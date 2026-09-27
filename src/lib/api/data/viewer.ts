@@ -72,6 +72,8 @@ export function useViewer(): Viewer {
   if (mock) return mock;
   if (!authConfigured || session.status === 'none') return { kind: 'guest' };
   if (session.status === 'unknown') return { kind: 'loading', signedIn: null };
+  // Error before empty: a failed /me must not leave the page loading forever.
+  if (query.isError && !query.data) return { kind: 'error', retry: () => void query.refetch() };
   if (!query.data) return { kind: 'loading', signedIn: true };
   return query.data === UNLINKED ? { kind: 'unlinked' } : query.data;
 }

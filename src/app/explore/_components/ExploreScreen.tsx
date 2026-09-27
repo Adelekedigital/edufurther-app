@@ -64,10 +64,13 @@ export function ExploreScreen() {
       ? 'guest'
       : viewer.kind === 'member' ||
           viewer.kind === 'unlinked' ||
+          viewer.kind === 'error' ||
           (viewer.kind === 'loading' && viewer.signedIn)
         ? 'member'
         : 'pending';
   const signOut = useSignOut();
+  // No backend account yet: booking can't succeed, so the buttons say why instead.
+  const bookBlocked = viewer.kind === 'unlinked' ? 'Finish account setup to book' : null;
 
   const [input, setInput] = useState('');
   const [q, setQ] = useState('');
@@ -161,6 +164,15 @@ export function ExploreScreen() {
       offline={!online}
     >
       <div className={styles.page}>
+        {viewer.kind === 'error' && (
+          // PROVISIONAL copy: /me failed. The page still works as a public list.
+          <Notice tone="neutral" icon="error" title="We couldn’t load your account.">
+            Mentors below still work.{' '}
+            <button type="button" className={styles.inlineAction} onClick={viewer.retry}>
+              Try again
+            </button>
+          </Notice>
+        )}
         {viewer.kind === 'unlinked' && (
           // PROVISIONAL (backend auth reply 2026-09-27): no self-signup yet, so a new
           // email signs in to no account. Copy until the product decides the flow.
@@ -180,6 +192,7 @@ export function ExploreScreen() {
             onBook={setBooking}
             timeZone={timeZone}
             offline={!online}
+            bookBlocked={bookBlocked}
           />
         )}
 
@@ -224,6 +237,7 @@ export function ExploreScreen() {
           query={q}
           onClearSearch={clearAll}
           onBook={setBooking}
+          bookBlocked={bookBlocked}
           selfId={member?.isApprovedMentor ? member.id : null}
           offline={!online}
           restarted={results.restarted}

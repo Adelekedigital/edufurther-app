@@ -195,4 +195,18 @@ describe('MentorResults', () => {
     expect(screen.queryByText(/Next available/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'See availability' })).toBeInTheDocument();
   });
+
+  it('booking blocked for this viewer: every Book button is disabled and says why', () => {
+    render(
+      <MentorResults
+        {...props({ mentors: [mentor()], bookBlocked: 'Finish account setup to book' })}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Finish account setup to book' })).toBeDisabled();
+  });
+
+  it('the viewer’s own card has no Book button', () => {
+    render(<MentorResults {...props({ mentors: [mentor({ id: 'me' })], selfId: 'me' })} />);
+    expect(screen.queryByRole('button', { name: /Book session/ })).not.toBeInTheDocument();
+  });
 });

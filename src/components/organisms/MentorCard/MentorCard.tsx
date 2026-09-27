@@ -29,6 +29,8 @@ type MentorCardProps = {
    * books themselves. Interim until the backend leaves the caller out of /mentors.
    */
   isSelf?: boolean;
+  /** Booking can't start for this viewer (e.g. no account yet): the button says why. */
+  bookBlocked?: string | null;
 };
 
 /**
@@ -47,6 +49,7 @@ export function MentorCard({
   timeZone,
   showTopics = true,
   isSelf = false,
+  bookBlocked = null,
 }: MentorCardProps) {
   const tone = { '--photo-bg': `var(--avatar-tone-${m.tone})` } as CSSProperties;
   const degree = [m.degreeLine, m.institution].filter(Boolean);
@@ -130,12 +133,19 @@ export function MentorCard({
       </div>
 
       {!isSelf && (
-        <Button fullWidth className={styles.book} disabled={offline} onClick={() => onBook(m)}>
+        <Button
+          fullWidth
+          className={styles.book}
+          disabled={offline || !!bookBlocked}
+          onClick={() => onBook(m)}
+        >
           {offline
             ? 'Booking needs a connection'
-            : m.nextAvailableAt
-              ? `Book session with ${m.firstName}`
-              : 'See availability'}
+            : bookBlocked
+              ? bookBlocked
+              : m.nextAvailableAt
+                ? `Book session with ${m.firstName}`
+                : 'See availability'}
         </Button>
       )}
     </article>

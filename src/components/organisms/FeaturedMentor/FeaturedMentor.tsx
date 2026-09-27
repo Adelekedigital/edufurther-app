@@ -13,6 +13,8 @@ type FeaturedMentorProps = {
   onBook: (mentor: Featured) => void;
   timeZone: string;
   offline?: boolean;
+  /** Booking can't start for this viewer: the button says why. */
+  bookBlocked?: string | null;
 };
 
 /**
@@ -20,7 +22,13 @@ type FeaturedMentorProps = {
  * details right; stacks on phones. The page hides it while searching and on the
  * no-mentors and error states. Profile links don't prefetch (AppShell PREFETCH note).
  */
-export function FeaturedMentor({ mentor: m, onBook, timeZone, offline }: FeaturedMentorProps) {
+export function FeaturedMentor({
+  mentor: m,
+  onBook,
+  timeZone,
+  offline,
+  bookBlocked = null,
+}: FeaturedMentorProps) {
   const tone = { '--photo-bg': `var(--avatar-tone-${m.tone})` } as CSSProperties;
   return (
     <section aria-labelledby="featured-name" className={styles.card}>
@@ -72,8 +80,14 @@ export function FeaturedMentor({ mentor: m, onBook, timeZone, offline }: Feature
           </p>
         )}
         <div className={styles.actions}>
-          <Button variant="secondary-outlined" disabled={offline} onClick={() => onBook(m)}>
-            {offline ? 'Booking needs a connection' : `Book session with ${m.firstName}`}
+          <Button
+            variant="secondary-outlined"
+            disabled={offline || !!bookBlocked}
+            onClick={() => onBook(m)}
+          >
+            {offline
+              ? 'Booking needs a connection'
+              : (bookBlocked ?? `Book session with ${m.firstName}`)}
           </Button>
         </div>
       </div>

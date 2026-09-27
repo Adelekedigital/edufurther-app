@@ -27,6 +27,8 @@ export type MentorResultsProps = {
   onBook: (m: Mentor) => void;
   /** The viewer's own mentor id, when they are one: their card has no Book button. */
   selfId?: string | null;
+  /** Booking can't start for this viewer: every Book button says why (MentorCard). */
+  bookBlocked?: string | null;
   offline: boolean;
   restarted: boolean;
   onDismissRestarted: () => void;
@@ -125,6 +127,7 @@ export function MentorResults(p: MentorResultsProps) {
             mentor={m}
             onBook={p.onBook}
             isSelf={!!p.selfId && m.id === p.selfId}
+            bookBlocked={p.bookBlocked}
             offline={p.offline}
             timeZone={p.timeZone}
             showTopics={p.showTopics}
