@@ -112,3 +112,15 @@
     width: var(--touch-target-min);
   }
 }
+
+/* Docked beside the pager: bottom is recomputed every frame while scrolling. */
+.tracking {
+  transition:
+    left var(--duration-slow) var(--ease-standard),
+    transform var(--duration-slow) var(--ease-standard);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tracking {
+    transition: none;
+  }
+}

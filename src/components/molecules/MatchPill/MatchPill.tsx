@@ -1,4 +1,6 @@
-import type { CSSProperties } from 'react';
+'use client';
+
+import { useEffect, useLayoutEffect, useRef, type CSSProperties } from 'react';
 import { cx } from '@/lib/utils/cx';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import styles from './MatchPill.module.css';
@@ -15,6 +17,8 @@ type MatchPillProps = {
   bottom: string;
   /** The mini icon either restores the pill (after ×) or opens matches. */
   miniAction: 'restore' | 'open';
+  /** Following the pager as it scrolls: position updates every frame, so no bottom transition. */
+  tracking?: boolean;
   onMinimise: () => void;
   onRestore: () => void;
 };
@@ -31,16 +35,53 @@ export function MatchPill({
   dock,
   bottom,
   miniAction,
+  tracking,
   onMinimise,
   onRestore,
 }: MatchPillProps) {
   const linkProps = external ? { target: '_blank', rel: 'noopener noreferrer' } : {};
   const style = { '--pill-bottom': bottom } as CSSProperties;
+
+  // Full ↔ mini swaps the focused element out of the DOM (× , restore, or the
+  // phone collapse near the pager). If focus was in the pill, carry it to the
+  // control that replaced it instead of letting it fall to <body>.
+  const asideRef = useRef<HTMLElement>(null);
+  const focusInside = useRef(false);
+  useEffect(() => {
+    const onPointerDown = (e: PointerEvent) => {
+      if (!asideRef.current?.contains(e.target as Node)) focusInside.current = false;
+    };
+    document.addEventListener('pointerdown', onPointerDown, true);
+    return () => document.removeEventListener('pointerdown', onPointerDown, true);
+  }, []);
+  useLayoutEffect(() => {
+    const aside = asideRef.current;
+    if (!aside || !focusInside.current || aside.contains(document.activeElement)) return;
+    aside.querySelector<HTMLElement>('a, button')?.focus();
+  }, [size, miniAction]);
+
   return (
     <aside
+      ref={asideRef}
       aria-label="Get matched"
-      className={cx(styles.pill, styles[size], dock === 'corner' && styles.corner)}
+      className={cx(
+        styles.pill,
+        styles[size],
+        dock === 'corner' && styles.corner,
+        tracking && styles.tracking,
+      )}
+      data-match-pill
       style={style}
+      onFocus={() => {
+        focusInside.current = true;
+      }}
+      onBlur={(e) => {
+        // A blur caused by the swap itself has no relatedTarget; only a move to
+        // another real element on the page means focus has left the pill.
+        if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget as Node)) {
+          focusInside.current = false;
+        }
+      }}
     >
       {size === 'full' ? (
         <>

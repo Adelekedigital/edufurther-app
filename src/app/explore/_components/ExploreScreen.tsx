@@ -97,7 +97,7 @@ export function ExploreScreen() {
   // Floating pill once the in-page prompt scrolls away (design promptSticky=on).
   // × minimises it for the session; it hides while a booking is open.
   const [pillMinimised, setPillMinimised] = useState(false);
-  const floating = useFloatingPrompt(showMatchPrompt);
+  const floating = useFloatingPrompt(showMatchPrompt, !guest);
   const showPill = showMatchPrompt && floating.passed && !booking;
   const pill = pillLayout(floating, pillMinimised);
 
@@ -194,6 +194,7 @@ export function ExploreScreen() {
           size={pill.size}
           dock={pill.dock}
           bottom={pill.bottom}
+          tracking={pill.tracking}
           miniAction={pillMinimised ? 'restore' : 'open'}
           onMinimise={() => setPillMinimised(true)}
           onRestore={() => setPillMinimised(false)}
