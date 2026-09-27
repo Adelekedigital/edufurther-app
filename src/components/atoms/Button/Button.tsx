@@ -12,14 +12,17 @@ import styles from './Button.module.css';
 
 export type ButtonVariant = 'primary' | 'secondary-outlined' | 'text' | 'dark';
 /**
- * Sizes:
- * cta     — every call-to-action, and the default (product, 2026-09-27): Inter
- *           semibold 12/16, padding 16px 24px (48px), phones 16px (48px).
- * compact — fixed 32px (44px under 768px); nothing in the app uses it now.
- * sm      — DS spec-sheet button, 37px, Poppins bold.
- * lg      — DS spec-sheet large button.
+ * Sizes follow placement, variants follow importance (CTA Hierarchy.dc.html,
+ * replacing the one-size #28 rule). Labels are Inter semibold.
+ * large  — 48px, padding 16px 24px (phones 16px), 14px label. The one action
+ *          that moves a page, flow or modal footer forward; empty/error states.
+ * medium — 40px, padding 12px 20px, 14px label. A card's or section's action.
+ *          The default.
+ * small  — 32px, padding 8px 16px, 12px label. Rows and dense lists.
+ * On phones medium and small keep their drawn height; an invisible 44px tap
+ * area sits around them.
  */
-export type ButtonSize = 'compact' | 'cta' | 'sm' | 'lg';
+export type ButtonSize = 'large' | 'medium' | 'small';
 
 type Common = {
   variant?: ButtonVariant;
@@ -32,8 +35,8 @@ type Common = {
 
 function classes({
   variant = 'primary',
-  // Every CTA follows the booking-card pattern by default (product, 2026-09-27).
-  size = 'cta',
+  // A card's or section's action is the common case (CTA hierarchy default).
+  size = 'medium',
   fullWidth,
   className,
 }: Pick<Common, 'variant' | 'size' | 'fullWidth'> & { className?: string }) {

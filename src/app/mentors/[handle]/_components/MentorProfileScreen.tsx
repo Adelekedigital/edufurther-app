@@ -91,7 +91,11 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
             illustration="forms"
             title="We couldn’t load this profile"
             description="Something went wrong on our side. Check your connection and try again."
-            actions={<Button onClick={profile.retry}>Try again</Button>}
+            actions={
+              <Button size="large" onClick={profile.retry}>
+                Try again
+              </Button>
+            }
           />
         ) : profile.notFound || !p ? (
           // Design reply #34. 404 is "not found or not public", indistinguishable
@@ -100,7 +104,11 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
             illustration="search-results"
             title="This mentor profile isn’t available"
             description="The link may be out of date, or the profile isn’t public. You can find other mentors who’ve done the same path."
-            actions={<ButtonLink href="/explore">Explore mentors</ButtonLink>}
+            actions={
+              <ButtonLink href="/explore" size="large">
+                Explore mentors
+              </ButtonLink>
+            }
           />
         ) : (
           <>
@@ -110,7 +118,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               actions={
                 <>
                   {!isOwner && hasSessions && (
-                    <Button disabled={!!bookBlocked} onClick={() => openBooking()}>
+                    // The view's one filled button: Large (CTA hierarchy).
+                    <Button size="large" disabled={!!bookBlocked} onClick={() => openBooking()}>
                       {bookBlocked ?? 'Book a session'}
                     </Button>
                   )}

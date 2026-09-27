@@ -272,7 +272,11 @@ export function BookingFlow(p: BookingFlowProps) {
       size={100}
       title="We couldn’t load available times"
       description="Something went wrong on our side. Try again in a moment."
-      actions={<Button onClick={onRetry}>Try again</Button>}
+      actions={
+        <Button size="large" onClick={onRetry}>
+          Try again
+        </Button>
+      }
     />
   );
   // PROVISIONAL (design request #38): the card's "No open times at the moment".
@@ -304,7 +308,7 @@ export function BookingFlow(p: BookingFlowProps) {
         headingLevel={3}
         size={120}
         title="Request sent"
-        description={`${picked} is on hold.`}
+        description={`${picked} is on hold. You’ll get an email when ${m.firstName} replies.`}
       />
     </div>
   ) : null;
@@ -356,7 +360,7 @@ export function BookingFlow(p: BookingFlowProps) {
             {picked} is held for you for 10 minutes
           </p>
           <h3 className={styles.signupTitle}>Create a free account to finish booking</h3>
-          <Button variant="dark" fullWidth onClick={next}>
+          <Button variant="dark" size="medium" fullWidth onClick={next}>
             Continue with Google
           </Button>
           <span className={styles.or}>or</span>
@@ -416,7 +420,13 @@ export function BookingFlow(p: BookingFlowProps) {
   );
 
   const nextButton = (
-    <Button onClick={next} disabled={nextDisabled} busy={p.requestPending} fullWidth={isPhone}>
+    <Button
+      size="large"
+      onClick={next}
+      disabled={nextDisabled}
+      busy={p.requestPending}
+      fullWidth={isPhone}
+    >
       {p.requestPending ? 'Sending request…' : nextLabel}
     </Button>
   );
@@ -440,21 +450,20 @@ export function BookingFlow(p: BookingFlowProps) {
     const footer =
       step === 'done' ? (
         <>
-          <Button fullWidth onClick={p.onClose}>
+          <Button size="large" fullWidth onClick={p.onClose}>
             Done
           </Button>
-          <ButtonLink href="/bookings" variant="secondary-outlined" fullWidth>
+          <ButtonLink href="/bookings" variant="secondary-outlined" size="large" fullWidth>
             View my bookings
           </ButtonLink>
         </>
       ) : (
         <>
-          {/* DIVERGENCE: the design adds "· {first} confirms within 12 hours"; no
-              such figure exists (design-divergence.md, reply time). */}
+          {/* Design reply #30: no reply-time promise, just what happens next. */}
           {step === 'time' && time && (
             <p className={styles.footNote}>
               <Icon name="hourglass_top" size={14} />
-              {picked}
+              {picked} · You’ll get an email when {m.firstName} replies
             </p>
           )}
           {nextButton}
@@ -548,14 +557,16 @@ export function BookingFlow(p: BookingFlowProps) {
       <div className={styles.footer}>
         {step === 'done' ? (
           <>
-            <ButtonLink href="/bookings" variant="secondary-outlined">
+            <ButtonLink href="/bookings" variant="secondary-outlined" size="large">
               View my bookings
             </ButtonLink>
-            <Button onClick={p.onClose}>Done</Button>
+            <Button size="large" onClick={p.onClose}>
+              Done
+            </Button>
           </>
         ) : (
           <>
-            <Button variant="secondary-outlined" onClick={back}>
+            <Button variant="secondary-outlined" size="large" onClick={back}>
               {at === 0 ? 'Cancel' : 'Back'}
             </Button>
             {nextButton}

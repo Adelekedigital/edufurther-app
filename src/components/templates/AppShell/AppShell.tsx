@@ -82,10 +82,10 @@ export function AppShell({ active, chrome, account, offline, children }: AppShel
         </Link>
         {guest && (
           <div className={styles.guestActions}>
-            <ButtonLink href="/login" prefetch={PREFETCH} variant="secondary-outlined">
+            <ButtonLink href="/login" prefetch={PREFETCH} variant="secondary-outlined" size="large">
               Log in
             </ButtonLink>
-            <ButtonLink href="/signup" prefetch={PREFETCH}>
+            <ButtonLink href="/signup" prefetch={PREFETCH} size="large">
               Get started
             </ButtonLink>
           </div>
@@ -131,10 +131,16 @@ export function AppShell({ active, chrome, account, offline, children }: AppShel
         // always in thumb reach (design AppShell guestNav=float). Desktop keeps
         // them in the header.
         <div className={styles.guestBar}>
-          <ButtonLink href="/login" prefetch={PREFETCH} variant="secondary-outlined" fullWidth>
+          <ButtonLink
+            href="/login"
+            prefetch={PREFETCH}
+            variant="secondary-outlined"
+            size="large"
+            fullWidth
+          >
             Log in
           </ButtonLink>
-          <ButtonLink href="/signup" prefetch={PREFETCH} fullWidth>
+          <ButtonLink href="/signup" prefetch={PREFETCH} size="large" fullWidth>
             Get started free
           </ButtonLink>
         </div>

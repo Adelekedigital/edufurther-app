@@ -155,7 +155,7 @@ export function EmailCodeForm({
         </p>
       )}
 
-      <Button type="submit" fullWidth busy={busy}>
+      <Button type="submit" size="large" fullWidth busy={busy}>
         {step === 'email' ? 'Continue with email' : 'Verify and continue'}
       </Button>
 

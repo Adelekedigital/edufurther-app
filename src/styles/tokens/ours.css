@@ -54,12 +54,13 @@
   --avatar-tone-5: #5b3a8c;
   --avatar-tone-6: #0b6b2b;
 
-  /* Compact in-app button (handoff §7.1). */
+  /* Topic chip height (the old compact button size; chips aren't buttons). */
   --button-compact-h: 32px;
-  --button-compact-h-touch: 44px;
   --touch-target-min: 44px;
-  /* Booking CTA height: 16px padding + 16px line + 16px padding (Button size cta). */
-  --button-cta-h: 48px;
+  /* CTA Hierarchy.dc.html: button heights by placement (large / medium / small). */
+  --button-h-large: 48px;
+  --button-h-medium: 40px;
+  --button-h-small: 32px;
 
   /* Breakpoint, for reference: CSS media queries cannot read a var, so the
      number 768px is repeated in modules. Keep them equal. */
