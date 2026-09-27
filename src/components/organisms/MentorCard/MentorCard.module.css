@@ -97,18 +97,38 @@
   margin-top: auto;
 }
 
-.next {
+/* MentorCard.dc.html: flex column, gap --space-1, 12px, pushed to the card bottom. */
+.meta {
   margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+}
+.meta + .book {
+  margin-top: 0;
+}
+/* Offer line: 6px dot (green-600 = free) + text in the card's ink-900. */
+.offer {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  font-size: var(--text-p-xs);
+}
+.offerDot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: var(--radius-full);
+  background: var(--green-600);
+}
+.next {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
   color: var(--text-tertiary);
 }
+/* Design uses a bare <strong>: browser default weight, bold (700). */
 .nextTime {
   color: var(--green-700);
-  font-weight: var(--weight-semibold);
-}
-.next + .book {
-  margin-top: 0;
+  font-weight: var(--weight-bold);
 }

@@ -57,7 +57,21 @@ export function toMentor(r: MentorSummaryRead): Mentor {
       reviewCount: r.review_count,
       completedSessions: r.completed_sessions,
     }),
+    // PRODUCT RULE (2026-09-27): every session is free until paid sessions ship,
+    // so every mentor offers free mentorship. When the backend adds a price summary
+    // (has_free_session_type / min_price, backend request #3), derive it here.
+    offer: 'free',
     nextAvailableAt: r.next_available_at ?? null,
+    // Backend (reply round 3 #13): next_available_state says open / none / refreshing.
+    // Only claim "none" when it says so; refreshing or absent → unknown, say nothing.
+    nextAvailableState:
+      r.next_available_state === 'open' && r.next_available_at
+        ? 'open'
+        : r.next_available_state === 'none'
+          ? 'none'
+          : r.next_available_at
+            ? 'open'
+            : 'unknown',
     topics: r.offerings.map((o) => ({ slug: o.slug, label: o.display_name })),
   };
 }

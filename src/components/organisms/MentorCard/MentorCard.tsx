@@ -29,8 +29,10 @@ type MentorCardProps = {
 /**
  * MentorCard, `photo` variant (the chosen default). Name and photo link to the
  * profile; the photo link is out of the tab order to avoid a duplicate stop.
- * No price line: there are no prices (backend reply #3). The next-available line
- * shows only when the API has a time (backend reply #4: null → hide).
+ * Bottom block per MentorCard.dc.html: the offer line ("Free mentorship available"
+ * while every session is free; paid "from $X" waits for prices), then either
+ * "Next available: …", "No open times at the moment" (only when known to be none), or
+ * nothing while it is unknown/refreshing. Without a time, Book reads "See availability".
  * Prefetch is off on profile links: Mentor Profile is not built yet (AppShell PREFETCH note).
  */
 export function MentorCard({
@@ -97,15 +99,29 @@ export function MentorCard({
         </ul>
       )}
 
-      {m.nextAvailableAt && (
-        <p className={styles.next}>
-          <Icon name="bolt" size={14} />
-          Next available:{' '}
-          <strong className={styles.nextTime}>
-            {formatNextAvailable(m.nextAvailableAt, timeZone)}
-          </strong>
-        </p>
-      )}
+      {/* MentorCard.dc.html bottom block: offer line, then availability. */}
+      <div className={styles.meta}>
+        {m.offer === 'free' && (
+          <p className={styles.offer}>
+            <span className={styles.offerDot} aria-hidden />
+            Free mentorship available
+          </p>
+        )}
+        {m.nextAvailableAt ? (
+          <p className={styles.next}>
+            <Icon name="bolt" size={14} />
+            Next available:{' '}
+            <strong className={styles.nextTime}>
+              {formatNextAvailable(m.nextAvailableAt, timeZone)}
+            </strong>
+          </p>
+        ) : m.nextAvailableState === 'none' ? (
+          <p className={styles.next}>
+            <Icon name="event_busy" size={14} />
+            No open times at the moment
+          </p>
+        ) : null}
+      </div>
 
       <Button fullWidth className={styles.book} disabled={offline} onClick={() => onBook(m)}>
         {offline

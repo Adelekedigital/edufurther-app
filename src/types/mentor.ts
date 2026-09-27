@@ -29,8 +29,18 @@ export type Mentor = {
   /** Mean session value, 1..5. Null when there are no published reviews. */
   rating: number | null;
   label: MentorLabel | null;
-  /** Next free slot (UTC ISO). Null = nothing within the booking horizon. */
+  /**
+   * What booking costs, for the card's offer line. "free" = at least one free
+   * session type. Null = unknown (line hidden). Paid ("from $X") waits for prices.
+   */
+  offer: 'free' | null;
+  /** Next free slot (UTC ISO), or null. Null alone does not mean "none" — see nextAvailableState. */
   nextAvailableAt: string | null;
+  /**
+   * open: nextAvailableAt is set. none: known to have nothing open ("No open times
+   * at the moment"). unknown: not recomputed yet or not reported — say nothing.
+   */
+  nextAvailableState: 'open' | 'none' | 'unknown';
   topics: Topic[];
 };
 
