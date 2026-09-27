@@ -44,8 +44,8 @@ export type Mentor = {
   topics: Topic[];
 };
 
-/** The "Featured this week" mentor: a Mentor plus the public bio the card shows. */
-export type FeaturedMentor = Mentor & { bio: string };
+/** The "Featured this week" mentor: a Mentor plus the public bio the card shows (null: none written). */
+export type FeaturedMentor = Mentor & { bio: string | null };
 
 export type AppErrorKind =
   'offline' | 'unauthorized' | 'forbidden' | 'notFound' | 'validation' | 'server' | 'unknown';
