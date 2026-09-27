@@ -57,3 +57,27 @@ export function weekOfDays(
     return { date, slots: byDate.get(date) ?? [] };
   });
 }
+
+/**
+ * The dates to ask /slots for, so the four weeks on screen are always covered.
+ * The picker shows the viewer's today … today+27 in the viewer's zone, but
+ * `start`/`end` are calendar dates the backend reads in the mentor's zone —
+ * which can be a day either side. A day's margin on each end (30 days, one
+ * request; the backend allows 56) covers every zone pair; `visibleDays` then
+ * drops whatever falls outside the four weeks.
+ */
+export function slotWindow(timeZone: string, now = new Date()): { start: string; end: string } {
+  const today = dayKey(now.toISOString(), timeZone);
+  return { start: addDays(today, -1), end: addDays(today, BOOKING_HORIZON_DAYS + 1) };
+}
+
+/** Only the days the picker can show: today … today+27 in the viewer's zone. */
+export function visibleDays(
+  days: readonly BookingDay[],
+  timeZone: string,
+  now = new Date(),
+): BookingDay[] {
+  const first = dayKey(now.toISOString(), timeZone);
+  const last = addDays(first, BOOKING_HORIZON_DAYS - 1);
+  return days.filter((d) => d.date >= first && d.date <= last);
+}

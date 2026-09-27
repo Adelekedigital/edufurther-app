@@ -1,4 +1,4 @@
-import { bookingError, keyForAttempt, slotsEnd, toSessionType } from './booking';
+import { bookingError, keyForAttempt, toSessionType } from './booking';
 import { apiError, normaliseError } from './errors';
 
 describe('booking errors (POST /sessions)', () => {
@@ -55,11 +55,5 @@ describe('toSessionType', () => {
       description: '',
       questions: [],
     });
-  });
-});
-
-describe('slotsEnd', () => {
-  it('is an exclusive date 28 days out', () => {
-    expect(slotsEnd(new Date('2026-09-27T19:07:00Z'))).toBe('2026-10-25');
   });
 });

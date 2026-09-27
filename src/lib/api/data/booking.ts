@@ -3,16 +3,13 @@
 import { useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
-import { BOOKING_HORIZON_DAYS } from '@/lib/utils/slots';
+import { slotWindow } from '@/lib/utils/slots';
 import type { AppError, BookingRequest, Remote, SessionType } from '@/types/mentor';
 import { apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
 
 type SessionTypeRead = components['schemas']['SessionTypeRead'];
-
-/** How far ahead the booking modal looks (lib/utils/slots.ts). */
-export const SLOT_HORIZON_DAYS = BOOKING_HORIZON_DAYS;
 
 // ---- mapping ----------------------------------------------------------------
 
@@ -27,11 +24,6 @@ export function toSessionType(r: SessionTypeRead): SessionType {
     // there is nothing to ask, so the flow has no questions step.
     questions: [],
   };
-}
-
-/** `end` for /slots: a date, exclusive. `start` is left to the backend (the mentor's today). */
-export function slotsEnd(now = new Date(), days = SLOT_HORIZON_DAYS): string {
-  return new Date(now.getTime() + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
 /**
@@ -96,10 +88,17 @@ export function useSessionTypes(mentorId: string | null): Remote<SessionType[]> 
  * GET /users/{id}/availability/slots for one offering: UTC instants. The UI
  * groups them into days in the viewer's zone (utils/slots.ts).
  */
-export function useSlots(mentorId: string | null, sessionTypeId: string | null): Remote<string[]> {
+export function useSlots(
+  mentorId: string | null,
+  sessionTypeId: string | null,
+  /** The viewer's zone: the window is their four weeks (utils/slots.ts slotWindow). */
+  timeZone: string,
+): Remote<string[]> {
   const enabled = mentorId !== null && sessionTypeId !== null;
+  const window = slotWindow(timeZone);
   const query = useQuery({
-    queryKey: keys.booking.slots(mentorId ?? 'none', sessionTypeId ?? 'none'),
+    // The window's first day is in the key, so the grid moves on at midnight.
+    queryKey: [...keys.booking.slots(mentorId ?? 'none', sessionTypeId ?? 'none'), window.start],
     enabled,
     queryFn: async ({ signal }) => {
       const { data, error, response } = await api.GET(
@@ -107,7 +106,7 @@ export function useSlots(mentorId: string | null, sessionTypeId: string | null):
         {
           params: {
             path: { user_id: mentorId! },
-            query: { session_type_id: sessionTypeId!, end: slotsEnd() },
+            query: { session_type_id: sessionTypeId!, start: window.start, end: window.end },
           },
           signal,
         },

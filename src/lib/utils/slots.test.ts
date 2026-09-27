@@ -1,5 +1,5 @@
 import { formatDay } from './format';
-import { dayKey, groupSlotsByDay } from './slots';
+import { dayKey, groupSlotsByDay, slotWindow, visibleDays } from './slots';
 
 describe('groupSlotsByDay', () => {
   // Joshua on the dev backend: first slot 05:30Z on Sep 30.
@@ -40,5 +40,30 @@ describe('formatDay', () => {
     const key = dayKey('2026-09-27T12:30:00Z', 'Pacific/Auckland');
     expect(key).toBe('2026-09-28');
     expect(formatDay(key)).toEqual({ weekday: 'Mon', date: 'Sep 28' });
+  });
+});
+
+describe('slotWindow / visibleDays (review of #20)', () => {
+  // 6pm in Los Angeles on Sep 27 is already Sep 28 in UTC.
+  const la = new Date('2026-09-28T01:00:00Z');
+
+  it('asks for a day either side of the viewer’s four weeks', () => {
+    expect(slotWindow('America/Los_Angeles', la)).toEqual({
+      start: '2026-09-26',
+      end: '2026-10-26',
+    });
+    // East of UTC: Auckland is already on Sep 28, so its window starts the 27th.
+    expect(slotWindow('Pacific/Auckland', la)).toEqual({ start: '2026-09-27', end: '2026-10-27' });
+  });
+
+  it('keeps only today … today+27 in the viewer’s zone', () => {
+    const days = ['2026-09-26', '2026-09-27', '2026-10-24', '2026-10-25'].map((date) => ({
+      date,
+      slots: [{ startsAt: `${date}T18:00:00Z` }],
+    }));
+    expect(visibleDays(days, 'America/Los_Angeles', la).map((d) => d.date)).toEqual([
+      '2026-09-27',
+      '2026-10-24',
+    ]);
   });
 });

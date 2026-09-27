@@ -92,7 +92,7 @@ export function ExploreScreen() {
   const sessionTypes = useSessionTypes(booking?.id ?? null);
   // The offering being booked: the one picked in the modal, else the first.
   const typeId = bookingTypeId ?? sessionTypes.data?.[0]?.id ?? null;
-  const slots = useSlots(booking?.id ?? null, typeId);
+  const slots = useSlots(booking?.id ?? null, typeId, timeZone);
   const request = useRequestBooking();
 
   // Hidden while searching and on the no-mentors / error states (Design decisions: featured).

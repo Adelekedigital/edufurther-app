@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Mentor, Remote, SessionType } from '@/types/mentor';
 import { BookingFlow, type BookingFlowProps } from './BookingFlow';
@@ -269,6 +269,41 @@ describe('BookingFlow on real slots', () => {
 
 describe('BookingFlow week view (7 days at a time)', () => {
   beforeEach(() => setPhone(false));
+
+  it('says no open times when none of the four weeks has any, even if the fetch had some beyond', () => {
+    // Today is Sep 27; Oct 25 is today+28, fetched as margin but never shown.
+    render(<BookingFlow {...props({ slots: remote(['2026-10-25T12:00:00Z']) })} />);
+    expect(screen.getByText('No open times at the moment')).toBeInTheDocument();
+  });
+
+  it('clears the chosen time when the week changes', async () => {
+    const user = userEvent.setup();
+    render(
+      <BookingFlow
+        {...props({ sessionTypeId: 'st2', slots: remote([...slots, '2026-10-06T09:00:00Z']) })}
+      />,
+    );
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+    expect(screen.getByRole('button', { name: /^Request Mon, Sep 28/ })).toBeEnabled();
+    await user.click(screen.getByRole('button', { name: 'Later dates' }));
+    expect(screen.getByRole('button', { name: 'Pick a time' })).toBeDisabled();
+  });
+
+  it('moves the week on at midnight while the modal is open', () => {
+    vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
+    try {
+      vi.setSystemTime(new Date('2026-09-27T23:59:30Z'));
+      render(<BookingFlow {...props()} />);
+      expect(screen.getByText('Next 7 days · Sep 27 – Oct 3')).toBeInTheDocument();
+      vi.setSystemTime(new Date('2026-09-28T00:00:30Z'));
+      act(() => vi.advanceTimersByTime(60 * 1000));
+      expect(screen.getByText('Next 7 days · Sep 28 – Oct 4')).toBeInTheDocument();
+    } finally {
+      // Back to the file's pinned clock, pass or fail, so later tests see Sep 27.
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-09-27T12:00:00Z'));
+    }
+  });
 
   it('always opens on the next 7 days from today, empty days disabled', () => {
     render(<BookingFlow {...props()} />);

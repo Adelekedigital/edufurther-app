@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
@@ -13,7 +13,7 @@ import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { FileField } from '@/components/molecules/FileField/FileField';
 import { TimezonePicker } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import { formatDay, formatRating, formatTime } from '@/lib/utils/format';
-import { BOOKING_WEEKS, dayKey, groupSlotsByDay, weekOfDays } from '@/lib/utils/slots';
+import { BOOKING_WEEKS, dayKey, groupSlotsByDay, visibleDays, weekOfDays } from '@/lib/utils/slots';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type { AppError, BookingRequest, Mentor, Remote, SessionType } from '@/types/mentor';
 import type { SheetChrome } from '@/types/ui';
@@ -92,10 +92,27 @@ export function BookingFlow(p: BookingFlowProps) {
   const types = p.sessionTypes.data ?? [];
   const session = types.find((t) => t.id === p.sessionTypeId) ?? types[0] ?? null;
   // Grouped in the zone the viewer picked, so changing it regroups the days.
-  const days = useMemo(() => groupSlotsByDay(p.slots.data ?? [], zone), [p.slots.data, zone]);
+  // "Today" moves on at midnight even if nothing else re-renders the modal.
+  const [clock, setClock] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setClock(Date.now()), 60 * 1000);
+    return () => clearInterval(t);
+  }, []);
+  const today = dayKey(new Date(clock).toISOString(), zone);
+  // Only the four weeks on screen: the fetch has a day's margin either side.
+  const days = useMemo(
+    () => visibleDays(groupSlotsByDay(p.slots.data ?? [], zone), zone, new Date(clock)),
+    // `today` stands in for the clock: the result only changes when the date does.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [p.slots.data, zone, today],
+  );
   // Seven days at a time, always starting today (product, 2026-09-27); ‹ › move
   // through the four-week horizon. Empty days stay on show, disabled.
-  const weekDays = useMemo(() => weekOfDays(days, week, zone), [days, week, zone]);
+  const weekDays = useMemo(
+    () => weekOfDays(days, week, zone, new Date(clock)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [days, week, zone, today],
+  );
   const chosen = weekDays.findIndex((d) => d.date === dayChoice && d.slots.length > 0);
   const firstOpen = weekDays.findIndex((d) => d.slots.length > 0);
   const dayAt = chosen >= 0 ? chosen : firstOpen >= 0 ? firstOpen : null;
@@ -107,6 +124,8 @@ export function BookingFlow(p: BookingFlowProps) {
   const moveWeek = (to: number) => {
     setWeek(to);
     setDayChoice(null);
+    // Like changing the day: a time from another week must not stay chosen.
+    setTime(null);
   };
   // A chosen time only counts while the grid still offers it: slots reload after
   // a conflict, and a time someone else took must not stay selected.
