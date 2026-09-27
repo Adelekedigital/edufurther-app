@@ -12,6 +12,12 @@ type DayTimePickerProps = {
   time: string | null;
   onTimeChange: (startsAt: string) => void;
   timeZone: string;
+  /**
+   * grid — the modal's day grid and time grid.
+   * scroll — the phone sheet: days scroll sideways, a visible heading names the
+   * day and its count, then a three-column time grid (BookingModal.dc.html).
+   */
+  layout?: 'grid' | 'scroll';
 };
 
 /**
@@ -25,11 +31,19 @@ export function DayTimePicker({
   time,
   onTimeChange,
   timeZone,
+  layout = 'grid',
 }: DayTimePickerProps) {
   const name = useId();
   const day = days[dayIndex];
+  const scroll = layout === 'scroll';
+  const heading = (() => {
+    if (!day) return 'Time';
+    const f = formatDay(day.date, timeZone);
+    const n = day.slots.length;
+    return `${f.weekday}, ${f.date} · ${n} ${n === 1 ? 'time' : 'times'}`;
+  })();
   return (
-    <div className={styles.picker}>
+    <div className={cx(styles.picker, scroll && styles.scroll)}>
       <fieldset className={styles.fieldset}>
         <legend className="sr-only">Date</legend>
         <div className={styles.days}>
@@ -58,7 +72,7 @@ export function DayTimePicker({
         </div>
       </fieldset>
       <fieldset className={styles.fieldset}>
-        <legend className="sr-only">Time</legend>
+        <legend className={scroll ? styles.heading : 'sr-only'}>{scroll ? heading : 'Time'}</legend>
         <div className={styles.times}>
           {day?.slots.map((s) => (
             <label key={s.startsAt} className={styles.option}>

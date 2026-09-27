@@ -41,7 +41,7 @@ Sources, so the next sync can diff against them: the design project's
 | Explore hero, mentee and guest alike: "Find a mentor for your study-abroad journey" / "Get guidance from students and professionals who have been through the process. Explore free mentorship or book a paid 1:1 session." | Product, 2026-09-26. The design's mentee copy claimed match ranking, which isn't built | match ranking ships |
 | The Explore session owns the foundation: scaffold, tokens, DS atoms, AppShell. Other screens reuse it | User, 2026-09-26 | — |
 | Explore ships in two phases: A = list + BookingModal on mocked slots; B = real booking endpoints | User, 2026-09-26 | — |
-| One booking flow, `BookingModal`, shared by Explore and Mentor Profile. Default `flow=timeFirst`, `signupAt=afterTime`, `payment=placeholder` | Design decisions: Explore | — |
+| One booking flow, `BookingModal` (`BookingFlow` in `ModalShell`), wherever booking happens — Explore, Mentor Profile, and any later screen. No screen gets its own inline picker. Default `flow=timeFirst`, `signupAt=afterTime`, `payment=placeholder`. Under 768px it is the design's `mobileView=sheet` (ModalShell `sheet` + `footer`) | Design decisions: Explore; product 2026-09-27 ("consistent booking experience across wherever booking is done") | — |
 
 ---
 

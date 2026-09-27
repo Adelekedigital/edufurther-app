@@ -48,3 +48,27 @@ input:focus-visible + .box {
   font-size: var(--text-p-xs);
   color: var(--text-tertiary);
 }
+.touch {
+  display: none;
+}
+
+/* Phones (BookingModal.dc.html sheet): roomier box, larger glyph and label. */
+@media (max-width: 767px) {
+  .box {
+    padding: var(--space-5) var(--space-4);
+  }
+  .box .icon {
+    width: 24px;
+    height: 24px;
+    font-size: 24px;
+  }
+  .main {
+    font-size: var(--text-p-sm);
+  }
+  .pointer {
+    display: none;
+  }
+  .touch {
+    display: inline;
+  }
+}

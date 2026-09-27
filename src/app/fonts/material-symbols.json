@@ -1,5 +1,6 @@
 {
   "names": [
+    "arrow_back",
     "arrow_forward",
     "bolt",
     "chat",
@@ -11,9 +12,11 @@
     "error",
     "event",
     "event_busy",
+    "expand_less",
     "expand_more",
     "explore",
     "home",
+    "hourglass_top",
     "lock_clock",
     "logout",
     "mail",
@@ -29,5 +32,5 @@
     "star",
     "upload_file"
   ],
-  "sha256": "d83749f9d43416a34ed7863a2c712110a0891d23b17877d812204694a6a24728"
+  "sha256": "79e149c8423132089f95f134f2c60138e641e65547e4ca52aa094ad9c10b79fd"
 }
