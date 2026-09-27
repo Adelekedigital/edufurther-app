@@ -1,0 +1,151 @@
+/* PROVENANCE — imported verbatim from the EduFurther design system
+   (claude.ai/design project fb0b8ef2…, bundle _ds/edufurther-design-system-c4e21801…/tokens/colors.css)
+   on 2026-09-26. Do not edit values here: re-import instead. Our own additions
+   live in ./ours.css. The DS file's global `a` rules moved to styles/globals.css.
+
+   Colour tokens transcribed from the DESIGN-SYSTEM / COLOR frame and from the
+   measured component frames. Values are verbatim — nothing rounded or invented. */
+:root {
+  /* ── LEGACY DEEP BLUE ── SUPERSEDED. Banned in product UI (project-conventions). */
+  --brand-700: #0a3a6b;
+  --brand-600: #105192;
+  --brand-500: #0061a2;
+  --brand-100: #d8e9f9;
+  --brand-50: #f2f8ff;
+
+  --mint-400: #67fdb0;
+  --mint-200: #c2fedf;
+  --mint-500: #52ca8c;
+  --mint-50: #e0feef;
+
+  --navy-900: #091623;
+  --slate-500: #5e6f81;
+  --slate-400: #68798a;
+  --slate-300: #b2b8bf;
+
+  --gradient-brand: linear-gradient(90deg, #67fdb0 -0.01%, #0061a2 90.34%);
+
+  /* ── PRIMARY ── the COLOR frame's primary ramp, and the colour of the logo. */
+  --blue-50: #e6f0ff;
+  --blue-100: #b0cfff;
+  --blue-200: #8ab8ff;
+  --blue-300: #5497ff;
+  --blue-400: #3383ff;
+  --blue-500: #0064ff; /* base */
+  --blue-600: #005be8;
+  --blue-700: #0047b5;
+  --blue-800: #00378c;
+  --blue-900: #002a6b;
+
+  /* Orange — third-party UI kit spec sheets only. Banned in product UI. */
+  --orange-50: #ffece5;
+  --orange-100: #fcd2c2;
+  --orange-200: #fcb59a;
+  --orange-300: #fa9874;
+  --orange-400: #f77a4a;
+  --orange-500: #f56630;
+  --orange-600: #eb5017;
+  --orange-700: #cc400c;
+  --orange-800: #ad3307;
+
+  /* Secondary / success green. */
+  --green-50: #e7f5ec;
+  --green-100: #b5dfc3;
+  --green-200: #91cfa6;
+  --green-300: #5eb97d;
+  --green-400: #3fac64;
+  --green-500: #0f973d;
+  --green-600: #0e8938;
+  --green-700: #0b6b2b;
+  --green-800: #085322;
+  --green-900: #063f1a;
+  --green-online: #04802e;
+
+  /* Error red. */
+  --red-50: #fbf1f1;
+  --red-300: #e26e6a;
+  --red-500: #d42620;
+  --red-600: #cb1a14;
+  --red-700: #9e0a05;
+  --red-900: #59100d;
+
+  /* Warning. Only the 900 anchor is legible in the source file. */
+  --yellow-900: #66440a;
+
+  /* Accent (premium / celebration). */
+  --accent-900: #5c4c13;
+
+  /* Brand neutrals. */
+  --grey-50: #f5f6f7;
+  --grey-100: #e1e3e5;
+  --grey-200: #d3d5d8;
+  --grey-300: #bfc2c7;
+  --grey-400: #b2b6bc;
+  --grey-500: #9fa4ab;
+  --grey-600: #91959c;
+  --grey-700: #717479;
+  --grey-800: #575a5e;
+  --grey-900: #434548;
+
+  /* UI ink ramp — the greys the components are actually drawn with. */
+  --ink-25: #f7f9fc;
+  --ink-50: #f9fafb;
+  --ink-100: #f0f2f5;
+  --ink-200: #e4e7ec;
+  --ink-300: #d0d5dd;
+  --ink-400: #98a2b3;
+  --ink-500: #667185;
+  --ink-600: #475367;
+  --ink-700: #344054;
+  --ink-800: #1d2739;
+  --ink-900: #101928;
+
+  --white: #ffffff;
+
+  /* ── Semantic aliases ── */
+  --text-primary: var(--ink-900);
+  --text-secondary: var(--ink-700);
+  --text-tertiary: var(--ink-500);
+  --text-placeholder: var(--ink-400);
+  --text-disabled: var(--ink-300);
+  --text-on-action: var(--white);
+  --text-action: var(--blue-500);
+  --text-danger: var(--red-500);
+  --text-success: var(--green-600);
+  --text-link: var(--blue-500);
+  --text-link-hover: var(--blue-700);
+
+  --surface-page: var(--white);
+  --surface-card: var(--white);
+  --surface-subtle: var(--ink-50);
+  --surface-muted: var(--ink-100);
+  --surface-sunken: var(--ink-25);
+  --surface-brand-subtle: var(--blue-50);
+  --surface-legacy-subtle: var(--brand-50);
+  --surface-accent-subtle: var(--mint-50);
+  --surface-info-subtle: var(--blue-50);
+  --surface-danger-subtle: var(--red-50);
+
+  --action-primary: var(--blue-500);
+  --action-primary-hover: var(--blue-600);
+  --action-primary-pressed: var(--blue-700);
+  --action-primary-on-dark: var(--mint-400);
+  --action-primary-on-dark-label: var(--navy-900);
+  --action-secondary: var(--ink-500);
+  --action-secondary-hover: var(--ink-700);
+  --action-secondary-pressed: var(--ink-900);
+  --action-danger: var(--red-600);
+  --action-danger-hover: var(--red-300);
+  --action-danger-pressed: var(--red-700);
+  --action-disabled: var(--ink-300);
+
+  --border-default: var(--ink-300);
+  --border-subtle: var(--ink-200);
+  --border-muted: var(--ink-100);
+  --border-focus: var(--blue-500);
+  --border-typing: var(--orange-300);
+  --border-danger: var(--red-500);
+
+  --caret: #4b4efc;
+  --selection: #b6d8ff;
+}

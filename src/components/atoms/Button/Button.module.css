@@ -1,0 +1,138 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.button:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.full {
+  width: 100%;
+}
+
+/* ---- sizes ---- */
+.compact {
+  height: var(--button-compact-h);
+  padding: 0 var(--space-4);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  line-height: 16px;
+  font-weight: var(--weight-semibold);
+}
+
+.sm {
+  height: var(--control-h-sm);
+  padding: 0 var(--space-4);
+  font-family: var(--font-button);
+  font-size: var(--text-p-sm);
+  line-height: 20px;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.1px;
+}
+
+.lg {
+  height: var(--input-h-lg);
+  padding: var(--space-4) var(--space-8);
+  font-family: var(--font-button);
+  font-size: var(--text-p-sm);
+  line-height: 20px;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.1px;
+}
+
+@media (max-width: 767px) {
+  .compact,
+  .sm {
+    min-height: var(--button-compact-h-touch);
+  }
+}
+
+/* ---- variants ---- */
+.primary {
+  background: var(--action-primary);
+  color: var(--text-on-action);
+}
+.primary:hover {
+  background: var(--action-primary-hover);
+  color: var(--text-on-action);
+}
+.primary:active {
+  background: var(--action-primary-pressed);
+}
+
+.secondary-outlined {
+  background: var(--surface-card);
+  color: var(--text-primary);
+  box-shadow: inset 0 0 0 var(--border-hairline) var(--border-default);
+}
+.secondary-outlined:hover {
+  background: var(--surface-subtle);
+  color: var(--text-primary);
+}
+.secondary-outlined:active {
+  background: var(--surface-muted);
+  box-shadow: inset 0 0 0 var(--border-emphasis) var(--border-default);
+}
+
+.text {
+  background: transparent;
+  color: var(--text-action);
+  padding-left: 0;
+  padding-right: 0;
+  height: auto;
+}
+.text:hover {
+  color: var(--text-link-hover);
+  text-decoration: underline;
+}
+
+.dark {
+  background: var(--ink-900);
+  color: var(--text-on-action);
+}
+.dark:hover {
+  background: var(--ink-800);
+  color: var(--text-on-action);
+}
+
+/* ---- disabled / busy (DS: flat ink-300 fill; outlined: ink-400 on a 2px ink-100 ring) ---- */
+.button:disabled {
+  cursor: not-allowed;
+}
+/* DIVERGENCE: DS draws white on ink-300 (~1.5:1). Our disabled buttons often carry
+   the reason ("Booking needs a connection"), so the label must stay readable. */
+.primary:disabled,
+.dark:disabled {
+  background: var(--surface-muted);
+  color: var(--ink-600);
+}
+.secondary-outlined:disabled {
+  background: var(--surface-card);
+  color: var(--ink-500);
+  box-shadow: inset 0 0 0 var(--border-emphasis) var(--border-muted);
+}
+.text:disabled {
+  color: var(--ink-500);
+  text-decoration: none;
+}
+.button[aria-busy='true'] {
+  cursor: progress;
+}

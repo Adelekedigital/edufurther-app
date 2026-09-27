@@ -1,0 +1,25 @@
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.on-photo {
+  padding: 2px var(--space-2);
+  border: var(--border-hairline) solid var(--photo-tag-border);
+  border-radius: var(--radius-xs);
+  background: var(--photo-tag-tint);
+  color: var(--white);
+  font-weight: var(--weight-medium);
+}
+
+.neutral {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+}

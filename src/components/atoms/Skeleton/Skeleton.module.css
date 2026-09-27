@@ -1,0 +1,13 @@
+.block {
+  display: block;
+  background: var(--skeleton-fill);
+}
+.sm {
+  border-radius: var(--radius-sm);
+}
+.md {
+  border-radius: var(--radius-md);
+}
+.lg {
+  border-radius: var(--radius-lg);
+}

@@ -1,0 +1,46 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--button-compact-h);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  border: var(--border-hairline) solid var(--border-subtle);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+}
+.chip:hover {
+  background: var(--surface-subtle);
+  border-color: var(--border-default);
+}
+.chip:active {
+  background: var(--surface-muted);
+}
+.chip:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.on,
+.on:hover {
+  border-color: var(--blue-500);
+  background: var(--blue-50);
+  color: var(--blue-700);
+}
+.chip:disabled {
+  cursor: not-allowed;
+  color: var(--ink-500);
+  background: var(--surface-subtle);
+}
+@media (max-width: 767px) {
+  .chip {
+    min-height: var(--touch-target-min);
+    padding: 0 var(--space-2);
+  }
+}

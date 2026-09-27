@@ -1,0 +1,49 @@
+/* PROVENANCE — verbatim from the DS bundle tokens/typography.css, imported 2026-09-26.
+   Type scale from the DESIGN-SYSTEM / TYPOGRAPHY frame. */
+:root {
+  --text-display-lg: 56px;
+  --lh-display-lg: 1.2;
+  --ls-display-lg: -0.04em;
+  --text-display-sm: 48px;
+  --lh-display-sm: 1.2;
+  --ls-display-sm: -0.04em;
+  --text-h1: 40px;
+  --lh-h1: 1;
+  --ls-h1: -0.04em;
+  --text-h2: 36px;
+  --lh-h2: 1;
+  --ls-h2: -0.04em;
+  --text-h3: 32px;
+  --lh-h3: 1;
+  --ls-h3: -0.02em;
+  --text-h4: 28px;
+  --lh-h4: 1;
+  --ls-h4: -0.02em;
+  --text-h5: 24px;
+  --lh-h5: 1.2;
+  --ls-h5: -0.02em;
+  --text-h6: 20px;
+  --lh-h6: 1.2;
+  --ls-h6: -0.02em;
+
+  --text-p-lg: 18px;
+  --lh-p: 1.45;
+  --text-p-md: 16px;
+  --text-p-sm: 14px;
+  --text-p-xs: 12px;
+
+  --text-caption-lg: 14px;
+  --ls-caption-lg: 0.12em;
+  --text-caption-sm: 12px;
+  --ls-caption-sm: 0.12em;
+  --text-caption-xs: 10px;
+  --ls-caption-xs: 0.16em;
+  --lh-caption: 1.2;
+
+  --weight-light: 300;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800;
+}

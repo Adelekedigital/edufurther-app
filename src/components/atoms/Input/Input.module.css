@@ -1,0 +1,58 @@
+.field {
+  width: 100%;
+  min-width: 0;
+  padding: 0 var(--space-3);
+  border: var(--border-hairline) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-regular);
+  caret-color: var(--caret);
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+.field:hover {
+  border-color: var(--ink-400);
+}
+.field:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 0;
+  border-color: var(--border-focus);
+}
+.field[aria-invalid='true'] {
+  border-color: var(--border-danger);
+}
+.field:disabled {
+  background: var(--surface-subtle);
+  color: var(--ink-500);
+  cursor: not-allowed;
+}
+.md {
+  height: var(--control-h-sm);
+}
+.lg {
+  height: var(--space-11);
+  border-radius: var(--radius-lg);
+}
+.padStart {
+  padding-left: var(--space-10);
+}
+.padEnd {
+  padding-right: var(--space-11);
+}
+.textarea {
+  padding: var(--space-3);
+  line-height: var(--lh-p);
+  resize: vertical;
+}
+/* Search inputs: drop the browser's own clear button; we draw one. */
+.field::-webkit-search-cancel-button {
+  display: none;
+}
+@media (max-width: 767px) {
+  .field {
+    font-size: var(--text-p-md);
+    min-height: var(--touch-target-min);
+  }
+}

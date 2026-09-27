@@ -1,0 +1,66 @@
+/* OURS — tokens the design does not have. Designs are drawn at rest; these
+   exist because the build needs them. Each is listed in
+   .claude/skills/project-conventions/references/design-divergence.md so a
+   redesign does not silently drop them. */
+:root {
+  /* Focus ring. DS components draw 2px --blue-500 at 2px offset; every custom
+     control uses the same. */
+  --focus-ring-color: var(--border-focus);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
+  /* Placeholder text. DS --text-placeholder (--ink-400) is 2.58:1 on white. */
+  --text-placeholder: var(--ink-500);
+
+  /* Skeleton fill (design draws --ink-100 blocks; named so it can change once). */
+  --skeleton-fill: var(--ink-100);
+  --skeleton-pulse-duration: 1.4s;
+
+  /* Modal overlay and lift, read off Modal.dc.html literals. */
+  --overlay-scrim: rgba(16, 25, 40, 0.48);
+  --overlay-scrim-sheet: rgba(16, 25, 40, 0.4);
+  --shadow-modal: 0 24px 48px -12px rgba(16, 25, 40, 0.24), inset 0 0 0 1px var(--ink-100);
+  --shadow-popover: 0 8px 24px rgba(16, 24, 40, 0.12);
+
+  /* Text over photos: the label tag's tint on MentorCard (design: 35% ink-900). */
+  --photo-tag-tint: rgba(16, 25, 40, 0.35);
+  --photo-tag-border: var(--white);
+  /* Top-of-photo gradient start (Design decisions §8: 45% ink-900 → 0 over the top 45%). */
+  --photo-scrim: rgba(16, 25, 40, 0.45);
+
+  /* Plus tag. Gold with dark text — white on gold is ~2:1 (Design decisions: Explore). */
+  --plus-fill: #e3b42b;
+  --plus-text: #3d2a00;
+  /* Compact Plus / warning-note ground (design literal #fef6e7). */
+  --warning-subtle: #fef6e7;
+  --warning-text: var(--yellow-900);
+
+  /* Rating star (design literal #f3a218; DS ships star.svg with no token). */
+  --rating-star: #f3a218;
+
+  /* Initials placeholder grounds for mentors with no photo. Read off the
+     design's sample `tone` values; white initials pass 4.5:1 on each. */
+  --avatar-tone-1: #2f6f5e;
+  --avatar-tone-2: #7a2e3a;
+  --avatar-tone-3: #8a5a12;
+  --avatar-tone-4: #1f5c99;
+  --avatar-tone-5: #5b3a8c;
+  --avatar-tone-6: #0b6b2b;
+
+  /* Compact in-app button (handoff §7.1). */
+  --button-compact-h: 32px;
+  --button-compact-h-touch: 44px;
+  --touch-target-min: 44px;
+
+  /* Breakpoint, for reference: CSS media queries cannot read a var, so the
+     number 768px is repeated in modules. Keep them equal. */
+  --bp-mobile-max: 767px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+  }
+}

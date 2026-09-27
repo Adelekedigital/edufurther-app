@@ -1,0 +1,37 @@
+{
+  "$comment": [
+    "Windows variant — written by install.ps1 as .claude/settings.json.",
+    "Uses %CLAUDE_PROJECT_DIR% expansion; both hooks invoke `node`.",
+    "If `node` is not on PATH the hooks will not fire. Node is a given in a React",
+    "project, so if that happens you are probably in the wrong shell.",
+    "Turn the commit guard on LAST, once the rest of the standards are green.",
+    "If you already had a settings.json, this arrived as settings.json.new —",
+    "merge the hooks block into yours; an unmerged .new file enforces nothing."
+  ],
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"%CLAUDE_PROJECT_DIR%\\.claude\\hooks\\format-on-edit.mjs\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"%CLAUDE_PROJECT_DIR%\\.claude\\hooks\\commit-guard.mjs\"",
+            "timeout": 90
+          }
+        ]
+      }
+    ]
+  }
+}

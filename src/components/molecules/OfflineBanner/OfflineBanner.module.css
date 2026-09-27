@@ -1,0 +1,12 @@
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--ink-900);
+  color: var(--white);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  text-align: center;
+}

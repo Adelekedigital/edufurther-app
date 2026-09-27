@@ -1,0 +1,17 @@
+.line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  color: var(--text-tertiary);
+}
+.strong {
+  color: var(--text-primary);
+  font-weight: var(--weight-semibold);
+}
+.star {
+  color: var(--rating-star);
+}
+.new {
+  color: var(--blue-500);
+}

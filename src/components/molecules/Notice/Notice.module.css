@@ -1,0 +1,25 @@
+.notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-primary);
+}
+.text {
+  flex: 1;
+}
+.neutral {
+  background: var(--surface-muted);
+}
+.neutral .icon {
+  color: var(--ink-600);
+}
+.info {
+  background: var(--surface-info-subtle);
+}
+.info .icon {
+  color: var(--blue-500);
+}

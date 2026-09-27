@@ -1,0 +1,83 @@
+/** Domain types. Components are typed on these, never on the wire shape. */
+
+export type Topic = {
+  /** The backend's offering slug (catalog `code`). */
+  slug: string;
+  label: string;
+};
+
+/** Max one per card, highest priority first. Rules: lib/api/data/labels.ts. */
+export type MentorLabel = 'top-rated' | 'experienced' | 'rising';
+
+/** 1–6, an index into the --avatar-tone-* tokens. */
+export type AvatarTone = 1 | 2 | 3 | 4 | 5 | 6;
+
+export type Mentor = {
+  id: string;
+  /** Where the name and photo link to. */
+  profileHref: string;
+  name: string;
+  firstName: string;
+  initials: string;
+  photoUrl: string | null;
+  tone: AvatarTone;
+  /** "MSc, Computer Science" — null when the mentor has no degree on file. */
+  degreeLine: string | null;
+  institution: string | null;
+  completedSessions: number;
+  reviewCount: number;
+  /** Mean session value, 1..5. Null when there are no published reviews. */
+  rating: number | null;
+  label: MentorLabel | null;
+  /** Next free slot (UTC ISO). Null = nothing within the booking horizon. */
+  nextAvailableAt: string | null;
+  topics: Topic[];
+};
+
+export type AppErrorKind =
+  'offline' | 'unauthorized' | 'forbidden' | 'notFound' | 'validation' | 'server' | 'unknown';
+
+export type AppError = {
+  kind: AppErrorKind;
+  /** Safe to show a user. Never the server's `detail`. */
+  message: string;
+  status?: number;
+};
+
+// ---- Booking (phase A: mocked in lib/api/data/booking.ts) -------------------
+
+export type SessionType = {
+  id: string;
+  name: string;
+  durationMin: number;
+  description: string;
+  /** What the mentor asks before the session. */
+  questions: IntakeQuestion[];
+};
+
+export type IntakeQuestion = {
+  id: string;
+  label: string;
+  kind: 'text' | 'file';
+  required: boolean;
+};
+
+export type BookingDay = {
+  /** ISO date in the viewer's zone, e.g. 2026-09-28. */
+  date: string;
+  slots: BookingSlot[];
+};
+
+export type BookingSlot = {
+  /** UTC instant. */
+  startsAt: string;
+};
+
+export type BookingRequest = {
+  mentorId: string;
+  sessionTypeId: string;
+  startsAt: string;
+  answers: Record<string, string>;
+};
+
+export type Viewer = { kind: 'mentee'; firstName: string; initial: string } | { kind: 'guest' };

@@ -1,0 +1,106 @@
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { Avatar } from './Avatar/Avatar';
+import { Button } from './Button/Button';
+import { Chip } from './Chip/Chip';
+import { Icon } from './Icon/Icon';
+import { IconButton } from './IconButton/IconButton';
+import { Input } from './Input/Input';
+import { Skeleton } from './Skeleton/Skeleton';
+import { StepBars } from './StepBars/StepBars';
+import { Tag } from './Tag/Tag';
+
+/** Every atom, every variant and state, rendered in isolation. */
+const meta: Meta = { title: 'Atoms' };
+export default meta;
+type Story = StoryObj;
+
+const row = { display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' } as const;
+const col = { display: 'flex', flexDirection: 'column', gap: 16 } as const;
+
+export const Buttons: Story = {
+  render: () => (
+    <div style={col}>
+      <div style={row}>
+        <Button>Book session with Olajuwon</Button>
+        <Button variant="secondary-outlined">Show more mentors</Button>
+        <Button variant="text">Change</Button>
+        <Button variant="dark">Continue with Google</Button>
+      </div>
+      <div style={row}>
+        <Button disabled>Pick a time</Button>
+        <Button variant="secondary-outlined" disabled>
+          Booking needs a connection
+        </Button>
+        <Button busy>Sending request…</Button>
+        <Button icon="check">With icon</Button>
+      </div>
+      <div style={row}>
+        <Button size="sm">DS sm (37px)</Button>
+        <Button size="lg">DS lg (56px)</Button>
+      </div>
+      <div style={{ width: 280 }}>
+        <Button fullWidth>Book session with Chukwueze Morgan-Stanley-Okonkwo</Button>
+      </div>
+    </div>
+  ),
+};
+
+export const Chips: Story = {
+  render: () => (
+    <div style={row}>
+      <Chip pressed={false}>School selection</Chip>
+      <Chip pressed>Application documents</Chip>
+      <Chip pressed={false} disabled>
+        Visa and interview
+      </Chip>
+    </div>
+  ),
+};
+
+export const TagsAndIcons: Story = {
+  render: () => (
+    <div style={col}>
+      <div style={{ ...row, background: 'var(--avatar-tone-1)', padding: 16 }}>
+        <Tag tone="on-photo">Top-rated</Tag>
+        <Tag tone="on-photo">Rising mentor</Tag>
+      </div>
+      <div style={row}>
+        <Tag tone="neutral">Scholarships & funding</Tag>
+        <Icon name="star" filled label="Rated" />
+        <Icon name="bolt" />
+        <IconButton icon="close" aria-label="Clear search" />
+      </div>
+    </div>
+  ),
+};
+
+export const Avatars: Story = {
+  render: () => (
+    <div style={row}>
+      {([1, 2, 3, 4, 5, 6] as const).map((t) => (
+        <Avatar key={t} tone={t} initials="OS" alt="Olajuwon Samuel" size="xl" />
+      ))}
+      <Avatar tone={1} initials="OS" alt="" size="sm" />
+    </div>
+  ),
+};
+
+export const Inputs: Story = {
+  render: () => (
+    <div style={{ ...col, maxWidth: 360 }}>
+      <Input aria-label="Default" placeholder="Search mentors by name, school or program" />
+      <Input aria-label="Invalid" invalid defaultValue="not-an-email" />
+      <Input aria-label="Disabled" disabled defaultValue="Offline" />
+    </div>
+  ),
+};
+
+export const Loading: Story = {
+  render: () => (
+    <div style={{ ...col, maxWidth: 360 }}>
+      <Skeleton aspectRatio="3 / 2" radius="lg" />
+      <Skeleton width="60%" height="16px" />
+      <StepBars total={3} current={1} label="Step 2 of 3" />
+    </div>
+  ),
+};

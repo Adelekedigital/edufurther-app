@@ -1,0 +1,35 @@
+/**
+ * Material Symbols glyphs this app uses. The root layout loads the icon font
+ * subset to exactly these names — the full set is several megabytes. Add a
+ * glyph here before using it, or it renders as its ligature text.
+ */
+export const ICON_NAMES = [
+  'bolt',
+  'chat',
+  'check',
+  'check_circle',
+  'close',
+  'cloud_off',
+  'edit',
+  'error',
+  'event',
+  'expand_more',
+  'explore',
+  'home',
+  'lock_clock',
+  'menu',
+  'my_location',
+  'new_releases',
+  'refresh',
+  'schedule',
+  'search',
+  'settings',
+  'star',
+  'upload_file',
+] as const;
+
+export type IconName = (typeof ICON_NAMES)[number];
+
+export const MATERIAL_SYMBOLS_HREF =
+  'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..24,400,0..1,0' +
+  `&icon_names=${[...ICON_NAMES].sort().join(',')}&display=block`;

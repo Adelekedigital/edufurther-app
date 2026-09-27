@@ -1,0 +1,37 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--ink-500);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+.button:hover {
+  background: var(--ink-100);
+  color: var(--ink-900);
+}
+.button:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.sm {
+  width: var(--space-8);
+  height: var(--space-8);
+}
+.md {
+  width: var(--space-8);
+  height: var(--space-8);
+}
+@media (max-width: 767px) {
+  .sm,
+  .md {
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+  }
+}

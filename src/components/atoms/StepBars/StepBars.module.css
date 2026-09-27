@@ -1,0 +1,16 @@
+.bars {
+  display: grid;
+  gap: var(--space-1);
+}
+.on,
+.off {
+  height: 4px;
+  border-radius: var(--radius-full);
+  transition: background-color var(--duration-base) var(--ease-standard);
+}
+.on {
+  background: var(--action-primary);
+}
+.off {
+  background: var(--border-subtle);
+}

@@ -1,0 +1,46 @@
+# Failure modes — what has actually gone wrong here
+
+Generic standards encode what *usually* goes wrong. This file encodes what has
+gone wrong **in this codebase** — a far better predictor, and the only part of the
+standards package you cannot download.
+
+**Seeded rows.** The rows below recur across frontends. Keep the ones that can
+happen here, delete the rest, and change the wording to match your vocabulary.
+A row you keep is a claim that it can happen here.
+
+**Add a row whenever something broke that a generic standard would not have
+caught.** One line each, in the order it happened. Never delete a row because it
+is fixed — the fix is why the row is useful.
+
+| # | What happened | Root cause | What we do now |
+|---|---|---|---|
+| 1 | A failed request rendered "No items yet" and users thought their data was deleted | empty checked before error | error is checked first, always — `ui-states` |
+| 2 | Users double-booked a slot by double-clicking Confirm | submit not disabled while in flight, no idempotency key | disable on submit; key generated at action time |
+| 3 | A contract field rename broke 14 components in one PR | the generated client was imported directly in components | only `lib/api/data/` imports it; `check-boundaries.mjs` enforces it |
+| 4 | A palette update left three screens with the old brand blue | hex literals copied into components | tokens only; raw hex fails the checker |
+| 5 | Keyboard users could not dismiss the booking modal | Escape unhandled; focus not trapped | modal checklist in `accessibility`; focus trace in `review-page.mjs` |
+| 6 | A filter change did not update the result count above the list | count derived from a separate query key that was not invalidated | invalidate the subtree, not the single key |
+| 7 | Mobile layout broke at 390px for two weeks before anyone noticed | nobody ran the review at phone width | `review-page.mjs` runs at 390 and 1440 on every screen |
+| 8 | A 900kB hero image pushed LCP past 4s | no dimensions, no modern format, not sized to the slot | image rules in `performance`; total-weight budget enforced |
+| 9 | Session data persisted after logout on a shared machine | `localStorage` keys not enumerated and cleared | logout purges an explicit key list, caches, and IndexedDB |
+| 10 | An analytics event rename silently truncated every dashboard | event renamed in place | never rename a live event; add, run both, migrate, remove |
+| 11 | A service worker served last week's shell against this week's API | documents cached cache-first | documents are network-first; update prompt, no blind `skipWaiting` |
+| 12 | A form cleared every field when the server returned 422 | error handler reset the form | failure keeps every value; field errors map onto the same fields |
+| 13 | Search results from an abandoned query overwrote the current ones | no request cancellation | `signal` passed through every query fn |
+| 14 | A "temporary" third-party tag was still collecting form fields two years later | no inventory of what runs | vendor seam plus a reviewed list of third-party scripts |
+| 15 | *(real, 2026-09-26)* `next dev` appended its own block to the project `CLAUDE.md` | Next 16 generates agent rules into the repo root by default | `agentRules: false` in `next.config.ts`; check `git diff CLAUDE.md` after upgrading Next |
+| 16 | *(real)* A production build called `file:///C:/Program Files/Git/api/mock/…` and hung on skeletons | Git Bash rewrote `NEXT_PUBLIC_API_BASE_URL=/api/mock` into a Windows path at build time | build with `MSYS_NO_PATHCONV=1` (or from PowerShell/CI) when a value starts with `/` |
+| 17 | *(real)* The built app never reached network idle, so `review-page.mjs` timed out | Next 16 holds `<Link>` prefetch streams open for routes that 404 (screens not built yet) | `prefetch={false}` on links to unbuilt routes (AppShell `PREFETCH`, MentorCard); flip back when those screens ship |
+| 18 | *(real)* `openapi-typescript` and `next build` type-checking crashed | TypeScript 7 (native port) has no JS compiler API | TypeScript pinned to `~5.9` until the tooling supports 7 |
+| 19 | *(real)* ESLint crashed with `scopeManager.addGlobals is not a function` | ESLint 10 is ahead of `eslint-config-next`'s parser | ESLint pinned to `^9` |
+| 20 | *(real)* `review-page.mjs --states` screenshotted skeletons, not the error state | the query retries once before failing; the capture fires during the retry | error/empty states are proven by component tests and Storybook stories, not only `--states` |
+
+---
+
+## How to add a row
+
+Keep it to one line per column, and write the **root cause**, not the symptom.
+"The modal broke" is not a root cause; "focus was never moved into the dialog" is.
+
+The fourth column should name the standard, the check, or the rule that now
+prevents it. If nothing prevents it yet, say so — that row is a to-do.

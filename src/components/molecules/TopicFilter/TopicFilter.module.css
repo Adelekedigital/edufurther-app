@@ -1,0 +1,52 @@
+.filter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.heading {
+  font-family: var(--font-ui);
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+.clear {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-action);
+  border-radius: var(--radius-xs);
+}
+.clear:hover {
+  color: var(--text-link-hover);
+}
+.clear:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.clear:disabled {
+  color: var(--ink-500);
+  cursor: not-allowed;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+@media (max-width: 767px) {
+  .clear {
+    min-height: var(--touch-target-min);
+  }
+}

@@ -1,0 +1,25 @@
+.icon {
+  font-family: var(--font-icon);
+  font-size: var(--icon-size);
+  line-height: 1;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  overflow: hidden;
+  font-weight: normal;
+  font-style: normal;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0;
+  user-select: none;
+}
+
+.filled {
+  font-variation-settings: 'FILL' 1;
+}

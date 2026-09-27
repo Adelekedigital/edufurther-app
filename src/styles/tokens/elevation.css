@@ -1,0 +1,17 @@
+/* PROVENANCE — verbatim from the DS bundle tokens/elevation.css, imported 2026-09-26.
+   The kit is almost entirely flat: borders separate, only menus carry a shadow. */
+:root {
+  --shadow-none: none;
+  --shadow-menu: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-avatar-ring: 0 0 0 1.5px #ffffff;
+  --shadow-status-ring: 0 0 0 1px #ffffff;
+
+  --border-hairline: 1px;
+  --border-emphasis: 2px;
+  --border-control: 1.5px;
+
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 240ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
+}

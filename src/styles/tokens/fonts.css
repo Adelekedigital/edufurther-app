@@ -1,0 +1,18 @@
+/* PROVENANCE — DS bundle tokens/fonts.css, imported 2026-09-26.
+   The DS loads the families with a Google Fonts @import; here they come from
+   next/font (app/fonts.ts), which exposes each family as a --ff-* variable. The
+   role names and fallback stacks below are the DS's, unchanged. */
+:root {
+  --font-brand:
+    var(--ff-hanken), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-ui:
+    var(--ff-inter), 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Buttons are set in Poppins Bold across the whole product. */
+  --font-button:
+    var(--ff-poppins), 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* SUBSTITUTION (DS): Nunito Sans stands in for Avenir. */
+  --font-form:
+    var(--ff-nunito), Avenir, 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    sans-serif;
+  --font-icon: 'Material Symbols Outlined';
+}
