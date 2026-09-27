@@ -12,7 +12,7 @@ export function FeaturedMentorSkeleton() {
         <Skeleton width="35%" height="12px" />
         <Skeleton width="90%" height="32px" />
         <Skeleton width="40%" height="12px" />
-        <Skeleton width="190px" height="32px" radius="md" />
+        <Skeleton width="220px" height="var(--button-cta-h)" radius="md" />
       </div>
     </div>
   );

@@ -56,7 +56,6 @@ export function MentorCard({
       >
         {m.photoUrl ? (
           <>
-            <img src={m.photoUrl} alt="" className={styles.backdrop} loading="lazy" />
             <img src={m.photoUrl} alt="" className={styles.img} loading="lazy" />
             <span className={styles.scrim} />
           </>
@@ -124,7 +123,13 @@ export function MentorCard({
         ) : null}
       </div>
 
-      <Button fullWidth className={styles.book} disabled={offline} onClick={() => onBook(m)}>
+      <Button
+        fullWidth
+        size="cta"
+        className={styles.book}
+        disabled={offline}
+        onClick={() => onBook(m)}
+      >
         {offline
           ? 'Booking needs a connection'
           : m.nextAvailableAt

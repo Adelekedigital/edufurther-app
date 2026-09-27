@@ -19,24 +19,16 @@
   align-items: center;
   justify-content: center;
 }
-/* Whole photo, framed (product, 2026-09-27): real photos are mostly portrait,
-   and cropping them to the frame cut heads and shoulders. The full photo sits
-   centred on a blurred copy of itself (same file, no second download). */
-.backdrop {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: blur(24px);
-  transform: scale(1.15);
-}
+/* Cropped to the frame, face kept near the top (Explore.dc.html). The framed,
+   blurred-fill variant was tried and dropped (product, 2026-09-27): at the
+   493px card size the crop keeps head and shoulders. */
 .img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
+  object-position: 50% 25%;
 }
 .initials {
   font-family: var(--font-brand);

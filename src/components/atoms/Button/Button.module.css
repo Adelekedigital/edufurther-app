@@ -38,6 +38,16 @@
   font-weight: var(--weight-semibold);
 }
 
+/* Booking CTA (product, 2026-09-27; design request #24): padding, not a fixed
+   height. 16 + 16px line + 16 = --button-cta-h. */
+.cta {
+  padding: var(--space-4) var(--space-6);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  line-height: 16px;
+  font-weight: var(--weight-semibold);
+}
+
 .sm {
   height: var(--control-h-sm);
   padding: 0 var(--space-4);
@@ -62,6 +72,9 @@
   .compact,
   .sm {
     min-height: var(--button-compact-h-touch);
+  }
+  .cta {
+    padding: var(--space-4);
   }
 }
 

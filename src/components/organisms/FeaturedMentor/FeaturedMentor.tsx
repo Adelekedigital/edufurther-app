@@ -33,10 +33,7 @@ export function FeaturedMentor({ mentor: m, onBook, timeZone, offline }: Feature
         aria-hidden
       >
         {m.photoUrl ? (
-          <>
-            <img src={m.photoUrl} alt="" className={styles.backdrop} />
-            <img src={m.photoUrl} alt="" className={styles.img} />
-          </>
+          <img src={m.photoUrl} alt="" className={styles.img} />
         ) : (
           <span className={styles.initials}>{m.initials}</span>
         )}
@@ -75,7 +72,12 @@ export function FeaturedMentor({ mentor: m, onBook, timeZone, offline }: Feature
           </p>
         )}
         <div className={styles.actions}>
-          <Button variant="secondary-outlined" disabled={offline} onClick={() => onBook(m)}>
+          <Button
+            variant="secondary-outlined"
+            size="cta"
+            disabled={offline}
+            onClick={() => onBook(m)}
+          >
             {offline ? 'Booking needs a connection' : `Book session with ${m.firstName}`}
           </Button>
         </div>

@@ -55,6 +55,8 @@
   --button-compact-h: 32px;
   --button-compact-h-touch: 44px;
   --touch-target-min: 44px;
+  /* Booking CTA height: 16px padding + 16px line + 16px padding (Button size cta). */
+  --button-cta-h: 48px;
 
   /* Breakpoint, for reference: CSS media queries cannot read a var, so the
      number 768px is repeated in modules. Keep them equal. */
