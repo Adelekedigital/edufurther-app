@@ -1,24 +1,22 @@
 #!/usr/bin/env node
 /**
- * pnpm spec:pull — fetch the backend's published OpenAPI spec, lay the optional
- * ahead-of-backend overlay on top, and write openapi/openapi.json (untracked;
- * scripts/check-private-paths.mjs). Then `pnpm gen:api` generates the client.
+ * pnpm spec:pull — fetch the backend's published OpenAPI spec and write
+ * openapi/openapi.json (untracked; scripts/check-private-paths.mjs). Then
+ * `pnpm gen:api` generates the client.
  *
- *   OPENAPI_SPEC_URL           override the source (default: the backend's
- *                              rolling `openapi-latest` release asset)
- *   OPENAPI_SPEC_OVERLAY_JSON  overlay as JSON text (CI: an optional Actions secret)
- *   openapi/overlay.json       overlay file, used locally when the env var is unset
+ *   OPENAPI_SPEC_URL  override the source (default: the backend's rolling
+ *                     `openapi-latest` release asset, published on every merge
+ *                     to its main branch)
  *
- * The overlay holds only fields/endpoints the backend has not shipped yet.
- * Entries the backend already matches are reported so they can be deleted.
+ * The client is typed from what the backend has shipped, nothing else. A call to
+ * an endpoint that hasn't shipped yet stays inside the data-layer mock until it
+ * does (project-conventions).
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { assertOpenApi, mergeOpenApi } from './lib/merge-openapi.mjs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 
 const DEFAULT_URL =
   'https://github.com/Adelekedigital/edufurtherbe/releases/download/openapi-latest/openapi.json';
 const OUT = 'openapi/openapi.json';
-const OVERLAY_FILE = 'openapi/overlay.json';
 const inCi = !!process.env.GITHUB_ACTIONS;
 
 const url = process.env.OPENAPI_SPEC_URL || DEFAULT_URL;
@@ -45,52 +43,15 @@ async function download(attempt = 1) {
   }
 }
 
-/** `secret`: never echo the parser's message, which quotes part of the input into logs. */
-function parse(text, what, { secret = false } = {}) {
-  try {
-    return JSON.parse(text);
-  } catch (err) {
-    fail(`${what} is not valid JSON${secret ? '.' : ` (${err.message}).`}`);
-  }
-}
-
-const base = parse(await download(), 'The downloaded spec');
+let spec;
 try {
-  assertOpenApi(base);
+  spec = JSON.parse(await download());
 } catch (err) {
-  fail(`${url} did not return an OpenAPI spec: ${err.message}`);
+  fail(`the spec from ${url} is not valid JSON (${err.message}).`);
 }
-
-let overlay = null;
-let overlaySource = null;
-if (process.env.OPENAPI_SPEC_OVERLAY_JSON?.trim()) {
-  overlay = parse(process.env.OPENAPI_SPEC_OVERLAY_JSON, 'OPENAPI_SPEC_OVERLAY_JSON', {
-    secret: true,
-  });
-  overlaySource = 'OPENAPI_SPEC_OVERLAY_JSON';
-} else if (existsSync(OVERLAY_FILE)) {
-  overlay = parse(readFileSync(OVERLAY_FILE, 'utf8'), OVERLAY_FILE);
-  overlaySource = OVERLAY_FILE;
-}
-
-let spec = base;
-if (overlay) {
-  try {
-    const merged = mergeOpenApi(base, overlay);
-    spec = merged.spec;
-    const { added, replaced, redundant } = merged.report;
-    console.log(`spec:pull: overlay from ${overlaySource}`);
-    for (const w of added) console.log(`  + ${w}`);
-    for (const w of replaced) console.log(`  ~ ${w}`);
-    for (const w of redundant) {
-      const msg = `overlay entry "${w}" now matches the backend spec; remove it from ${overlaySource}.`;
-      console.log(inCi ? `::notice::${msg}` : `  = ${msg}`);
-    }
-  } catch (err) {
-    fail(`overlay from ${overlaySource} could not be applied: ${err.message}`);
-  }
-} else {
-  console.log('spec:pull: no overlay');
+const isObject = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
+if (!isObject(spec) || typeof spec.openapi !== 'string' || !isObject(spec.paths)) {
+  fail(`${url} did not return an OpenAPI spec (no "openapi" version or "paths").`);
 }
 
 mkdirSync('openapi', { recursive: true });

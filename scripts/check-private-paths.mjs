@@ -6,7 +6,7 @@
  * force-added past .gitignore. Runs in CI on every PR and via `pnpm check:private`.
  *
  * Why these paths (product decision, 2026-09-27):
- *   openapi/                 the backend API spec (+ local overlay) — pulled
+ *   openapi/                 the backend API spec — pulled
  *                            from the backend's release by `pnpm spec:pull`
  *   src/lib/api/generated/   generated from that spec; describes the same API
  *   docs/handoff/            FE <-> backend/design handoffs; backend internals

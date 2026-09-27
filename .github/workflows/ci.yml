@@ -47,12 +47,8 @@ jobs:
 
       # The spec comes from the backend: its CI publishes openapi.json on every
       # merge to main (release "openapi-latest"; the backend repo is public, so no
-      # token). The optional OPENAPI_SPEC_OVERLAY_JSON secret holds only what we
-      # build ahead of the backend (scripts/pull-spec.mjs). Fork PRs don't get the
-      # overlay; during an overlay window a maintainer re-runs them from a branch.
+      # token, no secret; fork PRs run the same as ours).
       - name: Pull the API spec from the backend
-        env:
-          OPENAPI_SPEC_OVERLAY_JSON: ${{ secrets.OPENAPI_SPEC_OVERLAY_JSON }}
         run: pnpm spec:pull
 
       - name: Generate API client
@@ -108,8 +104,6 @@ jobs:
 
       # Same spec as verify; the build needs the client.
       - name: Pull the API spec and generate the client
-        env:
-          OPENAPI_SPEC_OVERLAY_JSON: ${{ secrets.OPENAPI_SPEC_OVERLAY_JSON }}
         run: |
           pnpm spec:pull
           pnpm gen:api

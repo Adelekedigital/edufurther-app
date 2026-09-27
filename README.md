@@ -8,8 +8,8 @@ claude.ai/design (`fb0b8ef2…`) against the backend in `edufurtherBE`.
 
 ```bash
 pnpm install --frozen-lockfile
-# The API spec is not committed. Pull the backend's published spec (plus
-# openapi/overlay.json, if you have one), then generate the client:
+# The API spec is not committed. Pull the backend's published spec, then
+# generate the client:
 pnpm spec:pull
 pnpm gen:api
 pnpm dev                 # http://localhost:3000/explore — uses the in-app mock API
@@ -33,7 +33,6 @@ The browser calls `/api/v1/…` on the app's own domain and `next.config.ts` pro
 |---|---|---|---|
 | `BACKEND_URL` | prod backend | `https://edufurtherbe-dev.up.railway.app` | server-only; the build fails without it on Vercel. Previews never use prod |
 | `NEXT_PUBLIC_MATCH_CALL_URL` | Cal link | Cal link | empty hides "Find my mentor matches" |
-| `OPENAPI_SPEC_OVERLAY_JSON` | overlay | overlay | build-time; only while the overlay is non-empty |
 | `NEXT_PUBLIC_API_BASE_URL` | *unset* | *unset* | unset = same-origin proxy |
 | `ENABLE_MOCK_API` | **never** | **never** | mock is for local dev and CI only |
 
@@ -60,8 +59,6 @@ slots. Phase B wires auth and the real booking endpoints.
 This repo is public. `openapi/`, `src/lib/api/generated/` and `docs/handoff/` are
 git-ignored and must never be committed; `pnpm check:private` (also run in CI)
 fails if one is tracked. The spec is downloaded, never stored: `pnpm spec:pull` fetches
-the backend's published `openapi.json` (release `openapi-latest` on `edufurtherbe`) and
-lays an optional overlay on top — `openapi/overlay.json` locally, the
-`OPENAPI_SPEC_OVERLAY_JSON` Actions secret in CI. The overlay holds only fields and
-endpoints we build before the backend ships them; `spec:pull` reports entries the
-backend already matches, and those get deleted.
+the backend's published `openapi.json` (release `openapi-latest` on `edufurtherbe`).
+Nothing else is needed to build: no secret, no token, no extra Vercel variable
+beyond `BACKEND_URL`.
