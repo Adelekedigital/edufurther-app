@@ -26,6 +26,8 @@ export type FloatingPromptState = {
   viewportWidth: number;
   /** px from the viewport bottom that puts a pill 12px above the pager. */
   lift: number;
+  /** The pager has a "Show more mentors" button (not on the last page). */
+  hasButton: boolean;
   /** The pager's button: its vertical centre (px from the viewport bottom) and right edge. */
   buttonCenter: number;
   buttonRight: number;
@@ -41,6 +43,7 @@ const initial = (mobileBottom: number): FloatingPromptState => ({
   mobileBottom,
   viewportWidth: 0,
   lift: DESKTOP_BOTTOM,
+  hasButton: false,
   buttonCenter: 0,
   buttonRight: 0,
   pillWidth: 0,
@@ -92,6 +95,7 @@ export function useFloatingPrompt(enabled: boolean, hasTabBar: boolean): Floatin
           mobileBottom,
           viewportWidth: window.innerWidth,
           lift: nearEnd ? Math.max(DESKTOP_BOTTOM, Math.round(vh - pagerTop + 12)) : DESKTOP_BOTTOM,
+          hasButton: !!b,
           buttonCenter: b ? Math.round(vh - (b.top + b.height / 2)) : 0,
           buttonRight: b ? Math.round(b.right) : 0,
           pillWidth: pill?.offsetWidth ?? 0,
@@ -143,7 +147,8 @@ export function pillLayout(s: FloatingPromptState, minimised: boolean) {
   const width = mini ? MINI_SIZE : s.pillWidth;
   const height = mini ? MINI_SIZE : s.pillHeight;
   const left = s.viewportWidth - (s.isMobile ? MOBILE_RIGHT : DESKTOP_RIGHT) - width;
-  const fitsBeside = width > 0 && left >= s.buttonRight + BESIDE_GAP;
+  // Last page: no button to line up with, so always sit above the pager text.
+  const fitsBeside = s.hasButton && width > 0 && left >= s.buttonRight + BESIDE_GAP;
   const target = fitsBeside ? Math.round(s.buttonCenter - height / 2) : s.lift;
   // The floor already includes the tab bar; the safe area only matters at the floor.
   const bottom = target <= floor ? withSafeArea(floor) : `${target}px`;

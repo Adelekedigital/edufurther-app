@@ -76,9 +76,9 @@ export function MatchPill({
         focusInside.current = true;
       }}
       onBlur={(e) => {
-        // A blur caused by the swap itself has no relatedTarget; only a move to
-        // another real element on the page means focus has left the pill.
-        if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget as Node)) {
+        // Removing the focused element during a swap fires no blur, so any blur
+        // means focus really left — including to the browser UI (relatedTarget null).
+        if (!e.relatedTarget || !e.currentTarget.contains(e.relatedTarget as Node)) {
           focusInside.current = false;
         }
       }}

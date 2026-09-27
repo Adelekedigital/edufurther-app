@@ -8,6 +8,7 @@ const desk: FloatingPromptState = {
   mobileBottom: 72,
   viewportWidth: 1440,
   lift: 24,
+  hasButton: true,
   buttonCenter: 100,
   buttonRight: 460,
   pillWidth: 400,
@@ -76,5 +77,17 @@ describe('pillLayout — docked pill lines up with "Show more mentors"', () => {
   it('guests have no tab bar, so the phone floor is lower', () => {
     const guest = { ...phone, mobileBottom: 16 };
     expect(pillLayout(guest, false).bottom).toBe('calc(16px + env(safe-area-inset-bottom))');
+  });
+
+  it('last page (no button): sits 12px above the pager text, never on the floor', () => {
+    const last = {
+      ...phone,
+      nearEnd: true,
+      hasButton: false,
+      buttonCenter: 0,
+      buttonRight: 0,
+      lift: 150,
+    };
+    expect(pillLayout(last, false).bottom).toBe('150px');
   });
 });
