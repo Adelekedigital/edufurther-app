@@ -47,6 +47,20 @@ describe('mergeOpenApi', () => {
     expect(report.added).toEqual(['components.schemas.MentorListItem.next_available_state']);
   });
 
+  it('reports a required name the backend already requires', () => {
+    const overlay = { components: { schemas: { MentorListItem: { required: ['id'] } } } };
+    expect(mergeOpenApi(base(), overlay).report.redundant).toEqual([
+      'components.schemas.MentorListItem (required id)',
+    ]);
+  });
+
+  it('refuses to make a field the backend has as optional required', () => {
+    const overlay = {
+      components: { schemas: { MentorListItem: { required: ['next_available_at'] } } },
+    };
+    expect(() => mergeOpenApi(base(), overlay)).toThrow(/defines "next_available_at" as optional/);
+  });
+
   it('replaces an existing operation whole', () => {
     const overlay = { paths: { '/api/v1/mentors': { get: { operationId: 'list2' } } } };
     const { spec, report } = mergeOpenApi(base(), overlay);

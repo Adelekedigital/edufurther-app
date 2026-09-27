@@ -6,17 +6,22 @@
  *   paths.<path>.<method>        added, or replaced whole (overlay wins)
  *   components.<section>.<name>  added; for `schemas` present on both sides,
  *                                `properties` merge per property (overlay wins)
- *                                and `required` is the union; any other key the
+ *                                and `required` may only name properties the
+ *                                overlay adds (the backend owns the rest); any other key the
  *                                overlay sets replaces the base's
  * Anything else at the overlay's top level is an error, never silently dropped.
  *
  * Returns the merged spec (inputs untouched) and a report. `redundant` lists
  * overlay entries the backend spec already matches exactly: time to delete them.
  */
-export function mergeOpenApi(base, overlay) {
-  if (!isObject(base) || typeof base.openapi !== 'string' || !isObject(base.paths)) {
+export function assertOpenApi(doc) {
+  if (!isObject(doc) || typeof doc.openapi !== 'string' || !isObject(doc.paths)) {
     throw new Error('Base spec is not an OpenAPI document (no "openapi" version or "paths").');
   }
+}
+
+export function mergeOpenApi(base, overlay) {
+  assertOpenApi(base);
   if (!isObject(overlay)) throw new Error('Overlay must be a JSON object.');
   const unknown = Object.keys(overlay).filter((k) => k !== 'paths' && k !== 'components');
   if (unknown.length) {
@@ -75,7 +80,19 @@ function mergeSchema(before, value, where, note) {
         out.properties[prop] = structuredClone(def);
       }
     } else if (key === 'required' && Array.isArray(v)) {
-      out.required = [...new Set([...(out.required ?? []), ...v])];
+      // The backend owns requiredness of the fields it already has: forcing one it
+      // made optional would type as always-present a field that can be missing.
+      // `required` only applies to properties the overlay itself adds.
+      const had = new Set(before.required ?? []);
+      out.required = [...(out.required ?? [])];
+      for (const name of v) {
+        if (had.has(name)) note(`${where} (required ${name})`, name, name);
+        else if (before.properties && name in before.properties) {
+          throw new Error(
+            `${where}: the backend defines "${name}" as optional; the overlay may not make it required.`,
+          );
+        } else out.required.push(name);
+      }
     } else {
       note(`${where} (${key})`, out[key], v);
       out[key] = structuredClone(v);

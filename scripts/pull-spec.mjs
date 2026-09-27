@@ -13,7 +13,7 @@
  * Entries the backend already matches are reported so they can be deleted.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { mergeOpenApi } from './lib/merge-openapi.mjs';
+import { assertOpenApi, mergeOpenApi } from './lib/merge-openapi.mjs';
 
 const DEFAULT_URL =
   'https://github.com/Adelekedigital/edufurtherbe/releases/download/openapi-latest/openapi.json';
@@ -45,20 +45,28 @@ async function download(attempt = 1) {
   }
 }
 
-function parse(text, what) {
+/** `secret`: never echo the parser's message, which quotes part of the input into logs. */
+function parse(text, what, { secret = false } = {}) {
   try {
     return JSON.parse(text);
   } catch (err) {
-    fail(`${what} is not valid JSON (${err.message}).`);
+    fail(`${what} is not valid JSON${secret ? '.' : ` (${err.message}).`}`);
   }
 }
 
 const base = parse(await download(), 'The downloaded spec');
+try {
+  assertOpenApi(base);
+} catch (err) {
+  fail(`${url} did not return an OpenAPI spec: ${err.message}`);
+}
 
 let overlay = null;
 let overlaySource = null;
 if (process.env.OPENAPI_SPEC_OVERLAY_JSON?.trim()) {
-  overlay = parse(process.env.OPENAPI_SPEC_OVERLAY_JSON, 'OPENAPI_SPEC_OVERLAY_JSON');
+  overlay = parse(process.env.OPENAPI_SPEC_OVERLAY_JSON, 'OPENAPI_SPEC_OVERLAY_JSON', {
+    secret: true,
+  });
   overlaySource = 'OPENAPI_SPEC_OVERLAY_JSON';
 } else if (existsSync(OVERLAY_FILE)) {
   overlay = parse(readFileSync(OVERLAY_FILE, 'utf8'), OVERLAY_FILE);
