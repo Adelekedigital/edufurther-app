@@ -53,9 +53,10 @@ export async function GET(req: NextRequest) {
 
   // Enough latency to see skeletons and the refresh bar in dev.
   await new Promise((r) => setTimeout(r, 450));
-  return NextResponse.json(
-    cursor === null
-      ? { data: page, next_cursor: next, total: rows.length }
-      : { data: page, next_cursor: next },
-  );
+  // `total` as the backend ships it (PR #230): integer on the first page, null after.
+  return NextResponse.json({
+    data: page,
+    next_cursor: next,
+    total: cursor === null ? rows.length : null,
+  });
 }
