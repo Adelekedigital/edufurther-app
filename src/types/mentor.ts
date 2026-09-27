@@ -113,7 +113,7 @@ export type Viewer =
    */
   | { kind: 'accountExists' }
   /** Signed in, but /me failed (server or network): member chrome plus a retry. */
-  | { kind: 'error'; retry: () => void }
+  | { kind: 'error'; retry: () => void; retrying: boolean }
   | {
       kind: 'member';
       id: string;

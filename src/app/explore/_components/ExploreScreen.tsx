@@ -23,6 +23,7 @@ import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { Mentor } from '@/types/mentor';
 import styles from './ExploreScreen.module.css';
+import { bookBlockedFor } from './bookBlocked';
 import { pillLayout, useFloatingPrompt } from './useFloatingPrompt';
 
 /** Results update this long after typing stops; Enter applies at once (Design decisions §1). */
@@ -70,13 +71,8 @@ export function ExploreScreen() {
         ? 'member'
         : 'pending';
   const signOut = useSignOut();
-  // No backend account yet: booking can't succeed, so the buttons say why instead.
-  const bookBlocked =
-    viewer.kind === 'unlinked'
-      ? 'Finish account setup to book'
-      : viewer.kind === 'accountExists'
-        ? 'Contact support to book'
-        : null;
+  // Booking waits until the account is known; the Book buttons say why (bookBlocked.ts).
+  const bookBlocked = bookBlockedFor(viewer);
 
   const [input, setInput] = useState('');
   const [q, setQ] = useState('');
@@ -140,7 +136,8 @@ export function ExploreScreen() {
   // have no destination yet (no profile / feedback screens), so they wait —
   // design-divergence.md. Notifications likewise (no backend).
   const accountItems: AccountMenuItem[] = [
-    ...(MATCH_CALL_URL && (!member || member.isMentee || !member.isApprovedMentor)
+    // Only once we know the viewer is a mentee (or a new member, not a mentor).
+    ...(MATCH_CALL_URL && member && (member.isMentee || !member.isApprovedMentor)
       ? [
           {
             key: 'matches',
@@ -174,8 +171,14 @@ export function ExploreScreen() {
           // PROVISIONAL copy: /me failed. The page still works as a public list.
           <Notice tone="neutral" icon="error" title="We couldn’t load your account.">
             Mentors below still work.{' '}
-            <button type="button" className={styles.inlineAction} onClick={viewer.retry}>
-              Try again
+            <button
+              type="button"
+              className={styles.inlineAction}
+              onClick={viewer.retry}
+              disabled={viewer.retrying}
+              aria-busy={viewer.retrying || undefined}
+            >
+              {viewer.retrying ? 'Trying again…' : 'Try again'}
             </button>
           </Notice>
         )}

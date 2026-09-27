@@ -76,7 +76,8 @@ export function useViewer(): Viewer {
   if (!authConfigured || session.status === 'none') return { kind: 'guest' };
   if (session.status === 'unknown') return { kind: 'loading', signedIn: null };
   // Error before empty: a failed /me must not leave the page loading forever.
-  if (query.isError && !query.data) return { kind: 'error', retry: () => void query.refetch() };
+  if (query.isError && !query.data)
+    return { kind: 'error', retry: () => void query.refetch(), retrying: query.isFetching };
   if (!query.data) return { kind: 'loading', signedIn: true };
   if (query.data === UNLINKED) return { kind: 'unlinked' };
   if (query.data === ACCOUNT_EXISTS) return { kind: 'accountExists' };
