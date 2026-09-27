@@ -12,7 +12,9 @@ function backendUrl(): string | null {
   const raw = process.env.BACKEND_URL?.trim();
   if (!raw) {
     if (process.env.VERCEL === '1') {
-      throw new Error('BACKEND_URL is not set for this Vercel environment (see README, Deploying).');
+      throw new Error(
+        'BACKEND_URL is not set for this Vercel environment (see README, Deploying).',
+      );
     }
     return null;
   }
