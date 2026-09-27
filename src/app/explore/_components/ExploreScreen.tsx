@@ -15,6 +15,7 @@ import { useBookingOptions, useRequestBooking } from '@/lib/api/data/booking';
 import { useFeaturedMentor, useMentors, useTopics } from '@/lib/api/data/mentors';
 import { useViewer } from '@/lib/api/data/viewer';
 import { deviceTimeZone } from '@/lib/utils/format';
+import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { Mentor } from '@/types/mentor';
 import styles from './ExploreScreen.module.css';
@@ -44,6 +45,8 @@ function countLabel(q: string, topicCount: number, total: number | null): string
 export function ExploreScreen() {
   const viewer = useViewer();
   const online = useOnline();
+  // One card per row under 768px, two above — the match prompt goes after the first row.
+  const cardsPerRow = useMediaQuery('(max-width: 767px)') ? 1 : 2;
   const guest = viewer.kind === 'guest';
 
   const [input, setInput] = useState('');
@@ -171,7 +174,7 @@ export function ExploreScreen() {
           // Design default cardTopics=hide; topics show on the profile and when booking.
           showTopics={false}
           interstitial={matchPrompt}
-          interstitialAfter={2}
+          interstitialAfter={cardsPerRow}
         />
       </div>
 

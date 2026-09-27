@@ -31,6 +31,10 @@
 
 .refreshWrap {
   position: relative;
+  /* The match prompt can sit between two grids; keep the grid rhythm around it. */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 /* 3px indeterminate bar above the grid while refreshing (Design decisions §2). */
 .bar {
