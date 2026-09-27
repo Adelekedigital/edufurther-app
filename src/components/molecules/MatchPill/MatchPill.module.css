@@ -157,7 +157,7 @@
   line-height: var(--lh-p);
   color: var(--text-secondary);
 }
-/* Explore.dc.html popover button: full width, 36px, radius-lg — not the pill CTA. */
+/* Popover button: full width, radius-lg (Explore.dc.html), 48px CTA pattern (#28). */
 .popoverCta {
   display: flex;
   align-items: center;

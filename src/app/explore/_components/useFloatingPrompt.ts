@@ -12,7 +12,8 @@ const CORNER_INSET = 24;
 /** Gap the design wants between "Show more mentors" and a pill beside it. */
 const BESIDE_GAP = 16;
 const MINI_SIZE = 48;
-const FALLBACK_PILL_HEIGHT = 48;
+// Until the pill is measured: the full pill is ~66px since the 48px CTA (#28).
+const FALLBACK_PILL_HEIGHT = 66;
 
 export type FloatingPromptState = {
   /** The in-page prompt has scrolled up out of view. */

@@ -108,9 +108,10 @@
 .text {
   background: transparent;
   color: var(--text-action);
-  padding-left: 0;
-  padding-right: 0;
+  /* A text link, not a CTA: no padding on any side, whatever the size. */
+  padding: 0;
   height: auto;
+  min-height: 0;
 }
 .text:hover {
   color: var(--text-link-hover);

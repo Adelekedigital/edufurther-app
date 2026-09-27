@@ -12,13 +12,12 @@ import styles from './Button.module.css';
 
 export type ButtonVariant = 'primary' | 'secondary-outlined' | 'text' | 'dark';
 /**
- * compact — in-app CTA: Inter semibold 12/16, 32px, 44px under 768px (handoff §7.1).
+ * Sizes:
+ * cta     — every call-to-action, and the default (product, 2026-09-27): Inter
+ *           semibold 12/16, padding 16px 24px (48px), phones 16px (48px).
+ * compact — fixed 32px (44px under 768px); nothing in the app uses it now.
  * sm      — DS spec-sheet button, 37px, Poppins bold.
- * lg      — DS product button, 56px, Poppins bold.
- */
-/**
- * `cta`: the booking call-to-action (product, 2026-09-27): compact type with real
- * padding, 24/16px desktop and 16px phones, so 48px tall. Other sizes are fixed height.
+ * lg      — DS spec-sheet large button.
  */
 export type ButtonSize = 'compact' | 'cta' | 'sm' | 'lg';
 
