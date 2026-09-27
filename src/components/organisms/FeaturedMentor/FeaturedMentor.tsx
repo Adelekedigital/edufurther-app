@@ -42,34 +42,55 @@ export function FeaturedMentor({ mentor: m, onBook, timeZone, offline }: Feature
           Featured this week
         </span>
       </Link>
+      {/* Groups (product, 2026-09-27): who → proof → bio → offer/availability → CTA,
+          centred in the 315px card; design request #25. */}
       <div className={styles.body}>
-        <h2 className={styles.nameWrap}>
-          <span className="sr-only">Featured this week: </span>
-          <Link href={m.profileHref} prefetch={false} id="featured-name" className={styles.name}>
-            {m.name}
-          </Link>
-        </h2>
-        {(m.degreeLine || m.institution) && (
-          <p className={styles.degree}>
-            {m.degreeLine}
-            {m.degreeLine && m.institution && ' · '}
-            {m.institution && <span className={styles.school}>{m.institution}</span>}
-          </p>
-        )}
+        <div className={styles.who}>
+          <h2 className={styles.nameWrap}>
+            <span className="sr-only">Featured this week: </span>
+            <Link href={m.profileHref} prefetch={false} id="featured-name" className={styles.name}>
+              {m.name}
+            </Link>
+          </h2>
+          {(m.degreeLine || m.institution) && (
+            <p className={styles.degree}>
+              {m.degreeLine}
+              {m.degreeLine && m.institution && ' · '}
+              {m.institution && <span className={styles.school}>{m.institution}</span>}
+            </p>
+          )}
+        </div>
         <MentorProof
           rating={m.rating}
           reviewCount={m.reviewCount}
           completedSessions={m.completedSessions}
         />
         {m.bio && <p className={styles.bio}>{m.bio}</p>}
-        {m.nextAvailableAt && (
-          <p className={styles.next}>
-            <Icon name="bolt" size={14} />
-            Next available:{' '}
-            <strong className={styles.nextTime}>
-              {formatNextAvailable(m.nextAvailableAt, timeZone)}
-            </strong>
-          </p>
+        {/* Same bottom block as MentorCard: offer line, then availability. Not
+            rendered when empty, so it doesn't add a flex gap. */}
+        {(m.offer === 'free' || m.nextAvailableAt || m.nextAvailableState === 'none') && (
+          <div className={styles.meta}>
+            {m.offer === 'free' && (
+              <p className={styles.offer}>
+                <span className={styles.offerDot} aria-hidden />
+                Free mentorship available
+              </p>
+            )}
+            {m.nextAvailableAt ? (
+              <p className={styles.next}>
+                <Icon name="bolt" size={14} />
+                Next available:{' '}
+                <strong className={styles.nextTime}>
+                  {formatNextAvailable(m.nextAvailableAt, timeZone)}
+                </strong>
+              </p>
+            ) : m.nextAvailableState === 'none' ? (
+              <p className={styles.next}>
+                <Icon name="event_busy" size={14} />
+                No open times at the moment
+              </p>
+            ) : null}
+          </div>
         )}
         <div className={styles.actions}>
           <Button

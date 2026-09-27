@@ -34,7 +34,15 @@ export default meta;
 type Story = StoryObj<typeof FeaturedMentor>;
 
 export const Default: Story = {};
-export const NoNextSlot: Story = { args: { mentor: { ...featured, nextAvailableAt: null } } };
+export const NoNextSlot: Story = {
+  args: { mentor: { ...featured, nextAvailableAt: null, nextAvailableState: 'none' } },
+};
+/** Availability unknown (refreshing) and no offer: no bottom block, no extra gap. */
+export const NoOfferNoSlot: Story = {
+  args: {
+    mentor: { ...featured, offer: null, nextAvailableAt: null, nextAvailableState: 'unknown' },
+  },
+};
 export const Offline: Story = { args: { offline: true } };
 export const LongBio: Story = {
   args: { mentor: { ...featured, bio: (featured.bio ?? '').repeat(4) } },
