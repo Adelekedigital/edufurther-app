@@ -14,6 +14,7 @@ export const ICON_NAMES = [
   'edit',
   'error',
   'event',
+  'event_busy',
   'expand_more',
   'explore',
   'home',

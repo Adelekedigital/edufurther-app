@@ -17,7 +17,9 @@ const mentor: Mentor = {
   reviewCount: 11,
   rating: 4.9,
   label: 'top-rated',
+  offer: 'free',
   nextAvailableAt: null,
+  nextAvailableState: 'none',
   topics: [],
 };
 const sessionTypes: SessionType[] = [

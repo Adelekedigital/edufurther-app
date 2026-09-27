@@ -47,15 +47,19 @@ export async function GET(req: NextRequest) {
     const none = m.id === 'm-jesuah' || i % 7 === 6;
     const at = new Date(now + (2 + ((i * 11) % 70)) * 60 * 60 * 1000);
     at.setUTCMinutes(0, 0, 0);
-    return { ...m, next_available_at: none ? null : at.toISOString() };
+    // next_available_state (backend reply round 3 #13): Jesuah is fully booked;
+    // every 7th is "refreshing" (recently changed, not recomputed yet).
+    const state = none ? (m.id === 'm-jesuah' ? 'none' : 'refreshing') : 'open';
+    return { ...m, next_available_at: none ? null : at.toISOString(), next_available_state: state };
   });
   const next = start + limit < rows.length ? `c${start + limit}` : null;
 
   // Enough latency to see skeletons and the refresh bar in dev.
   await new Promise((r) => setTimeout(r, 450));
-  return NextResponse.json(
-    cursor === null
-      ? { data: page, next_cursor: next, total: rows.length }
-      : { data: page, next_cursor: next },
-  );
+  // `total` as the backend ships it (PR #230): integer on the first page, null after.
+  return NextResponse.json({
+    data: page,
+    next_cursor: next,
+    total: cursor === null ? rows.length : null,
+  });
 }
