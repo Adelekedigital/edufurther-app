@@ -153,7 +153,7 @@ Prototype files (`support.js`, `image-slot.js`, `dc-import`, `sc-if`) are the pr
 
 | Where | What is wrong | Plan |
 |---|---|---|
-| Links to unbuilt screens | `prefetch={false}` (AppShell `PREFETCH`) — failure log #17. Profile links prefetch again (Mentor Profile shipped) | Remove when Home/Bookings/Messages/Settings ship |
+| Links to unbuilt screens | `prefetch={false}` (AppShell `PREFETCH`) — failure log #17. Profile links stay `prefetch={false}` too: Next cancels its own prefetch streams and `review-page` flags them (failure log #25) | Remove when Home/Bookings/Messages/Settings ship; profile links only if prefetch stops aborting |
 | Match prompt → external Cal link | "Find my mentor matches" opens an external Cal booking page (`NEXT_PUBLIC_MATCH_CALL_URL`; empty hides the prompt). Product decision 2026-09-26 | **Move matching onto the platform** (sessions run through EduFurther). Needs an on-platform goals/matching flow + backend endpoint |
 | Featured mentor | Built on a mock of `GET /api/v1/featured-mentor` (shape settled: mentor or `null`, text field `about_me`) | Backend builds it (round 2 #11) |
 | Auth in booking | Guest sign-up step in BookingFlow still advances without an account (EmailCodeForm is ready to drop in) | B2 |

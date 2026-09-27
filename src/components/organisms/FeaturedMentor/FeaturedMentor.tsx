@@ -39,7 +39,15 @@ export function FeaturedMentor({
   } as CSSProperties;
   return (
     <section aria-labelledby="featured-name" className={styles.card}>
-      <Link href={m.profileHref} className={styles.photo} style={tone} tabIndex={-1} aria-hidden>
+      {/* Off: Next cancels its own profile prefetches mid-stream (failure-modes #25). */}
+      <Link
+        href={m.profileHref}
+        prefetch={false}
+        className={styles.photo}
+        style={tone}
+        tabIndex={-1}
+        aria-hidden
+      >
         {m.photoUrl ? (
           <img src={m.photoUrl} alt="" className={styles.img} />
         ) : (
@@ -56,7 +64,7 @@ export function FeaturedMentor({
         <div className={styles.who}>
           <h2 className={styles.nameWrap}>
             <span className="sr-only">Featured this week: </span>
-            <Link href={m.profileHref} id="featured-name" className={styles.name}>
+            <Link href={m.profileHref} prefetch={false} id="featured-name" className={styles.name}>
               {m.name}
             </Link>
           </h2>
