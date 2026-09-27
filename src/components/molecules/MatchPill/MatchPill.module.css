@@ -40,8 +40,11 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  height: var(--button-compact-h);
-  padding: 0 var(--space-3);
+  /* CTA padding pattern (product, 2026-09-27): 16px 24px, phones 16px, 48px
+     including the 1px border. The pill grows to fit; useFloatingPrompt measures it. */
+  padding: calc(var(--space-4) - var(--border-hairline))
+    calc(var(--space-6) - var(--border-hairline));
+  line-height: 16px;
   border: var(--border-hairline) solid var(--green-700);
   border-radius: var(--radius-full);
   background: var(--green-50);
@@ -101,7 +104,9 @@
   .label {
     white-space: normal;
   }
-  .cta,
+  .cta {
+    padding: calc(var(--space-4) - var(--border-hairline));
+  }
   .minimise {
     min-height: var(--touch-target-min);
   }
@@ -152,13 +157,17 @@
   line-height: var(--lh-p);
   color: var(--text-secondary);
 }
-/* Explore.dc.html popover button: full width, 36px, radius-lg — not the pill CTA. */
+/* Popover button: full width, radius-lg (Explore.dc.html), 48px CTA pattern (#28). */
 .popoverCta {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  height: var(--menu-item-h);
+  /* CTA padding pattern (product, 2026-09-27): 48px; phones 16px all round. */
+  /* Minus the 1px border, so the total matches the 48px Button cta. */
+  padding: calc(var(--space-4) - var(--border-hairline))
+    calc(var(--space-6) - var(--border-hairline));
+  line-height: 16px;
   margin-top: var(--space-1);
   border: var(--border-hairline) solid var(--green-700);
   border-radius: var(--radius-lg);
@@ -174,4 +183,9 @@
 .popoverCta:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
+}
+@media (max-width: 767px) {
+  .popoverCta {
+    padding: calc(var(--space-4) - var(--border-hairline));
+  }
 }

@@ -38,8 +38,11 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  height: var(--button-compact-h);
-  padding: 0 var(--space-4);
+  /* CTA padding pattern (product, 2026-09-27): 16px 24px, phones 16px; 48px. */
+  /* Minus the 1px border, so the total matches the 48px Button cta. */
+  padding: calc(var(--space-4) - var(--border-hairline))
+    calc(var(--space-6) - var(--border-hairline));
+  line-height: 16px;
   border: var(--border-hairline) solid var(--green-700);
   border-radius: var(--radius-lg);
   background: var(--white);
@@ -65,5 +68,10 @@
     min-height: var(--touch-target-min);
     width: 100%;
     justify-content: center;
+  }
+}
+@media (max-width: 767px) {
+  .cta {
+    padding: calc(var(--space-4) - var(--border-hairline));
   }
 }

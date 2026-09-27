@@ -46,7 +46,7 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | MentorCard photo `aspect-ratio:3 / 2`, card `border:1px` | Photo `aspect-ratio:445 / 300`; card stroke as `inset` box-shadow (Figma stroke-inside), so the photo is exactly 445 × 300 in the 493px card | Figma values (product 2026-09-27) | design adopts (request #26) |
 | MentorCard `padding:var(--space-4)` (16px) | `--space-6` (24px), skeleton too | Figma has 24px; the .dc.html lags it (product 2026-09-27) | design adopts (request #23) |
 | Featured card text column: `gap:var(--space-2)`, top-aligned, `padding:var(--space-5) var(--space-6)`, name `--text-p-lg`, no offer line | Centred, 12px between groups (name+degree 4px), 32px padding, name `--text-h6` (20px), MentorCard's offer + availability block, CTA 4px lower | Product (2026-09-27): the 315px card looked sparse and top-heavy | design adopts (request #25) |
-| Book session buttons (card + featured): `height:32px; padding:0 var(--space-4)` | Button size `cta`: `padding: 16px 24px` (48px tall); phones `16px` all round (48px) | Product (2026-09-27): the CTA needs real padding | design adopts (request #24) |
+| Every CTA: fixed-height compact buttons (`height:32px; padding:0 16px`), pill `Find matches` 32px, popover CTA 36px, match prompt 32px | **One CTA pattern everywhere**: Button default size `cta`, `padding:16px 24px` (48px), phones `16px` (48px); the hand-styled CTAs (match prompt, pill, popover) match it, border included. Chips, icon buttons and text links unchanged | Product (2026-09-27) | design adopts (requests #24, #28) |
 | Mentor photo placeholder: design tone per sample | Tone from a hash of the mentor id over 6 tokens | Real data has no tone field | design supplies a rule |
 
 ## Rules
