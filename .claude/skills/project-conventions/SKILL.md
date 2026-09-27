@@ -84,7 +84,9 @@ Sources, so the next sync can diff against them: the design project's
 |---|---|
 | Handoffs | `docs/handoff/<screen>-backend-request.md` → backend session answers in `<screen>-backend-reply.md` (it writes there directly) |
 | Where is the spec? | Backend FastAPI OpenAPI at `/openapi.json` (repo `c:/pythonwork/edufurtherBE`). `/docs` is the contract (backend ADR 0016 §4) |
-| How is the client generated? | `openapi-typescript` → `src/lib/api/generated/schema.ts` from `openapi/openapi.json` (`pnpm gen:api`); `openapi-fetch` client created once in `lib/api/data/http.ts`. **Spec, generated client and `docs/handoff/` are private** — git-ignored, never committed (public repo). Locally: the spec file on disk. CI: the `OPENAPI_SPEC_JSON` Actions secret (48KB cap; move to a private contracts repo when the full spec outgrows it). `pnpm check:private` enforces it. The spec is provisional until the backend exports one — read its header for the swap rule |
+| How is the client generated? | `openapi-typescript` → `src/lib/api/generated/schema.ts` from `openapi/openapi.json` (`pnpm gen:api`); `openapi-fetch` client created once in `lib/api/data/http.ts`. **Spec, generated client and `docs/handoff/` are private** — git-ignored, never committed (public repo). `pnpm spec:pull` downloads it (below). `pnpm check:private` enforces it |
+| Where does the spec come from? | Product (2026-09-27): the backend CI publishes `openapi.json` on every merge to main as the rolling release `openapi-latest` on `edufurtherbe` (public repo, public spec, no token). `pnpm spec:pull` downloads it; CI and Vercel need no secret for it |
+| Building ahead of the backend | Product (2026-09-27): **the typed client only knows what the backend has shipped.** An endpoint or field that isn't in the published spec yet lives in the data-layer mock (untyped, marked `PENDING BACKEND`) and is wired to the generated client when it ships. No overlay, no spec secret, no dashboard config — a build needs only the published spec and `BACKEND_URL` |
 | Where does the generated client live? | `src/lib/api/generated/` — imported only by `src/lib/api/data/` |
 | Base path | `/api/v1/...` |
 | Response envelope | Lists: `{ data: [...], next_cursor: string \| null }` |
@@ -92,7 +94,8 @@ Sources, so the next sync can diff against them: the design project's
 | Error codes that need specific UI | `422` on a list = bad cursor → restart from page 1. `404` on `/mentors/{handle}` = not found / not public (indistinguishable on purpose). Booking conflicts: see backend ADR 0024 — to confirm |
 | Pagination style | Opaque cursor, `?cursor=&limit=` (default 10, max 50; Explore uses 10 — product, 2026-09-27). `total` on the first page only (coming) |
 | Explore filters | `?offering=<slug>` repeatable, **ANY-of**, narrowed by `q`; slugs are the catalog `code` from `/api/v1/catalog/service-offerings`. Unknown slug → 422 |
-| Local dev | Phase A: `.env.development` points at the in-app mock (`/api/mock`, `ENABLE_MOCK_API=1`). Real backend: `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000` |
+| Local dev | Phase A: `.env.development` points at the in-app mock (`/api/mock`, `ENABLE_MOCK_API=1`). Real backend: `NEXT_PUBLIC_API_BASE_URL=` (empty) + `BACKEND_URL=http://localhost:8000` |
+| Deployed API calls | Product (2026-09-27): same-origin proxy. The browser calls `/api/v1/…` on the app; `next.config.ts` rewrites to server-only `BACKEND_URL` (Vercel prod → prod backend, previews → `edufurtherbe-dev`, never prod). No CORS entry per preview URL. Vercel env table in README |
 | Auth | Supabase auth (backend ADRs 0009, 0014, 0018). Public mentor endpoints need no token. Token storage on the client — to decide under `security-checker` |
 | Idempotency | Booking is idempotent and scoped to the caller (backend ADR 0024) — key format to confirm before BookingModal is wired |
 

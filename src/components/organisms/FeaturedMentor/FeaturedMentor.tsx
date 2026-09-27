@@ -61,7 +61,7 @@ export function FeaturedMentor({ mentor: m, onBook, timeZone, offline }: Feature
           reviewCount={m.reviewCount}
           completedSessions={m.completedSessions}
         />
-        <p className={styles.bio}>{m.bio}</p>
+        {m.bio && <p className={styles.bio}>{m.bio}</p>}
         {m.nextAvailableAt && (
           <p className={styles.next}>
             <Icon name="bolt" size={14} />

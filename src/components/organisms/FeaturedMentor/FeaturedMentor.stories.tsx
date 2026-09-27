@@ -37,8 +37,10 @@ export const Default: Story = {};
 export const NoNextSlot: Story = { args: { mentor: { ...featured, nextAvailableAt: null } } };
 export const Offline: Story = { args: { offline: true } };
 export const LongBio: Story = {
-  args: { mentor: { ...featured, bio: featured.bio.repeat(4) } },
+  args: { mentor: { ...featured, bio: (featured.bio ?? '').repeat(4) } },
 };
+/** about_me is optional: no bio, no empty paragraph. */
+export const NoBio: Story = { args: { mentor: { ...featured, bio: null } } };
 
 export const MatchPromptMentee: StoryObj = {
   render: () => (

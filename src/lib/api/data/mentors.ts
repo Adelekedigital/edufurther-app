@@ -72,7 +72,8 @@ export function toMentor(r: MentorSummaryRead): Mentor {
           : r.next_available_at
             ? 'open'
             : 'unknown',
-    topics: r.offerings.map((o) => ({ slug: o.slug, label: o.display_name })),
+    // `offerings` has a server default, so the spec marks it optional.
+    topics: (r.offerings ?? []).map((o) => ({ slug: o.slug, label: o.display_name })),
   };
 }
 
@@ -82,10 +83,17 @@ export function useTopics() {
   const query = useQuery({
     queryKey: keys.topics.all,
     queryFn: async ({ signal }) => {
-      const { data, response } = await api.GET('/api/v1/catalog/service-offerings', { signal });
+      // One generic catalogue endpoint; this is its service-offerings list.
+      const { data, response } = await api.GET('/api/v1/catalog/{catalogue}', {
+        params: { path: { catalogue: 'service-offerings' } },
+        signal,
+      });
       if (!data) throw new ApiError(response.status);
-      // The slug is `code` on the shared lookup shape (backend reply #2).
-      return data.data.map((l): Topic => ({ slug: l.code, label: l.display_name }));
+      // The slug is `code` on the shared lookup shape (backend reply #2). `code` is
+      // nullable on LookupRead; an offering without one can't be filtered on, so skip it.
+      return data.data.flatMap((l): Topic[] =>
+        l.code ? [{ slug: l.code, label: l.display_name }] : [],
+      );
     },
     // A closed taxonomy; it changes on deploys, not during a visit.
     staleTime: 60 * 60 * 1000,
@@ -113,7 +121,8 @@ export function useFeaturedMentor(enabled: boolean) {
       const { data, response } = await api.GET('/api/v1/featured-mentor', { signal });
       if (!response.ok) throw new ApiError(response.status);
       if (!data) return null;
-      return { ...toMentor(data), bio: data.about_me };
+      // about_me is optional in the published spec: a mentor may not have written one.
+      return { ...toMentor(data), bio: data.about_me?.trim() || null };
     },
     staleTime: 10 * 60 * 1000,
     retry: false,

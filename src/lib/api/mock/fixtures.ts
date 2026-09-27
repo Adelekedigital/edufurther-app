@@ -30,7 +30,7 @@ export const OFFERINGS: LookupRead[] = [
 const off = (...codes: string[]) =>
   codes.map((c) => {
     const o = OFFERINGS.find((x) => x.code === c)!;
-    return { slug: o.code, display_name: o.display_name };
+    return { slug: c, display_name: o.display_name };
   });
 
 const base = (
@@ -60,6 +60,9 @@ const base = (
   review_count: reviews,
   session_value: value,
   offerings,
+  // The mentors route sets both per request (relative to now).
+  next_available_at: null,
+  next_available_state: 'refreshing',
 });
 
 const DESIGN_SAMPLE: MentorSummaryRead[] = [

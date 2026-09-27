@@ -8,8 +8,9 @@ claude.ai/design (`fb0b8ef2…`) against the backend in `edufurtherBE`.
 
 ```bash
 pnpm install --frozen-lockfile
-# The API spec is private (not in this public repo). Put the current spec at
-# openapi/openapi.json (ask the backend team), then generate the client:
+# The API spec is not committed. Pull the backend's published spec, then
+# generate the client:
+pnpm spec:pull
 pnpm gen:api
 pnpm dev                 # http://localhost:3000/explore — uses the in-app mock API
 pnpm test                # Vitest + Testing Library
@@ -18,8 +19,22 @@ node scripts/check-boundaries.mjs
 node scripts/review-page.mjs /explore            # needs the app running
 ```
 
-Against the real backend: set `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000` and
-unset `ENABLE_MOCK_API` (see `.env.example`).
+Against the real backend, in `.env.development.local`: `NEXT_PUBLIC_API_BASE_URL=` (empty,
+so calls go same-origin), `BACKEND_URL=http://localhost:8000`, and `ENABLE_MOCK_API=`
+(see `.env.example`).
+
+## Deploying (Vercel)
+
+`vercel.json` sets the build command: `pnpm spec:pull && pnpm gen:api && pnpm build`.
+The browser calls `/api/v1/…` on the app's own domain and `next.config.ts` proxies it to
+`BACKEND_URL`, so preview URLs need no CORS entry on the backend.
+
+| Env var | Production | Preview | Notes |
+|---|---|---|---|
+| `BACKEND_URL` | prod backend | `https://edufurtherbe-dev.up.railway.app` | server-only; the build fails without it on Vercel. Previews never use prod |
+| `NEXT_PUBLIC_MATCH_CALL_URL` | Cal link | Cal link | empty hides "Find my mentor matches" |
+| `NEXT_PUBLIC_API_BASE_URL` | *unset* | *unset* | unset = same-origin proxy |
+| `ENABLE_MOCK_API` | **never** | **never** | mock is for local dev and CI only |
 
 ## Where things are
 
@@ -43,4 +58,7 @@ slots. Phase B wires auth and the real booking endpoints.
 
 This repo is public. `openapi/`, `src/lib/api/generated/` and `docs/handoff/` are
 git-ignored and must never be committed; `pnpm check:private` (also run in CI)
-fails if one is tracked. CI reads the spec from the `OPENAPI_SPEC_JSON` Actions secret.
+fails if one is tracked. The spec is downloaded, never stored: `pnpm spec:pull` fetches
+the backend's published `openapi.json` (release `openapi-latest` on `edufurtherbe`).
+Nothing else is needed to build: no secret, no token, no extra Vercel variable
+beyond `BACKEND_URL`.
