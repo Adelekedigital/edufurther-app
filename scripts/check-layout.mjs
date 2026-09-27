@@ -39,6 +39,42 @@ const CHECKS = [
       return overlap > 0.5 ? `name starts ${Math.round(overlap)}px inside the banner` : null;
     },
   },
+  {
+    // Product (design request #46): stacked, the topics come before the
+    // buttons; from 768px they sit on their own line under the row, as drawn.
+    name: 'profile topics vs buttons order',
+    slug: 'profile-topics-order',
+    route: '/mentors/olajuwon-samuel',
+    ready: '#profile-name',
+    widths: [390, 600, 767, 768, 1024, 1440],
+    run: () => {
+      const head = document.getElementById('profile-name')?.closest('section');
+      const topics = head?.querySelector('ul[aria-label="Helps with"]');
+      const book = [...(head?.querySelectorAll('button') ?? [])].find((b) => /Book/.test(b.textContent));
+      if (!topics || !book) return 'topics or Book not found';
+      const t = topics.getBoundingClientRect();
+      const b = book.getBoundingClientRect();
+      if (window.innerWidth < 768) return t.bottom <= b.top ? null : 'topics are not above the buttons';
+      return t.top >= b.bottom ? null : 'topics are not below the buttons';
+    },
+  },
+  {
+    // Design request #47: from 768px the photo sits 10px into the banner,
+    // however many lines the intro beside it runs to.
+    name: 'profile photo 10px into the banner',
+    slug: 'profile-photo-banner',
+    route: '/mentors/olajuwon-samuel',
+    ready: '#profile-name',
+    widths: [768, 900, 1024, 1440],
+    run: () => {
+      const head = document.getElementById('profile-name')?.closest('section');
+      const banner = head?.firstElementChild;
+      const photo = head?.children[1]?.firstElementChild;
+      if (!banner || !photo) return 'header not found';
+      const into = banner.getBoundingClientRect().bottom - photo.getBoundingClientRect().top;
+      return Math.abs(into - 10) <= 0.5 ? null : `photo is ${Math.round(into)}px into the banner`;
+    },
+  },
 ];
 
 function cannotRun(msg) {

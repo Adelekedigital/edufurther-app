@@ -110,7 +110,7 @@ export function ShareMenu({ url, name }: ShareMenuProps) {
           }
         }}
       >
-        <Icon name="ios_share" size={18} />
+        <Icon name="ios_share" size={20} />
       </button>
       {open && <div className={styles.backdrop} aria-hidden onClick={() => close(false)} />}
       {open && (

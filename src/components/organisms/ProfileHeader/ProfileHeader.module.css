@@ -33,6 +33,12 @@
   width: 112px;
   height: 112px;
   flex: none;
+  /* DIVERGENCE (product, design request #47): pinned 10px into the banner,
+     where the design draws it at desktop. With the design's flex-end the
+     photo slid below the banner whenever the intro ran to three lines. */
+  align-self: flex-start;
+  /* .head pulls the row up 48px; 38px down leaves the photo 10px into the banner. */
+  margin-top: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -100,6 +106,7 @@
   color: var(--rating-star);
 }
 .actions {
+  order: 1;
   position: relative;
   z-index: 10;
   display: flex;
@@ -107,14 +114,29 @@
   flex-wrap: wrap;
   align-items: center;
 }
+/* A line of its own under avatar, intro and actions: the design's topic row
+   (20px below the row, 20px above the card edge — .head's gap and padding). */
 .topics {
+  order: 2;
+  flex-basis: 100%;
   margin: 0;
+  padding: 0;
   display: flex;
   gap: var(--space-2);
   flex-wrap: wrap;
   align-items: center;
-  padding: 0 var(--space-6) var(--space-5);
   list-style: none;
+}
+
+/* Under 1024px the location gets its own line with no "·": on a wrap the dot
+   was left leading the new line (product, 2026-09-27). */
+@media (max-width: 1023px) {
+  .location {
+    flex-basis: 100%;
+  }
+  .location .dot {
+    display: none;
+  }
 }
 
 @media (max-width: 767px) {
@@ -129,6 +151,8 @@
   .avatar {
     width: 72px;
     height: 72px;
+    align-self: auto;
+    margin-top: 0;
   }
   .initials {
     font-size: 26px;
@@ -139,13 +163,6 @@
     flex-basis: 100%;
     padding-top: 0;
   }
-  /* Phones: the location always wraps, so it gets its own line with no "·". */
-  .location {
-    flex-basis: 100%;
-  }
-  .location .dot {
-    display: none;
-  }
   .name {
     font-size: var(--text-p-lg);
     line-height: 1.2;
@@ -153,7 +170,13 @@
   .actions {
     width: 100%;
   }
+  /* Stacked: name → topics → buttons (product, design request #46). The
+     chips keep 16px to the buttons, as they had below them. */
+  .actions,
   .topics {
-    padding: 0 var(--space-4) var(--space-4);
+    order: 0;
+  }
+  .topics {
+    margin-bottom: var(--space-1);
   }
 }

@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- remote avatars and banners of unknown host/size; see performance notes in design-divergence.md */
 import type { CSSProperties, ReactNode } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { Star } from '@/components/atoms/Star/Star';
 import { Tag } from '@/components/atoms/Tag/Tag';
 import { cx } from '@/lib/utils/cx';
 import { formatRating, sessionsLabel } from '@/lib/utils/format';
@@ -41,7 +42,7 @@ export function ProfileHeader({ profile, actions }: ProfileHeaderProps) {
   const proof =
     m.reviewCount > 0 && m.rating !== null ? (
       <span className={styles.item}>
-        <Icon name="star" size={14} filled className={styles.star} />
+        <Star size={14} className={styles.star} />
         <strong className={styles.strong}>{formatRating(m.rating)}</strong>({m.reviewCount}{' '}
         {m.reviewCount === 1 ? 'review' : 'reviews'})
       </span>
@@ -90,17 +91,20 @@ export function ProfileHeader({ profile, actions }: ProfileHeaderProps) {
             )}
           </p>
         </div>
+        {/* Topics sit before the actions in the DOM, so a stacked header (phones)
+            reads name → topics → buttons; from 768px CSS order puts them on
+            their own line under the row, as drawn. */}
+        {m.topics.length > 0 && (
+          <ul className={styles.topics} aria-label="Helps with">
+            {m.topics.map((t) => (
+              <li key={t.slug}>
+                <Tag tone="topic">{t.label}</Tag>
+              </li>
+            ))}
+          </ul>
+        )}
         {actions && <div className={styles.actions}>{actions}</div>}
       </div>
-      {m.topics.length > 0 && (
-        <ul className={styles.topics} aria-label="Helps with">
-          {m.topics.map((t) => (
-            <li key={t.slug}>
-              <Tag tone="topic">{t.label}</Tag>
-            </li>
-          ))}
-        </ul>
-      )}
     </section>
   );
 }
