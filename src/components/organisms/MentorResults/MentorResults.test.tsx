@@ -10,6 +10,7 @@ const mentor = (over: Partial<Mentor> = {}): Mentor => ({
   firstName: 'Olajuwon',
   initials: 'OS',
   photoUrl: null,
+  photoFocus: null,
   tone: 1,
   degreeLine: 'MSc, Computer Science',
   institution: 'University of London',
@@ -208,5 +209,18 @@ describe('MentorResults', () => {
   it('the viewer’s own card has no Book button', () => {
     render(<MentorResults {...props({ mentors: [mentor({ id: 'me' })], selfId: 'me' })} />);
     expect(screen.queryByRole('button', { name: /Book session/ })).not.toBeInTheDocument();
+  });
+
+  it('photo crop centres on the face when the backend gives one', () => {
+    const { container } = render(
+      <MentorResults
+        {...props({
+          mentors: [mentor({ photoUrl: '/x.webp', photoFocus: { x: 0.42, y: 0.3 } })],
+        })}
+      />,
+    );
+    const frame = container.querySelector('article a[aria-hidden]') as HTMLElement;
+    expect(frame.style.getPropertyValue('--photo-x')).toBe('42.0%');
+    expect(frame.style.getPropertyValue('--photo-y')).toBe('30.0%');
   });
 });

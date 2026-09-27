@@ -10,6 +10,7 @@ const mentor: Mentor = {
   firstName: 'Olajuwon',
   initials: 'OS',
   photoUrl: null,
+  photoFocus: null,
   tone: 1,
   degreeLine: 'MSc, Computer Science',
   institution: 'University of London',

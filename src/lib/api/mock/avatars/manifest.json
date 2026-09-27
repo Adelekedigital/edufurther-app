@@ -27,6 +27,10 @@
         "photographer": "Ninthgrid",
         "profile": "https://unsplash.com/@ninthgrid_",
         "photo": "https://unsplash.com/photos/D8Xxi_I77w4"
+      },
+      "focus": {
+        "x": 0.54,
+        "y": 0.46
       }
     },
     {
@@ -263,5 +267,6 @@
         "photo": "https://unsplash.com/photos/0OczC2-oFsA"
       }
     }
-  ]
+  ],
+  "focus_note": "focus: hand-measured face centre (0-1) on a few photos, to exercise avatar_focus; the rest are null like unprocessed photos."
 }

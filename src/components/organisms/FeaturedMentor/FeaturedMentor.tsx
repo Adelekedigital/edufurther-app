@@ -29,7 +29,14 @@ export function FeaturedMentor({
   offline,
   bookBlocked = null,
 }: FeaturedMentorProps) {
-  const tone = { '--photo-bg': `var(--avatar-tone-${m.tone})` } as CSSProperties;
+  // Face position → crop centre (backend avatar_focus); CSS falls back to 50% 25%.
+  const tone = {
+    '--photo-bg': `var(--avatar-tone-${m.tone})`,
+    ...(m.photoFocus && {
+      '--photo-x': `${(m.photoFocus.x * 100).toFixed(1)}%`,
+      '--photo-y': `${(m.photoFocus.y * 100).toFixed(1)}%`,
+    }),
+  } as CSSProperties;
   return (
     <section aria-labelledby="featured-name" className={styles.card}>
       <Link

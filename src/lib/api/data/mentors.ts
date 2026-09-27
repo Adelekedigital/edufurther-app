@@ -32,6 +32,13 @@ function toneFor(id: string): AvatarTone {
   return ((Math.abs(h) % 6) + 1) as AvatarTone;
 }
 
+/** avatar_focus → a clamped 0–1 point, or null when absent or malformed. */
+export function toFocus(f: { x: number; y: number } | null | undefined): Mentor['photoFocus'] {
+  if (!f || !Number.isFinite(f.x) || !Number.isFinite(f.y)) return null;
+  const clamp = (n: number) => Math.min(1, Math.max(0, n));
+  return { x: clamp(f.x), y: clamp(f.y) };
+}
+
 export function toMentor(r: MentorSummaryRead): Mentor {
   const first = r.first_name?.trim() || '';
   const last = r.last_name?.trim() || '';
@@ -47,6 +54,7 @@ export function toMentor(r: MentorSummaryRead): Mentor {
     firstName: first || name.split(' ')[0] || name,
     initials,
     photoUrl: r.avatar_url ?? null,
+    photoFocus: toFocus(r.avatar_focus),
     tone: toneFor(r.id),
     degreeLine,
     institution: r.institution ?? null,
