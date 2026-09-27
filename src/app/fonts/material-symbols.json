@@ -1,5 +1,6 @@
 {
   "names": [
+    "alternate_email",
     "arrow_back",
     "arrow_forward",
     "bolt",
@@ -13,12 +14,20 @@
     "edit",
     "error",
     "event",
+    "event_available",
     "event_busy",
     "expand_less",
     "expand_more",
     "explore",
+    "flag",
+    "flight_takeoff",
+    "groups",
     "home",
+    "home_pin",
     "hourglass_top",
+    "ios_share",
+    "link",
+    "location_on",
     "lock_clock",
     "logout",
     "mail",
@@ -26,13 +35,22 @@
     "my_location",
     "new_releases",
     "open_in_new",
+    "person",
     "refresh",
     "route",
     "schedule",
+    "school",
     "search",
     "settings",
+    "share",
+    "smart_display",
     "star",
-    "upload_file"
+    "translate",
+    "upload_file",
+    "verified_user",
+    "videocam",
+    "work",
+    "workspace_premium"
   ],
-  "sha256": "25fb5e6028bd96b44d8aa0f8d21df8c76f22e18b6d0f684cefe68ce4ce362de6"
+  "sha256": "18377b1f4d63d7ec4707520d9fcd3dc570e920d0e878a09866833d871cb18079"
 }

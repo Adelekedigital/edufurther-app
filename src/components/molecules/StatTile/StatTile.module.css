@@ -1,0 +1,48 @@
+/* Mentor Profile.dc.html: track record stats. Borders belong to the grid. */
+.stat {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+}
+.tile {
+  width: var(--space-8);
+  height: var(--space-8);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+}
+.gold {
+  background: var(--gold-subtle);
+  color: var(--yellow-900);
+}
+.blue {
+  background: var(--blue-50);
+  color: var(--blue-500);
+}
+.green {
+  background: var(--green-50);
+  color: var(--green-700);
+}
+.neutral {
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+}
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.value {
+  font-family: var(--font-brand);
+  font-size: var(--text-p-lg);
+  line-height: 1.2;
+  font-weight: var(--weight-semibold);
+}
+.label {
+  font-size: var(--text-p-xs);
+  line-height: 1.3;
+  color: var(--text-tertiary);
+}

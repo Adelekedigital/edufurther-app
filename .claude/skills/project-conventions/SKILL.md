@@ -106,7 +106,7 @@ Sources, so the next sync can diff against them: the design project's
 | Question | Answer |
 |---|---|
 | Where is the design? | https://claude.ai/design/p/fb0b8ef2-d0b9-4366-b6ab-33f22c441cd8 (DS project `c4e21801-7d61-406c-9736-fe03d681ec21`) |
-| Which parts are ported? | Explore (`/explore`) phase A: tokens, atoms, AppShell, ModalShell, MentorCard, MentorResults, BookingFlow (mocked slots) |
+| Which parts are ported? | Explore (`/explore`): tokens, atoms, AppShell, ModalShell (incl. the phone sheet), MentorCard, MentorResults, BookingFlow (real slots, 7-day week view). Mentor Profile (`/mentors/[handle]`, slug or id) PR 1: read-only header, Overview, Sessions, booking card, track record, owner view; Reviews, Similar mentors and editing follow |
 | Where do tokens come from? | `_ds/edufurther-design-system-…/tokens/*.css` → `src/styles/tokens/` |
 | Where is divergence recorded? | `references/design-divergence.md` |
 | What is deliberately not from the design? | Focus rings, disabled/busy, skeleton colour, reduced-motion, a text-on-photo scrim token — listed as *ours* in `design-divergence.md` |
@@ -128,7 +128,7 @@ Prototype files (`support.js`, `image-slot.js`, `dc-import`, `sc-if`) are the pr
    unless it is a recorded divergence in `references/design-divergence.md`.
 
 - Route folders kebab-case; components PascalCase.
-- Route-local components live in `src/app/<route>/_components/` until a second route needs them.
+- Route-local components live in `src/app/<route>/_components/` until a second route needs them. Page logic shared by routes lives in `src/app/_shell/` (`useAppShell` — chrome and account menu — and `bookBlockedFor`).
 - DS atoms keep the DS names and props (`Button`, `Chip`, `EmptyState`, `Avatar`, `Badge`, …).
 - `src/lib/api/data/` exports one hook per resource-and-shape, named `useX`.
 - Tokens are referenced semantically where an alias exists (`--text-secondary`), by ramp otherwise (`--ink-700`). Never by value.
@@ -153,7 +153,7 @@ Prototype files (`support.js`, `image-slot.js`, `dc-import`, `sc-if`) are the pr
 
 | Where | What is wrong | Plan |
 |---|---|---|
-| Links to unbuilt screens | `prefetch={false}` (AppShell `PREFETCH`, MentorCard) — failure log #17 | Remove when Home/Bookings/Messages/Settings/Mentor Profile ship |
+| Links to unbuilt screens | `prefetch={false}` (AppShell `PREFETCH`) — failure log #17. Profile links prefetch again (Mentor Profile shipped) | Remove when Home/Bookings/Messages/Settings ship |
 | Match prompt → external Cal link | "Find my mentor matches" opens an external Cal booking page (`NEXT_PUBLIC_MATCH_CALL_URL`; empty hides the prompt). Product decision 2026-09-26 | **Move matching onto the platform** (sessions run through EduFurther). Needs an on-platform goals/matching flow + backend endpoint |
 | Featured mentor | Built on a mock of `GET /api/v1/featured-mentor` (shape settled: mentor or `null`, text field `about_me`) | Backend builds it (round 2 #11) |
 | Auth in booking | Guest sign-up step in BookingFlow still advances without an account (EmailCodeForm is ready to drop in) | B2 |

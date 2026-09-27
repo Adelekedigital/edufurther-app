@@ -6,8 +6,11 @@ type TagProps = {
   /**
    * on-photo — white-outlined label over a mentor photo (35% ink tint).
    * neutral  — small grey tag inline with text (topic chips on the card).
+   * topic    — 28px blue chip, the profile header's help topics.
+   * info     — small blue tag, a session type's category.
+   * free     — small green tag, "Free" on a session type.
    */
-  tone: 'on-photo' | 'neutral';
+  tone: 'on-photo' | 'neutral' | 'topic' | 'info' | 'free';
   children: ReactNode;
   className?: string;
 };

@@ -1,0 +1,48 @@
+/* Mentor Profile.dc.html: Background fact tiles. */
+.tile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}
+.disc {
+  width: var(--space-10);
+  height: var(--space-10);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+}
+.green {
+  background: var(--green-50);
+  color: var(--green-700);
+}
+.blue {
+  background: var(--blue-50);
+  color: var(--blue-500);
+}
+.gold {
+  background: var(--gold-subtle);
+  color: var(--yellow-900);
+}
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.label {
+  font-size: var(--text-caption-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-caption-xs);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.value {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}

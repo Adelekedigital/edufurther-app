@@ -6,7 +6,7 @@ import styles from './Icon.module.css';
 type IconProps = {
   name: IconName;
   /** px. DS sizes: 14–16 inline, 18 in chips, 20 in buttons, 24 standalone. */
-  size?: 12 | 14 | 16 | 18 | 20 | 22 | 24 | 28;
+  size?: 10 | 12 | 14 | 16 | 18 | 20 | 22 | 24 | 28;
   filled?: boolean;
   /**
    * Omit for a decorative icon (the default: hidden from assistive tech).

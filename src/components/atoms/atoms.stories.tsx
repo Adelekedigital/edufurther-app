@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { Avatar } from './Avatar/Avatar';
+import { Badge } from './Badge/Badge';
 import { Button } from './Button/Button';
 import { Chip } from './Chip/Chip';
 import { Icon } from './Icon/Icon';
@@ -7,6 +9,7 @@ import { IconButton } from './IconButton/IconButton';
 import { Input } from './Input/Input';
 import { Skeleton } from './Skeleton/Skeleton';
 import { StepBars } from './StepBars/StepBars';
+import { Tabs } from './Tabs/Tabs';
 import { Tag } from './Tag/Tag';
 
 /** Every atom, every variant and state, rendered in isolation. */
@@ -66,6 +69,9 @@ export const TagsAndIcons: Story = {
       </div>
       <div style={row}>
         <Tag tone="neutral">Scholarships & funding</Tag>
+        <Tag tone="topic">School selection</Tag>
+        <Tag tone="info">Statement of purpose</Tag>
+        <Tag tone="free">Free</Tag>
         <Icon name="star" filled label="Rated" />
         <Icon name="bolt" />
         <IconButton icon="close" aria-label="Clear search" />
@@ -103,4 +109,38 @@ export const Loading: Story = {
       <StepBars total={3} current={1} label="Step 2 of 3" />
     </div>
   ),
+};
+
+export const Badges: Story = {
+  render: () => (
+    <div style={row}>
+      <Badge color="green" type="accent" size="sm">
+        New mentor
+      </Badge>
+      <Badge type="filled" size="sm">
+        Top-rated
+      </Badge>
+      <Badge color="neutral" type="accent">
+        Neutral
+      </Badge>
+    </div>
+  ),
+};
+
+/** Line tabs: one tab stop; arrows, Home and End move and select. */
+export const LineTabs: Story = {
+  render: function Render() {
+    const [tab, setTab] = useState('overview');
+    return (
+      <Tabs
+        label="Profile"
+        value={tab}
+        onChange={setTab}
+        items={[
+          { value: 'overview', label: 'Overview', panelId: 'p-overview' },
+          { value: 'sessions', label: 'Sessions (3)', panelId: 'p-sessions' },
+        ]}
+      />
+    );
+  },
 };

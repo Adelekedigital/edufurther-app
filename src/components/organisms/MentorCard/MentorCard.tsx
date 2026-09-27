@@ -63,14 +63,7 @@ export function MentorCard({
   const degree = [m.degreeLine, m.institution].filter(Boolean);
   return (
     <article className={styles.card} aria-labelledby={`mentor-${m.id}`}>
-      <Link
-        href={m.profileHref}
-        prefetch={false}
-        className={styles.photo}
-        style={tone}
-        tabIndex={-1}
-        aria-hidden
-      >
+      <Link href={m.profileHref} className={styles.photo} style={tone} tabIndex={-1} aria-hidden>
         {m.photoUrl ? (
           <>
             <img src={m.photoUrl} alt="" className={styles.img} loading="lazy" />
@@ -88,7 +81,7 @@ export function MentorCard({
 
       <div className={styles.who}>
         <h3 className={styles.nameWrap}>
-          <Link href={m.profileHref} prefetch={false} id={`mentor-${m.id}`} className={styles.name}>
+          <Link href={m.profileHref} id={`mentor-${m.id}`} className={styles.name}>
             {m.name}
           </Link>
         </h3>

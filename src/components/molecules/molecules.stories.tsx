@@ -5,12 +5,17 @@ import { fn } from 'storybook/test';
 import { AccountMenu } from './AccountMenu/AccountMenu';
 import { DayTimePicker } from './DayTimePicker/DayTimePicker';
 import { EmptyState } from './EmptyState/EmptyState';
+import { FactTile } from './FactTile/FactTile';
 import { FileField } from './FileField/FileField';
+import { IconListItem } from './IconListItem/IconListItem';
 import { MentorProof } from './MentorProof/MentorProof';
 import { Notice } from './Notice/Notice';
 import { OfflineBanner } from './OfflineBanner/OfflineBanner';
 import { PageHero } from './PageHero/PageHero';
 import { SearchField } from './SearchField/SearchField';
+import { ShareMenu } from './ShareMenu/ShareMenu';
+import { SocialLink } from './SocialLink/SocialLink';
+import { StatTile } from './StatTile/StatTile';
 import { TimezonePicker } from './TimezonePicker/TimezonePicker';
 import { TopicFilter } from './TopicFilter/TopicFilter';
 
@@ -170,6 +175,74 @@ export const AccountMenuRail: Story = {
           { key: 'logout', label: 'Logout', icon: 'logout', danger: true, onSelect: fn() },
         ]}
       />
+    </div>
+  ),
+};
+
+// ---- Mentor Profile pieces ---------------------------------------------------
+
+export const ProfileListRows: Story = {
+  render: () => (
+    <div style={{ maxWidth: 560, border: '1px solid var(--border-subtle)', borderRadius: 10 }}>
+      <IconListItem
+        icon="school"
+        tone="blue"
+        title="PhD, Sociology"
+        meta="Mississippi State University · 2023 – 2027"
+      />
+      <IconListItem
+        icon="workspace_premium"
+        tone="gold"
+        title="Graduate Teaching Assistantship with a very long title that has to wrap onto a second line"
+        meta="Mississippi State University · 2021"
+      />
+      <IconListItem icon="school" tone="blue" title="MSc" />
+    </div>
+  ),
+};
+
+export const FactTiles: Story = {
+  render: () => (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+        gap: 12,
+        maxWidth: 600,
+      }}
+    >
+      <FactTile icon="home_pin" tone="green" label="From" value="Nigeria" />
+      <FactTile icon="school" tone="blue" label="Studied in" value="United States" />
+      <FactTile icon="translate" tone="gold" label="Mentors in" value="English, Yoruba" />
+    </div>
+  ),
+};
+
+export const StatTiles: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', maxWidth: 400 }}>
+      <StatTile icon="schedule" tone="gold" value="3,060 mins" label="mentoring time" />
+      <StatTile icon="event_available" tone="blue" value="51" label="sessions completed" />
+      <StatTile icon="groups" tone="green" value="27" label="mentees mentored" />
+      <StatTile icon="verified_user" tone="neutral" value="88%" label="avg. attendance" />
+    </div>
+  ),
+};
+
+export const SocialLinks: Story = {
+  render: () => (
+    <div style={{ display: 'flex', gap: 8 }}>
+      <SocialLink kind="linkedin" href="https://www.linkedin.com/in/example" />
+      <SocialLink kind="x" href="https://x.com/example" />
+      <SocialLink kind="youtube" href="https://www.youtube.com/@example" />
+    </div>
+  ),
+};
+
+export const Share: Story = {
+  render: () => (
+    <div style={{ display: 'flex', justifyContent: 'flex-end', maxWidth: 400, minHeight: 200 }}>
+      <ShareMenu url="https://edufurther.com/mentors/gbenga" name="Gbenga Elufisan" />
     </div>
   ),
 };

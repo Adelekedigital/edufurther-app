@@ -1,0 +1,183 @@
+/* Mentor Profile.dc.html booking card (single- and multi-offering). */
+.card {
+  display: flex;
+  flex-direction: column;
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}
+.h2 {
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+
+/* ---- one offering ---------------------------------------------------------- */
+.single {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+.headRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.headText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-p-xs);
+  color: var(--text-tertiary);
+}
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--text-p-xs);
+  color: var(--text-tertiary);
+}
+
+/* "Next available" shortcut: dashed blue box (design). */
+.next {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-hairline) dashed var(--blue-500);
+  border-radius: var(--radius-md);
+  background: var(--blue-50);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  text-align: left;
+  cursor: pointer;
+}
+.next:hover {
+  background: var(--blue-100);
+}
+.next:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.next:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.nextIcon {
+  color: var(--blue-500);
+}
+.none {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+/* Ours: the multi-offering card has no "next" line in the design (it was per
+   offering, which the API can't give — backend reply #10); the mentor's own
+   figure sits under the header instead. */
+.inset {
+  margin: 0 var(--space-5) var(--space-3);
+}
+
+/* ---- several offerings ------------------------------------------------------ */
+.multiHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-5) var(--space-5) var(--space-3);
+}
+.sub {
+  font-size: var(--text-p-xs);
+  color: var(--text-tertiary);
+}
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  border-top: var(--border-hairline) solid var(--border-muted);
+}
+.rowTop {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.rowName {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.free {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--green-700);
+}
+.rowDesc {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.rowFoot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}
+.compare {
+  width: 100%;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  border: none;
+  border-top: var(--border-hairline) solid var(--border-muted);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  background: none;
+  color: var(--text-action);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+.compare:hover {
+  background: var(--surface-subtle);
+}
+.compare:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: calc(var(--focus-ring-width) * -1);
+}
+
+@media (max-width: 767px) {
+  .single {
+    padding: var(--space-4);
+  }
+  .multiHead {
+    padding: var(--space-3) var(--space-4);
+  }
+  .row {
+    padding: var(--space-3) var(--space-4);
+  }
+  .inset {
+    margin: 0 var(--space-4) var(--space-3);
+  }
+  .next {
+    min-height: var(--touch-target-min);
+  }
+}

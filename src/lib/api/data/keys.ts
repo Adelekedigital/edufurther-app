@@ -16,6 +16,8 @@ export const keys = {
     all: ['mentors'] as const,
     featured: (who: string) => ['mentors', 'featured', who] as const,
     // Offerings are sorted so ['a','b'] and ['b','a'] share one cache entry.
+    // `who`: the owner gets their own page in any state, with owner-only fields.
+    profile: (handle: string, who: string) => ['mentors', 'profile', handle, who] as const,
     list: (f: MentorFilters, who: string) =>
       ['mentors', 'list', who, { q: f.q, offerings: [...f.offerings].sort() }] as const,
   },

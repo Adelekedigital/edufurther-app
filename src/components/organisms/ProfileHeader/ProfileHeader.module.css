@@ -1,0 +1,156 @@
+/* Mentor Profile.dc.html header card. Values from its markup; phone values
+   from AppShell.dc.html's data-ef rules (banner, profhead, avatar, introtext). */
+.card {
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-2xl);
+  background: var(--surface-card);
+}
+.banner {
+  position: relative;
+  height: 140px;
+  /* 15px: the card's 16px radius less its 1px border. */
+  border-radius: 15px 15px 0 0;
+  background: var(--blue-500);
+  overflow: hidden;
+}
+.bannerImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: var(--space-5);
+  align-items: flex-end;
+  flex-wrap: wrap;
+  padding: 0 var(--space-6) var(--space-5);
+  margin-top: -48px;
+}
+.avatar {
+  width: 112px;
+  height: 112px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 4px var(--white);
+  background: var(--photo-bg);
+  overflow: hidden;
+}
+.photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Crop anchored on the face (avatar_focus), design default otherwise. */
+  object-position: var(--photo-x, 50%) var(--photo-y, 25%);
+}
+.initials {
+  font-family: var(--font-brand);
+  font-size: 40px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.02em;
+  color: var(--white);
+}
+.intro {
+  flex: 1 1 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: calc(var(--space-12) + var(--space-6));
+}
+.name {
+  font-family: var(--font-brand);
+  font-size: var(--text-h5);
+  line-height: var(--lh-h5);
+  letter-spacing: var(--ls-h5);
+  font-weight: var(--weight-semibold);
+}
+.headline {
+  font-size: var(--text-p-sm);
+  color: var(--text-secondary);
+}
+.proof {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  font-size: var(--text-p-xs);
+  color: var(--text-secondary);
+}
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+/* A separator travels with the item after it, so a wrap never leaves "·" dangling. */
+.sep {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.strong {
+  color: var(--text-primary);
+}
+.star {
+  color: var(--rating-star);
+}
+.actions {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.topics {
+  margin: 0;
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 0 var(--space-6) var(--space-5);
+  list-style: none;
+}
+
+@media (max-width: 767px) {
+  .banner {
+    height: 96px;
+  }
+  .head {
+    gap: var(--space-3);
+    padding: 0 var(--space-4) var(--space-4);
+    margin-top: -36px;
+  }
+  .avatar {
+    width: 72px;
+    height: 72px;
+  }
+  .initials {
+    font-size: 26px;
+  }
+  .intro {
+    padding-top: 0;
+  }
+  /* Phones: the location always wraps, so it gets its own line with no "·". */
+  .location {
+    flex-basis: 100%;
+  }
+  .location .dot {
+    display: none;
+  }
+  .name {
+    font-size: var(--text-p-lg);
+    line-height: 1.2;
+  }
+  .actions {
+    width: 100%;
+  }
+  .topics {
+    padding: 0 var(--space-4) var(--space-4);
+  }
+}

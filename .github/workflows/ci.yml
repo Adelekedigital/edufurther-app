@@ -131,7 +131,8 @@ jobs:
       - name: Review pages
         run: |
           set -e
-          for route in /explore ; do
+          # /mentors/olajuwon-samuel: a full mock profile (Mentor Profile PR 1).
+          for route in /explore /mentors/olajuwon-samuel ; do
             node scripts/review-page.mjs "$route"
           done
 

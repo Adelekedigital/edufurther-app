@@ -52,6 +52,20 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | BookingModal days: every day with slots (desktop grid; phone sheet: sideways 68px strip with slot counts) | **7 days at a time, starting today**, with the profile card's week switcher ("Next 7 days · Sep 27 – Oct 3", ‹ ›, 28px arrows) across the 4-week horizon; all 7 tiles shown, empty days disabled, a green dot on open days, day number only; 3-column time grid. Same on phones (44px arrows and times, day heading shown) | Product (2026-09-27): "the next 7 days of availability are to be shown"; always opens on this week | design adopts in BookingModal.dc.html (request #40) |
 | BookingModal phone sheet footer note "{time} · {first} confirms within 12 hours" | "{time}" only (same hourglass line) | Reply time is not a real figure anywhere (same as the done-state row above) | backend exposes a response-time stat; design request #30 |
 | BookingModal phone sheet: 44px primary/outlined footer buttons | 48px, the one CTA pattern (padding 16px on phones) | Product (2026-09-27), requests #24/#28 | design adopts (#31) |
+| Mentor Profile "Degree verified by EduFurther" tick next to the name | Not rendered | No verification concept exists anywhere in the backend (profile reply #8) | backend verifies degrees |
+| Mentor Profile header "Message" button | Not rendered | No messaging yet | messaging ships |
+| Mentor Profile Reviews tab, rating link to it | Not in PR 1 (tabs are Overview and Sessions); the header rating is plain text | Built in profile PR 2 | PR 2 |
+| Mentor Profile "Similar mentors" card | Not rendered | Endpoint shipped after PR 1 (profile reply update 2, #9) | a follow-up PR |
+| Mentor Profile in-card booking (date tiles, week switcher, time grid, in-card "Request sent") | Card keeps its header (name, duration, venue, Free) and a "Next available" shortcut; every Book opens the shared BookingModal. Several offerings: the design's list with Book on each | Product (2026-09-27): one booking experience everywhere | design redraws the card (request #32) |
+| Mentor Profile per-offering "Free Mon, Sep 28" (booking card rows, Sessions tab cards) | Hidden; the multi-offering card shows the mentor's own "Next available" under its header instead (ours), and the Sessions card's Book keeps the right-hand place | Availability is stored per mentor, not per offering (profile reply #10) | never, unless the backend adds it |
+| Mentor Profile "Top-rated" badge in the track record | Not rendered | No product rule for "Top-rated" yet | product defines it (design request #33) |
+| Mentor Profile "Mentees keep coming back" line on every profile | Only when sessions ÷ mentees rounds above 1.0 | Otherwise the sentence is false | never |
+| Mentor Profile scholarship "Fully funded" badge | Not rendered | The API has no funding field | backend adds one |
+| Mentor Profile share menu "Copy link page" | Not offered | Link pages don't exist | link pages ship |
+| Mentor Profile social chip YouTube mark (DS `Youtube2`) | Material `smart_display` glyph (LinkedIn `work`, X `alternate_email`) | DS brand glyphs not ported (same as the Google G) | Icon atom ports DS brand glyphs |
+| Mentor Profile owner banner with a "View as mentee" toggle | "You're viewing your own profile." with a note for a pending or unlisted profile (PROVISIONAL), no toggle | Editing ships in later PRs; the toggle only means something with an edit mode | owner PRs (design request #35) |
+| Mentor Profile social chip 32px, share button 32px, "Show more" link | 44px on phones | Touch targets (ours) | never |
+| Mentor Profile loading / error / not-found | Skeleton of header + columns; EmptyState "We couldn't load this profile" + Try again; "This mentor profile isn't available" + Explore mentors (PROVISIONAL) | Not designed | design answers request #34 |
 | Mentor photo placeholder: design tone per sample | Tone from a hash of the mentor id over 6 tokens | Real data has no tone field | design supplies a rule |
 
 ## Rules
@@ -74,6 +88,7 @@ Defined in `src/styles/tokens/ours.css`. A redesign must not silently drop them:
 | `--photo-tag-tint`, `--photo-scrim`, `--photo-tag-border` | text over photos (Design decisions §8) |
 | `--plus-fill`, `--plus-text`, `--warning-subtle`, `--warning-text` | design literals; warning ramp incomplete in DS |
 | `--rating-star` | design literal `#f3a218` |
+| `--gold-subtle` | design literal `#fffbef` (award and mentoring-time icon tiles, Mentor Profile) |
 | `--avatar-tone-1…6` | initials grounds, read off design samples |
 | `--button-compact-h`, `--button-compact-h-touch`, `--touch-target-min` | compact CTA (handoff §7.1), 44px targets |
 | reduced-motion durations | not drawn |

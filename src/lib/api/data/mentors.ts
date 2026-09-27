@@ -26,7 +26,7 @@ export const MENTOR_PAGE_SIZE = 10;
 
 // ---- mapping --------------------------------------------------------------
 
-function toneFor(id: string): AvatarTone {
+export function toneFor(id: string): AvatarTone {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
   return ((Math.abs(h) % 6) + 1) as AvatarTone;
@@ -37,6 +37,19 @@ export function toFocus(f: { x: number; y: number } | null | undefined): Mentor[
   if (!f || !Number.isFinite(f.x) || !Number.isFinite(f.y)) return null;
   const clamp = (n: number) => Math.min(1, Math.max(0, n));
   return { x: clamp(f.x), y: clamp(f.y) };
+}
+
+/**
+ * Backend (reply round 3 #13): next_available_state says open / none / refreshing.
+ * Only claim "none" when it says so; refreshing or absent → unknown, say nothing.
+ */
+export function nextAvailableState(
+  state: string | null | undefined,
+  at: string | null | undefined,
+): Mentor['nextAvailableState'] {
+  if (state === 'open' && at) return 'open';
+  if (state === 'none') return 'none';
+  return at ? 'open' : 'unknown';
 }
 
 export function toMentor(r: MentorSummaryRead): Mentor {
@@ -71,16 +84,7 @@ export function toMentor(r: MentorSummaryRead): Mentor {
     // (has_free_session_type / min_price, backend request #3), derive it here.
     offer: 'free',
     nextAvailableAt: r.next_available_at ?? null,
-    // Backend (reply round 3 #13): next_available_state says open / none / refreshing.
-    // Only claim "none" when it says so; refreshing or absent → unknown, say nothing.
-    nextAvailableState:
-      r.next_available_state === 'open' && r.next_available_at
-        ? 'open'
-        : r.next_available_state === 'none'
-          ? 'none'
-          : r.next_available_at
-            ? 'open'
-            : 'unknown',
+    nextAvailableState: nextAvailableState(r.next_available_state, r.next_available_at),
     // `offerings` has a server default, so the spec marks it optional.
     topics: (r.offerings ?? []).map((o) => ({ slug: o.slug, label: o.display_name })),
   };
