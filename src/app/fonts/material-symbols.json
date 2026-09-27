@@ -6,6 +6,8 @@
     "chat",
     "check",
     "check_circle",
+    "chevron_left",
+    "chevron_right",
     "close",
     "cloud_off",
     "edit",
@@ -32,5 +34,5 @@
     "star",
     "upload_file"
   ],
-  "sha256": "79e149c8423132089f95f134f2c60138e641e65547e4ca52aa094ad9c10b79fd"
+  "sha256": "25fb5e6028bd96b44d8aa0f8d21df8c76f22e18b6d0f684cefe68ce4ce362de6"
 }

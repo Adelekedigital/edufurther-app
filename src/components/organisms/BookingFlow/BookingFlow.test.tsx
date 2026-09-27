@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Mentor, Remote, SessionType } from '@/types/mentor';
 import { BookingFlow, type BookingFlowProps } from './BookingFlow';
@@ -80,6 +80,13 @@ const props = (over: Partial<BookingFlowProps> = {}): BookingFlowProps => ({
   ...over,
 });
 
+// The week view always starts today; pin it to Sunday, Sep 27 2026.
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-09-27T12:00:00Z'));
+});
+afterAll(() => vi.useRealTimers());
+
 function setPhone(phone: boolean) {
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
     matches: phone && query.includes('max-width: 767px'),
@@ -104,7 +111,7 @@ describe('BookingFlow on phones (sheet)', () => {
   it('moves back to the header after step 1 and keeps one footer action', async () => {
     const user = userEvent.setup();
     render(<BookingFlow {...props()} />);
-    await user.click(screen.getAllByRole('radio')[2]!); // first time of the first day
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
     await user.click(screen.getByRole('button', { name: 'Continue to questions' }));
     expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
     expect(screen.getByTestId('sheet')).toHaveTextContent('right close');
@@ -115,7 +122,7 @@ describe('BookingFlow on phones (sheet)', () => {
   it('shows no chosen-time row over the done, loading or error states', async () => {
     const user = userEvent.setup();
     const { rerender } = render(<BookingFlow {...props()} />);
-    await user.click(screen.getAllByRole('radio')[2]!);
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
     await user.click(screen.getByRole('button', { name: 'Continue to questions' }));
     expect(screen.getByRole('button', { name: /^Change/ })).toBeInTheDocument();
 
@@ -169,7 +176,7 @@ describe('BookingFlow on real slots', () => {
     const onRequest = vi.fn();
     render(<BookingFlow {...props({ sessionTypeId: 'st2', onRequest })} />);
     expect(screen.getByRole('progressbar', { name: /Step 1 of 1/ })).toBeInTheDocument();
-    await user.click(screen.getAllByRole('radio')[2]!);
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
     await user.click(screen.getByRole('button', { name: /^Request Mon, Sep 28/ }));
     expect(onRequest).toHaveBeenCalledWith(
       expect.objectContaining({ sessionTypeId: 'st2', startsAt: '2026-09-28T09:00:00Z' }),
@@ -180,7 +187,7 @@ describe('BookingFlow on real slots', () => {
     const user = userEvent.setup();
     const onRequest = vi.fn();
     render(<BookingFlow {...props({ sessionTypeId: 'st2', isGuest: true, onRequest })} />);
-    await user.click(screen.getAllByRole('radio')[2]!);
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.type(screen.getByRole('textbox', { name: 'Email address' }), 'a@b.co');
     await user.click(screen.getByRole('button', { name: 'Continue with email' }));
@@ -194,8 +201,8 @@ describe('BookingFlow on real slots', () => {
         {...props({ slots: remote(['2026-09-29T02:00:00Z']), deviceZone: 'America/New_York' })}
       />,
     );
-    expect(screen.getByText('Sep 28')).toBeInTheDocument();
-    expect(screen.getByText('10:00 pm')).toBeInTheDocument();
+    expect(screen.getByText('Mon, Sep 28 · 1 time')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: '10:00 pm' })).toBeInTheDocument();
   });
 
   it('says so when the offering has no open times', () => {
@@ -231,7 +238,7 @@ describe('BookingFlow on real slots', () => {
     const { rerender } = render(
       <BookingFlow {...props({ sessionTypeId: 'st2', isGuest: true })} />,
     );
-    await user.click(screen.getAllByRole('radio')[2]!); // Sep 28 09:00
+    await user.click(screen.getByRole('radio', { name: '9:00 am' })); // Sep 28
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     expect(screen.getByRole('progressbar', { name: /Step 2 of 2/ })).toBeInTheDocument();
 
@@ -244,7 +251,7 @@ describe('BookingFlow on real slots', () => {
     expect(screen.getByRole('progressbar', { name: /Step 1 of 2/ })).toBeInTheDocument();
 
     // Picking the remaining time must not jump ahead to sign-up by itself.
-    await user.click(screen.getAllByRole('radio')[1]!);
+    await user.click(screen.getByRole('radio', { name: '1:00 pm' }));
     expect(screen.getByRole('progressbar', { name: /Step 1 of 2/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
   });
@@ -252,10 +259,69 @@ describe('BookingFlow on real slots', () => {
   it('drops a chosen time the grid no longer offers (taken meanwhile)', async () => {
     const user = userEvent.setup();
     const { rerender } = render(<BookingFlow {...props()} />);
-    await user.click(screen.getAllByRole('radio')[2]!);
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
     await user.click(screen.getByRole('button', { name: 'Continue to questions' }));
     rerender(<BookingFlow {...props({ slots: remote(['2026-09-29T13:00:00Z']) })} />);
     expect(screen.getByRole('progressbar', { name: /Step 1 of 2/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Pick a time' })).toBeDisabled();
+  });
+});
+
+describe('BookingFlow week view (7 days at a time)', () => {
+  beforeEach(() => setPhone(false));
+
+  it('says no open times when none of the four weeks has any, even if the fetch had some beyond', () => {
+    // Today is Sep 27; Oct 25 is today+28, fetched as margin but never shown.
+    render(<BookingFlow {...props({ slots: remote(['2026-10-25T12:00:00Z']) })} />);
+    expect(screen.getByText('No open times at the moment')).toBeInTheDocument();
+  });
+
+  it('clears the chosen time when the week changes', async () => {
+    const user = userEvent.setup();
+    render(
+      <BookingFlow
+        {...props({ sessionTypeId: 'st2', slots: remote([...slots, '2026-10-06T09:00:00Z']) })}
+      />,
+    );
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+    expect(screen.getByRole('button', { name: /^Request Mon, Sep 28/ })).toBeEnabled();
+    await user.click(screen.getByRole('button', { name: 'Later dates' }));
+    expect(screen.getByRole('button', { name: 'Pick a time' })).toBeDisabled();
+  });
+
+  it('moves the week on at midnight while the modal is open', () => {
+    vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
+    try {
+      vi.setSystemTime(new Date('2026-09-27T23:59:30Z'));
+      render(<BookingFlow {...props()} />);
+      expect(screen.getByText('Next 7 days · Sep 27 – Oct 3')).toBeInTheDocument();
+      vi.setSystemTime(new Date('2026-09-28T00:00:30Z'));
+      act(() => vi.advanceTimersByTime(60 * 1000));
+      expect(screen.getByText('Next 7 days · Sep 28 – Oct 4')).toBeInTheDocument();
+    } finally {
+      // Back to the file's pinned clock, pass or fail, so later tests see Sep 27.
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-09-27T12:00:00Z'));
+    }
+  });
+
+  it('always opens on the next 7 days from today, empty days disabled', () => {
+    render(<BookingFlow {...props()} />);
+    expect(screen.getByText('Next 7 days · Sep 27 – Oct 3')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Sun, Sep 27, no open times/ })).toBeDisabled();
+    expect(screen.getByRole('radio', { name: /Mon, Sep 28, 1 time/ })).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Earlier dates' })).toBeDisabled();
+  });
+
+  it('opens on this week even when the first time is later, and ‹ › reach it', async () => {
+    const user = userEvent.setup();
+    render(<BookingFlow {...props({ slots: remote(['2026-10-06T09:00:00Z']) })} />);
+    expect(screen.getByText(/No open times this week/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Later dates' }));
+    expect(screen.getByText('Oct 4 – Oct 10')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Tue, Oct 6, 1 time/ })).toBeChecked();
+    await user.click(screen.getByRole('button', { name: 'Later dates' }));
+    await user.click(screen.getByRole('button', { name: 'Later dates' }));
+    expect(screen.getByRole('button', { name: 'Later dates' })).toBeDisabled();
   });
 });
