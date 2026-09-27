@@ -84,7 +84,7 @@ Sources, so the next sync can diff against them: the design project's
 |---|---|
 | Handoffs | `docs/handoff/<screen>-backend-request.md` → backend session answers in `<screen>-backend-reply.md` (it writes there directly) |
 | Where is the spec? | Backend FastAPI OpenAPI at `/openapi.json` (repo `c:/pythonwork/edufurtherBE`). `/docs` is the contract (backend ADR 0016 §4) |
-| How is the client generated? | `openapi-typescript` → `src/lib/api/generated/schema.ts` from the checked-in `openapi/openapi.json` (`pnpm gen:api`); `openapi-fetch` client created once in `lib/api/data/http.ts`. The snapshot is **provisional** until the backend exports one — read its header for the swap rule (fields ahead of the backend stay until confirmed) |
+| How is the client generated? | `openapi-typescript` → `src/lib/api/generated/schema.ts` from `openapi/openapi.json` (`pnpm gen:api`); `openapi-fetch` client created once in `lib/api/data/http.ts`. **Spec, generated client and `docs/handoff/` are private** — git-ignored, never committed (public repo). Locally: the spec file on disk. CI: the `OPENAPI_SPEC_JSON` Actions secret (48KB cap; move to a private contracts repo when the full spec outgrows it). `pnpm check:private` enforces it. The spec is provisional until the backend exports one — read its header for the swap rule |
 | Where does the generated client live? | `src/lib/api/generated/` — imported only by `src/lib/api/data/` |
 | Base path | `/api/v1/...` |
 | Response envelope | Lists: `{ data: [...], next_cursor: string \| null }` |
@@ -141,7 +141,7 @@ Prototype files (`support.js`, `image-slot.js`, `dc-import`, `sc-if`) are the pr
 | Show "★ 0 (0 reviews)" | reads as a bad rating |
 | Port the prototype's global mobile `<style>` block | handoff §7.3; it overrides by attribute-substring selectors |
 | Fetch below the page | `check-boundaries.mjs` rule 1 |
-| Make this repo public while it holds `openapi/`, `docs/handoff/` or `.claude/` internals | they map the backend API and its behaviour; product chose a private repo (2026-09-26) |
+| Track `openapi/`, `src/lib/api/generated/` or `docs/handoff/` in git | this repo is public and they map the backend API. Product (2026-09-27): repo stays public; these are git-ignored and `pnpm check:private` fails CI if one is tracked. `.claude/` stays tracked by decision — process docs whose contract notes cover only what the public client already calls. Old versions remain in history (no rewrite, by decision) |
 | Push straight to `main` | every change goes through a PR with green CI, `/code-review` and `/security-review` (2026-09-26) |
 
 ---
