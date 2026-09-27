@@ -4,6 +4,7 @@
  * five mentors are the design's sample; the rest exist so paging has pages.
  */
 import type { components } from '@/lib/api/generated/schema';
+import avatars from './avatars/manifest.json';
 
 type MentorSummaryRead = components['schemas']['MentorSummaryRead'];
 type LookupRead = components['schemas']['LookupRead'];
@@ -44,13 +45,14 @@ const base = (
   reviews: number,
   value: number | null,
   offerings: ReturnType<typeof off>,
+  avatar: string | null = null,
 ): MentorSummaryRead => ({
   id,
   slug: `${first}-${last}`.toLowerCase().replace(/[^a-z-]/g, ''),
   first_name: first,
   last_name: last,
   headline: null,
-  avatar_url: null,
+  avatar_url: avatar,
   primary_study_country: null,
   origin_country: null,
   degree,
@@ -193,14 +195,27 @@ const SETS = [
   off('scholarships-and-funding', 'school-selection', 'application-documents'),
 ];
 
-const GENERATED: MentorSummaryRead[] = FIRST.map((f, i) => {
+/**
+ * Test portraits (./avatars: Unsplash, free licence, credits in manifest.json),
+ * served by app/api/mock/avatars. The featured mock takes the first landscape
+ * photo (to exercise the featured crop); generated mentors take the rest with
+ * the manifest's fictional names, and the remainder keep initials so that path
+ * stays covered. Framings vary on purpose (close-up, half-body, landscape).
+ */
+const avatarUrl = (file: string) => `/api/mock/avatars/${file}`;
+const FEATURED_PHOTO = avatars.people.find((p) => p.framing === 'landscape')!;
+const PHOTO_PEOPLE = avatars.people.filter((p) => p !== FEATURED_PHOTO);
+
+const GENERATED: MentorSummaryRead[] = FIRST.map((first, i) => {
+  const face = PHOTO_PEOPLE[i];
+  const f = face?.first_name ?? first;
   const [deg, course] = COURSES[i % COURSES.length]!;
   const sessions = (i * 7) % 61;
   const reviews = sessions > 3 ? (i * 3) % 14 : 0;
   return base(
     `m-gen-${i}`,
     f,
-    LAST[i % LAST.length]!,
+    face?.last_name ?? LAST[i % LAST.length]!,
     deg!,
     course!,
     SCHOOLS[i % SCHOOLS.length]!,
@@ -208,6 +223,7 @@ const GENERATED: MentorSummaryRead[] = FIRST.map((f, i) => {
     reviews,
     reviews ? 4 + ((i * 13) % 10) / 10 : null,
     SETS[i % SETS.length]!,
+    face ? avatarUrl(face.file) : null,
   );
 });
 
@@ -216,9 +232,9 @@ export const MENTORS: MentorSummaryRead[] = [...DESIGN_SAMPLE, ...GENERATED];
 /** The design's "Featured this week" sample (bio as rewritten by design). */
 export const FEATURED = {
   ...base(
-    'm-aderewa',
-    'Aderewa',
-    'Oluchi',
+    'm-featured',
+    FEATURED_PHOTO.first_name,
+    FEATURED_PHOTO.last_name,
     'MSc',
     'Public Health',
     'University of London',
@@ -226,6 +242,7 @@ export const FEATURED = {
     34,
     4.9,
     off('application-documents', 'career-guidance'),
+    avatarUrl(FEATURED_PHOTO.file),
   ),
   about_me:
     'I’m a medical doctor and public health professional. I love meeting people and sharing what I’ve learned, and it’s a privilege to guide others through the application journey.',
