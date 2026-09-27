@@ -83,7 +83,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
     completed_sessions: sessions,
     mentoring_minutes: sessions * 60,
     mentees_mentored: Math.ceil(sessions / 2),
-    attendance_rate: sessions > 0 ? 88 : null,
+    // Null until a session has settled (backend); every fourth mentor has none
+    // yet, so the track record's "No data yet" tile has data to render.
+    attendance_rate: sessions > 0 && i % 4 !== 1 ? 88 : null,
     reviews: {
       count: m.review_count,
       session_value: m.session_value,

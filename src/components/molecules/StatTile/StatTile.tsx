@@ -6,7 +6,8 @@ import styles from './StatTile.module.css';
 type StatTileProps = {
   icon: IconName;
   tone: 'gold' | 'blue' | 'green' | 'neutral';
-  value: string;
+  /** Null: nothing is known yet — shown as a muted "No data yet", never as 0. */
+  value: string | null;
   label: string;
   className?: string;
 };
@@ -19,7 +20,9 @@ export function StatTile({ icon, tone, value, label, className }: StatTileProps)
         <Icon name={icon} size={18} />
       </span>
       <span className={styles.text}>
-        <span className={styles.value}>{value}</span>
+        <span className={cx(styles.value, value === null && styles.empty)}>
+          {value ?? 'No data yet'}
+        </span>
         <span className={styles.label}>{label}</span>
       </span>
     </div>

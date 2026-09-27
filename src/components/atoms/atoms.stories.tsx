@@ -20,29 +20,41 @@ type Story = StoryObj;
 const row = { display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' } as const;
 const col = { display: 'flex', flexDirection: 'column', gap: 16 } as const;
 
+/** CTA Hierarchy.dc.html: three sizes by placement, variants by importance. */
 export const Buttons: Story = {
   render: () => (
     <div style={col}>
       <div style={row}>
-        <Button>Book session with Olajuwon</Button>
-        <Button variant="secondary-outlined">Show more mentors</Button>
-        <Button variant="text">Change</Button>
+        <Button size="large">Book a session</Button>
+        <Button size="large" variant="secondary-outlined">
+          Back
+        </Button>
+        <Button size="large" variant="text">
+          Cancel
+        </Button>
+      </div>
+      <div style={row}>
+        <Button>Book session</Button>
+        <Button variant="secondary-outlined">Book</Button>
+        <Button variant="text">Show 4 more reviews</Button>
         <Button variant="dark">Continue with Google</Button>
+      </div>
+      <div style={row}>
+        <Button size="small" variant="secondary-outlined">
+          Accept
+        </Button>
+        <Button size="small" variant="text">
+          Decline
+        </Button>
       </div>
       <div style={row}>
         <Button disabled>Pick a time</Button>
         <Button variant="secondary-outlined" disabled>
           Booking needs a connection
         </Button>
-        <Button busy>Sending request…</Button>
-        <Button icon="check">With icon</Button>
-      </div>
-      <div style={row}>
-        <Button size="sm">DS sm (37px)</Button>
-        <Button size="lg">DS lg (56px)</Button>
-      </div>
-      <div style={{ width: 280 }}>
-        <Button fullWidth>Book session with Chukwueze Morgan-Stanley-Okonkwo</Button>
+        <Button size="large" busy>
+          Sending request…
+        </Button>
       </div>
     </div>
   ),

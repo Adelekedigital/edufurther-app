@@ -111,7 +111,7 @@ export function FeaturedMentor({
         <div className={styles.actions}>
           <Button
             variant="secondary-outlined"
-            size="cta"
+            size="medium"
             disabled={offline || !!bookBlocked}
             onClick={() => onBook(m)}
           >

@@ -78,7 +78,11 @@ export function MentorResults(p: MentorResultsProps) {
                 'You’re offline. Your filters are saved, so try again when you reconnect.'
               : 'Something went wrong on our side. Your filters are saved, so try again in a moment.'
           }
-          actions={<Button onClick={p.onRetry}>Try again</Button>}
+          actions={
+            <Button size="large" onClick={p.onRetry}>
+              Try again
+            </Button>
+          }
         />
       </section>
     );
@@ -98,7 +102,11 @@ export function MentorResults(p: MentorResultsProps) {
                 ? `No one matches “${p.query}” for these topics. Try a different name, school or program, or other topics.`
                 : 'No mentors help with these topics yet. Try other topics to see more mentors.'
             }
-            actions={<Button onClick={p.onClearSearch}>Clear search</Button>}
+            actions={
+              <Button size="large" onClick={p.onClearSearch}>
+                Clear search
+              </Button>
+            }
           />
         ) : (
           // "Notify me" is held: nothing stores the request yet (backend reply, follow-up 2).

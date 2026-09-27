@@ -70,16 +70,14 @@ export function TrackRecordCard({ profile, isOwner }: TrackRecordCardProps) {
       value: n.format(profile.menteesMentored),
       label: 'mentees mentored',
     },
-    ...(profile.attendanceRate !== null
-      ? [
-          {
-            icon: 'verified_user' as const,
-            tone: 'neutral' as const,
-            value: `${Math.round(profile.attendanceRate)}%`,
-            label: 'avg. attendance',
-          },
-        ]
-      : []),
+    // Always four tiles: attendance is null (never 0) until a session has
+    // settled (backend), and a missing tile left a hole in the grid.
+    {
+      icon: 'verified_user' as const,
+      tone: 'neutral' as const,
+      value: profile.attendanceRate === null ? null : `${Math.round(profile.attendanceRate)}%`,
+      label: 'avg. attendance',
+    },
   ];
 
   return (

@@ -144,7 +144,9 @@ export function MentorCard({
       {!isSelf && (
         <Button
           fullWidth
-          size="cta"
+          size="medium"
+          // Repeated on every card, so outlined (CTA hierarchy).
+          variant="secondary-outlined"
           className={styles.book}
           disabled={offline || !!bookBlocked}
           onClick={() => onBook(m)}

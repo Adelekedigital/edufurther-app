@@ -9,7 +9,7 @@ export function MentorCardSkeleton() {
       <Skeleton width="60%" height="16px" />
       <Skeleton width="80%" height="12px" />
       <Skeleton width="45%" height="12px" />
-      <Skeleton height="var(--button-cta-h)" radius="md" />
+      <Skeleton height="var(--button-h-medium)" radius="md" />
     </div>
   );
 }

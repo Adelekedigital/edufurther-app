@@ -87,21 +87,33 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           <ProfileSkeleton />
         ) : profile.error && !p ? (
           // Only with nothing to show: a failed background refetch keeps the profile.
-          <EmptyState
-            illustration="forms"
-            title="We couldn’t load this profile"
-            description="Something went wrong on our side. Check your connection and try again."
-            actions={<Button onClick={profile.retry}>Try again</Button>}
-          />
+          <div className={styles.state}>
+            <EmptyState
+              illustration="forms"
+              title="We couldn’t load this profile"
+              description="Something went wrong on our side. Check your connection and try again."
+              actions={
+                <Button size="large" onClick={profile.retry}>
+                  Try again
+                </Button>
+              }
+            />
+          </div>
         ) : profile.notFound || !p ? (
           // Design reply #34. 404 is "not found or not public", indistinguishable
           // on purpose — the copy doesn't guess which.
-          <EmptyState
-            illustration="search-results"
-            title="This mentor profile isn’t available"
-            description="The link may be out of date, or the profile isn’t public. You can find other mentors who’ve done the same path."
-            actions={<ButtonLink href="/explore">Explore mentors</ButtonLink>}
-          />
+          <div className={styles.state}>
+            <EmptyState
+              illustration="search-results"
+              title="This mentor profile isn’t available"
+              description="The link may be out of date, or the profile isn’t public. You can find other mentors who’ve done the same path."
+              actions={
+                <ButtonLink href="/explore" size="large">
+                  Explore mentors
+                </ButtonLink>
+              }
+            />
+          </div>
         ) : (
           <>
             {isOwner && <OwnerBar profile={p} />}
@@ -110,7 +122,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               actions={
                 <>
                   {!isOwner && hasSessions && (
-                    <Button disabled={!!bookBlocked} onClick={() => openBooking()}>
+                    // The view's one filled button: Large (CTA hierarchy).
+                    <Button size="large" disabled={!!bookBlocked} onClick={() => openBooking()}>
                       {bookBlocked ?? 'Book a session'}
                     </Button>
                   )}
@@ -240,23 +253,33 @@ function OwnerBar({ profile }: { profile: MentorProfile }) {
   );
 }
 
+/** Mentor Profile.dc.html `pageState=loading`: the header card and both columns. */
 function ProfileSkeleton() {
   return (
     <div className={styles.skeleton} aria-busy>
       <span className="sr-only" role="status">
         Loading profile
       </span>
-      <Skeleton height="300px" radius="lg" />
+      <div className={styles.skHeader}>
+        <div className={styles.skBanner} />
+        <div className={styles.skHead}>
+          <span className={styles.skAvatar} />
+          <div className={styles.skLines}>
+            <Skeleton width="40%" height="24px" radius="md" />
+            <Skeleton width="60%" height="14px" radius="md" />
+            <Skeleton width="30%" height="14px" radius="md" />
+          </div>
+        </div>
+      </div>
       <div className={styles.cols}>
-        <div className={styles.main}>
-          <Skeleton height="20px" width="30%" />
-          <Skeleton height="72px" />
-          <Skeleton height="160px" radius="lg" />
+        <div className={styles.skMain}>
+          <Skeleton width="30%" height="18px" radius="md" />
+          <Skeleton height="14px" radius="md" />
+          <Skeleton height="14px" radius="md" />
+          <Skeleton width="70%" height="14px" radius="md" />
+          <Skeleton height="160px" radius="lg" className={styles.skBlock} />
         </div>
-        <div className={styles.aside}>
-          <Skeleton height="220px" radius="lg" />
-          <Skeleton height="200px" radius="lg" />
-        </div>
+        <Skeleton height="220px" radius="lg" className={styles.skAside} />
       </div>
     </div>
   );

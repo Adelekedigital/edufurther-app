@@ -3,11 +3,15 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  /* The column count comes from the 280px floor; the 360px cap sits on the
+     card, since a fixed track max would size the count off 360 instead. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: var(--space-4);
   list-style: none;
 }
 .card {
+  width: 100%;
+  max-width: 360px;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);

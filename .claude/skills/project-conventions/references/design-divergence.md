@@ -47,11 +47,11 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | MentorCard photo `aspect-ratio:3 / 2`, card `border:1px` | Photo `aspect-ratio:445 / 300`; card stroke as `inset` box-shadow (Figma stroke-inside), so the photo is exactly 445 × 300 in the 493px card | Figma values (product 2026-09-27) | design adopts (request #26) |
 | MentorCard `padding:var(--space-4)` (16px) | `--space-6` (24px), skeleton too | Figma has 24px; the .dc.html lags it (product 2026-09-27) | design adopts (request #23) |
 | Featured card text column: `gap:var(--space-2)`, top-aligned, `padding:var(--space-5) var(--space-6)`, name `--text-p-lg`, no offer line | Centred, 12px between groups (name+degree 4px), 32px padding, name `--text-h6` (20px), MentorCard's offer + availability block, CTA 4px lower | Product (2026-09-27): the 315px card looked sparse and top-heavy | design adopts (request #25) |
-| Every CTA: fixed-height compact buttons (`height:32px; padding:0 16px`), pill `Find matches` 32px, popover CTA 36px, match prompt 32px | **One CTA pattern everywhere**: Button default size `cta`, `padding:16px 24px` (48px), phones `16px` (48px); the hand-styled CTAs (match prompt, pill, popover) match it, border included. Chips, icon buttons and text links unchanged | Product (2026-09-27) | design adopts (requests #24, #28) |
+| Button sizes and variants | Built to CTA Hierarchy.dc.html (replaces the one-size #28 rule): large 48 / medium 40 / small 32 by placement, one filled button per view. The green "Find my mentor matches" buttons (prompt, pill, popover) are small 32 | Design + product (2026-09-27); match buttons: product, design request #41 | design maps the match buttons (#41) |
 | Selected day tile weekday `--ink-500` on `--blue-50` (4.28:1 at 10px) | Superseded by the week view below: the weekday takes the tile's text colour (`--text-primary`), as the profile card draws it | WCAG 1.4.3; design request #29 | design answers #29 |
 | BookingModal days: every day with slots (desktop grid; phone sheet: sideways 68px strip with slot counts) | **7 days at a time, starting today**, with the profile card's week switcher ("Next 7 days · Sep 27 – Oct 3", ‹ ›, 28px arrows) across the 4-week horizon; all 7 tiles shown, empty days disabled, a green dot on open days, day number only; 3-column time grid. Same on phones (44px arrows and times, day heading shown) | Product (2026-09-27): "the next 7 days of availability are to be shown"; always opens on this week | design adopts in BookingModal.dc.html (request #40) |
-| BookingModal phone sheet footer note "{time} · {first} confirms within 12 hours" | "{time}" only (same hourglass line) | Reply time is not a real figure anywhere (same as the done-state row above) | backend exposes a response-time stat; design request #30 |
-| BookingModal phone sheet: 44px primary/outlined footer buttons | 48px, the one CTA pattern (padding 16px on phones) | Product (2026-09-27), requests #24/#28 | design adopts (#31) |
+| BookingModal footer note "{time} · {first} confirms within 12 hours" | Resolved by design reply #30: "{time} · You'll get an email when {first} replies" (and the done state) | — | — |
+| BookingModal phone sheet "Continue with Google" drawn 44px | Medium 40px with the invisible 44px tap area | CTA hierarchy rule 5 (medium keeps its drawn height on phones) | design redraws the sheet's Google button |
 | Mentor Profile "Degree verified by EduFurther" tick next to the name | Not rendered | No verification concept exists anywhere in the backend (profile reply #8) | backend verifies degrees |
 | Mentor Profile header "Message" button | Not rendered | No messaging yet | messaging ships |
 | Mentor Profile Reviews tab, rating link to it | Not in PR 1 (tabs are Overview and Sessions); the header rating is plain text | Built in profile PR 2 | PR 2 |
@@ -66,6 +66,8 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | Mentor Profile owner banner with a "View as mentee" toggle | The design's banner copy and lock icon (reply #35) without the toggle | Editing ships in later PRs; the toggle only means something with an edit mode | owner PRs |
 | Mentor Profile social chip 32px, share button 32px, "Show more" link | 44px on phones | Touch targets (ours) | never |
 | Mentor Profile loading / error / not-found | Built to design reply #34 (copy and layout) | — | — |
+| Mentor Profile share menu `top: 40px` | `top: calc(100% + 16px)` (phones `+ 12px`): 8px clear of the 48px header Book | Drawn beside a 32px Book; next to the 48px one it touched it (product 2026-09-27) | design adopts (request #44) |
+| Mentor Profile track record: four stats, all known | An unknown figure (attendance before a settled session) keeps its tile with a muted "No data yet" | A dropped tile left a hole in the 2×2 grid (product 2026-09-27) | design confirms styling (request #43) |
 | Mentor photo placeholder: design tone per sample | Tone from a hash of the mentor id over 6 tokens | Real data has no tone field | design supplies a rule |
 
 ## Rules
@@ -90,5 +92,5 @@ Defined in `src/styles/tokens/ours.css`. A redesign must not silently drop them:
 | `--rating-star` | design literal `#f3a218` |
 | `--gold-subtle` | design literal `#fffbef` (award and mentoring-time icon tiles, Mentor Profile) |
 | `--avatar-tone-1…6` | initials grounds, read off design samples |
-| `--button-compact-h`, `--button-compact-h-touch`, `--touch-target-min` | compact CTA (handoff §7.1), 44px targets |
+| `--button-h-large`, `--button-h-medium`, `--button-h-small`, `--button-compact-h`, `--touch-target-min` | CTA hierarchy heights (the DS button sizes differ), chip height, 44px targets |
 | reduced-motion durations | not drawn |

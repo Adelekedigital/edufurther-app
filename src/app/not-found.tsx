@@ -12,7 +12,11 @@ export default function NotFound() {
         headingLevel={2}
         title="We couldn’t find that page"
         description="It may have moved, or it isn’t ready yet."
-        actions={<ButtonLink href="/explore">Find a mentor</ButtonLink>}
+        actions={
+          <ButtonLink href="/explore" size="large">
+            Find a mentor
+          </ButtonLink>
+        }
       />
     </main>
   );

@@ -40,10 +40,12 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  /* CTA padding pattern (product, 2026-09-27): 16px 24px, phones 16px, 48px
-     including the 1px border. The pill grows to fit; useFloatingPrompt measures it. */
-  padding: calc(var(--space-4) - var(--border-hairline))
-    calc(var(--space-6) - var(--border-hairline));
+  /* Small 32px (design request #41; Explore.dc.html: height 32, padding 0 12px),
+     including the 1px border. useFloatingPrompt measures the pill. */
+  position: relative;
+  box-sizing: border-box;
+  height: 32px;
+  padding: 0 var(--space-3);
   line-height: 16px;
   border: var(--border-hairline) solid var(--green-700);
   border-radius: var(--radius-full);
@@ -104,8 +106,15 @@
   .label {
     white-space: normal;
   }
-  .cta {
-    padding: calc(var(--space-4) - var(--border-hairline));
+  /* Small 32px: an invisible 44px tap area on phones (CTA hierarchy rule 5). */
+  .cta::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, var(--touch-target-min));
+    height: var(--touch-target-min);
+    transform: translate(-50%, -50%);
   }
   .minimise {
     min-height: var(--touch-target-min);
@@ -157,16 +166,16 @@
   line-height: var(--lh-p);
   color: var(--text-secondary);
 }
-/* Popover button: full width, radius-lg (Explore.dc.html), 48px CTA pattern (#28). */
+/* Popover button: full width, radius-lg (Explore.dc.html), Small 32px (#41). */
 .popoverCta {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  /* CTA padding pattern (product, 2026-09-27): 48px; phones 16px all round. */
-  /* Minus the 1px border, so the total matches the 48px Button cta. */
-  padding: calc(var(--space-4) - var(--border-hairline))
-    calc(var(--space-6) - var(--border-hairline));
+  position: relative;
+  box-sizing: border-box;
+  height: 32px;
+  padding: 0 var(--space-4);
   line-height: 16px;
   margin-top: var(--space-1);
   border: var(--border-hairline) solid var(--green-700);
@@ -185,7 +194,14 @@
   outline-offset: var(--focus-ring-offset);
 }
 @media (max-width: 767px) {
-  .popoverCta {
-    padding: calc(var(--space-4) - var(--border-hairline));
+  /* Small 32px: an invisible 44px tap area on phones (CTA hierarchy rule 5). */
+  .popoverCta::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, var(--touch-target-min));
+    height: var(--touch-target-min);
+    transform: translate(-50%, -50%);
   }
 }
