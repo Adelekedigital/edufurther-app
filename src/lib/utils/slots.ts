@@ -1,5 +1,12 @@
 import type { BookingDay } from '@/types/mentor';
 
+/**
+ * How far ahead booking looks: four weeks, one /slots request (the backend
+ * allows 56 days). The modal shows it a week at a time.
+ */
+export const BOOKING_HORIZON_DAYS = 28;
+export const BOOKING_WEEKS = BOOKING_HORIZON_DAYS / 7;
+
 /** The calendar date (YYYY-MM-DD) an instant falls on in `timeZone`. */
 export function dayKey(isoInstant: string, timeZone: string): string {
   // en-CA formats as YYYY-MM-DD.
@@ -24,4 +31,29 @@ export function groupSlotsByDay(instants: readonly string[], timeZone: string): 
     date,
     slots: starts.map((startsAt) => ({ startsAt })),
   }));
+}
+
+/** A calendar date (YYYY-MM-DD) plus n days. Pure date arithmetic, no zone. */
+export function addDays(isoDate: string, n: number): string {
+  const d = new Date(`${isoDate}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Week `week` (0 = the next 7 days from today in the viewer's zone), every
+ * day present — days with nothing open have no slots and render disabled.
+ */
+export function weekOfDays(
+  days: readonly BookingDay[],
+  week: number,
+  timeZone: string,
+  now = new Date(),
+): BookingDay[] {
+  const today = dayKey(now.toISOString(), timeZone);
+  const byDate = new Map(days.map((d) => [d.date, d.slots]));
+  return Array.from({ length: 7 }, (_, i) => {
+    const date = addDays(today, week * 7 + i);
+    return { date, slots: byDate.get(date) ?? [] };
+  });
 }

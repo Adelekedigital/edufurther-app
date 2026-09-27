@@ -13,7 +13,7 @@ import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { FileField } from '@/components/molecules/FileField/FileField';
 import { TimezonePicker } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import { formatDay, formatRating, formatTime } from '@/lib/utils/format';
-import { dayKey, groupSlotsByDay } from '@/lib/utils/slots';
+import { BOOKING_WEEKS, dayKey, groupSlotsByDay, weekOfDays } from '@/lib/utils/slots';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type { AppError, BookingRequest, Mentor, Remote, SessionType } from '@/types/mentor';
 import type { SheetChrome } from '@/types/ui';
@@ -79,7 +79,9 @@ export function BookingFlow(p: BookingFlowProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const isPhone = useMediaQuery(PHONE);
-  const [dayIndex, setDayIndex] = useState(0);
+  const [week, setWeek] = useState(0);
+  // The day the viewer picked (YYYY-MM-DD in their zone), or null → the week's first open day.
+  const [dayChoice, setDayChoice] = useState<string | null>(null);
   const [picked_, setTime] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [email, setEmail] = useState('');
@@ -91,7 +93,21 @@ export function BookingFlow(p: BookingFlowProps) {
   const session = types.find((t) => t.id === p.sessionTypeId) ?? types[0] ?? null;
   // Grouped in the zone the viewer picked, so changing it regroups the days.
   const days = useMemo(() => groupSlotsByDay(p.slots.data ?? [], zone), [p.slots.data, zone]);
-  const dayAt = Math.min(dayIndex, Math.max(days.length - 1, 0));
+  // Seven days at a time, always starting today (product, 2026-09-27); ‹ › move
+  // through the four-week horizon. Empty days stay on show, disabled.
+  const weekDays = useMemo(() => weekOfDays(days, week, zone), [days, week, zone]);
+  const chosen = weekDays.findIndex((d) => d.date === dayChoice && d.slots.length > 0);
+  const firstOpen = weekDays.findIndex((d) => d.slots.length > 0);
+  const dayAt = chosen >= 0 ? chosen : firstOpen >= 0 ? firstOpen : null;
+  const weekLabel = (() => {
+    const a = formatDay(weekDays[0]!.date).date;
+    const b = formatDay(weekDays[6]!.date).date;
+    return week === 0 ? `Next 7 days · ${a} – ${b}` : `${a} – ${b}`;
+  })();
+  const moveWeek = (to: number) => {
+    setWeek(to);
+    setDayChoice(null);
+  };
   // A chosen time only counts while the grid still offers it: slots reload after
   // a conflict, and a time someone else took must not stay selected.
   const time =
@@ -144,7 +160,8 @@ export function BookingFlow(p: BookingFlowProps) {
   const back = () => (at === 0 ? p.onClose() : setStepIndex(at - 1));
   const chooseType = (id: string) => {
     p.onSessionTypeChange(id);
-    setDayIndex(0);
+    setWeek(0);
+    setDayChoice(null);
     setTime(null);
     setAnswers({});
   };
@@ -286,10 +303,10 @@ export function BookingFlow(p: BookingFlowProps) {
             noTimes
           ) : (
             <DayTimePicker
-              days={days}
+              days={weekDays}
               dayIndex={dayAt}
               onDayChange={(i) => {
-                setDayIndex(i);
+                setDayChoice(weekDays[i]!.date);
                 setTime(null);
               }}
               time={time}
@@ -301,7 +318,13 @@ export function BookingFlow(p: BookingFlowProps) {
                 setStepIndex(0);
               }}
               timeZone={zone}
-              layout={isPhone ? 'scroll' : 'grid'}
+              week={{
+                label: weekLabel,
+                canPrev: week > 0,
+                canNext: week < BOOKING_WEEKS - 1,
+                onPrev: () => moveWeek(week - 1),
+                onNext: () => moveWeek(week + 1),
+              }}
             />
           )}
         </>

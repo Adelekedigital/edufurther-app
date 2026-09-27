@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { addDays } from '@/lib/utils/slots';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
 import { AccountMenu } from './AccountMenu/AccountMenu';
@@ -111,12 +112,18 @@ export const Booking: Story = {
     const [day, setDay] = useState(0);
     const [time, setTime] = useState<string | null>(null);
     const [file, setFile] = useState<string | null>(null);
-    const days = [0, 1, 2, 3, 4].map((i) => ({
-      date: `2026-09-${28 + i}`,
-      slots: [9, 13, 16]
-        .slice(0, 3 - (i % 3))
-        .map((h) => ({ startsAt: `2026-09-${28 + i}T${h}:00:00Z` })),
-    }));
+    // A week with two empty days (disabled, no dot).
+    const days = [0, 1, 2, 3, 4, 5, 6].map((i) => {
+      const date = addDays('2026-09-27', i);
+      return {
+        date,
+        slots:
+          i === 1 || i === 4
+            ? []
+            : [9, 13, 16].slice(0, 3 - (i % 3)).map((h) => ({ startsAt: `${date}T${h}:00:00Z` })),
+      };
+    });
+    const [week, setWeek] = useState(0);
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 480 }}>
         <TimezonePicker value={zone} onChange={setZone} deviceZone="Europe/London" />
@@ -127,6 +134,13 @@ export const Booking: Story = {
           time={time}
           onTimeChange={setTime}
           timeZone={zone}
+          week={{
+            label: week === 0 ? 'Next 7 days · Sep 27 – Oct 3' : 'Oct 4 – Oct 10',
+            canPrev: week > 0,
+            canNext: week < 3,
+            onPrev: () => setWeek(week - 1),
+            onNext: () => setWeek(week + 1),
+          }}
         />
         <FileField
           label="Upload your current CV"

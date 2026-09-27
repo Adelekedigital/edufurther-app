@@ -3,6 +3,7 @@
 import { useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
+import { BOOKING_HORIZON_DAYS } from '@/lib/utils/slots';
 import type { AppError, BookingRequest, Remote, SessionType } from '@/types/mentor';
 import { apiError, normaliseError } from './errors';
 import { api } from './http';
@@ -10,12 +11,8 @@ import { keys } from './keys';
 
 type SessionTypeRead = components['schemas']['SessionTypeRead'];
 
-/**
- * How far ahead the booking modal looks: one request (the backend allows 56 days).
- * Days without a slot are not shown, so a quiet month still opens on its first
- * open day — the same instant the card's "next available" names.
- */
-export const SLOT_HORIZON_DAYS = 28;
+/** How far ahead the booking modal looks (lib/utils/slots.ts). */
+export const SLOT_HORIZON_DAYS = BOOKING_HORIZON_DAYS;
 
 // ---- mapping ----------------------------------------------------------------
 
