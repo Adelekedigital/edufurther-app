@@ -60,6 +60,9 @@ const base = (
   review_count: reviews,
   session_value: value,
   offerings,
+  // The mentors route sets both per request (relative to now).
+  next_available_at: null,
+  next_available_state: 'refreshing',
 });
 
 const DESIGN_SAMPLE: MentorSummaryRead[] = [

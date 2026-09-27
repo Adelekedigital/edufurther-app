@@ -14,6 +14,8 @@ const row = (over: Record<string, unknown> = {}) => ({
   review_count: 0,
   session_value: null,
   offerings: [{ slug: 'application-documents', display_name: 'Application documents' }],
+  next_available_at: null,
+  next_available_state: 'refreshing' as const,
   ...over,
 });
 
