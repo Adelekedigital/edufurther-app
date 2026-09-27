@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { MatchPill } from '@/components/molecules/MatchPill/MatchPill';
-import type { AccountMenuItem } from '@/components/molecules/AccountMenu/AccountMenu';
 import { MatchPrompt } from '@/components/molecules/MatchPrompt/MatchPrompt';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { PageHero } from '@/components/molecules/PageHero/PageHero';
@@ -14,27 +13,19 @@ import { BookingFlow } from '@/components/organisms/BookingFlow/BookingFlow';
 import { MentorResults } from '@/components/organisms/MentorResults/MentorResults';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
-import { useSignOut } from '@/lib/api/data/auth';
 import { useRequestBooking, useSessionTypes, useSlots } from '@/lib/api/data/booking';
 import { useFeaturedMentor, useMentors, useTopics } from '@/lib/api/data/mentors';
-import { useViewer } from '@/lib/api/data/viewer';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { Mentor } from '@/types/mentor';
 import styles from './ExploreScreen.module.css';
-import { bookBlockedFor } from './bookBlocked';
+import { bookBlockedFor } from '@/app/_shell/bookBlocked';
+import { MATCH_CALL_URL, useAppShell } from '@/app/_shell/useAppShell';
 import { pillLayout, useFloatingPrompt } from './useFloatingPrompt';
 
 /** Results update this long after typing stops; Enter applies at once (Design decisions §1). */
 const SEARCH_DEBOUNCE_MS = 300;
-
-/**
- * "Find my mentor matches" goes to an external Cal booking page for now (product
- * decision, 2026-09-26). TEMPORARY: matching must move onto the platform — see
- * project-conventions → Known rough edges. Unset → the prompt is not rendered.
- */
-const MATCH_CALL_URL = process.env.NEXT_PUBLIC_MATCH_CALL_URL ?? '';
 
 /**
  * Design matchPrompt: signed-in mentees with ≤ 2 sessions only. Guests don't see
@@ -54,23 +45,11 @@ function countLabel(q: string, topicCount: number, total: number | null): string
 }
 
 export function ExploreScreen() {
-  const viewer = useViewer();
+  const { viewer, member, chrome, account } = useAppShell();
   const online = useOnline();
   // One card per row under 768px, two above — the match prompt goes after the first row.
   const cardsPerRow = useMediaQuery('(max-width: 767px)') ? 1 : 2;
   const guest = viewer.kind === 'guest';
-  const member = viewer.kind === 'member' ? viewer : null;
-  const chrome =
-    viewer.kind === 'guest'
-      ? 'guest'
-      : viewer.kind === 'member' ||
-          viewer.kind === 'unlinked' ||
-          viewer.kind === 'accountExists' ||
-          viewer.kind === 'error' ||
-          (viewer.kind === 'loading' && viewer.signedIn)
-        ? 'member'
-        : 'pending';
-  const signOut = useSignOut();
   // Booking waits until the account is known; the Book buttons say why (bookBlocked.ts).
   const bookBlocked = bookBlockedFor(viewer);
 
@@ -137,40 +116,8 @@ export function ExploreScreen() {
     request.reset();
   };
 
-  // AppShell.dc.html account menu, mentee variant. "View profile" and "Feedback"
-  // have no destination yet (no profile / feedback screens), so they wait —
-  // design-divergence.md. Notifications likewise (no backend).
-  const accountItems: AccountMenuItem[] = [
-    // Only once we know the viewer is a mentee (or a new member, not a mentor).
-    ...(MATCH_CALL_URL && member && (member.isMentee || !member.isApprovedMentor)
-      ? [
-          {
-            key: 'matches',
-            label: 'Find my mentor matches',
-            icon: 'route' as const,
-            href: MATCH_CALL_URL,
-            external: true,
-          },
-        ]
-      : []),
-    {
-      key: 'logout',
-      label: 'Logout',
-      icon: 'logout',
-      danger: true,
-      onSelect: () => void signOut(),
-    },
-  ];
-
   return (
-    <AppShell
-      active="Explore"
-      chrome={chrome}
-      account={
-        chrome === 'member' ? { initial: member?.initial ?? '', items: accountItems } : undefined
-      }
-      offline={!online}
-    >
+    <AppShell active="Explore" chrome={chrome} account={account} offline={!online}>
       <div className={styles.page}>
         {viewer.kind === 'error' && (
           // PROVISIONAL copy: /me failed. The page still works as a public list.

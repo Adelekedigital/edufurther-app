@@ -1,0 +1,82 @@
+/* Mentor Profile.dc.html, Overview tab. */
+.overview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.h2 {
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+.about {
+  max-width: 680px;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--text-secondary);
+  text-wrap: pretty;
+}
+.clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.toggle {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  padding: 0;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-action);
+}
+.toggle:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.socials {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.list {
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+}
+/* Rows after the first get the design's hairline (border-top ink-100). */
+.list > * + * {
+  border-top: var(--border-hairline) solid var(--border-muted);
+}
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-3);
+}
+.moved {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  color: var(--text-secondary);
+}
+.movedIcon {
+  flex: none;
+  color: var(--green-600);
+}
+
+@media (max-width: 767px) {
+  .overview {
+    gap: var(--space-4);
+  }
+  .toggle {
+    min-height: var(--touch-target-min);
+  }
+}

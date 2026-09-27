@@ -1,0 +1,39 @@
+/* Mentor Profile.dc.html: Education / Scholarships list rows. */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+.tile {
+  width: var(--space-10);
+  height: var(--space-10);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+}
+.blue {
+  background: var(--blue-50);
+  color: var(--blue-500);
+}
+.gold {
+  background: var(--gold-subtle);
+  color: var(--yellow-900);
+}
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.title {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.meta {
+  font-size: var(--text-p-xs);
+  color: var(--text-tertiary);
+}

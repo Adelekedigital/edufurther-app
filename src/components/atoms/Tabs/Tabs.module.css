@@ -1,0 +1,41 @@
+/* DS Tabs line variant — values from _ds_bundle.js (Tabs.jsx). */
+.list {
+  display: flex;
+  align-items: stretch;
+  box-shadow: inset 0 -1px 0 var(--border-subtle);
+}
+.tab {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 16px 15px 16px;
+  margin-bottom: -1px;
+  border: none;
+  border-bottom: var(--border-hairline) solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-brand);
+  font-weight: var(--weight-medium);
+  font-size: var(--text-p-sm);
+  line-height: 1.45;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+.tab:hover {
+  color: var(--text-primary);
+}
+.on,
+.on:hover {
+  color: var(--blue-500);
+  border-bottom-color: var(--blue-500);
+}
+.tab:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: calc(var(--focus-ring-width) * -1);
+}
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}

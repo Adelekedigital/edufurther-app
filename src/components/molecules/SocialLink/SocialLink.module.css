@@ -1,0 +1,37 @@
+/* Mentor Profile.dc.html: social chips under About. */
+.link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 32px;
+  padding: 0 var(--space-3) 0 var(--space-1);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  color: var(--text-primary);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+.link:hover {
+  background: var(--surface-subtle);
+  color: var(--text-primary);
+}
+.link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.disc {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--surface-subtle);
+}
+/* Phones: 44px targets (ours; the design's chip is 32px). */
+@media (max-width: 767px) {
+  .link {
+    height: var(--touch-target-min);
+  }
+}

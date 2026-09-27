@@ -153,3 +153,44 @@ export type Viewer =
     };
 
 export type CreditState = 'on_track' | 'moderate' | 'low' | 'exhausted';
+
+// ---- Mentor profile (GET /api/v1/mentors/{handle}) ----------------------------
+
+export type SocialKind = 'linkedin' | 'x' | 'youtube';
+
+/** A bookable offering as the profile shows it (category, stage, venue). */
+export type ProfileSessionType = SessionType & {
+  /** The offering's help category, e.g. "Visa and interview". */
+  category: string | null;
+  /** Application stage it suits, e.g. "Drafting". */
+  stage: string | null;
+  /** Where it happens, e.g. "Google Meet". */
+  venue: string;
+};
+
+export type ProfileItem = { id: string; title: string; meta: string | null };
+
+export type MentorProfile = {
+  /** The card-shaped mentor: header basics, proof line, BookingFlow. */
+  mentor: Mentor;
+  headline: string | null;
+  about: string | null;
+  bannerUrl: string | null;
+  originCountry: string | null;
+  studyCountry: string | null;
+  languages: string[];
+  /** Only links that passed lib/utils/socialUrl. */
+  socials: { kind: SocialKind; href: string }[];
+  education: ProfileItem[];
+  awards: ProfileItem[];
+  sessionTypes: ProfileSessionType[];
+  mentoringMinutes: number;
+  menteesMentored: number;
+  /** Whole-number percentage, or null. */
+  attendanceRate: number | null;
+  /**
+   * Present only when the viewer is this mentor (backend mentor-profile reply
+   * #1): the owner sees their page in any state.
+   */
+  owner: { approval: 'pending' | 'approved' | 'declined' | null; listed: boolean } | null;
+};

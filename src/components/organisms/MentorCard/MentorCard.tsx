@@ -63,6 +63,7 @@ export function MentorCard({
   const degree = [m.degreeLine, m.institution].filter(Boolean);
   return (
     <article className={styles.card} aria-labelledby={`mentor-${m.id}`}>
+      {/* Off: Next cancels its own profile prefetches mid-stream (failure-modes #25). */}
       <Link
         href={m.profileHref}
         prefetch={false}

@@ -39,6 +39,7 @@ export function FeaturedMentor({
   } as CSSProperties;
   return (
     <section aria-labelledby="featured-name" className={styles.card}>
+      {/* Off: Next cancels its own profile prefetches mid-stream (failure-modes #25). */}
       <Link
         href={m.profileHref}
         prefetch={false}
