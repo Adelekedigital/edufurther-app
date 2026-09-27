@@ -94,6 +94,31 @@
           }
         }
       }
+    },
+    "/api/v1/featured-mentor": {
+      "get": {
+        "operationId": "featured_mentor",
+        "summary": "SETTLED shape, not built (backend reply round 2 #11): this week's featured mentor, or null",
+        "responses": {
+          "200": {
+            "description": "The featured mentor, or null when there is none",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/FeaturedMentorRead"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -298,6 +323,25 @@
             "type": "string"
           }
         }
+      },
+      "FeaturedMentorRead": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/MentorSummaryRead"
+          },
+          {
+            "type": "object",
+            "required": [
+              "about_me"
+            ],
+            "properties": {
+              "about_me": {
+                "type": "string",
+                "description": "Same field as the public profile; the card clamps it to 2 lines."
+              }
+            }
+          }
+        ]
       }
     }
   }

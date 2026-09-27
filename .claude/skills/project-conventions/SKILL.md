@@ -131,6 +131,8 @@ Prototype files (`support.js`, `image-slot.js`, `dc-import`, `sc-if`) are the pr
 | Show "★ 0 (0 reviews)" | reads as a bad rating |
 | Port the prototype's global mobile `<style>` block | handoff §7.3; it overrides by attribute-substring selectors |
 | Fetch below the page | `check-boundaries.mjs` rule 1 |
+| Make this repo public while it holds `openapi/`, `docs/handoff/` or `.claude/` internals | they map the backend API and its behaviour; product chose a private repo (2026-09-26) |
+| Push straight to `main` | every change goes through a PR with green CI, `/code-review` and `/security-review` (2026-09-26) |
 
 ---
 
@@ -139,6 +141,8 @@ Prototype files (`support.js`, `image-slot.js`, `dc-import`, `sc-if`) are the pr
 | Where | What is wrong | Plan |
 |---|---|---|
 | Links to unbuilt screens | `prefetch={false}` (AppShell `PREFETCH`, MentorCard) — failure log #17 | Remove when Home/Bookings/Messages/Settings/Mentor Profile ship |
+| Match prompt → external Cal link | "Find my mentor matches" opens an external Cal booking page (`NEXT_PUBLIC_MATCH_CALL_URL`; empty hides the prompt). Product decision 2026-09-26 | **Move matching onto the platform** (sessions run through EduFurther). Needs an on-platform goals/matching flow + backend endpoint |
+| Featured mentor | Built on a mock of `GET /api/v1/featured-mentor` (shape settled: mentor or `null`, text field `about_me`) | Backend builds it (round 2 #11) |
 | Auth | Not wired; viewer comes from `NEXT_PUBLIC_MOCK_VIEWER`; guest sign-up step advances without an account | Phase B |
 | Booking data | Session types, slots and the request are typed mocks in `lib/api/data/booking.ts` | Phase B: backend booking-flow request |
 | DS tokens | Warning ramp has only `--yellow-900`; Plus uses literal `#e3b42b`/`#3d2a00`/`#fef6e7` | Add as *our* tokens, recorded in `design-divergence.md` |

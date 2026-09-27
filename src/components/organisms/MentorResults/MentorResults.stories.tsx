@@ -107,6 +107,7 @@ const meta: Meta<typeof MentorResults> = {
     isLoadingMore: false,
     loadMoreError: null,
     onLoadMore: fn(),
+    showTopics: false,
   },
 };
 export default meta;

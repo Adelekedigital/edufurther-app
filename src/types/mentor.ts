@@ -34,6 +34,9 @@ export type Mentor = {
   topics: Topic[];
 };
 
+/** The "Featured this week" mentor: a Mentor plus the public bio the card shows. */
+export type FeaturedMentor = Mentor & { bio: string };
+
 export type AppErrorKind =
   'offline' | 'unauthorized' | 'forbidden' | 'notFound' | 'validation' | 'server' | 'unknown';
 
@@ -80,4 +83,12 @@ export type BookingRequest = {
   answers: Record<string, string>;
 };
 
-export type Viewer = { kind: 'mentee'; firstName: string; initial: string } | { kind: 'guest' };
+export type Viewer =
+  | {
+      kind: 'mentee';
+      firstName: string;
+      initial: string;
+      /** Sessions the mentee has had; drives the match prompt (≤ 2 → shown). */
+      completedSessions: number;
+    }
+  | { kind: 'guest' };

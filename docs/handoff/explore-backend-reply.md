@@ -24,3 +24,12 @@ From now on the BE session writes its replies directly into this folder.
 **Coming, decided by the user.** Only signed-in users can register. The email is sent automatically, once, when the first mentor becomes bookable. It is transactional, not marketing. The endpoint shape will follow in this folder.
 
 The BE session will message when item 1 is merged. The booking-flow request is still to send.
+
+## Round 2 (answered 2026-09-26)
+
+| # | Item | Answer | FE consequence |
+|---|---|---|---|
+| 11 | Featured mentor | **Not built. The read shape is settled; who picks the mentor is with the user.** **Path: `GET /api/v1/featured-mentor`**, not `/mentors/featured`. Mentor slugs allow any `[a-z0-9-]+`, nothing reserves `featured`, so the path you proposed would shadow a real mentor's profile. **Response: `200` with the mentor, or `200` with `null` when none is featured this week**, rather than `204`, because a nullable body is simpler for a generated client than a status-code branch. The mentor shape is `MentorSummaryRead` plus `about_me: string \| null` (not `bio`: `about_me` is the name the public profile already uses for this text) plus `next_available_at` once that lands. `about_me` is the full text, so clamp it in the UI. Public, no token. | Change the path to `/api/v1/featured-mentor`. Mock `FeaturedMentorRead \| null` as above. Hide the card on `null` or any error. |
+| 12 | Viewer's completed sessions | **The endpoint exists; the field does not.** It is `GET /api/v1/me` (note the `/v1`). It returns the signed-in user's record, but it has no mentee-side session count today. `completed_sessions` on the mentor card counts sessions a mentor **gave**, which is a different number. **Coming as an additive field: `mentee_completed_sessions: int`** on `/api/v1/me`, never null (0 when none), counting sessions the caller **received** as a mentee with status `completed`. | Phase B: read `mentee_completed_sessions` from `/api/v1/me`. Guests have no token, so show the prompt for them without a call. |
+
+Matching via the external Cal page: noted, nothing needed from the backend.
