@@ -30,7 +30,13 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | Explore hero sub (product chat copy) | Design's latest: "…Explore free 1:1 mentorship sessions." | Product's version promised paid sessions, which don't exist | product/design settle it (design request #18) |
 | Match prompt "Find my mentor matches" → onboarding goals (undesigned) | External Cal booking link, opens in a new tab | Product decision; goals/onboarding not built | matching moves on-platform |
 | Match prompt for mentees with ≤ 2 sessions | Mock viewer has 0 sessions until auth | No signed-in viewer yet | auth (phase B) |
-| Account menu item "Find my mentor matches" | Not rendered (account menu held) | No auth | auth (phase B) |
+| Account menu (rail avatar + menu; More sheet on phones) | Built to AppShell.dc.html; "Find my mentor matches" links to the Cal page (hidden when unset) | — | — |
+| Account menu "View profile", "Feedback" | Not rendered | No mentee profile or feedback screen/destination yet | those screens ship |
+| Header "Notifications" bell (signed in) | Not rendered | No notifications backend | notifications ship |
+| No standalone Log in / Sign up screen in the design | `/login`, `/signup`: centred card with the booking modal's sign-up step (email) + a 6-digit code step | Needed for the header links; PROVISIONAL | design answers request #19 |
+| Sign-up step "Continue with Google" | Not rendered | Backend: Google sign-in is work in progress | backend enables it |
+| The viewer's own card on Explore (approved mentor) | Card shown without a Book button | Nobody books themselves; interim until the backend leaves the caller out of /mentors | backend self-exclusion ships |
+| Signed in, no backend account (`/me` 404) | Info notice on Explore: "Your account isn’t ready yet…" (PROVISIONAL) | No self-signup yet | product decides account creation |
 | Featured card button "Book session with Oluchi" (surname) | "Book session with {first name}" | Matches every other Book label; design sample used split[1] | never |
 | Featured card secondary text `--ink-500` on `--blue-50` | `--ink-600` inside the card | ~4.2:1 fails AA on the blue ground (axe, page review) | design picks a token for text on blue-50 |
 | Page size 24 (Design decisions §3) | 10 per page | Product (2026-09-27): quick to scan, "Show more mentors" for the rest | product revisits |

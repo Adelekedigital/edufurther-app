@@ -93,12 +93,40 @@ export type BookingRequest = {
   answers: Record<string, string>;
 };
 
+/** Who is looking (GET /api/v1/me; backend auth reply #3). */
 export type Viewer =
+  /**
+   * Not known yet. `signedIn`: null while the session itself is unknown (render
+   * neither guest nor member chrome); true while /me is on its way.
+   */
+  | { kind: 'loading'; signedIn: boolean | null }
+  | { kind: 'guest' }
+  /**
+   * Signed in, but the backend has no account for this identity yet (/me 404:
+   * there is no self-signup; backend auth reply, 2026-09-27). Not a guest, not a member.
+   */
+  | { kind: 'unlinked' }
+  /**
+   * Signed in with an email that already belongs to an EduFurther account not
+   * linked to this sign-in (/me 409 /problems/account-exists, backend PR #238).
+   * Only support can link them.
+   */
+  | { kind: 'accountExists' }
+  /** Signed in, but /me failed (server or network): member chrome plus a retry. */
+  | { kind: 'error'; retry: () => void; retrying: boolean }
   | {
-      kind: 'mentee';
+      kind: 'member';
+      id: string;
       firstName: string;
       initial: string;
-      /** Sessions the mentee has had; drives the match prompt (≤ 2 → shown). */
+      /** A goal row exists (backend: can book). Null goal = not onboarded yet. */
+      isMentee: boolean;
+      /** An approved mentor profile exists. `primary_role` is never used for this. */
+      isApprovedMentor: boolean;
+      /** Sessions had as a mentee; drives the match prompt (≤ 2 → shown). */
       completedSessions: number;
-    }
-  | { kind: 'guest' };
+      /** Null for users without a mentee goal (no credit block). */
+      credits: { balance: number; allowance: number; state: CreditState } | null;
+    };
+
+export type CreditState = 'on_track' | 'moderate' | 'low' | 'exhausted';

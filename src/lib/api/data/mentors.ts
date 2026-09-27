@@ -13,6 +13,7 @@ import { api } from './http';
 import { ApiError, normaliseError } from './errors';
 import { keys, type MentorFilters } from './keys';
 import { deriveLabel } from './labels';
+import { sessionKey, useSession } from './session';
 
 type MentorSummaryRead = components['schemas']['MentorSummaryRead'];
 
@@ -114,9 +115,11 @@ export function useTopics() {
  * Any failure hides the card: it is a nice-to-have, never a page error.
  */
 export function useFeaturedMentor(enabled: boolean) {
+  const session = useSession();
   const query = useQuery({
-    queryKey: keys.mentors.featured,
-    enabled,
+    queryKey: keys.mentors.featured(sessionKey(session)),
+    // Wait for the session: a signed-in mentor must never be featured to themselves.
+    enabled: enabled && session.status !== 'unknown',
     queryFn: async ({ signal }): Promise<FeaturedMentor | null> => {
       const { data, response } = await api.GET('/api/v1/featured-mentor', { signal });
       if (!response.ok) throw new ApiError(response.status);
@@ -154,10 +157,13 @@ export type MentorsResult = {
 export function useMentors(filters: MentorFilters): MentorsResult {
   const qc = useQueryClient();
   const [restarted, setRestarted] = useState(false);
-  const key = keys.mentors.list(filters);
+  const session = useSession();
+  const key = keys.mentors.list(filters, sessionKey(session));
 
   const query = useInfiniteQuery({
     queryKey: key,
+    // Wait for the session so a signed-in visitor doesn't fetch the guest list first.
+    enabled: session.status !== 'unknown',
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam, signal }) => {
       const { data, response } = await api.GET('/api/v1/mentors', {

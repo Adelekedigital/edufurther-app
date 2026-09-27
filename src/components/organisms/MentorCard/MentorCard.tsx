@@ -24,6 +24,13 @@ type MentorCardProps = {
   timeZone: string;
   /** Topic tags. Design MentorCard defaults to true; Explore's `cardTopics` default hides them. */
   showTopics?: boolean;
+  /**
+   * The viewer's own card (a mentor browsing Explore): no Book button — nobody
+   * books themselves. Interim until the backend leaves the caller out of /mentors.
+   */
+  isSelf?: boolean;
+  /** Booking can't start for this viewer (e.g. no account yet): the button says why. */
+  bookBlocked?: string | null;
 };
 
 /**
@@ -41,6 +48,8 @@ export function MentorCard({
   offline,
   timeZone,
   showTopics = true,
+  isSelf = false,
+  bookBlocked = null,
 }: MentorCardProps) {
   const tone = { '--photo-bg': `var(--avatar-tone-${m.tone})` } as CSSProperties;
   const degree = [m.degreeLine, m.institution].filter(Boolean);
@@ -123,19 +132,23 @@ export function MentorCard({
         ) : null}
       </div>
 
-      <Button
-        fullWidth
-        size="cta"
-        className={styles.book}
-        disabled={offline}
-        onClick={() => onBook(m)}
-      >
-        {offline
-          ? 'Booking needs a connection'
-          : m.nextAvailableAt
-            ? `Book session with ${m.firstName}`
-            : 'See availability'}
-      </Button>
+      {!isSelf && (
+        <Button
+          fullWidth
+          size="cta"
+          className={styles.book}
+          disabled={offline || !!bookBlocked}
+          onClick={() => onBook(m)}
+        >
+          {offline
+            ? 'Booking needs a connection'
+            : bookBlocked
+              ? bookBlocked
+              : m.nextAvailableAt
+                ? `Book session with ${m.firstName}`
+                : 'See availability'}
+        </Button>
+      )}
     </article>
   );
 }

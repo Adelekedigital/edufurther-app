@@ -29,10 +29,17 @@ so calls go same-origin), `BACKEND_URL=http://localhost:8000`, and `ENABLE_MOCK_
 The browser calls `/api/v1/…` on the app's own domain and `next.config.ts` proxies it to
 `BACKEND_URL`, so preview URLs need no CORS entry on the backend.
 
+Sign-in also needs, in the Supabase dashboard (Authentication → URL Configuration), the
+site URL and redirect URLs: `http://localhost:3000/**`, the production domain `/**`, and the
+Vercel preview pattern `https://*-<team>.vercel.app/**`. The magic link lands on
+`/auth/callback`.
+
 | Env var | Production | Preview | Notes |
 |---|---|---|---|
 | `BACKEND_URL` | prod backend | `https://edufurtherbe-dev.up.railway.app` | server-only; the build fails without it on Vercel. Previews never use prod |
 | `NEXT_PUBLIC_MATCH_CALL_URL` | Cal link | Cal link | empty hides "Find my mentor matches" |
+| `NEXT_PUBLIC_SUPABASE_URL` | prod project URL | dev project URL | public; empty turns sign-in off |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | prod publishable key | dev publishable key | public by design |
 | `NEXT_PUBLIC_API_BASE_URL` | *unset* | *unset* | unset = same-origin proxy |
 | `ENABLE_MOCK_API` | **never** | **never** | mock is for local dev and CI only |
 

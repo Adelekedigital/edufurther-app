@@ -1,0 +1,36 @@
+/* PROVISIONAL (no auth screen in the design): a centred card on the page ground,
+   built only from tokens the design system already uses for modals. */
+.page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6) var(--space-4);
+  background: var(--surface-subtle);
+}
+.card {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  background: var(--surface-card);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-modal);
+}
+.logo {
+  align-self: flex-start;
+  display: block;
+}
+@media (max-width: 767px) {
+  .page {
+    align-items: flex-start;
+    background: var(--surface-card);
+    padding: var(--space-5) var(--space-4);
+  }
+  .card {
+    padding: 0;
+    box-shadow: none;
+  }
+}

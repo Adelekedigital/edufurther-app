@@ -1,0 +1,137 @@
+'use client';
+
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { Icon } from '@/components/atoms/Icon/Icon';
+import type { IconName } from '@/components/atoms/Icon/iconNames';
+import { cx } from '@/lib/utils/cx';
+import styles from './AccountMenu.module.css';
+
+export type AccountMenuItem = {
+  key: string;
+  label: string;
+  icon: IconName;
+  /** Destructive (Logout): red, after a divider (AppShell.dc.html). */
+  danger?: boolean;
+} & (
+  { href: string; external?: boolean; onSelect?: never } | { onSelect: () => void; href?: never }
+);
+
+type AccountMenuProps = {
+  /** The viewer's initial, shown in the avatar button. */
+  initial: string;
+  items: AccountMenuItem[];
+};
+
+/**
+ * Account avatar + menu at the foot of the side rail (AppShell.dc.html: 36px
+ * green-900 circle, menu 212px wide, 36px items, Logout red after a divider).
+ * WAI-ARIA menu button: arrows / Home / End move, Escape and Tab close, focus
+ * returns to the button.
+ */
+export function AccountMenu({ initial, items }: AccountMenuProps) {
+  const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const itemRefs = useRef<(HTMLElement | null)[]>([]);
+  const menuId = useId();
+
+  useEffect(() => {
+    if (open) itemRefs.current[0]?.focus();
+  }, [open]);
+
+  const close = (refocus: boolean) => {
+    setOpen(false);
+    if (refocus) buttonRef.current?.focus();
+  };
+
+  const onMenuKey = (e: KeyboardEvent) => {
+    const els = itemRefs.current.filter((x): x is HTMLElement => !!x);
+    const i = els.indexOf(document.activeElement as HTMLElement);
+    const to = (n: number) => {
+      e.preventDefault();
+      els[(n + els.length) % els.length]?.focus();
+    };
+    if (e.key === 'ArrowDown') to(i + 1);
+    else if (e.key === 'ArrowUp') to(i - 1);
+    else if (e.key === 'Home') to(0);
+    else if (e.key === 'End') to(els.length - 1);
+    else if (e.key === 'Escape') {
+      e.preventDefault();
+      close(true);
+    } else if (e.key === 'Tab') close(false);
+  };
+
+  return (
+    <div className={styles.root}>
+      {open && <div className={styles.backdrop} aria-hidden onClick={() => close(false)} />}
+      {open && (
+        <div
+          id={menuId}
+          role="menu"
+          aria-label="Account"
+          className={styles.menu}
+          onKeyDown={onMenuKey}
+        >
+          {items.map((it, k) => {
+            const cls = cx(styles.item, it.danger && styles.danger);
+            const ref = (el: HTMLElement | null) => {
+              itemRefs.current[k] = el;
+            };
+            const body = (
+              <>
+                <Icon name={it.icon} size={16} />
+                {it.label}
+              </>
+            );
+            return it.href !== undefined ? (
+              <a
+                key={it.key}
+                ref={ref}
+                role="menuitem"
+                tabIndex={-1}
+                className={cls}
+                href={it.href}
+                {...(it.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                onClick={() => close(false)}
+              >
+                {body}
+              </a>
+            ) : (
+              <button
+                key={it.key}
+                ref={ref}
+                type="button"
+                role="menuitem"
+                tabIndex={-1}
+                className={cls}
+                onClick={() => {
+                  close(true);
+                  it.onSelect();
+                }}
+              >
+                {body}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <button
+        ref={buttonRef}
+        type="button"
+        className={styles.avatar}
+        aria-label="Account menu"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={open ? menuId : undefined}
+        onClick={() => setOpen((o) => !o)}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            setOpen(true);
+          }
+        }}
+      >
+        {initial}
+      </button>
+    </div>
+  );
+}

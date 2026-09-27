@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
+import { AccountMenu } from './AccountMenu/AccountMenu';
 import { DayTimePicker } from './DayTimePicker/DayTimePicker';
 import { EmptyState } from './EmptyState/EmptyState';
 import { FileField } from './FileField/FileField';
@@ -136,4 +137,25 @@ export const Booking: Story = {
       </div>
     );
   },
+};
+
+/** Rail foot account menu (AppShell.dc.html). Open it to see the items. */
+export const AccountMenuRail: Story = {
+  render: () => (
+    <div style={{ paddingTop: 200, paddingLeft: 24, background: 'var(--blue-50)', width: 88 }}>
+      <AccountMenu
+        initial="E"
+        items={[
+          {
+            key: 'matches',
+            label: 'Find my mentor matches',
+            icon: 'route',
+            href: '#',
+            external: true,
+          },
+          { key: 'logout', label: 'Logout', icon: 'logout', danger: true, onSelect: fn() },
+        ]}
+      />
+    </div>
+  ),
 };

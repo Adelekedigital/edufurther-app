@@ -1,0 +1,79 @@
+/* Values from AppShell.dc.html (rail account button + menu). */
+.root {
+  position: relative;
+}
+.avatar {
+  width: var(--space-9);
+  height: var(--space-9);
+  border-radius: var(--radius-full);
+  border: none;
+  cursor: pointer;
+  background: var(--green-900);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  box-shadow: 0 0 0 1.5px var(--white);
+}
+.avatar:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+/* AppShell.dc.html places the menu from the rail: 20px from its left edge and
+   72px up from its foot, i.e. 16px above the 36px avatar (which has 20px below
+   it). The avatar is centred in the 88px rail, 26px from its left edge. */
+.menu {
+  position: absolute;
+  left: calc(var(--space-5) - (88px - var(--space-9)) / 2);
+  bottom: calc(100% + var(--space-4));
+  z-index: 21;
+  width: 212px;
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-1) 0;
+  box-shadow:
+    var(--shadow-menu),
+    inset 0 0 0 var(--border-hairline) var(--ink-100);
+}
+.item {
+  width: 100%;
+  height: var(--menu-item-h);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+  text-align: left;
+  text-decoration: none;
+}
+.item:hover,
+.item:focus-visible {
+  background: var(--ink-50);
+  color: var(--text-primary);
+  outline: none;
+}
+.item:focus-visible {
+  box-shadow: inset 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
+}
+.danger,
+.danger:hover,
+.danger:focus-visible {
+  color: var(--text-danger);
+}
+.danger {
+  border-top: var(--border-hairline) solid var(--ink-100);
+}
