@@ -33,7 +33,8 @@ type Common = {
 
 function classes({
   variant = 'primary',
-  size = 'compact',
+  // Every CTA follows the booking-card pattern by default (product, 2026-09-27).
+  size = 'cta',
   fullWidth,
   className,
 }: Pick<Common, 'variant' | 'size' | 'fullWidth'> & { className?: string }) {

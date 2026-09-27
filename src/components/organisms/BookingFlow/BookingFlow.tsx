@@ -244,7 +244,7 @@ export function BookingFlow(p: BookingFlowProps) {
                   {picked} is held for you for 10 minutes
                 </p>
                 <h3 className={styles.signupTitle}>Create a free account to finish booking</h3>
-                <Button variant="dark" size="sm" fullWidth onClick={next}>
+                <Button variant="dark" fullWidth onClick={next}>
                   Continue with Google
                 </Button>
                 <span className={styles.or}>or</span>
