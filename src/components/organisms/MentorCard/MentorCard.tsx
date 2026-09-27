@@ -29,8 +29,9 @@ type MentorCardProps = {
 /**
  * MentorCard, `photo` variant (the chosen default). Name and photo link to the
  * profile; the photo link is out of the tab order to avoid a duplicate stop.
- * No price line: there are no prices (backend reply #3). The next-available line
- * shows only when the API has a time (backend reply #4: null → hide).
+ * Bottom block per MentorCard.dc.html: the offer line ("Free mentorship available"
+ * while every session is free; paid "from $X" waits for prices), then either
+ * "Next available: …" or "No open times at the moment" (with "See availability").
  * Prefetch is off on profile links: Mentor Profile is not built yet (AppShell PREFETCH note).
  */
 export function MentorCard({
