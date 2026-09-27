@@ -229,7 +229,7 @@ const GENERATED: MentorSummaryRead[] = FIRST.map((first, i) => {
 
 export const MENTORS: MentorSummaryRead[] = [...DESIGN_SAMPLE, ...GENERATED];
 
-/** The design's "Featured this week" sample (bio as rewritten by design). */
+/** "Featured this week" mock: the design's sample bio, with the first landscape test photo and its name. */
 export const FEATURED = {
   ...base(
     'm-featured',
