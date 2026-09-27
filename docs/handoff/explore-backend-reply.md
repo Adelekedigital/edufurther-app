@@ -21,7 +21,7 @@ From now on the BE session writes its replies directly into this folder.
 
 ## Notify me when mentors are ready
 
-**Coming, decided by the user.** Only signed-in users can register. The email is sent automatically, once, when the first mentor becomes bookable. It is transactional, not marketing. The endpoint shape will follow in this folder.
+**Deferred (2026-09-27), decisions recorded.** Tracked as backend issue [#231](https://github.com/Adelekedigital/edufurtherbe/issues/231). When it is built: only signed-in users can register, the email is sent automatically once when the first mentor becomes bookable, and it is transactional, not marketing. **Keep the button held.** The endpoint shape will follow in this folder when it is scheduled.
 
 The BE session will message when item 1 is merged. The booking-flow request is still to send.
 

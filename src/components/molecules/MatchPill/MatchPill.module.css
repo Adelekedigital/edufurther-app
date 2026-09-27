@@ -12,7 +12,7 @@
   border-radius: var(--radius-full);
   background: var(--white);
   border: var(--border-hairline) solid var(--green-100);
-  box-shadow: var(--shadow-menu);
+  box-shadow: var(--shadow-float);
   font-family: var(--font-ui);
   transition:
     left var(--duration-slow) var(--ease-standard),
@@ -98,9 +98,6 @@
   }
 }
 @media (max-width: 767px) {
-  .corner {
-    left: calc(100% - var(--space-4));
-  }
   .label {
     white-space: normal;
   }
@@ -123,4 +120,58 @@
   .tracking {
     transition: none;
   }
+}
+
+/* Phones: explainer above the round icon (Design decisions: "Mobile float icon:
+   small popover"). Styled like the account menu; moves with the icon. */
+.popover {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + var(--space-2));
+  width: min(264px, calc(100vw - var(--space-8)));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  box-shadow:
+    var(--shadow-menu),
+    inset 0 0 0 var(--border-hairline) var(--border-muted);
+}
+.popoverTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+.popoverBody {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-secondary);
+}
+/* Explore.dc.html popover button: full width, 36px, radius-lg — not the pill CTA. */
+.popoverCta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  height: var(--menu-item-h);
+  margin-top: var(--space-1);
+  border: var(--border-hairline) solid var(--green-700);
+  border-radius: var(--radius-lg);
+  background: var(--green-50);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--green-700);
+}
+.popoverCta:hover {
+  background: var(--green-100);
+  color: var(--green-700);
+}
+.popoverCta:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
 }

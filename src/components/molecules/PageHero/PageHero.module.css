@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  /* 32px on every screen, phones included (Design decisions: "Reverted again"). */
   padding: var(--space-8);
   border-radius: var(--radius-xl);
   background: var(--action-primary);
@@ -10,23 +11,25 @@
 .title {
   font-family: var(--font-brand);
   font-size: var(--text-h3);
-  line-height: 1.1;
+  line-height: 1.15;
   letter-spacing: var(--ls-h3);
   font-weight: var(--weight-semibold);
   text-wrap: balance;
 }
 .subtitle {
-  font-size: var(--text-p-sm);
+  font-size: var(--text-p-md);
   line-height: var(--lh-p);
   max-width: 640px;
 }
-/* Phones: H3 display steps down to H6 (design PWA polish). */
+/* Phones: title H5 (24px) so it doesn't break into 4+ lines at 390px; sub 14px
+   (Design decisions: mobile guest header + hero type). */
 @media (max-width: 767px) {
-  .hero {
-    padding: var(--space-5) var(--space-4);
-  }
   .title {
-    font-size: var(--text-h6);
+    font-size: var(--text-h5);
     line-height: 1.15;
+    letter-spacing: var(--ls-h5);
+  }
+  .subtitle {
+    font-size: var(--text-p-sm);
   }
 }

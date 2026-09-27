@@ -25,7 +25,8 @@ const PRIMARY_TABS = ['Home', 'Explore', 'Bookings'];
 /**
  * Prefetch is off until the other screens exist: Next 16 holds prefetch streams
  * open for routes that 404, which never lets the page reach network idle.
- * Turn it back on (delete prefetch={PREFETCH}) once Home/Bookings/Messages/Settings ship.
+ * Turn it back on (delete prefetch={PREFETCH}) once Home/Bookings/Messages/Settings
+ * and the Log in / Sign up pages ship.
  */
 const PREFETCH = false;
 
@@ -73,10 +74,12 @@ export function AppShell({ active, guest, offline, children }: AppShellProps) {
         </Link>
         {guest && (
           <div className={styles.guestActions}>
-            <ButtonLink href="/login" variant="secondary-outlined">
+            <ButtonLink href="/login" prefetch={PREFETCH} variant="secondary-outlined">
               Log in
             </ButtonLink>
-            <ButtonLink href="/signup">Get started</ButtonLink>
+            <ButtonLink href="/signup" prefetch={PREFETCH}>
+              Get started
+            </ButtonLink>
           </div>
         )}
       </header>
@@ -107,6 +110,20 @@ export function AppShell({ active, guest, offline, children }: AppShellProps) {
           {children}
         </main>
       </div>
+
+      {guest && (
+        // Phones: guest actions move from the header to a sticky bottom bar,
+        // always in thumb reach (design AppShell guestNav=float). Desktop keeps
+        // them in the header.
+        <div className={styles.guestBar}>
+          <ButtonLink href="/login" prefetch={PREFETCH} variant="secondary-outlined" fullWidth>
+            Log in
+          </ButtonLink>
+          <ButtonLink href="/signup" prefetch={PREFETCH} fullWidth>
+            Get started free
+          </ButtonLink>
+        </div>
+      )}
 
       {!guest && (
         <nav aria-label="Main" className={styles.tabs}>

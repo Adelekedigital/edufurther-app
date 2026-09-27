@@ -93,17 +93,22 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 });
 
 export type ButtonLinkProps = Common &
-  Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'children' | 'href'> & { href: string };
+  Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'children' | 'href'> & {
+    href: string;
+    /** Passed to next/link. Off for routes that don't exist yet (they stall prefetch). */
+    prefetch?: boolean;
+  };
 
 /** A button-styled link: it navigates, so it is an <a>. */
 export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(function ButtonLink(
-  { variant, size, fullWidth, icon, iconPosition, className, children, href, ...rest },
+  { variant, size, fullWidth, icon, iconPosition, className, children, href, prefetch, ...rest },
   ref,
 ) {
   return (
     <Link
       ref={ref}
       href={href}
+      prefetch={prefetch}
       className={classes({ variant, size, fullWidth, className })}
       {...rest}
     >

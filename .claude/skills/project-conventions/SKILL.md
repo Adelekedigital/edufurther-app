@@ -114,6 +114,16 @@ Prototype files (`support.js`, `image-slot.js`, `dc-import`, `sc-if`) are the pr
 
 ## House conventions
 
+**Design conformance — non-negotiable (product, 2026-09-27).**
+1. The `.dc.html` markup is the spec. Read every value (size, radius, padding, colour,
+   shadow, weight, line-height, gap, inset) from the element's inline style — never
+   from `Design decisions.md` prose, which describes intent, not values.
+2. Reuse a class only if the design's values for both elements are identical. Two
+   buttons that look alike in prose ("green outline") are often different specs.
+3. Before a PR, measure computed styles in Playwright against the design values for
+   every new or changed element, and list the table in the PR. A mismatch is a bug,
+   unless it is a recorded divergence in `references/design-divergence.md`.
+
 - Route folders kebab-case; components PascalCase.
 - Route-local components live in `src/app/<route>/_components/` until a second route needs them.
 - DS atoms keep the DS names and props (`Button`, `Chip`, `EmptyState`, `Avatar`, `Badge`, …).

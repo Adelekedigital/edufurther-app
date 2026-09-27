@@ -32,8 +32,13 @@ const SEARCH_DEBOUNCE_MS = 300;
  */
 const MATCH_CALL_URL = process.env.NEXT_PUBLIC_MATCH_CALL_URL ?? '';
 
-/** Design matchPrompt=auto: guests and mentees with ≤ 2 sessions see it. */
+/**
+ * Design matchPrompt: signed-in mentees with ≤ 2 sessions only. Guests don't see
+ * it — matching needs an account, and they have "Get started free" instead.
+ */
 const MATCH_PROMPT_MAX_SESSIONS = 2;
+const MATCH_PROMPT_BODY =
+  'Share your goals and we’ll suggest mentors who fit your path, so your first sessions count.';
 
 function countLabel(q: string, topicCount: number, total: number | null): string {
   const topics = topicCount ? ` for ${topicCount} topic${topicCount > 1 ? 's' : ''}` : '';
@@ -81,17 +86,10 @@ export function ExploreScreen() {
 
   const showMatchPrompt =
     !!MATCH_CALL_URL &&
-    (viewer.kind === 'guest' || viewer.completedSessions <= MATCH_PROMPT_MAX_SESSIONS);
+    viewer.kind === 'mentee' &&
+    viewer.completedSessions <= MATCH_PROMPT_MAX_SESSIONS;
   const matchPrompt = showMatchPrompt ? (
-    <MatchPrompt
-      href={MATCH_CALL_URL}
-      external
-      body={
-        guest
-          ? 'Tell us your goals and we’ll suggest mentors who’ve already been where you’re going.'
-          : 'Share your goals and we’ll suggest mentors who fit your path, so your first sessions count.'
-      }
-    />
+    <MatchPrompt href={MATCH_CALL_URL} external body={MATCH_PROMPT_BODY} />
   ) : null;
 
   // Floating pill once the in-page prompt scrolls away (design promptSticky=on).
@@ -195,7 +193,10 @@ export function ExploreScreen() {
           dock={pill.dock}
           bottom={pill.bottom}
           tracking={pill.tracking}
-          miniAction={pillMinimised ? 'restore' : 'open'}
+          // Phones: the icon explains itself in a popover. Desktop: it only exists after
+          // ×, and restores the full pill.
+          miniAction={floating.isMobile ? 'popover' : 'restore'}
+          body={MATCH_PROMPT_BODY}
           onMinimise={() => setPillMinimised(true)}
           onRestore={() => setPillMinimised(false)}
         />
