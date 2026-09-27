@@ -48,6 +48,9 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | MentorCard `padding:var(--space-4)` (16px) | `--space-6` (24px), skeleton too | Figma has 24px; the .dc.html lags it (product 2026-09-27) | design adopts (request #23) |
 | Featured card text column: `gap:var(--space-2)`, top-aligned, `padding:var(--space-5) var(--space-6)`, name `--text-p-lg`, no offer line | Centred, 12px between groups (name+degree 4px), 32px padding, name `--text-h6` (20px), MentorCard's offer + availability block, CTA 4px lower | Product (2026-09-27): the 315px card looked sparse and top-heavy | design adopts (request #25) |
 | Every CTA: fixed-height compact buttons (`height:32px; padding:0 16px`), pill `Find matches` 32px, popover CTA 36px, match prompt 32px | **One CTA pattern everywhere**: Button default size `cta`, `padding:16px 24px` (48px), phones `16px` (48px); the hand-styled CTAs (match prompt, pill, popover) match it, border included. Chips, icon buttons and text links unchanged | Product (2026-09-27) | design adopts (requests #24, #28) |
+| Selected day tile weekday `--ink-500` on `--blue-50` (4.28:1 at 10px) | `--ink-600` on the selected tile only | WCAG 1.4.3 (axe on every booking modal); product 2026-09-27 | design answers request #29 |
+| BookingModal phone sheet footer note "{time} · {first} confirms within 12 hours" | "{time}" only (same hourglass line) | Reply time is not a real figure anywhere (same as the done-state row above) | backend exposes a response-time stat; design request #30 |
+| BookingModal phone sheet: 44px primary/outlined footer buttons | 48px, the one CTA pattern (padding 16px on phones) | Product (2026-09-27), requests #24/#28 | design adopts (#31) |
 | Mentor photo placeholder: design tone per sample | Tone from a hash of the mentor id over 6 tokens | Real data has no tone field | design supplies a rule |
 
 ## Rules

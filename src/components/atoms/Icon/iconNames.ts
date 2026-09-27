@@ -6,6 +6,7 @@
  * CI's `pnpm check:icons` fails until you do.
  */
 export const ICON_NAMES = [
+  'arrow_back',
   'arrow_forward',
   'bolt',
   'chat',
@@ -17,9 +18,11 @@ export const ICON_NAMES = [
   'error',
   'event',
   'event_busy',
+  'expand_less',
   'expand_more',
   'explore',
   'home',
+  'hourglass_top',
   'lock_clock',
   'logout',
   'mail',

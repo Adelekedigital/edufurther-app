@@ -28,6 +28,12 @@
   width: var(--space-8);
   height: var(--space-8);
 }
+/* BookingModal.dc.html sheet header: 44 × 44, 22px glyph, --ink-700. */
+.lg {
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  color: var(--ink-700);
+}
 @media (max-width: 767px) {
   .sm,
   .md {

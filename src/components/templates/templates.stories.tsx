@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
+import { Button } from '@/components/atoms/Button/Button';
+import { StepBars } from '@/components/atoms/StepBars/StepBars';
 import { AppShell } from './AppShell/AppShell';
 import { ModalShell } from './ModalShell/ModalShell';
 
@@ -66,6 +68,33 @@ export const Modal: Story = {
         onClose={() => setOpen(false)}
       >
         <p>Content slot.</p>
+      </ModalShell>
+    ) : (
+      <button onClick={() => setOpen(true)}>Open</button>
+    );
+  },
+};
+
+/** Phones: BookingModal.dc.html `mobileView=sheet` chrome around a content slot. */
+export const ModalSheet: Story = {
+  globals: { viewport: { value: 'mobile2', isRotated: false } },
+  render: function Render() {
+    const [open, setOpen] = useState(true);
+    return open ? (
+      <ModalShell
+        title="Book General mentorship"
+        onClose={() => setOpen(false)}
+        sheet={{
+          caption: 'Step 2 of 3',
+          heading: 'Create your free account',
+          leading: { icon: 'arrow_back', label: 'Back', onClick: fn() },
+          showClose: true,
+          progress: <StepBars total={3} current={1} label="Step 2 of 3" thin />,
+        }}
+        footer={<Button fullWidth>Continue with email</Button>}
+      >
+        <p>Content slot. It scrolls; the header, bars and footer do not.</p>
+        <Filler />
       </ModalShell>
     ) : (
       <button onClick={() => setOpen(true)}>Open</button>

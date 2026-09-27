@@ -104,3 +104,76 @@
     padding-right: var(--space-10);
   }
 }
+
+/* Phone sheet — BookingModal.dc.html `mobileView=sheet`, values from its markup. */
+.sheetRoot {
+  padding: 0;
+  align-items: stretch;
+}
+.sheet {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-card);
+  animation: fade var(--duration-base) var(--ease-standard);
+}
+.sheet:focus {
+  outline: none;
+}
+.sheetHeader {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: max(var(--space-1), env(safe-area-inset-top)) var(--space-1) var(--space-1);
+}
+.sheetTitle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+.sheetCaption {
+  font-size: var(--text-caption-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-caption-xs);
+  line-height: var(--lh-caption);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.sheetHeading {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.sheetSpacer {
+  flex: none;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+}
+.sheetProgress {
+  flex: none;
+  padding: 0 var(--space-4) var(--space-2);
+}
+.sheetBody {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-2) var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.sheetFooter {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) max(var(--space-3), env(safe-area-inset-bottom));
+  border-top: var(--border-hairline) solid var(--border-muted);
+  background: var(--surface-card);
+}

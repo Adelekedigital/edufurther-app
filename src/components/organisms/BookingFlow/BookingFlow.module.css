@@ -220,21 +220,94 @@
   border-top: var(--border-hairline) solid var(--border-muted);
 }
 
+/* ---- Phone sheet (BookingModal.dc.html `mobileView=sheet`) ---------------- */
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+.summaryToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: none;
+  border-radius: var(--radius-lg);
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+  text-align: left;
+}
+.summaryToggle:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 0;
+}
+.summaryText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.summaryName {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.summaryMeta {
+  font-size: var(--text-p-xs);
+  color: var(--text-tertiary);
+}
+.summaryChevron {
+  color: var(--ink-500);
+}
+.summaryBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-top: var(--border-hairline) solid var(--border-muted);
+}
+.done {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.footNote {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  color: var(--text-tertiary);
+}
+
 @media (max-width: 767px) {
   .select {
     height: var(--touch-target-min);
     font-size: var(--text-p-md);
   }
-  .profileLink,
-  .change {
+  .profileLink {
     min-height: var(--touch-target-min);
     display: inline-flex;
     align-items: center;
+    align-self: flex-start;
   }
-  .footer {
-    position: sticky;
-    bottom: 0;
-    background: var(--surface-card);
-    padding-bottom: env(safe-area-inset-bottom);
+  /* Chosen-time row: a 44px blue-50 strip with a 44px Change target. */
+  .picked {
+    min-height: var(--touch-target-min);
+    padding: 0 0 0 var(--space-3);
+    border: none;
+    background: var(--blue-50);
+  }
+  .pickedText {
+    font-weight: var(--weight-semibold);
+  }
+  .change {
+    height: var(--touch-target-min);
+    padding: 0 var(--space-3);
   }
 }

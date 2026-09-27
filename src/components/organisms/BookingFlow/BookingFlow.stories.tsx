@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
 import type { BookingDay, Mentor, SessionType } from '@/types/mentor';
-import { BookingFlow } from './BookingFlow';
+import { BookingFlow, type BookingFlowProps } from './BookingFlow';
 
 const mentor: Mentor = {
   id: 'm1',
@@ -94,3 +94,67 @@ export const OptionsError: Story = {
 };
 export const Sending: Story = { args: { requestPending: true } };
 export const Sent: Story = { args: { requestDone: true } };
+
+// ---- phones: the sheet (BookingModal.dc.html mobileView=sheet) --------------
+// The organism stories cannot import ModalShell (a template), so this frame only
+// lays out the three slots the flow hands over. `templates` has the real sheet.
+const phoneShell: BookingFlowProps['renderShell'] = (shell, body) => (
+  <div style={{ height: 760, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ padding: '8px 16px', textAlign: 'center', fontSize: 14 }}>
+      <div style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>{shell.sheet?.caption}</div>
+      <strong>{shell.sheet?.heading}</strong>
+      <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
+        left: {shell.sheet?.leading.label}
+        {shell.sheet?.showClose ? ' · right: Close' : ''}
+      </div>
+    </div>
+    <div style={{ padding: '0 16px 8px' }}>{shell.sheet?.progress}</div>
+    <div
+      style={{
+        flex: 1,
+        overflow: 'auto',
+        padding: '8px 16px 20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
+      }}
+    >
+      {body}
+    </div>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        padding: 16,
+        borderTop: '1px solid var(--border-muted)',
+      }}
+    >
+      {shell.footer}
+    </div>
+  </div>
+);
+const phone = {
+  globals: { viewport: { value: 'mobile2', isRotated: false } },
+  parameters: { layout: 'fullscreen' },
+};
+
+export const PhonePickTime: Story = { ...phone, args: { renderShell: phoneShell } };
+export const PhoneGuest: Story = { ...phone, args: { renderShell: phoneShell, isGuest: true } };
+export const PhoneSingleType: Story = {
+  ...phone,
+  args: { renderShell: phoneShell, options: { sessionTypes: [sessionTypes[0]!], days } },
+};
+export const PhoneOpenedOnType: Story = {
+  ...phone,
+  args: { renderShell: phoneShell, initialTypeId: 'st2', hideProfileLink: true },
+};
+export const PhoneLoading: Story = {
+  ...phone,
+  args: { renderShell: phoneShell, options: null, optionsLoading: true },
+};
+export const PhoneError: Story = {
+  ...phone,
+  args: { renderShell: phoneShell, options: null, optionsError: { kind: 'server', message: 'x' } },
+};
+export const PhoneSent: Story = { ...phone, args: { renderShell: phoneShell, requestDone: true } };

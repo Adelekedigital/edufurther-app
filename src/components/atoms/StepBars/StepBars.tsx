@@ -1,3 +1,4 @@
+import { cx } from '@/lib/utils/cx';
 import styles from './StepBars.module.css';
 
 type StepBarsProps = {
@@ -6,13 +7,15 @@ type StepBarsProps = {
   current: number;
   /** e.g. "Step 2 of 3". The bars themselves are decorative. */
   label: string;
+  /** Phone sheet: 3px bars, 2px apart (BookingModal.dc.html). */
+  thin?: boolean;
 };
 
 /** Segmented progress across the top of a multi-step flow. */
-export function StepBars({ total, current, label }: StepBarsProps) {
+export function StepBars({ total, current, label, thin }: StepBarsProps) {
   return (
     <div
-      className={styles.bars}
+      className={cx(styles.bars, thin && styles.thin)}
       role="progressbar"
       aria-label={label}
       aria-valuemin={1}

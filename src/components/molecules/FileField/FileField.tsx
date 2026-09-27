@@ -55,7 +55,14 @@ export function FileField({
             className={styles.icon}
           />
           <span className={styles.main}>
-            {fileName ? `${fileName} attached` : 'Click to upload'}
+            {fileName ? (
+              `${fileName} attached`
+            ) : (
+              <>
+                <span className={styles.pointer}>Click to upload</span>
+                <span className={styles.touch}>Tap to upload a file</span>
+              </>
+            )}
           </span>
           <span id={hintId} className={styles.hint}>
             {hint}

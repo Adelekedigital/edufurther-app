@@ -8,8 +8,11 @@ type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>
   icon: IconName;
   /** Required: an icon-only control has no visible text to name it. */
   'aria-label': string;
-  size?: 'sm' | 'md';
+  /** lg — 44px at every width, darker glyph (the phone sheet header). */
+  size?: 'sm' | 'md' | 'lg';
 };
+
+const ICON_SIZE = { sm: 18, md: 20, lg: 22 } as const;
 
 /** Round, quiet icon control (search clear, modal close, dismiss). 44px hit area on phones. */
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
@@ -23,7 +26,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       className={cx(styles.button, styles[size], className)}
       {...rest}
     >
-      <Icon name={icon} size={size === 'sm' ? 18 : 20} />
+      <Icon name={icon} size={ICON_SIZE[size]} />
     </button>
   );
 });

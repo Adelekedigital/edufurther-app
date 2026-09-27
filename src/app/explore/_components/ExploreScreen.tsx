@@ -310,6 +310,8 @@ export function ExploreScreen() {
               subtitle={shell.subtitle}
               size="xl"
               onClose={closeBooking}
+              sheet={shell.sheet}
+              footer={shell.footer}
             >
               {body}
             </ModalShell>

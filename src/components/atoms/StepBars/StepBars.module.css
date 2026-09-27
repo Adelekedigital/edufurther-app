@@ -14,3 +14,10 @@
 .off {
   background: var(--border-subtle);
 }
+.thin {
+  gap: 2px;
+}
+.thin .on,
+.thin .off {
+  height: 3px;
+}
