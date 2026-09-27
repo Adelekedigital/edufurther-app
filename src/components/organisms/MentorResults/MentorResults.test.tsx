@@ -42,6 +42,7 @@ const props = (over: Partial<MentorResultsProps> = {}): MentorResultsProps => ({
   isLoadingMore: false,
   loadMoreError: null,
   onLoadMore: vi.fn(),
+  showTopics: false,
   ...over,
 });
 
@@ -136,5 +137,28 @@ describe('MentorResults', () => {
     expect(screen.getByText('The list was updated.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
     expect(onDismissRestarted).toHaveBeenCalled();
+  });
+
+  it('topic tags are hidden when showTopics is false (design cardTopics=hide)', () => {
+    render(<MentorResults {...props({ mentors: [mentor()] })} />);
+    expect(screen.queryByRole('list', { name: 'Helps with' })).not.toBeInTheDocument();
+  });
+
+  it('interstitial goes after the first row when there is more than one row', () => {
+    const ms = [1, 2, 3].map((i) =>
+      mentor({ id: `m${i}`, name: `Mentor ${i}`, firstName: `M${i}` }),
+    );
+    render(<MentorResults {...props({ mentors: ms, interstitial: <aside>PROMPT</aside> })} />);
+    const text = document.body.textContent ?? '';
+    expect(text.indexOf('Mentor 2')).toBeLessThan(text.indexOf('PROMPT'));
+    expect(text.indexOf('PROMPT')).toBeLessThan(text.indexOf('Mentor 3'));
+  });
+
+  it('interstitial falls back to the bottom with one row or less', () => {
+    render(
+      <MentorResults {...props({ mentors: [mentor()], interstitial: <aside>PROMPT</aside> })} />,
+    );
+    const text = document.body.textContent ?? '';
+    expect(text.indexOf('That’s everyone')).toBeLessThan(text.indexOf('PROMPT'));
   });
 });

@@ -209,3 +209,21 @@ const GENERATED: MentorSummaryRead[] = FIRST.map((f, i) => {
 });
 
 export const MENTORS: MentorSummaryRead[] = [...DESIGN_SAMPLE, ...GENERATED];
+
+/** The design's "Featured this week" sample (bio as rewritten by design). */
+export const FEATURED = {
+  ...base(
+    'm-aderewa',
+    'Aderewa',
+    'Oluchi',
+    'MSc',
+    'Public Health',
+    'University of London',
+    122,
+    34,
+    4.9,
+    off('application-documents', 'career-guidance'),
+  ),
+  about_me:
+    'I’m a medical doctor and public health professional. I love meeting people and sharing what I’ve learned, and it’s a privilege to guide others through the application journey.',
+};

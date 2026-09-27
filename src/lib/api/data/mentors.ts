@@ -8,7 +8,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
-import type { AppError, AvatarTone, Mentor, Topic } from '@/types/mentor';
+import type { AppError, AvatarTone, FeaturedMentor, Mentor, Topic } from '@/types/mentor';
 import { api } from './http';
 import { ApiError, normaliseError } from './errors';
 import { keys, type MentorFilters } from './keys';
@@ -77,6 +77,30 @@ export function useTopics() {
     isLoading: query.isPending,
     error: query.error ? normaliseError(query.error) : null,
   };
+}
+
+// ---- featured -------------------------------------------------------------
+
+/**
+ * "Featured this week". GET /api/v1/featured-mentor — shape settled in backend reply
+ * round 2 #11 (200 with the mentor, or 200 with null), not built yet; the phase A
+ * mock serves it.
+ * Any failure hides the card: it is a nice-to-have, never a page error.
+ */
+export function useFeaturedMentor(enabled: boolean) {
+  const query = useQuery({
+    queryKey: keys.mentors.featured,
+    enabled,
+    queryFn: async ({ signal }): Promise<FeaturedMentor | null> => {
+      const { data, response } = await api.GET('/api/v1/featured-mentor', { signal });
+      if (!response.ok) throw new ApiError(response.status);
+      if (!data) return null;
+      return { ...toMentor(data), bio: data.about_me };
+    },
+    staleTime: 10 * 60 * 1000,
+    retry: false,
+  });
+  return { featured: query.data ?? null, isLoading: enabled && query.isPending };
 }
 
 // ---- mentors --------------------------------------------------------------

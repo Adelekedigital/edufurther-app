@@ -70,3 +70,32 @@ scroll) using `next_cursor`.
 ## Not asked for yet (later screens)
 BookingModal (slots, intake questions, create booking + idempotency key,
 guest hold for 10 minutes) — a separate request once Explore's list is live.
+
+---
+
+## Round 2 — design update (2026-09-26)
+
+Design added a "Featured this week" card and a "Not sure who's right for you?"
+prompt to Explore. The FE builds both against typed mocks now.
+
+### 11. Featured mentor — can mock
+The card shows one mentor under the hero: the normal card fields plus a short
+**bio** (clamped to 2 lines) and `next_available_at`.
+- Proposed: `GET /api/v1/mentors/featured` → `MentorSummaryRead & { bio: string }`,
+  `204` when there is no featured mentor this week. Public.
+- **Path caution:** `/mentors/featured` sits beside `/mentors/{handle}`. If a
+  handle could ever be `featured`, prefer another path (e.g. `/featured-mentor`);
+  tell us which and we change one line.
+- **Who picks the mentor** (editorial vs automatic, weekly rotation) is a product
+  question; we only need the read.
+- The card hides itself on any error or `204`.
+
+### 12. The viewer's completed-session count — needed for phase B
+The match prompt shows for guests and for mentees with **≤ 2** completed
+sessions (design `matchPrompt=auto`). When auth lands, where does the FE read the
+signed-in mentee's completed-session count — `/api/me` or another endpoint?
+
+### Not asked of the backend
+"Find my mentor matches" links to an **external Cal booking page** for now
+(product decision). Matching is expected to move onto the platform later; that
+will need its own endpoint and request.

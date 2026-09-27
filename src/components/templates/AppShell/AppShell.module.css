@@ -38,10 +38,6 @@
   display: flex;
   border-radius: var(--radius-xs);
 }
-.logo img {
-  height: var(--space-6);
-  width: auto;
-}
 .guestActions {
   display: flex;
   gap: var(--space-3);

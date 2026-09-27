@@ -22,6 +22,8 @@ type MentorCardProps = {
   offline?: boolean;
   /** The viewer's zone, for the next-available time. */
   timeZone: string;
+  /** Topic tags. Design MentorCard defaults to true; Explore's `cardTopics` default hides them. */
+  showTopics?: boolean;
 };
 
 /**
@@ -29,9 +31,15 @@ type MentorCardProps = {
  * profile; the photo link is out of the tab order to avoid a duplicate stop.
  * No price line: there are no prices (backend reply #3). The next-available line
  * shows only when the API has a time (backend reply #4: null → hide).
+ * Prefetch is off on profile links: Mentor Profile is not built yet (AppShell PREFETCH note).
  */
-// prefetch is off on profile links: Mentor Profile is not built yet (see AppShell PREFETCH note).
-export function MentorCard({ mentor: m, onBook, offline, timeZone }: MentorCardProps) {
+export function MentorCard({
+  mentor: m,
+  onBook,
+  offline,
+  timeZone,
+  showTopics = true,
+}: MentorCardProps) {
   const tone = { '--photo-bg': `var(--avatar-tone-${m.tone})` } as CSSProperties;
   const degree = [m.degreeLine, m.institution].filter(Boolean);
   return (
@@ -79,7 +87,7 @@ export function MentorCard({ mentor: m, onBook, offline, timeZone }: MentorCardP
         />
       </div>
 
-      {m.topics.length > 0 && (
+      {showTopics && m.topics.length > 0 && (
         <ul className={styles.topics} aria-label="Helps with">
           {m.topics.map((t) => (
             <li key={t.slug}>

@@ -2,6 +2,7 @@ import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { Notice } from '@/components/molecules/Notice/Notice';
+import type { ReactNode } from 'react';
 import type { AppError, Mentor } from '@/types/mentor';
 import { MentorCard } from '../MentorCard/MentorCard';
 import { MentorCardSkeleton } from '../MentorCard/MentorCardSkeleton';
@@ -31,6 +32,14 @@ export type MentorResultsProps = {
   isLoadingMore: boolean;
   loadMoreError: AppError | null;
   onLoadMore: () => void;
+  /** Topic tags on cards (design `cardTopics`, default hide). */
+  showTopics: boolean;
+  /**
+   * A panel placed after the first row (`interstitialAfter` cards), or after the
+   * pager when there is one row or less — the design's match prompt, `auto`.
+   */
+  interstitial?: ReactNode;
+  interstitialAfter?: number;
 };
 
 /**
@@ -99,6 +108,29 @@ export function MentorResults(p: MentorResultsProps) {
     );
   }
 
+  const after = p.interstitialAfter ?? 2;
+  const inRow = !!p.interstitial && p.mentors.length > after;
+  const firstRow = inRow ? p.mentors.slice(0, after) : p.mentors;
+  const rest = inRow ? p.mentors.slice(after) : [];
+  const renderGrid = (list: Mentor[]) => (
+    <ul
+      className={p.isRefreshing ? `${styles.grid} ${styles.dim}` : styles.grid}
+      inert={p.isRefreshing}
+    >
+      {list.map((m) => (
+        <li key={m.id} className={styles.item}>
+          <MentorCard
+            mentor={m}
+            onBook={p.onBook}
+            offline={p.offline}
+            timeZone={p.timeZone}
+            showTopics={p.showTopics}
+          />
+        </li>
+      ))}
+    </ul>
+  );
+
   return (
     <section aria-labelledby="results-count" className={styles.results}>
       {p.offline && (
@@ -127,16 +159,9 @@ export function MentorResults(p: MentorResultsProps) {
             <span className={styles.barFill} />
           </span>
         )}
-        <ul
-          className={p.isRefreshing ? `${styles.grid} ${styles.dim}` : styles.grid}
-          inert={p.isRefreshing}
-        >
-          {p.mentors.map((m) => (
-            <li key={m.id} className={styles.item}>
-              <MentorCard mentor={m} onBook={p.onBook} offline={p.offline} timeZone={p.timeZone} />
-            </li>
-          ))}
-        </ul>
+        {renderGrid(firstRow)}
+        {inRow && p.interstitial}
+        {rest.length > 0 && renderGrid(rest)}
       </div>
 
       <div className={styles.pager}>
@@ -172,6 +197,7 @@ export function MentorResults(p: MentorResultsProps) {
           </span>
         )}
       </div>
+      {p.interstitial && !inRow && p.interstitial}
     </section>
   );
 }

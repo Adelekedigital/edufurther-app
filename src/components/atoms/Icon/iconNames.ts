@@ -4,6 +4,7 @@
  * glyph here before using it, or it renders as its ligature text.
  */
 export const ICON_NAMES = [
+  'arrow_forward',
   'bolt',
   'chat',
   'check',
@@ -19,8 +20,10 @@ export const ICON_NAMES = [
   'lock_clock',
   'menu',
   'my_location',
+  'open_in_new',
   'new_releases',
   'refresh',
+  'route',
   'schedule',
   'search',
   'settings',

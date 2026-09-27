@@ -1,0 +1,5 @@
+# Generated — must match `pnpm gen:api` byte for byte (CI checks it).
+src/lib/api/generated/
+.next/
+storybook-static/
+pnpm-lock.yaml
