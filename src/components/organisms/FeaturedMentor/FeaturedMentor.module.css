@@ -9,8 +9,11 @@
 .photo {
   position: relative;
   overflow: hidden;
-  flex: 1 1 260px;
-  min-height: 220px;
+  /* Figma: a 400px-wide image, card 315px tall (product, 2026-09-27; the
+     .dc.html has flex 1 1 260px, min-height 220px). Stacks below 900px. */
+  flex: 0 0 400px;
+  /* The card is 315px outside its 1px border (Figma). */
+  min-height: calc(315px - 2 * var(--border-hairline));
   background: var(--photo-bg);
   display: flex;
   align-items: center;
@@ -111,6 +114,14 @@
   display: flex;
   padding-top: var(--space-2);
 }
+/* Too narrow for image beside text: the image spans the card, above it. */
+@media (max-width: 900px) {
+  .photo,
+  .skeletonPhoto {
+    flex: 1 1 100%;
+    min-height: 220px;
+  }
+}
 @media (max-width: 767px) {
   .photo {
     min-height: 180px;
@@ -129,8 +140,9 @@
   animation: pulse var(--skeleton-pulse-duration) ease-in-out infinite;
 }
 .skeletonPhoto {
-  flex: 1 1 260px;
-  min-height: 220px;
+  flex: 0 0 400px;
+  /* The card is 315px outside its 1px border (Figma). */
+  min-height: calc(315px - 2 * var(--border-hairline));
   background: var(--blue-100);
 }
 @keyframes pulse {

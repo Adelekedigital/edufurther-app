@@ -36,6 +36,7 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | Page size 24 (Design decisions §3) | 10 per page | Product (2026-09-27): quick to scan, "Show more mentors" for the rest | product revisits |
 | Explore page `max-width:1120px` | `calc(2 * 493px + 16px)` = 1002px | Product (2026-09-27): Figma card max width is 493px; at 1120 two cards grew to ~552px and photos dominated. Hero, featured and filters share the width so edges align | design adopts (request #23) |
 | Explore section `gap:var(--space-6)` (24px), phones 16px | `--space-8` (32px), phones `--space-6` (24px) | Product (2026-09-27): hero → featured → "What do you need help with?" read cramped | design adopts (request #23) |
+| Featured image `flex:1 1 260px; min-height:220px` | 400px wide, card 315px tall; stacks full-width below 900px | Figma values (product 2026-09-27) | design adopts (request #23) |
 | MentorCard `padding:var(--space-4)` (16px) | `--space-6` (24px), skeleton too | Figma has 24px; the .dc.html lags it (product 2026-09-27) | design adopts (request #23) |
 | MentorCard / featured photo `object-fit:cover; object-position:50% 25%` | Whole photo, `object-fit:contain`, over a blurred copy of itself (`cover`, `blur(24px)`, `scale(1.15)`) | Product (2026-09-27): real photos are portrait; cropping to 3:2 cut heads and shoulders | design adopts (request #23) |
 | Mentor photo placeholder: design tone per sample | Tone from a hash of the mentor id over 6 tokens | Real data has no tone field | design supplies a rule |
