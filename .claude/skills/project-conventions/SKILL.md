@@ -158,7 +158,7 @@ Prototype files (`support.js`, `image-slot.js`, `dc-import`, `sc-if`) are the pr
 | Featured mentor | Built on a mock of `GET /api/v1/featured-mentor` (shape settled: mentor or `null`, text field `about_me`) | Backend builds it (round 2 #11) |
 | Auth in booking | Guest sign-up step in BookingFlow still advances without an account (EmailCodeForm is ready to drop in) | B2 |
 | Support channel | `accountExists` notice says "contact support" with no link — no support channel defined | product names one (design request #27) |
-| Booking data | Session types, slots and the request are typed mocks in `lib/api/data/booking.ts` | Phase B: backend booking-flow request |
+| Booking data | Session types, slots and the request are real (B2, 2026-09-27). Intake questions and answers are not shipped (booking reply #1–#3): offerings ask nothing, so there is no questions step. Previews have sign-in off, so a real request there is a 401 ("Log in to book this session.") | Backend ships questions + answers; auth env set on previews |
 | DS tokens | Warning ramp has only `--yellow-900`; Plus uses literal `#e3b42b`/`#3d2a00`/`#fef6e7` | Add as *our* tokens, recorded in `design-divergence.md` |
 | DS `--text-placeholder` | `#98a2b3` on white is 2.58:1 | Use `--ink-500` for placeholders; record divergence |
 | DS focus | Readme says inputs focus to a 2px orange ring | We use `--border-focus` (blue-500); record divergence |

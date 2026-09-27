@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { mockAvailabilityState, mockNextAvailableAt } from '@/lib/api/mock/availability';
 import { MENTORS, OFFERINGS } from '@/lib/api/mock/fixtures';
 
 /**
@@ -40,19 +41,14 @@ export async function GET(req: NextRequest) {
         offerings.some((o) => (m.offerings ?? []).some((x) => x.slug === o)))
     );
   });
-  // next_available_at (backend reply #4, coming): relative to now, on the hour.
-  // Null for the design's "no open times" mentor and every seventh one.
+  // next_available_at / next_available_state: one source with the mocked slots
+  // (lib/api/mock/availability.ts), so the modal's first time equals the card's.
   const now = Date.now();
-  const page = rows.slice(start, start + limit).map((m) => {
-    const i = MENTORS.indexOf(m);
-    const none = m.id === 'm-jesuah' || i % 7 === 6;
-    const at = new Date(now + (2 + ((i * 11) % 70)) * 60 * 60 * 1000);
-    at.setUTCMinutes(0, 0, 0);
-    // next_available_state (backend reply round 3 #13): Jesuah is fully booked;
-    // every 7th is "refreshing" (recently changed, not recomputed yet).
-    const state = none ? (m.id === 'm-jesuah' ? 'none' : 'refreshing') : 'open';
-    return { ...m, next_available_at: none ? null : at.toISOString(), next_available_state: state };
-  });
+  const page = rows.slice(start, start + limit).map((m) => ({
+    ...m,
+    next_available_at: mockNextAvailableAt(m.id, now),
+    next_available_state: mockAvailabilityState(m.id),
+  }));
   const next = start + limit < rows.length ? `c${start + limit}` : null;
 
   // Enough latency to see skeletons and the refresh bar in dev.

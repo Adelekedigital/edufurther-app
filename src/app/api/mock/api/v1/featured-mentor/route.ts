@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { mockNextAvailableAt } from '@/lib/api/mock/availability';
 import { FEATURED } from '@/lib/api/mock/fixtures';
 
 /**
@@ -9,7 +10,9 @@ import { FEATURED } from '@/lib/api/mock/fixtures';
 export async function GET() {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
   await new Promise((r) => setTimeout(r, 200));
-  const at = new Date(Date.now() + 30 * 60 * 60 * 1000);
-  at.setUTCMinutes(0, 0, 0);
-  return NextResponse.json({ ...FEATURED, next_available_at: at.toISOString() });
+  return NextResponse.json({
+    ...FEATURED,
+    next_available_at: mockNextAvailableAt(FEATURED.id),
+    next_available_state: 'open',
+  });
 }

@@ -15,7 +15,7 @@ import { MentorResults } from '@/components/organisms/MentorResults/MentorResult
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useSignOut } from '@/lib/api/data/auth';
-import { useBookingOptions, useRequestBooking } from '@/lib/api/data/booking';
+import { useRequestBooking, useSessionTypes, useSlots } from '@/lib/api/data/booking';
 import { useFeaturedMentor, useMentors, useTopics } from '@/lib/api/data/mentors';
 import { useViewer } from '@/lib/api/data/viewer';
 import { deviceTimeZone } from '@/lib/utils/format';
@@ -78,6 +78,7 @@ export function ExploreScreen() {
   const [q, setQ] = useState('');
   const [offerings, setOfferings] = useState<string[]>([]);
   const [booking, setBooking] = useState<Mentor | null>(null);
+  const [bookingTypeId, setBookingTypeId] = useState<string | null>(null);
   // Cards only render after a client fetch, so reading the device zone here is safe.
   const [timeZone] = useState(deviceTimeZone);
 
@@ -88,7 +89,10 @@ export function ExploreScreen() {
 
   const topics = useTopics();
   const results = useMentors({ q, offerings });
-  const options = useBookingOptions(booking?.id ?? null);
+  const sessionTypes = useSessionTypes(booking?.id ?? null);
+  // The offering being booked: the one picked in the modal, else the first.
+  const typeId = bookingTypeId ?? sessionTypes.data?.[0]?.id ?? null;
+  const slots = useSlots(booking?.id ?? null, typeId);
   const request = useRequestBooking();
 
   // Hidden while searching and on the no-mentors / error states (Design decisions: featured).
@@ -129,6 +133,7 @@ export function ExploreScreen() {
     setOfferings((cur) => (cur.includes(slug) ? cur.filter((s) => s !== slug) : [...cur, slug]));
   const closeBooking = () => {
     setBooking(null);
+    setBookingTypeId(null);
     request.reset();
   };
 
@@ -291,10 +296,10 @@ export function ExploreScreen() {
         <BookingFlow
           key={booking.id}
           mentor={booking}
-          options={options.options}
-          optionsLoading={options.isLoading}
-          optionsError={options.error}
-          onRetryOptions={options.retry}
+          sessionTypes={sessionTypes}
+          sessionTypeId={typeId}
+          onSessionTypeChange={setBookingTypeId}
+          slots={slots}
           isGuest={guest}
           // PHASE A: no auth yet — continuing counts as signed up.
           onSignup={() => undefined}

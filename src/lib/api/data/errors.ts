@@ -5,9 +5,21 @@ export class ApiError extends Error {
   constructor(
     readonly status: number,
     readonly title?: string,
+    /** Problem Details `type` — e.g. `/problems/insufficient-credit` on a 409. */
+    readonly type?: string,
   ) {
     super(title ?? `HTTP ${status}`);
   }
+}
+
+/** Reads `title`/`type` from a Problem Details body openapi-fetch parsed as `error`. */
+export function apiError(status: number, body: unknown): ApiError {
+  const p = (body && typeof body === 'object' ? body : {}) as { title?: unknown; type?: unknown };
+  return new ApiError(
+    status,
+    typeof p.title === 'string' ? p.title : undefined,
+    typeof p.type === 'string' ? p.type : undefined,
+  );
 }
 
 /**
@@ -25,6 +37,10 @@ export function normaliseError(error: unknown): AppError {
     if (s === 403)
       return { kind: 'forbidden', message: 'You don’t have access to this.', status: s };
     if (s === 404) return { kind: 'notFound', message: 'We couldn’t find that.', status: s };
+    if (s === 409 && error.type?.endsWith('/problems/insufficient-credit'))
+      return { kind: 'noCredit', message: 'You’re out of credits.', status: s };
+    if (s === 409)
+      return { kind: 'conflict', message: 'That changed while you were looking.', status: s };
     if (s === 422) return { kind: 'validation', message: 'That request wasn’t valid.', status: s };
     if (s >= 500)
       return { kind: 'server', message: 'Something went wrong on our side.', status: s };

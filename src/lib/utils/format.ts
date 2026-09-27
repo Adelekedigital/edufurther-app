@@ -11,12 +11,17 @@ export function formatRating(r: number): string {
   return r.toFixed(1);
 }
 
-export function formatDay(iso: string, timeZone: string) {
-  const d = new Date(`${iso}T12:00:00Z`);
-  return {
-    weekday: new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone }).format(d),
-    date: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone }).format(d),
-  };
+/**
+ * A calendar date (YYYY-MM-DD, already in the viewer's zone — see
+ * utils/slots.ts) as "Mon" / "Sep 28". Formatted in UTC on purpose: the date is
+ * not an instant, and reading it in a zone would move it a day for anyone east
+ * of UTC+12.
+ */
+export function formatDay(isoDate: string) {
+  const d = new Date(`${isoDate}T12:00:00Z`);
+  const fmt = (o: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat('en-US', { ...o, timeZone: 'UTC' }).format(d);
+  return { weekday: fmt({ weekday: 'short' }), date: fmt({ month: 'short', day: 'numeric' }) };
 }
 
 export function formatTime(isoInstant: string, timeZone: string): string {

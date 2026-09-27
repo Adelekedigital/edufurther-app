@@ -20,6 +20,10 @@ export const keys = {
       ['mentors', 'list', who, { q: f.q, offerings: [...f.offerings].sort() }] as const,
   },
   booking: {
-    options: (mentorId: string) => ['booking', 'options', mentorId] as const,
+    sessionTypes: (mentorId: string) => ['booking', 'sessionTypes', mentorId] as const,
+    /** Prefix: every offering's slots for one mentor (invalidated after a booking). */
+    slotsFor: (mentorId: string) => ['booking', 'slots', mentorId] as const,
+    slots: (mentorId: string, sessionTypeId: string) =>
+      ['booking', 'slots', mentorId, sessionTypeId] as const,
   },
 };
