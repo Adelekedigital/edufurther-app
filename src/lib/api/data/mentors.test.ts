@@ -1,5 +1,5 @@
 import { deriveLabel } from './labels';
-import { toMentor } from './mentors';
+import { toFocus, toMentor } from './mentors';
 
 const row = (over: Record<string, unknown> = {}) => ({
   id: 'abc',
@@ -54,5 +54,26 @@ describe('toMentor', () => {
   });
   it('keeps the tone stable for an id', () => {
     expect(toMentor(row()).tone).toBe(toMentor(row()).tone);
+  });
+});
+
+describe('toFocus (backend avatar_focus, #240)', () => {
+  it('passes a 0–1 point through', () => {
+    expect(toFocus({ x: 0.42, y: 0.3 })).toEqual({ x: 0.42, y: 0.3 });
+  });
+  it('clamps out-of-range values', () => {
+    expect(toFocus({ x: -0.2, y: 1.4 })).toEqual({ x: 0, y: 1 });
+  });
+  it('null, missing or malformed → null (CSS default crop)', () => {
+    expect(toFocus(null)).toBeNull();
+    expect(toFocus(undefined)).toBeNull();
+    expect(toFocus({ x: Number.NaN, y: 0.5 })).toBeNull();
+  });
+  it('toMentor carries it', () => {
+    expect(toMentor(row({ avatar_focus: { x: 0.5, y: 0.2 } })).photoFocus).toEqual({
+      x: 0.5,
+      y: 0.2,
+    });
+    expect(toMentor(row()).photoFocus).toBeNull();
   });
 });

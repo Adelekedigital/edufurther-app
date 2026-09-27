@@ -11,6 +11,7 @@ const featured: Featured = {
   firstName: 'Aderewa',
   initials: 'AO',
   photoUrl: null,
+  photoFocus: null,
   tone: 2,
   degreeLine: 'MSc, Public Health',
   institution: 'University of London',

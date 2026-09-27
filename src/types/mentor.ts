@@ -20,6 +20,11 @@ export type Mentor = {
   firstName: string;
   initials: string;
   photoUrl: string | null;
+  /**
+   * Where the face is in the photo, as 0–1 fractions (backend avatar_focus, #240).
+   * The crop is anchored on it (object-position); null → the design's 50% 25%.
+   */
+  photoFocus: { x: number; y: number } | null;
   tone: AvatarTone;
   /** "MSc, Computer Science" — null when the mentor has no degree on file. */
   degreeLine: string | null;

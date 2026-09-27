@@ -46,6 +46,7 @@ const base = (
   value: number | null,
   offerings: ReturnType<typeof off>,
   avatar: string | null = null,
+  focus: { x: number; y: number } | null = null,
 ): MentorSummaryRead => ({
   id,
   slug: `${first}-${last}`.toLowerCase().replace(/[^a-z-]/g, ''),
@@ -53,6 +54,7 @@ const base = (
   last_name: last,
   headline: null,
   avatar_url: avatar,
+  avatar_focus: focus,
   primary_study_country: null,
   origin_country: null,
   degree,
@@ -224,6 +226,7 @@ const GENERATED: MentorSummaryRead[] = FIRST.map((first, i) => {
     reviews ? 4 + ((i * 13) % 10) / 10 : null,
     SETS[i % SETS.length]!,
     face ? avatarUrl(face.file) : null,
+    (face && 'focus' in face ? (face.focus as { x: number; y: number }) : null) ?? null,
   );
 });
 
