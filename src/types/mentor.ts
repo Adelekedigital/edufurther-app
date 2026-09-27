@@ -22,7 +22,7 @@ export type Mentor = {
   photoUrl: string | null;
   /**
    * Where the face is in the photo, as 0–1 fractions (backend avatar_focus, #240).
-   * The crop centres on it; null → the design's default crop (50% 25%).
+   * The crop is anchored on it (object-position); null → the design's 50% 25%.
    */
   photoFocus: { x: number; y: number } | null;
   tone: AvatarTone;

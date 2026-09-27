@@ -29,7 +29,7 @@ export function FeaturedMentor({
   offline,
   bookBlocked = null,
 }: FeaturedMentorProps) {
-  // Face position → crop centre (backend avatar_focus); CSS falls back to 50% 25%.
+  // Face position anchors the crop (backend avatar_focus); CSS falls back to 50% 25%.
   const tone = {
     '--photo-bg': `var(--avatar-tone-${m.tone})`,
     ...(m.photoFocus && {

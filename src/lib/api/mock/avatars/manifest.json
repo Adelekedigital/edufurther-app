@@ -268,5 +268,5 @@
       }
     }
   ],
-  "focus_note": "focus: hand-measured face centre (0-1) on a few photos, to exercise avatar_focus; the rest are null like unprocessed photos."
+  "focus_note": "focus: hand-measured face position (0-1) on mentor-02 only, to exercise avatar_focus; the rest are null, like photos the backend has not processed."
 }
