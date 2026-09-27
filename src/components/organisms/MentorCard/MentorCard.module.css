@@ -3,8 +3,16 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-4);
-  border: var(--border-hairline) solid var(--border-subtle);
+  /* Figma: 24px (the .dc.html has 16px; product 2026-09-27, design request #23). */
+  padding: var(--space-6);
+  /* Figma draws the stroke inside the card, so it takes no layout space: the
+     493px card leaves the photo exactly 445px (493 - 2 x 24). */
+  border: none;
+  box-shadow: inset 0 0 0 var(--border-hairline) var(--border-subtle);
+  /* High Contrast (forced colors) drops box-shadow; this transparent inset
+     outline takes no space either, and the system colours it there. */
+  outline: var(--border-hairline) solid transparent;
+  outline-offset: calc(-1 * var(--border-hairline));
   border-radius: var(--radius-xl);
   background: var(--surface-card);
   min-width: 0;
@@ -12,7 +20,8 @@
 
 .photo {
   position: relative;
-  aspect-ratio: 3 / 2;
+  /* Figma: 445 x 300 at the 493px card (the .dc.html says 3 / 2). */
+  aspect-ratio: 445 / 300;
   border-radius: var(--radius-lg);
   background: var(--photo-bg);
   display: flex;
@@ -20,6 +29,9 @@
   justify-content: center;
   overflow: hidden;
 }
+/* Cropped to the frame, face kept near the top (Explore.dc.html). The framed,
+   blurred-fill variant was tried and dropped (product, 2026-09-27): at the
+   493px card size the crop keeps head and shoulders. */
 .img {
   position: absolute;
   inset: 0;

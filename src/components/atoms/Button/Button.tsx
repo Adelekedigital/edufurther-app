@@ -16,7 +16,11 @@ export type ButtonVariant = 'primary' | 'secondary-outlined' | 'text' | 'dark';
  * sm      — DS spec-sheet button, 37px, Poppins bold.
  * lg      — DS product button, 56px, Poppins bold.
  */
-export type ButtonSize = 'compact' | 'sm' | 'lg';
+/**
+ * `cta`: the booking call-to-action (product, 2026-09-27): compact type with real
+ * padding, 24/16px desktop and 16px phones, so 48px tall. Other sizes are fixed height.
+ */
+export type ButtonSize = 'compact' | 'cta' | 'sm' | 'lg';
 
 type Common = {
   variant?: ButtonVariant;

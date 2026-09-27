@@ -135,6 +135,7 @@ export function MentorCard({
       {!isSelf && (
         <Button
           fullWidth
+          size="cta"
           className={styles.book}
           disabled={offline || !!bookBlocked}
           onClick={() => onBook(m)}

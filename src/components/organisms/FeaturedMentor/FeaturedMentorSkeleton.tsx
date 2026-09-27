@@ -6,13 +6,19 @@ export function FeaturedMentorSkeleton() {
   return (
     <div className={styles.skeleton} aria-hidden>
       <span className={styles.skeletonPhoto} />
+      {/* Mirrors the card's groups: who, proof, bio, offer/availability, CTA. */}
       <div className={styles.body}>
-        <Skeleton width="45%" height="20px" />
-        <Skeleton width="60%" height="12px" />
-        <Skeleton width="35%" height="12px" />
-        <Skeleton width="90%" height="32px" />
-        <Skeleton width="40%" height="12px" />
-        <Skeleton width="190px" height="32px" radius="md" />
+        <div className={styles.who}>
+          <Skeleton width="45%" height="26px" />
+          <Skeleton width="60%" height="17px" />
+        </div>
+        <Skeleton width="35%" height="17px" />
+        <Skeleton width="90%" height="35px" />
+        <div className={styles.meta}>
+          <Skeleton width="40%" height="17px" />
+          <Skeleton width="45%" height="17px" />
+        </div>
+        <Skeleton width="220px" height="var(--button-cta-h)" radius="md" />
       </div>
     </div>
   );

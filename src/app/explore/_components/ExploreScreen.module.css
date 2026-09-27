@@ -1,9 +1,14 @@
 .page {
-  max-width: 1120px;
+  /* Two cards at most 493px wide each (Figma card, product 2026-09-27) plus the
+     16px gap. Hero, featured and filters share the width so the edges line up.
+     The design's page is 1120px; design-divergence.md. */
+  max-width: calc(2 * 493px + var(--space-4));
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  /* 32px between hero, featured card and filters (product, 2026-09-27: the
+     design's 24px read cramped with real content; design-divergence.md). */
+  gap: var(--space-8);
 }
 .filters {
   display: flex;
@@ -12,7 +17,7 @@
 }
 @media (max-width: 767px) {
   .page {
-    gap: var(--space-4);
+    gap: var(--space-6);
   }
 }
 /* "Try again" inside a notice: a text action, blue-700 for contrast on the tinted ground. */
