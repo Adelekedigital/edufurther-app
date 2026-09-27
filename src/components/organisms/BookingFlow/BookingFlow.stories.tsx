@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
-import type { BookingDay, Mentor, SessionType } from '@/types/mentor';
+import type { AppError, Mentor, Remote, SessionType } from '@/types/mentor';
 import { BookingFlow, type BookingFlowProps } from './BookingFlow';
 
 const mentor: Mentor = {
@@ -41,10 +41,18 @@ const sessionTypes: SessionType[] = [
     questions: [{ id: 'q2', label: 'Upload your current CV', kind: 'file', required: true }],
   },
 ];
-const days: BookingDay[] = [0, 1, 2, 3, 4].map((i) => ({
-  date: `2026-09-${28 + i}`,
-  slots: [9, 13].map((h) => ({ startsAt: `2026-09-${28 + i}T${h}:00:00Z` })),
-}));
+// Bookable instants, as GET …/availability/slots returns them (UTC).
+const slots = [0, 1, 2, 3, 4].flatMap((i) =>
+  [9, 13].map((h) => `2026-09-${28 + i}T${String(h).padStart(2, '0')}:00:00Z`),
+);
+const remote = <T,>(data: T | null, over: Partial<Remote<T>> = {}): Remote<T> => ({
+  data,
+  isLoading: false,
+  error: null,
+  retry: fn(),
+  ...over,
+});
+const failed: AppError = { kind: 'server', message: 'x' };
 
 /** Rendered without the ModalShell: the page supplies the frame via renderShell. */
 const meta: Meta<typeof BookingFlow> = {
@@ -52,10 +60,10 @@ const meta: Meta<typeof BookingFlow> = {
   component: BookingFlow,
   args: {
     mentor,
-    options: { sessionTypes, days },
-    optionsLoading: false,
-    optionsError: null,
-    onRetryOptions: fn(),
+    sessionTypes: remote(sessionTypes),
+    sessionTypeId: null,
+    onSessionTypeChange: fn(),
+    slots: remote(slots),
     isGuest: false,
     onSignup: fn(),
     onRequest: fn(),
@@ -85,12 +93,24 @@ type Story = StoryObj<typeof BookingFlow>;
 
 export const PickTime: Story = {};
 export const Guest: Story = { args: { isGuest: true } };
-export const SingleSessionType: Story = {
-  args: { options: { sessionTypes: [sessionTypes[0]!], days } },
+export const SingleSessionType: Story = { args: { sessionTypes: remote([sessionTypes[0]!]) } };
+/** An offering that asks nothing (every offering until the backend ships questions). */
+export const NoQuestions: Story = {
+  args: { sessionTypeId: 'st2', sessionTypes: remote([{ ...sessionTypes[1]!, questions: [] }]) },
 };
-export const LoadingOptions: Story = { args: { options: null, optionsLoading: true } };
-export const OptionsError: Story = {
-  args: { options: null, optionsError: { kind: 'server', message: 'x' } },
+export const LoadingSessions: Story = {
+  args: { sessionTypes: remote<SessionType[]>(null, { isLoading: true }) },
+};
+export const SessionsError: Story = {
+  args: { sessionTypes: remote<SessionType[]>(null, { error: failed }) },
+};
+export const LoadingSlots: Story = { args: { slots: remote<string[]>(null, { isLoading: true }) } };
+export const SlotsError: Story = { args: { slots: remote<string[]>(null, { error: failed }) } };
+export const NoOpenTimes: Story = { args: { slots: remote([]) } };
+export const RequestFailed: Story = {
+  args: {
+    requestError: { kind: 'conflict', message: 'That time was just taken. Pick another time.' },
+  },
 };
 export const Sending: Story = { args: { requestPending: true } };
 export const Sent: Story = { args: { requestDone: true } };
@@ -143,18 +163,22 @@ export const PhonePickTime: Story = { ...phone, args: { renderShell: phoneShell 
 export const PhoneGuest: Story = { ...phone, args: { renderShell: phoneShell, isGuest: true } };
 export const PhoneSingleType: Story = {
   ...phone,
-  args: { renderShell: phoneShell, options: { sessionTypes: [sessionTypes[0]!], days } },
+  args: { renderShell: phoneShell, sessionTypes: remote([sessionTypes[0]!]) },
 };
 export const PhoneOpenedOnType: Story = {
   ...phone,
-  args: { renderShell: phoneShell, initialTypeId: 'st2', hideProfileLink: true },
+  args: { renderShell: phoneShell, sessionTypeId: 'st2', hideProfileLink: true },
 };
 export const PhoneLoading: Story = {
   ...phone,
-  args: { renderShell: phoneShell, options: null, optionsLoading: true },
+  args: { renderShell: phoneShell, slots: remote<string[]>(null, { isLoading: true }) },
 };
 export const PhoneError: Story = {
   ...phone,
-  args: { renderShell: phoneShell, options: null, optionsError: { kind: 'server', message: 'x' } },
+  args: { renderShell: phoneShell, slots: remote<string[]>(null, { error: failed }) },
 };
 export const PhoneSent: Story = { ...phone, args: { renderShell: phoneShell, requestDone: true } };
+export const PhoneNoOpenTimes: Story = {
+  ...phone,
+  args: { renderShell: phoneShell, slots: remote([]) },
+};

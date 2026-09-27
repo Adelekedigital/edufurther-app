@@ -53,7 +53,17 @@ export type Mentor = {
 export type FeaturedMentor = Mentor & { bio: string | null };
 
 export type AppErrorKind =
-  'offline' | 'unauthorized' | 'forbidden' | 'notFound' | 'validation' | 'server' | 'unknown';
+  | 'offline'
+  | 'unauthorized'
+  | 'forbidden'
+  | 'notFound'
+  | 'validation'
+  /** 409 that passes on its own (a slot taken meanwhile, a request in flight). */
+  | 'conflict'
+  /** 409 `/problems/insufficient-credit`: retrying will not help. */
+  | 'noCredit'
+  | 'server'
+  | 'unknown';
 
 export type AppError = {
   kind: AppErrorKind;
@@ -62,7 +72,15 @@ export type AppError = {
   status?: number;
 };
 
-// ---- Booking (phase A: mocked in lib/api/data/booking.ts) -------------------
+/** One fetched value as a view sees it: the page passes these down. */
+export type Remote<T> = {
+  data: T | null;
+  isLoading: boolean;
+  error: AppError | null;
+  retry: () => void;
+};
+
+// ---- Booking (lib/api/data/booking.ts) ---------------------------------------
 
 export type SessionType = {
   id: string;

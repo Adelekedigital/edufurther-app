@@ -38,7 +38,7 @@ export function DayTimePicker({
   const scroll = layout === 'scroll';
   const heading = (() => {
     if (!day) return 'Time';
-    const f = formatDay(day.date, timeZone);
+    const f = formatDay(day.date);
     const n = day.slots.length;
     return `${f.weekday}, ${f.date} · ${n} ${n === 1 ? 'time' : 'times'}`;
   })();
@@ -48,7 +48,7 @@ export function DayTimePicker({
         <legend className="sr-only">Date</legend>
         <div className={styles.days}>
           {days.map((d, i) => {
-            const f = formatDay(d.date, timeZone);
+            const f = formatDay(d.date);
             const n = d.slots.length;
             return (
               <label key={d.date} className={styles.option}>
