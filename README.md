@@ -23,6 +23,15 @@ Against the real backend, in `.env.development.local`: `NEXT_PUBLIC_API_BASE_URL
 so calls go same-origin), `BACKEND_URL=http://localhost:8000`, and `ENABLE_MOCK_API=`
 (see `.env.example`).
 
+## Fonts and icons
+
+Self-hosted, never fetched from Google at build or runtime (`src/app/fonts/`, loaded by
+`next/font/local`). Text fonts are subsets from google/fonts (SIL OFL, licences alongside):
+rebuild with `python scripts/fonts/build_fonts.py <sources>` (needs fonttools + brotli). The
+icon font is a Material Symbols subset of `ICON_NAMES`: after adding an icon to
+`src/components/atoms/Icon/iconNames.ts`, run `pnpm icons:pull` and commit the result
+(CI's `pnpm check:icons` fails otherwise).
+
 ## Deploying (Vercel)
 
 `vercel.json` sets the build command: `pnpm spec:pull && pnpm gen:api && pnpm build`.

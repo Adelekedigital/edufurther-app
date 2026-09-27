@@ -1,6 +1,7 @@
 /* PROVENANCE — DS bundle tokens/fonts.css, imported 2026-09-26.
-   The DS loads the families with a Google Fonts @import; here they come from
-   next/font (app/fonts.ts), which exposes each family as a --ff-* variable. The
+   The DS loads the families with a Google Fonts @import; here they are
+   self-hosted through next/font/local (app/fonts.ts, files in app/fonts/), which
+   exposes each family as a --ff-* variable. The
    role names and fallback stacks below are the DS's, unchanged. */
 :root {
   --font-brand:
@@ -14,5 +15,5 @@
   --font-form:
     var(--ff-nunito), Avenir, 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI',
     sans-serif;
-  --font-icon: 'Material Symbols Outlined';
+  --font-icon: var(--ff-icons), 'Material Symbols Outlined';
 }
