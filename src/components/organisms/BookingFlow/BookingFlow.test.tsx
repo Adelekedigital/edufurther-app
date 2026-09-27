@@ -226,6 +226,29 @@ describe('BookingFlow on real slots', () => {
     expect(onSessionTypeChange).toHaveBeenCalledWith('st2');
   });
 
+  it('stays on the time step when a new time is picked after the old one was taken', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <BookingFlow {...props({ sessionTypeId: 'st2', isGuest: true })} />,
+    );
+    await user.click(screen.getAllByRole('radio')[2]!); // Sep 28 09:00
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(screen.getByRole('progressbar', { name: /Step 2 of 2/ })).toBeInTheDocument();
+
+    // Slots reload without that time: back to the time step.
+    rerender(
+      <BookingFlow
+        {...props({ sessionTypeId: 'st2', isGuest: true, slots: remote(['2026-09-29T13:00:00Z']) })}
+      />,
+    );
+    expect(screen.getByRole('progressbar', { name: /Step 1 of 2/ })).toBeInTheDocument();
+
+    // Picking the remaining time must not jump ahead to sign-up by itself.
+    await user.click(screen.getAllByRole('radio')[1]!);
+    expect(screen.getByRole('progressbar', { name: /Step 1 of 2/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
+  });
+
   it('drops a chosen time the grid no longer offers (taken meanwhile)', async () => {
     const user = userEvent.setup();
     const { rerender } = render(<BookingFlow {...props()} />);

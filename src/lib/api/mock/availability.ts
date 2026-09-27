@@ -24,25 +24,37 @@ export function mockAvailabilityState(mentorId: string): 'open' | 'none' | 'refr
 }
 
 /**
- * The mentor's first opening, relative to now and on the hour. Null only for a
- * mentor with nothing open. A "refreshing" mentor still has a grid — only the
- * card's summary of it is being recomputed (backend reply round 3 #13).
+ * The grid is laid out from a fixed point — the hour this module loaded — not
+ * from "now" on every request. Otherwise every slot moved an hour forward each
+ * time the clock crossed one, and a time loaded at 10:59 was refused at 11:00
+ * (review of #19). Slots that have passed simply drop off.
  */
-function firstOpening(mentorId: string, now: number): number | null {
+const EPOCH = (() => {
+  const d = new Date();
+  d.setUTCMinutes(0, 0, 0);
+  return d.getTime();
+})();
+
+/**
+ * Where the mentor's grid starts. Null only for a mentor with nothing open. A
+ * "refreshing" mentor still has a grid — only the card's summary of it is being
+ * recomputed (backend reply round 3 #13).
+ */
+function gridOrigin(mentorId: string): number | null {
   if (mockAvailabilityState(mentorId) === 'none') return null;
   const i = MENTORS.findIndex((m) => m.id === mentorId);
   const offsetHours = mentorId === FEATURED.id ? 30 : i >= 0 ? 2 + ((i * 11) % 70) : null;
-  if (offsetHours === null) return null;
-  const at = new Date(now + offsetHours * HOUR);
-  at.setUTCMinutes(0, 0, 0);
-  return at.getTime();
+  return offsetHours === null ? null : EPOCH + offsetHours * HOUR;
 }
 
-/** The card's `next_available_at`: the first opening, unless it is being recomputed. */
+/**
+ * The card's `next_available_at`: the first slot still ahead on the earliest
+ * offering (the grid the modal opens on), unless it is being recomputed.
+ */
 export function mockNextAvailableAt(mentorId: string, now = Date.now()): string | null {
   if (mockAvailabilityState(mentorId) !== 'open') return null;
-  const at = firstOpening(mentorId, now);
-  return at === null ? null : new Date(at).toISOString();
+  const first = mockSlots(mentorId, MOCK_SESSION_TYPES[0]!.id, now + 56 * DAY, now)[0];
+  return first ? first.start : null;
 }
 
 export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
@@ -87,7 +99,7 @@ export function mockSlots(
   endExclusive: number,
   now = Date.now(),
 ): { start: string; end: string }[] {
-  const first = firstOpening(mentorId, now);
+  const first = gridOrigin(mentorId);
   const type = MOCK_SESSION_TYPES.find((t) => t.id === sessionTypeId);
   if (first === null || !type) return [];
   const origin = first + (type.id === 'st-general' ? 0 : DAY);
@@ -95,7 +107,7 @@ export function mockSlots(
   for (let d = 0; origin + d * DAY < endExclusive; d += 2) {
     for (const h of [0, 1, 5]) {
       const start = origin + d * DAY + h * HOUR;
-      if (start >= endExclusive) continue;
+      if (start < now || start >= endExclusive) continue;
       out.push({
         start: new Date(start).toISOString().replace('.000Z', 'Z'),
         end: new Date(start + type.duration_minutes * 60 * 1000)

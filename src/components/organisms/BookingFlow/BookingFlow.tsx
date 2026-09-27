@@ -293,7 +293,13 @@ export function BookingFlow(p: BookingFlowProps) {
                 setTime(null);
               }}
               time={time}
-              onTimeChange={setTime}
+              onTimeChange={(t) => {
+                setTime(t);
+                // Times are only picked on the time step. If the flow came back here
+                // because the old time was taken, the saved step still points
+                // further on; picking must not jump there without Continue.
+                setStepIndex(0);
+              }}
               timeZone={zone}
               layout={isPhone ? 'scroll' : 'grid'}
             />
