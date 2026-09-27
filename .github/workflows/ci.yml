@@ -26,6 +26,8 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      spec: ${{ steps.spec.outputs.available }}
     steps:
       - uses: actions/checkout@v4
 
@@ -47,21 +49,35 @@ jobs:
 
       # The spec lives in an encrypted Actions secret, not in the repo; the client
       # is generated from it on every run and never committed.
+      # Fork PRs never receive repo secrets: for them the spec-dependent steps
+      # (typecheck, build, page review) are skipped with a notice and a maintainer
+      # re-runs them from a branch. A missing secret anywhere else is a
+      # misconfiguration and fails.
       - name: Write the API spec from the secret
+        id: spec
         env:
           OPENAPI_SPEC_JSON: ${{ secrets.OPENAPI_SPEC_JSON }}
+          IS_FORK_PR: ${{ github.event.pull_request.head.repo.fork == true }}
         run: |
           if [ -z "$OPENAPI_SPEC_JSON" ]; then
-            echo "OPENAPI_SPEC_JSON secret is missing (Settings > Secrets and variables > Actions)."
+            if [ "$IS_FORK_PR" = "true" ]; then
+              echo "::notice::Fork PR: no access to OPENAPI_SPEC_JSON, so typecheck, build and page review are skipped. A maintainer re-runs them from a branch."
+              echo "available=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "::error::OPENAPI_SPEC_JSON secret is missing (Settings > Secrets and variables > Actions)."
             exit 1
           fi
           mkdir -p openapi
           printf '%s' "$OPENAPI_SPEC_JSON" > openapi/openapi.json
+          echo "available=true" >> "$GITHUB_OUTPUT"
 
       - name: Generate API client
+        if: steps.spec.outputs.available == 'true'
         run: pnpm gen:api
 
       - name: Typecheck
+        if: steps.spec.outputs.available == 'true'
         run: pnpm typecheck
 
       - name: Lint
@@ -77,11 +93,13 @@ jobs:
         run: pnpm test -- --coverage
 
       - name: Build
+        if: steps.spec.outputs.available == 'true'
         run: pnpm build
 
       # Secrets do not belong in a client bundle, and removing the variable later
       # does not un-publish the old build. Add your own patterns.
       - name: Grep the bundle for secrets
+        if: steps.spec.outputs.available == 'true'
         run: |
           set -euo pipefail
           PATTERNS='sk_live_|sk_test_|-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{20,}'
@@ -97,6 +115,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: verify
+    # Only when verify had the spec (never on fork PRs; see verify).
+    if: needs.verify.outputs.spec == 'true'
     steps:
       - uses: actions/checkout@v4
       # Version comes from package.json "packageManager"; the action refuses two sources.
@@ -114,6 +134,10 @@ jobs:
         env:
           OPENAPI_SPEC_JSON: ${{ secrets.OPENAPI_SPEC_JSON }}
         run: |
+          if [ -z "$OPENAPI_SPEC_JSON" ]; then
+            echo "::error::OPENAPI_SPEC_JSON secret is missing (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
           mkdir -p openapi
           printf '%s' "$OPENAPI_SPEC_JSON" > openapi/openapi.json
           pnpm gen:api

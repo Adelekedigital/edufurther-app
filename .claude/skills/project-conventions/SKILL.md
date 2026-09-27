@@ -141,7 +141,7 @@ Prototype files (`support.js`, `image-slot.js`, `dc-import`, `sc-if`) are the pr
 | Show "★ 0 (0 reviews)" | reads as a bad rating |
 | Port the prototype's global mobile `<style>` block | handoff §7.3; it overrides by attribute-substring selectors |
 | Fetch below the page | `check-boundaries.mjs` rule 1 |
-| Make this repo public while it holds `openapi/`, `docs/handoff/` or `.claude/` internals | they map the backend API and its behaviour; product chose a private repo (2026-09-26) |
+| Track `openapi/`, `src/lib/api/generated/` or `docs/handoff/` in git | this repo is public and they map the backend API. Product (2026-09-27): repo stays public; these are git-ignored and `pnpm check:private` fails CI if one is tracked. `.claude/` stays tracked by decision — process docs whose contract notes cover only what the public client already calls. Old versions remain in history (no rewrite, by decision) |
 | Push straight to `main` | every change goes through a PR with green CI, `/code-review` and `/security-review` (2026-09-26) |
 
 ---
