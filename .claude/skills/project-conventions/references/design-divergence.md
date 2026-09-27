@@ -66,6 +66,8 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | Mentor Profile owner banner with a "View as mentee" toggle | The design's banner copy and lock icon (reply #35) without the toggle | Editing ships in later PRs; the toggle only means something with an edit mode | owner PRs |
 | Mentor Profile social chip 32px, share button 32px, "Show more" link | 44px on phones | Touch targets (ours) | never |
 | Mentor Profile loading / error / not-found | Built to design reply #34 (copy and layout) | — | — |
+| Mentor Profile share menu `top: 40px` | `top: calc(100% + 16px)` (phones `+ 12px`): 8px clear of the 48px header Book | Drawn beside a 32px Book; next to the 48px one it touched it (product 2026-09-27) | design adopts (request #44) |
+| Mentor Profile track record: four stats, all known | An unknown figure (attendance before a settled session) keeps its tile with a muted "No data yet" | A dropped tile left a hole in the 2×2 grid (product 2026-09-27) | design confirms styling (request #43) |
 | Mentor photo placeholder: design tone per sample | Tone from a hash of the mentor id over 6 tokens | Real data has no tone field | design supplies a rule |
 
 ## Rules

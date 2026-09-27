@@ -29,7 +29,10 @@
 .menu {
   position: absolute;
   right: 0;
-  top: 40px;
+  /* DIVERGENCE: the design's top: 40px was drawn beside a 32px Book button;
+     next to the 48px one it touches it. 16px below the 32px icon = 8px below
+     a 48px neighbour (product, 2026-09-27). */
+  top: calc(100% + var(--space-4));
   z-index: 5;
   width: 220px;
   padding: var(--space-1);
@@ -74,7 +77,8 @@
     height: var(--touch-target-min);
   }
   .menu {
-    top: 52px;
+    /* 44px icon beside a 48px button: 8px clear of the button. */
+    top: calc(100% + var(--space-3));
   }
   .item {
     height: var(--touch-target-min);

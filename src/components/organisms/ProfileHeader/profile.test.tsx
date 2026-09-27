@@ -60,7 +60,10 @@ describe('TrackRecordCard', () => {
       />,
     );
     expect(screen.queryByText('Mentees keep coming back')).not.toBeInTheDocument();
-    expect(screen.queryByText('avg. attendance')).not.toBeInTheDocument();
+    // Unknown attendance keeps its tile: the grid stays whole, and it never says 0%.
+    expect(screen.getByText('avg. attendance')).toBeInTheDocument();
+    expect(screen.getByText('No data yet')).toBeInTheDocument();
+    expect(screen.queryByText('0%')).not.toBeInTheDocument();
   });
 
   it('shows the rating whenever there are reviews, even without repeat bookings (review of #21)', () => {
