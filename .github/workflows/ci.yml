@@ -40,18 +40,26 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      # The generated client is generated, not committed. If it drifts from the
-      # spec, a PR can pass locally and fail for everyone else.
-      - name: Generate API client
-        run: pnpm gen:api
+      # This repo is public: the API spec, the generated client and handoff docs
+      # must never be tracked (scripts/check-private-paths.mjs).
+      - name: Private paths are not tracked
+        run: node scripts/check-private-paths.mjs
 
-      - name: Fail if the generated client is out of date
+      # The spec lives in an encrypted Actions secret, not in the repo; the client
+      # is generated from it on every run and never committed.
+      - name: Write the API spec from the secret
+        env:
+          OPENAPI_SPEC_JSON: ${{ secrets.OPENAPI_SPEC_JSON }}
         run: |
-          if ! git diff --quiet; then
-            echo "The generated client is out of date. Run 'pnpm gen:api' and commit."
-            git diff --stat
+          if [ -z "$OPENAPI_SPEC_JSON" ]; then
+            echo "OPENAPI_SPEC_JSON secret is missing (Settings > Secrets and variables > Actions)."
             exit 1
           fi
+          mkdir -p openapi
+          printf '%s' "$OPENAPI_SPEC_JSON" > openapi/openapi.json
+
+      - name: Generate API client
+        run: pnpm gen:api
 
       - name: Typecheck
         run: pnpm typecheck
@@ -100,6 +108,15 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
+
+      # The spec comes from the secret, as in verify; the build needs the client.
+      - name: Write the API spec from the secret and generate the client
+        env:
+          OPENAPI_SPEC_JSON: ${{ secrets.OPENAPI_SPEC_JSON }}
+        run: |
+          mkdir -p openapi
+          printf '%s' "$OPENAPI_SPEC_JSON" > openapi/openapi.json
+          pnpm gen:api
 
       # Review a BUILT app. Dev-server numbers are not the numbers you ship.
       # Phase A: no backend in CI, so the build talks to the in-app mock API.

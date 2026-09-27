@@ -10,3 +10,10 @@ next-env.d.ts
 .env
 !.env.example
 !.env.development
+
+# ---- Private: never commit to this public repo (product, 2026-09-27) ----
+# They map the backend API and its behaviour. CI gets the spec from the
+# OPENAPI_SPEC_JSON Actions secret; scripts/check-private-paths.mjs enforces this.
+openapi/
+src/lib/api/generated/
+docs/handoff/

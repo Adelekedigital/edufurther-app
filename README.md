@@ -8,6 +8,9 @@ claude.ai/design (`fb0b8ef2…`) against the backend in `edufurtherBE`.
 
 ```bash
 pnpm install --frozen-lockfile
+# The API spec is private (not in this public repo). Put the current spec at
+# openapi/openapi.json (ask the backend team), then generate the client:
+pnpm gen:api
 pnpm dev                 # http://localhost:3000/explore — uses the in-app mock API
 pnpm test                # Vitest + Testing Library
 pnpm storybook           # every component, every state, in isolation
@@ -24,14 +27,20 @@ unset `ENABLE_MOCK_API` (see `.env.example`).
 |---|---|
 | `src/styles/tokens/` | Design-system tokens, verbatim with provenance; `ours.css` = tokens the design lacks |
 | `src/components/{atoms,molecules,organisms,templates}` | Atomic levels; imports only point down |
-| `src/lib/api/generated/` | Generated from `openapi/openapi.json` (`pnpm gen:api`). Imported only by `lib/api/data/` |
+| `src/lib/api/generated/` | Generated locally from the private `openapi/openapi.json` (`pnpm gen:api`); **never committed**. Imported only by `lib/api/data/` |
 | `src/lib/api/data/` | Hooks, query keys, error normalisation, label rules — the seam |
 | `src/app/explore/` | The Explore screen — the only place that fetches |
 | `src/app/api/mock/` | Phase A mock of the backend contract (answers only with `ENABLE_MOCK_API=1`) |
-| `docs/handoff/` | Requests to / replies from the backend and design |
+| `docs/handoff/` | Requests to / replies from the backend and design — **local only, never committed** |
 | `.claude/skills/project-conventions/` | Settled decisions, contract, divergences, failure log |
 
 ## Status
 
 Explore phase A: the list with every state, and the booking flow on mocked
 slots. Phase B wires auth and the real booking endpoints.
+
+## Private files
+
+This repo is public. `openapi/`, `src/lib/api/generated/` and `docs/handoff/` are
+git-ignored and must never be committed; `pnpm check:private` (also run in CI)
+fails if one is tracked. CI reads the spec from the `OPENAPI_SPEC_JSON` Actions secret.

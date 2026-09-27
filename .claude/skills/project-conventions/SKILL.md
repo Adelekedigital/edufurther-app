@@ -84,7 +84,7 @@ Sources, so the next sync can diff against them: the design project's
 |---|---|
 | Handoffs | `docs/handoff/<screen>-backend-request.md` → backend session answers in `<screen>-backend-reply.md` (it writes there directly) |
 | Where is the spec? | Backend FastAPI OpenAPI at `/openapi.json` (repo `c:/pythonwork/edufurtherBE`). `/docs` is the contract (backend ADR 0016 §4) |
-| How is the client generated? | `openapi-typescript` → `src/lib/api/generated/schema.ts` from the checked-in `openapi/openapi.json` (`pnpm gen:api`); `openapi-fetch` client created once in `lib/api/data/http.ts`. The snapshot is **provisional** until the backend exports one — read its header for the swap rule (fields ahead of the backend stay until confirmed) |
+| How is the client generated? | `openapi-typescript` → `src/lib/api/generated/schema.ts` from `openapi/openapi.json` (`pnpm gen:api`); `openapi-fetch` client created once in `lib/api/data/http.ts`. **Spec, generated client and `docs/handoff/` are private** — git-ignored, never committed (public repo). Locally: the spec file on disk. CI: the `OPENAPI_SPEC_JSON` Actions secret (48KB cap; move to a private contracts repo when the full spec outgrows it). `pnpm check:private` enforces it. The spec is provisional until the backend exports one — read its header for the swap rule |
 | Where does the generated client live? | `src/lib/api/generated/` — imported only by `src/lib/api/data/` |
 | Base path | `/api/v1/...` |
 | Response envelope | Lists: `{ data: [...], next_cursor: string \| null }` |
