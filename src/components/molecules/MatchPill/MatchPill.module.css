@@ -1,0 +1,126 @@
+.pill {
+  position: fixed;
+  z-index: 25;
+  left: 50%;
+  bottom: var(--pill-bottom);
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - var(--space-8));
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--white);
+  border: var(--border-hairline) solid var(--green-100);
+  box-shadow: var(--shadow-menu);
+  font-family: var(--font-ui);
+  transition:
+    left var(--duration-slow) var(--ease-standard),
+    transform var(--duration-slow) var(--ease-standard),
+    bottom var(--duration-base) var(--ease-standard);
+}
+/* Docked: slides to the bottom-right so the centred pager stays clear. */
+.corner {
+  left: calc(100% - var(--space-6));
+  transform: translateX(-100%);
+}
+.full {
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+}
+.route {
+  color: var(--green-700);
+}
+.label {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--button-compact-h);
+  padding: 0 var(--space-3);
+  border: var(--border-hairline) solid var(--green-700);
+  border-radius: var(--radius-full);
+  background: var(--green-50);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--green-700);
+  white-space: nowrap;
+}
+.cta:hover {
+  background: var(--green-100);
+  color: var(--green-700);
+}
+.minimise {
+  width: var(--space-8);
+  height: var(--space-8);
+  flex: none;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--ink-500);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.minimise:hover {
+  background: var(--ink-100);
+}
+.mini {
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--green-50);
+  color: var(--green-700);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mini:hover {
+  background: var(--green-100);
+  color: var(--green-700);
+}
+.cta:focus-visible,
+.minimise:focus-visible,
+.mini:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pill {
+    transition: none;
+  }
+}
+@media (max-width: 767px) {
+  .corner {
+    left: calc(100% - var(--space-4));
+  }
+  .label {
+    white-space: normal;
+  }
+  .cta,
+  .minimise {
+    min-height: var(--touch-target-min);
+  }
+  .minimise {
+    width: var(--touch-target-min);
+  }
+}
+
+/* Docked beside the pager: bottom is recomputed every frame while scrolling. */
+.tracking {
+  transition:
+    left var(--duration-slow) var(--ease-standard),
+    transform var(--duration-slow) var(--ease-standard);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tracking {
+    transition: none;
+  }
+}

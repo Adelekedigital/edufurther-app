@@ -16,8 +16,12 @@ import { deriveLabel } from './labels';
 
 type MentorSummaryRead = components['schemas']['MentorSummaryRead'];
 
-/** Design page size (Design decisions §3). Backend max is 50. */
-export const MENTOR_PAGE_SIZE = 24;
+/**
+ * Mentors per page. Product decision (2026-09-27): 10, so the list is quick to
+ * scan and "Show more mentors" loads the rest. Design drew 24; backend default
+ * is 10, max 50.
+ */
+export const MENTOR_PAGE_SIZE = 10;
 
 // ---- mapping --------------------------------------------------------------
 

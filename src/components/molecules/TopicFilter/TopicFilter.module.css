@@ -50,3 +50,25 @@
     min-height: var(--touch-target-min);
   }
 }
+
+/* Phones: one sideways-scrolling row, edge to edge, no scrollbar — chips peek
+   off the right edge to hint there's more (Design decisions: topic chips on
+   mobile). Keeps search and the first mentors higher on a 390px screen. */
+@media (max-width: 767px) {
+  .chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin-inline: calc(-1 * var(--space-4));
+    padding-inline: var(--space-4);
+    scroll-padding-inline: var(--space-4);
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .chips::-webkit-scrollbar {
+    display: none;
+  }
+  .chips > * {
+    flex: none;
+    white-space: nowrap;
+  }
+}

@@ -15,7 +15,7 @@ type MatchPromptProps = {
  */
 export function MatchPrompt({ body, href, external }: MatchPromptProps) {
   return (
-    <section aria-labelledby="match-prompt-title" className={styles.prompt}>
+    <section aria-labelledby="match-prompt-title" className={styles.prompt} data-match-prompt>
       <span className={styles.badge} aria-hidden>
         <Icon name="route" size={22} />
       </span>
