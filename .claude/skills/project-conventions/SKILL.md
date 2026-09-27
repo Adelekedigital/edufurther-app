@@ -93,7 +93,8 @@ Sources, so the next sync can diff against them: the design project's
 | Error codes that need specific UI | `422` on a list = bad cursor → restart from page 1. `404` on `/mentors/{handle}` = not found / not public (indistinguishable on purpose). Booking conflicts: see backend ADR 0024 — to confirm |
 | Pagination style | Opaque cursor, `?cursor=&limit=` (default 10, max 50; Explore uses 10 — product, 2026-09-27). `total` on the first page only (coming) |
 | Explore filters | `?offering=<slug>` repeatable, **ANY-of**, narrowed by `q`; slugs are the catalog `code` from `/api/v1/catalog/service-offerings`. Unknown slug → 422 |
-| Local dev | Phase A: `.env.development` points at the in-app mock (`/api/mock`, `ENABLE_MOCK_API=1`). Real backend: `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000` |
+| Local dev | Phase A: `.env.development` points at the in-app mock (`/api/mock`, `ENABLE_MOCK_API=1`). Real backend: `NEXT_PUBLIC_API_BASE_URL=` (empty) + `BACKEND_URL=http://localhost:8000` |
+| Deployed API calls | Product (2026-09-27): same-origin proxy. The browser calls `/api/v1/…` on the app; `next.config.ts` rewrites to server-only `BACKEND_URL` (Vercel prod → prod backend, previews → `edufurtherbe-dev`, never prod). No CORS entry per preview URL. Vercel env table in README |
 | Auth | Supabase auth (backend ADRs 0009, 0014, 0018). Public mentor endpoints need no token. Token storage on the client — to decide under `security-checker` |
 | Idempotency | Booking is idempotent and scoped to the caller (backend ADR 0024) — key format to confirm before BookingModal is wired |
 

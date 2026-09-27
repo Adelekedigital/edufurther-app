@@ -19,8 +19,23 @@ node scripts/check-boundaries.mjs
 node scripts/review-page.mjs /explore            # needs the app running
 ```
 
-Against the real backend: set `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000` and
-unset `ENABLE_MOCK_API` (see `.env.example`).
+Against the real backend, in `.env.development.local`: `NEXT_PUBLIC_API_BASE_URL=` (empty,
+so calls go same-origin), `BACKEND_URL=http://localhost:8000`, and `ENABLE_MOCK_API=`
+(see `.env.example`).
+
+## Deploying (Vercel)
+
+`vercel.json` sets the build command: `pnpm spec:pull && pnpm gen:api && pnpm build`.
+The browser calls `/api/v1/…` on the app's own domain and `next.config.ts` proxies it to
+`BACKEND_URL`, so preview URLs need no CORS entry on the backend.
+
+| Env var | Production | Preview | Notes |
+|---|---|---|---|
+| `BACKEND_URL` | prod backend | `https://edufurtherbe-dev.up.railway.app` | server-only; the build fails without it on Vercel. Previews never use prod |
+| `NEXT_PUBLIC_MATCH_CALL_URL` | Cal link | Cal link | empty hides "Find my mentor matches" |
+| `OPENAPI_SPEC_OVERLAY_JSON` | overlay | overlay | build-time; only while the overlay is non-empty |
+| `NEXT_PUBLIC_API_BASE_URL` | *unset* | *unset* | unset = same-origin proxy |
+| `ENABLE_MOCK_API` | **never** | **never** | mock is for local dev and CI only |
 
 ## Where things are
 
