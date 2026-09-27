@@ -4,7 +4,8 @@ Sources: the official google/fonts repo (SIL OFL 1.1), pinned in SOURCES below.
 Each family becomes ONE woff2 covering the Latin script as our users write it,
 so next/font/local can preload it and size a matching fallback (no layout shift).
 
-Coverage, beyond Google's own latin + latin-ext split:
+Requested coverage, beyond Google's own latin + latin-ext split (a family can only
+include what its source font has; the build prints each family's gaps):
   - precomposed Yoruba / Igbo letters: ọ ẹ ṣ ị ụ ṅ (not the whole Latin Extended
     Additional block, which is mostly Vietnamese: 24 KB on Inter alone)
   - West African letters: ɛ ɔ ɓ ɗ ƙ ŋ ə ɣ ɲ (Akan, Ewe, Hausa, Fula…)
@@ -54,6 +55,9 @@ SOURCES = [
     ("poppins/Poppins-Bold.ttf", "poppins-700.woff2", None),
 ]
 
+# Characters we care about most; the build reports any a family lacks.
+KEY_CHARS = "₦ ẹ ọ ṣ ị ụ ṅ Ẹ Ọ Ṣ ɛ ɔ Ɛ Ɔ ɓ ɗ ƙ ŋ".split()
+
 OUT = Path(__file__).resolve().parents[2] / "src" / "app" / "fonts"
 
 
@@ -80,7 +84,12 @@ def build(src_dir: Path) -> None:
         sub.subset(font)
         font.flavor = "woff2"
         font.save(OUT / out_name)
-        print(f"{out_name}: {(OUT / out_name).stat().st_size // 1024} KB")
+        # Report the key characters this family can't draw: the browser falls
+        # back to a system font for those, mid-word. Nothing fails; it's a record.
+        have = set(font.getBestCmap())
+        missing = [c for c in KEY_CHARS if ord(c) not in have]
+        note = f"  lacks: {' '.join(missing)}" if missing else "  all key characters"
+        print(f"{out_name}: {(OUT / out_name).stat().st_size // 1024} KB{note}")
 
 
 if __name__ == "__main__":

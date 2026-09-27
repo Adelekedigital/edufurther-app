@@ -9,7 +9,7 @@
  * sorted names it contains). Runs locally only; builds never touch Google.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
-import { iconNamesFromSource } from './icon-names.mjs';
+import { fingerprint, iconNamesFromSource } from './icon-names.mjs';
 
 const OUT = 'src/app/fonts/material-symbols';
 const names = iconNamesFromSource(readFileSync('src/components/atoms/Icon/iconNames.ts', 'utf8'));
@@ -31,5 +31,8 @@ if (!url) throw new Error('No woff2 URL in the Google Fonts response.');
 const font = Buffer.from(await fetch(url).then((r) => r.arrayBuffer()));
 
 writeFileSync(`${OUT}.woff2`, font);
-writeFileSync(`${OUT}.json`, `${JSON.stringify({ names }, null, 2)}\n`);
+writeFileSync(
+  `${OUT}.json`,
+  `${JSON.stringify({ names, sha256: fingerprint(font, names) }, null, 2)}\n`,
+);
 console.log(`icons:pull: ${names.length} glyphs, ${Math.round(font.length / 1024)} KB`);

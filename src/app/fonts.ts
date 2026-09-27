@@ -3,8 +3,13 @@ import localFont from 'next/font/local';
 /**
  * Self-hosted fonts (product, 2026-09-27): the files live in ./fonts, so neither
  * builds nor visitors ever contact Google Fonts. Text fonts are subsets cut by
- * scripts/fonts/build_fonts.py from google/fonts (SIL OFL, licences alongside),
- * covering Latin incl. Yoruba/Igbo dot-below letters, West African letters and ₦.
+ * scripts/fonts/build_fonts.py from google/fonts (SIL OFL, licences alongside).
+ * They request Latin incl. Yoruba/Igbo dot-below letters, West African letters
+ * and ₦, but only where the source font has them: Inter (all UI text — names,
+ * bios, buttons) covers every one; Hanken Grotesk (headings) lacks ₦, ṣ and the
+ * West African letters; Nunito Sans (form fields) lacks ɛ ɔ ƙ; Poppins (DS spec
+ * buttons, unused) lacks all. Missing characters fall back to a system font.
+ * The build script prints each family's gaps.
  * The icon font is the Material Symbols subset from `pnpm icons:pull` (Apache 2.0).
  *
  * Each family becomes a --ff-* variable; styles/tokens/fonts.css maps the DS
