@@ -31,7 +31,8 @@ type MentorCardProps = {
  * profile; the photo link is out of the tab order to avoid a duplicate stop.
  * Bottom block per MentorCard.dc.html: the offer line ("Free mentorship available"
  * while every session is free; paid "from $X" waits for prices), then either
- * "Next available: …" or "No open times at the moment" (with "See availability").
+ * "Next available: …", "No open times at the moment" (only when known to be none), or
+ * nothing while it is unknown/refreshing. Without a time, Book reads "See availability".
  * Prefetch is off on profile links: Mentor Profile is not built yet (AppShell PREFETCH note).
  */
 export function MentorCard({
@@ -114,12 +115,12 @@ export function MentorCard({
               {formatNextAvailable(m.nextAvailableAt, timeZone)}
             </strong>
           </p>
-        ) : (
+        ) : m.nextAvailableState === 'none' ? (
           <p className={styles.next}>
             <Icon name="event_busy" size={14} />
             No open times at the moment
           </p>
-        )}
+        ) : null}
       </div>
 
       <Button fullWidth className={styles.book} disabled={offline} onClick={() => onBook(m)}>

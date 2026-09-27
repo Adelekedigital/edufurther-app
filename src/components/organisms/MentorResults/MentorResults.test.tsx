@@ -19,6 +19,7 @@ const mentor = (over: Partial<Mentor> = {}): Mentor => ({
   label: 'top-rated',
   offer: 'free',
   nextAvailableAt: '2026-09-28T12:00:00Z',
+  nextAvailableState: 'open',
   topics: [{ slug: 'application-documents', label: 'Application documents' }],
   ...over,
 });
@@ -170,7 +171,11 @@ describe('MentorResults', () => {
   });
 
   it('card with no open slot says so and offers to see availability', () => {
-    render(<MentorResults {...props({ mentors: [mentor({ nextAvailableAt: null })] })} />);
+    render(
+      <MentorResults
+        {...props({ mentors: [mentor({ nextAvailableAt: null, nextAvailableState: 'none' })] })}
+      />,
+    );
     expect(screen.getByText('No open times at the moment')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'See availability' })).toBeInTheDocument();
   });
@@ -178,5 +183,16 @@ describe('MentorResults', () => {
   it('offer line is hidden when the offer is unknown', () => {
     render(<MentorResults {...props({ mentors: [mentor({ offer: null })] })} />);
     expect(screen.queryByText('Free mentorship available')).not.toBeInTheDocument();
+  });
+
+  it('availability unknown (null, not recomputed): no claim at all, just See availability', () => {
+    render(
+      <MentorResults
+        {...props({ mentors: [mentor({ nextAvailableAt: null, nextAvailableState: 'unknown' })] })}
+      />,
+    );
+    expect(screen.queryByText(/No open times/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Next available/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'See availability' })).toBeInTheDocument();
   });
 });

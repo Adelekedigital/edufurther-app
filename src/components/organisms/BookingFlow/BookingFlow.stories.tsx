@@ -19,6 +19,7 @@ const mentor: Mentor = {
   label: 'top-rated',
   offer: 'free',
   nextAvailableAt: null,
+  nextAvailableState: 'none',
   topics: [],
 };
 const sessionTypes: SessionType[] = [

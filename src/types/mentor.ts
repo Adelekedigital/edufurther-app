@@ -34,8 +34,13 @@ export type Mentor = {
    * session type. Null = unknown (line hidden). Paid ("from $X") waits for prices.
    */
   offer: 'free' | null;
-  /** Next free slot (UTC ISO). Null = nothing within the booking horizon. */
+  /** Next free slot (UTC ISO), or null. Null alone does not mean "none" — see nextAvailableState. */
   nextAvailableAt: string | null;
+  /**
+   * open: nextAvailableAt is set. none: known to have nothing open ("No open times
+   * at the moment"). unknown: not recomputed yet or not reported — say nothing.
+   */
+  nextAvailableState: 'open' | 'none' | 'unknown';
   topics: Topic[];
 };
 

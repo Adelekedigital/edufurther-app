@@ -47,7 +47,10 @@ export async function GET(req: NextRequest) {
     const none = m.id === 'm-jesuah' || i % 7 === 6;
     const at = new Date(now + (2 + ((i * 11) % 70)) * 60 * 60 * 1000);
     at.setUTCMinutes(0, 0, 0);
-    return { ...m, next_available_at: none ? null : at.toISOString() };
+    // next_available_state (backend reply round 3 #13): Jesuah is fully booked;
+    // every 7th is "refreshing" (recently changed, not recomputed yet).
+    const state = none ? (m.id === 'm-jesuah' ? 'none' : 'refreshing') : 'open';
+    return { ...m, next_available_at: none ? null : at.toISOString(), next_available_state: state };
   });
   const next = start + limit < rows.length ? `c${start + limit}` : null;
 
