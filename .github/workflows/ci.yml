@@ -111,7 +111,8 @@ jobs:
         env:
           ENABLE_MOCK_API: "1"
       - name: Wait for the server
-        run: npx --yes wait-on http://localhost:3000 --timeout 60000
+        # "/" has no page until the Home screen ships; wait on a real route.
+        run: npx --yes wait-on http://localhost:3000/explore --timeout 60000
 
       # List the routes that must stay clean. Add to this as you go; a route not
       # listed here is a route nobody is measuring.
