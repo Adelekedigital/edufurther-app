@@ -133,7 +133,10 @@
   .initials {
     font-size: 26px;
   }
+  /* Always its own line under the avatar: the -36px pull only clears the
+     banner while the name sits below it (failure-modes #26). */
   .intro {
+    flex-basis: 100%;
     padding-top: 0;
   }
   /* Phones: the location always wraps, so it gets its own line with no "·". */
