@@ -8,6 +8,7 @@
 }
 .photo {
   position: relative;
+  overflow: hidden;
   flex: 1 1 260px;
   min-height: 220px;
   background: var(--photo-bg);
@@ -15,13 +16,24 @@
   align-items: center;
   justify-content: center;
 }
-.img {
+/* Whole photo, framed (product, 2026-09-27): real photos are mostly portrait,
+   and cropping them to the frame cut heads and shoulders. The full photo sits
+   centred on a blurred copy of itself (same file, no second download). */
+.backdrop {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 25%;
+  filter: blur(24px);
+  transform: scale(1.15);
+}
+.img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 .initials {
   font-family: var(--font-brand);

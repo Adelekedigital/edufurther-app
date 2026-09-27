@@ -3,7 +3,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-4);
+  /* Figma: 24px (the .dc.html has 16px; product 2026-09-27, design request #23). */
+  padding: var(--space-6);
   border: var(--border-hairline) solid var(--border-subtle);
   border-radius: var(--radius-xl);
   background: var(--surface-card);
@@ -20,13 +21,24 @@
   justify-content: center;
   overflow: hidden;
 }
-.img {
+/* Whole photo, framed (product, 2026-09-27): real photos are mostly portrait,
+   and cropping them to the frame cut heads and shoulders. The full photo sits
+   centred on a blurred copy of itself (same file, no second download). */
+.backdrop {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 25%;
+  filter: blur(24px);
+  transform: scale(1.15);
+}
+.img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 /* Top gradient so the white-outlined label reads on bright photos (Design decisions §8). */
 .scrim {
