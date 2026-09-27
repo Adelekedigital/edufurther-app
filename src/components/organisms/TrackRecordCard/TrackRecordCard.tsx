@@ -87,7 +87,7 @@ export function TrackRecordCard({ profile, isOwner }: TrackRecordCardProps) {
       <h2 id="track-h" className="sr-only">
         Track record
       </h2>
-      {repeat && (
+      {(rated || repeat) && (
         <div className={styles.band}>
           {rated && (
             <div
@@ -109,12 +109,14 @@ export function TrackRecordCard({ profile, isOwner }: TrackRecordCardProps) {
               </span>
             </div>
           )}
-          <div className={styles.bandText}>
-            <span className={styles.bandTitle}>Mentees keep coming back</span>
-            <span className={styles.body}>
-              On average each mentee books {perMentee.toFixed(1)} sessions with {m.firstName}.
-            </span>
-          </div>
+          {repeat && (
+            <div className={styles.bandText}>
+              <span className={styles.bandTitle}>Mentees keep coming back</span>
+              <span className={styles.body}>
+                On average each mentee books {perMentee.toFixed(1)} sessions with {m.firstName}.
+              </span>
+            </div>
+          )}
         </div>
       )}
       <div className={styles.grid}>

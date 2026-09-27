@@ -63,6 +63,12 @@ describe('TrackRecordCard', () => {
     expect(screen.queryByText('avg. attendance')).not.toBeInTheDocument();
   });
 
+  it('shows the rating whenever there are reviews, even without repeat bookings (review of #21)', () => {
+    render(<TrackRecordCard profile={{ ...fullProfile, menteesMentored: 51 }} isOwner={false} />);
+    expect(screen.getByRole('img', { name: 'Rated 4.9 out of 5' })).toBeInTheDocument();
+    expect(screen.queryByText('Mentees keep coming back')).not.toBeInTheDocument();
+  });
+
   it('invites first mentees when there are no sessions yet', () => {
     render(<TrackRecordCard profile={newProfile} isOwner={false} />);
     expect(screen.getByText('Be one of Oluwakemi’s first mentees')).toBeInTheDocument();

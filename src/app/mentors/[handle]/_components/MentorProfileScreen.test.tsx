@@ -95,6 +95,17 @@ describe('MentorProfileScreen — the four states', () => {
     expect(replace).toHaveBeenCalledWith('/mentors/gbenga?tab=sessions', { scroll: false });
   });
 
+  it('keeps a shared link’s other parameters when the tab changes (review of #21)', async () => {
+    const user = userEvent.setup();
+    search = new URLSearchParams('utm_source=linkedin');
+    profile = state({ data: fullProfile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('tab', { name: 'Sessions (1)' }));
+    expect(replace).toHaveBeenCalledWith('/mentors/gbenga?utm_source=linkedin&tab=sessions', {
+      scroll: false,
+    });
+  });
+
   it('opens on the Sessions tab from ?tab=sessions', () => {
     search = new URLSearchParams('tab=sessions');
     profile = state({ data: fullProfile });
@@ -117,6 +128,14 @@ describe('MentorProfileScreen — the mentor on their own page', () => {
       screen.getByText('Only you can see this until your profile is approved.'),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Book a session' })).not.toBeInTheDocument();
+  });
+
+  it('tells a declined mentor their profile wasn’t approved (review of #21)', () => {
+    profile = state({ data: { ...fullProfile, owner: { approval: 'declined', listed: true } } });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(
+      screen.getByText('Your profile wasn’t approved. Only you can see it.'),
+    ).toBeInTheDocument();
   });
 
   it('says an unlisted profile is hidden', () => {

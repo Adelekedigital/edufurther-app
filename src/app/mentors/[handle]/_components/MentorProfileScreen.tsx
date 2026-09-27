@@ -45,8 +45,14 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const params = useSearchParams();
   const hasSessions = (p?.sessionTypes.length ?? 0) > 0;
   const tab: Tab = params.get('tab') === 'sessions' && hasSessions ? 'sessions' : 'overview';
-  const setTab = (t: string) =>
-    router.replace(t === 'sessions' ? `${pathname}?tab=sessions` : pathname, { scroll: false });
+  const setTab = (t: string) => {
+    // Change only `tab`: a shared link's other parameters (utm_*) stay.
+    const next = new URLSearchParams(params.toString());
+    if (t === 'sessions') next.set('tab', 'sessions');
+    else next.delete('tab');
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
 
   // Cards only render after a client fetch, so reading the device zone here is safe.
   const [timeZone] = useState(deviceTimeZone);
@@ -212,11 +218,14 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
 function OwnerBar({ profile }: { profile: MentorProfile }) {
   const o = profile.owner;
   const hidden =
-    o && o.approval !== 'approved'
-      ? 'Only you can see this until your profile is approved.'
-      : o && !o.listed
-        ? 'Your profile is unlisted. Only you can see it.'
-        : null;
+    o && o.approval === 'declined'
+      ? // PROVISIONAL (design request #42): design wrote pending and unlisted only.
+        'Your profile wasn’t approved. Only you can see it.'
+      : o && o.approval !== 'approved'
+        ? 'Only you can see this until your profile is approved.'
+        : o && !o.listed
+          ? 'Your profile is unlisted. Only you can see it.'
+          : null;
   return (
     <div className={styles.ownerBar}>
       <span className={styles.ownerText}>

@@ -16,8 +16,9 @@ const STUDY = ['United States', 'United Kingdom', 'Canada', 'Germany'];
  * MOCK of GET /api/v1/mentors/{handle} (slug or id) → MentorPublicRead, built
  * from the list fixtures. Every third generated mentor is sparse (no about, no
  * awards, no background) and mentors with no sessions read as new, so the
- * profile's empty branches have data to render. Unknown handles 404, as do
- * the design's fully booked sample, which reads as hidden. ENABLE_MOCK_API=1 only.
+ * profile's empty branches have data to render. Unknown handles 404. The
+ * design's fully booked sample is public with its offerings and reads
+ * next_available_state "none" ("No open times at the moment"). ENABLE_MOCK_API=1 only.
  */
 export async function GET(_req: Request, ctx: { params: Promise<{ handle: string }> }) {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
@@ -30,7 +31,6 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
 
   const sparse = i > 5 && i % 3 === 2;
   const sessions = m.completed_sessions;
-  const hidden = mockAvailabilityState(m.id) === 'none';
   const body: MentorPublicRead = {
     id: m.id,
     slug: m.slug,
@@ -53,15 +53,13 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
     social_twitter: null,
     social_youtube: i % 4 === 0 ? `https://www.youtube.com/@${m.slug}` : null,
     offerings: m.offerings,
-    session_types: hidden
-      ? []
-      : MOCK_SESSION_TYPES.map((t, k) => ({
-          ...t,
-          application_stage: k === 0 ? 'early_exploration' : 'drafting_stage',
-          service_offering: m.offerings?.[k]
-            ? { code: m.offerings[k]!.slug, display_name: m.offerings[k]!.display_name }
-            : null,
-        })),
+    session_types: MOCK_SESSION_TYPES.map((t, k) => ({
+      ...t,
+      application_stage: k === 0 ? 'early_exploration' : 'drafting_stage',
+      service_offering: m.offerings?.[k]
+        ? { code: m.offerings[k]!.slug, display_name: m.offerings[k]!.display_name }
+        : null,
+    })),
     education: [
       {
         id: `${m.id}-e1`,
