@@ -12,8 +12,8 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | Design says | We do | Why | Revisit when |
 |---|---|---|---|
 | MentorCard "Plus" gold tag | Not rendered | Backend has no Plus concept (reply #5) | backend defines Plus |
-| MentorCard price line ("Free mentorship available" / "Paid sessions from $X") | Not rendered | No prices exist; sessions use credits (reply #3) | payments ship |
-| MentorCard "No open times in the next 2 weeks" when no next slot | Line hidden; Book reads "See availability" | Backend: `next_available_at: null` means none within the booking horizon, which is not always 2 weeks (reply #4) | horizon is fixed product-wide |
+| MentorCard price line: "Free mentorship available" / "Paid sessions from $X" | Free line shown for every mentor; paid line deferred | Product (2026-09-27): all sessions are free until paid ships. No price data in the API yet (backend reply #3) | backend adds a price summary / paid sessions ship |
+| MentorCard "No open times in the next 2 weeks" | "No open times at the moment" (same icon and style); Book reads "See availability" | Product (2026-09-27): the booking horizon is not always 2 weeks | a fixed product-wide horizon |
 | "New to EduFurther" whenever there are no reviews | Only at 0–2 sessions; otherwise "No reviews yet · N sessions" | no reviews ≠ new (reply #6) | design confirms copy (design request #15) |
 | Empty state "No mentors match all of that" / "Try removing a topic or two" | "No mentors match that" + ANY-of copy (provisional) | Topics match ANY-of (revised reply #1) — more chips widen results | design answers request #13 |
 | No-mentors state with "Notify me" | Button hidden; the sentence promising it dropped | Nothing stores the request; notify is signed-in only (reply, notify section) | notify endpoint ships |

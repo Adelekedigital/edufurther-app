@@ -57,6 +57,10 @@ export function toMentor(r: MentorSummaryRead): Mentor {
       reviewCount: r.review_count,
       completedSessions: r.completed_sessions,
     }),
+    // PRODUCT RULE (2026-09-27): every session is free until paid sessions ship,
+    // so every mentor offers free mentorship. When the backend adds a price summary
+    // (has_free_session_type / min_price, backend request #3), derive it here.
+    offer: 'free',
     nextAvailableAt: r.next_available_at ?? null,
     topics: r.offerings.map((o) => ({ slug: o.slug, label: o.display_name })),
   };

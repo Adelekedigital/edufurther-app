@@ -22,6 +22,7 @@ export const sampleMentors: Mentor[] = [
     reviewCount: 11,
     rating: 4.9,
     label: 'top-rated',
+    offer: 'free',
     nextAvailableAt: soon,
     topics: [
       { slug: 'a', label: 'Scholarships & funding' },
@@ -42,6 +43,7 @@ export const sampleMentors: Mentor[] = [
     reviewCount: 0,
     rating: null,
     label: 'rising',
+    offer: 'free',
     nextAvailableAt: soon,
     topics: [{ slug: 'b', label: 'Application documents' }],
   },
@@ -59,6 +61,7 @@ export const sampleMentors: Mentor[] = [
     reviewCount: 4,
     rating: 4.9,
     label: 'experienced',
+    offer: 'free',
     nextAvailableAt: null,
     topics: [{ slug: 'c', label: 'Program selection' }],
   },
@@ -76,6 +79,7 @@ export const sampleMentors: Mentor[] = [
     reviewCount: 0,
     rating: null,
     label: null,
+    offer: 'free',
     nextAvailableAt: soon,
     topics: [
       { slug: 'd', label: 'Career guidance' },

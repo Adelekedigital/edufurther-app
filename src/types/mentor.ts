@@ -29,6 +29,11 @@ export type Mentor = {
   /** Mean session value, 1..5. Null when there are no published reviews. */
   rating: number | null;
   label: MentorLabel | null;
+  /**
+   * What booking costs, for the card's offer line. "free" = at least one free
+   * session type. Null = unknown (line hidden). Paid ("from $X") waits for prices.
+   */
+  offer: 'free' | null;
   /** Next free slot (UTC ISO). Null = nothing within the booking horizon. */
   nextAvailableAt: string | null;
   topics: Topic[];

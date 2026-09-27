@@ -97,15 +97,29 @@ export function MentorCard({
         </ul>
       )}
 
-      {m.nextAvailableAt && (
-        <p className={styles.next}>
-          <Icon name="bolt" size={14} />
-          Next available:{' '}
-          <strong className={styles.nextTime}>
-            {formatNextAvailable(m.nextAvailableAt, timeZone)}
-          </strong>
-        </p>
-      )}
+      {/* MentorCard.dc.html bottom block: offer line, then availability. */}
+      <div className={styles.meta}>
+        {m.offer === 'free' && (
+          <p className={styles.offer}>
+            <span className={styles.offerDot} aria-hidden />
+            Free mentorship available
+          </p>
+        )}
+        {m.nextAvailableAt ? (
+          <p className={styles.next}>
+            <Icon name="bolt" size={14} />
+            Next available:{' '}
+            <strong className={styles.nextTime}>
+              {formatNextAvailable(m.nextAvailableAt, timeZone)}
+            </strong>
+          </p>
+        ) : (
+          <p className={styles.next}>
+            <Icon name="event_busy" size={14} />
+            No open times at the moment
+          </p>
+        )}
+      </div>
 
       <Button fullWidth className={styles.book} disabled={offline} onClick={() => onBook(m)}>
         {offline

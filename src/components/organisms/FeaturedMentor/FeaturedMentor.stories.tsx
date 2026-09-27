@@ -18,6 +18,7 @@ const featured: Featured = {
   reviewCount: 34,
   rating: 4.9,
   label: 'top-rated',
+  offer: 'free',
   nextAvailableAt: new Date(Date.now() + 30 * 3600_000).toISOString(),
   topics: [],
   bio: 'I’m a medical doctor and public health professional. I love meeting people and sharing what I’ve learned, and it’s a privilege to guide others through the application journey.',

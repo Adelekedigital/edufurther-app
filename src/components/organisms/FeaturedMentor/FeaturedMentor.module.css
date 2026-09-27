@@ -90,9 +90,10 @@
   font-size: var(--text-p-xs);
   color: var(--text-tertiary);
 }
+/* Design uses a bare <strong>: bold (700). */
 .nextTime {
   color: var(--text-primary);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-bold);
 }
 .actions {
   display: flex;
