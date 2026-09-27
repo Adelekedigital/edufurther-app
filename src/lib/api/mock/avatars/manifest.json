@@ -1,0 +1,182 @@
+{
+  "source": "thispersondoesnotexist.com (StyleGAN, synthetic faces \u2014 no real people)",
+  "downloaded": "2026-09-27",
+  "people": [
+    {
+      "file": "face-01.webp",
+      "first_name": "Sofia",
+      "last_name": "Marin",
+      "shape": "portrait",
+      "width": 480,
+      "height": 600
+    },
+    {
+      "file": "face-02.webp",
+      "first_name": "Elena",
+      "last_name": "Rossi",
+      "shape": "square",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "file": "face-03.webp",
+      "first_name": "Daniel",
+      "last_name": "Reyes",
+      "shape": "landscape",
+      "width": 600,
+      "height": 400
+    },
+    {
+      "file": "face-04.webp",
+      "first_name": "Lukas",
+      "last_name": "Weber",
+      "shape": "portrait",
+      "width": 480,
+      "height": 600
+    },
+    {
+      "file": "face-06.webp",
+      "first_name": "Mark",
+      "last_name": "Thompson",
+      "shape": "square",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "file": "face-07.webp",
+      "first_name": "Rafael",
+      "last_name": "Santos",
+      "shape": "landscape",
+      "width": 600,
+      "height": 400
+    },
+    {
+      "file": "face-08.webp",
+      "first_name": "Hannah",
+      "last_name": "Keller",
+      "shape": "portrait",
+      "width": 480,
+      "height": 600
+    },
+    {
+      "file": "face-09.webp",
+      "first_name": "Adrian",
+      "last_name": "Novak",
+      "shape": "square",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "file": "face-11.webp",
+      "first_name": "Tomasz",
+      "last_name": "Kowalski",
+      "shape": "landscape",
+      "width": 600,
+      "height": 400
+    },
+    {
+      "file": "face-12.webp",
+      "first_name": "Laura",
+      "last_name": "Bennett",
+      "shape": "portrait",
+      "width": 480,
+      "height": 600
+    },
+    {
+      "file": "face-13.webp",
+      "first_name": "Leo",
+      "last_name": "Martins",
+      "shape": "square",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "file": "face-14.webp",
+      "first_name": "James",
+      "last_name": "Walker",
+      "shape": "landscape",
+      "width": 600,
+      "height": 400
+    },
+    {
+      "file": "face-17.webp",
+      "first_name": "Omar",
+      "last_name": "Haddad",
+      "shape": "portrait",
+      "width": 480,
+      "height": 600
+    },
+    {
+      "file": "face-18.webp",
+      "first_name": "Claire",
+      "last_name": "Dubois",
+      "shape": "square",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "file": "face-22.webp",
+      "first_name": "Ethan",
+      "last_name": "Clarke",
+      "shape": "landscape",
+      "width": 600,
+      "height": 400
+    },
+    {
+      "file": "face-23.webp",
+      "first_name": "Peter",
+      "last_name": "Lindqvist",
+      "shape": "portrait",
+      "width": 480,
+      "height": 600
+    },
+    {
+      "file": "face-24.webp",
+      "first_name": "Anna",
+      "last_name": "Schmidt",
+      "shape": "square",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "file": "face-25.webp",
+      "first_name": "Isabel",
+      "last_name": "Ortiz",
+      "shape": "landscape",
+      "width": 600,
+      "height": 400
+    },
+    {
+      "file": "face-26.webp",
+      "first_name": "Marco",
+      "last_name": "Bianchi",
+      "shape": "portrait",
+      "width": 480,
+      "height": 600
+    },
+    {
+      "file": "face-27.webp",
+      "first_name": "Emily",
+      "last_name": "Carter",
+      "shape": "square",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "file": "face-28.webp",
+      "first_name": "Julia",
+      "last_name": "Fischer",
+      "shape": "landscape",
+      "width": 600,
+      "height": 400
+    },
+    {
+      "file": "face-21.webp",
+      "first_name": "Maria",
+      "last_name": "Lopez",
+      "shape": "portrait",
+      "width": 480,
+      "height": 600
+    }
+  ]
+}
