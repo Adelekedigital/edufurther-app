@@ -38,7 +38,7 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | Explore section `gap:var(--space-6)` (24px), phones 16px | `--space-8` (32px), phones `--space-6` (24px) | Product (2026-09-27): hero → featured → "What do you need help with?" read cramped | design adopts (request #23) |
 | Featured image `flex:1 1 260px; min-height:220px` | 400px wide, card 315px tall; stacks full-width below 900px | Figma values (product 2026-09-27) | design adopts (request #23) |
 | MentorCard `padding:var(--space-4)` (16px) | `--space-6` (24px), skeleton too | Figma has 24px; the .dc.html lags it (product 2026-09-27) | design adopts (request #23) |
-| MentorCard / featured photo `object-fit:cover; object-position:50% 25%` | Whole photo, `object-fit:contain`, over a blurred copy of itself (`cover`, `blur(24px)`, `scale(1.15)`) | Product (2026-09-27): real photos are portrait; cropping to 3:2 cut heads and shoulders | design adopts (request #23) |
+| Book session buttons (card + featured): `height:32px; padding:0 var(--space-4)` | Button size `cta`: `padding: 16px 24px` (48px tall); phones `16px` all round (48px) | Product (2026-09-27): the CTA needs real padding | design adopts (request #24) |
 | Mentor photo placeholder: design tone per sample | Tone from a hash of the mentor id over 6 tokens | Real data has no tone field | design supplies a rule |
 
 ## Rules
