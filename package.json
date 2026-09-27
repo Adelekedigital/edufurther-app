@@ -40,6 +40,7 @@
   "reviewPage": {
     "widths": [
       390,
+      600,
       1440
     ],
     "outDir": ".review",

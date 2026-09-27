@@ -136,6 +136,11 @@ jobs:
             node scripts/review-page.mjs "$route"
           done
 
+      # Layout invariants at in-between widths the screenshots skip
+      # (failure-modes #26). Add a check when one of those bites.
+      - name: Check layout
+        run: node scripts/check-layout.mjs
+
       # A failed run whose screenshots you cannot see is a puzzle.
       - uses: actions/upload-artifact@v4
         if: always()
