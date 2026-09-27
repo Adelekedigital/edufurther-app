@@ -30,6 +30,10 @@
   flex: none;
   color: var(--text-tertiary);
 }
+.ownerIconLock {
+  flex: none;
+  color: var(--ink-600);
+}
 .tabsRow {
   border-bottom: var(--border-hairline) solid var(--border-subtle);
 }

@@ -49,7 +49,13 @@ export function ShareMenu({ url, name }: ShareMenuProps) {
       label: 'Copy profile link',
       icon: 'link',
       onSelect: () => {
-        navigator.clipboard?.writeText(url).then(
+        // No clipboard API outside secure contexts (plain-http previews, some
+        // webviews): say so rather than fail silently.
+        if (!navigator.clipboard) {
+          setStatus('Couldn’t copy the link');
+          return;
+        }
+        navigator.clipboard.writeText(url).then(
           () => setStatus('Link copied'),
           () => setStatus('Couldn’t copy the link'),
         );

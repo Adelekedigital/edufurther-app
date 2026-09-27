@@ -48,7 +48,12 @@ export function SessionTypeList({
           </div>
           {canBook && (
             <div className={styles.foot}>
-              <Button disabled={!!bookBlocked} onClick={() => onBook(s.id)}>
+              {/* Repeated on every card, so outlined (CTA hierarchy). */}
+              <Button
+                variant="secondary-outlined"
+                disabled={!!bookBlocked}
+                onClick={() => onBook(s.id)}
+              >
                 {bookBlocked ?? 'Book session'}
               </Button>
             </div>

@@ -71,12 +71,10 @@ export const BookCardOneOffering: Story = {
   render: () => (
     <div style={side}>
       <BookSessionCard
-        mentor={fullProfile.mentor}
         sessionTypes={[sessionTypes[0]!]}
         onBook={fn()}
         onCompare={fn()}
         bookBlocked={null}
-        timeZone="America/New_York"
       />
     </div>
   ),
@@ -85,26 +83,10 @@ export const BookCardSeveral: Story = {
   render: () => (
     <div style={side}>
       <BookSessionCard
-        mentor={fullProfile.mentor}
         sessionTypes={sessionTypes}
         onBook={fn()}
         onCompare={fn()}
         bookBlocked={null}
-        timeZone="America/New_York"
-      />
-    </div>
-  ),
-};
-export const BookCardNoOpenTimes: Story = {
-  render: () => (
-    <div style={side}>
-      <BookSessionCard
-        mentor={newProfile.mentor}
-        sessionTypes={[sessionTypes[0]!]}
-        onBook={fn()}
-        onCompare={fn()}
-        bookBlocked={null}
-        timeZone="America/New_York"
       />
     </div>
   ),
@@ -113,12 +95,10 @@ export const BookCardBlocked: Story = {
   render: () => (
     <div style={side}>
       <BookSessionCard
-        mentor={fullProfile.mentor}
         sessionTypes={[sessionTypes[0]!]}
         onBook={fn()}
         onCompare={fn()}
         bookBlocked="Booking needs a connection"
-        timeZone="America/New_York"
       />
     </div>
   ),

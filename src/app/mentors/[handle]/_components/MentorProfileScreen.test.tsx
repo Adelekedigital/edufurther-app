@@ -114,9 +114,22 @@ describe('MentorProfileScreen — the mentor on their own page', () => {
     });
     render(<MentorProfileScreen handle="gbenga" />);
     expect(
-      screen.getByText(/You’re viewing your own profile. Only you can see it until it’s approved./),
+      screen.getByText('Only you can see this until your profile is approved.'),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Book a session' })).not.toBeInTheDocument();
+  });
+
+  it('says an unlisted profile is hidden', () => {
+    profile = state({ data: { ...fullProfile, owner: { approval: 'approved', listed: false } } });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByText('Your profile is unlisted. Only you can see it.')).toBeInTheDocument();
+  });
+
+  it('keeps a loaded profile on screen when a background refetch fails (review of #21)', () => {
+    profile = state({ data: fullProfile, error: { kind: 'offline', message: 'x' } });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Gbenga Elufisan' })).toBeInTheDocument();
+    expect(screen.queryByText('We couldn’t load this profile')).not.toBeInTheDocument();
   });
 
   it('knows the owner by id even before the owner-only fields arrive', () => {

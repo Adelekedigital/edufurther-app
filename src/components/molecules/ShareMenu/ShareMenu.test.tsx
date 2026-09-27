@@ -32,4 +32,13 @@ describe('ShareMenu', () => {
     expect(writeText).toHaveBeenCalledWith('https://edufurther.com/mentors/g?x=1');
     expect(await screen.findByRole('status')).toHaveTextContent('Link copied');
   });
+
+  it('says so when the clipboard API is missing (plain-http previews; review of #21)', async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true });
+    render(<ShareMenu url="https://edufurther.com/mentors/g" name="Gbenga E" />);
+    await user.click(screen.getByRole('button', { name: 'Share profile' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Copy profile link' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Couldn’t copy the link');
+  });
 });

@@ -28,6 +28,7 @@
     "ios_share",
     "link",
     "location_on",
+    "lock",
     "lock_clock",
     "logout",
     "mail",
@@ -52,5 +53,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "18377b1f4d63d7ec4707520d9fcd3dc570e920d0e878a09866833d871cb18079"
+  "sha256": "0326936b58f6a1dddb0406afdfd257e1e594752c9d35b334fe9fab9000bfe40c"
 }

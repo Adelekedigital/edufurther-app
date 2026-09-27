@@ -34,6 +34,7 @@ export const ICON_NAMES = [
   'ios_share',
   'link',
   'location_on',
+  'lock',
   'lock_clock',
   'logout',
   'mail',

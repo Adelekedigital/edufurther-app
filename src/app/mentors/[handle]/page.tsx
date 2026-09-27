@@ -13,11 +13,17 @@ export default async function MentorProfilePage({
 }: {
   params: Promise<{ handle: string }>;
 }) {
-  const { handle } = await params;
+  const { handle: raw } = await params;
+  // A malformed %-sequence (e.g. /mentors/%E0) must not crash the render: keep
+  // the raw value and let the API answer 404 → "This mentor profile isn't available".
+  let handle = raw;
+  try {
+    handle = decodeURIComponent(raw);
+  } catch {}
   // The screen reads ?tab= (useSearchParams), which needs a Suspense boundary.
   return (
     <Suspense>
-      <MentorProfileScreen handle={decodeURIComponent(handle)} />
+      <MentorProfileScreen handle={handle} />
     </Suspense>
   );
 }

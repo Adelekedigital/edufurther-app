@@ -79,20 +79,21 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
       <div className={styles.page}>
         {profile.isLoading ? (
           <ProfileSkeleton />
-        ) : profile.error ? (
+        ) : profile.error && !p ? (
+          // Only with nothing to show: a failed background refetch keeps the profile.
           <EmptyState
             illustration="forms"
             title="We couldn’t load this profile"
-            description="Something went wrong on our side. Try again in a moment."
+            description="Something went wrong on our side. Check your connection and try again."
             actions={<Button onClick={profile.retry}>Try again</Button>}
           />
         ) : profile.notFound || !p ? (
-          // PROVISIONAL (design request #34). 404 is "not found or not public",
-          // indistinguishable on purpose — the copy doesn't guess which.
+          // Design reply #34. 404 is "not found or not public", indistinguishable
+          // on purpose — the copy doesn't guess which.
           <EmptyState
             illustration="search-results"
             title="This mentor profile isn’t available"
-            description="It may have moved, or the mentor isn’t taking bookings right now."
+            description="The link may be out of date, or the profile isn’t public. You can find other mentors who’ve done the same path."
             actions={<ButtonLink href="/explore">Explore mentors</ButtonLink>}
           />
         ) : (
@@ -154,12 +155,10 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 <aside className={styles.aside} aria-label="Booking and track record">
                   {!isOwner && (
                     <BookSessionCard
-                      mentor={p.mentor}
                       sessionTypes={p.sessionTypes}
                       onBook={openBooking}
                       onCompare={() => setTab('sessions')}
                       bookBlocked={bookBlocked}
-                      timeZone={timeZone}
                     />
                   )}
                   <TrackRecordCard profile={p} isOwner={isOwner} />
@@ -206,23 +205,27 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
 }
 
 /**
- * Mentor Profile.dc.html owner bar, read-only for now: the "View as mentee"
- * toggle arrives with editing. PROVISIONAL (design request #35): the note for a
- * profile mentees can't see yet.
+ * Mentor Profile.dc.html owner bar (design reply #35), read-only for now: the
+ * "View as mentee" toggle arrives with editing. A profile mentees can't see yet
+ * says so, with a lock.
  */
 function OwnerBar({ profile }: { profile: MentorProfile }) {
   const o = profile.owner;
-  const note =
+  const hidden =
     o && o.approval !== 'approved'
-      ? ' Only you can see it until it’s approved.'
+      ? 'Only you can see this until your profile is approved.'
       : o && !o.listed
-        ? ' It’s hidden from search right now.'
-        : '';
+        ? 'Your profile is unlisted. Only you can see it.'
+        : null;
   return (
     <div className={styles.ownerBar}>
       <span className={styles.ownerText}>
-        <Icon name="person" size={18} className={styles.ownerIcon} />
-        You’re viewing your own profile.{note}
+        <Icon
+          name={hidden ? 'lock' : 'person'}
+          size={18}
+          className={hidden ? styles.ownerIconLock : styles.ownerIcon}
+        />
+        {hidden ?? 'You’re viewing your own profile.'}
       </span>
     </div>
   );

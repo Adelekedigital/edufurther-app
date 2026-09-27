@@ -44,47 +44,16 @@
   color: var(--text-tertiary);
 }
 
-/* "Next available" shortcut: dashed blue box (design). */
-.next {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: var(--border-hairline) dashed var(--blue-500);
-  border-radius: var(--radius-md);
-  background: var(--blue-50);
-  color: var(--text-primary);
-  font-family: var(--font-ui);
+/* One offering: description, then what happens after Book (design reply #32). */
+.desc {
   font-size: var(--text-p-xs);
-  text-align: left;
-  cursor: pointer;
+  line-height: var(--lh-p);
+  color: var(--text-secondary);
 }
-.next:hover {
-  background: var(--blue-100);
-}
-.next:disabled {
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-.next:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
-}
-.nextIcon {
-  color: var(--blue-500);
-}
-.none {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
+.helper {
   font-size: var(--text-p-xs);
-  color: var(--ink-600);
-}
-/* Ours: the multi-offering card has no "next" line in the design (it was per
-   offering, which the API can't give — backend reply #10); the mentor's own
-   figure sits under the header instead. */
-.inset {
-  margin: 0 var(--space-5) var(--space-3);
+  color: var(--text-tertiary);
+  text-align: center;
 }
 
 /* ---- several offerings ------------------------------------------------------ */
@@ -173,11 +142,5 @@
   }
   .row {
     padding: var(--space-3) var(--space-4);
-  }
-  .inset {
-    margin: 0 var(--space-4) var(--space-3);
-  }
-  .next {
-    min-height: var(--touch-target-min);
   }
 }

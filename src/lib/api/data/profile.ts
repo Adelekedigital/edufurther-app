@@ -136,8 +136,8 @@ export function toMentorProfile(r: MentorPublicRead): MentorProfile {
     sessionTypes: (r.session_types ?? []).map(toProfileSessionType),
     mentoringMinutes: r.mentoring_minutes,
     menteesMentored: r.mentees_mentored,
-    // Assumed a whole-number percentage, like SessionRead.mentee_attendance_rate
-    // (asked in mentor-profile-backend-request #13).
+    // A whole-number percentage, 0–100; null (never 0) until a session has
+    // settled (backend, mentor-profile request #13).
     attendanceRate: r.attendance_rate ?? null,
     owner: isOwner
       ? { approval: r.approval_status ?? null, listed: r.listing_status !== 'unlisted' }

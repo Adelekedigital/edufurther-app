@@ -1,35 +1,30 @@
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Tag } from '@/components/atoms/Tag/Tag';
-import { cx } from '@/lib/utils/cx';
-import { formatNextAvailable } from '@/lib/utils/format';
-import type { Mentor, ProfileSessionType } from '@/types/mentor';
+import type { ProfileSessionType } from '@/types/mentor';
 import styles from './BookSessionCard.module.css';
 
 type BookSessionCardProps = {
-  mentor: Mentor;
   sessionTypes: ProfileSessionType[];
   /** Opens the shared booking modal, on that offering when one is given. */
   onBook: (sessionTypeId?: string) => void;
   /** Switches to the Sessions tab. */
   onCompare: () => void;
   bookBlocked: string | null;
-  timeZone: string;
 };
 
 /**
- * The profile's booking card. PROVISIONAL (design request #32): product wants
- * one booking experience everywhere, so the design's in-card date tiles, time
- * grid and "Request sent" are not built — every Book opens BookingModal.
- * The card keeps the design's header and the "Next available" shortcut.
+ * The profile's booking card (design reply #32): no in-card picker — every Book
+ * opens the shared BookingModal on that offering. One offering: header,
+ * description, an outlined "Book this session" and what happens next. Several:
+ * the first two with Book on each, then "Compare sessions". Book is outlined:
+ * the header's "Book a session" is the view's one filled button (CTA hierarchy).
  */
 export function BookSessionCard({
-  mentor,
   sessionTypes,
   onBook,
   onCompare,
   bookBlocked,
-  timeZone,
 }: BookSessionCardProps) {
   if (sessionTypes.length === 0) return null;
 
@@ -56,15 +51,16 @@ export function BookSessionCard({
             </div>
             <Tag tone="free">Free</Tag>
           </div>
-          <Availability
-            mentor={mentor}
-            timeZone={timeZone}
-            onBook={() => onBook(s.id)}
-            blocked={!!bookBlocked}
-          />
-          <Button fullWidth disabled={!!bookBlocked} onClick={() => onBook(s.id)}>
-            {bookBlocked ?? 'Book a session'}
+          {s.description && <p className={styles.desc}>{s.description}</p>}
+          <Button
+            variant="secondary-outlined"
+            fullWidth
+            disabled={!!bookBlocked}
+            onClick={() => onBook(s.id)}
+          >
+            {bookBlocked ?? 'Book this session'}
           </Button>
+          <p className={styles.helper}>You’ll pick a time and answer a few questions next.</p>
         </div>
       </section>
     );
@@ -78,13 +74,6 @@ export function BookSessionCard({
         </h2>
         <span className={styles.sub}>{sessionTypes.length} session types</span>
       </div>
-      <Availability
-        mentor={mentor}
-        timeZone={timeZone}
-        onBook={() => onBook()}
-        blocked={!!bookBlocked}
-        inset
-      />
       <ul className={styles.rows}>
         {sessionTypes.slice(0, 2).map((s) => (
           <li key={s.id} className={styles.row}>
@@ -98,7 +87,11 @@ export function BookSessionCard({
                 <Icon name="schedule" size={14} />
                 {s.durationMin} min
               </span>
-              <Button disabled={!!bookBlocked} onClick={() => onBook(s.id)}>
+              <Button
+                variant="secondary-outlined"
+                disabled={!!bookBlocked}
+                onClick={() => onBook(s.id)}
+              >
                 Book
                 <span className="sr-only"> {s.name}</span>
               </Button>
@@ -112,48 +105,4 @@ export function BookSessionCard({
       </button>
     </section>
   );
-}
-
-/**
- * "Next available: Wed, Sep 30, 1:30 am" as the design's dashed shortcut into
- * booking, from the same figure the Explore card shows. "No open times at the
- * moment" only when the backend says there are none (Explore rule).
- */
-function Availability({
-  mentor,
-  timeZone,
-  onBook,
-  blocked,
-  inset,
-}: {
-  mentor: Mentor;
-  timeZone: string;
-  onBook: () => void;
-  blocked: boolean;
-  inset?: boolean;
-}) {
-  if (mentor.nextAvailableState === 'open' && mentor.nextAvailableAt) {
-    return (
-      <button
-        type="button"
-        className={cx(styles.next, inset && styles.inset)}
-        onClick={onBook}
-        disabled={blocked}
-      >
-        <Icon name="bolt" size={18} className={styles.nextIcon} />
-        <span>
-          <strong>Next available:</strong> {formatNextAvailable(mentor.nextAvailableAt, timeZone)}
-        </span>
-      </button>
-    );
-  }
-  if (mentor.nextAvailableState === 'none') {
-    return (
-      <p className={cx(styles.none, inset && styles.inset)}>
-        <Icon name="event_busy" size={16} />
-        No open times at the moment
-      </p>
-    );
-  }
-  return null;
 }

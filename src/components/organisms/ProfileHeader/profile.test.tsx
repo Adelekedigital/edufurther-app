@@ -70,37 +70,34 @@ describe('TrackRecordCard', () => {
 });
 
 describe('BookSessionCard', () => {
-  it('opens booking on the offering from Book and from Next available', async () => {
+  it('one offering: Book this session opens booking on it, and says what comes next', async () => {
     const user = userEvent.setup();
     const onBook = vi.fn();
     render(
       <BookSessionCard
-        mentor={fullProfile.mentor}
         sessionTypes={[sessionTypes[0]!]}
         onBook={onBook}
         onCompare={vi.fn()}
         bookBlocked={null}
-        timeZone="America/New_York"
       />,
     );
-    await user.click(screen.getByRole('button', { name: /Next available: Wed, Sep 30/ }));
-    await user.click(screen.getByRole('button', { name: 'Book a session' }));
-    expect(onBook).toHaveBeenNthCalledWith(1, 'st1');
-    expect(onBook).toHaveBeenNthCalledWith(2, 'st1');
+    expect(screen.queryByText(/Next available/)).not.toBeInTheDocument();
+    expect(
+      screen.getByText('You’ll pick a time and answer a few questions next.'),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Book this session' }));
+    expect(onBook).toHaveBeenCalledWith('st1');
   });
 
-  it('says no open times only when the backend says none, and shows why booking is blocked', () => {
+  it('shows why booking is blocked', () => {
     render(
       <BookSessionCard
-        mentor={newProfile.mentor}
         sessionTypes={[sessionTypes[0]!]}
         onBook={vi.fn()}
         onCompare={vi.fn()}
         bookBlocked="Booking needs a connection"
-        timeZone="UTC"
       />,
     );
-    expect(screen.getByText('No open times at the moment')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Booking needs a connection' })).toBeDisabled();
   });
 
@@ -109,12 +106,10 @@ describe('BookSessionCard', () => {
     const onCompare = vi.fn();
     render(
       <BookSessionCard
-        mentor={fullProfile.mentor}
         sessionTypes={sessionTypes}
         onBook={vi.fn()}
         onCompare={onCompare}
         bookBlocked={null}
-        timeZone="UTC"
       />,
     );
     const rowBooks = screen
