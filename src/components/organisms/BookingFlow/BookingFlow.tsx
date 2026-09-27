@@ -386,8 +386,13 @@ export function BookingFlow(p: BookingFlowProps) {
             )}
           </div>
         )}
-        {pickedRow}
-        {status ?? stepContent}
+        {/* Same gate as the desktop columns: not over loading, error or done. */}
+        {status ?? (
+          <>
+            {pickedRow}
+            {stepContent}
+          </>
+        )}
       </>
     );
 

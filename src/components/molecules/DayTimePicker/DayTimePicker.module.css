@@ -73,6 +73,11 @@ input:checked + .tile {
 input:checked + .timeTile {
   color: var(--blue-700);
 }
+/* DIVERGENCE: design keeps the weekday --ink-500 on the selected blue-50 tile,
+   4.28:1 at 10px (axe). --ink-600 passes; sent to design (design-divergence.md). */
+input:checked + .dayTile .weekday {
+  color: var(--ink-600);
+}
 input:focus-visible + .tile {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);

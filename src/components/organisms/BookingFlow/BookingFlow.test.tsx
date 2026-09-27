@@ -99,6 +99,26 @@ describe('BookingFlow on phones (sheet)', () => {
     expect(footer.querySelectorAll('button')).toHaveLength(1);
   });
 
+  it('shows no chosen-time row over the done, loading or error states', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<BookingFlow {...props()} />);
+    await user.click(screen.getAllByRole('radio')[2]!);
+    await user.click(screen.getByRole('button', { name: 'Continue to questions' }));
+    expect(screen.getByRole('button', { name: /^Change/ })).toBeInTheDocument();
+
+    rerender(<BookingFlow {...props({ requestDone: true })} />);
+    expect(screen.getByText('Request sent')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Change/ })).not.toBeInTheDocument();
+
+    rerender(<BookingFlow {...props({ optionsLoading: true })} />);
+    expect(screen.queryByRole('button', { name: /^Change/ })).not.toBeInTheDocument();
+
+    rerender(
+      <BookingFlow {...props({ options: null, optionsError: { kind: 'server', message: 'x' } })} />,
+    );
+    expect(screen.queryByRole('button', { name: /^Change/ })).not.toBeInTheDocument();
+  });
+
   it('opens on the requested session type and can hide the profile link', async () => {
     const user = userEvent.setup();
     render(<BookingFlow {...props({ initialTypeId: 'st2', hideProfileLink: true })} />);

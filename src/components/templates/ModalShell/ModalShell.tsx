@@ -63,14 +63,20 @@ export function ModalShell({
         onCloseRef.current();
         return;
       }
-      if (e.key !== 'Tab' || !dialog) return;
-      const items = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+      // Read the ref on every key: the sheet and the centred modal are different
+      // elements, and the caller swaps them when the viewport crosses 768px.
+      const live = dialogRef.current;
+      if (e.key !== 'Tab' || !live) return;
+      const items = Array.from(live.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
         (el) => el.offsetParent !== null || el === document.activeElement,
       );
       if (items.length === 0) return;
       const firstEl = items[0]!;
       const lastEl = items[items.length - 1]!;
-      if (e.shiftKey && document.activeElement === firstEl) {
+      if (!live.contains(document.activeElement)) {
+        e.preventDefault();
+        (e.shiftKey ? lastEl : firstEl).focus();
+      } else if (e.shiftKey && document.activeElement === firstEl) {
         e.preventDefault();
         lastEl.focus();
       } else if (!e.shiftKey && document.activeElement === lastEl) {
@@ -85,6 +91,19 @@ export function ModalShell({
       opener?.focus?.();
     };
   }, []);
+
+  // Switching between sheet and centred modal replaces the dialog element, and
+  // focus falls to <body>. Put it back inside the new one.
+  const isSheet = !!sheet;
+  const mountedLayout = useRef(isSheet);
+  useEffect(() => {
+    if (mountedLayout.current === isSheet) return;
+    mountedLayout.current = isSheet;
+    const live = dialogRef.current;
+    if (live && !live.contains(document.activeElement)) {
+      (live.querySelector<HTMLElement>(FOCUSABLE) ?? live).focus();
+    }
+  }, [isSheet]);
 
   if (sheet) {
     return createPortal(
