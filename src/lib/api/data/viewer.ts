@@ -50,6 +50,7 @@ function mockViewer(): Viewer | null {
 }
 
 const UNLINKED = Symbol('unlinked');
+const ACCOUNT_EXISTS = Symbol('accountExists');
 
 export function useViewer(): Viewer {
   const mock = mockViewer();
@@ -62,6 +63,8 @@ export function useViewer(): Viewer {
       // No backend account for this identity (no self-signup yet): a state, not
       // an error, and not worth retrying.
       if (response.status === 404) return UNLINKED;
+      // The email belongs to an existing account that isn't linked to this sign-in.
+      if (response.status === 409) return ACCOUNT_EXISTS;
       if (!data) throw new ApiError(response.status);
       return toViewer(data);
     },
@@ -75,5 +78,7 @@ export function useViewer(): Viewer {
   // Error before empty: a failed /me must not leave the page loading forever.
   if (query.isError && !query.data) return { kind: 'error', retry: () => void query.refetch() };
   if (!query.data) return { kind: 'loading', signedIn: true };
-  return query.data === UNLINKED ? { kind: 'unlinked' } : query.data;
+  if (query.data === UNLINKED) return { kind: 'unlinked' };
+  if (query.data === ACCOUNT_EXISTS) return { kind: 'accountExists' };
+  return query.data;
 }

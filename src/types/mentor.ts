@@ -106,6 +106,12 @@ export type Viewer =
    * there is no self-signup; backend auth reply, 2026-09-27). Not a guest, not a member.
    */
   | { kind: 'unlinked' }
+  /**
+   * Signed in with an email that already belongs to an EduFurther account not
+   * linked to this sign-in (/me 409 /problems/account-exists, backend PR #238).
+   * Only support can link them.
+   */
+  | { kind: 'accountExists' }
   /** Signed in, but /me failed (server or network): member chrome plus a retry. */
   | { kind: 'error'; retry: () => void }
   | {

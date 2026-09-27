@@ -64,13 +64,19 @@ export function ExploreScreen() {
       ? 'guest'
       : viewer.kind === 'member' ||
           viewer.kind === 'unlinked' ||
+          viewer.kind === 'accountExists' ||
           viewer.kind === 'error' ||
           (viewer.kind === 'loading' && viewer.signedIn)
         ? 'member'
         : 'pending';
   const signOut = useSignOut();
   // No backend account yet: booking can't succeed, so the buttons say why instead.
-  const bookBlocked = viewer.kind === 'unlinked' ? 'Finish account setup to book' : null;
+  const bookBlocked =
+    viewer.kind === 'unlinked'
+      ? 'Finish account setup to book'
+      : viewer.kind === 'accountExists'
+        ? 'Contact support to book'
+        : null;
 
   const [input, setInput] = useState('');
   const [q, setQ] = useState('');
@@ -171,6 +177,14 @@ export function ExploreScreen() {
             <button type="button" className={styles.inlineAction} onClick={viewer.retry}>
               Try again
             </button>
+          </Notice>
+        )}
+        {viewer.kind === 'accountExists' && (
+          // PROVISIONAL copy (backend PR #238). No support channel is defined yet,
+          // so there is no link: design request #27.
+          <Notice tone="info" icon="error" title="This email already has an EduFurther account.">
+            It isn’t linked to this sign-in yet. Please contact EduFurther support to connect them.
+            You can still browse mentors.
           </Notice>
         )}
         {viewer.kind === 'unlinked' && (
