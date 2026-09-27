@@ -18,6 +18,7 @@ export const ICON_NAMES = [
   'explore',
   'home',
   'lock_clock',
+  'remove',
   'menu',
   'my_location',
   'open_in_new',

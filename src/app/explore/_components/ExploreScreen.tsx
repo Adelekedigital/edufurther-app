@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { MatchPill } from '@/components/molecules/MatchPill/MatchPill';
 import { MatchPrompt } from '@/components/molecules/MatchPrompt/MatchPrompt';
 import { PageHero } from '@/components/molecules/PageHero/PageHero';
 import { SearchField } from '@/components/molecules/SearchField/SearchField';
@@ -19,6 +20,7 @@ import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { Mentor } from '@/types/mentor';
 import styles from './ExploreScreen.module.css';
+import { pillLayout, useFloatingPrompt } from './useFloatingPrompt';
 
 /** Results update this long after typing stops; Enter applies at once (Design decisions §1). */
 const SEARCH_DEBOUNCE_MS = 300;
@@ -91,6 +93,13 @@ export function ExploreScreen() {
       }
     />
   ) : null;
+
+  // Floating pill once the in-page prompt scrolls away (design promptSticky=on).
+  // × minimises it for the session; it hides while a booking is open.
+  const [pillMinimised, setPillMinimised] = useState(false);
+  const floating = useFloatingPrompt(showMatchPrompt);
+  const showPill = showMatchPrompt && floating.passed && !booking;
+  const pill = pillLayout(floating, pillMinimised);
 
   const hasFilters = offerings.length > 0 || q.length > 0;
   const clearAll = () => {
@@ -177,6 +186,19 @@ export function ExploreScreen() {
           interstitialAfter={cardsPerRow}
         />
       </div>
+
+      {showPill && (
+        <MatchPill
+          href={MATCH_CALL_URL}
+          external
+          size={pill.size}
+          dock={pill.dock}
+          bottom={pill.bottom}
+          miniAction={pillMinimised ? 'restore' : 'open'}
+          onMinimise={() => setPillMinimised(true)}
+          onRestore={() => setPillMinimised(false)}
+        />
+      )}
 
       {booking && (
         <BookingFlow

@@ -164,7 +164,7 @@ export function MentorResults(p: MentorResultsProps) {
         {rest.length > 0 && renderGrid(rest)}
       </div>
 
-      <div className={styles.pager}>
+      <div className={styles.pager} data-pager>
         {p.loadMoreError ? (
           <>
             <span role="alert" className={styles.pagerError}>

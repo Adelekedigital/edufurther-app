@@ -3,7 +3,7 @@
   "info": {
     "title": "EduFurther API (PROVISIONAL SUBSET)",
     "version": "0.0.0-provisional",
-    "description": "Hand-written from edufurtherBE src/app/api/schemas/mentors.py and the backend's handoff reply (docs/handoff/explore-backend-reply.md), 2026-09-26, because the live spec could not be exported. REPLACE with the real /openapi.json and run `pnpm gen:api` once feat/mentors-offering-filter merges. Revised for backend reply v2: offering is ANY-of; next_available_at and total are mocked ahead of the backend. SWAP RULE (backend, 2026-09-26): at the filter merge take only the offering param from the real spec; keep total and next_available_at here until the backend confirms each has landed (total first, then next_available_at)."
+    "description": "Hand-written from edufurtherBE src/app/api/schemas/mentors.py and the backend's handoff reply (docs/handoff/explore-backend-reply.md), 2026-09-26, because the live spec could not be exported. REPLACE with the real /openapi.json and run `pnpm gen:api` once feat/mentors-offering-filter merges. Revised for backend reply v2: offering is ANY-of; next_available_at and total are mocked ahead of the backend. SWAP RULE (backend, 2026-09-26): at the filter merge take only the offering param from the real spec; keep total and next_available_at here until the backend confirms each has landed (total first, then next_available_at). LIVE: offering filter merged in backend PR #229 (2026-09-27). Still provisional here: total, next_available_at, /api/v1/featured-mentor."
   },
   "paths": {
     "/api/v1/mentors": {
