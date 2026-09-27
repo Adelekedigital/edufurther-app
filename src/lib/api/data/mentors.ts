@@ -121,7 +121,8 @@ export function useFeaturedMentor(enabled: boolean) {
       const { data, response } = await api.GET('/api/v1/featured-mentor', { signal });
       if (!response.ok) throw new ApiError(response.status);
       if (!data) return null;
-      return { ...toMentor(data), bio: data.about_me };
+      // about_me is optional in the published spec: a mentor may not have written one.
+      return { ...toMentor(data), bio: data.about_me?.trim() || null };
     },
     staleTime: 10 * 60 * 1000,
     retry: false,
