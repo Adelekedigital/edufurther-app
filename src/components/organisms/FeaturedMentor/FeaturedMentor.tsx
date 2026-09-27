@@ -33,7 +33,10 @@ export function FeaturedMentor({ mentor: m, onBook, timeZone, offline }: Feature
         aria-hidden
       >
         {m.photoUrl ? (
-          <img src={m.photoUrl} alt="" className={styles.img} />
+          <>
+            <img src={m.photoUrl} alt="" className={styles.backdrop} />
+            <img src={m.photoUrl} alt="" className={styles.img} />
+          </>
         ) : (
           <span className={styles.initials}>{m.initials}</span>
         )}

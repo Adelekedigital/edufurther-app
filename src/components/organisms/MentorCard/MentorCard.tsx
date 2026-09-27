@@ -56,6 +56,7 @@ export function MentorCard({
       >
         {m.photoUrl ? (
           <>
+            <img src={m.photoUrl} alt="" className={styles.backdrop} loading="lazy" />
             <img src={m.photoUrl} alt="" className={styles.img} loading="lazy" />
             <span className={styles.scrim} />
           </>
