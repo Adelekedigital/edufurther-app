@@ -8,8 +8,9 @@ claude.ai/design (`fb0b8ef2…`) against the backend in `edufurtherBE`.
 
 ```bash
 pnpm install --frozen-lockfile
-# The API spec is private (not in this public repo). Put the current spec at
-# openapi/openapi.json (ask the backend team), then generate the client:
+# The API spec is not committed. Pull the backend's published spec (plus
+# openapi/overlay.json, if you have one), then generate the client:
+pnpm spec:pull
 pnpm gen:api
 pnpm dev                 # http://localhost:3000/explore — uses the in-app mock API
 pnpm test                # Vitest + Testing Library
@@ -43,4 +44,9 @@ slots. Phase B wires auth and the real booking endpoints.
 
 This repo is public. `openapi/`, `src/lib/api/generated/` and `docs/handoff/` are
 git-ignored and must never be committed; `pnpm check:private` (also run in CI)
-fails if one is tracked. CI reads the spec from the `OPENAPI_SPEC_JSON` Actions secret.
+fails if one is tracked. The spec is downloaded, never stored: `pnpm spec:pull` fetches
+the backend's published `openapi.json` (release `openapi-latest` on `edufurtherbe`) and
+lays an optional overlay on top — `openapi/overlay.json` locally, the
+`OPENAPI_SPEC_OVERLAY_JSON` Actions secret in CI. The overlay holds only fields and
+endpoints we build before the backend ships them; `spec:pull` reports entries the
+backend already matches, and those get deleted.

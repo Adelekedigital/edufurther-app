@@ -13,7 +13,8 @@
     "gen:api": "openapi-typescript openapi/openapi.json -o src/lib/api/generated/schema.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "check:private": "node scripts/check-private-paths.mjs"
+    "check:private": "node scripts/check-private-paths.mjs",
+    "spec:pull": "node scripts/pull-spec.mjs"
   },
   "checkBoundaries": {
     "root": "src",
