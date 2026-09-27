@@ -45,6 +45,11 @@ jobs:
       - name: Private paths are not tracked
         run: node scripts/check-private-paths.mjs
 
+      # The icon font is committed (no Google Fonts at build or runtime): it must
+      # hold exactly the glyphs iconNames.ts lists (pnpm icons:pull regenerates it).
+      - name: Icon font matches iconNames.ts
+        run: pnpm check:icons
+
       # The spec comes from the backend: its CI publishes openapi.json on every
       # merge to main (release "openapi-latest"; the backend repo is public, so no
       # token, no secret; fork PRs run the same as ours).

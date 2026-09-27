@@ -71,8 +71,14 @@ function die(msg, code = 2) {
 const flags = new Set(argv.filter((a) => a.startsWith('--')));
 const positional = [];
 for (let i = 0; i < argv.length; i++) {
-  if (argv[i] === '--base') { DEFAULTS.baseUrl = argv[++i]; continue; }
-  if (argv[i].startsWith('--base=')) { DEFAULTS.baseUrl = argv[i].slice(7); continue; }
+  if (argv[i] === '--base') {
+    DEFAULTS.baseUrl = argv[++i];
+    continue;
+  }
+  if (argv[i].startsWith('--base=')) {
+    DEFAULTS.baseUrl = argv[i].slice(7);
+    continue;
+  }
   if (argv[i].startsWith('--')) continue;
   positional.push(argv[i]);
 }
@@ -116,8 +122,8 @@ try {
 } catch {
   die(
     'playwright is not installed.\n' +
-    '  pnpm add -D playwright && pnpm exec playwright install chromium\n' +
-    '  (or npm i -D playwright && npx playwright install chromium)'
+      '  pnpm add -D playwright && pnpm exec playwright install chromium\n' +
+      '  (or npm i -D playwright && npx playwright install chromium)',
   );
 }
 
@@ -139,8 +145,8 @@ try {
 } catch (err) {
   die(
     `could not launch a browser: ${err.message}\n` +
-    '  Set REVIEW_BROWSER_PATH to an existing Chromium binary if your image ' +
-    'ships its own.'
+      '  Set REVIEW_BROWSER_PATH to an existing Chromium binary if your image ' +
+      'ships its own.',
   );
 }
 
@@ -319,7 +325,7 @@ async function reviewWidth(width) {
     if (noRing) {
       result.focusIssues.push(
         `no visible focus ring: <${stop.tag}${stop.role ? ` role=${stop.role}` : ''}>` +
-        `${stop.name ? ` "${stop.name}"` : ''}`
+          `${stop.name ? ` "${stop.name}"` : ''}`,
       );
     }
     if (!stop.name && !['input', 'select', 'textarea'].includes(stop.tag)) {
@@ -329,7 +335,7 @@ async function reviewWidth(width) {
       result.focusIssues.push(`focusable but not visible: <${stop.tag}> "${stop.name}"`);
     }
     result.focusStops.push(
-      `${stop.tag}${stop.role ? `[${stop.role}]` : ''}${stop.name ? ` "${stop.name}"` : ''}`
+      `${stop.tag}${stop.role ? `[${stop.role}]` : ''}${stop.name ? ` "${stop.name}"` : ''}`,
     );
   }
 
@@ -406,13 +412,15 @@ if (JSON_OUT) {
     const cls = r.vitals?.cls != null ? r.vitals.cls.toFixed(3) : 'n/a';
     process.stdout.write(
       `    vitals          LCP ${lcp}   CLS ${cls}   ` +
-      `(INP not measured — needs a real interaction)\n`
+        `(INP not measured — needs a real interaction)\n`,
     );
     process.stdout.write(
       `    weight          total ${kb(r.weight.totalBytes)}kB   JS ${kb(r.weight.jsBytes)}kB   ` +
-      `CSS ${kb(r.weight.cssBytes)}kB   img ${kb(r.weight.imgBytes)}kB` +
-      (r.weight.unmeasured ? `   (${r.weight.unmeasured} response(s) sent no content-length)` : '') +
-      '\n'
+        `CSS ${kb(r.weight.cssBytes)}kB   img ${kb(r.weight.imgBytes)}kB` +
+        (r.weight.unmeasured
+          ? `   (${r.weight.unmeasured} response(s) sent no content-length)`
+          : '') +
+        '\n',
     );
 
     const line = (label, items, fmt = (x) => x) => {
@@ -436,7 +444,8 @@ if (JSON_OUT) {
       const c = r.overflow.culprit;
       process.stdout.write(
         `    overflow        ${r.overflow.by}px horizontal` +
-        (c ? ` — worst: <${c.tag}> ${c.cls ? `.${c.cls}` : ''} (${c.past}px past)` : '') + '\n'
+          (c ? ` — worst: <${c.tag}> ${c.cls ? `.${c.cls}` : ''} (${c.past}px past)` : '') +
+          '\n',
       );
     } else {
       process.stdout.write('    overflow        none\n');
@@ -451,7 +460,11 @@ if (JSON_OUT) {
     if (r.a11y === null) {
       process.stdout.write('    axe             skipped\n');
     } else {
-      line('axe violations', r.a11y, (v) => `${v.impact ?? '?'}  ${v.id} — ${v.help} (${v.nodes}) ${v.target}`);
+      line(
+        'axe violations',
+        r.a11y,
+        (v) => `${v.impact ?? '?'}  ${v.id} — ${v.help} (${v.nodes}) ${v.target}`,
+      );
     }
 
     line('over budget', r.budgetFailures);
@@ -464,10 +477,12 @@ if (JSON_OUT) {
 
   process.stdout.write(
     '\n  Open the screenshots. A green report with an unreadable page is still a\n' +
-    '  broken page, and no scan sees "the heading overlaps the card".\n'
+      '  broken page, and no scan sees "the heading overlaps the card".\n',
   );
   if (!FORCE_STATES) {
-    process.stdout.write('  Then run again with --states — the failure path is where the design gave you nothing.\n');
+    process.stdout.write(
+      '  Then run again with --states — the failure path is where the design gave you nothing.\n',
+    );
   }
 }
 

@@ -14,7 +14,9 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "check:private": "node scripts/check-private-paths.mjs",
-    "spec:pull": "node scripts/pull-spec.mjs"
+    "spec:pull": "node scripts/pull-spec.mjs",
+    "icons:pull": "node scripts/fonts/pull-icons.mjs",
+    "check:icons": "node scripts/check-icons.mjs"
   },
   "checkBoundaries": {
     "root": "src",

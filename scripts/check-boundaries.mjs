@@ -57,9 +57,24 @@ const DEFAULTS = {
 const EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mts', '.mjs'];
 
 const SKIP_DIRS = new Set([
-  'node_modules', '.git', '.next', '.nuxt', '.svelte-kit', '.turbo', '.vercel',
-  'dist', 'build', 'out', 'coverage', 'storybook-static', '__snapshots__',
-  '.cache', 'public', 'playwright-report', 'test-results', '.claude',
+  'node_modules',
+  '.git',
+  '.next',
+  '.nuxt',
+  '.svelte-kit',
+  '.turbo',
+  '.vercel',
+  'dist',
+  'build',
+  'out',
+  'coverage',
+  'storybook-static',
+  '__snapshots__',
+  '.cache',
+  'public',
+  'playwright-report',
+  'test-results',
+  '.claude',
 ]);
 
 /**
@@ -71,9 +86,15 @@ const SKIP_DIRS = new Set([
  */
 const LEVELS = {
   // atomic design
-  atoms: 1, molecules: 2, organisms: 3, templates: 4,
+  atoms: 1,
+  molecules: 2,
+  organisms: 3,
+  templates: 4,
   // the older naming this package used to ship
-  ui: 1, patterns: 2, states: 3, layout: 4,
+  ui: 1,
+  patterns: 2,
+  states: 3,
+  layout: 4,
 };
 const PAGE_DIRS = ['app', 'pages', 'routes', 'views', 'screens'];
 const PAGE_LEVEL = 5;
@@ -97,8 +118,10 @@ function loadConfig() {
       fail(`config: "${key}" must be an array.`);
     }
   }
-  if (user.vendorSeams !== undefined
-      && (typeof user.vendorSeams !== 'object' || Array.isArray(user.vendorSeams))) {
+  if (
+    user.vendorSeams !== undefined &&
+    (typeof user.vendorSeams !== 'object' || Array.isArray(user.vendorSeams))
+  ) {
     fail('config: "vendorSeams" must be an object of { module: [allowed dirs] }.');
   }
   return {
@@ -209,9 +232,7 @@ const toPosix = (p) => p.split(sep).join('/');
 function within(relPath, dirs, rootRel) {
   return dirs.some((d) => {
     const clean = toPosix(d).replace(/^\.\//, '').replace(/\/$/, '');
-    const candidates = rootRel && rootRel !== '.'
-      ? [clean, posix.join(rootRel, clean)]
-      : [clean];
+    const candidates = rootRel && rootRel !== '.' ? [clean, posix.join(rootRel, clean)] : [clean];
     return candidates.some((c) => relPath === c || relPath.startsWith(`${c}/`));
   });
 }
@@ -249,7 +270,7 @@ const rootRel = (() => {
 if (rootRel === null) {
   fail(
     `none of these roots exist: ${config.roots.join(', ')}\n` +
-    `  Set "checkBoundaries": { "root": "<your source dir>" } in package.json.`
+      `  Set "checkBoundaries": { "root": "<your source dir>" } in package.json.`,
   );
 }
 
@@ -264,9 +285,9 @@ const files = walk(rootAbs)
 if (files.length === 0) {
   fail(
     `scanned zero files under "${rootRel}".\n` +
-    `  A check that finds nothing to scan reports green while enforcing nothing,\n` +
-    `  so this is an error, not a pass. Wrong directory, or "root" needs setting\n` +
-    `  in package.json.`
+      `  A check that finds nothing to scan reports green while enforcing nothing,\n` +
+      `  so this is an error, not a pass. Wrong directory, or "root" needs setting\n` +
+      `  in package.json.`,
   );
 }
 
@@ -303,7 +324,7 @@ for (const file of files) {
         file,
         idx >= 0 ? lineOf(source, idx) : 1,
         `${LEVEL_NAMES[here.level]} imports the generated API client (${spec}). ` +
-        `Only the page fetches; pass the data down.`
+          `Only the page fetches; pass the data down.`,
       );
     }
 
@@ -317,7 +338,7 @@ for (const file of files) {
           'vendor-seam',
           file,
           idx >= 0 ? lineOf(source, idx) : 1,
-          `imports ${spec} outside its seam. Allowed only in: ${allowed.join(', ')}.`
+          `imports ${spec} outside its seam. Allowed only in: ${allowed.join(', ')}.`,
         );
       }
     }
@@ -332,7 +353,7 @@ for (const file of files) {
           file,
           idx >= 0 ? lineOf(source, idx) : 1,
           `${LEVEL_NAMES[here.level]} imports a ${LEVEL_NAMES[there.level]} (${spec}). ` +
-          `A level that reaches up can no longer render in isolation.`
+            `A level that reaches up can no longer render in isolation.`,
         );
       }
     }
@@ -352,7 +373,7 @@ for (const file of files) {
         file,
         idx >= 0 ? lineOf(source, idx) : 1,
         `raw colour ${m[0]}. A literal is a copy no design update will reach — ` +
-        `use a token. Legitimate exceptions go in "allowRawHex".`
+          `use a token. Legitimate exceptions go in "allowRawHex".`,
       );
     }
   }
@@ -361,11 +382,9 @@ for (const file of files) {
 // ---------------------------------------------------------------- output ----
 
 if (JSON_OUT) {
-  process.stdout.write(`${JSON.stringify(
-    { root: rootRel, scanned: files.length, violations },
-    null,
-    2,
-  )}\n`);
+  process.stdout.write(
+    `${JSON.stringify({ root: rootRel, scanned: files.length, violations }, null, 2)}\n`,
+  );
   process.exit(violations.length ? 1 : 0);
 }
 
@@ -399,7 +418,7 @@ for (const [rule, items] of Object.entries(byRule)) {
 
 process.stdout.write(
   `\n  ${violations.length} violation(s). Fix them, or relax the config in ` +
-  `package.json and tighten later.\n` +
-  `  The one worth keeping strict from day one is client-import.\n`
+    `package.json and tighten later.\n` +
+    `  The one worth keeping strict from day one is client-import.\n`,
 );
 process.exit(1);

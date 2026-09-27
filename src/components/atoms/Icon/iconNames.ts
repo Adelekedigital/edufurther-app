@@ -1,7 +1,9 @@
 /**
- * Material Symbols glyphs this app uses. The root layout loads the icon font
- * subset to exactly these names — the full set is several megabytes. Add a
- * glyph here before using it, or it renders as its ligature text.
+ * Material Symbols glyphs this app uses. The self-hosted icon font
+ * (app/fonts/material-symbols.woff2) is a subset of exactly these names — the
+ * full set is several megabytes. After adding a glyph here, run
+ * `pnpm icons:pull` and commit the font, or it renders as its ligature text;
+ * CI's `pnpm check:icons` fails until you do.
  */
 export const ICON_NAMES = [
   'arrow_forward',
@@ -35,7 +37,3 @@ export const ICON_NAMES = [
 ] as const;
 
 export type IconName = (typeof ICON_NAMES)[number];
-
-export const MATERIAL_SYMBOLS_HREF =
-  'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..24,400,0..1,0' +
-  `&icon_names=${[...ICON_NAMES].sort().join(',')}&display=block`;
