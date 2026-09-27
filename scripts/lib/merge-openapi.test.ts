@@ -61,6 +61,33 @@ describe('mergeOpenApi', () => {
     expect(() => mergeOpenApi(base(), overlay)).toThrow(/defines "next_available_at" as optional/);
   });
 
+  it('refuses a required name the overlay does not add, and handles inherited names', () => {
+    const typo = {
+      components: {
+        schemas: {
+          MentorListItem: { required: ['state_typo'], properties: { state: { type: 'string' } } },
+        },
+      },
+    };
+    expect(() => mergeOpenApi(base(), typo)).toThrow(
+      /"state_typo" is not a property this overlay adds/,
+    );
+    const ctor = {
+      components: {
+        schemas: {
+          MentorListItem: {
+            required: ['constructor'],
+            properties: { constructor: { type: 'string' } },
+          },
+        },
+      },
+    };
+    expect(mergeOpenApi(base(), ctor).spec.components.schemas.MentorListItem.required).toEqual([
+      'id',
+      'constructor',
+    ]);
+  });
+
   it('replaces an existing operation whole', () => {
     const overlay = { paths: { '/api/v1/mentors': { get: { operationId: 'list2' } } } };
     const { spec, report } = mergeOpenApi(base(), overlay);

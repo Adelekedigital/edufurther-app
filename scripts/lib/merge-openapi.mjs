@@ -76,7 +76,8 @@ function mergeSchema(before, value, where, note) {
     if (key === 'properties' && isObject(v)) {
       out.properties ??= {};
       for (const [prop, def] of Object.entries(v)) {
-        note(`${where}.${prop}`, out.properties[prop], def);
+        const prev = Object.hasOwn(out.properties, prop) ? out.properties[prop] : undefined;
+        note(`${where}.${prop}`, prev, def);
         out.properties[prop] = structuredClone(def);
       }
     } else if (key === 'required' && Array.isArray(v)) {
@@ -84,12 +85,19 @@ function mergeSchema(before, value, where, note) {
       // made optional would type as always-present a field that can be missing.
       // `required` only applies to properties the overlay itself adds.
       const had = new Set(before.required ?? []);
+      const backendHas = (n) => isObject(before.properties) && Object.hasOwn(before.properties, n);
+      const overlayAdds = (n) =>
+        isObject(value.properties) && Object.hasOwn(value.properties, n) && !backendHas(n);
       out.required = [...(out.required ?? [])];
       for (const name of v) {
         if (had.has(name)) note(`${where} (required ${name})`, name, name);
-        else if (before.properties && name in before.properties) {
+        else if (backendHas(name)) {
           throw new Error(
             `${where}: the backend defines "${name}" as optional; the overlay may not make it required.`,
+          );
+        } else if (!overlayAdds(name)) {
+          throw new Error(
+            `${where}: required "${name}" is not a property this overlay adds (typo, or defined via $ref/allOf?).`,
           );
         } else out.required.push(name);
       }
