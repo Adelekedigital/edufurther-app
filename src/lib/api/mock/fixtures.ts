@@ -30,7 +30,7 @@ export const OFFERINGS: LookupRead[] = [
 const off = (...codes: string[]) =>
   codes.map((c) => {
     const o = OFFERINGS.find((x) => x.code === c)!;
-    return { slug: o.code, display_name: o.display_name };
+    return { slug: c, display_name: o.display_name };
   });
 
 const base = (

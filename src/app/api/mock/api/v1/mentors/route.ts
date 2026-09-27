@@ -36,7 +36,8 @@ export async function GET(req: NextRequest) {
       .toLowerCase();
     return (
       (!q || hay.includes(q)) &&
-      (offerings.length === 0 || offerings.some((o) => m.offerings.some((x) => x.slug === o)))
+      (offerings.length === 0 ||
+        offerings.some((o) => (m.offerings ?? []).some((x) => x.slug === o)))
     );
   });
   // next_available_at (backend reply #4, coming): relative to now, on the hour.

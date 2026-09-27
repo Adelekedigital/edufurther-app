@@ -72,7 +72,8 @@ export function toMentor(r: MentorSummaryRead): Mentor {
           : r.next_available_at
             ? 'open'
             : 'unknown',
-    topics: r.offerings.map((o) => ({ slug: o.slug, label: o.display_name })),
+    // `offerings` has a server default, so the spec marks it optional.
+    topics: (r.offerings ?? []).map((o) => ({ slug: o.slug, label: o.display_name })),
   };
 }
 
@@ -82,10 +83,17 @@ export function useTopics() {
   const query = useQuery({
     queryKey: keys.topics.all,
     queryFn: async ({ signal }) => {
-      const { data, response } = await api.GET('/api/v1/catalog/service-offerings', { signal });
+      // One generic catalogue endpoint; this is its service-offerings list.
+      const { data, response } = await api.GET('/api/v1/catalog/{catalogue}', {
+        params: { path: { catalogue: 'service-offerings' } },
+        signal,
+      });
       if (!data) throw new ApiError(response.status);
-      // The slug is `code` on the shared lookup shape (backend reply #2).
-      return data.data.map((l): Topic => ({ slug: l.code, label: l.display_name }));
+      // The slug is `code` on the shared lookup shape (backend reply #2). `code` is
+      // nullable on LookupRead; an offering without one can't be filtered on, so skip it.
+      return data.data.flatMap((l): Topic[] =>
+        l.code ? [{ slug: l.code, label: l.display_name }] : [],
+      );
     },
     // A closed taxonomy; it changes on deploys, not during a visit.
     staleTime: 60 * 60 * 1000,
