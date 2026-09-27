@@ -56,10 +56,20 @@
   background: var(--blue-50);
   padding: var(--space-4) 0 var(--space-5);
 }
-.railList {
-  /* Stays in view while the page scrolls, under the sticky header. */
+.railInner {
+  /* Stays in view while the page scrolls, under the sticky header; the account
+     button sits at its foot (AppShell.dc.html: spacer, then the avatar). */
   position: sticky;
   top: calc(var(--navbar-h-mobile) + var(--space-4));
+  height: calc(100dvh - var(--navbar-h-mobile) - var(--space-4) - var(--space-5));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.railAccount {
+  margin-top: auto;
+}
+.railList {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -224,6 +234,18 @@
     font-size: var(--text-p-sm);
     font-weight: var(--weight-medium);
     color: var(--text-primary);
+    /* Nav links and account actions (buttons) share this row style. */
+    width: 100%;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-family: var(--font-ui);
+    text-align: left;
+    text-decoration: none;
+  }
+  .sheetDanger,
+  .sheetDanger:hover {
+    color: var(--text-danger);
   }
   .sheetItem[aria-current='page'] {
     background: var(--blue-50);

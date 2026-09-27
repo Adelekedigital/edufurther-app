@@ -96,7 +96,7 @@ Sources, so the next sync can diff against them: the design project's
 | Explore filters | `?offering=<slug>` repeatable, **ANY-of**, narrowed by `q`; slugs are the catalog `code` from `/api/v1/catalog/service-offerings`. Unknown slug → 422 |
 | Local dev | Phase A: `.env.development` points at the in-app mock (`/api/mock`, `ENABLE_MOCK_API=1`). Real backend: `NEXT_PUBLIC_API_BASE_URL=` (empty) + `BACKEND_URL=http://localhost:8000` |
 | Deployed API calls | Product (2026-09-27): same-origin proxy. The browser calls `/api/v1/…` on the app; `next.config.ts` rewrites to server-only `BACKEND_URL` (Vercel prod → prod backend, previews → `edufurtherbe-dev`, never prod). No CORS entry per preview URL. Vercel env table in README |
-| Auth | Supabase auth (backend ADRs 0009, 0014, 0018). Public mentor endpoints need no token. Token storage on the client — to decide under `security-checker` |
+| Auth | Supabase, passwordless email code (+ magic link) — backend auth reply 2026-09-27. `lib/vendor/supabase/` is the only importer of `@supabase/*` (vendorSeams). Session in cookies via `@supabase/ssr`, refreshed in `src/proxy.ts`; never localStorage. `http.ts` middleware sends `Bearer`, refreshes once on 401, else signs out. Viewer from `GET /api/v1/me`: 401/none → guest, **404 → `unlinked`** (no self-signup yet; product deciding), goal → mentee, approved `mentor_profile` → mentor; never `primary_role`. Query keys carry the session identity (signed-in lists differ). Post-sign-in destinations go through `safeReturnTo` (local paths only). Password + Google: backend WIP, not offered |
 | Idempotency | Booking is idempotent and scoped to the caller (backend ADR 0024) — key format to confirm before BookingModal is wired |
 
 ---
@@ -156,7 +156,8 @@ Prototype files (`support.js`, `image-slot.js`, `dc-import`, `sc-if`) are the pr
 | Links to unbuilt screens | `prefetch={false}` (AppShell `PREFETCH`, MentorCard) — failure log #17 | Remove when Home/Bookings/Messages/Settings/Mentor Profile ship |
 | Match prompt → external Cal link | "Find my mentor matches" opens an external Cal booking page (`NEXT_PUBLIC_MATCH_CALL_URL`; empty hides the prompt). Product decision 2026-09-26 | **Move matching onto the platform** (sessions run through EduFurther). Needs an on-platform goals/matching flow + backend endpoint |
 | Featured mentor | Built on a mock of `GET /api/v1/featured-mentor` (shape settled: mentor or `null`, text field `about_me`) | Backend builds it (round 2 #11) |
-| Auth | Not wired; viewer comes from `NEXT_PUBLIC_MOCK_VIEWER`; guest sign-up step advances without an account | Phase B |
+| Auth in booking | Guest sign-up step in BookingFlow still advances without an account (EmailCodeForm is ready to drop in) | B2 |
+| New sign-ups | A new email signs in to no backend account (`/me` 404 → `unlinked` notice on Explore) | product decides account creation (backend recommends: on first authenticated request) |
 | Booking data | Session types, slots and the request are typed mocks in `lib/api/data/booking.ts` | Phase B: backend booking-flow request |
 | DS tokens | Warning ramp has only `--yellow-900`; Plus uses literal `#e3b42b`/`#3d2a00`/`#fef6e7` | Add as *our* tokens, recorded in `design-divergence.md` |
 | DS `--text-placeholder` | `#98a2b3` on white is 2.58:1 | Use `--ink-500` for placeholders; record divergence |

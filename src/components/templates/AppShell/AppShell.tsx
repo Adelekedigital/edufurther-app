@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
+import { AccountMenu, type AccountMenuItem } from '@/components/molecules/AccountMenu/AccountMenu';
 import { OfflineBanner } from '@/components/molecules/OfflineBanner/OfflineBanner';
 import { cx } from '@/lib/utils/cx';
 import styles from './AppShell.module.css';
@@ -33,18 +34,25 @@ const PREFETCH = false;
 type AppShellProps = {
   /** Label of the current section, e.g. "Explore". */
   active: string;
-  /** Guests get the public header (Log in / Get started) and no navigation. */
-  guest: boolean;
+  /**
+   * guest: public header (Log in / Get started), no navigation.
+   * member: rail / tabs and the account menu.
+   * pending: the session isn't known yet, so neither set of controls is shown.
+   */
+  chrome: 'guest' | 'member' | 'pending';
+  /** Member account menu (rail foot; appended to the More sheet on phones). */
+  account?: { initial: string; items: AccountMenuItem[] };
   offline: boolean;
   children: ReactNode;
 };
 
 /**
  * App chrome: header, side rail (≥768px) or bottom tabs (<768px), offline banner.
- * Not yet here, pending auth: the account menu and notifications (see
- * docs/handoff/explore-design-request.md → build notes).
+ * Not yet here: notifications (no backend) — see design-divergence.md.
  */
-export function AppShell({ active, guest, offline, children }: AppShellProps) {
+export function AppShell({ active, chrome, account, offline, children }: AppShellProps) {
+  const guest = chrome === 'guest';
+  const member = chrome === 'member';
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLButtonElement>(null);
   const extra = MENTEE_NAV.filter((n) => !PRIMARY_TABS.includes(n.label));
@@ -85,25 +93,32 @@ export function AppShell({ active, guest, offline, children }: AppShellProps) {
       </header>
 
       <div className={styles.body}>
-        {!guest && (
+        {member && (
           <nav aria-label="Main" className={styles.rail}>
-            <ul className={styles.railList}>
-              {MENTEE_NAV.map((n) => (
-                <li key={n.href}>
-                  <Link
-                    href={n.href}
-                    prefetch={PREFETCH}
-                    className={styles.railItem}
-                    aria-current={n.label === active ? 'page' : undefined}
-                  >
-                    <span className={styles.railIcon}>
-                      <Icon name={n.icon} size={20} />
-                    </span>
-                    {n.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <div className={styles.railInner}>
+              <ul className={styles.railList}>
+                {MENTEE_NAV.map((n) => (
+                  <li key={n.href}>
+                    <Link
+                      href={n.href}
+                      prefetch={PREFETCH}
+                      className={styles.railItem}
+                      aria-current={n.label === active ? 'page' : undefined}
+                    >
+                      <span className={styles.railIcon}>
+                        <Icon name={n.icon} size={20} />
+                      </span>
+                      {n.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              {account && (
+                <div className={styles.railAccount}>
+                  <AccountMenu initial={account.initial} items={account.items} />
+                </div>
+              )}
+            </div>
           </nav>
         )}
         <main id="main" className={cx(styles.main, guest && styles.mainGuest)}>
@@ -125,7 +140,7 @@ export function AppShell({ active, guest, offline, children }: AppShellProps) {
         </div>
       )}
 
-      {!guest && (
+      {member && (
         <nav aria-label="Main" className={styles.tabs}>
           {MENTEE_NAV.filter((n) => PRIMARY_TABS.includes(n.label)).map((n) => (
             <Link
@@ -176,6 +191,33 @@ export function AppShell({ active, guest, offline, children }: AppShellProps) {
                     <Icon name={n.icon} size={20} />
                     {n.label}
                   </Link>
+                </li>
+              ))}
+              {account?.items.map((it) => (
+                <li key={it.key}>
+                  {it.href !== undefined ? (
+                    <a
+                      href={it.href}
+                      className={cx(styles.sheetItem, it.danger && styles.sheetDanger)}
+                      {...(it.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                      onClick={() => setMoreOpen(false)}
+                    >
+                      <Icon name={it.icon} size={20} />
+                      {it.label}
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      className={cx(styles.sheetItem, it.danger && styles.sheetDanger)}
+                      onClick={() => {
+                        setMoreOpen(false);
+                        it.onSelect();
+                      }}
+                    >
+                      <Icon name={it.icon} size={20} />
+                      {it.label}
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>

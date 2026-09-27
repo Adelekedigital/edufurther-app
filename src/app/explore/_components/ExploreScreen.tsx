@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { MatchPill } from '@/components/molecules/MatchPill/MatchPill';
+import type { AccountMenuItem } from '@/components/molecules/AccountMenu/AccountMenu';
 import { MatchPrompt } from '@/components/molecules/MatchPrompt/MatchPrompt';
+import { Notice } from '@/components/molecules/Notice/Notice';
 import { PageHero } from '@/components/molecules/PageHero/PageHero';
 import { SearchField } from '@/components/molecules/SearchField/SearchField';
 import { TopicFilter } from '@/components/molecules/TopicFilter/TopicFilter';
@@ -12,6 +14,7 @@ import { BookingFlow } from '@/components/organisms/BookingFlow/BookingFlow';
 import { MentorResults } from '@/components/organisms/MentorResults/MentorResults';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
+import { useSignOut } from '@/lib/api/data/auth';
 import { useBookingOptions, useRequestBooking } from '@/lib/api/data/booking';
 import { useFeaturedMentor, useMentors, useTopics } from '@/lib/api/data/mentors';
 import { useViewer } from '@/lib/api/data/viewer';
@@ -55,6 +58,16 @@ export function ExploreScreen() {
   // One card per row under 768px, two above — the match prompt goes after the first row.
   const cardsPerRow = useMediaQuery('(max-width: 767px)') ? 1 : 2;
   const guest = viewer.kind === 'guest';
+  const member = viewer.kind === 'member' ? viewer : null;
+  const chrome =
+    viewer.kind === 'guest'
+      ? 'guest'
+      : viewer.kind === 'member' ||
+          viewer.kind === 'unlinked' ||
+          (viewer.kind === 'loading' && viewer.signedIn)
+        ? 'member'
+        : 'pending';
+  const signOut = useSignOut();
 
   const [input, setInput] = useState('');
   const [q, setQ] = useState('');
@@ -84,10 +97,12 @@ export function ExploreScreen() {
   const featuredQuery = useFeaturedMentor(featuredOn);
   const featured = featuredQuery.featured;
 
+  // Mentees, or new members who aren't mentors either (no goal yet = not onboarded).
   const showMatchPrompt =
     !!MATCH_CALL_URL &&
-    viewer.kind === 'mentee' &&
-    viewer.completedSessions <= MATCH_PROMPT_MAX_SESSIONS;
+    !!member &&
+    (member.isMentee || !member.isApprovedMentor) &&
+    member.completedSessions <= MATCH_PROMPT_MAX_SESSIONS;
   const matchPrompt = showMatchPrompt ? (
     <MatchPrompt href={MATCH_CALL_URL} external body={MATCH_PROMPT_BODY} />
   ) : null;
@@ -95,7 +110,7 @@ export function ExploreScreen() {
   // Floating pill once the in-page prompt scrolls away (design promptSticky=on).
   // × minimises it for the session; it hides while a booking is open.
   const [pillMinimised, setPillMinimised] = useState(false);
-  const floating = useFloatingPrompt(showMatchPrompt, !guest);
+  const floating = useFloatingPrompt(showMatchPrompt, chrome === 'member');
   const showPill = showMatchPrompt && floating.passed && !booking;
   const pill = pillLayout(floating, pillMinimised);
 
@@ -112,9 +127,47 @@ export function ExploreScreen() {
     request.reset();
   };
 
+  // AppShell.dc.html account menu, mentee variant. "View profile" and "Feedback"
+  // have no destination yet (no profile / feedback screens), so they wait —
+  // design-divergence.md. Notifications likewise (no backend).
+  const accountItems: AccountMenuItem[] = [
+    ...(MATCH_CALL_URL && (!member || member.isMentee || !member.isApprovedMentor)
+      ? [
+          {
+            key: 'matches',
+            label: 'Find my mentor matches',
+            icon: 'route' as const,
+            href: MATCH_CALL_URL,
+            external: true,
+          },
+        ]
+      : []),
+    {
+      key: 'logout',
+      label: 'Logout',
+      icon: 'logout',
+      danger: true,
+      onSelect: () => void signOut(),
+    },
+  ];
+
   return (
-    <AppShell active="Explore" guest={guest} offline={!online}>
+    <AppShell
+      active="Explore"
+      chrome={chrome}
+      account={
+        chrome === 'member' ? { initial: member?.initial ?? '', items: accountItems } : undefined
+      }
+      offline={!online}
+    >
       <div className={styles.page}>
+        {viewer.kind === 'unlinked' && (
+          // PROVISIONAL (backend auth reply 2026-09-27): no self-signup yet, so a new
+          // email signs in to no account. Copy until the product decides the flow.
+          <Notice tone="info" icon="new_releases" title="Your account isn’t ready yet.">
+            You can browse mentors now. Booking opens once your account is set up.
+          </Notice>
+        )}
         <PageHero
           title="Find a mentor for your study-abroad journey"
           subtitle="Get guidance from mentors who have been through the process. Explore free 1:1 mentorship sessions."
@@ -171,6 +224,7 @@ export function ExploreScreen() {
           query={q}
           onClearSearch={clearAll}
           onBook={setBooking}
+          selfId={member?.isApprovedMentor ? member.id : null}
           offline={!online}
           restarted={results.restarted}
           onDismissRestarted={results.dismissRestarted}

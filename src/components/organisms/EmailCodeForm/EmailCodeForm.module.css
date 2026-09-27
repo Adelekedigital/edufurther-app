@@ -1,0 +1,85 @@
+/* Email step values from BookingModal.dc.html (sign-up step); code step reuses them. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.title {
+  margin: 0;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+.intro {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+.mailIcon {
+  vertical-align: -3px;
+  margin-right: var(--space-1);
+  color: var(--blue-500);
+}
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+}
+.code {
+  letter-spacing: 0.3em;
+  font-variant-numeric: tabular-nums;
+}
+.error {
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-danger);
+}
+.footer {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+.footer a {
+  font-weight: var(--weight-semibold);
+}
+.secondary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.textButton {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+}
+.textButton:hover:not(:disabled) {
+  color: var(--blue-700);
+}
+.textButton:disabled {
+  cursor: default;
+  color: var(--ink-500);
+}
+.textButton:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-sm);
+}
+@media (max-width: 767px) {
+  .textButton {
+    min-height: var(--touch-target-min);
+  }
+}

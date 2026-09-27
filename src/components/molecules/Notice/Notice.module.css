@@ -23,3 +23,9 @@
 .info .icon {
   color: var(--blue-500);
 }
+/* Links on the tinted grounds: blue-500 is under 4.5:1 there (axe); blue-700 passes. */
+.text a {
+  color: var(--blue-700);
+  font-weight: var(--weight-semibold);
+  text-decoration: underline;
+}

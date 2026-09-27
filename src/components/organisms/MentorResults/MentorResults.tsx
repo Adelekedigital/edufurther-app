@@ -25,6 +25,8 @@ export type MentorResultsProps = {
   query: string;
   onClearSearch: () => void;
   onBook: (m: Mentor) => void;
+  /** The viewer's own mentor id, when they are one: their card has no Book button. */
+  selfId?: string | null;
   offline: boolean;
   restarted: boolean;
   onDismissRestarted: () => void;
@@ -122,6 +124,7 @@ export function MentorResults(p: MentorResultsProps) {
           <MentorCard
             mentor={m}
             onBook={p.onBook}
+            isSelf={!!p.selfId && m.id === p.selfId}
             offline={p.offline}
             timeZone={p.timeZone}
             showTopics={p.showTopics}
