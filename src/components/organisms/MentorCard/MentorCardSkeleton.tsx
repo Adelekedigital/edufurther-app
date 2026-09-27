@@ -5,7 +5,7 @@ import styles from './MentorCardSkeleton.module.css';
 export function MentorCardSkeleton() {
   return (
     <div className={styles.card} aria-hidden>
-      <Skeleton aspectRatio="3 / 2" radius="lg" />
+      <Skeleton aspectRatio="445 / 300" radius="lg" />
       <Skeleton width="60%" height="16px" />
       <Skeleton width="80%" height="12px" />
       <Skeleton width="45%" height="12px" />
