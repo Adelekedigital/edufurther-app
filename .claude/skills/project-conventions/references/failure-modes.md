@@ -33,6 +33,7 @@ is fixed — the fix is why the row is useful.
 | 17 | *(real)* The built app never reached network idle, so `review-page.mjs` timed out | Next 16 holds `<Link>` prefetch streams open for routes that 404 (screens not built yet) | `prefetch={false}` on links to unbuilt routes (AppShell `PREFETCH`, MentorCard); flip back when those screens ship |
 | 18 | *(real)* `openapi-typescript` and `next build` type-checking crashed | TypeScript 7 (native port) has no JS compiler API | TypeScript pinned to `~5.9` until the tooling supports 7 |
 | 19 | *(real)* ESLint crashed with `scopeManager.addGlobals is not a function` | ESLint 10 is ahead of `eslint-config-next`'s parser | ESLint pinned to `^9` |
+| 21 | *(real, 2026-09-27)* The phone match popover shipped a 32px fully-rounded CTA where the design has a 36px full-width radius-lg button; also popover padding, icon inset, pill shadow and hero line-height were off | built from the design-decisions prose and reused the pill's `.cta` class instead of reading the popover's own markup values | "Design conformance" rule in project-conventions: values from `.dc.html` only, no class reuse unless values match, computed-style table in every PR |
 | 20 | *(real)* `review-page.mjs --states` screenshotted skeletons, not the error state | the query retries once before failing; the capture fires during the retry | error/empty states are proven by component tests and Storybook stories, not only `--states` |
 
 ---

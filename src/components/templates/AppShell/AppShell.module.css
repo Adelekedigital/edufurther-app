@@ -230,3 +230,25 @@
     color: var(--blue-700);
   }
 }
+
+/* ---- guest bottom action bar (phones; design guestNav=float) ---- */
+.guestBar {
+  display: none;
+}
+@media (max-width: 767px) {
+  .guestActions {
+    display: none;
+  }
+  .guestBar {
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom));
+    background: var(--surface-page);
+    border-top: var(--border-hairline) solid var(--border-subtle);
+    box-shadow: var(--shadow-bar-up);
+  }
+}

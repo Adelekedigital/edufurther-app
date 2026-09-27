@@ -7,9 +7,8 @@ const MOBILE_BOTTOM_WITH_TABS = 72;
 /** Phones without it (guests have no tab bar in AppShell). */
 const MOBILE_BOTTOM_NO_TABS = 16;
 const DESKTOP_BOTTOM = 24;
-/** Right inset of the docked pill (matches MatchPill.module.css `.corner`). */
-const DESKTOP_RIGHT = 24;
-const MOBILE_RIGHT = 16;
+/** Right inset of the docked pill on every screen (Explore.dc.html; MatchPill `.corner`). */
+const CORNER_INSET = 24;
 /** Gap the design wants between "Show more mentors" and a pill beside it. */
 const BESIDE_GAP = 16;
 const MINI_SIZE = 48;
@@ -146,7 +145,7 @@ export function pillLayout(s: FloatingPromptState, minimised: boolean) {
 
   const width = mini ? MINI_SIZE : s.pillWidth;
   const height = mini ? MINI_SIZE : s.pillHeight;
-  const left = s.viewportWidth - (s.isMobile ? MOBILE_RIGHT : DESKTOP_RIGHT) - width;
+  const left = s.viewportWidth - CORNER_INSET - width;
   // Last page: no button to line up with, so always sit above the pager text.
   const fitsBeside = s.hasButton && width > 0 && left >= s.buttonRight + BESIDE_GAP;
   const target = fitsBeside ? Math.round(s.buttonCenter - height / 2) : s.lift;

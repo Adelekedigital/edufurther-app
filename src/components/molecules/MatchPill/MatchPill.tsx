@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, type CSSProperties } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { cx } from '@/lib/utils/cx';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import styles from './MatchPill.module.css';
@@ -15,8 +15,14 @@ type MatchPillProps = {
   dock: 'center' | 'corner';
   /** Distance from the bottom of the viewport, as a CSS length. */
   bottom: string;
-  /** The mini icon either restores the pill (after ×) or opens matches. */
-  miniAction: 'restore' | 'open';
+  /**
+   * What the round icon does. restore: bring back the full pill (desktop, after ×).
+   * popover: open a small explainer above it (phones) — Design decisions: "Mobile
+   * float icon: small popover".
+   */
+  miniAction: 'restore' | 'popover';
+  /** One-line explainer shown in the popover. */
+  body: string;
   /** Following the pager as it scrolls: position updates every frame, so no bottom transition. */
   tracking?: boolean;
   onMinimise: () => void;
@@ -35,6 +41,7 @@ export function MatchPill({
   dock,
   bottom,
   miniAction,
+  body,
   tracking,
   onMinimise,
   onRestore,
@@ -46,10 +53,21 @@ export function MatchPill({
   // phone collapse near the pager). If focus was in the pill, carry it to the
   // control that replaced it instead of letting it fall to <body>.
   const asideRef = useRef<HTMLElement>(null);
+  const popoverId = useId();
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  // The popover belongs to the round icon; any change of form closes it.
+  const [lastForm, setLastForm] = useState(size + miniAction);
+  if (lastForm !== size + miniAction) {
+    setLastForm(size + miniAction);
+    setPopoverOpen(false);
+  }
   const focusInside = useRef(false);
   useEffect(() => {
     const onPointerDown = (e: PointerEvent) => {
-      if (!asideRef.current?.contains(e.target as Node)) focusInside.current = false;
+      if (!asideRef.current?.contains(e.target as Node)) {
+        focusInside.current = false;
+        setPopoverOpen(false);
+      }
     };
     document.addEventListener('pointerdown', onPointerDown, true);
     return () => document.removeEventListener('pointerdown', onPointerDown, true);
@@ -71,6 +89,13 @@ export function MatchPill({
         tracking && styles.tracking,
       )}
       data-match-pill
+      onKeyDown={(e) => {
+        if (e.key === 'Escape' && popoverOpen) {
+          e.stopPropagation();
+          setPopoverOpen(false);
+          asideRef.current?.querySelector<HTMLElement>('button[aria-expanded]')?.focus();
+        }
+      }}
       style={style}
       onFocus={() => {
         focusInside.current = true;
@@ -112,15 +137,38 @@ export function MatchPill({
           <Icon name="route" size={24} />
         </button>
       ) : (
-        <a
-          href={href}
-          className={styles.mini}
-          aria-label="Find my mentor matches"
-          title="Find my mentor matches"
-          {...linkProps}
-        >
-          <Icon name="route" size={24} />
-        </a>
+        <>
+          <button
+            type="button"
+            className={styles.mini}
+            aria-label="Not sure who’s right for you?"
+            aria-expanded={popoverOpen}
+            aria-controls={popoverOpen ? popoverId : undefined}
+            onClick={() => setPopoverOpen((o) => !o)}
+          >
+            <Icon name="route" size={24} />
+          </button>
+          {/* After the toggle in the DOM, so Tab from the icon moves into it. */}
+          {popoverOpen && (
+            <div
+              id={popoverId}
+              className={styles.popover}
+              role="region"
+              aria-labelledby={`${popoverId}-title`}
+            >
+              <p id={`${popoverId}-title`} className={styles.popoverTitle}>
+                <Icon name="route" size={18} className={styles.route} />
+                Not sure who’s right for you?
+              </p>
+              <p className={styles.popoverBody}>{body}</p>
+              <a href={href} className={styles.popoverCta} {...linkProps}>
+                Find my matches
+                <Icon name={external ? 'open_in_new' : 'arrow_forward'} size={16} />
+                {external && <span className="sr-only"> (opens in a new tab)</span>}
+              </a>
+            </div>
+          )}
+        </>
       )}
     </aside>
   );
