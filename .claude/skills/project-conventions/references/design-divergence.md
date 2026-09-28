@@ -76,6 +76,7 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | First-mentees card "Got funded. {award}, fully funded." / Explore "New mentor · {award}" | The card says "Got funded. {award}." without ", fully funded"; Explore falls back to "· N sessions" | No funding field on awards, and no awards on the list API | backend adds them (backend request #17) |
 | First-mentees card (owner) on a pending, declined or unlisted profile | Not shown; the OwnerBar explains | "Share your profile" would push a link that 404s for everyone else (review of #25) | design confirms (request #51) |
 | BookingModal opened from "Book {time}" when no offering still has that time | Opens on the first offering with "That time was just taken. Here's what's open." (provisional) | The card's time is the mentor's earliest across offerings and can be minutes stale (review of #25) | design supplies copy (request #50) |
+| Mentor Profile Background note "Has made the move from Nigeria to United States" | "…to the United States" (the card's `countryInSentence` rule) | Copy fix, made in frontend (product 2026-09-27: small copy/typography fixes are ours) | design file catches up |
 | Mentor photo placeholder: design tone per sample | Tone from a hash of the mentor id over 6 tokens | Real data has no tone field | design supplies a rule |
 
 ## Rules

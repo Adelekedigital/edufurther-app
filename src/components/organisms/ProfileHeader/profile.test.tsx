@@ -63,7 +63,9 @@ describe('ProfileOverview', () => {
 
   it('names the move when origin and study country differ', () => {
     render(<ProfileOverview profile={fullProfile} />);
-    expect(screen.getByText(/Has made the move from Nigeria to United States/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Has made the move from Nigeria to the United States/),
+    ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /LinkedIn/ })).toHaveAttribute(
       'href',
       'https://www.linkedin.com/in/gbenga',
