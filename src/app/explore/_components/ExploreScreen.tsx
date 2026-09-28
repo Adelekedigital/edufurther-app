@@ -277,12 +277,12 @@ export function ExploreScreen() {
 
 /**
  * Explore.dc.html turns on BookingModal's first-mentees box (show-first-reasons)
- * for a new mentor: under 3 sessions and no reviews. "Got funded." needs the
- * mentor's award on the list API (backend request #17), so for now only the
- * move is shown, when known.
+ * for a new mentor. "New" is the Explore label's own rule (lib/api/data/labels.ts),
+ * so the card's label and the box can't disagree. "Got funded." needs the
+ * mentor's award on the list API (backend #17): until then only the move shows.
  */
-function firstReasonsFor(m: Mentor): FirstReason[] {
-  if (m.completedSessions >= 3 || m.reviewCount > 0) return [];
+export function firstReasonsFor(m: Mentor): FirstReason[] {
+  if (m.label !== 'new') return [];
   const move = movedBetween(m.originCountry, m.studyCountry);
   return move
     ? [

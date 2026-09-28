@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { cx } from '@/lib/utils/cx';
 import { formatDay, formatTime } from '@/lib/utils/format';
@@ -28,6 +28,8 @@ type DayTimePickerProps = {
      * week has any ("Check back soon.").
      */
     nextOpen?: { label: string; onClick: () => void } | null;
+    /** The empty week's second line: "Try later dates.", "Try earlier dates." or "Check back soon." */
+    emptyHint?: string;
   };
 };
 
@@ -47,6 +49,13 @@ export function DayTimePicker({
   week,
 }: DayTimePickerProps) {
   const name = useId();
+  const dayGroupRef = useRef<HTMLFieldSetElement>(null);
+  const focusDayAfterJump = useRef(false);
+  useEffect(() => {
+    if (!focusDayAfterJump.current) return;
+    focusDayAfterJump.current = false;
+    dayGroupRef.current?.querySelector<HTMLInputElement>('input:checked')?.focus();
+  }, [week.label]);
   const labelId = `${name}-week`;
   const day = dayIndex === null ? null : days[dayIndex];
   const heading = day
@@ -83,7 +92,7 @@ export function DayTimePicker({
           </button>
         </span>
       </div>
-      <fieldset className={styles.fieldset} aria-labelledby={labelId}>
+      <fieldset ref={dayGroupRef} className={styles.fieldset} aria-labelledby={labelId}>
         <legend className="sr-only">Date</legend>
         <div className={styles.days}>
           {days.map((d, i) => {
@@ -136,10 +145,19 @@ export function DayTimePicker({
         <div className={styles.emptyWeek} role="status">
           <span className={styles.emptyTitle}>No open times this week</span>
           <span className={styles.emptyBody}>
-            {week.nextOpen ? 'Try later dates.' : 'Check back soon.'}
+            {week.emptyHint ?? (week.nextOpen ? 'Try later dates.' : 'Check back soon.')}
           </span>
           {week.nextOpen && (
-            <button type="button" className={styles.emptyJump} onClick={week.nextOpen.onClick}>
+            <button
+              type="button"
+              className={styles.emptyJump}
+              onClick={() => {
+                // The link unmounts once the new week shows times: hand focus
+                // to that week's chosen day so it isn't dropped (review of #26).
+                focusDayAfterJump.current = true;
+                week.nextOpen!.onClick();
+              }}
+            >
               {week.nextOpen.label}
             </button>
           )}

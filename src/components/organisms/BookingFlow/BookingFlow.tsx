@@ -194,21 +194,25 @@ export function BookingFlow(p: BookingFlowProps) {
     else if (allTried && firstTypeId && session.id !== firstTypeId) onTypeChange(firstTypeId);
   }, [seekNext, allTried, firstTypeId, session, seek.tried, onTypeChange]);
 
-  // The next week (after the one on screen) with any time, for an empty week's
-  // "Show Oct 4 – Oct 10" (design reply #40).
-  const nextOpenWeek = (() => {
+  // An empty week's way on (design reply #40): the next week with any time,
+  // "Show Oct 11 – Oct 17". Only worked out when the week on screen is empty.
+  const weekEmpty = firstOpen < 0 && days.length > 0;
+  const nextOpen = useMemo(() => {
+    if (!weekEmpty) return null;
     for (let w = week + 1; w < BOOKING_WEEKS; w++) {
-      if (weekOfDays(days, w, zone, new Date(clock)).some((d) => d.slots.length > 0)) return w;
+      const ds = weekOfDays(days, w, zone, new Date(clock));
+      if (ds.some((d) => d.slots.length > 0))
+        return {
+          week: w,
+          label: `Show ${formatDay(ds[0]!.date).date} – ${formatDay(ds[6]!.date).date}`,
+        };
     }
     return null;
-  })();
-  const nextOpenLabel =
-    nextOpenWeek === null
-      ? null
-      : (() => {
-          const ds = weekOfDays(days, nextOpenWeek, zone, new Date(clock));
-          return `Show ${formatDay(ds[0]!.date).date} – ${formatDay(ds[6]!.date).date}`;
-        })();
+    // `today` stands in for the clock, as for weekDays.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekEmpty, days, week, zone, today]);
+  // Nothing later but something earlier: say so, not "Check back soon" (review of #26).
+  const earlierOpen = weekEmpty && !nextOpen && week > 0;
 
   const weekLabel = (() => {
     const a = formatDay(weekDays[0]!.date).date;
@@ -231,10 +235,13 @@ export function BookingFlow(p: BookingFlowProps) {
   const hasQuestions = (session?.questions.length ?? 0) > 0;
   const steps = useMemo<Step[]>(() => {
     const s: Step[] = ['time'];
-    if (p.isGuest && !signedUp) s.push('signup');
+    // A guest's sign-up step stays counted while their request is in flight:
+    // dropping it then made the flow look like it jumped back to step 1
+    // (one step, no bar, the first-mentees box again) until the reply (review of #26).
+    if (p.isGuest && (!signedUp || p.requestPending)) s.push('signup');
     if (hasQuestions) s.push('questions');
     return s;
-  }, [p.isGuest, signedUp, hasQuestions]);
+  }, [p.isGuest, signedUp, p.requestPending, hasQuestions]);
   // Once a guest has signed up the step leaves the flow; the index then points
   // at the step that followed it (or past the end, which clamps to the last).
   // Without a (still valid) time there is nothing to continue with: back to it.
@@ -420,7 +427,7 @@ export function BookingFlow(p: BookingFlowProps) {
           Be one of {m.firstName}’s first mentees
         </span>
         {p.firstReasons.map((r) => (
-          <span key={r.icon} className={styles.firstReason}>
+          <span key={r.k} className={styles.firstReason}>
             <Icon name={r.icon} size={16} className={styles.firstIcon} />
             <span>
               <strong className={styles.firstKey}>{r.k}</strong> {r.v}
@@ -471,10 +478,14 @@ export function BookingFlow(p: BookingFlowProps) {
                 canNext: week < BOOKING_WEEKS - 1,
                 onPrev: () => moveWeek(week - 1),
                 onNext: () => moveWeek(week + 1),
-                nextOpen:
-                  nextOpenWeek === null || !nextOpenLabel
-                    ? null
-                    : { label: nextOpenLabel, onClick: () => moveWeek(nextOpenWeek) },
+                nextOpen: nextOpen
+                  ? { label: nextOpen.label, onClick: () => moveWeek(nextOpen.week) }
+                  : null,
+                emptyHint: nextOpen
+                  ? 'Try later dates.'
+                  : earlierOpen
+                    ? 'Try earlier dates.'
+                    : 'Check back soon.',
               }}
             />
           )}
