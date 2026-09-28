@@ -119,8 +119,11 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   );
   const reviewsHref = p ? `${p.mentor.profileHref}?tab=reviews` : '';
 
-  // Similar mentors: the Overview aside, for anyone but the mentor themselves.
-  const showSimilar = !!p && !isOwner && tab === 'overview';
+  // Similar mentors: the Overview aside, for mentees and guests. Not the mentor
+  // themselves, and not other mentors (product 2026-09-28: it's a mentee-facing
+  // suggestion, and mentors' nav has no Explore). Waits for who is looking.
+  const showSimilar =
+    !!p && !isOwner && tab === 'overview' && viewer.kind !== 'loading' && !member?.isMentor;
   const similar = useSimilarMentors(handle, showSimilar);
 
   // Mentees can see this profile: the owner's card only nudges sharing then
@@ -327,7 +330,12 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               {tab !== 'sessions' && (
                 // Reviews tab: the design's default `reviewsLayout=focus` drops
                 // the track record (and Similar mentors) from the aside.
-                <aside className={styles.aside} aria-label="Booking and track record">
+                <aside
+                  className={styles.aside}
+                  aria-label={
+                    tab === 'overview' ? 'Booking, track record and similar mentors' : 'Booking'
+                  }
+                >
                   {!isPhone && firstMentees}
                   {!isOwner && (
                     <BookSessionCard

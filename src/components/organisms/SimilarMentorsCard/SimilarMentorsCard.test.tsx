@@ -1,10 +1,16 @@
 import { render, screen, within } from '@testing-library/react';
-import { toSimilarMentor } from '@/lib/api/data/similar';
 import { formatFreeDay, inSentence } from '@/lib/utils/format';
 import { SimilarMentorsCard } from './SimilarMentorsCard';
 import { similarMentors } from './similar.fixture';
 
 describe('SimilarMentorsCard', () => {
+  // The fixture's next times are fixed dates: pin "now" so "Free {day}" is stable.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-28T10:00:00Z'));
+  });
+  afterEach(() => vi.useRealTimers());
+
   it('lists each mentor: name link, New badge, degree and school, shared topic, next free day', () => {
     render(
       <SimilarMentorsCard
@@ -30,7 +36,7 @@ describe('SimilarMentorsCard', () => {
     expect(first.getByText('4.8')).toBeInTheDocument();
     expect(first.getByText('Also helps with statement of purpose')).toBeInTheDocument();
     expect(
-      first.getByRole('link', { name: /^Free \w+\s*with Oluwakemi Olayinka$/ }),
+      first.getByRole('link', { name: /^Free Thu\s*with Oluwakemi Olayinka$/ }),
     ).toBeInTheDocument();
     // A new mentor: the badge, and no star rating without reviews.
     const third = within(rows[2]!);
@@ -68,16 +74,30 @@ describe('SimilarMentorsCard', () => {
 });
 
 describe('formatFreeDay', () => {
-  const now = new Date('2026-09-28T10:00:00Z'); // a Monday
-  it('today, tomorrow, a weekday within the week, then a date', () => {
+  const now = new Date('2026-09-28T10:00:00Z'); // Monday 10:00 UTC
+  it('today, tomorrow, a weekday up to 6 days ahead, then a date', () => {
     expect(formatFreeDay('2026-09-28T16:00:00Z', 'UTC', now)).toBe('Free today');
     expect(formatFreeDay('2026-09-29T09:00:00Z', 'UTC', now)).toBe('Free tomorrow');
     expect(formatFreeDay('2026-10-01T09:00:00Z', 'UTC', now)).toBe('Free Thu');
-    expect(formatFreeDay('2026-10-09T09:00:00Z', 'UTC', now)).toBe('Free Oct 9');
+    expect(formatFreeDay('2026-10-05T09:00:00Z', 'UTC', now)).toBe('Free Oct 5');
+  });
+  it('counts calendar days: the whole of day 6 reads alike (review of #31)', () => {
+    expect(formatFreeDay('2026-10-04T09:59:00Z', 'UTC', now)).toBe('Free Sun');
+    expect(formatFreeDay('2026-10-04T10:00:00Z', 'UTC', now)).toBe('Free Sun');
+    expect(formatFreeDay('2026-10-04T23:00:00Z', 'UTC', now)).toBe('Free Sun');
+  });
+  it('a time already past reads as today, never as next week (review of #31)', () => {
+    expect(formatFreeDay('2026-09-27T16:00:00Z', 'UTC', now)).toBe('Free today');
   });
   it('reads the day in the viewer’s zone', () => {
     // 23:30 UTC Monday is already Tuesday in Lagos (UTC+1).
     expect(formatFreeDay('2026-09-28T23:30:00Z', 'Africa/Lagos', now)).toBe('Free tomorrow');
+  });
+  it('a 25-hour DST day doesn’t skip "tomorrow" (review of #31)', () => {
+    // New York falls back on Sun Nov 1, 2026 (a 25-hour day): from 00:30 that
+    // Sunday, Monday is still tomorrow.
+    const early = new Date('2026-11-01T04:30:00Z'); // Sun 00:30 EDT
+    expect(formatFreeDay('2026-11-02T15:00:00Z', 'America/New_York', early)).toBe('Free tomorrow');
   });
 });
 
@@ -86,33 +106,5 @@ describe('inSentence', () => {
     expect(inSentence('Visa and interview')).toBe('visa and interview');
     expect(inSentence('CV review')).toBe('CV review');
     expect(inSentence('SOP drafts')).toBe('SOP drafts');
-  });
-});
-
-describe('toSimilarMentor', () => {
-  it('maps the row: degree and school, the shared offering, Explore’s rules', () => {
-    const s = toSimilarMentor({
-      id: 'm2',
-      slug: 'ademola-daniels',
-      first_name: 'Ademola',
-      last_name: 'Daniels',
-      degree: 'PhD',
-      study_course: 'Sociology',
-      institution: 'University of Toronto',
-      completed_sessions: 1,
-      review_count: 0,
-      session_value: null,
-      next_available_state: 'open',
-      next_available_at: '2026-10-03T09:00:00Z',
-      joined_at: '2026-09-01T12:00:00Z',
-      shared_offering: { slug: 'visa-and-interview', display_name: 'Visa and interview' },
-    });
-    expect(s.meta).toBe('PhD, University of Toronto');
-    expect(s.sharedTopic).toBe('Visa and interview');
-    expect(s.mentor).toMatchObject({
-      label: 'new',
-      rating: null,
-      profileHref: '/mentors/ademola-daniels',
-    });
   });
 });

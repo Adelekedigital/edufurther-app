@@ -15,13 +15,14 @@ vi.mock('next/navigation', () => ({
 }));
 
 let isGuest = false;
+let viewerIsMentor = false;
 vi.mock('@/app/_shell/useAppShell', () => ({
   useAppShell: () =>
     isGuest
       ? { viewer: { kind: 'guest' }, member: null, chrome: 'guest', account: undefined }
       : {
           viewer: { kind: 'member', id: 'viewer-1' },
-          member: { id: 'viewer-1', initial: 'E' },
+          member: { id: 'viewer-1', initial: 'E', isMentor: viewerIsMentor },
           chrome: 'member',
           account: undefined,
         },
@@ -93,6 +94,7 @@ const state = (over: Partial<ProfileRemote>): ProfileRemote => ({
 beforeEach(() => {
   search = new URLSearchParams();
   isGuest = false;
+  viewerIsMentor = false;
   reviewsRemote = reviewsState();
   reviewPrompt = null;
   reviewsArgs.mockReset();
@@ -458,6 +460,14 @@ describe('MentorProfileScreen — Similar mentors', () => {
 
   it('never to the mentor on their own page', () => {
     profile = state({ data: { ...fullProfile, owner: { approval: 'approved', listed: true } } });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('heading', { name: 'Similar mentors' })).not.toBeInTheDocument();
+    expect(similarArgs).toHaveBeenLastCalledWith('gbenga', false);
+  });
+
+  it('not for another mentor (product 2026-09-28: mentee-facing, no Explore for mentors)', () => {
+    viewerIsMentor = true;
+    profile = state({ data: fullProfile });
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.queryByRole('heading', { name: 'Similar mentors' })).not.toBeInTheDocument();
     expect(similarArgs).toHaveBeenLastCalledWith('gbenga', false);

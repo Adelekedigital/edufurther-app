@@ -55,7 +55,6 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | Mentor Profile "Degree verified by EduFurther" tick next to the name | Not rendered | No verification concept exists anywhere in the backend (profile reply #8) | backend verifies degrees |
 | Mentor Profile header "Message" button | Not rendered | No messaging yet | messaging ships |
 | Mentor Profile Reviews tab, rating link to it | Not in PR 1 (tabs are Overview and Sessions); the header rating is plain text | Built in profile PR 2 | PR 2 |
-| Mentor Profile "Similar mentors" card | Not rendered | Endpoint shipped after PR 1 (profile reply update 2, #9) | a follow-up PR |
 | Mentor Profile in-card booking (date tiles, week switcher, time grid, in-card "Request sent") | Resolved by design reply #32: the card is header, description, outlined "Book this session" and "You'll pick a time and answer a few questions next."; every Book opens the shared BookingModal | Product (2026-09-27): one booking experience everywhere; design adopted | — |
 | Mentor Profile per-offering "Free Mon, Sep 28" (booking card rows, Sessions tab cards) | Hidden; the Sessions card's Book keeps the right-hand place | Availability is stored per mentor, not per offering (profile reply #10) | never, unless the backend adds it |
 | Mentor Profile "Top-rated" badge in the track record | Not rendered | No product rule for "Top-rated" yet | product defines it (design request #33) |

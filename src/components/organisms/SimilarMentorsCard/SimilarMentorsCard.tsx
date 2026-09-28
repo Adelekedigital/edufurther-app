@@ -18,7 +18,8 @@ type SimilarMentorsCardProps = {
 
 /**
  * Mentor Profile.dc.html aside: "Similar mentors". A suggestion, not the
- * page's content, so an empty or failed list renders nothing.
+ * page's content, so an empty or failed list renders nothing. Profile links
+ * aren't prefetched (project convention; the card renders after load).
  */
 export function SimilarMentorsCard({
   mentors,
@@ -63,7 +64,7 @@ export function SimilarMentorsCard({
                 <Avatar size="md" tone="plain" initials={m.initials} src={m.photoUrl} alt="" />
                 <div className={styles.who}>
                   <span className={styles.name}>
-                    <Link href={m.profileHref} className={styles.nameLink}>
+                    <Link href={m.profileHref} prefetch={false} className={styles.nameLink}>
                       {m.name}
                     </Link>
                     {m.label === 'new' && (
@@ -89,7 +90,7 @@ export function SimilarMentorsCard({
                   Also helps with {inSentence(sharedTopic)}
                 </span>
                 {m.nextAvailableState === 'open' && m.nextAvailableAt && (
-                  <Link href={m.profileHref} className={styles.link}>
+                  <Link href={m.profileHref} prefetch={false} className={styles.link}>
                     {formatFreeDay(m.nextAvailableAt, timeZone)}
                     <span className="sr-only"> with {m.name}</span>
                   </Link>

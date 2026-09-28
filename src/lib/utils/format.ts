@@ -58,15 +58,20 @@ export function formatNextAvailable(
  * session is free until paid sessions ship (product rule, 2026-09-27).
  */
 export function formatFreeDay(isoInstant: string, timeZone: string, now = new Date()): string {
-  const dayKey = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone }).format(d);
+  // Calendar days apart in the viewer's zone (not 24h steps: DST days are 23
+  // or 25 hours, and 9:59 vs 10:00 on the same day must read alike).
+  const dayNumber = (d: Date) =>
+    Date.parse(`${new Intl.DateTimeFormat('en-CA', { timeZone }).format(d)}T00:00:00Z`) /
+    86_400_000;
   const at = new Date(isoInstant);
-  const DAY = 24 * 60 * 60 * 1000;
-  if (dayKey(at) === dayKey(now)) return 'Free today';
-  if (dayKey(at) === dayKey(new Date(now.getTime() + DAY))) return 'Free tomorrow';
-  const within = at.getTime() - now.getTime() < 6 * DAY;
+  const days = dayNumber(at) - dayNumber(now);
+  // A time already past (a stale value, a tab left open) reads as today,
+  // never as next week's day of the same name.
+  if (days <= 0) return 'Free today';
+  if (days === 1) return 'Free tomorrow';
   const day = new Intl.DateTimeFormat(
     'en-US',
-    within ? { weekday: 'short', timeZone } : { month: 'short', day: 'numeric', timeZone },
+    days <= 6 ? { weekday: 'short', timeZone } : { month: 'short', day: 'numeric', timeZone },
   ).format(at);
   return `Free ${day}`;
 }
