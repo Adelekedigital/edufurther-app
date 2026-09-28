@@ -1,0 +1,51 @@
+/* DS FormControl toggle at size 20: track 20×1.95 = 39 by 20×1.2 = 24, knob 24 − 3. */
+.switch {
+  position: relative;
+  flex: none;
+  width: 39px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--ink-300);
+  cursor: pointer;
+  transition: background-color var(--duration-base) var(--ease-standard);
+}
+.on {
+  background: var(--action-primary);
+}
+.knob {
+  position: absolute;
+  top: 1.5px;
+  left: 1.5px;
+  width: 21px;
+  height: 21px;
+  border-radius: var(--radius-full);
+  background: var(--white);
+  transition: left var(--duration-base) var(--ease-standard);
+}
+.on .knob {
+  left: 16.5px;
+}
+.switch:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.switch:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+@media (max-width: 767px) {
+  /* Drawn at 24px; the tap area reaches 44px (CTA Hierarchy rule 5). */
+  .switch::after {
+    content: '';
+    position: absolute;
+    inset: -10px -3px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .switch,
+  .knob {
+    transition: none;
+  }
+}

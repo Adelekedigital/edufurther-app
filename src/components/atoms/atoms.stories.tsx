@@ -8,6 +8,9 @@ import { Icon } from './Icon/Icon';
 import { Star } from './Star/Star';
 import { IconButton } from './IconButton/IconButton';
 import { Input } from './Input/Input';
+import { Radio } from './Radio/Radio';
+import { Select } from './Select/Select';
+import { Switch } from './Switch/Switch';
 import { Skeleton } from './Skeleton/Skeleton';
 import { StepBars } from './StepBars/StepBars';
 import { Tabs } from './Tabs/Tabs';
@@ -171,4 +174,64 @@ export const LineTabs: Story = {
       />
     );
   },
+};
+
+/** DS FormControl toggle, size 20 (Session Types list: Live / Hidden). */
+export const Switches: Story = {
+  render: function Render() {
+    const [on, setOn] = useState(true);
+    return (
+      <div style={row}>
+        <Switch checked={on} onChange={setOn} aria-label="SOP draft review is live" />
+        <Switch checked={false} onChange={() => {}} aria-label="Off" />
+        <Switch checked onChange={() => {}} aria-label="Disabled on" disabled />
+      </div>
+    );
+  },
+};
+
+/** DS FormControl radio, size 20. */
+export const Radios: Story = {
+  render: function Render() {
+    const [v, setV] = useState('a');
+    return (
+      <div style={row}>
+        {['a', 'b'].map((x) => (
+          <label key={x} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <Radio name="demo" checked={v === x} onChange={() => setV(x)} />
+            Option {x.toUpperCase()}
+          </label>
+        ))}
+        <Radio aria-label="Disabled" disabled />
+      </div>
+    );
+  },
+};
+
+/** Session Types rule rows (160px) and overrides (240px). */
+export const Selects: Story = {
+  render: () => (
+    <div style={row}>
+      <Select
+        aria-label="Session length"
+        width={160}
+        defaultValue="60"
+        options={[30, 45, 60, 90].map((m) => ({ value: String(m), label: `${m} min` }))}
+      />
+      <Select
+        aria-label="Booking approval"
+        width={240}
+        options={[
+          { value: 'inherit', label: 'Use my default' },
+          { value: 'on', label: 'Approve each request' },
+        ]}
+      />
+      <Select
+        aria-label="Disabled"
+        width={160}
+        disabled
+        options={[{ value: 'x', label: 'Disabled' }]}
+      />
+    </div>
+  ),
 };

@@ -3,6 +3,8 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { cx } from '@/lib/utils/cx';
+import { Icon } from '@/components/atoms/Icon/Icon';
+import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { IconButton } from '@/components/atoms/IconButton/IconButton';
 import type { SheetChrome } from '@/types/ui';
 import styles from './ModalShell.module.css';
@@ -12,6 +14,10 @@ type ModalShellProps = {
   subtitle?: string;
   /** sm 400 / md 480 / lg 560 / xl 880 (design Modal.dc.html). */
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  /** Header glyph in a ringed disc (Modal.dc.html `icon`). Centred modal only. */
+  icon?: IconName;
+  /** Colours the icon: success for "published", danger for a destructive confirm. */
+  tone?: 'default' | 'danger' | 'success';
   onClose: () => void;
   children: ReactNode;
   /**
@@ -35,6 +41,8 @@ export function ModalShell({
   title,
   subtitle,
   size = 'md',
+  icon,
+  tone = 'default',
   onClose,
   children,
   sheet,
@@ -165,15 +173,22 @@ export function ModalShell({
         className={cx(styles.dialog, styles[size])}
       >
         <IconButton icon="close" aria-label="Close" className={styles.close} onClick={onClose} />
-        <div className={styles.header}>
-          <h2 id={titleId} className={styles.title}>
-            {title}
-          </h2>
-          {subtitle && (
-            <p id={subId} className={styles.subtitle}>
-              {subtitle}
-            </p>
+        <div className={cx(styles.header, icon && styles.withIcon)}>
+          {icon && (
+            <span className={cx(styles.icon, styles[`icon-${tone}`])}>
+              <Icon name={icon} size={24} />
+            </span>
           )}
+          <div className={styles.titles}>
+            <h2 id={titleId} className={styles.title}>
+              {title}
+            </h2>
+            {subtitle && (
+              <p id={subId} className={styles.subtitle}>
+                {subtitle}
+              </p>
+            )}
+          </div>
         </div>
         {children}
         {footer}

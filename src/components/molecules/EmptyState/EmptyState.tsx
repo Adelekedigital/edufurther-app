@@ -2,7 +2,7 @@
 import type { ReactNode } from 'react';
 import styles from './EmptyState.module.css';
 
-export type Illustration = 'search-results' | 'forms' | 'team' | 'calendar';
+export type Illustration = 'search-results' | 'forms' | 'team' | 'calendar' | 'task-templates';
 
 type EmptyStateProps = {
   illustration: Illustration;

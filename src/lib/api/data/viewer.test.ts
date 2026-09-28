@@ -31,6 +31,12 @@ describe('toViewer (backend auth reply #3)', () => {
     expect(toViewer(approved).isApprovedMentor).toBe(true);
   });
 
+  it('any mentor profile, in any state, is a mentor for navigation and session types', () => {
+    expect(toViewer(me()).isMentor).toBe(false);
+    const pending = me({ mentor_profile: { approval_status: 'pending' } as Me['mentor_profile'] });
+    expect(toViewer(pending)).toMatchObject({ isMentor: true, isApprovedMentor: false });
+  });
+
   it('falls back to the email name when there is no first name', () => {
     expect(toViewer(me({ first_name: null }))).toMatchObject({
       firstName: 'esther.a',

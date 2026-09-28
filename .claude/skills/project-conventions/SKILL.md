@@ -41,6 +41,7 @@ Sources, so the next sync can diff against them: the design project's
 | Explore hero, mentee and guest alike: "Find a mentor for your study-abroad journey" / "Get guidance from students and professionals who have been through the process. Explore free mentorship or book a paid 1:1 session." | Product, 2026-09-26. The design's mentee copy claimed match ranking, which isn't built | match ranking ships |
 | The Explore session owns the foundation: scaffold, tokens, DS atoms, AppShell. Other screens reuse it | User, 2026-09-26 | — |
 | Explore ships in two phases: A = list + BookingModal on mocked slots; B = real booking endpoints | User, 2026-09-26 | — |
+| **Mentor navigation** for any viewer with a mentor profile, in any state (`viewer.isMentor`; design AppShell `role=mentor`): Home, Sessions → `/session-types`, Bookings, Messages, Calendar, Integration, Settings; phone tabs Home, Calendar, Bookings + More. **Mentors never see Explore** (even if also a mentee); **Admin is never shown** to mentors or mentees. Mentees: Home, Explore, Bookings, Messages, Settings. No nav items until /me answers (no wrong-set flash) | Product 2026-09-28; backend session-types reply #6 (every mentor state may manage session types) | product revisits roles |
 | One booking flow, `BookingModal` (`BookingFlow` in `ModalShell`), wherever booking happens — Explore, Mentor Profile, and any later screen. No screen gets its own inline picker. Default `flow=timeFirst`, `signupAt=afterTime`, `payment=placeholder`. Under 768px it is the design's `mobileView=sheet` (ModalShell `sheet` + `footer`). Dates show **7 days at a time, always starting today**, with ‹ › across the 4-week horizon (product 2026-09-27) | Design decisions: Explore; product 2026-09-27 ("consistent booking experience across wherever booking is done") | — |
 
 ---
@@ -110,7 +111,7 @@ Sources, so the next sync can diff against them: the design project's
 | Question | Answer |
 |---|---|
 | Where is the design? | https://claude.ai/design/p/fb0b8ef2-d0b9-4366-b6ab-33f22c441cd8 (DS project `c4e21801-7d61-406c-9736-fe03d681ec21`) |
-| Which parts are ported? | Explore (`/explore`): tokens, atoms, AppShell, ModalShell (incl. the phone sheet), MentorCard, MentorResults, BookingFlow (real slots, 7-day week view). Mentor Profile (`/mentors/[handle]`, slug or id) PR 1: read-only header, Overview, Sessions, booking card, track record, owner view; Reviews, Similar mentors and editing follow |
+| Which parts are ported? | Explore (`/explore`): tokens, atoms, AppShell, ModalShell (incl. the phone sheet), MentorCard, MentorResults, BookingFlow (real slots, 7-day week view). Mentor Profile (`/mentors/[handle]`, slug or id) PR 1: read-only header, Overview, Sessions, booking card, track record, owner view; Reviews, Similar mentors and editing follow. Session Types (`/session-types`, mentor nav "Sessions", 4 PRs): PR 1 building blocks (Switch, Radio, Select, SegmentedControl, RadioCards, WizardSteps, FormField, ModalShell `icon`/`tone`, mentor nav) |
 | Where do tokens come from? | `_ds/edufurther-design-system-…/tokens/*.css` → `src/styles/tokens/` |
 | Where is divergence recorded? | `references/design-divergence.md` |
 | What is deliberately not from the design? | Focus rings, disabled/busy, skeleton colour, reduced-motion, a text-on-photo scrim token — listed as *ours* in `design-divergence.md` |

@@ -149,6 +149,11 @@ export type Viewer =
       isMentee: boolean;
       /** An approved mentor profile exists. `primary_role` is never used for this. */
       isApprovedMentor: boolean;
+      /**
+       * A mentor profile exists in any state (pending, approved, paused…). Gets the
+       * mentor navigation and may manage session types (backend reply #6).
+       */
+      isMentor: boolean;
       /** Sessions had as a mentee; drives the match prompt (≤ 2 → shown). */
       completedSessions: number;
       /** Null for users without a mentee goal (no credit block). */

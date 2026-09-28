@@ -90,6 +90,21 @@
   --cover-mist-bg: var(--ink-100);
   --cover-mist-ink: var(--ink-700);
 
+  /* Modal header icon (Modal.dc.html `tone`): a 48px disc with a 6px ring.
+     The rings are design literals; the discs and glyphs are DS ramps. */
+  --modal-icon-bg: var(--blue-50);
+  --modal-icon-ring: #f5f9ff;
+  --modal-icon-ink: var(--blue-500);
+  --modal-icon-danger-bg: var(--red-50);
+  --modal-icon-danger-ring: #fff6f5;
+  --modal-icon-danger-ink: var(--red-500);
+  --modal-icon-success-bg: var(--green-50);
+  --modal-icon-success-ring: #f3fbf6;
+  --modal-icon-success-ink: var(--green-700);
+
+  /* Wizard step number (Session Types.dc.html literal 11px; no DS step). */
+  --step-dot-text: 11px;
+
   /* Breakpoint, for reference: CSS media queries cannot read a var, so the
      number 768px is repeated in modules. Keep them equal. */
   --bp-mobile-max: 767px;

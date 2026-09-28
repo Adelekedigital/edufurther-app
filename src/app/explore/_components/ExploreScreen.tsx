@@ -46,7 +46,7 @@ function countLabel(q: string, topicCount: number, total: number | null): string
 }
 
 export function ExploreScreen() {
-  const { viewer, member, chrome, account } = useAppShell();
+  const { viewer, member, chrome, account, nav } = useAppShell();
   const online = useOnline();
   // One card per row under 768px, two above — the match prompt goes after the first row.
   const cardsPerRow = useMediaQuery('(max-width: 767px)') ? 1 : 2;
@@ -118,7 +118,7 @@ export function ExploreScreen() {
   };
 
   return (
-    <AppShell active="Explore" chrome={chrome} account={account} offline={!online}>
+    <AppShell active="Explore" nav={nav} chrome={chrome} account={account} offline={!online}>
       <div className={styles.page}>
         {viewer.kind === 'error' && (
           // PROVISIONAL copy: /me failed. The page still works as a public list.
