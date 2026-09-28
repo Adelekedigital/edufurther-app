@@ -33,4 +33,19 @@ describe('ModalShell', () => {
     );
     expect(dialog()).toContainElement(document.activeElement as HTMLElement);
   });
+
+  it('a toned icon sits above the title and stays out of the accessible name', () => {
+    render(
+      <ModalShell
+        title="Session type published"
+        icon="check_circle"
+        tone="success"
+        onClose={vi.fn()}
+      >
+        <p>Body</p>
+      </ModalShell>,
+    );
+    expect(screen.getByRole('dialog', { name: 'Session type published' })).toBeInTheDocument();
+    expect(document.querySelector('.icon-success')).toHaveTextContent('check_circle');
+  });
 });

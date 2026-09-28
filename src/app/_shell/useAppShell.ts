@@ -64,6 +64,13 @@ export function useAppShell() {
     viewer,
     member,
     chrome,
+    // Design AppShell `role`: any mentor profile gets the mentor nav, which has
+    // no Explore (product, 2026-09-28). Unknown until /me answers.
+    nav: !member
+      ? ('unknown' as const)
+      : member.isMentor
+        ? ('mentor' as const)
+        : ('mentee' as const),
     account: chrome === 'member' ? { initial: member?.initial ?? '', items } : undefined,
   };
 }

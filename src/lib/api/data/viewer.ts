@@ -24,6 +24,7 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     initial: (name[0] ?? '?').toUpperCase(),
     isMentee: me.goal != null,
     isApprovedMentor: me.mentor_profile?.approval_status === 'approved',
+    isMentor: me.mentor_profile != null,
     completedSessions: me.mentee_completed_sessions,
     credits: me.credits
       ? { balance: me.credits.balance, allowance: me.credits.allowance, state: me.credits.state }
@@ -43,8 +44,21 @@ function mockViewer(): Viewer | null {
       initial: 'E',
       isMentee: true,
       isApprovedMentor: false,
+      isMentor: false,
       completedSessions: 0,
       credits: { balance: 3, allowance: 3, state: 'on_track' },
+    };
+  if (mock === 'mentor')
+    return {
+      kind: 'member',
+      id: 'mock-mentor',
+      firstName: 'Gbenga',
+      initial: 'G',
+      isMentee: false,
+      isApprovedMentor: true,
+      isMentor: true,
+      completedSessions: 0,
+      credits: null,
     };
   return null;
 }

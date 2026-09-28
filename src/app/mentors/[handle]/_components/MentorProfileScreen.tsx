@@ -44,7 +44,7 @@ const NEW_MENTOR_UNDER = 3;
  * (backend mentor-profile reply #1). Editing comes in a later PR. The only place on this route that fetches.
  */
 export function MentorProfileScreen({ handle }: { handle: string }) {
-  const { viewer, member, chrome, account } = useAppShell();
+  const { viewer, member, chrome, account, nav } = useAppShell();
   const online = useOnline();
   const profile = useMentorProfile(handle);
   const p = profile.data;
@@ -153,7 +153,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
     ) : null;
 
   return (
-    <AppShell active="Explore" chrome={chrome} account={account} offline={!online}>
+    <AppShell active="Explore" nav={nav} chrome={chrome} account={account} offline={!online}>
       <div className={styles.page}>
         {profile.isLoading ? (
           <ProfileSkeleton />

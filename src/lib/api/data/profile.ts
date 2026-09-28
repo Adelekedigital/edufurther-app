@@ -30,6 +30,7 @@ const STAGE: Record<ApplicationStage, string | null> = {
   drafting_stage: 'Drafting',
   post_submission: 'After submitting',
   revisions: 'Revising',
+  interviewing: 'Interviewing', // backend #10 (session-types reply), design stage chip
   other: null, // custom_stage_label carries it
 };
 
