@@ -1,0 +1,124 @@
+/* Mentor Profile.dc.html aside: the "Similar mentors" `<section>`. The design
+   sets no line-heights here, so text runs at `normal`. */
+.card {
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+}
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4) var(--space-5);
+}
+.title {
+  margin: 0;
+  font-size: var(--text-p-md);
+  line-height: normal;
+  font-weight: var(--weight-semibold);
+}
+.link {
+  font-size: var(--text-p-xs);
+  line-height: normal;
+  font-weight: var(--weight-semibold);
+  color: var(--text-action);
+  text-decoration: none;
+  white-space: nowrap;
+  border-radius: var(--radius-xs);
+}
+.link:hover {
+  color: var(--text-link-hover);
+}
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-top: var(--border-hairline) solid var(--ink-100);
+}
+.top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: var(--text-p-sm);
+  line-height: normal;
+  font-weight: var(--weight-semibold);
+}
+.nameLink {
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--radius-xs);
+}
+.nameLink:hover {
+  text-decoration: underline;
+}
+.meta {
+  font-size: var(--text-p-xs);
+  line-height: normal;
+  color: var(--text-tertiary);
+}
+.rating {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--text-p-xs);
+  line-height: normal;
+  font-weight: var(--weight-semibold);
+}
+.star {
+  color: var(--rating-star);
+}
+.bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.overlap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  line-height: normal;
+  color: var(--text-secondary);
+}
+.overlapIcon {
+  color: var(--blue-500);
+}
+.link:focus-visible,
+.nameLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.skAvatar {
+  flex: none;
+  border-radius: var(--radius-full);
+}
+
+/* AppShell.dc.html phone rule: "--space-4 --space-5" padding → "--space-3 --space-4". */
+@media (max-width: 767px) {
+  .head,
+  .row {
+    padding: var(--space-3) var(--space-4);
+  }
+}

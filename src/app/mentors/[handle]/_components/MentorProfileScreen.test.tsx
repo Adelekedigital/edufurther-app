@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile, reviews } from '@/components/organisms/ProfileHeader/profile.fixture';
+import { similarMentors } from '@/components/organisms/SimilarMentorsCard/similar.fixture';
 import type { MentorReviewsResult } from '@/lib/api/data/reviews';
 import type { MentorProfile, Remote, ReviewPrompt } from '@/types/mentor';
 import { MentorProfileScreen } from './MentorProfileScreen';
@@ -38,6 +39,16 @@ vi.mock('@/lib/api/data/reviews', () => ({
   },
   useReviewPrompt: () => reviewPrompt,
 }));
+// Per test: the Similar mentors card's list, and whether it was asked for.
+let similarRemote: Remote<typeof similarMentors>;
+const similarArgs = vi.fn();
+vi.mock('@/lib/api/data/similar', () => ({
+  useSimilarMentors: (...args: unknown[]) => {
+    similarArgs(...args);
+    return similarRemote;
+  },
+}));
+
 const reviewsState = (over: Partial<MentorReviewsResult> = {}): MentorReviewsResult => ({
   reviews: [],
   isLoading: false,
@@ -85,6 +96,8 @@ beforeEach(() => {
   reviewsRemote = reviewsState();
   reviewPrompt = null;
   reviewsArgs.mockReset();
+  similarRemote = { data: similarMentors, isLoading: false, error: null, retry: vi.fn() };
+  similarArgs.mockReset();
   sessionTypesRemote = idle;
   slotsRemote = idle;
   replace.mockReset();
@@ -423,5 +436,42 @@ describe('MentorProfileScreen — Reviews tab', () => {
     expect(screen.queryByText('No reviews for this session yet.')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(retry).toHaveBeenCalled();
+  });
+});
+
+describe('MentorProfileScreen — Similar mentors', () => {
+  it('shows the card at the bottom of the Overview aside', () => {
+    profile = state({ data: fullProfile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    const aside = screen.getByRole('complementary');
+    expect(within(aside).getByRole('heading', { name: 'Similar mentors' })).toBeInTheDocument();
+    expect(similarArgs).toHaveBeenLastCalledWith('gbenga', true);
+  });
+
+  it('not on the Reviews tab (the design’s focus layout)', () => {
+    search = new URLSearchParams('tab=reviews');
+    profile = state({ data: fullProfile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('heading', { name: 'Similar mentors' })).not.toBeInTheDocument();
+    expect(similarArgs).toHaveBeenLastCalledWith('gbenga', false);
+  });
+
+  it('never to the mentor on their own page', () => {
+    profile = state({ data: { ...fullProfile, owner: { approval: 'approved', listed: true } } });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('heading', { name: 'Similar mentors' })).not.toBeInTheDocument();
+    expect(similarArgs).toHaveBeenLastCalledWith('gbenga', false);
+  });
+
+  it('hides the card when the list fails', () => {
+    profile = state({ data: fullProfile });
+    similarRemote = {
+      data: null,
+      isLoading: false,
+      error: { kind: 'server', message: 'x' },
+      retry: vi.fn(),
+    };
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('heading', { name: 'Similar mentors' })).not.toBeInTheDocument();
   });
 });

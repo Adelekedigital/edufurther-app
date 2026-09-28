@@ -17,6 +17,7 @@ import { ProfileOverview } from '@/components/organisms/ProfileOverview/ProfileO
 import { ReviewsList } from '@/components/organisms/ReviewsList/ReviewsList';
 import { ReviewsSummary } from '@/components/organisms/ReviewsSummary/ReviewsSummary';
 import { SessionTypeList } from '@/components/organisms/SessionTypeList/SessionTypeList';
+import { SimilarMentorsCard } from '@/components/organisms/SimilarMentorsCard/SimilarMentorsCard';
 import { TrackRecordCard } from '@/components/organisms/TrackRecordCard/TrackRecordCard';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
@@ -25,6 +26,7 @@ import { useAppShell } from '@/app/_shell/useAppShell';
 import { useRequestBooking, useSessionTypes, useSlots } from '@/lib/api/data/booking';
 import { useMentorProfile } from '@/lib/api/data/profile';
 import { REVIEW_PAGE_SIZE, useMentorReviews, useReviewPrompt } from '@/lib/api/data/reviews';
+import { useSimilarMentors } from '@/lib/api/data/similar';
 import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
@@ -39,8 +41,7 @@ const NEW_MENTOR_UNDER = 3;
 /**
  * Mentor Profile (Mentor Profile.dc.html), read-only: the page every viewer
  * sees — mentee, guest, and the mentor themselves in any approval state
- * (backend mentor-profile reply #1). Editing and Similar mentors come in later
- * PRs. The only place on this route that fetches.
+ * (backend mentor-profile reply #1). Editing comes in a later PR. The only place on this route that fetches.
  */
 export function MentorProfileScreen({ handle }: { handle: string }) {
   const { viewer, member, chrome, account } = useAppShell();
@@ -117,6 +118,10 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
     tab === 'reviews' && viewer.kind === 'member' && !isOwner,
   );
   const reviewsHref = p ? `${p.mentor.profileHref}?tab=reviews` : '';
+
+  // Similar mentors: the Overview aside, for anyone but the mentor themselves.
+  const showSimilar = !!p && !isOwner && tab === 'overview';
+  const similar = useSimilarMentors(handle, showSimilar);
 
   // Mentees can see this profile: the owner's card only nudges sharing then
   // (a pending, declined or unlisted profile's link 404s for everyone else;
@@ -333,6 +338,14 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                     />
                   )}
                   {tab === 'overview' && <TrackRecordCard profile={p} />}
+                  {showSimilar && (
+                    <SimilarMentorsCard
+                      mentors={similar.data}
+                      isLoading={similar.isLoading}
+                      timeZone={timeZone}
+                      seeAllHref="/explore"
+                    />
+                  )}
                 </aside>
               )}
             </div>

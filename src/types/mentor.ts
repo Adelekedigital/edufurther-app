@@ -228,6 +228,15 @@ export type Review = {
   text: string;
 };
 
+/** A row of Mentor Profile.dc.html's "Similar mentors" card. */
+export type SimilarMentor = {
+  mentor: Mentor;
+  /** "MA, Leipzig University": degree and school; null when neither is on file. */
+  meta: string | null;
+  /** The offering they share with this profile ("Also helps with {it}"). */
+  sharedTopic: string;
+};
+
 /**
  * What the viewer can do about reviewing this mentor (GET /me/mentors/{id}/relationship).
  * none: no session together yet. due: a review is owed. Null: nothing to say.

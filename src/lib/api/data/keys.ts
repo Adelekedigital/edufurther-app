@@ -25,6 +25,7 @@ export const keys = {
       ['mentors', 'reviews', handle, sessionTypeId, who] as const,
     relationship: (mentorId: string, who: string) =>
       ['mentors', 'relationship', mentorId, who] as const,
+    similar: (handle: string, who: string) => ['mentors', 'similar', handle, who] as const,
   },
   booking: {
     sessionTypes: (mentorId: string) => ['booking', 'sessionTypes', mentorId] as const,

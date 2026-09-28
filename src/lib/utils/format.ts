@@ -52,6 +52,33 @@ export function formatNextAvailable(
   return `${day}, ${time}`;
 }
 
+/**
+ * Mentor Profile.dc.html "Similar mentors": "Free today" · "Free tomorrow" ·
+ * "Free Thu" (within the week) · "Free Oct 9", in the viewer's zone. Every
+ * session is free until paid sessions ship (product rule, 2026-09-27).
+ */
+export function formatFreeDay(isoInstant: string, timeZone: string, now = new Date()): string {
+  const dayKey = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone }).format(d);
+  const at = new Date(isoInstant);
+  const DAY = 24 * 60 * 60 * 1000;
+  if (dayKey(at) === dayKey(now)) return 'Free today';
+  if (dayKey(at) === dayKey(new Date(now.getTime() + DAY))) return 'Free tomorrow';
+  const within = at.getTime() - now.getTime() < 6 * DAY;
+  const day = new Intl.DateTimeFormat(
+    'en-US',
+    within ? { weekday: 'short', timeZone } : { month: 'short', day: 'numeric', timeZone },
+  ).format(at);
+  return `Free ${day}`;
+}
+
+/**
+ * A label as it reads mid-sentence: "Visa and interview" → "visa and
+ * interview", but "CV review" and "SOP drafts" keep their capitals.
+ */
+export function inSentence(label: string): string {
+  return /^[A-Z][a-z]/.test(label) ? label[0]!.toLowerCase() + label.slice(1) : label;
+}
+
 export function deviceTimeZone(): string {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone;
