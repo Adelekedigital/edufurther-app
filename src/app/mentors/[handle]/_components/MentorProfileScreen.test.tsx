@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { fullProfile, reviews } from '@/components/organisms/ProfileHeader/profile.fixture';
 import { similarMentors } from '@/components/organisms/SimilarMentorsCard/similar.fixture';
 import type { MentorReviewsResult } from '@/lib/api/data/reviews';
-import type { MentorProfile, Remote, ReviewPrompt } from '@/types/mentor';
+import type { MentorProfile, Remote, ReviewPrompt, Viewer } from '@/types/mentor';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
 const replace = vi.fn();
@@ -16,16 +16,32 @@ vi.mock('next/navigation', () => ({
 
 let isGuest = false;
 let viewerIsMentor = false;
+let viewerLoading = false;
 vi.mock('@/app/_shell/useAppShell', () => ({
-  useAppShell: () =>
-    isGuest
-      ? { viewer: { kind: 'guest' }, member: null, chrome: 'guest', account: undefined }
-      : {
-          viewer: { kind: 'member', id: 'viewer-1' },
-          member: { id: 'viewer-1', initial: 'E', isMentor: viewerIsMentor },
-          chrome: 'member',
-          account: undefined,
-        },
+  useAppShell: () => {
+    if (viewerLoading)
+      return {
+        viewer: { kind: 'loading', signedIn: true },
+        member: null,
+        chrome: 'loading',
+        account: undefined,
+      };
+    if (isGuest)
+      return { viewer: { kind: 'guest' }, member: null, chrome: 'guest', account: undefined };
+    // As in useAppShell: `member` is the viewer itself, when it's a member.
+    const m = {
+      kind: 'member',
+      id: 'viewer-1',
+      firstName: 'Ebun',
+      initial: 'E',
+      isMentee: !viewerIsMentor,
+      isApprovedMentor: viewerIsMentor,
+      isMentor: viewerIsMentor,
+      completedSessions: 0,
+      credits: null,
+    } satisfies Extract<Viewer, { kind: 'member' }>;
+    return { viewer: m, member: m, chrome: 'member', account: undefined };
+  },
 }));
 
 // Per test: the Reviews tab's list and the review note.
@@ -95,6 +111,7 @@ beforeEach(() => {
   search = new URLSearchParams();
   isGuest = false;
   viewerIsMentor = false;
+  viewerLoading = false;
   reviewsRemote = reviewsState();
   reviewPrompt = null;
   reviewsArgs.mockReset();
@@ -471,6 +488,27 @@ describe('MentorProfileScreen — Similar mentors', () => {
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.queryByRole('heading', { name: 'Similar mentors' })).not.toBeInTheDocument();
     expect(similarArgs).toHaveBeenLastCalledWith('gbenga', false);
+  });
+
+  it('waits while it isn’t known who is looking (review of #31)', () => {
+    viewerLoading = true;
+    profile = state({ data: fullProfile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('heading', { name: 'Similar mentors' })).not.toBeInTheDocument();
+    expect(similarArgs).toHaveBeenLastCalledWith('gbenga', false);
+  });
+
+  it('names the aside after what it holds (review of #31)', () => {
+    profile = state({ data: fullProfile });
+    const { unmount } = render(<MentorProfileScreen handle="gbenga" />);
+    expect(
+      screen.getByRole('complementary', { name: 'Booking, track record and similar mentors' }),
+    ).toBeInTheDocument();
+    unmount();
+    // The owner: no booking card, no similar mentors.
+    profile = state({ data: { ...fullProfile, owner: { approval: 'approved', listed: true } } });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('complementary', { name: 'Track record' })).toBeInTheDocument();
   });
 
   it('hides the card when the list fails', () => {

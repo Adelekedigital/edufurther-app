@@ -60,9 +60,18 @@ export function formatNextAvailable(
 export function formatFreeDay(isoInstant: string, timeZone: string, now = new Date()): string {
   // Calendar days apart in the viewer's zone (not 24h steps: DST days are 23
   // or 25 hours, and 9:59 vs 10:00 on the same day must read alike).
-  const dayNumber = (d: Date) =>
-    Date.parse(`${new Intl.DateTimeFormat('en-CA', { timeZone }).format(d)}T00:00:00Z`) /
-    86_400_000;
+  // Read the parts, not a locale's layout (en-CA's YYYY-MM-DD is CLDR data,
+  // not a guarantee).
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+  });
+  const dayNumber = (d: Date) => {
+    const p = Object.fromEntries(parts.formatToParts(d).map((x) => [x.type, Number(x.value)]));
+    return Date.UTC(p.year!, p.month! - 1, p.day!) / 86_400_000;
+  };
   const at = new Date(isoInstant);
   const days = dayNumber(at) - dayNumber(now);
   // A time already past (a stale value, a tab left open) reads as today,

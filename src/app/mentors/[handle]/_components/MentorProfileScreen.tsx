@@ -125,6 +125,13 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const showSimilar =
     !!p && !isOwner && tab === 'overview' && viewer.kind !== 'loading' && !member?.isMentor;
   const similar = useSimilarMentors(handle, showSimilar);
+  // The aside's name lists what it holds for this viewer on this tab.
+  const asideLabel =
+    listLabel([
+      !isOwner && 'booking',
+      tab === 'overview' && 'track record',
+      showSimilar && 'similar mentors',
+    ]) ?? 'About this mentor';
 
   // Mentees can see this profile: the owner's card only nudges sharing then
   // (a pending, declined or unlisted profile's link 404s for everyone else;
@@ -330,12 +337,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               {tab !== 'sessions' && (
                 // Reviews tab: the design's default `reviewsLayout=focus` drops
                 // the track record (and Similar mentors) from the aside.
-                <aside
-                  className={styles.aside}
-                  aria-label={
-                    tab === 'overview' ? 'Booking, track record and similar mentors' : 'Booking'
-                  }
-                >
+                <aside className={styles.aside} aria-label={asideLabel}>
                   {!isPhone && firstMentees}
                   {!isOwner && (
                     <BookSessionCard
@@ -395,6 +397,14 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
       )}
     </AppShell>
   );
+}
+
+/** "Booking, track record and similar mentors" from the parts present; null for none. */
+function listLabel(parts: (string | false)[]): string | null {
+  const p = parts.filter((x): x is string => !!x);
+  if (!p.length) return null;
+  const text = p.length === 1 ? p[0]! : `${p.slice(0, -1).join(', ')} and ${p.at(-1)}`;
+  return text[0]!.toUpperCase() + text.slice(1);
 }
 
 /**
