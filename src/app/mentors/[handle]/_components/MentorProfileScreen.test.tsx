@@ -159,3 +159,72 @@ describe('MentorProfileScreen — the mentor on their own page', () => {
     expect(screen.getByText(/You’re viewing your own profile./)).toBeInTheDocument();
   });
 });
+
+describe('MentorProfileScreen — new mentors (design reply #45)', () => {
+  const newMentor = (sessions: number, over: Partial<MentorProfile> = {}): MentorProfile => ({
+    ...fullProfile,
+    mentor: {
+      ...fullProfile.mentor,
+      completedSessions: sessions,
+      reviewCount: 0,
+      rating: null,
+      nextAvailableState: 'open',
+      nextAvailableAt: '2026-09-28T13:00:00Z',
+    },
+    ...over,
+  });
+
+  it('invites mentees under 3 sessions, with the move and the award, and not from 3', () => {
+    profile = state({ data: newMentor(2) });
+    const { unmount } = render(<MentorProfileScreen handle="gbenga" />);
+    expect(
+      screen.getByRole('heading', { name: 'Be one of Gbenga’s first mentees' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Made the move you’re planning.')).toBeInTheDocument();
+    expect(screen.getByText('Got funded.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Book .* · / })).toBeInTheDocument();
+    unmount();
+    profile = state({ data: newMentor(3) });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByText(/first mentees/)).not.toBeInTheDocument();
+  });
+
+  it('"Book {time}" opens the booking modal', async () => {
+    const user = userEvent.setup();
+    profile = state({ data: newMentor(0) });
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: /^Book .* · / }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('offers no Book when the mentor has no session types', () => {
+    profile = state({ data: newMentor(0, { sessionTypes: [] }) });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByText(/first mentees/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Book .* · / })).not.toBeInTheDocument();
+  });
+
+  it('shows the owner what mentees see, and "Share your profile" opens the share menu', async () => {
+    const user = userEvent.setup();
+    profile = state({ data: newMentor(1, { owner: { approval: 'approved', listed: true } }) });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(
+      screen.getByRole('heading', { name: 'Mentees see you as a new mentor' }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Share your profile' }));
+    expect(screen.getByRole('menuitem', { name: 'Copy profile link' })).toHaveFocus();
+  });
+
+  it('does not nudge sharing a profile mentees can’t see (review of #25)', () => {
+    for (const owner of [
+      { approval: 'pending' as const, listed: true },
+      { approval: 'declined' as const, listed: true },
+      { approval: 'approved' as const, listed: false },
+    ]) {
+      profile = state({ data: newMentor(0, { owner }) });
+      const { unmount } = render(<MentorProfileScreen handle="gbenga" />);
+      expect(screen.queryByRole('button', { name: 'Share your profile' })).not.toBeInTheDocument();
+      unmount();
+    }
+  });
+});

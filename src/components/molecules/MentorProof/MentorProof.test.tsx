@@ -9,13 +9,35 @@ describe('MentorProof', () => {
   });
   it('never shows an empty star rating for a new mentor', () => {
     render(<MentorProof rating={null} reviewCount={0} completedSessions={0} />);
-    expect(screen.getByText('New to EduFurther')).toBeInTheDocument();
+    expect(screen.getByText('New mentor')).toBeInTheDocument();
     expect(screen.getByText(/No sessions yet/)).toBeInTheDocument();
     expect(screen.queryByText('0.0')).not.toBeInTheDocument();
+  });
+  it('a new mentor leads with the move when both countries are known (MentorCard.dc.html)', () => {
+    const { rerender } = render(
+      <MentorProof
+        rating={null}
+        reviewCount={0}
+        completedSessions={1}
+        originCountry="Nigeria"
+        studyCountry="United States"
+      />,
+    );
+    expect(screen.getByText(/Moved from Nigeria to the United States/)).toBeInTheDocument();
+    rerender(
+      <MentorProof
+        rating={null}
+        reviewCount={0}
+        completedSessions={1}
+        originCountry="Canada"
+        studyCountry="Canada"
+      />,
+    );
+    expect(screen.getByText(/1 session/)).toBeInTheDocument();
   });
   it('an established mentor without reviews is not "new" (backend reply #6)', () => {
     render(<MentorProof rating={null} reviewCount={0} completedSessions={12} />);
     expect(screen.getByText('No reviews yet')).toBeInTheDocument();
-    expect(screen.queryByText('New to EduFurther')).not.toBeInTheDocument();
+    expect(screen.queryByText('New mentor')).not.toBeInTheDocument();
   });
 });

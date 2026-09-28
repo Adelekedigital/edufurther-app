@@ -148,13 +148,14 @@ export const FirstMentees: Story = {
         firstName="Adaeze"
         nextTime={next}
         timeZone="America/New_York"
-        languages={['English', 'Igbo']}
+        move={{ from: 'Nigeria', to: 'the United Kingdom' }}
+        award="Commonwealth Scholarship"
         onBook={fn()}
       />
     </div>
   ),
 };
-/** Nothing open and no languages: no facts box, no Book button. */
+/** Nothing open, no move, no award: no facts box, no Book button. */
 export const FirstMenteesNoTimes: Story = {
   render: () => (
     <div style={side}>
@@ -163,7 +164,8 @@ export const FirstMenteesNoTimes: Story = {
         firstName="Chukwuemeka-Oluwaseun"
         nextTime={null}
         timeZone="America/New_York"
-        languages={[]}
+        move={null}
+        award={null}
         onBook={fn()}
       />
     </div>
@@ -184,7 +186,8 @@ export const FirstMenteesPhone: Story = {
       firstName="Adaeze"
       nextTime={next}
       timeZone="Africa/Lagos"
-      languages={['English', 'Igbo', 'Yoruba']}
+      move={{ from: 'Ghana', to: 'Canada' }}
+      award={null}
       onBook={fn()}
     />
   ),

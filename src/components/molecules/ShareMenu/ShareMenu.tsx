@@ -10,13 +10,18 @@ type ShareMenuProps = {
   url: string;
   /** Mentor's name, for the email subject. */
   name: string;
-  /**
-   * Optional control from outside (e.g. the owner's "Share your profile"
-   * button elsewhere on the page). Uncontrolled when omitted.
-   */
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-};
+} & (
+  | {
+      /**
+       * Controlled from outside (e.g. the owner's "Share your profile" button
+       * elsewhere on the page). Both or neither: without onOpenChange a
+       * controlled menu could never close.
+       */
+      open: boolean;
+      onOpenChange: (open: boolean) => void;
+    }
+  | { open?: undefined; onOpenChange?: undefined }
+);
 
 type Item = { key: string; label: string; icon: IconName } & (
   { href: string; onSelect?: never } | { onSelect: () => void; href?: never }
@@ -41,8 +46,13 @@ export function ShareMenu({ url, name, open: openProp, onOpenChange }: ShareMenu
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
 
+  // Where focus goes back to on close: the control that opened the menu (the
+  // header icon, or a button elsewhere that opened it from outside).
+  const returnFocus = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (!open) return;
+    const from = document.activeElement;
+    returnFocus.current = from instanceof HTMLElement && from !== document.body ? from : null;
     // The menu opens downward; on a short phone it can land under the fixed
     // bottom bar. Scroll just enough to show all of it (scroll-margin in CSS
     // keeps it clear of the bar), then focus without a second jump.
@@ -57,7 +67,8 @@ export function ShareMenu({ url, name, open: openProp, onOpenChange }: ShareMenu
 
   const close = (refocus: boolean) => {
     setOpen(false);
-    if (refocus) buttonRef.current?.focus();
+    if (refocus)
+      (returnFocus.current?.isConnected ? returnFocus.current : buttonRef.current)?.focus();
   };
 
   const items: Item[] = [

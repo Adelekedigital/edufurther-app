@@ -104,6 +104,8 @@ export function MentorCard({
           rating={m.rating}
           reviewCount={m.reviewCount}
           completedSessions={m.completedSessions}
+          originCountry={m.originCountry}
+          studyCountry={m.studyCountry}
         />
       </div>
 

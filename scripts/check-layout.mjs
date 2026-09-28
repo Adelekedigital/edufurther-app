@@ -92,10 +92,10 @@ const CHECKS = [
     name: 'first-mentees card placement',
     slug: 'first-mentees-placement',
     route: '/mentors/adaeze-okonkwo',
-    ready: 'section[aria-labelledby=first-mentees-h]',
+    ready: '[data-first-mentees]',
     widths: [390, 767, 768, 1440],
     run: () => {
-      const card = document.querySelector('section[aria-labelledby=first-mentees-h]');
+      const card = document.querySelector('[data-first-mentees]');
       if (!card) return { cannot: 'first-mentees card not found' };
       if (window.innerWidth >= 768) {
         const aside = card.closest('aside');

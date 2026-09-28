@@ -80,6 +80,8 @@ export function FeaturedMentor({
           rating={m.rating}
           reviewCount={m.reviewCount}
           completedSessions={m.completedSessions}
+          originCountry={m.originCountry}
+          studyCountry={m.studyCountry}
         />
         {m.bio && <p className={styles.bio}>{m.bio}</p>}
         {/* Same bottom block as MentorCard: offer line, then availability. Not

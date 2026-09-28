@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { mockAvailabilityState, mockNextAvailableAt } from '@/lib/api/mock/availability';
-import { MENTORS, OFFERINGS } from '@/lib/api/mock/fixtures';
+import { MENTORS, OFFERINGS, mockCountries } from '@/lib/api/mock/fixtures';
 
 /**
  * PHASE A MOCK of GET /api/v1/mentors, following the backend's stated contract
@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
   const now = Date.now();
   const page = rows.slice(start, start + limit).map((m) => ({
     ...m,
+    ...mockCountries(m.id),
     next_available_at: mockNextAvailableAt(m.id, now),
     next_available_state: mockAvailabilityState(m.id),
   }));

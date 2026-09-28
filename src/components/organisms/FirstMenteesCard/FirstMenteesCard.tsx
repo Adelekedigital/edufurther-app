@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
@@ -13,7 +14,10 @@ type FirstMenteesCardProps =
       nextTime: string | null;
       /** The viewer's zone, for the time shown. */
       timeZone: string;
-      languages: string[];
+      /** Origin → study country when they differ (movedBetween), else null. */
+      move: { from: string; to: string } | null;
+      /** The mentor's first scholarship or award title, or null. */
+      award: string | null;
       /** Opens booking on that time. Omit to show no button. */
       onBook?: (time: string) => void;
     }
@@ -25,11 +29,33 @@ type FirstMenteesCardProps =
 type Fact = { icon: IconName; k: string; v: string };
 
 /**
+ * The facts box (design, 2026-09-27): why a new mentor is worth booking. The
+ * design's ", fully funded" after the award needs a funding field the API
+ * doesn't have (design-divergence.md).
+ */
+function factsFor(move: { from: string; to: string } | null, award: string | null): Fact[] {
+  return [
+    ...(move
+      ? [
+          {
+            icon: 'flight_takeoff' as const,
+            k: 'Made the move you’re planning.',
+            v: `From ${move.from} to ${move.to}, a path many mentees are planning.`,
+          },
+        ]
+      : []),
+    ...(award ? [{ icon: 'workspace_premium' as const, k: 'Got funded.', v: `${award}.` }] : []),
+  ];
+}
+
+/**
  * Mentor Profile.dc.html "first mentees" card (design reply #45): shown while a
  * mentor has fewer than 3 completed sessions. Mentees get an invitation with
- * the next open time and languages; the owner is told what mentees see.
+ * what makes this mentor worth it (the move, the funding) and "Book {next
+ * open time}"; the owner is told what mentees see.
  */
 export function FirstMenteesCard(p: FirstMenteesCardProps) {
+  const headingId = useId();
   const mentee = p.variant === 'mentee';
   const when =
     mentee && p.nextTime
@@ -38,27 +64,20 @@ export function FirstMenteesCard(p: FirstMenteesCardProps) {
           return `${f.weekday}, ${f.date} · ${formatTime(p.nextTime, p.timeZone)}`;
         })()
       : null;
-  const facts: Fact[] = mentee
-    ? [
-        ...(when ? [{ icon: 'event_available' as const, k: 'Next open:', v: when }] : []),
-        ...(p.languages.length
-          ? [{ icon: 'translate' as const, k: 'Speaks', v: p.languages.join(', ') }]
-          : []),
-      ]
-    : [];
+  const facts = mentee ? factsFor(p.move, p.award) : [];
   const title = mentee
     ? `Be one of ${p.firstName}’s first mentees`
     : 'Mentees see you as a new mentor';
 
   return (
-    <section className={styles.card} aria-labelledby="first-mentees-h">
+    <section className={styles.card} aria-labelledby={headingId} data-first-mentees>
       <div className={styles.row}>
         <span className={styles.icon} aria-hidden>
           <Icon name={mentee ? 'handshake' : 'campaign'} size={22} />
         </span>
         <div className={styles.text}>
           <span className={styles.caption}>New mentor</span>
-          <h2 id="first-mentees-h" className={styles.title}>
+          <h2 id={headingId} className={styles.title}>
             {title}
           </h2>
           <p className={styles.body}>

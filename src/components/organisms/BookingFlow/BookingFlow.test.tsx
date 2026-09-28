@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Mentor, Remote, SessionType } from '@/types/mentor';
@@ -330,11 +331,70 @@ describe('BookingFlow week view (7 days at a time)', () => {
     expect(screen.getByRole('button', { name: /^Request Tue, Oct 6/ })).toBeEnabled();
   });
 
-  it('opens as usual when the given time is no longer offered', () => {
-    render(
-      <BookingFlow {...props({ sessionTypeId: 'st2', initialTime: '2026-10-06T09:00:00Z' })} />,
+  it('applies the time when the slots arrive after the modal opened, once', async () => {
+    const user = userEvent.setup();
+    const later = [...slots, '2026-10-06T09:00:00Z'];
+    const { rerender } = render(
+      <BookingFlow
+        {...props({
+          sessionTypeId: 'st2',
+          slots: remote<string[]>(null, { isLoading: true }),
+          initialTime: '2026-10-06T09:00:00Z',
+        })}
+      />,
+    );
+    rerender(
+      <BookingFlow
+        {...props({
+          sessionTypeId: 'st2',
+          slots: remote(later),
+          initialTime: '2026-10-06T09:00:00Z',
+        })}
+      />,
+    );
+    expect(screen.getByRole('radio', { name: '9:00 am' })).toBeChecked();
+    expect(screen.getByText('Oct 4 – Oct 10')).toBeInTheDocument();
+    // A refetch after the viewer moved on doesn't pull them back.
+    await user.click(screen.getByRole('button', { name: 'Earlier dates' }));
+    rerender(
+      <BookingFlow
+        {...props({
+          sessionTypeId: 'st2',
+          slots: remote([...later]),
+          initialTime: '2026-10-06T09:00:00Z',
+        })}
+      />,
     );
     expect(screen.getByText('Next 7 days · Sep 27 – Oct 3')).toBeInTheDocument();
+  });
+
+  it('finds the time on another offering, and says so when no offering has it', () => {
+    // A page stand-in: it owns the offering and serves each one's slots.
+    const byType: Record<string, string[]> = { st1: slots, st2: ['2026-10-01T15:00:00Z'] };
+    function Page({ initialTime }: { initialTime: string }) {
+      const [typeId, setTypeId] = useState('st1');
+      return (
+        <BookingFlow
+          {...props({
+            sessionTypeId: typeId,
+            onSessionTypeChange: setTypeId,
+            slots: remote(byType[typeId]!),
+            initialTime,
+          })}
+        />
+      );
+    }
+    const { unmount } = render(<Page initialTime="2026-10-01T15:00:00Z" />);
+    expect(screen.getByRole('button', { name: /^Request Thu, Oct 1/ })).toBeEnabled();
+    expect(screen.queryByText(/just taken/)).not.toBeInTheDocument();
+    unmount();
+
+    render(<Page initialTime="2026-10-02T15:00:00Z" />);
+    expect(screen.getByRole('status', { name: '' })).toHaveTextContent(
+      'That time was just taken. Here’s what’s open.',
+    );
+    // Back on the first offering, nothing picked.
+    expect(screen.getByRole('combobox')).toHaveValue('st1');
     expect(screen.getByRole('button', { name: 'Pick a time' })).toBeDisabled();
   });
 

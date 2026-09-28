@@ -116,7 +116,7 @@ describe('TrackRecordCard', () => {
 });
 
 describe('FirstMenteesCard', () => {
-  it('invites mentees with the next time and languages, and books that time', async () => {
+  it('invites mentees with the move and the award, and books the next time', async () => {
     const user = userEvent.setup();
     const onBook = vi.fn();
     render(
@@ -125,31 +125,36 @@ describe('FirstMenteesCard', () => {
         firstName="Adaeze"
         nextTime="2026-09-28T13:00:00Z"
         timeZone="America/New_York"
-        languages={['English', 'Igbo']}
+        move={{ from: 'Nigeria', to: 'the United Kingdom' }}
+        award="Commonwealth Scholarship"
         onBook={onBook}
       />,
     );
     expect(
       screen.getByRole('heading', { name: 'Be one of Adaeze’s first mentees' }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Mon, Sep 28 · 9:00 am')).toBeInTheDocument();
-    expect(screen.getByText('English, Igbo')).toBeInTheDocument();
+    expect(screen.getByText('Made the move you’re planning.')).toBeInTheDocument();
+    expect(
+      screen.getByText(/From Nigeria to the United Kingdom, a path many mentees are planning\./),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Got funded.')).toBeInTheDocument();
+    expect(screen.getByText(/Commonwealth Scholarship\./)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Book Mon, Sep 28 · 9:00 am' }));
     expect(onBook).toHaveBeenCalledWith('2026-09-28T13:00:00Z');
   });
 
-  it('leaves out the next time and Book when nothing is open', () => {
+  it('leaves out the facts box and Book when there is nothing to show', () => {
     render(
       <FirstMenteesCard
         variant="mentee"
         firstName="Adaeze"
         nextTime={null}
         timeZone="UTC"
-        languages={[]}
+        move={null}
+        award={null}
         onBook={vi.fn()}
       />,
     );
-    expect(screen.queryByText('Next open:')).not.toBeInTheDocument();
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });

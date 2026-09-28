@@ -21,7 +21,7 @@ import { bookBlockedFor } from '@/app/_shell/bookBlocked';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { useRequestBooking, useSessionTypes, useSlots } from '@/lib/api/data/booking';
 import { useMentorProfile } from '@/lib/api/data/profile';
-import { deviceTimeZone } from '@/lib/utils/format';
+import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { MentorProfile } from '@/types/mentor';
@@ -92,20 +92,28 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const isOwner = !!p && (p.owner !== null || member?.id === p.mentor.id);
   const bookBlocked = !online ? 'Booking needs a connection' : bookBlockedFor(viewer);
 
+  // Mentees can see this profile: the owner's card only nudges sharing then
+  // (a pending, declined or unlisted profile's link 404s for everyone else;
+  // the OwnerBar explains that instead). No owner block → public.
+  const isPublic = !p?.owner || (p.owner.approval === 'approved' && p.owner.listed);
+
   // Design reply #45: under 3 sessions, an invitation (mentees) or what mentees
   // see (owner). Desktop: top of the aside (Overview only, like the aside).
   // Phones: under the tabs, on both tabs.
   const firstMentees =
     p && p.mentor.completedSessions < NEW_MENTOR_UNDER ? (
       isOwner ? (
-        <FirstMenteesCard variant="owner" onShare={() => setShareOpen(true)} />
+        isPublic ? (
+          <FirstMenteesCard variant="owner" onShare={() => setShareOpen(true)} />
+        ) : null
       ) : (
         <FirstMenteesCard
           variant="mentee"
           firstName={p.mentor.firstName}
           nextTime={p.mentor.nextAvailableState === 'open' ? p.mentor.nextAvailableAt : null}
           timeZone={timeZone}
-          languages={p.languages}
+          move={movedBetween(p.originCountry, p.studyCountry)}
+          award={p.awards[0]?.title ?? null}
           // Blocked booking (guest setup, offline…) is explained on the header's
           // Book; the card just doesn't offer one.
           onBook={hasSessions && !bookBlocked ? (time) => openBooking(undefined, time) : undefined}

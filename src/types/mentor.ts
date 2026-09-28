@@ -34,6 +34,9 @@ export type Mentor = {
   /** Mean session value, 1..5. Null when there are no published reviews. */
   rating: number | null;
   label: MentorLabel | null;
+  /** Where they grew up / where they studied (display names), for "Moved from X to Y". */
+  originCountry?: string | null;
+  studyCountry?: string | null;
   /**
    * What booking costs, for the card's offer line. "free" = at least one free
    * session type. Null = unknown (line hidden). Paid ("from $X") waits for prices.

@@ -73,6 +73,9 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | Mentor Profile rating tile: five gold stars at any rating | Lit stars follow the rounded rating; the rest in `--ink-200`, the design's review-row unlit colour | Five gold stars for a 4.2 overstates it | design confirms (request #47) |
 | DS outlined button label `--blue-500` | `--blue-600` label; the hairline stays `--blue-500` | blue-500 text is 4.3–4.4:1 on the tinted cards it sits on (blue-50 featured card, green-50 first-mentees card) and on its own blue-50 pressed state; blue-600 is ≥5.0:1 everywhere (WCAG 1.4.3, axe) | design adopts (request #48) |
 | Mentor Profile header "No sessions yet · Joined Sep 2026" | "No sessions yet" alone | The API has no join date | backend adds `joined_at` (backend request #14) |
+| First-mentees card "Got funded. {award}, fully funded." / Explore "New mentor · {award}" | The card says "Got funded. {award}." without ", fully funded"; Explore falls back to "· N sessions" | No funding field on awards, and no awards on the list API | backend adds them (backend request #17) |
+| First-mentees card (owner) on a pending, declined or unlisted profile | Not shown; the OwnerBar explains | "Share your profile" would push a link that 404s for everyone else (review of #25) | design confirms (request #51) |
+| BookingModal opened from "Book {time}" when no offering still has that time | Opens on the first offering with "That time was just taken. Here's what's open." (provisional) | The card's time is the mentor's earliest across offerings and can be minutes stale (review of #25) | design supplies copy (request #50) |
 | Mentor photo placeholder: design tone per sample | Tone from a hash of the mentor id over 6 tokens | Real data has no tone field | design supplies a rule |
 
 ## Rules

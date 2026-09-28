@@ -257,3 +257,29 @@ export const FEATURED = {
   about_me:
     'I’m a medical doctor and public health professional. I love meeting people and sharing what I’ve learned, and it’s a privilege to guide others through the application journey.',
 };
+
+const COUNTRIES = ['Nigeria', 'Ghana', 'Kenya', 'Cameroon', 'Nigeria'];
+const STUDY = ['United States', 'United Kingdom', 'Canada', 'Germany'];
+
+/**
+ * A mock mentor's index across [FEATURED, ...MENTORS] and whether their
+ * profile is sparse (every third generated mentor: no headline, about,
+ * awards, background or countries). One source for the list and the profile.
+ */
+export function mockProfileIndex(mentorId: string): { i: number; sparse: boolean } {
+  const i = [FEATURED, ...MENTORS].findIndex((m) => m.id === mentorId);
+  return { i, sparse: i > 5 && i % 3 === 2 };
+}
+
+/** Origin and study country, the same on the Explore list and the profile. */
+export function mockCountries(mentorId: string): {
+  origin_country: string | null;
+  primary_study_country: string | null;
+} {
+  const { i, sparse } = mockProfileIndex(mentorId);
+  if (i < 0 || sparse) return { origin_country: null, primary_study_country: null };
+  return {
+    origin_country: COUNTRIES[i % COUNTRIES.length]!,
+    primary_study_country: STUDY[i % STUDY.length]!,
+  };
+}

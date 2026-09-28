@@ -5,12 +5,9 @@ import {
   mockAvailabilityState,
   mockNextAvailableAt,
 } from '@/lib/api/mock/availability';
-import { FEATURED, MENTORS } from '@/lib/api/mock/fixtures';
+import { FEATURED, MENTORS, mockCountries, mockProfileIndex } from '@/lib/api/mock/fixtures';
 
 type MentorPublicRead = components['schemas']['MentorPublicRead'];
-
-const COUNTRIES = ['Nigeria', 'Ghana', 'Kenya', 'Cameroon', 'Nigeria'];
-const STUDY = ['United States', 'United Kingdom', 'Canada', 'Germany'];
 
 /**
  * MOCK of GET /api/v1/mentors/{handle} (slug or id) → MentorPublicRead, built
@@ -29,7 +26,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
   if (!m) return new NextResponse(null, { status: 404 });
   await new Promise((r) => setTimeout(r, 250));
 
-  const sparse = i > 5 && i % 3 === 2;
+  const { sparse } = mockProfileIndex(m.id);
   const sessions = m.completed_sessions;
   const body: MentorPublicRead = {
     id: m.id,
@@ -49,8 +46,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
     avatar_focus: m.avatar_focus,
     banner_url: null,
     primary_study_program: m.study_course,
-    primary_study_country: sparse ? null : STUDY[i % STUDY.length]!,
-    origin_country: sparse ? null : COUNTRIES[i % COUNTRIES.length]!,
+    ...mockCountries(m.id),
     social_linkedin: sparse ? null : `https://www.linkedin.com/in/${m.slug}`,
     social_twitter: null,
     social_youtube: i % 4 === 0 ? `https://www.youtube.com/@${m.slug}` : null,
