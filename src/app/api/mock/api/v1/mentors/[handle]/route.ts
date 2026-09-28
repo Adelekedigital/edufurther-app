@@ -97,6 +97,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
         ],
     next_available_at: mockNextAvailableAt(m.id),
     next_available_state: mockAvailabilityState(m.id),
+    joined_at: m.joined_at,
   };
   return NextResponse.json(body);
 }
