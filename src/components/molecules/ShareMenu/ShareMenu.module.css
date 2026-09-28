@@ -1,10 +1,13 @@
-/* Mentor Profile.dc.html: share button (32px) and its menu (220px). */
+/* Share button and its menu (220px). The button is a 48px square: CTA
+   Hierarchy.dc.html ("Header: Share (icon, 48×48 square)", rule 4: an icon
+   button in a CTA row matches the row's height). Mentor Profile.dc.html still
+   draws 32px (design request #46). */
 .root {
   position: relative;
 }
 .trigger {
-  width: 32px;
-  height: 32px;
+  width: var(--button-h-large);
+  height: var(--button-h-large);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -29,10 +32,8 @@
 .menu {
   position: absolute;
   right: 0;
-  /* DIVERGENCE: the design's top: 40px was drawn beside a 32px Book button;
-     next to the 48px one it touches it. 16px below the 32px icon = 8px below
-     a 48px neighbour (product, 2026-09-27). */
-  top: calc(100% + var(--space-4));
+  /* 8px below the 48px row (request #44). */
+  top: calc(100% + var(--space-2));
   z-index: 5;
   width: 220px;
   padding: var(--space-1);
@@ -72,13 +73,10 @@
 }
 /* Phones: 44px targets (ours). */
 @media (max-width: 767px) {
-  .trigger {
-    width: var(--touch-target-min);
-    height: var(--touch-target-min);
-  }
+  /* Clear of the bottom tab bar / guest bar when scrolled into view: the
+     design's phone bottom offset is 72px (Explore.dc.html). */
   .menu {
-    /* 44px icon beside a 48px button: 8px clear of the button. */
-    top: calc(100% + var(--space-3));
+    scroll-margin-bottom: calc(72px + env(safe-area-inset-bottom));
   }
   .item {
     height: var(--touch-target-min);

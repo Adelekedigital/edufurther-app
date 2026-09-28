@@ -1,0 +1,9 @@
+/* Mentor Profile.dc.html: `width/height: Npx; mask: url(assets/star.svg)
+   center/contain`. The glyph is 13.996×13.437, so it fills the width and
+   centres vertically, exactly as the mask does. */
+.star {
+  display: block;
+  flex: none;
+  width: var(--star-size);
+  height: var(--star-size);
+}

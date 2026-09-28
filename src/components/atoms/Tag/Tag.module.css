@@ -49,3 +49,11 @@
   color: var(--green-700);
   font-weight: var(--weight-semibold);
 }
+
+/* AppShell.dc.html phone rule: `padding: 0 var(--space-3)` becomes
+   `0 var(--space-2)` under 768px. */
+@media (max-width: 767px) {
+  .topic {
+    padding: 0 var(--space-2);
+  }
+}

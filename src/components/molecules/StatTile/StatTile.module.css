@@ -55,3 +55,11 @@
   line-height: 1.3;
   color: var(--text-tertiary);
 }
+
+/* AppShell.dc.html phone rule: `padding: var(--space-4) var(--space-5)`
+   becomes `var(--space-3) var(--space-4)` under 768px. */
+@media (max-width: 767px) {
+  .stat {
+    padding: var(--space-3) var(--space-4);
+  }
+}

@@ -86,4 +86,9 @@
   .band {
     padding: var(--space-4);
   }
+  /* AppShell.dc.html phone rule: --text-h5 becomes --text-p-lg at 1.2. */
+  .ratingValue {
+    font-size: var(--text-p-lg);
+    line-height: 1.2;
+  }
 }

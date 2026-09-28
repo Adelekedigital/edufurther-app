@@ -1,5 +1,6 @@
 import { Badge } from '@/components/atoms/Badge/Badge';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { Star } from '@/components/atoms/Star/Star';
 import { StatTile } from '@/components/molecules/StatTile/StatTile';
 import { cx } from '@/lib/utils/cx';
 import { formatRating } from '@/lib/utils/format';
@@ -96,11 +97,9 @@ export function TrackRecordCard({ profile, isOwner }: TrackRecordCardProps) {
               <span className={styles.ratingValue}>{formatRating(m.rating!)}</span>
               <span className={styles.stars} aria-hidden>
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <Icon
+                  <Star
                     key={i}
-                    name="star"
                     size={10}
-                    filled
                     className={i <= filled ? styles.starOn : styles.starOff}
                   />
                 ))}

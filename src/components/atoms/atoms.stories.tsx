@@ -5,6 +5,7 @@ import { Badge } from './Badge/Badge';
 import { Button } from './Button/Button';
 import { Chip } from './Chip/Chip';
 import { Icon } from './Icon/Icon';
+import { Star } from './Star/Star';
 import { IconButton } from './IconButton/IconButton';
 import { Input } from './Input/Input';
 import { Skeleton } from './Skeleton/Skeleton';
@@ -88,6 +89,21 @@ export const TagsAndIcons: Story = {
         <Icon name="bolt" />
         <IconButton icon="close" aria-label="Clear search" />
       </div>
+    </div>
+  ),
+};
+
+/** Mentor Profile.dc.html rating stars: the design's star.svg at its four sizes. */
+export const Stars: Story = {
+  render: () => (
+    <div style={{ display: 'flex', gap: 12, alignItems: 'center', color: 'var(--rating-star)' }}>
+      <Star size={10} />
+      <Star size={12} />
+      <Star size={14} />
+      <Star size={16} />
+      <span style={{ color: 'var(--ink-200)' }}>
+        <Star size={16} />
+      </span>
     </div>
   ),
 };
