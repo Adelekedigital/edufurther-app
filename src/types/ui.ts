@@ -8,7 +8,7 @@ import type { ReactNode } from 'react';
 export type SheetChrome = {
   caption?: string;
   heading: string;
-  leading: { icon: 'close' | 'arrow_back'; label: string; onClick: () => void };
+  leading: { icon: 'close' | 'arrow_back'; label: string; onClick: () => void; disabled?: boolean };
   showClose: boolean;
   /** Sits under the header and does not scroll (step bars). */
   progress?: ReactNode;

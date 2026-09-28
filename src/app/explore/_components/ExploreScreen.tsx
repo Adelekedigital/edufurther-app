@@ -19,6 +19,7 @@ import { deviceTimeZone } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { Mentor } from '@/types/mentor';
+import { firstReasonsFor } from './firstReasons';
 import styles from './ExploreScreen.module.css';
 import { bookBlockedFor } from '@/app/_shell/bookBlocked';
 import { MATCH_CALL_URL, useAppShell } from '@/app/_shell/useAppShell';
@@ -256,6 +257,7 @@ export function ExploreScreen() {
           requestError={request.error}
           onClose={closeBooking}
           deviceZone={timeZone}
+          firstReasons={firstReasonsFor(booking)}
           renderShell={(shell, body) => (
             <ModalShell
               title={shell.title}

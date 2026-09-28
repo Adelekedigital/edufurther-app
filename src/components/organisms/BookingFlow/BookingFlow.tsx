@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
@@ -32,6 +32,13 @@ const STEP_LABEL: Record<Exclude<Step, 'done'>, string> = {
   time: 'Pick a date and time',
   signup: 'Create your free account',
   questions: 'Questions from',
+};
+
+export type FirstReason = {
+  icon: 'flight_takeoff' | 'workspace_premium';
+  /** The bold lead, e.g. "Made the move you’re planning." */
+  k: string;
+  v: string;
 };
 
 export type BookingFlowProps = {
@@ -69,6 +76,13 @@ export type BookingFlowProps = {
    * offering's own (no placeholder from the previous one).
    */
   initialTime?: string | null;
+  /**
+   * BookingModal.dc.html `showFirstReasons`: for a new mentor, why they're
+   * worth booking ("Made the move…", "Got funded."), shown on the first step.
+   * The page decides when (Explore turns it on; the profile's card already
+   * says it). Empty or omitted: no box.
+   */
+  firstReasons?: FirstReason[];
   /**
    * Hands the page what the modal shell needs. On phones `sheet` and `footer`
    * are set and the shell renders as a full-screen sheet; on wider screens
@@ -180,6 +194,26 @@ export function BookingFlow(p: BookingFlowProps) {
     else if (allTried && firstTypeId && session.id !== firstTypeId) onTypeChange(firstTypeId);
   }, [seekNext, allTried, firstTypeId, session, seek.tried, onTypeChange]);
 
+  // An empty week's way on (design reply #40): the next week with any time,
+  // "Show Oct 11 – Oct 17". Only worked out when the week on screen is empty.
+  const weekEmpty = firstOpen < 0 && days.length > 0;
+  const nextOpen = useMemo(() => {
+    if (!weekEmpty) return null;
+    for (let w = week + 1; w < BOOKING_WEEKS; w++) {
+      const ds = weekOfDays(days, w, zone, new Date(clock));
+      if (ds.some((d) => d.slots.length > 0))
+        return {
+          week: w,
+          label: `Show ${formatDay(ds[0]!.date).date} – ${formatDay(ds[6]!.date).date}`,
+        };
+    }
+    return null;
+    // `today` stands in for the clock, as for weekDays.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekEmpty, days, week, zone, today]);
+  // Nothing later but something earlier: say so, not "Check back soon" (review of #26).
+  const earlierOpen = weekEmpty && !nextOpen && week > 0;
+
   const weekLabel = (() => {
     const a = formatDay(weekDays[0]!.date).date;
     const b = formatDay(weekDays[6]!.date).date;
@@ -201,16 +235,21 @@ export function BookingFlow(p: BookingFlowProps) {
   const hasQuestions = (session?.questions.length ?? 0) > 0;
   const steps = useMemo<Step[]>(() => {
     const s: Step[] = ['time'];
-    if (p.isGuest && !signedUp) s.push('signup');
+    // A guest's sign-up step stays in the list for the whole flow, so "Step n
+    // of N" never changes under them (sending, an error, going back). Once
+    // they've signed up it's stepped over instead (review of #26).
+    if (p.isGuest) s.push('signup');
     if (hasQuestions) s.push('questions');
     return s;
-  }, [p.isGuest, signedUp, hasQuestions]);
-  // Once a guest has signed up the step leaves the flow; the index then points
-  // at the step that followed it (or past the end, which clamps to the last).
+  }, [p.isGuest, hasQuestions]);
+  // The next / previous step to show, stepping over a sign-up already done.
+  const skip = (i: number) => steps[i] === 'signup' && signedUp;
+  const after = (i: number) => (skip(i + 1) ? i + 2 : i + 1);
+  const before = (i: number) => (skip(i - 1) ? i - 2 : i - 1);
   // Without a (still valid) time there is nothing to continue with: back to it.
   const at = time || p.requestDone ? Math.min(stepIndex, steps.length - 1) : 0;
   const step: Step = p.requestDone ? 'done' : steps[at]!;
-  const isLast = at === steps.length - 1;
+  const isLast = after(at) >= steps.length;
 
   const picked = time
     ? (() => {
@@ -222,25 +261,46 @@ export function BookingFlow(p: BookingFlowProps) {
   const missingRequired =
     step === 'questions' && !!session?.questions.some((q) => q.required && !answers[q.id]);
 
+  // A double-click fires twice before the page's `requestPending` arrives:
+  // guard here too. Cleared by a failed send, so a retry goes through.
+  const sent = useRef(false);
+  const signedUpNow = useRef(false);
+  useEffect(() => {
+    if (p.requestError) sent.current = false;
+  }, [p.requestError]);
   const submit = () => {
-    if (session && time)
-      p.onRequest({ mentorId: m.id, sessionTypeId: session.id, startsAt: time, answers });
+    if (sent.current || !session || !time) return;
+    sent.current = true;
+    p.onRequest({ mentorId: m.id, sessionTypeId: session.id, startsAt: time, answers });
   };
   const next = () => {
+    // One request per action: nothing submits again while one is out
+    // (review r3 of #26: the sign-up step's Google button double-booked).
+    if (p.requestPending) return;
     if (step === 'signup') {
-      p.onSignup();
-      setSignedUp(true);
+      // Signed up already (a retry after an error): don't sign up twice.
+      if (!signedUp && !signedUpNow.current) {
+        signedUpNow.current = true;
+        p.onSignup();
+        setSignedUp(true);
+      }
       // Nothing after sign-up (no questions): the request goes now.
       if (isLast) submit();
+      else setStepIndex(at + 1);
       return;
     }
     if (isLast) {
       submit();
       return;
     }
-    setStepIndex(at + 1);
+    setStepIndex(after(at));
   };
-  const back = () => (at === 0 ? p.onClose() : setStepIndex(at - 1));
+  const back = () => {
+    const to = before(at);
+    if (to < 0) p.onClose();
+    // Not while a request is out: its reply belongs to the time on screen.
+    else if (!p.requestPending) setStepIndex(to);
+  };
   const chooseType = (id: string) => {
     // The viewer chose: stop looking for the requested time.
     setSeek((s) => ({ ...s, done: true }));
@@ -251,11 +311,11 @@ export function BookingFlow(p: BookingFlowProps) {
     setAnswers({});
   };
 
-  const nextStep = steps[at + 1];
+  const nextStep = steps[after(at)];
   const nextLabel =
     step === 'time' && !time
       ? 'Pick a time'
-      : step === 'signup'
+      : step === 'signup' && !signedUp
         ? 'Continue with email'
         : isLast
           ? `Request ${picked}`
@@ -270,7 +330,10 @@ export function BookingFlow(p: BookingFlowProps) {
       : step === 'done'
         ? ''
         : STEP_LABEL[step];
-  const subtitle = step === 'done' ? '' : `Step ${at + 1} of ${steps.length} · ${stepName}`;
+  // Design #39: with a single step there's no "Step 1 of 1" and no bar.
+  const oneStep = steps.length === 1;
+  const subtitle =
+    step === 'done' || oneStep ? '' : `Step ${at + 1} of ${steps.length} · ${stepName}`;
 
   const proof =
     m.reviewCount > 0 && m.rating !== null
@@ -279,7 +342,10 @@ export function BookingFlow(p: BookingFlowProps) {
   const mentorMeta = [m.degreeLine, m.institution, proof].filter(Boolean).join(' · ');
 
   const nextDisabled =
-    !session || (step === 'time' && !time) || missingRequired || (step === 'signup' && !email);
+    !session ||
+    (step === 'time' && !time) ||
+    missingRequired ||
+    (step === 'signup' && !signedUp && !email);
 
   const typeSelect = session && (
     <div className={styles.field}>
@@ -315,7 +381,12 @@ export function BookingFlow(p: BookingFlowProps) {
     <div className={styles.picked}>
       <Icon name="event" size={isPhone ? 18 : 16} className={styles.pickedIcon} />
       <span className={styles.pickedText}>{picked}</span>
-      <button type="button" className={styles.change} onClick={() => setStepIndex(0)}>
+      <button
+        type="button"
+        className={styles.change}
+        onClick={() => setStepIndex(0)}
+        disabled={p.requestPending}
+      >
         Change<span className="sr-only"> time</span>
       </button>
     </div>
@@ -379,8 +450,27 @@ export function BookingFlow(p: BookingFlowProps) {
     </div>
   ) : null;
 
+  const firstBox =
+    at === 0 && step !== 'done' && p.firstReasons && p.firstReasons.length > 0 ? (
+      <div className={styles.firstBox}>
+        <span className={styles.firstTitle}>
+          <Icon name="handshake" size={18} className={styles.firstIcon} />
+          Be one of {m.firstName}’s first mentees
+        </span>
+        {p.firstReasons.map((r) => (
+          <span key={r.k} className={styles.firstReason}>
+            <Icon name={r.icon} size={16} className={styles.firstIcon} />
+            <span>
+              <strong className={styles.firstKey}>{r.k}</strong> {r.v}
+            </span>
+          </span>
+        ))}
+      </div>
+    ) : null;
+
   const stepContent = session && (
     <>
+      {firstBox}
       {step === 'time' && (
         <>
           <TimezonePicker value={zone} onChange={setZone} deviceZone={p.deviceZone} />
@@ -419,6 +509,14 @@ export function BookingFlow(p: BookingFlowProps) {
                 canNext: week < BOOKING_WEEKS - 1,
                 onPrev: () => moveWeek(week - 1),
                 onNext: () => moveWeek(week + 1),
+                nextOpen: nextOpen
+                  ? { label: nextOpen.label, onClick: () => moveWeek(nextOpen.week) }
+                  : null,
+                emptyHint: nextOpen
+                  ? 'Try later dates.'
+                  : earlierOpen
+                    ? 'Try earlier dates.'
+                    : 'Check back soon.',
               }}
             />
           )}
@@ -431,25 +529,35 @@ export function BookingFlow(p: BookingFlowProps) {
             <Icon name="lock_clock" size={16} />
             {picked} is held for you for 10 minutes
           </p>
-          <h3 className={styles.signupTitle}>Create a free account to finish booking</h3>
-          <Button variant="dark" size="medium" fullWidth onClick={next}>
-            Continue with Google
-          </Button>
-          <span className={styles.or}>or</span>
-          <label className={styles.field}>
-            <span className={styles.fieldLabelStrong}>Email address</span>
-            <Input
-              type="email"
-              autoComplete="email"
-              inputMode="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </label>
-          <span className={styles.login}>
-            Have an account? <Link href="/login">Log in</Link>
-          </span>
+          {signedUp ? (
+            // After signing up (e.g. a retry after an error): no second form.
+            <p className={styles.signedUp}>
+              <Icon name="check_circle" size={16} />
+              {email ? `Signed up as ${email}` : 'You’re signed up'}
+            </p>
+          ) : (
+            <>
+              <h3 className={styles.signupTitle}>Create a free account to finish booking</h3>
+              <Button variant="dark" size="medium" fullWidth busy={p.requestPending} onClick={next}>
+                Continue with Google
+              </Button>
+              <span className={styles.or}>or</span>
+              <label className={styles.field}>
+                <span className={styles.fieldLabelStrong}>Email address</span>
+                <Input
+                  type="email"
+                  autoComplete="email"
+                  inputMode="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </label>
+              <span className={styles.login}>
+                Have an account? <Link href="/login">Log in</Link>
+              </span>
+            </>
+          )}
         </div>
       )}
 
@@ -507,14 +615,14 @@ export function BookingFlow(p: BookingFlowProps) {
   if (isPhone) {
     const atStart = at === 0 || step === 'done';
     const sheet: SheetChrome = {
-      caption: step === 'done' ? undefined : `Step ${at + 1} of ${steps.length}`,
+      caption: step === 'done' || oneStep ? undefined : `Step ${at + 1} of ${steps.length}`,
       heading: step === 'done' ? 'Booking requested' : stepName,
       leading: atStart
         ? { icon: 'close', label: 'Close', onClick: p.onClose }
-        : { icon: 'arrow_back', label: 'Back', onClick: back },
+        : { icon: 'arrow_back', label: 'Back', onClick: back, disabled: p.requestPending },
       showClose: !atStart,
       progress:
-        step !== 'done' ? (
+        step !== 'done' && !oneStep ? (
           <StepBars total={steps.length} current={at} label={subtitle} thin />
         ) : undefined,
     };
@@ -601,7 +709,9 @@ export function BookingFlow(p: BookingFlowProps) {
         {profileLink}
       </div>
 
-      {step !== 'done' && <StepBars total={steps.length} current={at} label={subtitle} />}
+      {step !== 'done' && !oneStep && (
+        <StepBars total={steps.length} current={at} label={subtitle} />
+      )}
 
       {status ?? (
         <div className={styles.columns}>
@@ -638,7 +748,12 @@ export function BookingFlow(p: BookingFlowProps) {
           </>
         ) : (
           <>
-            <Button variant="secondary-outlined" size="large" onClick={back}>
+            <Button
+              variant="secondary-outlined"
+              size="large"
+              onClick={back}
+              disabled={at > 0 && p.requestPending}
+            >
               {at === 0 ? 'Cancel' : 'Back'}
             </Button>
             {nextButton}

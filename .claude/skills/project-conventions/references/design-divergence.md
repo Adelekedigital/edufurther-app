@@ -77,7 +77,10 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | First-mentees card (owner) on a pending, declined or unlisted profile | Not shown; the OwnerBar explains | "Share your profile" would push a link that 404s for everyone else (review of #25) | design confirms (request #51) |
 | BookingModal opened from "Book {time}" when no offering still has that time | Opens on the first offering with "That time was just taken. Here's what's open." (provisional) | The card's time is the mentor's earliest across offerings and can be minutes stale (review of #25) | design supplies copy (request #50) |
 | Mentor Profile Background note "Has made the move from Nigeria to United States" | "…to the United States" (the card's `countryInSentence` rule) | Copy fix, made in frontend (product 2026-09-27: small copy/typography fixes are ours) | design file catches up |
-| Mentor photo placeholder: design tone per sample | Tone from a hash of the mentor id over 6 tokens | Real data has no tone field | design supplies a rule |
+| BookingModal empty week: "Try later dates." / "Check back soon." | Also "Try earlier dates." when only earlier weeks have times | "Check back soon" was wrong there (review of #26). Copy fix, ours (product rule) | design file catches up |
+| Mentor photo placeholder: design tone per sample (Explore cards) | Tone from a hash of the mentor id over 6 tokens | Real data has no tone field. The profile follows the design's cover rule instead: the photo circle is the cover's paired dark colour | design supplies a rule for cards |
+| BookingModal first-mentees box "Got funded. {award}" (Explore) | Only "Made the move…" on Explore bookings; no box when the move isn't known | The list API has no awards (backend request #17) | backend ships #17 |
+| Profile "Change cover" panel (colour picker, cover art, topic icons) | Automatic cover colour only | Storing a chosen colour/art needs backend #19; owner editing comes in later PRs | owner-edit PRs |
 
 ## Rules
 

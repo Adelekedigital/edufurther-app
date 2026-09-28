@@ -23,6 +23,15 @@ Against the real backend, in `.env.development.local`: `NEXT_PUBLIC_API_BASE_URL
 so calls go same-origin), `BACKEND_URL=http://localhost:8000`, and `ENABLE_MOCK_API=`
 (see `.env.example`).
 
+Two things that break booking against a real backend (preview or dev):
+
+- **`NEXT_PUBLIC_API_BASE_URL` must stay unset on Vercel.** Set, the browser calls the
+  backend's domain directly. `POST /sessions` then fails CORS on its `Idempotency-Key`
+  header, and the user sees "We couldn't reach EduFurther".
+- **`NEXT_PUBLIC_MOCK_VIEWER` can't book.** It only fakes the viewer in the UI, with no
+  sign-in and no token, so the backend answers `POST /sessions` with 401. Browse with it;
+  sign in for real to book.
+
 ## Fonts and icons
 
 Self-hosted, never fetched from Google at build or runtime (`src/app/fonts/`, loaded by

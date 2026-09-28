@@ -4,6 +4,7 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import { Star } from '@/components/atoms/Star/Star';
 import { Tag } from '@/components/atoms/Tag/Tag';
 import { cx } from '@/lib/utils/cx';
+import { coverFor, coverVars } from '@/lib/utils/cover';
 import { formatRating, sessionsLabel } from '@/lib/utils/format';
 import type { MentorProfile } from '@/types/mentor';
 import styles from './ProfileHeader.module.css';
@@ -29,8 +30,11 @@ export function locationLine(from: string | null, studiedIn: string | null): str
  */
 export function ProfileHeader({ profile, actions }: ProfileHeaderProps) {
   const m = profile.mentor;
+  // Cover colour (Mentor Profile.dc.html): a light banner when there's no
+  // banner image, and its paired dark colour behind the initials.
+  const cover = coverVars(coverFor(m.id));
   const photoStyle = {
-    '--photo-bg': `var(--avatar-tone-${m.tone})`,
+    '--photo-bg': cover.ink,
     ...(m.photoFocus && {
       '--photo-x': `${(m.photoFocus.x * 100).toFixed(1)}%`,
       '--photo-y': `${(m.photoFocus.y * 100).toFixed(1)}%`,
@@ -55,7 +59,7 @@ export function ProfileHeader({ profile, actions }: ProfileHeaderProps) {
 
   return (
     <section className={styles.card} aria-labelledby="profile-name">
-      <div className={styles.banner}>
+      <div className={styles.banner} style={{ '--cover-bg': cover.bg } as CSSProperties}>
         {profile.bannerUrl && <img src={profile.bannerUrl} alt="" className={styles.bannerImg} />}
       </div>
       <div className={styles.head}>
