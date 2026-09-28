@@ -4,6 +4,7 @@
     "arrow_back",
     "arrow_forward",
     "bolt",
+    "campaign",
     "chat",
     "check",
     "check_circle",
@@ -22,6 +23,7 @@
     "flag",
     "flight_takeoff",
     "groups",
+    "handshake",
     "home",
     "home_pin",
     "hourglass_top",
@@ -53,5 +55,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "0326936b58f6a1dddb0406afdfd257e1e594752c9d35b334fe9fab9000bfe40c"
+  "sha256": "52f6feb7d303b2f010bb738bf3cd3f082870de67c56355ddf00a1e84d8e430d4"
 }

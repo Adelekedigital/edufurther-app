@@ -49,7 +49,8 @@ Sources, so the next sync can diff against them: the design project's
 
 - **Positioning: EduFurther is an experience-led mentorship platform.** Copy is actionable and encouraging, and never claims a capability that isn't built (e.g. match ranking).
 - Undesigned states and copy are **held and sent to design** (`docs/handoff/*-design-request.md`), not invented in the build. Interaction states (focus, hover, pressed, disabled, reduced motion) are the exception: the build adds them as *ours*.
-- A mentor with **no reviews never shows a star rating**. Show "New to EduFurther · No sessions yet / 1 session / N sessions". An empty rating reads as a bad one.
+- A mentor with **no reviews never shows a star rating**. An empty rating reads as a bad one. Explore cards show "New to EduFurther · No sessions yet / 1 session / N sessions"; the profile header leads with the sessions count (plus "· Joined {Mon YYYY}" once the API has it) and the first-mentees card says "New mentor".
+- A mentor with **fewer than 3 completed sessions is new** (design reply #45): Explore labels the card "New mentor" (and no reviews); the profile shows `FirstMenteesCard` (mentee invitation with next open time, languages and "Book {time}", or the owner's "Share your profile") at the top of the aside, under the tabs on phones; the track record appears from 1 session and its rating band from 3.
 - Times are shown in the **viewer's timezone, with the zone named** ("Times shown in Lagos (WAT) ✎"), via `TimezonePicker`.
 - Guests never see a match score. Guests sign up **after** choosing a time (`signupAt=afterTime`), and the chosen time is held for 10 minutes.
 - A failed load **keeps the user's filters and query**.
@@ -72,7 +73,7 @@ Sources, so the next sync can diff against them: the design project's
 | Session | A booked 1:1 | a browser/auth session |
 | Booking | The request/record of a session: pending → confirmed / declined / cancelled / completed | — |
 | Slot | A concrete start time a session type can be booked at | a weekly availability window |
-| Rising mentor | Label for a new mentor (0–2 sessions, no reviews) | — |
+| New mentor | Explore label and profile card for a mentor under 3 completed sessions (label also needs no reviews). Was "Rising mentor" until design reply #45 | — |
 | Plus | Premium mentor tag (gold, dark text) | a paid plan for mentees |
 | Match | % fit to the mentee's onboarding goals. **Not built** (tweak `matchScore=hide` is the default) | a search relevance score |
 

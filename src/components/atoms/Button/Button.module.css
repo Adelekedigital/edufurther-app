@@ -86,18 +86,22 @@
   background: var(--action-primary-pressed);
 }
 
+/* DS Button (_ds_bundle.js, Button.prompt.md): transparent, a 1px blue-500
+   hairline and a blue label; hover on --surface-subtle, pressed on --blue-50.
+   DIVERGENCE: the label is --blue-600, not --blue-500. On the tinted cards it
+   sits on (blue-50, green-50) and on its own pressed state, blue-500 text is
+   4.3–4.4:1; blue-600 is 5.0:1 or better everywhere (WCAG 1.4.3). */
 .secondary-outlined {
-  background: var(--surface-card);
-  color: var(--text-primary);
-  box-shadow: inset 0 0 0 var(--border-hairline) var(--border-default);
+  background: transparent;
+  color: var(--blue-600);
+  box-shadow: inset 0 0 0 var(--border-hairline) var(--action-primary);
 }
 .secondary-outlined:hover {
   background: var(--surface-subtle);
-  color: var(--text-primary);
+  color: var(--blue-600);
 }
 .secondary-outlined:active {
-  background: var(--surface-muted);
-  box-shadow: inset 0 0 0 var(--border-emphasis) var(--border-default);
+  background: var(--blue-50);
 }
 
 .text {

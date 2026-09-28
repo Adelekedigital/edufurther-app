@@ -313,6 +313,31 @@ describe('BookingFlow week view (7 days at a time)', () => {
     expect(screen.getByRole('button', { name: 'Earlier dates' })).toBeDisabled();
   });
 
+  it('opens on a given time: its week, its day, the time picked', () => {
+    render(
+      <BookingFlow
+        {...props({
+          sessionTypeId: 'st2',
+          slots: remote([...slots, '2026-10-06T09:00:00Z']),
+          // A different spelling of the same instant still matches.
+          initialTime: '2026-10-06T09:00:00.000+00:00',
+        })}
+      />,
+    );
+    expect(screen.getByText('Oct 4 – Oct 10')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Tue, Oct 6, 1 time/ })).toBeChecked();
+    expect(screen.getByRole('radio', { name: '9:00 am' })).toBeChecked();
+    expect(screen.getByRole('button', { name: /^Request Tue, Oct 6/ })).toBeEnabled();
+  });
+
+  it('opens as usual when the given time is no longer offered', () => {
+    render(
+      <BookingFlow {...props({ sessionTypeId: 'st2', initialTime: '2026-10-06T09:00:00Z' })} />,
+    );
+    expect(screen.getByText('Next 7 days · Sep 27 – Oct 3')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pick a time' })).toBeDisabled();
+  });
+
   it('opens on this week even when the first time is later, and ‹ › reach it', async () => {
     const user = userEvent.setup();
     render(<BookingFlow {...props({ slots: remote(['2026-10-06T09:00:00Z']) })} />);

@@ -12,7 +12,7 @@ import styles from './MentorCard.module.css';
 const LABEL_TEXT: Record<MentorLabel, string> = {
   'top-rated': 'Top-rated',
   experienced: 'Experienced mentor',
-  rising: 'Rising mentor',
+  new: 'New mentor',
 };
 
 type MentorCardProps = {

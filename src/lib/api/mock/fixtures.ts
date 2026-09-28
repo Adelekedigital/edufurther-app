@@ -208,11 +208,18 @@ const avatarUrl = (file: string) => `/api/mock/avatars/${file}`;
 const FEATURED_PHOTO = avatars.people.find((p) => p.framing === 'landscape')!;
 const PHOTO_PEOPLE = avatars.people.filter((p) => p !== FEATURED_PHOTO);
 
+/**
+ * Fixed session counts for the new-mentor cases (design reply #45): #8 has 0
+ * sessions and lands on a sparse, "refreshing" profile, so its first-mentees
+ * card has no next time and no languages; #20 has exactly 1 session.
+ */
+const SESSIONS_OVERRIDE: Record<number, number> = { 8: 0, 20: 1 };
+
 const GENERATED: MentorSummaryRead[] = FIRST.map((first, i) => {
   const face = PHOTO_PEOPLE[i];
   const f = face?.first_name ?? first;
   const [deg, course] = COURSES[i % COURSES.length]!;
-  const sessions = (i * 7) % 61;
+  const sessions = SESSIONS_OVERRIDE[i] ?? (i * 7) % 61;
   const reviews = sessions > 3 ? (i * 3) % 14 : 0;
   return base(
     `m-gen-${i}`,

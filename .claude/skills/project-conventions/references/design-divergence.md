@@ -71,6 +71,8 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | Mentor Profile avatar `align-items: flex-end` with the intro (desktop) | Pinned 10px into the banner (`align-self: flex-start; margin-top: 38px`). With no headline the intro is shorter than the pinned photo, so the header is ~23px taller than flex-end would draw it | With flex-end the photo slid below the banner whenever the intro ran to three lines (the design's own sample does it at 1024px) (product 2026-09-27) | design adopts (request #47) |
 | Mentor Profile proof line wraps with a leading "·" (tablet) | Under 1024px the location takes its own line with no dot, as on phones | A wrapped separator led the new line (product 2026-09-27) | design adopts (request #47) |
 | Mentor Profile rating tile: five gold stars at any rating | Lit stars follow the rounded rating; the rest in `--ink-200`, the design's review-row unlit colour | Five gold stars for a 4.2 overstates it | design confirms (request #47) |
+| DS outlined button label `--blue-500` | `--blue-600` label; the hairline stays `--blue-500` | blue-500 text is 4.3–4.4:1 on the tinted cards it sits on (blue-50 featured card, green-50 first-mentees card) and on its own blue-50 pressed state; blue-600 is ≥5.0:1 everywhere (WCAG 1.4.3, axe) | design adopts (request #48) |
+| Mentor Profile header "No sessions yet · Joined Sep 2026" | "No sessions yet" alone | The API has no join date | backend adds `joined_at` (backend request #14) |
 | Mentor photo placeholder: design tone per sample | Tone from a hash of the mentor id over 6 tokens | Real data has no tone field | design supplies a rule |
 
 ## Rules

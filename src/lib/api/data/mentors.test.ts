@@ -30,8 +30,8 @@ describe('deriveLabel (Design decisions §9)', () => {
   it('Experienced at ≥ 50 sessions', () => {
     expect(deriveLabel({ rating: 4.1, reviewCount: 3, completedSessions: 50 })).toBe('experienced');
   });
-  it('Rising at 0–2 sessions with no reviews', () => {
-    expect(deriveLabel({ rating: null, reviewCount: 0, completedSessions: 2 })).toBe('rising');
+  it('New mentor at 0–2 sessions with no reviews', () => {
+    expect(deriveLabel({ rating: null, reviewCount: 0, completedSessions: 2 })).toBe('new');
     expect(deriveLabel({ rating: null, reviewCount: 0, completedSessions: 3 })).toBeNull();
   });
 });
@@ -43,7 +43,7 @@ describe('toMentor', () => {
     expect(m.initials).toBe('AO');
     expect(m.degreeLine).toBe('MSc, Data Science');
     expect(m.profileHref).toBe('/mentors/ada-o');
-    expect(m.label).toBe('rising');
+    expect(m.label).toBe('new');
     expect(m.tone).toBeGreaterThanOrEqual(1);
     expect(m.tone).toBeLessThanOrEqual(6);
   });

@@ -86,6 +86,31 @@ const CHECKS = [
       return Math.abs(into - 10) <= 0.5 ? null : `photo is ${Math.round(into)}px into the banner`;
     },
   },
+  {
+    // Design reply #45: a new mentor's first-mentees card sits at the top of
+    // the aside from 768px, and under the tabs (above the tab panel) on phones.
+    name: 'first-mentees card placement',
+    slug: 'first-mentees-placement',
+    route: '/mentors/adaeze-okonkwo',
+    ready: 'section[aria-labelledby=first-mentees-h]',
+    widths: [390, 767, 768, 1440],
+    run: () => {
+      const card = document.querySelector('section[aria-labelledby=first-mentees-h]');
+      if (!card) return { cannot: 'first-mentees card not found' };
+      if (window.innerWidth >= 768) {
+        const aside = card.closest('aside');
+        return aside && aside.firstElementChild === card ? null : 'card is not first in the aside';
+      }
+      const tabs = document.querySelector('[role=tablist]');
+      const panel = document.querySelector('[role=tabpanel]');
+      if (!tabs || !panel) return { cannot: 'tabs or panel not found' };
+      const c = card.getBoundingClientRect();
+      return tabs.getBoundingClientRect().bottom <= c.top &&
+        c.bottom <= panel.getBoundingClientRect().top
+        ? null
+        : 'card is not between the tabs and the tab panel';
+    },
+  },
 ];
 
 function cannotRun(msg) {

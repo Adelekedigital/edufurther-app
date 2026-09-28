@@ -45,7 +45,7 @@ export const sampleMentors: Mentor[] = [
     completedSessions: 0,
     reviewCount: 0,
     rating: null,
-    label: 'rising',
+    label: 'new',
     offer: 'free',
     nextAvailableAt: soon,
     nextAvailableState: 'open',

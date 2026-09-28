@@ -18,6 +18,31 @@ describe('ShareMenu', () => {
     expect(button).toHaveFocus();
   });
 
+  it('can be opened from outside and reports closing', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    const { rerender } = render(
+      <ShareMenu
+        url="https://edufurther.com/mentors/g"
+        name="Gbenga E"
+        open={false}
+        onOpenChange={onOpenChange}
+      />,
+    );
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    rerender(
+      <ShareMenu
+        url="https://edufurther.com/mentors/g"
+        name="Gbenga E"
+        open
+        onOpenChange={onOpenChange}
+      />,
+    );
+    expect(screen.getByRole('menuitem', { name: 'Copy profile link' })).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
   it('builds share links from the encoded URL and announces a copy', async () => {
     const user = userEvent.setup();
     const writeText = vi.fn().mockResolvedValue(undefined);

@@ -78,7 +78,7 @@ export const TagsAndIcons: Story = {
     <div style={col}>
       <div style={{ ...row, background: 'var(--avatar-tone-1)', padding: 16 }}>
         <Tag tone="on-photo">Top-rated</Tag>
-        <Tag tone="on-photo">Rising mentor</Tag>
+        <Tag tone="on-photo">New mentor</Tag>
       </div>
       <div style={row}>
         <Tag tone="neutral">Scholarships & funding</Tag>

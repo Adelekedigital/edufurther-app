@@ -13,7 +13,14 @@ import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { FileField } from '@/components/molecules/FileField/FileField';
 import { TimezonePicker } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import { formatDay, formatRating, formatTime } from '@/lib/utils/format';
-import { BOOKING_WEEKS, dayKey, groupSlotsByDay, visibleDays, weekOfDays } from '@/lib/utils/slots';
+import {
+  BOOKING_WEEKS,
+  dayKey,
+  groupSlotsByDay,
+  visibleDays,
+  weekIndexOf,
+  weekOfDays,
+} from '@/lib/utils/slots';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type { AppError, BookingRequest, Mentor, Remote, SessionType } from '@/types/mentor';
 import type { SheetChrome } from '@/types/ui';
@@ -52,6 +59,12 @@ export type BookingFlowProps = {
   deviceZone: string;
   /** Hide "View profile" — the flow was opened from that profile. */
   hideProfileLink?: boolean;
+  /**
+   * A time to open on (UTC ISO), e.g. the profile's "Book Mon, Sep 28 ·
+   * 9:00 am". Picked, on its week, once the slots load and still offer it;
+   * otherwise the flow opens as usual.
+   */
+  initialTime?: string | null;
   /**
    * Hands the page what the modal shell needs. On phones `sheet` and `footer`
    * are set and the shell renders as a full-screen sheet; on wider screens
@@ -116,6 +129,21 @@ export function BookingFlow(p: BookingFlowProps) {
   const chosen = weekDays.findIndex((d) => d.date === dayChoice && d.slots.length > 0);
   const firstOpen = weekDays.findIndex((d) => d.slots.length > 0);
   const dayAt = chosen >= 0 ? chosen : firstOpen >= 0 ? firstOpen : null;
+  // Open on the requested time once, when the slots that offer it arrive.
+  // Adjusted during render (React's "state from props" pattern), not in an effect.
+  const [initialApplied, setInitialApplied] = useState(false);
+  if (!initialApplied && p.initialTime && p.slots.data) {
+    setInitialApplied(true);
+    const at = Date.parse(p.initialTime);
+    const hit = days.flatMap((d) => d.slots).find((s) => Date.parse(s.startsAt) === at);
+    const w = hit ? weekIndexOf(hit.startsAt, zone, new Date(clock)) : -1;
+    if (hit && w >= 0 && w < BOOKING_WEEKS) {
+      setWeek(w);
+      setDayChoice(dayKey(hit.startsAt, zone));
+      setTime(hit.startsAt);
+    }
+  }
+
   const weekLabel = (() => {
     const a = formatDay(weekDays[0]!.date).date;
     const b = formatDay(weekDays[6]!.date).date;

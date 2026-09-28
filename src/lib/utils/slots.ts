@@ -41,6 +41,18 @@ export function addDays(isoDate: string, n: number): string {
 }
 
 /**
+ * Which 7-day page (0 = the one starting today) holds `instant`, in the
+ * viewer's zone. Negative for a day before today.
+ */
+export function weekIndexOf(instant: string, timeZone: string, now = new Date()): number {
+  const day = (iso: string) => Date.parse(`${iso}T12:00:00Z`);
+  const diff = Math.round(
+    (day(dayKey(instant, timeZone)) - day(dayKey(now.toISOString(), timeZone))) / 864e5,
+  );
+  return Math.floor(diff / 7);
+}
+
+/**
  * Week `week` (0 = the next 7 days from today in the viewer's zone), every
  * day present — days with nothing open have no slots and render disabled.
  */

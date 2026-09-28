@@ -10,6 +10,12 @@ type ShareMenuProps = {
   url: string;
   /** Mentor's name, for the email subject. */
   name: string;
+  /**
+   * Optional control from outside (e.g. the owner's "Share your profile"
+   * button elsewhere on the page). Uncontrolled when omitted.
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
 type Item = { key: string; label: string; icon: IconName } & (
@@ -22,8 +28,13 @@ type Item = { key: string; label: string; icon: IconName } & (
  * as AccountMenu: arrows / Home / End move, Escape and Tab close, focus
  * returns to the button. Copying is announced ("Link copied").
  */
-export function ShareMenu({ url, name }: ShareMenuProps) {
-  const [open, setOpen] = useState(false);
+export function ShareMenu({ url, name, open: openProp, onOpenChange }: ShareMenuProps) {
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const setOpen = (next: boolean) => {
+    if (openProp === undefined) setOpenState(next);
+    onOpenChange?.(next);
+  };
   const [status, setStatus] = useState('');
   const buttonRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
@@ -108,7 +119,7 @@ export function ShareMenu({ url, name }: ShareMenuProps) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => setOpen(!open)}
         onKeyDown={(e) => {
           if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
             e.preventDefault();

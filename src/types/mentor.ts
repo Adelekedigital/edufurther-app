@@ -7,7 +7,7 @@ export type Topic = {
 };
 
 /** Max one per card, highest priority first. Rules: lib/api/data/labels.ts. */
-export type MentorLabel = 'top-rated' | 'experienced' | 'rising';
+export type MentorLabel = 'top-rated' | 'experienced' | 'new';
 
 /** 1–6, an index into the --avatar-tone-* tokens. */
 export type AvatarTone = 1 | 2 | 3 | 4 | 5 | 6;
