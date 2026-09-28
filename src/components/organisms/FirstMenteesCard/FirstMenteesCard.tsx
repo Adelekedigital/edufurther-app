@@ -44,7 +44,15 @@ function factsFor(move: { from: string; to: string } | null, award: string | nul
           },
         ]
       : []),
-    ...(award ? [{ icon: 'workspace_premium' as const, k: 'Got funded.', v: `${award}.` }] : []),
+    ...(award
+      ? [
+          {
+            icon: 'workspace_premium' as const,
+            k: 'Got funded.',
+            v: /[.!?]$/.test(award) ? award : `${award}.`,
+          },
+        ]
+      : []),
   ];
 }
 

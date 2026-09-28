@@ -61,8 +61,12 @@ export type BookingFlowProps = {
   hideProfileLink?: boolean;
   /**
    * A time to open on (UTC ISO), e.g. the profile's "Book Mon, Sep 28 ·
-   * 9:00 am". Picked, on its week, once the slots load and still offer it;
-   * otherwise the flow opens as usual.
+   * 9:00 am" — the mentor's earliest across offerings. Each offering is tried
+   * (via onSessionTypeChange) until one offers it; it's then picked on its
+   * week. If every offering loaded and none has it, the flow falls back to the
+   * first and says the time was taken. A failed load is shown as a load error
+   * and re-checked when its retry succeeds. `slots` must be the current
+   * offering's own (no placeholder from the previous one).
    */
   initialTime?: string | null;
   /**
@@ -134,33 +138,47 @@ export function BookingFlow(p: BookingFlowProps) {
   // offering is tried in turn; if none still has it, the flow says so and
   // falls back to the first. State is adjusted during render (React's "state
   // from props" pattern); switching offering is the page's, so it's an effect.
-  const [seek, setSeek] = useState<{ done: boolean; tried: string[] }>(() => ({
+  const [seek, setSeek] = useState<{ done: boolean; tried: string[]; errored: string[] }>(() => ({
     done: !p.initialTime,
     tried: [],
+    errored: [],
   }));
-  if (!seek.done && p.initialTime && session && !seek.tried.includes(session.id)) {
-    if (p.slots.data) {
+  if (!seek.done && p.initialTime && session) {
+    const id = session.id;
+    const retried = seek.errored.includes(id);
+    if (p.slots.data && (!seek.tried.includes(id) || retried)) {
+      // Loaded (or loaded after a failed attempt): look for the time here.
       const at = Date.parse(p.initialTime);
       const hit = days.flatMap((d) => d.slots).find((s) => Date.parse(s.startsAt) === at);
       const w = hit ? weekIndexOf(hit.startsAt, zone, new Date(clock)) : -1;
+      const errored = seek.errored.filter((x) => x !== id);
       if (hit && w >= 0 && w < BOOKING_WEEKS) {
-        setSeek({ done: true, tried: seek.tried });
+        setSeek({ done: true, tried: seek.tried, errored });
         setWeek(w);
         setDayChoice(dayKey(hit.startsAt, zone));
         setTime(hit.startsAt);
-      } else setSeek({ done: false, tried: [...seek.tried, session.id] });
-    } else if (p.slots.error) setSeek({ done: false, tried: [...seek.tried, session.id] });
+      } else setSeek({ done: false, tried: [...new Set([...seek.tried, id])], errored });
+    } else if (p.slots.error && !seek.tried.includes(id)) {
+      // A failed load is not "the time is gone": remembered, and re-checked
+      // if a retry succeeds.
+      setSeek({ done: false, tried: [...seek.tried, id], errored: [...seek.errored, id] });
+    }
   }
   const seekNext = seek.done ? undefined : types.find((t) => !seek.tried.includes(t.id));
-  // Every offering tried and none had it: shown until a time is picked.
-  const initialMissed = !seek.done && types.length > 0 && !seekNext;
+  const allTried = !seek.done && types.length > 0 && !seekNext;
   const firstTypeId = types[0]?.id;
+  // Still looking, or about to fall back to the first offering: hold the
+  // skeleton so another offering's grid never flashes.
+  const seeking =
+    !seek.done && !!session && (!allTried || (!!firstTypeId && session.id !== firstTypeId));
+  // Every offering loaded and none had it: the only case the note may claim.
+  const initialMissed = allTried && seek.errored.length === 0;
   const onTypeChange = p.onSessionTypeChange;
   useEffect(() => {
     if (!session) return;
     if (seekNext && seek.tried.includes(session.id)) onTypeChange(seekNext.id);
-    else if (initialMissed && firstTypeId && session.id !== firstTypeId) onTypeChange(firstTypeId);
-  }, [seekNext, initialMissed, firstTypeId, session, seek.tried, onTypeChange]);
+    else if (allTried && firstTypeId && session.id !== firstTypeId) onTypeChange(firstTypeId);
+  }, [seekNext, allTried, firstTypeId, session, seek.tried, onTypeChange]);
 
   const weekLabel = (() => {
     const a = formatDay(weekDays[0]!.date).date;
@@ -366,13 +384,13 @@ export function BookingFlow(p: BookingFlowProps) {
       {step === 'time' && (
         <>
           <TimezonePicker value={zone} onChange={setZone} deviceZone={p.deviceZone} />
-          {initialMissed && !time && !p.slots.isLoading && (
+          {initialMissed && !time && !seeking && !p.slots.isLoading && !p.slots.error && (
             // PROVISIONAL copy (design request #50).
             <p className={styles.missedNote} role="status">
               That time was just taken. Here’s what’s open.
             </p>
           )}
-          {p.slots.isLoading || (!seek.done && !initialMissed) ? (
+          {p.slots.isLoading || seeking ? (
             skeleton('Loading available times')
           ) : p.slots.error ? (
             loadError(p.slots.retry)

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixture';
 import type { MentorProfile, Remote } from '@/types/mentor';
@@ -26,9 +26,12 @@ let profile: ProfileRemote;
 vi.mock('@/lib/api/data/profile', () => ({ useMentorProfile: () => profile }));
 
 const idle = { data: null, isLoading: false, error: null, retry: vi.fn() };
+// Per test: what the booking modal's queries return.
+let sessionTypesRemote: unknown = idle;
+let slotsRemote: unknown = idle;
 vi.mock('@/lib/api/data/booking', () => ({
-  useSessionTypes: () => idle,
-  useSlots: () => idle,
+  useSessionTypes: () => sessionTypesRemote,
+  useSlots: () => slotsRemote,
   useRequestBooking: () => ({
     request: vi.fn(),
     isPending: false,
@@ -49,6 +52,8 @@ const state = (over: Partial<ProfileRemote>): ProfileRemote => ({
 
 beforeEach(() => {
   search = new URLSearchParams();
+  sessionTypesRemote = idle;
+  slotsRemote = idle;
   replace.mockReset();
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
     matches: false,
@@ -189,12 +194,36 @@ describe('MentorProfileScreen — new mentors (design reply #45)', () => {
     expect(screen.queryByText(/first mentees/)).not.toBeInTheDocument();
   });
 
-  it('"Book {time}" opens the booking modal', async () => {
-    const user = userEvent.setup();
-    profile = state({ data: newMentor(0) });
-    render(<MentorProfileScreen handle="gbenga" />);
-    await user.click(screen.getByRole('button', { name: /^Book .* · / }));
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  it('"Book {time}" opens the booking modal with that time picked', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-27T12:00:00Z'));
+    try {
+      const user = userEvent.setup();
+      sessionTypesRemote = {
+        ...idle,
+        data: [
+          {
+            id: 'st1',
+            name: 'General mentorship',
+            durationMin: 60,
+            description: '',
+            questions: [],
+          },
+        ],
+      };
+      slotsRemote = { ...idle, data: ['2026-09-28T09:00:00Z', '2026-09-28T13:00:00Z'] };
+      profile = state({ data: newMentor(0) });
+      render(<MentorProfileScreen handle="gbenga" />);
+      await user.click(screen.getByRole('button', { name: /^Book .* · / }));
+      // The card's time (13:00Z) is picked, not the day's first (09:00Z):
+      // the footer reads "Request {the card's time}".
+      const cardTime = screen.getByRole('button', { name: /^Book .* · / }).textContent!.slice(5);
+      expect(
+        within(screen.getByRole('dialog')).getByRole('button', { name: `Request ${cardTime}` }),
+      ).toBeEnabled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('offers no Book when the mentor has no session types', () => {

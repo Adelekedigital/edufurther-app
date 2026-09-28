@@ -398,6 +398,67 @@ describe('BookingFlow week view (7 days at a time)', () => {
     expect(screen.getByRole('button', { name: 'Pick a time' })).toBeDisabled();
   });
 
+  it('a load error is not "time taken", and a successful retry picks the time', async () => {
+    const user = userEvent.setup();
+    const time = '2026-10-01T15:00:00Z';
+    function Page() {
+      const [typeId, setTypeId] = useState('st1');
+      const [st1, setSt1] = useState<Remote<string[]>>(
+        remote<string[]>(null, {
+          error: { kind: 'offline', message: 'x' },
+          retry: () => setSt1(remote([...slots, time])),
+        }),
+      );
+      const byType: Record<string, Remote<string[]>> = { st1, st2: remote(slots) };
+      return (
+        <BookingFlow
+          {...props({
+            sessionTypeId: typeId,
+            onSessionTypeChange: setTypeId,
+            slots: byType[typeId]!,
+            initialTime: time,
+          })}
+        />
+      );
+    }
+    render(<Page />);
+    // st1 failed, st2 loaded without it: back on st1 with its load error, no "taken".
+    expect(screen.getByRole('combobox')).toHaveValue('st1');
+    expect(screen.getByText('We couldn’t load available times')).toBeInTheDocument();
+    expect(screen.queryByText(/just taken/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(screen.getByRole('radio', { name: /Thu, Oct 1/ })).toBeChecked();
+    expect(screen.getByRole('radio', { name: '3:00 pm' })).toBeChecked();
+  });
+
+  it('stops looking once the viewer picks an offering', async () => {
+    const user = userEvent.setup();
+    function Page() {
+      const [typeId, setTypeId] = useState('st1');
+      // st2 never finishes loading: the search would wait on it.
+      const byType: Record<string, Remote<string[]>> = {
+        st1: remote(slots),
+        st2: remote<string[]>(null, { isLoading: true }),
+      };
+      return (
+        <BookingFlow
+          {...props({
+            sessionTypeId: typeId,
+            onSessionTypeChange: setTypeId,
+            slots: byType[typeId]!,
+            initialTime: '2026-10-02T15:00:00Z',
+          })}
+        />
+      );
+    }
+    render(<Page />);
+    expect(screen.getByRole('combobox')).toHaveValue('st2');
+    await user.selectOptions(screen.getByRole('combobox'), 'st1');
+    expect(screen.getByRole('combobox')).toHaveValue('st1');
+    expect(screen.getByRole('radio', { name: /Mon, Sep 28, 1 time/ })).toBeInTheDocument();
+    expect(screen.queryByText(/just taken/)).not.toBeInTheDocument();
+  });
+
   it('opens on this week even when the first time is later, and ‹ › reach it', async () => {
     const user = userEvent.setup();
     render(<BookingFlow {...props({ slots: remote(['2026-10-06T09:00:00Z']) })} />);
