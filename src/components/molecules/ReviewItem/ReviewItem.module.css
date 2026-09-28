@@ -1,0 +1,79 @@
+/* Mentor Profile.dc.html: `<article>` in the reviews list. */
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5) 0;
+  border-top: var(--border-hairline) solid var(--ink-100);
+  font-family: var(--font-ui);
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.name {
+  font-size: var(--text-p-sm);
+  line-height: normal;
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+.meta {
+  font-size: var(--text-p-xs);
+  line-height: normal;
+  color: var(--text-tertiary);
+}
+.side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.stars {
+  display: flex;
+  gap: 2px;
+}
+.star {
+  color: var(--rating-star);
+}
+.off {
+  color: var(--ink-200);
+}
+.topic {
+  align-self: flex-start;
+}
+.text {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--text-primary);
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+}
+.redacted {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-1);
+}
+.line {
+  display: block;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--ink-100);
+}
+
+/* AppShell.dc.html phone rule: `padding: var(--space-5) 0` matches its
+   `padding: var(--space-5)` selector, so a review is inset --space-4 all round. */
+@media (max-width: 767px) {
+  .item {
+    padding: var(--space-4);
+  }
+}

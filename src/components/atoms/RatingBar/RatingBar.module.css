@@ -1,0 +1,30 @@
+/* Mentor Profile.dc.html: `attrs` in the reviews summary. */
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.text {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  line-height: normal;
+  color: var(--text-secondary);
+}
+.value {
+  color: var(--text-primary);
+}
+.track {
+  display: block;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--ink-100);
+}
+.fill {
+  display: block;
+  width: var(--fill);
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--blue-500);
+}

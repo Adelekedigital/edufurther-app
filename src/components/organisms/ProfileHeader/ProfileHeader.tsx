@@ -13,6 +13,8 @@ type ProfileHeaderProps = {
   profile: MentorProfile;
   /** Book / share controls — the page owns what booking means. */
   actions?: ReactNode;
+  /** The rating opens the Reviews tab (Mentor Profile.dc.html `goReviews`). */
+  onShowReviews?: () => void;
 };
 
 /** "From Nigeria, studied in United States", or whichever half is known. */
@@ -28,7 +30,7 @@ export function locationLine(from: string | null, studiedIn: string | null): str
  * headline, the proof line and the help topics. The design's "Degree verified"
  * tick is not rendered — nothing verifies a degree (backend reply #8).
  */
-export function ProfileHeader({ profile, actions }: ProfileHeaderProps) {
+export function ProfileHeader({ profile, actions, onShowReviews }: ProfileHeaderProps) {
   const m = profile.mentor;
   // Cover colour (Mentor Profile.dc.html): a light banner when there's no
   // banner image, and its paired dark colour behind the initials.
@@ -48,11 +50,23 @@ export function ProfileHeader({ profile, actions }: ProfileHeaderProps) {
   // once the API has a join date (backend request #14).
   const proof =
     m.reviewCount > 0 && m.rating !== null ? (
-      <span className={styles.item}>
-        <Star size={14} className={styles.star} />
-        <strong className={styles.strong}>{formatRating(m.rating)}</strong>({m.reviewCount}{' '}
-        {m.reviewCount === 1 ? 'review' : 'reviews'})
-      </span>
+      onShowReviews ? (
+        <button
+          type="button"
+          className={cx(styles.item, styles.ratingButton)}
+          onClick={onShowReviews}
+        >
+          <Star size={14} className={styles.star} />
+          <strong className={styles.strong}>{formatRating(m.rating)}</strong>({m.reviewCount}{' '}
+          {m.reviewCount === 1 ? 'review' : 'reviews'})
+        </button>
+      ) : (
+        <span className={styles.item}>
+          <Star size={14} className={styles.star} />
+          <strong className={styles.strong}>{formatRating(m.rating)}</strong>({m.reviewCount}{' '}
+          {m.reviewCount === 1 ? 'review' : 'reviews'})
+        </span>
+      )
     ) : m.completedSessions >= 3 ? (
       <strong className={styles.strong}>No reviews yet</strong>
     ) : null;

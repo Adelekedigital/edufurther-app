@@ -9,8 +9,9 @@ type TagProps = {
    * topic    — 28px blue chip, the profile header's help topics.
    * info     — small blue tag, a session type's category.
    * free     — small green tag, "Free" on a session type.
+   * praise   — 28px round blue tag with an icon, "Most praised for" on reviews.
    */
-  tone: 'on-photo' | 'neutral' | 'topic' | 'info' | 'free';
+  tone: 'on-photo' | 'neutral' | 'topic' | 'info' | 'free' | 'praise';
   children: ReactNode;
   className?: string;
 };
