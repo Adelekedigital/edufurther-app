@@ -7,12 +7,15 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
+import { ReviewNote } from '@/components/molecules/ReviewNote/ReviewNote';
 import { ShareMenu } from '@/components/molecules/ShareMenu/ShareMenu';
 import { BookSessionCard } from '@/components/organisms/BookSessionCard/BookSessionCard';
 import { FirstMenteesCard } from '@/components/organisms/FirstMenteesCard/FirstMenteesCard';
 import { BookingFlow } from '@/components/organisms/BookingFlow/BookingFlow';
 import { ProfileHeader } from '@/components/organisms/ProfileHeader/ProfileHeader';
 import { ProfileOverview } from '@/components/organisms/ProfileOverview/ProfileOverview';
+import { ReviewsList } from '@/components/organisms/ReviewsList/ReviewsList';
+import { ReviewsSummary } from '@/components/organisms/ReviewsSummary/ReviewsSummary';
 import { SessionTypeList } from '@/components/organisms/SessionTypeList/SessionTypeList';
 import { TrackRecordCard } from '@/components/organisms/TrackRecordCard/TrackRecordCard';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
@@ -21,13 +24,14 @@ import { bookBlockedFor } from '@/app/_shell/bookBlocked';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { useRequestBooking, useSessionTypes, useSlots } from '@/lib/api/data/booking';
 import { useMentorProfile } from '@/lib/api/data/profile';
+import { REVIEW_PAGE_SIZE, useMentorReviews, useReviewPrompt } from '@/lib/api/data/reviews';
 import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { MentorProfile } from '@/types/mentor';
 import styles from './MentorProfileScreen.module.css';
 
-type Tab = 'overview' | 'sessions';
+type Tab = 'overview' | 'sessions' | 'reviews';
 
 /** Below this many completed sessions a mentor is "new" (design reply #45). */
 const NEW_MENTOR_UNDER = 3;
@@ -35,8 +39,8 @@ const NEW_MENTOR_UNDER = 3;
 /**
  * Mentor Profile (Mentor Profile.dc.html), read-only: the page every viewer
  * sees — mentee, guest, and the mentor themselves in any approval state
- * (backend mentor-profile reply #1). Editing, Reviews and Similar mentors come
- * in later PRs. The only place on this route that fetches.
+ * (backend mentor-profile reply #1). Editing and Similar mentors come in later
+ * PRs. The only place on this route that fetches.
  */
 export function MentorProfileScreen({ handle }: { handle: string }) {
   const { viewer, member, chrome, account } = useAppShell();
@@ -49,11 +53,18 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const pathname = usePathname();
   const params = useSearchParams();
   const hasSessions = (p?.sessionTypes.length ?? 0) > 0;
-  const tab: Tab = params.get('tab') === 'sessions' && hasSessions ? 'sessions' : 'overview';
+  const hasReviews = (p?.reviews.count ?? 0) > 0;
+  const asked = params.get('tab');
+  const tab: Tab =
+    asked === 'sessions' && hasSessions
+      ? 'sessions'
+      : asked === 'reviews' && hasReviews
+        ? 'reviews'
+        : 'overview';
   const setTab = (t: string) => {
     // Change only `tab`: a shared link's other parameters (utm_*) stay.
     const next = new URLSearchParams(params.toString());
-    if (t === 'sessions') next.set('tab', 'sessions');
+    if (t === 'sessions' || t === 'reviews') next.set('tab', t);
     else next.delete('tab');
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
@@ -91,6 +102,21 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
 
   const isOwner = !!p && (p.owner !== null || member?.id === p.mentor.id);
   const bookBlocked = !online ? 'Booking needs a connection' : bookBlockedFor(viewer);
+
+  // ---- reviews tab ------------------------------------------------------------
+  const isGuest = viewer.kind === 'guest';
+  const [reviewFilter, setReviewFilter] = useState<string | null>(null);
+  const reviews = useMentorReviews(handle, reviewFilter, {
+    guest: isGuest,
+    active: tab === 'reviews',
+    // Guest or not decides what's fetched, so wait until that's known.
+    ready: viewer.kind !== 'loading',
+  });
+  const reviewPrompt = useReviewPrompt(
+    p?.mentor.id ?? null,
+    tab === 'reviews' && viewer.kind === 'member' && !isOwner,
+  );
+  const reviewsHref = p ? `${p.mentor.profileHref}?tab=reviews` : '';
 
   // Mentees can see this profile: the owner's card only nudges sharing then
   // (a pending, declined or unlisted profile's link 404s for everyone else;
@@ -160,6 +186,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
             {isOwner && <OwnerBar profile={p} />}
             <ProfileHeader
               profile={p}
+              onShowReviews={hasReviews ? () => setTab('reviews') : undefined}
               actions={
                 <>
                   {!isOwner && hasSessions && (
@@ -196,6 +223,15 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                         },
                       ]
                     : []),
+                  ...(hasReviews
+                    ? [
+                        {
+                          value: 'reviews',
+                          label: `Reviews (${p.reviews.count})`,
+                          panelId: 'panel-reviews',
+                        },
+                      ]
+                    : []),
                 ]}
               />
             </div>
@@ -211,6 +247,69 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               >
                 {tab === 'overview' ? (
                   <ProfileOverview profile={p} />
+                ) : tab === 'reviews' ? (
+                  <>
+                    <ReviewsSummary summary={p.reviews} firstName={p.mentor.firstName} />
+                    {reviewPrompt === 'none' ? (
+                      <ReviewNote
+                        tone="neutral"
+                        icon="rate_review"
+                        title={`You can review ${p.mentor.firstName} after your first session`}
+                        body="Reviews come only from mentees who’ve had a session, so you can trust what you read."
+                        action={
+                          hasSessions && !bookBlocked ? (
+                            <Button
+                              variant="secondary-outlined"
+                              size="medium"
+                              onClick={() => openBooking()}
+                            >
+                              Book a session
+                            </Button>
+                          ) : undefined
+                        }
+                      />
+                    ) : reviewPrompt === 'due' ? (
+                      // No "Write a review" yet: writing a review isn't built.
+                      <ReviewNote
+                        tone="info"
+                        icon="star"
+                        title={`How was your session with ${p.mentor.firstName}?`}
+                        body="Your review helps other mentees choose, and takes about a minute."
+                      />
+                    ) : null}
+                    <ReviewsList
+                      reviews={reviews.reviews}
+                      isLoading={reviews.isLoading}
+                      error={reviews.error}
+                      onRetry={reviews.retry}
+                      hasMore={reviews.hasMore}
+                      isLoadingMore={reviews.isLoadingMore}
+                      loadMoreError={reviews.loadMoreError}
+                      onLoadMore={reviews.loadMore}
+                      // What the next click loads: at most a page, from the
+                      // unfiltered total ("Show 5 more", not "Show 15 more").
+                      remaining={
+                        reviewFilter === null
+                          ? Math.min(p.reviews.count - reviews.reviews.length, REVIEW_PAGE_SIZE)
+                          : null
+                      }
+                      filters={p.sessionTypes.map((t) => ({ id: t.id, label: t.name }))}
+                      filter={reviewFilter}
+                      onFilter={setReviewFilter}
+                      gate={
+                        isGuest
+                          ? {
+                              firstName: p.mentor.firstName,
+                              // Filtered, the total isn't known: no "+N more" count.
+                              total:
+                                reviewFilter === null ? p.reviews.count : reviews.reviews.length,
+                              signupHref: `/signup?next=${encodeURIComponent(reviewsHref)}`,
+                              loginHref: `/login?next=${encodeURIComponent(reviewsHref)}`,
+                            }
+                          : null
+                      }
+                    />
+                  </>
                 ) : (
                   <SessionTypeList
                     sessionTypes={p.sessionTypes}
@@ -220,7 +319,9 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                   />
                 )}
               </div>
-              {tab === 'overview' && (
+              {tab !== 'sessions' && (
+                // Reviews tab: the design's default `reviewsLayout=focus` drops
+                // the track record (and Similar mentors) from the aside.
                 <aside className={styles.aside} aria-label="Booking and track record">
                   {!isPhone && firstMentees}
                   {!isOwner && (
@@ -231,7 +332,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                       bookBlocked={bookBlocked}
                     />
                   )}
-                  <TrackRecordCard profile={p} />
+                  {tab === 'overview' && <TrackRecordCard profile={p} />}
                 </aside>
               )}
             </div>

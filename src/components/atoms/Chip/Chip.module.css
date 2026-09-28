@@ -38,6 +38,12 @@
   color: var(--ink-500);
   background: var(--surface-subtle);
 }
+/* Mentor Profile.dc.html `reviewFilters`: 28px, fully round (44px on phones,
+   like every chip: AppShell.dc.html `button { min-height: 44px }`). */
+.pill {
+  height: 28px;
+  border-radius: var(--radius-full);
+}
 @media (max-width: 767px) {
   .chip {
     min-height: var(--touch-target-min);

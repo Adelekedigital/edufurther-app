@@ -94,6 +94,23 @@
   align-items: center;
   gap: var(--space-1);
 }
+/* Mentor Profile.dc.html `goReviews`: the proof line's rating as a bare button. */
+.ratingButton {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  border-radius: var(--radius-xs);
+}
+.ratingButton:hover .strong {
+  text-decoration: underline;
+}
+.ratingButton:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
 /* A separator travels with the item after it, so a wrap never leaves "·" dangling. */
 .sep {
   display: flex;

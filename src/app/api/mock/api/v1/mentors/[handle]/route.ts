@@ -6,6 +6,7 @@ import {
   mockNextAvailableAt,
 } from '@/lib/api/mock/availability';
 import { FEATURED, MENTORS, mockCountries, mockProfileIndex } from '@/lib/api/mock/fixtures';
+import { mockReviewSummary } from '@/lib/api/mock/reviews';
 
 type MentorPublicRead = components['schemas']['MentorPublicRead'];
 
@@ -84,11 +85,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
     // Null until a session has settled (backend); every fourth mentor has none
     // yet, so the track record's "No data yet" tile has data to render.
     attendance_rate: sessions > 0 && i % 4 !== 1 ? 88 : null,
-    reviews: {
-      count: m.review_count,
-      session_value: m.session_value,
-      recommended_percent: m.review_count ? 90 : null,
-    },
+    reviews: mockReviewSummary(m.id),
     languages: sparse
       ? []
       : [

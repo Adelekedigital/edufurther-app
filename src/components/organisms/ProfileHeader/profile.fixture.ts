@@ -1,5 +1,5 @@
 /** Test and story data for the profile organisms. Not shipped in the app. */
-import type { MentorProfile, ProfileSessionType } from '@/types/mentor';
+import type { MentorProfile, ProfileSessionType, Review } from '@/types/mentor';
 
 export const sessionTypes: ProfileSessionType[] = [
   {
@@ -86,6 +86,13 @@ export const fullProfile: MentorProfile = {
   mentoringMinutes: 3060,
   menteesMentored: 27,
   attendanceRate: 88,
+  // Mentor Profile.dc.html reviews tab.
+  reviews: {
+    count: 7,
+    rating: 4.9,
+    wouldRecommendIn10: 9,
+    attributes: { communication: 86, knowledge: 96, support: 91, practicality: 91 },
+  },
   owner: null,
 };
 
@@ -115,4 +122,64 @@ export const newProfile: MentorProfile = {
   mentoringMinutes: 0,
   menteesMentored: 0,
   attendanceRate: null,
+  reviews: {
+    count: 0,
+    rating: null,
+    wouldRecommendIn10: null,
+    attributes: { communication: null, knowledge: null, support: null, practicality: null },
+  },
 };
+
+/** Mentor Profile.dc.html `allReviews`, newest first. */
+export const reviews: Review[] = [
+  {
+    id: 'r7',
+    author: 'Pulane L.',
+    initials: 'PL',
+    institution: 'University of Cape Town',
+    createdAt: '2026-04-19T12:00:00Z',
+    rating: 4,
+    topic: 'SOP draft review',
+    text: 'Practical, direct feedback on my SOP draft. Would have loved a bit more time, but it was worth it.',
+  },
+  {
+    id: 'r6',
+    author: 'Taofeeq A.',
+    initials: 'TA',
+    institution: 'Obafemi Awolowo University',
+    createdAt: '2026-03-02T12:00:00Z',
+    rating: 5,
+    topic: 'Program shortlist',
+    text: 'Helped me cut a list of 14 programs to 6 that actually fit my research and fund internationals.',
+  },
+  {
+    id: 'r5',
+    author: 'Folake A.',
+    initials: 'FA',
+    institution: 'University of Lagos',
+    createdAt: '2026-02-04T12:00:00Z',
+    rating: 5,
+    topic: 'SOP draft review',
+    text: 'He related to my situation coming from a less common course of study and explained how to frame it as a strength.',
+  },
+  {
+    id: 'r4',
+    author: 'Deleted user',
+    initials: '',
+    institution: null,
+    createdAt: '2025-11-16T12:00:00Z',
+    rating: 5,
+    topic: null,
+    text: 'Glad I found this platform and my mentor. He showed me how to approach professors about assistantships.',
+  },
+  {
+    id: 'r3',
+    author: 'Muhammed O.',
+    initials: 'MO',
+    institution: 'Federal University Oye-Ekiti',
+    createdAt: '2025-09-28T12:00:00Z',
+    rating: 4,
+    topic: 'Mock visa interview',
+    text: 'Ran a mock visa interview with me and gave clear notes on what to tighten. Ready for the real one now.',
+  },
+];

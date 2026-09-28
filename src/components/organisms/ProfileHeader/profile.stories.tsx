@@ -1,14 +1,17 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
 import { Button } from '@/components/atoms/Button/Button';
+import { ReviewNote } from '@/components/molecules/ReviewNote/ReviewNote';
 import { ShareMenu } from '@/components/molecules/ShareMenu/ShareMenu';
 import { BookSessionCard } from '../BookSessionCard/BookSessionCard';
 import { FirstMenteesCard } from '../FirstMenteesCard/FirstMenteesCard';
 import { ProfileOverview } from '../ProfileOverview/ProfileOverview';
+import { ReviewsList } from '../ReviewsList/ReviewsList';
+import { ReviewsSummary } from '../ReviewsSummary/ReviewsSummary';
 import { SessionTypeList } from '../SessionTypeList/SessionTypeList';
 import { TrackRecordCard } from '../TrackRecordCard/TrackRecordCard';
 import { ProfileHeader } from './ProfileHeader';
-import { fullProfile, newProfile, sessionTypes } from './profile.fixture';
+import { fullProfile, newProfile, reviews, sessionTypes } from './profile.fixture';
 
 /** The Mentor Profile organisms, each on its own, with full and empty data. */
 const meta: Meta = { title: 'Organisms/Mentor profile' };
@@ -190,5 +193,109 @@ export const FirstMenteesPhone: Story = {
       award={null}
       onBook={fn()}
     />
+  ),
+};
+
+// ---- Reviews tab ------------------------------------------------------------
+
+const main = { maxWidth: 680, display: 'flex', flexDirection: 'column' as const, gap: 24 };
+const list = {
+  reviews,
+  isLoading: false,
+  error: null,
+  onRetry: fn(),
+  hasMore: true,
+  isLoadingMore: false,
+  loadMoreError: null,
+  onLoadMore: fn(),
+  remaining: 2,
+  filters: sessionTypes.map((t) => ({ id: t.id, label: t.name })),
+  filter: null,
+  onFilter: fn(),
+  gate: null,
+};
+
+export const Reviews: Story = {
+  render: () => (
+    <div style={main}>
+      <ReviewsSummary summary={fullProfile.reviews} firstName="Gbenga" />
+      <ReviewsList {...list} />
+    </div>
+  ),
+};
+
+export const ReviewsSummarySparse: Story = {
+  render: () => (
+    <div style={main}>
+      <ReviewsSummary
+        summary={{
+          count: 1,
+          rating: 4,
+          wouldRecommendIn10: null,
+          attributes: { communication: 80, knowledge: null, support: null, practicality: null },
+        }}
+        firstName="Ada"
+      />
+    </div>
+  ),
+};
+
+export const ReviewsLoading: Story = {
+  render: () => (
+    <div style={main}>
+      <ReviewsList {...list} reviews={[]} isLoading />
+    </div>
+  ),
+};
+
+export const ReviewsError: Story = {
+  render: () => (
+    <div style={main}>
+      <ReviewsList {...list} reviews={[]} error={{ kind: 'server', message: 'x' }} />
+    </div>
+  ),
+};
+
+export const ReviewsEmptyFilter: Story = {
+  render: () => (
+    <div style={main}>
+      <ReviewsList {...list} reviews={[]} filter={sessionTypes[1]!.id} />
+    </div>
+  ),
+};
+
+export const ReviewsGuest: Story = {
+  render: () => (
+    <div style={main}>
+      <ReviewsList
+        {...list}
+        reviews={[{ ...reviews[0]!, text: '' }]}
+        gate={{ firstName: 'Gbenga', total: 7, signupHref: '/signup', loginHref: '/login' }}
+      />
+    </div>
+  ),
+};
+
+export const ReviewNotes: Story = {
+  render: () => (
+    <div style={main}>
+      <ReviewNote
+        tone="neutral"
+        icon="rate_review"
+        title="You can review Gbenga after your first session"
+        body="Reviews come only from mentees who’ve had a session, so you can trust what you read."
+        action={
+          <Button variant="secondary-outlined" size="small">
+            Book a session
+          </Button>
+        }
+      />
+      <ReviewNote
+        tone="info"
+        icon="star"
+        title="How was your session with Gbenga?"
+        body="Your review helps other mentees choose, and takes about a minute."
+      />
+    </div>
   ),
 };

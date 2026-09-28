@@ -20,6 +20,11 @@ export const keys = {
     profile: (handle: string, who: string) => ['mentors', 'profile', handle, who] as const,
     list: (f: MentorFilters, who: string) =>
       ['mentors', 'list', who, { q: f.q, offerings: [...f.offerings].sort() }] as const,
+    // `sessionTypeId`: the filter chip ('all' = none). `who`: guests fetch one.
+    reviews: (handle: string, sessionTypeId: string, who: string) =>
+      ['mentors', 'reviews', handle, sessionTypeId, who] as const,
+    relationship: (mentorId: string, who: string) =>
+      ['mentors', 'relationship', mentorId, who] as const,
   },
   booking: {
     sessionTypes: (mentorId: string) => ['booking', 'sessionTypes', mentorId] as const,

@@ -39,6 +39,8 @@
     "new_releases",
     "open_in_new",
     "person",
+    "psychology",
+    "rate_review",
     "refresh",
     "route",
     "schedule",
@@ -48,6 +50,7 @@
     "share",
     "smart_display",
     "star",
+    "task_alt",
     "translate",
     "upload_file",
     "verified_user",
@@ -55,5 +58,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "52f6feb7d303b2f010bb738bf3cd3f082870de67c56355ddf00a1e84d8e430d4"
+  "sha256": "66aaf56b88b2ff89cd396d03bdba2e0d6b7328b9a9949144204a915ee18afd0b"
 }

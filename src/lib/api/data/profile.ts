@@ -6,6 +6,7 @@ import { safeSocialUrl } from '@/lib/utils/socialUrl';
 import type {
   Mentor,
   MentorProfile,
+  ReviewSummary,
   ProfileItem,
   ProfileSessionType,
   Remote,
@@ -39,6 +40,34 @@ const VENUE: Record<Venue, string> = {
 };
 
 // ---- mapping ----------------------------------------------------------------
+
+type ReviewSummaryRead = components['schemas']['ReviewSummaryRead'];
+
+/** A whole-number percentage (0–100), or null when not rated yet. */
+function percent(v: number | null | undefined): number | null {
+  return typeof v === 'number' && Number.isFinite(v)
+    ? Math.round(Math.min(100, Math.max(0, v)))
+    : null;
+}
+
+export function toReviewSummary(r: ReviewSummaryRead | undefined): ReviewSummary {
+  const in10 = r?.would_recommend_in_10;
+  return {
+    count: r?.count ?? 0,
+    rating: r?.session_value ?? null,
+    // Backend #256: share scoring 8+ of 10, as "n in 10"; null hides the box.
+    wouldRecommendIn10:
+      typeof in10 === 'number' && Number.isFinite(in10)
+        ? Math.round(Math.min(10, Math.max(0, in10)))
+        : null,
+    attributes: {
+      communication: percent(r?.communication_rating?.percent),
+      knowledge: percent(r?.knowledge_rating?.percent),
+      support: percent(r?.support_rating?.percent),
+      practicality: percent(r?.practicality_rating?.percent),
+    },
+  };
+}
 
 function year(date: string | null | undefined): string | null {
   return date ? date.slice(0, 4) : null;
@@ -141,6 +170,7 @@ export function toMentorProfile(r: MentorPublicRead): MentorProfile {
     // A whole-number percentage, 0–100; null (never 0) until a session has
     // settled (backend, mentor-profile request #13).
     attendanceRate: r.attendance_rate ?? null,
+    reviews: toReviewSummary(r.reviews),
     owner: isOwner
       ? { approval: r.approval_status ?? null, listed: r.listing_status !== 'unlisted' }
       : null,

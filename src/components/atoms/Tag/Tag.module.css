@@ -50,10 +50,23 @@
   font-weight: var(--weight-semibold);
 }
 
+/* Mentor Profile.dc.html: "Most praised for" in the reviews summary; the
+   caller passes a 16px icon before the text. */
+.praise {
+  gap: var(--space-1);
+  height: 28px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--blue-50);
+  color: var(--blue-700);
+  font-weight: var(--weight-semibold);
+}
+
 /* AppShell.dc.html phone rule: `padding: 0 var(--space-3)` becomes
    `0 var(--space-2)` under 768px. */
 @media (max-width: 767px) {
-  .topic {
+  .topic,
+  .praise {
     padding: 0 var(--space-2);
   }
 }

@@ -21,9 +21,10 @@ export default async function MentorProfilePage({
     handle = decodeURIComponent(raw);
   } catch {}
   // The screen reads ?tab= (useSearchParams), which needs a Suspense boundary.
+  // Keyed by mentor: moving to another profile starts fresh (tab filter, booking).
   return (
     <Suspense>
-      <MentorProfileScreen handle={handle} />
+      <MentorProfileScreen key={handle} handle={handle} />
     </Suspense>
   );
 }
