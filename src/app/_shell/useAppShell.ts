@@ -64,6 +64,9 @@ export function useAppShell() {
     viewer,
     member,
     chrome,
+    // Design AppShell `role`: a mentor gets the mentor nav (role switching for
+    // dual-role users isn't built — design-divergence.md).
+    nav: member?.isMentor ? ('mentor' as const) : ('mentee' as const),
     account: chrome === 'member' ? { initial: member?.initial ?? '', items } : undefined,
   };
 }

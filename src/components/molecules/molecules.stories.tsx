@@ -7,6 +7,11 @@ import { DayTimePicker } from './DayTimePicker/DayTimePicker';
 import { EmptyState } from './EmptyState/EmptyState';
 import { FactTile } from './FactTile/FactTile';
 import { FileField } from './FileField/FileField';
+import { FormField } from './FormField/FormField';
+import { Input, Textarea } from '@/components/atoms/Input/Input';
+import { RadioCards } from './RadioCards/RadioCards';
+import { SegmentedControl } from './SegmentedControl/SegmentedControl';
+import { WizardSteps } from './WizardSteps/WizardSteps';
 import { IconListItem } from './IconListItem/IconListItem';
 import { MentorProof } from './MentorProof/MentorProof';
 import { Notice } from './Notice/Notice';
@@ -245,4 +250,137 @@ export const Share: Story = {
       <ShareMenu url="https://edufurther.com/mentors/gbenga" name="Gbenga Elufisan" />
     </div>
   ),
+};
+
+/** Session Types.dc.html: Price (fill, 200px) and Answer type (hug, with icons). */
+export const Segmented: Story = {
+  render: function Render() {
+    const [price, setPrice] = useState<'free' | 'paid'>('free');
+    const [kind, setKind] = useState<'text' | 'file'>('text');
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <SegmentedControl
+          label="Price"
+          width={200}
+          value={price}
+          onChange={setPrice}
+          options={[
+            { value: 'free', label: 'Free' },
+            { value: 'paid', label: 'Paid' },
+          ]}
+        />
+        <SegmentedControl
+          label="Answer type"
+          layout="hug"
+          value={kind}
+          onChange={setKind}
+          options={[
+            { value: 'text', label: 'Short answer', icon: 'short_text' },
+            { value: 'file', label: 'File upload', icon: 'upload_file' },
+          ]}
+        />
+      </div>
+    );
+  },
+};
+
+/** Session Types.dc.html "When can mentees book this?". */
+export const RadioCardGroup: Story = {
+  render: function Render() {
+    const [v, setV] = useState<'default' | 'custom'>('default');
+    return (
+      <div style={{ maxWidth: 840 }}>
+        <RadioCards
+          label="Hours for this session"
+          value={v}
+          onChange={setV}
+          options={[
+            {
+              value: 'default',
+              label: 'Use my Calendar availability',
+              description:
+                'Mentees book this session in the weekly hours you set in Calendar. Changes there apply here too.',
+            },
+            {
+              value: 'custom',
+              label: 'Set dedicated hours',
+              description:
+                'Offer this session only at its own times, e.g. evenings for visa prep. Your Calendar hours stay as they are.',
+            },
+          ]}
+        />
+      </div>
+    );
+  },
+};
+
+const WIZARD = ['Core details', 'Intake questions', 'Scheduling', 'Review'];
+/** Create: on step 2 of a fresh flow — 3 and 4 locked. */
+export const Steps: Story = {
+  render: function Render() {
+    const [cur, setCur] = useState(2);
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 880 }}>
+        <WizardSteps
+          label="Create a session type"
+          steps={WIZARD}
+          current={cur}
+          reached={2}
+          onSelect={setCur}
+        />
+        <WizardSteps
+          label="Edit session type"
+          steps={WIZARD}
+          current={4}
+          reached={4}
+          onSelect={fn()}
+        />
+        <WizardSteps
+          label="Revisiting step 1"
+          steps={WIZARD}
+          current={1}
+          reached={3}
+          onSelect={fn()}
+        />
+      </div>
+    );
+  },
+};
+
+export const Fields: Story = {
+  render: function Render() {
+    const [desc, setDesc] = useState('');
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 560 }}>
+        <FormField
+          label="Session name"
+          hint="Be specific. Mentees scan this when comparing sessions."
+        >
+          {(f) => <Input {...f} fieldSize="md" placeholder="e.g. SOP draft review" />}
+        </FormField>
+        <FormField
+          label="What mentees get"
+          counter={`${desc.length} / 500`}
+          hint="Say what they’ll leave with. Aim for 3–5 sentences."
+        >
+          {(f) => (
+            <Textarea
+              {...f}
+              rows={4}
+              maxLength={500}
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+            />
+          )}
+        </FormField>
+        <FormField
+          label="Session name"
+          error="Give your session a name."
+          hint="Be specific. Mentees scan this when comparing sessions."
+        >
+          {(f) => <Input {...f} fieldSize="md" />}
+        </FormField>
+      </div>
+    );
+  },
 };

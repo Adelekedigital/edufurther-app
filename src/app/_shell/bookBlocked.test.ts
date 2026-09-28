@@ -11,6 +11,7 @@ describe('bookBlockedFor', () => {
         initial: 'A',
         isMentee: true,
         isApprovedMentor: false,
+        isMentor: false,
         completedSessions: 0,
         credits: null,
       }),

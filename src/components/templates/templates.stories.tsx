@@ -35,6 +35,14 @@ export const ShellMentee: Story = {
     </AppShell>
   ),
 };
+/** Mentor navigation (design AppShell role=mentor): tabs are Home, Calendar, Bookings + More. */
+export const ShellMentor: Story = {
+  render: () => (
+    <AppShell active="Sessions" nav="mentor" chrome="member" account={account} offline={false}>
+      <Filler />
+    </AppShell>
+  ),
+};
 /** Session not known yet: no guest buttons, no navigation. */
 export const ShellPending: Story = {
   render: () => (
@@ -100,4 +108,43 @@ export const ModalSheet: Story = {
       <button onClick={() => setOpen(true)}>Open</button>
     );
   },
+};
+
+/** Modal.dc.html `tone="success"` (Session Types "Session type published"). */
+export const ModalSuccess: Story = {
+  render: () => (
+    <ModalShell
+      title="Session type published"
+      subtitle="“SOP draft review” is live on your profile. Mentees can book it in your open hours."
+      icon="check_circle"
+      tone="success"
+      size="sm"
+      onClose={fn()}
+    >
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <Button size="large" variant="secondary-outlined" fullWidth>
+          View on profile
+        </Button>
+        <Button size="large" fullWidth>
+          Done
+        </Button>
+      </div>
+    </ModalShell>
+  ),
+};
+
+/** Modal.dc.html `tone="danger"`: every destructive action confirms here. */
+export const ModalDanger: Story = {
+  render: () => (
+    <ModalShell
+      title="Delete this session type?"
+      subtitle="“SOP draft review” will be removed from your profile."
+      icon="delete"
+      tone="danger"
+      size="sm"
+      onClose={fn()}
+    >
+      <p>Buttons come with the confirm organism (PR 2).</p>
+    </ModalShell>
+  ),
 };

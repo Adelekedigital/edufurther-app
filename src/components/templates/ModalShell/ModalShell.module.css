@@ -58,6 +58,37 @@
   gap: var(--space-1);
   padding-right: var(--space-8);
 }
+/* With an icon: icon and titles stack at --space-3, titles keep --space-1. */
+.withIcon {
+  gap: var(--space-3);
+}
+.titles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.icon {
+  width: var(--space-12);
+  height: var(--space-12);
+  margin: var(--space-1) 0 var(--space-1) 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--modal-icon-bg);
+  box-shadow: 0 0 0 6px var(--modal-icon-ring);
+  color: var(--modal-icon-ink);
+}
+.icon-danger {
+  background: var(--modal-icon-danger-bg);
+  box-shadow: 0 0 0 6px var(--modal-icon-danger-ring);
+  color: var(--modal-icon-danger-ink);
+}
+.icon-success {
+  background: var(--modal-icon-success-bg);
+  box-shadow: 0 0 0 6px var(--modal-icon-success-ring);
+  color: var(--modal-icon-success-ink);
+}
 .title {
   font-family: var(--font-brand);
   font-size: var(--text-p-lg);

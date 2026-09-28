@@ -1,0 +1,24 @@
+.radio {
+  appearance: none;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  border-radius: var(--radius-full);
+  background: var(--white);
+  box-shadow: inset 0 0 0 1.5px var(--ink-300);
+  cursor: pointer;
+}
+/* Dot: 20 − 2 × 5 (the design insets it by size × 0.25). */
+.radio:checked {
+  background: radial-gradient(circle, var(--action-primary) 4.5px, var(--white) 5px);
+  box-shadow: inset 0 0 0 1.5px var(--action-primary);
+}
+.radio:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.radio:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

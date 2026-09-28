@@ -21,8 +21,22 @@ const MENTEE_NAV: NavItem[] = [
   { label: 'Messages', href: '/messages', icon: 'chat' },
   { label: 'Settings', href: '/settings', icon: 'settings' },
 ];
+/** Mentor navigation (design AppShell role=mentor, sidebar=rail, integrationIn=nav). */
+const MENTOR_NAV: NavItem[] = [
+  { label: 'Home', href: '/', icon: 'home' },
+  { label: 'Sessions', href: '/session-types', icon: 'event_note' },
+  { label: 'Bookings', href: '/bookings', icon: 'schedule' },
+  { label: 'Messages', href: '/messages', icon: 'chat' },
+  { label: 'Calendar', href: '/calendar', icon: 'calendar_month' },
+  { label: 'Integration', href: '/integrations', icon: 'power' },
+  { label: 'Settings', href: '/settings', icon: 'settings' },
+];
+const NAV = { mentee: MENTEE_NAV, mentor: MENTOR_NAV };
 /** Bottom tabs: max 4 — the first three, then "More" (design PWA pass). */
-const PRIMARY_TABS = ['Home', 'Explore', 'Bookings'];
+const PRIMARY_TABS = {
+  mentee: ['Home', 'Explore', 'Bookings'],
+  mentor: ['Home', 'Calendar', 'Bookings'],
+};
 /**
  * Prefetch is off until the other screens exist: Next 16 holds prefetch streams
  * open for routes that 404, which never lets the page reach network idle.
@@ -34,6 +48,8 @@ const PREFETCH = false;
 type AppShellProps = {
   /** Label of the current section, e.g. "Explore". */
   active: string;
+  /** Which navigation a member gets (design `role`). From useAppShell. */
+  nav?: 'mentee' | 'mentor';
   /**
    * guest: public header (Log in / Get started), no navigation.
    * member: rail / tabs and the account menu.
@@ -50,12 +66,23 @@ type AppShellProps = {
  * App chrome: header, side rail (≥768px) or bottom tabs (<768px), offline banner.
  * Not yet here: notifications (no backend) — see design-divergence.md.
  */
-export function AppShell({ active, chrome, account, offline, children }: AppShellProps) {
+export function AppShell({
+  active,
+  nav = 'mentee',
+  chrome,
+  account,
+  offline,
+  children,
+}: AppShellProps) {
   const guest = chrome === 'guest';
   const member = chrome === 'member';
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLButtonElement>(null);
-  const extra = MENTEE_NAV.filter((n) => !PRIMARY_TABS.includes(n.label));
+  const items = NAV[nav];
+  const primary = PRIMARY_TABS[nav];
+  // In the design's pick order: mentor tabs read Home, Calendar, Bookings.
+  const tabs = primary.flatMap((l) => items.filter((n) => n.label === l));
+  const extra = items.filter((n) => !primary.includes(n.label));
   const moreActive = extra.some((n) => n.label === active);
 
   useEffect(() => {
@@ -97,7 +124,7 @@ export function AppShell({ active, chrome, account, offline, children }: AppShel
           <nav aria-label="Main" className={styles.rail}>
             <div className={styles.railInner}>
               <ul className={styles.railList}>
-                {MENTEE_NAV.map((n) => (
+                {items.map((n) => (
                   <li key={n.href}>
                     <Link
                       href={n.href}
@@ -148,7 +175,7 @@ export function AppShell({ active, chrome, account, offline, children }: AppShel
 
       {member && (
         <nav aria-label="Main" className={styles.tabs}>
-          {MENTEE_NAV.filter((n) => PRIMARY_TABS.includes(n.label)).map((n) => (
+          {tabs.map((n) => (
             <Link
               key={n.href}
               href={n.href}
