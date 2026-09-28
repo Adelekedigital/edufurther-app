@@ -98,6 +98,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
     next_available_at: mockNextAvailableAt(m.id),
     next_available_state: mockAvailabilityState(m.id),
     joined_at: m.joined_at,
+    // Backend #19: no choice made → the frontend's automatic cover.
+    cover_color: null,
+    cover_art: 'none',
   };
   return NextResponse.json(body);
 }
