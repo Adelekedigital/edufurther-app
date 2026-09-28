@@ -67,6 +67,8 @@ const base = (
   // The mentors route sets both per request (relative to now).
   next_available_at: null,
   next_available_state: 'refreshing',
+  // When they became a mentor (backend #14). Fixed, so the mock is stable.
+  joined_at: '2026-09-01T12:00:00Z',
 });
 
 const DESIGN_SAMPLE: MentorSummaryRead[] = [

@@ -16,6 +16,7 @@ const row = (over: Record<string, unknown> = {}) => ({
   offerings: [{ slug: 'application-documents', display_name: 'Application documents' }],
   next_available_at: null,
   next_available_state: 'refreshing' as const,
+  joined_at: '2026-09-01T12:00:00Z',
   ...over,
 });
 
