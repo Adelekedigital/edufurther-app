@@ -31,11 +31,13 @@ const MENTOR_NAV: NavItem[] = [
   { label: 'Integration', href: '/integrations', icon: 'power' },
   { label: 'Settings', href: '/settings', icon: 'settings' },
 ];
-const NAV = { mentee: MENTEE_NAV, mentor: MENTOR_NAV };
+/** `unknown`: signed in, role not known yet — no items rather than the wrong set. */
+const NAV = { mentee: MENTEE_NAV, mentor: MENTOR_NAV, unknown: [] as NavItem[] };
 /** Bottom tabs: max 4 — the first three, then "More" (design PWA pass). */
 const PRIMARY_TABS = {
   mentee: ['Home', 'Explore', 'Bookings'],
   mentor: ['Home', 'Calendar', 'Bookings'],
+  unknown: [] as string[],
 };
 /**
  * Prefetch is off until the other screens exist: Next 16 holds prefetch streams
@@ -48,8 +50,12 @@ const PREFETCH = false;
 type AppShellProps = {
   /** Label of the current section, e.g. "Explore". */
   active: string;
-  /** Which navigation a member gets (design `role`). From useAppShell. */
-  nav?: 'mentee' | 'mentor';
+  /**
+   * Which navigation a member gets (design `role`; Admin is never shown). From
+   * useAppShell; `unknown` while /me is loading, so a mentor never sees the
+   * mentee set flash first.
+   */
+  nav?: 'mentee' | 'mentor' | 'unknown';
   /**
    * guest: public header (Log in / Get started), no navigation.
    * member: rail / tabs and the account menu.
@@ -189,20 +195,22 @@ export function AppShell({
               {n.label}
             </Link>
           ))}
-          <button
-            ref={moreRef}
-            type="button"
-            className={styles.tab}
-            aria-expanded={moreOpen}
-            aria-controls="more-sheet"
-            data-current={moreActive || undefined}
-            onClick={() => setMoreOpen((o) => !o)}
-          >
-            <span className={styles.tabIcon}>
-              <Icon name="menu" size={22} />
-            </span>
-            More
-          </button>
+          {nav !== 'unknown' && (
+            <button
+              ref={moreRef}
+              type="button"
+              className={styles.tab}
+              aria-expanded={moreOpen}
+              aria-controls="more-sheet"
+              data-current={moreActive || undefined}
+              onClick={() => setMoreOpen((o) => !o)}
+            >
+              <span className={styles.tabIcon}>
+                <Icon name="menu" size={22} />
+              </span>
+              More
+            </button>
+          )}
         </nav>
       )}
 

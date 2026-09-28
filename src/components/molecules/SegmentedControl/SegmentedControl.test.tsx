@@ -38,4 +38,21 @@ describe('SegmentedControl', () => {
     await user.keyboard('{ArrowLeft}');
     expect(radio('60 min')).toHaveFocus();
   });
+
+  it('with no matching value, the first segment still takes the tab stop', async () => {
+    const user = userEvent.setup();
+    render(
+      <SegmentedControl
+        label="Answer type"
+        value={'' as 'text' | 'file'}
+        onChange={vi.fn()}
+        options={[
+          { value: 'text', label: 'Short answer' },
+          { value: 'file', label: 'File upload' },
+        ]}
+      />,
+    );
+    await user.tab();
+    expect(screen.getByRole('radio', { name: 'Short answer' })).toHaveFocus();
+  });
 });

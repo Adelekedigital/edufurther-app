@@ -27,7 +27,8 @@ export function WizardSteps({ steps, current, reached, onSelect, label }: Wizard
           const n = i + 1;
           const isCurrent = n === current;
           const done = !isCurrent && n <= reached;
-          const locked = n > reached;
+          // The step on screen is never locked, even if a caller passes one past `reached`.
+          const locked = n > reached && !isCurrent;
           const state = isCurrent ? 'current' : done ? 'done' : 'upcoming';
           return (
             <li key={name} className={cx(styles.step, styles[state])}>

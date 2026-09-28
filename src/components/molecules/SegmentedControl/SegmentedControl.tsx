@@ -38,6 +38,12 @@ export function SegmentedControl<V extends string>({
   className,
 }: SegmentedControlProps<V>) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  // Nothing selected (or a value that isn't offered): the first segment takes
+  // the tab stop, so the group is still reachable by keyboard.
+  const stop = Math.max(
+    0,
+    options.findIndex((o) => o.value === value),
+  );
   const move = (i: number) => {
     const n = options.length;
     const at = (i + n) % n;
@@ -77,7 +83,7 @@ export function SegmentedControl<V extends string>({
             type="button"
             role="radio"
             aria-checked={on}
-            tabIndex={on ? 0 : -1}
+            tabIndex={i === stop ? 0 : -1}
             className={cx(styles.segment, styles[layout], on && styles.on)}
             onClick={() => onChange(o.value)}
             onKeyDown={(e) => onKey(e, i)}

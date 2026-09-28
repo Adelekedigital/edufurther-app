@@ -46,4 +46,31 @@ describe('AppShell navigation', () => {
     expect(hrefs(1)).toEqual(['/', '/calendar', '/bookings']);
     expect(nav(1).getByRole('button', { name: 'More' })).toHaveAttribute('data-current', 'true');
   });
+
+  it('mentors never see Explore or Admin; mentees never see Admin (product, 2026-09-28)', () => {
+    const { unmount } = render(
+      <AppShell active="Home" nav="mentor" chrome="member" offline={false}>
+        <p>Page</p>
+      </AppShell>,
+    );
+    expect(screen.queryByRole('link', { name: 'Explore' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Admin' })).toBeNull();
+    unmount();
+    render(
+      <AppShell active="Home" nav="mentee" chrome="member" offline={false}>
+        <p>Page</p>
+      </AppShell>,
+    );
+    expect(screen.queryByRole('link', { name: 'Admin' })).toBeNull();
+  });
+
+  it('role not known yet: no nav items and no More, so the wrong set never flashes', () => {
+    render(
+      <AppShell active="Explore" nav="unknown" chrome="member" offline={false}>
+        <p>Page</p>
+      </AppShell>,
+    );
+    for (const i of [0, 1] as const) expect(nav(i).queryAllByRole('link')).toHaveLength(0);
+    expect(screen.queryByRole('button', { name: 'More' })).toBeNull();
+  });
 });

@@ -38,4 +38,12 @@ describe('WizardSteps', () => {
       'step',
     );
   });
+
+  it('the step on screen is never disabled, even past what was reached', () => {
+    render(<WizardSteps label="Create" steps={STEPS} current={3} reached={1} onSelect={vi.fn()} />);
+    const current = screen.getByRole('button', { name: /Scheduling/ });
+    expect(current).toHaveAttribute('aria-current', 'step');
+    expect(current).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Review/ })).toBeDisabled();
+  });
 });
