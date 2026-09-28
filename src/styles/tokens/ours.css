@@ -62,6 +62,34 @@
   --button-h-medium: 40px;
   --button-h-small: 32px;
 
+  /* Profile cover colours (Mentor Profile.dc.html, 2026-09-27): a light banner
+     and its paired dark colour for the photo circle. Picked per mentor by
+     lib/utils/cover.ts; values verbatim from the design. */
+  --cover-sky-bg: var(--blue-50);
+  --cover-sky-ink: var(--blue-700);
+  --cover-ice-bg: oklch(0.96 0.02 220);
+  --cover-ice-ink: oklch(0.42 0.09 230);
+  --cover-aqua-bg: oklch(0.95 0.03 195);
+  --cover-aqua-ink: oklch(0.42 0.08 200);
+  --cover-mint-bg: var(--green-50);
+  --cover-mint-ink: var(--green-900);
+  --cover-sage-bg: oklch(0.95 0.025 130);
+  --cover-sage-ink: oklch(0.4 0.08 135);
+  --cover-lemon-bg: oklch(0.97 0.04 100);
+  --cover-lemon-ink: oklch(0.42 0.08 95);
+  --cover-sand-bg: #fef6e7;
+  --cover-sand-ink: var(--yellow-900);
+  --cover-peach-bg: oklch(0.95 0.03 55);
+  --cover-peach-ink: oklch(0.45 0.11 50);
+  --cover-blush-bg: oklch(0.95 0.025 20);
+  --cover-blush-ink: oklch(0.45 0.13 25);
+  --cover-rose-bg: oklch(0.95 0.025 350);
+  --cover-rose-ink: oklch(0.44 0.13 355);
+  --cover-lilac-bg: oklch(0.95 0.025 300);
+  --cover-lilac-ink: oklch(0.42 0.12 300);
+  --cover-mist-bg: var(--ink-100);
+  --cover-mist-ink: var(--ink-700);
+
   /* Breakpoint, for reference: CSS media queries cannot read a var, so the
      number 768px is repeated in modules. Keep them equal. */
   --bp-mobile-max: 767px;

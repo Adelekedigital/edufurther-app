@@ -137,10 +137,43 @@ input:focus-visible + .tile {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+/* BookingModal.dc.html weekEmpty. */
 .emptyWeek {
-  padding: var(--space-3) 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-subtle);
+  text-align: center;
+}
+.emptyTitle {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.emptyBody {
   font-size: var(--text-p-xs);
   color: var(--ink-600);
+}
+.emptyJump {
+  min-height: 32px;
+  padding: 0 var(--space-2);
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+}
+.emptyJump:hover {
+  color: var(--blue-700);
+}
+.emptyJump:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-md);
 }
 
 @media (max-width: 767px) {

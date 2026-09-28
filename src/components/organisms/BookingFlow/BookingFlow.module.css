@@ -323,3 +323,36 @@
   line-height: var(--lh-p);
   color: var(--ink-600);
 }
+
+/* BookingModal.dc.html `showFirst`: why a new mentor is worth booking. */
+.firstBox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--green-50);
+}
+.firstTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+.firstReason {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-secondary);
+}
+.firstIcon {
+  line-height: 1.3;
+  color: var(--green-700);
+}
+.firstKey {
+  color: var(--text-primary);
+}

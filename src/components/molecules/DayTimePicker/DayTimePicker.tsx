@@ -22,6 +22,12 @@ type DayTimePickerProps = {
     canNext: boolean;
     onPrev: () => void;
     onNext: () => void;
+    /**
+     * An empty week's way on (BookingModal.dc.html, design reply #40): the
+     * next week that has times, e.g. "Show Oct 4 – Oct 10". Null when no later
+     * week has any ("Check back soon.").
+     */
+    nextOpen?: { label: string; onClick: () => void } | null;
   };
 };
 
@@ -126,10 +132,18 @@ export function DayTimePicker({
           </div>
         </fieldset>
       ) : (
-        // PROVISIONAL (design request #40): the design never shows an empty week.
-        <p className={styles.emptyWeek}>
-          No open times this week.{week.canNext ? ' Try later dates.' : ''}
-        </p>
+        // BookingModal.dc.html weekEmpty (design reply #40).
+        <div className={styles.emptyWeek} role="status">
+          <span className={styles.emptyTitle}>No open times this week</span>
+          <span className={styles.emptyBody}>
+            {week.nextOpen ? 'Try later dates.' : 'Check back soon.'}
+          </span>
+          {week.nextOpen && (
+            <button type="button" className={styles.emptyJump} onClick={week.nextOpen.onClick}>
+              {week.nextOpen.label}
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

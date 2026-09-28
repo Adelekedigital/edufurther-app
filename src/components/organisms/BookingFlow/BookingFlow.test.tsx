@@ -176,7 +176,9 @@ describe('BookingFlow on real slots', () => {
     const user = userEvent.setup();
     const onRequest = vi.fn();
     render(<BookingFlow {...props({ sessionTypeId: 'st2', onRequest })} />);
-    expect(screen.getByRole('progressbar', { name: /Step 1 of 1/ })).toBeInTheDocument();
+    // Design #39: one step → no "Step 1 of 1" caption and no step bar.
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Step 1 of 1/)).not.toBeInTheDocument();
     await user.click(screen.getByRole('radio', { name: '9:00 am' }));
     await user.click(screen.getByRole('button', { name: /^Request Mon, Sep 28/ }));
     expect(onRequest).toHaveBeenCalledWith(
@@ -457,6 +459,49 @@ describe('BookingFlow week view (7 days at a time)', () => {
     expect(screen.getByRole('combobox')).toHaveValue('st1');
     expect(screen.getByRole('radio', { name: /Mon, Sep 28, 1 time/ })).toBeInTheDocument();
     expect(screen.queryByText(/just taken/)).not.toBeInTheDocument();
+  });
+
+  it('an empty week offers the next week with times, or says check back soon', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(
+      <BookingFlow {...props({ sessionTypeId: 'st2', slots: remote(['2026-10-13T09:00:00Z']) })} />,
+    );
+    expect(screen.getByText('No open times this week')).toBeInTheDocument();
+    expect(screen.getByText('Try later dates.')).toBeInTheDocument();
+    // Oct 13 is in the third week (Oct 11 – Oct 17), past an empty second week.
+    await user.click(screen.getByRole('button', { name: 'Show Oct 11 – Oct 17' }));
+    expect(screen.getByText('Oct 11 – Oct 17')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Tue, Oct 13, 1 time/ })).toBeChecked();
+    unmount();
+    // Nothing later in the four weeks: no link.
+    render(
+      <BookingFlow {...props({ sessionTypeId: 'st2', slots: remote(['2026-09-27T20:00:00Z']) })} />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Later dates' }));
+    expect(screen.getByText('Check back soon.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Show / })).not.toBeInTheDocument();
+  });
+
+  it('shows the first-mentees reasons on the first step only, when given', async () => {
+    const user = userEvent.setup();
+    const reasons = [
+      {
+        icon: 'flight_takeoff' as const,
+        k: 'Made the move you’re planning.',
+        v: 'From Nigeria to the United States.',
+      },
+    ];
+    const { unmount } = render(
+      <BookingFlow {...props({ sessionTypeId: 'st1', firstReasons: reasons })} />,
+    );
+    expect(screen.getByText('Be one of Olajuwon’s first mentees')).toBeInTheDocument();
+    expect(screen.getByText('Made the move you’re planning.')).toBeInTheDocument();
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+    await user.click(screen.getByRole('button', { name: /^Continue/ }));
+    expect(screen.queryByText(/first mentees/)).not.toBeInTheDocument();
+    unmount();
+    render(<BookingFlow {...props({ sessionTypeId: 'st1', firstReasons: [] })} />);
+    expect(screen.queryByText(/first mentees/)).not.toBeInTheDocument();
   });
 
   it('opens on this week even when the first time is later, and ‹ › reach it', async () => {

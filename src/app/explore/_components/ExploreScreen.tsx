@@ -9,13 +9,13 @@ import { SearchField } from '@/components/molecules/SearchField/SearchField';
 import { TopicFilter } from '@/components/molecules/TopicFilter/TopicFilter';
 import { FeaturedMentor } from '@/components/organisms/FeaturedMentor/FeaturedMentor';
 import { FeaturedMentorSkeleton } from '@/components/organisms/FeaturedMentor/FeaturedMentorSkeleton';
-import { BookingFlow } from '@/components/organisms/BookingFlow/BookingFlow';
+import { BookingFlow, type FirstReason } from '@/components/organisms/BookingFlow/BookingFlow';
 import { MentorResults } from '@/components/organisms/MentorResults/MentorResults';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useRequestBooking, useSessionTypes, useSlots } from '@/lib/api/data/booking';
 import { useFeaturedMentor, useMentors, useTopics } from '@/lib/api/data/mentors';
-import { deviceTimeZone } from '@/lib/utils/format';
+import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { Mentor } from '@/types/mentor';
@@ -256,6 +256,7 @@ export function ExploreScreen() {
           requestError={request.error}
           onClose={closeBooking}
           deviceZone={timeZone}
+          firstReasons={firstReasonsFor(booking)}
           renderShell={(shell, body) => (
             <ModalShell
               title={shell.title}
@@ -272,4 +273,24 @@ export function ExploreScreen() {
       )}
     </AppShell>
   );
+}
+
+/**
+ * Explore.dc.html turns on BookingModal's first-mentees box (show-first-reasons)
+ * for a new mentor: under 3 sessions and no reviews. "Got funded." needs the
+ * mentor's award on the list API (backend request #17), so for now only the
+ * move is shown, when known.
+ */
+function firstReasonsFor(m: Mentor): FirstReason[] {
+  if (m.completedSessions >= 3 || m.reviewCount > 0) return [];
+  const move = movedBetween(m.originCountry, m.studyCountry);
+  return move
+    ? [
+        {
+          icon: 'flight_takeoff',
+          k: 'Made the move you’re planning.',
+          v: `From ${move.from} to ${move.to}.`,
+        },
+      ]
+    : [];
 }

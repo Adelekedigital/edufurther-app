@@ -4,6 +4,7 @@ import { BookSessionCard } from '../BookSessionCard/BookSessionCard';
 import { FirstMenteesCard } from '../FirstMenteesCard/FirstMenteesCard';
 import { ProfileOverview } from '../ProfileOverview/ProfileOverview';
 import { TrackRecordCard } from '../TrackRecordCard/TrackRecordCard';
+import { coverFor } from '@/lib/utils/cover';
 import { ProfileHeader, locationLine } from './ProfileHeader';
 import { fullProfile, newProfile, sessionTypes } from './profile.fixture';
 
@@ -41,6 +42,15 @@ describe('ProfileHeader', () => {
       />,
     );
     expect(screen.queryByRole('list', { name: 'Helps with' })).not.toBeInTheDocument();
+  });
+
+  it('paints the banner and the initials circle in the mentor’s cover colours', () => {
+    const { container } = render(<ProfileHeader profile={fullProfile} />);
+    const banner = container.querySelector('section')!.firstElementChild as HTMLElement;
+    const key = coverFor(fullProfile.mentor.id);
+    expect(banner.style.getPropertyValue('--cover-bg')).toBe(`var(--cover-${key}-bg)`);
+    const circle = screen.getByRole('img', { name: fullProfile.mentor.name }).parentElement!;
+    expect(circle.style.getPropertyValue('--photo-bg')).toBe(`var(--cover-${key}-ink)`);
   });
 
   it('says whichever half of the move is known', () => {

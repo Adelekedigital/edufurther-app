@@ -10,7 +10,8 @@
   height: 140px;
   /* 15px: the card's 16px radius less its 1px border. */
   border-radius: 15px 15px 0 0;
-  background: var(--blue-500);
+  /* The mentor's cover colour (lib/utils/cover.ts); a banner image covers it. */
+  background: var(--cover-bg, var(--blue-500));
   overflow: hidden;
 }
 .bannerImg {

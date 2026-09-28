@@ -34,6 +34,13 @@ const STEP_LABEL: Record<Exclude<Step, 'done'>, string> = {
   questions: 'Questions from',
 };
 
+export type FirstReason = {
+  icon: 'flight_takeoff' | 'workspace_premium';
+  /** The bold lead, e.g. "Made the move you’re planning." */
+  k: string;
+  v: string;
+};
+
 export type BookingFlowProps = {
   mentor: Mentor;
   /** The mentor's offerings (GET /users/{id}/session-types). */
@@ -69,6 +76,13 @@ export type BookingFlowProps = {
    * offering's own (no placeholder from the previous one).
    */
   initialTime?: string | null;
+  /**
+   * BookingModal.dc.html `showFirstReasons`: for a new mentor, why they're
+   * worth booking ("Made the move…", "Got funded."), shown on the first step.
+   * The page decides when (Explore turns it on; the profile's card already
+   * says it). Empty or omitted: no box.
+   */
+  firstReasons?: FirstReason[];
   /**
    * Hands the page what the modal shell needs. On phones `sheet` and `footer`
    * are set and the shell renders as a full-screen sheet; on wider screens
@@ -180,6 +194,22 @@ export function BookingFlow(p: BookingFlowProps) {
     else if (allTried && firstTypeId && session.id !== firstTypeId) onTypeChange(firstTypeId);
   }, [seekNext, allTried, firstTypeId, session, seek.tried, onTypeChange]);
 
+  // The next week (after the one on screen) with any time, for an empty week's
+  // "Show Oct 4 – Oct 10" (design reply #40).
+  const nextOpenWeek = (() => {
+    for (let w = week + 1; w < BOOKING_WEEKS; w++) {
+      if (weekOfDays(days, w, zone, new Date(clock)).some((d) => d.slots.length > 0)) return w;
+    }
+    return null;
+  })();
+  const nextOpenLabel =
+    nextOpenWeek === null
+      ? null
+      : (() => {
+          const ds = weekOfDays(days, nextOpenWeek, zone, new Date(clock));
+          return `Show ${formatDay(ds[0]!.date).date} – ${formatDay(ds[6]!.date).date}`;
+        })();
+
   const weekLabel = (() => {
     const a = formatDay(weekDays[0]!.date).date;
     const b = formatDay(weekDays[6]!.date).date;
@@ -270,7 +300,10 @@ export function BookingFlow(p: BookingFlowProps) {
       : step === 'done'
         ? ''
         : STEP_LABEL[step];
-  const subtitle = step === 'done' ? '' : `Step ${at + 1} of ${steps.length} · ${stepName}`;
+  // Design #39: with a single step there's no "Step 1 of 1" and no bar.
+  const oneStep = steps.length === 1;
+  const subtitle =
+    step === 'done' || oneStep ? '' : `Step ${at + 1} of ${steps.length} · ${stepName}`;
 
   const proof =
     m.reviewCount > 0 && m.rating !== null
@@ -379,8 +412,27 @@ export function BookingFlow(p: BookingFlowProps) {
     </div>
   ) : null;
 
+  const firstBox =
+    at === 0 && step !== 'done' && p.firstReasons && p.firstReasons.length > 0 ? (
+      <div className={styles.firstBox}>
+        <span className={styles.firstTitle}>
+          <Icon name="handshake" size={18} className={styles.firstIcon} />
+          Be one of {m.firstName}’s first mentees
+        </span>
+        {p.firstReasons.map((r) => (
+          <span key={r.icon} className={styles.firstReason}>
+            <Icon name={r.icon} size={16} className={styles.firstIcon} />
+            <span>
+              <strong className={styles.firstKey}>{r.k}</strong> {r.v}
+            </span>
+          </span>
+        ))}
+      </div>
+    ) : null;
+
   const stepContent = session && (
     <>
+      {firstBox}
       {step === 'time' && (
         <>
           <TimezonePicker value={zone} onChange={setZone} deviceZone={p.deviceZone} />
@@ -419,6 +471,10 @@ export function BookingFlow(p: BookingFlowProps) {
                 canNext: week < BOOKING_WEEKS - 1,
                 onPrev: () => moveWeek(week - 1),
                 onNext: () => moveWeek(week + 1),
+                nextOpen:
+                  nextOpenWeek === null || !nextOpenLabel
+                    ? null
+                    : { label: nextOpenLabel, onClick: () => moveWeek(nextOpenWeek) },
               }}
             />
           )}
@@ -507,14 +563,14 @@ export function BookingFlow(p: BookingFlowProps) {
   if (isPhone) {
     const atStart = at === 0 || step === 'done';
     const sheet: SheetChrome = {
-      caption: step === 'done' ? undefined : `Step ${at + 1} of ${steps.length}`,
+      caption: step === 'done' || oneStep ? undefined : `Step ${at + 1} of ${steps.length}`,
       heading: step === 'done' ? 'Booking requested' : stepName,
       leading: atStart
         ? { icon: 'close', label: 'Close', onClick: p.onClose }
         : { icon: 'arrow_back', label: 'Back', onClick: back },
       showClose: !atStart,
       progress:
-        step !== 'done' ? (
+        step !== 'done' && !oneStep ? (
           <StepBars total={steps.length} current={at} label={subtitle} thin />
         ) : undefined,
     };
@@ -601,7 +657,9 @@ export function BookingFlow(p: BookingFlowProps) {
         {profileLink}
       </div>
 
-      {step !== 'done' && <StepBars total={steps.length} current={at} label={subtitle} />}
+      {step !== 'done' && !oneStep && (
+        <StepBars total={steps.length} current={at} label={subtitle} />
+      )}
 
       {status ?? (
         <div className={styles.columns}>
