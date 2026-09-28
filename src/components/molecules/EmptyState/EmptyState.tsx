@@ -11,7 +11,7 @@ type EmptyStateProps = {
   /** Buttons, owned by the caller. */
   actions?: ReactNode;
   /** Title element level, so the state slots into the page outline. */
-  headingLevel?: 2 | 3;
+  headingLevel?: 1 | 2 | 3;
   size?: number;
 };
 

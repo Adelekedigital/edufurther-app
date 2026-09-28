@@ -132,7 +132,25 @@
 }
 /* DIVERGENCE: DS draws white on ink-300 (~1.5:1). Our disabled buttons often carry
    the reason ("Booking needs a connection"), so the label must stay readable. */
+/* DS Button `destructive` (filled): only the confirm inside a danger modal
+   (CTA Hierarchy.dc.html). Rest and pressed from the DS FILLS table.
+   DIVERGENCE: hover darkens to --red-700. The DS hover (#dd524d, and the
+   --action-danger-hover token, --red-300) puts white 14px text at 3.9:1 and
+   3.15:1 (WCAG 1.4.3 needs 4.5); --red-700 is 8.4:1. */
+.destructive {
+  background: var(--action-danger);
+  color: var(--text-on-action);
+}
+.destructive:hover {
+  background: var(--action-danger-pressed);
+  color: var(--text-on-action);
+}
+.destructive:active {
+  background: var(--action-danger-pressed);
+}
+
 .primary:disabled,
+.destructive:disabled,
 .dark:disabled {
   background: var(--surface-muted);
   color: var(--ink-600);

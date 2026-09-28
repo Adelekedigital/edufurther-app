@@ -1,0 +1,100 @@
+/* Session Types.dc.html `types` row. */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}
+.hidden {
+  background: var(--ink-50);
+}
+.tile {
+  flex: none;
+  width: var(--space-10);
+  height: var(--space-10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  background: var(--blue-50);
+  color: var(--blue-500);
+}
+.body {
+  flex: 1 1 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.name {
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+.hidden .name {
+  color: var(--ink-500);
+}
+.description {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.facts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.fact {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 24px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--ink-50);
+  font-size: var(--text-p-xs);
+  color: var(--ink-700);
+}
+/* On the hidden row's ink-50 ground the chips would vanish; lift them to white. */
+.hidden .fact {
+  background: var(--surface-card);
+}
+.factIcon {
+  color: var(--ink-500);
+}
+.message {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-danger);
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+@media (max-width: 767px) {
+  /* Design phone rule: --space-5 card padding becomes --space-4. */
+  .row {
+    padding: var(--space-4);
+  }
+}

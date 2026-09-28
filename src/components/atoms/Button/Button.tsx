@@ -10,7 +10,7 @@ import { Icon } from '../Icon/Icon';
 import type { IconName } from '../Icon/iconNames';
 import styles from './Button.module.css';
 
-export type ButtonVariant = 'primary' | 'secondary-outlined' | 'text' | 'dark';
+export type ButtonVariant = 'primary' | 'secondary-outlined' | 'text' | 'dark' | 'destructive';
 /**
  * Sizes follow placement, variants follow importance (CTA Hierarchy.dc.html,
  * replacing the one-size #28 rule). Labels are Inter semibold.

@@ -16,6 +16,13 @@
   background: var(--ink-100);
   color: var(--ink-900);
 }
+.square {
+  border-radius: var(--radius-md);
+}
+.danger:hover {
+  background: var(--red-50);
+  color: var(--red-500);
+}
 .button:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
@@ -39,5 +46,20 @@
   .md {
     width: var(--touch-target-min);
     height: var(--touch-target-min);
+  }
+}
+@media (max-width: 767px) {
+  /* Row actions stay drawn at 32px on phones; an invisible area reaches 44px
+     (CTA Hierarchy.dc.html rule 5), so rows don't reflow. */
+  .square.sm,
+  .square.md {
+    position: relative;
+    width: var(--space-8);
+    height: var(--space-8);
+  }
+  .square::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
   }
 }

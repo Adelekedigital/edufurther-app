@@ -57,6 +57,10 @@ export function mockNextAvailableAt(mentorId: string, now = Date.now()): string 
   return first ? first.start : null;
 }
 
+// Backend Session Types #9 (merging): reads gain `service_offerings[]`. Spread
+// from a variable so the mock compiles against the spec before and after it ships.
+const NO_TOPICS = { service_offerings: [] };
+
 export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
   {
     id: 'st-general',
@@ -66,6 +70,7 @@ export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
     duration_minutes: 60,
     min_notice_minutes: 120,
     service_offering: null,
+    ...NO_TOPICS,
     application_stage: null,
     custom_stage_label: null,
     meeting_venue: 'google_meet',
@@ -77,6 +82,7 @@ export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
     duration_minutes: 45,
     min_notice_minutes: 1440,
     service_offering: null,
+    ...NO_TOPICS,
     application_stage: null,
     custom_stage_label: null,
     meeting_venue: 'google_meet',

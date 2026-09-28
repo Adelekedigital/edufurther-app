@@ -1,5 +1,7 @@
 'use client';
 
+import { useSyncExternalStore } from 'react';
+import { usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { authConfigured } from '@/lib/vendor/supabase/config';
@@ -33,41 +35,69 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
 }
 
 /** Local dev / CI page review without auth (NEXT_PUBLIC_MOCK_VIEWER). */
-function mockViewer(): Viewer | null {
-  const mock = process.env.NEXT_PUBLIC_MOCK_VIEWER;
-  if (mock === 'guest') return { kind: 'guest' };
-  if (mock === 'mentee')
-    return {
-      kind: 'member',
-      id: 'mock-viewer',
-      firstName: 'Esther',
-      initial: 'E',
-      isMentee: true,
-      isApprovedMentor: false,
-      isMentor: false,
-      completedSessions: 0,
-      credits: { balance: 3, allowance: 3, state: 'on_track' },
-    };
-  if (mock === 'mentor')
-    return {
-      kind: 'member',
-      id: 'mock-mentor',
-      firstName: 'Gbenga',
-      initial: 'G',
-      isMentee: false,
-      isApprovedMentor: true,
-      isMentor: true,
-      completedSessions: 0,
-      credits: null,
-    };
-  return null;
+const MOCK_VIEWERS: Record<string, Viewer> = {
+  guest: { kind: 'guest' },
+  mentee: {
+    kind: 'member',
+    id: 'mock-viewer',
+    firstName: 'Esther',
+    initial: 'E',
+    isMentee: true,
+    isApprovedMentor: false,
+    isMentor: false,
+    completedSessions: 0,
+    credits: { balance: 3, allowance: 3, state: 'on_track' },
+  },
+  mentor: {
+    kind: 'member',
+    id: 'mock-mentor',
+    firstName: 'Gbenga',
+    initial: 'G',
+    isMentee: false,
+    isApprovedMentor: true,
+    isMentor: true,
+    completedSessions: 0,
+    credits: null,
+  },
+};
+
+const readMockParam = () => new URLSearchParams(window.location.search).get('mockViewer');
+const onPopState = (cb: () => void) => {
+  window.addEventListener('popstate', cb);
+  return () => window.removeEventListener('popstate', cb);
+};
+
+/** Screens only a mentor can use: in mock mode they default to the mentor viewer. */
+const MENTOR_ONLY_ROUTES = ['/session-types'];
+
+/**
+ * The mock viewer, or null when NEXT_PUBLIC_MOCK_VIEWER is unset (every real
+ * deploy). While it is set (local dev, CI):
+ * - mentor-only routes default to the mentor, so one CI build (mentee by
+ *   default) reviews them as their real user. The path is known on the server
+ *   too, so hydration matches and nothing flips (CLS);
+ * - `?mockViewer=mentor|mentee|guest` overrides it for manual checks. It is
+ *   read through useSyncExternalStore (the server snapshot is null), so it
+ *   applies right after hydration.
+ */
+function useMockViewer(): Viewer | null {
+  const env = process.env.NEXT_PUBLIC_MOCK_VIEWER;
+  const path = usePathname();
+  const param = useSyncExternalStore(
+    onPopState,
+    () => (env ? readMockParam() : null),
+    () => null,
+  );
+  if (!env) return null;
+  const byRoute = MENTOR_ONLY_ROUTES.some((r) => path?.startsWith(r)) ? 'mentor' : env;
+  return MOCK_VIEWERS[param ?? byRoute] ?? MOCK_VIEWERS[env] ?? null;
 }
 
 const UNLINKED = Symbol('unlinked');
 const ACCOUNT_EXISTS = Symbol('accountExists');
 
 export function useViewer(): Viewer {
-  const mock = mockViewer();
+  const mock = useMockViewer();
   const session = useSession();
   const userId = session.status === 'present' ? session.userId : null;
   const query = useQuery({
