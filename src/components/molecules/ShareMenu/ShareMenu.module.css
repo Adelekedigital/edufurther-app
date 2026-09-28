@@ -73,6 +73,11 @@
 }
 /* Phones: 44px targets (ours). */
 @media (max-width: 767px) {
+  /* Clear of the bottom tab bar / guest bar when scrolled into view: the
+     design's phone bottom offset is 72px (Explore.dc.html). */
+  .menu {
+    scroll-margin-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
   .item {
     height: var(--touch-target-min);
   }

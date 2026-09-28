@@ -97,7 +97,11 @@ export function TrackRecordCard({ profile, isOwner }: TrackRecordCardProps) {
               <span className={styles.ratingValue}>{formatRating(m.rating!)}</span>
               <span className={styles.stars} aria-hidden>
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <Star key={i} size={10} className={i <= filled ? styles.starOn : styles.starOff} />
+                  <Star
+                    key={i}
+                    size={10}
+                    className={i <= filled ? styles.starOn : styles.starOff}
+                  />
                 ))}
               </span>
             </div>

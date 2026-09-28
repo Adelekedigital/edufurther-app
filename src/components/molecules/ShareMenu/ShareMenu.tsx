@@ -27,10 +27,16 @@ export function ShareMenu({ url, name }: ShareMenuProps) {
   const [status, setStatus] = useState('');
   const buttonRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
+  const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
 
   useEffect(() => {
-    if (open) itemRefs.current[0]?.focus();
+    if (!open) return;
+    // The menu opens downward; on a short phone it can land under the fixed
+    // bottom bar. Scroll just enough to show all of it (scroll-margin in CSS
+    // keeps it clear of the bar), then focus without a second jump.
+    menuRef.current?.scrollIntoView?.({ block: 'nearest' });
+    itemRefs.current[0]?.focus({ preventScroll: true });
   }, [open]);
   useEffect(() => {
     if (!status) return;
@@ -116,6 +122,7 @@ export function ShareMenu({ url, name }: ShareMenuProps) {
       {open && (
         <div
           id={menuId}
+          ref={menuRef}
           role="menu"
           aria-label="Share"
           className={styles.menu}

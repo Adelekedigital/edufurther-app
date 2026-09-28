@@ -14,8 +14,8 @@ const STUDY = ['United States', 'United Kingdom', 'Canada', 'Germany'];
 
 /**
  * MOCK of GET /api/v1/mentors/{handle} (slug or id) → MentorPublicRead, built
- * from the list fixtures. Every third generated mentor is sparse (no about, no
- * awards, no background) and mentors with no sessions read as new, so the
+ * from the list fixtures. Every third generated mentor is sparse (no headline,
+ * no about, no awards, no background) and mentors with no sessions read as new, so the
  * profile's empty branches have data to render. Unknown handles 404. The
  * design's fully booked sample is public with its offerings and reads
  * next_available_state "none" ("No open times at the moment"). ENABLE_MOCK_API=1 only.
@@ -37,9 +37,11 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
     first_name: m.first_name,
     last_name: m.last_name,
     timezone: 'America/Chicago',
-    headline: [m.degree && m.study_course ? `${m.degree} ${m.study_course}` : null, m.institution]
-      .filter(Boolean)
-      .join(' · '),
+    headline: sparse
+      ? null
+      : [m.degree && m.study_course ? `${m.degree} ${m.study_course}` : null, m.institution]
+          .filter(Boolean)
+          .join(' · '),
     about_me: sparse
       ? null
       : `I moved abroad for my ${m.degree ?? 'degree'} at ${m.institution} and have reviewed dozens of statements since. I’ll help you shortlist programs that fund, tell a clear story in your statement, and prepare for visa and admissions interviews. Past failures taught me as much as the wins, and I bring both to every session.`,

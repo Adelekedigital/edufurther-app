@@ -18,6 +18,28 @@ describe('ProfileHeader', () => {
     expect(screen.getByText('No sessions yet')).toBeInTheDocument();
   });
 
+  it('puts the topics before the buttons, so a stacked header reads name → topics → actions', () => {
+    render(
+      <ProfileHeader
+        profile={fullProfile}
+        actions={<button type="button">Book a session</button>}
+      />,
+    );
+    const topics = screen.getByRole('list', { name: 'Helps with' });
+    const book = screen.getByRole('button', { name: 'Book a session' });
+    expect(topics.compareDocumentPosition(book) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('renders no topic list when the mentor has none', () => {
+    render(
+      <ProfileHeader
+        profile={{ ...fullProfile, mentor: { ...fullProfile.mentor, topics: [] } }}
+        actions={<button type="button">Book a session</button>}
+      />,
+    );
+    expect(screen.queryByRole('list', { name: 'Helps with' })).not.toBeInTheDocument();
+  });
+
   it('says whichever half of the move is known', () => {
     expect(locationLine('Ghana', null)).toBe('From Ghana');
     expect(locationLine(null, 'Canada')).toBe('Studied in Canada');
