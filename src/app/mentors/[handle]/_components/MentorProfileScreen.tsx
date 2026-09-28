@@ -24,7 +24,7 @@ import { bookBlockedFor } from '@/app/_shell/bookBlocked';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { useRequestBooking, useSessionTypes, useSlots } from '@/lib/api/data/booking';
 import { useMentorProfile } from '@/lib/api/data/profile';
-import { useMentorReviews, useReviewPrompt } from '@/lib/api/data/reviews';
+import { REVIEW_PAGE_SIZE, useMentorReviews, useReviewPrompt } from '@/lib/api/data/reviews';
 import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
@@ -108,8 +108,9 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const [reviewFilter, setReviewFilter] = useState<string | null>(null);
   const reviews = useMentorReviews(handle, reviewFilter, {
     guest: isGuest,
+    active: tab === 'reviews',
     // Guest or not decides what's fetched, so wait until that's known.
-    enabled: tab === 'reviews' && viewer.kind !== 'loading',
+    ready: viewer.kind !== 'loading',
   });
   const reviewPrompt = useReviewPrompt(
     p?.mentor.id ?? null,
@@ -285,8 +286,12 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                       isLoadingMore={reviews.isLoadingMore}
                       loadMoreError={reviews.loadMoreError}
                       onLoadMore={reviews.loadMore}
+                      // What the next click loads: at most a page, from the
+                      // unfiltered total ("Show 5 more", not "Show 15 more").
                       remaining={
-                        reviewFilter === null ? p.reviews.count - reviews.reviews.length : null
+                        reviewFilter === null
+                          ? Math.min(p.reviews.count - reviews.reviews.length, REVIEW_PAGE_SIZE)
+                          : null
                       }
                       filters={p.sessionTypes.map((t) => ({ id: t.id, label: t.name }))}
                       filter={reviewFilter}

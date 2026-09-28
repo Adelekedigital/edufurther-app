@@ -31,6 +31,7 @@ let reviewsRemote: MentorReviewsResult;
 let reviewPrompt: ReviewPrompt = null;
 const reviewsArgs = vi.fn();
 vi.mock('@/lib/api/data/reviews', () => ({
+  REVIEW_PAGE_SIZE: 5,
   useMentorReviews: (...args: unknown[]) => {
     reviewsArgs(...args);
     return reviewsRemote;
@@ -302,7 +303,7 @@ describe('MentorProfileScreen — Reviews tab', () => {
     expect(reviewsArgs).toHaveBeenLastCalledWith(
       'gbenga',
       null,
-      expect.objectContaining({ enabled: false }),
+      expect.objectContaining({ active: false }),
     );
   });
 
@@ -326,11 +327,19 @@ describe('MentorProfileScreen — Reviews tab', () => {
     expect(screen.getAllByRole('article')).toHaveLength(5);
     // 7 reviews, 5 shown.
     expect(screen.getByRole('button', { name: 'Show 2 more reviews' })).toBeInTheDocument();
+  });
+
+  it('"Show N more" names what one click loads: at most a page', () => {
+    search = new URLSearchParams('tab=reviews');
+    profile = state({ data: { ...fullProfile, reviews: { ...fullProfile.reviews, count: 20 } } });
+    reviewsRemote = reviewsState({ reviews, hasMore: true });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('button', { name: 'Show 5 more reviews' })).toBeInTheDocument();
     expect(screen.queryByText('Track record')).not.toBeInTheDocument();
     expect(reviewsArgs).toHaveBeenLastCalledWith(
       'gbenga',
       null,
-      expect.objectContaining({ guest: false, enabled: true }),
+      expect.objectContaining({ guest: false, active: true, ready: true }),
     );
   });
 

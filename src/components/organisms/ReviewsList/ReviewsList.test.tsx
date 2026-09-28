@@ -83,7 +83,8 @@ describe('ReviewsList', () => {
   });
 
   it('a guest: redacted text never in the page, no "Show more", the sign-up card', () => {
-    const r = { ...reviews[0]!, text: '' };
+    // The real text goes in: the gate alone must keep it off the page.
+    const r = reviews[0]!;
     render(
       <ReviewsList
         {...props({

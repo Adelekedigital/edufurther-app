@@ -1,6 +1,7 @@
 'use client';
 
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useCallback } from 'react';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import type { AppError, Review, ReviewPrompt } from '@/types/mentor';
 import { ApiError, apiError, normaliseError } from './errors';
@@ -58,21 +59,26 @@ export type MentorReviewsResult = {
 /**
  * GET /api/v1/mentors/{handle}/reviews, newest first, five a page.
  * `sessionTypeId`: the filter chip (null = all). A guest gets one review,
- * without its text.
+ * without its text. `active`: the list is on screen. `ready`: who is looking
+ * is known (guest or not decides what's fetched); until then an active list
+ * reads as loading, never as empty.
  */
 export function useMentorReviews(
   handle: string,
   sessionTypeId: string | null,
-  { guest, enabled }: { guest: boolean; enabled: boolean },
+  { guest, active, ready }: { guest: boolean; active: boolean; ready: boolean },
 ): MentorReviewsResult {
   const session = useSession();
+  const qc = useQueryClient();
+  const key = keys.mentors.reviews(
+    handle,
+    sessionTypeId ?? 'all',
+    guest ? 'guest' : sessionKey(session),
+  );
+  const canFetch = active && ready && session.status !== 'unknown';
   const query = useInfiniteQuery({
-    queryKey: keys.mentors.reviews(
-      handle,
-      sessionTypeId ?? 'all',
-      guest ? 'guest' : sessionKey(session),
-    ),
-    enabled: enabled && session.status !== 'unknown',
+    queryKey: key,
+    enabled: canFetch,
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam, signal }) => {
       const { data, error, response } = await api.GET('/api/v1/mentors/{handle}/reviews', {
@@ -101,15 +107,25 @@ export function useMentorReviews(
 
   const pages = query.data?.pages ?? [];
   const nextFailed = query.isFetchNextPageError;
+
+  const loadMore = useCallback(async () => {
+    const res = await query.fetchNextPage();
+    // A cursor the server no longer honours (422): start again from page 1,
+    // as the Explore list does (contract: 422 on a list = bad cursor).
+    if (res.isFetchNextPageError && res.error instanceof ApiError && res.error.status === 422) {
+      await qc.resetQueries({ queryKey: key, exact: true });
+    }
+  }, [query, qc, key]);
+
   return {
     reviews: pages.flatMap((p) => p.reviews),
-    isLoading: enabled && query.isPending,
+    isLoading: active && (!canFetch || query.isPending),
     error: query.isError && !nextFailed ? normaliseError(query.error) : null,
     retry: () => void query.refetch(),
     hasMore: query.hasNextPage,
     isLoadingMore: query.isFetchingNextPage,
     loadMoreError: nextFailed ? normaliseError(query.error) : null,
-    loadMore: () => void query.fetchNextPage(),
+    loadMore: () => void loadMore(),
   };
 }
 
