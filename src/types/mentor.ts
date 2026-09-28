@@ -196,9 +196,45 @@ export type MentorProfile = {
   menteesMentored: number;
   /** Whole-number percentage, or null. */
   attendanceRate: number | null;
+  reviews: ReviewSummary;
   /**
    * Present only when the viewer is this mentor (backend mentor-profile reply
    * #1): the owner sees their page in any state.
    */
   owner: { approval: 'pending' | 'approved' | 'declined' | null; listed: boolean } | null;
 };
+
+// ---- Reviews (GET /api/v1/mentors/{handle}/reviews) ---------------------------
+
+export type ReviewAttribute = 'communication' | 'knowledge' | 'support' | 'practicality';
+
+/** The profile's review summary (MentorPublicRead.reviews). */
+export type ReviewSummary = {
+  count: number;
+  /** Mean session value, 1..5; null with no published reviews. */
+  rating: number | null;
+  /** Share of mentees scoring 8+ of 10, as "n in 10" (0–10); null → the box hides. */
+  wouldRecommendIn10: number | null;
+  /** Whole-number percentages per attribute; null when not rated yet. */
+  attributes: Record<ReviewAttribute, number | null>;
+};
+
+export type Review = {
+  id: string;
+  /** "Aladi P.", or "Deleted user". */
+  author: string;
+  initials: string;
+  institution: string | null;
+  createdAt: string;
+  /** 1..5. */
+  rating: number;
+  /** The session type it was for, when known. */
+  topic: string | null;
+  text: string;
+};
+
+/**
+ * What the viewer can do about reviewing this mentor (GET /me/mentors/{id}/relationship).
+ * none: no session together yet. due: a review is owed. Null: nothing to say.
+ */
+export type ReviewPrompt = 'none' | 'due' | null;
