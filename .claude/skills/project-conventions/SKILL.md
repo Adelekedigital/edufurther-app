@@ -62,6 +62,7 @@ Sources, so the next sync can diff against them: the design project's
 - Sentence case everywhere. US spelling. No emoji. "Mentor", never "Coach".
 - Review attribution is first name + initial; the surname is never shown (backend guarantees it).
 - **Reviews tab** (Mentor Profile.dc.html, `reviewsLayout=focus`): shown as "Reviews (N)" at `?tab=reviews` only when N > 0; the header rating opens it. The aside keeps the first-mentees and booking cards but drops the track record (and Similar mentors). Five reviews a page, newest first, "Show N more reviews" (a text button in the Medium box). A **guest** fetches one review and its text is dropped in the data layer (`toReview(r, guest)`), so it never reaches the page; the sign-up card follows. The "{n} in 10" box shows only when the API sends `would_recommend_in_10`; "Most praised for" is the top 2 rated attributes. A deleted author reads "Deleted user" with the DS icon avatar.
+- **Similar mentors** (Mentor Profile.dc.html aside): three rows from `GET /mentors/{handle}/similar`, at the bottom of the **Overview** aside only, for anyone but the owner. Rows use Explore's card rules (`toMentor`: "New" under 3 sessions, no rating without reviews). "Free {day}" (`formatFreeDay`, viewer's zone) links to that mentor's profile. A suggestion, not content: an empty or failed list renders no card.
 
 ---
 
