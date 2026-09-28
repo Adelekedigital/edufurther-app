@@ -281,6 +281,23 @@ describe('BookingFlow on real slots', () => {
     expect(onSignup).toHaveBeenCalledTimes(1);
   });
 
+  it('a double-click on "Continue with email" books once (review r4 of #26)', async () => {
+    const user = userEvent.setup();
+    const onSignup = vi.fn();
+    const onRequest = vi.fn();
+    render(
+      <BookingFlow {...props({ sessionTypeId: 'st2', isGuest: true, onSignup, onRequest })} />,
+    );
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.type(screen.getByRole('textbox', { name: 'Email address' }), 'a@b.co');
+    // The second click lands on the same footer button, now "Request …",
+    // before the page's requestPending arrives.
+    await user.dblClick(screen.getByRole('button', { name: 'Continue with email' }));
+    expect(onRequest).toHaveBeenCalledTimes(1);
+    expect(onSignup).toHaveBeenCalledTimes(1);
+  });
+
   it('Back is disabled while a request is out', async () => {
     const user = userEvent.setup();
     const { rerender } = render(<BookingFlow {...props({ sessionTypeId: 'st1' })} />);
@@ -288,6 +305,23 @@ describe('BookingFlow on real slots', () => {
     await user.click(screen.getByRole('button', { name: /^Continue/ }));
     rerender(<BookingFlow {...props({ sessionTypeId: 'st1', requestPending: true })} />);
     expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled();
+  });
+
+  it('"Change" is disabled while a request is out (review r4 of #26)', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<BookingFlow {...props({ sessionTypeId: 'st1' })} />);
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+    await user.click(screen.getByRole('button', { name: /^Continue/ }));
+    rerender(<BookingFlow {...props({ sessionTypeId: 'st1', requestPending: true })} />);
+    expect(screen.getByRole('button', { name: /^Change/ })).toBeDisabled();
+  });
+
+  it('Cancel still closes while a request is out (review r4 of #26)', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    render(<BookingFlow {...props({ sessionTypeId: 'st2', requestPending: true, onClose })} />);
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('going back after signing up skips the sign-up step', async () => {

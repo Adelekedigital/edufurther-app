@@ -296,11 +296,10 @@ export function BookingFlow(p: BookingFlowProps) {
     setStepIndex(after(at));
   };
   const back = () => {
-    // Not while a request is out: its reply belongs to the time on screen.
-    if (p.requestPending) return;
     const to = before(at);
     if (to < 0) p.onClose();
-    else setStepIndex(to);
+    // Not while a request is out: its reply belongs to the time on screen.
+    else if (!p.requestPending) setStepIndex(to);
   };
   const chooseType = (id: string) => {
     // The viewer chose: stop looking for the requested time.
@@ -382,7 +381,12 @@ export function BookingFlow(p: BookingFlowProps) {
     <div className={styles.picked}>
       <Icon name="event" size={isPhone ? 18 : 16} className={styles.pickedIcon} />
       <span className={styles.pickedText}>{picked}</span>
-      <button type="button" className={styles.change} onClick={() => setStepIndex(0)}>
+      <button
+        type="button"
+        className={styles.change}
+        onClick={() => setStepIndex(0)}
+        disabled={p.requestPending}
+      >
         Change<span className="sr-only"> time</span>
       </button>
     </div>
