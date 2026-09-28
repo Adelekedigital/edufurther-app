@@ -3,6 +3,7 @@ import { fn } from 'storybook/test';
 import { Button } from '@/components/atoms/Button/Button';
 import { ShareMenu } from '@/components/molecules/ShareMenu/ShareMenu';
 import { BookSessionCard } from '../BookSessionCard/BookSessionCard';
+import { FirstMenteesCard } from '../FirstMenteesCard/FirstMenteesCard';
 import { ProfileOverview } from '../ProfileOverview/ProfileOverview';
 import { SessionTypeList } from '../SessionTypeList/SessionTypeList';
 import { TrackRecordCard } from '../TrackRecordCard/TrackRecordCard';
@@ -107,7 +108,7 @@ export const BookCardBlocked: Story = {
 export const TrackRecord: Story = {
   render: () => (
     <div style={side}>
-      <TrackRecordCard profile={fullProfile} isOwner={false} />
+      <TrackRecordCard profile={fullProfile} />
     </div>
   ),
 };
@@ -120,22 +121,74 @@ export const TrackRecordNoReviews: Story = {
           mentor: { ...fullProfile.mentor, reviewCount: 0, rating: null },
           attendanceRate: null,
         }}
-        isOwner={false}
       />
     </div>
   ),
 };
-export const TrackRecordNewMentor: Story = {
+/** 1–2 sessions: the stats show, the rating band waits for 3 (design). */
+export const TrackRecordTwoSessions: Story = {
   render: () => (
     <div style={side}>
-      <TrackRecordCard profile={newProfile} isOwner={false} />
+      <TrackRecordCard
+        profile={{
+          ...fullProfile,
+          mentor: { ...fullProfile.mentor, completedSessions: 2, reviewCount: 1, rating: 5 },
+          menteesMentored: 1,
+        }}
+      />
     </div>
   ),
 };
-export const TrackRecordNewMentorOwner: Story = {
+const next = '2026-09-28T13:00:00Z';
+export const FirstMentees: Story = {
   render: () => (
     <div style={side}>
-      <TrackRecordCard profile={newProfile} isOwner />
+      <FirstMenteesCard
+        variant="mentee"
+        firstName="Adaeze"
+        nextTime={next}
+        timeZone="America/New_York"
+        move={{ from: 'Nigeria', to: 'the United Kingdom' }}
+        award="Commonwealth Scholarship"
+        onBook={fn()}
+      />
     </div>
+  ),
+};
+/** Nothing open, no move, no award: no facts box, no Book button. */
+export const FirstMenteesNoTimes: Story = {
+  render: () => (
+    <div style={side}>
+      <FirstMenteesCard
+        variant="mentee"
+        firstName="Chukwuemeka-Oluwaseun"
+        nextTime={null}
+        timeZone="America/New_York"
+        move={null}
+        award={null}
+        onBook={fn()}
+      />
+    </div>
+  ),
+};
+export const FirstMenteesOwner: Story = {
+  render: () => (
+    <div style={side}>
+      <FirstMenteesCard variant="owner" onShare={fn()} />
+    </div>
+  ),
+};
+export const FirstMenteesPhone: Story = {
+  globals: { viewport: { value: 'mobile2', isRotated: false } },
+  render: () => (
+    <FirstMenteesCard
+      variant="mentee"
+      firstName="Adaeze"
+      nextTime={next}
+      timeZone="Africa/Lagos"
+      move={{ from: 'Ghana', to: 'Canada' }}
+      award={null}
+      onBook={fn()}
+    />
   ),
 };

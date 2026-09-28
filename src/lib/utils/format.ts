@@ -59,3 +59,23 @@ export function deviceTimeZone(): string {
     return 'UTC';
   }
 }
+
+/**
+ * A country as it reads after "to": "the United Kingdom", "Canada". The same
+ * rule as MentorCard.dc.html / Mentor Profile.dc.html.
+ */
+export function countryInSentence(country: string): string {
+  return /^(United |UK$|UAE$|Netherlands|Philippines|Czech Republic|Bahamas|Gambia)/.test(country)
+    ? `the ${country}`
+    : country;
+}
+
+/** The move line's pair, when both ends are known and differ; else null. */
+export function movedBetween(
+  origin: string | null | undefined,
+  study: string | null | undefined,
+): { from: string; to: string } | null {
+  return origin && study && origin !== study
+    ? { from: origin, to: countryInSentence(study) }
+    : null;
+}

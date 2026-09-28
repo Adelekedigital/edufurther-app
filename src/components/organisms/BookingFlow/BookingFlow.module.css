@@ -311,3 +311,15 @@
     padding: 0 var(--space-3);
   }
 }
+
+/* PROVISIONAL (design request #50): the requested time is gone. Styled as the
+   design's info note (Mentor Profile.dc.html request form). */
+.missedNote {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--blue-50);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}

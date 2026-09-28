@@ -1,4 +1,3 @@
-import { Badge } from '@/components/atoms/Badge/Badge';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Star } from '@/components/atoms/Star/Star';
 import { StatTile } from '@/components/molecules/StatTile/StatTile';
@@ -9,43 +8,27 @@ import styles from './TrackRecordCard.module.css';
 
 type TrackRecordCardProps = {
   profile: MentorProfile;
-  /** The mentor is looking at their own page. */
-  isOwner: boolean;
 };
 
 const n = new Intl.NumberFormat('en-US');
+/** The blue rating band waits for 3 completed sessions (design: showStatsHead). */
+const BAND_FROM = 3;
 
 /**
  * Mentor Profile.dc.html track record: a rating tile and "Mentees keep coming
- * back" on blue, then plain-worded stats (BFM: give numbers context). No
- * sessions yet → the design's "first mentees" card instead.
+ * back" on blue (from 3 sessions), then plain-worded stats (BFM: give numbers
+ * context). Nothing at 0 sessions: the page shows FirstMenteesCard.
  *
  * Not built: the "Top-rated" badge (no product rule yet, design #33). The
  * "keep coming back" line only appears when it is true — more than one
  * session per mentee on average.
  */
-export function TrackRecordCard({ profile, isOwner }: TrackRecordCardProps) {
+export function TrackRecordCard({ profile }: TrackRecordCardProps) {
   const m = profile.mentor;
 
-  if (m.completedSessions === 0) {
-    return (
-      <section className={cx(styles.card, styles.empty)} aria-labelledby="track-h">
-        <div>
-          <Badge type="accent" color="green" size="sm">
-            New mentor
-          </Badge>
-        </div>
-        <h2 id="track-h" className={styles.emptyTitle}>
-          {isOwner ? 'Your track record starts here' : `Be one of ${m.firstName}’s first mentees`}
-        </h2>
-        <p className={styles.body}>
-          {isOwner
-            ? 'Sessions, mentees and attendance show up after your first booking. Sharing your profile is the fastest way to get it.'
-            : 'New mentors often have more open slots and time to go deep with you.'}
-        </p>
-      </section>
-    );
-  }
+  // Nothing to show before the first session: the page shows the first-mentees
+  // card instead (design reply #45).
+  if (m.completedSessions === 0) return null;
 
   const perMentee = profile.menteesMentored > 0 ? m.completedSessions / profile.menteesMentored : 0;
   const repeat = Math.round(perMentee * 10) / 10 > 1;
@@ -86,7 +69,7 @@ export function TrackRecordCard({ profile, isOwner }: TrackRecordCardProps) {
       <h2 id="track-h" className="sr-only">
         Track record
       </h2>
-      {(rated || repeat) && (
+      {m.completedSessions >= BAND_FROM && (rated || repeat) && (
         <div className={styles.band}>
           {rated && (
             <div

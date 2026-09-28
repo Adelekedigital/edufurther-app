@@ -10,7 +10,18 @@ type ShareMenuProps = {
   url: string;
   /** Mentor's name, for the email subject. */
   name: string;
-};
+} & (
+  | {
+      /**
+       * Controlled from outside (e.g. the owner's "Share your profile" button
+       * elsewhere on the page). Both or neither: without onOpenChange a
+       * controlled menu could never close.
+       */
+      open: boolean;
+      onOpenChange: (open: boolean) => void;
+    }
+  | { open?: undefined; onOpenChange?: undefined }
+);
 
 type Item = { key: string; label: string; icon: IconName } & (
   { href: string; onSelect?: never } | { onSelect: () => void; href?: never }
@@ -22,16 +33,26 @@ type Item = { key: string; label: string; icon: IconName } & (
  * as AccountMenu: arrows / Home / End move, Escape and Tab close, focus
  * returns to the button. Copying is announced ("Link copied").
  */
-export function ShareMenu({ url, name }: ShareMenuProps) {
-  const [open, setOpen] = useState(false);
+export function ShareMenu({ url, name, open: openProp, onOpenChange }: ShareMenuProps) {
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const setOpen = (next: boolean) => {
+    if (openProp === undefined) setOpenState(next);
+    onOpenChange?.(next);
+  };
   const [status, setStatus] = useState('');
   const buttonRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
 
+  // Where focus goes back to on close: the control that opened the menu (the
+  // header icon, or a button elsewhere that opened it from outside).
+  const returnFocus = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (!open) return;
+    const from = document.activeElement;
+    returnFocus.current = from instanceof HTMLElement && from !== document.body ? from : null;
     // The menu opens downward; on a short phone it can land under the fixed
     // bottom bar. Scroll just enough to show all of it (scroll-margin in CSS
     // keeps it clear of the bar), then focus without a second jump.
@@ -46,7 +67,8 @@ export function ShareMenu({ url, name }: ShareMenuProps) {
 
   const close = (refocus: boolean) => {
     setOpen(false);
-    if (refocus) buttonRef.current?.focus();
+    if (refocus)
+      (returnFocus.current?.isConnected ? returnFocus.current : buttonRef.current)?.focus();
   };
 
   const items: Item[] = [
@@ -108,7 +130,7 @@ export function ShareMenu({ url, name }: ShareMenuProps) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => setOpen(!open)}
         onKeyDown={(e) => {
           if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
             e.preventDefault();

@@ -38,7 +38,10 @@ export function ProfileHeader({ profile, actions }: ProfileHeaderProps) {
   } as CSSProperties;
   const location = locationLine(profile.originCountry, profile.studyCountry);
 
-  // Never an empty star rating (product rule): rating only with reviews.
+  // Never an empty star rating (product rule): rating only with reviews. A new
+  // mentor (0–2 sessions) leads with the sessions count, since the first-mentees
+  // card says "New mentor" (design reply #45); "· Joined {Mon YYYY}" follows
+  // once the API has a join date (backend request #14).
   const proof =
     m.reviewCount > 0 && m.rating !== null ? (
       <span className={styles.item}>
@@ -46,11 +49,9 @@ export function ProfileHeader({ profile, actions }: ProfileHeaderProps) {
         <strong className={styles.strong}>{formatRating(m.rating)}</strong>({m.reviewCount}{' '}
         {m.reviewCount === 1 ? 'review' : 'reviews'})
       </span>
-    ) : (
-      <strong className={styles.strong}>
-        {m.completedSessions <= 2 ? 'New to EduFurther' : 'No reviews yet'}
-      </strong>
-    );
+    ) : m.completedSessions >= 3 ? (
+      <strong className={styles.strong}>No reviews yet</strong>
+    ) : null;
 
   return (
     <section className={styles.card} aria-labelledby="profile-name">
@@ -74,10 +75,14 @@ export function ProfileHeader({ profile, actions }: ProfileHeaderProps) {
           {profile.headline && <p className={styles.headline}>{profile.headline}</p>}
           <p className={styles.proof}>
             {proof}
-            <span className={styles.sep}>
-              <span aria-hidden>·</span>
+            {proof ? (
+              <span className={styles.sep}>
+                <span aria-hidden>·</span>
+                <span>{sessionsLabel(m.completedSessions)}</span>
+              </span>
+            ) : (
               <span>{sessionsLabel(m.completedSessions)}</span>
-            </span>
+            )}
             {location && (
               <span className={cx(styles.sep, styles.location)}>
                 <span aria-hidden className={styles.dot}>

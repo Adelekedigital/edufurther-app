@@ -208,11 +208,18 @@ const avatarUrl = (file: string) => `/api/mock/avatars/${file}`;
 const FEATURED_PHOTO = avatars.people.find((p) => p.framing === 'landscape')!;
 const PHOTO_PEOPLE = avatars.people.filter((p) => p !== FEATURED_PHOTO);
 
+/**
+ * Fixed session counts for the new-mentor cases (design reply #45): #8 has 0
+ * sessions and lands on a sparse, "refreshing" profile, so its first-mentees
+ * card has no next time and no languages; #20 has exactly 1 session.
+ */
+const SESSIONS_OVERRIDE: Record<number, number> = { 8: 0, 20: 1 };
+
 const GENERATED: MentorSummaryRead[] = FIRST.map((first, i) => {
   const face = PHOTO_PEOPLE[i];
   const f = face?.first_name ?? first;
   const [deg, course] = COURSES[i % COURSES.length]!;
-  const sessions = (i * 7) % 61;
+  const sessions = SESSIONS_OVERRIDE[i] ?? (i * 7) % 61;
   const reviews = sessions > 3 ? (i * 3) % 14 : 0;
   return base(
     `m-gen-${i}`,
@@ -250,3 +257,29 @@ export const FEATURED = {
   about_me:
     'I’m a medical doctor and public health professional. I love meeting people and sharing what I’ve learned, and it’s a privilege to guide others through the application journey.',
 };
+
+const COUNTRIES = ['Nigeria', 'Ghana', 'Kenya', 'Cameroon', 'Nigeria'];
+const STUDY = ['United States', 'United Kingdom', 'Canada', 'Germany'];
+
+/**
+ * A mock mentor's index across [FEATURED, ...MENTORS] and whether their
+ * profile is sparse (every third generated mentor: no headline, about,
+ * awards, background or countries). One source for the list and the profile.
+ */
+export function mockProfileIndex(mentorId: string): { i: number; sparse: boolean } {
+  const i = [FEATURED, ...MENTORS].findIndex((m) => m.id === mentorId);
+  return { i, sparse: i > 5 && i % 3 === 2 };
+}
+
+/** Origin and study country, the same on the Explore list and the profile. */
+export function mockCountries(mentorId: string): {
+  origin_country: string | null;
+  primary_study_country: string | null;
+} {
+  const { i, sparse } = mockProfileIndex(mentorId);
+  if (i < 0 || sparse) return { origin_country: null, primary_study_country: null };
+  return {
+    origin_country: COUNTRIES[i % COUNTRIES.length]!,
+    primary_study_country: STUDY[i % STUDY.length]!,
+  };
+}

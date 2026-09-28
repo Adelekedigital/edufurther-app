@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BookSessionCard } from '../BookSessionCard/BookSessionCard';
+import { FirstMenteesCard } from '../FirstMenteesCard/FirstMenteesCard';
 import { ProfileOverview } from '../ProfileOverview/ProfileOverview';
 import { TrackRecordCard } from '../TrackRecordCard/TrackRecordCard';
 import { ProfileHeader, locationLine } from './ProfileHeader';
@@ -14,7 +15,9 @@ describe('ProfileHeader', () => {
     expect(screen.getByText(/From Nigeria, studied in United States/)).toBeInTheDocument();
     rerender(<ProfileHeader profile={newProfile} />);
     expect(screen.queryByText('4.9')).not.toBeInTheDocument();
-    expect(screen.getByText('New to EduFurther')).toBeInTheDocument();
+    // Design reply #45: no "New to EduFurther" on the profile; the sessions
+    // count leads (the first-mentees card says "New mentor").
+    expect(screen.queryByText('New to EduFurther')).not.toBeInTheDocument();
     expect(screen.getByText('No sessions yet')).toBeInTheDocument();
   });
 
@@ -60,7 +63,9 @@ describe('ProfileOverview', () => {
 
   it('names the move when origin and study country differ', () => {
     render(<ProfileOverview profile={fullProfile} />);
-    expect(screen.getByText(/Has made the move from Nigeria to United States/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Has made the move from Nigeria to the United States/),
+    ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /LinkedIn/ })).toHaveAttribute(
       'href',
       'https://www.linkedin.com/in/gbenga',
@@ -70,16 +75,13 @@ describe('ProfileOverview', () => {
 
 describe('TrackRecordCard', () => {
   it('says mentees come back only when they do', () => {
-    const { rerender } = render(<TrackRecordCard profile={fullProfile} isOwner={false} />);
+    const { rerender } = render(<TrackRecordCard profile={fullProfile} />);
     expect(screen.getByText('Mentees keep coming back')).toBeInTheDocument();
     expect(screen.getByText(/books 1.9 sessions with Gbenga/)).toBeInTheDocument();
     expect(screen.getByText('3,060 mins')).toBeInTheDocument();
     expect(screen.getByText('88%')).toBeInTheDocument();
     rerender(
-      <TrackRecordCard
-        profile={{ ...fullProfile, menteesMentored: 51, attendanceRate: null }}
-        isOwner={false}
-      />,
+      <TrackRecordCard profile={{ ...fullProfile, menteesMentored: 51, attendanceRate: null }} />,
     );
     expect(screen.queryByText('Mentees keep coming back')).not.toBeInTheDocument();
     // Unknown attendance keeps its tile: the grid stays whole, and it never says 0%.
@@ -89,14 +91,85 @@ describe('TrackRecordCard', () => {
   });
 
   it('shows the rating whenever there are reviews, even without repeat bookings (review of #21)', () => {
-    render(<TrackRecordCard profile={{ ...fullProfile, menteesMentored: 51 }} isOwner={false} />);
+    render(<TrackRecordCard profile={{ ...fullProfile, menteesMentored: 51 }} />);
     expect(screen.getByRole('img', { name: 'Rated 4.9 out of 5' })).toBeInTheDocument();
     expect(screen.queryByText('Mentees keep coming back')).not.toBeInTheDocument();
   });
 
-  it('invites first mentees when there are no sessions yet', () => {
-    render(<TrackRecordCard profile={newProfile} isOwner={false} />);
-    expect(screen.getByText('Be one of Oluwakemi’s first mentees')).toBeInTheDocument();
+  it('renders nothing before the first session (the page shows FirstMenteesCard)', () => {
+    const { container } = render(<TrackRecordCard profile={newProfile} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('shows the stats from 1 session and the rating band only from 3', () => {
+    const two = {
+      ...fullProfile,
+      mentor: { ...fullProfile.mentor, completedSessions: 2, reviewCount: 1, rating: 5 },
+      menteesMentored: 1,
+    };
+    const { rerender } = render(<TrackRecordCard profile={two} />);
+    expect(screen.getByText('sessions completed')).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: /Rated/ })).not.toBeInTheDocument();
+    rerender(
+      <TrackRecordCard profile={{ ...two, mentor: { ...two.mentor, completedSessions: 3 } }} />,
+    );
+    expect(screen.getByRole('img', { name: 'Rated 5.0 out of 5' })).toBeInTheDocument();
+  });
+});
+
+describe('FirstMenteesCard', () => {
+  it('invites mentees with the move and the award, and books the next time', async () => {
+    const user = userEvent.setup();
+    const onBook = vi.fn();
+    render(
+      <FirstMenteesCard
+        variant="mentee"
+        firstName="Adaeze"
+        nextTime="2026-09-28T13:00:00Z"
+        timeZone="America/New_York"
+        move={{ from: 'Nigeria', to: 'the United Kingdom' }}
+        award="Commonwealth Scholarship"
+        onBook={onBook}
+      />,
+    );
+    expect(
+      screen.getByRole('heading', { name: 'Be one of Adaeze’s first mentees' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Made the move you’re planning.')).toBeInTheDocument();
+    expect(
+      screen.getByText(/From Nigeria to the United Kingdom, a path many mentees are planning\./),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Got funded.')).toBeInTheDocument();
+    expect(screen.getByText(/Commonwealth Scholarship\./)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Book Mon, Sep 28 · 9:00 am' }));
+    expect(onBook).toHaveBeenCalledWith('2026-09-28T13:00:00Z');
+  });
+
+  it('leaves out the facts box and Book when there is nothing to show', () => {
+    render(
+      <FirstMenteesCard
+        variant="mentee"
+        firstName="Adaeze"
+        nextTime={null}
+        timeZone="UTC"
+        move={null}
+        award={null}
+        onBook={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('tells the owner what mentees see and offers sharing', async () => {
+    const user = userEvent.setup();
+    const onShare = vi.fn();
+    render(<FirstMenteesCard variant="owner" onShare={onShare} />);
+    expect(
+      screen.getByRole('heading', { name: 'Mentees see you as a new mentor' }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Share your profile' }));
+    expect(onShare).toHaveBeenCalled();
   });
 });
 

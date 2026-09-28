@@ -100,7 +100,7 @@ export const newProfile: MentorProfile = {
     completedSessions: 0,
     reviewCount: 0,
     rating: null,
-    label: 'rising',
+    label: 'new',
     nextAvailableState: 'none',
     nextAvailableAt: null,
     topics: [],

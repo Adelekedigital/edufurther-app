@@ -1,19 +1,9 @@
-/* Mentor Profile.dc.html track record card and its "first mentees" empty card. */
+/* Mentor Profile.dc.html track record card. */
 .card {
   border: var(--border-hairline) solid var(--border-subtle);
   border-radius: var(--radius-xl);
   background: var(--surface-card);
   overflow: hidden;
-}
-.empty {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-5);
-}
-.emptyTitle {
-  font-size: var(--text-p-md);
-  font-weight: var(--weight-semibold);
 }
 .body {
   font-size: var(--text-p-xs);
@@ -82,7 +72,6 @@
 }
 
 @media (max-width: 767px) {
-  .empty,
   .band {
     padding: var(--space-4);
   }

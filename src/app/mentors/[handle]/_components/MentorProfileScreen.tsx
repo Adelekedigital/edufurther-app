@@ -9,6 +9,7 @@ import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { ShareMenu } from '@/components/molecules/ShareMenu/ShareMenu';
 import { BookSessionCard } from '@/components/organisms/BookSessionCard/BookSessionCard';
+import { FirstMenteesCard } from '@/components/organisms/FirstMenteesCard/FirstMenteesCard';
 import { BookingFlow } from '@/components/organisms/BookingFlow/BookingFlow';
 import { ProfileHeader } from '@/components/organisms/ProfileHeader/ProfileHeader';
 import { ProfileOverview } from '@/components/organisms/ProfileOverview/ProfileOverview';
@@ -20,12 +21,16 @@ import { bookBlockedFor } from '@/app/_shell/bookBlocked';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { useRequestBooking, useSessionTypes, useSlots } from '@/lib/api/data/booking';
 import { useMentorProfile } from '@/lib/api/data/profile';
-import { deviceTimeZone } from '@/lib/utils/format';
+import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
+import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { MentorProfile } from '@/types/mentor';
 import styles from './MentorProfileScreen.module.css';
 
 type Tab = 'overview' | 'sessions';
+
+/** Below this many completed sessions a mentor is "new" (design reply #45). */
+const NEW_MENTOR_UNDER = 3;
 
 /**
  * Mentor Profile (Mentor Profile.dc.html), read-only: the page every viewer
@@ -62,23 +67,59 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // ---- booking: the shared BookingModal, as on Explore -----------------------
   const [booking, setBooking] = useState(false);
   const [bookingTypeId, setBookingTypeId] = useState<string | null>(null);
+  // A time to open on, from the first-mentees card's "Book {time}".
+  const [bookingTime, setBookingTime] = useState<string | null>(null);
   const mentorId = booking && p ? p.mentor.id : null;
   const sessionTypes = useSessionTypes(mentorId);
   const typeId = bookingTypeId ?? sessionTypes.data?.[0]?.id ?? null;
   const slots = useSlots(mentorId, typeId, timeZone);
   const request = useRequestBooking();
-  const openBooking = (sessionTypeId?: string) => {
+  const openBooking = (sessionTypeId?: string, time?: string) => {
     setBookingTypeId(sessionTypeId ?? null);
+    setBookingTime(time ?? null);
     setBooking(true);
   };
   const closeBooking = () => {
     setBooking(false);
     setBookingTypeId(null);
+    setBookingTime(null);
     request.reset();
   };
+  // The owner's "Share your profile" opens the header's share menu.
+  const [shareOpen, setShareOpen] = useState(false);
+  const isPhone = useMediaQuery('(max-width: 767px)');
 
   const isOwner = !!p && (p.owner !== null || member?.id === p.mentor.id);
   const bookBlocked = !online ? 'Booking needs a connection' : bookBlockedFor(viewer);
+
+  // Mentees can see this profile: the owner's card only nudges sharing then
+  // (a pending, declined or unlisted profile's link 404s for everyone else;
+  // the OwnerBar explains that instead). No owner block → public.
+  const isPublic = !p?.owner || (p.owner.approval === 'approved' && p.owner.listed);
+
+  // Design reply #45: under 3 sessions, an invitation (mentees) or what mentees
+  // see (owner). Desktop: top of the aside (Overview only, like the aside).
+  // Phones: under the tabs, on both tabs.
+  const firstMentees =
+    p && p.mentor.completedSessions < NEW_MENTOR_UNDER ? (
+      isOwner ? (
+        isPublic ? (
+          <FirstMenteesCard variant="owner" onShare={() => setShareOpen(true)} />
+        ) : null
+      ) : (
+        <FirstMenteesCard
+          variant="mentee"
+          firstName={p.mentor.firstName}
+          nextTime={p.mentor.nextAvailableState === 'open' ? p.mentor.nextAvailableAt : null}
+          timeZone={timeZone}
+          move={movedBetween(p.originCountry, p.studyCountry)}
+          award={p.awards[0]?.title ?? null}
+          // Blocked booking (guest setup, offline…) is explained on the header's
+          // Book; the card just doesn't offer one.
+          onBook={hasSessions && !bookBlocked ? (time) => openBooking(undefined, time) : undefined}
+        />
+      )
+    ) : null;
 
   return (
     <AppShell active="Explore" chrome={chrome} account={account} offline={!online}>
@@ -127,7 +168,14 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                       {bookBlocked ?? 'Book a session'}
                     </Button>
                   )}
-                  {shareUrl && <ShareMenu url={shareUrl} name={p.mentor.name} />}
+                  {shareUrl && (
+                    <ShareMenu
+                      url={shareUrl}
+                      name={p.mentor.name}
+                      open={shareOpen}
+                      onOpenChange={setShareOpen}
+                    />
+                  )}
                 </>
               }
             />
@@ -152,6 +200,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               />
             </div>
 
+            {isPhone && firstMentees}
+
             <div className={styles.cols}>
               <div
                 className={styles.main}
@@ -172,6 +222,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               </div>
               {tab === 'overview' && (
                 <aside className={styles.aside} aria-label="Booking and track record">
+                  {!isPhone && firstMentees}
                   {!isOwner && (
                     <BookSessionCard
                       sessionTypes={p.sessionTypes}
@@ -180,7 +231,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                       bookBlocked={bookBlocked}
                     />
                   )}
-                  <TrackRecordCard profile={p} isOwner={isOwner} />
+                  <TrackRecordCard profile={p} />
                 </aside>
               )}
             </div>
@@ -204,6 +255,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           requestError={request.error}
           onClose={closeBooking}
           deviceZone={timeZone}
+          initialTime={bookingTime}
           hideProfileLink
           renderShell={(shell, body) => (
             <ModalShell

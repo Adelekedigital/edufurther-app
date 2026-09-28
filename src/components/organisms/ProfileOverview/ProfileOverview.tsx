@@ -7,6 +7,7 @@ import { IconListItem } from '@/components/molecules/IconListItem/IconListItem';
 import { SocialLink } from '@/components/molecules/SocialLink/SocialLink';
 import { cx } from '@/lib/utils/cx';
 import type { MentorProfile } from '@/types/mentor';
+import { movedBetween } from '@/lib/utils/format';
 import styles from './ProfileOverview.module.css';
 
 type ProfileOverviewProps = {
@@ -36,10 +37,12 @@ export function ProfileOverview({ profile }: ProfileOverviewProps) {
     label: string;
     value: string;
   }[];
-  const moved =
-    p.originCountry && p.studyCountry && p.originCountry !== p.studyCountry
-      ? `Has made the move from ${p.originCountry} to ${p.studyCountry}, a path many mentees are planning.`
-      : null;
+  // "…to the United States": the same rule as the first-mentees card (copy
+  // fix made here, design-divergence.md).
+  const move = movedBetween(p.originCountry, p.studyCountry);
+  const moved = move
+    ? `Has made the move from ${move.from} to ${move.to}, a path many mentees are planning.`
+    : null;
 
   return (
     <div className={styles.overview}>

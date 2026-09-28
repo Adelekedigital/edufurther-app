@@ -11,7 +11,8 @@ import type { MentorLabel } from '@/types/mentor';
 export const LABEL_RULES = {
   topRated: { minRating: 4.8, minReviews: 10 },
   experienced: { minSessions: 50 },
-  rising: { maxSessions: 2 },
+  /** "New mentor" (design: under 3 sessions and no reviews). */
+  new: { maxSessions: 2 },
 } as const;
 
 export function deriveLabel(m: {
@@ -27,6 +28,6 @@ export function deriveLabel(m: {
   )
     return 'top-rated';
   if (m.completedSessions >= r.experienced.minSessions) return 'experienced';
-  if (m.completedSessions <= r.rising.maxSessions && m.reviewCount === 0) return 'rising';
+  if (m.completedSessions <= r.new.maxSessions && m.reviewCount === 0) return 'new';
   return null;
 }
