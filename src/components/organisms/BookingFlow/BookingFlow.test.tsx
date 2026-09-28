@@ -245,25 +245,49 @@ describe('BookingFlow on real slots', () => {
     }
   });
 
-  it('a guest error without questions stays on step 2 of 2', async () => {
+  it('a guest error without questions stays on step 2, signed up, with a retry and no second sign-up', async () => {
     const user = userEvent.setup();
-    const { rerender } = render(
-      <BookingFlow {...props({ sessionTypeId: 'st2', isGuest: true })} />,
-    );
+    const onSignup = vi.fn();
+    const onRequest = vi.fn();
+    const base = { sessionTypeId: 'st2', isGuest: true, onSignup, onRequest };
+    const { rerender } = render(<BookingFlow {...props(base)} />);
     await user.click(screen.getByRole('radio', { name: '9:00 am' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     await user.type(screen.getByRole('textbox', { name: 'Email address' }), 'a@b.co');
     await user.click(screen.getByRole('button', { name: 'Continue with email' }));
     rerender(
-      <BookingFlow
-        {...props({
-          sessionTypeId: 'st2',
-          isGuest: true,
-          requestError: { kind: 'offline', message: 'x' },
-        })}
-      />,
+      <BookingFlow {...props({ ...base, requestError: { kind: 'offline', message: 'x' } })} />,
     );
     expect(screen.getByRole('progressbar', { name: /Step 2 of 2/ })).toBeInTheDocument();
+    // No second sign-up form: they're signed up, and the button retries.
+    expect(screen.queryByRole('textbox', { name: 'Email address' })).not.toBeInTheDocument();
+    expect(screen.getByText('Signed up as a@b.co')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^Request Mon, Sep 28/ }));
+    expect(onRequest).toHaveBeenCalledTimes(2);
+    expect(onSignup).toHaveBeenCalledTimes(1);
+  });
+
+  it('a double-click on "Continue with Google" books once (review r3 of #26)', async () => {
+    const user = userEvent.setup();
+    const onSignup = vi.fn();
+    const onRequest = vi.fn();
+    render(
+      <BookingFlow {...props({ sessionTypeId: 'st2', isGuest: true, onSignup, onRequest })} />,
+    );
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.dblClick(screen.getByRole('button', { name: 'Continue with Google' }));
+    expect(onRequest).toHaveBeenCalledTimes(1);
+    expect(onSignup).toHaveBeenCalledTimes(1);
+  });
+
+  it('Back is disabled while a request is out', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<BookingFlow {...props({ sessionTypeId: 'st1' })} />);
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+    await user.click(screen.getByRole('button', { name: /^Continue/ }));
+    rerender(<BookingFlow {...props({ sessionTypeId: 'st1', requestPending: true })} />);
+    expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled();
   });
 
   it('going back after signing up skips the sign-up step', async () => {

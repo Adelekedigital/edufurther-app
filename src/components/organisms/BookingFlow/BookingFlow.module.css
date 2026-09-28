@@ -356,3 +356,16 @@
 .firstKey {
   color: var(--text-primary);
 }
+
+/* The sign-up step after signing up (a retry after an error). */
+.signedUp {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-p-sm);
+  color: var(--text-secondary);
+}
+.signedUp > :first-child {
+  color: var(--green-700);
+}

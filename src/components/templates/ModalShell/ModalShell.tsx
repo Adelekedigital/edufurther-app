@@ -125,6 +125,7 @@ export function ModalShell({
               icon={sheet.leading.icon}
               aria-label={sheet.leading.label}
               onClick={sheet.leading.onClick}
+              disabled={sheet.leading.disabled}
             />
             <div className={styles.sheetTitle}>
               {sheet.caption && (

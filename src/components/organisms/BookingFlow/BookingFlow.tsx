@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
@@ -261,14 +261,29 @@ export function BookingFlow(p: BookingFlowProps) {
   const missingRequired =
     step === 'questions' && !!session?.questions.some((q) => q.required && !answers[q.id]);
 
+  // A double-click fires twice before the page's `requestPending` arrives:
+  // guard here too. Cleared by a failed send, so a retry goes through.
+  const sent = useRef(false);
+  const signedUpNow = useRef(false);
+  useEffect(() => {
+    if (p.requestError) sent.current = false;
+  }, [p.requestError]);
   const submit = () => {
-    if (session && time)
-      p.onRequest({ mentorId: m.id, sessionTypeId: session.id, startsAt: time, answers });
+    if (sent.current || !session || !time) return;
+    sent.current = true;
+    p.onRequest({ mentorId: m.id, sessionTypeId: session.id, startsAt: time, answers });
   };
   const next = () => {
+    // One request per action: nothing submits again while one is out
+    // (review r3 of #26: the sign-up step's Google button double-booked).
+    if (p.requestPending) return;
     if (step === 'signup') {
-      p.onSignup();
-      setSignedUp(true);
+      // Signed up already (a retry after an error): don't sign up twice.
+      if (!signedUp && !signedUpNow.current) {
+        signedUpNow.current = true;
+        p.onSignup();
+        setSignedUp(true);
+      }
       // Nothing after sign-up (no questions): the request goes now.
       if (isLast) submit();
       else setStepIndex(at + 1);
@@ -281,6 +296,8 @@ export function BookingFlow(p: BookingFlowProps) {
     setStepIndex(after(at));
   };
   const back = () => {
+    // Not while a request is out: its reply belongs to the time on screen.
+    if (p.requestPending) return;
     const to = before(at);
     if (to < 0) p.onClose();
     else setStepIndex(to);
@@ -299,7 +316,7 @@ export function BookingFlow(p: BookingFlowProps) {
   const nextLabel =
     step === 'time' && !time
       ? 'Pick a time'
-      : step === 'signup'
+      : step === 'signup' && !signedUp
         ? 'Continue with email'
         : isLast
           ? `Request ${picked}`
@@ -326,7 +343,10 @@ export function BookingFlow(p: BookingFlowProps) {
   const mentorMeta = [m.degreeLine, m.institution, proof].filter(Boolean).join(' · ');
 
   const nextDisabled =
-    !session || (step === 'time' && !time) || missingRequired || (step === 'signup' && !email);
+    !session ||
+    (step === 'time' && !time) ||
+    missingRequired ||
+    (step === 'signup' && !signedUp && !email);
 
   const typeSelect = session && (
     <div className={styles.field}>
@@ -505,25 +525,35 @@ export function BookingFlow(p: BookingFlowProps) {
             <Icon name="lock_clock" size={16} />
             {picked} is held for you for 10 minutes
           </p>
-          <h3 className={styles.signupTitle}>Create a free account to finish booking</h3>
-          <Button variant="dark" size="medium" fullWidth onClick={next}>
-            Continue with Google
-          </Button>
-          <span className={styles.or}>or</span>
-          <label className={styles.field}>
-            <span className={styles.fieldLabelStrong}>Email address</span>
-            <Input
-              type="email"
-              autoComplete="email"
-              inputMode="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </label>
-          <span className={styles.login}>
-            Have an account? <Link href="/login">Log in</Link>
-          </span>
+          {signedUp ? (
+            // After signing up (e.g. a retry after an error): no second form.
+            <p className={styles.signedUp}>
+              <Icon name="check_circle" size={16} />
+              {email ? `Signed up as ${email}` : 'You’re signed up'}
+            </p>
+          ) : (
+            <>
+              <h3 className={styles.signupTitle}>Create a free account to finish booking</h3>
+              <Button variant="dark" size="medium" fullWidth busy={p.requestPending} onClick={next}>
+                Continue with Google
+              </Button>
+              <span className={styles.or}>or</span>
+              <label className={styles.field}>
+                <span className={styles.fieldLabelStrong}>Email address</span>
+                <Input
+                  type="email"
+                  autoComplete="email"
+                  inputMode="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </label>
+              <span className={styles.login}>
+                Have an account? <Link href="/login">Log in</Link>
+              </span>
+            </>
+          )}
         </div>
       )}
 
@@ -585,7 +615,7 @@ export function BookingFlow(p: BookingFlowProps) {
       heading: step === 'done' ? 'Booking requested' : stepName,
       leading: atStart
         ? { icon: 'close', label: 'Close', onClick: p.onClose }
-        : { icon: 'arrow_back', label: 'Back', onClick: back },
+        : { icon: 'arrow_back', label: 'Back', onClick: back, disabled: p.requestPending },
       showClose: !atStart,
       progress:
         step !== 'done' && !oneStep ? (
@@ -714,7 +744,12 @@ export function BookingFlow(p: BookingFlowProps) {
           </>
         ) : (
           <>
-            <Button variant="secondary-outlined" size="large" onClick={back}>
+            <Button
+              variant="secondary-outlined"
+              size="large"
+              onClick={back}
+              disabled={at > 0 && p.requestPending}
+            >
               {at === 0 ? 'Cancel' : 'Back'}
             </Button>
             {nextButton}
