@@ -224,6 +224,62 @@ describe('BookingFlow on real slots', () => {
     expect(screen.queryByRole('radio', { name: '9:00 am' })).not.toBeInTheDocument();
   });
 
+  it('a guest with questions stays on the questions while sending and after an error', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <BookingFlow {...props({ sessionTypeId: 'st1', isGuest: true })} />,
+    );
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.type(screen.getByRole('textbox', { name: 'Email address' }), 'a@b.co');
+    await user.click(screen.getByRole('button', { name: 'Continue with email' }));
+    expect(screen.getByRole('progressbar', { name: /Step 3 of 3/ })).toBeInTheDocument();
+    for (const over of [
+      { requestPending: true },
+      { requestError: { kind: 'offline', message: 'x' } as const },
+    ]) {
+      rerender(<BookingFlow {...props({ sessionTypeId: 'st1', isGuest: true, ...over })} />);
+      expect(screen.getByRole('progressbar', { name: /Step 3 of 3/ })).toBeInTheDocument();
+      expect(screen.queryByRole('textbox', { name: 'Email address' })).not.toBeInTheDocument();
+      expect(screen.getByText('What would you like to cover?')).toBeInTheDocument();
+    }
+  });
+
+  it('a guest error without questions stays on step 2 of 2', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <BookingFlow {...props({ sessionTypeId: 'st2', isGuest: true })} />,
+    );
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.type(screen.getByRole('textbox', { name: 'Email address' }), 'a@b.co');
+    await user.click(screen.getByRole('button', { name: 'Continue with email' }));
+    rerender(
+      <BookingFlow
+        {...props({
+          sessionTypeId: 'st2',
+          isGuest: true,
+          requestError: { kind: 'offline', message: 'x' },
+        })}
+      />,
+    );
+    expect(screen.getByRole('progressbar', { name: /Step 2 of 2/ })).toBeInTheDocument();
+  });
+
+  it('going back after signing up skips the sign-up step', async () => {
+    const user = userEvent.setup();
+    render(<BookingFlow {...props({ sessionTypeId: 'st1', isGuest: true })} />);
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.type(screen.getByRole('textbox', { name: 'Email address' }), 'a@b.co');
+    await user.click(screen.getByRole('button', { name: 'Continue with email' }));
+    await user.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByRole('progressbar', { name: /Step 1 of 3/ })).toBeInTheDocument();
+    // And forward again goes straight to the questions.
+    await user.click(screen.getByRole('button', { name: /^Continue/ }));
+    expect(screen.getByText('What would you like to cover?')).toBeInTheDocument();
+  });
+
   it('groups the days in the zone the viewer picked', () => {
     // 02:00Z on Sep 29 is still Sep 28 in New York.
     render(

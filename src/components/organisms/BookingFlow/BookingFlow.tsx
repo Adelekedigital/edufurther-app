@@ -235,19 +235,21 @@ export function BookingFlow(p: BookingFlowProps) {
   const hasQuestions = (session?.questions.length ?? 0) > 0;
   const steps = useMemo<Step[]>(() => {
     const s: Step[] = ['time'];
-    // A guest's sign-up step stays counted while their request is in flight:
-    // dropping it then made the flow look like it jumped back to step 1
-    // (one step, no bar, the first-mentees box again) until the reply (review of #26).
-    if (p.isGuest && (!signedUp || p.requestPending)) s.push('signup');
+    // A guest's sign-up step stays in the list for the whole flow, so "Step n
+    // of N" never changes under them (sending, an error, going back). Once
+    // they've signed up it's stepped over instead (review of #26).
+    if (p.isGuest) s.push('signup');
     if (hasQuestions) s.push('questions');
     return s;
-  }, [p.isGuest, signedUp, p.requestPending, hasQuestions]);
-  // Once a guest has signed up the step leaves the flow; the index then points
-  // at the step that followed it (or past the end, which clamps to the last).
+  }, [p.isGuest, hasQuestions]);
+  // The next / previous step to show, stepping over a sign-up already done.
+  const skip = (i: number) => steps[i] === 'signup' && signedUp;
+  const after = (i: number) => (skip(i + 1) ? i + 2 : i + 1);
+  const before = (i: number) => (skip(i - 1) ? i - 2 : i - 1);
   // Without a (still valid) time there is nothing to continue with: back to it.
   const at = time || p.requestDone ? Math.min(stepIndex, steps.length - 1) : 0;
   const step: Step = p.requestDone ? 'done' : steps[at]!;
-  const isLast = at === steps.length - 1;
+  const isLast = after(at) >= steps.length;
 
   const picked = time
     ? (() => {
@@ -269,15 +271,20 @@ export function BookingFlow(p: BookingFlowProps) {
       setSignedUp(true);
       // Nothing after sign-up (no questions): the request goes now.
       if (isLast) submit();
+      else setStepIndex(at + 1);
       return;
     }
     if (isLast) {
       submit();
       return;
     }
-    setStepIndex(at + 1);
+    setStepIndex(after(at));
   };
-  const back = () => (at === 0 ? p.onClose() : setStepIndex(at - 1));
+  const back = () => {
+    const to = before(at);
+    if (to < 0) p.onClose();
+    else setStepIndex(to);
+  };
   const chooseType = (id: string) => {
     // The viewer chose: stop looking for the requested time.
     setSeek((s) => ({ ...s, done: true }));
@@ -288,7 +295,7 @@ export function BookingFlow(p: BookingFlowProps) {
     setAnswers({});
   };
 
-  const nextStep = steps[at + 1];
+  const nextStep = steps[after(at)];
   const nextLabel =
     step === 'time' && !time
       ? 'Pick a time'

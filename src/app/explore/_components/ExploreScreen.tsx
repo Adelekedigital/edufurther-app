@@ -9,16 +9,17 @@ import { SearchField } from '@/components/molecules/SearchField/SearchField';
 import { TopicFilter } from '@/components/molecules/TopicFilter/TopicFilter';
 import { FeaturedMentor } from '@/components/organisms/FeaturedMentor/FeaturedMentor';
 import { FeaturedMentorSkeleton } from '@/components/organisms/FeaturedMentor/FeaturedMentorSkeleton';
-import { BookingFlow, type FirstReason } from '@/components/organisms/BookingFlow/BookingFlow';
+import { BookingFlow } from '@/components/organisms/BookingFlow/BookingFlow';
 import { MentorResults } from '@/components/organisms/MentorResults/MentorResults';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useRequestBooking, useSessionTypes, useSlots } from '@/lib/api/data/booking';
 import { useFeaturedMentor, useMentors, useTopics } from '@/lib/api/data/mentors';
-import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
+import { deviceTimeZone } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { Mentor } from '@/types/mentor';
+import { firstReasonsFor } from './firstReasons';
 import styles from './ExploreScreen.module.css';
 import { bookBlockedFor } from '@/app/_shell/bookBlocked';
 import { MATCH_CALL_URL, useAppShell } from '@/app/_shell/useAppShell';
@@ -273,24 +274,4 @@ export function ExploreScreen() {
       )}
     </AppShell>
   );
-}
-
-/**
- * Explore.dc.html turns on BookingModal's first-mentees box (show-first-reasons)
- * for a new mentor. "New" is the Explore label's own rule (lib/api/data/labels.ts),
- * so the card's label and the box can't disagree. "Got funded." needs the
- * mentor's award on the list API (backend #17): until then only the move shows.
- */
-export function firstReasonsFor(m: Mentor): FirstReason[] {
-  if (m.label !== 'new') return [];
-  const move = movedBetween(m.originCountry, m.studyCountry);
-  return move
-    ? [
-        {
-          icon: 'flight_takeoff',
-          k: 'Made the move you’re planning.',
-          v: `From ${move.from} to ${move.to}.`,
-        },
-      ]
-    : [];
 }

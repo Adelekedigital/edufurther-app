@@ -1,11 +1,5 @@
 import type { Mentor } from '@/types/mentor';
-import { firstReasonsFor } from './ExploreScreen';
-
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace: vi.fn() }),
-  usePathname: () => '/explore',
-  useSearchParams: () => new URLSearchParams(),
-}));
+import { firstReasonsFor } from './firstReasons';
 
 const base = {
   label: 'new',
