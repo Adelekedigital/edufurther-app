@@ -40,4 +40,17 @@ describe('accountItems (AppShell.dc.html account menu)', () => {
     if ('onSelect' in logout && logout.onSelect) logout.onSelect();
     expect(signOut).toHaveBeenCalled();
   });
+
+  it("the design's order with both: View profile, Find my mentor matches, Logout (pending mentor)", async () => {
+    vi.stubEnv('NEXT_PUBLIC_MATCH_CALL_URL', 'https://cal.example/match');
+    vi.resetModules();
+    const { accountItems: fresh } = await import('./useAppShell');
+    const items = fresh(member({ isApprovedMentor: false }), vi.fn());
+    expect(items.map((i) => i.label)).toEqual(['View profile', 'Find my mentor matches', 'Logout']);
+    vi.unstubAllEnvs();
+  });
+
+  it('no member (loading, or not signed in as a member): Logout only', () => {
+    expect(accountItems(null, vi.fn()).map((i) => i.label)).toEqual(['Logout']);
+  });
 });
