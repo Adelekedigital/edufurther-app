@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { slotWindow } from '@/lib/utils/slots';
@@ -77,12 +77,19 @@ export type BookingError = AppError & { questionId?: string; fileGone?: boolean 
 
 /** What a 422's pointers say about the answers (backend domain/intake answer_problems). */
 export type AnswerProblem =
-  { kind: 'answer'; questionId: string; fileGone: boolean } | { kind: 'missing' } | null;
+  | { kind: 'answer'; questionId: string; fileGone: boolean }
+  // A required question unanswered, or one we answered that's no longer asked:
+  // the questions changed under the modal, so they're re-read.
+  | { kind: 'missing' }
+  | { kind: 'stale' }
+  | null;
 
 export function answerProblem(body: unknown, sent: AnswerWrite[]): AnswerProblem {
   const list = (body as { errors?: unknown } | null)?.errors;
   if (!Array.isArray(list)) return null;
   const pointers = list.map((it) => String((it as { pointer?: unknown })?.pointer ?? ''));
+  // "/answers/{i}/question_id": not a question this offering asks (any more).
+  if (pointers.some((ptr) => /^\/answers\/\d+\/question_id/.test(ptr))) return { kind: 'stale' };
   for (const ptr of pointers) {
     const m = /^\/answers\/(\d+)(\/file_id)?/.exec(ptr);
     const questionId = m ? sent[Number(m[1])]?.question_id : undefined;
@@ -229,8 +236,10 @@ export function useRequestBooking() {
       attempt.current = null;
     },
     onSettled: (_data, error, req) => {
-      // A required question we didn't show: the questions changed, so re-read them.
-      if ((error as { answers?: AnswerProblem } | null)?.answers?.kind === 'missing')
+      // The questions changed under the modal (a required one we didn't show, or
+      // one we answered that's gone): re-read them.
+      const problem = (error as { answers?: AnswerProblem } | null)?.answers?.kind;
+      if (problem === 'missing' || problem === 'stale')
         void queryClient.invalidateQueries({
           queryKey: keys.booking.sessionTypes(req.mentorId),
         });
@@ -240,11 +249,16 @@ export function useRequestBooking() {
       void queryClient.invalidateQueries({ queryKey: keys.mentors.all });
     },
   });
+  const error = useMemo(
+    () => (mutation.error ? requestError(mutation.error) : null),
+    [mutation.error],
+  );
   return {
     request: mutation.mutate,
     isPending: mutation.isPending,
     isDone: mutation.isSuccess,
-    error: mutation.error ? requestError(mutation.error) : null,
+    // One object per error: the flow reacts to a new refusal by identity (review r2 of #62).
+    error,
     reset: () => {
       attempt.current = null;
       mutation.reset();
@@ -271,6 +285,12 @@ export function requestError(e: unknown): BookingError {
     return {
       ...normaliseError(e),
       message: 'Answer every required question (marked *), then send again.',
+    };
+  if (problem?.kind === 'stale')
+    // PROVISIONAL copy — design request #6.
+    return {
+      ...normaliseError(e),
+      message: 'The questions for this session changed. Check your answers, then send again.',
     };
   return bookingError(normaliseError(e));
 }

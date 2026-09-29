@@ -101,6 +101,36 @@ describe('useRequestBooking: a 422 about the answers (backend answer_problems)',
     );
   });
 
+  it('a question no longer asked: the questions changed, re-read them', async () => {
+    const invalidate = vi.spyOn(qc, 'invalidateQueries');
+    refuse([{ pointer: '/answers/0/question_id', message: 'not a question this offering asks' }]);
+    const e = await send();
+    expect(e.message).toBe(
+      'The questions for this session changed. Check your answers, then send again.',
+    );
+    expect(e.questionId).toBeUndefined();
+    await waitFor(() =>
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['booking', 'sessionTypes', 'm1'] }),
+    );
+  });
+
+  it('the error keeps its identity across renders (review r2 of #62)', async () => {
+    refuse([{ pointer: '/answers/1/file_id', message: 'already used' }]);
+    const { result, rerender } = renderHook(() => useRequestBooking(), { wrapper });
+    act(() =>
+      result.current.request({
+        mentorId: 'm1',
+        sessionTypeId: 'st',
+        startsAt: '2026-09-30T09:00:00Z',
+        answers: { qa: { text: 'Fall' }, qf: { file: { id: 'f1', name: 'cv.pdf', size: 8 } } },
+      }),
+    );
+    await waitFor(() => expect(result.current.error).not.toBeNull());
+    const first = result.current.error;
+    rerender();
+    expect(result.current.error).toBe(first);
+  });
+
   it('a 422 about the time is still the time', async () => {
     refuse([{ pointer: '/starts_at', message: 'not offered' }]);
     expect((await send()).message).toBe('That time isn’t available any more. Pick another time.');

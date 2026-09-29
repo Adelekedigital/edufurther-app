@@ -66,6 +66,8 @@ export function FileField({
           onClick={(e) => uploading && e.preventDefault()}
           onChange={(e) => {
             if (!uploading) onFile(e.target.files?.[0] ?? null);
+            // Picking the same file again (after "Upload the file again") must fire again.
+            e.target.value = '';
           }}
         />
         <span

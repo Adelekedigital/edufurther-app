@@ -870,6 +870,47 @@ describe('BookingFlow week view (7 days at a time)', () => {
       expect(screen.getByRole('alert')).toHaveTextContent('Upload the file again');
     });
 
+    it('after "Upload the file again", the new file stays through the page re-rendering (review r2 of #62)', async () => {
+      const user = userEvent.setup();
+      const onUpload = vi
+        .fn()
+        .mockResolvedValueOnce({ id: 'f1', name: 'cv.pdf', size: 8 })
+        .mockResolvedValueOnce({ id: 'f2', name: 'cv.pdf', size: 8 });
+      // One error object, as the hook now returns; the page re-renders on its own.
+      const gone = {
+        kind: 'validation' as const,
+        message: 'Upload the file again: that one can’t be used any more.',
+        questionId: 'qf',
+        fileGone: true,
+      };
+      let bump: () => void = () => {};
+      function Page({ error }: { error: typeof gone | null }) {
+        const [, setN] = useState(0);
+        bump = () => setN((n) => n + 1);
+        return (
+          <BookingFlow
+            {...props({
+              sessionTypes: remote(allKinds),
+              sessionTypeId: 'st3',
+              onUpload,
+              requestError: error,
+            })}
+          />
+        );
+      }
+      const { rerender } = render(<Page error={null} />);
+      await toQuestions(user);
+      await user.upload(screen.getByLabelText(/Upload your CV/), cv);
+      expect(await screen.findByText('cv.pdf attached')).toBeInTheDocument();
+      rerender(<Page error={gone} />);
+      expect(screen.queryByText('cv.pdf attached')).toBeNull();
+      await user.upload(screen.getByLabelText(/Upload your CV/), cv);
+      expect(await screen.findByText('cv.pdf attached')).toBeInTheDocument();
+      act(() => bump());
+      act(() => bump());
+      expect(screen.getByText('cv.pdf attached')).toBeInTheDocument();
+    });
+
     it('the file input stays focusable while uploading (review of #62)', async () => {
       const user = userEvent.setup();
       const onUpload = vi.fn(
