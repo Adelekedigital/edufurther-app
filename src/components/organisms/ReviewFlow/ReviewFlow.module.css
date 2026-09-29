@@ -185,3 +185,26 @@
   flex-wrap: wrap;
   gap: var(--space-3);
 }
+
+/* Edit: loading the review (ours; the design draws no loading state). */
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.skLine,
+.skLineShort {
+  display: block;
+  height: 14px;
+  border-radius: var(--radius-full);
+  background: var(--skeleton-fill);
+}
+.skLineShort {
+  width: 60%;
+}
+.loadError {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--text-danger);
+}

@@ -26,6 +26,12 @@ export const keys = {
     relationship: (mentorId: string, who: string) =>
       ['mentors', 'relationship', mentorId, who] as const,
     similar: (handle: string, who: string) => ['mentors', 'similar', handle, who] as const,
+    /** Prefixes, for invalidating every variant after a review is sent. */
+    reviewsAll: ['mentors', 'reviews'] as const,
+    profilesAll: ['mentors', 'profile'] as const,
+    relationshipFor: (mentorId: string) => ['mentors', 'relationship', mentorId] as const,
+    reviewableFor: (mentorId: string) => ['mentors', 'reviewable', mentorId] as const,
+    myReviewFor: (mentorId: string) => ['mentors', 'myReview', mentorId] as const,
     /** The viewer's sessions with this mentor that can be reviewed, and their own review. */
     reviewable: (mentorId: string, who: string) =>
       ['mentors', 'reviewable', mentorId, who] as const,
@@ -39,6 +45,11 @@ export const keys = {
   // A mentor's booking preferences and Calendar hours, by their user id.
   mentorDefaults: (userId: string) => ['mentorDefaults', userId] as const,
   weeklyHours: (userId: string) => ['weeklyHours', userId] as const,
+  /** A review as its author reads it (GET /reviews/{id}), to pre-fill Edit. */
+  reviews: {
+    authoredAll: ['reviews', 'authored'] as const,
+    authored: (reviewId: string, who: string) => ['reviews', 'authored', reviewId, who] as const,
+  },
   booking: {
     sessionTypes: (mentorId: string) => ['booking', 'sessionTypes', mentorId] as const,
     /** Prefix: every offering's slots for one mentor (invalidated after a booking). */

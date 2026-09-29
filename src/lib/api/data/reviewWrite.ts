@@ -96,7 +96,7 @@ export type ReviewSendError =
   | { kind: 'editClosed'; message: string }
   | (AppError & { kind: AppError['kind'] });
 
-function sendError(e: unknown, editing: boolean): ReviewSendError {
+export function sendError(e: unknown, editing: boolean): ReviewSendError {
   if (e instanceof ApiError && e.status === 409) {
     if (editing)
       return {
@@ -183,11 +183,18 @@ export function useMyReview(mentorId: string | null, enabled: boolean): Remote<M
   };
 }
 
-/** The author's full review (GET /reviews/{id}, AuthoredReviewRead), to pre-fill Edit. */
-export function useAuthoredReview(reviewId: string | null, enabled: boolean): Remote<MyReview> {
+/**
+ * The author's full review (GET /reviews/{id}, AuthoredReviewRead), to pre-fill
+ * Edit. `fetchedAt` lets the caller insist on a copy fetched after Edit opened:
+ * a cached one can be older than the last save.
+ */
+export function useAuthoredReview(
+  reviewId: string | null,
+  enabled: boolean,
+): Remote<MyReview> & { fetchedAt: number; failedAt: number } {
   const session = useSession();
   const query = useQuery({
-    queryKey: ['reviews', 'authored', reviewId ?? '', sessionKey(session)],
+    queryKey: keys.reviews.authored(reviewId ?? '', sessionKey(session)),
     enabled: enabled && !!reviewId && session.status !== 'unknown',
     queryFn: async ({ signal }) => {
       const { data, error, response } = await api.GET('/api/v1/reviews/{review_id}', {
@@ -198,6 +205,8 @@ export function useAuthoredReview(reviewId: string | null, enabled: boolean): Re
       return toMyReview(data);
     },
     staleTime: 0,
+    // Always a fresh read when Edit opens.
+    refetchOnMount: 'always',
     retry: false,
   });
   return {
@@ -205,6 +214,8 @@ export function useAuthoredReview(reviewId: string | null, enabled: boolean): Re
     isLoading: enabled && query.isPending,
     error: query.error ? normaliseError(query.error) : null,
     retry: () => void query.refetch(),
+    fetchedAt: query.dataUpdatedAt,
+    failedAt: query.errorUpdatedAt,
   };
 }
 
@@ -242,11 +253,14 @@ export function useSendReview() {
       qc.setQueryData(keys.mentors.myReview(a.mentorId, sessionKey(session)), mine);
     },
     onSettled: (_d, _e, a) => {
-      // The list, the summary, the note and what's left to review all move.
-      void qc.invalidateQueries({ queryKey: ['mentors', 'reviews'] });
-      void qc.invalidateQueries({ queryKey: ['mentors', 'profile'] });
-      void qc.invalidateQueries({ queryKey: ['mentors', 'relationship', a.mentorId] });
-      void qc.invalidateQueries({ queryKey: ['mentors', 'reviewable', a.mentorId] });
+      // The list, the summary, the note, what's left to review, and the viewer's
+      // own review (also after a failure: a 409 means the window shut) all move.
+      void qc.invalidateQueries({ queryKey: keys.mentors.reviewsAll });
+      void qc.invalidateQueries({ queryKey: keys.mentors.profilesAll });
+      void qc.invalidateQueries({ queryKey: keys.mentors.relationshipFor(a.mentorId) });
+      void qc.invalidateQueries({ queryKey: keys.mentors.reviewableFor(a.mentorId) });
+      void qc.invalidateQueries({ queryKey: keys.mentors.myReviewFor(a.mentorId) });
+      void qc.invalidateQueries({ queryKey: keys.reviews.authoredAll });
     },
   });
   const editing = mutation.variables?.mode === 'edit';

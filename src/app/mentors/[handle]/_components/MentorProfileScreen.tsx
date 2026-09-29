@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
@@ -42,7 +42,7 @@ import { useSimilarMentors } from '@/lib/api/data/similar';
 import { deviceTimeZone, formatTime, movedBetween } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
-import type { MentorProfile } from '@/types/mentor';
+import type { MentorProfile, ReviewAnswers } from '@/types/mentor';
 import styles from './MentorProfileScreen.module.css';
 
 type Tab = 'overview' | 'sessions' | 'reviews';
@@ -149,14 +149,38 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const mine = myReview.data;
   // Edit pre-fills from the author's full review; the list row has only step 1.
   const authored = useAuthoredReview(mine?.id ?? null, reviewing === 'edit');
-  const mineUntil = mine?.editableUntil ? formatTime(mine.editableUntil, timeZone) : null;
-  const canWrite = !mine?.editableUntil && reviewPrompt === 'due' && !!reviewable.data?.length;
+  // The form starts from, and saving compares against, ONE snapshot: a copy
+  // fetched after Edit opened (a cached one can predate the last save; review
+  // of #59). Taken while rendering, once, when that fresh copy lands.
+  const [editOpenedAt, setEditOpenedAt] = useState(0);
+  const [editBase, setEditBase] = useState<Partial<ReviewAnswers> | null>(null);
+  if (reviewing === 'edit' && !editBase && authored.fetchedAt >= editOpenedAt && authored.data) {
+    setEditBase(authored.data.answers);
+  }
+  const editFailed =
+    reviewing === 'edit' && !editBase && authored.failedAt >= editOpenedAt && !!authored.error;
+  // "Still editable" is decided now, not when the review was fetched, and the
+  // page re-renders at the deadline so Edit goes away on its own.
+  const [now, setNow] = useState(() => Date.now());
+  const until = mine?.editableUntil ? Date.parse(mine.editableUntil) : 0;
+  const mineOpen = until > now;
+  useEffect(() => {
+    if (!mineOpen) return;
+    const t = setTimeout(() => setNow(Date.now()), until - Date.now() + 50);
+    return () => clearTimeout(t);
+  }, [mineOpen, until]);
+  const mineUntil =
+    mineOpen && mine?.editableUntil ? formatTime(mine.editableUntil, timeZone) : null;
+  const canWrite = !mineOpen && reviewPrompt === 'due' && !!reviewable.data?.length;
   const openReview = (mode: 'new' | 'edit') => {
     sendReview.reset();
+    setEditBase(null);
+    setEditOpenedAt(Date.now());
     setReviewing(mode);
   };
   const closeReview = () => {
     setReviewing(null);
+    setEditBase(null);
     sendReview.reset();
   };
   // Mentor Profile.dc.html `scrollToBook`: the "no session yet" note's Book
@@ -321,7 +345,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 ) : tab === 'reviews' ? (
                   <>
                     <ReviewsSummary summary={p.reviews} firstName={p.mentor.firstName} />
-                    {mine?.editableUntil ? (
+                    {mineOpen ? (
                       <ReviewNote
                         tone="success"
                         icon="check_circle"
@@ -489,12 +513,26 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
         />
       )}
 
-      {reviewing && p && member && (reviewing === 'new' || !authored.isLoading) && (
+      {reviewing && p && member && (
         <ReviewFlow
+          // Remount when the edit snapshot arrives, so the form starts from it.
+          key={reviewing === 'edit' ? (editBase ? 'edit-ready' : 'edit-loading') : 'new'}
           mode={reviewing}
+          loading={reviewing === 'edit' && !editBase && !editFailed}
+          loadError={
+            editFailed
+              ? {
+                  message: 'We couldn’t load your review. Check your connection and try again.',
+                  onRetry: () => {
+                    setEditOpenedAt(Date.now());
+                    authored.retry();
+                  },
+                }
+              : null
+          }
           mentorFirstName={p.mentor.firstName}
           sessions={reviewable.data ?? []}
-          initial={reviewing === 'edit' ? (authored.data?.answers ?? mine?.answers) : undefined}
+          initial={reviewing === 'edit' ? (editBase ?? undefined) : undefined}
           editableUntil={sendReview.result?.editableUntil ?? mine?.editableUntil ?? null}
           author={{ name: member.firstName, initials: member.initial, institution: null }}
           timeZone={timeZone}
@@ -504,7 +542,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                   mode: 'edit',
                   mentorId: p.mentor.id,
                   reviewId: mine.id,
-                  before: authored.data?.answers ?? mine.answers,
+                  before: editBase ?? mine.answers,
                   answers,
                 })
               : sessionId &&

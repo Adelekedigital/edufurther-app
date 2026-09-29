@@ -1,5 +1,6 @@
 import type { ReviewAnswers } from '@/types/mentor';
-import { toEdit, toMyReview } from './reviewWrite';
+import { ApiError } from './errors';
+import { sendError, toEdit, toMyReview } from './reviewWrite';
 
 const full: ReviewAnswers = {
   overall: 4,
@@ -89,5 +90,27 @@ describe('toMyReview', () => {
     expect(r.editableUntil).toBeNull();
     // A review from before the stars: its valuable_rating stands in.
     expect(r.answers.overall).toBe(4);
+  });
+});
+
+describe('sendError (the copy for each refusal)', () => {
+  it('409 already reviewed / too soon, by problem type', () => {
+    expect(sendError(new ApiError(409, 'x', '/problems/review-already-exists'), false).kind).toBe(
+      'alreadyReviewed',
+    );
+    expect(
+      sendError(new ApiError(409, 'x', '/problems/review-interval-not-elapsed'), false).kind,
+    ).toBe('tooSoon');
+  });
+  it('any 409 on an edit means the window shut', () => {
+    expect(sendError(new ApiError(409), true)).toMatchObject({
+      kind: 'editClosed',
+      message: 'The edit window has closed, so your review stands as written.',
+    });
+  });
+  it("anything else: our copy, never the server's", () => {
+    expect(sendError(new ApiError(500, 'Internal detail'), false).message).toBe(
+      'We couldn’t send your review. Try again.',
+    );
   });
 });

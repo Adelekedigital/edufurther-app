@@ -12,8 +12,10 @@ type StarRatingProps = {
   /** 0 = none yet; otherwise 1–5. */
   value: number;
   onChange: (value: number) => void;
-  /** Names the group ("Rating out of 5"). */
+  /** Names the group ("Rating out of 5"), when there's no `labelledBy`. */
   label: string;
+  /** The id of the visible question: preferred over `label`. */
+  labelledBy?: string;
 };
 
 /**
@@ -21,7 +23,7 @@ type StarRatingProps = {
  * preview and the word for the rating. A WAI-ARIA radio group: one tab stop,
  * arrows move and choose.
  */
-export function StarRating({ value, onChange, label }: StarRatingProps) {
+export function StarRating({ value, onChange, label, labelledBy }: StarRatingProps) {
   const [hover, setHover] = useState(0);
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const shown = hover || value;
@@ -43,7 +45,12 @@ export function StarRating({ value, onChange, label }: StarRatingProps) {
 
   return (
     <div className={styles.row}>
-      <div role="radiogroup" aria-label={label} className={styles.stars}>
+      <div
+        role="radiogroup"
+        aria-label={labelledBy ? undefined : label}
+        aria-labelledby={labelledBy}
+        className={styles.stars}
+      >
         {[1, 2, 3, 4, 5].map((n) => (
           <button
             key={n}

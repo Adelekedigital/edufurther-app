@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, type CSSProperties, type KeyboardEvent } from 'react';
+import { useId, useRef, type CSSProperties, type KeyboardEvent } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { cx } from '@/lib/utils/cx';
@@ -18,8 +18,10 @@ type ChoiceScaleProps<V extends string | number> = {
   options: ScaleOption<V>[];
   value: V | null;
   onChange: (value: V) => void;
-  /** Names the group: the question it answers. */
+  /** Names the group: the question it answers (used when there's no `labelledBy`). */
   label: string;
+  /** The id of the visible question: preferred over `label`. */
+  labelledBy?: string;
   /** Tight: the 1–10 scale's 4px gaps. */
   tight?: boolean;
   /** Label weight: medium for words, semibold for numbers (design). */
@@ -42,8 +44,10 @@ export function ChoiceScale<V extends string | number>({
   tight,
   numeric,
   ends,
+  labelledBy,
 }: ChoiceScaleProps<V>) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const endsId = useId();
   const at = options.findIndex((o) => o.value === value);
   const focusable = at < 0 ? 0 : at;
   const move = (i: number) => {
@@ -63,7 +67,9 @@ export function ChoiceScale<V extends string | number>({
     <div className={styles.wrap}>
       <div
         role="radiogroup"
-        aria-label={label}
+        aria-label={labelledBy ? undefined : label}
+        aria-labelledby={labelledBy}
+        aria-describedby={ends ? endsId : undefined}
         className={cx(styles.grid, tight && styles.tight)}
         style={{ '--cols': options.length } as CSSProperties}
       >
@@ -96,7 +102,8 @@ export function ChoiceScale<V extends string | number>({
         })}
       </div>
       {ends && (
-        <div className={styles.ends} aria-hidden>
+        // Describes the group ("Not at all … A lot") so the numbers have a meaning.
+        <div className={styles.ends} id={endsId}>
           <span>{ends[0]}</span>
           <span>{ends[1]}</span>
         </div>

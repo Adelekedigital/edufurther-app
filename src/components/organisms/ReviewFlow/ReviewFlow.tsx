@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
@@ -50,6 +50,10 @@ export type ReviewFlowProps = {
   done: boolean;
   onClose: () => void;
   onBookAgain?: () => void;
+  /** Edit: the review is still loading (a fresh copy, fetched after Edit opened). */
+  loading?: boolean;
+  /** Edit: it couldn't be loaded. */
+  loadError?: { message: string; onRetry: () => void } | null;
   /** The page wraps the flow in ModalShell (an organism can't import a template). */
   renderShell: (shell: ReviewShell, body: ReactNode) => ReactNode;
 };
@@ -98,10 +102,13 @@ export function ReviewFlow(p: ReviewFlowProps) {
   const [feedbackOpen, setFeedbackOpen] = useState(!!p.initial?.platformNote);
   // One request per click, before the page's `pending` arrives.
   const sent = useRef(false);
-  // A failed send clears it, so "Submit" works again.
+  // A failed send clears it, so "Submit" works again; so does any send that
+  // finishes (pending true → false), so the button can't get stuck.
   useEffect(() => {
-    if (p.error) sent.current = false;
-  }, [p.error]);
+    if (p.error || !p.pending) sent.current = false;
+  }, [p.error, p.pending]);
+  const ids = useId();
+  const qid = (k: string) => `${ids}-${k}`;
 
   const set = <K extends keyof ReviewAnswers>(k: K, v: ReviewAnswers[K]) =>
     setA((x) => ({ ...x, [k]: v }));
@@ -189,6 +196,43 @@ export function ReviewFlow(p: ReviewFlowProps) {
     else p.onClose();
   };
 
+  if (p.loading || p.loadError) {
+    const shell: ReviewShell = { title: 'Edit your review', subtitle: '' };
+    return (
+      <>
+        {p.renderShell(
+          shell,
+          <div className={styles.flow}>
+            {p.loadError ? (
+              <p className={styles.loadError} role="alert">
+                {p.loadError.message}
+              </p>
+            ) : (
+              <div className={styles.loading} role="status" aria-busy>
+                <span className="sr-only">Loading your review</span>
+                <span className={styles.skLine} />
+                <span className={styles.skLine} />
+                <span className={styles.skLineShort} />
+              </div>
+            )}
+            <div className={styles.footer}>
+              <div className={styles.buttons}>
+                <Button variant="secondary-outlined" size="large" onClick={p.onClose}>
+                  Cancel
+                </Button>
+                {p.loadError && (
+                  <Button size="large" onClick={p.loadError.onRetry}>
+                    Try again
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>,
+        )}
+      </>
+    );
+  }
+
   const body = (
     <div className={styles.flow}>
       {!p.done && (
@@ -215,11 +259,14 @@ export function ReviewFlow(p: ReviewFlowProps) {
             </label>
           )}
           <div className={styles.rating}>
-            <span className={styles.fieldTitle}>How would you rate your time with {first}?</span>
+            <span className={styles.fieldTitle} id={qid('overall')}>
+              How would you rate your time with {first}?
+            </span>
             <StarRating
               value={a.overall}
               onChange={(n) => set('overall', n)}
               label="Rating out of 5"
+              labelledBy={qid('overall')}
             />
           </div>
           <label className={styles.field}>
@@ -249,7 +296,7 @@ export function ReviewFlow(p: ReviewFlowProps) {
         <div className={styles.rows}>
           {rows.map(([k, before, word, after]) => (
             <div key={k} className={styles.question}>
-              <span className={styles.questionText}>
+              <span className={styles.questionText} id={qid(k)}>
                 {before}
                 <span className={styles.questionKey}>{word}</span>
                 {after}
@@ -259,6 +306,7 @@ export function ReviewFlow(p: ReviewFlowProps) {
                 value={a[k] ?? null}
                 onChange={(v) => set(k, v)}
                 label={before + word + after}
+                labelledBy={qid(k)}
               />
             </div>
           ))}
@@ -268,7 +316,7 @@ export function ReviewFlow(p: ReviewFlowProps) {
       {!p.done && step === 3 && (
         <>
           <div className={styles.question}>
-            <span className={styles.questionText}>
+            <span className={styles.questionText} id={qid('value')}>
               How much did this session move you toward your study abroad goals?
             </span>
             <ChoiceScale
@@ -276,12 +324,13 @@ export function ReviewFlow(p: ReviewFlowProps) {
               value={a.value || null}
               onChange={(v) => set('value', v)}
               label="Value, 1 to 5"
+              labelledBy={qid('value')}
               numeric
               ends={['Not at all', 'A lot']}
             />
           </div>
           <div className={styles.question}>
-            <span className={styles.questionText}>
+            <span className={styles.questionText} id={qid('recommend')}>
               How likely are you to recommend {first} to a friend?
             </span>
             <ChoiceScale
@@ -289,6 +338,7 @@ export function ReviewFlow(p: ReviewFlowProps) {
               value={a.recommend || null}
               onChange={(v) => set('recommend', v)}
               label="Recommend, 1 to 10"
+              labelledBy={qid('recommend')}
               numeric
               tight
               ends={['1 · Not likely', '10 · Very likely']}

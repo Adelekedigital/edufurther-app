@@ -45,7 +45,9 @@ describe('ReviewFlow', () => {
   it('stars: arrow keys move and choose, one tab stop', async () => {
     const user = userEvent.setup();
     render(<ReviewFlow {...props()} />);
-    const group = screen.getByRole('radiogroup', { name: 'Rating out of 5' });
+    const group = screen.getByRole('radiogroup', {
+      name: 'How would you rate your time with Gbenga?',
+    });
     const first = within(group).getByRole('radio', { name: '1 star, Poor' });
     expect(first).toHaveAttribute('tabindex', '0');
     first.focus();
@@ -167,5 +169,25 @@ describe('ReviewFlow', () => {
     expect(screen.getByRole('button', { name: 'Submit review' })).toBeDisabled();
     await user.click(screen.getByRole('button', { name: 'Back' }));
     expect(screen.getByText('Step 2 of 3')).toBeInTheDocument();
+  });
+
+  it('screen readers hear the visible question, and what the ends of a scale mean', async () => {
+    const user = userEvent.setup();
+    render(<ReviewFlow {...props()} />);
+    expect(
+      screen.getByRole('radiogroup', { name: 'How would you rate your time with Gbenga?' }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('radio', { name: '4 stars, Great' }));
+    await user.click(screen.getByRole('textbox'));
+    await user.paste('Clear, honest advice on my shortlist.');
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    for (const g of screen.getAllByRole('radiogroup')) {
+      await user.click(within(g).getByRole('radio', { name: 'Okay' }));
+    }
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    const value = screen.getByRole('radiogroup', {
+      name: 'How much did this session move you toward your study abroad goals?',
+    });
+    expect(value).toHaveAccessibleDescription(/Not at all\s*A lot/);
   });
 });
