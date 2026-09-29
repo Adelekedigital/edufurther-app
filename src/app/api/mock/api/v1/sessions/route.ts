@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { MENTORS } from '@/lib/api/mock/fixtures';
 import { MOCK_SESSION_TYPES, mockSlots } from '@/lib/api/mock/availability';
+import { uploads } from '@/lib/api/mock/intakeFiles';
 
 const DAY = 24 * 60 * 60 * 1000;
 const problem = (status: number, title: string, type = 'about:blank') =>
@@ -21,6 +22,7 @@ export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => null)) as {
     session_type_id?: string;
     starts_at?: string;
+    answers?: { question_id?: string; text?: string; option_ids?: string[]; file_id?: string }[];
   } | null;
   const type = MOCK_SESSION_TYPES.find((t) => t.id === body?.session_type_id);
   if (!type || !body?.starts_at) return problem(422, 'Unprocessable Content');
@@ -31,6 +33,34 @@ export async function POST(req: NextRequest) {
     ),
   );
   if (!offered) return problem(422, 'That instant is not offered');
+  // Answers (backend #268, #282; REQUIRE_INTAKE_ANSWERS on): each must fit its
+  // question; a required question needs one. 422 errors[] points at the answer.
+  const answers = body.answers ?? [];
+  const questions = type.questions ?? [];
+  const errors: { pointer: string; message: string }[] = [];
+  answers.forEach((a, i) => {
+    const qn = questions.find((x) => x.id === a.question_id);
+    const bad =
+      !qn ||
+      (qn.question_type === 'free_text' && !a.text?.trim()) ||
+      (qn.question_type === 'file_upload' &&
+        !(a.file_id && uploads.get(a.file_id) && !uploads.get(a.file_id)!.used)) ||
+      (qn.question_type === 'multi_choice' &&
+        (!a.option_ids?.length ||
+          (!qn.allows_multiple && a.option_ids.length > 1) ||
+          a.option_ids.some((o) => !qn.options.some((x) => x.id === o))));
+    if (bad) errors.push({ pointer: `/answers/${i}`, message: 'Invalid answer' });
+  });
+  const missing = questions.some(
+    (qn) => qn.is_required && !answers.some((a) => a.question_id === qn.id),
+  );
+  if (errors.length || missing)
+    return NextResponse.json(
+      { type: 'about:blank', title: 'Validation failed', status: 422, errors },
+      { status: 422, headers: { 'content-type': 'application/problem+json' } },
+    );
+  for (const a of answers)
+    if (a.file_id && uploads.has(a.file_id)) uploads.get(a.file_id)!.used = true;
   await new Promise((r) => setTimeout(r, 600));
   return NextResponse.json(
     {

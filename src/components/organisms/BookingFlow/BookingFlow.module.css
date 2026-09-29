@@ -373,3 +373,27 @@
 .signedUp > :first-child {
   color: var(--green-700);
 }
+
+/* Choice questions (PROVISIONAL: no booking design yet, design request #6). */
+.choice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+.choice legend {
+  margin-bottom: var(--space-2);
+}
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--touch-target-min);
+  font-size: var(--text-p-sm);
+  cursor: pointer;
+}
+.req {
+  color: var(--text-danger);
+}

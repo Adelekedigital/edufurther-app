@@ -58,6 +58,7 @@ const remote = { data: [], isLoading: false, error: null, retry: vi.fn() };
 vi.mock('@/lib/api/data/booking', () => ({
   useSessionTypes: () => remote,
   useSlots: () => remote,
+  useUploadIntakeFile: () => vi.fn(),
   useRequestBooking: () => ({
     request: vi.fn(),
     isPending: false,

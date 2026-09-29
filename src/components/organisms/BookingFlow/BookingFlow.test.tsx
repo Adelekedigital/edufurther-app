@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Mentor, Remote, SessionType } from '@/types/mentor';
 import { BookingFlow, type BookingFlowProps } from './BookingFlow';
@@ -32,10 +32,49 @@ const sessionTypes: SessionType[] = [
     durationMin: 60,
     description: 'Open.',
     questions: [
-      { id: 'q1', label: 'What would you like to cover?', kind: 'text', required: false },
+      {
+        id: 'q1',
+        label: 'What would you like to cover?',
+        kind: 'text',
+        required: false,
+        options: [],
+      },
     ],
   },
   { id: 'st2', name: 'CV review', durationMin: 45, description: 'CV.', questions: [] },
+];
+/** Every question kind (only the questions-step tests offer it). */
+const allKinds: SessionType[] = [
+  {
+    id: 'st3',
+    name: 'Application check',
+    durationMin: 45,
+    description: 'Every question kind.',
+    questions: [
+      { id: 'qf', label: 'Upload your CV', kind: 'file', required: true, options: [] },
+      {
+        id: 'qs',
+        label: 'What is it for?',
+        kind: 'single',
+        required: true,
+        options: [
+          { id: 'o1', label: 'Masters' },
+          { id: 'o2', label: 'PhD' },
+        ],
+      },
+      {
+        id: 'qm',
+        label: 'Which parts worry you?',
+        kind: 'multi',
+        required: false,
+        options: [
+          { id: 'm1', label: 'Structure' },
+          { id: 'm2', label: 'Wording' },
+        ],
+      },
+      { id: 'qt', label: 'Anything else?', kind: 'text', required: false, options: [] },
+    ],
+  },
 ];
 const slots = ['2026-09-28T09:00:00Z', '2026-09-29T13:00:00Z'];
 const remote = <T,>(data: T | null, over: Partial<Remote<T>> = {}): Remote<T> => ({
@@ -675,5 +714,105 @@ describe('BookingFlow week view (7 days at a time)', () => {
     await user.click(screen.getByRole('button', { name: 'Later dates' }));
     await user.click(screen.getByRole('button', { name: 'Later dates' }));
     expect(screen.getByRole('button', { name: 'Later dates' })).toBeDisabled();
+  });
+
+  describe('the questions step (backend PRs 268, 12, 282)', () => {
+    const toQuestions = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+      await user.click(screen.getByRole('button', { name: 'Continue to questions' }));
+    };
+    const cv = new File(['%PDF-1.7'], 'cv.pdf', { type: 'application/pdf' });
+
+    it('asks every kind; required answers and a finished upload gate the request', async () => {
+      const user = userEvent.setup();
+      const onRequest = vi.fn();
+      let finish: (f: { id: string; name: string; size: number }) => void = () => {};
+      const onUpload = vi.fn(
+        () => new Promise<{ id: string; name: string; size: number }>((r) => (finish = r)),
+      );
+      render(
+        <BookingFlow
+          {...props({ sessionTypes: remote(allKinds), sessionTypeId: 'st3', onRequest, onUpload })}
+        />,
+      );
+      await toQuestions(user);
+      const send = () => screen.getByRole('button', { name: /^Request Mon, Sep 28/ });
+      expect(send()).toBeDisabled();
+
+      await user.upload(screen.getByLabelText(/Upload your CV/), cv);
+      expect(onUpload).toHaveBeenCalledWith(cv);
+      expect(screen.getByText(/Uploading cv\.pdf/)).toBeInTheDocument();
+      await user.click(screen.getByRole('radio', { name: 'PhD' }));
+      // Still uploading: nothing sends.
+      expect(send()).toBeDisabled();
+      await act(async () => finish({ id: 'f1', name: 'cv.pdf', size: 8 }));
+      expect(send()).toBeEnabled();
+
+      await user.click(screen.getByRole('button', { name: 'Wording' }));
+      await user.type(screen.getByRole('textbox', { name: 'Anything else?' }), 'Due Friday');
+      await user.click(send());
+      expect(onRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sessionTypeId: 'st3',
+          answers: {
+            qf: { file: { id: 'f1', name: 'cv.pdf', size: 8 } },
+            qs: { optionIds: ['o2'] },
+            qm: { optionIds: ['m2'] },
+            qt: { text: 'Due Friday' },
+          },
+        }),
+      );
+    });
+
+    it('a refused upload says why and can be retried with the same file', async () => {
+      const user = userEvent.setup();
+      const onUpload = vi
+        .fn()
+        .mockRejectedValueOnce({
+          kind: 'validation',
+          message: 'Upload a PDF or Word (.docx) file under 5 MB.',
+        })
+        .mockResolvedValueOnce({ id: 'f2', name: 'cv.pdf', size: 8 });
+      render(
+        <BookingFlow
+          {...props({ sessionTypes: remote(allKinds), sessionTypeId: 'st3', onUpload })}
+        />,
+      );
+      await toQuestions(user);
+      await user.upload(screen.getByLabelText(/Upload your CV/), cv);
+      expect(
+        await screen.findByText('Upload a PDF or Word (.docx) file under 5 MB.'),
+      ).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Try again' }));
+      expect(onUpload).toHaveBeenLastCalledWith(cv);
+      expect(await screen.findByText('cv.pdf attached')).toBeInTheDocument();
+      expect(screen.queryByRole('alert')).toBeNull();
+    });
+
+    it('an answer the server refused shows under that question, not at the bottom', async () => {
+      const user = userEvent.setup();
+      const { rerender } = render(
+        <BookingFlow {...props({ sessionTypes: remote(allKinds), sessionTypeId: 'st3' })} />,
+      );
+      await toQuestions(user);
+      rerender(
+        <BookingFlow
+          {...props({
+            sessionTypes: remote(allKinds),
+            sessionTypeId: 'st3',
+            requestError: {
+              kind: 'validation',
+              message: 'Check your answer to this question, then send again.',
+              questionId: 'qs',
+            },
+          })}
+        />,
+      );
+      const alert = screen.getByRole('alert');
+      expect(alert).toHaveTextContent('Check your answer to this question');
+      expect(
+        within(screen.getByRole('group', { name: /What is it for\?/ })).getByRole('alert'),
+      ).toBe(alert);
+    });
   });
 });

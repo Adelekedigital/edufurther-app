@@ -110,6 +110,8 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | Launch choice "Start with a waitlist" and the waitlist modals | Not built; Publish opens it for booking | Waitlist out of scope (product) — #45 | #45 |
 | Scheduling "Video" override | Not built | No conferencing-options API yet — #46 | #46 |
 | Choice options "from your areas of expertise" | Not built; the mentor writes the options | Not built on the backend (product) — #47 | #47 |
+| BookingModal questions: only text and file answers designed | Single choice as radios, multiple as ChoiceChips; upload uploading / attached / refused + Try again; a refused answer's message under its question (PROVISIONAL) | Backend #12 and #282 ship choice and file answers | design request #6 |
+| BookingModal file hint ("PDF or Word · max 10 MB") | "PDF or Word (.docx) · max 5 MB" | What the upload accepts (backend #282, decided from the bytes) | never |
 | Wizard action bar `position: sticky; top: 0` | Sticks under the shell's sticky header | At top 0 it slid beneath the header | never |
 | Tip "Every extra question lowers bookings" as the DS Notice (info: `--brand-50` ground, `--brand-600` ring, 18px padding) | Our info Notice (blue-50, no ring, 12/16px) | `--brand-*` is banned in product UI (DS readme) | DS moves Notice off the brand palette |
 | Order hint "Drag to reorder." | "Drag or use the arrows to reorder." | The arrows are the keyboard / touch way (small copy fix, ours) | design file catches up |

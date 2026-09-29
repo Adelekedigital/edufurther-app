@@ -99,9 +99,17 @@ export type SessionType = {
 export type IntakeQuestion = {
   id: string;
   label: string;
-  kind: 'text' | 'file';
+  /** text: prose; single / multi: choose from `options`; file: a PDF or Word upload. */
+  kind: 'text' | 'single' | 'multi' | 'file';
   required: boolean;
+  options: { id: string; label: string }[];
 };
+
+/** An uploaded intake file (POST /me/intake-files), sent as the answer's `file_id`. */
+export type IntakeFile = { id: string; name: string; size: number };
+
+/** One answer, by question id. Exactly one form is used per question kind. */
+export type IntakeAnswer = { text?: string; optionIds?: string[]; file?: IntakeFile };
 
 export type BookingDay = {
   /** ISO date in the viewer's zone, e.g. 2026-09-28. */
@@ -118,7 +126,7 @@ export type BookingRequest = {
   mentorId: string;
   sessionTypeId: string;
   startsAt: string;
-  answers: Record<string, string>;
+  answers: Record<string, IntakeAnswer>;
 };
 
 /** Who is looking (GET /api/v1/me; backend auth reply #3). */

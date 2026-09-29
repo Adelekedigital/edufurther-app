@@ -10,7 +10,9 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { StepBars } from '@/components/atoms/StepBars/StepBars';
 import { DayTimePicker } from '@/components/molecules/DayTimePicker/DayTimePicker';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
+import { ChoiceChips } from '@/components/molecules/ChoiceChips/ChoiceChips';
 import { FileField } from '@/components/molecules/FileField/FileField';
+import { Radio } from '@/components/atoms/Radio/Radio';
 import { TimezonePicker } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import { formatDay, formatRating, formatTime } from '@/lib/utils/format';
 import {
@@ -22,7 +24,16 @@ import {
   weekOfDays,
 } from '@/lib/utils/slots';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
-import type { AppError, BookingRequest, Mentor, Remote, SessionType } from '@/types/mentor';
+import type {
+  AppError,
+  BookingRequest,
+  IntakeAnswer,
+  IntakeFile,
+  IntakeQuestion,
+  Mentor,
+  Remote,
+  SessionType,
+} from '@/types/mentor';
 import type { SheetChrome } from '@/types/ui';
 import styles from './BookingFlow.module.css';
 
@@ -60,8 +71,17 @@ export type BookingFlowProps = {
   onRequest: (req: BookingRequest) => void;
   requestPending: boolean;
   requestDone: boolean;
-  /** Already worded for the user (lib/api/data/booking.ts bookingError). */
-  requestError: AppError | null;
+  /**
+   * Already worded for the user (lib/api/data/booking.ts). `questionId` when the
+   * server refused one answer: the message shows under that question.
+   */
+  requestError: (AppError & { questionId?: string }) | null;
+  /**
+   * Uploads a file answer when the mentee picks it (the page owns the request:
+   * POST /me/intake-files) and resolves to the file to answer with. Rejects with
+   * an AppError whose message is ours.
+   */
+  onUpload?: (file: File) => Promise<IntakeFile>;
   onClose: () => void;
   deviceZone: string;
   /** Hide "View profile" — the flow was opened from that profile. */
@@ -114,7 +134,33 @@ export function BookingFlow(p: BookingFlowProps) {
   // The day the viewer picked (YYYY-MM-DD in their zone), or null → the week's first open day.
   const [dayChoice, setDayChoice] = useState<string | null>(null);
   const [picked_, setTime] = useState<string | null>(null);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, IntakeAnswer>>({});
+  // File answers in flight or refused, by question id (a done one is in `answers`).
+  const [uploads, setUploads] = useState<
+    Record<string, { status: 'uploading' | 'error'; file: File; error?: string }>
+  >({});
+  const answer = (id: string, a: IntakeAnswer) => setAnswers((x) => ({ ...x, [id]: a }));
+  const upload = (q: IntakeQuestion, file: File | null) => {
+    if (!file) return;
+    if (!p.onUpload) return;
+    setAnswers(({ [q.id]: _replaced, ...rest }) => rest);
+    setUploads((u) => ({ ...u, [q.id]: { status: 'uploading', file } }));
+    p.onUpload(file).then(
+      (f) => {
+        answer(q.id, { file: f });
+        setUploads(({ [q.id]: _done, ...rest }) => rest);
+      },
+      (e: AppError) =>
+        setUploads((u) => ({
+          ...u,
+          [q.id]: {
+            status: 'error',
+            file,
+            error: e?.message ?? 'We couldn’t upload it. Try again.',
+          },
+        })),
+    );
+  };
   const [email, setEmail] = useState('');
   const [zone, setZone] = useState(p.deviceZone);
   const typeSelectId = useId();
@@ -259,7 +305,10 @@ export function BookingFlow(p: BookingFlowProps) {
     : '';
 
   const missingRequired =
-    step === 'questions' && !!session?.questions.some((q) => q.required && !answers[q.id]);
+    step === 'questions' &&
+    !!session?.questions.some((q) => q.required && !isAnswered(answers[q.id]));
+  // Nothing sends while a file is still uploading.
+  const uploading = Object.values(uploads).some((u) => u.status === 'uploading');
 
   // A double-click fires twice before the page's `requestPending` arrives:
   // guard here too. Cleared by a failed send, so a retry goes through.
@@ -345,6 +394,7 @@ export function BookingFlow(p: BookingFlowProps) {
     !session ||
     (step === 'time' && !time) ||
     missingRequired ||
+    uploading ||
     (step === 'signup' && !signedUp && !email);
 
   const typeSelect = session && (
@@ -566,31 +616,109 @@ export function BookingFlow(p: BookingFlowProps) {
           <p className={styles.intro}>
             {m.firstName} reads these before your session. About 2 minutes.
           </p>
-          {session.questions.map((q) =>
-            q.kind === 'text' ? (
+          {session.questions.map((q) => {
+            const refused =
+              p.requestError?.questionId === q.id ? (
+                <p role="alert" className={styles.error}>
+                  <Icon name="error" size={16} />
+                  {p.requestError.message}
+                </p>
+              ) : null;
+            const req = q.required && (
+              <>
+                {' '}
+                <span aria-hidden className={styles.req}>
+                  *
+                </span>
+                <span className="sr-only">(required)</span>
+              </>
+            );
+            if (q.kind === 'file') {
+              const u = uploads[q.id];
+              return (
+                <div key={q.id} className={styles.field}>
+                  <FileField
+                    label={q.label}
+                    required={q.required}
+                    fileName={answers[q.id]?.file?.name ?? null}
+                    status={u?.status ?? 'idle'}
+                    pendingName={u?.file.name}
+                    error={u?.error}
+                    onRetry={u ? () => upload(q, u.file) : undefined}
+                    onFile={(f) => upload(q, f)}
+                  />
+                  {refused}
+                </div>
+              );
+            }
+            if (q.kind === 'single')
+              return (
+                // PROVISIONAL — choice questions have no booking design yet (design request #6).
+                <fieldset key={q.id} className={styles.choice}>
+                  <legend className={styles.fieldLabelStrong}>
+                    {q.label}
+                    {req}
+                  </legend>
+                  {q.options.map((o) => (
+                    <label key={o.id} className={styles.option}>
+                      <Radio
+                        name={`q-${q.id}`}
+                        checked={answers[q.id]?.optionIds?.[0] === o.id}
+                        onChange={() => answer(q.id, { optionIds: [o.id] })}
+                      />
+                      {o.label}
+                    </label>
+                  ))}
+                  {refused}
+                </fieldset>
+              );
+            if (q.kind === 'multi') {
+              const picked = answers[q.id]?.optionIds ?? [];
+              return (
+                // PROVISIONAL — choice questions have no booking design yet (design request #6).
+                <div key={q.id} className={styles.field}>
+                  <span className={styles.fieldLabelStrong} aria-hidden>
+                    {q.label}
+                    {req}
+                  </span>
+                  <ChoiceChips
+                    label={`${q.label}${q.required ? ' (required)' : ''} — pick any that apply`}
+                    options={q.options.map((o) => ({ value: o.id, label: o.label }))}
+                    selected={picked}
+                    onToggle={(id) =>
+                      answer(q.id, {
+                        optionIds: picked.includes(id)
+                          ? picked.filter((x) => x !== id)
+                          : [...picked, id],
+                      })
+                    }
+                  />
+                  {refused}
+                </div>
+              );
+            }
+            return (
               <label key={q.id} className={styles.field}>
-                <span className={styles.fieldLabelStrong}>{q.label}</span>
+                <span className={styles.fieldLabelStrong}>
+                  {q.label}
+                  {req}
+                </span>
                 <Textarea
                   rows={isPhone ? 4 : 3}
-                  value={answers[q.id] ?? ''}
+                  maxLength={2000}
+                  value={answers[q.id]?.text ?? ''}
                   required={q.required}
-                  onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
+                  onChange={(e) => answer(q.id, { text: e.target.value })}
                 />
+                {refused}
               </label>
-            ) : (
-              <FileField
-                key={q.id}
-                label={q.label}
-                required={q.required}
-                fileName={answers[q.id] || null}
-                onFile={(f) => setAnswers((a) => ({ ...a, [q.id]: f?.name ?? '' }))}
-              />
-            ),
-          )}
+            );
+          })}
         </div>
       )}
 
-      {p.requestError && (
+      {/* An answer the server refused says so under its own question instead. */}
+      {p.requestError && !p.requestError.questionId && (
         <p role="alert" className={styles.error}>
           <Icon name="error" size={16} />
           {p.requestError.message}
@@ -633,7 +761,13 @@ export function BookingFlow(p: BookingFlowProps) {
           <Button size="large" fullWidth onClick={p.onClose}>
             Done
           </Button>
-          <ButtonLink href="/bookings" variant="secondary-outlined" size="large" fullWidth>
+          <ButtonLink
+            href="/bookings"
+            prefetch={false}
+            variant="secondary-outlined"
+            size="large"
+            fullWidth
+          >
             View my bookings
           </ButtonLink>
         </>
@@ -739,7 +873,7 @@ export function BookingFlow(p: BookingFlowProps) {
       <div className={styles.footer}>
         {step === 'done' ? (
           <>
-            <ButtonLink href="/bookings" variant="secondary-outlined" size="large">
+            <ButtonLink href="/bookings" prefetch={false} variant="secondary-outlined" size="large">
               View my bookings
             </ButtonLink>
             <Button size="large" onClick={p.onClose}>
@@ -764,4 +898,9 @@ export function BookingFlow(p: BookingFlowProps) {
   );
 
   return <>{p.renderShell({ title, subtitle }, body)}</>;
+}
+
+/** Answered = something to send: text, at least one option, or an uploaded file. */
+function isAnswered(a: IntakeAnswer | undefined): boolean {
+  return !!(a?.text?.trim() || a?.optionIds?.length || a?.file);
 }

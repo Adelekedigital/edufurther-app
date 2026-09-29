@@ -4,14 +4,41 @@ import { useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { slotWindow } from '@/lib/utils/slots';
-import type { AppError, BookingRequest, Remote, SessionType } from '@/types/mentor';
-import { apiError, normaliseError } from './errors';
+import type {
+  AppError,
+  BookingRequest,
+  IntakeAnswer,
+  IntakeFile,
+  IntakeQuestion,
+  Remote,
+  SessionType,
+} from '@/types/mentor';
+import { ApiError, apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
 
 type SessionTypeRead = components['schemas']['SessionTypeRead'];
+type QuestionRead = components['schemas']['QuestionRead'];
+type AnswerWrite = components['schemas']['AnswerWrite'];
 
 // ---- mapping ----------------------------------------------------------------
+
+export function toQuestion(q: QuestionRead): IntakeQuestion {
+  return {
+    id: q.id,
+    label: q.question_text,
+    kind:
+      q.question_type === 'file_upload'
+        ? 'file'
+        : q.question_type === 'multi_choice'
+          ? q.allows_multiple
+            ? 'multi'
+            : 'single'
+          : 'text',
+    required: q.is_required,
+    options: (q.options ?? []).map((o) => ({ id: o.id, label: o.text })),
+  };
+}
 
 export function toSessionType(r: SessionTypeRead): SessionType {
   return {
@@ -19,11 +46,40 @@ export function toSessionType(r: SessionTypeRead): SessionType {
     name: r.name,
     durationMin: r.duration_minutes,
     description: r.description?.trim() ?? '',
-    // PENDING BACKEND (booking reply #1): questions inline on SessionTypeRead are
-    // not shipped, and POST /sessions takes no answers yet (#2). Until both ship
-    // there is nothing to ask, so the flow has no questions step.
-    questions: [],
+    // The live intake form, in the order mentees see it (backend #268).
+    questions: [...(r.questions ?? [])]
+      .sort((a, b) => a.display_order - b.display_order)
+      .map(toQuestion),
   };
+}
+
+/** Answered = something to send: text, at least one option, or an uploaded file. */
+export function isAnswered(a: IntakeAnswer | undefined): boolean {
+  return !!(a?.text?.trim() || a?.optionIds?.length || a?.file);
+}
+
+/** answers[] for POST /sessions: one form per answer, unanswered questions left out. */
+export function toAnswers(answers: Record<string, IntakeAnswer>): AnswerWrite[] {
+  return Object.entries(answers).flatMap(([question_id, a]): AnswerWrite[] => {
+    if (a.file) return [{ question_id, file_id: a.file.id }];
+    if (a.optionIds?.length) return [{ question_id, option_ids: a.optionIds }];
+    if (a.text?.trim()) return [{ question_id, text: a.text.trim() }];
+    return [];
+  });
+}
+
+/** A refused request; `questionId` when the server named one answer (422 /answers/{i}). */
+export type BookingError = AppError & { questionId?: string };
+
+/** The answer the server refused, by its pointer into the answers we sent. */
+export function questionForPointer(body: unknown, sent: AnswerWrite[]): string | undefined {
+  const list = (body as { errors?: unknown } | null)?.errors;
+  if (!Array.isArray(list)) return undefined;
+  for (const it of list) {
+    const m = /^\/answers\/(\d+)/.exec(String((it as { pointer?: unknown })?.pointer ?? ''));
+    if (m) return sent[Number(m[1])]?.question_id;
+  }
+  return undefined;
 }
 
 /**
@@ -132,9 +188,13 @@ export function useRequestBooking() {
   const attempt = useRef<{ key: string; body: string } | null>(null);
   const mutation = useMutation({
     mutationFn: async (req: BookingRequest) => {
-      // PENDING BACKEND (booking reply #2): `answers` has no field on the booking
-      // body yet, so it is not sent — and the flow asks no questions (see above).
-      const body = { session_type_id: req.sessionTypeId, starts_at: req.startsAt };
+      // The intake answers go with the request (backend #268, file answers PR C).
+      const answers = toAnswers(req.answers);
+      const body = {
+        session_type_id: req.sessionTypeId,
+        starts_at: req.startsAt,
+        ...(answers.length ? { answers } : {}),
+      };
       attempt.current = keyForAttempt(attempt.current, JSON.stringify(body), () =>
         crypto.randomUUID(),
       );
@@ -142,7 +202,11 @@ export function useRequestBooking() {
         params: { header: { 'Idempotency-Key': attempt.current.key } },
         body,
       });
-      if (!data) throw apiError(response.status, error);
+      if (!data) {
+        const e = apiError(response.status, error) as ApiError & { questionId?: string };
+        if (response.status === 422) e.questionId = questionForPointer(error, answers);
+        throw e;
+      }
       return data;
     },
     onSuccess: () => {
@@ -159,10 +223,77 @@ export function useRequestBooking() {
     request: mutation.mutate,
     isPending: mutation.isPending,
     isDone: mutation.isSuccess,
-    error: mutation.error ? bookingError(normaliseError(mutation.error)) : null,
+    error: mutation.error ? requestError(mutation.error) : null,
     reset: () => {
       attempt.current = null;
       mutation.reset();
     },
   };
+}
+
+/** Our copy for a refused request; an answer the server refused points at its question. */
+function requestError(e: unknown): BookingError {
+  const questionId = (e as { questionId?: string }).questionId;
+  if (questionId)
+    return {
+      ...normaliseError(e),
+      questionId,
+      message: 'Check your answer to this question, then send again.',
+    };
+  return bookingError(normaliseError(e));
+}
+
+// ---- intake files (backend PR C) -----------------------------------------------
+
+/** What the upload endpoint takes (decided from the bytes, not the name). */
+export const INTAKE_ACCEPT = '.pdf,.docx';
+export const INTAKE_MAX_BYTES = 5 * 1024 * 1024;
+
+/** Our copy for a refused upload, by status; the server's text is never shown. */
+export function uploadError(e: unknown): AppError {
+  const n = normaliseError(e);
+  const s = e instanceof ApiError ? e.status : undefined;
+  if (s === 413 || s === 422)
+    return { ...n, message: 'Upload a PDF or Word (.docx) file under 5 MB.' };
+  if (s === 409)
+    return {
+      ...n,
+      message: 'You have too many files waiting to be used in a booking. Try again tomorrow.',
+    };
+  if (s === 401) return { ...n, message: 'Log in to upload a file.' };
+  if (s !== undefined && s >= 500)
+    return { ...n, message: 'File uploads aren’t available right now. Try again later.' };
+  return { ...n, message: `We couldn’t upload it. ${n.message} Try again.` };
+}
+
+/**
+ * POST /me/intake-files: upload when the mentee picks the file (an unused
+ * upload is deleted after about a day), then answer with its id. A file that
+ * is obviously wrong (size) is refused here, before it's sent.
+ */
+export function useUploadIntakeFile() {
+  const mutation = useMutation<IntakeFile, AppError, File>({
+    mutationFn: async (file) => {
+      if (file.size > INTAKE_MAX_BYTES) throw uploadError(new ApiError(413));
+      let result;
+      try {
+        result = await api.POST('/api/v1/me/intake-files', {
+          // The generated type calls the binary part a string (openapi-typescript
+          // and multipart); the serializer sends the File itself.
+          body: { file } as unknown as { file: string },
+          bodySerializer: (b) => {
+            const form = new FormData();
+            form.append('file', (b as unknown as { file: File }).file);
+            return form;
+          },
+        });
+      } catch (e) {
+        throw uploadError(e);
+      }
+      const { data, error, response } = result;
+      if (!data) throw uploadError(apiError(response.status, error));
+      return { id: data.file_id, name: data.filename, size: data.size };
+    },
+  });
+  return (file: File) => mutation.mutateAsync(file);
 }

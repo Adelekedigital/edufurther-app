@@ -23,7 +23,12 @@ import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { bookBlockedFor } from '@/app/_shell/bookBlocked';
 import { useAppShell } from '@/app/_shell/useAppShell';
-import { useRequestBooking, useSessionTypes, useSlots } from '@/lib/api/data/booking';
+import {
+  useRequestBooking,
+  useSessionTypes,
+  useSlots,
+  useUploadIntakeFile,
+} from '@/lib/api/data/booking';
 import { useMentorProfile } from '@/lib/api/data/profile';
 import { REVIEW_PAGE_SIZE, useMentorReviews, useReviewPrompt } from '@/lib/api/data/reviews';
 import { useSimilarMentors } from '@/lib/api/data/similar';
@@ -86,6 +91,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const typeId = bookingTypeId ?? sessionTypes.data?.[0]?.id ?? null;
   const slots = useSlots(mentorId, typeId, timeZone);
   const request = useRequestBooking();
+  const uploadIntakeFile = useUploadIntakeFile();
   const openBooking = (sessionTypeId?: string, time?: string) => {
     setBookingTypeId(sessionTypeId ?? null);
     setBookingTime(time ?? null);
@@ -391,6 +397,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           requestPending={request.isPending}
           requestDone={request.isDone}
           requestError={request.error}
+          onUpload={uploadIntakeFile}
           onClose={closeBooking}
           deviceZone={timeZone}
           initialTime={bookingTime}

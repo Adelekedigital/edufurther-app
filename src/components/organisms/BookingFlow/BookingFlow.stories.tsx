@@ -30,7 +30,13 @@ const sessionTypes: SessionType[] = [
     durationMin: 60,
     description: 'An open conversation about your study-abroad plans.',
     questions: [
-      { id: 'q1', label: 'What would you like to cover?', kind: 'text', required: false },
+      {
+        id: 'q1',
+        label: 'What would you like to cover?',
+        kind: 'text',
+        required: false,
+        options: [],
+      },
     ],
   },
   {
@@ -38,7 +44,38 @@ const sessionTypes: SessionType[] = [
     name: 'CV review',
     durationMin: 60,
     description: 'Line by line.',
-    questions: [{ id: 'q2', label: 'Upload your current CV', kind: 'file', required: true }],
+    // Every question kind (backend #268 + #12): answer, pick one, pick any, upload.
+    questions: [
+      { id: 'q2', label: 'Upload your current CV', kind: 'file', required: true, options: [] },
+      {
+        id: 'q3',
+        label: 'When do you start?',
+        kind: 'single',
+        required: true,
+        options: [
+          { id: 'o1', label: 'Fall 2027' },
+          { id: 'o2', label: 'Spring 2028' },
+        ],
+      },
+      {
+        id: 'q4',
+        label: 'Which parts worry you most?',
+        kind: 'multi',
+        required: false,
+        options: [
+          { id: 'o3', label: 'Essays' },
+          { id: 'o4', label: 'Funding' },
+          { id: 'o5', label: 'Visa' },
+        ],
+      },
+      {
+        id: 'q5',
+        label: 'Anything else I should know?',
+        kind: 'text',
+        required: false,
+        options: [],
+      },
+    ],
   },
 ];
 // Bookable instants, as GET …/availability/slots returns them (UTC).
@@ -67,6 +104,9 @@ const meta: Meta<typeof BookingFlow> = {
     isGuest: false,
     onSignup: fn(),
     onRequest: fn(),
+    // Resolves like POST /me/intake-files after a moment.
+    onUpload: (f: File) =>
+      new Promise((r) => setTimeout(() => r({ id: 'file-1', name: f.name, size: f.size }), 800)),
     requestPending: false,
     requestDone: false,
     requestError: null,
@@ -181,4 +221,29 @@ export const PhoneSent: Story = { ...phone, args: { renderShell: phoneShell, req
 export const PhoneNoOpenTimes: Story = {
   ...phone,
   args: { renderShell: phoneShell, slots: remote([]) },
+};
+
+/** The questions step with every kind (pick CV review, then a time). */
+export const AllQuestionKinds: Story = { args: { sessionTypeId: 'st2' } };
+/** Uploads are refused (e.g. not a PDF / Word file): the reason and Try again. */
+export const UploadRefused: Story = {
+  args: {
+    sessionTypeId: 'st2',
+    onUpload: () =>
+      Promise.reject({
+        kind: 'validation',
+        message: 'Upload a PDF or Word (.docx) file under 5 MB.',
+      }),
+  },
+};
+/** The server refused one answer: the message shows under that question. */
+export const AnswerRefused: Story = {
+  args: {
+    sessionTypeId: 'st2',
+    requestError: {
+      kind: 'validation',
+      message: 'Check your answer to this question, then send again.',
+      questionId: 'q3',
+    },
+  },
 };
