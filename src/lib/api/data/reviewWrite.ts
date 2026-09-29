@@ -18,52 +18,21 @@ import { sessionKey, useSession } from './session';
 type ReviewWrite = components['schemas']['ReviewWrite'];
 type ReviewEdit = components['schemas']['ReviewEdit'];
 
-// ---- PENDING BACKEND (backend PR #285) -----------------------------------------
-// Not in the spec yet: `overall_rating`, `editable_until` (ReviewRead,
-// AuthoredReviewRead), the scale renamed to poor | okay | great,
-// GET /me/authored-reviews?mentor_id= and the author's GET /reviews/{id}.
-// The shapes below are the agreed contract; the casts go when the spec lands.
+type ReviewRead = components['schemas']['ReviewRead'];
+type AuthoredReviewRead = components['schemas']['AuthoredReviewRead'];
+type AuthoredReviewSummaryRead = components['schemas']['AuthoredReviewSummaryRead'];
 
-/** ReviewRead / OwnReviewRead as agreed (the author's full read while editable). */
-type ReviewReadNext = {
-  id: string;
-  created_at: string;
-  editable_until?: string | null;
-  reviewed_for?: string;
-  overall_rating?: number | null;
-  public_review: string;
-  session_value?: number;
-  withdrawn?: boolean;
-  communication_rating?: AttributeScore | null;
-  knowledge_rating?: AttributeScore | null;
-  support_rating?: AttributeScore | null;
-  practicality_rating?: AttributeScore | null;
-  valuable_rating?: number | null;
-  nps_recommend_score?: number | null;
-  private_review?: string | null;
-};
-
-type ReviewWriteNext = {
-  session_id: string;
-  overall_rating: number;
-  public_review: string;
-  communication_rating: AttributeScore;
-  knowledge_rating: AttributeScore;
-  support_rating: AttributeScore;
-  practicality_rating: AttributeScore;
-  valuable_rating: number;
-  nps_recommend_score: number;
-  private_review?: string | null;
-};
-
-type ReviewEditNext = Partial<Omit<ReviewWriteNext, 'session_id'>>;
+/** Any read of the viewer's own review: the list row, the full author read, or a POST/PATCH reply. */
+type AnyOwnRead = AuthoredReviewSummaryRead & Partial<AuthoredReviewRead> & Partial<ReviewRead>;
 
 // ---- mapping ----------------------------------------------------------------
 
-export function toMyReview(r: ReviewReadNext): MyReview {
+export function toMyReview(r: AnyOwnRead): MyReview {
   const a: Partial<ReviewAnswers> = {};
+  // A review written before the stars has no overall_rating; its stars are its
+  // valuable_rating (the backend's rule for the same case).
   if (r.overall_rating != null) a.overall = r.overall_rating;
-  else if (r.session_value != null) a.overall = r.session_value;
+  else if (r.valuable_rating != null) a.overall = r.valuable_rating;
   a.text = r.public_review;
   if (r.communication_rating) a.communication = r.communication_rating;
   if (r.knowledge_rating) a.knowledge = r.knowledge_rating;
@@ -81,7 +50,7 @@ export function toMyReview(r: ReviewReadNext): MyReview {
   };
 }
 
-function toWrite(sessionId: string, x: ReviewAnswers): ReviewWriteNext {
+function toWrite(sessionId: string, x: ReviewAnswers): ReviewWrite {
   return {
     session_id: sessionId,
     overall_rating: x.overall,
@@ -97,8 +66,8 @@ function toWrite(sessionId: string, x: ReviewAnswers): ReviewWriteNext {
 }
 
 /** Only what changed (PATCH: every field may be omitted). */
-export function toEdit(before: Partial<ReviewAnswers>, after: ReviewAnswers): ReviewEditNext {
-  const out: ReviewEditNext = {};
+export function toEdit(before: Partial<ReviewAnswers>, after: ReviewAnswers): ReviewEdit {
+  const out: ReviewEdit = {};
   const text = after.text.trim();
   if (after.overall !== before.overall) out.overall_rating = after.overall;
   if (text !== (before.text ?? '').trim()) out.public_review = text;
@@ -112,7 +81,7 @@ export function toEdit(before: Partial<ReviewAnswers>, after: ReviewAnswers): Re
   if (note !== (before.platformNote ?? '').trim()) out.private_review = note || null;
   // Unanswered (a question the API didn't return and the viewer left alone:
   // 0 or empty) is never sent; the stored answer stands.
-  for (const k of Object.keys(out) as (keyof ReviewEditNext)[]) {
+  for (const k of Object.keys(out) as (keyof ReviewEdit)[]) {
     const v = out[k];
     if (v === undefined || v === 0) delete out[k];
   }
@@ -184,15 +153,6 @@ export function useReviewableSessions(
   };
 }
 
-/** Untyped GET for the two paths the spec doesn't have yet (PENDING BACKEND #285). */
-const getPending = api.GET as unknown as (
-  path: string,
-  init: {
-    params?: { path?: Record<string, string>; query?: Record<string, unknown> };
-    signal?: AbortSignal;
-  },
-) => Promise<{ data?: unknown; error?: unknown; response: Response }>;
-
 /**
  * The viewer's own review of this mentor (GET /me/authored-reviews?mentor_id=),
  * or null: enough for the "Your review" tag and the "live" note. The full
@@ -204,12 +164,12 @@ export function useMyReview(mentorId: string | null, enabled: boolean): Remote<M
     queryKey: keys.mentors.myReview(mentorId ?? '', sessionKey(session)),
     enabled: enabled && !!mentorId && session.status !== 'unknown',
     queryFn: async ({ signal }) => {
-      const { data, error, response } = await getPending('/api/v1/me/authored-reviews', {
+      const { data, error, response } = await api.GET('/api/v1/me/authored-reviews', {
         params: { query: { mentor_id: mentorId!, limit: 1 } },
         signal,
       });
       if (!data) throw apiError(response.status, error);
-      const row = (data as { data: ReviewReadNext[] }).data[0];
+      const row = data.data[0];
       return row ? toMyReview(row) : null;
     },
     staleTime: 60_000,
@@ -230,12 +190,12 @@ export function useAuthoredReview(reviewId: string | null, enabled: boolean): Re
     queryKey: ['reviews', 'authored', reviewId ?? '', sessionKey(session)],
     enabled: enabled && !!reviewId && session.status !== 'unknown',
     queryFn: async ({ signal }) => {
-      const { data, error, response } = await getPending('/api/v1/reviews/{review_id}', {
+      const { data, error, response } = await api.GET('/api/v1/reviews/{review_id}', {
         params: { path: { review_id: reviewId! } },
         signal,
       });
       if (!data) throw apiError(response.status, error);
-      return toMyReview(data as ReviewReadNext);
+      return toMyReview(data);
     },
     staleTime: 0,
     retry: false,
@@ -266,17 +226,17 @@ export function useSendReview() {
     mutationFn: async (a: SendArgs): Promise<MyReview> => {
       if (a.mode === 'new') {
         const { data, error, response } = await api.POST('/api/v1/reviews', {
-          body: toWrite(a.sessionId, a.answers) as unknown as ReviewWrite,
+          body: toWrite(a.sessionId, a.answers),
         });
         if (!data) throw apiError(response.status, error);
-        return toMyReview(data as unknown as ReviewReadNext);
+        return toMyReview(data);
       }
       const { data, error, response } = await api.PATCH('/api/v1/reviews/{review_id}', {
         params: { path: { review_id: a.reviewId } },
-        body: toEdit(a.before, a.answers) as unknown as ReviewEdit,
+        body: toEdit(a.before, a.answers),
       });
       if (!data) throw apiError(response.status, error);
-      return toMyReview(data as unknown as ReviewReadNext);
+      return toMyReview(data);
     },
     onSuccess: (mine, a) => {
       qc.setQueryData(keys.mentors.myReview(a.mentorId, sessionKey(session)), mine);

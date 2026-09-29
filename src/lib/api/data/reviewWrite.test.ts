@@ -58,6 +58,8 @@ describe('toMyReview', () => {
     const r = toMyReview({
       id: 'r1',
       created_at: '2026-09-29T11:55:00Z',
+      session_id: 's1',
+      reviewed_for: 'm1',
       editable_until: new Date(Date.now() + 60_000).toISOString(),
       overall_rating: 4,
       public_review: full.text,
@@ -78,11 +80,14 @@ describe('toMyReview', () => {
       id: 'r1',
       created_at: '2026-09-29T11:00:00Z',
       editable_until: new Date(Date.now() - 1000).toISOString(),
+      session_id: 's1',
+      reviewed_for: 'm1',
       public_review: full.text,
-      session_value: 4,
+      overall_rating: null,
+      valuable_rating: 4,
     });
     expect(r.editableUntil).toBeNull();
-    // Falls back to session_value for the stars when overall_rating is absent.
+    // A review from before the stars: its valuable_rating stands in.
     expect(r.answers.overall).toBe(4);
   });
 });
