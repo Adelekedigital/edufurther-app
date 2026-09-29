@@ -46,7 +46,7 @@ function countLabel(q: string, topicCount: number, total: number | null): string
 }
 
 export function ExploreScreen() {
-  const { viewer, member, chrome, account, nav } = useAppShell();
+  const { viewer, member, chrome, account, nav, canBook } = useAppShell();
   const online = useOnline();
   // One card per row under 768px, two above — the match prompt goes after the first row.
   const cardsPerRow = useMediaQuery('(max-width: 767px)') ? 1 : 2;
@@ -57,7 +57,9 @@ export function ExploreScreen() {
   const [input, setInput] = useState('');
   const [q, setQ] = useState('');
   const [offerings, setOfferings] = useState<string[]>([]);
-  const [booking, setBooking] = useState<Mentor | null>(null);
+  const [booking, setBookingState] = useState<Mentor | null>(null);
+  // Mentors can't book (product, 2026-09-29): nothing opens the flow for them.
+  const setBooking = (m: Mentor | null) => setBookingState(canBook ? m : null);
   const [bookingTypeId, setBookingTypeId] = useState<string | null>(null);
   // Cards only render after a client fetch, so reading the device zone here is safe.
   const [timeZone] = useState(deviceTimeZone);
@@ -163,6 +165,7 @@ export function ExploreScreen() {
             timeZone={timeZone}
             offline={!online}
             bookBlocked={bookBlocked}
+            canBook={canBook}
           />
         )}
 
@@ -208,6 +211,7 @@ export function ExploreScreen() {
           onClearSearch={clearAll}
           onBook={setBooking}
           bookBlocked={bookBlocked}
+          canBook={canBook}
           selfId={member?.isApprovedMentor ? member.id : null}
           offline={!online}
           restarted={results.restarted}
@@ -240,7 +244,8 @@ export function ExploreScreen() {
         />
       )}
 
-      {booking && (
+      {/* Also closes an open booking if /me turns the viewer into a mentor (review of #52). */}
+      {booking && canBook && (
         <BookingFlow
           key={booking.id}
           mentor={booking}

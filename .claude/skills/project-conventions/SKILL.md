@@ -55,6 +55,7 @@ Sources, so the next sync can diff against them: the design project's
 - **BookingModal's first-mentees box** shows on step 1 for a new mentor (under 3 sessions, no reviews) when booked from **Explore** only; the profile already says it in its card.
 - A mentor with **fewer than 3 completed sessions is new** (design reply #45): Explore labels the card "New mentor" (and no reviews); the profile shows `FirstMenteesCard` (mentee invitation with "Made the move" / "Got funded" facts and "Book {next open time}"; the owner's "Share your profile" only while the profile is public) at the top of the aside, under the tabs on phones; the track record appears from 1 session and its rating band from 3.
 - Times are shown in the **viewer's timezone, with the zone named** ("Times shown in Lagos (WAT) ✎"), via `TimezonePicker`.
+- **Mentors can't book** (product, 2026-09-29): a viewer with a mentor profile, in any state (`canBookFor` / `useAppShell().canBook`), never sees a Book control and never opens BookingFlow. On Explore cards and the featured card, "View profile" takes Book's place; on a mentor's profile, the Book controls are hidden (Mentor Profile session applies it).
 - Guests never see a match score. Guests sign up **after** choosing a time (`signupAt=afterTime`), and the chosen time is held for 10 minutes.
 - A failed load **keeps the user's filters and query**.
 - Free vs paid is stated before commitment: "Free mentorship available" or "Paid sessions from $X".

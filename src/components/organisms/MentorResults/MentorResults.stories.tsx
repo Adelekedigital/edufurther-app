@@ -151,3 +151,5 @@ export const Cards: StoryObj = {
     </div>
   ),
 };
+/** A mentor viewer can't book (product, 2026-09-29): View profile in Book's place. */
+export const MentorViewer: Story = { args: { canBook: false } };
