@@ -10,6 +10,7 @@ describe('toSimilarMentor', () => {
       degree: 'PhD',
       study_course: 'Sociology',
       institution: 'University of Toronto',
+      taking_bookings: true,
       completed_sessions: 1,
       review_count: 0,
       session_value: null,

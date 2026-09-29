@@ -6,6 +6,7 @@ const row = (over: Record<string, unknown> = {}) => ({
   slug: 'ada-o',
   first_name: 'Ada',
   last_name: 'Okonkwo',
+  taking_bookings: true,
   degree: 'MSc',
   study_course: 'Data Science',
   institution: 'University of Manchester',

@@ -167,6 +167,7 @@ export function toMentorProfile(r: MentorPublicRead): MentorProfile {
 
   return {
     mentor,
+    names: { first, last },
     headline: r.headline?.trim() || null,
     about: r.about_me?.trim() || null,
     bannerUrl: r.banner_url ?? null,

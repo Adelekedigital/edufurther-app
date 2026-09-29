@@ -193,6 +193,8 @@ export type ProfileItem = { id: string; title: string; meta: string | null };
 export type MentorProfile = {
   /** The card-shaped mentor: header basics, proof line, BookingFlow. */
   mentor: Mentor;
+  /** The names as stored (first and last apart), for the owner's edit form. */
+  names: { first: string; last: string };
   headline: string | null;
   about: string | null;
   bannerUrl: string | null;

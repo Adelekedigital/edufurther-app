@@ -21,6 +21,8 @@ type FormFieldProps = {
   counter?: string;
   /** Our copy for what is wrong. Replaces nothing: the hint stays. */
   error?: string;
+  /** A 12px label, for forms set in place on a page (Mentor Profile.dc.html edit). */
+  compact?: boolean;
   children: (control: FieldControlProps) => ReactNode;
 };
 
@@ -28,7 +30,7 @@ type FormFieldProps = {
  * Label, control, hint (Session Types.dc.html "Session name", "What mentees
  * get"). The error line is ours: the design draws no invalid state.
  */
-export function FormField({ label, hint, counter, error, children }: FormFieldProps) {
+export function FormField({ label, hint, counter, error, compact, children }: FormFieldProps) {
   const id = useId();
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
@@ -36,7 +38,10 @@ export function FormField({ label, hint, counter, error, children }: FormFieldPr
   return (
     <div className={styles.field}>
       <div className={styles.labelRow}>
-        <label htmlFor={id} className={styles.label}>
+        <label
+          htmlFor={id}
+          className={compact ? `${styles.label} ${styles.compact}` : styles.label}
+        >
           {label}
         </label>
         {counter && <span className={styles.counter}>{counter}</span>}

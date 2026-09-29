@@ -27,3 +27,7 @@
   font-weight: var(--weight-medium);
   color: var(--text-danger);
 }
+/* Mentor Profile.dc.html inline edit: 12px medium labels. */
+.compact {
+  font-size: var(--text-p-xs);
+}

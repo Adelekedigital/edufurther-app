@@ -29,6 +29,8 @@ const ALLOWED: Record<string, (v: unknown) => boolean> = {
   booking_window_days: (v) => v === null || (typeof v === 'number' && v >= 1 && v <= 90),
   break_after_minutes: (v) => v === null || (typeof v === 'number' && v >= 0 && v <= 120),
   requires_booking_confirmation: (v) => typeof v === 'boolean',
+  // The owner's headline (profile edit): null or blank clears it; 300 at most.
+  headline: (v) => v === null || (typeof v === 'string' && v.trim().length <= 300),
 };
 
 /** MOCK of PATCH /api/v1/users/{id}/mentor-profile: the booking preferences only. */

@@ -60,6 +60,7 @@ export const fullProfile: MentorProfile = {
       { slug: 'scholarships-funding', label: 'Scholarships & funding' },
     ],
   },
+  names: { first: 'Gbenga', last: 'Elufisan' },
   headline: 'PhD Sociology · Mississippi State University',
   about:
     'A sociologist in training, focused on community development, agriculture and food systems, and inequality. I moved from Nigeria to a fully funded PhD at Mississippi State, and I’ve reviewed dozens of SOPs since. I’ll help you shortlist programs that fund, tell a clear story in your statement, and prepare for visa and admissions interviews. Past failures taught me as much as the wins, and I bring both to every session.',
@@ -113,6 +114,7 @@ export const newProfile: MentorProfile = {
     nextAvailableAt: null,
     topics: [],
   },
+  names: { first: 'Oluwadamilare', last: 'Adebayo-Ogunleye' },
   headline: null,
   about: null,
   originCountry: null,

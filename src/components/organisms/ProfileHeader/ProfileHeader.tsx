@@ -17,6 +17,11 @@ type ProfileHeaderProps = {
   onShowReviews?: () => void;
   /** The owner's "Change cover" control, top right of the banner (not clipped by it). */
   bannerTools?: ReactNode;
+  /**
+   * The owner's name-and-headline form, in place of the intro while editing
+   * (Mentor Profile.dc.html `editingIntro`).
+   */
+  introEditor?: ReactNode;
 };
 
 /** "From Nigeria, studied in United States", or whichever half is known. */
@@ -37,6 +42,7 @@ export function ProfileHeader({
   actions,
   onShowReviews,
   bannerTools,
+  introEditor,
 }: ProfileHeaderProps) {
   const m = profile.mentor;
   // Cover colour (Mentor Profile.dc.html): a light banner when there's no
@@ -118,34 +124,44 @@ export function ProfileHeader({
             </span>
           )}
         </div>
-        <div className={styles.intro}>
-          <h1 id="profile-name" className={styles.name}>
-            {m.name}
-          </h1>
-          {profile.headline && <p className={styles.headline}>{profile.headline}</p>}
-          <p className={styles.proof}>
-            {proof}
-            {proof ? (
-              <span className={styles.sep}>
-                <span aria-hidden>·</span>
+        {introEditor ? (
+          <div className={cx(styles.intro, styles.introEdit)}>
+            {/* The page keeps its title while the form replaces it. */}
+            <h1 id="profile-name" className="sr-only">
+              {m.name}
+            </h1>
+            {introEditor}
+          </div>
+        ) : (
+          <div className={styles.intro}>
+            <h1 id="profile-name" className={styles.name}>
+              {m.name}
+            </h1>
+            {profile.headline && <p className={styles.headline}>{profile.headline}</p>}
+            <p className={styles.proof}>
+              {proof}
+              {proof ? (
+                <span className={styles.sep}>
+                  <span aria-hidden>·</span>
+                  <span>{sessionsLabel(m.completedSessions)}</span>
+                </span>
+              ) : (
                 <span>{sessionsLabel(m.completedSessions)}</span>
-              </span>
-            ) : (
-              <span>{sessionsLabel(m.completedSessions)}</span>
-            )}
-            {location && (
-              <span className={cx(styles.sep, styles.location)}>
-                <span aria-hidden className={styles.dot}>
-                  ·
+              )}
+              {location && (
+                <span className={cx(styles.sep, styles.location)}>
+                  <span aria-hidden className={styles.dot}>
+                    ·
+                  </span>
+                  <span className={styles.item}>
+                    <Icon name="location_on" size={14} />
+                    {location}
+                  </span>
                 </span>
-                <span className={styles.item}>
-                  <Icon name="location_on" size={14} />
-                  {location}
-                </span>
-              </span>
-            )}
-          </p>
-        </div>
+              )}
+            </p>
+          </div>
+        )}
         {/* Topics sit before the actions in the DOM, so a stacked header (phones)
             reads name → topics → buttons; from 768px CSS order puts them on
             their own line under the row, as drawn. */}

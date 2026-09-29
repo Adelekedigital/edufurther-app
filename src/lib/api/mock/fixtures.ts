@@ -57,6 +57,8 @@ const base = (
   slug: `${first}-${last}`.toLowerCase().replace(/[^a-z-]/g, ''),
   first_name: first,
   last_name: last,
+  // Backend #301: approved, listed and bookable. The mock's mentors all are.
+  taking_bookings: true,
   headline: null,
   avatar_url: avatar,
   avatar_focus: focus,

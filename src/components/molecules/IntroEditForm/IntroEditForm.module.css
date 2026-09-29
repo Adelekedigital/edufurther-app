@@ -1,0 +1,34 @@
+/* Mentor Profile.dc.html `editingIntro`: fields in an auto-fit grid (200px
+   minimum), then Save and Cancel. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+/* The headline takes the full row: two name fields share the first. */
+.wide {
+  grid-column: 1 / -1;
+}
+.actions {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+.general {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-danger);
+}
+/* AppShell.dc.html phone rule: `padding: 0 var(--space-3)` becomes space-2. */
+@media (max-width: 767px) {
+  .input {
+    padding: 0 var(--space-2);
+  }
+}

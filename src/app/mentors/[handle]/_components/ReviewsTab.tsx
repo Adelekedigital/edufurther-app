@@ -6,9 +6,24 @@ import { REVIEW_PAGE_SIZE } from '@/lib/api/data/reviews';
 import type { MentorProfile } from '@/types/mentor';
 import type { useProfileReviewing } from './useProfileReviewing';
 
+/** What the tab reads from useProfileReviewing (not the modal's state). */
+export type ReviewsTabData = Pick<
+  ReturnType<typeof useProfileReviewing>,
+  | 'isGuest'
+  | 'list'
+  | 'filter'
+  | 'setFilter'
+  | 'prompt'
+  | 'mine'
+  | 'mineOpen'
+  | 'mineUntil'
+  | 'canWrite'
+  | 'open'
+>;
+
 type ReviewsTabProps = {
   profile: MentorProfile;
-  reviews: ReturnType<typeof useProfileReviewing>;
+  reviews: ReviewsTabData;
   /** The "no session yet" note may offer Book (it scrolls to the booking card). */
   offerBook: boolean;
   onBook: () => void;

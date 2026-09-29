@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event';
 import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixture';
 import { similarMentors } from '@/components/organisms/SimilarMentorsCard/similar.fixture';
 import type { MentorProfile } from '@/types/mentor';
-// The harness mocks the data hooks: import it before the screen.
 import {
   h,
   state,
@@ -16,6 +15,35 @@ import {
   idle,
 } from './profileScreen.harness';
 import { MentorProfileScreen, suggestionsLine } from './MentorProfileScreen';
+
+// The data hooks, mocked (hoisted above the imports; state lives in the harness).
+vi.mock('next/navigation', async () =>
+  (await import('./profileScreen.harness')).mocks.navigation(),
+);
+vi.mock('@/app/_shell/useAppShell', async () =>
+  (await import('./profileScreen.harness')).mocks.appShell(),
+);
+vi.mock('@/lib/api/data/reviews', async () =>
+  (await import('./profileScreen.harness')).mocks.reviews(),
+);
+vi.mock('@/lib/api/data/reviewWrite', async () =>
+  (await import('./profileScreen.harness')).mocks.reviewWrite(),
+);
+vi.mock('@/lib/api/data/similar', async () =>
+  (await import('./profileScreen.harness')).mocks.similar(),
+);
+vi.mock('@/lib/api/data/profile', async () =>
+  (await import('./profileScreen.harness')).mocks.profile(),
+);
+vi.mock('@/lib/api/data/cover', async () =>
+  (await import('./profileScreen.harness')).mocks.cover(),
+);
+vi.mock('@/lib/api/data/profileEdit', async () =>
+  (await import('./profileScreen.harness')).mocks.profileEdit(),
+);
+vi.mock('@/lib/api/data/booking', async () =>
+  (await import('./profileScreen.harness')).mocks.booking(),
+);
 
 describe('MentorProfileScreen — the four states', () => {
   it('loading', () => {

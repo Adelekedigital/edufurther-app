@@ -1,6 +1,8 @@
 /**
  * Shared test harness for MentorProfileScreen's test files: the mocked data
- * hooks and the per-test state they return. Import it before the screen.
+ * hooks and the per-test state they return. Each test file registers the
+ * mocks itself (`vi.mock(path, () => mocks.x())`, hoisted by Vitest), so
+ * import order can't leave the screen on the real hooks (review of #75).
  * Tests set `h.*` (e.g. `h.profile = state({...})`); beforeEach resets it.
  */
 import { similarMentors } from '@/components/organisms/SimilarMentorsCard/similar.fixture';
@@ -69,6 +71,10 @@ export const h = {
   // What the booking modal's queries return.
   sessionTypesRemote: idle as unknown,
   slotsRemote: idle as unknown,
+  // The owner's edits: whether a save succeeds (closing the form), and errors.
+  editOk: true,
+  introErrors: {} as Record<string, string>,
+  aboutError: null as string | null,
 };
 
 export const replace = vi.fn();
@@ -80,14 +86,16 @@ export const coverSave = vi.fn();
 export const coverUpload = vi.fn();
 export const coverRemove = vi.fn();
 export const coverPick = vi.fn();
+export const saveIntro = vi.fn();
+export const saveAbout = vi.fn();
 
-vi.mock('next/navigation', () => ({
+const navigationMock = () => ({
   useRouter: () => ({ replace }),
   usePathname: () => '/mentors/gbenga',
   useSearchParams: () => h.search,
-}));
+});
 
-vi.mock('@/app/_shell/useAppShell', () => ({
+const appShellMock = () => ({
   useAppShell: () => {
     if (h.viewerLoading)
       return {
@@ -126,9 +134,9 @@ vi.mock('@/app/_shell/useAppShell', () => ({
       canBook: !h.viewerIsMentor,
     };
   },
-}));
+});
 
-vi.mock('@/lib/api/data/reviews', () => ({
+const reviewsMock = () => ({
   REVIEW_PAGE_SIZE: 5,
   useMentorReviews: (...args: unknown[]) => {
     reviewsArgs(...args);
@@ -136,25 +144,25 @@ vi.mock('@/lib/api/data/reviews', () => ({
   },
   // Like the real hook: nothing when the screen doesn't ask.
   useReviewPrompt: (_id: string | null, enabled: boolean) => (enabled ? h.reviewPrompt : null),
-}));
+});
 
-vi.mock('@/lib/api/data/reviewWrite', () => ({
+const reviewWriteMock = () => ({
   useMyReview: () => h.myReviewRemote,
   useAuthoredReview: () => h.authoredRemote,
   useReviewableSessions: () => h.reviewableRemote,
   useSendReview: () => ({ send: sendReview, reset: vi.fn(), ...h.sendState }),
-}));
+});
 
-vi.mock('@/lib/api/data/similar', () => ({
+const similarMock = () => ({
   useSimilarMentors: (...args: unknown[]) => {
     similarArgs(...args);
     return h.similarRemote;
   },
-}));
+});
 
-vi.mock('@/lib/api/data/profile', () => ({ useMentorProfile: () => h.profile }));
+const profileMock = () => ({ useMentorProfile: () => h.profile });
 
-vi.mock('@/lib/api/data/cover', () => ({
+const coverMock = () => ({
   BANNER_ACCEPT: 'image/jpeg,image/png,image/webp',
   useCoverEdit: () => ({
     save: coverSave,
@@ -169,9 +177,9 @@ vi.mock('@/lib/api/data/cover', () => ({
     imageError: null,
     clearMessages: vi.fn(),
   }),
-}));
+});
 
-vi.mock('@/lib/api/data/booking', () => ({
+const bookingMock = () => ({
   useSessionTypes: (...a: unknown[]) => {
     sessionTypesArgs(...a);
     return h.sessionTypesRemote;
@@ -185,7 +193,39 @@ vi.mock('@/lib/api/data/booking', () => ({
     error: null,
     reset: vi.fn(),
   }),
-}));
+});
+
+const profileEditMock = () => ({
+  useProfileEdit: () => ({
+    saveIntro: (before: unknown, after: unknown, done: () => void) => {
+      saveIntro(before, after);
+      if (h.editOk) done();
+    },
+    introSaving: false,
+    introErrors: h.introErrors,
+    resetIntro: vi.fn(),
+    saveAbout: (text: string, done: () => void) => {
+      saveAbout(text);
+      if (h.editOk) done();
+    },
+    aboutSaving: false,
+    aboutError: h.aboutError,
+    resetAbout: vi.fn(),
+  }),
+});
+
+/** The mocked modules, by name; each test file registers them with vi.mock. */
+export const mocks = {
+  navigation: navigationMock,
+  appShell: appShellMock,
+  reviews: reviewsMock,
+  reviewWrite: reviewWriteMock,
+  similar: similarMock,
+  profile: profileMock,
+  cover: coverMock,
+  booking: bookingMock,
+  profileEdit: profileEditMock,
+};
 
 beforeEach(() => {
   h.search = new URLSearchParams();
@@ -210,6 +250,11 @@ beforeEach(() => {
   h.sessionTypesRemote = idle;
   h.slotsRemote = idle;
   replace.mockReset();
+  h.editOk = true;
+  h.introErrors = {};
+  h.aboutError = null;
+  saveIntro.mockReset();
+  saveAbout.mockReset();
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
     matches: false,
     media: query,
