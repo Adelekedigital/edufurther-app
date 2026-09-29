@@ -57,9 +57,10 @@ export function mockNextAvailableAt(mentorId: string, now = Date.now()): string 
   return first ? first.start : null;
 }
 
-// Backend Session Types #9 (merging): reads gain `service_offerings[]`. Spread
-// from a variable so the mock compiles against the spec before and after it ships.
-const NO_TOPICS = { service_offerings: [] };
+// Fields the backend adds to SessionTypeRead as required: `service_offerings[]`
+// (#9) and `questions[]` (backend PR #268, the live intake form). Spread from a
+// variable so the mock compiles against the spec before and after each ships.
+const NO_TOPICS = { service_offerings: [], questions: [] };
 
 export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
   {
