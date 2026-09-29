@@ -135,16 +135,13 @@
   font-size: var(--text-p-sm);
   font-weight: var(--weight-semibold);
 }
+/* If the note wraps (the narrowest aside), the icon stays with its first line. */
 .factNote {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-1);
   font-size: var(--text-p-xs);
   color: var(--ink-600);
-}
-.factNoteIcon {
-  font-size: 14px;
-  line-height: 1;
 }
 .desc {
   font-size: var(--text-p-xs);

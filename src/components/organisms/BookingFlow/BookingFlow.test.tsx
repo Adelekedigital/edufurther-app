@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { act, render, screen, within } from '@testing-library/react';
+import { act, getDefaultNormalizer, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Mentor, Remote, SessionType } from '@/types/mentor';
 import { BookingFlow, type BookingFlowProps } from './BookingFlow';
@@ -141,7 +141,12 @@ describe('BookingFlow on phones (sheet)', () => {
 
   it('the session summary says it’s free and uses a credit', () => {
     render(<BookingFlow {...props()} />);
-    expect(screen.getByText(/· \d+ min · Free · 1 credit$/)).toBeInTheDocument();
+    // No-break spaces keep "60 min" and "1 credit" whole.
+    expect(
+      screen.getByText(/· \d+\u00a0min · Free · 1\u00a0credit$/, {
+        normalizer: getDefaultNormalizer({ collapseWhitespace: false }),
+      }),
+    ).toBeInTheDocument();
   });
 
   it('starts with close on the left and no close on the right', () => {
@@ -215,7 +220,12 @@ describe('BookingFlow on wider screens', () => {
   it('shows the price, Free, and the credit it uses, next to the length', () => {
     render(<BookingFlow {...props()} />);
     const aside = screen.getByRole('complementary', { name: 'Session' });
-    expect(aside).toHaveTextContent(/Price\s*Free\s*(toll)?\s*Uses 1 credit/);
+    expect(within(aside).getByText('Price')).toBeInTheDocument();
+    expect(within(aside).getByText('Free')).toBeInTheDocument();
+    // The coin icon is decorative: hidden, so the tile reads "Price, Free, Uses 1 credit".
+    const note = within(aside).getByText('Uses 1 credit');
+    expect(note.querySelector('[aria-hidden="true"]')).toHaveTextContent('toll');
+    expect(within(aside).queryByRole('img')).toBeNull();
     expect(aside).toHaveTextContent(/Length\s*\d+ min/);
   });
 });
