@@ -1,0 +1,20 @@
+.gate {
+  max-width: 880px;
+  padding: var(--space-10) var(--space-5);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+}
+/* Modal.dc.html confirm: two equal buttons, --space-3 apart. */
+.buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.buttons > :only-child {
+  grid-column: 1 / -1;
+}
+.error {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-danger);
+}

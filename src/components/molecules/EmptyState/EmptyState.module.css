@@ -22,7 +22,9 @@
   font-weight: var(--weight-semibold);
 }
 .description {
-  font-size: var(--text-p-sm);
+  /* DS EmptyState: brand face at --text-p-md (was 14px, unlogged; fixed with Session Types). */
+  font-family: var(--font-brand);
+  font-size: var(--text-p-md);
   line-height: var(--lh-p);
   color: var(--text-tertiary);
   text-wrap: pretty;

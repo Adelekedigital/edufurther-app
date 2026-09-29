@@ -26,6 +26,11 @@ export const keys = {
     relationship: (mentorId: string, who: string) =>
       ['mentors', 'relationship', mentorId, who] as const,
   },
+  // `who`: the session identity — one mentor's own list is never another's.
+  sessionTypes: {
+    all: ['sessionTypes'] as const,
+    own: (who: string) => ['sessionTypes', 'own', who] as const,
+  },
   booking: {
     sessionTypes: (mentorId: string) => ['booking', 'sessionTypes', mentorId] as const,
     /** Prefix: every offering's slots for one mentor (invalidated after a booking). */

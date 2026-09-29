@@ -10,20 +10,33 @@ type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>
   'aria-label': string;
   /** lg — 44px at every width, darker glyph (the phone sheet header). */
   size?: 'sm' | 'md' | 'lg';
+  /** square: the 32px rounded-square row action (Session Types.dc.html rows). */
+  shape?: 'round' | 'square';
+  /** danger: hover turns red — for a delete that then confirms. */
+  tone?: 'default' | 'danger';
 };
 
 const ICON_SIZE = { sm: 18, md: 20, lg: 22 } as const;
 
-/** Round, quiet icon control (search clear, modal close, dismiss). 44px hit area on phones. */
+/**
+ * Quiet icon control (search clear, modal close, dismiss; square for row actions).
+ * 44px hit area on phones.
+ */
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
-  { icon, size = 'md', className, type, ...rest },
+  { icon, size = 'md', shape = 'round', tone = 'default', className, type, ...rest },
   ref,
 ) {
   return (
     <button
       ref={ref}
       type={type ?? 'button'}
-      className={cx(styles.button, styles[size], className)}
+      className={cx(
+        styles.button,
+        styles[size],
+        shape === 'square' && styles.square,
+        tone === 'danger' && styles.danger,
+        className,
+      )}
       {...rest}
     >
       <Icon name={icon} size={ICON_SIZE[size]} />

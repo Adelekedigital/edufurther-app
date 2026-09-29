@@ -132,7 +132,8 @@ jobs:
         run: |
           set -e
           # /mentors/olajuwon-samuel: a full mock profile (Mentor Profile PR 1).
-          for route in /explore /mentors/olajuwon-samuel ; do
+          # /session-types: mentor-only; the mock viewer is the mentor there (viewer.ts).
+          for route in /explore /mentors/olajuwon-samuel /session-types ; do
             node scripts/review-page.mjs "$route"
           done
 

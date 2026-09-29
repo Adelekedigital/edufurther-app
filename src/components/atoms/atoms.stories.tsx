@@ -235,3 +235,36 @@ export const Selects: Story = {
     </div>
   ),
 };
+
+/** Danger modal confirm (CTA Hierarchy: destructive filled, only inside the confirm). */
+export const DestructiveButton: Story = {
+  render: () => (
+    <div style={row}>
+      <Button size="large" variant="destructive">
+        Delete
+      </Button>
+      <Button size="large" variant="destructive" busy>
+        Deleting…
+      </Button>
+      <Button size="large" variant="destructive" disabled>
+        Delete
+      </Button>
+    </div>
+  ),
+};
+
+/** Session Types row actions: 32px rounded square; delete hovers red. */
+export const RowIconButtons: Story = {
+  render: () => (
+    <div style={row}>
+      <IconButton icon="edit" size="sm" shape="square" aria-label="Edit question 1" />
+      <IconButton
+        icon="delete"
+        size="sm"
+        shape="square"
+        tone="danger"
+        aria-label="Delete SOP draft review"
+      />
+    </div>
+  ),
+};
