@@ -566,4 +566,77 @@ describe('useDuplicateSessionType — review of #74', () => {
     PATCH.mockImplementation(() => reply(500));
     await expect(run({})).resolves.toMatchObject({ failed: ['topics', 'hidden'] });
   });
+
+  it('a stale label without "other" isn’t sent; choice and text questions keep their shape', async () => {
+    GET.mockImplementation((path: string) =>
+      path === '/api/v1/me/session-types'
+        ? reply(
+            200,
+            list({ application_stages: ['drafting_stage'], custom_stage_label: 'Old label' }),
+          )
+        : path.endsWith('/questions')
+          ? reply(200, {
+              data: [
+                {
+                  id: 'q1',
+                  question_text: 'Why?',
+                  question_type: 'free_text',
+                  is_required: true,
+                  display_order: 0,
+                  allows_multiple: false,
+                  options: [],
+                },
+                {
+                  id: 'q2',
+                  question_text: 'For?',
+                  question_type: 'multi_choice',
+                  is_required: true,
+                  display_order: 1,
+                  allows_multiple: false,
+                  options: [
+                    { id: 'o1', text: 'MSc' },
+                    { id: 'o2', text: 'PhD' },
+                  ],
+                },
+                {
+                  id: 'q3',
+                  question_text: 'Parts?',
+                  question_type: 'multi_choice',
+                  is_required: false,
+                  display_order: 2,
+                  allows_multiple: true,
+                  options: [
+                    { id: 'o3', text: 'A' },
+                    { id: 'o4', text: 'B' },
+                  ],
+                },
+              ],
+              next_cursor: null,
+            })
+          : reply(200, { data: [], next_cursor: null }),
+    );
+    POST.mockImplementation(() => reply(201, { id: 'st2', question_ids: [] }));
+    await run();
+    const body = POST.mock.calls[0]![1].body;
+    expect(body.custom_stage_label).toBeNull();
+    expect(body.questions).toEqual([
+      { question_text: 'Why?', question_type: 'free_text', is_required: true, display_order: 0 },
+      {
+        question_text: 'For?',
+        question_type: 'multi_choice',
+        is_required: true,
+        display_order: 1,
+        allows_multiple: false,
+        options: [{ text: 'MSc' }, { text: 'PhD' }],
+      },
+      {
+        question_text: 'Parts?',
+        question_type: 'multi_choice',
+        is_required: false,
+        display_order: 2,
+        allows_multiple: true,
+        options: [{ text: 'A' }, { text: 'B' }],
+      },
+    ]);
+  });
 });

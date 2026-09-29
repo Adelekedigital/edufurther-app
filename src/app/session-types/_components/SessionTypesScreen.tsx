@@ -37,7 +37,11 @@ export function SessionTypesScreen() {
     viewer.kind === 'loading' ? { ...remote, isLoading: true } : remote;
 
   const [messages, setMessages] = useState<Record<string, string>>({});
+  // Rows whose message is progress or success (not an error); a switch's
+  // messages always clear this, so a failed save never looks like a note.
+  const [infoIds, setInfoIds] = useState<string[]>([]);
   const onLiveFailed = useCallback((id: string, live: boolean) => {
+    setInfoIds((ids) => ids.filter((x) => x !== id));
     setMessages((m) => ({
       ...m,
       // PROVISIONAL copy — design request #2.
@@ -47,6 +51,7 @@ export function SessionTypesScreen() {
   const setLive = useSetLive(onLiveFailed);
   const onLiveChange = (id: string, live: boolean) => {
     setMessages(({ [id]: _cleared, ...rest }) => rest);
+    setInfoIds((ids) => ids.filter((x) => x !== id));
     setLive(id, live);
   };
   // The switch asks first (Session Types.dc.html `toggle`): showing and hiding
@@ -64,8 +69,6 @@ export function SessionTypesScreen() {
   const router = useRouter();
   const { topics, isLoading: topicsLoading } = useTopics();
   const dup = useDuplicateSessionType();
-  // Rows whose message is progress or success (not an error).
-  const [infoIds, setInfoIds] = useState<string[]>([]);
   const say = (id: string, text: string, info: boolean) => {
     setMessages((m) => ({ ...m, [id]: text }));
     setInfoIds((ids) =>

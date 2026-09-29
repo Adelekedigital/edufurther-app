@@ -395,13 +395,15 @@ export function toDuplicateBody(
   s: SavedSessionType,
   name: string,
   offeringIds: Record<string, string>,
-) {
+): { body: ReturnType<typeof toCreateBody>; missingTopics: number } {
   const r = s.read;
   const offerings = r.service_offerings?.length
     ? r.service_offerings
     : r.service_offering
       ? [r.service_offering]
       : [];
+  const stages = (r.application_stages ??
+    (r.application_stage ? [r.application_stage] : [])) as Stage[];
   const questions: DraftQuestion[] = s.questions.map((q) => ({
     key: q.id,
     text: q.text,
@@ -418,9 +420,9 @@ export function toDuplicateBody(
       service_offering_ids: offerings.flatMap((o) =>
         offeringIds[o.code] ? [offeringIds[o.code]!] : [],
       ),
-      application_stages:
-        r.application_stages ?? (r.application_stage ? [r.application_stage] : []),
-      custom_stage_label: r.custom_stage_label ?? null,
+      application_stages: stages,
+      // Only with "other": a legacy row can carry a stale label the API refuses.
+      custom_stage_label: stages.includes('other') ? (r.custom_stage_label ?? null) : null,
       icon: r.icon ?? null,
       requires_booking_confirmation: r.requires_booking_confirmation ?? null,
       booking_window_days: r.booking_window_days ?? null,

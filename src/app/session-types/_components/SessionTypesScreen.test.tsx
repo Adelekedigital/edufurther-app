@@ -46,11 +46,15 @@ const TYPE: OwnSessionType = {
 };
 let list: Remote<OwnSessionType[]>;
 const setLive = vi.fn();
+let failLive: (id: string, live: boolean) => void = () => {};
 const remove = vi.fn();
 let deleteErr: DeleteError | null = null;
 vi.mock('@/lib/api/data/sessionTypes', () => ({
   useOwnSessionTypes: () => list,
-  useSetLive: () => setLive,
+  useSetLive: (onFailed: (id: string, live: boolean) => void) => {
+    failLive = onFailed;
+    return setLive;
+  },
   useDeleteSessionType: () => ({ remove, isPending: false, error: deleteErr, reset: vi.fn() }),
 }));
 
@@ -265,5 +269,20 @@ describe('SessionTypesScreen', () => {
     list = idle({ data: [TYPE] });
     render(<SessionTypesScreen />);
     expect(screen.queryByRole('button', { name: /Copy share link/ })).toBeNull();
+  });
+
+  it('after a duplicate’s note, a failed switch on that row still reads as an error (review r2 of #74)', async () => {
+    viewer = mentor;
+    const user = userEvent.setup();
+    duplicate.mockResolvedValueOnce({ id: 'n', name: 'SOP draft review (copy)', failed: [] });
+    render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Duplicate/ }));
+    const note = await screen.findByText(/was added, hidden/);
+    expect(note.textContent).not.toMatch(/^error/);
+    await act(async () => failLive('a', false));
+    const failed = screen.getByText(/Couldn’t hide it\./);
+    // The error icon leads an error message; a note has none.
+    expect(failed.textContent).toMatch(/^error/);
   });
 });
