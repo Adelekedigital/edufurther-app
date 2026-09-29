@@ -333,17 +333,7 @@ export function useRetryWindows() {
 
 export type MentorDefaults = BookingDefaults;
 
-const defaultsKey = (userId: string | null) => ['mentorDefaults', userId ?? 'none'] as const;
-
-/**
- * PENDING BACKEND (round 3 B): `default_duration_minutes` and
- * `default_min_notice_minutes` aren't in the published spec yet. Read loosely
- * until they are; absent reads as "not set" (the platform's applies).
- */
-type PendingDefaults = {
-  default_duration_minutes?: number | null;
-  default_min_notice_minutes?: number | null;
-};
+const defaultsKey = (userId: string | null) => keys.mentorDefaults(userId ?? 'none');
 
 /** GET /users/{id}/mentor-profile — the defaults a session type inherits. */
 export function useMentorDefaults(userId: string | null): Remote<MentorDefaults> {
@@ -356,10 +346,9 @@ export function useMentorDefaults(userId: string | null): Remote<MentorDefaults>
         signal,
       });
       if (!data) throw apiError(response.status, error);
-      const pending = data as typeof data & PendingDefaults;
-      const notice = pending.default_min_notice_minutes;
+      const notice = data.default_min_notice_minutes;
       return {
-        durationMin: pending.default_duration_minutes ?? null,
+        durationMin: data.default_duration_minutes ?? null,
         noticeHours: notice == null ? null : notice / 60,
         windowDays: data.booking_window_days ?? null,
         breakMin: data.break_after_minutes ?? null,
@@ -396,8 +385,8 @@ export function useSaveMentorDefaults(userId: string | null) {
       try {
         result = await api.PATCH('/api/v1/users/{user_id}/mentor-profile', {
           params: { path: { user_id: userId! } },
-          // PENDING BACKEND: the two default_* fields (round 3 B).
-          body: body as unknown as MentorProfileWrite,
+          // A partial update: only the booking preferences (the generated type lists every field).
+          body: body as MentorProfileWrite,
         });
       } catch (e) {
         throw saveError(e);
@@ -407,8 +396,11 @@ export function useSaveMentorDefaults(userId: string | null) {
     },
     onSuccess: (saved) => {
       qc.setQueryData(defaultsKey(userId), saved);
-      // Slots follow the new defaults (length, notice, window, break).
+      // Everything that follows the defaults: slots, the own list's lengths
+      // ("Use my defaults" types), the profile's Sessions tab (review of #60).
       void qc.invalidateQueries({ queryKey: ['booking'] });
+      void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });
+      void qc.invalidateQueries({ queryKey: keys.mentors.all });
     },
   });
   return {

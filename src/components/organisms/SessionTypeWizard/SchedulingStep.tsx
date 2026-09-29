@@ -1,6 +1,7 @@
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Select } from '@/components/atoms/Select/Select';
 import { RadioCards } from '@/components/molecules/RadioCards/RadioCards';
+import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import {
   BREAKS,
   DURATIONS,
@@ -22,12 +23,24 @@ export type DefaultsStatus = 'loading' | 'ready' | 'failed';
 
 /** The mentor's Calendar hours, for the "Use my Calendar availability" summary. */
 export type WeeklyStatus =
-  { status: 'loading' } | { status: 'failed' } | { status: 'ready'; summary: string | null };
+  | { status: 'loading' }
+  | { status: 'failed' }
+  | { status: 'ready'; summary: string | null; timeZone: string };
 
-export const durationOptions = DURATIONS.map((m) => ({ value: String(m), label: `${m} min` }));
-export const noticeOptions = NOTICE_HOURS.map((h) => ({ value: String(h), label: `${h} hrs` }));
-export const windowOptions = WINDOW_DAYS.map((n) => ({ value: String(n), label: windowLabel(n) }));
-export const breakOptions = BREAKS.map((m) => ({ value: String(m), label: breakLabel(m) }));
+/**
+ * The design's choices, plus the stored value when it isn't one of them (set
+ * elsewhere, e.g. 21 days): a native select would otherwise show its first
+ * option while keeping the real value (review of #60).
+ */
+const choices = (list: number[], label: (n: number) => string) => (current: number) =>
+  (list.includes(current) ? list : [...list, current].sort((a, b) => a - b)).map((n) => ({
+    value: String(n),
+    label: label(n),
+  }));
+export const durationOptions = choices(DURATIONS, (m) => `${m} min`);
+export const noticeOptions = choices(NOTICE_HOURS, (h) => `${h} hrs`);
+export const windowOptions = choices(WINDOW_DAYS, windowLabel);
+export const breakOptions = choices(BREAKS, breakLabel);
 
 type SchedulingStepProps = {
   draft: Draft;
@@ -67,7 +80,7 @@ export function SchedulingStep({
     label: string,
     hint: string,
     value: number,
-    options: { value: string; label: string }[],
+    options: (current: number) => { value: string; label: string }[],
     set: (v: number) => void,
   ) => (
     <div className={styles.ruleRow}>
@@ -78,7 +91,7 @@ export function SchedulingStep({
       <Select
         aria-label={label}
         width={160}
-        options={options}
+        options={options(value)}
         value={String(value)}
         onChange={(e) => set(Number(e.target.value))}
       />
@@ -224,7 +237,10 @@ export function SchedulingStep({
                 : weekly.status === 'failed'
                   ? // PROVISIONAL copy — design request #7.
                     'We couldn’t load your weekly hours.'
-                  : (weekly.summary ?? 'No weekly hours yet')}
+                  : weekly.summary
+                    ? // Times are always shown with their zone named (product rule).
+                      `${weekly.summary} · ${zoneLabel(weekly.timeZone)} time`
+                    : 'No weekly hours yet'}
             </span>
             {weekly.status === 'failed' ? (
               <button type="button" className={styles.inlineAction} onClick={onRetryWeekly}>

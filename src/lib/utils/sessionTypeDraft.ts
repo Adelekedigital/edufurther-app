@@ -145,8 +145,6 @@ export function draftFromTemplate(t: SessionTemplate): Draft {
     description: t.description,
     topics: [t.topic],
     durationMin: t.durationMin,
-    // A template's own length ("45 min") holds only as this type's own rule.
-    rules: t.durationMin === PLATFORM_DURATION_MIN ? 'default' : 'custom',
     questions: t.questions.map((q) => ({
       key: newKey(),
       text: q.text,
@@ -233,7 +231,7 @@ export function parseOptions(input: string): string[] {
 
 // ---- to the API ---------------------------------------------------------------
 
-const hhmm = (m: number) => {
+export const hhmm = (m: number) => {
   // The API's times are wall-clock `HH:MM:SS`; midnight at the end of a day is 23:59:59.
   if (m >= 1440) return '23:59:59';
   return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}:00`;
@@ -260,8 +258,7 @@ export function toCreateBody(d: Draft, offeringIds: Record<string, string>) {
   return {
     name: d.name.trim(),
     description: d.description.trim() || null,
-    // null = the mentor's default (backend round 3 B). PENDING BACKEND: the
-    // published spec still requires both; the backend PR makes them nullable.
+    // null = the mentor's default, resolved when read (backend round 3 B).
     duration_minutes: custom ? d.durationMin : null,
     min_notice_minutes: custom ? d.noticeHours * 60 : null,
     service_offering_ids: d.topics.map((c) => offeringIds[c]).filter((x): x is string => !!x),
@@ -396,4 +393,29 @@ export function weeklySummary(days: DayHours[]): string | null {
 /** Any slot that ends before it starts, or overlaps: the hours can't be saved. */
 export function hasSlotErrors(days: DayHours[]): boolean {
   return days.some((d) => d.on && d.slots.some((_, k) => slotError(d.slots, k) !== null));
+}
+
+/** "Set rules for this session" starts from the mentor's own values (review of #60). */
+export function customFrom(d: BookingDefaults) {
+  const r = resolveDefaults(d);
+  return {
+    durationMin: r.durationMin,
+    noticeHours: r.noticeHours,
+    windowDays: r.windowDays,
+    breakMin: r.breakMin,
+  };
+}
+
+/**
+ * A template's length ("45 min") holds only as this type's own rule when it
+ * isn't the mentor's default length: then it starts in "Set rules for this
+ * session", seeded from the mentor's defaults, with the template's length.
+ */
+export function applyTemplateLength(
+  d: Draft,
+  templateMin: number,
+  defaults: BookingDefaults,
+): Draft {
+  if (templateMin === resolveDefaults(defaults).durationMin) return d;
+  return { ...d, ...customFrom(defaults), rules: 'custom', durationMin: templateMin };
 }

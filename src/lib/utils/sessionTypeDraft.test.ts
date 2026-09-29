@@ -1,6 +1,7 @@
 import { SESSION_TEMPLATES } from './sessionTemplates';
 import {
   blankDraft,
+  applyTemplateLength,
   copyForField,
   defaultsSummary,
   draftFromTemplate,
@@ -218,11 +219,37 @@ describe('templates', () => {
     expect(new Set(d.questions.map((q) => q.key)).size).toBe(2);
   });
 
-  it('a template with its own length starts with its own rules, so the length holds', () => {
-    expect(draftFromTemplate(SESSION_TEMPLATES[0]!).rules).toBe('default'); // 60 min
-    const visa = draftFromTemplate(SESSION_TEMPLATES[1]!);
-    expect(visa).toMatchObject({ durationMin: 45, rules: 'custom' });
-    expect(toCreateBody(visa, {}).duration_minutes).toBe(45);
+  it('a template’s length holds: its own rules when it isn’t the mentor’s length (review of #60)', () => {
+    const mine = {
+      durationMin: 45,
+      noticeHours: 72,
+      windowDays: 14,
+      breakMin: 10,
+      requiresApproval: true,
+    };
+    const visa = draftFromTemplate(SESSION_TEMPLATES[1]!); // 45 min
+    const sop = draftFromTemplate(SESSION_TEMPLATES[0]!); // 60 min
+    // The mentor's default is 45: the visa template follows it, the SOP one can't.
+    expect(applyTemplateLength(visa, 45, mine)).toBe(visa);
+    const own = applyTemplateLength(sop, 60, mine);
+    expect(own).toMatchObject({
+      rules: 'custom',
+      durationMin: 60,
+      // The rest from the mentor's defaults, not the blank draft's.
+      noticeHours: 72,
+      windowDays: 14,
+      breakMin: 10,
+    });
+    expect(toCreateBody(own, {}).duration_minutes).toBe(60);
+    // Unknown defaults: the platform's 60.
+    const none = {
+      ...mine,
+      durationMin: null,
+      noticeHours: null,
+      windowDays: null,
+      breakMin: null,
+    };
+    expect(applyTemplateLength(sop, 60, none)).toBe(sop);
   });
 });
 

@@ -3,12 +3,17 @@
 import { useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import { hasSlotErrors, type DayHours } from '@/lib/utils/sessionTypeDraft';
 import { WeeklyHoursEditor } from './WeeklyHoursEditor';
 import styles from './SessionTypeWizard.module.css';
 
 type WeeklyHoursFormProps = {
   initial: DayHours[];
+  /** The zone the hours are kept in; named above the editor. */
+  timeZone: string;
+  /** Zones of other active hours: not shown here, and left as they are. */
+  otherZones?: string[];
   saving: boolean;
   /** Our copy for a save that failed; announced. */
   error: string | null;
@@ -24,6 +29,8 @@ type WeeklyHoursFormProps = {
  */
 export function WeeklyHoursForm({
   initial,
+  timeZone,
+  otherZones = [],
   saving,
   error,
   onCancel,
@@ -34,6 +41,15 @@ export function WeeklyHoursForm({
   const invalid = hasSlotErrors(days);
   return (
     <div className={styles.modalBody}>
+      {/* PROVISIONAL copy — design request #7. */}
+      <p className={styles.zoneNote}>
+        <Icon name="schedule" size={16} />
+        <span>
+          Times in {zoneLabel(timeZone)}.
+          {otherZones.length > 0 &&
+            ` Hours you set in ${otherZones.map(zoneLabel).join(', ')} aren’t shown here and stay as they are.`}
+        </span>
+      </p>
       <div className={styles.hoursModalBox}>
         <WeeklyHoursEditor variant="compact" days={days} onChange={setDays} />
       </div>

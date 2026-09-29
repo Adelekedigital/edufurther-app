@@ -43,7 +43,7 @@ vi.mock('@/lib/api/data/mentors', () => ({
 const create = vi.fn();
 let defaultsMock: unknown;
 const READY = {
-  data: { durationMin: 45, noticeHours: 48, windowDays: 28, breakMin: 15, requiresApproval: true },
+  data: { durationMin: 60, noticeHours: 48, windowDays: 28, breakMin: 15, requiresApproval: true },
   isLoading: false,
   error: null,
   retry: vi.fn(),
@@ -57,11 +57,13 @@ vi.mock('@/lib/api/data/sessionTypes', async (orig) => ({
   useSaveMentorDefaults: () => ({
     save: saveDefaults,
     isPending: false,
-    error: null,
-    reset: vi.fn(),
+    error: defaultsSaveError,
+    reset: resetDefaults,
   }),
 }));
 const saveDefaults = vi.fn();
+const resetDefaults = vi.fn();
+let defaultsSaveError: unknown = null;
 const saveHours = vi.fn();
 const WEEK = [
   { on: false, slots: [[540, 600]] },
@@ -74,7 +76,7 @@ const WEEK = [
 ];
 vi.mock('@/lib/api/data/weeklyHours', () => ({
   useWeeklyHours: () => ({
-    data: { days: WEEK, timeZone: 'Africa/Lagos', rules: [] },
+    data: { days: WEEK, timeZone: 'Africa/Lagos', rules: [], otherZones: [] },
     isLoading: false,
     error: null,
     retry: vi.fn(),
@@ -88,6 +90,8 @@ beforeEach(() => {
   createError = null;
   defaultsMock = READY;
   saveDefaults.mockReset().mockResolvedValue(undefined);
+  resetDefaults.mockReset();
+  defaultsSaveError = null;
   saveHours.mockReset().mockResolvedValue(undefined);
 });
 const next = (name: RegExp) => screen.getByRole('button', { name });
@@ -275,7 +279,7 @@ describe('CreateSessionTypeScreen', () => {
     await toStep3();
     expect(
       screen.getByText(
-        '45 min sessions · at least 48 hours notice · bookable up to 4 weeks ahead · 15 min break · you approve each request',
+        '60 min sessions · at least 48 hours notice · bookable up to 4 weeks ahead · 15 min break · you approve each request',
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: 'Session length' })).toBeNull();
@@ -312,7 +316,7 @@ describe('CreateSessionTypeScreen', () => {
     await user.click(screen.getByRole('button', { name: 'Edit defaults' }));
     let dialog = screen.getByRole('dialog', { name: 'Booking preferences' });
     // The mentor's own values, not the platform's.
-    expect(within(dialog).getByRole('combobox', { name: 'Session length' })).toHaveValue('45');
+    expect(within(dialog).getByRole('combobox', { name: 'Session length' })).toHaveValue('60');
     await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     expect(saveDefaults).not.toHaveBeenCalled();
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -350,7 +354,10 @@ describe('CreateSessionTypeScreen', () => {
     render(<CreateSessionTypeScreen template="sop-review" />);
     await user.click(next(/Continue to intake/));
     await user.click(next(/Continue to scheduling/));
-    expect(screen.getByText('Mon 5 pm–8 pm · Sat 9 am–1 pm')).toBeInTheDocument();
+    // The zone is named with the times (product rule).
+    expect(
+      screen.getByText('Mon 5 pm–8 pm · Sat 9 am–1 pm · Lagos (WAT) time'),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Edit weekly hours' }));
     const dialog = screen.getByRole('dialog', { name: 'Your weekly hours' });
     // 4:00 pm, before the 5:00 pm start.
@@ -371,5 +378,57 @@ describe('CreateSessionTypeScreen', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Save hours' }));
     expect(saveHours).toHaveBeenCalledTimes(1);
     expect(saveHours.mock.calls[0]![0].days[1]).toEqual({ on: true, slots: [[1020, 1260]] });
+  });
+});
+
+describe('CreateSessionTypeScreen — review of #60', () => {
+  const toStep3 = async (user: ReturnType<typeof userEvent.setup>, template = 'sop-review') => {
+    render(<CreateSessionTypeScreen template={template} />);
+    await user.click(next(/Continue to intake/));
+    await user.click(next(/Continue to scheduling/));
+  };
+
+  it('a failed save keeps Booking preferences open and says so; reopening starts clean', async () => {
+    const user = userEvent.setup();
+    saveDefaults.mockRejectedValue({ kind: 'server', message: 'x' });
+    defaultsSaveError = {
+      kind: 'server',
+      message: 'Your preferences didn’t save. Try again in a moment.',
+    };
+    await toStep3(user);
+    await user.click(screen.getByRole('button', { name: 'Edit defaults' }));
+    expect(resetDefaults).toHaveBeenCalledTimes(1);
+    const dialog = screen.getByRole('dialog', { name: 'Booking preferences' });
+    await user.click(within(dialog).getByRole('button', { name: 'Save defaults' }));
+    expect(screen.getByRole('dialog', { name: 'Booking preferences' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('alert')).toHaveTextContent('Your preferences didn’t save.');
+  });
+
+  it('"Set rules for this session" starts from the mentor’s own values', async () => {
+    const user = userEvent.setup();
+    await toStep3(user);
+    await user.click(screen.getByRole('radio', { name: /Set rules for this session/ }));
+    // READY: 60 min, 48 hrs, 28 days, 15 min — not the blank draft's 24 hrs notice.
+    expect(screen.getByRole('combobox', { name: 'Session length' })).toHaveValue('60');
+    expect(screen.getByRole('combobox', { name: 'Minimum notice' })).toHaveValue('48');
+  });
+
+  it('a template whose length isn’t the mentor’s starts with its own rules; one that is, follows the defaults', async () => {
+    const user = userEvent.setup();
+    // Mock visa interview is 45 min; the mentor's default is 60.
+    await toStep3(user, 'mock-visa-interview');
+    expect(screen.getByRole('combobox', { name: 'Session length' })).toHaveValue('45');
+    expect(screen.getByRole('combobox', { name: 'Minimum notice' })).toHaveValue('48');
+  });
+
+  it('a stored value that isn’t a design option shows as itself, not the first option', async () => {
+    const user = userEvent.setup();
+    defaultsMock = { ...READY, data: { ...READY.data, windowDays: 20 } };
+    await toStep3(user);
+    await user.click(screen.getByRole('button', { name: 'Edit defaults' }));
+    const dialog = screen.getByRole('dialog', { name: 'Booking preferences' });
+    const select = within(dialog).getByRole('combobox', { name: 'Bookable up to' });
+    expect(select).toHaveValue('20');
+    expect(within(select).getByRole('option', { name: '20 days' })).toBeInTheDocument();
   });
 });

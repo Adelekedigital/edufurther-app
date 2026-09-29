@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
@@ -26,7 +26,9 @@ import { useSaveWeeklyHours, useWeeklyHours } from '@/lib/api/data/weeklyHours';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { SESSION_TEMPLATES } from '@/lib/utils/sessionTemplates';
 import {
+  applyTemplateLength,
   blankDraft,
+  customFrom,
   draftFromTemplate,
   stepOf,
   toCreateBody,
@@ -43,6 +45,14 @@ import { mentorGate } from './MentorGate';
 import styles from './SessionTypesScreen.module.css';
 
 const LIST = '/session-types';
+/** The mentor's defaults when they couldn't be read: none set, so the platform's. */
+const NO_DEFAULTS = {
+  durationMin: null,
+  noticeHours: null,
+  windowDays: null,
+  breakMin: null,
+  requiresApproval: true,
+};
 
 /** /session-types/new — create a session type (Session Types.dc.html, form view). */
 export function CreateSessionTypeScreen({ template }: { template: string | null }) {
@@ -57,11 +67,26 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
   const weekly = useWeeklyHours(mentorId);
   const saveWeekly = useSaveWeeklyHours(mentorId);
 
-  const initial = useMemo(() => {
-    const t = SESSION_TEMPLATES.find((x) => x.key === template);
-    return t ? draftFromTemplate(t) : blankDraft();
-  }, [template]);
+  const tmpl = SESSION_TEMPLATES.find((x) => x.key === template) ?? null;
+  const [initial, setInitial] = useState<Draft>(() =>
+    tmpl ? draftFromTemplate(tmpl) : blankDraft(),
+  );
   const [draft, setDraft] = useState<Draft>(initial);
+  // Once the mentor's defaults are known (or failed: the platform's), a template
+  // whose length isn't theirs starts with its own rules (review of #60). Set
+  // during render, once, so it isn't counted as an unsaved change.
+  const [templateSettled, setTemplateSettled] = useState(!tmpl);
+  if (!templateSettled && (defaults.data || defaults.error)) {
+    setTemplateSettled(true);
+    const known = defaults.data ?? NO_DEFAULTS;
+    const next = applyTemplateLength(draft, tmpl!.durationMin, known);
+    if (next !== draft) {
+      setDraft(next);
+      setInitial(next);
+    }
+  }
+  // "Set rules for this session" starts from the mentor's values, the first time.
+  const customSeeded = useRef(false);
   const [step, setStep] = useState<Step>(1);
   const [reached, setReached] = useState<Step>(1);
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -93,6 +118,11 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
   }, []);
 
   const update = (patch: Partial<Draft>) => {
+    if (patch.rules === 'custom' && draft.rules !== 'custom' && !customSeeded.current) {
+      customSeeded.current = true;
+      if (defaults.data) patch = { ...customFrom(defaults.data), ...patch };
+    }
+    if (draft.rules === 'custom') customSeeded.current = true;
     setDraft((d) => ({ ...d, ...patch }));
     // A field the mentor changes is no longer wrong until they try again.
     setErrors((e) => {
@@ -208,7 +238,11 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
               weekly.error
                 ? { status: 'failed' }
                 : weekly.data
-                  ? { status: 'ready', summary: weeklySummary(weekly.data.days) }
+                  ? {
+                      status: 'ready',
+                      summary: weeklySummary(weekly.data.days),
+                      timeZone: weekly.data.timeZone,
+                    }
                   : { status: 'loading' }
             }
             onRetryWeekly={weekly.retry}
@@ -317,6 +351,8 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
         >
           <WeeklyHoursForm
             initial={weekly.data.days}
+            timeZone={weekly.data.timeZone}
+            otherZones={weekly.data.otherZones}
             saving={saveWeekly.isPending}
             error={saveWeekly.error?.message ?? null}
             onCancel={() => setModal(null)}

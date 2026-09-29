@@ -428,6 +428,19 @@
   padding-top: var(--space-4);
   border-top: var(--border-hairline) solid var(--border-muted);
 }
+.zoneNote {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+.zoneNote > :first-child {
+  flex: none;
+  color: var(--ink-500);
+}
 .modalError {
   display: flex;
   align-items: center;

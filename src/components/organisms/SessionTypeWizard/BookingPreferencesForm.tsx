@@ -58,28 +58,28 @@ export function BookingPreferencesForm({
           'Session length',
           'How long each booking lasts.',
           String(v.durationMin),
-          durationOptions,
+          durationOptions(v.durationMin),
           (x) => setV({ ...v, durationMin: Number(x) }),
         )}
         {row(
           'Minimum notice',
           'Mentees can’t book with less notice.',
           String(v.noticeHours),
-          noticeOptions,
+          noticeOptions(v.noticeHours),
           (x) => setV({ ...v, noticeHours: Number(x) }),
         )}
         {row(
           'Bookable up to',
           'How far ahead mentees can book.',
           String(v.windowDays),
-          windowOptions,
+          windowOptions(v.windowDays),
           (x) => setV({ ...v, windowDays: Number(x) }),
         )}
         {row(
           'Break after each session',
           'Time kept free between bookings.',
           String(v.breakMin),
-          breakOptions,
+          breakOptions(v.breakMin),
           (x) => setV({ ...v, breakMin: Number(x) }),
         )}
         {row(

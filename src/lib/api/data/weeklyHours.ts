@@ -4,45 +4,57 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import type { AppError, Remote } from '@/types/mentor';
 import { deviceTimeZone } from '@/lib/utils/format';
-import { emptyWeek, type DayHours, type Slot } from '@/lib/utils/sessionTypeDraft';
+import { emptyWeek, hhmm, type DayHours, type Slot } from '@/lib/utils/sessionTypeDraft';
 import { apiError, normaliseError } from './errors';
 import { api } from './http';
+import { keys } from './keys';
 
 type AvailabilityRuleRead = components['schemas']['AvailabilityRuleRead'];
 
 /** The mentor's Calendar hours: what "Use my Calendar availability" books into. */
 export type WeeklyHours = {
-  /** Sunday first (backend day_of_week 0 = Sunday). */
+  /** Sunday first (backend day_of_week 0 = Sunday), in `timeZone`. */
   days: DayHours[];
-  /** The zone the hours are kept in: the rules' own, else this device's. */
+  /** The zone these hours are kept in (named wherever they're shown). */
   timeZone: string;
-  /** The active rules as read, so a save changes only what changed. */
+  /** The active rules in `timeZone`, so a save changes only what changed. */
   rules: AvailabilityRuleRead[];
+  /** Active rules kept in another zone: not shown here, and never touched by a save. */
+  otherZones: string[];
 };
 
-const weeklyKey = (userId: string | null) => ['weeklyHours', userId ?? 'none'] as const;
-
-/** "17:00:00" → 1020; "00:00" as an end is midnight at the end of the day. */
-function minutes(t: string, end: boolean): number {
+/**
+ * "17:00:00" → 1020. An end at midnight is stored as 23:59:59 (the backend
+ * refuses an end at or before the start, so 00:00 can't end a day) and reads
+ * back as 1440, the end of the day.
+ */
+export function minutes(t: string, end: boolean): number {
   const [h = 0, m = 0] = t.split(':').map(Number);
   const v = h * 60 + m;
-  return end && v === 0 ? 1440 : v;
+  if (end && (v === 0 || v === 1439)) return 1440;
+  return v;
 }
-const hhmm = (m: number) =>
-  m >= 1440
-    ? '00:00'
-    : `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 
 export function toWeeklyHours(rules: AvailabilityRuleRead[], fallbackZone: string): WeeklyHours {
   const active = rules.filter((r) => r.is_active);
+  // The zone most of the hours are in (the device's when there are none).
+  const counts = new Map<string, number>();
+  for (const r of active) counts.set(r.timezone, (counts.get(r.timezone) ?? 0) + 1);
+  const timeZone = [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? fallbackZone;
+  const mine = active.filter((r) => r.timezone === timeZone);
   const days = emptyWeek();
   const byDay: Slot[][] = Array.from({ length: 7 }, () => []);
-  for (const r of active)
+  for (const r of mine)
     byDay[r.day_of_week]?.push([minutes(r.start_time, false), minutes(r.end_time, true)]);
   byDay.forEach((slots, i) => {
     if (slots.length) days[i] = { on: true, slots: slots.sort((a, b) => a[0] - b[0]) };
   });
-  return { days, timeZone: active[0]?.timezone ?? fallbackZone, rules: active };
+  return {
+    days,
+    timeZone,
+    rules: mine,
+    otherZones: [...counts.keys()].filter((z) => z !== timeZone),
+  };
 }
 
 type RuleKey = string;
@@ -64,7 +76,7 @@ export function planHoursSave(rules: AvailabilityRuleRead[], days: DayHours[]) {
 /** GET /users/{id}/availability/rules — the mentor's weekly hours. */
 export function useWeeklyHours(userId: string | null): Remote<WeeklyHours> {
   const query = useQuery({
-    queryKey: weeklyKey(userId),
+    queryKey: keys.weeklyHours(userId ?? 'none'),
     enabled: userId !== null,
     queryFn: async ({ signal }) => {
       const { data, error, response } = await api.GET(
@@ -91,29 +103,29 @@ export function useWeeklyHours(userId: string | null): Remote<WeeklyHours> {
  * Save the "Your weekly hours" modal: delete the hours that went, then add the
  * new ones (an overlap with one being removed would otherwise be refused).
  * Rules are separate requests, so a partial failure is possible: the hours are
- * re-read either way, and the error says to check them.
+ * re-read either way, and the error says to check them. A rule already gone
+ * (404: removed by an earlier, partly failed save) counts as removed.
  */
 export function useSaveWeeklyHours(userId: string | null) {
   const qc = useQueryClient();
   const mutation = useMutation<void, AppError, { current: WeeklyHours; days: DayHours[] }>({
     mutationFn: async ({ current, days }) => {
       const { remove, add } = planHoursSave(current.rules, days);
-      const ok = (p: Promise<{ response: Response }>) =>
-        p.then((r) => r.response.ok).catch(() => false);
       const path = { user_id: userId! };
       const removed = await Promise.all(
         remove.map((r) =>
-          ok(
-            api.DELETE('/api/v1/users/{user_id}/availability/rules/{rule_id}', {
+          api
+            .DELETE('/api/v1/users/{user_id}/availability/rules/{rule_id}', {
               params: { path: { ...path, rule_id: r.id } },
-            }),
-          ),
+            })
+            .then((x) => x.response.ok || x.response.status === 404)
+            .catch(() => false),
         ),
       );
       const added = await Promise.all(
         add.map(({ day, slot: [a, b] }) =>
-          ok(
-            api.POST('/api/v1/users/{user_id}/availability/rules', {
+          api
+            .POST('/api/v1/users/{user_id}/availability/rules', {
               params: { path },
               body: {
                 day_of_week: day,
@@ -122,15 +134,20 @@ export function useSaveWeeklyHours(userId: string | null) {
                 timezone: current.timeZone,
                 is_active: true,
               },
-            }),
-          ),
+            })
+            .then((x) => x.response.ok)
+            .catch(() => false),
         ),
       );
-      if ([...removed, ...added].some((x) => !x)) throw hoursError(add.length + remove.length);
+      const results = [...removed, ...added];
+      const failed = results.filter((x) => !x).length;
+      if (failed) throw hoursError(failed === results.length);
     },
     onSettled: () => {
-      void qc.invalidateQueries({ queryKey: weeklyKey(userId) });
+      void qc.invalidateQueries({ queryKey: keys.weeklyHours(userId ?? 'none') });
+      // Slots, the profile's "Book {next open time}", cards' "Free {day}".
       void qc.invalidateQueries({ queryKey: ['booking'] });
+      void qc.invalidateQueries({ queryKey: keys.mentors.all });
     },
   });
   return {
@@ -142,14 +159,14 @@ export function useSaveWeeklyHours(userId: string | null) {
 }
 
 /** Our copy (PROVISIONAL — design request #7). */
-function hoursError(changes: number): AppError {
+export function hoursError(none: boolean): AppError {
   const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
   return {
     kind: offline ? 'offline' : 'server',
     message: offline
       ? 'You’re offline. Your hours didn’t save. Try again when you reconnect.'
-      : changes > 1
-        ? 'Some of your hours didn’t save. Check them, then try again.'
-        : 'Your hours didn’t save. Try again in a moment.',
+      : none
+        ? 'Your hours didn’t save. Try again in a moment.'
+        : 'Some of your hours didn’t save. Check them, then try again.',
   };
 }

@@ -57,17 +57,15 @@ export function addRule(body: Record<string, unknown>): { status: number; json: 
   )
     return { status: 422, json: problem(422, 'Validation failed') };
   const a = mins(start);
-  const b = end.startsWith('00:00') ? 1440 : mins(end);
+  // As the backend: 00:00 can't end a day (end <= start is refused); 23:59:59 does.
+  const b = mins(end);
   if (b <= a) return { status: 422, json: problem(422, 'Validation failed') };
   const overlap = rules.some(
-    (r) =>
-      r.is_active &&
-      r.day_of_week === day &&
-      a < (mins(r.end_time) || 1440) &&
-      mins(r.start_time) < b,
+    (r) => r.is_active && r.day_of_week === day && a < mins(r.end_time) && mins(r.start_time) < b,
   );
   if (overlap) return { status: 409, json: problem(409, 'Overlapping availability') };
   const created = rule(day, start.slice(0, 5), end.slice(0, 5));
+  created.end_time = end.length === 5 ? `${end}:00` : end;
   if (typeof body.timezone === 'string') created.timezone = body.timezone;
   rules.push(created);
   return { status: 201, json: { id: created.id } };
