@@ -92,6 +92,12 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // The profile only exists after a client fetch, so `window` is there by then.
   const shareUrl = p ? `${window.location.origin}${p.mentor.profileHref}` : '';
 
+  const isOwner = !!p && (p.owner !== null || member?.id === p.mentor.id);
+  const bookBlocked = !online ? 'Booking needs a connection' : bookBlockedFor(viewer);
+  // Mentors can't book (product 2026-09-29, canBookFor): on another mentor's
+  // profile every Book control goes away, as for the owner on their own.
+  const mayBook = !isOwner && canBook;
+
   // ---- booking: the shared BookingModal, as on Explore -----------------------
   // Who is being booked: this profile's mentor, or one suggested on the
   // "isn't available" page.
@@ -99,7 +105,10 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const [bookingTypeId, setBookingTypeId] = useState<string | null>(null);
   // A time to open on, from the first-mentees card's "Book {time}".
   const [bookingTime, setBookingTime] = useState<string | null>(null);
-  const mentorId = booking?.id ?? null;
+  // A booking the viewer can no longer make (they turn out to be a mentor)
+  // closes: nothing is fetched for it, and nothing shows.
+  const bookingAllowed = !!booking && (booking.id === p?.mentor.id ? mayBook : canBook);
+  const mentorId = bookingAllowed ? booking!.id : null;
   const sessionTypes = useSessionTypes(mentorId);
   const typeId = bookingTypeId ?? sessionTypes.data?.[0]?.id ?? null;
   const slots = useSlots(mentorId, typeId, timeZone);
@@ -108,11 +117,13 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const openBooking = (sessionTypeId?: string, time?: string) => {
     setBookingTypeId(sessionTypeId ?? null);
     setBookingTime(time ?? null);
+    request.reset();
     setBooking(p?.mentor ?? null);
   };
   const bookSuggested = (m: Mentor) => {
     setBookingTypeId(null);
     setBookingTime(null);
+    request.reset();
     setBooking(m);
   };
   const closeBooking = () => {
@@ -124,12 +135,6 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // The owner's "Share your profile" opens the header's share menu.
   const [shareOpen, setShareOpen] = useState(false);
   const isPhone = useMediaQuery('(max-width: 767px)');
-
-  const isOwner = !!p && (p.owner !== null || member?.id === p.mentor.id);
-  const bookBlocked = !online ? 'Booking needs a connection' : bookBlockedFor(viewer);
-  // Mentors can't book (product 2026-09-29, canBookFor): on another mentor's
-  // profile every Book control goes away, as for the owner on their own.
-  const mayBook = !isOwner && canBook;
 
   // The owner's cover (Mentor Profile.dc.html "Change cover"): colour and art
   // save as picked; an image replaces them.
@@ -290,6 +295,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               <EmptyState
                 illustration="search-results"
                 size={96}
+                headingLevel={1}
                 title="This mentor profile isn’t available"
                 description="The link may be out of date, or the profile isn’t public right now."
               />
@@ -310,6 +316,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
             <div className={styles.state}>
               <EmptyState
                 illustration="search-results"
+                headingLevel={1}
                 title="This mentor profile isn’t available"
                 description="The link may be out of date, or the profile isn’t public. You can find other mentors who’ve done the same path."
                 actions={
@@ -541,7 +548,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
         )}
       </div>
 
-      {booking && (booking.id === p?.mentor.id ? mayBook : canBook) && (
+      {booking && bookingAllowed && (
         <BookingFlow
           mentor={booking}
           sessionTypes={sessionTypes}
@@ -643,7 +650,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
 
 /**
  * The suggestions' subtitle from what they share with the missing profile:
- * "They help with visa interview and CV review, and are taking bookings."
+ * "They help with visa interview, and CV review, and are taking bookings."
  * Provisional (the design's sample names four topics and says "have open times
  * now", which the list doesn't promise: it's bookable mentors, not free times).
  */
@@ -652,8 +659,10 @@ export function suggestionsLine(list: SimilarMentor[]): string {
     .slice(0, 3)
     .map(inSentence);
   if (!topics.length) return 'They are taking bookings.';
+  // Commas between topics, and before the last "and": topic names have their
+  // own "and"s ("visa and interview"), so each stays whole.
   const joined =
-    topics.length === 1 ? topics[0]! : `${topics.slice(0, -1).join(', ')} and ${topics.at(-1)}`;
+    topics.length === 1 ? topics[0]! : `${topics.slice(0, -1).join(', ')}, and ${topics.at(-1)}`;
   return `They help with ${joined}, and are taking bookings.`;
 }
 

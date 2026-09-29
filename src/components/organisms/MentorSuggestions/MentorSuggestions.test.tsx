@@ -46,6 +46,22 @@ describe('MentorSuggestions', () => {
     expect(screen.getAllByText('New mentor')).toHaveLength(1);
   });
 
+  it('the compact photo loads lazily and keeps the face in the crop', () => {
+    const withPhoto = {
+      ...sampleMentors[0]!,
+      photoUrl: '/p.jpg',
+      photoFocus: { x: 0.3, y: 0.2 },
+    };
+    const { container } = render(
+      <MentorSuggestions {...props} mentors={[withPhoto]} loading={false} />,
+    );
+    const img = container.querySelector('img')!;
+    expect(img).toHaveAttribute('loading', 'lazy');
+    const circle = img.parentElement!;
+    expect(circle.style.getPropertyValue('--avatar-x')).toBe('30.0%');
+    expect(circle.style.getPropertyValue('--avatar-y')).toBe('20.0%');
+  });
+
   it('Book hands over the mentor', async () => {
     const onBook = vi.fn();
     const user = userEvent.setup();

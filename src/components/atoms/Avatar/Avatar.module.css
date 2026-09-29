@@ -14,6 +14,8 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* Centred unless the face position is known (focus). */
+  object-position: var(--avatar-x, 50%) var(--avatar-y, 50%);
 }
 .sm {
   width: 32px;

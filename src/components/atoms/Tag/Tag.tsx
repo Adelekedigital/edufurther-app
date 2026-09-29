@@ -11,6 +11,7 @@ type TagProps = {
    * free     — small green tag, "Free" on a session type.
    * praise   — 28px round blue tag with an icon, "Most praised for" on reviews.
    * mine     — small green tag, "Your review" on the viewer's own review.
+   * badge    — plain chip beside a name (compact MentorCard's "Top-rated").
    */
   tone: 'on-photo' | 'neutral' | 'topic' | 'info' | 'free' | 'praise' | 'mine' | 'badge';
   children: ReactNode;

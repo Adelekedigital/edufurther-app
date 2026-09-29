@@ -111,7 +111,15 @@ export function MentorCard({
 
       <div className={compact ? styles.compactHead : styles.whoWrap}>
         {compact && (
-          <Avatar size="xl" tone={m.tone} initials={m.initials} src={m.photoUrl} alt="" />
+          <Avatar
+            size="xl"
+            tone={m.tone}
+            initials={m.initials}
+            src={m.photoUrl}
+            alt=""
+            focus={m.photoFocus}
+            lazy
+          />
         )}
         <div className={styles.who}>
           <div className={styles.nameRow}>

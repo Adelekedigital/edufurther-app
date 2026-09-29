@@ -19,14 +19,31 @@ type AvatarProps = {
   /** The person's name. Pass "" when a visible name sits right next to it. */
   alt: string;
   className?: string;
+  /** Where the face is (0–1 each way, backend avatar_focus): the crop keeps it. */
+  focus?: { x: number; y: number } | null;
+  /** Below the fold: the browser loads it when it's near. */
+  lazy?: boolean;
 };
 
-export function Avatar({ size = 'md', initials, tone, src, alt, className }: AvatarProps) {
+export function Avatar({
+  size = 'md',
+  initials,
+  tone,
+  src,
+  alt,
+  className,
+  focus,
+  lazy,
+}: AvatarProps) {
   const plain = tone === 'plain';
   const blank = plain && !src && !initials;
-  const style = plain
-    ? undefined
-    : ({ '--avatar-bg': `var(--avatar-tone-${tone})` } as CSSProperties);
+  const style = {
+    ...(!plain && { '--avatar-bg': `var(--avatar-tone-${tone})` }),
+    ...(focus && {
+      '--avatar-x': `${(focus.x * 100).toFixed(1)}%`,
+      '--avatar-y': `${(focus.y * 100).toFixed(1)}%`,
+    }),
+  } as CSSProperties;
   return (
     <span
       className={cx(
@@ -39,7 +56,7 @@ export function Avatar({ size = 'md', initials, tone, src, alt, className }: Ava
       style={style}
     >
       {src ? (
-        <img src={src} alt={alt} className={styles.img} />
+        <img src={src} alt={alt} className={styles.img} loading={lazy ? 'lazy' : undefined} />
       ) : (
         <span
           role={alt ? 'img' : undefined}
