@@ -134,8 +134,21 @@ describe('toMentorProfile', () => {
         }),
       ),
     ).toBe('Exploring, Pre-departure');
-    // Empty means any stage: no chip. The list wins over the deprecated field.
-    expect(stageLine(t({ application_stages: [], application_stage: null }))).toBeNull();
+    // Empty means any stage: no chip, even with the deprecated field still set.
+    expect(
+      stageLine(t({ application_stages: [], application_stage: 'drafting_stage' })),
+    ).toBeNull();
+    // The list wins over the deprecated field (review of #71).
+    expect(
+      stageLine(t({ application_stages: ['revisions'], application_stage: 'drafting_stage' })),
+    ).toBe('Revising');
+    // A stage said twice (the mentor's wording matching a built-in one) reads once.
+    expect(
+      stageLine(
+        t({ application_stages: ['drafting_stage', 'other'], custom_stage_label: 'Drafting' }),
+      ),
+    ).toBe('Drafting');
+    expect(stageLine(t({ application_stages: ['post_submission'] }))).toBe('Submitted, waiting');
     // An older response without the list still reads its single stage.
     expect(stageLine(t({ application_stage: 'interviewing' }))).toBe('Interviewing');
     // `other` with no wording adds nothing.

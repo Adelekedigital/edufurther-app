@@ -27,9 +27,10 @@ type ApplicationStage = components['schemas']['ApplicationStage'];
 type Venue = components['schemas']['ConferencingProvider'];
 
 const STAGE: Record<ApplicationStage, string | null> = {
+  // One wording with the Session Types wizard (product, 2026-09-29).
   early_exploration: 'Exploring',
   drafting_stage: 'Drafting',
-  post_submission: 'After submitting',
+  post_submission: 'Submitted, waiting',
   revisions: 'Revising',
   interviewing: 'Interviewing', // backend #10 (session-types reply), design stage chip
   other: null, // custom_stage_label carries it
