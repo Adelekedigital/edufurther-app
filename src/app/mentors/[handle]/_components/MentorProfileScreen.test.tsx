@@ -62,7 +62,8 @@ vi.mock('@/lib/api/data/reviews', () => ({
     reviewsArgs(...args);
     return reviewsRemote;
   },
-  useReviewPrompt: () => reviewPrompt,
+  // Like the real hook: nothing when the screen doesn't ask.
+  useReviewPrompt: (_id: string | null, enabled: boolean) => (enabled ? reviewPrompt : null),
 }));
 // Per test: the Similar mentors card's list, and whether it was asked for.
 let similarRemote: Remote<typeof similarMentors>;
@@ -573,9 +574,37 @@ describe('MentorProfileScreen â€” a mentor viewing another mentor (mentors canâ€
     expect(screen.queryByRole('button', { name: /^Book/ })).not.toBeInTheDocument();
   });
 
-  it('a mentee still gets every Book control', () => {
+  it('no mentee invitation card and no "review after your first session" (review of #54)', () => {
+    viewerIsMentor = true;
+    reviewPrompt = 'none';
+    profile = state({
+      data: { ...fullProfile, mentor: { ...fullProfile.mentor, completedSessions: 1 } },
+    });
+    const { unmount } = render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByText(/first mentees/)).not.toBeInTheDocument();
+    unmount();
+    search = new URLSearchParams('tab=reviews');
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByText(/after your first session/)).not.toBeInTheDocument();
+  });
+
+  it('an open booking closes if the viewer turns out to be a mentor (review of #54)', async () => {
+    const user = userEvent.setup();
+    profile = state({ data: fullProfile });
+    const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getAllByRole('button', { name: 'Book a session' })[0]!);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    viewerIsMentor = true;
+    rerender(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('a mentee still gets the header Book and the booking card', () => {
     profile = state({ data: fullProfile });
     render(<MentorProfileScreen handle="gbenga" />);
-    expect(screen.getAllByRole('button', { name: /^Book/ }).length).toBeGreaterThan(1);
+    expect(screen.getByRole('button', { name: 'Book a session' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: fullProfile.sessionTypes[0]!.name }),
+    ).toBeInTheDocument();
   });
 });

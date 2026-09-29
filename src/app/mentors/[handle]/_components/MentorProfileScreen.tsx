@@ -118,7 +118,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   });
   const reviewPrompt = useReviewPrompt(
     p?.mentor.id ?? null,
-    tab === 'reviews' && viewer.kind === 'member' && !isOwner,
+    // Mentors can't book a first session, so "review after your first session" isn't for them.
+    tab === 'reviews' && viewer.kind === 'member' && !isOwner && canBook,
   );
   const reviewsHref = p ? `${p.mentor.profileHref}?tab=reviews` : '';
 
@@ -153,7 +154,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
         isPublic ? (
           <FirstMenteesCard variant="owner" onShare={() => setShareOpen(true)} />
         ) : null
-      ) : (
+      ) : mayBook ? (
+        // The invitation to book: not for mentors, who can't (review of #54).
         <FirstMenteesCard
           variant="mentee"
           firstName={p.mentor.firstName}
@@ -169,7 +171,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               : undefined
           }
         />
-      )
+      ) : null
     ) : null;
 
   return (
