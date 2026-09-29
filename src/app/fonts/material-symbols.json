@@ -2,6 +2,7 @@
   "names": [
     "account_box",
     "add",
+    "add_photo_alternate",
     "alternate_email",
     "arrow_back",
     "arrow_downward",
@@ -21,6 +22,7 @@
     "cloud_off",
     "content_copy",
     "delete",
+    "description",
     "drag_indicator",
     "edit",
     "edit_document",
@@ -35,6 +37,7 @@
     "find_in_page",
     "flag",
     "flight_takeoff",
+    "folder_open",
     "format_list_numbered",
     "groups",
     "handshake",
@@ -43,6 +46,7 @@
     "hourglass_top",
     "ios_share",
     "join_inner",
+    "label",
     "lightbulb",
     "link",
     "location_on",
@@ -54,6 +58,7 @@
     "my_location",
     "new_releases",
     "open_in_new",
+    "palette",
     "payments",
     "person",
     "power",
@@ -87,5 +92,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "375a193dc8d9c81e69ce404561b79d40eef8ae11e7f169bc631fb0b7d15da482"
+  "sha256": "24587a3f0673f5d55cf438763995fae360c3378b2d14b9cf27850104f374bcd8"
 }
