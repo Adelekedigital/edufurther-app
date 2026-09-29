@@ -40,6 +40,9 @@ describe('keyForAttempt (Idempotency-Key per booking attempt)', () => {
 
 describe('toSessionType', () => {
   it('maps the offering and asks no questions until the backend ships them', () => {
+    // Fields the spec adds as required (#9 topics, #268 questions), spread so the
+    // fixture compiles before and after they ship.
+    const later = { service_offerings: [], questions: [] };
     const t = toSessionType({
       id: 'st',
       name: 'CV review',
@@ -47,6 +50,7 @@ describe('toSessionType', () => {
       duration_minutes: 45,
       min_notice_minutes: 1440,
       meeting_venue: 'google_meet',
+      ...later,
     });
     expect(t).toEqual({
       id: 'st',
