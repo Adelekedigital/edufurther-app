@@ -12,7 +12,7 @@ type TagProps = {
    * praise   — 28px round blue tag with an icon, "Most praised for" on reviews.
    * mine     — small green tag, "Your review" on the viewer's own review.
    */
-  tone: 'on-photo' | 'neutral' | 'topic' | 'info' | 'free' | 'praise' | 'mine';
+  tone: 'on-photo' | 'neutral' | 'topic' | 'info' | 'free' | 'praise' | 'mine' | 'badge';
   children: ReactNode;
   className?: string;
 };

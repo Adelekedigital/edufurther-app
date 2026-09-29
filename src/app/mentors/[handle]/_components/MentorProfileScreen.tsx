@@ -19,6 +19,7 @@ import { ReviewFlow } from '@/components/organisms/ReviewFlow/ReviewFlow';
 import { ReviewsList } from '@/components/organisms/ReviewsList/ReviewsList';
 import { ReviewsSummary } from '@/components/organisms/ReviewsSummary/ReviewsSummary';
 import { SessionTypeList } from '@/components/organisms/SessionTypeList/SessionTypeList';
+import { MentorSuggestions } from '@/components/organisms/MentorSuggestions/MentorSuggestions';
 import { SimilarMentorsCard } from '@/components/organisms/SimilarMentorsCard/SimilarMentorsCard';
 import { TrackRecordCard } from '@/components/organisms/TrackRecordCard/TrackRecordCard';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
@@ -42,10 +43,10 @@ import {
 } from '@/lib/api/data/reviewWrite';
 import { useSimilarMentors } from '@/lib/api/data/similar';
 import { coverFor } from '@/lib/utils/cover';
-import { deviceTimeZone, formatTime, movedBetween } from '@/lib/utils/format';
+import { deviceTimeZone, formatTime, inSentence, movedBetween } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
-import type { MentorProfile, ReviewAnswers } from '@/types/mentor';
+import type { Mentor, MentorProfile, ReviewAnswers, SimilarMentor } from '@/types/mentor';
 import styles from './MentorProfileScreen.module.css';
 
 type Tab = 'overview' | 'sessions' | 'reviews';
@@ -92,11 +93,13 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const shareUrl = p ? `${window.location.origin}${p.mentor.profileHref}` : '';
 
   // ---- booking: the shared BookingModal, as on Explore -----------------------
-  const [booking, setBooking] = useState(false);
+  // Who is being booked: this profile's mentor, or one suggested on the
+  // "isn't available" page.
+  const [booking, setBooking] = useState<Mentor | null>(null);
   const [bookingTypeId, setBookingTypeId] = useState<string | null>(null);
   // A time to open on, from the first-mentees card's "Book {time}".
   const [bookingTime, setBookingTime] = useState<string | null>(null);
-  const mentorId = booking && p ? p.mentor.id : null;
+  const mentorId = booking?.id ?? null;
   const sessionTypes = useSessionTypes(mentorId);
   const typeId = bookingTypeId ?? sessionTypes.data?.[0]?.id ?? null;
   const slots = useSlots(mentorId, typeId, timeZone);
@@ -105,10 +108,15 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const openBooking = (sessionTypeId?: string, time?: string) => {
     setBookingTypeId(sessionTypeId ?? null);
     setBookingTime(time ?? null);
-    setBooking(true);
+    setBooking(p?.mentor ?? null);
+  };
+  const bookSuggested = (m: Mentor) => {
+    setBookingTypeId(null);
+    setBookingTime(null);
+    setBooking(m);
   };
   const closeBooking = () => {
-    setBooking(false);
+    setBooking(null);
     setBookingTypeId(null);
     setBookingTime(null);
     request.reset();
@@ -203,9 +211,13 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // suggestion, and mentors' nav has no Explore). Waits for who is looking.
   const showSimilar =
     !!p && !isOwner && tab === 'overview' && viewer.kind !== 'loading' && !member?.isMentor;
-  const similar = useSimilarMentors(handle, showSimilar);
+  // The "isn't available" page offers them to everyone (Mentor Profile.dc.html
+  // notFound; mentors see "View profile" on the cards). The endpoint answers
+  // for hidden and unknown handles alike (#38).
+  const similar = useSimilarMentors(handle, showSimilar || profile.notFound);
   // The card hides itself when the list is empty or failed.
   const similarShown = showSimilar && (similar.isLoading || !!similar.data?.length);
+  const suggestionsShown = profile.notFound && (similar.isLoading || !!similar.data?.length);
   // The aside's name lists what it holds for this viewer on this tab; with
   // only the first-mentees card it's "About this mentor".
   const asideLabel =
@@ -269,20 +281,45 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
             />
           </div>
         ) : profile.notFound || !p ? (
-          // Design reply #34. 404 is "not found or not public", indistinguishable
-          // on purpose — the copy doesn't guess which.
-          <div className={styles.state}>
-            <EmptyState
-              illustration="search-results"
-              title="This mentor profile isn’t available"
-              description="The link may be out of date, or the profile isn’t public. You can find other mentors who’ve done the same path."
-              actions={
-                <ButtonLink href="/explore" size="large">
-                  Explore mentors
-                </ButtonLink>
-              }
-            />
-          </div>
+          // Design reply #34, then Mentor Profile.dc.html notFound (#38). 404 is
+          // "not found or not public", indistinguishable on purpose: the copy
+          // doesn't guess which. With mentors to suggest, they carry the page
+          // on; without, "Explore mentors" does.
+          suggestionsShown ? (
+            <div className={styles.missing}>
+              <EmptyState
+                illustration="search-results"
+                size={96}
+                title="This mentor profile isn’t available"
+                description="The link may be out of date, or the profile isn’t public right now."
+              />
+              <MentorSuggestions
+                title="Mentors with similar expertise"
+                subtitle={suggestionsLine(similar.data ?? [])}
+                mentors={similar.data?.map((x) => x.mentor) ?? null}
+                loading={similar.isLoading}
+                exploreHref="/explore"
+                onBook={bookSuggested}
+                timeZone={timeZone}
+                offline={!online}
+                bookBlocked={bookBlocked}
+                canBook={canBook}
+              />
+            </div>
+          ) : (
+            <div className={styles.state}>
+              <EmptyState
+                illustration="search-results"
+                title="This mentor profile isn’t available"
+                description="The link may be out of date, or the profile isn’t public. You can find other mentors who’ve done the same path."
+                actions={
+                  <ButtonLink href="/explore" size="large">
+                    Explore mentors
+                  </ButtonLink>
+                }
+              />
+            </div>
+          )
         ) : (
           <>
             {isOwner && <OwnerBar profile={p} />}
@@ -504,9 +541,9 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
         )}
       </div>
 
-      {booking && p && mayBook && (
+      {booking && (booking.id === p?.mentor.id ? mayBook : canBook) && (
         <BookingFlow
-          mentor={p.mentor}
+          mentor={booking}
           sessionTypes={sessionTypes}
           sessionTypeId={typeId}
           onSessionTypeChange={setBookingTypeId}
@@ -522,7 +559,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           onClose={closeBooking}
           deviceZone={timeZone}
           initialTime={bookingTime}
-          hideProfileLink
+          // On this profile the link would lead back here; a suggested mentor's is useful.
+          hideProfileLink={booking.id === p?.mentor.id}
           renderShell={(shell, body) => (
             <ModalShell
               title={shell.title}
@@ -601,6 +639,22 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
       )}
     </AppShell>
   );
+}
+
+/**
+ * The suggestions' subtitle from what they share with the missing profile:
+ * "They help with visa interview and CV review, and are taking bookings."
+ * Provisional (the design's sample names four topics and says "have open times
+ * now", which the list doesn't promise: it's bookable mentors, not free times).
+ */
+export function suggestionsLine(list: SimilarMentor[]): string {
+  const topics = [...new Set(list.map((x) => x.sharedTopic).filter(Boolean))]
+    .slice(0, 3)
+    .map(inSentence);
+  if (!topics.length) return 'They are taking bookings.';
+  const joined =
+    topics.length === 1 ? topics[0]! : `${topics.slice(0, -1).join(', ')} and ${topics.at(-1)}`;
+  return `They help with ${joined}, and are taking bookings.`;
 }
 
 /** "Booking, track record and similar mentors" from the parts present; null for none. */

@@ -24,6 +24,14 @@
   color: var(--text-secondary);
 }
 
+/* MentorCard.dc.html compact: the label beside the name ("Top-rated"). */
+.badge {
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+}
+
 /* Mentor Profile.dc.html: header topics. */
 .topic {
   height: 28px;
