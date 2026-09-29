@@ -353,6 +353,8 @@ export function resolveDefaults(d: BookingDefaults) {
   };
 }
 
+/** Hours as shown: a stored 2000 min is "33.3", not 33.333333333333336 (review r3 of #60). */
+export const hoursLabel = (h: number) => String(Number(h.toFixed(1)));
 export const windowLabel = (days: number) =>
   days % 7 === 0 ? `${days / 7} week${days === 7 ? '' : 's'}` : `${days} days`;
 export const breakLabel = (m: number) => (m ? `${m} min` : 'None');
@@ -363,7 +365,7 @@ export function defaultsSummary(d: BookingDefaults): string {
   const r = resolveDefaults(d);
   return [
     `${r.durationMin} min sessions`,
-    `at least ${r.noticeHours} hours notice`,
+    `at least ${hoursLabel(r.noticeHours)} hours notice`,
     `bookable up to ${windowLabel(r.windowDays)} ahead`,
     r.breakMin ? `${r.breakMin} min break` : 'no break',
     r.requiresApproval ? 'you approve each request' : 'instant confirm',

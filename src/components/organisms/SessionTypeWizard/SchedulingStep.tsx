@@ -8,6 +8,7 @@ import {
   NOTICE_HOURS,
   WINDOW_DAYS,
   breakLabel,
+  hoursLabel,
   defaultsSummary,
   windowLabel,
   type BookingDefaults,
@@ -38,7 +39,7 @@ const choices = (list: number[], label: (n: number) => string) => (current: numb
     label: label(n),
   }));
 export const durationOptions = choices(DURATIONS, (m) => `${m} min`);
-export const noticeOptions = choices(NOTICE_HOURS, (h) => `${Number(h.toFixed(1))} hrs`);
+export const noticeOptions = choices(NOTICE_HOURS, (h) => `${hoursLabel(h)} hrs`);
 export const windowOptions = choices(WINDOW_DAYS, windowLabel);
 export const breakOptions = choices(BREAKS, breakLabel);
 

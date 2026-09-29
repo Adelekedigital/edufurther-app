@@ -6,6 +6,7 @@ import {
   STAGE_LABELS,
   approvalLabel,
   breakLabel,
+  hoursLabel,
   resolveDefaults,
   timeLabel,
   windowLabel,
@@ -46,7 +47,9 @@ export function ReviewStep({ draft: d, topics, defaults, onEdit }: ReviewStepPro
   const inherited = (text: (r: NonNullable<typeof mine>) => string) =>
     mine ? `${text(mine)} (my default)` : 'My default';
   const lengthText = custom ? `${d.durationMin} min` : inherited((r) => `${r.durationMin} min`);
-  const noticeText = custom ? `${d.noticeHours} hours` : inherited((r) => `${r.noticeHours} hours`);
+  const noticeText = custom
+    ? `${hoursLabel(d.noticeHours)} hours`
+    : inherited((r) => `${hoursLabel(r.noticeHours)} hours`);
   const windowText = custom
     ? `${windowLabel(d.windowDays)} ahead`
     : inherited((r) => `${windowLabel(r.windowDays)} ahead`);

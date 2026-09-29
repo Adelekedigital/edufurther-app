@@ -277,6 +277,16 @@ describe('summaries (Session Types.dc.html, rulesFlow=inline)', () => {
     ).toBe(
       '60 min sessions · at least 24 hours notice · bookable up to 8 weeks ahead · no break · instant confirm',
     );
+    // Notice that isn't whole hours (a stored 2000 min) reads "33.3", not the float.
+    expect(
+      defaultsSummary({
+        durationMin: 60,
+        noticeHours: 2000 / 60,
+        windowDays: 14,
+        breakMin: 0,
+        requiresApproval: true,
+      }),
+    ).toContain('at least 33.3 hours notice');
   });
 
   it('notice that isn’t a whole number of hours is sent as whole minutes (review r2 of #60)', () => {
