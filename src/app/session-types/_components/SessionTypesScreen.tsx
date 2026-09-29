@@ -80,6 +80,32 @@ export function SessionTypesScreen() {
         }
       />
     );
+  } else if (viewer.kind === 'accountExists') {
+    body = (
+      <Gate
+        // Explore's copy (PROVISIONAL, backend PR #238; no support channel yet: design request #27).
+        title="This email already has an EduFurther account."
+        description="It isn’t linked to this sign-in yet. Please contact EduFurther support to connect them."
+        action={
+          <ButtonLink href="/explore" size="large" variant="secondary-outlined">
+            Browse mentors
+          </ButtonLink>
+        }
+      />
+    );
+  } else if (viewer.kind === 'unlinked') {
+    body = (
+      <Gate
+        // Explore's copy (PROVISIONAL, backend auth reply 2026-09-27: no self-signup yet).
+        title="Your account isn’t ready yet."
+        description="Once your account is set up, you can offer sessions here."
+        action={
+          <ButtonLink href="/explore" size="large" variant="secondary-outlined">
+            Browse mentors
+          </ButtonLink>
+        }
+      />
+    );
   } else if (viewer.kind !== 'loading' && !isMentor) {
     body = (
       <Gate

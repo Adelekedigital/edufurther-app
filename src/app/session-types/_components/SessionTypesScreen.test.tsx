@@ -122,4 +122,22 @@ describe('SessionTypesScreen', () => {
     expect(setLive).toHaveBeenCalledWith('a', false);
     expect(screen.queryByRole('dialog')).toBeNull();
   });
+
+  it('signed in without a usable account: told why, never "for mentors"', () => {
+    viewer = { kind: 'accountExists' };
+    const { unmount } = render(<SessionTypesScreen />);
+    expect(
+      screen.getByRole('heading', {
+        level: 1,
+        name: 'This email already has an EduFurther account.',
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/for mentors/)).toBeNull();
+    unmount();
+    viewer = { kind: 'unlinked' };
+    render(<SessionTypesScreen />);
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Your account isn’t ready yet.' }),
+    ).toBeInTheDocument();
+  });
 });

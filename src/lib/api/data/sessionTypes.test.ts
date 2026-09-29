@@ -66,8 +66,10 @@ describe('deleteError (backend #4)', () => {
     expect(e.bookedCount).toBeUndefined();
   });
 
-  it('404 reads as already deleted; anything else is our retry copy, never `detail`', () => {
-    expect(deleteError(new ApiError(404), {}).message).toBe('It was already deleted.');
+  it('anything else is our retry copy, never `detail`; a network failure too', () => {
+    expect(deleteError(new TypeError('Failed to fetch'), null).message).not.toContain(
+      'Failed to fetch',
+    );
     const e = deleteError(new ApiError(500), { detail: 'stack trace here' });
     expect(e.hasBookings).toBeUndefined();
     expect(e.message).not.toContain('stack trace');

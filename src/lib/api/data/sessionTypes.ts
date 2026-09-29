@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import type { Remote } from '@/types/mentor';
@@ -66,7 +67,6 @@ export function deleteError(error: unknown, body: unknown): DeleteError {
       message: 'Sessions are still booked on it.',
     };
   }
-  if (e.kind === 'notFound') return { ...e, message: 'It was already deleted.' };
   return { ...e, message: `We couldn’t delete it. ${e.message} Try again.` };
 }
 
@@ -122,6 +122,8 @@ export function useSetLive(onFailed: (id: string, live: boolean) => void) {
   const qc = useQueryClient();
   const who = useWho();
   const key = keys.sessionTypes.own(who);
+  // Switches in flight across all rows: the list is refetched once, after the last.
+  const inFlight = useRef(0);
   const mutation = useMutation({
     mutationFn: async ({ id, live }: { id: string; live: boolean }) => {
       const { data, error, response } = await api.PATCH(
@@ -132,18 +134,23 @@ export function useSetLive(onFailed: (id: string, live: boolean) => void) {
       return data;
     },
     onMutate: async ({ id, live }) => {
+      inFlight.current += 1;
       await qc.cancelQueries({ queryKey: key });
-      const before = qc.getQueryData<OwnSessionType[]>(key);
       qc.setQueryData<OwnSessionType[]>(key, (list) =>
         list?.map((t) => (t.id === id ? { ...t, isLive: live } : t)),
       );
-      return { before };
     },
-    onError: (_e, { id, live }, ctx) => {
-      if (ctx?.before) qc.setQueryData(key, ctx.before);
+    onError: (_e, { id, live }) => {
+      // Roll back this row only: another row's switch may be in flight too.
+      qc.setQueryData<OwnSessionType[]>(key, (list) =>
+        list?.map((t) => (t.id === id ? { ...t, isLive: !live } : t)),
+      );
       onFailed(id, live);
     },
     onSettled: () => {
+      inFlight.current -= 1;
+      // A refetch while another switch is pending could return its old state.
+      if (inFlight.current > 0) return;
       void qc.invalidateQueries({ queryKey: key });
       // What mentees can book changed: Explore cards and the public profile.
       void qc.invalidateQueries({ queryKey: keys.mentors.all });
@@ -159,9 +166,18 @@ export function useDeleteSessionType() {
   const who = useWho();
   const mutation = useMutation<void, DeleteError, string>({
     mutationFn: async (id) => {
-      const { error, response } = await api.DELETE('/api/v1/me/session-types/{session_type_id}', {
-        params: { path: { session_type_id: id } },
-      });
+      let result;
+      try {
+        result = await api.DELETE('/api/v1/me/session-types/{session_type_id}', {
+          params: { path: { session_type_id: id } },
+        });
+      } catch (e) {
+        // Network failure: our copy, never the browser's "Failed to fetch".
+        throw deleteError(e, null);
+      }
+      const { error, response } = result;
+      // Already gone (deleted from another tab or device): what the mentor wanted.
+      if (response.status === 404) return;
       if (!response.ok) throw deleteError(apiError(response.status, error), error);
     },
     onSuccess: (_d, id) => {

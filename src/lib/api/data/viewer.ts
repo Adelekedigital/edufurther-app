@@ -90,7 +90,10 @@ function useMockViewer(): Viewer | null {
   );
   if (!env) return null;
   const byRoute = MENTOR_ONLY_ROUTES.some((r) => path?.startsWith(r)) ? 'mentor' : env;
-  return MOCK_VIEWERS[param ?? byRoute] ?? MOCK_VIEWERS[env] ?? null;
+  const pick = param ?? byRoute;
+  // Own keys only: `?mockViewer=constructor` must not reach Object.prototype.
+  const key = Object.hasOwn(MOCK_VIEWERS, pick) ? pick : env;
+  return Object.hasOwn(MOCK_VIEWERS, key) ? MOCK_VIEWERS[key]! : null;
 }
 
 const UNLINKED = Symbol('unlinked');
