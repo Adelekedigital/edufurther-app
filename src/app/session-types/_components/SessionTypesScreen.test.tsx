@@ -43,11 +43,14 @@ const TYPE: OwnSessionType = {
   icon: 'video_call',
   iconChoice: null,
   questionCount: 0,
+  isFeatured: false,
+  pendingDeletion: null,
+  booked: { count: 0, lastEndsAt: null },
 };
 let list: Remote<OwnSessionType[]>;
 const setLive = vi.fn();
 let failLive: (id: string, live: boolean) => void = () => {};
-const remove = vi.fn();
+const remove = vi.fn().mockResolvedValue({ kind: 'deleted' });
 let deleteErr: DeleteError | null = null;
 vi.mock('@/lib/api/data/sessionTypes', () => ({
   useOwnSessionTypes: () => list,
@@ -56,7 +59,11 @@ vi.mock('@/lib/api/data/sessionTypes', () => ({
     return setLive;
   },
   useDeleteSessionType: () => ({ remove, isPending: false, error: deleteErr, reset: vi.fn() }),
+  useSetFeatured: () => setFeatured,
+  useRestoreSessionType: () => ({ restore, isPending: false }),
 }));
+const setFeatured = vi.fn();
+const restore = vi.fn();
 
 const mentor: Viewer = {
   kind: 'member',
@@ -81,9 +88,12 @@ beforeEach(() => {
   list = idle({ data: [TYPE] });
   deleteErr = null;
   setLive.mockClear();
+  setFeatured.mockClear();
+  restore.mockClear();
   topicsLoading = false;
   duplicate.mockReset();
   remove.mockClear();
+  remove.mockResolvedValue({ kind: 'deleted' });
 });
 
 describe('SessionTypesScreen', () => {
@@ -129,21 +139,89 @@ describe('SessionTypesScreen', () => {
     expect(screen.getByRole('dialog', { name: 'Delete this session type?' })).toBeInTheDocument();
     expect(remove).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Delete' }));
-    expect(remove).toHaveBeenCalledWith('a', expect.anything());
+    expect(remove).toHaveBeenCalledWith('a');
   });
 
-  it('refused because sessions are booked: says how many, and offers switching it off', async () => {
+  it('with sessions booked, Delete asks to schedule the deletion for the last one’s date', async () => {
     viewer = mentor;
-    deleteErr = { kind: 'conflict', message: 'x', hasBookings: true, bookedCount: 2 };
+    list = idle({
+      data: [{ ...TYPE, booked: { count: 2, lastEndsAt: '2026-10-14T18:00:00Z' } }],
+    });
     const user = userEvent.setup();
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
-    const dialog = screen.getByRole('dialog', { name: 'This session type has bookings' });
-    expect(dialog).toHaveTextContent('2 booked sessions are on “SOP draft review”');
-    await user.click(screen.getByRole('button', { name: 'Switch it off' }));
-    expect(setLive).toHaveBeenCalledWith('a', false);
-    expect(screen.queryByRole('dialog')).toBeNull();
+    const dialog = screen.getByRole('dialog', { name: 'Schedule deletion for Oct 14?' });
+    expect(dialog).toHaveTextContent(
+      'Hidden from mentees now. The 2 booked sessions go ahead first.',
+    );
+    await user.click(within(dialog).getByRole('button', { name: 'Schedule deletion' }));
+    expect(remove).toHaveBeenCalledWith('a');
+  });
+
+  it('with nothing booked, Delete says it can’t be undone and deletes', async () => {
+    viewer = mentor;
+    const user = userEvent.setup();
+    render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
+    const dialog = screen.getByRole('dialog', { name: 'Delete this session type?' });
+    expect(dialog).toHaveTextContent('This can’t be undone.');
+    expect(dialog).not.toHaveTextContent(/booked/);
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
+    expect(remove).toHaveBeenCalledWith('a');
+  });
+
+  it('a type scheduled for deletion says when, offers "Keep it", and nothing else that would show it', async () => {
+    viewer = mentor;
+    list = idle({
+      data: [
+        {
+          ...TYPE,
+          isLive: false,
+          pendingDeletion: { deletesAfter: '2026-10-14T18:00:00Z', bookedCount: 2 },
+        },
+      ],
+    });
+    const user = userEvent.setup();
+    render(<SessionTypesScreen />);
+    const row = screen.getByRole('article', { name: 'SOP draft review' });
+    expect(row).toHaveTextContent('Scheduled for deletion');
+    expect(row).toHaveTextContent(
+      'Hidden. Deleted after its last booked session on Oct 14. The 2 booked sessions go ahead.',
+    );
+    expect(within(row).queryByRole('switch')).toBeNull();
+    expect(within(row).queryByRole('button', { name: /Copy share link/ })).toBeNull();
+    await user.click(
+      within(row).getByRole('button', { name: 'More actions for SOP draft review' }),
+    );
+    expect(screen.queryByRole('menuitem', { name: /Delete|featured/ })).toBeNull();
+    await user.keyboard('{Escape}');
+    await user.click(within(row).getByRole('button', { name: 'Keep it: SOP draft review' }));
+    expect(restore).toHaveBeenCalledWith('a');
+  });
+
+  it('featuring another asks first; with none featured it just features', async () => {
+    viewer = mentor;
+    list = idle({
+      data: [
+        { ...TYPE, isFeatured: true },
+        { ...TYPE, id: 'b', name: 'Visa prep' },
+      ],
+    });
+    const user = userEvent.setup();
+    render(<SessionTypesScreen />);
+    expect(screen.getByRole('article', { name: 'SOP draft review' })).toHaveTextContent('Featured');
+    await user.click(screen.getByRole('button', { name: 'More actions for Visa prep' }));
+    await user.click(screen.getByRole('menuitem', { name: /Mark as featured/ }));
+    const dialog = screen.getByRole('dialog', { name: 'Feature “Visa prep” instead?' });
+    expect(dialog).toHaveTextContent('“SOP draft review” will no longer be featured.');
+    await user.click(within(dialog).getByRole('button', { name: 'Feature this instead' }));
+    expect(setFeatured).toHaveBeenCalledWith('b', true);
+    setFeatured.mockClear();
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Remove from featured/ }));
+    expect(setFeatured).toHaveBeenCalledWith('a', false);
   });
 
   it('signed in without a usable account: told why, never "for mentors"', () => {

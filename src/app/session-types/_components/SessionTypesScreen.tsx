@@ -8,7 +8,13 @@ import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useRouter } from 'next/navigation';
 import { useTopics } from '@/lib/api/data/mentors';
 import { useDuplicateSessionType } from '@/lib/api/data/sessionTypeEdit';
-import { useDeleteSessionType, useOwnSessionTypes, useSetLive } from '@/lib/api/data/sessionTypes';
+import {
+  useDeleteSessionType,
+  useOwnSessionTypes,
+  useRestoreSessionType,
+  useSetFeatured,
+  useSetLive,
+} from '@/lib/api/data/sessionTypes';
 import { SESSION_TEMPLATES, templateHint } from '@/lib/utils/sessionTemplates';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { Remote } from '@/types/mentor';
@@ -120,6 +126,32 @@ export function SessionTypesScreen() {
     del.reset();
   };
 
+  // Featured: one at a time; featuring another asks first (design `feature` confirm).
+  const setFeatured = useSetFeatured((id, featured) =>
+    say(
+      id,
+      // PROVISIONAL copy — design request #10.
+      featured
+        ? 'Couldn’t feature it. A hidden session type can’t be featured; show it first, or try again.'
+        : 'Couldn’t remove it from featured. Check your connection and try again.',
+      false,
+    ),
+  );
+  const [featuring, setFeaturing] = useState<{
+    type: OwnSessionType;
+    current: OwnSessionType;
+  } | null>(null);
+  const onFeature = (t: OwnSessionType, featured: boolean) => {
+    setMessages(({ [t.id]: _cleared, ...rest }) => rest);
+    const current = (list.data ?? []).find((x) => x.isFeatured && x.id !== t.id);
+    if (featured && current) return setFeaturing({ type: t, current });
+    setFeatured(t.id, featured);
+  };
+  const restore = useRestoreSessionType((id) =>
+    // PROVISIONAL copy — design request #10.
+    say(id, 'Couldn’t keep it. Check your connection and try again.', false),
+  );
+
   const body: ReactNode = mentorGate(viewer, isMentor, '/session-types') ?? (
     <SessionTypeManager
       list={list}
@@ -128,6 +160,11 @@ export function SessionTypesScreen() {
       onLiveChange={askVisibility}
       onDelete={setConfirming}
       onEdit={(t) => router.push(`/session-types/${encodeURIComponent(t.id)}/edit`)}
+      onFeature={onFeature}
+      onRestore={(t) => {
+        setMessages(({ [t.id]: _cleared, ...rest }) => rest);
+        restore.restore(t.id);
+      }}
       onDuplicate={onDuplicate}
       shareUrl={shareUrl}
       createHref={CREATE_HREF}
@@ -150,27 +187,42 @@ export function SessionTypesScreen() {
           }}
         />
       )}
+      {featuring && (
+        <FeatureConfirm
+          type={featuring.type}
+          current={featuring.current}
+          onCancel={() => setFeaturing(null)}
+          onConfirm={() => {
+            setFeatured(featuring.type.id, true);
+            setFeaturing(null);
+          }}
+        />
+      )}
       {confirming && (
         <DeleteConfirm
           type={confirming}
           busy={del.isPending}
           error={del.error}
           onKeep={closeConfirm}
-          onDelete={() => del.remove(confirming.id, { onSuccess: closeConfirm })}
-          onSwitchOff={() => {
-            onLiveChange(confirming.id, false);
-            closeConfirm();
-          }}
+          onDelete={() =>
+            void del
+              .remove(confirming.id)
+              .then(closeConfirm)
+              .catch(() => undefined)
+          }
         />
       )}
     </AppShell>
   );
 }
 
+const shortDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
 /**
- * Every destructive action confirms in a danger modal (project rule). Deleting
- * is refused while sessions are booked on it (backend #4): the modal then says
- * so and offers switching it off — the reversible way to stop new bookings.
+ * Delete confirms in a danger modal (project rule). With sessions still booked
+ * it's the design's "Schedule deletion for {date}?": hidden now, deleted after
+ * the last one (backend round 4).
  */
 function DeleteConfirm(p: {
   type: OwnSessionType;
@@ -178,47 +230,21 @@ function DeleteConfirm(p: {
   error: DeleteError | null;
   onKeep: () => void;
   onDelete: () => void;
-  onSwitchOff: () => void;
 }) {
-  if (p.error?.hasBookings) {
-    const n = p.error.bookedCount;
-    const who = n ? `${n} booked session${n === 1 ? ' is' : 's are'}` : 'Booked sessions are still';
-    const next = p.type.isLive
-      ? 'Switch it off to stop new bookings. Booked sessions still go ahead.'
-      : 'It’s already hidden, so no one new can book it.';
-    return (
-      // PROVISIONAL state and copy — design request #4.
-      <ModalShell
-        title="This session type has bookings"
-        subtitle={`${who} on “${p.type.name}”, so it can’t be deleted yet. ${next}`}
-        icon="event_busy"
-        tone="danger"
-        size="sm"
-        onClose={p.onKeep}
-      >
-        <div className={styles.buttons}>
-          {p.type.isLive ? (
-            <>
-              <Button size="large" variant="secondary-outlined" fullWidth onClick={p.onKeep}>
-                Keep it live
-              </Button>
-              <Button size="large" fullWidth onClick={p.onSwitchOff}>
-                Switch it off
-              </Button>
-            </>
-          ) : (
-            <Button size="large" variant="secondary-outlined" fullWidth onClick={p.onKeep}>
-              Close
-            </Button>
-          )}
-        </div>
-      </ModalShell>
-    );
-  }
+  const { count, lastEndsAt } = p.type.booked;
+  const scheduled = count > 0;
+  const title = !scheduled
+    ? 'Delete this session type?'
+    : lastEndsAt
+      ? `Schedule deletion for ${shortDate(lastEndsAt)}?`
+      : 'Schedule deletion?';
+  const subtitle = scheduled
+    ? `Hidden from mentees now. The ${count} booked session${count === 1 ? ' goes' : 's go'} ahead first.`
+    : `“${p.type.name}” is removed from your profile and Session types. This can’t be undone.`;
   return (
     <ModalShell
-      title="Delete this session type?"
-      subtitle={`“${p.type.name}” is removed from your profile and Session types. This can’t be undone.`}
+      title={title}
+      subtitle={subtitle}
       icon="delete"
       tone="danger"
       size="sm"
@@ -234,7 +260,38 @@ function DeleteConfirm(p: {
           Keep it
         </Button>
         <Button size="large" variant="destructive" fullWidth onClick={p.onDelete} busy={p.busy}>
-          Delete
+          {scheduled ? 'Schedule deletion' : 'Delete'}
+        </Button>
+      </div>
+    </ModalShell>
+  );
+}
+
+/**
+ * Featuring another type (Session Types.dc.html `feature` confirm). The
+ * design's "…and is highlighted first on your Explore card" waits for Explore
+ * to show it (backend #299): never claim what isn't built.
+ */
+function FeatureConfirm(p: {
+  type: OwnSessionType;
+  current: OwnSessionType;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <ModalShell
+      title={`Feature “${p.type.name}” instead?`}
+      subtitle={`It moves to the top of your profile. “${p.current.name}” will no longer be featured. You can feature one session type at a time.`}
+      icon="star"
+      size="sm"
+      onClose={p.onCancel}
+    >
+      <div className={styles.buttons}>
+        <Button size="large" variant="secondary-outlined" fullWidth onClick={p.onCancel}>
+          Cancel
+        </Button>
+        <Button size="large" fullWidth onClick={p.onConfirm}>
+          Feature this instead
         </Button>
       </div>
     </ModalShell>

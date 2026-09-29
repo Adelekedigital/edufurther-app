@@ -15,6 +15,9 @@ const T: OwnSessionType = {
   icon: 'edit_document',
   iconChoice: null,
   questionCount: 2,
+  isFeatured: false,
+  pendingDeletion: null,
+  booked: { count: 0, lastEndsAt: null },
 };
 const remote = (over: Partial<Remote<OwnSessionType[]>>): Remote<OwnSessionType[]> => ({
   data: null,
@@ -36,6 +39,8 @@ const setup = (list: Remote<OwnSessionType[]>, messages = {}) => {
       onDelete={onDelete}
       createHref="/session-types/new"
       onEdit={onEdit}
+      onFeature={vi.fn()}
+      onRestore={vi.fn()}
       onDuplicate={onDuplicate}
       shareUrl={(t) => `https://x.test/mentors/m1?book=${t.id}`}
       templates={[
@@ -105,7 +110,7 @@ describe('SessionTypeManager — the four states', () => {
       within(menu)
         .getAllByRole('menuitem')
         .map((m: HTMLElement) => m.textContent),
-    ).toEqual(['editEdit', 'content_copyDuplicate', 'deleteDelete']);
+    ).toEqual(['editEdit', 'content_copyDuplicate', 'starMark as featured', 'deleteDelete']);
     await user.click(within(menu).getByRole('menuitem', { name: /Delete/ }));
     expect(onDelete).toHaveBeenCalledWith(expect.objectContaining({ id: 'b' }));
     await user.click(more);

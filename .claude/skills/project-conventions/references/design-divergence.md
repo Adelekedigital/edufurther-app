@@ -135,6 +135,8 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | Duplicate places the copy right under the original | It joins the list where the server puts new types (the end); named "(copy)", "(copy 2)"… and hidden | The API has no list order to set | backend adds an order |
 | Duplicate disabled at the type limit ("N of 5") | No limit, so never disabled | No limit on the backend (reply #3) | never |
 | Share link `edufurther.com/{mentor}/{slug}` | `/mentors/{id}?book={type}`: the profile, with booking started on that type | A page per type is roadmap #72 | #72 |
+| "Featured" badge in orange | Blue accent badge (primary) | The orange ramp is banned in product UI (DS readme) | never |
+| Feature confirm: "…and is highlighted first on your Explore card" | Clause dropped | Explore doesn't show the featured type yet (backend #299); never claim what isn't built | #299 ships |
 | Session type row copy-link and "⋯" buttons on phones: 44px tall (the prototype's global `button{min-height:44px}`) | 32px drawn, an invisible 44px tap area | CTA hierarchy rule 5 | never |
 | Row menu items on phones: the prototype's phone padding rule squeezes them to 22px tall, 8px padding | 44px tall, 12px padding | A 22px target is below the 44px minimum | never |
 | Wizard action bar `position: sticky; top: 0` | Sticks under the shell's sticky header | At top 0 it slid beneath the header | never |

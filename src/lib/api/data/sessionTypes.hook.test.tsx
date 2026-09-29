@@ -5,6 +5,8 @@ import {
   useCreateSessionType,
   useDeleteSessionType,
   useOwnSessionTypes,
+  useRestoreSessionType,
+  useSetFeatured,
   useSaveMentorDefaults,
   useSetLive,
 } from './sessionTypes';
@@ -39,6 +41,10 @@ const row = (id: string, is_active = true) => ({
   custom_stage_label: null,
   icon: null,
   requires_booking_confirmation: null,
+  is_featured: false,
+  pending_deletion: null as { deletes_after: string | null; booked_count: number } | null,
+  booked_count: 0,
+  last_booked_ends_at: null as string | null,
 });
 const ok = (data: unknown, status = 200) => ({
   data,
@@ -115,7 +121,7 @@ describe('useDeleteSessionType', () => {
     const wrapper = setup();
     DELETE.mockRejectedValue(new TypeError('Failed to fetch'));
     const { result } = renderHook(() => useDeleteSessionType(), { wrapper });
-    act(() => result.current.remove('x'));
+    await act(() => result.current.remove('x').catch(() => undefined));
     await waitFor(() => expect(result.current.error).not.toBeNull());
     expect(result.current.error!.message).toMatch(/We couldn’t delete it/);
     expect(result.current.error!.message).not.toContain('Failed to fetch');
@@ -129,11 +135,95 @@ describe('useDeleteSessionType', () => {
       { wrapper },
     );
     await waitFor(() => expect(result.current.list.data).toHaveLength(2));
-    const onSuccess = vi.fn();
-    act(() => result.current.del.remove('x', { onSuccess }));
-    await waitFor(() => expect(onSuccess).toHaveBeenCalled());
-    expect(result.current.list.data!.map((t) => t.id)).toEqual(['y']);
+    list = [row('y')];
+    await act(async () => {
+      await expect(result.current.del.remove('x')).resolves.toEqual({ kind: 'deleted' });
+    });
+    await waitFor(() => expect(result.current.list.data!.map((t) => t.id)).toEqual(['y']));
     expect(result.current.del.error).toBeNull();
+  });
+
+  it('booked (202): hidden now, un-featured, scheduled — the row stays until it goes (round 4)', async () => {
+    const wrapper = setup();
+    list = [{ ...row('x'), is_featured: true }, row('y')];
+    DELETE.mockResolvedValue({
+      data: { scheduled: true, deletes_after: '2026-10-14T18:00:00Z', booked_count: 2 },
+      error: undefined,
+      response: new Response(null, { status: 202 }),
+    });
+    const { result } = renderHook(
+      () => ({ list: useOwnSessionTypes(true), del: useDeleteSessionType() }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.list.data).toHaveLength(2));
+    // The refetch after the DELETE reads the server's state.
+    list = [
+      {
+        ...row('x', false),
+        pending_deletion: { deletes_after: '2026-10-14T18:00:00Z', booked_count: 2 },
+      },
+      row('y'),
+    ];
+    await act(async () => {
+      await expect(result.current.del.remove('x')).resolves.toEqual({
+        kind: 'scheduled',
+        deletesAfter: '2026-10-14T18:00:00Z',
+        bookedCount: 2,
+      });
+    });
+    const x = () => result.current.list.data!.find((t) => t.id === 'x')!;
+    await waitFor(() =>
+      expect(x()).toMatchObject({
+        isLive: false,
+        isFeatured: false,
+        pendingDeletion: { deletesAfter: '2026-10-14T18:00:00Z', bookedCount: 2 },
+      }),
+    );
+  });
+});
+
+describe('useRestoreSessionType', () => {
+  it('cancels the scheduled deletion and leaves it hidden; a failure is reported for the row', async () => {
+    const wrapper = setup();
+    list = [{ ...row('x', false), pending_deletion: { deletes_after: null, booked_count: 1 } }];
+    POST.mockResolvedValue(ok({ ...row('x', false) }));
+    const onFailed = vi.fn();
+    const { result } = renderHook(
+      () => ({ list: useOwnSessionTypes(true), r: useRestoreSessionType(onFailed) }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.list.data).toHaveLength(1));
+    list = [row('x', false)];
+    act(() => result.current.r.restore('x'));
+    await waitFor(() =>
+      expect(result.current.list.data![0]).toMatchObject({ pendingDeletion: null, isLive: false }),
+    );
+    expect(POST.mock.calls[0]![0]).toBe('/api/v1/me/session-types/{session_type_id}/restore');
+    POST.mockResolvedValue(fail(500));
+    act(() => result.current.r.restore('x'));
+    await waitFor(() => expect(onFailed).toHaveBeenCalledWith('x'));
+  });
+});
+
+describe('useSetFeatured', () => {
+  it('featuring one un-features the others at once; a refusal puts every badge back', async () => {
+    const wrapper = setup();
+    list = [{ ...row('x'), is_featured: true }, row('y')];
+    const onFailed = vi.fn();
+    const { result } = renderHook(
+      () => ({ list: useOwnSessionTypes(true), feature: useSetFeatured(onFailed) }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.list.data).toHaveLength(2));
+    let refuse!: () => void;
+    PATCH.mockImplementation(() => new Promise((res) => (refuse = () => res(fail(422)))));
+    act(() => result.current.feature('y', true));
+    const featured = () => result.current.list.data!.filter((t) => t.isFeatured).map((t) => t.id);
+    await waitFor(() => expect(featured()).toEqual(['y']));
+    expect(PATCH.mock.calls[0]![1].body).toEqual({ is_featured: true });
+    await act(async () => refuse());
+    await waitFor(() => expect(featured()).toEqual(['x']));
+    expect(onFailed).toHaveBeenCalledWith('y', true);
   });
 });
 

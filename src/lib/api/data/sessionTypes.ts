@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import type { AppError, Remote } from '@/types/mentor';
-import type { DeleteError, OwnSessionType, SessionIcon } from '@/types/sessionType';
+import type { DeleteError, DeleteResult, OwnSessionType, SessionIcon } from '@/types/sessionType';
 import {
   copyForField,
   fieldForPointer,
@@ -67,25 +67,20 @@ export function toOwnSessionType(
     iconChoice: r.icon ?? null,
     icon: r.icon ?? autoIcon(topics.map((t) => t.code)),
     questionCount,
+    isFeatured: r.is_featured,
+    pendingDeletion: r.pending_deletion
+      ? {
+          deletesAfter: r.pending_deletion.deletes_after ?? null,
+          bookedCount: r.pending_deletion.booked_count,
+        }
+      : null,
+    booked: { count: r.booked_count, lastEndsAt: r.last_booked_ends_at ?? null },
   };
 }
 
-/**
- * DELETE refused while sessions are booked on it: 409
- * `/problems/session-type-has-bookings` + `booked_count` (backend #4). Any 409 on
- * DELETE means this (backend reply #4), so the type is a hint, not a gate.
- */
-export function deleteError(error: unknown, body: unknown): DeleteError {
+/** A refused delete, in our copy (a booked type is scheduled now, not refused). */
+export function deleteError(error: unknown): DeleteError {
   const e = normaliseError(error);
-  if (error instanceof ApiError && error.status === 409) {
-    const n = (body as { booked_count?: unknown } | null)?.booked_count;
-    return {
-      ...e,
-      hasBookings: true,
-      bookedCount: typeof n === 'number' && n > 0 ? n : undefined,
-      message: 'Sessions are still booked on it.',
-    };
-  }
   return { ...e, message: `We couldn’t delete it. ${e.message} Try again.` };
 }
 
@@ -179,11 +174,15 @@ export function useSetLive(onFailed: (id: string, live: boolean) => void) {
   return (id: string, live: boolean) => mutation.mutate({ id, live });
 }
 
-/** DELETE /me/session-types/{id}. Not optimistic: it waits for the confirm modal's answer. */
+/**
+ * DELETE /me/session-types/{id}, after the confirm. 204: gone. 202: sessions
+ * are booked on it, so it's hidden now (and un-featured) and deleted after the
+ * last one; the row shows that until then (backend round 4).
+ */
 export function useDeleteSessionType() {
   const qc = useQueryClient();
   const who = useWho();
-  const mutation = useMutation<void, DeleteError, string>({
+  const mutation = useMutation<DeleteResult, DeleteError, string>({
     mutationFn: async (id) => {
       let result;
       try {
@@ -192,27 +191,111 @@ export function useDeleteSessionType() {
         });
       } catch (e) {
         // Network failure: our copy, never the browser's "Failed to fetch".
-        throw deleteError(e, null);
+        throw deleteError(e);
       }
-      const { error, response } = result;
+      const { data, error, response } = result;
       // Already gone (deleted from another tab or device): what the mentor wanted.
-      if (response.status === 404) return;
-      if (!response.ok) throw deleteError(apiError(response.status, error), error);
+      if (response.status === 404 || response.status === 204) return { kind: 'deleted' };
+      if (response.status === 202 && data)
+        return {
+          kind: 'scheduled',
+          deletesAfter: data.deletes_after ?? null,
+          bookedCount: data.booked_count,
+        };
+      throw deleteError(apiError(response.status, error));
     },
-    onSuccess: (_d, id) => {
+    onSuccess: (r, id) => {
       qc.setQueryData<OwnSessionType[]>(keys.sessionTypes.own(who), (list) =>
-        list?.filter((t) => t.id !== id),
+        r.kind === 'deleted'
+          ? list?.filter((t) => t.id !== id)
+          : list?.map((t) =>
+              t.id === id
+                ? {
+                    ...t,
+                    isLive: false,
+                    isFeatured: false,
+                    pendingDeletion: { deletesAfter: r.deletesAfter, bookedCount: r.bookedCount },
+                  }
+                : t,
+            ),
       );
+      void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });
       void qc.invalidateQueries({ queryKey: keys.mentors.all });
       void qc.invalidateQueries({ queryKey: ['booking'] });
     },
   });
   return {
-    remove: mutation.mutate,
+    remove: mutation.mutateAsync,
     isPending: mutation.isPending,
     error: mutation.error,
     reset: mutation.reset,
   };
+}
+
+/** POST …/restore: the scheduled deletion is cancelled; the type stays hidden. */
+export function useRestoreSessionType(onFailed: (id: string) => void) {
+  const qc = useQueryClient();
+  const who = useWho();
+  const mutation = useMutation<void, AppError, string>({
+    mutationFn: async (id) => {
+      const r = await api
+        .POST('/api/v1/me/session-types/{session_type_id}/restore', {
+          params: { path: { session_type_id: id } },
+        })
+        .catch((e: unknown) => {
+          throw normaliseError(e);
+        });
+      if (!r.response.ok) throw apiError(r.response.status, r.error);
+    },
+    onSuccess: (_d, id) =>
+      qc.setQueryData<OwnSessionType[]>(keys.sessionTypes.own(who), (list) =>
+        list?.map((t) => (t.id === id ? { ...t, pendingDeletion: null, isLive: false } : t)),
+      ),
+    onError: (_e, id) => onFailed(id),
+    onSettled: () => void qc.invalidateQueries({ queryKey: keys.sessionTypes.all }),
+  });
+  return { restore: mutation.mutate, isPending: mutation.isPending };
+}
+
+/**
+ * PATCH is_featured — optimistic: the badge moves at once (featuring one
+ * un-features the others, as the backend does in one transaction) and rolls
+ * back if refused (a hidden or scheduled type: 422 /is_featured).
+ */
+export function useSetFeatured(onFailed: (id: string, featured: boolean) => void) {
+  const qc = useQueryClient();
+  const who = useWho();
+  const key = keys.sessionTypes.own(who);
+  const mutation = useMutation({
+    mutationFn: async ({ id, featured }: { id: string; featured: boolean }) => {
+      const { data, error, response } = await api.PATCH(
+        '/api/v1/me/session-types/{session_type_id}',
+        { params: { path: { session_type_id: id } }, body: { is_featured: featured } },
+      );
+      if (!data) throw apiError(response.status, error);
+    },
+    onMutate: async ({ id, featured }) => {
+      await qc.cancelQueries({ queryKey: key });
+      const before = qc.getQueryData<OwnSessionType[]>(key);
+      qc.setQueryData<OwnSessionType[]>(key, (list) =>
+        list?.map((t) => ({
+          ...t,
+          isFeatured: t.id === id ? featured : featured ? false : t.isFeatured,
+        })),
+      );
+      return { before };
+    },
+    onError: (_e, { id, featured }, ctx) => {
+      if (ctx?.before) qc.setQueryData(key, ctx.before);
+      onFailed(id, featured);
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: key });
+      // The featured type leads the profile.
+      void qc.invalidateQueries({ queryKey: keys.mentors.all });
+    },
+  });
+  return (id: string, featured: boolean) => mutation.mutate({ id, featured });
 }
 
 // ---- create -------------------------------------------------------------------

@@ -30,16 +30,17 @@ type Stored = Omit<
   bookedCount: number;
 };
 
+// Once per load, so two reads of a type agree (review of #79).
+const LAST_BOOKED_ENDS_AT = new Date(Date.now() + 14 * 86_400_000).toISOString();
 /** The last booked session ends two weeks out: the date a scheduled deletion waits for. */
-const lastBookedEndsAt = (t: Stored) =>
-  t.bookedCount ? new Date(Date.now() + 14 * 86_400_000).toISOString() : null;
+const lastBookedEndsAt = (bookedCount: number) => (bookedCount ? LAST_BOOKED_ENDS_AT : null);
 
 /** The read: the type's own value, else the mentor's default, else the platform's. */
 function resolve({ questions: _q, bookedCount, ...t }: Stored): OwnSessionTypeRead {
   return {
     ...t,
     booked_count: bookedCount,
-    last_booked_ends_at: lastBookedEndsAt({ ...t, questions: [], bookedCount }),
+    last_booked_ends_at: lastBookedEndsAt(bookedCount),
     duration_minutes: t.duration_minutes ?? prefs.default_duration_minutes ?? 60,
     min_notice_minutes: t.min_notice_minutes ?? prefs.default_min_notice_minutes ?? 1440,
     duration_inherited: t.duration_minutes === null,
@@ -104,7 +105,8 @@ function seed(): Stored[] {
         q('q1', 'Which programs are you applying to?', 'free_text', true),
         q('q2', 'Upload your current SOP draft (PDF or Word)', 'file_upload', false),
       ],
-      // Deleting it is refused (backend #4): two sessions are still booked.
+      is_featured: true,
+      // Deleting it schedules the deletion (round 4): two sessions are still booked.
       bookedCount: 2,
     },
     {
@@ -136,23 +138,42 @@ function seed(): Stored[] {
 
 let store: Stored[] = seed();
 
+/** The featured type first, like the backend. */
 export function mockOwnSessionTypes(): OwnSessionTypeRead[] {
-  return store.map(resolve);
+  return [...store].sort((a, b) => Number(b.is_featured) - Number(a.is_featured)).map(resolve);
 }
 
 export function mockQuestions(id: string): QuestionRead[] | null {
   return store.find((t) => t.id === id)?.questions ?? null;
 }
 
-/** 'gone' | 'booked' (with the count) | 'deleted'. */
+/** 404, 204, or 202: booked sessions go ahead, so it's hidden and deleted after (round 4). */
 export function mockDeleteSessionType(
   id: string,
-): { result: 'gone' } | { result: 'booked'; count: number } | { result: 'deleted' } {
+):
+  | { result: 'gone' | 'deleted' }
+  | { result: 'scheduled'; deletes_after: string | null; booked_count: number } {
   const t = store.find((x) => x.id === id);
   if (!t) return { result: 'gone' };
-  if (t.bookedCount > 0) return { result: 'booked', count: t.bookedCount };
+  if (t.bookedCount > 0) {
+    const deletes_after = lastBookedEndsAt(t.bookedCount);
+    Object.assign(t, {
+      is_active: false,
+      is_featured: false,
+      pending_deletion: { deletes_after, booked_count: t.bookedCount },
+    });
+    return { result: 'scheduled', deletes_after, booked_count: t.bookedCount };
+  }
   store = store.filter((x) => x.id !== id);
   return { result: 'deleted' };
+}
+
+/** POST …/restore: the deletion is cancelled; the type stays hidden. */
+export function mockRestoreSessionType(id: string): OwnSessionTypeRead | null {
+  const t = store.find((x) => x.id === id);
+  if (!t) return null;
+  t.pending_deletion = null;
+  return resolve(t);
 }
 
 // ---- create (backend #1, #2) --------------------------------------------------
@@ -352,7 +373,16 @@ export function mockEditSessionType(
   const ids = has('service_offering_ids') ? body.service_offering_ids : undefined;
   if (Array.isArray(ids) && ids.length > 3)
     errors.push({ pointer: '/service_offering_ids', message: 'at most 3' });
+  // Round 4: one featured per mentor, and only a live type; a scheduled type stays hidden.
+  const active = has('is_active') ? body.is_active : t.is_active;
+  if (has('is_active') && body.is_active && t.pending_deletion)
+    errors.push({ pointer: '/is_active', message: 'scheduled for deletion' });
+  if (has('is_featured') && body.is_featured && (!active || t.pending_deletion))
+    errors.push({ pointer: '/is_featured', message: 'hidden' });
   if (errors.length) return { status: 422, errors };
+  if (body.is_featured === true) store.forEach((x) => (x.is_featured = x.id === id));
+  // Hiding the featured type un-features it.
+  if (body.is_featured === false || active === false) t.is_featured = false;
 
   const patch: Partial<Stored> = {};
   for (const k of [

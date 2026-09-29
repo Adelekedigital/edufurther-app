@@ -13,6 +13,10 @@ type SessionTypeRowProps = {
   onLiveChange: (live: boolean) => void;
   onDelete: () => void;
   onEdit: () => void;
+  /** Mark as / remove from featured (the menu); absent while deletion is scheduled. */
+  onFeature: (featured: boolean) => void;
+  /** Cancel a scheduled deletion (the row's "Keep it"). */
+  onRestore: () => void;
   onDuplicate: () => void;
   /** The public link to book this type; null until it can be built (no button). */
   shareUrl: string | null;
@@ -33,12 +37,15 @@ export function SessionTypeRow({
   onLiveChange,
   onDelete,
   onEdit,
+  onFeature,
+  onRestore,
   onDuplicate,
   shareUrl,
   message,
   messageTone = 'error',
 }: SessionTypeRowProps) {
   const nameId = useId();
+  const pending = t.pendingDeletion;
   const qn = t.questionCount;
   const facts = [
     { icon: 'schedule' as const, label: `${t.durationMin} min` },
@@ -57,11 +64,26 @@ export function SessionTypeRow({
           <h2 id={nameId} className={styles.name}>
             {t.name}
           </h2>
-          <Badge type="accent" size="sm" color={t.isLive ? 'green' : 'neutral'}>
-            {t.isLive ? 'Live' : 'Hidden'}
+          <Badge type="accent" size="sm" color={pending ? 'red' : t.isLive ? 'green' : 'neutral'}>
+            {pending ? 'Scheduled for deletion' : t.isLive ? 'Live' : 'Hidden'}
           </Badge>
+          {t.isFeatured && (
+            // The design's orange is banned in product UI: our blue accent (design-divergence.md).
+            <Badge type="accent" size="sm" color="primary">
+              Featured
+            </Badge>
+          )}
         </div>
         {t.description && <p className={styles.description}>{t.description}</p>}
+        {pending && (
+          <p className={styles.pending}>
+            <Icon name="schedule" size={16} className={styles.pendingIcon} />
+            {pendingNote(pending)}
+            <button type="button" className={styles.keep} onClick={onRestore}>
+              Keep it<span className="sr-only">: {t.name}</span>
+            </button>
+          </p>
+        )}
         <ul className={styles.facts}>
           {facts.map((f) => (
             <li key={f.icon} className={styles.fact}>
@@ -81,22 +103,53 @@ export function SessionTypeRow({
         )}
       </div>
       <div className={styles.actions}>
-        <Switch
-          checked={t.isLive}
-          onChange={onLiveChange}
-          aria-label={`Visible to mentees: ${t.name}`}
-          title={t.isLive ? 'Visible to mentees' : 'Hidden from mentees'}
-        />
-        {shareUrl && <CopyLinkButton label={`Copy share link for ${t.name}`} url={shareUrl} />}
+        {!pending && (
+          <Switch
+            checked={t.isLive}
+            onChange={onLiveChange}
+            aria-label={`Visible to mentees: ${t.name}`}
+            title={t.isLive ? 'Visible to mentees' : 'Hidden from mentees'}
+          />
+        )}
+        {shareUrl && !pending && (
+          <CopyLinkButton label={`Copy share link for ${t.name}`} url={shareUrl} />
+        )}
         <RowMenu
           label={`More actions for ${t.name}`}
           items={[
             { key: 'edit', icon: 'edit', label: 'Edit', onSelect: onEdit },
             { key: 'duplicate', icon: 'content_copy', label: 'Duplicate', onSelect: onDuplicate },
-            { key: 'delete', icon: 'delete', label: 'Delete', onSelect: onDelete, danger: true },
+            ...(pending
+              ? []
+              : [
+                  {
+                    key: 'feature',
+                    icon: 'star' as const,
+                    label: t.isFeatured ? 'Remove from featured' : 'Mark as featured',
+                    onSelect: () => onFeature(!t.isFeatured),
+                  },
+                  {
+                    key: 'delete',
+                    icon: 'delete' as const,
+                    label: 'Delete',
+                    onSelect: onDelete,
+                    danger: true,
+                  },
+                ]),
           ]}
         />
       </div>
     </article>
   );
+}
+
+/** Design `pendingNote`: "Hidden. Deleted after its last booked session on Oct 14. The 2 booked sessions go ahead." */
+export function pendingNote(p: { deletesAfter: string | null; bookedCount: number }): string {
+  const n = p.bookedCount;
+  const when = p.deletesAfter
+    ? ` on ${new Date(p.deletesAfter).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+    : '';
+  // No booked session left: it goes at the next hourly run.
+  if (!n) return 'Hidden. Deleted within the hour.';
+  return `Hidden. Deleted after its last booked session${when}. The ${n} booked session${n === 1 ? ' goes' : 's go'} ahead.`;
 }

@@ -17,6 +17,8 @@ type SessionTypeManagerProps = {
   onLiveChange: (id: string, live: boolean) => void;
   onDelete: (type: OwnSessionType) => void;
   onEdit: (type: OwnSessionType) => void;
+  onFeature: (type: OwnSessionType, featured: boolean) => void;
+  onRestore: (type: OwnSessionType) => void;
   onDuplicate: (type: OwnSessionType) => void;
   /** The share link for a type; null until it can be built. */
   shareUrl: (type: OwnSessionType) => string | null;
@@ -79,6 +81,8 @@ function List({
   onDelete,
   createHref,
   onEdit,
+  onFeature,
+  onRestore,
   onDuplicate,
   shareUrl,
 }: SessionTypeManagerProps) {
@@ -159,6 +163,8 @@ function List({
           onLiveChange={(live) => onLiveChange(t.id, live)}
           onDelete={() => onDelete(t)}
           onEdit={() => onEdit(t)}
+          onFeature={(f) => onFeature(t, f)}
+          onRestore={() => onRestore(t)}
           onDuplicate={() => onDuplicate(t)}
           shareUrl={shareUrl(t)}
         />

@@ -21,6 +21,9 @@ const T = (over: Partial<OwnSessionType>): OwnSessionType => ({
   icon: 'edit_document',
   iconChoice: null,
   questionCount: 2,
+  isFeatured: false,
+  pendingDeletion: null,
+  booked: { count: 0, lastEndsAt: null },
   ...over,
 });
 const TYPES: OwnSessionType[] = [
@@ -34,6 +37,9 @@ const TYPES: OwnSessionType[] = [
     topics: [{ code: 'program-selection', label: 'Program selection' }],
     icon: 'school',
     questionCount: 1,
+    isFeatured: false,
+    pendingDeletion: null,
+    booked: { count: 0, lastEndsAt: null },
   }),
   T({
     id: 'c',
@@ -44,6 +50,9 @@ const TYPES: OwnSessionType[] = [
     topics: [{ code: 'interview-preparation', label: 'Interview preparation' }],
     icon: 'record_voice_over',
     questionCount: 1,
+    isFeatured: false,
+    pendingDeletion: null,
+    booked: { count: 0, lastEndsAt: null },
   }),
 ];
 const TEMPLATES = [
@@ -81,6 +90,8 @@ const base = {
   onLiveChange: fn(),
   onDelete: fn(),
   onEdit: fn(),
+  onFeature: fn(),
+  onRestore: fn(),
   onDuplicate: fn(),
   shareUrl: (t: { id: string }) => `https://edufurther.com/mentors/m1?book=${t.id}`,
   createHref: '#',
@@ -89,6 +100,28 @@ const base = {
 
 export const Content: Story = {
   render: () => <SessionTypeManager {...base} list={remote({ data: TYPES })} />,
+};
+/** Round 4: the featured type first; a scheduled deletion with and without booked sessions. */
+export const FeaturedAndScheduled: Story = {
+  render: () => (
+    <SessionTypeManager
+      {...base}
+      list={remote({
+        data: [
+          T({ id: 'a', isFeatured: true }),
+          T({
+            ...TYPES[1],
+            isLive: false,
+            pendingDeletion: { deletesAfter: '2026-10-14T18:00:00Z', bookedCount: 2 },
+          }),
+          T({
+            ...TYPES[2],
+            pendingDeletion: { deletesAfter: null, bookedCount: 0 },
+          }),
+        ],
+      })}
+    />
+  ),
 };
 export const Loading: Story = {
   render: () => <SessionTypeManager {...base} list={remote({ isLoading: true })} />,
@@ -125,6 +158,9 @@ export const EdgeCases: Story = {
             name: 'Statement of purpose and personal history essay review for US and Canadian graduate programs',
             description: '',
             questionCount: null,
+            isFeatured: false,
+            pendingDeletion: null,
+            booked: { count: 0, lastEndsAt: null },
             topics: [],
             icon: 'video_call',
           }),
