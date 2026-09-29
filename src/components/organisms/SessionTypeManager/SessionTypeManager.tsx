@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { ButtonLink, Button } from '@/components/atoms/Button/Button';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
@@ -17,10 +18,20 @@ type SessionTypeManagerProps = {
   onLiveChange: (id: string, live: boolean) => void;
   onDelete: (type: OwnSessionType) => void;
   onEdit: (type: OwnSessionType) => void;
+  onFeature: (type: OwnSessionType, featured: boolean) => void;
+  onRestore: (type: OwnSessionType) => void;
   onDuplicate: (type: OwnSessionType) => void;
   /** The share link for a type; null until it can be built. */
   shareUrl: (type: OwnSessionType) => string | null;
   createHref: string;
+  /** Rows whose "Keep it" is waiting on the server. */
+  restoringIds?: string[];
+  /**
+   * Where focus goes after a row is removed: the next row's "⋯", or Create
+   * when none is left. Cleared through onFocused once applied.
+   */
+  focusAfterRemoval?: { menuOf: string } | 'create' | null;
+  onFocused?: () => void;
   /** Omitted until the edit screen ships (Session Types PR 4). */
   templates: { key: string; href: string; icon: IconName; name: string; hint: string }[];
 };
@@ -31,9 +42,16 @@ type SessionTypeManagerProps = {
  * empty — and "Start from a template" under it in every state.
  */
 export function SessionTypeManager(p: SessionTypeManagerProps) {
+  const header = useRef<HTMLDivElement>(null);
+  const { focusAfterRemoval, onFocused } = p;
+  useEffect(() => {
+    if (focusAfterRemoval !== 'create') return;
+    header.current?.querySelector<HTMLElement>('a')?.focus();
+    onFocused?.();
+  }, [focusAfterRemoval, onFocused]);
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
+      <div className={styles.header} ref={header}>
         <div className={styles.intro}>
           <h1 className={styles.title}>Session types</h1>
           <p className={styles.lede}>
@@ -79,8 +97,13 @@ function List({
   onDelete,
   createHref,
   onEdit,
+  onFeature,
+  onRestore,
   onDuplicate,
   shareUrl,
+  restoringIds,
+  focusAfterRemoval,
+  onFocused,
 }: SessionTypeManagerProps) {
   if (list.isLoading) {
     return (
@@ -159,8 +182,13 @@ function List({
           onLiveChange={(live) => onLiveChange(t.id, live)}
           onDelete={() => onDelete(t)}
           onEdit={() => onEdit(t)}
+          onFeature={(f) => onFeature(t, f)}
+          onRestore={() => onRestore(t)}
           onDuplicate={() => onDuplicate(t)}
           shareUrl={shareUrl(t)}
+          restoring={!!restoringIds?.includes(t.id)}
+          focusMenu={typeof focusAfterRemoval === 'object' && focusAfterRemoval?.menuOf === t.id}
+          onFocused={onFocused}
         />
       ))}
     </div>

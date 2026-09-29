@@ -103,3 +103,43 @@
 .messageInfo {
   color: var(--ink-700);
 }
+/* Scheduled for deletion (Session Types.dc.html `pendingNote`). */
+.pending {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+.pendingIcon {
+  color: var(--red-500);
+}
+.keep {
+  position: relative;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--blue-500);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+.keep:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+/* A 45px target on touch (17px text + 14px each side), tablets included. */
+@media (max-width: 767px), (pointer: coarse) {
+  .keep::after {
+    content: '';
+    position: absolute;
+    inset: -14px -8px;
+  }
+}
+.keep[aria-disabled='true'] {
+  cursor: progress;
+}

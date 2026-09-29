@@ -6,7 +6,7 @@ type BadgeProps = {
   /** filled: solid ground, white text. accent: tinted ground. */
   type?: 'filled' | 'accent';
   /** The DS's orange is banned in product UI, so it is not offered. */
-  color?: 'primary' | 'green' | 'neutral';
+  color?: 'primary' | 'green' | 'red' | 'neutral';
   /** sm 10px caption / md 12px. */
   size?: 'sm' | 'md';
   children: ReactNode;

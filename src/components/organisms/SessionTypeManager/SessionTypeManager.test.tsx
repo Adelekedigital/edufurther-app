@@ -15,6 +15,9 @@ const T: OwnSessionType = {
   icon: 'edit_document',
   iconChoice: null,
   questionCount: 2,
+  isFeatured: false,
+  pendingDeletion: null,
+  booked: { count: 0, lastEndsAt: null },
 };
 const remote = (over: Partial<Remote<OwnSessionType[]>>): Remote<OwnSessionType[]> => ({
   data: null,
@@ -28,14 +31,18 @@ const setup = (list: Remote<OwnSessionType[]>, messages = {}) => {
   const onDelete = vi.fn();
   const onEdit = vi.fn();
   const onDuplicate = vi.fn();
-  render(
+  const onRestore = vi.fn();
+  const el = (l: Remote<OwnSessionType[]>, restoringIds: string[] = []) => (
     <SessionTypeManager
-      list={list}
+      list={l}
+      restoringIds={restoringIds}
       messages={messages}
       onLiveChange={onLiveChange}
       onDelete={onDelete}
       createHref="/session-types/new"
       onEdit={onEdit}
+      onFeature={vi.fn()}
+      onRestore={onRestore}
       onDuplicate={onDuplicate}
       shareUrl={(t) => `https://x.test/mentors/m1?book=${t.id}`}
       templates={[
@@ -47,9 +54,18 @@ const setup = (list: Remote<OwnSessionType[]>, messages = {}) => {
           hint: '60 min · 2 questions',
         },
       ]}
-    />,
+    />
   );
-  return { onLiveChange, onDelete, onEdit, onDuplicate };
+  const { rerender } = render(el(list));
+  return {
+    onLiveChange,
+    onDelete,
+    onEdit,
+    onDuplicate,
+    onRestore,
+    relist: (l: Remote<OwnSessionType[]>) => rerender(el(l)),
+    rerenderWith: (l: Remote<OwnSessionType[]>, ids: string[]) => rerender(el(l, ids)),
+  };
 };
 
 describe('SessionTypeManager — the four states', () => {
@@ -105,7 +121,7 @@ describe('SessionTypeManager — the four states', () => {
       within(menu)
         .getAllByRole('menuitem')
         .map((m: HTMLElement) => m.textContent),
-    ).toEqual(['editEdit', 'content_copyDuplicate', 'deleteDelete']);
+    ).toEqual(['editEdit', 'content_copyDuplicate', 'starMark as featured', 'deleteDelete']);
     await user.click(within(menu).getByRole('menuitem', { name: /Delete/ }));
     expect(onDelete).toHaveBeenCalledWith(expect.objectContaining({ id: 'b' }));
     await user.click(more);
@@ -121,9 +137,46 @@ describe('SessionTypeManager — the four states', () => {
 
   it('a switch that did not save says so on its row', () => {
     setup(remote({ data: [T] }), { a: 'Couldn’t hide it. Check your connection and try again.' });
-    // The row's own message (each row also has the copy link's polite status).
+    // Shown on the row; the page's LiveRegion reads it out.
     expect(
-      screen.getAllByRole('status').find((x) => x.textContent?.includes('Couldn’t hide it.')),
-    ).toBeTruthy();
+      within(screen.getByRole('article', { name: 'SOP draft review' })).getByText(
+        'Couldn’t hide it. Check your connection and try again.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('after "Keep it" works, focus moves to the switch it gives back (not the page)', async () => {
+    const pending = {
+      ...T,
+      isLive: false,
+      pendingDeletion: { deletesAfter: null, bookedCount: 1 },
+    };
+    const { onRestore, relist } = setup(remote({ data: [pending] }));
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'Keep it: SOP draft review' }));
+    expect(onRestore).toHaveBeenCalled();
+    relist(remote({ data: [{ ...pending, pendingDeletion: null }] }));
+    expect(
+      screen.getByRole('switch', { name: 'Visible to mentees: SOP draft review' }),
+    ).toHaveFocus();
+  });
+
+  it('a "Keep it" that failed doesn’t pull focus later, when a refetch clears the deletion', async () => {
+    const pending = {
+      ...T,
+      isLive: false,
+      pendingDeletion: { deletesAfter: null, bookedCount: 1 },
+    };
+    const { relist, rerenderWith } = setup(remote({ data: [pending] }));
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Keep it: SOP draft review' }));
+    rerenderWith(remote({ data: [pending] }), ['a']);
+    rerenderWith(remote({ data: [pending] }), []);
+    await user.click(screen.getByRole('link', { name: 'Create session type' }));
+    relist(remote({ data: [{ ...pending, pendingDeletion: null }] }));
+    expect(
+      screen.getByRole('switch', { name: 'Visible to mentees: SOP draft review' }),
+    ).not.toHaveFocus();
   });
 });

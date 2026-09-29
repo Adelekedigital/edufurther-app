@@ -33,6 +33,14 @@
   background: var(--green-50);
   color: var(--green-700);
 }
+.red-filled {
+  background: var(--red-500);
+  color: var(--white);
+}
+.red-accent {
+  background: var(--red-50);
+  color: var(--red-700);
+}
 .neutral-filled {
   background: var(--ink-500);
   color: var(--white);

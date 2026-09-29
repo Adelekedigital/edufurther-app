@@ -1,10 +1,16 @@
 'use client';
 
 import { useRef } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useMutation,
+  useMutationState,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import type { AppError, Remote } from '@/types/mentor';
-import type { DeleteError, OwnSessionType, SessionIcon } from '@/types/sessionType';
+import type { DeleteError, DeleteResult, OwnSessionType, SessionIcon } from '@/types/sessionType';
 import {
   copyForField,
   fieldForPointer,
@@ -67,25 +73,20 @@ export function toOwnSessionType(
     iconChoice: r.icon ?? null,
     icon: r.icon ?? autoIcon(topics.map((t) => t.code)),
     questionCount,
+    isFeatured: r.is_featured,
+    pendingDeletion: r.pending_deletion
+      ? {
+          deletesAfter: r.pending_deletion.deletes_after ?? null,
+          bookedCount: r.pending_deletion.booked_count,
+        }
+      : null,
+    booked: { count: r.booked_count, lastEndsAt: r.last_booked_ends_at ?? null },
   };
 }
 
-/**
- * DELETE refused while sessions are booked on it: 409
- * `/problems/session-type-has-bookings` + `booked_count` (backend #4). Any 409 on
- * DELETE means this (backend reply #4), so the type is a hint, not a gate.
- */
-export function deleteError(error: unknown, body: unknown): DeleteError {
+/** A refused delete, in our copy (a booked type is scheduled now, not refused). */
+export function deleteError(error: unknown): DeleteError {
   const e = normaliseError(error);
-  if (error instanceof ApiError && error.status === 409) {
-    const n = (body as { booked_count?: unknown } | null)?.booked_count;
-    return {
-      ...e,
-      hasBookings: true,
-      bookedCount: typeof n === 'number' && n > 0 ? n : undefined,
-      message: 'Sessions are still booked on it.',
-    };
-  }
   return { ...e, message: `We couldn’t delete it. ${e.message} Try again.` };
 }
 
@@ -137,13 +138,40 @@ export function useOwnSessionTypes(enabled: boolean): Remote<OwnSessionType[]> {
  * rolls back if the server refuses; `onFailed` lets the row say so (a silent
  * rollback reads as the app ignoring the click).
  */
+/**
+ * Every write to a row shares one key, so the list is refetched once, after
+ * the last one settles: a refetch while another write is pending could return
+ * its old state and flicker the row back (review of #80).
+ */
+const ROW_WRITE = ['sessionTypes', 'rowWrite'] as const;
+// A real setTimeout: a test with fake timers must advance them to see the refetch.
+const settling = new WeakSet<QueryClient>();
+function settleRowWrite(qc: QueryClient) {
+  // Checked after this mutation stops counting as pending, and once for writes
+  // settling in the same tick: otherwise each sees the other and none refetches.
+  if (settling.has(qc)) return;
+  settling.add(qc);
+  setTimeout(() => {
+    settling.delete(qc);
+    if (qc.isMutating({ mutationKey: ROW_WRITE }) > 0) return;
+    void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });
+    // What mentees can book, and the featured type: Explore cards and the profile.
+    void qc.invalidateQueries({ queryKey: keys.mentors.all });
+    void qc.invalidateQueries({ queryKey: ['booking'] });
+  }, 0);
+}
+/** Restores in flight, by row, so each "Keep it" waits on its own. */
+const RESTORE = [...ROW_WRITE, 'restore'] as const;
+// Offline, fail at once (our copy says so) rather than pause and send later.
+const ROW_WRITE_OPTS = { networkMode: 'always' } as const;
+
 export function useSetLive(onFailed: (id: string, live: boolean) => void) {
   const qc = useQueryClient();
   const who = useWho();
   const key = keys.sessionTypes.own(who);
-  // Switches in flight across all rows: the list is refetched once, after the last.
-  const inFlight = useRef(0);
   const mutation = useMutation({
+    mutationKey: ROW_WRITE,
+    ...ROW_WRITE_OPTS,
     mutationFn: async ({ id, live }: { id: string; live: boolean }) => {
       const { data, error, response } = await api.PATCH(
         '/api/v1/me/session-types/{session_type_id}',
@@ -153,7 +181,6 @@ export function useSetLive(onFailed: (id: string, live: boolean) => void) {
       return data;
     },
     onMutate: async ({ id, live }) => {
-      inFlight.current += 1;
       await qc.cancelQueries({ queryKey: key });
       qc.setQueryData<OwnSessionType[]>(key, (list) =>
         list?.map((t) => (t.id === id ? { ...t, isLive: live } : t)),
@@ -166,24 +193,22 @@ export function useSetLive(onFailed: (id: string, live: boolean) => void) {
       );
       onFailed(id, live);
     },
-    onSettled: () => {
-      inFlight.current -= 1;
-      // A refetch while another switch is pending could return its old state.
-      if (inFlight.current > 0) return;
-      void qc.invalidateQueries({ queryKey: key });
-      // What mentees can book changed: Explore cards and the public profile.
-      void qc.invalidateQueries({ queryKey: keys.mentors.all });
-      void qc.invalidateQueries({ queryKey: ['booking'] });
-    },
+    onSettled: () => settleRowWrite(qc),
   });
   return (id: string, live: boolean) => mutation.mutate({ id, live });
 }
 
-/** DELETE /me/session-types/{id}. Not optimistic: it waits for the confirm modal's answer. */
+/**
+ * DELETE /me/session-types/{id}, after the confirm. 204: gone. 202: sessions
+ * are booked on it, so it's hidden now (and un-featured) and deleted after the
+ * last one; the row shows that until then (backend round 4).
+ */
 export function useDeleteSessionType() {
   const qc = useQueryClient();
   const who = useWho();
-  const mutation = useMutation<void, DeleteError, string>({
+  const mutation = useMutation<DeleteResult, DeleteError, string>({
+    mutationKey: ROW_WRITE,
+    ...ROW_WRITE_OPTS,
     mutationFn: async (id) => {
       let result;
       try {
@@ -192,27 +217,140 @@ export function useDeleteSessionType() {
         });
       } catch (e) {
         // Network failure: our copy, never the browser's "Failed to fetch".
-        throw deleteError(e, null);
+        throw deleteError(e);
       }
-      const { error, response } = result;
+      const { data, error, response } = result;
       // Already gone (deleted from another tab or device): what the mentor wanted.
-      if (response.status === 404) return;
-      if (!response.ok) throw deleteError(apiError(response.status, error), error);
+      if (response.status === 404 || response.status === 204) return { kind: 'deleted' };
+      // Scheduled even when the body didn't arrive: the refetch brings the figures.
+      if (response.status === 202)
+        return {
+          kind: 'scheduled',
+          deletesAfter: data?.deletes_after ?? null,
+          bookedCount: data?.booked_count ?? 0,
+        };
+      throw deleteError(apiError(response.status, error));
     },
-    onSuccess: (_d, id) => {
+    // A list fetch already under way would land after this and bring the row back.
+    onMutate: () => qc.cancelQueries({ queryKey: keys.sessionTypes.own(who) }),
+    onSuccess: (r, id) => {
       qc.setQueryData<OwnSessionType[]>(keys.sessionTypes.own(who), (list) =>
-        list?.filter((t) => t.id !== id),
+        r.kind === 'deleted'
+          ? list?.filter((t) => t.id !== id)
+          : list?.map((t) =>
+              t.id === id
+                ? {
+                    ...t,
+                    isLive: false,
+                    isFeatured: false,
+                    pendingDeletion: { deletesAfter: r.deletesAfter, bookedCount: r.bookedCount },
+                  }
+                : t,
+            ),
       );
-      void qc.invalidateQueries({ queryKey: keys.mentors.all });
-      void qc.invalidateQueries({ queryKey: ['booking'] });
     },
+    onSettled: () => settleRowWrite(qc),
   });
   return {
-    remove: mutation.mutate,
+    remove: mutation.mutateAsync,
     isPending: mutation.isPending,
     error: mutation.error,
     reset: mutation.reset,
   };
+}
+
+/**
+ * POST …/restore: the scheduled deletion is cancelled; the type stays hidden.
+ * A 404 means the hourly job already deleted it: the row goes, like a delete.
+ */
+export function useRestoreSessionType(
+  onFailed: (id: string, error: AppError) => void,
+  onDone: (id: string, result: 'kept' | 'gone') => void,
+) {
+  const qc = useQueryClient();
+  const who = useWho();
+  const key = keys.sessionTypes.own(who);
+  const mutation = useMutation<'kept' | 'gone', AppError, string>({
+    mutationKey: RESTORE,
+    ...ROW_WRITE_OPTS,
+    mutationFn: async (id) => {
+      const r = await api
+        .POST('/api/v1/me/session-types/{session_type_id}/restore', {
+          params: { path: { session_type_id: id } },
+        })
+        .catch((e: unknown) => {
+          throw normaliseError(e);
+        });
+      if (r.response.status === 404) return 'gone';
+      if (!r.response.ok) throw normaliseError(apiError(r.response.status, r.error));
+      return 'kept';
+    },
+    onMutate: () => qc.cancelQueries({ queryKey: key }),
+    onSuccess: (r, id) => {
+      qc.setQueryData<OwnSessionType[]>(key, (list) =>
+        r === 'gone'
+          ? list?.filter((t) => t.id !== id)
+          : list?.map((t) => (t.id === id ? { ...t, pendingDeletion: null, isLive: false } : t)),
+      );
+      onDone(id, r);
+    },
+    onError: (e, id) => onFailed(id, e),
+    onSettled: () => settleRowWrite(qc),
+  });
+  // useMutation tracks only its latest call: read every restore still pending.
+  const pendingIds = useMutationState({
+    filters: { mutationKey: RESTORE, status: 'pending' },
+    // RESTORE is this hook's alone, so its variables are always the row id.
+    select: (m) => m.state.variables as string,
+  });
+  return { restore: mutation.mutate, pendingIds };
+}
+
+/**
+ * PATCH is_featured — optimistic: the badge moves at once (featuring one
+ * un-features the others, as the backend does in one transaction) and rolls
+ * back if refused (a hidden or scheduled type: 422 /is_featured).
+ */
+export function useSetFeatured(onFailed: (id: string, featured: boolean, error: AppError) => void) {
+  const qc = useQueryClient();
+  const who = useWho();
+  const key = keys.sessionTypes.own(who);
+  const mutation = useMutation({
+    mutationKey: ROW_WRITE,
+    ...ROW_WRITE_OPTS,
+    mutationFn: async ({ id, featured }: { id: string; featured: boolean }) => {
+      const { data, error, response } = await api.PATCH(
+        '/api/v1/me/session-types/{session_type_id}',
+        { params: { path: { session_type_id: id } }, body: { is_featured: featured } },
+      );
+      if (!data) throw apiError(response.status, error);
+    },
+    onMutate: async ({ id, featured }) => {
+      await qc.cancelQueries({ queryKey: key });
+      // Only the badges roll back: another row's switch may have saved meanwhile.
+      const wasFeatured = (qc.getQueryData<OwnSessionType[]>(key) ?? [])
+        .filter((t) => t.isFeatured)
+        .map((t) => t.id);
+      qc.setQueryData<OwnSessionType[]>(key, (list) =>
+        list?.map((t) => ({
+          ...t,
+          isFeatured: t.id === id ? featured : featured ? false : t.isFeatured,
+        })),
+      );
+      return { wasFeatured };
+    },
+    onError: (e, { id, featured }, ctx) => {
+      // Back to the badges before this call; another feature still in flight
+      // shows again when it settles and the list refetches.
+      if (ctx)
+        qc.setQueryData<OwnSessionType[]>(key, (list) =>
+          list?.map((t) => ({ ...t, isFeatured: ctx.wasFeatured.includes(t.id) })),
+        );
+      onFailed(id, featured, normaliseError(e));
+    },
+    onSettled: () => settleRowWrite(qc),
+  });
+  return (id: string, featured: boolean) => mutation.mutate({ id, featured });
 }
 
 // ---- create -------------------------------------------------------------------

@@ -17,6 +17,10 @@ const own = (over: Partial<Own> = {}): Own =>
     custom_stage_label: null,
     icon: null,
     requires_booking_confirmation: null,
+    is_featured: false,
+    pending_deletion: null,
+    booked_count: 0,
+    last_booked_ends_at: null as string | null,
     ...over,
   }) as Own;
 
@@ -33,6 +37,28 @@ describe('toOwnSessionType', () => {
       icon: 'edit_document',
       iconChoice: null,
       questionCount: 2,
+      isFeatured: false,
+      pendingDeletion: null,
+      booked: { count: 0, lastEndsAt: null },
+    });
+  });
+
+  it('featured, a scheduled deletion, and the booked figures (round 4)', () => {
+    const t = toOwnSessionType(
+      {
+        ...own({
+          is_featured: true,
+          pending_deletion: { deletes_after: '2026-10-14T18:00:00Z', booked_count: 2 },
+        }),
+        booked_count: 2,
+        last_booked_ends_at: '2026-10-14T18:00:00Z',
+      } as Own,
+      0,
+    );
+    expect(t).toMatchObject({
+      isFeatured: true,
+      pendingDeletion: { deletesAfter: '2026-10-14T18:00:00Z', bookedCount: 2 },
+      booked: { count: 2, lastEndsAt: '2026-10-14T18:00:00Z' },
     });
   });
 
@@ -71,26 +97,10 @@ describe('toOwnSessionType', () => {
   });
 });
 
-describe('deleteError (backend #4)', () => {
-  it('409 with booked_count: has bookings, with the count', () => {
-    const e = deleteError(new ApiError(409, 'x', '/problems/session-type-has-bookings'), {
-      booked_count: 2,
-    });
-    expect(e).toMatchObject({ hasBookings: true, bookedCount: 2 });
-  });
-
-  it('any 409 on delete means bookings, even without a type or count', () => {
-    const e = deleteError(new ApiError(409), {});
-    expect(e.hasBookings).toBe(true);
-    expect(e.bookedCount).toBeUndefined();
-  });
-
-  it('anything else is our retry copy, never `detail`; a network failure too', () => {
-    expect(deleteError(new TypeError('Failed to fetch'), null).message).not.toContain(
-      'Failed to fetch',
-    );
-    const e = deleteError(new ApiError(500), { detail: 'stack trace here' });
-    expect(e.hasBookings).toBeUndefined();
+describe('deleteError', () => {
+  it('our retry copy, never `detail`; a network failure too (a booked type is scheduled now, not refused)', () => {
+    expect(deleteError(new TypeError('Failed to fetch')).message).not.toContain('Failed to fetch');
+    const e = deleteError(new ApiError(500, 'stack trace here'));
     expect(e.message).not.toContain('stack trace');
     expect(e.message).toMatch(/We couldn’t delete it/);
   });

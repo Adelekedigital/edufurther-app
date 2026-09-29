@@ -31,7 +31,16 @@ export type OwnSessionType = {
   iconChoice: SessionIcon | null;
   /** Intake questions on the form; null when the count couldn't be loaded. */
   questionCount: number | null;
+  /** Shown first on the profile; one per mentor (backend round 4). */
+  isFeatured: boolean;
+  /** Deleted after its last booked session; hidden meanwhile (backend round 4). */
+  pendingDeletion: { deletesAfter: string | null; bookedCount: number } | null;
+  /** Sessions booked on it now and when the last one ends: whether Delete deletes or schedules. */
+  booked: { count: number; lastEndsAt: string | null };
 };
 
-/** Delete refused because sessions are still booked on it (backend #4). */
-export type DeleteError = AppError & { bookedCount?: number; hasBookings?: boolean };
+export type DeleteError = AppError;
+
+/** What a DELETE did: gone, or hidden now and deleted after its last booked session. */
+export type DeleteResult =
+  { kind: 'deleted' } | { kind: 'scheduled'; deletesAfter: string | null; bookedCount: number };

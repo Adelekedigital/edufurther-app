@@ -22,18 +22,17 @@ export async function PATCH(req: Request, ctx: Ctx) {
   return problem(r.status, r.errors ? { errors: r.errors } : {});
 }
 
-/** MOCK of DELETE: 204, 404, or 409 /problems/session-type-has-bookings + booked_count (#4). */
+/** MOCK of DELETE: 204, 404, or 202 {scheduled, deletes_after, booked_count} (round 4). */
 export async function DELETE(_req: Request, ctx: Ctx) {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
   const { session_type_id } = await ctx.params;
   await new Promise((r) => setTimeout(r, 300));
   const r = mockDeleteSessionType(session_type_id);
   if (r.result === 'gone') return problem(404);
-  if (r.result === 'booked')
-    return problem(409, {
-      type: '/problems/session-type-has-bookings',
-      title: 'Session type has bookings',
-      booked_count: r.count,
-    });
+  if (r.result === 'scheduled')
+    return NextResponse.json(
+      { scheduled: true, deletes_after: r.deletes_after, booked_count: r.booked_count },
+      { status: 202 },
+    );
   return new NextResponse(null, { status: 204 });
 }

@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import {
   useCreateSessionType,
   useDeleteSessionType,
   useOwnSessionTypes,
+  useRestoreSessionType,
+  useSetFeatured,
   useSaveMentorDefaults,
   useSetLive,
 } from './sessionTypes';
@@ -39,6 +41,10 @@ const row = (id: string, is_active = true) => ({
   custom_stage_label: null,
   icon: null,
   requires_booking_confirmation: null,
+  is_featured: false,
+  pending_deletion: null as { deletes_after: string | null; booked_count: number } | null,
+  booked_count: 0,
+  last_booked_ends_at: null as string | null,
 });
 const ok = (data: unknown, status = 200) => ({
   data,
@@ -61,6 +67,8 @@ function setup() {
   return wrapper;
 }
 
+const BOOKED = { deletes_after: '2026-10-14T12:00:00Z', booked_count: 2 };
+const hang = () => GET.mockImplementation(() => new Promise(() => {}));
 let list: ReturnType<typeof row>[];
 beforeEach(() => {
   list = [row('x'), row('y')];
@@ -115,25 +123,259 @@ describe('useDeleteSessionType', () => {
     const wrapper = setup();
     DELETE.mockRejectedValue(new TypeError('Failed to fetch'));
     const { result } = renderHook(() => useDeleteSessionType(), { wrapper });
-    act(() => result.current.remove('x'));
+    await act(() => result.current.remove('x').catch(() => undefined));
     await waitFor(() => expect(result.current.error).not.toBeNull());
     expect(result.current.error!.message).toMatch(/We couldn’t delete it/);
     expect(result.current.error!.message).not.toContain('Failed to fetch');
   });
 
-  it('already deleted elsewhere (404): the row leaves the list, like a delete', async () => {
-    const wrapper = setup();
-    DELETE.mockResolvedValue(fail(404));
+  // The list refetch never answers in these tests: what the cache shows came
+  // from the hook itself, so removing a cache write fails them (review of #80).
+
+  it('deleted (204) or already gone (404): the row leaves the list at once', async () => {
+    for (const status of [204, 404]) {
+      list = [row('x'), row('y')];
+      GET.mockImplementation(() => Promise.resolve(ok({ data: list, next_cursor: null })));
+      DELETE.mockResolvedValue(status === 204 ? ok(undefined, 204) : fail(404));
+      const { result } = renderHook(
+        () => ({ list: useOwnSessionTypes(true), del: useDeleteSessionType() }),
+        { wrapper: setup() },
+      );
+      await waitFor(() => expect(result.current.list.data).toHaveLength(2));
+      hang();
+      await act(async () => {
+        await expect(result.current.del.remove('x')).resolves.toEqual({ kind: 'deleted' });
+      });
+      await waitFor(() => expect(result.current.list.data!.map((t) => t.id)).toEqual(['y']));
+    }
+  });
+
+  it('booked (202): hidden, un-featured and scheduled at once; a 202 without its body still is', async () => {
+    for (const data of [{ scheduled: true, ...BOOKED }, undefined]) {
+      list = [{ ...row('x'), is_featured: true }, row('y')];
+      GET.mockImplementation(() => Promise.resolve(ok({ data: list, next_cursor: null })));
+      DELETE.mockResolvedValue(ok(data, 202));
+      const { result } = renderHook(
+        () => ({ list: useOwnSessionTypes(true), del: useDeleteSessionType() }),
+        { wrapper: setup() },
+      );
+      await waitFor(() => expect(result.current.list.data).toHaveLength(2));
+      hang();
+      await act(async () => {
+        await expect(result.current.del.remove('x')).resolves.toMatchObject({ kind: 'scheduled' });
+      });
+      await waitFor(() =>
+        expect(result.current.list.data!.find((t) => t.id === 'x')).toMatchObject({
+          isLive: false,
+          isFeatured: false,
+          pendingDeletion: data
+            ? { deletesAfter: BOOKED.deletes_after, bookedCount: 2 }
+            : { deletesAfter: null, bookedCount: 0 },
+        }),
+      );
+    }
+  });
+});
+
+describe('useRestoreSessionType', () => {
+  it('kept: no longer scheduled, still hidden; already deleted (404): the row goes', async () => {
+    list = [
+      { ...row('x', false), pending_deletion: BOOKED },
+      { ...row('y', false), pending_deletion: BOOKED },
+    ];
+    const onFailed = vi.fn();
+    const onSuccess = vi.fn();
     const { result } = renderHook(
-      () => ({ list: useOwnSessionTypes(true), del: useDeleteSessionType() }),
-      { wrapper },
+      () => ({ list: useOwnSessionTypes(true), r: useRestoreSessionType(onFailed, onSuccess) }),
+      { wrapper: setup() },
     );
     await waitFor(() => expect(result.current.list.data).toHaveLength(2));
-    const onSuccess = vi.fn();
-    act(() => result.current.del.remove('x', { onSuccess }));
-    await waitFor(() => expect(onSuccess).toHaveBeenCalled());
-    expect(result.current.list.data!.map((t) => t.id)).toEqual(['y']);
-    expect(result.current.del.error).toBeNull();
+    hang();
+    POST.mockResolvedValueOnce(ok(row('x', false))).mockResolvedValueOnce(fail(404));
+    act(() => result.current.r.restore('x'));
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+    expect(onSuccess.mock.calls[0]).toEqual(['x', 'kept']);
+    expect(result.current.list.data![0]).toMatchObject({
+      id: 'x',
+      pendingDeletion: null,
+      isLive: false,
+    });
+    expect(POST.mock.calls[0]![0]).toBe('/api/v1/me/session-types/{session_type_id}/restore');
+    act(() => result.current.r.restore('y'));
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(2));
+    expect(onSuccess.mock.calls[1]).toEqual(['y', 'gone']);
+    expect(result.current.list.data!.map((t) => t.id)).toEqual(['x']);
+    expect(onFailed).not.toHaveBeenCalled();
+  });
+
+  it('a refusal is reported for the row with its kind; the row stays scheduled', async () => {
+    list = [{ ...row('x', false), pending_deletion: BOOKED }];
+    const onFailed = vi.fn();
+    const { result } = renderHook(
+      () => ({ list: useOwnSessionTypes(true), r: useRestoreSessionType(onFailed, vi.fn()) }),
+      { wrapper: setup() },
+    );
+    await waitFor(() => expect(result.current.list.data).toHaveLength(1));
+    POST.mockResolvedValue(fail(500));
+    act(() => result.current.r.restore('x'));
+    await waitFor(() =>
+      expect(onFailed).toHaveBeenCalledWith('x', expect.objectContaining({ kind: 'server' })),
+    );
+    expect(result.current.list.data![0]!.pendingDeletion).not.toBeNull();
+  });
+});
+
+describe('useSetFeatured', () => {
+  it('featuring one un-features the others at once; a refusal puts only the badges back', async () => {
+    list = [{ ...row('x'), is_featured: true }, row('y'), row('z')];
+    const onFailed = vi.fn();
+    const { result } = renderHook(
+      () => ({
+        list: useOwnSessionTypes(true),
+        feature: useSetFeatured(onFailed),
+        setLive: useSetLive(vi.fn()),
+      }),
+      { wrapper: setup() },
+    );
+    await waitFor(() => expect(result.current.list.data).toHaveLength(3));
+    hang();
+    let refuse!: () => void;
+    PATCH.mockImplementation(
+      (_p: string, o: { body: { is_featured?: boolean } }) =>
+        new Promise((res) => {
+          if ('is_featured' in o.body) refuse = () => res(fail(422));
+          else res(ok({ updated: true }));
+        }),
+    );
+    const featured = () => result.current.list.data!.filter((t) => t.isFeatured).map((t) => t.id);
+    act(() => result.current.feature('y', true));
+    await waitFor(() => expect(featured()).toEqual(['y']));
+    // Another row's switch saves while the feature is still waiting.
+    act(() => result.current.setLive('z', false));
+    await waitFor(() => expect(PATCH).toHaveBeenCalledTimes(2));
+    await act(async () => refuse());
+    await waitFor(() => expect(featured()).toEqual(['x']));
+    expect(result.current.list.data!.find((t) => t.id === 'z')!.isLive).toBe(false);
+    expect(onFailed).toHaveBeenCalledWith(
+      'y',
+      true,
+      expect.objectContaining({ kind: 'validation' }),
+    );
+  });
+
+  it('writes in flight together refetch the list once, after the last one', async () => {
+    const { result } = renderHook(
+      () => ({
+        list: useOwnSessionTypes(true),
+        feature: useSetFeatured(vi.fn()),
+        setLive: useSetLive(vi.fn()),
+      }),
+      { wrapper: setup() },
+    );
+    await waitFor(() => expect(result.current.list.data).toHaveLength(2));
+    const lists = () =>
+      GET.mock.calls.filter(([path]) => !String(path).endsWith('/questions')).length;
+    const reads = lists();
+    const answers: (() => void)[] = [];
+    PATCH.mockImplementation(
+      () => new Promise((res) => answers.push(() => res(ok({ updated: true })))),
+    );
+    act(() => {
+      result.current.feature('x', true);
+      result.current.setLive('y', false);
+    });
+    await waitFor(() => expect(answers).toHaveLength(2));
+    await act(async () => answers[0]!());
+    expect(lists()).toBe(reads);
+    await act(async () => answers[1]!());
+    await waitFor(() => expect(lists()).toBe(reads + 1));
+  });
+});
+
+describe('row writes (review r2 of #80)', () => {
+  it('offline, a write fails at once with our offline copy instead of pausing', async () => {
+    const onFailed = vi.fn();
+    const { result } = renderHook(
+      () => ({ list: useOwnSessionTypes(true), feature: useSetFeatured(onFailed) }),
+      { wrapper: setup() },
+    );
+    await waitFor(() => expect(result.current.list.data).toHaveLength(2));
+    // Offline as both see it: our error copy (navigator) and the query client.
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    onlineManager.setOnline(false);
+    try {
+      PATCH.mockRejectedValue(new TypeError('Failed to fetch'));
+      act(() => result.current.feature('x', true));
+      await waitFor(() =>
+        expect(onFailed).toHaveBeenCalledWith(
+          'x',
+          true,
+          expect.objectContaining({ kind: 'offline' }),
+        ),
+      );
+    } finally {
+      online.mockRestore();
+      onlineManager.setOnline(true);
+    }
+  });
+
+  it('two rows can be kept at once: each waits on its own, and each says how it went', async () => {
+    list = [
+      { ...row('x', false), pending_deletion: BOOKED },
+      { ...row('y', false), pending_deletion: BOOKED },
+    ];
+    const onDone = vi.fn();
+    const { result } = renderHook(
+      () => ({ list: useOwnSessionTypes(true), r: useRestoreSessionType(vi.fn(), onDone) }),
+      { wrapper: setup() },
+    );
+    await waitFor(() => expect(result.current.list.data).toHaveLength(2));
+    const answers: Record<string, () => void> = {};
+    POST.mockImplementation(
+      (_p: string, o: { params: { path: { session_type_id: string } } }) =>
+        new Promise((res) => {
+          const id = o.params.path.session_type_id;
+          answers[id] = () => res(id === 'x' ? ok(row('x', false)) : fail(404));
+        }),
+    );
+    act(() => {
+      result.current.r.restore('x');
+      result.current.r.restore('y');
+    });
+    await waitFor(() => expect([...result.current.r.pendingIds].sort()).toEqual(['x', 'y']));
+    // The first click's answer arrives after the second click: it still reports.
+    await act(async () => answers.x!());
+    await act(async () => answers.y!());
+    await waitFor(() => expect(onDone).toHaveBeenCalledTimes(2));
+    expect(onDone.mock.calls).toEqual([
+      ['x', 'kept'],
+      ['y', 'gone'],
+    ]);
+  });
+
+  it('two writes settling in the same tick still refetch the list once', async () => {
+    const { result } = renderHook(
+      () => ({
+        list: useOwnSessionTypes(true),
+        feature: useSetFeatured(vi.fn()),
+        setLive: useSetLive(vi.fn()),
+      }),
+      { wrapper: setup() },
+    );
+    await waitFor(() => expect(result.current.list.data).toHaveLength(2));
+    const lists = () =>
+      GET.mock.calls.filter(([path]) => !String(path).endsWith('/questions')).length;
+    const reads = lists();
+    let answer!: () => void;
+    const gate = new Promise<void>((res) => (answer = res));
+    PATCH.mockImplementation(() => gate.then(() => ok({ updated: true })));
+    act(() => {
+      result.current.feature('x', true);
+      result.current.setLive('y', false);
+    });
+    await waitFor(() => expect(PATCH).toHaveBeenCalledTimes(2));
+    await act(async () => answer());
+    await waitFor(() => expect(lists()).toBe(reads + 1));
   });
 });
 
