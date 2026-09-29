@@ -56,6 +56,7 @@
     "logout",
     "mail",
     "menu",
+    "more_horiz",
     "my_location",
     "new_releases",
     "open_in_new",
@@ -90,8 +91,10 @@
     "verified_user",
     "video_call",
     "videocam",
+    "visibility",
+    "visibility_off",
     "work",
     "workspace_premium"
   ],
-  "sha256": "6938cdfb541be1742f2665b924068e1ea121988fd898df6f2111c538d6c7c8ab"
+  "sha256": "d6b713512ad7b1d624e7ef3cbfc9cfebdeec3f53bdd30cef2575f1c5287eba6c"
 }

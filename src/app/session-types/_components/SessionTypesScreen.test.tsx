@@ -1,10 +1,25 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Remote, Viewer } from '@/types/mentor';
 import type { DeleteError, OwnSessionType } from '@/types/sessionType';
 import { SessionTypesScreen } from './SessionTypesScreen';
 
-vi.mock('next/navigation', () => ({ usePathname: () => '/session-types' }));
+const push = vi.fn();
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/session-types',
+  useRouter: () => ({ push }),
+}));
+vi.mock('@/lib/api/data/mentors', () => ({
+  useTopics: () => ({
+    topics: [{ slug: 'document-preparation', label: 'Document preparation', id: 'o4' }],
+    isLoading: topicsLoading,
+  }),
+}));
+const duplicate = vi.fn();
+let topicsLoading = false;
+vi.mock('@/lib/api/data/sessionTypeEdit', () => ({
+  useDuplicateSessionType: () => ({ duplicate, isPending: false }),
+}));
 
 let viewer: Viewer;
 vi.mock('@/app/_shell/useAppShell', () => ({
@@ -31,11 +46,15 @@ const TYPE: OwnSessionType = {
 };
 let list: Remote<OwnSessionType[]>;
 const setLive = vi.fn();
+let failLive: (id: string, live: boolean) => void = () => {};
 const remove = vi.fn();
 let deleteErr: DeleteError | null = null;
 vi.mock('@/lib/api/data/sessionTypes', () => ({
   useOwnSessionTypes: () => list,
-  useSetLive: () => setLive,
+  useSetLive: (onFailed: (id: string, live: boolean) => void) => {
+    failLive = onFailed;
+    return setLive;
+  },
   useDeleteSessionType: () => ({ remove, isPending: false, error: deleteErr, reset: vi.fn() }),
 }));
 
@@ -62,6 +81,8 @@ beforeEach(() => {
   list = idle({ data: [TYPE] });
   deleteErr = null;
   setLive.mockClear();
+  topicsLoading = false;
+  duplicate.mockReset();
   remove.mockClear();
 });
 
@@ -103,7 +124,8 @@ describe('SessionTypesScreen', () => {
     viewer = mentor;
     const user = userEvent.setup();
     render(<SessionTypesScreen />);
-    await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
     expect(screen.getByRole('dialog', { name: 'Delete this session type?' })).toBeInTheDocument();
     expect(remove).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Delete' }));
@@ -115,7 +137,8 @@ describe('SessionTypesScreen', () => {
     deleteErr = { kind: 'conflict', message: 'x', hasBookings: true, bookedCount: 2 };
     const user = userEvent.setup();
     render(<SessionTypesScreen />);
-    await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
     const dialog = screen.getByRole('dialog', { name: 'This session type has bookings' });
     expect(dialog).toHaveTextContent('2 booked sessions are on “SOP draft review”');
     await user.click(screen.getByRole('button', { name: 'Switch it off' }));
@@ -139,5 +162,127 @@ describe('SessionTypesScreen', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: 'Your account isn’t ready yet.' }),
     ).toBeInTheDocument();
+  });
+
+  it('the switch asks first: showing, hiding, and hiding the last visible one (design update)', async () => {
+    viewer = mentor;
+    list = idle({ data: [TYPE, { ...TYPE, id: 'b', name: 'Visa prep', isLive: false }] });
+    const user = userEvent.setup();
+    render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('switch', { name: 'Visible to mentees: SOP draft review' }));
+    // The only visible one: hiding it says what that means for the profile.
+    let dialog = screen.getByRole('dialog', { name: 'Hide your last session type?' });
+    expect(dialog).toHaveTextContent('Your profile will show “Not taking bookings”');
+    await user.click(within(dialog).getByRole('button', { name: 'Keep visible' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(setLive).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('switch', { name: 'Visible to mentees: SOP draft review' }));
+    dialog = screen.getByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Hide it' }));
+    expect(setLive).toHaveBeenCalledWith('a', false);
+    // Showing the hidden one asks too.
+    await user.click(screen.getByRole('switch', { name: 'Visible to mentees: Visa prep' }));
+    dialog = screen.getByRole('dialog', { name: 'Show “Visa prep” to mentees?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Show it' }));
+    expect(setLive).toHaveBeenCalledWith('b', true);
+  });
+
+  it('Duplicate copies with a name not already used, and says what didn’t come across', async () => {
+    viewer = mentor;
+    const user = userEvent.setup();
+    duplicate.mockResolvedValueOnce({
+      id: 'new',
+      name: 'SOP draft review (copy)',
+      failed: ['hours'],
+    });
+    render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Duplicate/ }));
+    expect(duplicate).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'a', offeringIds: { 'document-preparation': 'o4' } }),
+    );
+    expect(
+      await screen.findByText(
+        '“SOP draft review (copy)” was added, hidden, but its dedicated hours didn’t copy. Check it before you show it.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('Edit goes to the edit screen; the share link books this type on the profile', async () => {
+    const user = userEvent.setup();
+    viewer = mentor;
+    const write = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: write },
+      configurable: true,
+    });
+    render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Edit/ }));
+    expect(push).toHaveBeenCalledWith('/session-types/a/edit');
+    await user.click(screen.getByRole('button', { name: 'Copy share link for SOP draft review' }));
+    expect(write).toHaveBeenCalledWith(expect.stringMatching(/\/mentors\/m1\?book=a$/));
+    expect(await screen.findByText('Link copied')).toBeInTheDocument();
+  });
+
+  it('Duplicate says it’s copying, then that the copy is hidden; a refusal is said on the row (review of #74)', async () => {
+    viewer = mentor;
+    const user = userEvent.setup();
+    let finish: (v: unknown) => void = () => {};
+    duplicate.mockImplementationOnce(() => new Promise((r) => (finish = r)));
+    render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Duplicate/ }));
+    expect(screen.getByText('Copying “SOP draft review”…')).toBeInTheDocument();
+    await act(async () => finish({ id: 'n', name: 'SOP draft review (copy)', failed: [] }));
+    expect(
+      screen.getByText(
+        '“SOP draft review (copy)” was added, hidden. Check it, then show it to mentees.',
+      ),
+    ).toBeInTheDocument();
+
+    duplicate.mockRejectedValueOnce({
+      message: 'We couldn’t duplicate it. You’re offline. Try again.',
+    });
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Duplicate/ }));
+    expect(
+      await screen.findByText('We couldn’t duplicate it. You’re offline. Try again.'),
+    ).toBeInTheDocument();
+  });
+
+  it('Duplicate waits for the topics, so a copy never loses them', async () => {
+    viewer = mentor;
+    topicsLoading = true;
+    const user = userEvent.setup();
+    render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Duplicate/ }));
+    expect(duplicate).not.toHaveBeenCalled();
+    expect(
+      screen.getByText('Still loading your topics. Try again in a moment.'),
+    ).toBeInTheDocument();
+  });
+
+  it('no share link until we know whose profile it is', () => {
+    viewer = { kind: 'loading', signedIn: true };
+    list = idle({ data: [TYPE] });
+    render(<SessionTypesScreen />);
+    expect(screen.queryByRole('button', { name: /Copy share link/ })).toBeNull();
+  });
+
+  it('after a duplicate’s note, a failed switch on that row still reads as an error (review r2 of #74)', async () => {
+    viewer = mentor;
+    const user = userEvent.setup();
+    duplicate.mockResolvedValueOnce({ id: 'n', name: 'SOP draft review (copy)', failed: [] });
+    render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Duplicate/ }));
+    const note = await screen.findByText(/was added, hidden/);
+    expect(note.textContent).not.toMatch(/^error/);
+    await act(async () => failLive('a', false));
+    const failed = screen.getByText(/Couldn’t hide it\./);
+    // The error icon leads an error message; a note has none.
+    expect(failed.textContent).toMatch(/^error/);
   });
 });

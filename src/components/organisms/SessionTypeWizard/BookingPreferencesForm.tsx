@@ -83,7 +83,7 @@ export function BookingPreferencesForm({
           (x) => setV({ ...v, breakMin: Number(x) }),
         )}
         {row(
-          'Approve bookings before they’re confirmed',
+          'Approve each booking',
           'You review each request before it’s booked.',
           v.requiresApproval ? 'on' : 'off',
           [

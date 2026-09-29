@@ -7,7 +7,9 @@ import { DayTimePicker } from './DayTimePicker/DayTimePicker';
 import { EmptyState } from './EmptyState/EmptyState';
 import { FactTile } from './FactTile/FactTile';
 import { ChoiceChips } from './ChoiceChips/ChoiceChips';
+import { CopyLinkButton } from './CopyLinkButton/CopyLinkButton';
 import { DayHoursRow } from './DayHoursRow/DayHoursRow';
+import { RowMenu } from './RowMenu/RowMenu';
 import { FileField } from './FileField/FileField';
 import { IconPicker } from './IconPicker/IconPicker';
 import { QuestionRow } from './QuestionRow/QuestionRow';
@@ -614,6 +616,34 @@ export const DayHoursCompact: Story = {
           onCopyAll={fn()}
         />
       ))}
+    </div>
+  ),
+};
+
+/** Row "⋯" menu (Session Types.dc.html): open it; Delete is red, after a divider. */
+export const RowActionsMenu: Story = {
+  render: () => (
+    <div style={{ display: 'flex', justifyContent: 'flex-end', maxWidth: 480, paddingBottom: 200 }}>
+      <RowMenu
+        label="More actions for SOP draft review"
+        items={[
+          { key: 'edit', icon: 'edit', label: 'Edit', onSelect: fn() },
+          { key: 'dup', icon: 'content_copy', label: 'Duplicate', onSelect: fn() },
+          { key: 'del', icon: 'delete', label: 'Delete', onSelect: fn(), danger: true },
+        ]}
+      />
+    </div>
+  ),
+};
+
+/** Copy share link: click for "Link copied" (the clipboard needs a secure context). */
+export const CopyShareLink: Story = {
+  render: () => (
+    <div style={{ paddingTop: 48 }}>
+      <CopyLinkButton
+        label="Copy share link for SOP draft review"
+        url="https://edufurther.com/mentors/m1?book=st1"
+      />
     </div>
   ),
 };

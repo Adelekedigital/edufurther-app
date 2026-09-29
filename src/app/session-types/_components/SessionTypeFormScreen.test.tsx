@@ -348,7 +348,7 @@ describe('SessionTypeFormScreen', () => {
       '30',
     );
     await user.selectOptions(
-      within(dialog).getByRole('combobox', { name: 'Approve bookings before they’re confirmed' }),
+      within(dialog).getByRole('combobox', { name: 'Approve each booking' }),
       'off',
     );
     await user.click(within(dialog).getByRole('button', { name: 'Save defaults' }));

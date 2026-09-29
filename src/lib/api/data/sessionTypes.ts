@@ -231,7 +231,7 @@ export type CreateError = AppError & { fields: FieldErrors };
 export function createError(
   error: unknown,
   body: unknown,
-  action: 'publish' | 'save' = 'publish',
+  action: 'publish' | 'save' | 'duplicate' = 'publish',
 ): CreateError {
   const e = normaliseError(error);
   const fields: FieldErrors = {};
@@ -262,7 +262,10 @@ export function createError(
     message:
       action === 'save'
         ? `We couldn’t save your changes. ${e.message} Try again.`
-        : `We couldn’t publish it. ${e.message} Try again.`,
+        : action === 'duplicate'
+          ? // PROVISIONAL copy — design request #9.
+            `We couldn’t duplicate it. ${e.message} Try again.`
+          : `We couldn’t publish it. ${e.message} Try again.`,
   };
 }
 

@@ -10,13 +10,18 @@ import styles from './SessionTypeManager.module.css';
 
 type SessionTypeManagerProps = {
   list: Remote<OwnSessionType[]>;
-  /** Our copy per row when its Live switch didn't save. */
+  /** Our copy under a row: a switch that didn't save, or what Duplicate did. */
   messages: Record<string, string>;
+  /** Rows whose message is progress or success, not an error. */
+  infoIds?: string[];
   onLiveChange: (id: string, live: boolean) => void;
   onDelete: (type: OwnSessionType) => void;
+  onEdit: (type: OwnSessionType) => void;
+  onDuplicate: (type: OwnSessionType) => void;
+  /** The share link for a type; null until it can be built. */
+  shareUrl: (type: OwnSessionType) => string | null;
   createHref: string;
   /** Omitted until the edit screen ships (Session Types PR 4). */
-  editHref?: (id: string) => string;
   templates: { key: string; href: string; icon: IconName; name: string; hint: string }[];
 };
 
@@ -69,10 +74,13 @@ export function SessionTypeManager(p: SessionTypeManagerProps) {
 function List({
   list,
   messages,
+  infoIds,
   onLiveChange,
   onDelete,
   createHref,
-  editHref,
+  onEdit,
+  onDuplicate,
+  shareUrl,
 }: SessionTypeManagerProps) {
   if (list.isLoading) {
     return (
@@ -147,9 +155,12 @@ function List({
           key={t.id}
           type={t}
           message={messages[t.id]}
+          messageTone={infoIds?.includes(t.id) ? 'info' : 'error'}
           onLiveChange={(live) => onLiveChange(t.id, live)}
           onDelete={() => onDelete(t)}
-          editHref={editHref?.(t.id)}
+          onEdit={() => onEdit(t)}
+          onDuplicate={() => onDuplicate(t)}
+          shareUrl={shareUrl(t)}
         />
       ))}
     </div>

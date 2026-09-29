@@ -127,6 +127,12 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | Choice options "from your areas of expertise" | Not built; the mentor writes the options | Not built on the backend (product) — #47 | #47 |
 | BookingModal questions: only text and file answers designed | Single choice as radios, multiple as ChoiceChips; upload uploading / attached / refused + Try again; a refused answer's message under its question (PROVISIONAL) | Backend #12 and #282 ship choice and file answers | design request #6 |
 | BookingModal file hint ("PDF or Word · max 10 MB") | "PDF or Word (.docx) · max 5 MB" | What the upload accepts (backend #282, decided from the bytes) | never |
+| Stage chip "Exploring options" | "Exploring" (one wording everywhere: Exploring / Drafting / Submitted, waiting / Revising / Interviewing) | Product decision, 2026-09-29 | design adopts |
+| Duplicate places the copy right under the original | It joins the list where the server puts new types (the end); named "(copy)", "(copy 2)"… and hidden | The API has no list order to set | backend adds an order |
+| Duplicate disabled at the type limit ("N of 5") | No limit, so never disabled | No limit on the backend (reply #3) | never |
+| Share link `edufurther.com/{mentor}/{slug}` | `/mentors/{id}?book={type}`: the profile, with booking started on that type | A page per type is roadmap #72 | #72 |
+| Session type row copy-link and "⋯" buttons on phones: 44px tall (the prototype's global `button{min-height:44px}`) | 32px drawn, an invisible 44px tap area | CTA hierarchy rule 5 | never |
+| Row menu items on phones: the prototype's phone padding rule squeezes them to 22px tall, 8px padding | 44px tall, 12px padding | A 22px target is below the 44px minimum | never |
 | Wizard action bar `position: sticky; top: 0` | Sticks under the shell's sticky header | At top 0 it slid beneath the header | never |
 | Tip "Every extra question lowers bookings" as the DS Notice (info: `--brand-50` ground, `--brand-600` ring, 18px padding) | Our info Notice (blue-50, no ring, 12/16px) | `--brand-*` is banned in product UI (DS readme) | DS moves Notice off the brand palette |
 | Order hint "Drag to reorder." | "Drag or use the arrows to reorder." | The arrows are the keyboard / touch way (small copy fix, ours) | design file catches up |

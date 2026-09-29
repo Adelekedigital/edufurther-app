@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Remote } from '@/types/mentor';
 import type { OwnSessionType } from '@/types/sessionType';
@@ -26,6 +26,8 @@ const remote = (over: Partial<Remote<OwnSessionType[]>>): Remote<OwnSessionType[
 const setup = (list: Remote<OwnSessionType[]>, messages = {}) => {
   const onLiveChange = vi.fn();
   const onDelete = vi.fn();
+  const onEdit = vi.fn();
+  const onDuplicate = vi.fn();
   render(
     <SessionTypeManager
       list={list}
@@ -33,7 +35,9 @@ const setup = (list: Remote<OwnSessionType[]>, messages = {}) => {
       onLiveChange={onLiveChange}
       onDelete={onDelete}
       createHref="/session-types/new"
-      editHref={(id) => `/session-types/${id}/edit`}
+      onEdit={onEdit}
+      onDuplicate={onDuplicate}
+      shareUrl={(t) => `https://x.test/mentors/m1?book=${t.id}`}
       templates={[
         {
           key: 'sop',
@@ -45,7 +49,7 @@ const setup = (list: Remote<OwnSessionType[]>, messages = {}) => {
       ]}
     />,
   );
-  return { onLiveChange, onDelete };
+  return { onLiveChange, onDelete, onEdit, onDuplicate };
 };
 
 describe('SessionTypeManager — the four states', () => {
@@ -80,7 +84,7 @@ describe('SessionTypeManager — the four states', () => {
 
   it('content: each type is a named row; the switch and delete report the row', async () => {
     const user = userEvent.setup();
-    const { onLiveChange, onDelete } = setup(
+    const { onLiveChange, onDelete, onEdit, onDuplicate } = setup(
       remote({
         data: [T, { ...T, id: 'b', name: 'Visa interview prep', isLive: false, questionCount: 1 }],
       }),
@@ -93,17 +97,33 @@ describe('SessionTypeManager — the four states', () => {
     );
     await user.click(screen.getByRole('switch', { name: /SOP draft review/ }));
     expect(onLiveChange).toHaveBeenCalledWith('a', false);
-    await user.click(screen.getByRole('button', { name: 'Delete Visa interview prep' }));
+    // The row menu (Session Types.dc.html): Edit, Duplicate, Delete.
+    const more = screen.getByRole('button', { name: 'More actions for Visa interview prep' });
+    await user.click(more);
+    const menu = screen.getByRole('menu', { name: 'More actions for Visa interview prep' });
+    expect(
+      within(menu)
+        .getAllByRole('menuitem')
+        .map((m: HTMLElement) => m.textContent),
+    ).toEqual(['editEdit', 'content_copyDuplicate', 'deleteDelete']);
+    await user.click(within(menu).getByRole('menuitem', { name: /Delete/ }));
     expect(onDelete).toHaveBeenCalledWith(expect.objectContaining({ id: 'b' }));
-    // Edit opens the edit screen (Session Types PR 4).
-    expect(screen.getByRole('link', { name: 'Edit Visa interview prep' })).toHaveAttribute(
-      'href',
-      '/session-types/b/edit',
-    );
+    await user.click(more);
+    await user.click(screen.getByRole('menuitem', { name: /Edit/ }));
+    expect(onEdit).toHaveBeenCalledWith(expect.objectContaining({ id: 'b' }));
+    await user.click(more);
+    await user.click(screen.getByRole('menuitem', { name: /Duplicate/ }));
+    expect(onDuplicate).toHaveBeenCalledWith(expect.objectContaining({ id: 'b' }));
+    expect(
+      screen.getByRole('button', { name: 'Copy share link for Visa interview prep' }),
+    ).toBeInTheDocument();
   });
 
   it('a switch that did not save says so on its row', () => {
     setup(remote({ data: [T] }), { a: 'Couldn’t hide it. Check your connection and try again.' });
-    expect(screen.getByRole('status')).toHaveTextContent('Couldn’t hide it.');
+    // The row's own message (each row also has the copy link's polite status).
+    expect(
+      screen.getAllByRole('status').find((x) => x.textContent?.includes('Couldn’t hide it.')),
+    ).toBeTruthy();
   });
 });

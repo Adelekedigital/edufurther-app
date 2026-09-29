@@ -6,6 +6,8 @@ import type { Remote } from '@/types/mentor';
 import {
   emptyWeek,
   hhmm,
+  toCreateBody,
+  toQuestionWrite,
   resolveDefaults,
   type BookingDefaults,
   type DayHours,
@@ -100,32 +102,35 @@ export function toDraft(s: SavedSessionType, defaults: BookingDefaults | null): 
   };
 }
 
-/** GET the type (from the own list: there's no single GET), its questions and its hours. */
+/** The type (from the own list: there's no single GET), its questions and its hours. */
+async function fetchSaved(id: string, signal?: AbortSignal): Promise<SavedSessionType> {
+  const path = { params: { path: { session_type_id: id } }, signal };
+  const list = await api.GET('/api/v1/me/session-types', { signal });
+  if (!list.data) throw apiError(list.response.status, list.error);
+  const read = list.data.data.find((t) => t.id === id);
+  // Not theirs, or deleted: indistinguishable on purpose (and nothing more is asked).
+  if (!read) throw new ApiError(404);
+  const [qs, ws] = await Promise.all([
+    api.GET('/api/v1/me/session-types/{session_type_id}/questions', path),
+    api.GET('/api/v1/me/session-types/{session_type_id}/windows', path),
+  ]);
+  if (!qs.data) throw apiError(qs.response.status, qs.error);
+  if (!ws.data) throw apiError(ws.response.status, ws.error);
+  return {
+    read,
+    questions: [...qs.data.data]
+      .sort((a, b) => a.display_order - b.display_order)
+      .map(toSavedQuestion),
+    windows: ws.data.data,
+  };
+}
+
+/** GET a saved type for the edit form. */
 export function useSavedSessionType(id: string, enabled: boolean): Remote<SavedSessionType> {
   const query = useQuery({
     queryKey: keys.sessionTypes.edit(id),
     enabled,
-    queryFn: async ({ signal }): Promise<SavedSessionType> => {
-      const path = { params: { path: { session_type_id: id } }, signal };
-      const list = await api.GET('/api/v1/me/session-types', { signal });
-      if (!list.data) throw apiError(list.response.status, list.error);
-      const read = list.data.data.find((t) => t.id === id);
-      // Not theirs, or deleted: indistinguishable on purpose (and nothing more is asked).
-      if (!read) throw new ApiError(404);
-      const [qs, ws] = await Promise.all([
-        api.GET('/api/v1/me/session-types/{session_type_id}/questions', path),
-        api.GET('/api/v1/me/session-types/{session_type_id}/windows', path),
-      ]);
-      if (!qs.data) throw apiError(qs.response.status, qs.error);
-      if (!ws.data) throw apiError(ws.response.status, ws.error);
-      return {
-        read,
-        questions: [...qs.data.data]
-          .sort((a, b) => a.display_order - b.display_order)
-          .map(toSavedQuestion),
-        windows: ws.data.data,
-      };
-    },
+    queryFn: ({ signal }) => fetchSaved(id, signal),
     // The form keeps its own copy; a background refetch mustn't move it.
     staleTime: Infinity,
     refetchOnWindowFocus: false,
@@ -369,5 +374,150 @@ export function useSaveSessionType() {
     isPending: mutation.isPending,
     error: mutation.error,
     reset: mutation.reset,
+  };
+}
+
+/** A name not already used: "SOP review (copy)", then "(copy 2)", … */
+export function copyName(name: string, taken: string[]): string {
+  const used = new Set(taken.map((n) => n.trim().toLowerCase()));
+  for (let n = 1; ; n++) {
+    const candidate = `${name} (copy${n > 1 ? ` ${n}` : ''})`;
+    if (!used.has(candidate.toLowerCase())) return candidate;
+  }
+}
+
+/**
+ * The create request for a copy, from the type as read: what it inherits stays
+ * inherited (null), what it sets stays set — never frozen to today's defaults
+ * or to a fallback (review of #74).
+ */
+export function toDuplicateBody(
+  s: SavedSessionType,
+  name: string,
+  offeringIds: Record<string, string>,
+): { body: ReturnType<typeof toCreateBody>; missingTopics: number } {
+  const r = s.read;
+  const offerings = r.service_offerings?.length
+    ? r.service_offerings
+    : r.service_offering
+      ? [r.service_offering]
+      : [];
+  const stages = (r.application_stages ??
+    (r.application_stage ? [r.application_stage] : [])) as Stage[];
+  const questions: DraftQuestion[] = s.questions.map((q) => ({
+    key: q.id,
+    text: q.text,
+    kind: q.kind,
+    required: q.required,
+    options: q.options.map((o) => o.text),
+  }));
+  return {
+    body: {
+      name,
+      description: r.description ?? null,
+      duration_minutes: r.duration_inherited ? null : r.duration_minutes,
+      min_notice_minutes: r.min_notice_inherited ? null : r.min_notice_minutes,
+      service_offering_ids: offerings.flatMap((o) =>
+        offeringIds[o.code] ? [offeringIds[o.code]!] : [],
+      ),
+      application_stages: stages,
+      // Only with "other": a legacy row can carry a stale label the API refuses.
+      custom_stage_label: stages.includes('other') ? (r.custom_stage_label ?? null) : null,
+      icon: r.icon ?? null,
+      requires_booking_confirmation: r.requires_booking_confirmation ?? null,
+      booking_window_days: r.booking_window_days ?? null,
+      break_after_minutes: r.break_after_minutes ?? null,
+      questions: questions.map(toQuestionWrite),
+    },
+    // Topics we couldn't match to the catalog (not loaded, or no longer offered).
+    missingTopics: offerings.filter((o) => !offeringIds[o.code]).length,
+  };
+}
+
+/** Duplicate's outcome: the new type, and what didn't come across. */
+export type Duplicated = {
+  id: string;
+  name: string;
+  failed: ('hours' | 'hidden' | 'topics')[];
+};
+
+/**
+ * Duplicate a session type (Session Types.dc.html row menu): its fields,
+ * questions (in the create request) and dedicated hours, named "(copy)" and
+ * hidden. Hours and hiding are separate requests after the create: what failed
+ * comes back so the page can say so. The create is refused like any create
+ * (our copy), and then nothing else is sent.
+ */
+export function useDuplicateSessionType() {
+  const qc = useQueryClient();
+  const mutation = useMutation<
+    Duplicated,
+    CreateError,
+    { id: string; takenNames: string[]; offeringIds: Record<string, string> }
+  >({
+    mutationFn: async ({ id, takenNames, offeringIds }) => {
+      let saved: SavedSessionType;
+      try {
+        saved = await fetchSaved(id);
+      } catch (e) {
+        throw createError(e, null, 'duplicate');
+      }
+      const name = copyName(saved.read.name, takenNames);
+      const { body, missingTopics } = toDuplicateBody(saved, name, offeringIds);
+      let result;
+      try {
+        result = await api.POST('/api/v1/me/session-types', {
+          params: { header: { 'Idempotency-Key': crypto.randomUUID() } },
+          body: body as unknown as components['schemas']['MentorSessionTypeWrite'],
+        });
+      } catch (e) {
+        throw createError(e, null, 'duplicate');
+      }
+      if (!result.data)
+        throw createError(
+          apiError(result.response.status, result.error),
+          result.error,
+          'duplicate',
+        );
+      const newId = result.data.id;
+      const failed: Duplicated['failed'] = missingTopics ? ['topics'] : [];
+      // Hidden straight away (a create can't start hidden), so the copy is never
+      // bookable while its hours are copied, and a failed hours copy lands hidden.
+      const hidden = await ok(
+        api.PATCH('/api/v1/me/session-types/{session_type_id}', {
+          params: { path: { session_type_id: newId } },
+          body: { is_active: false },
+        }),
+      );
+      if (!hidden) failed.push('hidden');
+      const hours = await Promise.all(
+        saved.windows
+          .filter((w) => w.is_active)
+          .map((w) =>
+            ok(
+              api.POST('/api/v1/me/session-types/{session_type_id}/windows', {
+                params: { path: { session_type_id: newId } },
+                body: {
+                  day_of_week: w.day_of_week,
+                  start_time: w.start_time,
+                  end_time: w.end_time,
+                  timezone: w.timezone,
+                  is_active: true,
+                },
+              }),
+            ),
+          ),
+      );
+      if (hours.some((x) => !x)) failed.push('hours');
+      return { id: newId, name, failed };
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });
+      void qc.invalidateQueries({ queryKey: keys.mentors.all });
+    },
+  });
+  return {
+    duplicate: mutation.mutateAsync,
+    isPending: mutation.isPending,
   };
 }
