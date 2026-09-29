@@ -204,9 +204,12 @@ export function useAuthoredReview(
       if (!data) throw apiError(response.status, error);
       return toMyReview(data);
     },
+    // Fresh on every open: the query is enabled only while Edit is open, and
+    // enabling a stale query (staleTime 0) refetches it.
     staleTime: 0,
-    // Always a fresh read when Edit opens.
-    refetchOnMount: 'always',
+    // Offline, fail at once (the error + "Try again" state) rather than pause
+    // with an endless skeleton (review r2 of #59), as the reviews list does.
+    networkMode: 'always',
     retry: false,
   });
   return {

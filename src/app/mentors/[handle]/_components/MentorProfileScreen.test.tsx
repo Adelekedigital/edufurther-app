@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile, reviews } from '@/components/organisms/ProfileHeader/profile.fixture';
 import { similarMentors } from '@/components/organisms/SimilarMentorsCard/similar.fixture';
@@ -849,6 +849,21 @@ describe('MentorProfileScreen — editing a review (review of #59)', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('We couldn’t load your review');
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(retry).toHaveBeenCalled();
+  });
+
+  it('the "live" note and Edit go away on their own at the deadline', () => {
+    // Fake the timer too: the page re-renders at the deadline.
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
+    vi.setSystemTime(T0);
+    myReviewRemote = remote(open());
+    reviewsRemote = reviewsState({ reviews });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByText('Thanks, your review is live')).toBeInTheDocument();
+    act(() => {
+      vi.advanceTimersByTime(8 * 60_000 + 100);
+    });
+    expect(screen.queryByText('Thanks, your review is live')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Edit/ })).not.toBeInTheDocument();
   });
 
   it('once the window has shut, no "live" note and no Edit, whatever was fetched', () => {
