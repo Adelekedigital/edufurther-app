@@ -27,6 +27,8 @@ export type MentorResultsProps = {
   onBook: (m: Mentor) => void;
   /** The viewer's own mentor id, when they are one: their card has no Book button. */
   selfId?: string | null;
+  /** False for a mentor viewer: every card shows View profile (product, 2026-09-29). */
+  canBook?: boolean;
   /** Booking can't start for this viewer: every Book button says why (MentorCard). */
   bookBlocked?: string | null;
   offline: boolean;
@@ -135,6 +137,7 @@ export function MentorResults(p: MentorResultsProps) {
             mentor={m}
             onBook={p.onBook}
             isSelf={!!p.selfId && m.id === p.selfId}
+            canBook={p.canBook}
             bookBlocked={p.bookBlocked}
             offline={p.offline}
             timeZone={p.timeZone}

@@ -19,3 +19,13 @@ export function bookBlockedFor(viewer: Viewer): string | null {
       return null;
   }
 }
+
+/**
+ * Whether this viewer may book at all. Mentors can't — a viewer with a mentor
+ * profile, in any state (product, 2026-09-29): Explore and profiles show them
+ * "View profile" where Book would be. Guests and mentees can (bookBlockedFor
+ * still says why a moment's state holds them back).
+ */
+export function canBookFor(viewer: Viewer): boolean {
+  return !(viewer.kind === 'member' && viewer.isMentor);
+}

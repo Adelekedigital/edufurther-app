@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- remote avatar host not yet fixed (Supabase storage); see design-divergence.md */
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/atoms/Button/Button';
+import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { MentorProof } from '@/components/molecules/MentorProof/MentorProof';
 import { formatNextAvailable } from '@/lib/utils/format';
@@ -15,6 +15,8 @@ type FeaturedMentorProps = {
   offline?: boolean;
   /** Booking can't start for this viewer: the button says why. */
   bookBlocked?: string | null;
+  /** False for a mentor viewer: "View profile" instead of Book (product, 2026-09-29). */
+  canBook?: boolean;
 };
 
 /**
@@ -28,6 +30,7 @@ export function FeaturedMentor({
   timeZone,
   offline,
   bookBlocked = null,
+  canBook = true,
 }: FeaturedMentorProps) {
   // Face position anchors the crop (backend avatar_focus); CSS falls back to 50% 25%.
   const tone = {
@@ -111,16 +114,27 @@ export function FeaturedMentor({
           </div>
         )}
         <div className={styles.actions}>
-          <Button
-            variant="secondary-outlined"
-            size="medium"
-            disabled={offline || !!bookBlocked}
-            onClick={() => onBook(m)}
-          >
-            {offline
-              ? 'Booking needs a connection'
-              : (bookBlocked ?? `Book session with ${m.firstName}`)}
-          </Button>
+          {!canBook ? (
+            <ButtonLink
+              href={m.profileHref}
+              prefetch={false}
+              variant="secondary-outlined"
+              size="medium"
+            >
+              View profile<span className="sr-only">: {m.name}</span>
+            </ButtonLink>
+          ) : (
+            <Button
+              variant="secondary-outlined"
+              size="medium"
+              disabled={offline || !!bookBlocked}
+              onClick={() => onBook(m)}
+            >
+              {offline
+                ? 'Booking needs a connection'
+                : (bookBlocked ?? `Book session with ${m.firstName}`)}
+            </Button>
+          )}
         </div>
       </div>
     </section>

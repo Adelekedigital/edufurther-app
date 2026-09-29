@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- remote avatar host not yet fixed (Supabase storage); see design-divergence.md */
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/atoms/Button/Button';
+import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { formatNextAvailable } from '@/lib/utils/format';
 import { Tag } from '@/components/atoms/Tag/Tag';
@@ -31,6 +31,11 @@ type MentorCardProps = {
   isSelf?: boolean;
   /** Booking can't start for this viewer (e.g. no account yet): the button says why. */
   bookBlocked?: string | null;
+  /**
+   * False for a viewer who can't book at all (a mentor, product 2026-09-29):
+   * "View profile" takes Book's place, so the card keeps its action.
+   */
+  canBook?: boolean;
 };
 
 /**
@@ -50,6 +55,7 @@ export function MentorCard({
   showTopics = true,
   isSelf = false,
   bookBlocked = null,
+  canBook = true,
 }: MentorCardProps) {
   // The face position (backend avatar_focus) drives the crop via CSS custom
   // properties; without it the CSS falls back to the design's 50% 25%.
@@ -143,7 +149,18 @@ export function MentorCard({
         ) : null}
       </div>
 
-      {!isSelf && (
+      {!canBook || isSelf ? (
+        <ButtonLink
+          href={m.profileHref}
+          prefetch={false}
+          fullWidth
+          size="medium"
+          variant="secondary-outlined"
+          className={styles.book}
+        >
+          View profile<span className="sr-only">: {m.name}</span>
+        </ButtonLink>
+      ) : (
         <Button
           fullWidth
           size="medium"

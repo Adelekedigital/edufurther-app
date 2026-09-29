@@ -1,4 +1,4 @@
-import { bookBlockedFor } from './bookBlocked';
+import { bookBlockedFor, canBookFor } from './bookBlocked';
 
 describe('bookBlockedFor', () => {
   it('guests and members can book (guests sign up inside the flow)', () => {
@@ -32,5 +32,26 @@ describe('bookBlockedFor', () => {
     );
     expect(bookBlockedFor({ kind: 'unlinked' })).toBe('Finish account setup to book');
     expect(bookBlockedFor({ kind: 'accountExists' })).toBe('Contact support to book');
+  });
+});
+
+describe('canBookFor (product, 2026-09-29: mentors can’t book)', () => {
+  const member = (isMentor: boolean) =>
+    ({
+      kind: 'member',
+      id: 'u1',
+      firstName: 'Ada',
+      initial: 'A',
+      isMentee: true,
+      isApprovedMentor: false,
+      isMentor,
+      completedSessions: 0,
+      credits: null,
+    }) as const;
+  it('a mentor in any state cannot; mentees, guests and unknown viewers can', () => {
+    expect(canBookFor(member(true))).toBe(false);
+    expect(canBookFor(member(false))).toBe(true);
+    expect(canBookFor({ kind: 'guest' })).toBe(true);
+    expect(canBookFor({ kind: 'loading', signedIn: true })).toBe(true);
   });
 });

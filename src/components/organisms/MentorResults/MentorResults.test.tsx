@@ -223,4 +223,19 @@ describe('MentorResults', () => {
     expect(frame.style.getPropertyValue('--photo-x')).toBe('42.0%');
     expect(frame.style.getPropertyValue('--photo-y')).toBe('30.0%');
   });
+
+  it('a mentor viewer gets View profile, never Book (product, 2026-09-29)', async () => {
+    const onBook = vi.fn();
+    render(<MentorResults {...props({ mentors: [mentor()], onBook, canBook: false })} />);
+    expect(screen.queryByRole('button', { name: /Book session/ })).toBeNull();
+    const view = screen.getByRole('link', { name: 'View profile: Olajuwon Samuel' });
+    expect(view).toHaveAttribute('href', '/mentors/m1');
+    expect(onBook).not.toHaveBeenCalled();
+  });
+
+  it('the viewer’s own card shows View profile instead of an empty slot', () => {
+    render(<MentorResults {...props({ mentors: [mentor()], selfId: 'm1' })} />);
+    expect(screen.getByRole('link', { name: 'View profile: Olajuwon Samuel' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Book session/ })).toBeNull();
+  });
 });

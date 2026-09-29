@@ -3,6 +3,7 @@
 import type { AccountMenuItem } from '@/components/molecules/AccountMenu/AccountMenu';
 import { useSignOut } from '@/lib/api/data/auth';
 import { useViewer } from '@/lib/api/data/viewer';
+import { canBookFor } from './bookBlocked';
 import type { Viewer } from '@/types/mentor';
 
 /**
@@ -71,6 +72,8 @@ export function useAppShell() {
       : member.isMentor
         ? ('mentor' as const)
         : ('mentee' as const),
+    /** Mentors can't book (product, 2026-09-29): "View profile" instead of Book. */
+    canBook: canBookFor(viewer),
     account: chrome === 'member' ? { initial: member?.initial ?? '', items } : undefined,
   };
 }

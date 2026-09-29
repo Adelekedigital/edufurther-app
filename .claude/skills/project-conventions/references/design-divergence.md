@@ -110,6 +110,7 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | Prototype phone rule `padding: 0 var(--space-3)` → 8px inside inputs | Inputs keep 12px | The shared Input (Explore search, login) would need per-variant rules; revisit in a cross-screen pass | a cross-screen phone pass |
 | Textarea 14px on phones (the prototype's 16px rule covers inputs and selects only) | 16px | iOS zooms on focus under 16px | never |
 | Published modal after creating | Also "…but its dedicated hours didn't save" + Retry hours when a window fails (PROVISIONAL, design request #5) | Hours are separate requests after the type exists (backend #15) | design answers #5 |
+| MentorCard / featured card for a mentor viewer (not designed) | "View profile" link in Book's place (same outlined medium size); the viewer's own card too (was no button) | Mentors can't book (product, 2026-09-29); an empty slot looked broken | design draws the mentor-on-Explore state |
 | Wizard step number 11px (literal) | `--step-dot-text` (ours) | No DS token for 11px | DS adds a step size |
 | Session Types phone rules in AppShell's global `<style>` (radiogroups/selects full width, steps scroll sideways) | The same rules, per component at 768px (SegmentedControl, Select, WizardSteps) | Handoff §7.3 | never |
 
