@@ -830,7 +830,9 @@ export function BookingFlow(p: BookingFlowProps) {
               <span className={styles.summaryText}>
                 <span className={styles.summaryName}>{session.name}</span>
                 <span className={styles.summaryMeta}>
-                  {m.name} · {session.durationMin} min · Free
+                  {/* BookingModal.dc.html `priceShort`: free sessions say what they use. */}
+                  {/* No-break spaces: a narrow phone wraps at a " · ", never inside "60 min". */}
+                  {m.name} · {session.durationMin}&nbsp;min · Free · 1&nbsp;credit
                 </span>
               </span>
               <Icon
@@ -889,9 +891,21 @@ export function BookingFlow(p: BookingFlowProps) {
                 <span className={styles.sessionName}>{session?.name}</span>
               </div>
             )}
-            <div className={styles.fact}>
-              <span className={styles.factLabel}>Length</span>
-              <span className={styles.factValue}>{session?.durationMin} min</span>
+            {/* BookingModal.dc.html facts: Price and Length. Every session is free
+                and every booking uses one credit (product, 2026-09-28). */}
+            <div className={styles.facts}>
+              <div className={styles.fact}>
+                <span className={styles.factLabel}>Price</span>
+                <span className={styles.factValue}>Free</span>
+                <span className={styles.factNote}>
+                  <Icon name="toll" size={14} />
+                  Uses 1 credit
+                </span>
+              </div>
+              <div className={styles.fact}>
+                <span className={styles.factLabel}>Length</span>
+                <span className={styles.factValue}>{session?.durationMin} min</span>
+              </div>
             </div>
             <p className={styles.desc}>{session?.description}</p>
             {pickedRow}
