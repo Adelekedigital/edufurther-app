@@ -58,7 +58,7 @@ function seed(): Stored[] {
         'We’ll work through your statement of purpose together, focusing on how your story fits the program and the strength of your opening. You’ll leave with a prioritized revision list and clarity on your next draft.',
       duration_minutes: 60,
       is_active: true,
-      ...topics('application-documents'),
+      ...topics('document-preparation'),
       application_stage: 'drafting_stage',
       questions: [
         q('q1', 'Which programs are you applying to?', 'free_text', true),
@@ -87,7 +87,7 @@ function seed(): Stored[] {
         'A mock visa interview with honest notes on what to tighten before the real one.',
       duration_minutes: 45,
       is_active: false,
-      ...topics('visa-and-interview'),
+      ...topics('interview-preparation'),
       questions: [q('q4', 'Which embassy and date?', 'free_text', true)],
       bookedCount: 0,
     },

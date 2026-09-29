@@ -32,7 +32,7 @@ vi.mock('@/app/_shell/useAppShell', () => ({
 vi.mock('@/lib/api/data/mentors', () => ({
   useTopics: () => ({
     topics: [
-      { slug: 'application-documents', label: 'Application documents', id: 'o4' },
+      { slug: 'document-preparation', label: 'Document preparation', id: 'o4' },
       { slug: 'school-selection', label: 'School selection', id: 'o1' },
     ],
     isLoading: false,
@@ -70,7 +70,7 @@ describe('CreateSessionTypeScreen', () => {
     expect(screen.getByRole('textbox', { name: 'Session name' })).toHaveValue('SOP draft review');
     expect(
       within(screen.getByRole('group', { name: 'Topics' })).getByRole('button', {
-        name: 'Application documents',
+        name: 'Document preparation',
       }),
     ).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: /^Review/ })).toBeDisabled();

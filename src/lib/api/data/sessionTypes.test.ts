@@ -12,7 +12,7 @@ const own = (over: Partial<Own> = {}): Own =>
     min_notice_minutes: 1440,
     meeting_venue: 'daily',
     is_active: true,
-    service_offering: { code: 'application-documents', display_name: 'Application documents' },
+    service_offering: { code: 'document-preparation', display_name: 'Document preparation' },
     application_stage: null,
     custom_stage_label: null,
     icon: null,
@@ -29,7 +29,7 @@ describe('toOwnSessionType', () => {
       durationMin: 60,
       noticeMin: 1440,
       isLive: true,
-      topics: [{ code: 'application-documents', label: 'Application documents' }],
+      topics: [{ code: 'document-preparation', label: 'Document preparation' }],
       icon: 'edit_document',
       iconChoice: null,
       questionCount: 2,
@@ -40,8 +40,27 @@ describe('toOwnSessionType', () => {
     expect(toOwnSessionType(own({ icon: 'lightbulb' }), 0).icon).toBe('lightbulb');
     expect(toOwnSessionType(own({ icon: 'lightbulb' }), 0).iconChoice).toBe('lightbulb');
     expect(toOwnSessionType(own({ service_offering: null }), 0).icon).toBe('video_call');
-    expect(autoIcon('visa-and-interview')).toBe('record_voice_over');
-    expect(autoIcon('something-new')).toBe('video_call');
+    expect(autoIcon(['interview-preparation'])).toBe('record_voice_over');
+    expect(autoIcon(['something-new'])).toBe('video_call');
+    expect(autoIcon([])).toBe('video_call');
+  });
+
+  it('every catalog offering has its own icon, first topic wins, 3+ is a general call', () => {
+    // The backend's real codes (service_offerings seed) — the old map missed four.
+    expect(
+      [
+        'test-preparation',
+        'document-preparation',
+        'school-selection',
+        'program-selection',
+        'scholarships-financial-aid',
+        'interview-preparation',
+      ].map((c) => autoIcon([c])),
+    ).toEqual(['quiz', 'edit_document', 'school', 'school', 'payments', 'record_voice_over']);
+    expect(autoIcon(['scholarships-financial-aid', 'school-selection'])).toBe('payments');
+    expect(autoIcon(['test-preparation', 'school-selection', 'program-selection'])).toBe(
+      'video_call',
+    );
   });
 
   it('switched off reads as not live; description may be missing', () => {

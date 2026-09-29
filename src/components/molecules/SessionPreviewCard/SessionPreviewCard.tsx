@@ -3,7 +3,7 @@ import styles from './SessionPreviewCard.module.css';
 type SessionPreviewCardProps = {
   name: string;
   description: string;
-  /** e.g. ["60 min", "Application documents"]. */
+  /** e.g. ["60 min", "Document preparation"]. */
   facts: string[];
 };
 
