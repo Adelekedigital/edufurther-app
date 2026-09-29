@@ -27,9 +27,10 @@ type ApplicationStage = components['schemas']['ApplicationStage'];
 type Venue = components['schemas']['ConferencingProvider'];
 
 const STAGE: Record<ApplicationStage, string | null> = {
+  // One wording with the Session Types wizard (product, 2026-09-29).
   early_exploration: 'Exploring',
   drafting_stage: 'Drafting',
-  post_submission: 'After submitting',
+  post_submission: 'Submitted, waiting',
   revisions: 'Revising',
   interviewing: 'Interviewing', // backend #10 (session-types reply), design stage chip
   other: null, // custom_stage_label carries it
@@ -75,13 +76,22 @@ function year(date: string | null | undefined): string | null {
   return date ? date.slice(0, 4) : null;
 }
 
+/**
+ * Every stage the offering is aimed at, in the mentor's order: "Drafting,
+ * Revising". `other` reads as the mentor's own wording. Empty means any stage,
+ * so no chip. Falls back to the deprecated single `application_stage` while
+ * a response still lacks the list (backend round 3).
+ */
+export function stageLine(r: SessionTypeRead): string | null {
+  const stages = r.application_stages ?? (r.application_stage ? [r.application_stage] : []);
+  const labels = stages
+    .map((s) => (s === 'other' ? r.custom_stage_label?.trim() || null : STAGE[s]))
+    .filter((l): l is string => !!l);
+  return labels.length ? [...new Set(labels)].join(', ') : null;
+}
+
 function toProfileSessionType(r: SessionTypeRead): ProfileSessionType {
-  const stage =
-    r.application_stage === 'other'
-      ? r.custom_stage_label?.trim() || null
-      : r.application_stage
-        ? STAGE[r.application_stage]
-        : null;
+  const stage = stageLine(r);
   return {
     ...toSessionType(r),
     category: r.service_offering?.display_name ?? null,

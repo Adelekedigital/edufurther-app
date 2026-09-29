@@ -50,10 +50,16 @@
 }
 .chip {
   display: flex;
-  align-items: center;
+  /* Top-aligned, so on a wrapped stage list the icon stays with the first
+     line (one line: the same as centred, since the chip is 24px). */
+  align-items: flex-start;
   gap: 2px;
-  height: 24px;
-  padding: 0 var(--space-2);
+  /* 24px as drawn; a long stage list ("Exploring, Drafting, Revising…") may
+     wrap on a narrow card, so the chip grows rather than overflowing. */
+  min-height: 24px;
+  max-width: 100%;
+  padding: 2px var(--space-2);
+  line-height: var(--lh-p);
   border-radius: var(--radius-md);
   background: var(--surface-subtle);
 }

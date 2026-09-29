@@ -63,6 +63,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
     offerings: m.offerings,
     session_types: MOCK_SESSION_TYPES.map((t, k) => ({
       ...t,
+      // Backend round 3: the list, plus the deprecated first item.
+      application_stages: k === 0 ? ['early_exploration'] : ['drafting_stage', 'revisions'],
       application_stage: k === 0 ? 'early_exploration' : 'drafting_stage',
       service_offering: m.offerings?.[k]
         ? { code: m.offerings[k]!.slug, display_name: m.offerings[k]!.display_name }
