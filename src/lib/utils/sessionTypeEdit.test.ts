@@ -184,10 +184,21 @@ describe('a different option in the same place (review r2 of #67)', () => {
       { id: 'c3', text: 'PhD' },
     ]);
   });
-  it('a typo fix or a case or punctuation change is a rename', () => {
+  it('only case, spacing or punctuation make a rename; anything else is a different option', () => {
     expect(isRename('Masters', "Master's")).toBe(true);
-    expect(isRename('Scholarhsips', 'Scholarships')).toBe(true);
-    expect(isRename('Masters', 'Diploma')).toBe(false);
-    expect(isRename('MBA', 'MSc')).toBe(false);
+    expect(isRename('part time', 'Part-time')).toBe(true);
+    for (const [x, y] of [
+      ['Masters', 'Diploma'],
+      ['MBA', 'MSc'],
+      ['Online', 'Offline'],
+      ['Male', 'Female'],
+      ['Year 1', 'Year 2'],
+      ['Level 3', 'Level 4'],
+      ['2025', '2026'],
+      ['A-level', 'O-level'],
+      // A typo fix goes as new too: the server's 409 says so if it was answered.
+      ['Scholarhsips', 'Scholarships'],
+    ])
+      expect(isRename(x!, y!)).toBe(false);
   });
 });

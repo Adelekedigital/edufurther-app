@@ -280,4 +280,25 @@ describe('EditSessionTypeScreen', () => {
       ),
     ).toBeInTheDocument();
   });
+
+  it('a refusal alongside another failed question still says "Save again" (review r3 of #67)', async () => {
+    const user = userEvent.setup();
+    save.mockResolvedValueOnce({
+      failed: ['questions'],
+      newIds: {},
+      onlyRefusals: false,
+      questionErrors: {
+        qa: 'A booking already chose an option you removed or changed. Keep it, then save again.',
+      },
+      saved: { questions: SAVED.questions, windows: [] },
+    });
+    render(<EditSessionTypeScreen id="st1" />);
+    await user.click(screen.getByRole('button', { name: /^Review/ }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(
+      await screen.findByText(
+        'Your changes are saved, except the intake questions. Save again to try those.',
+      ),
+    ).toBeInTheDocument();
+  });
 });

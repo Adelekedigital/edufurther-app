@@ -39,27 +39,14 @@ const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLow
 /** Letters and digits only, lower case: "Master's" and "masters" are the same option. */
 const bare = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
 
-/** Edit distance, capped: enough to tell a typo fix from a different option. */
-function distance(a: string, b: string): number {
-  const row = Array.from({ length: b.length + 1 }, (_, k) => k);
-  for (let x = 1; x <= a.length; x++) {
-    let prev = row[0]!;
-    row[0] = x;
-    for (let y = 1; y <= b.length; y++) {
-      const cur = row[y]!;
-      row[y] = Math.min(row[y]! + 1, row[y - 1]! + 1, prev + (a[x - 1] === b[y - 1] ? 0 : 1));
-      prev = cur;
-    }
-  }
-  return row[b.length]!;
-}
-
-/** A rename, not a different option: the same once bare, or a typo apart (≤ 2 edits). */
-export const isRename = (a: string, b: string) => {
-  const x = bare(a);
-  const y = bare(b);
-  return x === y || (Math.min(x.length, y.length) > 3 && distance(x, y) <= 2);
-};
+/**
+ * A rename, not a different option: the same once case, spacing and
+ * punctuation are set aside ("Masters" → "Master's"). Nothing looser: a typo
+ * allowance also matched Online/Offline and Year 1/Year 2, which would repoint
+ * booking answers silently; a missed rename only meets the server's visible
+ * 409 (review r3 of #67).
+ */
+export const isRename = (a: string, b: string) => bare(a) === bare(b);
 
 /**
  * Each option keeps its saved id where it can, so an answer that chose it still
