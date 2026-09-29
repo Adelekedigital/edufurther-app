@@ -505,13 +505,28 @@ describe('MentorProfileScreen — Similar mentors', () => {
       screen.getByRole('complementary', { name: 'Booking, track record and similar mentors' }),
     ).toBeInTheDocument();
     unmount();
+    // Another mentor: booking and track record, no similar mentors.
+    viewerIsMentor = true;
+    const second = render(<MentorProfileScreen handle="gbenga" />);
+    expect(
+      screen.getByRole('complementary', { name: 'Booking and track record' }),
+    ).toBeInTheDocument();
+    second.unmount();
+    viewerIsMentor = false;
     // The owner: no booking card, no similar mentors.
     profile = state({ data: { ...fullProfile, owner: { approval: 'approved', listed: true } } });
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.getByRole('complementary', { name: 'Track record' })).toBeInTheDocument();
   });
 
-  it('hides the card when the list fails', () => {
+  it('the owner’s Reviews tab with nothing for the aside has no aside (review r3 of #31)', () => {
+    search = new URLSearchParams('tab=reviews');
+    profile = state({ data: { ...fullProfile, owner: { approval: 'approved', listed: true } } });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+  });
+
+  it('hides the card when the list fails, and the aside stops naming it', () => {
     profile = state({ data: fullProfile });
     similarRemote = {
       data: null,
@@ -521,5 +536,8 @@ describe('MentorProfileScreen — Similar mentors', () => {
     };
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.queryByRole('heading', { name: 'Similar mentors' })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('complementary', { name: 'Booking and track record' }),
+    ).toBeInTheDocument();
   });
 });

@@ -125,12 +125,15 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const showSimilar =
     !!p && !isOwner && tab === 'overview' && viewer.kind !== 'loading' && !member?.isMentor;
   const similar = useSimilarMentors(handle, showSimilar);
-  // The aside's name lists what it holds for this viewer on this tab.
+  // The card hides itself when the list is empty or failed.
+  const similarShown = showSimilar && (similar.isLoading || !!similar.data?.length);
+  // The aside's name lists what it holds for this viewer on this tab; with
+  // only the first-mentees card it's "About this mentor".
   const asideLabel =
     listLabel([
       !isOwner && 'booking',
       tab === 'overview' && 'track record',
-      showSimilar && 'similar mentors',
+      similarShown && 'similar mentors',
     ]) ?? 'About this mentor';
 
   // Mentees can see this profile: the owner's card only nudges sharing then
@@ -334,30 +337,32 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                   />
                 )}
               </div>
-              {tab !== 'sessions' && (
-                // Reviews tab: the design's default `reviewsLayout=focus` drops
-                // the track record (and Similar mentors) from the aside.
-                <aside className={styles.aside} aria-label={asideLabel}>
-                  {!isPhone && firstMentees}
-                  {!isOwner && (
-                    <BookSessionCard
-                      sessionTypes={p.sessionTypes}
-                      onBook={openBooking}
-                      onCompare={() => setTab('sessions')}
-                      bookBlocked={bookBlocked}
-                    />
-                  )}
-                  {tab === 'overview' && <TrackRecordCard profile={p} />}
-                  {showSimilar && (
-                    <SimilarMentorsCard
-                      mentors={similar.data}
-                      isLoading={similar.isLoading}
-                      timeZone={timeZone}
-                      seeAllHref="/explore"
-                    />
-                  )}
-                </aside>
-              )}
+              {tab !== 'sessions' &&
+                // Never an empty named landmark (the owner's Reviews tab can hold nothing).
+                (!isOwner || tab === 'overview' || (!isPhone && !!firstMentees)) && (
+                  // Reviews tab: the design's default `reviewsLayout=focus` drops
+                  // the track record (and Similar mentors) from the aside.
+                  <aside className={styles.aside} aria-label={asideLabel}>
+                    {!isPhone && firstMentees}
+                    {!isOwner && (
+                      <BookSessionCard
+                        sessionTypes={p.sessionTypes}
+                        onBook={openBooking}
+                        onCompare={() => setTab('sessions')}
+                        bookBlocked={bookBlocked}
+                      />
+                    )}
+                    {tab === 'overview' && <TrackRecordCard profile={p} />}
+                    {similarShown && (
+                      <SimilarMentorsCard
+                        mentors={similar.data}
+                        isLoading={similar.isLoading}
+                        timeZone={timeZone}
+                        seeAllHref="/explore"
+                      />
+                    )}
+                  </aside>
+                )}
             </div>
           </>
         )}
