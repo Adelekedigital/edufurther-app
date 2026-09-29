@@ -25,24 +25,35 @@ export function useOwnerEditing(
     wasOpen.current = introOpen;
   }, [introOpen, editButton]);
 
-  const introValues: IntroEdit = {
+  const current = (): IntroEdit => ({
     firstName: profile?.names.first ?? '',
     lastName: profile?.names.last ?? '',
     headline: profile?.headline ?? '',
-  };
+  });
+  // What the form started from, taken when it opens: a refetch meanwhile (an
+  // edit in another tab) can't make an untouched field look changed and
+  // send its old value back (review of #78).
+  const [introBase, setIntroBase] = useState<IntroEdit | null>(null);
+  const introValues = introBase ?? current();
 
   return {
     introOpen,
     introValues,
     openIntro: () => {
       edit.resetIntro();
+      setIntroBase(current());
       setIntroOpen(true);
     },
     closeIntro: () => {
       setIntroOpen(false);
+      setIntroBase(null);
       edit.resetIntro();
     },
-    saveIntro: (after: IntroEdit) => edit.saveIntro(introValues, after, () => setIntroOpen(false)),
+    saveIntro: (after: IntroEdit) =>
+      edit.saveIntro(introValues, after, () => {
+        setIntroOpen(false);
+        setIntroBase(null);
+      }),
     introSaving: edit.introSaving,
     introErrors: edit.introErrors,
 

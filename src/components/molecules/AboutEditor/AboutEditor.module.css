@@ -6,7 +6,7 @@
 }
 /* The design's editing textarea wears the focus colour as its border. */
 .text {
-  border-color: var(--blue-500);
+  border-color: var(--border-focus);
   resize: vertical;
 }
 .actions {

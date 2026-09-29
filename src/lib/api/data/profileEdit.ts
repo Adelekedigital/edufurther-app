@@ -49,6 +49,13 @@ function toEditError(error: unknown, body: unknown): EditError {
   });
 }
 
+/** The general line when the names saved but the headline didn't. */
+function partialCopy(general: string): string {
+  return /offline/i.test(general)
+    ? 'Your name saved. The headline didn’t: you’re offline. Try again when you’re connected.'
+    : 'Your name saved. The headline didn’t: try again.';
+}
+
 /** What can be caught before sending: a name can't be emptied. */
 export function introProblems(before: IntroEdit, after: IntroEdit): IntroEditErrors {
   const out: IntroEditErrors = {};
@@ -61,8 +68,9 @@ export function introProblems(before: IntroEdit, after: IntroEdit): IntroEditErr
  * The owner's name, headline and About (Mentor Profile.dc.html owner edit).
  * Names and About: PATCH /users/{id}/profile; headline: PATCH
  * /users/{id}/mentor-profile. Both are partial: only what changed is sent.
- * Not optimistic: the form shows "Saving…", then the profile (and anything
- * listing this mentor) refetches. Offline fails at once.
+ * Not optimistic: "Saving…" lasts until the profile (and anything listing
+ * this mentor) has refetched, so the form closes onto the new values, never
+ * a flash of the old ones (review of #78). Offline fails at once.
  */
 export function useProfileEdit(userId: string | null) {
   const qc = useQueryClient();
@@ -86,6 +94,7 @@ export function useProfileEdit(userId: string | null) {
         ...(first !== before.firstName.trim() && { first_name: first }),
         ...(last && last !== before.lastName.trim() && { last_name: last }),
       };
+      let namesSaved = false;
       try {
         if (Object.keys(names).length) {
           const { error, response } = await api.PATCH('/api/v1/users/{user_id}/profile', {
@@ -93,6 +102,7 @@ export function useProfileEdit(userId: string | null) {
             body: names,
           });
           if (!response.ok) throw toEditError(apiError(response.status, error), error);
+          namesSaved = true;
         }
         if (headline !== before.headline.trim()) {
           const { error, response } = await api.PATCH('/api/v1/users/{user_id}/mentor-profile', {
@@ -103,11 +113,16 @@ export function useProfileEdit(userId: string | null) {
           if (!response.ok) throw toEditError(apiError(response.status, error), error);
         }
       } catch (e) {
-        throw e instanceof EditError ? e : toEditError(e, null);
+        const err = e instanceof EditError ? e : toEditError(e, null);
+        // The names landed and the headline didn't: say so, not "didn't save".
+        if (namesSaved && err.errors.general)
+          throw new EditError({ ...err.errors, general: partialCopy(err.errors.general) });
+        throw err;
       }
     },
-    // Whatever landed (the names can save before the headline fails) shows.
-    onSettled: () => void refresh(),
+    // Whatever landed (the names can save before the headline fails) shows;
+    // returned, so the save waits for it.
+    onSettled: () => refresh(),
   });
 
   const about = useMutation<void, EditError, string>({
@@ -125,7 +140,7 @@ export function useProfileEdit(userId: string | null) {
         throw e instanceof EditError ? e : toEditError(e, null);
       }
     },
-    onSuccess: () => void refresh(),
+    onSuccess: () => refresh(),
   });
 
   return {

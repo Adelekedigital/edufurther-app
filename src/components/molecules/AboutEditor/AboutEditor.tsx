@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Textarea } from '@/components/atoms/Input/Input';
 import { ABOUT_MAX } from '@/lib/utils/profileLimits';
@@ -22,6 +22,11 @@ type AboutEditorProps = {
 export function AboutEditor({ initial, onSave, onCancel, saving, error }: AboutEditorProps) {
   const [text, setText] = useState(initial);
   const ref = useRef<HTMLTextAreaElement>(null);
+  const errorId = useId();
+  // A failed save: back to the text, whose description now carries why.
+  useEffect(() => {
+    if (error) ref.current?.focus();
+  }, [error]);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -51,15 +56,21 @@ export function AboutEditor({ initial, onSave, onCancel, saving, error }: AboutE
         rows={6}
         aria-label="About"
         invalid={!!error}
+        aria-describedby={error ? errorId : undefined}
         className={styles.text}
       />
       {error && (
-        <p role="alert" className={styles.error}>
+        <p id={errorId} role="alert" className={styles.error}>
           {error}
         </p>
       )}
       <div className={styles.actions}>
-        <Button type="submit" size="medium" disabled={saving} aria-busy={saving || undefined}>
+        <Button
+          type="submit"
+          size="medium"
+          aria-disabled={saving || undefined}
+          aria-busy={saving || undefined}
+        >
           {saving ? 'Saving…' : 'Save'}
         </Button>
         <Button type="button" variant="text" size="medium" onClick={onCancel}>

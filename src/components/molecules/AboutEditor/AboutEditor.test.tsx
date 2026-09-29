@@ -37,7 +37,14 @@ describe('AboutEditor', () => {
   it('shows a failure, and "Saving…" while saving', () => {
     setup({ saving: true, error: 'That didn’t save. Try again.' });
     expect(screen.getByRole('alert')).toHaveTextContent('That didn’t save. Try again.');
-    expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
-    expect(screen.getByRole('textbox', { name: 'About' })).toBeInvalid();
+    expect(screen.getByRole('button', { name: 'Saving…' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    const box = screen.getByRole('textbox', { name: 'About' });
+    expect(box).toBeInvalid();
+    // The failure is the textarea's description, and focus is back on it.
+    expect(box).toHaveAccessibleDescription('That didn’t save. Try again.');
+    expect(box).toHaveFocus();
   });
 });

@@ -107,6 +107,37 @@ describe('useProfileEdit', () => {
     expect(PATCH).toHaveBeenCalledTimes(1);
   });
 
+  it('names saved, headline failed: says so, refetches what landed, stays open (review of #78)', async () => {
+    PATCH.mockResolvedValueOnce(ok).mockResolvedValueOnce(fail(500));
+    const { result, spy } = setup();
+    const done = vi.fn();
+    act(() =>
+      result.current.saveIntro(before, { ...before, firstName: 'Ade', headline: 'MSc' }, done),
+    );
+    await waitFor(() =>
+      expect(result.current.introErrors.general).toBe(
+        'Your name saved. The headline didn’t: try again.',
+      ),
+    );
+    expect(spy).toHaveBeenCalledWith({ queryKey: keys.mentors.all });
+    expect(done).not.toHaveBeenCalled();
+  });
+
+  it('the form closes only once the refetch is in, so the old name never flashes back', async () => {
+    PATCH.mockResolvedValue(ok);
+    const { result, spy } = setup();
+    const pending: (() => void)[] = [];
+    spy.mockImplementation(() => new Promise<void>((r) => pending.push(r)));
+    const done = vi.fn();
+    act(() => result.current.saveIntro(before, { ...before, firstName: 'Ade' }, done));
+    await waitFor(() => expect(spy).toHaveBeenCalled());
+    await act(() => new Promise((r) => setTimeout(r, 30)));
+    expect(done).not.toHaveBeenCalled();
+    expect(result.current.introSaving).toBe(true);
+    await act(async () => pending.forEach((r) => r()));
+    await waitFor(() => expect(done).toHaveBeenCalled());
+  });
+
   it('About: trimmed, blank clears it, a failure says so', async () => {
     PATCH.mockResolvedValueOnce(ok).mockResolvedValueOnce(fail(500));
     const { result } = setup();

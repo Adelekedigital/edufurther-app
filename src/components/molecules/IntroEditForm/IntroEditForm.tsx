@@ -22,7 +22,8 @@ type IntroEditFormProps = {
  * The owner's name and headline, edited in place of the header's intro
  * (Mentor Profile.dc.html `editingIntro`). The design draws one "Name" field;
  * the account stores first and last names apart, so there are two
- * (design-divergence.md). Save needs a first name (names can't be cleared).
+ * (design-divergence.md). A blank first name is refused by the save, with a
+ * message (names can't be cleared).
  * Escape cancels. The first field has focus on open.
  */
 export function IntroEditForm({
@@ -34,16 +35,29 @@ export function IntroEditForm({
 }: IntroEditFormProps) {
   const [v, setV] = useState(initial);
   const first = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => first.current?.focus(), []);
+  // A failed save: focus the first field it names, so its message (wired as
+  // the field's description) is read; else the general alert speaks.
+  // Keyed on the messages, not the object (a new {} each render would steal
+  // focus back while the owner types elsewhere).
+  const errorsKey = Object.entries(errors).join('|');
+  useEffect(() => {
+    if (!errorsKey) return;
+    formRef.current?.querySelector<HTMLInputElement>('[aria-invalid="true"]')?.focus();
+  }, [errorsKey]);
   const set = (k: keyof IntroValues) => (e: { target: { value: string } }) =>
     setV((x) => ({ ...x, [k]: e.target.value }));
-  const canSave = !!v.firstName.trim() && !saving;
+  // Save stays enabled with a blank first name: the save says why it can't
+  // (a disabled button explains nothing; review of #78). Not while saving.
+  const canSave = !saving;
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (canSave) onSave(v);
   };
   return (
     <form
+      ref={formRef}
       className={styles.form}
       aria-label="Edit your name and headline"
       onSubmit={submit}
@@ -65,7 +79,9 @@ export function IntroEditForm({
               onChange={set('firstName')}
               autoComplete="given-name"
               maxLength={NAME_MAX}
-              required
+              // aria-required, not required: the browser's own block would stop the
+              // save before our message could say why.
+              aria-required
             />
           )}
         </FormField>
@@ -101,7 +117,13 @@ export function IntroEditForm({
         </p>
       )}
       <div className={styles.actions}>
-        <Button type="submit" size="medium" disabled={!canSave} aria-busy={saving || undefined}>
+        {/* aria-disabled, not disabled: a disabled button drops the focus it has. */}
+        <Button
+          type="submit"
+          size="medium"
+          aria-disabled={saving || undefined}
+          aria-busy={saving || undefined}
+        >
           {saving ? 'Saving…' : 'Save'}
         </Button>
         <Button type="button" variant="text" size="medium" onClick={onCancel}>

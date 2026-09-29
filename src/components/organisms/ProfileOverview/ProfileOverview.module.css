@@ -89,6 +89,7 @@
   gap: var(--space-3);
 }
 .edit {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-1);
@@ -99,7 +100,15 @@
   font-family: var(--font-ui);
   font-size: var(--text-p-xs);
   font-weight: var(--weight-semibold);
-  color: var(--blue-500);
+  color: var(--text-action);
+}
+/* Drawn small; an invisible area makes the tap target 44px on phones. */
+@media (max-width: 767px) {
+  .edit::after {
+    content: '';
+    position: absolute;
+    inset: -14px -8px;
+  }
 }
 .edit:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);

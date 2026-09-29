@@ -249,7 +249,11 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               <Tabs
                 label="Profile"
                 value={tab}
-                onChange={setTab}
+                onChange={(t) => {
+                  // The About editor lives on Overview: leaving closes it.
+                  if (owner.aboutOpen) owner.closeAbout();
+                  setTab(t);
+                }}
                 items={[
                   { value: 'overview', label: 'Overview', panelId: 'panel-overview' },
                   ...(hasSessions

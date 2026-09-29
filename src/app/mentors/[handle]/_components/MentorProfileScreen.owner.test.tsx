@@ -67,6 +67,7 @@ describe('MentorProfileScreen — the owner edits their profile', () => {
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('button', { name: 'Edit profile' }));
     await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(saveIntro).toHaveBeenCalled();
     expect(screen.getByRole('form', { name: 'Edit your name and headline' })).toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent('That didn’t save. Try again.');
   });
@@ -82,6 +83,29 @@ describe('MentorProfileScreen — the owner edits their profile', () => {
     expect(saveAbout).toHaveBeenCalledWith(`${own.about} More.`);
     expect(screen.queryByRole('textbox', { name: 'About' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Edit About' })).toHaveFocus();
+  });
+
+  it('a refetch while the form is open doesn’t change what the save compares against', async () => {
+    h.profile = state({ data: own });
+    const user = userEvent.setup();
+    const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: 'Edit profile' }));
+    // Another tab changed the headline meanwhile.
+    h.profile = state({ data: { ...own, headline: 'Changed elsewhere' } });
+    rerender(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    const [beforeArg] = saveIntro.mock.calls[0]!;
+    expect(beforeArg).toMatchObject({ headline: own.headline });
+  });
+
+  it('leaving Overview closes the About editor', async () => {
+    h.profile = state({ data: own });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: 'Edit About' }));
+    expect(screen.getByRole('textbox', { name: 'About' })).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: /Sessions/ }));
+    expect(screen.queryByRole('textbox', { name: 'About' })).toBeNull();
   });
 
   it('an empty About invites the owner to write one', () => {

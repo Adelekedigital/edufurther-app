@@ -40,12 +40,44 @@ describe('IntroEditForm', () => {
     expect(onSave).toHaveBeenCalledWith({ ...initial, headline: 'MSc Public Health' });
   });
 
-  it('won’t save without a first name', async () => {
+  it('a blank first name still saves: the save says why it can’t (review of #78)', async () => {
     const { user, onSave } = setup();
     await user.clear(screen.getByRole('textbox', { name: 'First name' }));
-    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
-    await user.keyboard('{Enter}');
-    expect(onSave).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(onSave).toHaveBeenCalledWith({ ...initial, firstName: '' });
+  });
+
+  it('a failed save puts focus on the first field it names; typing elsewhere keeps focus', async () => {
+    const onSave = vi.fn();
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <IntroEditForm initial={initial} onSave={onSave} onCancel={vi.fn()} saving={false} />,
+    );
+    const headline = screen.getByRole('textbox', { name: 'Headline' });
+    rerender(
+      <IntroEditForm
+        initial={initial}
+        onSave={onSave}
+        onCancel={vi.fn()}
+        saving={false}
+        errors={{ headline: 'Keep your headline under 300 characters.' }}
+      />,
+    );
+    expect(headline).toHaveFocus();
+    const last = screen.getByRole('textbox', { name: 'Last name' });
+    await user.click(last);
+    await user.type(last, 'x');
+    // Same errors, a new object each render: focus stays where the owner is.
+    rerender(
+      <IntroEditForm
+        initial={initial}
+        onSave={onSave}
+        onCancel={vi.fn()}
+        saving={false}
+        errors={{ headline: 'Keep your headline under 300 characters.' }}
+      />,
+    );
+    expect(last).toHaveFocus();
   });
 
   it('Escape and Cancel cancel', async () => {
@@ -65,8 +97,11 @@ describe('IntroEditForm', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Nope.');
   });
 
-  it('while saving: "Saving…", and no second save', () => {
-    setup({ saving: true });
-    expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
+  it('while saving: "Saving…", and no second save (the button keeps focus)', async () => {
+    const { user, onSave } = setup({ saving: true });
+    const btn = screen.getByRole('button', { name: 'Saving…' });
+    expect(btn).toHaveAttribute('aria-disabled', 'true');
+    await user.click(btn);
+    expect(onSave).not.toHaveBeenCalled();
   });
 });
