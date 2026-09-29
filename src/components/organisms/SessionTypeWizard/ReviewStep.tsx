@@ -3,7 +3,7 @@ import { SummarySection } from '@/components/molecules/SummarySection/SummarySec
 import {
   DAY_NAMES,
   QUESTION_KIND_LABELS,
-  STAGE_LABELS,
+  stagesLabel,
   approvalLabel,
   breakLabel,
   hoursLabel,
@@ -39,7 +39,7 @@ type ReviewStepProps = {
 /** Step 4 (Session Types.dc.html `isStep4`): check answers, and the card as mentees see it. */
 export function ReviewStep({ draft: d, topics, defaults, onEdit }: ReviewStepProps) {
   const topicLabels = d.topics.map((c) => topics.find((t) => t.slug === c)?.label ?? c);
-  const stage = d.stage === 'other' ? d.customStage : d.stage ? STAGE_LABELS[d.stage] : 'Any stage';
+  const stage = stagesLabel(d);
   // `defaults` is null until the mentor's own are known: then say "My default"
   // without a value rather than show the platform's as theirs (review of #49).
   const custom = d.rules === 'custom';

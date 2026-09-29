@@ -474,4 +474,72 @@ describe('CreateSessionTypeScreen — review of #60', () => {
       'Some of these hours overlap hours you set in London (UK). Change them, then save.',
     );
   });
+
+  it('"Best for mentees who are…" takes several stages and sends them all (round 3 A)', async () => {
+    const user = userEvent.setup();
+    render(<CreateSessionTypeScreen template="sop-review" />);
+    const group = screen.getByRole('group', { name: 'Best for mentees who are' });
+    expect(screen.getByText('Pick all that apply. Leave empty for any stage.')).toBeInTheDocument();
+    await user.click(within(group).getByRole('button', { name: 'Drafting' }));
+    await user.click(within(group).getByRole('button', { name: 'Revising' }));
+    await user.type(screen.getByRole('textbox', { name: 'Another stage' }), 'Deferred');
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    for (const n of ['Drafting', 'Revising', 'Deferred'])
+      expect(within(group).getByRole('button', { name: n })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+    // Unpicking one keeps the others.
+    await user.click(within(group).getByRole('button', { name: 'Revising' }));
+    for (const n of [
+      /Continue to intake/,
+      /Continue to scheduling/,
+      /Continue to review/,
+      /Publish session/,
+    ])
+      await user.click(next(n));
+    expect(create.mock.calls[0]![0].body).toMatchObject({
+      application_stages: ['drafting_stage', 'other'],
+      custom_stage_label: 'Deferred',
+    });
+  });
+
+  it('your own stage: Add renames it (one label), unpicking it clears it, and a stage error clears on change', async () => {
+    const user = userEvent.setup();
+    render(<CreateSessionTypeScreen template="sop-review" />);
+    const group = screen.getByRole('group', { name: 'Best for mentees who are' });
+    const own = screen.getByRole('textbox', { name: 'Another stage' });
+    await user.type(own, 'Deferred');
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.type(own, 'Gap year');
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    // Renamed, not a second one.
+    expect(within(group).queryByRole('button', { name: 'Deferred' })).toBeNull();
+    expect(within(group).getByRole('button', { name: 'Gap year' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    // Unpicked: the chip and its label go.
+    await user.click(within(group).getByRole('button', { name: 'Gap year' }));
+    expect(within(group).queryByRole('button', { name: 'Gap year' })).toBeNull();
+
+    // A refused stage (422 /application_stages) shows on step 1 and clears when the stages change.
+    create.mockImplementationOnce((_v, opts) =>
+      opts.onError({ kind: 'validation', message: 'x', fields: { stage: 'Check the stage.' } }),
+    );
+    for (const n of [
+      /Continue to intake/,
+      /Continue to scheduling/,
+      /Continue to review/,
+      /Publish session/,
+    ])
+      await user.click(next(n));
+    expect(screen.getByText('Check the stage.')).toBeInTheDocument();
+    await user.click(
+      within(screen.getByRole('group', { name: 'Best for mentees who are' })).getByRole('button', {
+        name: 'Drafting',
+      }),
+    );
+    expect(screen.queryByText('Check the stage.')).toBeNull();
+  });
 });

@@ -29,12 +29,18 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
   const [stageDraft, setStageDraft] = useState('');
   const stages = [
     ...Object.entries(STAGE_LABELS).map(([value, label]) => ({ value, label })),
-    ...(d.stage === 'other' && d.customStage ? [{ value: 'other', label: d.customStage }] : []),
+    ...(d.stages.includes('other') && d.customStage
+      ? [{ value: 'other', label: d.customStage }]
+      : []),
   ];
   const addStage = () => {
     const v = stageDraft.trim();
     if (!v) return;
-    update({ stage: 'other', customStage: v });
+    // One of the mentor's own (the backend keeps one label): adding another renames it.
+    update({
+      stages: d.stages.includes('other') ? d.stages : [...d.stages, 'other'],
+      customStage: v,
+    });
     setStageDraft('');
   };
   return (
@@ -106,13 +112,16 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
         <ChoiceChips
           label="Best for mentees who are"
           options={stages}
-          selected={d.stage ? [d.stage] : []}
+          selected={d.stages}
           describedBy={`${id}-stage-hint`}
           onToggle={(v) =>
             update(
-              d.stage === v
-                ? { stage: null, customStage: '' }
-                : { stage: v as Stage, customStage: v === 'other' ? d.customStage : '' },
+              d.stages.includes(v as Stage)
+                ? {
+                    stages: d.stages.filter((s) => s !== v),
+                    customStage: v === 'other' ? '' : d.customStage,
+                  }
+                : { stages: [...d.stages, v as Stage] },
             )
           }
         />
@@ -143,7 +152,7 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
         </div>
         {errors.stage && <p className={styles.fieldError}>{errors.stage}</p>}
         <span id={`${id}-stage-hint`} className={styles.groupHint}>
-          Pick one. Leave empty for any stage.
+          Pick all that apply. Leave empty for any stage.
         </span>
       </div>
     </div>

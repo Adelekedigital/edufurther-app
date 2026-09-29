@@ -14,6 +14,7 @@ import {
   stepOf,
   toCreateBody,
   toWindows,
+  stagesLabel,
   validateStep,
   weeklySummary,
   type Draft,
@@ -36,7 +37,9 @@ describe('validateStep', () => {
       'topics',
     ]);
     expect(validateStep(filled(), 1)).toEqual({});
-    expect(validateStep(filled({ stage: 'other', customStage: ' ' }), 1).stage).toBeTruthy();
+    expect(
+      validateStep(filled({ stages: ['drafting_stage', 'other'], customStage: ' ' }), 1).stage,
+    ).toBeTruthy();
   });
 
   it('step 3 with dedicated hours needs a day on, and flags bad or overlapping slots', () => {
@@ -152,7 +155,7 @@ describe('toCreateBody', () => {
         windowDays: 14,
         breakMin: 10,
         approval: 'off',
-        stage: 'other',
+        stages: ['early_exploration', 'other'],
         customStage: ' Deferred ',
       }),
       ids,
@@ -163,9 +166,26 @@ describe('toCreateBody', () => {
       booking_window_days: 14,
       break_after_minutes: 10,
       requires_booking_confirmation: false,
-      application_stage: 'other',
+      application_stages: ['early_exploration', 'other'],
       custom_stage_label: 'Deferred',
     });
+    // Never both: the backend refuses application_stage alongside the list.
+    expect(body).not.toHaveProperty('application_stage');
+  });
+
+  it('several stages, in the order picked; none is any stage; no label without "other"', () => {
+    expect(toCreateBody(filled({ stages: ['revisions', 'drafting_stage'] }), ids)).toMatchObject({
+      application_stages: ['revisions', 'drafting_stage'],
+      custom_stage_label: null,
+    });
+    expect(toCreateBody(filled({ stages: [], customStage: 'stale' }), ids)).toMatchObject({
+      application_stages: [],
+      custom_stage_label: null,
+    });
+    expect(stagesLabel({ stages: ['drafting_stage', 'other'], customStage: 'Deferred' })).toBe(
+      'Drafting, Deferred',
+    );
+    expect(stagesLabel({ stages: [], customStage: '' })).toBe('Any stage');
   });
 });
 
@@ -324,6 +344,8 @@ describe('422 pointers → the owning field and step', () => {
     ['/service_offering_ids', 'topics', 1],
     ['/service_offering_ids/3', 'topics', 1],
     ['/custom_stage_label', 'stage', 1],
+    ['/application_stages', 'stage', 1],
+    ['/application_stages/1', 'stage', 1],
     ['/questions/2/options/0/text', 'question-2', 2],
     ['/questions', 'questions', 2],
     ['/booking_window_days', 'rules', 3],

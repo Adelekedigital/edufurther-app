@@ -64,6 +64,7 @@ function seed(): Stored[] {
   const base = {
     meeting_venue: 'daily' as const,
     application_stage: null,
+    application_stages: [],
     custom_stage_label: null,
     icon: null,
     requires_booking_confirmation: null,
@@ -84,6 +85,7 @@ function seed(): Stored[] {
       is_active: true,
       ...topics('document-preparation'),
       application_stage: 'drafting_stage',
+      application_stages: ['drafting_stage'],
       questions: [
         q('q1', 'Which programs are you applying to?', 'free_text', true),
         q('q2', 'Upload your current SOP draft (PDF or Word)', 'file_upload', false),
@@ -190,6 +192,19 @@ export function mockCreateSessionType(
   if (ids.length > 3) errors.push({ pointer: '/service_offering_ids', message: 'at most 3' });
   const qs = Array.isArray(body.questions) ? body.questions : [];
   if (qs.length > 5) errors.push({ pointer: '/questions', message: 'at most 5' });
+  // Stages (backend round 3 A): a list, never null, no repeats, not with the
+  // single field; `other` needs its label, and only `other` may have one.
+  const stages = body.application_stages;
+  if ('application_stages' in body && !Array.isArray(stages))
+    errors.push({ pointer: '/application_stages', message: 'must be a list' });
+  else if (Array.isArray(stages) && new Set(stages).size !== stages.length)
+    errors.push({ pointer: '/application_stages', message: 'no repeats' });
+  if ('application_stages' in body && 'application_stage' in body)
+    errors.push({ pointer: '/application_stage', message: 'send one of the two' });
+  const hasOther = Array.isArray(stages) && stages.includes('other');
+  const label = typeof body.custom_stage_label === 'string' ? body.custom_stage_label.trim() : '';
+  if (hasOther !== !!label)
+    errors.push({ pointer: '/custom_stage_label', message: 'required exactly with other' });
   if (errors.length)
     return {
       status: 422,
@@ -242,7 +257,11 @@ export function mockCreateSessionType(
     meeting_venue: 'daily',
     is_active: true,
     service_offering: offerings[0] ?? null,
-    application_stage: (body.application_stage as OwnSessionTypeRead['application_stage']) ?? null,
+    application_stages: (Array.isArray(stages)
+      ? stages
+      : []) as OwnSessionTypeRead['application_stages'],
+    application_stage: ((Array.isArray(stages) ? stages[0] : body.application_stage) ??
+      null) as OwnSessionTypeRead['application_stage'],
     custom_stage_label: (body.custom_stage_label as string | null) ?? null,
     icon: (body.icon as OwnSessionTypeRead['icon']) ?? null,
     requires_booking_confirmation: (body.requires_booking_confirmation as boolean | null) ?? null,
