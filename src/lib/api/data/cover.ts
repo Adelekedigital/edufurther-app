@@ -49,7 +49,9 @@ export function bannerErrorCopy(e: AppError): string {
  * The owner's cover: colour and art (PATCH /users/{id}/profile) and the banner
  * image (POST /users/{id}/banner). Colour and art show at once (optimistic);
  * saves run one at a time in the order picked, so the last pick wins. A failed
- * save refetches the profile, so the page shows what's really saved.
+ * save refetches the profile, so the page shows what's really saved. Offline,
+ * both fail at once (networkMode 'always'): a paused mutation would otherwise
+ * send itself on reconnect, after the owner had moved on (review r3 of #59).
  */
 export function useCoverEdit(handle: string, userId: string | null) {
   const session = useSession();
@@ -60,6 +62,7 @@ export function useCoverEdit(handle: string, userId: string | null) {
 
   const save = useMutation({
     scope: { id: `cover:${userId}` },
+    networkMode: 'always',
     mutationFn: async (c: CoverPatch) => {
       if (!userId) throw new Error('No user');
       const { error, response } = await api.PATCH('/api/v1/users/{user_id}/profile', {
@@ -82,6 +85,7 @@ export function useCoverEdit(handle: string, userId: string | null) {
   });
 
   const upload = useMutation({
+    networkMode: 'always',
     mutationFn: async (file: File) => {
       if (!userId) throw new Error('No user');
       const { data, error, response } = await api.POST('/api/v1/users/{user_id}/banner', {

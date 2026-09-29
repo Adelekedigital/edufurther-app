@@ -1,6 +1,7 @@
 /* "Change cover" and its popover. Values from Mentor Profile.dc.html (owner,
-   coverOpen): 28px white button with an ink-200 ring, a 264px dialog 8px
-   below it (top 52px on the banner), 32px round swatches in 6 columns. */
+   coverOpen): 28px white button with an ink-200 ring, a dialog 8px below it
+   (top 52px on the banner), 32px round swatches in 6 columns. The design's
+   `width: 264px` is the content box: it renders 296px with its padding. */
 .root {
   position: relative;
 }
@@ -39,7 +40,7 @@
   right: 0;
   top: calc(28px + var(--space-2));
   z-index: 21;
-  width: 264px;
+  width: 296px;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -100,6 +101,8 @@
   border-radius: var(--radius-full);
   box-shadow: inset 0 0 0 1px var(--swatch-edge);
   color: var(--text-primary);
+  font-size: 16px;
+  line-height: 1;
   cursor: pointer;
 }
 /* The picked swatch: a white gap, then a blue ring (the design's). */
@@ -167,4 +170,16 @@
 }
 .file {
   display: none;
+}
+
+/* AppShell.dc.html phone rule: buttons reach 44px, and `padding: 0
+   var(--space-3)` becomes `0 var(--space-2)`. The 32px swatches are exempt. */
+@media (max-width: 767px) {
+  .trigger {
+    min-height: 44px;
+    padding: 0 var(--space-2);
+  }
+  .upload {
+    min-height: 44px;
+  }
 }

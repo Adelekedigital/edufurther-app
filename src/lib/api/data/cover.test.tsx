@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixture';
 import type { MentorProfile } from '@/types/mentor';
@@ -122,6 +122,30 @@ describe('useCoverEdit', () => {
     await act(async () => resolvers[1]!());
     await waitFor(() => expect(result.current.saveState).toBe('saved'));
     expect(read().cover.color).toBe('rose');
+  });
+
+  describe('offline', () => {
+    afterEach(() => onlineManager.setOnline(true));
+
+    it('a save fails at once instead of waiting to send on reconnect', async () => {
+      onlineManager.setOnline(false);
+      PATCH.mockRejectedValue(new TypeError('Failed to fetch'));
+      const { wrapper } = setup();
+      const { result } = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
+      act(() => result.current.save({ color: 'mint' }));
+      await waitFor(() => expect(result.current.saveState).toBe('error'));
+      expect(PATCH).toHaveBeenCalledTimes(1);
+    });
+
+    it('an upload fails at once and says so', async () => {
+      onlineManager.setOnline(false);
+      POST.mockRejectedValue(new TypeError('Failed to fetch'));
+      const { wrapper } = setup();
+      const { result } = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
+      act(() => result.current.upload(file('image/png', 10)));
+      await waitFor(() => expect(result.current.uploadError).toMatch(/offline/));
+      expect(POST).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('uploads the file as multipart and shows the new banner', async () => {
