@@ -19,7 +19,7 @@ describe('BookSessionCard', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  describe('not taking bookings (backend #301)', () => {
+  describe('not taking bookings (backend 301)', () => {
     it('one offering: it stays to read, says why, and offers no Book', () => {
       render(<BookSessionCard {...props} sessionTypes={[sessionTypes[0]!]} notTaking />);
       expect(screen.getByRole('heading', { name: sessionTypes[0]!.name })).toBeInTheDocument();
