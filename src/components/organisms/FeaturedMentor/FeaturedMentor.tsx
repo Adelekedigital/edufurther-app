@@ -120,8 +120,10 @@ export function FeaturedMentor({
               prefetch={false}
               variant="secondary-outlined"
               size="medium"
+              // aria-label, not an sr-only span: Chrome reads that span as a block ("View profile : name").
+              aria-label={`View profile: ${m.name}`}
             >
-              View profile<span className="sr-only">: {m.name}</span>
+              View profile
             </ButtonLink>
           ) : (
             <Button
