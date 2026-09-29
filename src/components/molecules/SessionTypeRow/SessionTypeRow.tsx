@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { cx } from '@/lib/utils/cx';
 import { Badge } from '@/components/atoms/Badge/Badge';
 import { Icon } from '@/components/atoms/Icon/Icon';
@@ -24,6 +24,11 @@ type SessionTypeRowProps = {
   message?: string;
   /** info: progress or success (no error icon). */
   messageTone?: 'error' | 'info';
+  /** "Keep it" was clicked and hasn't answered: a second click does nothing. */
+  restoring?: boolean;
+  /** Put focus on the "⋯" button (the row above or below was removed). */
+  focusMenu?: boolean;
+  onFocused?: () => void;
 };
 
 /**
@@ -43,9 +48,27 @@ export function SessionTypeRow({
   shareUrl,
   message,
   messageTone = 'error',
+  restoring = false,
+  focusMenu = false,
+  onFocused,
 }: SessionTypeRowProps) {
   const nameId = useId();
   const pending = t.pendingDeletion;
+  const switchRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLButtonElement>(null);
+  // "Keep it" unmounts when it works: focus moves to the switch it gives back,
+  // the next thing the mentor needs (it comes back hidden).
+  const kept = useRef(false);
+  useEffect(() => {
+    if (pending || !kept.current) return;
+    kept.current = false;
+    switchRef.current?.focus();
+  }, [pending]);
+  useEffect(() => {
+    if (!focusMenu) return;
+    menuRef.current?.focus();
+    onFocused?.();
+  }, [focusMenu, onFocused]);
   const qn = t.questionCount;
   const facts = [
     { icon: 'schedule' as const, label: `${t.durationMin} min` },
@@ -83,8 +106,13 @@ export function SessionTypeRow({
             <button
               type="button"
               className={styles.keep}
-              onClick={onRestore}
+              onClick={() => {
+                if (restoring) return;
+                kept.current = true;
+                onRestore();
+              }}
               aria-label={`Keep it: ${t.name}`}
+              aria-disabled={restoring || undefined}
             >
               Keep it
             </button>
@@ -99,10 +127,8 @@ export function SessionTypeRow({
           ))}
         </ul>
         {message && (
-          <p
-            role="status"
-            className={cx(styles.message, messageTone === 'info' && styles.messageInfo)}
-          >
+          // Announced by the page's LiveRegion, not here: a region inserted with its text is often missed.
+          <p className={cx(styles.message, messageTone === 'info' && styles.messageInfo)}>
             {messageTone === 'error' && <Icon name="error" size={16} />}
             {message}
           </p>
@@ -111,6 +137,7 @@ export function SessionTypeRow({
       <div className={styles.actions}>
         {!pending && (
           <Switch
+            ref={switchRef}
             checked={t.isLive}
             onChange={onLiveChange}
             aria-label={`Visible to mentees: ${t.name}`}
@@ -121,6 +148,7 @@ export function SessionTypeRow({
           <CopyLinkButton label={`Copy share link for ${t.name}`} url={shareUrl} />
         )}
         <RowMenu
+          triggerRef={menuRef}
           label={`More actions for ${t.name}`}
           items={[
             { key: 'edit', icon: 'edit', label: 'Edit', onSelect: onEdit },

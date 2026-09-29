@@ -1,6 +1,6 @@
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Remote, Viewer } from '@/types/mentor';
+import type { AppError, Remote, Viewer } from '@/types/mentor';
 import type { DeleteError, OwnSessionType } from '@/types/sessionType';
 import { SessionTypesScreen } from './SessionTypesScreen';
 
@@ -59,11 +59,23 @@ vi.mock('@/lib/api/data/sessionTypes', () => ({
     return setLive;
   },
   useDeleteSessionType: () => ({ remove, isPending: false, error: deleteErr, reset: vi.fn() }),
-  useSetFeatured: () => setFeatured,
-  useRestoreSessionType: () => ({ restore, isPending: false }),
+  useSetFeatured: (onFailed: typeof failFeature) => {
+    failFeature = onFailed;
+    return setFeatured;
+  },
+  useRestoreSessionType: () => ({ restore, pendingId: restorePending }),
 }));
 const setFeatured = vi.fn();
+let failFeature: (id: string, featured: boolean, e: AppError) => void = () => {};
+let restorePending: string | null = null;
 const restore = vi.fn();
+const sop = () => screen.getByRole('article', { name: 'SOP draft review' });
+/** What the page's live region last read out. */
+const announced = () =>
+  screen
+    .getAllByRole('status')
+    .map((s) => s.textContent)
+    .join(' | ');
 
 const mentor: Viewer = {
   kind: 'member',
@@ -89,7 +101,8 @@ beforeEach(() => {
   deleteErr = null;
   setLive.mockClear();
   setFeatured.mockClear();
-  restore.mockClear();
+  restore.mockReset();
+  restorePending = null;
   topicsLoading = false;
   duplicate.mockReset();
   remove.mockClear();
@@ -198,7 +211,7 @@ describe('SessionTypesScreen', () => {
     expect(screen.queryByRole('menuitem', { name: /Delete|featured/ })).toBeNull();
     await user.keyboard('{Escape}');
     await user.click(within(row).getByRole('button', { name: 'Keep it: SOP draft review' }));
-    expect(restore).toHaveBeenCalledWith('a');
+    expect(restore).toHaveBeenCalledWith('a', expect.anything());
   });
 
   it('featuring another asks first; with none featured it just features', async () => {
@@ -222,6 +235,132 @@ describe('SessionTypesScreen', () => {
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Remove from featured/ }));
     expect(setFeatured).toHaveBeenCalledWith('a', false);
+  });
+
+  it('a hidden type isn’t sent to be featured: the row says to show it first', async () => {
+    viewer = mentor;
+    list = idle({
+      data: [
+        { ...TYPE, isLive: false },
+        { ...TYPE, id: 'b', name: 'Visa prep', isFeatured: true },
+      ],
+    });
+    const user = userEvent.setup();
+    render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Mark as featured/ }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(setFeatured).not.toHaveBeenCalled();
+    expect(sop()).toHaveTextContent(
+      'Show it to mentees first: a hidden session type can’t be featured.',
+    );
+  });
+
+  it('a failed feature says why by what went wrong, not always "hidden"', () => {
+    viewer = mentor;
+    render(<SessionTypesScreen />);
+    const cases: [AppError['kind'], boolean, string][] = [
+      ['offline', true, 'Couldn’t feature it. Check your connection and try again.'],
+      ['validation', true, 'Show it to mentees first: a hidden session type can’t be featured.'],
+      ['server', true, 'Couldn’t feature it. Try again in a moment.'],
+      ['server', false, 'Couldn’t remove it from featured. Try again in a moment.'],
+    ];
+    for (const [kind, featured, text] of cases) {
+      act(() => failFeature('a', featured, { kind, message: '' }));
+      expect(sop()).toHaveTextContent(text);
+      expect(announced()).toContain(text);
+    }
+  });
+
+  it('a failed delete keeps the confirm open with our copy', async () => {
+    viewer = mentor;
+    deleteErr = {
+      kind: 'server',
+      message: 'We couldn’t delete it. Something went wrong. Try again.',
+    };
+    remove.mockRejectedValue(deleteErr);
+    const user = userEvent.setup();
+    render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
+    const dialog = screen.getByRole('dialog', { name: 'Delete this session type?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
+    expect(screen.getByRole('dialog', { name: 'Delete this session type?' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('alert')).toHaveTextContent(
+      'We couldn’t delete it. Something went wrong. Try again.',
+    );
+  });
+
+  it('scheduling clears the row’s old message and is read out', async () => {
+    viewer = mentor;
+    remove.mockResolvedValue({
+      kind: 'scheduled',
+      deletesAfter: '2026-10-14T12:00:00Z',
+      bookedCount: 2,
+    });
+    const user = userEvent.setup();
+    render(<SessionTypesScreen />);
+    act(() => failFeature('a', true, { kind: 'validation', message: '' }));
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
+    expect(sop()).not.toHaveTextContent('Show it to mentees first');
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }));
+    await waitFor(() =>
+      expect(announced()).toContain('Deletion scheduled for Oct 14. Hidden from mentees now.'),
+    );
+  });
+
+  it('after a delete, focus goes to the next row’s “⋯”, or to Create when none is left', async () => {
+    viewer = mentor;
+    list = idle({ data: [TYPE, { ...TYPE, id: 'b', name: 'Visa prep' }] });
+    const user = userEvent.setup();
+    const { rerender } = render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
+    // The list refetch removes the row as the dialog closes.
+    remove.mockImplementation(async () => {
+      list = idle({ data: [{ ...TYPE, id: 'b', name: 'Visa prep' }] });
+      return { kind: 'deleted' };
+    });
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }));
+    rerender(<SessionTypesScreen />);
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'More actions for Visa prep' })).toHaveFocus(),
+    );
+    expect(announced()).toContain('“SOP draft review” was deleted.');
+
+    remove.mockImplementation(async () => {
+      list = idle({ data: [] });
+      return { kind: 'deleted' };
+    });
+    await user.click(screen.getByRole('button', { name: 'More actions for Visa prep' }));
+    await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }));
+    rerender(<SessionTypesScreen />);
+    await waitFor(() =>
+      expect(screen.getAllByRole('link', { name: 'Create session type' })[0]).toHaveFocus(),
+    );
+  });
+
+  it('"Keep it" says it was kept; a second click while it waits sends nothing', async () => {
+    viewer = mentor;
+    list = idle({
+      data: [{ ...TYPE, isLive: false, pendingDeletion: { deletesAfter: null, bookedCount: 1 } }],
+    });
+    restore.mockImplementation((_id: string, o: { onSuccess: (r: string) => void }) =>
+      o.onSuccess('kept'),
+    );
+    const user = userEvent.setup();
+    const { rerender } = render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('button', { name: 'Keep it: SOP draft review' }));
+    expect(announced()).toContain('Kept. “SOP draft review” is hidden until you show it.');
+    restore.mockClear();
+    restorePending = 'a';
+    rerender(<SessionTypesScreen />);
+    const keep = screen.getByRole('button', { name: 'Keep it: SOP draft review' });
+    expect(keep).toHaveAttribute('aria-disabled', 'true');
+    await user.click(keep);
+    expect(restore).not.toHaveBeenCalled();
   });
 
   it('signed in without a usable account: told why, never "for mentors"', () => {
@@ -280,7 +419,7 @@ describe('SessionTypesScreen', () => {
       expect.objectContaining({ id: 'a', offeringIds: { 'document-preparation': 'o4' } }),
     );
     expect(
-      await screen.findByText(
+      await within(sop()).findByText(
         '“SOP draft review (copy)” was added, hidden, but its dedicated hours didn’t copy. Check it before you show it.',
       ),
     ).toBeInTheDocument();
@@ -311,10 +450,12 @@ describe('SessionTypesScreen', () => {
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Duplicate/ }));
-    expect(screen.getByText('Copying “SOP draft review”…')).toBeInTheDocument();
+    expect(within(sop()).getByText('Copying “SOP draft review”…')).toBeInTheDocument();
+    // Read out from the page's one region, not a region inserted with its text.
+    expect(announced()).toContain('Copying “SOP draft review”…');
     await act(async () => finish({ id: 'n', name: 'SOP draft review (copy)', failed: [] }));
     expect(
-      screen.getByText(
+      within(sop()).getByText(
         '“SOP draft review (copy)” was added, hidden. Check it, then show it to mentees.',
       ),
     ).toBeInTheDocument();
@@ -325,7 +466,7 @@ describe('SessionTypesScreen', () => {
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Duplicate/ }));
     expect(
-      await screen.findByText('We couldn’t duplicate it. You’re offline. Try again.'),
+      await within(sop()).findByText('We couldn’t duplicate it. You’re offline. Try again.'),
     ).toBeInTheDocument();
   });
 
@@ -338,7 +479,7 @@ describe('SessionTypesScreen', () => {
     await user.click(screen.getByRole('menuitem', { name: /Duplicate/ }));
     expect(duplicate).not.toHaveBeenCalled();
     expect(
-      screen.getByText('Still loading your topics. Try again in a moment.'),
+      within(sop()).getByText('Still loading your topics. Try again in a moment.'),
     ).toBeInTheDocument();
   });
 
@@ -356,10 +497,10 @@ describe('SessionTypesScreen', () => {
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Duplicate/ }));
-    const note = await screen.findByText(/was added, hidden/);
+    const note = await within(sop()).findByText(/was added, hidden/);
     expect(note.textContent).not.toMatch(/^error/);
     await act(async () => failLive('a', false));
-    const failed = screen.getByText(/Couldn’t hide it\./);
+    const failed = within(sop()).getByText(/Couldn’t hide it\./);
     // The error icon leads an error message; a note has none.
     expect(failed.textContent).toMatch(/^error/);
   });

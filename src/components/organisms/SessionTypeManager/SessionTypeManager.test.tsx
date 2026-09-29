@@ -31,16 +31,17 @@ const setup = (list: Remote<OwnSessionType[]>, messages = {}) => {
   const onDelete = vi.fn();
   const onEdit = vi.fn();
   const onDuplicate = vi.fn();
-  render(
+  const onRestore = vi.fn();
+  const el = (l: Remote<OwnSessionType[]>) => (
     <SessionTypeManager
-      list={list}
+      list={l}
       messages={messages}
       onLiveChange={onLiveChange}
       onDelete={onDelete}
       createHref="/session-types/new"
       onEdit={onEdit}
       onFeature={vi.fn()}
-      onRestore={vi.fn()}
+      onRestore={onRestore}
       onDuplicate={onDuplicate}
       shareUrl={(t) => `https://x.test/mentors/m1?book=${t.id}`}
       templates={[
@@ -52,9 +53,17 @@ const setup = (list: Remote<OwnSessionType[]>, messages = {}) => {
           hint: '60 min · 2 questions',
         },
       ]}
-    />,
+    />
   );
-  return { onLiveChange, onDelete, onEdit, onDuplicate };
+  const { rerender } = render(el(list));
+  return {
+    onLiveChange,
+    onDelete,
+    onEdit,
+    onDuplicate,
+    onRestore,
+    relist: (l: Remote<OwnSessionType[]>) => rerender(el(l)),
+  };
 };
 
 describe('SessionTypeManager — the four states', () => {
@@ -126,9 +135,28 @@ describe('SessionTypeManager — the four states', () => {
 
   it('a switch that did not save says so on its row', () => {
     setup(remote({ data: [T] }), { a: 'Couldn’t hide it. Check your connection and try again.' });
-    // The row's own message (each row also has the copy link's polite status).
+    // Shown on the row; the page's LiveRegion reads it out.
     expect(
-      screen.getAllByRole('status').find((x) => x.textContent?.includes('Couldn’t hide it.')),
-    ).toBeTruthy();
+      within(screen.getByRole('article', { name: 'SOP draft review' })).getByText(
+        'Couldn’t hide it. Check your connection and try again.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('after "Keep it" works, focus moves to the switch it gives back (not the page)', async () => {
+    const pending = {
+      ...T,
+      isLive: false,
+      pendingDeletion: { deletesAfter: null, bookedCount: 1 },
+    };
+    const { onRestore, relist } = setup(remote({ data: [pending] }));
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'Keep it: SOP draft review' }));
+    expect(onRestore).toHaveBeenCalled();
+    relist(remote({ data: [{ ...pending, pendingDeletion: null }] }));
+    expect(
+      screen.getByRole('switch', { name: 'Visible to mentees: SOP draft review' }),
+    ).toHaveFocus();
   });
 });

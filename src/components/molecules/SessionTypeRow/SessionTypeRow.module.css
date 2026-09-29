@@ -132,10 +132,14 @@
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
 }
-@media (max-width: 767px) {
+/* A 45px target on touch (17px text + 14px each side), tablets included. */
+@media (max-width: 767px), (pointer: coarse) {
   .keep::after {
     content: '';
     position: absolute;
-    inset: -12px -8px;
+    inset: -14px -8px;
   }
+}
+.keep[aria-disabled='true'] {
+  cursor: progress;
 }

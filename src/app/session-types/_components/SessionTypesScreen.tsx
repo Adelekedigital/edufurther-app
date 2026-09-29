@@ -2,6 +2,7 @@
 
 import { useCallback, useState, type ReactNode } from 'react';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
+import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { SessionTypeManager } from '@/components/organisms/SessionTypeManager/SessionTypeManager';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
@@ -43,17 +44,26 @@ export function SessionTypesScreen() {
     viewer.kind === 'loading' ? { ...remote, isLoading: true } : remote;
 
   const [messages, setMessages] = useState<Record<string, string>>({});
+  const clearMessage = (id: string) => setMessages(({ [id]: _cleared, ...rest }) => rest);
+  // Everything a row says, and what an action did, is read out from one region.
+  const [announcement, setAnnouncement] = useState<{ text: string; id: number } | null>(null);
+  const announce = useCallback(
+    (text: string) => setAnnouncement((a) => ({ text, id: (a?.id ?? 0) + 1 })),
+    [],
+  );
   // Rows whose message is progress or success (not an error); a switch's
   // messages always clear this, so a failed save never looks like a note.
   const [infoIds, setInfoIds] = useState<string[]>([]);
-  const onLiveFailed = useCallback((id: string, live: boolean) => {
-    setInfoIds((ids) => ids.filter((x) => x !== id));
-    setMessages((m) => ({
-      ...m,
+  const onLiveFailed = useCallback(
+    (id: string, live: boolean) => {
       // PROVISIONAL copy — design request #2.
-      [id]: `Couldn’t ${live ? 'make it live' : 'hide it'}. Check your connection and try again.`,
-    }));
-  }, []);
+      const text = `Couldn’t ${live ? 'make it live' : 'hide it'}. Check your connection and try again.`;
+      setInfoIds((ids) => ids.filter((x) => x !== id));
+      setMessages((m) => ({ ...m, [id]: text }));
+      announce(text);
+    },
+    [announce],
+  );
   const setLive = useSetLive(onLiveFailed);
   const onLiveChange = (id: string, live: boolean) => {
     setMessages(({ [id]: _cleared, ...rest }) => rest);
@@ -77,6 +87,7 @@ export function SessionTypesScreen() {
   const dup = useDuplicateSessionType();
   const say = (id: string, text: string, info: boolean) => {
     setMessages((m) => ({ ...m, [id]: text }));
+    announce(text);
     setInfoIds((ids) =>
       info ? [...ids.filter((x) => x !== id), id] : ids.filter((x) => x !== id),
     );
@@ -125,15 +136,48 @@ export function SessionTypesScreen() {
     setConfirming(null);
     del.reset();
   };
+  // A removed row takes its buttons with it: focus the next row's "⋯", or Create.
+  const [focusAfterRemoval, setFocusAfterRemoval] = useState<{ menuOf: string } | 'create' | null>(
+    null,
+  );
+  const onFocused = useCallback(() => setFocusAfterRemoval(null), []);
+  const neighbour = (id: string): { menuOf: string } | 'create' => {
+    const rows = list.data ?? [];
+    const i = rows.findIndex((x) => x.id === id);
+    const next = rows[i + 1] ?? rows[i - 1];
+    return next ? { menuOf: next.id } : 'create';
+  };
+  const onDelete = (t: OwnSessionType) => {
+    const after = neighbour(t.id);
+    void del
+      .remove(t.id)
+      .then((r) => {
+        closeConfirm();
+        clearMessage(t.id);
+        if (r.kind === 'deleted') {
+          setFocusAfterRemoval(after);
+          announce(`“${t.name}” was deleted.`);
+        } else
+          announce(
+            r.deletesAfter
+              ? `Deletion scheduled for ${shortDate(r.deletesAfter)}. Hidden from mentees now.`
+              : 'Deletion scheduled. Hidden from mentees now.',
+          );
+      })
+      .catch(() => undefined);
+  };
 
   // Featured: one at a time; featuring another asks first (design `feature` confirm).
-  const setFeatured = useSetFeatured((id, featured) =>
+  // PROVISIONAL copy throughout — design request #10.
+  const HIDDEN_FEATURE = 'Show it to mentees first: a hidden session type can’t be featured.';
+  const setFeatured = useSetFeatured((id, featured, e) =>
     say(
       id,
-      // PROVISIONAL copy — design request #10.
-      featured
-        ? 'Couldn’t feature it. A hidden session type can’t be featured; show it first, or try again.'
-        : 'Couldn’t remove it from featured. Check your connection and try again.',
+      e.kind === 'offline'
+        ? `Couldn’t ${featured ? 'feature it' : 'remove it from featured'}. Check your connection and try again.`
+        : featured && e.kind === 'validation'
+          ? HIDDEN_FEATURE
+          : `Couldn’t ${featured ? 'feature it' : 'remove it from featured'}. Try again in a moment.`,
       false,
     ),
   );
@@ -142,15 +186,35 @@ export function SessionTypesScreen() {
     current: OwnSessionType;
   } | null>(null);
   const onFeature = (t: OwnSessionType, featured: boolean) => {
-    setMessages(({ [t.id]: _cleared, ...rest }) => rest);
+    clearMessage(t.id);
+    // Known to be refused: say so, rather than confirm and roll back.
+    if (featured && !t.isLive) return say(t.id, HIDDEN_FEATURE, false);
     const current = (list.data ?? []).find((x) => x.isFeatured && x.id !== t.id);
     if (featured && current) return setFeaturing({ type: t, current });
     setFeatured(t.id, featured);
   };
-  const restore = useRestoreSessionType((id) =>
-    // PROVISIONAL copy — design request #10.
-    say(id, 'Couldn’t keep it. Check your connection and try again.', false),
+  const restore = useRestoreSessionType((id, e) =>
+    say(
+      id,
+      e.kind === 'offline'
+        ? 'Couldn’t keep it. Check your connection and try again.'
+        : 'Couldn’t keep it. Try again in a moment.',
+      false,
+    ),
   );
+  const onRestore = (t: OwnSessionType) => {
+    if (restore.pendingId) return;
+    clearMessage(t.id);
+    const after = neighbour(t.id);
+    restore.restore(t.id, {
+      onSuccess: (r) => {
+        if (r === 'kept') return announce(`Kept. “${t.name}” is hidden until you show it.`);
+        // The hourly job got there first.
+        setFocusAfterRemoval(after);
+        announce(`“${t.name}” was already deleted.`);
+      },
+    });
+  };
 
   const body: ReactNode = mentorGate(viewer, isMentor, '/session-types') ?? (
     <SessionTypeManager
@@ -158,13 +222,16 @@ export function SessionTypesScreen() {
       messages={messages}
       infoIds={infoIds}
       onLiveChange={askVisibility}
-      onDelete={setConfirming}
+      onDelete={(t) => {
+        clearMessage(t.id);
+        setConfirming(t);
+      }}
       onEdit={(t) => router.push(`/session-types/${encodeURIComponent(t.id)}/edit`)}
       onFeature={onFeature}
-      onRestore={(t) => {
-        setMessages(({ [t.id]: _cleared, ...rest }) => rest);
-        restore.restore(t.id);
-      }}
+      onRestore={onRestore}
+      restoringId={restore.pendingId}
+      focusAfterRemoval={focusAfterRemoval}
+      onFocused={onFocused}
       onDuplicate={onDuplicate}
       shareUrl={shareUrl}
       createHref={CREATE_HREF}
@@ -204,14 +271,10 @@ export function SessionTypesScreen() {
           busy={del.isPending}
           error={del.error}
           onKeep={closeConfirm}
-          onDelete={() =>
-            void del
-              .remove(confirming.id)
-              .then(closeConfirm)
-              .catch(() => undefined)
-          }
+          onDelete={() => onDelete(confirming)}
         />
       )}
+      <LiveRegion message={announcement} />
     </AppShell>
   );
 }

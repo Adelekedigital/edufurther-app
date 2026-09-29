@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
 import { cx } from '@/lib/utils/cx';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
@@ -19,6 +19,8 @@ type RowMenuProps = {
   /** The button's name, e.g. "More actions for SOP draft review". */
   label: string;
   items: RowMenuItem[];
+  /** The "⋯" button, for a list that moves focus to it (after a row is removed). */
+  triggerRef?: RefObject<HTMLButtonElement | null>;
 };
 
 /**
@@ -27,7 +29,7 @@ type RowMenuProps = {
  * on the last; arrows, Home and End move; Escape and Tab close, Escape back
  * to the button; a click outside closes.
  */
-export function RowMenu({ label, items }: RowMenuProps) {
+export function RowMenu({ label, items, triggerRef }: RowMenuProps) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
   const button = useRef<HTMLButtonElement>(null);
@@ -88,7 +90,10 @@ export function RowMenu({ label, items }: RowMenuProps) {
   return (
     <span className={styles.wrap}>
       <button
-        ref={button}
+        ref={(el) => {
+          button.current = el;
+          if (triggerRef) triggerRef.current = el;
+        }}
         type="button"
         className={styles.trigger}
         aria-label={label}

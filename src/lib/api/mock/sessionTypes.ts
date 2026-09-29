@@ -294,7 +294,10 @@ export function mockCreateSessionType(
     requires_booking_confirmation: (body.requires_booking_confirmation as boolean | null) ?? null,
     ...extra,
     questions,
+    is_featured: false,
+    pending_deletion: null,
     bookedCount: 0,
+    // The body is untyped JSON; the cast covers its loose fields, not these.
   } as Stored);
   const result = { id, question_ids: questions.map((q) => q.id) };
   if (key) replays.set(key, { body: raw, result });
