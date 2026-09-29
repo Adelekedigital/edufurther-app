@@ -9,13 +9,15 @@ type StepBarsProps = {
   label: string;
   /** Phone sheet: 3px bars, 2px apart (BookingModal.dc.html). */
   thin?: boolean;
+  /** Unfilled bars in --ink-100 instead of the border tone (ReviewModal.dc.html). */
+  faint?: boolean;
 };
 
 /** Segmented progress across the top of a multi-step flow. */
-export function StepBars({ total, current, label, thin }: StepBarsProps) {
+export function StepBars({ total, current, label, thin, faint }: StepBarsProps) {
   return (
     <div
-      className={cx(styles.bars, thin && styles.thin)}
+      className={cx(styles.bars, thin && styles.thin, faint && styles.faint)}
       role="progressbar"
       aria-label={label}
       aria-valuemin={1}

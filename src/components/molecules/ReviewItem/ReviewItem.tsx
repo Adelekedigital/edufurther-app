@@ -1,4 +1,5 @@
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
+import { Button } from '@/components/atoms/Button/Button';
 import { Star } from '@/components/atoms/Star/Star';
 import { Tag } from '@/components/atoms/Tag/Tag';
 import { cx } from '@/lib/utils/cx';
@@ -9,6 +10,10 @@ type ReviewItemProps = {
   review: Review;
   /** Guests: three grey lines in place of the text (Mentor Profile.dc.html `redacted`). */
   redacted?: boolean;
+  /** The viewer's own review: a "Your review" tag (`r.isMine`). */
+  mine?: boolean;
+  /** Still editable: "Editable until 4:32 pm" + Edit, under the text (`r.canEdit`). */
+  edit?: { until: string; onEdit: () => void };
 };
 
 const DATE = new Intl.DateTimeFormat('en-US', {
@@ -19,7 +24,7 @@ const DATE = new Intl.DateTimeFormat('en-US', {
 });
 
 /** Mentor Profile.dc.html: one review in the Reviews tab. */
-export function ReviewItem({ review: r, redacted = false }: ReviewItemProps) {
+export function ReviewItem({ review: r, redacted = false, mine = false, edit }: ReviewItemProps) {
   return (
     <article className={styles.item}>
       <div className={styles.head}>
@@ -39,10 +44,11 @@ export function ReviewItem({ review: r, redacted = false }: ReviewItemProps) {
           </time>
         </div>
       </div>
-      {r.topic && (
-        // The design's tag row (it also carries "Editable until…" on your own review).
+      {(r.topic || mine) && (
+        // The design's tag row: the session's topic, and "Your review".
         <div className={styles.tags}>
-          <Tag tone="neutral">{r.topic}</Tag>
+          {r.topic && <Tag tone="neutral">{r.topic}</Tag>}
+          {mine && <Tag tone="mine">Your review</Tag>}
         </div>
       )}
       {redacted ? (
@@ -57,6 +63,14 @@ export function ReviewItem({ review: r, redacted = false }: ReviewItemProps) {
         </div>
       ) : (
         <p className={styles.text}>{r.text}</p>
+      )}
+      {edit && (
+        <div className={styles.editRow}>
+          <span>Editable until {edit.until}</span>
+          <Button variant="text" size="medium" className={styles.editButton} onClick={edit.onEdit}>
+            Edit<span className="sr-only"> your review</span>
+          </Button>
+        </div>
       )}
     </article>
   );

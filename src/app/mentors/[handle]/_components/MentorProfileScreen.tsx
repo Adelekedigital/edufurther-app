@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
@@ -14,6 +14,7 @@ import { FirstMenteesCard } from '@/components/organisms/FirstMenteesCard/FirstM
 import { BookingFlow } from '@/components/organisms/BookingFlow/BookingFlow';
 import { ProfileHeader } from '@/components/organisms/ProfileHeader/ProfileHeader';
 import { ProfileOverview } from '@/components/organisms/ProfileOverview/ProfileOverview';
+import { ReviewFlow } from '@/components/organisms/ReviewFlow/ReviewFlow';
 import { ReviewsList } from '@/components/organisms/ReviewsList/ReviewsList';
 import { ReviewsSummary } from '@/components/organisms/ReviewsSummary/ReviewsSummary';
 import { SessionTypeList } from '@/components/organisms/SessionTypeList/SessionTypeList';
@@ -31,11 +32,17 @@ import {
 } from '@/lib/api/data/booking';
 import { useMentorProfile } from '@/lib/api/data/profile';
 import { REVIEW_PAGE_SIZE, useMentorReviews, useReviewPrompt } from '@/lib/api/data/reviews';
+import {
+  useAuthoredReview,
+  useMyReview,
+  useReviewableSessions,
+  useSendReview,
+} from '@/lib/api/data/reviewWrite';
 import { useSimilarMentors } from '@/lib/api/data/similar';
-import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
+import { deviceTimeZone, formatTime, movedBetween } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
-import type { MentorProfile } from '@/types/mentor';
+import type { MentorProfile, ReviewAnswers } from '@/types/mentor';
 import styles from './MentorProfileScreen.module.css';
 
 type Tab = 'overview' | 'sessions' | 'reviews';
@@ -128,6 +135,61 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
     tab === 'reviews' && viewer.kind === 'member' && !isOwner && canBook,
   );
   const reviewsHref = p ? `${p.mentor.profileHref}?tab=reviews` : '';
+
+  // ---- writing a review (ReviewModal.dc.html) ---------------------------------
+  // Writing a review is a mentee's (mentors can't have had a session as one).
+  const asMember = tab === 'reviews' && viewer.kind === 'member' && !isOwner && canBook;
+  const myReview = useMyReview(p?.mentor.id ?? null, asMember);
+  const reviewable = useReviewableSessions(
+    p?.mentor.id ?? null,
+    asMember && reviewPrompt === 'due',
+  );
+  const sendReview = useSendReview();
+  const [reviewing, setReviewing] = useState<'new' | 'edit' | null>(null);
+  const mine = myReview.data;
+  // Edit pre-fills from the author's full review; the list row has only step 1.
+  const authored = useAuthoredReview(mine?.id ?? null, reviewing === 'edit');
+  // The form starts from, and saving compares against, ONE snapshot: a copy
+  // fetched after Edit opened (a cached one can predate the last save; review
+  // of #59). Taken while rendering, once, when that fresh copy lands.
+  const [editOpenedAt, setEditOpenedAt] = useState(0);
+  const [editBase, setEditBase] = useState<Partial<ReviewAnswers> | null>(null);
+  if (reviewing === 'edit' && !editBase && authored.fetchedAt >= editOpenedAt && authored.data) {
+    setEditBase(authored.data.answers);
+  }
+  const editFailed =
+    reviewing === 'edit' && !editBase && authored.failedAt >= editOpenedAt && !!authored.error;
+  // "Still editable" is decided now, not when the review was fetched, and the
+  // page re-renders at the deadline so Edit goes away on its own.
+  const [now, setNow] = useState(() => Date.now());
+  const until = mine?.editableUntil ? Date.parse(mine.editableUntil) : 0;
+  const mineOpen = until > now;
+  useEffect(() => {
+    if (!mineOpen) return;
+    const t = setTimeout(() => setNow(Date.now()), until - Date.now() + 50);
+    return () => clearTimeout(t);
+  }, [mineOpen, until]);
+  const mineUntil =
+    mineOpen && mine?.editableUntil ? formatTime(mine.editableUntil, timeZone) : null;
+  const canWrite = !mineOpen && reviewPrompt === 'due' && !!reviewable.data?.length;
+  const openReview = (mode: 'new' | 'edit') => {
+    sendReview.reset();
+    setEditBase(null);
+    setEditOpenedAt(Date.now());
+    setReviewing(mode);
+  };
+  const closeReview = () => {
+    setReviewing(null);
+    setEditBase(null);
+    sendReview.reset();
+  };
+  // Mentor Profile.dc.html `scrollToBook`: the "no session yet" note's Book
+  // takes you to the booking card rather than opening booking itself.
+  const scrollToBook = () => {
+    const card = document.getElementById('profile-book');
+    card?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    card?.querySelector<HTMLElement>('button, a[href]')?.focus({ preventScroll: true });
+  };
 
   // Similar mentors: the Overview aside, for mentees and guests. Not the mentor
   // themselves, and not other mentors (product 2026-09-28: it's a mentee-facing
@@ -283,7 +345,23 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 ) : tab === 'reviews' ? (
                   <>
                     <ReviewsSummary summary={p.reviews} firstName={p.mentor.firstName} />
-                    {reviewPrompt === 'none' ? (
+                    {mineOpen ? (
+                      <ReviewNote
+                        tone="success"
+                        icon="check_circle"
+                        title="Thanks, your review is live"
+                        body={`You can edit it until ${mineUntil}. After that it’s locked, and your next session can add a new one.`}
+                        action={
+                          <Button
+                            variant="secondary-outlined"
+                            size="medium"
+                            onClick={() => openReview('edit')}
+                          >
+                            Edit review
+                          </Button>
+                        }
+                      />
+                    ) : reviewPrompt === 'none' ? (
                       <ReviewNote
                         tone="neutral"
                         icon="rate_review"
@@ -294,7 +372,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                             <Button
                               variant="secondary-outlined"
                               size="medium"
-                              onClick={() => openBooking()}
+                              onClick={scrollToBook}
                             >
                               Book a session
                             </Button>
@@ -302,12 +380,18 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                         }
                       />
                     ) : reviewPrompt === 'due' ? (
-                      // No "Write a review" yet: writing a review isn't built.
                       <ReviewNote
                         tone="info"
                         icon="star"
                         title={`How was your session with ${p.mentor.firstName}?`}
                         body="Your review helps other mentees choose, and takes about a minute."
+                        action={
+                          canWrite ? (
+                            <Button size="medium" onClick={() => openReview('new')}>
+                              Write a review
+                            </Button>
+                          ) : undefined
+                        }
                       />
                     ) : null}
                     <ReviewsList
@@ -329,6 +413,16 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                       filters={p.sessionTypes.map((t) => ({ id: t.id, label: t.name }))}
                       filter={reviewFilter}
                       onFilter={setReviewFilter}
+                      mine={
+                        mine
+                          ? {
+                              id: mine.id,
+                              edit: mineUntil
+                                ? { until: mineUntil, onEdit: () => openReview('edit') }
+                                : null,
+                            }
+                          : null
+                      }
                       gate={
                         isGuest
                           ? {
@@ -360,12 +454,14 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                   <aside className={styles.aside} aria-label={asideLabel}>
                     {!isPhone && firstMentees}
                     {mayBook && (
-                      <BookSessionCard
-                        sessionTypes={p.sessionTypes}
-                        onBook={openBooking}
-                        onCompare={() => setTab('sessions')}
-                        bookBlocked={bookBlocked}
-                      />
+                      <div id="profile-book" className={styles.scrollTarget}>
+                        <BookSessionCard
+                          sessionTypes={p.sessionTypes}
+                          onBook={openBooking}
+                          onCompare={() => setTab('sessions')}
+                          bookBlocked={bookBlocked}
+                        />
+                      </div>
                     )}
                     {tab === 'overview' && <TrackRecordCard profile={p} />}
                     {similarShown && (
@@ -410,6 +506,68 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               onClose={closeBooking}
               sheet={shell.sheet}
               footer={shell.footer}
+            >
+              {body}
+            </ModalShell>
+          )}
+        />
+      )}
+
+      {reviewing && p && member && (
+        <ReviewFlow
+          // Remount when the edit snapshot arrives, so the form starts from it.
+          key={reviewing === 'edit' ? (editBase ? 'edit-ready' : 'edit-loading') : 'new'}
+          mode={reviewing}
+          loading={reviewing === 'edit' && !editBase && !editFailed}
+          loadError={
+            editFailed
+              ? {
+                  message: 'We couldn’t load your review. Check your connection and try again.',
+                  onRetry: () => {
+                    setEditOpenedAt(Date.now());
+                    authored.retry();
+                  },
+                }
+              : null
+          }
+          mentorFirstName={p.mentor.firstName}
+          sessions={reviewable.data ?? []}
+          initial={reviewing === 'edit' ? (editBase ?? undefined) : undefined}
+          editableUntil={sendReview.result?.editableUntil ?? mine?.editableUntil ?? null}
+          author={{ name: member.firstName, initials: member.initial, institution: null }}
+          timeZone={timeZone}
+          onSend={(answers, sessionId) =>
+            reviewing === 'edit' && mine
+              ? sendReview.send({
+                  mode: 'edit',
+                  mentorId: p.mentor.id,
+                  reviewId: mine.id,
+                  before: editBase ?? mine.answers,
+                  answers,
+                })
+              : sessionId &&
+                sendReview.send({ mode: 'new', mentorId: p.mentor.id, sessionId, answers })
+          }
+          pending={sendReview.isPending}
+          error={sendReview.error?.message ?? null}
+          done={!!sendReview.result}
+          onClose={closeReview}
+          onBookAgain={
+            mayBook && hasSessions && !bookBlocked
+              ? () => {
+                  closeReview();
+                  openBooking();
+                }
+              : undefined
+          }
+          renderShell={(shell, body) => (
+            <ModalShell
+              title={shell.title}
+              subtitle={shell.subtitle}
+              icon={shell.icon}
+              tone={shell.tone}
+              size="md"
+              onClose={closeReview}
             >
               {body}
             </ModalShell>

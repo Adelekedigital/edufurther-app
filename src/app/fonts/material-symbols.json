@@ -68,6 +68,9 @@
     "school",
     "search",
     "sell",
+    "sentiment_dissatisfied",
+    "sentiment_neutral",
+    "sentiment_satisfied",
     "settings",
     "share",
     "short_text",
@@ -83,5 +86,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "087ca85f5e2f3e4883989acfc08de1f6b5d0f7ff5b42ceeb80db5c439f8c2264"
+  "sha256": "1a9983114b5d8ba6f4274e6ae73b6b6eb08354f9836937ab2aa3f543e8a52323"
 }

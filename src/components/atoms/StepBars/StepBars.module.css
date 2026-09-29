@@ -21,3 +21,6 @@
 .thin .off {
   height: 3px;
 }
+.faint .off {
+  background: var(--ink-100);
+}

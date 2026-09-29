@@ -1,9 +1,16 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile, reviews } from '@/components/organisms/ProfileHeader/profile.fixture';
 import { similarMentors } from '@/components/organisms/SimilarMentorsCard/similar.fixture';
 import type { MentorReviewsResult } from '@/lib/api/data/reviews';
-import type { MentorProfile, Remote, ReviewPrompt, Viewer } from '@/types/mentor';
+import type {
+  MentorProfile,
+  MyReview,
+  Remote,
+  ReviewableSession,
+  ReviewPrompt,
+  Viewer,
+} from '@/types/mentor';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
 const replace = vi.fn();
@@ -65,6 +72,27 @@ vi.mock('@/lib/api/data/reviews', () => ({
   // Like the real hook: nothing when the screen doesn't ask.
   useReviewPrompt: (_id: string | null, enabled: boolean) => (enabled ? reviewPrompt : null),
 }));
+// Per test: the viewer's own review, what they can review, and sending.
+let myReviewRemote: Remote<MyReview | null>;
+// The author's full review, with when it was fetched (the screen insists on a
+// copy fetched after Edit opened).
+let authoredRemote: Remote<MyReview> & { fetchedAt: number; failedAt: number };
+let reviewableRemote: Remote<ReviewableSession[]>;
+const sendReview = vi.fn();
+let sendState: { isPending: boolean; result: MyReview | null; error: { message: string } | null };
+vi.mock('@/lib/api/data/reviewWrite', () => ({
+  useMyReview: () => myReviewRemote,
+  useAuthoredReview: () => authoredRemote,
+  useReviewableSessions: () => reviewableRemote,
+  useSendReview: () => ({ send: sendReview, reset: vi.fn(), ...sendState }),
+}));
+const remote = <T,>(data: T): Remote<T> => ({
+  data,
+  isLoading: false,
+  error: null,
+  retry: vi.fn(),
+});
+
 // Per test: the Similar mentors card's list, and whether it was asked for.
 let similarRemote: Remote<typeof similarMentors>;
 const similarArgs = vi.fn();
@@ -127,6 +155,16 @@ beforeEach(() => {
   reviewsArgs.mockReset();
   similarRemote = { data: similarMentors, isLoading: false, error: null, retry: vi.fn() };
   similarArgs.mockReset();
+  myReviewRemote = remote(null);
+  authoredRemote = {
+    ...remote<MyReview>(null as unknown as MyReview),
+    data: null,
+    fetchedAt: 0,
+    failedAt: 0,
+  };
+  reviewableRemote = remote([]);
+  sendReview.mockReset();
+  sendState = { isPending: false, result: null, error: null };
   sessionTypesRemote = idle;
   slotsRemote = idle;
   replace.mockReset();
@@ -607,5 +645,234 @@ describe('MentorProfileScreen — a mentor viewing another mentor (mentors can�
     expect(
       screen.getByRole('heading', { name: fullProfile.sessionTypes[0]!.name }),
     ).toBeInTheDocument();
+  });
+});
+
+describe('MentorProfileScreen — writing a review', () => {
+  const due = () => {
+    search = new URLSearchParams('tab=reviews');
+    profile = state({ data: fullProfile });
+    reviewPrompt = 'due';
+    reviewableRemote = remote([
+      { id: 's1', startsAt: '2026-09-19T15:00:00Z', typeName: 'SOP draft review' },
+    ]);
+  };
+
+  it(
+    '"Write a review" opens the flow; it sends once, with the session',
+    { timeout: 15_000 },
+    async () => {
+      const user = userEvent.setup();
+      due();
+      render(<MentorProfileScreen handle="gbenga" />);
+      await user.click(screen.getByRole('button', { name: 'Write a review' }));
+      const dialog = screen.getByRole('dialog', { name: 'How was your session with Gbenga?' });
+      expect(within(dialog).getByText('Pick a rating to continue.')).toBeInTheDocument();
+      await user.click(within(dialog).getByRole('radio', { name: '5 stars, Excellent' }));
+      await user.click(within(dialog).getByRole('textbox'));
+      await user.paste('We rewrote my SOP opening together and it finally reads well.');
+      await user.click(within(dialog).getByRole('button', { name: 'Continue' }));
+      for (const q of [
+        'How clearly did Gbenga communicate ideas and advice?',
+        'How knowledgeable was Gbenga on the topics you discussed?',
+        'How supported did you feel during the session?',
+        'How practical were the suggestions you received?',
+      ]) {
+        await user.click(
+          within(screen.getByRole('radiogroup', { name: q })).getByRole('radio', { name: 'Great' }),
+        );
+      }
+      await user.click(screen.getByRole('button', { name: 'Continue' }));
+      await user.click(
+        within(
+          screen.getByRole('radiogroup', {
+            name: 'How much did this session move you toward your study abroad goals?',
+          }),
+        ).getByRole('radio', {
+          name: '5',
+        }),
+      );
+      await user.click(
+        within(
+          screen.getByRole('radiogroup', {
+            name: 'How likely are you to recommend Gbenga to a friend?',
+          }),
+        ).getByRole('radio', {
+          name: '10',
+        }),
+      );
+      await user.dblClick(screen.getByRole('button', { name: 'Submit review' }));
+      expect(sendReview).toHaveBeenCalledTimes(1);
+      expect(sendReview.mock.calls[0]![0]).toMatchObject({
+        mode: 'new',
+        mentorId: 'm1',
+        sessionId: 's1',
+        answers: { overall: 5, communication: 'great', value: 5, recommend: 10 },
+      });
+    },
+  );
+
+  it('no "Write a review" when there is no session left to review', () => {
+    due();
+    reviewableRemote = remote([]);
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByText('How was your session with Gbenga?')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Write a review' })).not.toBeInTheDocument();
+  });
+
+  it(
+    'after submitting: "Thanks, your review is live", and the review can be edited',
+    { timeout: 15_000 },
+    async () => {
+      const user = userEvent.setup();
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-09-29T12:00:00Z'));
+      search = new URLSearchParams('tab=reviews');
+      profile = state({ data: fullProfile });
+      myReviewRemote = remote({
+        id: 'r7',
+        createdAt: '2026-09-29T11:55:00Z',
+        editableUntil: '2026-09-29T12:05:00Z',
+        answers: { overall: 4, text: 'Practical, direct feedback on my SOP draft.' },
+      });
+      reviewsRemote = reviewsState({ reviews });
+      render(<MentorProfileScreen handle="gbenga" />);
+      expect(screen.getByText('Thanks, your review is live')).toBeInTheDocument();
+      // The list marks the viewer's own review (r7) as editable.
+      expect(screen.getByText(/^Editable until/)).toBeInTheDocument();
+      expect(screen.getByText('Your review')).toBeInTheDocument();
+      // A copy fetched after Edit opens (the screen won't start from an older one).
+      authoredRemote = {
+        ...remote(myReviewRemote.data!),
+        fetchedAt: Number.MAX_SAFE_INTEGER,
+        failedAt: 0,
+      };
+      await user.click(screen.getByRole('button', { name: 'Edit review' }));
+      expect(screen.getByRole('dialog', { name: 'Edit your review' })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: '4 stars, Great' })).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
+      vi.useRealTimers();
+    },
+  );
+
+  it('the "no session yet" note\'s Book scrolls to the booking card (design change)', async () => {
+    const user = userEvent.setup();
+    search = new URLSearchParams('tab=reviews');
+    profile = state({ data: fullProfile });
+    reviewPrompt = 'none';
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    render(<MentorProfileScreen handle="gbenga" />);
+    const note = screen
+      .getByText('You can review Gbenga after your first session')
+      .closest('div')!.parentElement!;
+    await user.click(within(note).getByRole('button', { name: 'Book a session' }));
+    expect(scroll).toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('MentorProfileScreen — editing a review (review of #59)', () => {
+  const T0 = new Date('2026-09-29T12:00:00Z');
+  const open = (over: Partial<MyReview['answers']> = {}): MyReview => ({
+    id: 'r7',
+    createdAt: '2026-09-29T11:58:00Z',
+    editableUntil: '2026-09-29T12:08:00Z',
+    answers: { overall: 4, text: 'Practical, direct feedback on my SOP draft.', ...over },
+  });
+  const full = (overall: number): MyReview => ({
+    ...open(),
+    answers: {
+      overall,
+      text: 'Practical, direct feedback on my SOP draft.',
+      communication: 'great',
+      knowledge: 'great',
+      support: 'okay',
+      practicality: 'great',
+      value: 4,
+      recommend: 9,
+      platformNote: '',
+    },
+  });
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(T0);
+    search = new URLSearchParams('tab=reviews');
+    profile = state({ data: fullProfile });
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('never starts the form from a stale cached copy; the fresh one seeds it and is what saving compares to', async () => {
+    const user = userEvent.setup();
+    myReviewRemote = remote(open());
+    // A cached copy from before the last save (4 stars), fetched before Edit opened.
+    authoredRemote = { ...remote(full(4)), fetchedAt: T0.getTime() - 60_000, failedAt: 0 };
+    const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: 'Edit review' }));
+    expect(screen.getByText('Loading your review')).toBeInTheDocument();
+    expect(screen.queryByRole('radiogroup', { name: /rate your time/ })).not.toBeInTheDocument();
+    // The fresh copy lands: 2 stars (the last save).
+    authoredRemote = { ...remote(full(2)), fetchedAt: T0.getTime() + 1, failedAt: 0 };
+    rerender(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('radio', { name: '2 stars, Fair' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(sendReview.mock.calls[0]![0]).toMatchObject({
+      mode: 'edit',
+      before: { overall: 2 },
+      answers: { overall: 2 },
+    });
+  });
+
+  it('a failed load says so and retries', async () => {
+    const user = userEvent.setup();
+    myReviewRemote = remote(open());
+    const retry = vi.fn();
+    authoredRemote = {
+      ...remote<MyReview>(null as unknown as MyReview),
+      data: null,
+      error: { kind: 'server', message: 'x' },
+      retry,
+      fetchedAt: 0,
+      failedAt: 0,
+    };
+    const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: 'Edit review' }));
+    authoredRemote = { ...authoredRemote, failedAt: T0.getTime() + 1 };
+    rerender(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('alert')).toHaveTextContent('We couldn’t load your review');
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(retry).toHaveBeenCalled();
+  });
+
+  it('the "live" note and Edit go away on their own at the deadline', () => {
+    // Fake the timer too: the page re-renders at the deadline.
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
+    vi.setSystemTime(T0);
+    myReviewRemote = remote(open());
+    reviewsRemote = reviewsState({ reviews });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByText('Thanks, your review is live')).toBeInTheDocument();
+    act(() => {
+      vi.advanceTimersByTime(8 * 60_000 + 100);
+    });
+    expect(screen.queryByText('Thanks, your review is live')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Edit/ })).not.toBeInTheDocument();
+  });
+
+  it('once the window has shut, no "live" note and no Edit, whatever was fetched', () => {
+    vi.setSystemTime(new Date('2026-09-29T12:09:00Z'));
+    myReviewRemote = remote(open());
+    reviewsRemote = reviewsState({ reviews });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByText('Thanks, your review is live')).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Editable until/)).not.toBeInTheDocument();
+    expect(screen.getByText('Your review')).toBeInTheDocument();
   });
 });

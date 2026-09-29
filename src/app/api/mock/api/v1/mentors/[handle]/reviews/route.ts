@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { components } from '@/lib/api/generated/schema';
 import { FEATURED, MENTORS } from '@/lib/api/mock/fixtures';
+import { MOCK_SESSION_TYPES } from '@/lib/api/mock/availability';
 import { mockReviews } from '@/lib/api/mock/reviews';
+import { mineFor } from '@/lib/api/mock/reviewStore';
 
 type Page = components['schemas']['Page_MentorReviewRead_'];
 
@@ -21,7 +23,28 @@ export async function GET(req: Request, ctx: { params: Promise<{ handle: string 
   const limit = Math.min(50, Math.max(1, Number(q.get('limit')) || 10));
   const from = Number(q.get('cursor') ?? 0);
   if (!Number.isInteger(from) || from < 0) return new NextResponse(null, { status: 422 });
-  const all = mockReviews(m.id).filter((r) => !type || r.session_type?.id === type);
+  // The viewer's own review (written through the mock) leads the list.
+  const own = mineFor(m.id);
+  const ownType = own
+    ? MOCK_SESSION_TYPES[Number(own.session_id.split('-s').pop()) % MOCK_SESSION_TYPES.length]!
+    : null;
+  const mine = own
+    ? [
+        {
+          id: own.id,
+          created_at: own.created_at,
+          public_review: own.public_review,
+          session_value: own.overall_rating,
+          overall_rating: own.overall_rating,
+          author_first_name: 'Esther',
+          author_last_initial: 'M',
+          author_institution: 'University of Lagos',
+          author_deleted: false,
+          session_type: ownType ? { id: ownType.id, name: ownType.name } : null,
+        },
+      ]
+    : [];
+  const all = [...mine, ...mockReviews(m.id)].filter((r) => !type || r.session_type?.id === type);
   const body: Page = {
     data: all.slice(from, from + limit),
     next_cursor: from + limit < all.length ? String(from + limit) : null,
