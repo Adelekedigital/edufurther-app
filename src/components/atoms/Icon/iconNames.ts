@@ -6,6 +6,7 @@
  * CI's `pnpm check:icons` fails until you do.
  */
 export const ICON_NAMES = [
+  'account_box',
   'add',
   'alternate_email',
   'arrow_back',

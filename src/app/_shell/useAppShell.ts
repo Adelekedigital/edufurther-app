@@ -29,18 +29,26 @@ export function chromeFor(viewer: Viewer): ShellChrome {
   return 'pending';
 }
 
+type Member = Extract<Viewer, { kind: 'member' }>;
+
 /**
- * Everything a screen passes to AppShell about the viewer, shared so Explore
- * and Mentor Profile can't drift (AppShell.dc.html account menu, mentee
- * variant). "View profile" and "Feedback" have no destination yet, so they wait
- * — design-divergence.md. Notifications likewise (no backend).
+ * The account menu (AppShell.dc.html `menuItems`), in the design's order:
+ * View profile, Find my mentor matches, Logout. "View profile" is the viewer's
+ * own Mentor Profile, so mentors only: mentees have no profile page yet (#50).
+ * "Feedback" has no destination yet (#51).
  */
-export function useAppShell() {
-  const viewer = useViewer();
-  const signOut = useSignOut();
-  const chrome = chromeFor(viewer);
-  const member = viewer.kind === 'member' ? viewer : null;
-  const items: AccountMenuItem[] = [
+export function accountItems(member: Member | null, signOut: () => void): AccountMenuItem[] {
+  return [
+    ...(member?.isMentor
+      ? [
+          {
+            key: 'profile',
+            label: 'View profile',
+            icon: 'account_box' as const,
+            href: `/mentors/${encodeURIComponent(member.id)}`,
+          },
+        ]
+      : []),
     // Only once we know the viewer is a mentee (or a new member, not a mentor).
     ...(MATCH_CALL_URL && member && (member.isMentee || !member.isApprovedMentor)
       ? [
@@ -58,9 +66,21 @@ export function useAppShell() {
       label: 'Logout',
       icon: 'logout',
       danger: true,
-      onSelect: () => void signOut(),
+      onSelect: signOut,
     },
   ];
+}
+
+/**
+ * Everything a screen passes to AppShell about the viewer, shared so Explore
+ * and Mentor Profile can't drift. Notifications wait (no backend).
+ */
+export function useAppShell() {
+  const viewer = useViewer();
+  const signOut = useSignOut();
+  const chrome = chromeFor(viewer);
+  const member = viewer.kind === 'member' ? viewer : null;
+  const items = accountItems(member, () => void signOut());
   return {
     viewer,
     member,

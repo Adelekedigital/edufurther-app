@@ -1,5 +1,6 @@
 {
   "names": [
+    "account_box",
     "add",
     "alternate_email",
     "arrow_back",
@@ -82,5 +83,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "6250db5fcb02f5b3a638eefdf16747378fb4a3e475b382d3f258c7a8008b20ea"
+  "sha256": "087ca85f5e2f3e4883989acfc08de1f6b5d0f7ff5b42ceeb80db5c439f8c2264"
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
@@ -82,7 +83,21 @@ export function AccountMenu({ initial, items }: AccountMenuProps) {
                 {it.label}
               </>
             );
-            return it.href !== undefined ? (
+            // In-app links go through next/link (no full reload: the session and
+            // cache survive, review of #61); external ones open a new tab.
+            return it.href !== undefined && !it.external ? (
+              <Link
+                key={it.key}
+                ref={ref}
+                role="menuitem"
+                tabIndex={-1}
+                className={cls}
+                href={it.href}
+                onClick={() => close(false)}
+              >
+                {body}
+              </Link>
+            ) : it.href !== undefined ? (
               <a
                 key={it.key}
                 ref={ref}
@@ -90,7 +105,8 @@ export function AccountMenu({ initial, items }: AccountMenuProps) {
                 tabIndex={-1}
                 className={cls}
                 href={it.href}
-                {...(it.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                target="_blank"
+                rel="noopener noreferrer"
                 onClick={() => close(false)}
               >
                 {body}

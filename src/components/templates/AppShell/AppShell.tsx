@@ -236,11 +236,22 @@ export function AppShell({
               ))}
               {account?.items.map((it) => (
                 <li key={it.key}>
-                  {it.href !== undefined ? (
+                  {it.href !== undefined && !it.external ? (
+                    // In-app: next/link, no full reload (review of #61).
+                    <Link
+                      href={it.href}
+                      className={cx(styles.sheetItem, it.danger && styles.sheetDanger)}
+                      onClick={() => setMoreOpen(false)}
+                    >
+                      <Icon name={it.icon} size={20} />
+                      {it.label}
+                    </Link>
+                  ) : it.href !== undefined ? (
                     <a
                       href={it.href}
                       className={cx(styles.sheetItem, it.danger && styles.sheetDanger)}
-                      {...(it.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       onClick={() => setMoreOpen(false)}
                     >
                       <Icon name={it.icon} size={20} />
