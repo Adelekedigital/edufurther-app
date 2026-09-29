@@ -8,15 +8,21 @@ type Page = components['schemas']['Page_SimilarMentorRead_'];
 /**
  * MOCK of GET /api/v1/mentors/{handle}/similar → Page[SimilarMentorRead]:
  * other mentors sharing an offering, each with the one they share. Every
- * seventh mentor has none, so the hidden card has data to render.
+ * seventh mentor has none, so the hidden card has data to render. Like the
+ * backend: never a 404 (an unknown handle is an empty list), at most three.
+ * `hidden-mentor` stands for a mentor whose profile 404s (pending, unlisted or
+ * unbookable) but who shares offerings, for the "isn't available" page.
  * ENABLE_MOCK_API=1 only.
  */
+/** A hidden mentor's handle: /mentors/hidden-mentor 404s (no fixture), this answers. */
+const HIDDEN = 'hidden-mentor';
+
 export async function GET(_req: Request, ctx: { params: Promise<{ handle: string }> }) {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
   const { handle } = await ctx.params;
   const all = [FEATURED, ...MENTORS];
-  const me = all.find((m) => m.id === handle || m.slug === handle);
-  if (!me) return new NextResponse(null, { status: 404 });
+  const me = handle === HIDDEN ? all[1] : all.find((m) => m.id === handle || m.slug === handle);
+  if (!me) return NextResponse.json({ data: [], next_cursor: null } satisfies Page);
   await new Promise((r) => setTimeout(r, 300));
 
   const { i } = mockProfileIndex(me.id);
@@ -30,7 +36,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
       const shared = (m.offerings ?? []).find((o) => mine.has(o.slug));
       return shared ? [{ m, shared }] : [];
     })
-    .slice(0, 4)
+    .slice(0, 3)
     .map(({ m, shared }) => ({
       ...m,
       next_available_at: mockNextAvailableAt(m.id),

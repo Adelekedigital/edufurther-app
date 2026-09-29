@@ -11,7 +11,7 @@ import type {
   ReviewPrompt,
   Viewer,
 } from '@/types/mentor';
-import { MentorProfileScreen } from './MentorProfileScreen';
+import { MentorProfileScreen, suggestionsLine } from './MentorProfileScreen';
 
 const replace = vi.fn();
 let search = new URLSearchParams();
@@ -137,8 +137,12 @@ const idle = { data: null, isLoading: false, error: null, retry: vi.fn() };
 // Per test: what the booking modal's queries return.
 let sessionTypesRemote: unknown = idle;
 let slotsRemote: unknown = idle;
+const sessionTypesArgs = vi.fn();
 vi.mock('@/lib/api/data/booking', () => ({
-  useSessionTypes: () => sessionTypesRemote,
+  useSessionTypes: (...a: unknown[]) => {
+    sessionTypesArgs(...a);
+    return sessionTypesRemote;
+  },
   useSlots: () => slotsRemote,
   useUploadIntakeFile: () => vi.fn(),
   useRequestBooking: () => ({
@@ -207,13 +211,112 @@ describe('MentorProfileScreen — the four states', () => {
     expect(retry).toHaveBeenCalled();
   });
 
-  it('not found (or not public) sends people back to Explore', () => {
+  it('not found with nobody to suggest sends people back to Explore', () => {
     profile = state({ notFound: true });
+    similarRemote = { data: [], isLoading: false, error: null, retry: vi.fn() };
     render(<MentorProfileScreen handle="nobody" />);
-    expect(screen.getByText('This mentor profile isn’t available')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'This mentor profile isn’t available' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Explore mentors' })).toHaveAttribute(
       'href',
       '/explore',
+    );
+    expect(screen.queryByRole('heading', { name: 'Mentors with similar expertise' })).toBeNull();
+  });
+
+  it('not found, and the suggestions failed: the same way back, no section', () => {
+    profile = state({ notFound: true });
+    similarRemote = {
+      data: null,
+      isLoading: false,
+      error: { kind: 'server', message: 'x' },
+      retry: vi.fn(),
+    };
+    render(<MentorProfileScreen handle="nobody" />);
+    expect(screen.getByRole('link', { name: 'Explore mentors' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Mentors with similar expertise' })).toBeNull();
+  });
+
+  it('not found suggests mentors with similar expertise (#38)', () => {
+    profile = state({ notFound: true });
+    render(<MentorProfileScreen handle="hidden-mentor" />);
+    expect(similarArgs).toHaveBeenLastCalledWith('hidden-mentor', true);
+    // The page's title; the section and its cards sit under it (review of #69).
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'This mentor profile isn’t available' }),
+    ).toBeInTheDocument();
+    const section = screen.getByRole('region', { name: 'Mentors with similar expertise' });
+    expect(section).toHaveTextContent(
+      'They help with statement of purpose, scholarships & funding, and visa and interview, and are taking bookings.',
+    );
+    expect(within(section).getAllByRole('article')).toHaveLength(similarMentors.length);
+    expect(within(section).getByRole('link', { name: 'Explore all mentors' })).toHaveAttribute(
+      'href',
+      '/explore',
+    );
+    // The big button gives way to the section's.
+    expect(screen.queryByRole('link', { name: 'Explore mentors' })).toBeNull();
+  });
+
+  it('while the suggestions load, their place is held', () => {
+    profile = state({ notFound: true });
+    similarRemote = { data: null, isLoading: true, error: null, retry: vi.fn() };
+    render(<MentorProfileScreen handle="hidden-mentor" />);
+    const section = screen.getByRole('region', { name: 'Mentors with similar expertise' });
+    expect(section).toHaveAttribute('aria-busy', 'true');
+    expect(within(section).queryAllByRole('article')).toHaveLength(0);
+  });
+
+  it('a suggested mentor books in the same booking modal, for that mentor (review of #69)', async () => {
+    const user = userEvent.setup();
+    profile = state({ notFound: true });
+    render(<MentorProfileScreen handle="hidden-mentor" />);
+    await user.click(screen.getByRole('button', { name: 'Book session with Oluwakemi' }));
+    const dialog = screen.getByRole('dialog');
+    expect(sessionTypesArgs).toHaveBeenLastCalledWith('s1');
+    expect(dialog).toHaveTextContent('Oluwakemi Olayinka');
+    // Another mentor's page is worth a link (the profile's own mentor gets none).
+    expect(within(dialog).getByRole('link', { name: /View profile/ })).toHaveAttribute(
+      'href',
+      '/mentors/oluwakemi-olayinka',
+    );
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(sessionTypesArgs).toHaveBeenLastCalledWith(null);
+    // Another suggestion: the booking follows.
+    await user.click(screen.getByRole('button', { name: 'See availability' }));
+    expect(sessionTypesArgs).toHaveBeenLastCalledWith('s2');
+    expect(screen.getByRole('dialog')).toHaveTextContent('Muhammad Kabir Musa');
+  });
+
+  it('a suggested booking closes, and stops fetching, if the viewer turns out to be a mentor', async () => {
+    const user = userEvent.setup();
+    profile = state({ notFound: true });
+    const { rerender } = render(<MentorProfileScreen handle="hidden-mentor" />);
+    await user.click(screen.getByRole('button', { name: 'Book session with Oluwakemi' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    viewerIsMentor = true;
+    rerender(<MentorProfileScreen handle="hidden-mentor" />);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(sessionTypesArgs).toHaveBeenLastCalledWith(null);
+  });
+
+  it('a found profile asks for no suggestions when a mentor is looking', () => {
+    viewerIsMentor = true;
+    profile = state({ data: fullProfile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(similarArgs).toHaveBeenLastCalledWith('gbenga', false);
+  });
+
+  it('a mentor looking sees the suggestions with View profile, not Book', () => {
+    viewerIsMentor = true;
+    profile = state({ notFound: true });
+    render(<MentorProfileScreen handle="hidden-mentor" />);
+    const section = screen.getByRole('region', { name: 'Mentors with similar expertise' });
+    expect(within(section).queryByRole('button', { name: /^Book/ })).toBeNull();
+    expect(within(section).getAllByRole('link', { name: /^View profile/ })).toHaveLength(
+      similarMentors.length,
     );
   });
 
@@ -910,5 +1013,30 @@ describe('MentorProfileScreen — editing a review (review of #59)', () => {
     expect(screen.queryByText('Thanks, your review is live')).not.toBeInTheDocument();
     expect(screen.queryByText(/^Editable until/)).not.toBeInTheDocument();
     expect(screen.getByText('Your review')).toBeInTheDocument();
+  });
+});
+
+describe('suggestionsLine', () => {
+  const at = (n: number) => similarMentors.slice(0, n);
+  it('names up to three shared topics, commas keeping each whole', () => {
+    expect(suggestionsLine(at(0))).toBe('They are taking bookings.');
+    expect(suggestionsLine(at(1))).toBe(
+      'They help with statement of purpose, and are taking bookings.',
+    );
+    expect(suggestionsLine(at(2))).toBe(
+      'They help with statement of purpose, and scholarships & funding, and are taking bookings.',
+    );
+    expect(suggestionsLine(at(3))).toBe(
+      'They help with statement of purpose, scholarships & funding, and visa and interview, and are taking bookings.',
+    );
+  });
+  it('says a shared topic once', () => {
+    const twice = [
+      similarMentors[0]!,
+      { ...similarMentors[1]!, sharedTopic: 'Statement of purpose' },
+    ];
+    expect(suggestionsLine(twice)).toBe(
+      'They help with statement of purpose, and are taking bookings.',
+    );
   });
 });

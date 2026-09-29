@@ -63,6 +63,19 @@
 .state {
   padding: var(--space-16) var(--space-4);
 }
+/* Mentor Profile.dc.html notFound with suggestions: the message, then the grid. */
+.missing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-8) 0 var(--space-10);
+}
+/* AppShell.dc.html phone rule: `padding: var(--space-8)` becomes space-5. */
+@media (max-width: 767px) {
+  .missing {
+    padding: var(--space-5) 0;
+  }
+}
 
 /* Loading skeleton: Mentor Profile.dc.html `pageState=loading`. */
 .skeleton {

@@ -1,12 +1,14 @@
 /* eslint-disable @next/next/no-img-element -- remote avatar host not yet fixed (Supabase storage); see design-divergence.md */
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
+import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { formatNextAvailable } from '@/lib/utils/format';
 import { Tag } from '@/components/atoms/Tag/Tag';
 import { MentorProof } from '@/components/molecules/MentorProof/MentorProof';
 import type { Mentor, MentorLabel } from '@/types/mentor';
+import { cx } from '@/lib/utils/cx';
 import styles from './MentorCard.module.css';
 
 const LABEL_TEXT: Record<MentorLabel, string> = {
@@ -36,11 +38,18 @@ type MentorCardProps = {
    * "View profile" takes Book's place, so the card keeps its action.
    */
   canBook?: boolean;
+  /**
+   * `photo` (Explore, the default) or `compact` (MentorCard.dc.html): a 56px
+   * round photo beside the name, for suggestion grids such as the profile's
+   * "isn't available" page.
+   */
+  variant?: 'photo' | 'compact';
 };
 
 /**
- * MentorCard, `photo` variant (the chosen default). Name and photo link to the
- * profile; the photo link is out of the tab order to avoid a duplicate stop.
+ * MentorCard, `photo` variant (the chosen default) or `compact`. Name and photo
+ * link to the profile; the photo link is out of the tab order to avoid a
+ * duplicate stop (compact's round photo is not a link, as drawn).
  * Bottom block per MentorCard.dc.html: the offer line ("Free mentorship available"
  * while every session is free; paid "from $X" waits for prices), then either
  * "Next available: …", "No open times at the moment" (only when known to be none), or
@@ -56,7 +65,9 @@ export function MentorCard({
   isSelf = false,
   bookBlocked = null,
   canBook = true,
+  variant = 'photo',
 }: MentorCardProps) {
+  const compact = variant === 'compact';
   // The face position (backend avatar_focus) drives the crop via CSS custom
   // properties; without it the CSS falls back to the design's 50% 25%.
   const tone = {
@@ -68,51 +79,80 @@ export function MentorCard({
   } as CSSProperties;
   const degree = [m.degreeLine, m.institution].filter(Boolean);
   return (
-    <article className={styles.card} aria-labelledby={`mentor-${m.id}`}>
+    <article
+      className={cx(styles.card, compact && styles.compact)}
+      aria-labelledby={`mentor-${m.id}`}
+    >
       {/* Off: Next cancels its own profile prefetches mid-stream (failure-modes #25). */}
-      <Link
-        href={m.profileHref}
-        prefetch={false}
-        className={styles.photo}
-        style={tone}
-        tabIndex={-1}
-        aria-hidden
-      >
-        {m.photoUrl ? (
-          <>
-            <img src={m.photoUrl} alt="" className={styles.img} loading="lazy" />
-            <span className={styles.scrim} />
-          </>
-        ) : (
-          <span className={styles.initials}>{m.initials}</span>
-        )}
-        {m.label && (
-          <Tag tone="on-photo" className={styles.label}>
-            {LABEL_TEXT[m.label]}
-          </Tag>
-        )}
-      </Link>
+      {!compact && (
+        <Link
+          href={m.profileHref}
+          prefetch={false}
+          className={styles.photo}
+          style={tone}
+          tabIndex={-1}
+          aria-hidden
+        >
+          {m.photoUrl ? (
+            <>
+              <img src={m.photoUrl} alt="" className={styles.img} loading="lazy" />
+              <span className={styles.scrim} />
+            </>
+          ) : (
+            <span className={styles.initials}>{m.initials}</span>
+          )}
+          {m.label && (
+            <Tag tone="on-photo" className={styles.label}>
+              {LABEL_TEXT[m.label]}
+            </Tag>
+          )}
+        </Link>
+      )}
 
-      <div className={styles.who}>
-        <h3 className={styles.nameWrap}>
-          <Link href={m.profileHref} prefetch={false} id={`mentor-${m.id}`} className={styles.name}>
-            {m.name}
-          </Link>
-        </h3>
-        {degree.length > 0 && (
-          <p className={styles.degree}>
-            {m.degreeLine}
-            {m.degreeLine && m.institution && ' · '}
-            {m.institution && <span className={styles.school}>{m.institution}</span>}
-          </p>
+      <div className={compact ? styles.compactHead : styles.whoWrap}>
+        {compact && (
+          <Avatar
+            size="xl"
+            tone={m.tone}
+            initials={m.initials}
+            src={m.photoUrl}
+            alt=""
+            focus={m.photoFocus}
+            lazy
+          />
         )}
-        <MentorProof
-          rating={m.rating}
-          reviewCount={m.reviewCount}
-          completedSessions={m.completedSessions}
-          originCountry={m.originCountry}
-          studyCountry={m.studyCountry}
-        />
+        <div className={styles.who}>
+          <div className={styles.nameRow}>
+            <h3 className={styles.nameWrap}>
+              <Link
+                href={m.profileHref}
+                prefetch={false}
+                id={`mentor-${m.id}`}
+                className={styles.name}
+              >
+                {m.name}
+              </Link>
+            </h3>
+            {/* "New mentor" is already the proof line's first words: not twice. */}
+            {compact && m.label && m.label !== 'new' && (
+              <Tag tone="badge">{LABEL_TEXT[m.label]}</Tag>
+            )}
+          </div>
+          {degree.length > 0 && (
+            <p className={styles.degree}>
+              {m.degreeLine}
+              {m.degreeLine && m.institution && ' · '}
+              {m.institution && <span className={styles.school}>{m.institution}</span>}
+            </p>
+          )}
+          <MentorProof
+            rating={m.rating}
+            reviewCount={m.reviewCount}
+            completedSessions={m.completedSessions}
+            originCountry={m.originCountry}
+            studyCountry={m.studyCountry}
+          />
+        </div>
       </div>
 
       {showTopics && m.topics.length > 0 && (

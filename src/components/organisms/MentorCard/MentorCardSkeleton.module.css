@@ -11,6 +11,29 @@
   animation: pulse var(--skeleton-pulse-duration) ease-in-out infinite;
 }
 
+/* Compact (MentorCard compact): 16px padding, a 56px circle beside three lines. */
+.compact {
+  padding: var(--space-4);
+}
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+.circle {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  border-radius: var(--radius-full);
+  background: var(--skeleton-fill);
+}
+.lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 @keyframes pulse {
   0%,
   100% {
