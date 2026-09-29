@@ -41,6 +41,10 @@
   line-height: var(--lh-p);
   color: var(--ink-500);
 }
+/* --ink-500 on the selected card's blue-50 is 4.28:1; --ink-600 passes AA (design-divergence.md). */
+.on .description {
+  color: var(--ink-600);
+}
 @media (max-width: 767px) {
   /* Design phone rule: --space-3 --space-4 padding becomes --space-2 --space-3. */
   .card {

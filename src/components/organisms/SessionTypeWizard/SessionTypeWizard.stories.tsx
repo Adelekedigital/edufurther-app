@@ -25,7 +25,19 @@ const TOPICS = [
   { slug: 'test-preparation', label: 'Test preparation', id: 'o5' },
   { slug: 'scholarships-financial-aid', label: 'Scholarships & financial aid', id: 'o6' },
 ];
-const DEFAULTS = { windowDays: 28, breakMin: 15, requiresApproval: true };
+// The design's sample defaults (sharedDefs): 60 min, 24 hrs, 2 weeks, 15 min, approve.
+const DEFAULTS = {
+  durationMin: 60,
+  noticeHours: 24,
+  windowDays: 14,
+  breakMin: 15,
+  requiresApproval: true,
+};
+// The design's sample Calendar hours (Mon, Tue, Thu, Fri 5–8 pm; Sat 9 am–1 pm).
+const WEEKLY = {
+  status: 'ready' as const,
+  summary: 'Mon 5 pm–8 pm · Tue 5 pm–8 pm · Thu 5 pm–8 pm · Fri 5 pm–8 pm · Sat 9 am–1 pm',
+};
 const sop = () => draftFromTemplate(SESSION_TEMPLATES[0]!);
 
 function Harness({
@@ -55,6 +67,10 @@ function Harness({
       defaults={DEFAULTS}
       defaultsStatus="ready"
       onRetryDefaults={fn()}
+      onEditDefaults={fn()}
+      weekly={WEEKLY}
+      onRetryWeekly={fn()}
+      onEditWeekly={fn()}
       onStep={setS}
       onBack={() => setS((x) => (x > 1 ? ((x - 1) as Step) : x))}
       onNext={() => setS((x) => (x < 4 ? ((x + 1) as Step) : x))}

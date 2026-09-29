@@ -112,6 +112,79 @@
   outline-offset: var(--focus-ring-offset);
   border-radius: var(--radius-xs);
 }
+/* ---- TimeSlots.dc.html, variant compact (the weekly-hours modal) ---- */
+.cRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: var(--border-hairline) solid var(--border-muted);
+}
+.cRow:last-child {
+  border-bottom: none;
+}
+.cHead {
+  flex: none;
+  width: 92px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.cOff {
+  flex: 1;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+.cSlots {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+.cSlot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.cActions {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+.cIcon {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--ink-500);
+  cursor: pointer;
+}
+.cIcon:hover {
+  background: var(--ink-100);
+  color: var(--ink-900);
+}
+.cIcon:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.cError {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-danger);
+}
+
 @media (max-width: 767px) {
   /* The day's switch and name above its hours. */
   .row {
@@ -129,6 +202,30 @@
   }
   .add,
   .copy {
+    min-height: var(--touch-target-min);
+  }
+  /*
+   * Compact: the design keeps the row and overflows 12px at 390 (its × leaves the
+   * dialog); the day goes above its hours instead, as the list variant's phone
+   * rule does, and the two selects share the line (design-divergence.md).
+   */
+  .cRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+  .cSlot {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .cTime {
+    flex: 1;
+    min-width: 0;
+  }
+  .cTime select {
+    width: 100% !important;
+  }
+  .cIcon {
     min-height: var(--touch-target-min);
   }
 }

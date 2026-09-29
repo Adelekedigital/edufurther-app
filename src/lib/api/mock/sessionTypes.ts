@@ -4,6 +4,7 @@
  * the Live switch and delete stick until the server restarts. Samples are the
  * design's (Session Types.dc.html `fromScene`), re-keyed to catalog offerings.
  */
+import { prefs } from './bookingPrefs';
 import type { components } from '@/lib/api/generated/schema';
 import { OFFERINGS } from './fixtures';
 
@@ -213,8 +214,9 @@ export function mockCreateSessionType(
     id,
     name,
     description: (body.description as string | null) ?? null,
-    duration_minutes: Number(body.duration_minutes) || 60,
-    min_notice_minutes: Number(body.min_notice_minutes) || 1440,
+    // null = the mentor's default (backend round 3 B): stored resolved, as the read returns it.
+    duration_minutes: Number(body.duration_minutes) || prefs.default_duration_minutes || 60,
+    min_notice_minutes: Number(body.min_notice_minutes) || prefs.default_min_notice_minutes || 1440,
     meeting_venue: 'daily',
     is_active: true,
     service_offering: offerings[0] ?? null,

@@ -2,7 +2,10 @@ import { SESSION_TEMPLATES } from './sessionTemplates';
 import {
   blankDraft,
   copyForField,
+  defaultsSummary,
   draftFromTemplate,
+  hasSlotErrors,
+  emptyWeek,
   fieldForPointer,
   parseOptions,
   questionError,
@@ -11,6 +14,7 @@ import {
   toCreateBody,
   toWindows,
   validateStep,
+  weeklySummary,
   type Draft,
 } from './sessionTypeDraft';
 
@@ -113,7 +117,9 @@ describe('toCreateBody', () => {
     );
     expect(body).toMatchObject({
       name: 'SOP review',
-      min_notice_minutes: 2880,
+      // "Use my defaults": length and notice inherit too (backend round 3 B).
+      duration_minutes: null,
+      min_notice_minutes: null,
       service_offering_ids: ['o4', 'o1'],
       icon: 'lightbulb',
       requires_booking_confirmation: null,
@@ -141,6 +147,7 @@ describe('toCreateBody', () => {
     const body = toCreateBody(
       filled({
         rules: 'custom',
+        noticeHours: 48,
         windowDays: 14,
         breakMin: 10,
         approval: 'off',
@@ -150,6 +157,8 @@ describe('toCreateBody', () => {
       ids,
     );
     expect(body).toMatchObject({
+      duration_minutes: 60,
+      min_notice_minutes: 2880,
       booking_window_days: 14,
       break_after_minutes: 10,
       requires_booking_confirmation: false,
@@ -207,6 +216,63 @@ describe('templates', () => {
     });
     expect(d.questions.map((q) => q.kind)).toEqual(['free_text', 'file_upload']);
     expect(new Set(d.questions.map((q) => q.key)).size).toBe(2);
+  });
+
+  it('a template with its own length starts with its own rules, so the length holds', () => {
+    expect(draftFromTemplate(SESSION_TEMPLATES[0]!).rules).toBe('default'); // 60 min
+    const visa = draftFromTemplate(SESSION_TEMPLATES[1]!);
+    expect(visa).toMatchObject({ durationMin: 45, rules: 'custom' });
+    expect(toCreateBody(visa, {}).duration_minutes).toBe(45);
+  });
+});
+
+describe('summaries (Session Types.dc.html, rulesFlow=inline)', () => {
+  it('the defaults line: the mentor’s values, the platform’s where unset', () => {
+    expect(
+      defaultsSummary({
+        durationMin: 60,
+        noticeHours: 24,
+        windowDays: 14,
+        breakMin: 15,
+        requiresApproval: true,
+      }),
+    ).toBe(
+      '60 min sessions · at least 24 hours notice · bookable up to 2 weeks ahead · 15 min break · you approve each request',
+    );
+    expect(
+      defaultsSummary({
+        durationMin: null,
+        noticeHours: null,
+        windowDays: null,
+        breakMin: null,
+        requiresApproval: false,
+      }),
+    ).toBe(
+      '60 min sessions · at least 24 hours notice · bookable up to 8 weeks ahead · no break · instant confirm',
+    );
+  });
+
+  it('the weekly line: Monday first, short times, null with no hours', () => {
+    const week = emptyWeek();
+    week[0] = { on: true, slots: [[600, 660]] }; // Sunday
+    week[1] = {
+      on: true,
+      slots: [
+        [1020, 1200],
+        [1230, 1290],
+      ],
+    };
+    week[3] = { on: false, slots: [[540, 600]] }; // off: not shown
+    expect(weeklySummary(week)).toBe('Mon 5 pm–8 pm, 8:30 pm–9:30 pm · Sun 10 am–11 am');
+    expect(weeklySummary(emptyWeek())).toBeNull();
+  });
+
+  it('hours that end first or overlap block a save; days that are off don’t count', () => {
+    const week = emptyWeek();
+    week[2] = { on: true, slots: [[600, 540]] };
+    expect(hasSlotErrors(week)).toBe(true);
+    week[2] = { on: false, slots: [[600, 540]] };
+    expect(hasSlotErrors(week)).toBe(false);
   });
 });
 

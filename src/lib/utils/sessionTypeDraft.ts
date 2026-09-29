@@ -58,7 +58,10 @@ export type Draft = {
   questions: DraftQuestion[];
   durationMin: number;
   noticeHours: number;
-  /** default = inherit the mentor's booking window and break (backend #13). */
+  /**
+   * default = inherit the mentor's length, notice, booking window, break and
+   * approval (backend #13, round 3 B); custom = this type's own.
+   */
   rules: 'default' | 'custom';
   windowDays: number;
   breakMin: number;
@@ -66,6 +69,7 @@ export type Draft = {
   hours: 'default' | 'custom';
   /** Sunday first (backend day_of_week 0 = Sunday). */
   days: DayHours[];
+  /** Only with custom rules; inherit = the mentor's default. */
   approval: 'inherit' | 'on' | 'off';
 };
 
@@ -81,7 +85,9 @@ export const DURATIONS = [30, 45, 60, 90];
 export const NOTICE_HOURS = [24, 48, 72];
 export const WINDOW_DAYS = [7, 14, 28, 56];
 export const BREAKS = [0, 10, 15, 30];
-/** Platform defaults when the mentor has set none (backend #13). */
+/** Platform defaults when the mentor has set none (backend #13, round 3 B). */
+export const PLATFORM_DURATION_MIN = 60;
+export const PLATFORM_NOTICE_HOURS = 24;
 export const PLATFORM_WINDOW_DAYS = 56;
 export const PLATFORM_BREAK_MIN = 0;
 
@@ -139,6 +145,8 @@ export function draftFromTemplate(t: SessionTemplate): Draft {
     description: t.description,
     topics: [t.topic],
     durationMin: t.durationMin,
+    // A template's own length ("45 min") holds only as this type's own rule.
+    rules: t.durationMin === PLATFORM_DURATION_MIN ? 'default' : 'custom',
     questions: t.questions.map((q) => ({
       key: newKey(),
       text: q.text,
@@ -248,18 +256,21 @@ export function toWindows(days: DayHours[], timezone: string) {
 
 /** POST /me/session-types body (backend #1 questions, #9 topics, #13 rules, #16 approval, #18 icon). */
 export function toCreateBody(d: Draft, offeringIds: Record<string, string>) {
+  const custom = d.rules === 'custom';
   return {
     name: d.name.trim(),
     description: d.description.trim() || null,
-    duration_minutes: d.durationMin,
-    min_notice_minutes: d.noticeHours * 60,
+    // null = the mentor's default (backend round 3 B). PENDING BACKEND: the
+    // published spec still requires both; the backend PR makes them nullable.
+    duration_minutes: custom ? d.durationMin : null,
+    min_notice_minutes: custom ? d.noticeHours * 60 : null,
     service_offering_ids: d.topics.map((c) => offeringIds[c]).filter((x): x is string => !!x),
     application_stage: d.stage,
     custom_stage_label: d.stage === 'other' ? d.customStage.trim() : null,
     icon: d.icon,
-    requires_booking_confirmation: d.approval === 'inherit' ? null : d.approval === 'on',
-    booking_window_days: d.rules === 'custom' ? d.windowDays : null,
-    break_after_minutes: d.rules === 'custom' ? d.breakMin : null,
+    requires_booking_confirmation: !custom || d.approval === 'inherit' ? null : d.approval === 'on',
+    booking_window_days: custom ? d.windowDays : null,
+    break_after_minutes: custom ? d.breakMin : null,
     questions: d.questions.map((q, i) => {
       const choice = q.kind === 'single' || q.kind === 'multi';
       return {
@@ -320,4 +331,69 @@ export function fieldForPointer(pointer: string): FieldKey | null {
 export function copyForField(field: FieldKey): string {
   if (field.startsWith('question-')) return 'Check this question and its options.';
   return COPY[field] ?? 'Check this field.';
+}
+
+// ---- summaries (Session Types.dc.html, rulesFlow=inline) ------------------------
+
+/** The mentor's booking preferences; null = not set (the platform's applies). */
+export type BookingDefaults = {
+  durationMin: number | null;
+  noticeHours: number | null;
+  windowDays: number | null;
+  breakMin: number | null;
+  requiresApproval: boolean;
+};
+
+/** Every default resolved: the mentor's, else the platform's. */
+export function resolveDefaults(d: BookingDefaults) {
+  return {
+    durationMin: d.durationMin ?? PLATFORM_DURATION_MIN,
+    noticeHours: d.noticeHours ?? PLATFORM_NOTICE_HOURS,
+    windowDays: d.windowDays ?? PLATFORM_WINDOW_DAYS,
+    breakMin: d.breakMin ?? PLATFORM_BREAK_MIN,
+    requiresApproval: d.requiresApproval,
+  };
+}
+
+export const windowLabel = (days: number) =>
+  days % 7 === 0 ? `${days / 7} week${days === 7 ? '' : 's'}` : `${days} days`;
+export const breakLabel = (m: number) => (m ? `${m} min` : 'None');
+export const approvalLabel = (on: boolean) => (on ? 'Approve each request' : 'Confirm instantly');
+
+/** Design `sum`: "60 min sessions · at least 24 hours notice · bookable up to 2 weeks ahead · 15 min break · you approve each request". */
+export function defaultsSummary(d: BookingDefaults): string {
+  const r = resolveDefaults(d);
+  return [
+    `${r.durationMin} min sessions`,
+    `at least ${r.noticeHours} hours notice`,
+    `bookable up to ${windowLabel(r.windowDays)} ahead`,
+    r.breakMin ? `${r.breakMin} min break` : 'no break',
+    r.requiresApproval ? 'you approve each request' : 'instant confirm',
+  ].join(' · ');
+}
+
+/** Design `t`: "5 pm", "5:30 pm". */
+function shortTime(m: number): string {
+  const h = Math.floor(m / 60) % 24;
+  const mm = m % 60;
+  const ap = h >= 12 ? 'pm' : 'am';
+  const h12 = h % 12 || 12;
+  return mm ? `${h12}:${String(mm).padStart(2, '0')} ${ap}` : `${h12} ${ap}`;
+}
+
+/** Design `wk`, Monday first: "Mon 5 pm–8 pm · Sat 9 am–1 pm"; null when there are none. */
+export function weeklySummary(days: DayHours[]): string | null {
+  const mondayFirst = [1, 2, 3, 4, 5, 6, 0];
+  const parts = mondayFirst.flatMap((i) => {
+    const day = days[i];
+    if (!day?.on || !day.slots.length) return [];
+    const times = day.slots.map(([a, b]) => `${shortTime(a)}–${shortTime(b)}`).join(', ');
+    return [`${DAY_NAMES[i]!.slice(0, 3)} ${times}`];
+  });
+  return parts.length ? parts.join(' · ') : null;
+}
+
+/** Any slot that ends before it starts, or overlaps: the hours can't be saved. */
+export function hasSlotErrors(days: DayHours[]): boolean {
+  return days.some((d) => d.on && d.slots.some((_, k) => slotError(d.slots, k) !== null));
 }

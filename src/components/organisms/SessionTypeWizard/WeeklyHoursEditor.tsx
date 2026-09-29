@@ -4,6 +4,8 @@ import { DAY_NAMES, slotError, type DayHours, type Slot } from '@/lib/utils/sess
 type WeeklyHoursEditorProps = {
   days: DayHours[];
   onChange: (days: DayHours[]) => void;
+  /** compact: the weekly-hours modal (TimeSlots.dc.html `compact`). */
+  variant?: 'list' | 'compact';
 };
 
 const copy = (days: DayHours[]) =>
@@ -15,7 +17,7 @@ const copy = (days: DayHours[]) =>
  * slot; removing the last slot turns the day off; Copy to all days copies to
  * the days that are on.
  */
-export function WeeklyHoursEditor({ days, onChange }: WeeklyHoursEditorProps) {
+export function WeeklyHoursEditor({ days, onChange, variant = 'list' }: WeeklyHoursEditorProps) {
   const update = (fn: (d: DayHours[]) => void) => {
     const next = copy(days);
     fn(next);
@@ -26,6 +28,7 @@ export function WeeklyHoursEditor({ days, onChange }: WeeklyHoursEditorProps) {
       {days.map((day, i) => (
         <DayHoursRow
           key={DAY_NAMES[i]}
+          variant={variant}
           day={DAY_NAMES[i]!}
           hours={day}
           errors={day.slots.map((_, k) => slotError(day.slots, k))}
