@@ -111,6 +111,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
     // Backend #19: null until chosen → the frontend's automatic cover.
     cover_color: cover.cover_color,
     cover_art: cover.cover_art,
+    // Backend #301: approved, listed and bookable. The mock's mentors all are.
+    taking_bookings: true,
   };
   if (own) {
     // The owner's edits (PATCH /users/{id}/profile and /mentor-profile).
