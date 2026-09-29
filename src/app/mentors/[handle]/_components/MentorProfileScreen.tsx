@@ -6,6 +6,7 @@ import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
+import { CoverPicker } from '@/components/molecules/CoverPicker/CoverPicker';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { ReviewNote } from '@/components/molecules/ReviewNote/ReviewNote';
 import { ShareMenu } from '@/components/molecules/ShareMenu/ShareMenu';
@@ -30,6 +31,7 @@ import {
   useSlots,
   useUploadIntakeFile,
 } from '@/lib/api/data/booking';
+import { BANNER_ACCEPT, useCoverEdit } from '@/lib/api/data/cover';
 import { useMentorProfile } from '@/lib/api/data/profile';
 import { REVIEW_PAGE_SIZE, useMentorReviews, useReviewPrompt } from '@/lib/api/data/reviews';
 import {
@@ -39,6 +41,7 @@ import {
   useSendReview,
 } from '@/lib/api/data/reviewWrite';
 import { useSimilarMentors } from '@/lib/api/data/similar';
+import { coverFor } from '@/lib/utils/cover';
 import { deviceTimeZone, formatTime, movedBetween } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
@@ -119,6 +122,10 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // Mentors can't book (product 2026-09-29, canBookFor): on another mentor's
   // profile every Book control goes away, as for the owner on their own.
   const mayBook = !isOwner && canBook;
+
+  // The owner's cover (Mentor Profile.dc.html "Change cover"): colour and art
+  // save as picked; an image replaces them.
+  const coverEdit = useCoverEdit(handle, isOwner && p ? p.mentor.id : null);
 
   // ---- reviews tab ------------------------------------------------------------
   const isGuest = viewer.kind === 'guest';
@@ -282,6 +289,24 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
             <ProfileHeader
               profile={p}
               onShowReviews={hasReviews ? () => setTab('reviews') : undefined}
+              bannerTools={
+                isOwner ? (
+                  <CoverPicker
+                    color={p.cover.color ?? coverFor(p.mentor.id)}
+                    artOn={p.cover.art !== 'none'}
+                    onPickColor={(color) => coverEdit.save({ color })}
+                    onToggleArt={(on) => coverEdit.save({ art: on ? 'icons' : 'none' })}
+                    saveState={coverEdit.saveState}
+                    savedStamp={coverEdit.savedStamp}
+                    hasImage={!!p.bannerUrl}
+                    accept={BANNER_ACCEPT}
+                    uploading={coverEdit.uploading}
+                    uploadError={coverEdit.uploadError}
+                    onFile={coverEdit.upload}
+                    onClose={coverEdit.clearMessages}
+                  />
+                ) : undefined
+              }
               actions={
                 <>
                   {mayBook && hasSessions && (

@@ -1,4 +1,4 @@
-import { COVER_KEYS, coverFor, coverVars } from './cover';
+import { COVER_KEYS, coverArt, coverFor, coverKey, coverVars, topicIcon } from './cover';
 
 /** The design's formula, verbatim (Mentor Profile.dc.html). */
 function designPick(seed: string) {
@@ -23,5 +23,32 @@ describe('coverFor', () => {
       bg: 'var(--cover-lilac-bg)',
       ink: 'var(--cover-lilac-ink)',
     });
+  });
+});
+
+describe('coverKey / coverArt', () => {
+  it('keeps only our keys, so nothing unknown reaches CSS', () => {
+    expect(coverKey('mint')).toBe('mint');
+    expect(coverKey('red); background: url(x)')).toBeNull();
+    expect(coverKey(null)).toBeNull();
+    expect(coverKey(3)).toBeNull();
+  });
+  it('reads unknown art as none', () => {
+    expect(coverArt('pattern')).toBe('pattern');
+    expect(coverArt('sparkles')).toBe('none');
+    expect(coverArt(undefined)).toBe('none');
+  });
+});
+
+describe('topicIcon', () => {
+  it('matches the design’s topic icons on the label’s words', () => {
+    expect(topicIcon('Visa interview prep')).toBe('flight_takeoff');
+    expect(topicIcon('Scholarships & funding')).toBe('payments');
+    expect(topicIcon('Statement of purpose')).toBe('edit_document');
+    expect(topicIcon('Resume review')).toBe('description');
+    expect(topicIcon('Application documents')).toBe('folder_open');
+    expect(topicIcon('Career after graduation')).toBe('work');
+    expect(topicIcon('Choosing a university')).toBe('school');
+    expect(topicIcon('Something new')).toBe('label');
   });
 });

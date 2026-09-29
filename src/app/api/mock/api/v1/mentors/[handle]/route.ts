@@ -6,6 +6,7 @@ import {
   mockNextAvailableAt,
 } from '@/lib/api/mock/availability';
 import { FEATURED, MENTORS, mockCountries, mockProfileIndex } from '@/lib/api/mock/fixtures';
+import { mockBannerUrl, mockCover } from '@/lib/api/mock/coverStore';
 import { mockReviewSummary } from '@/lib/api/mock/reviews';
 
 type MentorPublicRead = components['schemas']['MentorPublicRead'];
@@ -16,22 +17,30 @@ type MentorPublicRead = components['schemas']['MentorPublicRead'];
  * no about, no awards, no background) and mentors with no sessions read as new, so the
  * profile's empty branches have data to render. Unknown handles 404. The
  * design's fully booked sample is public with its offerings and reads
- * next_available_state "none" ("No open times at the moment"). ENABLE_MOCK_API=1 only.
+ * next_available_state "none" ("No open times at the moment"). The mock mentor
+ * viewer's own id, `mock-mentor`, answers with the featured mentor's data, so
+ * the owner's tools can be driven locally. ENABLE_MOCK_API=1 only.
  */
+/** The mock mentor viewer's id (viewer.ts MOCK_VIEWERS.mentor). */
+const OWNER_ID = 'mock-mentor';
+
 export async function GET(_req: Request, ctx: { params: Promise<{ handle: string }> }) {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
   const { handle } = await ctx.params;
   const all = [FEATURED, ...MENTORS];
-  const i = all.findIndex((m) => m.id === handle || m.slug === handle);
+  const own = handle === OWNER_ID;
+  const i = own ? 0 : all.findIndex((m) => m.id === handle || m.slug === handle);
   const m = all[i];
   if (!m) return new NextResponse(null, { status: 404 });
+  const id = own ? OWNER_ID : m.id;
+  const cover = mockCover(id);
   await new Promise((r) => setTimeout(r, 250));
 
   const { sparse } = mockProfileIndex(m.id);
   const sessions = m.completed_sessions;
   const body: MentorPublicRead = {
-    id: m.id,
-    slug: m.slug,
+    id,
+    slug: own ? OWNER_ID : m.slug,
     first_name: m.first_name,
     last_name: m.last_name,
     timezone: 'America/Chicago',
@@ -45,7 +54,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
       : `I moved abroad for my ${m.degree ?? 'degree'} at ${m.institution} and have reviewed dozens of statements since. I’ll help you shortlist programs that fund, tell a clear story in your statement, and prepare for visa and admissions interviews. Past failures taught me as much as the wins, and I bring both to every session.`,
     avatar_url: m.avatar_url,
     avatar_focus: m.avatar_focus,
-    banner_url: null,
+    banner_url: mockBannerUrl(id),
     primary_study_program: m.study_course,
     ...mockCountries(m.id),
     social_linkedin: sparse ? null : `https://www.linkedin.com/in/${m.slug}`,
@@ -95,9 +104,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
     next_available_at: mockNextAvailableAt(m.id),
     next_available_state: mockAvailabilityState(m.id),
     joined_at: m.joined_at,
-    // Backend #19: no choice made → the frontend's automatic cover.
-    cover_color: null,
-    cover_art: 'none',
+    // Backend #19: null until chosen → the frontend's automatic cover.
+    cover_color: cover.cover_color,
+    cover_art: cover.cover_art,
   };
   return NextResponse.json(body);
 }

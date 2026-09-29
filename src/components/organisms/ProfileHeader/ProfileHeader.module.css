@@ -1,6 +1,7 @@
 /* Mentor Profile.dc.html header card. Values from its markup; phone values
    from AppShell.dc.html's data-ef rules (banner, profhead, avatar, introtext). */
 .card {
+  position: relative;
   border: var(--border-hairline) solid var(--border-subtle);
   border-radius: var(--radius-2xl);
   background: var(--surface-card);
@@ -13,6 +14,71 @@
   /* The mentor's cover colour (lib/utils/cover.ts); a banner image covers it. */
   background: var(--cover-bg, var(--blue-500));
   overflow: hidden;
+}
+/* Cover art (Mentor Profile.dc.html `artPattern` / `artSingle` / `hasCoverArt`),
+   in the cover's ink, faint. The glyphs are the icon font's ligatures. */
+.artPattern {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.22;
+  background-image: radial-gradient(var(--cover-ink) 1.5px, transparent 1.7px);
+  background-size: 18px 18px;
+  /* A mask reads alpha only: any opaque token works (no raw hex). */
+  mask-image: linear-gradient(90deg, transparent 30%, var(--ink-900) 85%);
+}
+.artSingleWrap,
+.artIconsWrap {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.artSingle {
+  position: absolute;
+  right: var(--space-10);
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-icon);
+  font-size: 152px;
+  line-height: 1;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 200;
+  color: var(--cover-ink);
+  opacity: 0.14;
+}
+.artIcons {
+  position: absolute;
+  right: var(--space-8);
+  bottom: calc(var(--space-4) * -1);
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-4);
+  color: var(--cover-ink);
+  opacity: 0.14;
+}
+.artIcon {
+  font-family: var(--font-icon);
+  font-size: 104px;
+  line-height: 1;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 300;
+}
+.artIcon[data-i='1'] {
+  font-size: 80px;
+}
+.artIcon[data-i='2'] {
+  font-size: 64px;
+}
+/* The owner's controls sit over the banner but outside its clip, so the
+   cover popover can overhang it. */
+.bannerTools {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 2;
 }
 .bannerImg {
   width: 100%;

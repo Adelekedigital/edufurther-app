@@ -4,7 +4,7 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import { Star } from '@/components/atoms/Star/Star';
 import { Tag } from '@/components/atoms/Tag/Tag';
 import { cx } from '@/lib/utils/cx';
-import { coverFor, coverVars } from '@/lib/utils/cover';
+import { coverFor, coverVars, topicIcon } from '@/lib/utils/cover';
 import { formatRating, sessionsLabel } from '@/lib/utils/format';
 import type { MentorProfile } from '@/types/mentor';
 import styles from './ProfileHeader.module.css';
@@ -15,6 +15,8 @@ type ProfileHeaderProps = {
   actions?: ReactNode;
   /** The rating opens the Reviews tab (Mentor Profile.dc.html `goReviews`). */
   onShowReviews?: () => void;
+  /** The owner's "Change cover" control, top right of the banner (not clipped by it). */
+  bannerTools?: ReactNode;
 };
 
 /** "From Nigeria, studied in United States", or whichever half is known. */
@@ -30,11 +32,20 @@ export function locationLine(from: string | null, studiedIn: string | null): str
  * headline, the proof line and the help topics. The design's "Degree verified"
  * tick is not rendered — nothing verifies a degree (backend reply #8).
  */
-export function ProfileHeader({ profile, actions, onShowReviews }: ProfileHeaderProps) {
+export function ProfileHeader({
+  profile,
+  actions,
+  onShowReviews,
+  bannerTools,
+}: ProfileHeaderProps) {
   const m = profile.mentor;
   // Cover colour (Mentor Profile.dc.html): a light banner when there's no
   // banner image, and its paired dark colour behind the initials.
-  const cover = coverVars(coverFor(m.id));
+  const cover = coverVars(profile.cover.color ?? coverFor(m.id));
+  // Cover art (Mentor Profile.dc.html): faint icons for the first 3 topics, a
+  // dot pattern, or one large icon. Only on a colour banner, never over a photo.
+  const art = profile.bannerUrl ? 'none' : profile.cover.art;
+  const artIcons = m.topics.slice(0, 3).map((t) => topicIcon(t.label));
   const photoStyle = {
     '--photo-bg': cover.ink,
     ...(m.photoFocus && {
@@ -73,9 +84,30 @@ export function ProfileHeader({ profile, actions, onShowReviews }: ProfileHeader
 
   return (
     <section className={styles.card} aria-labelledby="profile-name">
-      <div className={styles.banner} style={{ '--cover-bg': cover.bg } as CSSProperties}>
+      <div
+        className={styles.banner}
+        style={{ '--cover-bg': cover.bg, '--cover-ink': cover.ink } as CSSProperties}
+      >
         {profile.bannerUrl && <img src={profile.bannerUrl} alt="" className={styles.bannerImg} />}
+        {art === 'pattern' && <div className={styles.artPattern} aria-hidden />}
+        {art === 'single' && (
+          <div className={styles.artSingleWrap} aria-hidden>
+            <span className={styles.artSingle}>{artIcons[0] ?? 'school'}</span>
+          </div>
+        )}
+        {art === 'icons' && artIcons.length > 0 && (
+          <div className={styles.artIconsWrap} aria-hidden>
+            <div className={styles.artIcons}>
+              {artIcons.map((icon, i) => (
+                <span key={i} className={styles.artIcon} data-i={i}>
+                  {icon}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
+      {bannerTools && <div className={styles.bannerTools}>{bannerTools}</div>}
       <div className={styles.head}>
         <div className={styles.avatar} style={photoStyle}>
           {m.photoUrl ? (

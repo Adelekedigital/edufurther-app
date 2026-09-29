@@ -1,0 +1,189 @@
+/* "Change cover" and its popover. Values from Mentor Profile.dc.html (owner,
+   coverOpen): 28px white button with an ink-200 ring, a dialog 8px below it
+   (top 52px on the banner), 32px round swatches in 6 columns. The design's
+   `width: 264px` is the content box: it renders 296px with its padding. */
+.root {
+  position: relative;
+}
+.trigger {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  box-shadow: inset 0 0 0 1px var(--ink-200);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.trigger:hover {
+  background: var(--surface-subtle);
+}
+.trigger:focus-visible,
+.upload:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+.dialog {
+  position: absolute;
+  right: 0;
+  top: calc(28px + var(--space-2));
+  z-index: 21;
+  width: 296px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  box-shadow:
+    var(--shadow-menu),
+    inset 0 0 0 1px var(--ink-200);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+}
+/* Focused only by a click inside it (tabIndex -1): no ring. */
+.dialog:focus {
+  outline: none;
+}
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.title {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.status {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--green-700);
+}
+.statusError {
+  color: var(--text-danger);
+}
+.hint {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-2);
+}
+.swatch {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  box-shadow: inset 0 0 0 1px var(--swatch-edge);
+  color: var(--text-primary);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+/* The picked swatch: a white gap, then a blue ring (the design's). */
+.swatchOn {
+  box-shadow:
+    0 0 0 2px var(--surface-card),
+    0 0 0 4px var(--blue-500);
+}
+.swatch:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 4px;
+}
+.artRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--ink-100);
+}
+.artText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.artLabel {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+}
+.divider {
+  height: 1px;
+  background: var(--ink-100);
+}
+.upload {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-2);
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+.upload:hover {
+  background: var(--ink-50);
+}
+.upload[aria-disabled='true'] {
+  cursor: progress;
+  color: var(--text-tertiary);
+}
+.uploadIcon {
+  color: var(--ink-600);
+}
+.error {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-danger);
+}
+.file {
+  display: none;
+}
+
+/* AppShell.dc.html phone rule: buttons reach 44px, and `padding: 0
+   var(--space-3)` becomes `0 var(--space-2)`. The 32px swatches are exempt. */
+@media (max-width: 767px) {
+  .trigger {
+    min-height: 44px;
+    padding: 0 var(--space-2);
+  }
+  .upload {
+    min-height: 44px;
+  }
+}
