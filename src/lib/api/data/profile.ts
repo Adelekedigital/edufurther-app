@@ -3,6 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { coverArt, coverKey } from '@/lib/utils/cover';
+import { STAGE_LABELS } from '@/lib/utils/sessionTypeDraft';
 import { safeSocialUrl } from '@/lib/utils/socialUrl';
 import type {
   Mentor,
@@ -26,13 +27,9 @@ type SessionTypeRead = components['schemas']['SessionTypeRead'];
 type ApplicationStage = components['schemas']['ApplicationStage'];
 type Venue = components['schemas']['ConferencingProvider'];
 
+// One wording with the Session Types wizard (product, 2026-09-29): its labels.
 const STAGE: Record<ApplicationStage, string | null> = {
-  // One wording with the Session Types wizard (product, 2026-09-29).
-  early_exploration: 'Exploring',
-  drafting_stage: 'Drafting',
-  post_submission: 'Submitted, waiting',
-  revisions: 'Revising',
-  interviewing: 'Interviewing', // backend #10 (session-types reply), design stage chip
+  ...STAGE_LABELS,
   other: null, // custom_stage_label carries it
 };
 
@@ -168,6 +165,8 @@ export function toMentorProfile(r: MentorPublicRead): MentorProfile {
   return {
     mentor,
     names: { first, last },
+    // Backend #301: approved, listed and bookable now. Missing reads as true.
+    takingBookings: r.taking_bookings ?? true,
     headline: r.headline?.trim() || null,
     about: r.about_me?.trim() || null,
     bannerUrl: r.banner_url ?? null,

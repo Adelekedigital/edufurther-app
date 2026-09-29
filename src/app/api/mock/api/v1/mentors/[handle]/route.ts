@@ -105,14 +105,15 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
           { id: 'en', display_name: 'English', code: 'en' },
           { id: 'yo', display_name: 'Yoruba', code: 'yo' },
         ],
-    next_available_at: mockNextAvailableAt(m.id),
-    next_available_state: mockAvailabilityState(m.id),
+    // Null whenever the mentor isn't taking bookings (backend #301).
+    next_available_at: m.taking_bookings === false ? null : mockNextAvailableAt(m.id),
+    next_available_state: m.taking_bookings === false ? 'none' : mockAvailabilityState(m.id),
     joined_at: m.joined_at,
     // Backend #19: null until chosen → the frontend's automatic cover.
     cover_color: cover.cover_color,
     cover_art: cover.cover_art,
-    // Backend #301: approved, listed and bookable. The mock's mentors all are.
-    taking_bookings: true,
+    // Backend #301: approved, listed and bookable (fixtures' NOT_TAKING isn't).
+    taking_bookings: m.taking_bookings !== false,
   };
   if (own) {
     // The owner's edits (PATCH /users/{id}/profile and /mentor-profile).

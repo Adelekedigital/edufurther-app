@@ -22,6 +22,12 @@ type ProfileHeaderProps = {
    * (Mentor Profile.dc.html `editingIntro`).
    */
   introEditor?: ReactNode;
+  /**
+   * A muted line in the actions row, e.g. "Not taking bookings" where Book
+   * would be (product 2026-09-29: a line reads as status, a greyed button as
+   * broken).
+   */
+  status?: string;
 };
 
 /** "From Nigeria, studied in United States", or whichever half is known. */
@@ -43,6 +49,7 @@ export function ProfileHeader({
   onShowReviews,
   bannerTools,
   introEditor,
+  status,
 }: ProfileHeaderProps) {
   const m = profile.mentor;
   // Cover colour (Mentor Profile.dc.html): a light banner when there's no
@@ -174,7 +181,17 @@ export function ProfileHeader({
             ))}
           </ul>
         )}
-        {actions && <div className={styles.actions}>{actions}</div>}
+        {(actions || status) && (
+          <div className={styles.actions}>
+            {status && (
+              <p className={styles.status}>
+                <Icon name="event_busy" size={16} />
+                {status}
+              </p>
+            )}
+            {actions}
+          </div>
+        )}
       </div>
     </section>
   );

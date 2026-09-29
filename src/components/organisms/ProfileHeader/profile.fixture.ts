@@ -60,6 +60,7 @@ export const fullProfile: MentorProfile = {
       { slug: 'scholarships-funding', label: 'Scholarships & funding' },
     ],
   },
+  takingBookings: true,
   names: { first: 'Gbenga', last: 'Elufisan' },
   headline: 'PhD Sociology · Mississippi State University',
   about:
@@ -114,6 +115,7 @@ export const newProfile: MentorProfile = {
     nextAvailableAt: null,
     topics: [],
   },
+  takingBookings: true,
   names: { first: 'Oluwadamilare', last: 'Adebayo-Ogunleye' },
   headline: null,
   about: null,

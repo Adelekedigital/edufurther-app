@@ -195,6 +195,8 @@ export type MentorProfile = {
   mentor: Mentor;
   /** The names as stored (first and last apart), for the owner's edit form. */
   names: { first: string; last: string };
+  /** Bookable right now (backend #301); false shows "Not taking bookings". */
+  takingBookings: boolean;
   headline: string | null;
   about: string | null;
   bannerUrl: string | null;
