@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { FactTile } from '@/components/molecules/FactTile/FactTile';
 import { IconListItem } from '@/components/molecules/IconListItem/IconListItem';
@@ -12,6 +12,12 @@ import styles from './ProfileOverview.module.css';
 
 type ProfileOverviewProps = {
   profile: MentorProfile;
+  /**
+   * The owner's About editing (Mentor Profile.dc.html `canEditAbout` /
+   * `editingAbout`): an "Edit" link in the heading row, and the editor in
+   * place of the text while it's open.
+   */
+  aboutEdit?: { onEdit: () => void; editor: ReactNode | null };
 };
 
 /**
@@ -20,7 +26,15 @@ type ProfileOverviewProps = {
  * out, as the design does for a viewer who can't edit. Awards carry no funding
  * badge: the API has no funding field.
  */
-export function ProfileOverview({ profile }: ProfileOverviewProps) {
+export function ProfileOverview({ profile, aboutEdit }: ProfileOverviewProps) {
+  // When the editor closes, focus goes back to "Edit".
+  const editRef = useRef<HTMLButtonElement>(null);
+  const editing = !!aboutEdit?.editor;
+  const wasEditing = useRef(editing);
+  useEffect(() => {
+    if (wasEditing.current && !editing) editRef.current?.focus();
+    wasEditing.current = editing;
+  }, [editing]);
   const p = profile;
   const facts = [
     p.originCountry && { icon: 'home_pin', tone: 'green', label: 'From', value: p.originCountry },
@@ -46,12 +60,35 @@ export function ProfileOverview({ profile }: ProfileOverviewProps) {
 
   return (
     <div className={styles.overview}>
-      {(p.about || p.socials.length > 0) && (
+      {(p.about || p.socials.length > 0 || aboutEdit) && (
         <section className={styles.section} aria-labelledby="about-h">
-          <h2 id="about-h" className={styles.h2}>
-            About
-          </h2>
-          {p.about && <About text={p.about} />}
+          <div className={styles.headRow}>
+            <h2 id="about-h" className={styles.h2}>
+              About
+            </h2>
+            {aboutEdit && !editing && (
+              <button
+                ref={editRef}
+                type="button"
+                className={styles.edit}
+                onClick={aboutEdit.onEdit}
+                aria-label="Edit About"
+              >
+                <Icon name="edit" size={16} />
+                Edit
+              </button>
+            )}
+          </div>
+          {editing ? (
+            aboutEdit!.editor
+          ) : p.about ? (
+            <About text={p.about} />
+          ) : aboutEdit ? (
+            // PROVISIONAL: the design draws no empty About for the owner.
+            <p className={styles.aboutEmpty}>
+              Tell mentees about your path: what you studied, where, and what you can help with.
+            </p>
+          ) : null}
           {p.socials.length > 0 && (
             <div className={styles.socials}>
               {p.socials.map((s) => (

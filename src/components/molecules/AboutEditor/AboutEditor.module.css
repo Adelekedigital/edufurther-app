@@ -1,0 +1,27 @@
+/* Mentor Profile.dc.html `editingAbout`. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+/* The design's editing textarea wears the focus colour as its border. */
+.text {
+  border-color: var(--blue-500);
+  resize: vertical;
+}
+.actions {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+.count {
+  margin-left: auto;
+  font-size: var(--text-p-xs);
+  color: var(--text-tertiary);
+}
+.error {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-danger);
+}

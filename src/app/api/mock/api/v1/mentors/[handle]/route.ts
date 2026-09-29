@@ -6,7 +6,9 @@ import {
   mockNextAvailableAt,
 } from '@/lib/api/mock/availability';
 import { FEATURED, MENTORS, mockCountries, mockProfileIndex } from '@/lib/api/mock/fixtures';
+import { prefs } from '@/lib/api/mock/bookingPrefs';
 import { mockBannerUrl, mockCover } from '@/lib/api/mock/coverStore';
+import { mockText } from '@/lib/api/mock/profileTextStore';
 import { mockReviewSummary } from '@/lib/api/mock/reviews';
 
 type MentorPublicRead = components['schemas']['MentorPublicRead'];
@@ -110,5 +112,14 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
     cover_color: cover.cover_color,
     cover_art: cover.cover_art,
   };
+  if (own) {
+    // The owner's edits (PATCH /users/{id}/profile and /mentor-profile).
+    const t = mockText(id);
+    if (t.first_name) body.first_name = t.first_name;
+    if (t.last_name) body.last_name = t.last_name;
+    if ('about_me' in t) body.about_me = t.about_me ?? null;
+    const saved = (prefs as { headline?: string | null }).headline;
+    if (saved !== undefined) body.headline = saved?.trim() || null;
+  }
   return NextResponse.json(body);
 }

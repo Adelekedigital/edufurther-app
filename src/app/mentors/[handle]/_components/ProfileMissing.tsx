@@ -28,6 +28,9 @@ export function ProfileMissing({
   bookBlocked,
   canBook,
 }: ProfileMissingProps) {
+  // Rendered only for a profile that isn't found (the screen's branch; a
+  // loading or failed profile has its own state), so `similar` is this
+  // handle's list, asked for because of the 404.
   const suggest = similar.isLoading || !!similar.data?.length;
   return suggest ? (
     <div className={styles.missing}>

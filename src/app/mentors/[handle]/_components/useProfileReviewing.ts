@@ -9,14 +9,14 @@ import {
   useSendReview,
 } from '@/lib/api/data/reviewWrite';
 import { formatTime } from '@/lib/utils/format';
-import type { ReviewAnswers } from '@/types/mentor';
+import type { ReviewAnswers, Viewer } from '@/types/mentor';
 import type { ProfileTab } from './useProfileTab';
 
 type Options = {
   handle: string;
   mentorId: string | null;
   tab: ProfileTab;
-  viewerKind: string;
+  viewerKind: Viewer['kind'];
   isOwner: boolean;
   canBook: boolean;
   timeZone: string;

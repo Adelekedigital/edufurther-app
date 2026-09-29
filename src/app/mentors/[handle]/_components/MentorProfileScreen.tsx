@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
+import { AboutEditor } from '@/components/molecules/AboutEditor/AboutEditor';
 import { CoverPicker } from '@/components/molecules/CoverPicker/CoverPicker';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
+import { IntroEditForm } from '@/components/molecules/IntroEditForm/IntroEditForm';
 import { ShareMenu } from '@/components/molecules/ShareMenu/ShareMenu';
 import { BookSessionCard } from '@/components/organisms/BookSessionCard/BookSessionCard';
 import { FirstMenteesCard } from '@/components/organisms/FirstMenteesCard/FirstMenteesCard';
@@ -31,6 +33,7 @@ import { OwnerBar, ProfileSkeleton } from './ProfileParts';
 import { ProfileMissing } from './ProfileMissing';
 import { ReviewsTab } from './ReviewsTab';
 import { listLabel } from './suggestions';
+import { useOwnerEditing } from './useOwnerEditing';
 import { useProfileBooking } from './useProfileBooking';
 import { useProfileReviewing } from './useProfileReviewing';
 import { useProfileTab } from './useProfileTab';
@@ -83,6 +86,9 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // The owner's cover (Mentor Profile.dc.html "Change cover"): colour and art
   // save as picked; an image replaces them.
   const coverEdit = useCoverEdit(handle, isOwner && p ? p.mentor.id : null);
+  // The owner's name, headline and About (Mentor Profile.dc.html edit mode).
+  const editProfileButton = useRef<HTMLButtonElement>(null);
+  const owner = useOwnerEditing(p ?? null, isOwner, editProfileButton);
 
   // Similar mentors: the Overview aside, for mentees and guests. Not the mentor
   // themselves, and not other mentors (product 2026-09-28: it's a mentee-facing
@@ -177,6 +183,17 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
             <ProfileHeader
               profile={p}
               onShowReviews={hasReviews ? () => setTab('reviews') : undefined}
+              introEditor={
+                isOwner && owner.introOpen ? (
+                  <IntroEditForm
+                    initial={owner.introValues}
+                    onSave={owner.saveIntro}
+                    onCancel={owner.closeIntro}
+                    saving={owner.introSaving}
+                    errors={owner.introErrors}
+                  />
+                ) : undefined
+              }
               bannerTools={
                 isOwner ? (
                   <CoverPicker
@@ -200,6 +217,16 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               }
               actions={
                 <>
+                  {isOwner && !owner.introOpen && (
+                    <Button
+                      ref={editProfileButton}
+                      variant="secondary-outlined"
+                      size="large"
+                      onClick={owner.openIntro}
+                    >
+                      Edit profile
+                    </Button>
+                  )}
                   {mayBook && hasSessions && (
                     // The view's one filled button: Large (CTA hierarchy).
                     <Button size="large" disabled={!!bookBlocked} onClick={() => booking.open()}>
@@ -257,7 +284,25 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 aria-labelledby={`panel-${tab}-tab`}
               >
                 {tab === 'overview' ? (
-                  <ProfileOverview profile={p} />
+                  <ProfileOverview
+                    profile={p}
+                    aboutEdit={
+                      isOwner
+                        ? {
+                            onEdit: owner.openAbout,
+                            editor: owner.aboutOpen ? (
+                              <AboutEditor
+                                initial={p.about ?? ''}
+                                onSave={owner.saveAbout}
+                                onCancel={owner.closeAbout}
+                                saving={owner.aboutSaving}
+                                error={owner.aboutError}
+                              />
+                            ) : null,
+                          }
+                        : undefined
+                    }
+                  />
                 ) : tab === 'reviews' ? (
                   <ReviewsTab
                     profile={p}
