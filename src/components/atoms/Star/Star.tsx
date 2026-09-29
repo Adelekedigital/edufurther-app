@@ -3,8 +3,8 @@ import { cx } from '@/lib/utils/cx';
 import styles from './Star.module.css';
 
 type StarProps = {
-  /** px. Mentor Profile.dc.html: 10 (rating tile), 12 (reviews), 14 (header), 16 (reviews summary). */
-  size?: 10 | 12 | 14 | 16;
+  /** px. Mentor Profile.dc.html: 10 (rating tile), 12 (reviews), 14 (header), 16 (reviews summary); ReviewModal.dc.html: 32 (the rating input). */
+  size?: 10 | 12 | 14 | 16 | 32;
   className?: string;
 };
 

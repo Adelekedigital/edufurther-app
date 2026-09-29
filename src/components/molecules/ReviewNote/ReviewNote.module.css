@@ -17,6 +17,11 @@
   background: var(--blue-50);
   border-color: var(--blue-100);
 }
+/* Mentor Profile.dc.html `map.submitted`. */
+.success {
+  background: var(--green-50);
+  border-color: var(--green-100);
+}
 .icon {
   color: var(--blue-500);
 }

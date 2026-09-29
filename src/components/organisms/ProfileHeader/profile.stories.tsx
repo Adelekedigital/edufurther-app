@@ -6,6 +6,7 @@ import { ShareMenu } from '@/components/molecules/ShareMenu/ShareMenu';
 import { BookSessionCard } from '../BookSessionCard/BookSessionCard';
 import { FirstMenteesCard } from '../FirstMenteesCard/FirstMenteesCard';
 import { ProfileOverview } from '../ProfileOverview/ProfileOverview';
+import { ReviewFlow, type ReviewFlowProps } from '../ReviewFlow/ReviewFlow';
 import { ReviewsList } from '../ReviewsList/ReviewsList';
 import { ReviewsSummary } from '../ReviewsSummary/ReviewsSummary';
 import { SimilarMentorsCard } from '../SimilarMentorsCard/SimilarMentorsCard';
@@ -323,4 +324,58 @@ export const SimilarMentorsLoading: Story = {
       <SimilarMentorsCard mentors={null} isLoading timeZone="Africa/Lagos" seeAllHref="/explore" />
     </div>
   ),
+};
+
+// ---- Writing a review (ReviewModal.dc.html) -----------------------------------
+
+const flow: ReviewFlowProps = {
+  mode: 'new',
+  mentorFirstName: 'Gbenga',
+  sessions: [
+    { id: 's1', startsAt: '2026-09-19T15:00:00Z', typeName: 'SOP review' },
+    { id: 's2', startsAt: '2026-09-10T15:00:00Z', typeName: 'Mock visa interview' },
+  ],
+  editableUntil: '2026-09-29T12:05:00Z',
+  author: { name: 'Esther', initials: 'E', institution: null },
+  timeZone: 'Africa/Lagos',
+  onSend: fn(),
+  pending: false,
+  error: null,
+  done: false,
+  onClose: fn(),
+  onBookAgain: fn(),
+  renderShell: (shell, body) => (
+    <div style={{ maxWidth: 480, padding: 24, border: '1px solid var(--ink-200)' }}>
+      <h2 style={{ margin: 0 }}>{shell.title}</h2>
+      <p>{shell.subtitle}</p>
+      {body}
+    </div>
+  ),
+};
+
+export const ReviewWrite: Story = { render: () => <ReviewFlow {...flow} /> };
+
+export const ReviewEdit: Story = {
+  render: () => (
+    <ReviewFlow
+      {...flow}
+      mode="edit"
+      sessionLabel="SOP review · Sep 19"
+      initial={{ overall: 4, text: 'Practical, direct feedback on my SOP draft.' }}
+    />
+  ),
+};
+
+export const ReviewDone: Story = {
+  render: () => (
+    <ReviewFlow
+      {...flow}
+      done
+      initial={{ overall: 5, text: 'We rewrote my SOP opening together. It finally reads well.' }}
+    />
+  ),
+};
+
+export const ReviewSendFailed: Story = {
+  render: () => <ReviewFlow {...flow} error="We couldn’t send your review. Try again." />,
 };

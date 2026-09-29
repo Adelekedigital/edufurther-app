@@ -5,8 +5,8 @@ import { cx } from '@/lib/utils/cx';
 import styles from './ReviewNote.module.css';
 
 type ReviewNoteProps = {
-  /** neutral: grey (nothing to do yet). info: blue (the viewer can act). */
-  tone: 'neutral' | 'info';
+  /** neutral: grey (nothing to do yet). info: blue (the viewer can act). success: green (done). */
+  tone: 'neutral' | 'info' | 'success';
   icon: IconName;
   title: string;
   body: string;

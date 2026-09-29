@@ -152,3 +152,8 @@
     position: static;
   }
 }
+
+/* The review note's "Book a session" scrolls here; clear the app header. */
+.scrollTarget {
+  scroll-margin-top: var(--space-6);
+}

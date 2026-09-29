@@ -31,6 +31,8 @@ type ReviewsListProps = {
    * (Mentor Profile.dc.html `gated`).
    */
   gate: Gate | null;
+  /** The viewer's own review; `edit` while it can still be edited. */
+  mine?: { id: string; edit: { until: string; onEdit: () => void } | null } | null;
 };
 
 /**
@@ -98,7 +100,13 @@ export function ReviewsList(p: ReviewsListProps) {
       ) : (
         <div className={styles.list}>
           {p.reviews.map((r) => (
-            <ReviewItem key={r.id} review={r} redacted={guest} />
+            <ReviewItem
+              key={r.id}
+              review={r}
+              redacted={guest}
+              mine={!!p.mine && p.mine.id === r.id}
+              edit={p.mine && p.mine.id === r.id ? (p.mine.edit ?? undefined) : undefined}
+            />
           ))}
           {!guest && (p.hasMore || p.loadMoreError) && (
             <div className={styles.more}>

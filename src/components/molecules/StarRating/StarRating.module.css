@@ -1,0 +1,44 @@
+/* ReviewModal.dc.html step 1: "Your rating". */
+.row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+.stars {
+  display: flex;
+  gap: var(--space-1);
+}
+.star {
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+}
+.star:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: calc(var(--focus-ring-width) * -1);
+}
+.glyph {
+  color: var(--ink-200);
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+.lit {
+  color: var(--rating-star);
+}
+.word {
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  line-height: normal;
+  font-weight: var(--weight-semibold);
+  color: var(--text-tertiary);
+}
+.chosen {
+  color: var(--text-primary);
+}

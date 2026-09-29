@@ -26,6 +26,10 @@ export const keys = {
     relationship: (mentorId: string, who: string) =>
       ['mentors', 'relationship', mentorId, who] as const,
     similar: (handle: string, who: string) => ['mentors', 'similar', handle, who] as const,
+    /** The viewer's sessions with this mentor that can be reviewed, and their own review. */
+    reviewable: (mentorId: string, who: string) =>
+      ['mentors', 'reviewable', mentorId, who] as const,
+    myReview: (mentorId: string, who: string) => ['mentors', 'myReview', mentorId, who] as const,
   },
   // `who`: the session identity — one mentor's own list is never another's.
   sessionTypes: {

@@ -257,3 +257,39 @@ export type SimilarMentor = {
  * none: no session together yet. due: a review is owed. Null: nothing to say.
  */
 export type ReviewPrompt = 'none' | 'due' | null;
+
+// ---- Writing a review (POST /reviews, PATCH /reviews/{id}) -------------------
+
+/** The four attribute rows' scale (ReviewModal.dc.html "Poor / Okay / Great"). */
+export type AttributeScore = 'poor' | 'okay' | 'great';
+
+/** Everything the review flow collects. */
+export type ReviewAnswers = {
+  /** Step 1 stars, 1–5: the overall rating cards average. */
+  overall: number;
+  /** Shown on the profile. */
+  text: string;
+  communication: AttributeScore;
+  knowledge: AttributeScore;
+  support: AttributeScore;
+  practicality: AttributeScore;
+  /** "How much did this session move you toward your study abroad goals?" 1–5. */
+  value: number;
+  /** "How likely are you to recommend {first}?" 1–10. */
+  recommend: number;
+  /** "How could EduFurther work better for you?" Private; only the team sees it. */
+  platformNote: string;
+};
+
+/** A completed session the viewer may review. */
+export type ReviewableSession = { id: string; startsAt: string; typeName: string | null };
+
+/** The viewer's own review of a mentor. */
+export type MyReview = {
+  id: string;
+  createdAt: string;
+  /** Null once the edit window has shut. */
+  editableUntil: string | null;
+  /** Whatever the API returns; everything while the edit window is open. */
+  answers: Partial<ReviewAnswers>;
+};

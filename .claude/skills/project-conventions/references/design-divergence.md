@@ -78,7 +78,12 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | Mentor Profile Background note "Has made the move from Nigeria to United States" | "…to the United States" (the card's `countryInSentence` rule) | Copy fix, made in frontend (product 2026-09-27: small copy/typography fixes are ours) | design file catches up |
 | Similar mentors row: "5.0" on a new mentor (Ademola D., 1 session) | No rating without reviews | Product rule: a mentor with no reviews never shows a star rating | never |
 | Reviews guest gate: "Continue with email" + "Continue with Google" | "Continue with email" (to `/signup?next=…`) and "Log in" only | Google sign-in isn't built | Google auth ships |
-| Review note `due`: "Your review on Sep 19 (SOP review) helps…" + "Write a review" | "Your review helps other mentees choose, and takes about a minute." with no button | The relationship API has no session date or type, and writing a review isn't built | review writing ships (and the API names the session) |
+| Review note `due`: "Your review on Sep 19 (SOP review) helps…" | "Your review helps other mentees choose, and takes about a minute." + "Write a review" | The relationship API has no session date or type | the API names the session |
+| ReviewModal recommend scale 0–10 (11 buttons) | 1–10 (10 buttons, "1 · Not likely") | The API has no 0 (`nps_recommend_score` 1–10) | never |
+| ReviewModal "You can edit it until tomorrow at 6:00 pm" | The real deadline, "until 4:32 pm" (10-minute window, a backend setting; `editable_until`) | Product 2026-09-29: the backend's window | never |
+| ReviewModal "What could have made it even better? We pass this on to {first}…" | Left out | No API field for anonymised feedback to the mentor | #56 |
+| ReviewModal: which session (not drawn) | A provisional "Which session is this about?" select when there are several | Design request #54 | design answers #54 |
+| ReviewModal preview "Amara O. · University of Lagos · SOP review" | First name only, then the session type | /me has no last initial or school | /me adds them |
 | Review note `again` ("You've had 3 more sessions since your last review") | Not shown | The API gives no count of sessions since the last review | backend adds it |
 | Reviews "Show fewer reviews" after expanding | Not offered | Reviews page from the server (cursor); collapsing would drop fetched pages | never |
 | Review filter chips from the design's topic list | The mentor's own session types ("All" + one per type, only with 2+) | The API filters by `session_type` id | never |

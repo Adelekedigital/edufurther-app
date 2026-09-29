@@ -1,0 +1,300 @@
+'use client';
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { components } from '@/lib/api/generated/schema';
+import type {
+  AppError,
+  AttributeScore,
+  MyReview,
+  Remote,
+  ReviewAnswers,
+  ReviewableSession,
+} from '@/types/mentor';
+import { ApiError, apiError, normaliseError } from './errors';
+import { api } from './http';
+import { keys } from './keys';
+import { sessionKey, useSession } from './session';
+
+type ReviewWrite = components['schemas']['ReviewWrite'];
+type ReviewEdit = components['schemas']['ReviewEdit'];
+
+// ---- PENDING BACKEND (backend PR #285) -----------------------------------------
+// Not in the spec yet: `overall_rating`, `editable_until` (ReviewRead,
+// AuthoredReviewRead), the scale renamed to poor | okay | great,
+// GET /me/authored-reviews?mentor_id= and the author's GET /reviews/{id}.
+// The shapes below are the agreed contract; the casts go when the spec lands.
+
+/** ReviewRead / OwnReviewRead as agreed (the author's full read while editable). */
+type ReviewReadNext = {
+  id: string;
+  created_at: string;
+  editable_until?: string | null;
+  reviewed_for?: string;
+  overall_rating?: number | null;
+  public_review: string;
+  session_value?: number;
+  withdrawn?: boolean;
+  communication_rating?: AttributeScore | null;
+  knowledge_rating?: AttributeScore | null;
+  support_rating?: AttributeScore | null;
+  practicality_rating?: AttributeScore | null;
+  valuable_rating?: number | null;
+  nps_recommend_score?: number | null;
+  private_review?: string | null;
+};
+
+type ReviewWriteNext = {
+  session_id: string;
+  overall_rating: number;
+  public_review: string;
+  communication_rating: AttributeScore;
+  knowledge_rating: AttributeScore;
+  support_rating: AttributeScore;
+  practicality_rating: AttributeScore;
+  valuable_rating: number;
+  nps_recommend_score: number;
+  private_review?: string | null;
+};
+
+type ReviewEditNext = Partial<Omit<ReviewWriteNext, 'session_id'>>;
+
+// ---- mapping ----------------------------------------------------------------
+
+export function toMyReview(r: ReviewReadNext): MyReview {
+  const a: Partial<ReviewAnswers> = {};
+  if (r.overall_rating != null) a.overall = r.overall_rating;
+  else if (r.session_value != null) a.overall = r.session_value;
+  a.text = r.public_review;
+  if (r.communication_rating) a.communication = r.communication_rating;
+  if (r.knowledge_rating) a.knowledge = r.knowledge_rating;
+  if (r.support_rating) a.support = r.support_rating;
+  if (r.practicality_rating) a.practicality = r.practicality_rating;
+  if (r.valuable_rating != null) a.value = r.valuable_rating;
+  if (r.nps_recommend_score != null) a.recommend = r.nps_recommend_score;
+  if (r.private_review != null) a.platformNote = r.private_review;
+  const open = r.editable_until && Date.parse(r.editable_until) > Date.now();
+  return {
+    id: r.id,
+    createdAt: r.created_at,
+    editableUntil: open ? r.editable_until! : null,
+    answers: a,
+  };
+}
+
+function toWrite(sessionId: string, x: ReviewAnswers): ReviewWriteNext {
+  return {
+    session_id: sessionId,
+    overall_rating: x.overall,
+    public_review: x.text.trim(),
+    communication_rating: x.communication,
+    knowledge_rating: x.knowledge,
+    support_rating: x.support,
+    practicality_rating: x.practicality,
+    valuable_rating: x.value,
+    nps_recommend_score: x.recommend,
+    private_review: x.platformNote.trim() || null,
+  };
+}
+
+/** Only what changed (PATCH: every field may be omitted). */
+export function toEdit(before: Partial<ReviewAnswers>, after: ReviewAnswers): ReviewEditNext {
+  const out: ReviewEditNext = {};
+  const text = after.text.trim();
+  if (after.overall !== before.overall) out.overall_rating = after.overall;
+  if (text !== (before.text ?? '').trim()) out.public_review = text;
+  if (after.communication !== before.communication) out.communication_rating = after.communication;
+  if (after.knowledge !== before.knowledge) out.knowledge_rating = after.knowledge;
+  if (after.support !== before.support) out.support_rating = after.support;
+  if (after.practicality !== before.practicality) out.practicality_rating = after.practicality;
+  if (after.value !== before.value) out.valuable_rating = after.value;
+  if (after.recommend !== before.recommend) out.nps_recommend_score = after.recommend;
+  const note = after.platformNote.trim();
+  if (note !== (before.platformNote ?? '').trim()) out.private_review = note || null;
+  // Unanswered (a question the API didn't return and the viewer left alone:
+  // 0 or empty) is never sent; the stored answer stands.
+  for (const k of Object.keys(out) as (keyof ReviewEditNext)[]) {
+    const v = out[k];
+    if (v === undefined || v === 0) delete out[k];
+  }
+  return out;
+}
+
+// ---- errors -------------------------------------------------------------------
+
+export type ReviewSendError =
+  | { kind: 'alreadyReviewed'; message: string }
+  | { kind: 'tooSoon'; message: string }
+  | { kind: 'editClosed'; message: string }
+  | (AppError & { kind: AppError['kind'] });
+
+function sendError(e: unknown, editing: boolean): ReviewSendError {
+  if (e instanceof ApiError && e.status === 409) {
+    if (editing)
+      return {
+        kind: 'editClosed',
+        message: 'The edit window has closed, so your review stands as written.',
+      };
+    if (e.type?.endsWith('/problems/review-already-exists'))
+      return { kind: 'alreadyReviewed', message: 'You’ve already reviewed this session.' };
+    if (e.type?.endsWith('/problems/review-interval-not-elapsed'))
+      return {
+        kind: 'tooSoon',
+        message: 'You reviewed this recently. You can add a new review after your next session.',
+      };
+  }
+  const n = normaliseError(e);
+  return n.kind === 'offline'
+    ? { ...n, message: 'You’re offline. Your review is still here; send it once you’re back.' }
+    : { ...n, message: 'We couldn’t send your review. Try again.' };
+}
+
+// ---- hooks ------------------------------------------------------------------
+
+/** GET /me/reviewable-sessions?mentor_id=: newest first. Members only. */
+export function useReviewableSessions(
+  mentorId: string | null,
+  enabled: boolean,
+): Remote<ReviewableSession[]> {
+  const session = useSession();
+  const query = useQuery({
+    queryKey: keys.mentors.reviewable(mentorId ?? '', sessionKey(session)),
+    enabled: enabled && !!mentorId && session.status !== 'unknown',
+    queryFn: async ({ signal }) => {
+      const { data, error, response } = await api.GET('/api/v1/me/reviewable-sessions', {
+        params: { query: { mentor_id: mentorId! } },
+        signal,
+      });
+      if (!data) throw apiError(response.status, error);
+      return data.data
+        .map((s) => ({
+          id: s.session_id,
+          startsAt: s.starts_at,
+          typeName: s.session_type_name ?? null,
+        }))
+        .sort((a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt));
+    },
+    staleTime: 60_000,
+    retry: false,
+  });
+  return {
+    data: query.data ?? null,
+    isLoading: enabled && query.isPending,
+    error: query.error ? normaliseError(query.error) : null,
+    retry: () => void query.refetch(),
+  };
+}
+
+/** Untyped GET for the two paths the spec doesn't have yet (PENDING BACKEND #285). */
+const getPending = api.GET as unknown as (
+  path: string,
+  init: {
+    params?: { path?: Record<string, string>; query?: Record<string, unknown> };
+    signal?: AbortSignal;
+  },
+) => Promise<{ data?: unknown; error?: unknown; response: Response }>;
+
+/**
+ * The viewer's own review of this mentor (GET /me/authored-reviews?mentor_id=),
+ * or null: enough for the "Your review" tag and the "live" note. The full
+ * review (for editing) is `useAuthoredReview`.
+ */
+export function useMyReview(mentorId: string | null, enabled: boolean): Remote<MyReview | null> {
+  const session = useSession();
+  const query = useQuery({
+    queryKey: keys.mentors.myReview(mentorId ?? '', sessionKey(session)),
+    enabled: enabled && !!mentorId && session.status !== 'unknown',
+    queryFn: async ({ signal }) => {
+      const { data, error, response } = await getPending('/api/v1/me/authored-reviews', {
+        params: { query: { mentor_id: mentorId!, limit: 1 } },
+        signal,
+      });
+      if (!data) throw apiError(response.status, error);
+      const row = (data as { data: ReviewReadNext[] }).data[0];
+      return row ? toMyReview(row) : null;
+    },
+    staleTime: 60_000,
+    retry: false,
+  });
+  return {
+    data: query.data ?? null,
+    isLoading: enabled && query.isPending,
+    error: query.error ? normaliseError(query.error) : null,
+    retry: () => void query.refetch(),
+  };
+}
+
+/** The author's full review (GET /reviews/{id}, AuthoredReviewRead), to pre-fill Edit. */
+export function useAuthoredReview(reviewId: string | null, enabled: boolean): Remote<MyReview> {
+  const session = useSession();
+  const query = useQuery({
+    queryKey: ['reviews', 'authored', reviewId ?? '', sessionKey(session)],
+    enabled: enabled && !!reviewId && session.status !== 'unknown',
+    queryFn: async ({ signal }) => {
+      const { data, error, response } = await getPending('/api/v1/reviews/{review_id}', {
+        params: { path: { review_id: reviewId! } },
+        signal,
+      });
+      if (!data) throw apiError(response.status, error);
+      return toMyReview(data as ReviewReadNext);
+    },
+    staleTime: 0,
+    retry: false,
+  });
+  return {
+    data: query.data ?? null,
+    isLoading: enabled && query.isPending,
+    error: query.error ? normaliseError(query.error) : null,
+    retry: () => void query.refetch(),
+  };
+}
+
+type SendArgs =
+  | { mode: 'new'; mentorId: string; sessionId: string; answers: ReviewAnswers }
+  | {
+      mode: 'edit';
+      mentorId: string;
+      reviewId: string;
+      before: Partial<ReviewAnswers>;
+      answers: ReviewAnswers;
+    };
+
+/** POST /reviews or PATCH /reviews/{id}; one request per call (the caller guards clicks). */
+export function useSendReview() {
+  const qc = useQueryClient();
+  const session = useSession();
+  const mutation = useMutation({
+    mutationFn: async (a: SendArgs): Promise<MyReview> => {
+      if (a.mode === 'new') {
+        const { data, error, response } = await api.POST('/api/v1/reviews', {
+          body: toWrite(a.sessionId, a.answers) as unknown as ReviewWrite,
+        });
+        if (!data) throw apiError(response.status, error);
+        return toMyReview(data as unknown as ReviewReadNext);
+      }
+      const { data, error, response } = await api.PATCH('/api/v1/reviews/{review_id}', {
+        params: { path: { review_id: a.reviewId } },
+        body: toEdit(a.before, a.answers) as unknown as ReviewEdit,
+      });
+      if (!data) throw apiError(response.status, error);
+      return toMyReview(data as unknown as ReviewReadNext);
+    },
+    onSuccess: (mine, a) => {
+      qc.setQueryData(keys.mentors.myReview(a.mentorId, sessionKey(session)), mine);
+    },
+    onSettled: (_d, _e, a) => {
+      // The list, the summary, the note and what's left to review all move.
+      void qc.invalidateQueries({ queryKey: ['mentors', 'reviews'] });
+      void qc.invalidateQueries({ queryKey: ['mentors', 'profile'] });
+      void qc.invalidateQueries({ queryKey: ['mentors', 'relationship', a.mentorId] });
+      void qc.invalidateQueries({ queryKey: ['mentors', 'reviewable', a.mentorId] });
+    },
+  });
+  const editing = mutation.variables?.mode === 'edit';
+  return {
+    send: mutation.mutate,
+    isPending: mutation.isPending,
+    result: mutation.data ?? null,
+    error: mutation.error ? sendError(mutation.error, editing) : null,
+    reset: mutation.reset,
+  };
+}
