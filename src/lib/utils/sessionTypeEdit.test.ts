@@ -1,0 +1,204 @@
+import { blankDraft, type Draft, type DraftQuestion } from './sessionTypeDraft';
+import { isRename, planQuestions, toPatchBody, type SavedQuestion } from './sessionTypeEdit';
+
+const ids = { 'document-preparation': 'o4', 'school-selection': 'o1' };
+const saved: Draft = {
+  ...blankDraft(),
+  name: 'SOP review',
+  description: 'Line by line.',
+  topics: ['document-preparation'],
+  stages: ['drafting_stage'],
+};
+
+describe('toPatchBody (only what changed)', () => {
+  it('an untouched draft sends nothing', () => {
+    expect(toPatchBody({ ...saved }, saved, ids)).toEqual({});
+  });
+
+  it('sends each changed field, in the API’s shape', () => {
+    const d: Draft = {
+      ...saved,
+      name: ' SOP review+ ',
+      topics: ['document-preparation', 'school-selection'],
+      stages: ['drafting_stage', 'other'],
+      customStage: 'Deferred',
+    };
+    expect(toPatchBody(d, saved, ids)).toEqual({
+      name: 'SOP review+',
+      service_offering_ids: ['o4', 'o1'],
+      application_stages: ['drafting_stage', 'other'],
+      custom_stage_label: 'Deferred',
+    });
+  });
+
+  it('switching to own rules sends them; switching back sends null (inherit)', () => {
+    const own: Draft = { ...saved, rules: 'custom', durationMin: 45, noticeHours: 48 };
+    expect(toPatchBody(own, saved, ids)).toMatchObject({
+      duration_minutes: 45,
+      min_notice_minutes: 2880,
+    });
+    expect(toPatchBody(saved, own, ids)).toMatchObject({
+      duration_minutes: null,
+      min_notice_minutes: null,
+      booking_window_days: null,
+      break_after_minutes: null,
+    });
+  });
+});
+
+const sq = (id: string, over: Partial<SavedQuestion> = {}): SavedQuestion => ({
+  id,
+  text: `Q ${id}`,
+  kind: 'free_text',
+  required: false,
+  options: [],
+  ...over,
+});
+const dq = (q: SavedQuestion, over: Partial<DraftQuestion> = {}): DraftQuestion => ({
+  key: q.id,
+  id: q.id,
+  text: q.text,
+  kind: q.kind,
+  required: q.required,
+  options: q.options.map((o) => o.text),
+  ...over,
+});
+
+describe('planQuestions', () => {
+  const a = sq('a');
+  const b = sq('b', {
+    kind: 'single',
+    options: [
+      { id: 'b1', text: 'Fall' },
+      { id: 'b2', text: 'Spring' },
+    ],
+  });
+
+  it('untouched: nothing', () => {
+    expect(planQuestions([dq(a), dq(b)], [a, b])).toEqual({
+      remove: [],
+      update: [],
+      add: [],
+      reorder: false,
+    });
+  });
+
+  it('removed, changed (options keep their ids by text), added, reordered', () => {
+    const plan = planQuestions(
+      [
+        dq(b, { required: true, options: ['spring', 'Summer'] }),
+        { key: 'n1', text: 'New one?', kind: 'free_text', required: false, options: [] },
+      ],
+      [a, b],
+    );
+    expect(plan.remove).toEqual(['a']);
+    expect(plan.update).toEqual([
+      {
+        id: 'b',
+        body: {
+          is_required: true,
+          // "spring" matches "Spring" (case aside): its id is kept; "Fall" goes; "Summer" is new.
+          options: [{ id: 'b2', text: 'spring' }, { text: 'Summer' }],
+        },
+      },
+    ]);
+    expect(plan.add).toEqual([
+      {
+        key: 'n1',
+        body: {
+          question_text: 'New one?',
+          question_type: 'free_text',
+          is_required: false,
+          display_order: 1,
+        },
+      },
+    ]);
+    expect(plan.reorder).toBe(true);
+  });
+
+  it('a kind change sends the type (and options for a choice)', () => {
+    const plan = planQuestions([dq(a, { kind: 'multi', options: ['X', 'Y'] })], [a]);
+    expect(plan.update[0]!.body).toEqual({
+      question_type: 'multi_choice',
+      allows_multiple: true,
+      options: [{ text: 'X' }, { text: 'Y' }],
+    });
+  });
+
+  it('only moving questions reorders, with no other request', () => {
+    expect(planQuestions([dq(b), dq(a)], [a, b])).toEqual({
+      remove: [],
+      update: [],
+      add: [],
+      reorder: true,
+    });
+  });
+});
+
+describe('option ids (review of #67)', () => {
+  const b = sq('b', {
+    kind: 'single',
+    options: [
+      { id: 'b1', text: 'Masters' },
+      { id: 'b2', text: 'PhD' },
+    ],
+  });
+  it('a renamed option keeps its id (by place), so an answer that chose it still points at it', () => {
+    const plan = planQuestions([dq(b, { options: ["Master's", 'PhD'] })], [b]);
+    expect(plan.update[0]!.body.options).toEqual([
+      { id: 'b1', text: "Master's" },
+      { id: 'b2', text: 'PhD' },
+    ]);
+  });
+  it('an id not known yet (added, not re-read) isn’t sent', () => {
+    const fresh = sq('c', {
+      kind: 'single',
+      options: [
+        { id: 'c1', text: 'A' },
+        { id: 'pending-1', text: 'B' },
+      ],
+    });
+    const plan = planQuestions([dq(fresh, { options: ['A', 'B', 'C'] })], [fresh]);
+    expect(plan.update[0]!.body.options).toEqual([
+      { id: 'c1', text: 'A' },
+      { text: 'B' },
+      { text: 'C' },
+    ]);
+  });
+});
+
+describe('a different option in the same place (review r2 of #67)', () => {
+  it('goes as new, so an answer that chose the old one isn’t repointed (the server’s 409 guards it)', () => {
+    const c = sq('c', {
+      kind: 'single',
+      options: [
+        { id: 'c1', text: 'Undergrad' },
+        { id: 'c2', text: 'Masters' },
+        { id: 'c3', text: 'PhD' },
+      ],
+    });
+    const plan = planQuestions([dq(c, { options: ['Undergrad', 'Diploma', 'PhD'] })], [c]);
+    expect(plan.update[0]!.body.options).toEqual([
+      { id: 'c1', text: 'Undergrad' },
+      { text: 'Diploma' },
+      { id: 'c3', text: 'PhD' },
+    ]);
+  });
+  it('only case, spacing or punctuation make a rename; anything else is a different option', () => {
+    expect(isRename('Masters', "Master's")).toBe(true);
+    expect(isRename('part time', 'Part-time')).toBe(true);
+    for (const [x, y] of [
+      ['Masters', 'Diploma'],
+      ['MBA', 'MSc'],
+      ['Online', 'Offline'],
+      ['Male', 'Female'],
+      ['Year 1', 'Year 2'],
+      ['Level 3', 'Level 4'],
+      ['2025', '2026'],
+      ['A-level', 'O-level'],
+      // A typo fix goes as new too: the server's 409 says so if it was answered.
+      ['Scholarhsips', 'Scholarships'],
+    ])
+      expect(isRename(x!, y!)).toBe(false);
+  });
+});

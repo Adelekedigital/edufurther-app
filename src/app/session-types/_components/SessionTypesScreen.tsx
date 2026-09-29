@@ -61,6 +61,7 @@ export function SessionTypesScreen() {
       onLiveChange={onLiveChange}
       onDelete={setConfirming}
       createHref={CREATE_HREF}
+      editHref={(id) => `/session-types/${encodeURIComponent(id)}/edit`}
       templates={TEMPLATES}
     />
   );

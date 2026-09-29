@@ -228,7 +228,11 @@ export type CreateError = AppError & { fields: FieldErrors };
  * server's `message` and `detail` are never shown. 409 on create is a name the
  * mentor already uses (backend reply #2), or a replay still in flight.
  */
-export function createError(error: unknown, body: unknown): CreateError {
+export function createError(
+  error: unknown,
+  body: unknown,
+  action: 'publish' | 'save' = 'publish',
+): CreateError {
   const e = normaliseError(error);
   const fields: FieldErrors = {};
   if (error instanceof ApiError && error.status === 422) {
@@ -252,7 +256,14 @@ export function createError(error: unknown, body: unknown): CreateError {
       message: 'Some details need another look.',
     };
   }
-  return { ...e, fields, message: `We couldn’t publish it. ${e.message} Try again.` };
+  return {
+    ...e,
+    fields,
+    message:
+      action === 'save'
+        ? `We couldn’t save your changes. ${e.message} Try again.`
+        : `We couldn’t publish it. ${e.message} Try again.`,
+  };
 }
 
 /** POST each window; the ones that failed come back so they can be retried. */

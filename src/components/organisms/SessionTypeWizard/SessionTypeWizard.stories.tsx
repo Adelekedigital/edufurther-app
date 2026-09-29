@@ -48,17 +48,20 @@ function Harness({
   step = 1,
   errors = {},
   formError = null,
+  editing = false,
 }: {
   start: Draft;
   step?: Step;
   errors?: FieldErrors;
   formError?: string | null;
+  /** The edit form: its title and "Save changes". */
+  editing?: boolean;
 }) {
   const [d, setD] = useState(start);
   const [s, setS] = useState<Step>(step);
   return (
     <SessionTypeWizard
-      title="Create a session type"
+      title={editing ? 'Edit session type' : 'Create a session type'}
       step={s}
       reached={4}
       draft={d}
@@ -77,7 +80,7 @@ function Harness({
       onStep={setS}
       onBack={() => setS((x) => (x > 1 ? ((x - 1) as Step) : x))}
       onNext={() => setS((x) => (x < 4 ? ((x + 1) as Step) : x))}
-      finishLabel="Publish session"
+      finishLabel={editing ? 'Save changes' : 'Publish session'}
       busy={false}
       onDeleteQuestion={fn()}
     />
@@ -260,5 +263,19 @@ export const WeeklyHoursOtherZoneFailed: Story = {
         onSave={fn()}
       />
     </div>
+  ),
+};
+
+/** Editing (the design's `editId`): every step open, "Save changes". */
+export const EditReview: Story = { render: () => <Harness start={sop()} step={4} editing /> };
+/** An edit that partly saved: the note, and Save to try again. */
+export const EditPartlySaved: Story = {
+  render: () => (
+    <Harness
+      start={sop()}
+      step={4}
+      editing
+      formError="Your changes are saved, except the intake questions. Save again to try those."
+    />
   ),
 };

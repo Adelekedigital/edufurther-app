@@ -20,8 +20,15 @@ import {
   useMentorDefaults,
   useRetryWindows,
   useSaveMentorDefaults,
+  type CreateError,
   type Created,
 } from '@/lib/api/data/sessionTypes';
+import {
+  useSaveSessionType,
+  type SaveResult,
+  type SavedSessionType,
+} from '@/lib/api/data/sessionTypeEdit';
+import type { SavedQuestion } from '@/lib/utils/sessionTypeEdit';
 import { useSaveWeeklyHours, useWeeklyHours } from '@/lib/api/data/weeklyHours';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { SESSION_TEMPLATES } from '@/lib/utils/sessionTemplates';
@@ -54,8 +61,21 @@ const NO_DEFAULTS = {
   requiresApproval: true,
 };
 
-/** /session-types/new — create a session type (Session Types.dc.html, form view). */
-export function CreateSessionTypeScreen({ template }: { template: string | null }) {
+/** Editing: the type as saved, and the draft it opens as (EditSessionTypeScreen loads both). */
+export type EditTarget = { id: string; saved: SavedSessionType; draft: Draft };
+
+/**
+ * The session-type form (Session Types.dc.html, form view): create at
+ * /session-types/new, or edit at /session-types/[id]/edit when `edit` is given
+ * (the design's `editId`: every step open, "Save changes").
+ */
+export function SessionTypeFormScreen({
+  template,
+  edit,
+}: {
+  template: string | null;
+  edit?: EditTarget;
+}) {
   const router = useRouter();
   const { viewer, member, chrome, account, nav } = useAppShell();
   const online = useOnline();
@@ -67,9 +87,9 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
   const weekly = useWeeklyHours(mentorId);
   const saveWeekly = useSaveWeeklyHours(mentorId);
 
-  const tmpl = SESSION_TEMPLATES.find((x) => x.key === template) ?? null;
+  const tmpl = edit ? null : (SESSION_TEMPLATES.find((x) => x.key === template) ?? null);
   const [initial, setInitial] = useState<Draft>(() =>
-    tmpl ? draftFromTemplate(tmpl) : blankDraft(),
+    edit ? edit.draft : tmpl ? draftFromTemplate(tmpl) : blankDraft(),
   );
   const [draft, setDraft] = useState<Draft>(initial);
   // Once the mentor's defaults are known (or failed: the platform's), a template
@@ -99,19 +119,46 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
   // "Set rules for this session" starts from the mentor's values, the first time.
   const customSeeded = useRef(false);
   const [step, setStep] = useState<Step>(1);
-  const [reached, setReached] = useState<Step>(1);
+  // Editing: every step is open (the design's `maxStep: 4`).
+  const [reached, setReached] = useState<Step>(edit ? 4 : 1);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [modal, setModal] = useState<
     | { kind: 'discard' }
     | { kind: 'deleteQuestion'; index: number }
     | { kind: 'published'; created: Created }
+    | { kind: 'saved' }
     | { kind: 'defaults' }
     | { kind: 'weekly' }
     | null
   >(null);
   const create = useCreateSessionType();
+  const save = useSaveSessionType();
+  // What didn't save last time (the type's own fields did): says so, and Save retries.
+  const [partial, setPartial] = useState<SaveResult['failed']>([]);
+  const [refusedQuestions, setRefusedQuestions] = useState(false);
+  // The type as saved: from the loader, then from each save's own outcome, so a
+  // retry diffs against what's really there without waiting for a re-read. A
+  // re-read that lands afterwards is the server's word: it replaces this (review of #67).
+  type Base = { draft: Draft; questions: SavedQuestion[]; windows: SavedSessionType['windows'] };
+  const [base, setBase] = useState<(Base & { from: SavedSessionType }) | null>(() =>
+    edit
+      ? {
+          draft: edit.draft,
+          questions: edit.saved.questions,
+          windows: edit.saved.windows,
+          from: edit.saved,
+        }
+      : null,
+  );
+  if (edit && base && base.from !== edit.saved)
+    setBase({
+      draft: edit.draft,
+      questions: edit.saved.questions,
+      windows: edit.saved.windows,
+      from: edit.saved,
+    });
   const retry = useRetryWindows();
-  const published = modal?.kind === 'published';
+  const published = modal?.kind === 'published' || modal?.kind === 'saved';
   const dirty = !published && JSON.stringify(draft) !== JSON.stringify(initial);
 
   // Leaving with changes asks first: the browser's own prompt on reload / close.
@@ -151,6 +198,7 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
       return next;
     });
     if (create.error) create.reset();
+    if (save.error) save.reset();
   };
 
   const goTo = (n: Step) => {
@@ -175,6 +223,60 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
     const all = { ...validateStep(draft, 1), ...validateStep(draft, 3) };
     if (Object.keys(all).length) return showErrors(all);
     const ids = Object.fromEntries(topics.flatMap((t) => (t.id ? [[t.slug, t.id]] : [])));
+    if (edit) {
+      save
+        .save({
+          id: edit.id,
+          draft,
+          // As saved now (after any partial save), so a retry sends only what's left.
+          saved: base!.draft,
+          savedQuestions: base!.questions,
+          savedWindows: base!.windows,
+          offeringIds: ids,
+          timeZone: deviceTimeZone(),
+        })
+        .then(
+          (r) => {
+            setPartial(r.failed);
+            if (!r.failed.length) return setModal({ kind: 'saved' });
+            // New questions now exist: the draft carries their ids, so a retry
+            // doesn't add them twice.
+            const addIds = (d: Draft): Draft => ({
+              ...d,
+              questions: d.questions.map((q) =>
+                r.newIds[q.key] ? { ...q, id: r.newIds[q.key] } : q,
+              ),
+            });
+            const withIds = addIds(draft);
+            // Onto the draft as it is now: anything typed during the save stays.
+            setDraft((d) => addIds(d));
+            setBase((b) => ({
+              ...b!,
+              draft: withIds,
+              questions: r.saved.questions,
+              windows: r.saved.windows,
+            }));
+            // Unsaved now means only the parts that didn't save.
+            setInitial((i) => ({
+              ...withIds,
+              ...(r.failed.includes('questions') ? { questions: i.questions } : {}),
+              ...(r.failed.includes('hours') ? { hours: i.hours, days: i.days } : {}),
+            }));
+            // A change the server refused on one question (an answered option): on it.
+            const qErrors = Object.fromEntries(
+              withIds.questions.flatMap((q, n) =>
+                r.questionErrors[q.key] ? [[`question-${n}`, r.questionErrors[q.key]!]] : [],
+              ),
+            ) as FieldErrors;
+            setRefusedQuestions(Object.keys(qErrors).length > 0 && r.onlyRefusals);
+            if (Object.keys(qErrors).length) showErrors(qErrors);
+          },
+          (err: CreateError) => {
+            if (Object.keys(err.fields).length) showErrors(err.fields);
+          },
+        );
+      return;
+    }
     create.create(
       {
         body: toCreateBody(draft, ids),
@@ -194,7 +296,17 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
     router.push(LIST);
   };
 
-  const gate = mentorGate(viewer, isMentor, '/session-types/new');
+  const gate = mentorGate(
+    viewer,
+    isMentor,
+    edit ? `/session-types/${edit.id}/edit` : '/session-types/new',
+  );
+  // PROVISIONAL copy — design request #8.
+  const partialNote = !partial.length
+    ? null
+    : refusedQuestions && partial.length === 1
+      ? 'Your changes are saved, except the intake questions marked below.'
+      : `Your changes are saved, except ${partial.map((x) => (x === 'questions' ? 'the intake questions' : 'the dedicated hours')).join(' and ')}. Save again to try those.`;
   const loading = viewer.kind === 'loading' || topicsLoading;
   const auto = autoIcon(draft.topics);
 
@@ -229,13 +341,13 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
           </div>
         ) : (
           <SessionTypeWizard
-            title="Create a session type"
+            title={edit ? 'Edit session type' : 'Create a session type'}
             step={step}
             reached={reached}
             draft={draft}
             update={update}
             errors={errors}
-            formError={create.error?.message ?? null}
+            formError={(edit ? save.error?.message : create.error?.message) ?? partialNote}
             topics={topics}
             autoIcon={auto}
             defaults={defaults.data}
@@ -264,8 +376,8 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
             onStep={goTo}
             onBack={onBack}
             onNext={onNext}
-            finishLabel="Publish session"
-            busy={create.isPending}
+            finishLabel={edit ? 'Save changes' : 'Publish session'}
+            busy={edit ? save.isPending : create.isPending}
             onDeleteQuestion={(index) => setModal({ kind: 'deleteQuestion', index })}
           />
         ))}
@@ -273,8 +385,12 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
       {modal?.kind === 'discard' && (
         // PROVISIONAL copy — design request #5.
         <ModalShell
-          title="Discard this session type?"
-          subtitle="What you’ve entered so far won’t be saved."
+          title={edit ? 'Discard your changes?' : 'Discard this session type?'}
+          subtitle={
+            edit
+              ? 'Your changes to this session type won’t be saved.'
+              : 'What you’ve entered so far won’t be saved.'
+          }
           icon="delete"
           tone="danger"
           size="sm"
@@ -375,6 +491,40 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
                 .catch(() => undefined)
             }
           />
+        </ModalShell>
+      )}
+
+      {modal?.kind === 'saved' && edit && (
+        // Session Types.dc.html `wasEdit`: "Changes saved".
+        <ModalShell
+          title="Changes saved"
+          subtitle={
+            edit.saved.read.is_active
+              ? `“${draft.name.trim()}” is live on your profile. Mentees can book it in your open hours.`
+              : // PROVISIONAL copy — design request #8 (a hidden type isn't live).
+                `“${draft.name.trim()}” is saved. It’s hidden, so mentees can’t book it until you switch it on.`
+          }
+          icon="check_circle"
+          tone="success"
+          size="sm"
+          onClose={() => router.push(LIST)}
+        >
+          <div className={styles.buttons}>
+            {edit.saved.read.is_active && member && (
+              <ButtonLink
+                href={`/mentors/${member.id}`}
+                prefetch={false}
+                size="large"
+                variant="secondary-outlined"
+                fullWidth
+              >
+                View on profile
+              </ButtonLink>
+            )}
+            <Button size="large" fullWidth onClick={() => router.push(LIST)}>
+              Done
+            </Button>
+          </div>
         </ModalShell>
       )}
 

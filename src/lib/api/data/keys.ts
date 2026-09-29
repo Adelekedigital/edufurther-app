@@ -41,6 +41,8 @@ export const keys = {
   sessionTypes: {
     all: ['sessionTypes'] as const,
     own: (who: string) => ['sessionTypes', 'own', who] as const,
+    /** One type with its questions and hours, for the edit form. */
+    edit: (id: string) => ['sessionTypes', 'edit', id] as const,
   },
   // A mentor's booking preferences and Calendar hours, by their user id.
   mentorDefaults: (userId: string) => ['mentorDefaults', userId] as const,
