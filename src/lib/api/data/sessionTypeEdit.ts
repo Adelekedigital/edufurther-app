@@ -13,6 +13,7 @@ import {
   type DraftQuestion,
   type Stage,
 } from '@/lib/utils/sessionTypeDraft';
+import { deviceTimeZone } from '@/lib/utils/format';
 import { planQuestions, toPatchBody, type SavedQuestion } from '@/lib/utils/sessionTypeEdit';
 import { ApiError, apiError, normaliseError } from './errors';
 import { api } from './http';
@@ -67,7 +68,7 @@ export function toDraft(s: SavedSessionType, defaults: BookingDefaults | null): 
     : r.service_offering
       ? [r.service_offering]
       : [];
-  const hours = toWeeklyHours(s.windows, 'UTC');
+  const hours = toWeeklyHours(s.windows, deviceTimeZone());
   return {
     name: r.name,
     description: r.description ?? '',
@@ -88,8 +89,8 @@ export function toDraft(s: SavedSessionType, defaults: BookingDefaults | null): 
     rules: inheritsAll ? 'default' : 'custom',
     windowDays: r.booking_window_days ?? mine?.windowDays ?? 28,
     breakMin: r.break_after_minutes ?? mine?.breakMin ?? 15,
-    hours: s.windows.some((w) => w.is_active) ? 'custom' : 'default',
-    days: s.windows.length ? hours.days : emptyWeek(),
+    hours: hours.rules.length ? 'custom' : 'default',
+    days: hours.rules.length ? hours.days : emptyWeek(),
     approval:
       r.requires_booking_confirmation == null
         ? 'inherit'
@@ -138,7 +139,19 @@ export function useSavedSessionType(id: string, enabled: boolean): Remote<SavedS
 }
 
 /** What didn't save, when the type's own fields did. */
-export type SaveResult = { failed: ('questions' | 'hours')[] };
+/**
+ * What the save did. `saved` is the type as it now is on the server, built from
+ * each request's own outcome (not a re-read, which may not land): the next Save
+ * diffs against it, so a retry sends only what's left (review of #67).
+ */
+export type SaveResult = {
+  failed: ('questions' | 'hours')[];
+  /** New questions' ids, by their draft key: the form writes them into the draft. */
+  newIds: Record<string, string>;
+  /** Per draft question key: our copy for a change the server refused (an answered option). */
+  questionErrors: Record<string, string>;
+  saved: { questions: SavedQuestion[]; windows: AvailabilityRuleRead[] };
+};
 
 type SaveVars = {
   id: string;
@@ -150,6 +163,23 @@ type SaveVars = {
   offeringIds: Record<string, string>;
   timeZone: string;
 };
+
+/** A saved question as the draft now has it (after a successful write). */
+function fromDraft(q: DraftQuestion, before: SavedQuestion): Omit<SavedQuestion, 'id'> {
+  const choice = q.kind === 'single' || q.kind === 'multi';
+  const texts = choice ? q.options.map((o) => o.trim()).filter(Boolean) : [];
+  return {
+    text: q.text.trim(),
+    kind: q.kind,
+    required: q.required,
+    // Ids we can't know until re-read stay as the old ones where the text matched.
+    options: texts.map((text, i) => ({
+      id:
+        before.options.find((o) => o.text === text)?.id ?? before.options[i]?.id ?? `pending-${i}`,
+      text,
+    })),
+  };
+}
 
 const ok = (p: Promise<{ response: Response }>) => p.then((r) => r.response.ok).catch(() => false);
 
@@ -180,30 +210,42 @@ export function useSaveSessionType() {
           throw createError(apiError(result.response.status, result.error), result.error, 'save');
       }
       const failed: SaveResult['failed'] = [];
+      const questionErrors: SaveResult['questionErrors'] = {};
 
-      // Questions: removed, changed, added, then the order.
+      // ---- questions: removed, changed, added, then the order -----------------
       const plan = planQuestions(v.draft.questions, v.savedQuestions);
       const qp = (question_id: string) => ({ params: { path: { session_type_id, question_id } } });
-      const results: boolean[] = [];
-      results.push(
-        ...(await Promise.all(
-          plan.remove.map((qid) =>
-            api
-              .DELETE('/api/v1/me/session-types/{session_type_id}/questions/{question_id}', qp(qid))
-              .then((r) => r.response.ok || r.response.status === 404)
-              .catch(() => false),
-          ),
-        )),
-        ...(await Promise.all(
-          plan.update.map((u) =>
-            ok(
-              api.PATCH('/api/v1/me/session-types/{session_type_id}/questions/{question_id}', {
-                ...qp(u.id),
-                body: u.body,
-              }),
-            ),
-          ),
-        )),
+      let questions = [...v.savedQuestions];
+      let questionsOk = true;
+      await Promise.all(
+        plan.remove.map(async (qid) => {
+          const r = await api
+            .DELETE('/api/v1/me/session-types/{session_type_id}/questions/{question_id}', qp(qid))
+            .catch(() => null);
+          if (r && (r.response.ok || r.response.status === 404))
+            questions = questions.filter((q) => q.id !== qid);
+          else questionsOk = false;
+        }),
+      );
+      await Promise.all(
+        plan.update.map(async (u) => {
+          const r = await api
+            .PATCH('/api/v1/me/session-types/{session_type_id}/questions/{question_id}', {
+              ...qp(u.id),
+              body: u.body,
+            })
+            .catch(() => null);
+          const dq = v.draft.questions.find((q) => q.id === u.id)!;
+          if (r?.response.ok) {
+            questions = questions.map((q) => (q.id === u.id ? { ...q, ...fromDraft(dq, q) } : q));
+          } else {
+            questionsOk = false;
+            // A booking answer chose an option this change removes (backend: 409).
+            if (r?.response.status === 409)
+              questionErrors[dq.key] =
+                'A booking already chose an option you removed or changed. Keep it, then save again.';
+          }
+        }),
       );
       const newIds: Record<string, string> = {};
       for (const a of plan.add) {
@@ -215,54 +257,69 @@ export function useSaveSessionType() {
           })
           .catch(() => null);
         const newId = r?.data && (r.data as Record<string, string>).id;
-        if (newId) newIds[a.key] = newId;
-        results.push(!!newId);
+        if (newId) {
+          newIds[a.key] = newId;
+          const dq = v.draft.questions.find((q) => q.key === a.key)!;
+          questions.push({
+            id: newId,
+            ...fromDraft(dq, { id: newId, text: '', kind: dq.kind, required: false, options: [] }),
+          });
+        } else questionsOk = false;
       }
+      // The order: every question that exists now, in the draft's order.
       const allIds = v.draft.questions.map((q) => q.id ?? newIds[q.key]);
-      if (plan.reorder && allIds.every(Boolean) && allIds.length)
-        results.push(
-          await ok(
-            api.PUT('/api/v1/me/session-types/{session_type_id}/questions/order', {
-              params: { path: { session_type_id } },
-              body: { question_ids: allIds as string[] },
-            }),
-          ),
+      if (plan.reorder && questionsOk && allIds.every(Boolean) && allIds.length) {
+        const done = await ok(
+          api.PUT('/api/v1/me/session-types/{session_type_id}/questions/order', {
+            params: { path: { session_type_id } },
+            body: { question_ids: allIds as string[] },
+          }),
         );
-      if (results.some((x) => !x)) failed.push('questions');
+        if (done) questions = allIds.map((qid) => questions.find((q) => q.id === qid)!);
+        else questionsOk = false;
+      }
+      if (!questionsOk) failed.push('questions');
 
-      // Dedicated hours: "Use my Calendar availability" is having none.
+      // ---- dedicated hours: "Use my Calendar availability" is having none -------
+      // Only this zone's active hours are shown, diffed and added to; hours kept in
+      // another zone are left as they are (review of #67).
+      const zone = toWeeklyHours(v.savedWindows, v.timeZone);
       const days: DayHours[] = v.draft.hours === 'custom' ? v.draft.days : emptyWeek();
-      const hp = planHoursSave(
-        v.savedWindows.filter((w) => w.is_active),
-        days,
-      );
-      const hourResults = await Promise.all([
-        ...hp.remove.map((w) =>
-          api
+      const hp = planHoursSave(zone.rules, days);
+      let windows = [...v.savedWindows];
+      let hoursOk = true;
+      await Promise.all(
+        hp.remove.map(async (w) => {
+          const r = await api
             .DELETE('/api/v1/me/session-types/{session_type_id}/windows/{window_id}', {
               params: { path: { session_type_id, window_id: w.id } },
             })
-            .then((r) => r.response.ok || r.response.status === 404)
-            .catch(() => false),
-        ),
-      ]);
-      for (const a of hp.add)
-        hourResults.push(
-          await ok(
-            api.POST('/api/v1/me/session-types/{session_type_id}/windows', {
-              params: { path: { session_type_id } },
-              body: {
-                day_of_week: a.day,
-                start_time: hhmm(a.slot[0]),
-                end_time: hhmm(a.slot[1]),
-                timezone: v.savedWindows[0]?.timezone ?? v.timeZone,
-                is_active: true,
-              },
-            }),
-          ),
-        );
-      if (hourResults.some((x) => !x)) failed.push('hours');
-      return { failed };
+            .catch(() => null);
+          if (r && (r.response.ok || r.response.status === 404))
+            windows = windows.filter((x) => x.id !== w.id);
+          else hoursOk = false;
+        }),
+      );
+      for (const a of hp.add) {
+        const body = {
+          day_of_week: a.day,
+          start_time: hhmm(a.slot[0]),
+          end_time: hhmm(a.slot[1]),
+          timezone: zone.timeZone,
+          is_active: true,
+        };
+        const r = await api
+          .POST('/api/v1/me/session-types/{session_type_id}/windows', {
+            params: { path: { session_type_id } },
+            body,
+          })
+          .catch(() => null);
+        const wid = r?.data && (r.data as Record<string, string>).id;
+        if (r?.response.ok && wid) windows.push({ id: wid, ...body });
+        else hoursOk = false;
+      }
+      if (!hoursOk) failed.push('hours');
+      return { failed, newIds, questionErrors, saved: { questions, windows } };
     },
     onSettled: (_r, _e, v) => {
       void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });

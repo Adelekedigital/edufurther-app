@@ -28,6 +28,7 @@ import {
   type SaveResult,
   type SavedSessionType,
 } from '@/lib/api/data/sessionTypeEdit';
+import type { SavedQuestion } from '@/lib/utils/sessionTypeEdit';
 import { useSaveWeeklyHours, useWeeklyHours } from '@/lib/api/data/weeklyHours';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { SESSION_TEMPLATES } from '@/lib/utils/sessionTemplates';
@@ -134,6 +135,28 @@ export function SessionTypeFormScreen({
   const save = useSaveSessionType();
   // What didn't save last time (the type's own fields did): says so, and Save retries.
   const [partial, setPartial] = useState<SaveResult['failed']>([]);
+  const [refusedQuestions, setRefusedQuestions] = useState(false);
+  // The type as saved: from the loader, then from each save's own outcome, so a
+  // retry diffs against what's really there without waiting for a re-read. A
+  // re-read that lands afterwards is the server's word: it replaces this (review of #67).
+  type Base = { draft: Draft; questions: SavedQuestion[]; windows: SavedSessionType['windows'] };
+  const [base, setBase] = useState<(Base & { from: SavedSessionType }) | null>(() =>
+    edit
+      ? {
+          draft: edit.draft,
+          questions: edit.saved.questions,
+          windows: edit.saved.windows,
+          from: edit.saved,
+        }
+      : null,
+  );
+  if (edit && base && base.from !== edit.saved)
+    setBase({
+      draft: edit.draft,
+      questions: edit.saved.questions,
+      windows: edit.saved.windows,
+      from: edit.saved,
+    });
   const retry = useRetryWindows();
   const published = modal?.kind === 'published' || modal?.kind === 'saved';
   const dirty = !published && JSON.stringify(draft) !== JSON.stringify(initial);
@@ -205,17 +228,46 @@ export function SessionTypeFormScreen({
         .save({
           id: edit.id,
           draft,
-          // The latest as saved (re-read after a partial save), so a retry sends only what's left.
-          saved: edit.draft,
-          savedQuestions: edit.saved.questions,
-          savedWindows: edit.saved.windows,
+          // As saved now (after any partial save), so a retry sends only what's left.
+          saved: base!.draft,
+          savedQuestions: base!.questions,
+          savedWindows: base!.windows,
           offeringIds: ids,
           timeZone: deviceTimeZone(),
         })
         .then(
           (r) => {
             setPartial(r.failed);
-            if (!r.failed.length) setModal({ kind: 'saved' });
+            if (!r.failed.length) return setModal({ kind: 'saved' });
+            // New questions now exist: the draft carries their ids, so a retry
+            // doesn't add them twice.
+            const withIds = {
+              ...draft,
+              questions: draft.questions.map((q) =>
+                r.newIds[q.key] ? { ...q, id: r.newIds[q.key] } : q,
+              ),
+            };
+            setDraft(withIds);
+            setBase((b) => ({
+              ...b!,
+              draft: withIds,
+              questions: r.saved.questions,
+              windows: r.saved.windows,
+            }));
+            // Unsaved now means only the parts that didn't save.
+            setInitial((i) => ({
+              ...withIds,
+              ...(r.failed.includes('questions') ? { questions: i.questions } : {}),
+              ...(r.failed.includes('hours') ? { hours: i.hours, days: i.days } : {}),
+            }));
+            // A change the server refused on one question (an answered option): on it.
+            const qErrors = Object.fromEntries(
+              withIds.questions.flatMap((q, n) =>
+                r.questionErrors[q.key] ? [[`question-${n}`, r.questionErrors[q.key]!]] : [],
+              ),
+            ) as FieldErrors;
+            setRefusedQuestions(Object.keys(qErrors).length > 0);
+            if (Object.keys(qErrors).length) showErrors(qErrors);
           },
           (err: CreateError) => {
             if (Object.keys(err.fields).length) showErrors(err.fields);
@@ -248,9 +300,11 @@ export function SessionTypeFormScreen({
     edit ? `/session-types/${edit.id}/edit` : '/session-types/new',
   );
   // PROVISIONAL copy — design request #8.
-  const partialNote = partial.length
-    ? `Your changes are saved, except ${partial.map((x) => (x === 'questions' ? 'the intake questions' : 'the dedicated hours')).join(' and ')}. Save again to try those.`
-    : null;
+  const partialNote = !partial.length
+    ? null
+    : refusedQuestions && partial.length === 1
+      ? 'Your changes are saved, except the intake questions marked below.'
+      : `Your changes are saved, except ${partial.map((x) => (x === 'questions' ? 'the intake questions' : 'the dedicated hours')).join(' and ')}. Save again to try those.`;
   const loading = viewer.kind === 'loading' || topicsLoading;
   const auto = autoIcon(draft.topics);
 

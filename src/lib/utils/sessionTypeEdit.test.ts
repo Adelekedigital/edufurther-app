@@ -134,3 +134,35 @@ describe('planQuestions', () => {
     });
   });
 });
+
+describe('option ids (review of #67)', () => {
+  const b = sq('b', {
+    kind: 'single',
+    options: [
+      { id: 'b1', text: 'Masters' },
+      { id: 'b2', text: 'PhD' },
+    ],
+  });
+  it('a renamed option keeps its id (by place), so an answer that chose it still points at it', () => {
+    const plan = planQuestions([dq(b, { options: ["Master's", 'PhD'] })], [b]);
+    expect(plan.update[0]!.body.options).toEqual([
+      { id: 'b1', text: "Master's" },
+      { id: 'b2', text: 'PhD' },
+    ]);
+  });
+  it('an id not known yet (added, not re-read) isn’t sent', () => {
+    const fresh = sq('c', {
+      kind: 'single',
+      options: [
+        { id: 'c1', text: 'A' },
+        { id: 'pending-1', text: 'B' },
+      ],
+    });
+    const plan = planQuestions([dq(fresh, { options: ['A', 'B', 'C'] })], [fresh]);
+    expect(plan.update[0]!.body.options).toEqual([
+      { id: 'c1', text: 'A' },
+      { text: 'B' },
+      { text: 'C' },
+    ]);
+  });
+});

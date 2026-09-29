@@ -99,7 +99,12 @@ const ready = (data = SAVED) => ({ data, isLoading: false, error: null, retry: v
 
 beforeEach(() => {
   push.mockReset();
-  save.mockReset().mockResolvedValue({ failed: [] });
+  save.mockReset().mockResolvedValue({
+    failed: [],
+    newIds: {},
+    questionErrors: {},
+    saved: { questions: [], windows: [] },
+  });
   savedMock = ready();
 });
 
@@ -135,7 +140,12 @@ describe('EditSessionTypeScreen', () => {
 
   it('a partial save says what didn’t save, stays, and Save tries again', async () => {
     const user = userEvent.setup();
-    save.mockResolvedValueOnce({ failed: ['questions'] });
+    save.mockResolvedValueOnce({
+      failed: ['questions'],
+      newIds: {},
+      questionErrors: {},
+      saved: { questions: SAVED.questions, windows: [] },
+    });
     render(<EditSessionTypeScreen id="st1" />);
     await user.click(screen.getByRole('button', { name: /^Review/ }));
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
@@ -203,5 +213,61 @@ describe('EditSessionTypeScreen', () => {
     savedMock = { data: null, isLoading: true, error: null, retry: vi.fn() };
     render(<EditSessionTypeScreen id="st1" />);
     expect(screen.getByRole('status', { name: 'Loading' })).toBeInTheDocument();
+  });
+
+  it('a retry after a partial save carries the new ids and what saved (review of #67)', async () => {
+    const user = userEvent.setup();
+    const savedAfter = {
+      questions: [
+        ...SAVED.questions,
+        { id: 'qb', text: 'Deadline?', kind: 'free_text', required: false, options: [] },
+      ],
+      windows: [],
+    };
+    save
+      .mockResolvedValueOnce({
+        failed: ['hours'],
+        newIds: { k1: 'qb' },
+        questionErrors: {},
+        saved: savedAfter,
+      })
+      .mockResolvedValueOnce({ failed: [], newIds: {}, questionErrors: {}, saved: savedAfter });
+    render(<EditSessionTypeScreen id="st1" />);
+    await user.click(screen.getByRole('button', { name: /^Review/ }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(
+      await screen.findByText(
+        'Your changes are saved, except the dedicated hours. Save again to try those.',
+      ),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    const second = save.mock.calls[1]![0];
+    expect(second.savedQuestions).toEqual(savedAfter.questions);
+    expect(second.saved.name).toBe('SOP review');
+  });
+
+  it('an answered option the server wouldn’t change is said on that question', async () => {
+    const user = userEvent.setup();
+    save.mockResolvedValueOnce({
+      failed: ['questions'],
+      newIds: {},
+      questionErrors: {
+        qa: 'A booking already chose an option you removed or changed. Keep it, then save again.',
+      },
+      saved: { questions: SAVED.questions, windows: [] },
+    });
+    render(<EditSessionTypeScreen id="st1" />);
+    await user.click(screen.getByRole('button', { name: /^Review/ }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(
+      await screen.findByText('Your changes are saved, except the intake questions marked below.'),
+    ).toBeInTheDocument();
+    // Taken to the question.
+    expect(screen.getByText('Step 2 of 4 · Intake questions')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'A booking already chose an option you removed or changed. Keep it, then save again.',
+      ),
+    ).toBeInTheDocument();
   });
 });

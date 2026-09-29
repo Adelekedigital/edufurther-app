@@ -37,6 +37,24 @@ export function toPatchBody(d: Draft, saved: Draft, offeringIds: Record<string, 
 const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 /**
+ * Each option keeps its saved id where it can, so an answer that chose it still
+ * points at it: by text (case aside), else the saved option in the same place
+ * that no other option took (a renamed one: "Masters" → "Master's"). An id not
+ * known yet (added, not re-read) isn't sent: the option goes as new.
+ */
+function keepIds(texts: string[], saved: { id: string; text: string }[]) {
+  const known = saved.filter((o) => !o.id.startsWith('pending-'));
+  const byText = texts.map((t) => known.find((o) => same(o.text, t))?.id);
+  const taken = new Set(byText.filter(Boolean));
+  return texts.map((text, i) => {
+    const byPlace = saved[i] && !saved[i]!.id.startsWith('pending-') && !taken.has(saved[i]!.id);
+    const id = byText[i] ?? (byPlace ? saved[i]!.id : undefined);
+    if (id) taken.add(id);
+    return id ? { id, text } : { text };
+  });
+}
+
+/**
  * The question requests: removed ones deleted, changed ones patched (a choice's
  * options keep their ids by text, so an answer that chose one still points at
  * it), new ones added, and the order saved when it changed.
@@ -64,10 +82,7 @@ export function planQuestions(draft: DraftQuestion[], saved: SavedQuestion[]) {
       const texts = w.options.map((o) => o.text);
       const before = s.options.map((o) => o.text);
       if (JSON.stringify(texts) !== JSON.stringify(before) || q.kind !== s.kind)
-        body.options = texts.map((text) => {
-          const match = s.options.find((o) => same(o.text, text));
-          return match ? { id: match.id, text } : { text };
-        });
+        body.options = keepIds(texts, s.options);
     }
     if (Object.keys(body).length) update.push({ id: s.id, body });
   });

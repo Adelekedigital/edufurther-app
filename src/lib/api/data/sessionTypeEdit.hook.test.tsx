@@ -150,7 +150,7 @@ describe('useSaveSessionType', () => {
           ],
         }),
       ),
-    ).resolves.toEqual({ failed: [] });
+    ).resolves.toMatchObject({ failed: [] });
     expect(PATCH).toHaveBeenCalledTimes(1);
     expect(PATCH.mock.calls[0]![1].body).toEqual({ name: 'SOP review+' });
     expect(POST.mock.calls[0]![0]).toBe('/api/v1/me/session-types/{session_type_id}/questions');
@@ -188,7 +188,7 @@ describe('useSaveSessionType', () => {
     days[2] = { on: true, slots: [[540, 600]] };
     await expect(
       result.current.save(vars({ ...d, name: 'X', questions: [], hours: 'custom', days })),
-    ).resolves.toEqual({ failed: ['questions'] });
+    ).resolves.toMatchObject({ failed: ['questions'] });
   });
 });
 
@@ -208,5 +208,154 @@ describe('useSavedSessionType', () => {
     });
     await waitFor(() => expect(result.current.error?.kind).toBe('notFound'));
     expect(GET).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useSaveSessionType — a retry after a partial save (review of #67)', () => {
+  let qc: QueryClient;
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+  );
+  beforeEach(() => {
+    for (const f of [PATCH, POST, DELETE, PUT, GET]) f.mockReset();
+    qc = new QueryClient();
+  });
+
+  it('the second Save sends no question again when only the hours failed', async () => {
+    PATCH.mockImplementation(() => reply(200, { updated: true }));
+    PUT.mockImplementation(() => reply(204));
+    let hoursFail = true;
+    POST.mockImplementation((path: string) =>
+      path.endsWith('/questions')
+        ? reply(201, { id: 'qb' })
+        : hoursFail
+          ? reply(500)
+          : reply(201, { id: 'w1' }),
+    );
+    const { result } = renderHook(() => useSaveSessionType(), { wrapper });
+    const d = toDraft(saved(), defaults);
+    const days = d.days.map((x) => ({ ...x }));
+    days[2] = { on: true, slots: [[540, 600]] };
+    const draft = {
+      ...d,
+      hours: 'custom' as const,
+      days,
+      questions: [
+        ...d.questions,
+        { key: 'new', text: 'Deadline?', kind: 'free_text' as const, required: false, options: [] },
+      ],
+    };
+    const first = await result.current.save({
+      id: 'st1',
+      draft,
+      saved: d,
+      savedQuestions: saved().questions,
+      savedWindows: [],
+      offeringIds: {},
+      timeZone: 'Africa/Lagos',
+    });
+    expect(first.failed).toEqual(['hours']);
+    expect(first.newIds).toEqual({ new: 'qb' });
+    expect(first.saved.questions.map((q) => q.id)).toEqual(['qa', 'qb']);
+
+    // As the form does: the draft carries the new id; the baseline is what saved.
+    for (const f of [PATCH, POST, DELETE, PUT]) f.mockClear();
+    hoursFail = false;
+    const withIds = {
+      ...draft,
+      questions: draft.questions.map((q) =>
+        first.newIds[q.key] ? { ...q, id: first.newIds[q.key] } : q,
+      ),
+    };
+    const second = await result.current.save({
+      id: 'st1',
+      draft: withIds,
+      saved: withIds,
+      savedQuestions: first.saved.questions,
+      savedWindows: first.saved.windows,
+      offeringIds: {},
+      timeZone: 'Africa/Lagos',
+    });
+    expect(second.failed).toEqual([]);
+    expect(PATCH).not.toHaveBeenCalled();
+    expect(DELETE).not.toHaveBeenCalled();
+    expect(PUT).not.toHaveBeenCalled();
+    // Only the hours, once.
+    expect(POST).toHaveBeenCalledTimes(1);
+    expect(POST.mock.calls[0]![0]).toBe('/api/v1/me/session-types/{session_type_id}/windows');
+  });
+
+  it('an answered option the change removes (409) is said on that question', async () => {
+    PATCH.mockImplementation((path: string) =>
+      path.endsWith('{question_id}') ? reply(409) : reply(200, { updated: true }),
+    );
+    const { result } = renderHook(() => useSaveSessionType(), { wrapper });
+    const base = saved({
+      questions: [
+        {
+          id: 'qs',
+          text: 'For?',
+          kind: 'single',
+          required: true,
+          options: [
+            { id: 'o1', text: 'Masters' },
+            { id: 'o2', text: 'PhD' },
+          ],
+        },
+      ],
+    });
+    const d = toDraft(base, defaults);
+    const r = await result.current.save({
+      id: 'st1',
+      draft: { ...d, questions: [{ ...d.questions[0]!, options: ['Masters', 'MBA'] }] },
+      saved: d,
+      savedQuestions: base.questions,
+      savedWindows: [],
+      offeringIds: {},
+      timeZone: 'Africa/Lagos',
+    });
+    expect(r.failed).toEqual(['questions']);
+    expect(r.questionErrors).toEqual({
+      qs: 'A booking already chose an option you removed or changed. Keep it, then save again.',
+    });
+  });
+
+  it('hours kept in another zone are neither shown nor deleted; new ones go in the shown zone', async () => {
+    PATCH.mockImplementation(() => reply(200, { updated: true }));
+    POST.mockImplementation(() => reply(201, { id: 'w9' }));
+    DELETE.mockImplementation(() => reply(200));
+    const w = (id: string, day: number, zone: string, active = true) => ({
+      id,
+      day_of_week: day,
+      start_time: '09:00:00',
+      end_time: '10:00:00',
+      timezone: zone,
+      is_active: active,
+    });
+    const base = saved({
+      windows: [
+        w('a', 1, 'Africa/Lagos'),
+        w('b', 2, 'Africa/Lagos'),
+        w('c', 3, 'Europe/London'),
+        w('d', 4, 'Africa/Lagos', false),
+      ],
+    });
+    const d = toDraft(base, defaults);
+    expect(d.days[3]!.on).toBe(false); // London's Wednesday isn't shown
+    expect(d.days[4]!.on).toBe(false); // an inactive one isn't either
+    const days = d.days.map((x) => ({ ...x }));
+    days[5] = { on: true, slots: [[540, 600]] };
+    const { result } = renderHook(() => useSaveSessionType(), { wrapper });
+    await result.current.save({
+      id: 'st1',
+      draft: { ...d, name: 'X', days },
+      saved: d,
+      savedQuestions: base.questions,
+      savedWindows: base.windows,
+      offeringIds: {},
+      timeZone: 'America/New_York',
+    });
+    expect(DELETE).not.toHaveBeenCalled();
+    expect(POST.mock.calls[0]![1].body).toMatchObject({ day_of_week: 5, timezone: 'Africa/Lagos' });
   });
 });
