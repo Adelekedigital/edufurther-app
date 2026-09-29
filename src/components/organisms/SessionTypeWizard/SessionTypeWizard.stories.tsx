@@ -19,11 +19,11 @@ type Story = StoryObj;
 
 const TOPICS = [
   { slug: 'school-selection', label: 'School selection', id: 'o1' },
-  { slug: 'visa-and-interview', label: 'Visa and interview', id: 'o2' },
+  { slug: 'interview-preparation', label: 'Interview preparation', id: 'o2' },
   { slug: 'program-selection', label: 'Program selection', id: 'o3' },
-  { slug: 'application-documents', label: 'Application documents', id: 'o4' },
-  { slug: 'career-guidance', label: 'Career guidance', id: 'o5' },
-  { slug: 'scholarships-and-funding', label: 'Scholarships & funding', id: 'o6' },
+  { slug: 'document-preparation', label: 'Document preparation', id: 'o4' },
+  { slug: 'test-preparation', label: 'Test preparation', id: 'o5' },
+  { slug: 'scholarships-financial-aid', label: 'Scholarships & financial aid', id: 'o6' },
 ];
 const DEFAULTS = { windowDays: 28, breakMin: 15, requiresApproval: true };
 const sop = () => draftFromTemplate(SESSION_TEMPLATES[0]!);
@@ -75,7 +75,7 @@ export const CoreDetailsFull: Story = {
     <Harness
       start={{
         ...sop(),
-        topics: ['application-documents', 'school-selection', 'program-selection'],
+        topics: ['document-preparation', 'school-selection', 'program-selection'],
         stage: 'other',
         customStage: 'Deferred admission',
         icon: 'lightbulb',

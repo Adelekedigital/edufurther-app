@@ -20,7 +20,7 @@ export const SESSION_TEMPLATES: SessionTemplate[] = [
     icon: 'edit_document',
     description:
       'We’ll work through your statement of purpose together, focusing on how your story fits the program and the strength of your opening. You’ll leave with a prioritized revision list and clarity on your next draft.',
-    topic: 'application-documents',
+    topic: 'document-preparation',
     durationMin: 60,
     questions: [
       { text: 'Which programs are you applying to?', type: 'free_text', required: true },
@@ -32,7 +32,7 @@ export const SESSION_TEMPLATES: SessionTemplate[] = [
     name: 'Mock visa interview',
     icon: 'record_voice_over',
     description: 'A realistic practice interview with clear notes on what to tighten.',
-    topic: 'visa-and-interview',
+    topic: 'interview-preparation',
     durationMin: 45,
     questions: [{ text: 'Which embassy and interview date?', type: 'free_text', required: true }],
   },

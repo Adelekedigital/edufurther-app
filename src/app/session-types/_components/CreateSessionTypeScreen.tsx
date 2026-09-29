@@ -144,7 +144,7 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
 
   const gate = mentorGate(viewer, isMentor, '/session-types/new');
   const loading = viewer.kind === 'loading' || topicsLoading;
-  const auto = autoIcon(draft.topics[0]);
+  const auto = autoIcon(draft.topics);
 
   return (
     <AppShell active="Sessions" nav={nav} chrome={chrome} account={account} offline={!online}>

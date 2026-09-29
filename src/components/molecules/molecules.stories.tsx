@@ -36,14 +36,14 @@ type Story = StoryObj;
 
 const TOPICS = [
   { slug: 'school-selection', label: 'School selection' },
-  { slug: 'visa-and-interview', label: 'Visa and interview' },
-  { slug: 'application-documents', label: 'Application documents' },
-  { slug: 'scholarships-and-funding', label: 'Scholarships & funding' },
+  { slug: 'interview-preparation', label: 'Interview preparation' },
+  { slug: 'document-preparation', label: 'Document preparation' },
+  { slug: 'scholarships-financial-aid', label: 'Scholarships & financial aid' },
 ];
 
 export const Filters: Story = {
   render: function Render() {
-    const [sel, setSel] = useState(['application-documents']);
+    const [sel, setSel] = useState(['document-preparation']);
     const [q, setQ] = useState('');
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 720 }}>
@@ -394,7 +394,7 @@ export const Fields: Story = {
 /** Session Types topics (DS choice chips): at three, the rest are disabled. */
 export const Choices: Story = {
   render: function Render() {
-    const [sel, setSel] = useState(['application-documents', 'school-selection']);
+    const [sel, setSel] = useState(['document-preparation', 'school-selection']);
     return (
       <ChoiceChips
         label="Topics"
@@ -484,7 +484,7 @@ export const ReviewBlocks: Story = {
           onEdit={fn()}
           rows={[
             { k: 'Name', v: 'SOP draft review' },
-            { k: 'Topics', v: 'Application documents, School selection' },
+            { k: 'Topics', v: 'Document preparation, School selection' },
             { k: 'Best for', v: 'Drafting' },
           ]}
         />
@@ -492,7 +492,7 @@ export const ReviewBlocks: Story = {
       <SessionPreviewCard
         name="SOP draft review"
         description="We’ll work through your statement of purpose together. You’ll leave with a prioritized revision list."
-        facts={['60 min', 'Application documents', 'School selection']}
+        facts={['60 min', 'Document preparation', 'School selection']}
       />
     </div>
   ),

@@ -24,19 +24,22 @@ type MentorSessionTypeWrite = components['schemas']['MentorSessionTypeWrite'];
 // ---- mapping ----------------------------------------------------------------
 
 /**
- * Automatic icon from the topic (design `autoIcon`, re-keyed to the six catalog
- * offerings — design-divergence.md). No topic: the video call.
+ * Automatic icon from the topics (design `autoIcon`, re-keyed to the catalog's
+ * offering codes — design-divergence.md): the first topic's icon; none, or three
+ * or more (a general call), is the video call.
  */
 const TOPIC_ICON: Record<string, SessionIcon> = {
+  'test-preparation': 'quiz',
+  'document-preparation': 'edit_document',
   'school-selection': 'school',
   'program-selection': 'school',
-  'visa-and-interview': 'record_voice_over',
-  'application-documents': 'edit_document',
-  'career-guidance': 'badge',
-  'scholarships-and-funding': 'payments',
+  'scholarships-financial-aid': 'payments',
+  'interview-preparation': 'record_voice_over',
 };
-export function autoIcon(topicCode: string | null | undefined): SessionIcon {
-  return (topicCode && TOPIC_ICON[topicCode]) || 'video_call';
+export function autoIcon(topicCodes: readonly (string | null | undefined)[]): SessionIcon {
+  const first = topicCodes[0];
+  if (!first || topicCodes.length >= 3) return 'video_call';
+  return TOPIC_ICON[first] ?? 'video_call';
 }
 
 export function toOwnSessionType(
@@ -59,7 +62,7 @@ export function toOwnSessionType(
     isLive: r.is_active,
     topics,
     iconChoice: r.icon ?? null,
-    icon: r.icon ?? autoIcon(topics[0]?.code),
+    icon: r.icon ?? autoIcon(topics.map((t) => t.code)),
     questionCount,
   };
 }

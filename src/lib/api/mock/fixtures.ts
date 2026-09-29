@@ -11,19 +11,24 @@ type LookupRead = components['schemas']['LookupRead'];
 
 export const OFFERINGS: LookupRead[] = [
   { id: 'o1', code: 'school-selection', display_name: 'School selection', category: null },
-  { id: 'o2', code: 'visa-and-interview', display_name: 'Visa and interview', category: null },
+  {
+    id: 'o2',
+    code: 'interview-preparation',
+    display_name: 'Interview preparation',
+    category: null,
+  },
   { id: 'o3', code: 'program-selection', display_name: 'Program selection', category: null },
   {
     id: 'o4',
-    code: 'application-documents',
-    display_name: 'Application documents',
+    code: 'document-preparation',
+    display_name: 'Document preparation',
     category: null,
   },
-  { id: 'o5', code: 'career-guidance', display_name: 'Career guidance', category: null },
+  { id: 'o5', code: 'test-preparation', display_name: 'Test preparation', category: null },
   {
     id: 'o6',
-    code: 'scholarships-and-funding',
-    display_name: 'Scholarships & funding',
+    code: 'scholarships-financial-aid',
+    display_name: 'Scholarships & financial aid',
     category: null,
   },
 ];
@@ -82,7 +87,7 @@ const DESIGN_SAMPLE: MentorSummaryRead[] = [
     23,
     11,
     4.9,
-    off('scholarships-and-funding', 'application-documents', 'visa-and-interview'),
+    off('scholarships-financial-aid', 'document-preparation', 'interview-preparation'),
   ),
   base(
     'm-mariam',
@@ -94,7 +99,7 @@ const DESIGN_SAMPLE: MentorSummaryRead[] = [
     12,
     4,
     4.9,
-    off('application-documents', 'scholarships-and-funding'),
+    off('document-preparation', 'scholarships-financial-aid'),
   ),
   base(
     'm-chukwueze',
@@ -106,7 +111,7 @@ const DESIGN_SAMPLE: MentorSummaryRead[] = [
     2,
     0,
     null,
-    off('scholarships-and-funding', 'career-guidance'),
+    off('scholarships-financial-aid', 'test-preparation'),
   ),
   base(
     'm-adaeze',
@@ -118,7 +123,7 @@ const DESIGN_SAMPLE: MentorSummaryRead[] = [
     0,
     0,
     null,
-    off('application-documents', 'scholarships-and-funding'),
+    off('document-preparation', 'scholarships-financial-aid'),
   ),
   base(
     'm-jesuah',
@@ -130,7 +135,7 @@ const DESIGN_SAMPLE: MentorSummaryRead[] = [
     52,
     4,
     4.9,
-    off('application-documents', 'program-selection'),
+    off('document-preparation', 'program-selection'),
   ),
 ];
 
@@ -194,9 +199,9 @@ const COURSES = [
 ];
 const SETS = [
   off('school-selection', 'program-selection'),
-  off('visa-and-interview'),
-  off('career-guidance', 'application-documents'),
-  off('scholarships-and-funding', 'school-selection', 'application-documents'),
+  off('interview-preparation'),
+  off('test-preparation', 'document-preparation'),
+  off('scholarships-financial-aid', 'school-selection', 'document-preparation'),
 ];
 
 /**
@@ -253,7 +258,7 @@ export const FEATURED = {
     122,
     34,
     4.9,
-    off('application-documents', 'career-guidance'),
+    off('document-preparation', 'test-preparation'),
     avatarUrl(FEATURED_PHOTO.file),
   ),
   about_me:

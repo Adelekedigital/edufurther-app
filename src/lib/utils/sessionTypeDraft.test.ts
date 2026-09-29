@@ -14,12 +14,12 @@ import {
   type Draft,
 } from './sessionTypeDraft';
 
-const ids = { 'application-documents': 'o4', 'school-selection': 'o1' };
+const ids = { 'document-preparation': 'o4', 'school-selection': 'o1' };
 const filled = (over: Partial<Draft> = {}): Draft => ({
   ...blankDraft(),
   name: ' SOP review ',
   description: 'Leave with a list.',
-  topics: ['application-documents'],
+  topics: ['document-preparation'],
   ...over,
 });
 
@@ -94,7 +94,7 @@ describe('toCreateBody', () => {
   it('maps the draft: minutes, topic ids, inherit as null, choices as multi_choice', () => {
     const body = toCreateBody(
       filled({
-        topics: ['application-documents', 'school-selection'],
+        topics: ['document-preparation', 'school-selection'],
         noticeHours: 48,
         icon: 'lightbulb',
         questions: [
@@ -202,7 +202,7 @@ describe('templates', () => {
     const d = draftFromTemplate(SESSION_TEMPLATES[0]!);
     expect(d).toMatchObject({
       name: 'SOP draft review',
-      topics: ['application-documents'],
+      topics: ['document-preparation'],
       durationMin: 60,
     });
     expect(d.questions.map((q) => q.kind)).toEqual(['free_text', 'file_upload']);
