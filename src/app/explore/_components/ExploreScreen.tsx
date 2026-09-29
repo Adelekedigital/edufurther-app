@@ -244,7 +244,8 @@ export function ExploreScreen() {
         />
       )}
 
-      {booking && (
+      {/* Also closes an open booking if /me turns the viewer into a mentor (review of #52). */}
+      {booking && canBook && (
         <BookingFlow
           key={booking.id}
           mentor={booking}
