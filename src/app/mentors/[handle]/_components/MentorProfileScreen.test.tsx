@@ -25,9 +25,16 @@ vi.mock('@/app/_shell/useAppShell', () => ({
         member: null,
         chrome: 'loading',
         account: undefined,
+        canBook: true,
       };
     if (isGuest)
-      return { viewer: { kind: 'guest' }, member: null, chrome: 'guest', account: undefined };
+      return {
+        viewer: { kind: 'guest' },
+        member: null,
+        chrome: 'guest',
+        account: undefined,
+        canBook: true,
+      };
     // As in useAppShell: `member` is the viewer itself, when it's a member.
     const m = {
       kind: 'member',
@@ -40,7 +47,8 @@ vi.mock('@/app/_shell/useAppShell', () => ({
       completedSessions: 0,
       credits: null,
     } satisfies Extract<Viewer, { kind: 'member' }>;
-    return { viewer: m, member: m, chrome: 'member', account: undefined };
+    // canBookFor: mentors can't book.
+    return { viewer: m, member: m, chrome: 'member', account: undefined, canBook: !viewerIsMentor };
   },
 }));
 
@@ -54,7 +62,8 @@ vi.mock('@/lib/api/data/reviews', () => ({
     reviewsArgs(...args);
     return reviewsRemote;
   },
-  useReviewPrompt: () => reviewPrompt,
+  // Like the real hook: nothing when the screen doesn't ask.
+  useReviewPrompt: (_id: string | null, enabled: boolean) => (enabled ? reviewPrompt : null),
 }));
 // Per test: the Similar mentors card's list, and whether it was asked for.
 let similarRemote: Remote<typeof similarMentors>;
@@ -505,12 +514,10 @@ describe('MentorProfileScreen — Similar mentors', () => {
       screen.getByRole('complementary', { name: 'Booking, track record and similar mentors' }),
     ).toBeInTheDocument();
     unmount();
-    // Another mentor: booking and track record, no similar mentors.
+    // Another mentor: no booking (mentors can't book), no similar mentors.
     viewerIsMentor = true;
     const second = render(<MentorProfileScreen handle="gbenga" />);
-    expect(
-      screen.getByRole('complementary', { name: 'Booking and track record' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('complementary', { name: 'Track record' })).toBeInTheDocument();
     second.unmount();
     viewerIsMentor = false;
     // The owner: no booking card, no similar mentors.
@@ -538,6 +545,66 @@ describe('MentorProfileScreen — Similar mentors', () => {
     expect(screen.queryByRole('heading', { name: 'Similar mentors' })).not.toBeInTheDocument();
     expect(
       screen.getByRole('complementary', { name: 'Booking and track record' }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe('MentorProfileScreen — a mentor viewing another mentor (mentors can’t book)', () => {
+  it('no Book controls: header, booking card, first-mentees card', () => {
+    viewerIsMentor = true;
+    profile = state({
+      data: { ...fullProfile, mentor: { ...fullProfile.mentor, completedSessions: 1 } },
+    });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('button', { name: /^Book/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Book a session' })).not.toBeInTheDocument();
+    // The rest of the profile is still there.
+    expect(screen.getByRole('heading', { level: 1, name: 'Gbenga Elufisan' })).toBeInTheDocument();
+  });
+
+  it('no Book on the Sessions tab', () => {
+    viewerIsMentor = true;
+    search = new URLSearchParams('tab=sessions');
+    profile = state({ data: fullProfile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('tab', { name: 'Sessions (1)' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.queryByRole('button', { name: /^Book/ })).not.toBeInTheDocument();
+  });
+
+  it('no mentee invitation card and no "review after your first session" (review of #54)', () => {
+    viewerIsMentor = true;
+    reviewPrompt = 'none';
+    profile = state({
+      data: { ...fullProfile, mentor: { ...fullProfile.mentor, completedSessions: 1 } },
+    });
+    const { unmount } = render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByText(/first mentees/)).not.toBeInTheDocument();
+    unmount();
+    search = new URLSearchParams('tab=reviews');
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByText(/after your first session/)).not.toBeInTheDocument();
+  });
+
+  it('an open booking closes if the viewer turns out to be a mentor (review of #54)', async () => {
+    const user = userEvent.setup();
+    profile = state({ data: fullProfile });
+    const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getAllByRole('button', { name: 'Book a session' })[0]!);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    viewerIsMentor = true;
+    rerender(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('a mentee still gets the header Book and the booking card', () => {
+    profile = state({ data: fullProfile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('button', { name: 'Book a session' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: fullProfile.sessionTypes[0]!.name }),
     ).toBeInTheDocument();
   });
 });
