@@ -344,6 +344,8 @@ describe('422 pointers → the owning field and step', () => {
     ['/service_offering_ids', 'topics', 1],
     ['/service_offering_ids/3', 'topics', 1],
     ['/custom_stage_label', 'stage', 1],
+    ['/application_stages', 'stage', 1],
+    ['/application_stages/1', 'stage', 1],
     ['/questions/2/options/0/text', 'question-2', 2],
     ['/questions', 'questions', 2],
     ['/booking_window_days', 'rules', 3],
