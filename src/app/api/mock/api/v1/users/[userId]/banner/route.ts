@@ -25,3 +25,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ userId: string
   setMockCover(userId, { banner: { bytes: await file.arrayBuffer(), type: file.type, version } });
   return NextResponse.json({ banner_url: mockBannerUrl(userId) });
 }
+
+/**
+ * MOCK of DELETE /api/v1/users/{user_id}/banner: 204, whether or not there was
+ * one; the cover's colour and art show again. ENABLE_MOCK_API=1 only.
+ */
+export async function DELETE(_req: Request, ctx: { params: Promise<{ userId: string }> }) {
+  if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
+  const { userId } = await ctx.params;
+  await new Promise((r) => setTimeout(r, 400));
+  setMockCover(userId, { banner: undefined });
+  return new NextResponse(null, { status: 204 });
+}

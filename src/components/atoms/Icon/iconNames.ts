@@ -47,6 +47,7 @@ export const ICON_NAMES = [
   'format_list_numbered',
   'groups',
   'handshake',
+  'hide_image',
   'home',
   'home_pin',
   'hourglass_top',

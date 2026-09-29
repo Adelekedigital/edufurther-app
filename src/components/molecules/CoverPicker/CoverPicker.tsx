@@ -19,11 +19,20 @@ type CoverPickerProps = {
   saveState: CoverSaveState;
   /** Changes each time a run of saves ends well: "Saved" shows for a moment. */
   savedStamp: number;
-  /** A banner image is set: it hides the colour and the art on the cover. */
+  /**
+   * A banner image is set: it hides the colour and the art on the cover, no
+   * colour reads as picked, and the image button removes it
+   * (CoverPicker.dc.html `hasImage`).
+   */
   hasImage: boolean;
   onFile: (file: File) => void;
   uploading: boolean;
-  uploadError: string | null;
+  onRemoveImage: () => void;
+  removing: boolean;
+  /** Changes each time a removal succeeds: "Image removed" is said for a moment. */
+  removedStamp?: number;
+  /** Why the last upload or removal didn't work. */
+  imageError: string | null;
   /** The file types the picker offers (the data layer's list). */
   accept: string;
   /** The popover closed: a good time to forget old status and errors. */
@@ -51,7 +60,7 @@ export function CoverPicker(props: CoverPickerProps) {
   const hintId = useId();
   const artId = useId();
   const artHintId = useId();
-  const uploadErrorId = useId();
+  const imageErrorId = useId();
 
   // "Saved" shows for a moment after each save (design: 1.8s).
   // Keyed on the save's stamp: a new save shows it again.
@@ -64,7 +73,7 @@ export function CoverPicker(props: CoverPickerProps) {
   }, [saveState, savedStamp]);
 
   useEffect(() => {
-    if (open) swatchRefs.current[COVER_KEYS.indexOf(color)]?.focus();
+    if (open) swatchRefs.current[hasImage ? 0 : COVER_KEYS.indexOf(color)]?.focus();
     // Focus the picked swatch on open only, not on every pick.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -90,7 +99,25 @@ export function CoverPicker(props: CoverPickerProps) {
     onPickColor(COVER_KEYS[to]!);
   };
 
-  const status = saveState === 'error' ? 'Not saved. Try again.' : savedShown ? 'Saved' : '';
+  // "Image removed", like "Saved": a moment, keyed on its stamp.
+  const removedStamp = props.removedStamp ?? 0;
+  const [removedExpired, setRemovedExpired] = useState(0);
+  const removedShown = removedStamp > 0 && removedExpired !== removedStamp;
+  useEffect(() => {
+    if (!removedStamp) return;
+    const t = setTimeout(() => setRemovedExpired(removedStamp), SAVED_MS);
+    return () => clearTimeout(t);
+  }, [removedStamp]);
+
+  const status =
+    saveState === 'error'
+      ? 'Not saved. Try again.'
+      : removedShown
+        ? 'Image removed'
+        : savedShown
+          ? 'Saved'
+          : '';
+  const busy = props.uploading || props.removing;
 
   return (
     <div
@@ -154,7 +181,10 @@ export function CoverPicker(props: CoverPickerProps) {
             className={styles.swatches}
           >
             {COVER_KEYS.map((k, i) => {
-              const on = k === color;
+              // Under an image no colour shows, so none reads as picked; the
+              // first swatch keeps the group's one tab stop.
+              const on = k === color && !hasImage;
+              const stop = hasImage ? i === 0 : on;
               return (
                 <button
                   key={k}
@@ -166,7 +196,7 @@ export function CoverPicker(props: CoverPickerProps) {
                   aria-checked={on}
                   aria-label={label(k)}
                   title={label(k)}
-                  tabIndex={on ? 0 : -1}
+                  tabIndex={stop ? 0 : -1}
                   className={cx(styles.swatch, on && styles.swatchOn)}
                   style={{ background: coverVars(k).bg }}
                   onClick={() => !on && onPickColor(k)}
@@ -177,45 +207,53 @@ export function CoverPicker(props: CoverPickerProps) {
               );
             })}
           </div>
-          {!hasImage && (
-            <div className={styles.artRow}>
-              <span className={styles.artText}>
-                <span id={artId} className={styles.artLabel}>
-                  Show my topics on the cover
-                </span>
-                <span id={artHintId} className={styles.hint}>
-                  Faint icons from your first 3 topics.
-                </span>
+          {/* Shown with an image too (CoverPicker.dc.html): the art saves for when the image goes. */}
+          <div className={styles.artRow}>
+            <span className={styles.artText}>
+              <span id={artId} className={styles.artLabel}>
+                Show my topics on the cover
               </span>
-              <Switch
-                checked={artOn}
-                onChange={onToggleArt}
-                aria-labelledby={artId}
-                aria-describedby={artHintId}
-              />
-            </div>
-          )}
+              <span id={artHintId} className={styles.hint}>
+                Faint icons from your first 3 topics.
+              </span>
+            </span>
+            <Switch
+              checked={artOn}
+              onChange={onToggleArt}
+              aria-labelledby={artId}
+              aria-describedby={artHintId}
+            />
+          </div>
           <div className={styles.divider} aria-hidden />
-          {hasImage && <p className={styles.hint}>Your image is showing on the cover.</p>}
           <button
             type="button"
             className={styles.upload}
             // aria-disabled, not disabled: a disabled button drops the focus
             // it holds, and Escape with it (review of #65).
-            aria-disabled={props.uploading || undefined}
-            aria-describedby={props.uploadError ? uploadErrorId : undefined}
-            onClick={() => !props.uploading && fileRef.current?.click()}
+            aria-disabled={busy || undefined}
+            aria-describedby={props.imageError ? imageErrorId : undefined}
+            onClick={() => {
+              if (busy) return;
+              if (hasImage) props.onRemoveImage();
+              else fileRef.current?.click();
+            }}
           >
-            <Icon name="add_photo_alternate" size={18} className={styles.uploadIcon} />
+            <Icon
+              name={hasImage ? 'hide_image' : 'add_photo_alternate'}
+              size={18}
+              className={styles.uploadIcon}
+            />
             {props.uploading
               ? 'Uploading…'
-              : hasImage
-                ? 'Upload a new image'
-                : 'Upload an image instead'}
+              : props.removing
+                ? 'Removing…'
+                : hasImage
+                  ? 'Remove image'
+                  : 'Upload an image instead'}
           </button>
-          {props.uploadError && (
-            <p id={uploadErrorId} role="alert" className={styles.error}>
-              {props.uploadError}
+          {props.imageError && (
+            <p id={imageErrorId} role="alert" className={styles.error}>
+              {props.imageError}
             </p>
           )}
           <input

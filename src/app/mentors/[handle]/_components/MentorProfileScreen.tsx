@@ -338,14 +338,17 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                   <CoverPicker
                     color={p.cover.color ?? coverFor(p.mentor.id)}
                     artOn={p.cover.art !== 'none'}
-                    onPickColor={(color) => coverEdit.save({ color })}
+                    onPickColor={coverEdit.pickColor}
                     onToggleArt={(on) => coverEdit.save({ art: on ? 'icons' : 'none' })}
                     saveState={coverEdit.saveState}
                     savedStamp={coverEdit.savedStamp}
                     hasImage={!!p.bannerUrl}
                     accept={BANNER_ACCEPT}
                     uploading={coverEdit.uploading}
-                    uploadError={coverEdit.uploadError}
+                    onRemoveImage={coverEdit.removeImage}
+                    removing={coverEdit.removing}
+                    removedStamp={coverEdit.removedStamp}
+                    imageError={coverEdit.imageError}
                     onFile={coverEdit.upload}
                     onClose={coverEdit.clearMessages}
                   />

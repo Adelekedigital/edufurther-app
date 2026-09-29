@@ -120,15 +120,21 @@ let profile: ProfileRemote;
 vi.mock('@/lib/api/data/profile', () => ({ useMentorProfile: () => profile }));
 const coverSave = vi.fn();
 const coverUpload = vi.fn();
+const coverRemove = vi.fn();
+const coverPick = vi.fn();
 vi.mock('@/lib/api/data/cover', () => ({
   BANNER_ACCEPT: 'image/jpeg,image/png,image/webp',
   useCoverEdit: () => ({
     save: coverSave,
+    pickColor: coverPick,
+    removedStamp: 0,
     saveState: 'idle',
     savedStamp: 0,
     upload: coverUpload,
     uploading: false,
-    uploadError: null,
+    removeImage: coverRemove,
+    removing: false,
+    imageError: null,
     clearMessages: vi.fn(),
   }),
 }));
@@ -371,7 +377,7 @@ describe('MentorProfileScreen — the mentor on their own page', () => {
     const { container } = render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('button', { name: 'Change cover' }));
     await user.click(screen.getByRole('radio', { name: 'Peach' }));
-    expect(coverSave).toHaveBeenLastCalledWith({ color: 'peach' });
+    expect(coverPick).toHaveBeenLastCalledWith('peach');
     await user.click(screen.getByRole('switch', { name: 'Show my topics on the cover' }));
     expect(coverSave).toHaveBeenLastCalledWith({ art: 'icons' });
     // The data layer checks the file (tested there); the page hands it over.
