@@ -144,6 +144,7 @@ export function useOwnSessionTypes(enabled: boolean): Remote<OwnSessionType[]> {
  * its old state and flicker the row back (review of #80).
  */
 const ROW_WRITE = ['sessionTypes', 'rowWrite'] as const;
+// A real setTimeout: a test with fake timers must advance them to see the refetch.
 const settling = new WeakSet<QueryClient>();
 function settleRowWrite(qc: QueryClient) {
   // Checked after this mutation stops counting as pending, and once for writes
@@ -262,7 +263,10 @@ export function useDeleteSessionType() {
  * POST …/restore: the scheduled deletion is cancelled; the type stays hidden.
  * A 404 means the hourly job already deleted it: the row goes, like a delete.
  */
-export function useRestoreSessionType(onFailed: (id: string, error: AppError) => void) {
+export function useRestoreSessionType(
+  onFailed: (id: string, error: AppError) => void,
+  onDone: (id: string, result: 'kept' | 'gone') => void,
+) {
   const qc = useQueryClient();
   const who = useWho();
   const key = keys.sessionTypes.own(who);
@@ -288,6 +292,7 @@ export function useRestoreSessionType(onFailed: (id: string, error: AppError) =>
           ? list?.filter((t) => t.id !== id)
           : list?.map((t) => (t.id === id ? { ...t, pendingDeletion: null, isLive: false } : t)),
       );
+      onDone(id, r);
     },
     onError: (e, id) => onFailed(id, e),
     onSettled: () => settleRowWrite(qc),
@@ -295,6 +300,7 @@ export function useRestoreSessionType(onFailed: (id: string, error: AppError) =>
   // useMutation tracks only its latest call: read every restore still pending.
   const pendingIds = useMutationState({
     filters: { mutationKey: RESTORE, status: 'pending' },
+    // RESTORE is this hook's alone, so its variables are always the row id.
     select: (m) => m.state.variables as string,
   });
   return { restore: mutation.mutate, pendingIds };

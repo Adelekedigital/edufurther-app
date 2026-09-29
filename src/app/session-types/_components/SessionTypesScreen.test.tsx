@@ -63,11 +63,15 @@ vi.mock('@/lib/api/data/sessionTypes', () => ({
     failFeature = onFailed;
     return setFeatured;
   },
-  useRestoreSessionType: () => ({ restore, pendingIds: restorePending }),
+  useRestoreSessionType: (_failed: unknown, done: typeof restoreDone) => {
+    restoreDone = done;
+    return { restore, pendingIds: restorePending };
+  },
 }));
 const setFeatured = vi.fn();
 let failFeature: (id: string, featured: boolean, e: AppError) => void = () => {};
 let restorePending: string[] = [];
+let restoreDone: (id: string, r: 'kept' | 'gone') => void = () => {};
 const restore = vi.fn();
 const sop = () => screen.getByRole('article', { name: 'SOP draft review' });
 /** What the page's live region last read out. */
@@ -211,7 +215,7 @@ describe('SessionTypesScreen', () => {
     expect(screen.queryByRole('menuitem', { name: /Delete|featured/ })).toBeNull();
     await user.keyboard('{Escape}');
     await user.click(within(row).getByRole('button', { name: 'Keep it: SOP draft review' }));
-    expect(restore).toHaveBeenCalledWith('a', expect.anything());
+    expect(restore).toHaveBeenCalledWith('a');
   });
 
   it('featuring another asks first; with none featured it just features', async () => {
@@ -347,9 +351,7 @@ describe('SessionTypesScreen', () => {
     list = idle({
       data: [{ ...TYPE, isLive: false, pendingDeletion: { deletesAfter: null, bookedCount: 1 } }],
     });
-    restore.mockImplementation((_id: string, o: { onSuccess: (r: string) => void }) =>
-      o.onSuccess('kept'),
-    );
+    restore.mockImplementation((id: string) => restoreDone(id, 'kept'));
     const user = userEvent.setup();
     const { rerender } = render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'Keep it: SOP draft review' }));
@@ -376,7 +378,34 @@ describe('SessionTypesScreen', () => {
     const user = userEvent.setup();
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'Keep it: Visa prep' }));
-    expect(restore).toHaveBeenCalledWith('b', expect.anything());
+    expect(restore).toHaveBeenCalledWith('b');
+  });
+
+  it('two rows kept at once each say how it went, in whichever order they answer', async () => {
+    viewer = mentor;
+    const pending = { deletesAfter: null, bookedCount: 1 };
+    list = idle({
+      data: [
+        { ...TYPE, isLive: false, pendingDeletion: pending },
+        { ...TYPE, id: 'b', name: 'Visa prep', isLive: false, pendingDeletion: pending },
+      ],
+    });
+    const user = userEvent.setup();
+    const { rerender } = render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('button', { name: 'Keep it: SOP draft review' }));
+    await user.click(screen.getByRole('button', { name: 'Keep it: Visa prep' }));
+    act(() => restoreDone('a', 'kept'));
+    expect(announced()).toContain('Kept. “SOP draft review” is hidden until you show it.');
+    // Visa prep was already deleted: its row goes, focus moves to the row above.
+    list = idle({ data: [{ ...TYPE, isLive: false }] });
+    act(() => restoreDone('b', 'gone'));
+    rerender(<SessionTypesScreen />);
+    expect(announced()).toContain('“Visa prep” was already deleted.');
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'More actions for SOP draft review' }),
+      ).toHaveFocus(),
+    );
   });
 
   it('signed in without a usable account: told why, never "for mentors"', () => {

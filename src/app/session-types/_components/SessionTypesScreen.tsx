@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { SessionTypeManager } from '@/components/organisms/SessionTypeManager/SessionTypeManager';
@@ -193,27 +193,37 @@ export function SessionTypesScreen() {
     if (featured && current) return setFeaturing({ type: t, current });
     setFeatured(t.id, featured);
   };
-  const restore = useRestoreSessionType((id, e) =>
-    say(
-      id,
-      e.kind === 'offline'
-        ? 'Couldn’t keep it. Check your connection and try again.'
-        : 'Couldn’t keep it. Try again in a moment.',
-      false,
-    ),
+  // Name and focus target per row, taken at the click: a row the hourly job
+  // already deleted is gone from the list by the time its answer arrives.
+  const keeping = useRef(new Map<string, { name: string; after: { menuOf: string } | 'create' }>());
+  const restore = useRestoreSessionType(
+    (id, e) => {
+      keeping.current.delete(id);
+      say(
+        id,
+        e.kind === 'offline'
+          ? 'Couldn’t keep it. Check your connection and try again.'
+          : 'Couldn’t keep it. Try again in a moment.',
+        false,
+      );
+    },
+    // Hook level, not per call: with two rows kept at once, only the latest
+    // call's own callbacks would run (review r3 of #80).
+    (id, r) => {
+      const k = keeping.current.get(id);
+      keeping.current.delete(id);
+      if (!k) return;
+      if (r === 'kept') return announce(`Kept. “${k.name}” is hidden until you show it.`);
+      // The hourly job got there first.
+      setFocusAfterRemoval(k.after);
+      announce(`“${k.name}” was already deleted.`);
+    },
   );
   const onRestore = (t: OwnSessionType) => {
     if (restore.pendingIds.includes(t.id)) return;
     clearMessage(t.id);
-    const after = neighbour(t.id);
-    restore.restore(t.id, {
-      onSuccess: (r) => {
-        if (r === 'kept') return announce(`Kept. “${t.name}” is hidden until you show it.`);
-        // The hourly job got there first.
-        setFocusAfterRemoval(after);
-        announce(`“${t.name}” was already deleted.`);
-      },
-    });
+    keeping.current.set(t.id, { name: t.name, after: neighbour(t.id) });
+    restore.restore(t.id);
   };
 
   const body: ReactNode = mentorGate(viewer, isMentor, '/session-types') ?? (

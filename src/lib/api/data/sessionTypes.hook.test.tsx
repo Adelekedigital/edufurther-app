@@ -184,26 +184,26 @@ describe('useRestoreSessionType', () => {
       { ...row('y', false), pending_deletion: BOOKED },
     ];
     const onFailed = vi.fn();
+    const onSuccess = vi.fn();
     const { result } = renderHook(
-      () => ({ list: useOwnSessionTypes(true), r: useRestoreSessionType(onFailed) }),
+      () => ({ list: useOwnSessionTypes(true), r: useRestoreSessionType(onFailed, onSuccess) }),
       { wrapper: setup() },
     );
     await waitFor(() => expect(result.current.list.data).toHaveLength(2));
     hang();
     POST.mockResolvedValueOnce(ok(row('x', false))).mockResolvedValueOnce(fail(404));
-    const onSuccess = vi.fn();
-    act(() => result.current.r.restore('x', { onSuccess }));
+    act(() => result.current.r.restore('x'));
     await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
-    expect(onSuccess.mock.calls[0]![0]).toBe('kept');
+    expect(onSuccess.mock.calls[0]).toEqual(['x', 'kept']);
     expect(result.current.list.data![0]).toMatchObject({
       id: 'x',
       pendingDeletion: null,
       isLive: false,
     });
     expect(POST.mock.calls[0]![0]).toBe('/api/v1/me/session-types/{session_type_id}/restore');
-    act(() => result.current.r.restore('y', { onSuccess }));
+    act(() => result.current.r.restore('y'));
     await waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(2));
-    expect(onSuccess.mock.calls[1]![0]).toBe('gone');
+    expect(onSuccess.mock.calls[1]).toEqual(['y', 'gone']);
     expect(result.current.list.data!.map((t) => t.id)).toEqual(['x']);
     expect(onFailed).not.toHaveBeenCalled();
   });
@@ -212,7 +212,7 @@ describe('useRestoreSessionType', () => {
     list = [{ ...row('x', false), pending_deletion: BOOKED }];
     const onFailed = vi.fn();
     const { result } = renderHook(
-      () => ({ list: useOwnSessionTypes(true), r: useRestoreSessionType(onFailed) }),
+      () => ({ list: useOwnSessionTypes(true), r: useRestoreSessionType(onFailed, vi.fn()) }),
       { wrapper: setup() },
     );
     await waitFor(() => expect(result.current.list.data).toHaveLength(1));
@@ -319,22 +319,38 @@ describe('row writes (review r2 of #80)', () => {
     }
   });
 
-  it('two rows can be kept at once: each waits on its own', async () => {
+  it('two rows can be kept at once: each waits on its own, and each says how it went', async () => {
     list = [
       { ...row('x', false), pending_deletion: BOOKED },
       { ...row('y', false), pending_deletion: BOOKED },
     ];
+    const onDone = vi.fn();
     const { result } = renderHook(
-      () => ({ list: useOwnSessionTypes(true), r: useRestoreSessionType(vi.fn()) }),
+      () => ({ list: useOwnSessionTypes(true), r: useRestoreSessionType(vi.fn(), onDone) }),
       { wrapper: setup() },
     );
     await waitFor(() => expect(result.current.list.data).toHaveLength(2));
-    POST.mockImplementation(() => new Promise(() => {}));
+    const answers: Record<string, () => void> = {};
+    POST.mockImplementation(
+      (_p: string, o: { params: { path: { session_type_id: string } } }) =>
+        new Promise((res) => {
+          const id = o.params.path.session_type_id;
+          answers[id] = () => res(id === 'x' ? ok(row('x', false)) : fail(404));
+        }),
+    );
     act(() => {
       result.current.r.restore('x');
       result.current.r.restore('y');
     });
     await waitFor(() => expect([...result.current.r.pendingIds].sort()).toEqual(['x', 'y']));
+    // The first click's answer arrives after the second click: it still reports.
+    await act(async () => answers.x!());
+    await act(async () => answers.y!());
+    await waitFor(() => expect(onDone).toHaveBeenCalledTimes(2));
+    expect(onDone.mock.calls).toEqual([
+      ['x', 'kept'],
+      ['y', 'gone'],
+    ]);
   });
 
   it('two writes settling in the same tick still refetch the list once', async () => {
