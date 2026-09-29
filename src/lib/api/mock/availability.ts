@@ -60,7 +60,7 @@ export function mockNextAvailableAt(mentorId: string, now = Date.now()): string 
 // Fields the backend adds to SessionTypeRead as required: `service_offerings[]`
 // (#9) and `questions[]` (backend PR #268, the live intake form). Spread from a
 // variable so the mock compiles against the spec before and after each ships.
-const NO_TOPICS = { service_offerings: [], questions: [] };
+const NO_TOPICS = { service_offerings: [], questions: [], is_featured: false };
 
 const q = (
   id: string,
