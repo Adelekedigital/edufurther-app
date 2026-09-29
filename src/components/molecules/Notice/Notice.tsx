@@ -7,9 +7,10 @@ import styles from './Notice.module.css';
 
 type NoticeProps = {
   tone: 'neutral' | 'info';
-  icon: IconName;
+  /** Omit for a plain tip (Session Types' "Every extra question lowers bookings"). */
+  icon?: IconName;
   /** Bold lead-in, e.g. "You're offline." */
-  title: string;
+  title?: string;
   children: ReactNode;
   onDismiss?: () => void;
 };
@@ -18,9 +19,9 @@ type NoticeProps = {
 export function Notice({ tone, icon, title, children, onDismiss }: NoticeProps) {
   return (
     <div role="status" className={cx(styles.notice, styles[tone])}>
-      <Icon name={icon} size={20} className={styles.icon} />
+      {icon && <Icon name={icon} size={20} className={styles.icon} />}
       <p className={styles.text}>
-        <strong>{title}</strong> {children}
+        {title && <strong>{title}</strong>} {children}
       </p>
       {onDismiss && <IconButton icon="close" size="sm" aria-label="Dismiss" onClick={onDismiss} />}
     </div>

@@ -23,8 +23,8 @@ export type OwnSessionType = {
   noticeMin: number;
   /** Live (bookable) or hidden. Backend `is_active`. */
   isLive: boolean;
-  /** One catalog offering (backend: single topic until request #9). */
-  topic: { code: string; label: string } | null;
+  /** Catalog offerings, in the mentor's order, at most 3 (backend #9). */
+  topics: { code: string; label: string }[];
   /** The icon to draw: the mentor's pick, else automatic from the topic. */
   icon: SessionIcon;
   /** The mentor's pick; null = automatic. */

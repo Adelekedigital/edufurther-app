@@ -6,7 +6,13 @@ import { AccountMenu } from './AccountMenu/AccountMenu';
 import { DayTimePicker } from './DayTimePicker/DayTimePicker';
 import { EmptyState } from './EmptyState/EmptyState';
 import { FactTile } from './FactTile/FactTile';
+import { ChoiceChips } from './ChoiceChips/ChoiceChips';
+import { DayHoursRow } from './DayHoursRow/DayHoursRow';
 import { FileField } from './FileField/FileField';
+import { IconPicker } from './IconPicker/IconPicker';
+import { QuestionRow } from './QuestionRow/QuestionRow';
+import { SessionPreviewCard } from './SessionPreviewCard/SessionPreviewCard';
+import { SummarySection } from './SummarySection/SummarySection';
 import { FormField } from './FormField/FormField';
 import { Input, Textarea } from '@/components/atoms/Input/Input';
 import { RadioCards } from './RadioCards/RadioCards';
@@ -383,4 +389,158 @@ export const Fields: Story = {
       </div>
     );
   },
+};
+
+/** Session Types topics (DS choice chips): at three, the rest are disabled. */
+export const Choices: Story = {
+  render: function Render() {
+    const [sel, setSel] = useState(['application-documents', 'school-selection']);
+    return (
+      <ChoiceChips
+        label="Topics"
+        max={3}
+        selected={sel}
+        onToggle={(v) => setSel((s) => (s.includes(v) ? s.filter((x) => x !== v) : [...s, v]))}
+        options={TOPICS.map((t) => ({ value: t.slug, label: t.label }))}
+      />
+    );
+  },
+};
+
+export const SessionIconPicker: Story = {
+  render: function Render() {
+    const [v, setV] = useState<'lightbulb' | null>(null);
+    return (
+      <div style={{ height: 320 }}>
+        <IconPicker
+          value={v}
+          auto="edit_document"
+          onChange={(x) => setV(x as 'lightbulb' | null)}
+        />
+      </div>
+    );
+  },
+};
+
+export const Questions: Story = {
+  render: () => (
+    <ol
+      style={{
+        listStyle: 'none',
+        padding: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
+        maxWidth: 840,
+      }}
+    >
+      <QuestionRow
+        num={1}
+        text="Which programs are you applying to?"
+        meta="Short answer · Required"
+        icon="short_text"
+        onDown={fn()}
+        onEdit={fn()}
+        onDelete={fn()}
+      />
+      <QuestionRow
+        num={2}
+        text="When do you start?"
+        meta="Single choice (Fall 2027, Spring 2028) · Optional"
+        icon="radio_button_checked"
+        editing
+        onUp={fn()}
+        onDown={fn()}
+        onEdit={fn()}
+        onDelete={fn()}
+      />
+      <QuestionRow
+        num={3}
+        text="Upload your current SOP draft (PDF or Word)"
+        meta="File upload · Optional"
+        icon="upload_file"
+        onUp={fn()}
+        onEdit={fn()}
+        onDelete={fn()}
+      />
+    </ol>
+  ),
+};
+
+export const ReviewBlocks: Story = {
+  render: () => (
+    <div
+      style={{
+        display: 'flex',
+        gap: 20,
+        flexWrap: 'wrap',
+        alignItems: 'flex-start',
+        maxWidth: 840,
+      }}
+    >
+      <div style={{ flex: '1 1 360px' }}>
+        <SummarySection
+          title="Core details"
+          onEdit={fn()}
+          rows={[
+            { k: 'Name', v: 'SOP draft review' },
+            { k: 'Topics', v: 'Application documents, School selection' },
+            { k: 'Best for', v: 'Drafting' },
+          ]}
+        />
+      </div>
+      <SessionPreviewCard
+        name="SOP draft review"
+        description="We’ll work through your statement of purpose together. You’ll leave with a prioritized revision list."
+        facts={['60 min', 'Application documents', 'School selection']}
+      />
+    </div>
+  ),
+};
+
+/** TimeSlots list rows: off, one slot, and two slots with an overlap. */
+export const DayHours: Story = {
+  render: () => (
+    <div style={{ maxWidth: 640 }}>
+      <DayHoursRow
+        day="Monday"
+        hours={{ on: false, slots: [[540, 600]] }}
+        errors={[null]}
+        onToggle={fn()}
+        onSlot={fn()}
+        onRemove={fn()}
+        onAdd={fn()}
+        onCopyAll={fn()}
+      />
+      <DayHoursRow
+        day="Wednesday"
+        hours={{ on: true, slots: [[1020, 1200]] }}
+        errors={[null]}
+        onToggle={fn()}
+        onSlot={fn()}
+        onRemove={fn()}
+        onAdd={fn()}
+        onCopyAll={fn()}
+      />
+      <DayHoursRow
+        day="Thursday"
+        hours={{
+          on: true,
+          slots: [
+            [540, 780],
+            [720, 840],
+          ],
+        }}
+        errors={[
+          'These hours overlap with another time on this day.',
+          'These hours overlap with another time on this day.',
+        ]}
+        onToggle={fn()}
+        onSlot={fn()}
+        onRemove={fn()}
+        onAdd={fn()}
+        onCopyAll={fn()}
+      />
+    </div>
+  ),
 };

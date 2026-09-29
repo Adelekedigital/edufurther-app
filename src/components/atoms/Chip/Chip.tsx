@@ -9,8 +9,10 @@ type ChipProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'ari
   /**
    * filter — 32px, square-ish, a check when on (Explore topics).
    * pill   — 28px, fully round, no check (Mentor Profile review filters).
+   * choice — the DS Chip itself: 40px, brand face, inset ring, no check
+   *          (Session Types topics, stages, goals).
    */
-  look?: 'filter' | 'pill';
+  look?: 'filter' | 'pill' | 'choice';
   children: ReactNode;
 };
 
@@ -29,7 +31,13 @@ export const Chip = forwardRef<HTMLButtonElement, ChipProps>(function Chip(
       ref={ref}
       type={type ?? 'button'}
       aria-pressed={pressed}
-      className={cx(styles.chip, look === 'pill' && styles.pill, pressed && styles.on, className)}
+      className={cx(
+        styles.chip,
+        look === 'pill' && styles.pill,
+        look === 'choice' && styles.choice,
+        pressed && styles.on,
+        className,
+      )}
       {...rest}
     >
       {pressed && look === 'filter' && <Icon name="check" size={14} />}

@@ -3,14 +3,23 @@
 import { useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
-import type { Remote } from '@/types/mentor';
+import type { AppError, Remote } from '@/types/mentor';
 import type { DeleteError, OwnSessionType, SessionIcon } from '@/types/sessionType';
+import {
+  copyForField,
+  fieldForPointer,
+  type FieldErrors,
+  type toCreateBody,
+  type toWindows,
+} from '@/lib/utils/sessionTypeDraft';
+import { keyForAttempt } from './booking';
 import { ApiError, apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
 import { sessionKey, useSession } from './session';
 
 type OwnSessionTypeRead = components['schemas']['OwnSessionTypeRead'];
+type MentorSessionTypeWrite = components['schemas']['MentorSessionTypeWrite'];
 
 // ---- mapping ----------------------------------------------------------------
 
@@ -34,9 +43,13 @@ export function toOwnSessionType(
   r: OwnSessionTypeRead,
   questionCount: number | null,
 ): OwnSessionType {
-  const topic = r.service_offering
-    ? { code: r.service_offering.code, label: r.service_offering.display_name }
-    : null;
+  // `service_offerings` (backend #9); the single field is its first, kept for one release.
+  const list = r.service_offerings?.length
+    ? r.service_offerings
+    : r.service_offering
+      ? [r.service_offering]
+      : [];
+  const topics = list.map((o) => ({ code: o.code, label: o.display_name }));
   return {
     id: r.id,
     name: r.name,
@@ -44,9 +57,9 @@ export function toOwnSessionType(
     durationMin: r.duration_minutes,
     noticeMin: r.min_notice_minutes,
     isLive: r.is_active,
-    topic,
+    topics,
     iconChoice: r.icon ?? null,
-    icon: r.icon ?? autoIcon(topic?.code),
+    icon: r.icon ?? autoIcon(topics[0]?.code),
     questionCount,
   };
 }
@@ -193,5 +206,154 @@ export function useDeleteSessionType() {
     isPending: mutation.isPending,
     error: mutation.error,
     reset: mutation.reset,
+  };
+}
+
+// ---- create -------------------------------------------------------------------
+
+type CreateBody = ReturnType<typeof toCreateBody>;
+type WindowBody = ReturnType<typeof toWindows>[number];
+
+/** A refused create, in our copy: per-field messages when the server named fields. */
+export type CreateError = AppError & { fields: FieldErrors };
+
+/**
+ * 422 `errors[{pointer, message}]` (backend #5) → our copy on each field; the
+ * server's `message` and `detail` are never shown. 409 on create is a name the
+ * mentor already uses (backend reply #2), or a replay still in flight.
+ */
+export function createError(error: unknown, body: unknown): CreateError {
+  const e = normaliseError(error);
+  const fields: FieldErrors = {};
+  if (error instanceof ApiError && error.status === 422) {
+    const list = (body as { errors?: unknown } | null)?.errors;
+    if (Array.isArray(list)) {
+      for (const it of list) {
+        const pointer = (it as { pointer?: unknown })?.pointer;
+        const f = typeof pointer === 'string' ? fieldForPointer(pointer) : null;
+        if (f && !fields[f]) fields[f] = copyForField(f);
+      }
+    }
+    return { ...e, fields, message: 'Some details need another look.' };
+  }
+  if (error instanceof ApiError && error.status === 409) {
+    if (error.type?.includes('idempot'))
+      return { ...e, fields, message: 'Still publishing. Give it a moment, then try again.' };
+    return {
+      ...e,
+      fields: { name: 'You already have a session type with this name.' },
+      // The field says what; the banner says where to look (not the same sentence twice).
+      message: 'Some details need another look.',
+    };
+  }
+  return { ...e, fields, message: `We couldn’t publish it. ${e.message} Try again.` };
+}
+
+/** POST each window; the ones that failed come back so they can be retried. */
+async function postWindows(id: string, windows: WindowBody[]): Promise<WindowBody[]> {
+  const results = await Promise.all(
+    windows.map((w) =>
+      api
+        .POST('/api/v1/me/session-types/{session_type_id}/windows', {
+          params: { path: { session_type_id: id } },
+          body: w,
+        })
+        .then((r) => r.response.ok)
+        .catch(() => false),
+    ),
+  );
+  return windows.filter((_, i) => !results[i]);
+}
+
+export type Created = { id: string; failedWindows: WindowBody[] };
+
+/**
+ * POST /me/session-types with its questions in one transaction (backend #1),
+ * one Idempotency-Key per attempt (#2) — a double click or a retry of the same
+ * body can't create two. Dedicated hours are separate requests after it
+ * (backend #15); any that fail are returned, and the type is still created.
+ */
+export function useCreateSessionType() {
+  const qc = useQueryClient();
+  const attempt = useRef<{ key: string; body: string } | null>(null);
+  const mutation = useMutation<Created, CreateError, { body: CreateBody; windows: WindowBody[] }>({
+    mutationFn: async ({ body, windows }) => {
+      attempt.current = keyForAttempt(attempt.current, JSON.stringify(body), () =>
+        crypto.randomUUID(),
+      );
+      let result;
+      try {
+        result = await api.POST('/api/v1/me/session-types', {
+          params: { header: { 'Idempotency-Key': attempt.current.key } },
+          // The generated type makes every defaulted field required (openapi-typescript);
+          // the API requires only question_text, and refuses `allows_multiple`/`options`
+          // on a non-choice question (backend #12), so they are sent only on choices.
+          body: body as unknown as MentorSessionTypeWrite,
+        });
+      } catch (e) {
+        throw createError(e, null);
+      }
+      const { data, error, response } = result;
+      if (!data) throw createError(apiError(response.status, error), error);
+      const failedWindows = windows.length ? await postWindows(data.id, windows) : [];
+      return { id: data.id, failedWindows };
+    },
+    onSuccess: () => {
+      attempt.current = null;
+      void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });
+      void qc.invalidateQueries({ queryKey: keys.mentors.all });
+      void qc.invalidateQueries({ queryKey: ['booking'] });
+    },
+  });
+  return {
+    create: mutation.mutate,
+    isPending: mutation.isPending,
+    error: mutation.error,
+    reset: mutation.reset,
+  };
+}
+
+/** Retry the dedicated hours that didn't save. Resolves to those still failing. */
+export function useRetryWindows() {
+  const qc = useQueryClient();
+  const mutation = useMutation<WindowBody[], AppError, { id: string; windows: WindowBody[] }>({
+    mutationFn: ({ id, windows }) => postWindows(id, windows),
+    onSettled: () => void qc.invalidateQueries({ queryKey: ['booking'] }),
+  });
+  return { retry: mutation.mutateAsync, isPending: mutation.isPending };
+}
+
+// ---- the mentor's booking defaults (backend #13, #16) ----------------------------
+
+export type MentorDefaults = {
+  windowDays: number | null;
+  breakMin: number | null;
+  requiresApproval: boolean;
+};
+
+/** GET /users/{id}/mentor-profile — the defaults a session type inherits. */
+export function useMentorDefaults(userId: string | null): Remote<MentorDefaults> {
+  const query = useQuery({
+    queryKey: ['mentorDefaults', userId ?? 'none'],
+    enabled: userId !== null,
+    queryFn: async ({ signal }) => {
+      const { data, error, response } = await api.GET('/api/v1/users/{user_id}/mentor-profile', {
+        params: { path: { user_id: userId! } },
+        signal,
+      });
+      if (!data) throw apiError(response.status, error);
+      return {
+        windowDays: data.booking_window_days ?? null,
+        breakMin: data.break_after_minutes ?? null,
+        requiresApproval: data.requires_booking_confirmation,
+      };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+  return {
+    data: query.data ?? null,
+    isLoading: query.isPending && userId !== null,
+    error: query.error ? normaliseError(query.error) : null,
+    retry: () => void query.refetch(),
   };
 }

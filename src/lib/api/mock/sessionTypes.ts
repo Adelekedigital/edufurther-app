@@ -125,3 +125,114 @@ export function mockDeleteSessionType(
   store = store.filter((x) => x.id !== id);
   return { result: 'deleted' };
 }
+
+// ---- create (backend #1, #2) --------------------------------------------------
+
+type CreateBody = {
+  name?: unknown;
+  duration_minutes?: unknown;
+  min_notice_minutes?: unknown;
+  service_offering_ids?: unknown;
+  questions?: unknown;
+  [k: string]: unknown;
+};
+const replays = new Map<string, { body: string; result: unknown }>();
+const windows: Record<string, unknown[]> = {};
+
+/** Validate like the backend (a subset): 422 errors[] with JSON pointers, 409 on a used name. */
+export function mockCreateSessionType(
+  body: CreateBody,
+  key: string | null,
+):
+  | { status: 201; json: { id: string; question_ids: string[] }; replayed: boolean }
+  | { status: 409 | 422; json: Record<string, unknown> } {
+  const raw = JSON.stringify(body);
+  if (key && replays.has(key)) {
+    const r = replays.get(key)!;
+    if (r.body !== raw)
+      return {
+        status: 422,
+        json: { type: 'about:blank', title: 'Idempotency key reused', status: 422, errors: [] },
+      };
+    return {
+      status: 201,
+      json: r.result as { id: string; question_ids: string[] },
+      replayed: true,
+    };
+  }
+  const errors: { pointer: string; message: string }[] = [];
+  const name = typeof body.name === 'string' ? body.name.trim() : '';
+  if (!name || name.length > 200) errors.push({ pointer: '/name', message: 'invalid' });
+  const ids = Array.isArray(body.service_offering_ids) ? body.service_offering_ids : [];
+  if (ids.length > 3) errors.push({ pointer: '/service_offering_ids', message: 'at most 3' });
+  const qs = Array.isArray(body.questions) ? body.questions : [];
+  if (qs.length > 5) errors.push({ pointer: '/questions', message: 'at most 5' });
+  if (errors.length)
+    return {
+      status: 422,
+      json: {
+        type: 'about:blank',
+        title: 'Unprocessable Content',
+        status: 422,
+        detail: 'x',
+        errors,
+      },
+    };
+  if (store.some((t) => t.name.toLowerCase() === name.toLowerCase()))
+    return { status: 409, json: { type: 'about:blank', title: 'Conflict', status: 409 } };
+
+  const id = `mst-${Date.now().toString(36)}`;
+  const offerings = ids.flatMap((oid) => {
+    const o = OFFERINGS.find((x) => x.id === oid);
+    return o?.code ? [{ code: o.code, display_name: o.display_name }] : [];
+  });
+  const questions = qs.map((q, i) => {
+    const w = q as {
+      question_text: string;
+      question_type: QuestionRead['question_type'];
+      is_required?: boolean;
+      allows_multiple?: boolean;
+      options?: { text: string }[];
+    };
+    return {
+      id: `${id}-q${i}`,
+      question_text: w.question_text,
+      question_type: w.question_type,
+      is_required: !!w.is_required,
+      display_order: i,
+      allows_multiple: !!w.allows_multiple,
+      options: (w.options ?? []).map((o, j) => ({ id: `${id}-q${i}-o${j}`, text: o.text })),
+    } as QuestionRead;
+  });
+  const extra = {
+    service_offerings: offerings,
+    booking_window_days: body.booking_window_days ?? null,
+    break_after_minutes: body.break_after_minutes ?? null,
+  };
+  store.push({
+    id,
+    name,
+    description: (body.description as string | null) ?? null,
+    duration_minutes: Number(body.duration_minutes) || 60,
+    min_notice_minutes: Number(body.min_notice_minutes) || 1440,
+    meeting_venue: 'daily',
+    is_active: true,
+    service_offering: offerings[0] ?? null,
+    application_stage: (body.application_stage as OwnSessionTypeRead['application_stage']) ?? null,
+    custom_stage_label: (body.custom_stage_label as string | null) ?? null,
+    icon: (body.icon as OwnSessionTypeRead['icon']) ?? null,
+    requires_booking_confirmation: (body.requires_booking_confirmation as boolean | null) ?? null,
+    ...extra,
+    questions,
+    bookedCount: 0,
+  } as Stored);
+  const result = { id, question_ids: questions.map((q) => q.id) };
+  if (key) replays.set(key, { body: raw, result });
+  return { status: 201, json: result, replayed: false };
+}
+
+export function mockAddWindow(id: string, w: unknown): { id: string } | null {
+  if (!store.some((t) => t.id === id)) return null;
+  (windows[id] ??= []).push(w);
+  return { id: `${id}-w${windows[id]!.length}` };
+}

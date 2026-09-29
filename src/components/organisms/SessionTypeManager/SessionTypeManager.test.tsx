@@ -11,7 +11,7 @@ const T: OwnSessionType = {
   durationMin: 60,
   noticeMin: 1440,
   isLive: true,
-  topic: { code: 'application-documents', label: 'Application documents' },
+  topics: [{ code: 'application-documents', label: 'Application documents' }],
   icon: 'edit_document',
   iconChoice: null,
   questionCount: 2,

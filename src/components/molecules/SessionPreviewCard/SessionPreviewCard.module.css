@@ -1,0 +1,64 @@
+/* Session Types.dc.html step 4 "How mentees see it". */
+.aside {
+  flex: 0 1 260px;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.caption {
+  font-size: var(--text-caption-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-caption-xs);
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+}
+.name {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.description {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.fact {
+  /* 24px as drawn; a long topic list wraps instead of spilling out. */
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--ink-50);
+  font-size: var(--text-p-xs);
+  color: var(--ink-700);
+}
+.book {
+  margin-top: var(--space-2);
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--action-primary);
+  color: var(--text-on-action);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+}

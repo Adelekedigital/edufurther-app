@@ -1,0 +1,388 @@
+/* Session Types.dc.html, form view (`actions=top`, `rulesLayout=compact`). */
+.page {
+  max-width: 880px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding-bottom: var(--space-12);
+  color: var(--ink-900);
+}
+
+/* ---- sticky action bar ---- */
+.bar {
+  position: sticky;
+  /* Under the shell's sticky header (the design's top: 0 would slide beneath it). */
+  top: calc(var(--navbar-h-mobile) + env(safe-area-inset-top));
+  z-index: 20;
+  margin: calc(var(--space-6) * -1) calc(var(--space-7) * -1) 0;
+  padding: var(--space-4) var(--space-7);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  background: var(--surface-card);
+  border-bottom: var(--border-hairline) solid var(--border-muted);
+}
+.barLead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+.back {
+  width: var(--space-9);
+  height: var(--space-9);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  background: var(--surface-card);
+  color: var(--ink-700);
+  cursor: pointer;
+}
+.back:hover {
+  background: var(--surface-subtle);
+}
+.back:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.barTitles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.title {
+  font-size: var(--text-h6);
+  line-height: var(--lh-h6);
+  letter-spacing: var(--ls-h6);
+  font-weight: var(--weight-semibold);
+}
+.stepLine {
+  font-size: var(--text-p-xs);
+  color: var(--ink-700);
+}
+.formError {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-danger-subtle);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-danger);
+}
+
+/* ---- the step card ---- */
+.card {
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}
+.cardHead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border-bottom: var(--border-hairline) solid var(--border-muted);
+}
+.cardTitles {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.cardTitle {
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+.cardDescription {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-500);
+}
+.body1,
+.body2,
+.body3 {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+}
+.body1 {
+  gap: var(--space-5);
+}
+.body2 {
+  gap: var(--space-4);
+}
+.body3 {
+  gap: var(--space-6);
+}
+.body4 {
+  padding: var(--space-5);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-5);
+}
+
+/* ---- step 1 ---- */
+.group3,
+.group2 {
+  display: flex;
+  flex-direction: column;
+}
+.group3 {
+  gap: var(--space-3);
+}
+.group2 {
+  gap: var(--space-2);
+}
+.groupHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.groupLabel {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-medium);
+}
+.groupHint {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-500);
+}
+.stageAdd {
+  display: flex;
+  gap: var(--space-2);
+  max-width: 360px;
+}
+.stageInput {
+  flex: 1;
+  font-size: var(--text-p-xs);
+}
+.fieldError {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-danger);
+}
+
+/* ---- step 2 ---- */
+.orderHint {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+.orderIcon {
+  color: var(--ink-500);
+}
+.questions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.noQuestions {
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border-hairline) dashed var(--border-default);
+  border-radius: var(--radius-lg);
+}
+.editorEditing {
+  border-style: solid;
+  border-color: var(--blue-500);
+}
+.editorHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.editorTitle {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.editorCount {
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+.editorRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+.required {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-p-xs);
+}
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.textLink {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--blue-500);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+.textLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-xs);
+}
+.editorButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* ---- step 3 ---- */
+.section,
+.sectionRuled {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.sectionRuled {
+  padding-top: var(--space-5);
+  border-top: var(--border-hairline) solid var(--border-muted);
+}
+.sectionTitle {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.rules {
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+.ruleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+}
+.ruleRow + .ruleRow {
+  border-top: var(--border-hairline) solid var(--border-muted);
+}
+.ruleText {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ruleLabel {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-medium);
+}
+.ruleHint {
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+.defaults {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--ink-50);
+}
+.defaultsIcon {
+  color: var(--ink-500);
+}
+.defaultsText {
+  flex: 1;
+  min-width: 220px;
+  font-size: var(--text-p-xs);
+  color: var(--ink-700);
+}
+.link {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-600);
+}
+.hoursBox {
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+.override {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.overrideLabel {
+  font-size: var(--text-p-sm);
+}
+
+/* ---- step 4 ---- */
+.summaries {
+  flex: 1 1 360px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+@media (max-width: 767px) {
+  .bar {
+    /* The shell's phone padding is --space-4; the bar keeps the design's padding. */
+    margin: calc(var(--space-4) * -1) calc(var(--space-4) * -1) 0;
+  }
+  .defaults {
+    padding: var(--space-2) var(--space-3);
+  }
+  /* Drawn at 36px; the tap area reaches 44px (CTA Hierarchy rule 5). */
+  .back {
+    position: relative;
+  }
+  .back::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+  }
+  /* Design phone rule: --space-5 card padding becomes --space-4; --space-6 gaps become --space-4. */
+  .cardHead,
+  .body1,
+  .body2,
+  .body3,
+  .body4 {
+    padding: var(--space-4);
+  }
+  .body3 {
+    gap: var(--space-4);
+  }
+  .ruleRow {
+    padding: var(--space-2) var(--space-3);
+  }
+  /* Design phone rule: inputs are 16px (no iOS zoom). */
+  .stageInput {
+    font-size: var(--text-p-md);
+  }
+}

@@ -4,6 +4,8 @@ export type Topic = {
   /** The backend's offering slug (catalog `code`). */
   slug: string;
   label: string;
+  /** The offering's id, for writes (session types' `service_offering_ids`). */
+  id?: string;
 };
 
 /** Max one per card, highest priority first. Rules: lib/api/data/labels.ts. */
