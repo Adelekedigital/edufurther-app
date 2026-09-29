@@ -64,6 +64,13 @@ export function SessionTypeRow({
     kept.current = false;
     switchRef.current?.focus();
   }, [pending]);
+  // A restore that failed leaves the row scheduled: forget the click, so a
+  // later refetch clearing the deletion doesn't pull focus here.
+  const wasRestoring = useRef(false);
+  useEffect(() => {
+    if (wasRestoring.current && !restoring && pending) kept.current = false;
+    wasRestoring.current = restoring;
+  }, [restoring, pending]);
   useEffect(() => {
     if (!focusMenu) return;
     menuRef.current?.focus();

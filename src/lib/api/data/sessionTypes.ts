@@ -1,7 +1,13 @@
 'use client';
 
 import { useRef } from 'react';
-import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import {
+  useMutation,
+  useMutationState,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import type { AppError, Remote } from '@/types/mentor';
 import type { DeleteError, DeleteResult, OwnSessionType, SessionIcon } from '@/types/sessionType';
@@ -138,14 +144,25 @@ export function useOwnSessionTypes(enabled: boolean): Remote<OwnSessionType[]> {
  * its old state and flicker the row back (review of #80).
  */
 const ROW_WRITE = ['sessionTypes', 'rowWrite'] as const;
+const settling = new WeakSet<QueryClient>();
 function settleRowWrite(qc: QueryClient) {
-  // onSettled runs while this mutation still counts as pending.
-  if (qc.isMutating({ mutationKey: ROW_WRITE }) > 1) return;
-  void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });
-  // What mentees can book, and the featured type: Explore cards and the profile.
-  void qc.invalidateQueries({ queryKey: keys.mentors.all });
-  void qc.invalidateQueries({ queryKey: ['booking'] });
+  // Checked after this mutation stops counting as pending, and once for writes
+  // settling in the same tick: otherwise each sees the other and none refetches.
+  if (settling.has(qc)) return;
+  settling.add(qc);
+  setTimeout(() => {
+    settling.delete(qc);
+    if (qc.isMutating({ mutationKey: ROW_WRITE }) > 0) return;
+    void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });
+    // What mentees can book, and the featured type: Explore cards and the profile.
+    void qc.invalidateQueries({ queryKey: keys.mentors.all });
+    void qc.invalidateQueries({ queryKey: ['booking'] });
+  }, 0);
 }
+/** Restores in flight, by row, so each "Keep it" waits on its own. */
+const RESTORE = [...ROW_WRITE, 'restore'] as const;
+// Offline, fail at once (our copy says so) rather than pause and send later.
+const ROW_WRITE_OPTS = { networkMode: 'always' } as const;
 
 export function useSetLive(onFailed: (id: string, live: boolean) => void) {
   const qc = useQueryClient();
@@ -153,6 +170,7 @@ export function useSetLive(onFailed: (id: string, live: boolean) => void) {
   const key = keys.sessionTypes.own(who);
   const mutation = useMutation({
     mutationKey: ROW_WRITE,
+    ...ROW_WRITE_OPTS,
     mutationFn: async ({ id, live }: { id: string; live: boolean }) => {
       const { data, error, response } = await api.PATCH(
         '/api/v1/me/session-types/{session_type_id}',
@@ -189,6 +207,7 @@ export function useDeleteSessionType() {
   const who = useWho();
   const mutation = useMutation<DeleteResult, DeleteError, string>({
     mutationKey: ROW_WRITE,
+    ...ROW_WRITE_OPTS,
     mutationFn: async (id) => {
       let result;
       try {
@@ -248,7 +267,8 @@ export function useRestoreSessionType(onFailed: (id: string, error: AppError) =>
   const who = useWho();
   const key = keys.sessionTypes.own(who);
   const mutation = useMutation<'kept' | 'gone', AppError, string>({
-    mutationKey: ROW_WRITE,
+    mutationKey: RESTORE,
+    ...ROW_WRITE_OPTS,
     mutationFn: async (id) => {
       const r = await api
         .POST('/api/v1/me/session-types/{session_type_id}/restore', {
@@ -272,11 +292,12 @@ export function useRestoreSessionType(onFailed: (id: string, error: AppError) =>
     onError: (e, id) => onFailed(id, e),
     onSettled: () => settleRowWrite(qc),
   });
-  return {
-    restore: mutation.mutate,
-    // The row being kept: its "Keep it" ignores a second click meanwhile.
-    pendingId: mutation.isPending ? mutation.variables : null,
-  };
+  // useMutation tracks only its latest call: read every restore still pending.
+  const pendingIds = useMutationState({
+    filters: { mutationKey: RESTORE, status: 'pending' },
+    select: (m) => m.state.variables as string,
+  });
+  return { restore: mutation.mutate, pendingIds };
 }
 
 /**
@@ -290,6 +311,7 @@ export function useSetFeatured(onFailed: (id: string, featured: boolean, error: 
   const key = keys.sessionTypes.own(who);
   const mutation = useMutation({
     mutationKey: ROW_WRITE,
+    ...ROW_WRITE_OPTS,
     mutationFn: async ({ id, featured }: { id: string; featured: boolean }) => {
       const { data, error, response } = await api.PATCH(
         '/api/v1/me/session-types/{session_type_id}',
@@ -312,6 +334,8 @@ export function useSetFeatured(onFailed: (id: string, featured: boolean, error: 
       return { wasFeatured };
     },
     onError: (e, { id, featured }, ctx) => {
+      // Back to the badges before this call; another feature still in flight
+      // shows again when it settles and the list refetches.
       if (ctx)
         qc.setQueryData<OwnSessionType[]>(key, (list) =>
           list?.map((t) => ({ ...t, isFeatured: ctx.wasFeatured.includes(t.id) })),

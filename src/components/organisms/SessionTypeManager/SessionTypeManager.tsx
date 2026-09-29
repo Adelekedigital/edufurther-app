@@ -24,8 +24,8 @@ type SessionTypeManagerProps = {
   /** The share link for a type; null until it can be built. */
   shareUrl: (type: OwnSessionType) => string | null;
   createHref: string;
-  /** The row whose "Keep it" is waiting on the server. */
-  restoringId?: string | null;
+  /** Rows whose "Keep it" is waiting on the server. */
+  restoringIds?: string[];
   /**
    * Where focus goes after a row is removed: the next row's "⋯", or Create
    * when none is left. Cleared through onFocused once applied.
@@ -101,7 +101,7 @@ function List({
   onRestore,
   onDuplicate,
   shareUrl,
-  restoringId,
+  restoringIds,
   focusAfterRemoval,
   onFocused,
 }: SessionTypeManagerProps) {
@@ -186,7 +186,7 @@ function List({
           onRestore={() => onRestore(t)}
           onDuplicate={() => onDuplicate(t)}
           shareUrl={shareUrl(t)}
-          restoring={restoringId === t.id}
+          restoring={!!restoringIds?.includes(t.id)}
           focusMenu={typeof focusAfterRemoval === 'object' && focusAfterRemoval?.menuOf === t.id}
           onFocused={onFocused}
         />

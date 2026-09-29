@@ -32,9 +32,10 @@ const setup = (list: Remote<OwnSessionType[]>, messages = {}) => {
   const onEdit = vi.fn();
   const onDuplicate = vi.fn();
   const onRestore = vi.fn();
-  const el = (l: Remote<OwnSessionType[]>) => (
+  const el = (l: Remote<OwnSessionType[]>, restoringIds: string[] = []) => (
     <SessionTypeManager
       list={l}
+      restoringIds={restoringIds}
       messages={messages}
       onLiveChange={onLiveChange}
       onDelete={onDelete}
@@ -63,6 +64,7 @@ const setup = (list: Remote<OwnSessionType[]>, messages = {}) => {
     onDuplicate,
     onRestore,
     relist: (l: Remote<OwnSessionType[]>) => rerender(el(l)),
+    rerenderWith: (l: Remote<OwnSessionType[]>, ids: string[]) => rerender(el(l, ids)),
   };
 };
 
@@ -158,5 +160,23 @@ describe('SessionTypeManager — the four states', () => {
     expect(
       screen.getByRole('switch', { name: 'Visible to mentees: SOP draft review' }),
     ).toHaveFocus();
+  });
+
+  it('a "Keep it" that failed doesn’t pull focus later, when a refetch clears the deletion', async () => {
+    const pending = {
+      ...T,
+      isLive: false,
+      pendingDeletion: { deletesAfter: null, bookedCount: 1 },
+    };
+    const { relist, rerenderWith } = setup(remote({ data: [pending] }));
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Keep it: SOP draft review' }));
+    rerenderWith(remote({ data: [pending] }), ['a']);
+    rerenderWith(remote({ data: [pending] }), []);
+    await user.click(screen.getByRole('link', { name: 'Create session type' }));
+    relist(remote({ data: [{ ...pending, pendingDeletion: null }] }));
+    expect(
+      screen.getByRole('switch', { name: 'Visible to mentees: SOP draft review' }),
+    ).not.toHaveFocus();
   });
 });

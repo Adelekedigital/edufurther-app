@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import {
   useCreateSessionType,
@@ -288,6 +288,77 @@ describe('useSetFeatured', () => {
     await act(async () => answers[0]!());
     expect(lists()).toBe(reads);
     await act(async () => answers[1]!());
+    await waitFor(() => expect(lists()).toBe(reads + 1));
+  });
+});
+
+describe('row writes (review r2 of #80)', () => {
+  it('offline, a write fails at once with our offline copy instead of pausing', async () => {
+    const onFailed = vi.fn();
+    const { result } = renderHook(
+      () => ({ list: useOwnSessionTypes(true), feature: useSetFeatured(onFailed) }),
+      { wrapper: setup() },
+    );
+    await waitFor(() => expect(result.current.list.data).toHaveLength(2));
+    // Offline as both see it: our error copy (navigator) and the query client.
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    onlineManager.setOnline(false);
+    try {
+      PATCH.mockRejectedValue(new TypeError('Failed to fetch'));
+      act(() => result.current.feature('x', true));
+      await waitFor(() =>
+        expect(onFailed).toHaveBeenCalledWith(
+          'x',
+          true,
+          expect.objectContaining({ kind: 'offline' }),
+        ),
+      );
+    } finally {
+      online.mockRestore();
+      onlineManager.setOnline(true);
+    }
+  });
+
+  it('two rows can be kept at once: each waits on its own', async () => {
+    list = [
+      { ...row('x', false), pending_deletion: BOOKED },
+      { ...row('y', false), pending_deletion: BOOKED },
+    ];
+    const { result } = renderHook(
+      () => ({ list: useOwnSessionTypes(true), r: useRestoreSessionType(vi.fn()) }),
+      { wrapper: setup() },
+    );
+    await waitFor(() => expect(result.current.list.data).toHaveLength(2));
+    POST.mockImplementation(() => new Promise(() => {}));
+    act(() => {
+      result.current.r.restore('x');
+      result.current.r.restore('y');
+    });
+    await waitFor(() => expect([...result.current.r.pendingIds].sort()).toEqual(['x', 'y']));
+  });
+
+  it('two writes settling in the same tick still refetch the list once', async () => {
+    const { result } = renderHook(
+      () => ({
+        list: useOwnSessionTypes(true),
+        feature: useSetFeatured(vi.fn()),
+        setLive: useSetLive(vi.fn()),
+      }),
+      { wrapper: setup() },
+    );
+    await waitFor(() => expect(result.current.list.data).toHaveLength(2));
+    const lists = () =>
+      GET.mock.calls.filter(([path]) => !String(path).endsWith('/questions')).length;
+    const reads = lists();
+    let answer!: () => void;
+    const gate = new Promise<void>((res) => (answer = res));
+    PATCH.mockImplementation(() => gate.then(() => ok({ updated: true })));
+    act(() => {
+      result.current.feature('x', true);
+      result.current.setLive('y', false);
+    });
+    await waitFor(() => expect(PATCH).toHaveBeenCalledTimes(2));
+    await act(async () => answer());
     await waitFor(() => expect(lists()).toBe(reads + 1));
   });
 });

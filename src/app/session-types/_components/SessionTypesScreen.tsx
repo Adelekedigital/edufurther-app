@@ -203,7 +203,7 @@ export function SessionTypesScreen() {
     ),
   );
   const onRestore = (t: OwnSessionType) => {
-    if (restore.pendingId) return;
+    if (restore.pendingIds.includes(t.id)) return;
     clearMessage(t.id);
     const after = neighbour(t.id);
     restore.restore(t.id, {
@@ -229,7 +229,7 @@ export function SessionTypesScreen() {
       onEdit={(t) => router.push(`/session-types/${encodeURIComponent(t.id)}/edit`)}
       onFeature={onFeature}
       onRestore={onRestore}
-      restoringId={restore.pendingId}
+      restoringIds={restore.pendingIds}
       focusAfterRemoval={focusAfterRemoval}
       onFocused={onFocused}
       onDuplicate={onDuplicate}

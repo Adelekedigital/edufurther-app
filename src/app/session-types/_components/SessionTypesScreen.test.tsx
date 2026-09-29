@@ -63,11 +63,11 @@ vi.mock('@/lib/api/data/sessionTypes', () => ({
     failFeature = onFailed;
     return setFeatured;
   },
-  useRestoreSessionType: () => ({ restore, pendingId: restorePending }),
+  useRestoreSessionType: () => ({ restore, pendingIds: restorePending }),
 }));
 const setFeatured = vi.fn();
 let failFeature: (id: string, featured: boolean, e: AppError) => void = () => {};
-let restorePending: string | null = null;
+let restorePending: string[] = [];
 const restore = vi.fn();
 const sop = () => screen.getByRole('article', { name: 'SOP draft review' });
 /** What the page's live region last read out. */
@@ -102,7 +102,7 @@ beforeEach(() => {
   setLive.mockClear();
   setFeatured.mockClear();
   restore.mockReset();
-  restorePending = null;
+  restorePending = [];
   topicsLoading = false;
   duplicate.mockReset();
   remove.mockClear();
@@ -355,12 +355,28 @@ describe('SessionTypesScreen', () => {
     await user.click(screen.getByRole('button', { name: 'Keep it: SOP draft review' }));
     expect(announced()).toContain('Kept. “SOP draft review” is hidden until you show it.');
     restore.mockClear();
-    restorePending = 'a';
+    restorePending = ['a'];
     rerender(<SessionTypesScreen />);
     const keep = screen.getByRole('button', { name: 'Keep it: SOP draft review' });
     expect(keep).toHaveAttribute('aria-disabled', 'true');
     await user.click(keep);
     expect(restore).not.toHaveBeenCalled();
+  });
+
+  it('while one row is being kept, another row’s "Keep it" still works', async () => {
+    viewer = mentor;
+    const pending = { deletesAfter: null, bookedCount: 1 };
+    list = idle({
+      data: [
+        { ...TYPE, isLive: false, pendingDeletion: pending },
+        { ...TYPE, id: 'b', name: 'Visa prep', isLive: false, pendingDeletion: pending },
+      ],
+    });
+    restorePending = ['a'];
+    const user = userEvent.setup();
+    render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('button', { name: 'Keep it: Visa prep' }));
+    expect(restore).toHaveBeenCalledWith('b', expect.anything());
   });
 
   it('signed in without a usable account: told why, never "for mentors"', () => {
