@@ -7,6 +7,7 @@ import {
   emptyWeek,
   hhmm,
   toCreateBody,
+  toQuestionWrite,
   resolveDefaults,
   type BookingDefaults,
   type DayHours,
@@ -385,8 +386,58 @@ export function copyName(name: string, taken: string[]): string {
   }
 }
 
+/**
+ * The create request for a copy, from the type as read: what it inherits stays
+ * inherited (null), what it sets stays set — never frozen to today's defaults
+ * or to a fallback (review of #74).
+ */
+export function toDuplicateBody(
+  s: SavedSessionType,
+  name: string,
+  offeringIds: Record<string, string>,
+) {
+  const r = s.read;
+  const offerings = r.service_offerings?.length
+    ? r.service_offerings
+    : r.service_offering
+      ? [r.service_offering]
+      : [];
+  const questions: DraftQuestion[] = s.questions.map((q) => ({
+    key: q.id,
+    text: q.text,
+    kind: q.kind,
+    required: q.required,
+    options: q.options.map((o) => o.text),
+  }));
+  return {
+    body: {
+      name,
+      description: r.description ?? null,
+      duration_minutes: r.duration_inherited ? null : r.duration_minutes,
+      min_notice_minutes: r.min_notice_inherited ? null : r.min_notice_minutes,
+      service_offering_ids: offerings.flatMap((o) =>
+        offeringIds[o.code] ? [offeringIds[o.code]!] : [],
+      ),
+      application_stages:
+        r.application_stages ?? (r.application_stage ? [r.application_stage] : []),
+      custom_stage_label: r.custom_stage_label ?? null,
+      icon: r.icon ?? null,
+      requires_booking_confirmation: r.requires_booking_confirmation ?? null,
+      booking_window_days: r.booking_window_days ?? null,
+      break_after_minutes: r.break_after_minutes ?? null,
+      questions: questions.map(toQuestionWrite),
+    },
+    // Topics we couldn't match to the catalog (not loaded, or no longer offered).
+    missingTopics: offerings.filter((o) => !offeringIds[o.code]).length,
+  };
+}
+
 /** Duplicate's outcome: the new type, and what didn't come across. */
-export type Duplicated = { id: string; name: string; failed: ('hours' | 'hidden')[] };
+export type Duplicated = {
+  id: string;
+  name: string;
+  failed: ('hours' | 'hidden' | 'topics')[];
+};
 
 /**
  * Duplicate a session type (Session Types.dc.html row menu): its fields,
@@ -409,9 +460,8 @@ export function useDuplicateSessionType() {
       } catch (e) {
         throw createError(e, null, 'duplicate');
       }
-      const draft = toDraft(saved, null);
       const name = copyName(saved.read.name, takenNames);
-      const body = toCreateBody({ ...draft, name }, offeringIds);
+      const { body, missingTopics } = toDuplicateBody(saved, name, offeringIds);
       let result;
       try {
         result = await api.POST('/api/v1/me/session-types', {
@@ -428,7 +478,16 @@ export function useDuplicateSessionType() {
           'duplicate',
         );
       const newId = result.data.id;
-      const failed: Duplicated['failed'] = [];
+      const failed: Duplicated['failed'] = missingTopics ? ['topics'] : [];
+      // Hidden straight away (a create can't start hidden), so the copy is never
+      // bookable while its hours are copied, and a failed hours copy lands hidden.
+      const hidden = await ok(
+        api.PATCH('/api/v1/me/session-types/{session_type_id}', {
+          params: { path: { session_type_id: newId } },
+          body: { is_active: false },
+        }),
+      );
+      if (!hidden) failed.push('hidden');
       const hours = await Promise.all(
         saved.windows
           .filter((w) => w.is_active)
@@ -448,14 +507,6 @@ export function useDuplicateSessionType() {
           ),
       );
       if (hours.some((x) => !x)) failed.push('hours');
-      // A copy starts hidden, so it can be checked before mentees see it.
-      const hidden = await ok(
-        api.PATCH('/api/v1/me/session-types/{session_type_id}', {
-          params: { path: { session_type_id: newId } },
-          body: { is_active: false } as components['schemas']['MentorSessionTypePatch'],
-        }),
-      );
-      if (!hidden) failed.push('hidden');
       return { id: newId, name, failed };
     },
     onSettled: () => {
@@ -466,6 +517,5 @@ export function useDuplicateSessionType() {
   return {
     duplicate: mutation.mutateAsync,
     isPending: mutation.isPending,
-    pendingId: mutation.isPending ? mutation.variables?.id : undefined,
   };
 }

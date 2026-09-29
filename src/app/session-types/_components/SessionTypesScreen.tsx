@@ -62,29 +62,53 @@ export function SessionTypesScreen() {
     !!visibility && !visibility.show && (list.data ?? []).filter((x) => x.isLive).length === 1;
 
   const router = useRouter();
-  const { topics } = useTopics();
+  const { topics, isLoading: topicsLoading } = useTopics();
   const dup = useDuplicateSessionType();
+  // Rows whose message is progress or success (not an error).
+  const [infoIds, setInfoIds] = useState<string[]>([]);
+  const say = (id: string, text: string, info: boolean) => {
+    setMessages((m) => ({ ...m, [id]: text }));
+    setInfoIds((ids) =>
+      info ? [...ids.filter((x) => x !== id), id] : ids.filter((x) => x !== id),
+    );
+  };
+  // PROVISIONAL copy throughout — design request #9 (the design only adds the row).
   const onDuplicate = (t: OwnSessionType) => {
-    if (dup.isPending) return;
+    if (dup.isPending) return say(t.id, 'Still copying the last one. Try again in a moment.', true);
+    // The copy's topics come from the catalog: without it they'd be dropped.
+    if (topicsLoading) return say(t.id, 'Still loading your topics. Try again in a moment.', true);
     const offeringIds = Object.fromEntries(topics.flatMap((x) => (x.id ? [[x.slug, x.id]] : [])));
-    setMessages(({ [t.id]: _cleared, ...rest }) => rest);
+    say(t.id, `Copying “${t.name}”…`, true);
     dup.duplicate({ id: t.id, takenNames: (list.data ?? []).map((x) => x.name), offeringIds }).then(
       (d) => {
-        // PROVISIONAL copy — design request #9 (the design only adds the row).
-        if (d.failed.length)
-          setMessages((m) => ({
-            ...m,
-            [t.id]: `“${d.name}” was added, but ${
-              d.failed.includes('hours') ? 'its dedicated hours didn’t copy' : 'it isn’t hidden yet'
-            }. Check it before mentees see it.`,
-          }));
+        const missed = [
+          d.failed.includes('topics') && 'its topics',
+          d.failed.includes('hours') && 'its dedicated hours',
+        ].filter(Boolean);
+        if (d.failed.includes('hidden'))
+          say(
+            t.id,
+            `“${d.name}” was added, but it isn’t hidden yet: mentees can book it. Hide it, then check it.`,
+            false,
+          );
+        else if (missed.length)
+          say(
+            t.id,
+            `“${d.name}” was added, hidden, but ${missed.join(' and ')} didn’t copy. Check it before you show it.`,
+            false,
+          );
+        else say(t.id, `“${d.name}” was added, hidden. Check it, then show it to mentees.`, true);
       },
-      (e: { message: string }) => setMessages((m) => ({ ...m, [t.id]: e.message })),
+      (e: { message: string }) => say(t.id, e.message, false),
     );
   };
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
+  // Only once we know whose profile it is (no broken link while the account loads).
+  // /me carries no profile slug, so the id: the profile route takes either.
   const shareUrl = (t: OwnSessionType) =>
-    `${origin}/mentors/${encodeURIComponent(member?.id ?? '')}?book=${encodeURIComponent(t.id)}`;
+    member
+      ? `${origin}/mentors/${encodeURIComponent(member.id)}?book=${encodeURIComponent(t.id)}`
+      : null;
 
   const [confirming, setConfirming] = useState<OwnSessionType | null>(null);
   const del = useDeleteSessionType();
@@ -97,6 +121,7 @@ export function SessionTypesScreen() {
     <SessionTypeManager
       list={list}
       messages={messages}
+      infoIds={infoIds}
       onLiveChange={askVisibility}
       onDelete={setConfirming}
       onEdit={(t) => router.push(`/session-types/${encodeURIComponent(t.id)}/edit`)}

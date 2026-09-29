@@ -99,3 +99,7 @@
     padding: var(--space-4);
   }
 }
+/* Progress or success under the row (Duplicate): no error red. */
+.messageInfo {
+  color: var(--ink-700);
+}

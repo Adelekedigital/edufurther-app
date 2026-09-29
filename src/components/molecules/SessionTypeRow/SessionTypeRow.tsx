@@ -14,10 +14,12 @@ type SessionTypeRowProps = {
   onDelete: () => void;
   onEdit: () => void;
   onDuplicate: () => void;
-  /** The public link to book this type (copied by the row's link button). */
-  shareUrl: string;
-  /** Our copy when the last switch didn't save (the switch has already rolled back). */
+  /** The public link to book this type; null until it can be built (no button). */
+  shareUrl: string | null;
+  /** Our copy under the row: a switch that didn't save, or what Duplicate did. */
   message?: string;
+  /** info: progress or success (no error icon). */
+  messageTone?: 'error' | 'info';
 };
 
 /**
@@ -34,6 +36,7 @@ export function SessionTypeRow({
   onDuplicate,
   shareUrl,
   message,
+  messageTone = 'error',
 }: SessionTypeRowProps) {
   const nameId = useId();
   const qn = t.questionCount;
@@ -68,8 +71,11 @@ export function SessionTypeRow({
           ))}
         </ul>
         {message && (
-          <p role="status" className={styles.message}>
-            <Icon name="error" size={16} />
+          <p
+            role="status"
+            className={cx(styles.message, messageTone === 'info' && styles.messageInfo)}
+          >
+            {messageTone === 'error' && <Icon name="error" size={16} />}
             {message}
           </p>
         )}
@@ -81,7 +87,7 @@ export function SessionTypeRow({
           aria-label={`Visible to mentees: ${t.name}`}
           title={t.isLive ? 'Visible to mentees' : 'Hidden from mentees'}
         />
-        <CopyLinkButton label={`Copy share link for ${t.name}`} url={shareUrl} />
+        {shareUrl && <CopyLinkButton label={`Copy share link for ${t.name}`} url={shareUrl} />}
         <RowMenu
           label={`More actions for ${t.name}`}
           items={[

@@ -470,3 +470,100 @@ describe('useDuplicateSessionType', () => {
     });
   });
 });
+
+describe('useDuplicateSessionType — review of #74', () => {
+  const wrap = () => {
+    const qc = new QueryClient();
+    return function Wrapper({ children }: { children: ReactNode }) {
+      return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+    };
+  };
+  const list = (over: Partial<SavedSessionType['read']> = {}) => ({
+    data: [read(over)],
+    next_cursor: null,
+  });
+  const serve = (over: Partial<SavedSessionType['read']> = {}, windows: unknown[] = []) =>
+    GET.mockImplementation((path: string) =>
+      path === '/api/v1/me/session-types'
+        ? reply(200, list(over))
+        : reply(200, { data: path.endsWith('/questions') ? [] : windows, next_cursor: null }),
+    );
+  const run = async (offeringIds: Record<string, string> = { 'document-preparation': 'o4' }) => {
+    const { useDuplicateSessionType } = await import('./sessionTypeEdit');
+    const { result } = renderHook(() => useDuplicateSessionType(), { wrapper: wrap() });
+    return result.current.duplicate({ id: 'st1', takenNames: ['SOP review'], offeringIds });
+  };
+  beforeEach(() => {
+    for (const f of [PATCH, POST, DELETE, PUT, GET]) f.mockReset();
+    PATCH.mockImplementation(() => reply(200, { updated: true }));
+  });
+
+  it('what the original inherits stays inherited, what it sets stays set — no fallbacks', async () => {
+    serve({
+      duration_inherited: true,
+      min_notice_inherited: false,
+      min_notice_minutes: 2880,
+      break_after_minutes: 10,
+    });
+    POST.mockImplementation(() => reply(201, { id: 'st2', question_ids: [] }));
+    await run();
+    expect(POST.mock.calls[0]![1].body).toMatchObject({
+      duration_minutes: null,
+      min_notice_minutes: 2880,
+      booking_window_days: null,
+      break_after_minutes: 10,
+      requires_booking_confirmation: null,
+      application_stages: ['drafting_stage'],
+    });
+  });
+
+  it('hidden straight after the create, before any hours are copied', async () => {
+    const order: string[] = [];
+    serve({}, [
+      {
+        id: 'w1',
+        day_of_week: 2,
+        start_time: '17:00:00',
+        end_time: '20:00:00',
+        timezone: 'Europe/London',
+        is_active: true,
+      },
+    ]);
+    POST.mockImplementation((path: string) => {
+      order.push(path.endsWith('/windows') ? 'hours' : 'create');
+      return path.endsWith('/windows')
+        ? reply(201, { id: 'w9' })
+        : reply(201, { id: 'st2', question_ids: [] });
+    });
+    PATCH.mockImplementation(() => (order.push('hide'), reply(200, { updated: true })));
+    await expect(run()).resolves.toMatchObject({ failed: [] });
+    expect(order).toEqual(['create', 'hide', 'hours']);
+    expect(POST.mock.calls[1]![1].body).toMatchObject({ timezone: 'Europe/London' });
+  });
+
+  it('a read that fails sends nothing; a refused create sends nothing more', async () => {
+    GET.mockImplementation(() => reply(500));
+    await expect(run()).rejects.toMatchObject({
+      message: expect.stringMatching(/^We couldn’t duplicate it\./),
+    });
+    expect(POST).not.toHaveBeenCalled();
+    serve();
+    POST.mockImplementation(() =>
+      Promise.resolve({
+        data: undefined,
+        error: { errors: [] },
+        response: new Response(null, { status: 422 }),
+      }),
+    );
+    await expect(run()).rejects.toBeTruthy();
+    expect(PATCH).not.toHaveBeenCalled();
+    expect(POST).toHaveBeenCalledTimes(1);
+  });
+
+  it('says so when it couldn’t hide the copy, or match its topics', async () => {
+    serve();
+    POST.mockImplementation(() => reply(201, { id: 'st2', question_ids: [] }));
+    PATCH.mockImplementation(() => reply(500));
+    await expect(run({})).resolves.toMatchObject({ failed: ['topics', 'hidden'] });
+  });
+});

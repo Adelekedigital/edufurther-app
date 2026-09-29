@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Remote, Viewer } from '@/types/mentor';
 import type { DeleteError, OwnSessionType } from '@/types/sessionType';
@@ -12,9 +12,11 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/lib/api/data/mentors', () => ({
   useTopics: () => ({
     topics: [{ slug: 'document-preparation', label: 'Document preparation', id: 'o4' }],
+    isLoading: topicsLoading,
   }),
 }));
 const duplicate = vi.fn();
+let topicsLoading = false;
 vi.mock('@/lib/api/data/sessionTypeEdit', () => ({
   useDuplicateSessionType: () => ({ duplicate, isPending: false }),
 }));
@@ -75,6 +77,8 @@ beforeEach(() => {
   list = idle({ data: [TYPE] });
   deleteErr = null;
   setLive.mockClear();
+  topicsLoading = false;
+  duplicate.mockReset();
   remove.mockClear();
 });
 
@@ -195,7 +199,7 @@ describe('SessionTypesScreen', () => {
     );
     expect(
       await screen.findByText(
-        '“SOP draft review (copy)” was added, but its dedicated hours didn’t copy. Check it before mentees see it.',
+        '“SOP draft review (copy)” was added, hidden, but its dedicated hours didn’t copy. Check it before you show it.',
       ),
     ).toBeInTheDocument();
   });
@@ -215,5 +219,51 @@ describe('SessionTypesScreen', () => {
     await user.click(screen.getByRole('button', { name: 'Copy share link for SOP draft review' }));
     expect(write).toHaveBeenCalledWith(expect.stringMatching(/\/mentors\/m1\?book=a$/));
     expect(await screen.findByText('Link copied')).toBeInTheDocument();
+  });
+
+  it('Duplicate says it’s copying, then that the copy is hidden; a refusal is said on the row (review of #74)', async () => {
+    viewer = mentor;
+    const user = userEvent.setup();
+    let finish: (v: unknown) => void = () => {};
+    duplicate.mockImplementationOnce(() => new Promise((r) => (finish = r)));
+    render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Duplicate/ }));
+    expect(screen.getByText('Copying “SOP draft review”…')).toBeInTheDocument();
+    await act(async () => finish({ id: 'n', name: 'SOP draft review (copy)', failed: [] }));
+    expect(
+      screen.getByText(
+        '“SOP draft review (copy)” was added, hidden. Check it, then show it to mentees.',
+      ),
+    ).toBeInTheDocument();
+
+    duplicate.mockRejectedValueOnce({
+      message: 'We couldn’t duplicate it. You’re offline. Try again.',
+    });
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Duplicate/ }));
+    expect(
+      await screen.findByText('We couldn’t duplicate it. You’re offline. Try again.'),
+    ).toBeInTheDocument();
+  });
+
+  it('Duplicate waits for the topics, so a copy never loses them', async () => {
+    viewer = mentor;
+    topicsLoading = true;
+    const user = userEvent.setup();
+    render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Duplicate/ }));
+    expect(duplicate).not.toHaveBeenCalled();
+    expect(
+      screen.getByText('Still loading your topics. Try again in a moment.'),
+    ).toBeInTheDocument();
+  });
+
+  it('no share link until we know whose profile it is', () => {
+    viewer = { kind: 'loading', signedIn: true };
+    list = idle({ data: [TYPE] });
+    render(<SessionTypesScreen />);
+    expect(screen.queryByRole('button', { name: /Copy share link/ })).toBeNull();
   });
 });
