@@ -31,7 +31,7 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | Match prompt "Find my mentor matches" → onboarding goals (undesigned) | External Cal booking link, opens in a new tab | Product decision; goals/onboarding not built | matching moves on-platform |
 | Match prompt for mentees with ≤ 2 sessions | Mock viewer has 0 sessions until auth | No signed-in viewer yet | auth (phase B) |
 | Account menu (rail avatar + menu; More sheet on phones) | Built to AppShell.dc.html; "Find my mentor matches" links to the Cal page (hidden when unset) | — | — |
-| Account menu "View profile", "Feedback" | Not rendered | No mentee profile or feedback screen/destination yet | those screens ship |
+| Account menu "View profile" for mentees, and "Feedback" | "View profile" shows for mentors only (their own Mentor Profile); "Feedback" not rendered | No mentee profile (#50) or feedback destination (#51) yet | #50 / #51 |
 | Header "Notifications" bell (signed in) | Not rendered | No notifications backend | notifications ship |
 | No standalone Log in / Sign up screen in the design | `/login`, `/signup`: centred card with the booking modal's sign-up step (email) + a 6-digit code step | Needed for the header links; PROVISIONAL | design answers request #19 |
 | Sign-up step "Continue with Google" | Not rendered | Backend: Google sign-in is work in progress | backend enables it |
