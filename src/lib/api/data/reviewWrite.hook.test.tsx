@@ -7,11 +7,12 @@ import { useAuthoredReview, useSendReview } from './reviewWrite';
 
 const GET = vi.fn();
 const PATCH = vi.fn();
+const POST = vi.fn();
 vi.mock('./http', () => ({
   api: {
     GET: (...args: unknown[]) => GET(...args),
     PATCH: (...args: unknown[]) => PATCH(...args),
-    POST: vi.fn(),
+    POST: (...args: unknown[]) => POST(...args),
   },
 }));
 vi.mock('./session', () => ({
@@ -49,11 +50,26 @@ function wrapper({ children }: { children: ReactNode }) {
 beforeEach(() => {
   GET.mockReset();
   PATCH.mockReset();
+  POST.mockReset();
   qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 });
 
+// Global state is put back even when an assertion fails (review r3 of #59).
+afterEach(() => {
+  onlineManager.setOnline(true);
+  vi.restoreAllMocks();
+  vi.useRealTimers();
+});
+
+/** Offline as React Query sees it (networkMode) and as normaliseError reads it. */
+function goOffline() {
+  onlineManager.setOnline(false);
+  vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+}
+
 describe('useAuthoredReview (review r2 of #59)', () => {
   it('re-enabling (Edit opened again) refetches the cached copy; fetchedAt moves', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
     GET.mockResolvedValueOnce(authored(4)).mockResolvedValueOnce(authored(2));
     const { result, rerender } = renderHook(
       ({ on }: { on: boolean }) => useAuthoredReview('r7', on),
@@ -61,24 +77,36 @@ describe('useAuthoredReview (review r2 of #59)', () => {
     );
     await waitFor(() => expect(result.current.data?.answers.overall).toBe(4));
     const first = result.current.fetchedAt;
+    vi.setSystemTime(first + 5_000);
     rerender({ on: false });
     rerender({ on: true });
     await waitFor(() => expect(result.current.data?.answers.overall).toBe(2));
     expect(GET).toHaveBeenCalledTimes(2);
-    expect(result.current.fetchedAt).toBeGreaterThanOrEqual(first);
+    expect(result.current.fetchedAt).toBeGreaterThan(first);
   });
 
   it('offline: fails at once (error + failedAt), rather than pausing forever', async () => {
-    // React Query's own idea of online (what `networkMode` consults), and the
-    // browser's (what normaliseError reads).
-    onlineManager.setOnline(false);
-    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    goOffline();
     GET.mockRejectedValue(new TypeError('Failed to fetch'));
     const { result } = renderHook(() => useAuthoredReview('r7', true), { wrapper });
     await waitFor(() => expect(result.current.error?.kind).toBe('offline'));
     expect(result.current.failedAt).toBeGreaterThan(0);
-    online.mockRestore();
+  });
+
+  it('back online, "Try again" loads it: fetchedAt passes failedAt', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    goOffline();
+    GET.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    const { result } = renderHook(() => useAuthoredReview('r7', true), { wrapper });
+    await waitFor(() => expect(result.current.error?.kind).toBe('offline'));
+    const failedAt = result.current.failedAt;
+    vi.restoreAllMocks();
     onlineManager.setOnline(true);
+    vi.setSystemTime(failedAt + 5_000);
+    GET.mockResolvedValue(authored(3));
+    act(() => result.current.retry());
+    await waitFor(() => expect(result.current.data?.answers.overall).toBe(3));
+    expect(result.current.fetchedAt).toBeGreaterThan(failedAt);
   });
 });
 
@@ -125,5 +153,52 @@ describe('useSendReview: every send refreshes the viewer’s review (review of #
     const keysHit = spy.mock.calls.map((c) => JSON.stringify(c[0]?.queryKey));
     expect(keysHit).toContain(JSON.stringify(keys.mentors.myReviewFor('m1')));
     expect(ApiError).toBeDefined();
+  });
+});
+
+describe('useSendReview offline (review r3 of #59)', () => {
+  const answers = {
+    overall: 5,
+    text: 'Practical, direct feedback on my SOP draft.',
+    communication: 'great' as const,
+    knowledge: 'great' as const,
+    support: 'great' as const,
+    practicality: 'great' as const,
+    value: 5,
+    recommend: 10,
+    platformNote: '',
+  };
+
+  it('a new review fails at once with the offline copy; nothing is left to post later', async () => {
+    goOffline();
+    POST.mockRejectedValue(new TypeError('Failed to fetch'));
+    const { result } = renderHook(() => useSendReview(), { wrapper });
+    act(() => result.current.send({ mode: 'new', mentorId: 'm1', sessionId: 's1', answers }));
+    await waitFor(() => expect(result.current.error?.kind).toBe('offline'));
+    expect(result.current.error?.message).toMatch(/offline/);
+    expect(POST).toHaveBeenCalledTimes(1);
+    expect(
+      qc
+        .getMutationCache()
+        .getAll()
+        .some((m) => m.state.isPaused),
+    ).toBe(false);
+  });
+
+  it('an edit fails at once too', async () => {
+    goOffline();
+    PATCH.mockRejectedValue(new TypeError('Failed to fetch'));
+    const { result } = renderHook(() => useSendReview(), { wrapper });
+    act(() =>
+      result.current.send({
+        mode: 'edit',
+        mentorId: 'm1',
+        reviewId: 'r7',
+        before: { overall: 4 },
+        answers,
+      }),
+    );
+    await waitFor(() => expect(result.current.error?.kind).toBe('offline'));
+    expect(PATCH).toHaveBeenCalledTimes(1);
   });
 });

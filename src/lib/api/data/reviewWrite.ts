@@ -237,6 +237,9 @@ export function useSendReview() {
   const qc = useQueryClient();
   const session = useSession();
   const mutation = useMutation({
+    // Offline, fail at once with the offline copy. A paused mutation would
+    // survive closing the modal and post on reconnect (review r3 of #59).
+    networkMode: 'always',
     mutationFn: async (a: SendArgs): Promise<MyReview> => {
       if (a.mode === 'new') {
         const { data, error, response } = await api.POST('/api/v1/reviews', {
