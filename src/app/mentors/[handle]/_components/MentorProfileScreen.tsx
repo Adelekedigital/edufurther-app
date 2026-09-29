@@ -31,7 +31,7 @@ import {
   useSlots,
   useUploadIntakeFile,
 } from '@/lib/api/data/booking';
-import { BANNER_ACCEPT, bannerProblem, useCoverEdit } from '@/lib/api/data/cover';
+import { BANNER_ACCEPT, useCoverEdit } from '@/lib/api/data/cover';
 import { useMentorProfile } from '@/lib/api/data/profile';
 import { REVIEW_PAGE_SIZE, useMentorReviews, useReviewPrompt } from '@/lib/api/data/reviews';
 import {
@@ -124,10 +124,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const mayBook = !isOwner && canBook;
 
   // The owner's cover (Mentor Profile.dc.html "Change cover"): colour and art
-  // save as picked; an image replaces them. A file we can tell is wrong is
-  // caught here, before it's sent.
+  // save as picked; an image replaces them.
   const coverEdit = useCoverEdit(handle, isOwner && p ? p.mentor.id : null);
-  const [fileProblem, setFileProblem] = useState<string | null>(null);
 
   // ---- reviews tab ------------------------------------------------------------
   const isGuest = viewer.kind === 'guest';
@@ -299,17 +297,13 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                     onPickColor={(color) => coverEdit.save({ color })}
                     onToggleArt={(on) => coverEdit.save({ art: on ? 'icons' : 'none' })}
                     saveState={coverEdit.saveState}
-                    savedAt={coverEdit.savedAt}
+                    savedStamp={coverEdit.savedStamp}
                     hasImage={!!p.bannerUrl}
                     accept={BANNER_ACCEPT}
                     uploading={coverEdit.uploading}
-                    uploadError={fileProblem ?? coverEdit.uploadError}
-                    onFile={(file) => {
-                      const problem = bannerProblem(file);
-                      setFileProblem(problem);
-                      coverEdit.resetUpload();
-                      if (!problem) coverEdit.upload(file);
-                    }}
+                    uploadError={coverEdit.uploadError}
+                    onFile={coverEdit.upload}
+                    onClose={coverEdit.clearMessages}
                   />
                 ) : undefined
               }

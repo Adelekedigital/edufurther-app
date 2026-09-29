@@ -53,6 +53,10 @@
   color: var(--text-primary);
   font-family: var(--font-ui);
 }
+/* Focused only by a click inside it (tabIndex -1): no ring. */
+.dialog:focus {
+  outline: none;
+}
 .head {
   display: flex;
   flex-direction: column;
@@ -155,7 +159,7 @@
 .upload:hover {
   background: var(--ink-50);
 }
-.upload:disabled {
+.upload[aria-disabled='true'] {
   cursor: progress;
   color: var(--text-tertiary);
 }

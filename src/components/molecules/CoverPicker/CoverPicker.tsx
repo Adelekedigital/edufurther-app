@@ -17,8 +17,8 @@ type CoverPickerProps = {
   onPickColor: (key: CoverKey) => void;
   onToggleArt: (on: boolean) => void;
   saveState: CoverSaveState;
-  /** When the last save finished: "Saved" shows for a moment after each one. */
-  savedAt: number;
+  /** Changes each time a run of saves ends well: "Saved" shows for a moment. */
+  savedStamp: number;
   /** A banner image is set: it hides the colour and the art on the cover. */
   hasImage: boolean;
   onFile: (file: File) => void;
@@ -26,6 +26,8 @@ type CoverPickerProps = {
   uploadError: string | null;
   /** The file types the picker offers (the data layer's list). */
   accept: string;
+  /** The popover closed: a good time to forget old status and errors. */
+  onClose?: () => void;
 };
 
 const label = (k: CoverKey) => k[0]!.toUpperCase() + k.slice(1);
@@ -38,7 +40,7 @@ const SAVED_MS = 1800;
  * tabbing out closes it; Escape returns focus to the button.
  */
 export function CoverPicker(props: CoverPickerProps) {
-  const { color, artOn, onPickColor, onToggleArt, saveState, savedAt, hasImage } = props;
+  const { color, artOn, onPickColor, onToggleArt, saveState, savedStamp, hasImage } = props;
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -54,12 +56,12 @@ export function CoverPicker(props: CoverPickerProps) {
   // "Saved" shows for a moment after each save (design: 1.8s).
   // Keyed on the save's stamp: a new save shows it again.
   const [expired, setExpired] = useState(0);
-  const savedShown = saveState === 'saved' && savedAt > 0 && expired !== savedAt;
+  const savedShown = saveState === 'saved' && savedStamp > 0 && expired !== savedStamp;
   useEffect(() => {
-    if (saveState !== 'saved' || !savedAt) return;
-    const t = setTimeout(() => setExpired(savedAt), SAVED_MS);
+    if (saveState !== 'saved' || !savedStamp) return;
+    const t = setTimeout(() => setExpired(savedStamp), SAVED_MS);
     return () => clearTimeout(t);
-  }, [saveState, savedAt]);
+  }, [saveState, savedStamp]);
 
   useEffect(() => {
     if (open) swatchRefs.current[COVER_KEYS.indexOf(color)]?.focus();
@@ -69,6 +71,7 @@ export function CoverPicker(props: CoverPickerProps) {
 
   const close = (refocus: boolean) => {
     setOpen(false);
+    props.onClose?.();
     if (refocus) buttonRef.current?.focus();
   };
 
@@ -109,6 +112,7 @@ export function CoverPicker(props: CoverPickerProps) {
         ref={buttonRef}
         type="button"
         className={styles.trigger}
+        aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={open ? dialogId : undefined}
         onClick={() => (open ? close(false) : setOpen(true))}
@@ -118,7 +122,14 @@ export function CoverPicker(props: CoverPickerProps) {
       </button>
       {open && <div className={styles.backdrop} aria-hidden onClick={() => close(false)} />}
       {open && (
-        <div id={dialogId} role="dialog" aria-label="Cover" className={styles.dialog}>
+        <div
+          id={dialogId}
+          role="dialog"
+          aria-label="Cover"
+          // Focusable, so a click on its text keeps focus (and Escape) inside.
+          tabIndex={-1}
+          className={styles.dialog}
+        >
           <div className={styles.head}>
             <div className={styles.titleRow}>
               <span id={titleId} className={styles.title}>
@@ -189,9 +200,11 @@ export function CoverPicker(props: CoverPickerProps) {
           <button
             type="button"
             className={styles.upload}
-            disabled={props.uploading}
+            // aria-disabled, not disabled: a disabled button drops the focus
+            // it holds, and Escape with it (review of #65).
+            aria-disabled={props.uploading || undefined}
             aria-describedby={props.uploadError ? uploadErrorId : undefined}
-            onClick={() => fileRef.current?.click()}
+            onClick={() => !props.uploading && fileRef.current?.click()}
           >
             <Icon name="add_photo_alternate" size={18} className={styles.uploadIcon} />
             {props.uploading
@@ -211,7 +224,6 @@ export function CoverPicker(props: CoverPickerProps) {
             accept={props.accept}
             className={styles.file}
             tabIndex={-1}
-            aria-hidden
             onChange={(e) => {
               const f = e.target.files?.[0];
               // Clear it, so choosing the same file again still fires.

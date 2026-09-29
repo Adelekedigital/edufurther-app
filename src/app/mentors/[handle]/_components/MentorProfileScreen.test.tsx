@@ -122,15 +122,14 @@ const coverSave = vi.fn();
 const coverUpload = vi.fn();
 vi.mock('@/lib/api/data/cover', () => ({
   BANNER_ACCEPT: 'image/jpeg,image/png,image/webp',
-  bannerProblem: (f: File) => (f.type === 'image/gif' ? 'Choose a JPEG, PNG or WebP image.' : null),
   useCoverEdit: () => ({
     save: coverSave,
     saveState: 'idle',
-    savedAt: 0,
+    savedStamp: 0,
     upload: coverUpload,
     uploading: false,
     uploadError: null,
-    resetUpload: vi.fn(),
+    clearMessages: vi.fn(),
   }),
 }));
 
@@ -263,20 +262,17 @@ describe('MentorProfileScreen — the mentor on their own page', () => {
     expect(screen.queryByRole('button', { name: 'Book a session' })).not.toBeInTheDocument();
   });
 
-  it('changes their cover: colour, topic icons, and an image checked before it’s sent', async () => {
+  it('changes their cover: colour, topic icons and an image', async () => {
     profile = state({ data: { ...fullProfile, owner: { approval: 'approved', listed: true } } });
-    const user = userEvent.setup({ applyAccept: false });
+    const user = userEvent.setup();
     const { container } = render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('button', { name: 'Change cover' }));
     await user.click(screen.getByRole('radio', { name: 'Peach' }));
     expect(coverSave).toHaveBeenLastCalledWith({ color: 'peach' });
     await user.click(screen.getByRole('switch', { name: 'Show my topics on the cover' }));
     expect(coverSave).toHaveBeenLastCalledWith({ art: 'icons' });
+    // The data layer checks the file (tested there); the page hands it over.
     const input = container.querySelector('input[type=file]') as HTMLInputElement;
-    // applyAccept is off (setup), so a file the picker wouldn't offer still arrives.
-    await user.upload(input, new File(['x'], 'a.gif', { type: 'image/gif' }));
-    expect(screen.getByRole('alert')).toHaveTextContent('Choose a JPEG, PNG or WebP image.');
-    expect(coverUpload).not.toHaveBeenCalled();
     const ok = new File(['x'], 'a.png', { type: 'image/png' });
     await user.upload(input, ok);
     expect(coverUpload).toHaveBeenCalledWith(ok);

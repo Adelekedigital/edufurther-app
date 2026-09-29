@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, onlineManager, useQuery } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixture';
 import type { MentorProfile } from '@/types/mentor';
@@ -84,21 +84,68 @@ describe('useCoverEdit', () => {
     });
     await act(async () => finish());
     await waitFor(() => expect(result.current.saveState).toBe('saved'));
-    expect(result.current.savedAt).toBeGreaterThan(0);
+    expect(result.current.savedStamp).toBeGreaterThan(0);
   });
 
-  it('a failed save refetches the profile, so the page shows what’s saved', async () => {
+  it('a failed save puts back what’s saved, says so, and refetches', async () => {
     PATCH.mockResolvedValue({
       data: undefined,
       error: {},
       response: new Response(null, { status: 500 }),
     });
-    const { qc, wrapper, key } = setup();
+    const { qc, wrapper, key, read } = setup();
     const spy = vi.spyOn(qc, 'invalidateQueries');
     const { result } = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
     act(() => result.current.save({ art: 'icons' }));
     await waitFor(() => expect(result.current.saveState).toBe('error'));
+    expect(read().cover).toEqual(fullProfile.cover);
     expect(spy).toHaveBeenCalledWith({ queryKey: key });
+  });
+
+  it('a failed pick with another queued: the later pick shows, and the burst says Not saved (review of #65)', async () => {
+    // The server: what a refetch reads.
+    let server: MentorProfile = { ...fullProfile, cover: { color: 'sky', art: 'none' } };
+    const resolvers: ((ok: boolean) => void)[] = [];
+    PATCH.mockImplementation(
+      (_p: unknown, { body }: { body: { cover_color: MentorProfile['cover']['color'] } }) =>
+        new Promise((r) =>
+          resolvers.push((ok) => {
+            if (ok) server = { ...server, cover: { ...server.cover, color: body.cover_color } };
+            r(
+              ok
+                ? { data: {}, error: undefined, response: new Response(null) }
+                : { data: undefined, error: {}, response: new Response(null, { status: 500 }) },
+            );
+          }),
+        ),
+    );
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const key = keys.mentors.profile('ada', 'm1');
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    );
+    // A real query, so the refetch after a failure reads the server.
+    const { result } = renderHook(
+      () => {
+        useQuery({ queryKey: key, queryFn: async () => server });
+        return useCoverEdit('ada', 'u1');
+      },
+      { wrapper },
+    );
+    await waitFor(() => expect(qc.getQueryData<MentorProfile>(key)).toBeTruthy());
+    act(() => {
+      result.current.save({ color: 'peach' });
+      result.current.save({ color: 'mint' });
+    });
+    await waitFor(() => expect(resolvers).toHaveLength(1));
+    await act(async () => resolvers[0]!(false)); // peach fails
+    await waitFor(() => expect(resolvers).toHaveLength(2));
+    await act(async () => resolvers[1]!(true)); // mint saves
+    await waitFor(() => expect(result.current.saveState).toBe('error'));
+    await waitFor(() => expect(qc.getQueryData<MentorProfile>(key)!.cover.color).toBe('mint'));
+    expect(server.cover.color).toBe('mint');
   });
 
   it('saves picks one at a time, in the order made', async () => {
@@ -127,6 +174,16 @@ describe('useCoverEdit', () => {
   describe('offline', () => {
     afterEach(() => onlineManager.setOnline(true));
 
+    it('a failed pick is taken back, so it can be picked again', async () => {
+      onlineManager.setOnline(false);
+      PATCH.mockRejectedValue(new TypeError('Failed to fetch'));
+      const { wrapper, read } = setup();
+      const { result } = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
+      act(() => result.current.save({ color: 'mint' }));
+      await waitFor(() => expect(result.current.saveState).toBe('error'));
+      expect(read().cover).toEqual(fullProfile.cover);
+    });
+
     it('a save fails at once instead of waiting to send on reconnect', async () => {
       onlineManager.setOnline(false);
       PATCH.mockRejectedValue(new TypeError('Failed to fetch'));
@@ -146,6 +203,30 @@ describe('useCoverEdit', () => {
       await waitFor(() => expect(result.current.uploadError).toMatch(/offline/));
       expect(POST).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('refuses a file it can tell is wrong without sending it; closing clears the message', () => {
+    const { wrapper } = setup();
+    const { result } = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
+    act(() => result.current.upload(file('image/gif', 10)));
+    expect(result.current.uploadError).toMatch(/JPEG, PNG or WebP/);
+    expect(POST).not.toHaveBeenCalled();
+    act(() => result.current.clearMessages());
+    expect(result.current.uploadError).toBeNull();
+  });
+
+  it('closing forgets a failed save’s status', async () => {
+    PATCH.mockResolvedValue({
+      data: undefined,
+      error: {},
+      response: new Response(null, { status: 500 }),
+    });
+    const { wrapper } = setup();
+    const { result } = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
+    act(() => result.current.save({ color: 'rose' }));
+    await waitFor(() => expect(result.current.saveState).toBe('error'));
+    act(() => result.current.clearMessages());
+    expect(result.current.saveState).toBe('idle');
   });
 
   it('uploads the file as multipart and shows the new banner', async () => {

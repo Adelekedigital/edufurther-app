@@ -9,7 +9,7 @@ type Extra = Partial<{
   uploading: boolean;
   uploadError: string | null;
   saveState: CoverSaveState;
-  savedAt: number;
+  savedStamp: number;
 }>;
 
 function setup(extra: Extra = {}) {
@@ -32,7 +32,7 @@ function setup(extra: Extra = {}) {
           setArtOn(on);
         }}
         saveState={extra.saveState ?? 'idle'}
-        savedAt={extra.savedAt ?? 0}
+        savedStamp={extra.savedStamp ?? 0}
         hasImage={extra.hasImage ?? false}
         onFile={onFile}
         uploading={extra.uploading ?? false}
@@ -111,7 +111,7 @@ describe('CoverPicker', () => {
           onPickColor={() => {}}
           onToggleArt={() => {}}
           saveState="saved"
-          savedAt={1}
+          savedStamp={1}
           hasImage={false}
           onFile={() => {}}
           uploading={false}
@@ -130,7 +130,7 @@ describe('CoverPicker', () => {
           onPickColor={() => {}}
           onToggleArt={() => {}}
           saveState="error"
-          savedAt={0}
+          savedStamp={0}
           hasImage={false}
           onFile={() => {}}
           uploading={false}
@@ -166,7 +166,69 @@ describe('CoverPicker', () => {
   it('uploading and failed uploads', async () => {
     const { user } = setup({ uploading: true, uploadError: 'Choose an image under 5 MB.' });
     await user.click(trigger());
-    expect(screen.getByRole('button', { name: 'Uploading…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Uploading…' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
     expect(screen.getByRole('alert')).toHaveTextContent('Choose an image under 5 MB.');
+  });
+
+  it('while uploading, the button keeps focus and Escape still closes (review of #65)', async () => {
+    const { user } = setup({ uploading: true });
+    await user.click(trigger());
+    const up = screen.getByRole('button', { name: 'Uploading…' });
+    await user.click(up);
+    expect(up).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(trigger()).toHaveFocus();
+  });
+
+  it('a click on the dialog’s text keeps focus inside, so Escape works', async () => {
+    const { user } = setup();
+    await user.click(trigger());
+    await user.click(screen.getByText('Cover color'));
+    expect(screen.getByRole('dialog')).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('closes when you tab out of it or click outside, and says it closed', async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <>
+        <CoverPicker
+          color="sky"
+          artOn={false}
+          onPickColor={() => {}}
+          onToggleArt={() => {}}
+          saveState="idle"
+          savedStamp={0}
+          hasImage={false}
+          onFile={() => {}}
+          uploading={false}
+          uploadError={null}
+          accept=""
+          onClose={onClose}
+        />
+        <button>After</button>
+      </>,
+    );
+    await user.click(trigger());
+    screen.getByRole('button', { name: 'Upload an image instead' }).focus();
+    await user.tab();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(onClose).toHaveBeenCalledTimes(1);
+    await user.click(trigger());
+    const backdrop = document.querySelector('[aria-hidden="true"]') as HTMLElement;
+    await user.click(backdrop);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(onClose).toHaveBeenCalledTimes(2);
+  });
+
+  it('the button says it opens a dialog', () => {
+    setup();
+    expect(trigger()).toHaveAttribute('aria-haspopup', 'dialog');
   });
 });

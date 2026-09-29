@@ -1,5 +1,7 @@
 /** Domain types. Components are typed on these, never on the wire shape. */
 
+import type { CoverArt, CoverKey } from '@/lib/utils/cover';
+
 export type Topic = {
   /** The backend's offering slug (catalog `code`). */
   slug: string;
@@ -196,8 +198,8 @@ export type MentorProfile = {
   bannerUrl: string | null;
   /** The mentor's chosen cover (null colour: the automatic one) and cover art. */
   cover: {
-    color: import('@/lib/utils/cover').CoverKey | null;
-    art: import('@/lib/utils/cover').CoverArt;
+    color: CoverKey | null;
+    art: CoverArt;
   };
   originCountry: string | null;
   studyCountry: string | null;

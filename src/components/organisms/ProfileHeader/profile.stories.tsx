@@ -91,7 +91,7 @@ function OwnerCover() {
             setSavedAt(Date.now());
           }}
           saveState={savedAt ? 'saved' : 'idle'}
-          savedAt={savedAt}
+          savedStamp={savedAt}
           hasImage={false}
           onFile={fn()}
           uploading={false}

@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import type { CoverArt, CoverKey } from '@/lib/utils/cover';
@@ -45,22 +46,46 @@ export function bannerErrorCopy(e: AppError): string {
   return 'The image didn’t upload. Try again.';
 }
 
+/** Where a run of cover saves stands, for the picker's status line. */
+export type CoverSaveState = 'idle' | 'saving' | 'saved' | 'error';
+
+type Cover = MentorProfile['cover'];
+const applyPatch = (cover: Cover, c: CoverPatch): Cover => ({
+  color: c.color !== undefined ? c.color : cover.color,
+  art: c.art ?? cover.art,
+});
+
 /**
  * The owner's cover: colour and art (PATCH /users/{id}/profile) and the banner
- * image (POST /users/{id}/banner). Colour and art show at once (optimistic);
- * saves run one at a time in the order picked, so the last pick wins. A failed
- * save refetches the profile, so the page shows what's really saved. Offline,
- * both fail at once (networkMode 'always'): a paused mutation would otherwise
- * send itself on reconnect, after the owner had moved on (review r3 of #59).
+ * image (POST /users/{id}/banner).
+ *
+ * Colour and art show at once (optimistic) and save one at a time in the order
+ * picked. Quick picks form a burst: it keeps the last confirmed cover (what the
+ * server has) and, when its last save settles, writes that back, so a refetch
+ * that raced a save can't leave an old colour showing. If any save in the
+ * burst failed, the burst ends "Not saved" and the profile is refetched
+ * (review of #65).
+ *
+ * Offline, both fail at once (networkMode 'always'): a paused mutation would
+ * otherwise send itself on reconnect, after the owner had moved on (review r3
+ * of #59). The rollback to the confirmed cover works offline too.
  */
 export function useCoverEdit(handle: string, userId: string | null) {
   const session = useSession();
   const qc = useQueryClient();
   const key = keys.mentors.profile(handle, sessionKey(session));
+  const mutationKey = ['cover', userId] as const;
   const update = (fn: (p: MentorProfile) => MentorProfile) =>
     qc.setQueryData<MentorProfile>(key, (p) => (p ? fn(p) : p));
 
+  const burst = useRef<{ confirmed: Cover; failed: boolean } | null>(null);
+  const [status, setStatus] = useState<{ state: CoverSaveState; stamp: number }>({
+    state: 'idle',
+    stamp: 0,
+  });
+
   const save = useMutation({
+    mutationKey,
     scope: { id: `cover:${userId}` },
     networkMode: 'always',
     mutationFn: async (c: CoverPatch) => {
@@ -71,19 +96,35 @@ export function useCoverEdit(handle: string, userId: string | null) {
       });
       if (!response.ok) throw apiError(response.status, error);
     },
+    // Runs at once for every pick, even one still queued behind another save.
     onMutate: async (c) => {
       await qc.cancelQueries({ queryKey: key });
-      update((p) => ({
-        ...p,
-        cover: {
-          color: c.color !== undefined ? c.color : p.cover.color,
-          art: c.art ?? p.cover.art,
-        },
-      }));
+      const cover = qc.getQueryData<MentorProfile>(key)?.cover;
+      if (!burst.current && cover) burst.current = { confirmed: cover, failed: false };
+      setStatus({ state: 'saving', stamp: 0 });
+      update((p) => ({ ...p, cover: applyPatch(p.cover, c) }));
     },
-    onError: () => void qc.invalidateQueries({ queryKey: key }),
+    onSuccess: (_d, c) => {
+      if (burst.current) burst.current.confirmed = applyPatch(burst.current.confirmed, c);
+    },
+    onError: () => {
+      if (burst.current) burst.current.failed = true;
+    },
+    onSettled: () => {
+      // This save still counts as pending here: more than one = more queued.
+      if (qc.isMutating({ mutationKey }) > 1) return;
+      const b = burst.current;
+      burst.current = null;
+      if (!b) return;
+      update((p) => ({ ...p, cover: b.confirmed }));
+      if (b.failed) void qc.invalidateQueries({ queryKey: key });
+      setStatus({ state: b.failed ? 'error' : 'saved', stamp: Date.now() });
+    },
   });
 
+  // A file we can tell is wrong is refused here, before it's sent; one error
+  // source, cleared together.
+  const [fileProblem, setFileProblem] = useState<string | null>(null);
   const upload = useMutation({
     networkMode: 'always',
     mutationFn: async (file: File) => {
@@ -104,24 +145,33 @@ export function useCoverEdit(handle: string, userId: string | null) {
       if (typeof url !== 'string' || !url) throw apiError(500, undefined);
       return url;
     },
-    onSuccess: (url) => update((p) => ({ ...p, bannerUrl: url })),
+    onSuccess: async (url) => {
+      // A refetch already out would land after this with the old banner.
+      await qc.cancelQueries({ queryKey: key });
+      update((p) => ({ ...p, bannerUrl: url }));
+    },
   });
 
   return {
     /** Save a colour or art change; shows at once. */
     save: (c: CoverPatch) => save.mutate(c),
-    saveState: save.isPending
-      ? ('saving' as const)
-      : save.isError
-        ? ('error' as const)
-        : save.isSuccess
-          ? ('saved' as const)
-          : ('idle' as const),
-    /** When the last save finished, so "Saved" can show once per save. */
-    savedAt: save.isSuccess ? save.submittedAt : 0,
-    upload: (file: File) => upload.mutate(file),
+    saveState: status.state,
+    /** A new value each time a burst of saves ends, so "Saved" shows once per burst. */
+    savedStamp: status.state === 'saved' ? status.stamp : 0,
+    upload: (file: File) => {
+      const problem = bannerProblem(file);
+      setFileProblem(problem);
+      upload.reset();
+      if (!problem) upload.mutate(file);
+    },
     uploading: upload.isPending,
-    uploadError: upload.error ? bannerErrorCopy(normaliseError(upload.error)) : null,
-    resetUpload: () => upload.reset(),
+    uploadError:
+      fileProblem ?? (upload.error ? bannerErrorCopy(normaliseError(upload.error)) : null),
+    /** Forget the last save's status and any upload error (the picker closed). */
+    clearMessages: () => {
+      setFileProblem(null);
+      upload.reset();
+      setStatus((s) => (s.state === 'saving' ? s : { state: 'idle', stamp: 0 }));
+    },
   };
 }

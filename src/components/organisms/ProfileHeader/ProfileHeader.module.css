@@ -24,7 +24,8 @@
   opacity: 0.22;
   background-image: radial-gradient(var(--cover-ink) 1.5px, transparent 1.7px);
   background-size: 18px 18px;
-  mask-image: linear-gradient(90deg, transparent 30%, #000 85%);
+  /* A mask reads alpha only: any opaque token works (no raw hex). */
+  mask-image: linear-gradient(90deg, transparent 30%, var(--ink-900) 85%);
 }
 .artSingleWrap,
 .artIconsWrap {
