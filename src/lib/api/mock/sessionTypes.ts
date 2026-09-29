@@ -17,7 +17,12 @@ type QuestionRead = components['schemas']['QuestionRead'];
  */
 type Stored = Omit<
   OwnSessionTypeRead,
-  'duration_minutes' | 'min_notice_minutes' | 'duration_inherited' | 'min_notice_inherited'
+  | 'duration_minutes'
+  | 'min_notice_minutes'
+  | 'duration_inherited'
+  | 'min_notice_inherited'
+  | 'booked_count'
+  | 'last_booked_ends_at'
 > & {
   duration_minutes: number | null;
   min_notice_minutes: number | null;
@@ -25,10 +30,16 @@ type Stored = Omit<
   bookedCount: number;
 };
 
+/** The last booked session ends two weeks out: the date a scheduled deletion waits for. */
+const lastBookedEndsAt = (t: Stored) =>
+  t.bookedCount ? new Date(Date.now() + 14 * 86_400_000).toISOString() : null;
+
 /** The read: the type's own value, else the mentor's default, else the platform's. */
-function resolve({ questions: _q, bookedCount: _b, ...t }: Stored): OwnSessionTypeRead {
+function resolve({ questions: _q, bookedCount, ...t }: Stored): OwnSessionTypeRead {
   return {
     ...t,
+    booked_count: bookedCount,
+    last_booked_ends_at: lastBookedEndsAt({ ...t, questions: [], bookedCount }),
     duration_minutes: t.duration_minutes ?? prefs.default_duration_minutes ?? 60,
     min_notice_minutes: t.min_notice_minutes ?? prefs.default_min_notice_minutes ?? 1440,
     duration_inherited: t.duration_minutes === null,

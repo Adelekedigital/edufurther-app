@@ -42,6 +42,8 @@ const read = (over: Partial<SavedSessionType['read']> = {}): SavedSessionType['r
   break_after_minutes: null,
   is_featured: false,
   pending_deletion: null,
+  booked_count: 0,
+  last_booked_ends_at: null,
   ...over,
 });
 const saved = (over: Partial<SavedSessionType> = {}): SavedSessionType => ({
