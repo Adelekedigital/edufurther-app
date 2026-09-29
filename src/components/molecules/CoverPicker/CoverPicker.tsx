@@ -29,6 +29,8 @@ type CoverPickerProps = {
   uploading: boolean;
   onRemoveImage: () => void;
   removing: boolean;
+  /** Changes each time a removal succeeds: "Image removed" is said for a moment. */
+  removedStamp?: number;
   /** Why the last upload or removal didn't work. */
   imageError: string | null;
   /** The file types the picker offers (the data layer's list). */
@@ -97,7 +99,24 @@ export function CoverPicker(props: CoverPickerProps) {
     onPickColor(COVER_KEYS[to]!);
   };
 
-  const status = saveState === 'error' ? 'Not saved. Try again.' : savedShown ? 'Saved' : '';
+  // "Image removed", like "Saved": a moment, keyed on its stamp.
+  const removedStamp = props.removedStamp ?? 0;
+  const [removedExpired, setRemovedExpired] = useState(0);
+  const removedShown = removedStamp > 0 && removedExpired !== removedStamp;
+  useEffect(() => {
+    if (!removedStamp) return;
+    const t = setTimeout(() => setRemovedExpired(removedStamp), SAVED_MS);
+    return () => clearTimeout(t);
+  }, [removedStamp]);
+
+  const status =
+    saveState === 'error'
+      ? 'Not saved. Try again.'
+      : removedShown
+        ? 'Image removed'
+        : savedShown
+          ? 'Saved'
+          : '';
   const busy = props.uploading || props.removing;
 
   return (

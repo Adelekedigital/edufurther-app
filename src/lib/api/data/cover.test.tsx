@@ -318,6 +318,102 @@ describe('useCoverEdit', () => {
     expect(result.current.imageError).toBeNull();
   });
 
+  it('a refetch that raced the removal can’t bring the image back (review of #70)', async () => {
+    let finish!: () => void;
+    DELETE.mockReturnValue(
+      new Promise(
+        (r) =>
+          (finish = () =>
+            r({
+              data: undefined,
+              error: undefined,
+              response: new Response(null, { status: 204 }),
+            })),
+      ),
+    );
+    const { wrapper, read, qc, key } = setup();
+    qc.setQueryData<MentorProfile>(key, { ...fullProfile, bannerUrl: '/b.jpg' });
+    const { result } = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
+    act(() => result.current.removeImage());
+    await waitFor(() => expect(read().bannerUrl).toBeNull());
+    // A refetch from before the DELETE lands with the old image.
+    act(() => {
+      qc.setQueryData<MentorProfile>(key, { ...read(), bannerUrl: '/b.jpg' });
+    });
+    await act(async () => finish());
+    await waitFor(() => expect(read().bannerUrl).toBeNull());
+    expect(result.current.removedStamp).toBeGreaterThan(0);
+  });
+
+  it('a failed removal leaves a newer image alone and asks the server', async () => {
+    let fail!: () => void;
+    DELETE.mockReturnValue(
+      new Promise(
+        (r) =>
+          (fail = () =>
+            r({ data: undefined, error: {}, response: new Response(null, { status: 500 }) })),
+      ),
+    );
+    const { wrapper, read, qc, key } = setup();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+    qc.setQueryData<MentorProfile>(key, { ...fullProfile, bannerUrl: '/b.jpg' });
+    const { result } = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
+    act(() => result.current.removeImage());
+    await waitFor(() => expect(read().bannerUrl).toBeNull());
+    act(() => {
+      qc.setQueryData<MentorProfile>(key, { ...read(), bannerUrl: '/new.jpg' });
+    });
+    await act(async () => fail());
+    await waitFor(() => expect(result.current.imageError).toMatch(/wasn’t removed/));
+    expect(read().bannerUrl).toBe('/new.jpg');
+    expect(spy).toHaveBeenCalledWith({ queryKey: key });
+  });
+
+  it('one image change at a time: no removal during an upload, no upload during a removal', async () => {
+    POST.mockReturnValue(new Promise(() => {}));
+    DELETE.mockReturnValue(new Promise(() => {}));
+    const { wrapper, qc, key } = setup();
+    qc.setQueryData<MentorProfile>(key, { ...fullProfile, bannerUrl: '/b.jpg' });
+    const first = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
+    act(() => first.result.current.upload(file('image/png', 10)));
+    await waitFor(() => expect(first.result.current.uploading).toBe(true));
+    act(() => first.result.current.removeImage());
+    // Give a (wrongly) started removal time to reach the network.
+    await act(() => new Promise((r) => setTimeout(r, 30)));
+    expect(DELETE).not.toHaveBeenCalled();
+    const second = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
+    act(() => second.result.current.removeImage());
+    await waitFor(() => expect(second.result.current.removing).toBe(true));
+    act(() => second.result.current.upload(file('image/png', 10)));
+    await act(() => new Promise((r) => setTimeout(r, 30)));
+    expect(POST).toHaveBeenCalledTimes(1);
+  });
+
+  it('picking a colour over an image puts the colour on the banner: the image goes (product)', async () => {
+    PATCH.mockResolvedValue({ data: {}, error: undefined, response: new Response(null) });
+    DELETE.mockResolvedValue({
+      data: undefined,
+      error: undefined,
+      response: new Response(null, { status: 204 }),
+    });
+    const { wrapper, read, qc, key } = setup();
+    qc.setQueryData<MentorProfile>(key, { ...fullProfile, bannerUrl: '/b.jpg' });
+    const { result } = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
+    act(() => result.current.pickColor('mint'));
+    await waitFor(() => expect(read().bannerUrl).toBeNull());
+    expect(read().cover.color).toBe('mint');
+    expect(DELETE).toHaveBeenCalledTimes(1);
+  });
+
+  it('picking a colour with no image only saves the colour', async () => {
+    PATCH.mockResolvedValue({ data: {}, error: undefined, response: new Response(null) });
+    const { wrapper, read } = setup();
+    const { result } = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
+    act(() => result.current.pickColor('rose'));
+    await waitFor(() => expect(read().cover.color).toBe('rose'));
+    expect(DELETE).not.toHaveBeenCalled();
+  });
+
   it('uploads the file as multipart and shows the new banner', async () => {
     POST.mockResolvedValue({
       data: { banner_url: 'https://cdn/b.webp' },

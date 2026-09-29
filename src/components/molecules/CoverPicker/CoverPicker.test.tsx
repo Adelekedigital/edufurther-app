@@ -9,6 +9,7 @@ type Extra = Partial<{
   uploading: boolean;
   imageError: string | null;
   removing: boolean;
+  removedStamp: number;
   saveState: CoverSaveState;
   savedStamp: number;
 }>;
@@ -40,6 +41,7 @@ function setup(extra: Extra = {}) {
         uploading={extra.uploading ?? false}
         onRemoveImage={onRemoveImage}
         removing={extra.removing ?? false}
+        removedStamp={extra.removedStamp ?? 0}
         imageError={extra.imageError ?? null}
         accept="image/jpeg,image/png,image/webp"
       />
@@ -284,5 +286,11 @@ describe('CoverPicker', () => {
     } finally {
       open.mockRestore();
     }
+  });
+
+  it('says "Image removed" when a removal is done', async () => {
+    const { user } = setup({ removedStamp: 1 });
+    await user.click(trigger());
+    expect(screen.getByRole('status')).toHaveTextContent('Image removed');
   });
 });

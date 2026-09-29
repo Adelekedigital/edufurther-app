@@ -164,7 +164,9 @@ export function useCoverEdit(handle: string, userId: string | null) {
   });
 
   // Remove the image (DELETE /users/{id}/banner, 204, idempotent). The cover
-  // shows its colour at once; a failure puts the image back.
+  // shows its colour at once; a failure puts the image back. When it's done,
+  // "Image removed" is announced (removedStamp).
+  const [removedStamp, setRemovedStamp] = useState(0);
   const remove = useMutation({
     networkMode: 'always',
     mutationFn: async () => {
@@ -180,18 +182,45 @@ export function useCoverEdit(handle: string, userId: string | null) {
       update((p) => ({ ...p, bannerUrl: null }));
       return { before };
     },
+    onSuccess: async () => {
+      // A refetch that raced the DELETE could have put the old image back
+      // (review of #70): cancel it, then write the result.
+      await qc.cancelQueries({ queryKey: key });
+      update((p) => ({ ...p, bannerUrl: null }));
+      setRemovedStamp(Date.now());
+    },
     onError: (_e, _v, ctx) => {
-      if (ctx?.before) update((p) => ({ ...p, bannerUrl: ctx.before }));
+      // Only if nothing else set an image meanwhile; then ask the server,
+      // which may have deleted it before the connection failed.
+      if (ctx?.before) update((p) => (p.bannerUrl === null ? { ...p, bannerUrl: ctx.before } : p));
+      void qc.invalidateQueries({ queryKey: key });
     },
   });
+  // One image change at a time, whoever calls (review of #70).
+  const imageBusy = upload.isPending || remove.isPending;
+  const removeImage = () => {
+    if (imageBusy) return;
+    setFileProblem(null);
+    upload.reset();
+    remove.mutate();
+  };
 
   return {
     /** Save a colour or art change; shows at once. */
     save: (c: CoverPatch) => save.mutate(c),
+    /**
+     * Pick a cover colour. Over an image, the pick puts the colour on the
+     * banner, so the image goes (product, 2026-09-29).
+     */
+    pickColor: (color: CoverKey) => {
+      save.mutate({ color });
+      if (qc.getQueryData<MentorProfile>(key)?.bannerUrl) removeImage();
+    },
     saveState: status.state,
     /** A new value each time a burst of saves ends, so "Saved" shows once per burst. */
     savedStamp: status.state === 'saved' ? status.stamp : 0,
     upload: (file: File) => {
+      if (imageBusy) return;
       const problem = bannerProblem(file);
       setFileProblem(problem);
       upload.reset();
@@ -199,12 +228,10 @@ export function useCoverEdit(handle: string, userId: string | null) {
       if (!problem) upload.mutate(file);
     },
     uploading: upload.isPending,
-    removeImage: () => {
-      setFileProblem(null);
-      upload.reset();
-      remove.mutate();
-    },
+    removeImage,
     removing: remove.isPending,
+    /** A new value each time a removal succeeds, so "Image removed" is said once. */
+    removedStamp,
     /** The last upload's or removal's problem, whichever came last. */
     imageError:
       fileProblem ??
@@ -220,6 +247,7 @@ export function useCoverEdit(handle: string, userId: string | null) {
       // if it fails (review r2 of #65).
       if (!upload.isPending) upload.reset();
       if (!remove.isPending) remove.reset();
+      setRemovedStamp(0);
       setStatus((s) => (s.state === 'saving' ? s : { state: 'idle', stamp: 0 }));
     },
   };
