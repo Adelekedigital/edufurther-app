@@ -17,7 +17,7 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | "New to EduFurther" whenever there are no reviews | Only at 0–2 sessions; otherwise "No reviews yet · N sessions" | no reviews ≠ new (reply #6) | design confirms copy (design request #15) |
 | Empty state "No mentors match all of that" / "Try removing a topic or two" | "No mentors match that" + ANY-of copy (provisional) | Topics match ANY-of (revised reply #1) — more chips widen results | design answers request #13 |
 | No-mentors state with "Notify me" | Button hidden; the sentence promising it dropped | Nothing stores the request; notify is signed-in only (reply, notify section) | notify endpoint ships |
-| BookingModal payment step, price tile | No payment step; Length tile only | No prices in the system | payments ship |
+| BookingModal payment step | No payment step. The Price tile is built (design `freeCredit=show`): "Free" and "Uses 1 credit", and the phone summary "… · Free · 1 credit" | No prices in the system; every booking is 1 credit (product, 2026-09-28) | payments ship |
 | BookingModal "{time} is on hold. X usually replies within 12 hours" | "{time} is on hold." | Reply time is not a real figure anywhere | backend exposes a response-time stat |
 | Modal closes on backdrop click | Closes on ×, Escape, Cancel — not the backdrop | Booking holds typed answers and an uploaded file | never |
 | Guest "Continue with Google" with a drawn G mark | Text-only dark button | The mark is a raw-hex drawing; DS `Google2` icon not ported yet | Icon atom ports DS brand glyphs |

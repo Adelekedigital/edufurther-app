@@ -77,6 +77,7 @@
     "smart_display",
     "star",
     "task_alt",
+    "toll",
     "translate",
     "tune",
     "upload_file",
@@ -86,5 +87,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "1a9983114b5d8ba6f4274e6ae73b6b6eb08354f9836937ab2aa3f543e8a52323"
+  "sha256": "375a193dc8d9c81e69ce404561b79d40eef8ae11e7f169bc631fb0b7d15da482"
 }

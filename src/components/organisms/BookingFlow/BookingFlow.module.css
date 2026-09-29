@@ -110,6 +110,12 @@
   color: var(--ink-500);
 }
 
+/* Price and Length side by side (BookingModal.dc.html). */
+.facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
 .fact {
   display: flex;
   flex-direction: column;
@@ -128,6 +134,17 @@
 .factValue {
   font-size: var(--text-p-sm);
   font-weight: var(--weight-semibold);
+}
+.factNote {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+.factNoteIcon {
+  font-size: 14px;
+  line-height: 1;
 }
 .desc {
   font-size: var(--text-p-xs);

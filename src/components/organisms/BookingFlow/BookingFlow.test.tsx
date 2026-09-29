@@ -139,6 +139,11 @@ function setPhone(phone: boolean) {
 describe('BookingFlow on phones (sheet)', () => {
   beforeEach(() => setPhone(true));
 
+  it('the session summary says it’s free and uses a credit', () => {
+    render(<BookingFlow {...props()} />);
+    expect(screen.getByText(/· \d+ min · Free · 1 credit$/)).toBeInTheDocument();
+  });
+
   it('starts with close on the left and no close on the right', () => {
     render(<BookingFlow {...props()} />);
     const sheet = screen.getByTestId('sheet');
@@ -205,6 +210,13 @@ describe('BookingFlow on wider screens', () => {
     expect(screen.queryByTestId('footer')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View profile' })).toBeInTheDocument();
+  });
+
+  it('shows the price, Free, and the credit it uses, next to the length', () => {
+    render(<BookingFlow {...props()} />);
+    const aside = screen.getByRole('complementary', { name: 'Session' });
+    expect(aside).toHaveTextContent(/Price\s*Free\s*(toll)?\s*Uses 1 credit/);
+    expect(aside).toHaveTextContent(/Length\s*\d+ min/);
   });
 });
 

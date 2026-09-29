@@ -83,6 +83,7 @@ export const ICON_NAMES = [
   'smart_display',
   'star',
   'task_alt',
+  'toll',
   'translate',
   'tune',
   'upload_file',
