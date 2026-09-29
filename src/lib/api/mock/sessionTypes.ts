@@ -130,16 +130,6 @@ export function mockQuestions(id: string): QuestionRead[] | null {
   return store.find((t) => t.id === id)?.questions ?? null;
 }
 
-export function mockPatchSessionType(
-  id: string,
-  patch: Partial<Stored>,
-): OwnSessionTypeRead | null {
-  const t = store.find((x) => x.id === id);
-  if (!t) return null;
-  Object.assign(t, patch);
-  return resolve(t);
-}
-
 /** 'gone' | 'booked' (with the count) | 'deleted'. */
 export function mockDeleteSessionType(
   id: string,
@@ -162,7 +152,9 @@ type CreateBody = {
   [k: string]: unknown;
 };
 const replays = new Map<string, { body: string; result: unknown }>();
-const windows: Record<string, unknown[]> = {};
+type WindowRead = components['schemas']['AvailabilityRuleRead'];
+const windows: Record<string, WindowRead[]> = {};
+let windowSeq = 0;
 
 /** Validate like the backend (a subset): 422 errors[] with JSON pointers, 409 on a used name. */
 export function mockCreateSessionType(
@@ -276,6 +268,164 @@ export function mockCreateSessionType(
 
 export function mockAddWindow(id: string, w: unknown): { id: string } | null {
   if (!store.some((t) => t.id === id)) return null;
-  (windows[id] ??= []).push(w);
-  return { id: `${id}-w${windows[id]!.length}` };
+  const b = w as Partial<WindowRead>;
+  const row: WindowRead = {
+    id: `${id}-w${++windowSeq}`,
+    day_of_week: Number(b.day_of_week ?? 0),
+    start_time: String(b.start_time ?? '09:00:00'),
+    end_time: String(b.end_time ?? '10:00:00'),
+    timezone: String(b.timezone ?? 'Africa/Lagos'),
+    is_active: b.is_active ?? true,
+  };
+  (windows[id] ??= []).push(row);
+  return { id: row.id };
+}
+
+export function mockWindows(id: string): WindowRead[] | null {
+  return store.some((t) => t.id === id) ? (windows[id] ?? []) : null;
+}
+
+export function mockRemoveWindow(id: string, windowId: string): boolean {
+  const list = windows[id] ?? [];
+  const i = list.findIndex((w) => w.id === windowId);
+  if (i < 0) return false;
+  list.splice(i, 1);
+  return true;
+}
+
+// ---- edit (Session Types PR 4) --------------------------------------------------
+
+type Problem = { pointer: string; message: string };
+
+/**
+ * PATCH /me/session-types/{id}, validated like the backend (a subset): absent
+ * keeps, null inherits (length, notice, window, break, approval), stages a list.
+ */
+export function mockEditSessionType(
+  id: string,
+  body: Record<string, unknown>,
+): { status: 200 | 404 | 409 | 422; errors?: Problem[] } {
+  const t = store.find((x) => x.id === id);
+  if (!t) return { status: 404 };
+  const errors: Problem[] = [];
+  const has = (k: string) => k in body;
+  if (has('name')) {
+    const n = typeof body.name === 'string' ? body.name.trim() : '';
+    if (!n || n.length > 200) errors.push({ pointer: '/name', message: 'invalid' });
+    else if (store.some((x) => x.id !== id && x.name.toLowerCase() === n.toLowerCase()))
+      return { status: 409 };
+  }
+  const range = (k: string, lo: number, hi: number) => {
+    const v = body[k];
+    if (has(k) && v !== null && !(typeof v === 'number' && v >= lo && v <= hi))
+      errors.push({ pointer: `/${k}`, message: 'out of range' });
+  };
+  range('duration_minutes', 5, 480);
+  range('min_notice_minutes', 1440, 4320);
+  const stages = has('application_stages') ? body.application_stages : t.application_stages;
+  if (has('application_stages')) {
+    if (!Array.isArray(stages))
+      errors.push({ pointer: '/application_stages', message: 'must be a list' });
+    else if (new Set(stages).size !== stages.length)
+      errors.push({ pointer: '/application_stages', message: 'no repeats' });
+  }
+  if (has('application_stages') && has('application_stage'))
+    errors.push({ pointer: '/application_stage', message: 'send one of the two' });
+  const label = has('custom_stage_label') ? body.custom_stage_label : t.custom_stage_label;
+  const hasOther = Array.isArray(stages) && stages.includes('other');
+  if (hasOther !== !!(typeof label === 'string' && label.trim()))
+    errors.push({ pointer: '/custom_stage_label', message: 'required exactly with other' });
+  const ids = has('service_offering_ids') ? body.service_offering_ids : undefined;
+  if (Array.isArray(ids) && ids.length > 3)
+    errors.push({ pointer: '/service_offering_ids', message: 'at most 3' });
+  if (errors.length) return { status: 422, errors };
+
+  const patch: Partial<Stored> = {};
+  for (const k of [
+    'name',
+    'description',
+    'duration_minutes',
+    'min_notice_minutes',
+    'icon',
+    'is_active',
+    'requires_booking_confirmation',
+    'booking_window_days',
+    'break_after_minutes',
+    'custom_stage_label',
+  ] as const)
+    if (has(k)) Object.assign(patch, { [k]: body[k] });
+  if (has('application_stages')) {
+    patch.application_stages = stages as Stored['application_stages'];
+    patch.application_stage = ((stages as string[])[0] ?? null) as Stored['application_stage'];
+  }
+  if (Array.isArray(ids)) {
+    const offerings = ids.flatMap((oid) => {
+      const o = OFFERINGS.find((x) => x.id === oid);
+      return o?.code ? [{ code: o.code, display_name: o.display_name }] : [];
+    });
+    patch.service_offerings = offerings;
+    patch.service_offering = offerings[0] ?? null;
+  }
+  Object.assign(t, patch);
+  return { status: 200 };
+}
+
+let questionSeq = 0;
+const reorder = (t: Stored) => t.questions.forEach((q, i) => (q.display_order = i));
+
+export function mockAddQuestion(id: string, body: Record<string, unknown>): { id: string } | null {
+  const t = store.find((x) => x.id === id);
+  if (!t) return null;
+  const qid = `${id}-nq${++questionSeq}`;
+  t.questions.push({
+    id: qid,
+    question_text: String(body.question_text ?? ''),
+    question_type: (body.question_type ?? 'free_text') as QuestionRead['question_type'],
+    is_required: !!body.is_required,
+    display_order: t.questions.length,
+    allows_multiple: !!body.allows_multiple,
+    options: ((body.options as { text: string }[] | undefined) ?? []).map((o, j) => ({
+      id: `${qid}-o${j}`,
+      text: o.text,
+    })),
+  } as QuestionRead);
+  return { id: qid };
+}
+
+export function mockEditQuestion(id: string, qid: string, body: Record<string, unknown>): boolean {
+  const q = store.find((x) => x.id === id)?.questions.find((x) => x.id === qid);
+  if (!q) return false;
+  for (const k of ['question_text', 'question_type', 'is_required', 'allows_multiple'] as const)
+    if (k in body) Object.assign(q, { [k]: body[k] });
+  if (Array.isArray(body.options))
+    q.options = (body.options as { id?: string; text: string }[]).map((o, j) => ({
+      id: o.id ?? `${qid}-e${++questionSeq}-${j}`,
+      text: o.text,
+    }));
+  return true;
+}
+
+export function mockRemoveQuestion(id: string, qid: string): boolean {
+  const t = store.find((x) => x.id === id);
+  if (!t || !t.questions.some((q) => q.id === qid)) return false;
+  t.questions = t.questions.filter((q) => q.id !== qid);
+  reorder(t);
+  return true;
+}
+
+/** PUT order: every live question once, else 422. */
+export function mockOrderQuestions(id: string, order: unknown): 204 | 404 | 422 {
+  const t = store.find((x) => x.id === id);
+  if (!t) return 404;
+  const ids = Array.isArray(order) ? (order as string[]) : [];
+  const live = new Set(t.questions.map((q) => q.id));
+  if (
+    ids.length !== live.size ||
+    new Set(ids).size !== ids.length ||
+    !ids.every((x) => live.has(x))
+  )
+    return 422;
+  t.questions = ids.map((x) => t.questions.find((q) => q.id === x)!);
+  reorder(t);
+  return 204;
 }

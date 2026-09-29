@@ -33,6 +33,7 @@ const setup = (list: Remote<OwnSessionType[]>, messages = {}) => {
       onLiveChange={onLiveChange}
       onDelete={onDelete}
       createHref="/session-types/new"
+      editHref={(id) => `/session-types/${id}/edit`}
       templates={[
         {
           key: 'sop',
@@ -94,8 +95,11 @@ describe('SessionTypeManager — the four states', () => {
     expect(onLiveChange).toHaveBeenCalledWith('a', false);
     await user.click(screen.getByRole('button', { name: 'Delete Visa interview prep' }));
     expect(onDelete).toHaveBeenCalledWith(expect.objectContaining({ id: 'b' }));
-    // Edit ships with the edit screen (PR 4); no dead button meanwhile.
-    expect(screen.queryByRole('link', { name: /Edit/ })).toBeNull();
+    // Edit opens the edit screen (Session Types PR 4).
+    expect(screen.getByRole('link', { name: 'Edit Visa interview prep' })).toHaveAttribute(
+      'href',
+      '/session-types/b/edit',
+    );
   });
 
   it('a switch that did not save says so on its row', () => {

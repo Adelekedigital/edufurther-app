@@ -20,8 +20,14 @@ import {
   useMentorDefaults,
   useRetryWindows,
   useSaveMentorDefaults,
+  type CreateError,
   type Created,
 } from '@/lib/api/data/sessionTypes';
+import {
+  useSaveSessionType,
+  type SaveResult,
+  type SavedSessionType,
+} from '@/lib/api/data/sessionTypeEdit';
 import { useSaveWeeklyHours, useWeeklyHours } from '@/lib/api/data/weeklyHours';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { SESSION_TEMPLATES } from '@/lib/utils/sessionTemplates';
@@ -54,8 +60,21 @@ const NO_DEFAULTS = {
   requiresApproval: true,
 };
 
-/** /session-types/new — create a session type (Session Types.dc.html, form view). */
-export function CreateSessionTypeScreen({ template }: { template: string | null }) {
+/** Editing: the type as saved, and the draft it opens as (EditSessionTypeScreen loads both). */
+export type EditTarget = { id: string; saved: SavedSessionType; draft: Draft };
+
+/**
+ * The session-type form (Session Types.dc.html, form view): create at
+ * /session-types/new, or edit at /session-types/[id]/edit when `edit` is given
+ * (the design's `editId`: every step open, "Save changes").
+ */
+export function SessionTypeFormScreen({
+  template,
+  edit,
+}: {
+  template: string | null;
+  edit?: EditTarget;
+}) {
   const router = useRouter();
   const { viewer, member, chrome, account, nav } = useAppShell();
   const online = useOnline();
@@ -67,9 +86,9 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
   const weekly = useWeeklyHours(mentorId);
   const saveWeekly = useSaveWeeklyHours(mentorId);
 
-  const tmpl = SESSION_TEMPLATES.find((x) => x.key === template) ?? null;
+  const tmpl = edit ? null : (SESSION_TEMPLATES.find((x) => x.key === template) ?? null);
   const [initial, setInitial] = useState<Draft>(() =>
-    tmpl ? draftFromTemplate(tmpl) : blankDraft(),
+    edit ? edit.draft : tmpl ? draftFromTemplate(tmpl) : blankDraft(),
   );
   const [draft, setDraft] = useState<Draft>(initial);
   // Once the mentor's defaults are known (or failed: the platform's), a template
@@ -99,19 +118,24 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
   // "Set rules for this session" starts from the mentor's values, the first time.
   const customSeeded = useRef(false);
   const [step, setStep] = useState<Step>(1);
-  const [reached, setReached] = useState<Step>(1);
+  // Editing: every step is open (the design's `maxStep: 4`).
+  const [reached, setReached] = useState<Step>(edit ? 4 : 1);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [modal, setModal] = useState<
     | { kind: 'discard' }
     | { kind: 'deleteQuestion'; index: number }
     | { kind: 'published'; created: Created }
+    | { kind: 'saved' }
     | { kind: 'defaults' }
     | { kind: 'weekly' }
     | null
   >(null);
   const create = useCreateSessionType();
+  const save = useSaveSessionType();
+  // What didn't save last time (the type's own fields did): says so, and Save retries.
+  const [partial, setPartial] = useState<SaveResult['failed']>([]);
   const retry = useRetryWindows();
-  const published = modal?.kind === 'published';
+  const published = modal?.kind === 'published' || modal?.kind === 'saved';
   const dirty = !published && JSON.stringify(draft) !== JSON.stringify(initial);
 
   // Leaving with changes asks first: the browser's own prompt on reload / close.
@@ -151,6 +175,7 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
       return next;
     });
     if (create.error) create.reset();
+    if (save.error) save.reset();
   };
 
   const goTo = (n: Step) => {
@@ -175,6 +200,29 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
     const all = { ...validateStep(draft, 1), ...validateStep(draft, 3) };
     if (Object.keys(all).length) return showErrors(all);
     const ids = Object.fromEntries(topics.flatMap((t) => (t.id ? [[t.slug, t.id]] : [])));
+    if (edit) {
+      save
+        .save({
+          id: edit.id,
+          draft,
+          // The latest as saved (re-read after a partial save), so a retry sends only what's left.
+          saved: edit.draft,
+          savedQuestions: edit.saved.questions,
+          savedWindows: edit.saved.windows,
+          offeringIds: ids,
+          timeZone: deviceTimeZone(),
+        })
+        .then(
+          (r) => {
+            setPartial(r.failed);
+            if (!r.failed.length) setModal({ kind: 'saved' });
+          },
+          (err: CreateError) => {
+            if (Object.keys(err.fields).length) showErrors(err.fields);
+          },
+        );
+      return;
+    }
     create.create(
       {
         body: toCreateBody(draft, ids),
@@ -194,7 +242,15 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
     router.push(LIST);
   };
 
-  const gate = mentorGate(viewer, isMentor, '/session-types/new');
+  const gate = mentorGate(
+    viewer,
+    isMentor,
+    edit ? `/session-types/${edit.id}/edit` : '/session-types/new',
+  );
+  // PROVISIONAL copy — design request #8.
+  const partialNote = partial.length
+    ? `Your changes are saved, except ${partial.map((x) => (x === 'questions' ? 'the intake questions' : 'the dedicated hours')).join(' and ')}. Save again to try those.`
+    : null;
   const loading = viewer.kind === 'loading' || topicsLoading;
   const auto = autoIcon(draft.topics);
 
@@ -229,13 +285,13 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
           </div>
         ) : (
           <SessionTypeWizard
-            title="Create a session type"
+            title={edit ? 'Edit session type' : 'Create a session type'}
             step={step}
             reached={reached}
             draft={draft}
             update={update}
             errors={errors}
-            formError={create.error?.message ?? null}
+            formError={(edit ? save.error?.message : create.error?.message) ?? partialNote}
             topics={topics}
             autoIcon={auto}
             defaults={defaults.data}
@@ -264,8 +320,8 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
             onStep={goTo}
             onBack={onBack}
             onNext={onNext}
-            finishLabel="Publish session"
-            busy={create.isPending}
+            finishLabel={edit ? 'Save changes' : 'Publish session'}
+            busy={edit ? save.isPending : create.isPending}
             onDeleteQuestion={(index) => setModal({ kind: 'deleteQuestion', index })}
           />
         ))}
@@ -273,8 +329,12 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
       {modal?.kind === 'discard' && (
         // PROVISIONAL copy — design request #5.
         <ModalShell
-          title="Discard this session type?"
-          subtitle="What you’ve entered so far won’t be saved."
+          title={edit ? 'Discard your changes?' : 'Discard this session type?'}
+          subtitle={
+            edit
+              ? 'Your changes to this session type won’t be saved.'
+              : 'What you’ve entered so far won’t be saved.'
+          }
           icon="delete"
           tone="danger"
           size="sm"
@@ -375,6 +435,40 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
                 .catch(() => undefined)
             }
           />
+        </ModalShell>
+      )}
+
+      {modal?.kind === 'saved' && edit && (
+        // Session Types.dc.html `wasEdit`: "Changes saved".
+        <ModalShell
+          title="Changes saved"
+          subtitle={
+            edit.saved.read.is_active
+              ? `“${draft.name.trim()}” is live on your profile. Mentees can book it in your open hours.`
+              : // PROVISIONAL copy — design request #8 (a hidden type isn't live).
+                `“${draft.name.trim()}” is saved. It’s hidden, so mentees can’t book it until you switch it on.`
+          }
+          icon="check_circle"
+          tone="success"
+          size="sm"
+          onClose={() => router.push(LIST)}
+        >
+          <div className={styles.buttons}>
+            {edit.saved.read.is_active && member && (
+              <ButtonLink
+                href={`/mentors/${member.id}`}
+                prefetch={false}
+                size="large"
+                variant="secondary-outlined"
+                fullWidth
+              >
+                View on profile
+              </ButtonLink>
+            )}
+            <Button size="large" fullWidth onClick={() => router.push(LIST)}>
+              Done
+            </Button>
+          </div>
         </ModalShell>
       )}
 

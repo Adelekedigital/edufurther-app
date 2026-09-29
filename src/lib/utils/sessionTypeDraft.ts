@@ -34,6 +34,8 @@ export const QUESTION_KIND_LABELS: Record<QuestionKind, string> = {
 export type DraftQuestion = {
   /** Stable key for React and reordering; the server id once saved. */
   key: string;
+  /** The saved question's id (editing); absent for a new one. */
+  id?: string;
   text: string;
   kind: QuestionKind;
   required: boolean;
@@ -272,21 +274,24 @@ export function toCreateBody(d: Draft, offeringIds: Record<string, string>) {
     requires_booking_confirmation: !custom || d.approval === 'inherit' ? null : d.approval === 'on',
     booking_window_days: custom ? d.windowDays : null,
     break_after_minutes: custom ? d.breakMin : null,
-    questions: d.questions.map((q, i) => {
-      const choice = q.kind === 'single' || q.kind === 'multi';
-      return {
-        question_text: q.text.trim(),
-        question_type: choice ? ('multi_choice' as const) : (q.kind as 'free_text' | 'file_upload'),
-        is_required: q.required,
-        display_order: i,
-        ...(choice
-          ? {
-              allows_multiple: q.kind === 'multi',
-              options: q.options.map((o) => ({ text: o.trim() })).filter((o) => o.text),
-            }
-          : {}),
-      };
-    }),
+    questions: d.questions.map(toQuestionWrite),
+  };
+}
+
+/** One question as the API takes it (create, or a new one on edit). */
+export function toQuestionWrite(q: DraftQuestion, i: number) {
+  const choice = q.kind === 'single' || q.kind === 'multi';
+  return {
+    question_text: q.text.trim(),
+    question_type: choice ? ('multi_choice' as const) : (q.kind as 'free_text' | 'file_upload'),
+    is_required: q.required,
+    display_order: i,
+    ...(choice
+      ? {
+          allows_multiple: q.kind === 'multi',
+          options: q.options.map((o) => ({ text: o.trim() })).filter((o) => o.text),
+        }
+      : {}),
   };
 }
 

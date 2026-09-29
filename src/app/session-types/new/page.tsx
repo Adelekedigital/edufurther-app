@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { CreateSessionTypeScreen } from '../_components/CreateSessionTypeScreen';
+import { SessionTypeFormScreen } from '../_components/SessionTypeFormScreen';
 
 export const metadata: Metadata = {
   title: 'Create a session type',
@@ -14,5 +14,5 @@ export default async function NewSessionTypePage({
 }) {
   const sp = await searchParams;
   const template = typeof sp.template === 'string' ? sp.template : null;
-  return <CreateSessionTypeScreen template={template} />;
+  return <SessionTypeFormScreen template={template} />;
 }
