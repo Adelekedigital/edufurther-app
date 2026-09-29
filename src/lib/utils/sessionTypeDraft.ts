@@ -260,7 +260,8 @@ export function toCreateBody(d: Draft, offeringIds: Record<string, string>) {
     description: d.description.trim() || null,
     // null = the mentor's default, resolved when read (backend round 3 B).
     duration_minutes: custom ? d.durationMin : null,
-    min_notice_minutes: custom ? d.noticeHours * 60 : null,
+    // Minutes are whole; hours may not be (a stored 2000 min is 33.3 hrs).
+    min_notice_minutes: custom ? Math.round(d.noticeHours * 60) : null,
     service_offering_ids: d.topics.map((c) => offeringIds[c]).filter((x): x is string => !!x),
     application_stage: d.stage,
     custom_stage_label: d.stage === 'other' ? d.customStage.trim() : null,

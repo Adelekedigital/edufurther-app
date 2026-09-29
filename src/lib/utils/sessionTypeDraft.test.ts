@@ -279,6 +279,11 @@ describe('summaries (Session Types.dc.html, rulesFlow=inline)', () => {
     );
   });
 
+  it('notice that isn’t a whole number of hours is sent as whole minutes (review r2 of #60)', () => {
+    const d = { ...blankDraft(), rules: 'custom' as const, noticeHours: 2000 / 60 };
+    expect(toCreateBody(d, {}).min_notice_minutes).toBe(2000);
+  });
+
   it('the weekly line: Monday first, short times, null with no hours', () => {
     const week = emptyWeek();
     week[0] = { on: true, slots: [[600, 660]] }; // Sunday

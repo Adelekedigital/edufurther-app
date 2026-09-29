@@ -14,6 +14,8 @@ type WeeklyHoursFormProps = {
   timeZone: string;
   /** Zones of other active hours: not shown here, and left as they are. */
   otherZones?: string[];
+  /** Those hours' clock times: a slot overlapping one can't be saved (the backend refuses it). */
+  otherSlots?: { day: number; slot: [number, number]; zone: string }[];
   saving: boolean;
   /** Our copy for a save that failed; announced. */
   error: string | null;
@@ -31,6 +33,7 @@ export function WeeklyHoursForm({
   initial,
   timeZone,
   otherZones = [],
+  otherSlots = [],
   saving,
   error,
   onCancel,
@@ -38,7 +41,11 @@ export function WeeklyHoursForm({
 }: WeeklyHoursFormProps) {
   const [days, setDays] = useState(initial);
   const [tried, setTried] = useState(false);
-  const invalid = hasSlotErrors(days);
+  // A slot overlapping hours kept in another zone (same weekday, clock times).
+  const clash = otherSlots.find((o) =>
+    days[o.day]?.on ? days[o.day]!.slots.some(([a, b]) => a < o.slot[1] && o.slot[0] < b) : false,
+  );
+  const invalid = hasSlotErrors(days) || !!clash;
   return (
     <div className={styles.modalBody}>
       {/* PROVISIONAL copy — design request #7. */}
@@ -58,7 +65,9 @@ export function WeeklyHoursForm({
           <Icon name="error" size={18} />
           {tried && invalid
             ? // PROVISIONAL copy — design request #7.
-              'Fix the hours marked in red, then save.'
+              clash && !hasSlotErrors(days)
+              ? `Some of these hours overlap hours you set in ${zoneLabel(clash.zone)}. Change them, then save.`
+              : 'Fix the hours marked in red, then save.'
             : error}
         </p>
       )}

@@ -376,7 +376,7 @@ export function useSaveMentorDefaults(userId: string | null) {
       const r = resolveDefaults(next);
       const body = {
         default_duration_minutes: r.durationMin,
-        default_min_notice_minutes: r.noticeHours * 60,
+        default_min_notice_minutes: Math.round(r.noticeHours * 60),
         booking_window_days: r.windowDays,
         break_after_minutes: r.breakMin,
         requires_booking_confirmation: r.requiresApproval,

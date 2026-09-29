@@ -79,10 +79,21 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
   if (!templateSettled && (defaults.data || defaults.error)) {
     setTemplateSettled(true);
     const known = defaults.data ?? NO_DEFAULTS;
-    const next = applyTemplateLength(draft, tmpl!.durationMin, known);
-    if (next !== draft) {
-      setDraft(next);
-      setInitial(next);
+    const base = applyTemplateLength(initial, tmpl!.durationMin, known);
+    if (base !== initial) {
+      // The baseline moves, so this isn't an unsaved change; what the mentor
+      // already typed stays theirs (and still counts as unsaved). Their rules
+      // change only if they haven't touched them yet (review r2 of #60).
+      setInitial(base);
+      if (draft.rules === initial.rules && draft.durationMin === initial.durationMin)
+        setDraft({
+          ...draft,
+          rules: base.rules,
+          durationMin: base.durationMin,
+          noticeHours: base.noticeHours,
+          windowDays: base.windowDays,
+          breakMin: base.breakMin,
+        });
     }
   }
   // "Set rules for this session" starts from the mentor's values, the first time.
@@ -353,6 +364,7 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
             initial={weekly.data.days}
             timeZone={weekly.data.timeZone}
             otherZones={weekly.data.otherZones}
+            otherSlots={weekly.data.otherSlots}
             saving={saveWeekly.isPending}
             error={saveWeekly.error?.message ?? null}
             onCancel={() => setModal(null)}

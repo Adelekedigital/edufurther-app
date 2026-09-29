@@ -65,6 +65,7 @@ const saveDefaults = vi.fn();
 const resetDefaults = vi.fn();
 let defaultsSaveError: unknown = null;
 const saveHours = vi.fn();
+let otherSlots: { day: number; slot: [number, number]; zone: string }[] = [];
 const WEEK = [
   { on: false, slots: [[540, 600]] },
   { on: true, slots: [[1020, 1200]] },
@@ -76,7 +77,13 @@ const WEEK = [
 ];
 vi.mock('@/lib/api/data/weeklyHours', () => ({
   useWeeklyHours: () => ({
-    data: { days: WEEK, timeZone: 'Africa/Lagos', rules: [], otherZones: [] },
+    data: {
+      days: WEEK,
+      timeZone: 'Africa/Lagos',
+      rules: [],
+      otherZones: otherSlots.length ? ['Europe/London'] : [],
+      otherSlots,
+    },
     isLoading: false,
     error: null,
     retry: vi.fn(),
@@ -93,6 +100,7 @@ beforeEach(() => {
   resetDefaults.mockReset();
   defaultsSaveError = null;
   saveHours.mockReset().mockResolvedValue(undefined);
+  otherSlots = [];
 });
 const next = (name: RegExp) => screen.getByRole('button', { name });
 
@@ -430,5 +438,40 @@ describe('CreateSessionTypeScreen — review of #60', () => {
     const select = within(dialog).getByRole('combobox', { name: 'Bookable up to' });
     expect(select).toHaveValue('20');
     expect(within(select).getByRole('option', { name: '20 days' })).toBeInTheDocument();
+  });
+
+  it('defaults that arrive late don’t swallow what the mentor typed (review r2 of #60)', async () => {
+    const user = userEvent.setup();
+    defaultsMock = { data: null, isLoading: true, error: null, retry: vi.fn() };
+    const { rerender } = render(<CreateSessionTypeScreen template="mock-visa-interview" />);
+    await user.type(screen.getByRole('textbox', { name: 'Session name' }), ' 2');
+    // The defaults fail: the platform's 60 min isn't the template's 45, so its rules become its own.
+    defaultsMock = {
+      data: null,
+      isLoading: false,
+      error: { kind: 'server', message: 'x' },
+      retry: vi.fn(),
+    };
+    rerender(<CreateSessionTypeScreen template="mock-visa-interview" />);
+    await user.click(screen.getByRole('button', { name: 'Back to session types' }));
+    // Still an unsaved change: it asks before leaving.
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog', { name: 'Discard this session type?' })).toBeInTheDocument();
+  });
+
+  it('new hours overlapping hours kept in another zone can’t be saved, and it says which zone', async () => {
+    const user = userEvent.setup();
+    otherSlots = [{ day: 1, slot: [1080, 1140], zone: 'Europe/London' }]; // Mon 6–7 pm, London
+    await toStep3(user);
+    await user.click(screen.getByRole('button', { name: 'Edit weekly hours' }));
+    const dialog = screen.getByRole('dialog', { name: 'Your weekly hours' });
+    expect(
+      within(dialog).getByText(/Hours you set in London \(UK\) aren’t shown here/),
+    ).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Save hours' }));
+    expect(saveHours).not.toHaveBeenCalled();
+    expect(within(dialog).getByRole('alert')).toHaveTextContent(
+      'Some of these hours overlap hours you set in London (UK). Change them, then save.',
+    );
   });
 });

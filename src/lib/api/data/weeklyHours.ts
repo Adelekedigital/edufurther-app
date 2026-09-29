@@ -21,6 +21,11 @@ export type WeeklyHours = {
   rules: AvailabilityRuleRead[];
   /** Active rules kept in another zone: not shown here, and never touched by a save. */
   otherZones: string[];
+  /**
+   * Those rules' clock times. The backend's no-overlap rule compares clock times
+   * on a weekday whatever the zone, so a new slot must not overlap them either.
+   */
+  otherSlots: { day: number; slot: Slot; zone: string }[];
 };
 
 /**
@@ -40,7 +45,11 @@ export function toWeeklyHours(rules: AvailabilityRuleRead[], fallbackZone: strin
   // The zone most of the hours are in (the device's when there are none).
   const counts = new Map<string, number>();
   for (const r of active) counts.set(r.timezone, (counts.get(r.timezone) ?? 0) + 1);
-  const timeZone = [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? fallbackZone;
+  // On a tie, this device's zone, so the pick doesn't depend on the API's order.
+  const timeZone =
+    [...counts].sort(
+      (a, b) => b[1] - a[1] || Number(b[0] === fallbackZone) - Number(a[0] === fallbackZone),
+    )[0]?.[0] ?? fallbackZone;
   const mine = active.filter((r) => r.timezone === timeZone);
   const days = emptyWeek();
   const byDay: Slot[][] = Array.from({ length: 7 }, () => []);
@@ -54,6 +63,13 @@ export function toWeeklyHours(rules: AvailabilityRuleRead[], fallbackZone: strin
     timeZone,
     rules: mine,
     otherZones: [...counts.keys()].filter((z) => z !== timeZone),
+    otherSlots: active
+      .filter((r) => r.timezone !== timeZone)
+      .map((r) => ({
+        day: r.day_of_week,
+        slot: [minutes(r.start_time, false), minutes(r.end_time, true)] as Slot,
+        zone: r.timezone,
+      })),
   };
 }
 

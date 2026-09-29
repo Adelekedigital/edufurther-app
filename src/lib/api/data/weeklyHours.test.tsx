@@ -102,8 +102,22 @@ describe('zones', () => {
     );
     expect(w.timeZone).toBe('Africa/Lagos');
     expect(w.otherZones).toEqual(['Europe/London']);
+    expect(w.otherSlots).toEqual([{ day: 3, slot: [540, 600], zone: 'Europe/London' }]);
     expect(w.rules.map((r) => r.id)).toEqual(['a', 'b']);
     expect(w.days[3]!.on).toBe(false);
+  });
+});
+
+describe('a tie between zones', () => {
+  it('goes to this device’s zone, whatever the API’s order', () => {
+    const w = toWeeklyHours(
+      [
+        { ...rule('a', 1, '09:00:00', '10:00:00'), timezone: 'Europe/London' },
+        rule('b', 2, '09:00:00', '10:00:00'),
+      ],
+      'Africa/Lagos',
+    );
+    expect(w.timeZone).toBe('Africa/Lagos');
   });
 });
 
