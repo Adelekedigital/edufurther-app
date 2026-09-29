@@ -104,7 +104,7 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | "Your weekly hours" modal on phones (TimeSlots `compact`): the day and its hours stay on one row, 104px selects | The day above its hours; the two selects share the line | The design's row overflows 12px at 390 (the × leaves the dialog; the page scrolls sideways) | design confirms |
 | "Your weekly hours": no zone shown | "Times in Lagos (WAT)." above the editor, "· Lagos (WAT) time" after the summary; hours kept in another zone are named, not shown, and left as they are (PROVISIONAL, design request #7) | Times are always shown with their zone named (product rule) | design request #7 |
 | "Your weekly hours" modal: save failure, bad hours on Save | "Fix the hours marked in red, then save." / "Some of your hours didn’t save. Check them, then try again." (PROVISIONAL, design request #7) | Undesigned | design request #7 |
-| "Best for mentees who are…": several stages, several custom ones | One stage, or one custom label | Backend stores one per type (product approved 2026-09-28) — #48 | #48 |
+| "Best for mentees who are…": several stages, several of the mentor's own | Several stages (backend round 3 A, 2026-09-29), but one of the mentor's own: adding another renames it | The backend keeps one `custom_stage_label` per type | backend stores several labels |
 | Topics: any number of the design's 7 | Up to 3 of the 6 catalog offerings; the rest disable at 3 | Backend #9 caps at 3 | never |
 | Price (Free / Paid, USD) on step 1, the list and the preview | Not built | Every booking is 1 credit (product, 2026-09-28) | product revisits pricing |
 | Launch choice "Start with a waitlist" and the waitlist modals | Not built; Publish opens it for booking | Waitlist out of scope (product) — #45 | #45 |

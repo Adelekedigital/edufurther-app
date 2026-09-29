@@ -50,8 +50,9 @@ export type Draft = {
   description: string;
   /** Catalog offering codes, in the mentor's order, at most 3 (backend #9). */
   topics: string[];
-  stage: Stage | null;
-  /** The mentor's own stage, when `stage` is `other`. */
+  /** Several, in the order picked; empty = any stage (backend round 3 A). */
+  stages: Stage[];
+  /** The mentor's own stage, when `stages` has `other`. */
   customStage: string;
   /** null = automatic from the first topic. */
   icon: SessionIcon | null;
@@ -123,7 +124,7 @@ export function blankDraft(): Draft {
     name: '',
     description: '',
     topics: [],
-    stage: null,
+    stages: [],
     customStage: '',
     icon: null,
     questions: [],
@@ -192,7 +193,8 @@ export function validateStep(d: Draft, step: 1 | 2 | 3): FieldErrors {
       e.name = `Keep the name under ${NAME_MAX} characters.`;
     if (!d.description.trim()) e.description = 'Say what mentees get from this session.';
     if (d.topics.length === 0) e.topics = 'Pick at least one topic.';
-    if (d.stage === 'other' && !d.customStage.trim()) e.stage = 'Name the stage, or pick another.';
+    if (d.stages.includes('other') && !d.customStage.trim())
+      e.stage = 'Name the stage, or pick another.';
   }
   if (step === 3 && d.hours === 'custom') {
     const on = d.days.filter((x) => x.on);
@@ -263,8 +265,9 @@ export function toCreateBody(d: Draft, offeringIds: Record<string, string>) {
     // Minutes are whole; hours may not be (a stored 2000 min is 33.3 hrs).
     min_notice_minutes: custom ? Math.round(d.noticeHours * 60) : null,
     service_offering_ids: d.topics.map((c) => offeringIds[c]).filter((x): x is string => !!x),
-    application_stage: d.stage,
-    custom_stage_label: d.stage === 'other' ? d.customStage.trim() : null,
+    // The list (backend round 3 A); `application_stage` isn't sent with it (a 422).
+    application_stages: d.stages,
+    custom_stage_label: d.stages.includes('other') ? d.customStage.trim() : null,
     icon: d.icon,
     requires_booking_confirmation: !custom || d.approval === 'inherit' ? null : d.approval === 'on',
     booking_window_days: custom ? d.windowDays : null,
@@ -310,6 +313,7 @@ export function fieldForPointer(pointer: string): FieldKey | null {
     case 'service_offering_id':
       return 'topics';
     case 'application_stage':
+    case 'application_stages':
     case 'custom_stage_label':
       return 'stage';
     case 'questions':
@@ -421,4 +425,10 @@ export function applyTemplateLength(
 ): Draft {
   if (templateMin === resolveDefaults(defaults).durationMin) return d;
   return { ...d, ...customFrom(defaults), rules: 'custom', durationMin: templateMin };
+}
+
+/** "Exploring options, Drafting" (the mentor's own for `other`), or "Any stage". */
+export function stagesLabel(d: Pick<Draft, 'stages' | 'customStage'>): string {
+  const labels = d.stages.map((s) => (s === 'other' ? d.customStage.trim() : STAGE_LABELS[s]));
+  return labels.filter(Boolean).join(', ') || 'Any stage';
 }

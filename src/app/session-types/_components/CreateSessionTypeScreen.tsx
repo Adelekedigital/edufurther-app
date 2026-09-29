@@ -142,7 +142,7 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
       // Keys that don't match a draft field (server errors mapped by pointer, review of #49).
       const rules = ['durationMin', 'noticeHours', 'windowDays', 'breakMin', 'rules'];
       if (rules.some((k) => k in patch)) delete next.rules;
-      if ('customStage' in patch) delete next.stage;
+      if ('customStage' in patch || 'stages' in patch) delete next.stage;
       if ('questions' in patch)
         for (const k of Object.keys(next))
           if (k.startsWith('question-')) delete next[k as FieldKey];
