@@ -1,14 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Button, ButtonLink } from '@/components/atoms/Button/Button';
-import { Icon } from '@/components/atoms/Icon/Icon';
-import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
+import { useState } from 'react';
+import { Button } from '@/components/atoms/Button/Button';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { CoverPicker } from '@/components/molecules/CoverPicker/CoverPicker';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
-import { ReviewNote } from '@/components/molecules/ReviewNote/ReviewNote';
 import { ShareMenu } from '@/components/molecules/ShareMenu/ShareMenu';
 import { BookSessionCard } from '@/components/organisms/BookSessionCard/BookSessionCard';
 import { FirstMenteesCard } from '@/components/organisms/FirstMenteesCard/FirstMenteesCard';
@@ -16,200 +12,77 @@ import { BookingFlow } from '@/components/organisms/BookingFlow/BookingFlow';
 import { ProfileHeader } from '@/components/organisms/ProfileHeader/ProfileHeader';
 import { ProfileOverview } from '@/components/organisms/ProfileOverview/ProfileOverview';
 import { ReviewFlow } from '@/components/organisms/ReviewFlow/ReviewFlow';
-import { ReviewsList } from '@/components/organisms/ReviewsList/ReviewsList';
-import { ReviewsSummary } from '@/components/organisms/ReviewsSummary/ReviewsSummary';
 import { SessionTypeList } from '@/components/organisms/SessionTypeList/SessionTypeList';
-import { MentorSuggestions } from '@/components/organisms/MentorSuggestions/MentorSuggestions';
 import { SimilarMentorsCard } from '@/components/organisms/SimilarMentorsCard/SimilarMentorsCard';
 import { TrackRecordCard } from '@/components/organisms/TrackRecordCard/TrackRecordCard';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { bookBlockedFor } from '@/app/_shell/bookBlocked';
 import { useAppShell } from '@/app/_shell/useAppShell';
-import {
-  useRequestBooking,
-  useSessionTypes,
-  useSlots,
-  useUploadIntakeFile,
-} from '@/lib/api/data/booking';
 import { BANNER_ACCEPT, useCoverEdit } from '@/lib/api/data/cover';
 import { useMentorProfile } from '@/lib/api/data/profile';
-import { REVIEW_PAGE_SIZE, useMentorReviews, useReviewPrompt } from '@/lib/api/data/reviews';
-import {
-  useAuthoredReview,
-  useMyReview,
-  useReviewableSessions,
-  useSendReview,
-} from '@/lib/api/data/reviewWrite';
 import { useSimilarMentors } from '@/lib/api/data/similar';
 import { coverFor } from '@/lib/utils/cover';
-import { deviceTimeZone, formatTime, inSentence, movedBetween } from '@/lib/utils/format';
+import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
-import type { Mentor, MentorProfile, ReviewAnswers, SimilarMentor } from '@/types/mentor';
 import styles from './MentorProfileScreen.module.css';
+import { OwnerBar, ProfileSkeleton } from './ProfileParts';
+import { ProfileMissing } from './ProfileMissing';
+import { ReviewsTab } from './ReviewsTab';
+import { listLabel } from './suggestions';
+import { useProfileBooking } from './useProfileBooking';
+import { useProfileReviewing } from './useProfileReviewing';
+import { useProfileTab } from './useProfileTab';
 
-type Tab = 'overview' | 'sessions' | 'reviews';
+// Tests import it from here.
+export { suggestionsLine } from './suggestions';
 
 /** Below this many completed sessions a mentor is "new" (design reply #45). */
 const NEW_MENTOR_UNDER = 3;
 
 /**
- * Mentor Profile (Mentor Profile.dc.html), read-only: the page every viewer
- * sees — mentee, guest, and the mentor themselves in any approval state
- * (backend mentor-profile reply #1). Editing comes in a later PR. The only place on this route that fetches.
+ * Mentor Profile (Mentor Profile.dc.html): the page every viewer sees — mentee,
+ * guest, and the mentor themselves in any approval state (backend
+ * mentor-profile reply #1). The only place on this route that fetches; each
+ * concern lives in its own hook (tab, booking, reviewing, cover) and this
+ * component lays the page out.
  */
 export function MentorProfileScreen({ handle }: { handle: string }) {
   const { viewer, member, chrome, account, nav, canBook } = useAppShell();
   const online = useOnline();
   const profile = useMentorProfile(handle);
   const p = profile.data;
-
-  // Tab in the URL, so a shared link and Back keep it.
-  const router = useRouter();
-  const pathname = usePathname();
-  const params = useSearchParams();
   const hasSessions = (p?.sessionTypes.length ?? 0) > 0;
   const hasReviews = (p?.reviews.count ?? 0) > 0;
-  const asked = params.get('tab');
-  const tab: Tab =
-    asked === 'sessions' && hasSessions
-      ? 'sessions'
-      : asked === 'reviews' && hasReviews
-        ? 'reviews'
-        : 'overview';
-  const setTab = (t: string) => {
-    // Change only `tab`: a shared link's other parameters (utm_*) stay.
-    const next = new URLSearchParams(params.toString());
-    if (t === 'sessions' || t === 'reviews') next.set('tab', t);
-    else next.delete('tab');
-    const qs = next.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  };
+  const { tab, setTab } = useProfileTab(hasSessions, hasReviews);
 
   // Cards only render after a client fetch, so reading the device zone here is safe.
   const [timeZone] = useState(deviceTimeZone);
   // The profile only exists after a client fetch, so `window` is there by then.
   const shareUrl = p ? `${window.location.origin}${p.mentor.profileHref}` : '';
+  // The owner's "Share your profile" opens the header's share menu.
+  const [shareOpen, setShareOpen] = useState(false);
+  const isPhone = useMediaQuery('(max-width: 767px)');
 
   const isOwner = !!p && (p.owner !== null || member?.id === p.mentor.id);
   const bookBlocked = !online ? 'Booking needs a connection' : bookBlockedFor(viewer);
   // Mentors can't book (product 2026-09-29, canBookFor): on another mentor's
   // profile every Book control goes away, as for the owner on their own.
   const mayBook = !isOwner && canBook;
-
-  // ---- booking: the shared BookingModal, as on Explore -----------------------
-  // Who is being booked: this profile's mentor, or one suggested on the
-  // "isn't available" page.
-  const [booking, setBooking] = useState<Mentor | null>(null);
-  const [bookingTypeId, setBookingTypeId] = useState<string | null>(null);
-  // A time to open on, from the first-mentees card's "Book {time}".
-  const [bookingTime, setBookingTime] = useState<string | null>(null);
-  // A booking the viewer can no longer make (they turn out to be a mentor)
-  // closes: nothing is fetched for it, and nothing shows.
-  const bookingAllowed = !!booking && (booking.id === p?.mentor.id ? mayBook : canBook);
-  const mentorId = bookingAllowed ? booking!.id : null;
-  const sessionTypes = useSessionTypes(mentorId);
-  const typeId = bookingTypeId ?? sessionTypes.data?.[0]?.id ?? null;
-  const slots = useSlots(mentorId, typeId, timeZone);
-  const request = useRequestBooking();
-  const uploadIntakeFile = useUploadIntakeFile();
-  const openBooking = (sessionTypeId?: string, time?: string) => {
-    setBookingTypeId(sessionTypeId ?? null);
-    setBookingTime(time ?? null);
-    request.reset();
-    setBooking(p?.mentor ?? null);
-  };
-  const bookSuggested = (m: Mentor) => {
-    setBookingTypeId(null);
-    setBookingTime(null);
-    request.reset();
-    setBooking(m);
-  };
-  const closeBooking = () => {
-    setBooking(null);
-    setBookingTypeId(null);
-    setBookingTime(null);
-    request.reset();
-  };
-  // The owner's "Share your profile" opens the header's share menu.
-  const [shareOpen, setShareOpen] = useState(false);
-  const isPhone = useMediaQuery('(max-width: 767px)');
-
+  const booking = useProfileBooking({ mentor: p?.mentor ?? null, mayBook, canBook, timeZone });
+  const reviews = useProfileReviewing({
+    handle,
+    mentorId: p?.mentor.id ?? null,
+    tab,
+    viewerKind: viewer.kind,
+    isOwner,
+    canBook,
+    timeZone,
+  });
   // The owner's cover (Mentor Profile.dc.html "Change cover"): colour and art
   // save as picked; an image replaces them.
   const coverEdit = useCoverEdit(handle, isOwner && p ? p.mentor.id : null);
-
-  // ---- reviews tab ------------------------------------------------------------
-  const isGuest = viewer.kind === 'guest';
-  const [reviewFilter, setReviewFilter] = useState<string | null>(null);
-  const reviews = useMentorReviews(handle, reviewFilter, {
-    guest: isGuest,
-    active: tab === 'reviews',
-    // Guest or not decides what's fetched, so wait until that's known.
-    ready: viewer.kind !== 'loading',
-  });
-  const reviewPrompt = useReviewPrompt(
-    p?.mentor.id ?? null,
-    // Mentors can't book a first session, so "review after your first session" isn't for them.
-    tab === 'reviews' && viewer.kind === 'member' && !isOwner && canBook,
-  );
-  const reviewsHref = p ? `${p.mentor.profileHref}?tab=reviews` : '';
-
-  // ---- writing a review (ReviewModal.dc.html) ---------------------------------
-  // Writing a review is a mentee's (mentors can't have had a session as one).
-  const asMember = tab === 'reviews' && viewer.kind === 'member' && !isOwner && canBook;
-  const myReview = useMyReview(p?.mentor.id ?? null, asMember);
-  const reviewable = useReviewableSessions(
-    p?.mentor.id ?? null,
-    asMember && reviewPrompt === 'due',
-  );
-  const sendReview = useSendReview();
-  const [reviewing, setReviewing] = useState<'new' | 'edit' | null>(null);
-  const mine = myReview.data;
-  // Edit pre-fills from the author's full review; the list row has only step 1.
-  const authored = useAuthoredReview(mine?.id ?? null, reviewing === 'edit');
-  // The form starts from, and saving compares against, ONE snapshot: a copy
-  // fetched after Edit opened (a cached one can predate the last save; review
-  // of #59). Taken while rendering, once, when that fresh copy lands.
-  const [editOpenedAt, setEditOpenedAt] = useState(0);
-  const [editBase, setEditBase] = useState<Partial<ReviewAnswers> | null>(null);
-  if (reviewing === 'edit' && !editBase && authored.fetchedAt >= editOpenedAt && authored.data) {
-    setEditBase(authored.data.answers);
-  }
-  const editFailed =
-    reviewing === 'edit' && !editBase && authored.failedAt >= editOpenedAt && !!authored.error;
-  // "Still editable" is decided now, not when the review was fetched, and the
-  // page re-renders at the deadline so Edit goes away on its own.
-  const [now, setNow] = useState(() => Date.now());
-  const until = mine?.editableUntil ? Date.parse(mine.editableUntil) : 0;
-  const mineOpen = until > now;
-  useEffect(() => {
-    if (!mineOpen) return;
-    const t = setTimeout(() => setNow(Date.now()), until - Date.now() + 50);
-    return () => clearTimeout(t);
-  }, [mineOpen, until]);
-  const mineUntil =
-    mineOpen && mine?.editableUntil ? formatTime(mine.editableUntil, timeZone) : null;
-  const canWrite = !mineOpen && reviewPrompt === 'due' && !!reviewable.data?.length;
-  const openReview = (mode: 'new' | 'edit') => {
-    sendReview.reset();
-    setEditBase(null);
-    setEditOpenedAt(Date.now());
-    setReviewing(mode);
-  };
-  const closeReview = () => {
-    setReviewing(null);
-    setEditBase(null);
-    sendReview.reset();
-  };
-  // Mentor Profile.dc.html `scrollToBook`: the "no session yet" note's Book
-  // takes you to the booking card rather than opening booking itself.
-  const scrollToBook = () => {
-    const card = document.getElementById('profile-book');
-    card?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    card?.querySelector<HTMLElement>('button, a[href]')?.focus({ preventScroll: true });
-  };
 
   // Similar mentors: the Overview aside, for mentees and guests. Not the mentor
   // themselves, and not other mentors (product 2026-09-28: it's a mentee-facing
@@ -222,7 +95,6 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const similar = useSimilarMentors(handle, showSimilar || profile.notFound);
   // The card hides itself when the list is empty or failed.
   const similarShown = showSimilar && (similar.isLoading || !!similar.data?.length);
-  const suggestionsShown = profile.notFound && (similar.isLoading || !!similar.data?.length);
   // The aside's name lists what it holds for this viewer on this tab; with
   // only the first-mentees card it's "About this mentor".
   const asideLabel =
@@ -236,6 +108,15 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // (a pending, declined or unlisted profile's link 404s for everyone else;
   // the OwnerBar explains that instead). No owner block → public.
   const isPublic = !p?.owner || (p.owner.approval === 'approved' && p.owner.listed);
+  const canStartBooking = mayBook && hasSessions && !bookBlocked;
+
+  // Mentor Profile.dc.html `scrollToBook`: the "no session yet" note's Book
+  // takes you to the booking card rather than opening booking itself.
+  const scrollToBook = () => {
+    const card = document.getElementById('profile-book');
+    card?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    card?.querySelector<HTMLElement>('button, a[href]')?.focus({ preventScroll: true });
+  };
 
   // Design reply #45: under 3 sessions, an invitation (mentees) or what mentees
   // see (owner). Desktop: top of the aside (Overview only, like the aside).
@@ -257,11 +138,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           award={p.awards[0]?.title ?? null}
           // Blocked booking (guest setup, offline…) is explained on the header's
           // Book; the card just doesn't offer one.
-          onBook={
-            mayBook && hasSessions && !bookBlocked
-              ? (time) => openBooking(undefined, time)
-              : undefined
-          }
+          onBook={canStartBooking ? (time) => booking.open(undefined, time) : undefined}
         />
       ) : null
     ) : null;
@@ -286,47 +163,14 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
             />
           </div>
         ) : profile.notFound || !p ? (
-          // Design reply #34, then Mentor Profile.dc.html notFound (#38). 404 is
-          // "not found or not public", indistinguishable on purpose: the copy
-          // doesn't guess which. With mentors to suggest, they carry the page
-          // on; without, "Explore mentors" does.
-          suggestionsShown ? (
-            <div className={styles.missing}>
-              <EmptyState
-                illustration="search-results"
-                size={96}
-                headingLevel={1}
-                title="This mentor profile isn’t available"
-                description="The link may be out of date, or the profile isn’t public right now."
-              />
-              <MentorSuggestions
-                title="Mentors with similar expertise"
-                subtitle={suggestionsLine(similar.data ?? [])}
-                mentors={similar.data?.map((x) => x.mentor) ?? null}
-                loading={similar.isLoading}
-                exploreHref="/explore"
-                onBook={bookSuggested}
-                timeZone={timeZone}
-                offline={!online}
-                bookBlocked={bookBlocked}
-                canBook={canBook}
-              />
-            </div>
-          ) : (
-            <div className={styles.state}>
-              <EmptyState
-                illustration="search-results"
-                headingLevel={1}
-                title="This mentor profile isn’t available"
-                description="The link may be out of date, or the profile isn’t public. You can find other mentors who’ve done the same path."
-                actions={
-                  <ButtonLink href="/explore" size="large">
-                    Explore mentors
-                  </ButtonLink>
-                }
-              />
-            </div>
-          )
+          <ProfileMissing
+            similar={similar}
+            onBook={booking.openFor}
+            timeZone={timeZone}
+            offline={!online}
+            bookBlocked={bookBlocked}
+            canBook={canBook}
+          />
         ) : (
           <>
             {isOwner && <OwnerBar profile={p} />}
@@ -358,7 +202,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 <>
                   {mayBook && hasSessions && (
                     // The view's one filled button: Large (CTA hierarchy).
-                    <Button size="large" disabled={!!bookBlocked} onClick={() => openBooking()}>
+                    <Button size="large" disabled={!!bookBlocked} onClick={() => booking.open()}>
                       {bookBlocked ?? 'Book a session'}
                     </Button>
                   )}
@@ -415,104 +259,16 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 {tab === 'overview' ? (
                   <ProfileOverview profile={p} />
                 ) : tab === 'reviews' ? (
-                  <>
-                    <ReviewsSummary summary={p.reviews} firstName={p.mentor.firstName} />
-                    {mineOpen ? (
-                      <ReviewNote
-                        tone="success"
-                        icon="check_circle"
-                        title="Thanks, your review is live"
-                        body={`You can edit it until ${mineUntil}. After that it’s locked, and your next session can add a new one.`}
-                        action={
-                          <Button
-                            variant="secondary-outlined"
-                            size="medium"
-                            onClick={() => openReview('edit')}
-                          >
-                            Edit review
-                          </Button>
-                        }
-                      />
-                    ) : reviewPrompt === 'none' ? (
-                      <ReviewNote
-                        tone="neutral"
-                        icon="rate_review"
-                        title={`You can review ${p.mentor.firstName} after your first session`}
-                        body="Reviews come only from mentees who’ve had a session, so you can trust what you read."
-                        action={
-                          mayBook && hasSessions && !bookBlocked ? (
-                            <Button
-                              variant="secondary-outlined"
-                              size="medium"
-                              onClick={scrollToBook}
-                            >
-                              Book a session
-                            </Button>
-                          ) : undefined
-                        }
-                      />
-                    ) : reviewPrompt === 'due' ? (
-                      <ReviewNote
-                        tone="info"
-                        icon="star"
-                        title={`How was your session with ${p.mentor.firstName}?`}
-                        body="Your review helps other mentees choose, and takes about a minute."
-                        action={
-                          canWrite ? (
-                            <Button size="medium" onClick={() => openReview('new')}>
-                              Write a review
-                            </Button>
-                          ) : undefined
-                        }
-                      />
-                    ) : null}
-                    <ReviewsList
-                      reviews={reviews.reviews}
-                      isLoading={reviews.isLoading}
-                      error={reviews.error}
-                      onRetry={reviews.retry}
-                      hasMore={reviews.hasMore}
-                      isLoadingMore={reviews.isLoadingMore}
-                      loadMoreError={reviews.loadMoreError}
-                      onLoadMore={reviews.loadMore}
-                      // What the next click loads: at most a page, from the
-                      // unfiltered total ("Show 5 more", not "Show 15 more").
-                      remaining={
-                        reviewFilter === null
-                          ? Math.min(p.reviews.count - reviews.reviews.length, REVIEW_PAGE_SIZE)
-                          : null
-                      }
-                      filters={p.sessionTypes.map((t) => ({ id: t.id, label: t.name }))}
-                      filter={reviewFilter}
-                      onFilter={setReviewFilter}
-                      mine={
-                        mine
-                          ? {
-                              id: mine.id,
-                              edit: mineUntil
-                                ? { until: mineUntil, onEdit: () => openReview('edit') }
-                                : null,
-                            }
-                          : null
-                      }
-                      gate={
-                        isGuest
-                          ? {
-                              firstName: p.mentor.firstName,
-                              // Filtered, the total isn't known: no "+N more" count.
-                              total:
-                                reviewFilter === null ? p.reviews.count : reviews.reviews.length,
-                              signupHref: `/signup?next=${encodeURIComponent(reviewsHref)}`,
-                              loginHref: `/login?next=${encodeURIComponent(reviewsHref)}`,
-                            }
-                          : null
-                      }
-                    />
-                  </>
+                  <ReviewsTab
+                    profile={p}
+                    reviews={reviews}
+                    offerBook={canStartBooking}
+                    onBook={scrollToBook}
+                  />
                 ) : (
                   <SessionTypeList
                     sessionTypes={p.sessionTypes}
-                    onBook={openBooking}
+                    onBook={booking.open}
                     bookBlocked={bookBlocked}
                     canBook={mayBook}
                   />
@@ -529,7 +285,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                       <div id="profile-book" className={styles.scrollTarget}>
                         <BookSessionCard
                           sessionTypes={p.sessionTypes}
-                          onBook={openBooking}
+                          onBook={booking.open}
                           onCompare={() => setTab('sessions')}
                           bookBlocked={bookBlocked}
                         />
@@ -551,32 +307,32 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
         )}
       </div>
 
-      {booking && bookingAllowed && (
+      {booking.active && (
         <BookingFlow
-          mentor={booking}
-          sessionTypes={sessionTypes}
-          sessionTypeId={typeId}
-          onSessionTypeChange={setBookingTypeId}
-          slots={slots}
+          mentor={booking.active}
+          sessionTypes={booking.sessionTypes}
+          sessionTypeId={booking.typeId}
+          onSessionTypeChange={booking.setTypeId}
+          slots={booking.slots}
           isGuest={viewer.kind === 'guest'}
           // PHASE A: no auth yet — continuing counts as signed up.
           onSignup={() => undefined}
-          onRequest={request.request}
-          requestPending={request.isPending}
-          requestDone={request.isDone}
-          requestError={request.error}
-          onUpload={uploadIntakeFile}
-          onClose={closeBooking}
+          onRequest={booking.request.request}
+          requestPending={booking.request.isPending}
+          requestDone={booking.request.isDone}
+          requestError={booking.request.error}
+          onUpload={booking.uploadIntakeFile}
+          onClose={booking.close}
           deviceZone={timeZone}
-          initialTime={bookingTime}
+          initialTime={booking.initialTime}
           // On this profile the link would lead back here; a suggested mentor's is useful.
-          hideProfileLink={booking.id === p?.mentor.id}
+          hideProfileLink={booking.isThisMentor}
           renderShell={(shell, body) => (
             <ModalShell
               title={shell.title}
               subtitle={shell.subtitle}
               size="xl"
-              onClose={closeBooking}
+              onClose={booking.close}
               sheet={shell.sheet}
               footer={shell.footer}
             >
@@ -586,50 +342,53 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
         />
       )}
 
-      {reviewing && p && member && (
+      {reviews.reviewing && p && member && (
         <ReviewFlow
           // Remount when the edit snapshot arrives, so the form starts from it.
-          key={reviewing === 'edit' ? (editBase ? 'edit-ready' : 'edit-loading') : 'new'}
-          mode={reviewing}
-          loading={reviewing === 'edit' && !editBase && !editFailed}
+          key={
+            reviews.reviewing === 'edit'
+              ? reviews.editBase
+                ? 'edit-ready'
+                : 'edit-loading'
+              : 'new'
+          }
+          mode={reviews.reviewing}
+          loading={reviews.editLoading}
           loadError={
-            editFailed
+            reviews.editFailed
               ? {
                   message: 'We couldn’t load your review. Check your connection and try again.',
-                  onRetry: () => {
-                    setEditOpenedAt(Date.now());
-                    authored.retry();
-                  },
+                  onRetry: reviews.retryEdit,
                 }
               : null
           }
           mentorFirstName={p.mentor.firstName}
-          sessions={reviewable.data ?? []}
-          initial={reviewing === 'edit' ? (editBase ?? undefined) : undefined}
-          editableUntil={sendReview.result?.editableUntil ?? mine?.editableUntil ?? null}
+          sessions={reviews.reviewable.data ?? []}
+          initial={reviews.reviewing === 'edit' ? (reviews.editBase ?? undefined) : undefined}
+          editableUntil={reviews.send.result?.editableUntil ?? reviews.mine?.editableUntil ?? null}
           author={{ name: member.firstName, initials: member.initial, institution: null }}
           timeZone={timeZone}
           onSend={(answers, sessionId) =>
-            reviewing === 'edit' && mine
-              ? sendReview.send({
+            reviews.reviewing === 'edit' && reviews.mine
+              ? reviews.send.send({
                   mode: 'edit',
                   mentorId: p.mentor.id,
-                  reviewId: mine.id,
-                  before: editBase ?? mine.answers,
+                  reviewId: reviews.mine.id,
+                  before: reviews.editBase ?? reviews.mine.answers,
                   answers,
                 })
               : sessionId &&
-                sendReview.send({ mode: 'new', mentorId: p.mentor.id, sessionId, answers })
+                reviews.send.send({ mode: 'new', mentorId: p.mentor.id, sessionId, answers })
           }
-          pending={sendReview.isPending}
-          error={sendReview.error?.message ?? null}
-          done={!!sendReview.result}
-          onClose={closeReview}
+          pending={reviews.send.isPending}
+          error={reviews.send.error?.message ?? null}
+          done={!!reviews.send.result}
+          onClose={reviews.close}
           onBookAgain={
-            mayBook && hasSessions && !bookBlocked
+            canStartBooking
               ? () => {
-                  closeReview();
-                  openBooking();
+                  reviews.close();
+                  booking.open();
                 }
               : undefined
           }
@@ -640,7 +399,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               icon={shell.icon}
               tone={shell.tone}
               size="md"
-              onClose={closeReview}
+              onClose={reviews.close}
             >
               {body}
             </ModalShell>
@@ -648,93 +407,5 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
         />
       )}
     </AppShell>
-  );
-}
-
-/**
- * The suggestions' subtitle from what they share with the missing profile:
- * "They help with visa interview, and CV review, and are taking bookings."
- * Provisional (the design's sample names four topics and says "have open times
- * now", which the list doesn't promise: it's bookable mentors, not free times).
- */
-export function suggestionsLine(list: SimilarMentor[]): string {
-  const topics = [...new Set(list.map((x) => x.sharedTopic).filter(Boolean))]
-    .slice(0, 3)
-    .map(inSentence);
-  if (!topics.length) return 'They are taking bookings.';
-  // Commas between topics, and before the last "and": topic names have their
-  // own "and"s ("visa and interview"), so each stays whole.
-  const joined =
-    topics.length === 1 ? topics[0]! : `${topics.slice(0, -1).join(', ')}, and ${topics.at(-1)}`;
-  return `They help with ${joined}, and are taking bookings.`;
-}
-
-/** "Booking, track record and similar mentors" from the parts present; null for none. */
-function listLabel(parts: (string | false)[]): string | null {
-  const p = parts.filter((x): x is string => !!x);
-  if (!p.length) return null;
-  const text = p.length === 1 ? p[0]! : `${p.slice(0, -1).join(', ')} and ${p.at(-1)}`;
-  return text[0]!.toUpperCase() + text.slice(1);
-}
-
-/**
- * Mentor Profile.dc.html owner bar (design reply #35), read-only for now: the
- * "View as mentee" toggle arrives with editing. A profile mentees can't see yet
- * says so, with a lock.
- */
-function OwnerBar({ profile }: { profile: MentorProfile }) {
-  const o = profile.owner;
-  const hidden =
-    o && o.approval === 'declined'
-      ? // PROVISIONAL (design request #42): design wrote pending and unlisted only.
-        'Your profile wasn’t approved. Only you can see it.'
-      : o && o.approval !== 'approved'
-        ? 'Only you can see this until your profile is approved.'
-        : o && !o.listed
-          ? 'Your profile is unlisted. Only you can see it.'
-          : null;
-  return (
-    <div className={styles.ownerBar}>
-      <span className={styles.ownerText}>
-        <Icon
-          name={hidden ? 'lock' : 'person'}
-          size={18}
-          className={hidden ? styles.ownerIconLock : styles.ownerIcon}
-        />
-        {hidden ?? 'You’re viewing your own profile.'}
-      </span>
-    </div>
-  );
-}
-
-/** Mentor Profile.dc.html `pageState=loading`: the header card and both columns. */
-function ProfileSkeleton() {
-  return (
-    <div className={styles.skeleton} aria-busy>
-      <span className="sr-only" role="status">
-        Loading profile
-      </span>
-      <div className={styles.skHeader}>
-        <div className={styles.skBanner} />
-        <div className={styles.skHead}>
-          <span className={styles.skAvatar} />
-          <div className={styles.skLines}>
-            <Skeleton width="40%" height="24px" radius="md" />
-            <Skeleton width="60%" height="14px" radius="md" />
-            <Skeleton width="30%" height="14px" radius="md" />
-          </div>
-        </div>
-      </div>
-      <div className={styles.cols}>
-        <div className={styles.skMain}>
-          <Skeleton width="30%" height="18px" radius="md" />
-          <Skeleton height="14px" radius="md" />
-          <Skeleton height="14px" radius="md" />
-          <Skeleton width="70%" height="14px" radius="md" />
-          <Skeleton height="160px" radius="lg" className={styles.skBlock} />
-        </div>
-        <Skeleton height="220px" radius="lg" className={styles.skAside} />
-      </div>
-    </div>
   );
 }
