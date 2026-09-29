@@ -197,8 +197,10 @@ export function MentorCard({
           size="medium"
           variant="secondary-outlined"
           className={styles.book}
+          // aria-label, not an sr-only span: Chrome reads that span as a block ("View profile : name").
+          aria-label={`View profile: ${m.name}`}
         >
-          View profile<span className="sr-only">: {m.name}</span>
+          View profile
         </ButtonLink>
       ) : (
         <Button
