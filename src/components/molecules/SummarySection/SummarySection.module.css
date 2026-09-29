@@ -1,0 +1,65 @@
+/* Session Types.dc.html step 4 summary block. */
+.box {
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--border-hairline) solid var(--border-muted);
+}
+.title {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.edit {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--blue-500);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+.edit:hover {
+  color: var(--blue-700);
+}
+.edit:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-xs);
+}
+.rows {
+  margin: 0;
+}
+.row {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-p-xs);
+}
+.k {
+  width: 120px;
+  flex: none;
+  color: var(--ink-500);
+}
+.v {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  line-height: var(--lh-p);
+  color: var(--ink-900);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 767px) {
+  /* Design phone rule: --space-3 --space-4 padding becomes --space-2 --space-3. */
+  .head {
+    padding: var(--space-2) var(--space-3);
+  }
+}

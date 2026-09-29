@@ -43,22 +43,25 @@ export function SessionTypeManager(p: SessionTypeManagerProps) {
 
       <List {...p} />
 
-      <section className={styles.templates} aria-labelledby="st-templates">
-        <div className={styles.templatesIntro}>
-          <h2 id="st-templates" className={styles.templatesTitle}>
-            Start from a template
-          </h2>
-          <p className={styles.templatesHint}>
-            Pre-filled with a description and questions mentors commonly use. Edit anything before
-            publishing.
-          </p>
-        </div>
-        <div className={styles.grid}>
-          {p.templates.map((t) => (
-            <TemplateCard key={t.key} href={t.href} icon={t.icon} name={t.name} hint={t.hint} />
-          ))}
-        </div>
-      </section>
+      {/* After the list resolves: below a loading list it would jump as rows arrive (CLS). */}
+      {!p.list.isLoading && (
+        <section className={styles.templates} aria-labelledby="st-templates">
+          <div className={styles.templatesIntro}>
+            <h2 id="st-templates" className={styles.templatesTitle}>
+              Start from a template
+            </h2>
+            <p className={styles.templatesHint}>
+              Pre-filled with a description and questions mentors commonly use. Edit anything before
+              publishing.
+            </p>
+          </div>
+          <div className={styles.grid}>
+            {p.templates.map((t) => (
+              <TemplateCard key={t.key} href={t.href} icon={t.icon} name={t.name} hint={t.hint} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

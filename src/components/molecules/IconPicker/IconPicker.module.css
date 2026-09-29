@@ -1,0 +1,101 @@
+/* Session Types.dc.html step 1 icon tile and its "Session icon" popover. */
+.wrap {
+  position: relative;
+  flex: none;
+}
+.tile {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: var(--border-hairline) solid var(--blue-100);
+  border-radius: var(--radius-lg);
+  background: var(--blue-50);
+  color: var(--blue-500);
+  cursor: pointer;
+}
+.tile:hover,
+.tileOpen {
+  border-color: var(--blue-500);
+}
+.tile:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.badge {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--white);
+  box-shadow: 0 0 0 1px var(--ink-200);
+  color: var(--ink-700);
+}
+.panel {
+  position: absolute;
+  left: 0;
+  top: calc(100% + var(--space-2));
+  z-index: 20;
+  width: min(300px, calc(100vw - var(--space-10)));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  box-shadow:
+    var(--shadow-menu),
+    inset 0 0 0 1px var(--ink-200);
+}
+.title {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, 40px);
+  gap: var(--space-2);
+}
+.option {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0;
+  border: var(--border-hairline) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--ink-700);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+.auto {
+  grid-column: 1 / -1;
+  justify-content: flex-start;
+  padding: 0 var(--space-3);
+}
+.on {
+  border-color: var(--blue-500);
+  background: var(--blue-50);
+  color: var(--blue-700);
+}
+.option:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.hint {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}

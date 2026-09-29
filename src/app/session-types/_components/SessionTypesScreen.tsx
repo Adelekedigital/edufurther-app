@@ -2,7 +2,6 @@
 
 import { useCallback, useState, type ReactNode } from 'react';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
-import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { SessionTypeManager } from '@/components/organisms/SessionTypeManager/SessionTypeManager';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
@@ -12,6 +11,7 @@ import { useOnline } from '@/lib/utils/useOnline';
 import type { Remote } from '@/types/mentor';
 import type { DeleteError, OwnSessionType } from '@/types/sessionType';
 import { useAppShell } from '../../_shell/useAppShell';
+import { mentorGate } from './MentorGate';
 import styles from './SessionTypesScreen.module.css';
 
 const CREATE_HREF = '/session-types/new';
@@ -54,83 +54,16 @@ export function SessionTypesScreen() {
     del.reset();
   };
 
-  let body: ReactNode;
-  if (viewer.kind === 'guest') {
-    body = (
-      <Gate
-        // PROVISIONAL copy — design request #3.
-        title="Log in to manage your session types"
-        description="Session types are what mentees can book with you."
-        action={
-          <ButtonLink href="/login?next=%2Fsession-types" prefetch={false} size="large">
-            Log in
-          </ButtonLink>
-        }
-      />
-    );
-  } else if (viewer.kind === 'error') {
-    body = (
-      <Gate
-        title="We couldn’t load your account"
-        description="Something went wrong on our side. Try again in a moment."
-        action={
-          <Button size="large" onClick={viewer.retry} busy={viewer.retrying}>
-            Try again
-          </Button>
-        }
-      />
-    );
-  } else if (viewer.kind === 'accountExists') {
-    body = (
-      <Gate
-        // Explore's copy (PROVISIONAL, backend PR #238; no support channel yet: design request #27).
-        title="This email already has an EduFurther account."
-        description="It isn’t linked to this sign-in yet. Please contact EduFurther support to connect them."
-        action={
-          <ButtonLink href="/explore" size="large" variant="secondary-outlined">
-            Browse mentors
-          </ButtonLink>
-        }
-      />
-    );
-  } else if (viewer.kind === 'unlinked') {
-    body = (
-      <Gate
-        // Explore's copy (PROVISIONAL, backend auth reply 2026-09-27: no self-signup yet).
-        title="Your account isn’t ready yet."
-        description="Once your account is set up, you can offer sessions here."
-        action={
-          <ButtonLink href="/explore" size="large" variant="secondary-outlined">
-            Browse mentors
-          </ButtonLink>
-        }
-      />
-    );
-  } else if (viewer.kind !== 'loading' && !isMentor) {
-    body = (
-      <Gate
-        // PROVISIONAL copy — design request #3.
-        title="Session types are for mentors"
-        description="Once you’re a mentor, this is where you set up what mentees can book with you."
-        action={
-          <ButtonLink href="/explore" size="large" variant="secondary-outlined">
-            Find a mentor
-          </ButtonLink>
-        }
-      />
-    );
-  } else {
-    body = (
-      <SessionTypeManager
-        list={list}
-        messages={messages}
-        onLiveChange={onLiveChange}
-        onDelete={setConfirming}
-        createHref={CREATE_HREF}
-        templates={TEMPLATES}
-      />
-    );
-  }
+  const body: ReactNode = mentorGate(viewer, isMentor, '/session-types') ?? (
+    <SessionTypeManager
+      list={list}
+      messages={messages}
+      onLiveChange={onLiveChange}
+      onDelete={setConfirming}
+      createHref={CREATE_HREF}
+      templates={TEMPLATES}
+    />
+  );
 
   return (
     <AppShell active="Sessions" nav={nav} chrome={chrome} account={account} offline={!online}>
@@ -149,22 +82,6 @@ export function SessionTypesScreen() {
         />
       )}
     </AppShell>
-  );
-}
-
-function Gate(p: { title: string; description: string; action: ReactNode }) {
-  return (
-    <div className={styles.gate}>
-      <EmptyState
-        illustration="task-templates"
-        size={120}
-        title={p.title}
-        description={p.description}
-        actions={p.action}
-        // The gate is the whole page, so its title is the page's h1.
-        headingLevel={1}
-      />
-    </div>
   );
 }
 

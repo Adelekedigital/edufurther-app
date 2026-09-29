@@ -37,7 +37,7 @@ export function SessionTypeRow({
     ...(qn === null
       ? []
       : [{ icon: 'quiz' as const, label: `${qn} question${qn === 1 ? '' : 's'}` }]),
-    { icon: 'sell' as const, label: t.topic?.label ?? 'Any topic' },
+    { icon: 'sell' as const, label: t.topics.map((x) => x.label).join(', ') || 'Any topic' },
   ];
   return (
     <article className={cx(styles.row, !t.isLive && styles.hidden)} aria-labelledby={nameId}>

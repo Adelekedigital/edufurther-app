@@ -12,11 +12,13 @@
     "campaign",
     "chat",
     "check",
+    "check_box",
     "check_circle",
     "chevron_left",
     "chevron_right",
     "close",
     "cloud_off",
+    "content_copy",
     "delete",
     "drag_indicator",
     "edit",
@@ -56,6 +58,7 @@
     "power",
     "psychology",
     "quiz",
+    "radio_button_checked",
     "rate_review",
     "record_voice_over",
     "refresh",
@@ -79,5 +82,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "c402e60c5877d0bfd19dac295f51b221f36f40d47edc60c129a127d80ccd48c0"
+  "sha256": "6250db5fcb02f5b3a638eefdf16747378fb4a3e475b382d3f258c7a8008b20ea"
 }

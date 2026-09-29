@@ -95,6 +95,21 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | Hidden row: fact chips on --ink-50, same as the row ground | Chips turn white on a hidden row | They vanished into the grey (small fix, ours) | design file catches up |
 | DS destructive button hover #dd524d (`--action-danger-hover` = --red-300) | Hover darkens to --red-700 | White 14px label is 3.9:1 / 3.15:1 on the DS hovers (WCAG 1.4.3); 8.4:1 on --red-700 | DS fixes the hover token |
 | DS EmptyState description (16px, brand face) | Now 16px brand face (was 14px Inter since Explore, unlogged) | Fidelity fix found measuring Session Types; Explore's empty and error states change too | never |
+| Session Types wizard: Continue and "Add question" disabled until the step / question is valid | Always enabled; clicking shows what's missing on the field (our copy) | A disabled button can't say what's wrong (forms-validation) | never |
+| Wizard "Use my defaults / Set rules for this session" covers length, notice, window and break | Length and notice are always this type's own; the choice covers booking window and break only | No mentor-level default exists for length or notice (backend #13); product approved 2026-09-28 | backend adds length / notice defaults |
+| "Best for mentees who are…": several stages, several custom ones | One stage, or one custom label | Backend stores one per type (product approved 2026-09-28) — #48 | #48 |
+| Topics: any number of the design's 7 | Up to 3 of the 6 catalog offerings; the rest disable at 3 | Backend #9 caps at 3 | never |
+| Price (Free / Paid, USD) on step 1, the list and the preview | Not built | Every booking is 1 credit (product, 2026-09-28) | product revisits pricing |
+| Launch choice "Start with a waitlist" and the waitlist modals | Not built; Publish opens it for booking | Waitlist out of scope (product) — #45 | #45 |
+| Scheduling "Video" override | Not built | No conferencing-options API yet — #46 | #46 |
+| Choice options "from your areas of expertise" | Not built; the mentor writes the options | Not built on the backend (product) — #47 | #47 |
+| Wizard action bar `position: sticky; top: 0` | Sticks under the shell's sticky header | At top 0 it slid beneath the header | never |
+| Tip "Every extra question lowers bookings" as the DS Notice (info: `--brand-50` ground, `--brand-600` ring, 18px padding) | Our info Notice (blue-50, no ring, 12/16px) | `--brand-*` is banned in product UI (DS readme) | DS moves Notice off the brand palette |
+| Order hint "Drag to reorder." | "Drag or use the arrows to reorder." | The arrows are the keyboard / touch way (small copy fix, ours) | design file catches up |
+| Prototype phone rule: every button min-height 44px (back button, question row actions) | Drawn at 36 / 32px with an invisible 44px tap area | CTA Hierarchy rule 5 | never |
+| Prototype phone rule `padding: 0 var(--space-3)` → 8px inside inputs | Inputs keep 12px | The shared Input (Explore search, login) would need per-variant rules; revisit in a cross-screen pass | a cross-screen phone pass |
+| Textarea 14px on phones (the prototype's 16px rule covers inputs and selects only) | 16px | iOS zooms on focus under 16px | never |
+| Published modal after creating | Also "…but its dedicated hours didn't save" + Retry hours when a window fails (PROVISIONAL, design request #5) | Hours are separate requests after the type exists (backend #15) | design answers #5 |
 | Wizard step number 11px (literal) | `--step-dot-text` (ours) | No DS token for 11px | DS adds a step size |
 | Session Types phone rules in AppShell's global `<style>` (radiogroups/selects full width, steps scroll sideways) | The same rules, per component at 768px (SegmentedControl, Select, WizardSteps) | Handoff §7.3 | never |
 

@@ -1,0 +1,134 @@
+/* TimeSlots.dc.html, variant list: one day row. */
+.row {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr);
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: var(--border-hairline) solid var(--border-muted);
+}
+.row:last-child {
+  border-bottom: none;
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: var(--control-h-sm);
+}
+.day {
+  font-size: var(--text-caption-sm);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-caption-sm);
+  text-transform: uppercase;
+  color: var(--ink-900);
+}
+.dayOff {
+  color: var(--ink-500);
+}
+.off {
+  height: var(--control-h-sm);
+  display: flex;
+  align-items: center;
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+.slots {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.slot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.slotRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.to {
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+.remove {
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--ink-500);
+  cursor: pointer;
+}
+.remove:hover {
+  background: var(--ink-100);
+}
+.error {
+  font-size: var(--text-p-xs);
+  color: var(--text-danger);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+.add,
+.copy {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--space-6);
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  cursor: pointer;
+}
+.add {
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+}
+.add:hover {
+  color: var(--blue-700);
+}
+.copy {
+  font-weight: var(--weight-medium);
+  color: var(--ink-500);
+}
+.copy:hover {
+  color: var(--ink-900);
+}
+.remove:focus-visible,
+.add:focus-visible,
+.copy:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-xs);
+}
+@media (max-width: 767px) {
+  /* The day's switch and name above its hours. */
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+  /* Design phone rule [data-ef="slotrow"]: one line, the two selects share it. */
+  .slotRow {
+    flex-wrap: nowrap;
+    gap: var(--space-2);
+  }
+  .time {
+    flex: 1;
+    min-width: 0;
+  }
+  .add,
+  .copy {
+    min-height: var(--touch-target-min);
+  }
+}

@@ -107,7 +107,7 @@ export function useTopics() {
       // The slug is `code` on the shared lookup shape (backend reply #2). `code` is
       // nullable on LookupRead; an offering without one can't be filtered on, so skip it.
       return data.data.flatMap((l): Topic[] =>
-        l.code ? [{ slug: l.code, label: l.display_name }] : [],
+        l.code ? [{ slug: l.code, label: l.display_name, id: l.id }] : [],
       );
     },
     // A closed taxonomy; it changes on deploys, not during a visit.
@@ -117,6 +117,7 @@ export function useTopics() {
     topics: query.data ?? [],
     isLoading: query.isPending,
     error: query.error ? normaliseError(query.error) : null,
+    retry: () => void query.refetch(),
   };
 }
 
