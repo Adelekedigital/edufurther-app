@@ -68,18 +68,34 @@ export function toAnswers(answers: Record<string, IntakeAnswer>): AnswerWrite[] 
   });
 }
 
-/** A refused request; `questionId` when the server named one answer (422 /answers/{i}). */
-export type BookingError = AppError & { questionId?: string };
+/**
+ * A refused request. `questionId` when the server named one answer (422
+ * /answers/{i}); `fileGone` when that answer's file can't be used any more
+ * (already used, or deleted after a day), so the flow drops it.
+ */
+export type BookingError = AppError & { questionId?: string; fileGone?: boolean };
+
+/** What a 422's pointers say about the answers (backend domain/intake answer_problems). */
+export type AnswerProblem =
+  { kind: 'answer'; questionId: string; fileGone: boolean } | { kind: 'missing' } | null;
+
+export function answerProblem(body: unknown, sent: AnswerWrite[]): AnswerProblem {
+  const list = (body as { errors?: unknown } | null)?.errors;
+  if (!Array.isArray(list)) return null;
+  const pointers = list.map((it) => String((it as { pointer?: unknown })?.pointer ?? ''));
+  for (const ptr of pointers) {
+    const m = /^\/answers\/(\d+)(\/file_id)?/.exec(ptr);
+    const questionId = m ? sent[Number(m[1])]?.question_id : undefined;
+    if (questionId) return { kind: 'answer', questionId, fileGone: !!m?.[2] };
+  }
+  // "/answers" alone: a required question has no answer.
+  return pointers.includes('/answers') ? { kind: 'missing' } : null;
+}
 
 /** The answer the server refused, by its pointer into the answers we sent. */
 export function questionForPointer(body: unknown, sent: AnswerWrite[]): string | undefined {
-  const list = (body as { errors?: unknown } | null)?.errors;
-  if (!Array.isArray(list)) return undefined;
-  for (const it of list) {
-    const m = /^\/answers\/(\d+)/.exec(String((it as { pointer?: unknown })?.pointer ?? ''));
-    if (m) return sent[Number(m[1])]?.question_id;
-  }
-  return undefined;
+  const p = answerProblem(body, sent);
+  return p?.kind === 'answer' ? p.questionId : undefined;
 }
 
 /**
@@ -203,8 +219,8 @@ export function useRequestBooking() {
         body,
       });
       if (!data) {
-        const e = apiError(response.status, error) as ApiError & { questionId?: string };
-        if (response.status === 422) e.questionId = questionForPointer(error, answers);
+        const e = apiError(response.status, error) as ApiError & { answers?: AnswerProblem };
+        if (response.status === 422) e.answers = answerProblem(error, answers);
         throw e;
       }
       return data;
@@ -212,7 +228,12 @@ export function useRequestBooking() {
     onSuccess: () => {
       attempt.current = null;
     },
-    onSettled: (_data, _error, req) => {
+    onSettled: (_data, error, req) => {
+      // A required question we didn't show: the questions changed, so re-read them.
+      if ((error as { answers?: AnswerProblem } | null)?.answers?.kind === 'missing')
+        void queryClient.invalidateQueries({
+          queryKey: keys.booking.sessionTypes(req.mentorId),
+        });
       // A booking (or a slot taken meanwhile) changes this mentor's grid and
       // their "next available" on the cards.
       void queryClient.invalidateQueries({ queryKey: keys.booking.slotsFor(req.mentorId) });
@@ -232,13 +253,24 @@ export function useRequestBooking() {
 }
 
 /** Our copy for a refused request; an answer the server refused points at its question. */
-function requestError(e: unknown): BookingError {
-  const questionId = (e as { questionId?: string }).questionId;
-  if (questionId)
+export function requestError(e: unknown): BookingError {
+  const problem = (e as { answers?: AnswerProblem }).answers ?? null;
+  if (problem?.kind === 'answer')
     return {
       ...normaliseError(e),
-      questionId,
-      message: 'Check your answer to this question, then send again.',
+      questionId: problem.questionId,
+      ...(problem.fileGone
+        ? {
+            fileGone: true,
+            message: 'Upload the file again: that one can’t be used any more.',
+          }
+        : { message: 'Check your answer to this question, then send again.' }),
+    };
+  if (problem?.kind === 'missing')
+    // PROVISIONAL copy — design request #6.
+    return {
+      ...normaliseError(e),
+      message: 'Answer every required question (marked *), then send again.',
     };
   return bookingError(normaliseError(e));
 }

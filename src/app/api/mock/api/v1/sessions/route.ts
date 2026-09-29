@@ -39,22 +39,32 @@ export async function POST(req: NextRequest) {
   const questions = type.questions ?? [];
   const errors: { pointer: string; message: string }[] = [];
   answers.forEach((a, i) => {
+    const at = `/answers/${i}`;
     const qn = questions.find((x) => x.id === a.question_id);
-    const bad =
-      !qn ||
-      (qn.question_type === 'free_text' && !a.text?.trim()) ||
-      (qn.question_type === 'file_upload' &&
-        !(a.file_id && uploads.get(a.file_id) && !uploads.get(a.file_id)!.used)) ||
-      (qn.question_type === 'multi_choice' &&
-        (!a.option_ids?.length ||
-          (!qn.allows_multiple && a.option_ids.length > 1) ||
-          a.option_ids.some((o) => !qn.options.some((x) => x.id === o))));
-    if (bad) errors.push({ pointer: `/answers/${i}`, message: 'Invalid answer' });
+    if (!qn) return errors.push({ pointer: `${at}/question_id`, message: 'not a question' });
+    if (qn.question_type === 'free_text' && !a.text?.trim())
+      errors.push({ pointer: at, message: 'this question takes `text`' });
+    if (qn.question_type === 'file_upload') {
+      const u = a.file_id ? uploads.get(a.file_id) : undefined;
+      if (!a.file_id) errors.push({ pointer: at, message: 'this question takes `file_id`' });
+      else if (!u || u.used)
+        errors.push({
+          pointer: `${at}/file_id`,
+          message: 'not a file you uploaded, or already used',
+        });
+    }
+    if (
+      qn.question_type === 'multi_choice' &&
+      (!a.option_ids?.length ||
+        (!qn.allows_multiple && a.option_ids.length > 1) ||
+        a.option_ids.some((o) => !qn.options.some((x) => x.id === o)))
+    )
+      errors.push({ pointer: `${at}/option_ids`, message: 'invalid options' });
   });
-  const missing = questions.some(
-    (qn) => qn.is_required && !answers.some((a) => a.question_id === qn.id),
-  );
-  if (errors.length || missing)
+  for (const qn of questions)
+    if (qn.is_required && !answers.some((a) => a.question_id === qn.id))
+      errors.push({ pointer: '/answers', message: `question ${qn.id} is required` });
+  if (errors.length)
     return NextResponse.json(
       { type: 'about:blank', title: 'Validation failed', status: 422, errors },
       { status: 422, headers: { 'content-type': 'application/problem+json' } },

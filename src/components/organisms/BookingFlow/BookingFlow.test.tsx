@@ -789,6 +789,106 @@ describe('BookingFlow week view (7 days at a time)', () => {
       expect(screen.queryByRole('alert')).toBeNull();
     });
 
+    it('an upload that lands after a session-type switch is dropped, and nothing waits on it (review of #62)', async () => {
+      const user = userEvent.setup();
+      const onRequest = vi.fn();
+      let finish: (f: { id: string; name: string; size: number }) => void = () => {};
+      const onUpload = vi.fn(
+        () => new Promise<{ id: string; name: string; size: number }>((r) => (finish = r)),
+      );
+      const types = [...allKinds, sessionTypes[1]!]; // st3 (every kind), st2 (none)
+      function Harness() {
+        const [typeId, setTypeId] = useState('st3');
+        return (
+          <BookingFlow
+            {...props({
+              sessionTypes: remote(types),
+              sessionTypeId: typeId,
+              onSessionTypeChange: setTypeId,
+              onRequest,
+              onUpload,
+            })}
+          />
+        );
+      }
+      render(<Harness />);
+      await toQuestions(user);
+      await user.upload(screen.getByLabelText(/Upload your CV/), cv);
+      await user.click(screen.getByRole('button', { name: 'Back' }));
+      await user.selectOptions(screen.getByRole('combobox', { name: 'Session type' }), 'st2');
+      await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+      const send = screen.getByRole('button', { name: /^Request Mon, Sep 28/ });
+      // The other type's upload doesn't hold this one up.
+      expect(send).toBeEnabled();
+      await act(async () => finish({ id: 'f1', name: 'cv.pdf', size: 8 }));
+      await user.click(send);
+      expect(onRequest).toHaveBeenCalledWith(
+        expect.objectContaining({ sessionTypeId: 'st2', answers: {} }),
+      );
+    });
+
+    it('a refused answer to a question not on screen says so at the bottom', async () => {
+      const user = userEvent.setup();
+      const { rerender } = render(
+        <BookingFlow {...props({ sessionTypes: remote(allKinds), sessionTypeId: 'st3' })} />,
+      );
+      await toQuestions(user);
+      rerender(
+        <BookingFlow
+          {...props({
+            sessionTypes: remote(allKinds),
+            sessionTypeId: 'st3',
+            requestError: { kind: 'validation', message: 'Check your answer.', questionId: 'gone' },
+          })}
+        />,
+      );
+      expect(screen.getByRole('alert')).toHaveTextContent('Check your answer.');
+    });
+
+    it('a file the server can’t use any more is dropped, so the field asks for it again', async () => {
+      const user = userEvent.setup();
+      const onUpload = vi.fn().mockResolvedValue({ id: 'f1', name: 'cv.pdf', size: 8 });
+      const base = { sessionTypes: remote(allKinds), sessionTypeId: 'st3', onUpload };
+      const { rerender } = render(<BookingFlow {...props(base)} />);
+      await toQuestions(user);
+      await user.upload(screen.getByLabelText(/Upload your CV/), cv);
+      expect(await screen.findByText('cv.pdf attached')).toBeInTheDocument();
+      rerender(
+        <BookingFlow
+          {...props({
+            ...base,
+            requestError: {
+              kind: 'validation',
+              message: 'Upload the file again: that one can’t be used any more.',
+              questionId: 'qf',
+              fileGone: true,
+            },
+          })}
+        />,
+      );
+      expect(screen.queryByText('cv.pdf attached')).toBeNull();
+      expect(screen.getByRole('alert')).toHaveTextContent('Upload the file again');
+    });
+
+    it('the file input stays focusable while uploading (review of #62)', async () => {
+      const user = userEvent.setup();
+      const onUpload = vi.fn(
+        () => new Promise<{ id: string; name: string; size: number }>(() => {}),
+      );
+      render(
+        <BookingFlow
+          {...props({ sessionTypes: remote(allKinds), sessionTypeId: 'st3', onUpload })}
+        />,
+      );
+      await toQuestions(user);
+      const input = screen.getByLabelText(/Upload your CV/);
+      await user.upload(input, cv);
+      expect(input).not.toBeDisabled();
+      expect(input).toHaveAttribute('aria-disabled', 'true');
+      await user.upload(input, cv);
+      expect(onUpload).toHaveBeenCalledTimes(1);
+    });
+
     it('an answer the server refused shows under that question, not at the bottom', async () => {
       const user = userEvent.setup();
       const { rerender } = render(

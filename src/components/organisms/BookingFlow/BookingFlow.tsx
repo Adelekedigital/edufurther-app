@@ -75,7 +75,7 @@ export type BookingFlowProps = {
    * Already worded for the user (lib/api/data/booking.ts). `questionId` when the
    * server refused one answer: the message shows under that question.
    */
-  requestError: (AppError & { questionId?: string }) | null;
+  requestError: (AppError & { questionId?: string; fileGone?: boolean }) | null;
   /**
    * Uploads a file answer when the mentee picks it (the page owns the request:
    * POST /me/intake-files) and resolves to the file to answer with. Rejects with
@@ -140,17 +140,27 @@ export function BookingFlow(p: BookingFlowProps) {
     Record<string, { status: 'uploading' | 'error'; file: File; error?: string }>
   >({});
   const answer = (id: string, a: IntakeAnswer) => setAnswers((x) => ({ ...x, [id]: a }));
+  // The upload each question is waiting for. A result that isn't the latest for
+  // its question (another file picked, or the session type changed) is dropped
+  // (review of #62: a late upload answered a question no longer on screen).
+  const uploadGen = useRef(0);
+  const latestUpload = useRef<Record<string, number>>({});
   const upload = (q: IntakeQuestion, file: File | null) => {
     if (!file) return;
     if (!p.onUpload) return;
+    const token = ++uploadGen.current;
+    latestUpload.current[q.id] = token;
+    const current = () => latestUpload.current[q.id] === token;
     setAnswers(({ [q.id]: _replaced, ...rest }) => rest);
     setUploads((u) => ({ ...u, [q.id]: { status: 'uploading', file } }));
     p.onUpload(file).then(
       (f) => {
+        if (!current()) return;
         answer(q.id, { file: f });
         setUploads(({ [q.id]: _done, ...rest }) => rest);
       },
       (e: AppError) =>
+        current() &&
         setUploads((u) => ({
           ...u,
           [q.id]: {
@@ -307,8 +317,15 @@ export function BookingFlow(p: BookingFlowProps) {
   const missingRequired =
     step === 'questions' &&
     !!session?.questions.some((q) => q.required && !isAnswered(answers[q.id]));
-  // Nothing sends while a file is still uploading.
-  const uploading = Object.values(uploads).some((u) => u.status === 'uploading');
+  // Nothing sends while one of this session type's files is still uploading.
+  const uploading = Object.entries(uploads).some(
+    ([id, u]) => u.status === 'uploading' && !!session?.questions.some((q) => q.id === id),
+  );
+  // The server refused an answer on screen: it says so under that question.
+  const refusedOnScreen =
+    step === 'questions' &&
+    !!p.requestError?.questionId &&
+    !!session?.questions.some((q) => q.id === p.requestError?.questionId);
 
   // A double-click fires twice before the page's `requestPending` arrives:
   // guard here too. Cleared by a failed send, so a retry goes through.
@@ -317,10 +334,22 @@ export function BookingFlow(p: BookingFlowProps) {
   useEffect(() => {
     if (p.requestError) sent.current = false;
   }, [p.requestError]);
+  // A file the server can't use any more (already used, or deleted after a
+  // day): drop it once per refusal, so the field asks for it again.
+  const [seenError, setSeenError] = useState(p.requestError);
+  if (p.requestError !== seenError) {
+    setSeenError(p.requestError);
+    const gone = p.requestError?.fileGone ? p.requestError.questionId : undefined;
+    if (gone) setAnswers(({ [gone]: _gone, ...rest }) => rest);
+  }
   const submit = () => {
     if (sent.current || !session || !time) return;
     sent.current = true;
-    p.onRequest({ mentorId: m.id, sessionTypeId: session.id, startsAt: time, answers });
+    // Only the questions this session type asks now (the list can change under us).
+    const asked = Object.fromEntries(
+      session.questions.flatMap((q) => (answers[q.id] ? [[q.id, answers[q.id]!]] : [])),
+    );
+    p.onRequest({ mentorId: m.id, sessionTypeId: session.id, startsAt: time, answers: asked });
   };
   const next = () => {
     // One request per action: nothing submits again while one is out
@@ -358,6 +387,8 @@ export function BookingFlow(p: BookingFlowProps) {
     setDayChoice(null);
     setTime(null);
     setAnswers({});
+    latestUpload.current = {};
+    setUploads({});
   };
 
   const nextStep = steps[after(at)];
@@ -618,7 +649,7 @@ export function BookingFlow(p: BookingFlowProps) {
           </p>
           {session.questions.map((q) => {
             const refused =
-              p.requestError?.questionId === q.id ? (
+              refusedOnScreen && p.requestError?.questionId === q.id ? (
                 <p role="alert" className={styles.error}>
                   <Icon name="error" size={16} />
                   {p.requestError.message}
@@ -718,7 +749,7 @@ export function BookingFlow(p: BookingFlowProps) {
       )}
 
       {/* An answer the server refused says so under its own question instead. */}
-      {p.requestError && !p.requestError.questionId && (
+      {p.requestError && !refusedOnScreen && (
         <p role="alert" className={styles.error}>
           <Icon name="error" size={16} />
           {p.requestError.message}

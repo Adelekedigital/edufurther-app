@@ -60,8 +60,13 @@ export function FileField({
           aria-labelledby={`${id}-label`}
           aria-describedby={error ? `${hintId} ${id}-error` : hintId}
           aria-invalid={status === 'error' || undefined}
-          disabled={uploading}
-          onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+          // Not `disabled`: that would drop keyboard focus out of the dialog mid-upload
+          // (review of #62). While uploading, the picker doesn't open and a pick is ignored.
+          aria-disabled={uploading || undefined}
+          onClick={(e) => uploading && e.preventDefault()}
+          onChange={(e) => {
+            if (!uploading) onFile(e.target.files?.[0] ?? null);
+          }}
         />
         <span
           className={cx(
