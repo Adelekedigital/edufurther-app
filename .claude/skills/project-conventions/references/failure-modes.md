@@ -54,3 +54,4 @@ Keep it to one line per column, and write the **root cause**, not the symptom.
 
 The fourth column should name the standard, the check, or the rule that now
 prevents it. If nothing prevents it yet, say so — that row is a to-do.
+| 30 | *(real, 2026-09-29)* The row's "Keep it" button was named "Keep it : SOP draft review" in Chrome; the unit test (jsdom) saw "Keep it: SOP draft review" and passed | The name was the visible text plus an `.sr-only` span; the browser's name computation treats the absolutely placed span as a block and inserts a space. jsdom doesn't | put the full name in `aria-label` when it adds to the visible label; the drive script's `getByRole` catches it. Explore's "View profile: {name}" (MentorCard, FeaturedMentor) has the same pattern — not yet fixed |
