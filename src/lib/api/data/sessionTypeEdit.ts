@@ -150,6 +150,8 @@ export type SaveResult = {
   newIds: Record<string, string>;
   /** Per draft question key: our copy for a change the server refused (an answered option). */
   questionErrors: Record<string, string>;
+  /** Every question that didn't save was one of those refusals (nothing to simply retry). */
+  onlyRefusals: boolean;
   saved: { questions: SavedQuestion[]; windows: AvailabilityRuleRead[] };
 };
 
@@ -164,21 +166,26 @@ type SaveVars = {
   timeZone: string;
 };
 
-/** A saved question as the draft now has it (after a successful write). */
-function fromDraft(q: DraftQuestion, before: SavedQuestion): Omit<SavedQuestion, 'id'> {
+/**
+ * A saved question as the draft now has it (after a successful write). Its
+ * options are the ones sent: an id sent is kept; one sent without an id is
+ * known only after a re-read, so it's `pending-` (never sent back as an id).
+ */
+function fromDraft(
+  q: DraftQuestion,
+  before: SavedQuestion,
+  sent?: unknown,
+): Omit<SavedQuestion, 'id'> {
   const choice = q.kind === 'single' || q.kind === 'multi';
-  const texts = choice ? q.options.map((o) => o.trim()).filter(Boolean) : [];
-  return {
-    text: q.text.trim(),
-    kind: q.kind,
-    required: q.required,
-    // Ids we can't know until re-read stay as the old ones where the text matched.
-    options: texts.map((text, i) => ({
-      id:
-        before.options.find((o) => o.text === text)?.id ?? before.options[i]?.id ?? `pending-${i}`,
-      text,
-    })),
-  };
+  const options = Array.isArray(sent)
+    ? (sent as { id?: string; text: string }[]).map((o, i) => ({
+        id: o.id ?? `pending-${i}`,
+        text: o.text,
+      }))
+    : choice
+      ? before.options
+      : [];
+  return { text: q.text.trim(), kind: q.kind, required: q.required, options };
 }
 
 const ok = (p: Promise<{ response: Response }>) => p.then((r) => r.response.ok).catch(() => false);
@@ -217,6 +224,8 @@ export function useSaveSessionType() {
       const qp = (question_id: string) => ({ params: { path: { session_type_id, question_id } } });
       let questions = [...v.savedQuestions];
       let questionsOk = true;
+      // A question write that failed for any reason other than a refusal.
+      let otherQuestionFailure = false;
       await Promise.all(
         plan.remove.map(async (qid) => {
           const r = await api
@@ -224,7 +233,10 @@ export function useSaveSessionType() {
             .catch(() => null);
           if (r && (r.response.ok || r.response.status === 404))
             questions = questions.filter((q) => q.id !== qid);
-          else questionsOk = false;
+          else {
+            questionsOk = false;
+            otherQuestionFailure = true;
+          }
         }),
       );
       await Promise.all(
@@ -237,13 +249,16 @@ export function useSaveSessionType() {
             .catch(() => null);
           const dq = v.draft.questions.find((q) => q.id === u.id)!;
           if (r?.response.ok) {
-            questions = questions.map((q) => (q.id === u.id ? { ...q, ...fromDraft(dq, q) } : q));
+            questions = questions.map((q) =>
+              q.id === u.id ? { ...q, ...fromDraft(dq, q, u.body.options) } : q,
+            );
           } else {
             questionsOk = false;
             // A booking answer chose an option this change removes (backend: 409).
             if (r?.response.status === 409)
               questionErrors[dq.key] =
                 'A booking already chose an option you removed or changed. Keep it, then save again.';
+            else otherQuestionFailure = true;
           }
         }),
       );
@@ -262,9 +277,16 @@ export function useSaveSessionType() {
           const dq = v.draft.questions.find((q) => q.key === a.key)!;
           questions.push({
             id: newId,
-            ...fromDraft(dq, { id: newId, text: '', kind: dq.kind, required: false, options: [] }),
+            ...fromDraft(
+              dq,
+              { id: newId, text: '', kind: dq.kind, required: false, options: [] },
+              'options' in a.body ? a.body.options : undefined,
+            ),
           });
-        } else questionsOk = false;
+        } else {
+          questionsOk = false;
+          otherQuestionFailure = true;
+        }
       }
       // The order: every question that exists now, in the draft's order.
       const allIds = v.draft.questions.map((q) => q.id ?? newIds[q.key]);
@@ -276,7 +298,10 @@ export function useSaveSessionType() {
           }),
         );
         if (done) questions = allIds.map((qid) => questions.find((q) => q.id === qid)!);
-        else questionsOk = false;
+        else {
+          questionsOk = false;
+          otherQuestionFailure = true;
+        }
       }
       if (!questionsOk) failed.push('questions');
 
@@ -285,7 +310,12 @@ export function useSaveSessionType() {
       // another zone are left as they are (review of #67).
       const zone = toWeeklyHours(v.savedWindows, v.timeZone);
       const days: DayHours[] = v.draft.hours === 'custom' ? v.draft.days : emptyWeek();
-      const hp = planHoursSave(zone.rules, days);
+      // "Use my Calendar availability": every dedicated window goes, whatever its zone
+      // (with any left, the type is bookable only in those) — review r2 of #67.
+      const hp =
+        v.draft.hours === 'custom'
+          ? planHoursSave(zone.rules, days)
+          : { remove: v.savedWindows.filter((w) => w.is_active), add: [] };
       let windows = [...v.savedWindows];
       let hoursOk = true;
       await Promise.all(
@@ -319,7 +349,13 @@ export function useSaveSessionType() {
         else hoursOk = false;
       }
       if (!hoursOk) failed.push('hours');
-      return { failed, newIds, questionErrors, saved: { questions, windows } };
+      return {
+        failed,
+        newIds,
+        questionErrors,
+        onlyRefusals: !otherQuestionFailure,
+        saved: { questions, windows },
+      };
     },
     onSettled: (_r, _e, v) => {
       void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });

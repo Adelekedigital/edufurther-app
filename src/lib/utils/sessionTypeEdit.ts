@@ -36,19 +36,50 @@ export function toPatchBody(d: Draft, saved: Draft, offeringIds: Record<string, 
 
 const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
+/** Letters and digits only, lower case: "Master's" and "masters" are the same option. */
+const bare = (t: string) => t.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+
+/** Edit distance, capped: enough to tell a typo fix from a different option. */
+function distance(a: string, b: string): number {
+  const row = Array.from({ length: b.length + 1 }, (_, k) => k);
+  for (let x = 1; x <= a.length; x++) {
+    let prev = row[0]!;
+    row[0] = x;
+    for (let y = 1; y <= b.length; y++) {
+      const cur = row[y]!;
+      row[y] = Math.min(row[y]! + 1, row[y - 1]! + 1, prev + (a[x - 1] === b[y - 1] ? 0 : 1));
+      prev = cur;
+    }
+  }
+  return row[b.length]!;
+}
+
+/** A rename, not a different option: the same once bare, or a typo apart (≤ 2 edits). */
+export const isRename = (a: string, b: string) => {
+  const x = bare(a);
+  const y = bare(b);
+  return x === y || (Math.min(x.length, y.length) > 3 && distance(x, y) <= 2);
+};
+
 /**
  * Each option keeps its saved id where it can, so an answer that chose it still
  * points at it: by text (case aside), else the saved option in the same place
- * that no other option took (a renamed one: "Masters" → "Master's"). An id not
- * known yet (added, not re-read) isn't sent: the option goes as new.
+ * when it's only renamed ("Masters" → "Master's"). A different option in its
+ * place goes as new, so the server's 409 still guards an answered one (review
+ * r2 of #67). An id not known yet (added, not re-read) isn't sent.
  */
-function keepIds(texts: string[], saved: { id: string; text: string }[]) {
+export function keepIds(texts: string[], saved: { id: string; text: string }[]) {
   const known = saved.filter((o) => !o.id.startsWith('pending-'));
   const byText = texts.map((t) => known.find((o) => same(o.text, t))?.id);
   const taken = new Set(byText.filter(Boolean));
   return texts.map((text, i) => {
-    const byPlace = saved[i] && !saved[i]!.id.startsWith('pending-') && !taken.has(saved[i]!.id);
-    const id = byText[i] ?? (byPlace ? saved[i]!.id : undefined);
+    const there = saved[i];
+    const byPlace =
+      there &&
+      !there.id.startsWith('pending-') &&
+      !taken.has(there.id) &&
+      isRename(there.text, text);
+    const id = byText[i] ?? (byPlace ? there.id : undefined);
     if (id) taken.add(id);
     return id ? { id, text } : { text };
   });

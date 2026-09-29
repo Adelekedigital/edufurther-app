@@ -358,4 +358,38 @@ describe('useSaveSessionType — a retry after a partial save (review of #67)', 
     expect(DELETE).not.toHaveBeenCalled();
     expect(POST.mock.calls[0]![1].body).toMatchObject({ day_of_week: 5, timezone: 'Africa/Lagos' });
   });
+
+  it('"Use my Calendar availability" removes every dedicated window, whatever its zone (review r2)', async () => {
+    PATCH.mockImplementation(() => reply(200, { updated: true }));
+    DELETE.mockImplementation(() => reply(200));
+    const w = (id: string, zone: string) => ({
+      id,
+      day_of_week: 1,
+      start_time: '09:00:00',
+      end_time: '10:00:00',
+      timezone: zone,
+      is_active: true,
+    });
+    const base = saved({
+      windows: [w('a', 'Africa/Lagos'), w('b', 'Africa/Lagos'), w('c', 'Europe/London')],
+    });
+    const d = toDraft(base, defaults);
+    expect(d.hours).toBe('custom');
+    const { result } = renderHook(() => useSaveSessionType(), { wrapper });
+    const r = await result.current.save({
+      id: 'st1',
+      draft: { ...d, hours: 'default' },
+      saved: d,
+      savedQuestions: base.questions,
+      savedWindows: base.windows,
+      offeringIds: {},
+      timeZone: 'Africa/Lagos',
+    });
+    expect(DELETE.mock.calls.map((c) => c[1].params.path.window_id).sort()).toEqual([
+      'a',
+      'b',
+      'c',
+    ]);
+    expect(r.saved.windows).toEqual([]);
+  });
 });

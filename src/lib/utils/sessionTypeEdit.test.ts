@@ -1,5 +1,5 @@
 import { blankDraft, type Draft, type DraftQuestion } from './sessionTypeDraft';
-import { planQuestions, toPatchBody, type SavedQuestion } from './sessionTypeEdit';
+import { isRename, planQuestions, toPatchBody, type SavedQuestion } from './sessionTypeEdit';
 
 const ids = { 'document-preparation': 'o4', 'school-selection': 'o1' };
 const saved: Draft = {
@@ -164,5 +164,30 @@ describe('option ids (review of #67)', () => {
       { text: 'B' },
       { text: 'C' },
     ]);
+  });
+});
+
+describe('a different option in the same place (review r2 of #67)', () => {
+  it('goes as new, so an answer that chose the old one isn’t repointed (the server’s 409 guards it)', () => {
+    const c = sq('c', {
+      kind: 'single',
+      options: [
+        { id: 'c1', text: 'Undergrad' },
+        { id: 'c2', text: 'Masters' },
+        { id: 'c3', text: 'PhD' },
+      ],
+    });
+    const plan = planQuestions([dq(c, { options: ['Undergrad', 'Diploma', 'PhD'] })], [c]);
+    expect(plan.update[0]!.body.options).toEqual([
+      { id: 'c1', text: 'Undergrad' },
+      { text: 'Diploma' },
+      { id: 'c3', text: 'PhD' },
+    ]);
+  });
+  it('a typo fix or a case or punctuation change is a rename', () => {
+    expect(isRename('Masters', "Master's")).toBe(true);
+    expect(isRename('Scholarhsips', 'Scholarships')).toBe(true);
+    expect(isRename('Masters', 'Diploma')).toBe(false);
+    expect(isRename('MBA', 'MSc')).toBe(false);
   });
 });

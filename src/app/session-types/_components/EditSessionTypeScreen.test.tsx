@@ -103,6 +103,7 @@ beforeEach(() => {
     failed: [],
     newIds: {},
     questionErrors: {},
+    onlyRefusals: true,
     saved: { questions: [], windows: [] },
   });
   savedMock = ready();
@@ -144,6 +145,7 @@ describe('EditSessionTypeScreen', () => {
       failed: ['questions'],
       newIds: {},
       questionErrors: {},
+      onlyRefusals: true,
       saved: { questions: SAVED.questions, windows: [] },
     });
     render(<EditSessionTypeScreen id="st1" />);
@@ -229,9 +231,16 @@ describe('EditSessionTypeScreen', () => {
         failed: ['hours'],
         newIds: { k1: 'qb' },
         questionErrors: {},
+        onlyRefusals: true,
         saved: savedAfter,
       })
-      .mockResolvedValueOnce({ failed: [], newIds: {}, questionErrors: {}, saved: savedAfter });
+      .mockResolvedValueOnce({
+        failed: [],
+        newIds: {},
+        questionErrors: {},
+        onlyRefusals: true,
+        saved: savedAfter,
+      });
     render(<EditSessionTypeScreen id="st1" />);
     await user.click(screen.getByRole('button', { name: /^Review/ }));
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
@@ -251,6 +260,7 @@ describe('EditSessionTypeScreen', () => {
     save.mockResolvedValueOnce({
       failed: ['questions'],
       newIds: {},
+      onlyRefusals: true,
       questionErrors: {
         qa: 'A booking already chose an option you removed or changed. Keep it, then save again.',
       },

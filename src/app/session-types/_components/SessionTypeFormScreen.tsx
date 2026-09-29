@@ -241,13 +241,15 @@ export function SessionTypeFormScreen({
             if (!r.failed.length) return setModal({ kind: 'saved' });
             // New questions now exist: the draft carries their ids, so a retry
             // doesn't add them twice.
-            const withIds = {
-              ...draft,
-              questions: draft.questions.map((q) =>
+            const addIds = (d: Draft): Draft => ({
+              ...d,
+              questions: d.questions.map((q) =>
                 r.newIds[q.key] ? { ...q, id: r.newIds[q.key] } : q,
               ),
-            };
-            setDraft(withIds);
+            });
+            const withIds = addIds(draft);
+            // Onto the draft as it is now: anything typed during the save stays.
+            setDraft((d) => addIds(d));
             setBase((b) => ({
               ...b!,
               draft: withIds,
@@ -266,7 +268,7 @@ export function SessionTypeFormScreen({
                 r.questionErrors[q.key] ? [[`question-${n}`, r.questionErrors[q.key]!]] : [],
               ),
             ) as FieldErrors;
-            setRefusedQuestions(Object.keys(qErrors).length > 0);
+            setRefusedQuestions(Object.keys(qErrors).length > 0 && r.onlyRefusals);
             if (Object.keys(qErrors).length) showErrors(qErrors);
           },
           (err: CreateError) => {
