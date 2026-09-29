@@ -52,6 +52,47 @@ export function formatNextAvailable(
   return `${day}, ${time}`;
 }
 
+/**
+ * Mentor Profile.dc.html "Similar mentors": "Free today" · "Free tomorrow" ·
+ * "Free Thu" (within the week) · "Free Oct 9", in the viewer's zone. Every
+ * session is free until paid sessions ship (product rule, 2026-09-27).
+ */
+export function formatFreeDay(isoInstant: string, timeZone: string, now = new Date()): string {
+  // Calendar days apart in the viewer's zone (not 24h steps: DST days are 23
+  // or 25 hours, and 9:59 vs 10:00 on the same day must read alike).
+  // Read the parts, not a locale's layout (en-CA's YYYY-MM-DD is CLDR data,
+  // not a guarantee).
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+  });
+  const dayNumber = (d: Date) => {
+    const p = Object.fromEntries(parts.formatToParts(d).map((x) => [x.type, Number(x.value)]));
+    return Date.UTC(p.year!, p.month! - 1, p.day!) / 86_400_000;
+  };
+  const at = new Date(isoInstant);
+  const days = dayNumber(at) - dayNumber(now);
+  // A time already past (a stale value, a tab left open) reads as today,
+  // never as next week's day of the same name.
+  if (days <= 0) return 'Free today';
+  if (days === 1) return 'Free tomorrow';
+  const day = new Intl.DateTimeFormat(
+    'en-US',
+    days <= 6 ? { weekday: 'short', timeZone } : { month: 'short', day: 'numeric', timeZone },
+  ).format(at);
+  return `Free ${day}`;
+}
+
+/**
+ * A label as it reads mid-sentence: "Visa and interview" → "visa and
+ * interview", but "CV review" and "SOP drafts" keep their capitals.
+ */
+export function inSentence(label: string): string {
+  return /^[A-Z][a-z]/.test(label) ? label[0]!.toLowerCase() + label.slice(1) : label;
+}
+
 export function deviceTimeZone(): string {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone;

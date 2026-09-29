@@ -40,9 +40,10 @@ export function ReviewItem({ review: r, redacted = false }: ReviewItemProps) {
         </div>
       </div>
       {r.topic && (
-        <Tag tone="neutral" className={styles.topic}>
-          {r.topic}
-        </Tag>
+        // The design's tag row (it also carries "Editable until…" on your own review).
+        <div className={styles.tags}>
+          <Tag tone="neutral">{r.topic}</Tag>
+        </div>
       )}
       {redacted ? (
         <div

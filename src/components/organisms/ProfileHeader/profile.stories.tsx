@@ -8,6 +8,8 @@ import { FirstMenteesCard } from '../FirstMenteesCard/FirstMenteesCard';
 import { ProfileOverview } from '../ProfileOverview/ProfileOverview';
 import { ReviewsList } from '../ReviewsList/ReviewsList';
 import { ReviewsSummary } from '../ReviewsSummary/ReviewsSummary';
+import { SimilarMentorsCard } from '../SimilarMentorsCard/SimilarMentorsCard';
+import { similarMentors } from '../SimilarMentorsCard/similar.fixture';
 import { SessionTypeList } from '../SessionTypeList/SessionTypeList';
 import { TrackRecordCard } from '../TrackRecordCard/TrackRecordCard';
 import { ProfileHeader } from './ProfileHeader';
@@ -296,6 +298,29 @@ export const ReviewNotes: Story = {
         title="How was your session with Gbenga?"
         body="Your review helps other mentees choose, and takes about a minute."
       />
+    </div>
+  ),
+};
+
+// ---- Similar mentors ---------------------------------------------------------
+
+export const SimilarMentors: Story = {
+  render: () => (
+    <div style={side}>
+      <SimilarMentorsCard
+        mentors={similarMentors}
+        isLoading={false}
+        timeZone="Africa/Lagos"
+        seeAllHref="/explore"
+      />
+    </div>
+  ),
+};
+
+export const SimilarMentorsLoading: Story = {
+  render: () => (
+    <div style={side}>
+      <SimilarMentorsCard mentors={null} isLoading timeZone="Africa/Lagos" seeAllHref="/explore" />
     </div>
   ),
 };

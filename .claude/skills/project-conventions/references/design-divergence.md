@@ -55,7 +55,6 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | Mentor Profile "Degree verified by EduFurther" tick next to the name | Not rendered | No verification concept exists anywhere in the backend (profile reply #8) | backend verifies degrees |
 | Mentor Profile header "Message" button | Not rendered | No messaging yet | messaging ships |
 | Mentor Profile Reviews tab, rating link to it | Not in PR 1 (tabs are Overview and Sessions); the header rating is plain text | Built in profile PR 2 | PR 2 |
-| Mentor Profile "Similar mentors" card | Not rendered | Endpoint shipped after PR 1 (profile reply update 2, #9) | a follow-up PR |
 | Mentor Profile in-card booking (date tiles, week switcher, time grid, in-card "Request sent") | Resolved by design reply #32: the card is header, description, outlined "Book this session" and "You'll pick a time and answer a few questions next."; every Book opens the shared BookingModal | Product (2026-09-27): one booking experience everywhere; design adopted | — |
 | Mentor Profile per-offering "Free Mon, Sep 28" (booking card rows, Sessions tab cards) | Hidden; the Sessions card's Book keeps the right-hand place | Availability is stored per mentor, not per offering (profile reply #10) | never, unless the backend adds it |
 | Mentor Profile "Top-rated" badge in the track record | Not rendered | No product rule for "Top-rated" yet | product defines it (design request #33) |
@@ -77,7 +76,7 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | First-mentees card (owner) on a pending, declined or unlisted profile | Not shown; the OwnerBar explains | "Share your profile" would push a link that 404s for everyone else (review of #25) | design confirms (request #51) |
 | BookingModal opened from "Book {time}" when no offering still has that time | Opens on the first offering with "That time was just taken. Here's what's open." (provisional) | The card's time is the mentor's earliest across offerings and can be minutes stale (review of #25) | design supplies copy (request #50) |
 | Mentor Profile Background note "Has made the move from Nigeria to United States" | "…to the United States" (the card's `countryInSentence` rule) | Copy fix, made in frontend (product 2026-09-27: small copy/typography fixes are ours) | design file catches up |
-| Reviews summary "9 in 10" wraps onto two lines ("9 in / 10") beside the sentence | Kept on one line (`flex: none`) | Typography fix, made in frontend: a figure split across lines misreads | design file catches up |
+| Similar mentors row: "5.0" on a new mentor (Ademola D., 1 session) | No rating without reviews | Product rule: a mentor with no reviews never shows a star rating | never |
 | Reviews guest gate: "Continue with email" + "Continue with Google" | "Continue with email" (to `/signup?next=…`) and "Log in" only | Google sign-in isn't built | Google auth ships |
 | Review note `due`: "Your review on Sep 19 (SOP review) helps…" + "Write a review" | "Your review helps other mentees choose, and takes about a minute." with no button | The relationship API has no session date or type, and writing a review isn't built | review writing ships (and the API names the session) |
 | Review note `again` ("You've had 3 more sessions since your last review") | Not shown | The API gives no count of sessions since the last review | backend adds it |

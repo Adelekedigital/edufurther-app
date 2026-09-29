@@ -39,6 +39,7 @@
     "home_pin",
     "hourglass_top",
     "ios_share",
+    "join_inner",
     "lightbulb",
     "link",
     "location_on",
@@ -78,5 +79,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "721b5ff77ed402c464d08c2938225e5742dc6e84be7dc12c5b3cc659aa65e878"
+  "sha256": "c402e60c5877d0bfd19dac295f51b221f36f40d47edc60c129a127d80ccd48c0"
 }

@@ -17,6 +17,7 @@ import { ProfileOverview } from '@/components/organisms/ProfileOverview/ProfileO
 import { ReviewsList } from '@/components/organisms/ReviewsList/ReviewsList';
 import { ReviewsSummary } from '@/components/organisms/ReviewsSummary/ReviewsSummary';
 import { SessionTypeList } from '@/components/organisms/SessionTypeList/SessionTypeList';
+import { SimilarMentorsCard } from '@/components/organisms/SimilarMentorsCard/SimilarMentorsCard';
 import { TrackRecordCard } from '@/components/organisms/TrackRecordCard/TrackRecordCard';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
@@ -25,6 +26,7 @@ import { useAppShell } from '@/app/_shell/useAppShell';
 import { useRequestBooking, useSessionTypes, useSlots } from '@/lib/api/data/booking';
 import { useMentorProfile } from '@/lib/api/data/profile';
 import { REVIEW_PAGE_SIZE, useMentorReviews, useReviewPrompt } from '@/lib/api/data/reviews';
+import { useSimilarMentors } from '@/lib/api/data/similar';
 import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
@@ -39,8 +41,7 @@ const NEW_MENTOR_UNDER = 3;
 /**
  * Mentor Profile (Mentor Profile.dc.html), read-only: the page every viewer
  * sees — mentee, guest, and the mentor themselves in any approval state
- * (backend mentor-profile reply #1). Editing and Similar mentors come in later
- * PRs. The only place on this route that fetches.
+ * (backend mentor-profile reply #1). Editing comes in a later PR. The only place on this route that fetches.
  */
 export function MentorProfileScreen({ handle }: { handle: string }) {
   const { viewer, member, chrome, account, nav } = useAppShell();
@@ -117,6 +118,23 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
     tab === 'reviews' && viewer.kind === 'member' && !isOwner,
   );
   const reviewsHref = p ? `${p.mentor.profileHref}?tab=reviews` : '';
+
+  // Similar mentors: the Overview aside, for mentees and guests. Not the mentor
+  // themselves, and not other mentors (product 2026-09-28: it's a mentee-facing
+  // suggestion, and mentors' nav has no Explore). Waits for who is looking.
+  const showSimilar =
+    !!p && !isOwner && tab === 'overview' && viewer.kind !== 'loading' && !member?.isMentor;
+  const similar = useSimilarMentors(handle, showSimilar);
+  // The card hides itself when the list is empty or failed.
+  const similarShown = showSimilar && (similar.isLoading || !!similar.data?.length);
+  // The aside's name lists what it holds for this viewer on this tab; with
+  // only the first-mentees card it's "About this mentor".
+  const asideLabel =
+    listLabel([
+      !isOwner && 'booking',
+      tab === 'overview' && 'track record',
+      similarShown && 'similar mentors',
+    ]) ?? 'About this mentor';
 
   // Mentees can see this profile: the owner's card only nudges sharing then
   // (a pending, declined or unlisted profile's link 404s for everyone else;
@@ -319,22 +337,32 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                   />
                 )}
               </div>
-              {tab !== 'sessions' && (
-                // Reviews tab: the design's default `reviewsLayout=focus` drops
-                // the track record (and Similar mentors) from the aside.
-                <aside className={styles.aside} aria-label="Booking and track record">
-                  {!isPhone && firstMentees}
-                  {!isOwner && (
-                    <BookSessionCard
-                      sessionTypes={p.sessionTypes}
-                      onBook={openBooking}
-                      onCompare={() => setTab('sessions')}
-                      bookBlocked={bookBlocked}
-                    />
-                  )}
-                  {tab === 'overview' && <TrackRecordCard profile={p} />}
-                </aside>
-              )}
+              {tab !== 'sessions' &&
+                // Never an empty named landmark (the owner's Reviews tab can hold nothing).
+                (!isOwner || tab === 'overview' || (!isPhone && !!firstMentees)) && (
+                  // Reviews tab: the design's default `reviewsLayout=focus` drops
+                  // the track record (and Similar mentors) from the aside.
+                  <aside className={styles.aside} aria-label={asideLabel}>
+                    {!isPhone && firstMentees}
+                    {!isOwner && (
+                      <BookSessionCard
+                        sessionTypes={p.sessionTypes}
+                        onBook={openBooking}
+                        onCompare={() => setTab('sessions')}
+                        bookBlocked={bookBlocked}
+                      />
+                    )}
+                    {tab === 'overview' && <TrackRecordCard profile={p} />}
+                    {similarShown && (
+                      <SimilarMentorsCard
+                        mentors={similar.data}
+                        isLoading={similar.isLoading}
+                        timeZone={timeZone}
+                        seeAllHref="/explore"
+                      />
+                    )}
+                  </aside>
+                )}
             </div>
           </>
         )}
@@ -374,6 +402,14 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
       )}
     </AppShell>
   );
+}
+
+/** "Booking, track record and similar mentors" from the parts present; null for none. */
+function listLabel(parts: (string | false)[]): string | null {
+  const p = parts.filter((x): x is string => !!x);
+  if (!p.length) return null;
+  const text = p.length === 1 ? p[0]! : `${p.slice(0, -1).join(', ')} and ${p.at(-1)}`;
+  return text[0]!.toUpperCase() + text.slice(1);
 }
 
 /**

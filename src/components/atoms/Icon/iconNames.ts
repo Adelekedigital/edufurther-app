@@ -45,6 +45,7 @@ export const ICON_NAMES = [
   'home_pin',
   'hourglass_top',
   'ios_share',
+  'join_inner',
   'lightbulb',
   'link',
   'location_on',
