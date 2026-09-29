@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { AppShell } from './AppShell';
 
 // Two "Main" navs: the rail (≥768px) first, the bottom tabs (<768px) second.
@@ -72,5 +73,37 @@ describe('AppShell navigation', () => {
     );
     for (const i of [0, 1] as const) expect(nav(i).queryAllByRole('link')).toHaveLength(0);
     expect(screen.queryByRole('button', { name: 'More' })).toBeNull();
+  });
+
+  it('the More sheet opens in-app account links in the same tab, external ones in a new tab', async () => {
+    render(
+      <AppShell
+        active="Sessions"
+        nav="mentor"
+        chrome="member"
+        offline={false}
+        account={{
+          initial: 'G',
+          items: [
+            { key: 'profile', label: 'View profile', icon: 'account_box', href: '/mentors/u1' },
+            {
+              key: 'matches',
+              label: 'Find my mentor matches',
+              icon: 'route',
+              href: 'https://x.test',
+              external: true,
+            },
+          ],
+        }}
+      >
+        <p>Page</p>
+      </AppShell>,
+    );
+    await userEvent.click(nav(1).getByRole('button', { name: 'More' }));
+    const profile = screen.getAllByRole('link', { name: /View profile/ }).at(-1)!;
+    expect(profile).toHaveAttribute('href', '/mentors/u1');
+    expect(profile).not.toHaveAttribute('target');
+    const matches = screen.getAllByRole('link', { name: /Find my mentor matches/ }).at(-1)!;
+    expect(matches).toHaveAttribute('target', '_blank');
   });
 });

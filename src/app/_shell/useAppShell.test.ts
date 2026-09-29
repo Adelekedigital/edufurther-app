@@ -19,6 +19,9 @@ const member = (over: Partial<Member> = {}): Member => ({
 });
 
 describe('accountItems (AppShell.dc.html account menu)', () => {
+  // A failed assertion must not leak the stubbed env into later tests.
+  afterEach(() => vi.unstubAllEnvs());
+
   it('a mentor: "View profile" first, linking to their own profile, then Logout', () => {
     const items = accountItems(member(), vi.fn());
     expect(items.map((i) => i.label)).toEqual(['View profile', 'Logout']);
@@ -47,7 +50,6 @@ describe('accountItems (AppShell.dc.html account menu)', () => {
     const { accountItems: fresh } = await import('./useAppShell');
     const items = fresh(member({ isApprovedMentor: false }), vi.fn());
     expect(items.map((i) => i.label)).toEqual(['View profile', 'Find my mentor matches', 'Logout']);
-    vi.unstubAllEnvs();
   });
 
   it('no member (loading, or not signed in as a member): Logout only', () => {

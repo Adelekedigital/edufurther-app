@@ -8,6 +8,7 @@ const setup = () => {
     <AccountMenu
       initial="E"
       items={[
+        { key: 'profile', label: 'View profile', icon: 'account_box', href: '/mentors/u1' },
         {
           key: 'matches',
           label: 'Find my mentor matches',
@@ -31,9 +32,11 @@ describe('AccountMenu', () => {
     const items = screen.getAllByRole('menuitem');
     expect(items[0]).toHaveFocus();
     await userEvent.keyboard('{ArrowUp}');
-    expect(items[1]).toHaveFocus();
+    expect(items[2]).toHaveFocus();
     await userEvent.keyboard('{ArrowDown}');
     expect(items[0]).toHaveFocus();
+    await userEvent.keyboard('{ArrowDown}');
+    expect(items[1]).toHaveFocus();
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     expect(button).toHaveFocus();
@@ -48,6 +51,17 @@ describe('AccountMenu', () => {
     );
     await userEvent.click(screen.getByRole('menuitem', { name: /Logout/ }));
     expect(onLogout).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  it('an in-app link opens in the same tab, first in the menu, and closes it (review of #61)', async () => {
+    const { button } = setup();
+    await userEvent.click(button);
+    const profile = screen.getByRole('menuitem', { name: /View profile/ });
+    expect(profile).toHaveFocus();
+    expect(profile).toHaveAttribute('href', '/mentors/u1');
+    expect(profile).not.toHaveAttribute('target');
+    await userEvent.click(profile);
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 });
