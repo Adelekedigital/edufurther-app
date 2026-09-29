@@ -11,7 +11,7 @@ const meta: Meta<typeof MentorSuggestions> = {
   component: MentorSuggestions,
   args: {
     title: 'Mentors with similar expertise',
-    subtitle: 'They help with scholarships & funding and visa interview, and are taking bookings.',
+    subtitle: 'They help with scholarships & funding and visa interview.',
     exploreHref: '/explore',
     onBook: fn(),
     timeZone: 'Africa/Lagos',

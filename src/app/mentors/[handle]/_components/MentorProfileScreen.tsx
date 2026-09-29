@@ -81,8 +81,11 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const booking = useProfileBooking({ mentor: p?.mentor ?? null, mayBook, canBook, timeZone });
   useBookLink({
     profile: p ?? null,
-    ready: viewer.kind !== 'loading',
-    allowed: mayBook,
+    gone: profile.notFound || (!!profile.error && !p),
+    ready: viewer.kind !== 'loading' && online,
+    // Gated like every Book on the page: an account-blocked viewer's link is
+    // dropped (the page's Book says why).
+    allowed: mayBook && !bookBlockedFor(viewer),
     open: booking.open,
   });
   const reviews = useProfileReviewing({
@@ -116,7 +119,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // only the first-mentees card it's "About this mentor".
   const asideLabel =
     listLabel([
-      canBookHere && 'booking',
+      // Neutral when nothing can be booked (review of #81).
+      canBookHere && (notTaking ? 'sessions' : 'booking'),
       tab === 'overview' && 'track record',
       similarShown && 'similar mentors',
     ]) ?? 'About this mentor';

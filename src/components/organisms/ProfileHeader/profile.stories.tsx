@@ -40,6 +40,18 @@ export const Header: Story = {
     </div>
   ),
 };
+/** A status where Book would be ("Not taking bookings"; provisional). */
+export const HeaderNotTaking: Story = {
+  render: () => (
+    <div style={wide}>
+      <ProfileHeader
+        profile={fullProfile}
+        status="Not taking bookings"
+        actions={<ShareMenu url="https://edufurther.com/mentors/gbenga" name="Gbenga Elufisan" />}
+      />
+    </div>
+  ),
+};
 /** No reviews, no sessions, no headline or background, a long name. */
 export const HeaderNewMentor: Story = {
   render: () => (
@@ -173,6 +185,24 @@ export const BookCardBlocked: Story = {
         onCompare={fn()}
         bookBlocked="Booking needs a connection"
       />
+    </div>
+  ),
+};
+
+/** Not taking bookings (backend #301): one, several and none visible. Provisional. */
+export const BookCardNotTaking: Story = {
+  render: () => (
+    <div style={{ ...side, display: 'grid', gap: 16 }}>
+      {[[sessionTypes[0]!], sessionTypes, []].map((types, i) => (
+        <BookSessionCard
+          key={i}
+          sessionTypes={types}
+          onBook={fn()}
+          onCompare={fn()}
+          bookBlocked={null}
+          notTaking
+        />
+      ))}
     </div>
   ),
 };

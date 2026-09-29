@@ -51,6 +51,8 @@ export const h = {
   isGuest: false,
   viewerIsMentor: false,
   viewerLoading: false,
+  /** Signed in but blocked from booking (e.g. account setup): bookBlockedFor says why. */
+  viewerUnlinked: false,
   // The Reviews tab's list and the review note.
   reviewsRemote: reviewsState(),
   reviewPrompt: null as ReviewPrompt,
@@ -102,6 +104,14 @@ const appShellMock = () => ({
         viewer: { kind: 'loading', signedIn: true },
         member: null,
         chrome: 'loading',
+        account: undefined,
+        canBook: true,
+      };
+    if (h.viewerUnlinked)
+      return {
+        viewer: { kind: 'unlinked' },
+        member: null,
+        chrome: 'member',
         account: undefined,
         canBook: true,
       };
@@ -232,6 +242,7 @@ beforeEach(() => {
   h.isGuest = false;
   h.viewerIsMentor = false;
   h.viewerLoading = false;
+  h.viewerUnlinked = false;
   h.reviewsRemote = reviewsState();
   h.reviewPrompt = null;
   reviewsArgs.mockReset();

@@ -45,7 +45,7 @@ export function BookSessionCard({
       <section className={styles.card} aria-labelledby="book-h">
         <div className={styles.single}>
           <h2 id="book-h" className={styles.h2}>
-            Book a session
+            Sessions
           </h2>
           {notice}
         </div>
@@ -101,7 +101,8 @@ export function BookSessionCard({
     <section className={styles.card} aria-labelledby="book-h">
       <div className={styles.multiHead}>
         <h2 id="book-h" className={styles.h2}>
-          Book a session
+          {/* Neutral when nothing can be booked (review of #81). */}
+          {notTaking ? 'Sessions' : 'Book a session'}
         </h2>
         <span className={styles.sub}>{sessionTypes.length} session types</span>
       </div>

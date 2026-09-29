@@ -5,7 +5,7 @@ import { MentorSuggestions } from './MentorSuggestions';
 
 const props = {
   title: 'Mentors with similar expertise',
-  subtitle: 'They help with visa interview, and are taking bookings.',
+  subtitle: 'They help with visa interview.',
   exploreHref: '/explore',
   onBook: vi.fn(),
   timeZone: 'UTC',

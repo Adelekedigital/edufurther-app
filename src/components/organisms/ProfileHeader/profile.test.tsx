@@ -83,6 +83,14 @@ describe('ProfileHeader', () => {
     expect(banner.querySelector('img')).toHaveAttribute('src', '/b.jpg');
   });
 
+  it('a status sits where Book would, as text with a hidden icon', () => {
+    render(<ProfileHeader profile={fullProfile} status="Not taking bookings" />);
+    const line = screen.getByText('Not taking bookings');
+    expect(line.tagName).toBe('P');
+    expect(line.querySelector('[aria-hidden="true"]')).toHaveTextContent('event_busy');
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
   it('puts the owner’s cover tools with the banner', () => {
     render(<ProfileHeader profile={fullProfile} bannerTools={<button>Change cover</button>} />);
     expect(screen.getByRole('button', { name: 'Change cover' })).toBeInTheDocument();

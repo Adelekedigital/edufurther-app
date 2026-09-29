@@ -6,9 +6,19 @@ import type { MentorProfile } from '@/types/mentor';
 
 type Options = {
   profile: MentorProfile | null;
-  /** Everything else is known: who's looking (so whether they can book). */
+  /** No profile to open it on (not found, or it failed): the link is dropped. */
+  gone: boolean;
+  /**
+   * Whether the link can be decided yet: who's looking is known, and the
+   * device is online (offline, the link waits instead of opening a modal
+   * that can only spin; review of #81).
+   */
   ready: boolean;
-  /** This viewer may book this mentor now (not the owner, can book, taking bookings). */
+  /**
+   * This viewer may book this mentor now: not the owner, can book, taking
+   * bookings, and nothing blocks their booking (account setup: the page's
+   * Book already says why; review of #81).
+   */
   allowed: boolean;
   open: (sessionTypeId: string) => void;
 };
@@ -20,7 +30,7 @@ type Options = {
  * opens. Either way the parameter is then dropped (other parameters stay), so
  * closing, reloading or Back doesn't bring the modal back.
  */
-export function useBookLink({ profile, ready, allowed, open }: Options) {
+export function useBookLink({ profile, gone, ready, allowed, open }: Options) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -28,12 +38,18 @@ export function useBookLink({ profile, ready, allowed, open }: Options) {
   const handled = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!asked || !ready || !profile || handled.current === asked) return;
+    if (!asked) {
+      // Handled and removed: the same link, followed again later, counts again.
+      handled.current = null;
+      return;
+    }
+    if (handled.current === asked) return;
+    if (!gone && (!ready || !profile)) return;
     handled.current = asked;
-    if (allowed && profile.sessionTypes.some((t) => t.id === asked)) open(asked);
+    if (!gone && allowed && profile?.sessionTypes.some((t) => t.id === asked)) open(asked);
     const next = new URLSearchParams(params.toString());
     next.delete('book');
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }, [asked, ready, profile, allowed, open, params, pathname, router]);
+  }, [asked, gone, ready, profile, allowed, open, params, pathname, router]);
 }

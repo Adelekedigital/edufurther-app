@@ -1,4 +1,5 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { fullProfile, sessionTypes } from '@/components/organisms/ProfileHeader/profile.fixture';
 import { h, remote, replace, state } from './profileScreen.harness';
 import { MentorProfileScreen } from './MentorProfileScreen';
@@ -100,6 +101,55 @@ describe('MentorProfileScreen — ?book= links', () => {
   });
 });
 
+describe('MentorProfileScreen — ?book= links, gated like Book (review of #81)', () => {
+  beforeEach(() => {
+    h.sessionTypesRemote = remote(sessionTypes);
+    h.profile = state({ data: profile });
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  it('offline, the link waits (the page stays), then opens once back online', () => {
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    withLink(`book=${second.id}`);
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(replace).not.toHaveBeenCalled();
+    online.mockReturnValue(true);
+    act(() => {
+      window.dispatchEvent(new Event('online'));
+    });
+    expect(screen.getByRole('dialog')).toHaveTextContent(`Book ${second.name}`);
+  });
+
+  it('a viewer who can’t book yet (account setup) gets the page, not the modal', () => {
+    h.viewerUnlinked = true;
+    withLink(`book=${second.id}`);
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(replace).toHaveBeenCalledWith('/mentors/gbenga', { scroll: false });
+  });
+
+  it('closing the modal doesn’t bring it back, and the link is handled once', async () => {
+    const user = userEvent.setup();
+    withLink(`book=${second.id}`);
+    const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    // The URL hasn't caught up yet (the harness keeps ?book=): still no reopen.
+    rerender(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(replace).toHaveBeenCalledTimes(1);
+  });
+
+  it('a profile that isn’t there drops the link', () => {
+    h.profile = state({ notFound: true });
+    h.similarRemote = { data: [], isLoading: false, error: null, retry: vi.fn() };
+    withLink(`book=${second.id}`);
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(replace).toHaveBeenCalledWith('/mentors/gbenga', { scroll: false });
+  });
+});
+
 describe('MentorProfileScreen — not taking bookings (backend #301)', () => {
   it('says so in the header, and nothing anywhere offers Book', () => {
     h.profile = state({ data: { ...profile, takingBookings: false } });
@@ -108,6 +158,14 @@ describe('MentorProfileScreen — not taking bookings (backend #301)', () => {
     expect(screen.getByText('Not taking bookings')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Book/ })).toBeNull();
     expect(screen.getByText('Not taking bookings right now.')).toBeInTheDocument();
+  });
+
+  it('nothing is labelled as booking: the card reads "Sessions", and so does the aside', () => {
+    h.profile = state({ data: { ...profile, takingBookings: false } });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('heading', { name: 'Sessions' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Book a session' })).toBeNull();
+    expect(screen.getByRole('complementary')).toHaveAccessibleName(/^Sessions/);
   });
 
   it('the Sessions tab keeps the session types, without Book', () => {
