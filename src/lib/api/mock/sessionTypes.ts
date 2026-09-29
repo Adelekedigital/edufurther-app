@@ -73,6 +73,9 @@ function seed(): Stored[] {
     booking_window_days: null,
     break_after_minutes: null,
     min_notice_minutes: 1440,
+    // Backend round 4 (#300): one featured per mentor; none scheduled for deletion.
+    is_featured: false,
+    pending_deletion: null,
   };
   return [
     {

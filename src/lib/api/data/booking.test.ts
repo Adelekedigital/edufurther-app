@@ -50,7 +50,7 @@ describe('toSessionType', () => {
   it('maps the offering and asks no questions until the backend ships them', () => {
     // Fields the spec adds as required (#9 topics, #268 questions), spread so the
     // fixture compiles before and after they ship.
-    const later = { service_offerings: [], questions: [] };
+    const later = { service_offerings: [], questions: [], is_featured: false };
     const t = toSessionType({
       id: 'st',
       name: 'CV review',
@@ -90,6 +90,7 @@ describe('intake questions (backend #268, #12, #282)', () => {
     const t = toSessionType({
       id: 'st',
       name: 'CV review',
+      is_featured: false,
       description: 'x',
       duration_minutes: 45,
       min_notice_minutes: 1440,
