@@ -37,13 +37,26 @@ type ReviewStepProps = {
 export function ReviewStep({ draft: d, topics, defaults, onEdit }: ReviewStepProps) {
   const topicLabels = d.topics.map((c) => topics.find((t) => t.slug === c)?.label ?? c);
   const stage = d.stage === 'other' ? d.customStage : d.stage ? STAGE_LABELS[d.stage] : 'Any stage';
-  const windowDays =
-    d.rules === 'custom' ? d.windowDays : (defaults?.windowDays ?? PLATFORM_WINDOW_DAYS);
-  const breakMin = d.rules === 'custom' ? d.breakMin : (defaults?.breakMin ?? PLATFORM_BREAK_MIN);
+  // `defaults` is null until the mentor's own are known: then say "My default"
+  // without a value rather than show the platform's as theirs (review of #49).
+  const windowText =
+    d.rules === 'custom'
+      ? `${windowLabel(d.windowDays)} ahead`
+      : defaults
+        ? `${windowLabel(defaults.windowDays ?? PLATFORM_WINDOW_DAYS)} ahead (my default)`
+        : 'My default';
+  const breakText =
+    d.rules === 'custom'
+      ? breakLabel(d.breakMin)
+      : defaults
+        ? `${breakLabel(defaults.breakMin ?? PLATFORM_BREAK_MIN)} (my default)`
+        : 'My default';
   const approval =
-    d.approval === 'inherit'
-      ? `My default (${approvalLabel(defaults?.requiresApproval ?? false).toLowerCase()})`
-      : approvalLabel(d.approval === 'on');
+    d.approval !== 'inherit'
+      ? approvalLabel(d.approval === 'on')
+      : defaults
+        ? `My default (${approvalLabel(defaults.requiresApproval).toLowerCase()})`
+        : 'My default';
   return (
     <div className={styles.body4}>
       <div className={styles.summaries}>
@@ -75,14 +88,8 @@ export function ReviewStep({ draft: d, topics, defaults, onEdit }: ReviewStepPro
           rows={[
             { k: 'Length', v: `${d.durationMin} min` },
             { k: 'Minimum notice', v: `${d.noticeHours} hours` },
-            {
-              k: 'Bookable up to',
-              v: `${windowLabel(windowDays)} ahead${d.rules === 'default' ? ' (my default)' : ''}`,
-            },
-            {
-              k: 'Break after',
-              v: `${breakLabel(breakMin)}${d.rules === 'default' ? ' (my default)' : ''}`,
-            },
+            { k: 'Bookable up to', v: windowText },
+            { k: 'Break after', v: breakText },
             { k: 'Hours', v: hoursSummary(d) },
             { k: 'Approval', v: approval },
           ]}

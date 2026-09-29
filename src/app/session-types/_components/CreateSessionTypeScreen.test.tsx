@@ -41,23 +41,26 @@ vi.mock('@/lib/api/data/mentors', () => ({
 }));
 
 const create = vi.fn();
+let defaultsMock: unknown;
+const READY = {
+  data: { windowDays: 28, breakMin: 15, requiresApproval: true },
+  isLoading: false,
+  error: null,
+  retry: vi.fn(),
+};
 let createError: unknown = null;
 vi.mock('@/lib/api/data/sessionTypes', async (orig) => ({
   autoIcon: (await orig<typeof import('@/lib/api/data/sessionTypes')>()).autoIcon,
   useCreateSessionType: () => ({ create, isPending: false, error: createError, reset: vi.fn() }),
   useRetryWindows: () => ({ retry: vi.fn(), isPending: false }),
-  useMentorDefaults: () => ({
-    data: { windowDays: 28, breakMin: 15, requiresApproval: true },
-    isLoading: false,
-    error: null,
-    retry: vi.fn(),
-  }),
+  useMentorDefaults: () => defaultsMock,
 }));
 
 beforeEach(() => {
   push.mockReset();
   create.mockReset();
   createError = null;
+  defaultsMock = READY;
 });
 const next = (name: RegExp) => screen.getByRole('button', { name });
 
@@ -151,5 +154,81 @@ describe('CreateSessionTypeScreen', () => {
         .getAllByRole('listitem')
         .filter((li) => li.closest('ol[aria-label="Intake questions"]')),
     ).toHaveLength(1);
+  });
+
+  it('editing a question, then deleting one above it, saves the right question (review of #49)', async () => {
+    const user = userEvent.setup();
+    render(<CreateSessionTypeScreen template="sop-review" />);
+    await user.click(next(/Continue to intake questions/));
+    await user.click(screen.getByRole('button', { name: 'Edit question 2' }));
+    await user.click(screen.getByRole('button', { name: 'Delete question 1' }));
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }));
+    const text = screen.getByRole('textbox', { name: 'Question' });
+    await user.clear(text);
+    await user.type(text, 'Upload your latest draft');
+    await user.click(screen.getByRole('button', { name: 'Save question' }));
+    const rows = within(screen.getByRole('list', { name: 'Intake questions' })).getAllByRole(
+      'listitem',
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toHaveTextContent('Upload your latest draft');
+  });
+
+  it('a server error on one question shows on that question; a rules error clears when fixed', async () => {
+    const user = userEvent.setup();
+    create.mockImplementationOnce((_v, opts) =>
+      opts.onError({
+        kind: 'validation',
+        message: 'x',
+        fields: { 'question-1': 'Check this question and its options.' },
+      }),
+    );
+    render(<CreateSessionTypeScreen template="sop-review" />);
+    for (const n of [
+      /Continue to intake/,
+      /Continue to scheduling/,
+      /Continue to review/,
+      /Publish session/,
+    ])
+      await user.click(next(n));
+    expect(screen.getByText('Step 2 of 4 · Intake questions')).toBeInTheDocument();
+    const rows = within(screen.getByRole('list', { name: 'Intake questions' })).getAllByRole(
+      'listitem',
+    );
+    expect(rows[1]).toHaveTextContent('Check this question and its options.');
+    expect(rows[0]).not.toHaveTextContent('Check this question');
+
+    create.mockImplementationOnce((_v, opts) =>
+      opts.onError({
+        kind: 'validation',
+        message: 'x',
+        fields: { rules: 'Check the length and booking rules.' },
+      }),
+    );
+    for (const n of [/Continue to scheduling/, /Continue to review/, /Publish session/])
+      await user.click(next(n));
+    expect(screen.getByText('Check the length and booking rules.')).toBeInTheDocument();
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Session length' }), '45');
+    expect(screen.queryByText('Check the length and booking rules.')).toBeNull();
+  });
+
+  it('never shows platform values as "my default" while the mentor’s are loading or failed', async () => {
+    const user = userEvent.setup();
+    defaultsMock = { data: null, isLoading: true, error: null, retry: vi.fn() };
+    const { unmount } = render(<CreateSessionTypeScreen template="sop-review" />);
+    await user.click(next(/Continue to intake/));
+    await user.click(next(/Continue to scheduling/));
+    expect(screen.getByText('Loading your defaults…')).toBeInTheDocument();
+    expect(screen.getByText('Default: as set in Settings')).toBeInTheDocument();
+    await user.click(next(/Continue to review/));
+    expect(screen.queryByText(/confirm instantly/i)).toBeNull();
+    unmount();
+    const retry = vi.fn();
+    defaultsMock = { data: null, isLoading: false, error: { kind: 'server', message: 'x' }, retry };
+    render(<CreateSessionTypeScreen template="sop-review" />);
+    await user.click(next(/Continue to intake/));
+    await user.click(next(/Continue to scheduling/));
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(retry).toHaveBeenCalled();
   });
 });

@@ -87,6 +87,13 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
     setErrors((e) => {
       const next = { ...e };
       for (const k of Object.keys(patch)) delete next[k as FieldKey];
+      // Keys that don't match a draft field (server errors mapped by pointer, review of #49).
+      const rules = ['durationMin', 'noticeHours', 'windowDays', 'breakMin', 'rules'];
+      if (rules.some((k) => k in patch)) delete next.rules;
+      if ('customStage' in patch) delete next.stage;
+      if ('questions' in patch)
+        for (const k of Object.keys(next))
+          if (k.startsWith('question-')) delete next[k as FieldKey];
       if ('days' in patch || 'hours' in patch)
         for (const k of Object.keys(next)) if (k.startsWith('slot-')) delete next[k as FieldKey];
       return next;
@@ -180,6 +187,8 @@ export function CreateSessionTypeScreen({ template }: { template: string | null 
             topics={topics}
             autoIcon={auto}
             defaults={defaults.data}
+            defaultsStatus={defaults.error ? 'failed' : defaults.data ? 'ready' : 'loading'}
+            onRetryDefaults={defaults.retry}
             onStep={goTo}
             onBack={onBack}
             onNext={onNext}

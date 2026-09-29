@@ -11,7 +11,7 @@ import type { SessionIcon } from '@/types/sessionType';
 import { CoreDetailsStep } from './CoreDetailsStep';
 import { IntakeQuestionsStep } from './IntakeQuestionsStep';
 import { ReviewStep } from './ReviewStep';
-import { SchedulingStep, type Defaults } from './SchedulingStep';
+import { SchedulingStep, type Defaults, type DefaultsStatus } from './SchedulingStep';
 import styles from './SessionTypeWizard.module.css';
 
 export type Step = 1 | 2 | 3 | 4;
@@ -49,6 +49,9 @@ type SessionTypeWizardProps = {
   /** Automatic icon for the current topics. */
   autoIcon: SessionIcon;
   defaults: Defaults | null;
+  /** Whether `defaults` is the mentor's own yet: never shown as "my default" otherwise. */
+  defaultsStatus: DefaultsStatus;
+  onRetryDefaults: () => void;
   onStep: (step: Step) => void;
   onBack: () => void;
   onNext: () => void;
@@ -139,10 +142,17 @@ export function SessionTypeWizard(p: SessionTypeWizardProps) {
             update={p.update}
             errors={p.errors}
             defaults={p.defaults}
+            defaultsStatus={p.defaultsStatus}
+            onRetryDefaults={p.onRetryDefaults}
           />
         )}
         {p.step === 4 && (
-          <ReviewStep draft={p.draft} topics={p.topics} defaults={p.defaults} onEdit={p.onStep} />
+          <ReviewStep
+            draft={p.draft}
+            topics={p.topics}
+            defaults={p.defaultsStatus === 'ready' ? p.defaults : null}
+            onEdit={p.onStep}
+          />
         )}
       </section>
     </div>

@@ -22,6 +22,8 @@ export type Defaults = {
   requiresApproval: boolean;
 };
 
+export type DefaultsStatus = 'loading' | 'ready' | 'failed';
+
 export const windowLabel = (days: number) =>
   days % 7 === 0 ? `${days / 7} week${days === 7 ? '' : 's'}` : `${days} days`;
 export const breakLabel = (m: number) => (m ? `${m} min` : 'None');
@@ -38,8 +40,9 @@ type SchedulingStepProps = {
   draft: Draft;
   update: (patch: Partial<Draft>) => void;
   errors: FieldErrors;
-  /** null while loading or when it couldn't load: the platform defaults are shown. */
   defaults: Defaults | null;
+  defaultsStatus: DefaultsStatus;
+  onRetryDefaults: () => void;
 };
 
 /**
@@ -47,7 +50,16 @@ type SchedulingStepProps = {
  * notice (always this type's own — no mentor default exists for them), the
  * booking window and break (inherit or set), when mentees can book, approval.
  */
-export function SchedulingStep({ draft: d, update, errors, defaults }: SchedulingStepProps) {
+export function SchedulingStep({
+  draft: d,
+  update,
+  errors,
+  defaults,
+  defaultsStatus,
+  onRetryDefaults,
+}: SchedulingStepProps) {
+  // Only the mentor's own defaults are shown as theirs (review of #49).
+  const known = defaultsStatus === 'ready' ? defaults : null;
   const rule = (
     label: string,
     hint: string,
@@ -111,10 +123,23 @@ export function SchedulingStep({ draft: d, update, errors, defaults }: Schedulin
         {d.rules === 'default' ? (
           <div className={styles.defaults}>
             <Icon name="tune" size={18} className={styles.defaultsIcon} />
-            <span className={styles.defaultsText}>{defaultsSummary(defaults)}</span>
-            <Link href="/settings" prefetch={false} className={styles.link}>
-              Edit defaults
-            </Link>
+            <span className={styles.defaultsText} aria-live="polite">
+              {defaultsStatus === 'loading'
+                ? 'Loading your defaults…'
+                : defaultsStatus === 'failed'
+                  ? // PROVISIONAL copy — design request #5.
+                    'We couldn’t load your defaults. This session still follows them.'
+                  : defaultsSummary(known)}
+            </span>
+            {defaultsStatus === 'failed' ? (
+              <button type="button" className={styles.textLink} onClick={onRetryDefaults}>
+                Try again
+              </button>
+            ) : (
+              <Link href="/settings" prefetch={false} className={styles.link}>
+                Edit defaults
+              </Link>
+            )}
           </div>
         ) : (
           <div className={styles.rules}>
@@ -179,7 +204,9 @@ export function SchedulingStep({ draft: d, update, errors, defaults }: Schedulin
           <span className={styles.ruleText}>
             <span className={styles.overrideLabel}>Booking approval</span>
             <span className={styles.ruleHint}>
-              Default: {approvalLabel(defaults?.requiresApproval ?? false).toLowerCase()} (Settings)
+              {known
+                ? `Default: ${approvalLabel(known.requiresApproval).toLowerCase()} (Settings)`
+                : 'Default: as set in Settings'}
             </span>
           </span>
           <Select

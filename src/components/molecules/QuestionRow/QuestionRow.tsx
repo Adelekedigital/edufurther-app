@@ -14,6 +14,8 @@ type QuestionRowProps = {
   icon: IconName;
   /** Being edited in the editor below: drawn on blue. */
   editing?: boolean;
+  /** Our copy when the server refused this question. */
+  error?: string;
   onUp?: () => void;
   onDown?: () => void;
   onEdit: () => void;
@@ -41,6 +43,7 @@ export function QuestionRow({
   meta,
   icon,
   editing,
+  error,
   onUp,
   onDown,
   onEdit,
@@ -57,6 +60,7 @@ export function QuestionRow({
       className={cx(
         styles.row,
         editing && styles.editing,
+        error && styles.invalid,
         drag?.dragging && styles.dragging,
         drag?.dropLine === 'above' && styles.dropAbove,
         drag?.dropLine === 'below' && styles.dropBelow,
@@ -77,6 +81,12 @@ export function QuestionRow({
           {text}
         </span>
         <span className={styles.meta}>{meta}</span>
+        {error && (
+          <span className={styles.error}>
+            <Icon name="error" size={14} />
+            {error}
+          </span>
+        )}
       </div>
       {onUp && (
         <IconButton

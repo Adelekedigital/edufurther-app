@@ -58,11 +58,15 @@ export function IntakeQuestionsStep({
   errors,
   onDeleteQuestion,
 }: IntakeQuestionsStepProps) {
-  const [editing, setEditing] = useState<number | null>(null);
+  // The question being edited, by key: a delete or move above it can't point the
+  // editor at a different question (review of #49).
+  const [editingKey, setEditingKey] = useState<string | null>(null);
   const [q, setQ] = useState<Editor>(emptyEditor);
   const [tried, setTried] = useState(false);
   const [drag, setDrag] = useState<{ from: number; over: number | null } | null>(null);
   const qs = d.questions;
+  const found = editingKey === null ? -1 : qs.findIndex((x) => x.key === editingKey);
+  const editing = found >= 0 ? found : null;
   const choice = q.kind === 'single' || q.kind === 'multi';
   const editorError = tried ? questionError({ ...q, options: parseOptions(q.options) }) : null;
 
@@ -72,20 +76,9 @@ export function IntakeQuestionsStep({
     const [x] = next.splice(from, 1);
     next.splice(to, 0, x!);
     update({ questions: next });
-    if (editing !== null) {
-      const moved =
-        editing === from
-          ? to
-          : from < editing && to >= editing
-            ? editing - 1
-            : from > editing && to <= editing
-              ? editing + 1
-              : editing;
-      setEditing(moved);
-    }
   };
   const reset = () => {
-    setEditing(null);
+    setEditingKey(null);
     setQ(emptyEditor());
     setTried(false);
   };
@@ -94,7 +87,7 @@ export function IntakeQuestionsStep({
     const options = choice ? parseOptions(q.options) : [];
     if (questionError({ ...q, options })) return;
     const item: DraftQuestion = {
-      key: editing === null ? newKey() : qs[editing]!.key,
+      key: editing === null ? newKey() : editingKey!,
       text: q.text.trim(),
       kind: q.kind,
       required: q.required,
@@ -107,7 +100,7 @@ export function IntakeQuestionsStep({
   };
   const startEdit = (i: number) => {
     const x = qs[i]!;
-    setEditing(i);
+    setEditingKey(x.key);
     setQ({ text: x.text, kind: x.kind, required: x.required, options: x.options.join(', ') });
     setTried(false);
   };
@@ -131,6 +124,7 @@ export function IntakeQuestionsStep({
               meta={questionMeta(x)}
               icon={KIND_ICON[x.kind]}
               editing={editing === i}
+              error={errors[`question-${i}`]}
               onUp={i > 0 ? () => move(i, i - 1) : undefined}
               onDown={i < qs.length - 1 ? () => move(i, i + 1) : undefined}
               onEdit={() => startEdit(i)}
