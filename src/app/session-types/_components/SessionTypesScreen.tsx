@@ -5,6 +5,9 @@ import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { SessionTypeManager } from '@/components/organisms/SessionTypeManager/SessionTypeManager';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
+import { useRouter } from 'next/navigation';
+import { useTopics } from '@/lib/api/data/mentors';
+import { useDuplicateSessionType } from '@/lib/api/data/sessionTypeEdit';
 import { useDeleteSessionType, useOwnSessionTypes, useSetLive } from '@/lib/api/data/sessionTypes';
 import { SESSION_TEMPLATES, templateHint } from '@/lib/utils/sessionTemplates';
 import { useOnline } from '@/lib/utils/useOnline';
@@ -46,6 +49,42 @@ export function SessionTypesScreen() {
     setMessages(({ [id]: _cleared, ...rest }) => rest);
     setLive(id, live);
   };
+  // The switch asks first (Session Types.dc.html `toggle`): showing and hiding
+  // each confirm, and hiding the last visible type says what that means.
+  const [visibility, setVisibility] = useState<{ type: OwnSessionType; show: boolean } | null>(
+    null,
+  );
+  const askVisibility = (id: string, show: boolean) => {
+    const t = list.data?.find((x) => x.id === id);
+    if (t) setVisibility({ type: t, show });
+  };
+  const lastVisible =
+    !!visibility && !visibility.show && (list.data ?? []).filter((x) => x.isLive).length === 1;
+
+  const router = useRouter();
+  const { topics } = useTopics();
+  const dup = useDuplicateSessionType();
+  const onDuplicate = (t: OwnSessionType) => {
+    if (dup.isPending) return;
+    const offeringIds = Object.fromEntries(topics.flatMap((x) => (x.id ? [[x.slug, x.id]] : [])));
+    setMessages(({ [t.id]: _cleared, ...rest }) => rest);
+    dup.duplicate({ id: t.id, takenNames: (list.data ?? []).map((x) => x.name), offeringIds }).then(
+      (d) => {
+        // PROVISIONAL copy — design request #9 (the design only adds the row).
+        if (d.failed.length)
+          setMessages((m) => ({
+            ...m,
+            [t.id]: `“${d.name}” was added, but ${
+              d.failed.includes('hours') ? 'its dedicated hours didn’t copy' : 'it isn’t hidden yet'
+            }. Check it before mentees see it.`,
+          }));
+      },
+      (e: { message: string }) => setMessages((m) => ({ ...m, [t.id]: e.message })),
+    );
+  };
+  const origin = typeof window === 'undefined' ? '' : window.location.origin;
+  const shareUrl = (t: OwnSessionType) =>
+    `${origin}/mentors/${encodeURIComponent(member?.id ?? '')}?book=${encodeURIComponent(t.id)}`;
 
   const [confirming, setConfirming] = useState<OwnSessionType | null>(null);
   const del = useDeleteSessionType();
@@ -58,10 +97,12 @@ export function SessionTypesScreen() {
     <SessionTypeManager
       list={list}
       messages={messages}
-      onLiveChange={onLiveChange}
+      onLiveChange={askVisibility}
       onDelete={setConfirming}
+      onEdit={(t) => router.push(`/session-types/${encodeURIComponent(t.id)}/edit`)}
+      onDuplicate={onDuplicate}
+      shareUrl={shareUrl}
       createHref={CREATE_HREF}
-      editHref={(id) => `/session-types/${encodeURIComponent(id)}/edit`}
       templates={TEMPLATES}
     />
   );
@@ -69,6 +110,18 @@ export function SessionTypesScreen() {
   return (
     <AppShell active="Sessions" nav={nav} chrome={chrome} account={account} offline={!online}>
       {body}
+      {visibility && (
+        <VisibilityConfirm
+          type={visibility.type}
+          show={visibility.show}
+          last={lastVisible}
+          onCancel={() => setVisibility(null)}
+          onConfirm={() => {
+            onLiveChange(visibility.type.id, visibility.show);
+            setVisibility(null);
+          }}
+        />
+      )}
       {confirming && (
         <DeleteConfirm
           type={confirming}
@@ -137,7 +190,7 @@ function DeleteConfirm(p: {
   return (
     <ModalShell
       title="Delete this session type?"
-      subtitle={`“${p.type.name}” will be removed from your profile.`}
+      subtitle={`“${p.type.name}” is removed from your profile and Session types. This can’t be undone.`}
       icon="delete"
       tone="danger"
       size="sm"
@@ -154,6 +207,45 @@ function DeleteConfirm(p: {
         </Button>
         <Button size="large" variant="destructive" fullWidth onClick={p.onDelete} busy={p.busy}>
           Delete
+        </Button>
+      </div>
+    </ModalShell>
+  );
+}
+
+/** Show / hide (Session Types.dc.html `toggle` confirm): not destructive, so blue. */
+function VisibilityConfirm(p: {
+  type: OwnSessionType;
+  show: boolean;
+  /** Hiding the only visible type. */
+  last: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const title = p.show
+    ? `Show “${p.type.name}” to mentees?`
+    : p.last
+      ? 'Hide your last session type?'
+      : `Hide “${p.type.name}” from mentees?`;
+  const subtitle = p.show
+    ? 'It appears on your profile and Explore, and mentees can book it in your open hours.'
+    : p.last
+      ? 'Your profile will show “Not taking bookings” until a session type is visible again. Booked sessions go ahead.'
+      : 'Mentees can’t see or book it. Booked sessions go ahead, and you can show it again anytime.';
+  return (
+    <ModalShell
+      title={title}
+      subtitle={subtitle}
+      icon={p.show ? 'visibility' : 'visibility_off'}
+      size="sm"
+      onClose={p.onCancel}
+    >
+      <div className={styles.buttons}>
+        <Button size="large" variant="secondary-outlined" fullWidth onClick={p.onCancel}>
+          {p.show ? 'Cancel' : 'Keep visible'}
+        </Button>
+        <Button size="large" fullWidth onClick={p.onConfirm}>
+          {p.show ? 'Show it' : 'Hide it'}
         </Button>
       </div>
     </ModalShell>

@@ -62,6 +62,7 @@ export const ICON_NAMES = [
   'logout',
   'mail',
   'menu',
+  'more_horiz',
   'my_location',
   'new_releases',
   'open_in_new',
@@ -96,6 +97,8 @@ export const ICON_NAMES = [
   'verified_user',
   'video_call',
   'videocam',
+  'visibility',
+  'visibility_off',
   'work',
   'workspace_premium',
 ] as const;

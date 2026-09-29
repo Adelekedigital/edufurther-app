@@ -189,7 +189,7 @@ export function SchedulingStep({
           </div>
           <div className={styles.approvalRow}>
             <span className={styles.ruleText}>
-              <span className={styles.ruleLabel}>Approve bookings before they’re confirmed</span>
+              <span className={styles.ruleLabel}>Approve each booking</span>
               <span className={styles.ruleHint}>You review each request before it’s booked.</span>
             </span>
             <Select

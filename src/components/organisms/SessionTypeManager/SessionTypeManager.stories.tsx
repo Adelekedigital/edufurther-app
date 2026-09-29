@@ -80,6 +80,9 @@ const base = {
   messages: {},
   onLiveChange: fn(),
   onDelete: fn(),
+  onEdit: fn(),
+  onDuplicate: fn(),
+  shareUrl: (t: { id: string }) => `https://edufurther.com/mentors/m1?book=${t.id}`,
   createHref: '#',
   templates: TEMPLATES,
 };

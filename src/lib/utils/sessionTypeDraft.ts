@@ -16,7 +16,7 @@ export type Stage =
 
 /** Design chip labels ("Best for mentees who are…"). `other` carries the mentor's own words. */
 export const STAGE_LABELS: Record<Exclude<Stage, 'other'>, string> = {
-  early_exploration: 'Exploring options',
+  early_exploration: 'Exploring',
   drafting_stage: 'Drafting',
   post_submission: 'Submitted, waiting',
   revisions: 'Revising',
@@ -432,7 +432,7 @@ export function applyTemplateLength(
   return { ...d, ...customFrom(defaults), rules: 'custom', durationMin: templateMin };
 }
 
-/** "Exploring options, Drafting" (the mentor's own for `other`), or "Any stage". */
+/** "Exploring, Drafting" (the mentor's own for `other`), or "Any stage". */
 export function stagesLabel(d: Pick<Draft, 'stages' | 'customStage'>): string {
   const labels = d.stages.map((s) => (s === 'other' ? d.customStage.trim() : STAGE_LABELS[s]));
   return labels.filter(Boolean).join(', ') || 'Any stage';

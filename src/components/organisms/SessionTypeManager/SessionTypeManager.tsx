@@ -14,9 +14,12 @@ type SessionTypeManagerProps = {
   messages: Record<string, string>;
   onLiveChange: (id: string, live: boolean) => void;
   onDelete: (type: OwnSessionType) => void;
+  onEdit: (type: OwnSessionType) => void;
+  onDuplicate: (type: OwnSessionType) => void;
+  /** The share link for a type (the row copies it). */
+  shareUrl: (type: OwnSessionType) => string;
   createHref: string;
   /** Omitted until the edit screen ships (Session Types PR 4). */
-  editHref?: (id: string) => string;
   templates: { key: string; href: string; icon: IconName; name: string; hint: string }[];
 };
 
@@ -72,7 +75,9 @@ function List({
   onLiveChange,
   onDelete,
   createHref,
-  editHref,
+  onEdit,
+  onDuplicate,
+  shareUrl,
 }: SessionTypeManagerProps) {
   if (list.isLoading) {
     return (
@@ -149,7 +154,9 @@ function List({
           message={messages[t.id]}
           onLiveChange={(live) => onLiveChange(t.id, live)}
           onDelete={() => onDelete(t)}
-          editHref={editHref?.(t.id)}
+          onEdit={() => onEdit(t)}
+          onDuplicate={() => onDuplicate(t)}
+          shareUrl={shareUrl(t)}
         />
       ))}
     </div>

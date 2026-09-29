@@ -1,33 +1,38 @@
 import { useId } from 'react';
 import { cx } from '@/lib/utils/cx';
 import { Badge } from '@/components/atoms/Badge/Badge';
-import { ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
-import { IconButton } from '@/components/atoms/IconButton/IconButton';
 import { Switch } from '@/components/atoms/Switch/Switch';
 import type { OwnSessionType } from '@/types/sessionType';
+import { CopyLinkButton } from '../CopyLinkButton/CopyLinkButton';
+import { RowMenu } from '../RowMenu/RowMenu';
 import styles from './SessionTypeRow.module.css';
 
 type SessionTypeRowProps = {
   type: OwnSessionType;
   onLiveChange: (live: boolean) => void;
   onDelete: () => void;
-  /** Where Edit goes; omitted until the edit screen ships (Session Types PR 4). */
-  editHref?: string;
+  onEdit: () => void;
+  onDuplicate: () => void;
+  /** The public link to book this type (copied by the row's link button). */
+  shareUrl: string;
   /** Our copy when the last switch didn't save (the switch has already rolled back). */
   message?: string;
 };
 
 /**
  * One session type on the mentor's list (Session Types.dc.html `types` rows):
- * icon, name + Live/Hidden, two lines of description, facts, then the Live
- * switch, Edit and Delete. A hidden type is drawn on a grey ground.
+ * icon, name + Live/Hidden, two lines of description, facts, then the
+ * "Visible to mentees" switch, the share link and the "⋯" menu (Edit,
+ * Duplicate, Delete). A hidden type is drawn on a grey ground.
  */
 export function SessionTypeRow({
   type: t,
   onLiveChange,
   onDelete,
-  editHref,
+  onEdit,
+  onDuplicate,
+  shareUrl,
   message,
 }: SessionTypeRowProps) {
   const nameId = useId();
@@ -73,26 +78,17 @@ export function SessionTypeRow({
         <Switch
           checked={t.isLive}
           onChange={onLiveChange}
-          aria-label={`${t.name}: bookable on your profile`}
+          aria-label={`Visible to mentees: ${t.name}`}
+          title={t.isLive ? 'Visible to mentees' : 'Hidden from mentees'}
         />
-        {editHref && (
-          <ButtonLink
-            href={editHref}
-            prefetch={false}
-            size="small"
-            variant="secondary-outlined"
-            aria-label={`Edit ${t.name}`}
-          >
-            Edit
-          </ButtonLink>
-        )}
-        <IconButton
-          icon="delete"
-          size="sm"
-          shape="square"
-          tone="danger"
-          aria-label={`Delete ${t.name}`}
-          onClick={onDelete}
+        <CopyLinkButton label={`Copy share link for ${t.name}`} url={shareUrl} />
+        <RowMenu
+          label={`More actions for ${t.name}`}
+          items={[
+            { key: 'edit', icon: 'edit', label: 'Edit', onSelect: onEdit },
+            { key: 'duplicate', icon: 'content_copy', label: 'Duplicate', onSelect: onDuplicate },
+            { key: 'delete', icon: 'delete', label: 'Delete', onSelect: onDelete, danger: true },
+          ]}
         />
       </div>
     </article>

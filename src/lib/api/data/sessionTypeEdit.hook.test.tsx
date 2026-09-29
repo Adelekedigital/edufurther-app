@@ -393,3 +393,80 @@ describe('useSaveSessionType — a retry after a partial save (review of #67)', 
     expect(r.saved.windows).toEqual([]);
   });
 });
+
+describe('copyName', () => {
+  it('"(copy)", then "(copy 2)" …, never a name already used', async () => {
+    const { copyName } = await import('./sessionTypeEdit');
+    expect(copyName('SOP review', ['SOP review'])).toBe('SOP review (copy)');
+    expect(copyName('SOP review', ['SOP review', 'sop review (COPY)'])).toBe('SOP review (copy 2)');
+  });
+});
+
+describe('useDuplicateSessionType', () => {
+  it('creates "(copy)" with the questions, copies the hours, then hides it; says what failed', async () => {
+    const { useDuplicateSessionType } = await import('./sessionTypeEdit');
+    for (const f of [PATCH, POST, DELETE, PUT, GET]) f.mockReset();
+    GET.mockImplementation((path: string) =>
+      path === '/api/v1/me/session-types'
+        ? reply(200, { data: [read()], next_cursor: null })
+        : path.endsWith('/questions')
+          ? reply(200, {
+              data: [
+                {
+                  id: 'qa',
+                  question_text: 'Which programs?',
+                  question_type: 'free_text',
+                  is_required: true,
+                  display_order: 0,
+                  allows_multiple: false,
+                  options: [],
+                },
+              ],
+              next_cursor: null,
+            })
+          : reply(200, {
+              data: [
+                {
+                  id: 'w1',
+                  day_of_week: 2,
+                  start_time: '17:00:00',
+                  end_time: '20:00:00',
+                  timezone: 'Africa/Lagos',
+                  is_active: true,
+                },
+              ],
+              next_cursor: null,
+            }),
+    );
+    POST.mockImplementation((path: string) =>
+      path === '/api/v1/me/session-types'
+        ? reply(201, { id: 'st2', question_ids: ['q9'] })
+        : reply(500),
+    );
+    PATCH.mockImplementation(() => reply(200, { updated: true }));
+    const qc = new QueryClient();
+    const { result } = renderHook(() => useDuplicateSessionType(), {
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+      ),
+    });
+    const d = await result.current.duplicate({
+      id: 'st1',
+      takenNames: ['SOP review'],
+      offeringIds: { 'document-preparation': 'o4' },
+    });
+    expect(d).toEqual({ id: 'st2', name: 'SOP review (copy)', failed: ['hours'] });
+    const create = POST.mock.calls.find((c) => c[0] === '/api/v1/me/session-types')![1].body;
+    expect(create).toMatchObject({
+      name: 'SOP review (copy)',
+      service_offering_ids: ['o4'],
+      // Inherited rules stay inherited on the copy.
+      duration_minutes: null,
+      questions: [{ question_text: 'Which programs?', is_required: true }],
+    });
+    expect(PATCH.mock.calls[0]![1]).toMatchObject({
+      params: { path: { session_type_id: 'st2' } },
+      body: { is_active: false },
+    });
+  });
+});
