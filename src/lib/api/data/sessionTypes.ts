@@ -8,6 +8,8 @@ import type { DeleteError, OwnSessionType, SessionIcon } from '@/types/sessionTy
 import {
   copyForField,
   fieldForPointer,
+  resolveDefaults,
+  type BookingDefaults,
   type FieldErrors,
   type toCreateBody,
   type toWindows,
@@ -20,6 +22,7 @@ import { sessionKey, useSession } from './session';
 
 type OwnSessionTypeRead = components['schemas']['OwnSessionTypeRead'];
 type MentorSessionTypeWrite = components['schemas']['MentorSessionTypeWrite'];
+type MentorProfileWrite = components['schemas']['MentorProfileWrite'];
 
 // ---- mapping ----------------------------------------------------------------
 
@@ -328,24 +331,25 @@ export function useRetryWindows() {
 
 // ---- the mentor's booking defaults (backend #13, #16) ----------------------------
 
-export type MentorDefaults = {
-  windowDays: number | null;
-  breakMin: number | null;
-  requiresApproval: boolean;
-};
+export type MentorDefaults = BookingDefaults;
+
+const defaultsKey = (userId: string | null) => keys.mentorDefaults(userId ?? 'none');
 
 /** GET /users/{id}/mentor-profile — the defaults a session type inherits. */
 export function useMentorDefaults(userId: string | null): Remote<MentorDefaults> {
   const query = useQuery({
-    queryKey: ['mentorDefaults', userId ?? 'none'],
+    queryKey: defaultsKey(userId),
     enabled: userId !== null,
-    queryFn: async ({ signal }) => {
+    queryFn: async ({ signal }): Promise<MentorDefaults> => {
       const { data, error, response } = await api.GET('/api/v1/users/{user_id}/mentor-profile', {
         params: { path: { user_id: userId! } },
         signal,
       });
       if (!data) throw apiError(response.status, error);
+      const notice = data.default_min_notice_minutes;
       return {
+        durationMin: data.default_duration_minutes ?? null,
+        noticeHours: notice == null ? null : notice / 60,
         windowDays: data.booking_window_days ?? null,
         breakMin: data.break_after_minutes ?? null,
         requiresApproval: data.requires_booking_confirmation,
@@ -358,5 +362,63 @@ export function useMentorDefaults(userId: string | null): Remote<MentorDefaults>
     isLoading: query.isPending && userId !== null,
     error: query.error ? normaliseError(query.error) : null,
     retry: () => void query.refetch(),
+  };
+}
+
+/**
+ * PATCH /users/{id}/mentor-profile — the Booking preferences modal. Saves every
+ * value it shows (resolved), so what the mentor saw is what is stored.
+ */
+export function useSaveMentorDefaults(userId: string | null) {
+  const qc = useQueryClient();
+  const mutation = useMutation<MentorDefaults, AppError, MentorDefaults>({
+    mutationFn: async (next) => {
+      const r = resolveDefaults(next);
+      const body = {
+        default_duration_minutes: r.durationMin,
+        default_min_notice_minutes: Math.round(r.noticeHours * 60),
+        booking_window_days: r.windowDays,
+        break_after_minutes: r.breakMin,
+        requires_booking_confirmation: r.requiresApproval,
+      };
+      let result;
+      try {
+        result = await api.PATCH('/api/v1/users/{user_id}/mentor-profile', {
+          params: { path: { user_id: userId! } },
+          // A partial update: only the booking preferences (the generated type lists every field).
+          body: body as MentorProfileWrite,
+        });
+      } catch (e) {
+        throw saveError(e);
+      }
+      if (!result.response.ok) throw saveError(apiError(result.response.status, result.error));
+      return { ...r };
+    },
+    onSuccess: (saved) => {
+      qc.setQueryData(defaultsKey(userId), saved);
+      // Everything that follows the defaults: slots, the own list's lengths
+      // ("Use my defaults" types), the profile's Sessions tab (review of #60).
+      void qc.invalidateQueries({ queryKey: ['booking'] });
+      void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });
+      void qc.invalidateQueries({ queryKey: keys.mentors.all });
+    },
+  });
+  return {
+    save: mutation.mutateAsync,
+    isPending: mutation.isPending,
+    error: mutation.error,
+    reset: mutation.reset,
+  };
+}
+
+/** Our copy for a failed save (PROVISIONAL — design request #7); never the server's. */
+function saveError(error: unknown): AppError {
+  const e = normaliseError(error);
+  return {
+    ...e,
+    message:
+      e.kind === 'offline'
+        ? 'You’re offline. Your preferences didn’t save. Try again when you reconnect.'
+        : 'Your preferences didn’t save. Try again in a moment.',
   };
 }

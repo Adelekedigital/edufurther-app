@@ -8,6 +8,8 @@ type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
   /** Width of the control; the design draws 160px (rules) and 240px (overrides). */
   width?: number;
   invalid?: boolean;
+  /** compact: 36px, tighter padding and a 16px chevron (TimeSlots.dc.html `compact`). */
+  density?: 'default' | 'compact';
 };
 
 /**
@@ -15,19 +17,29 @@ type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
  * Native on purpose: the OS picker is the accessible one on phones.
  */
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
-  { options, width, invalid, className, ...rest },
+  { options, width, invalid, density = 'default', className, ...rest },
   ref,
 ) {
   return (
-    <span className={cx(styles.wrap, className)} style={width ? { width } : undefined}>
-      <select ref={ref} className={styles.select} {...rest} aria-invalid={invalid || undefined}>
+    <span
+      className={cx(styles.wrap, density === 'compact' && styles.compact, className)}
+      style={width ? { width } : undefined}
+    >
+      <select
+        ref={ref}
+        className={styles.select}
+        // Compact keeps its width on phones too (TimeSlots.dc.html: the select's own width).
+        style={density === 'compact' && width ? { width } : undefined}
+        {...rest}
+        aria-invalid={invalid || undefined}
+      >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
           </option>
         ))}
       </select>
-      <Icon name="expand_more" size={18} className={styles.chevron} />
+      <Icon name="expand_more" size={density === 'compact' ? 16 : 18} className={styles.chevron} />
     </span>
   );
 });

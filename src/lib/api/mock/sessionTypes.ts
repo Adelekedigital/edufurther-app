@@ -4,13 +4,37 @@
  * the Live switch and delete stick until the server restarts. Samples are the
  * design's (Session Types.dc.html `fromScene`), re-keyed to catalog offerings.
  */
+import { prefs } from './bookingPrefs';
 import type { components } from '@/lib/api/generated/schema';
 import { OFFERINGS } from './fixtures';
 
 type OwnSessionTypeRead = components['schemas']['OwnSessionTypeRead'];
 type QuestionRead = components['schemas']['QuestionRead'];
 
-type Stored = OwnSessionTypeRead & { questions: QuestionRead[]; bookedCount: number };
+/**
+ * Stored as sent: a null length or notice follows the mentor's default (backend
+ * round 3 B), resolved on every read, so a change of default reaches it.
+ */
+type Stored = Omit<
+  OwnSessionTypeRead,
+  'duration_minutes' | 'min_notice_minutes' | 'duration_inherited' | 'min_notice_inherited'
+> & {
+  duration_minutes: number | null;
+  min_notice_minutes: number | null;
+  questions: QuestionRead[];
+  bookedCount: number;
+};
+
+/** The read: the type's own value, else the mentor's default, else the platform's. */
+function resolve({ questions: _q, bookedCount: _b, ...t }: Stored): OwnSessionTypeRead {
+  return {
+    ...t,
+    duration_minutes: t.duration_minutes ?? prefs.default_duration_minutes ?? 60,
+    min_notice_minutes: t.min_notice_minutes ?? prefs.default_min_notice_minutes ?? 1440,
+    duration_inherited: t.duration_minutes === null,
+    min_notice_inherited: t.min_notice_minutes === null,
+  };
+}
 
 const offering = (code: string) => {
   const o = OFFERINGS.find((x) => x.code === code)!;
@@ -97,7 +121,7 @@ function seed(): Stored[] {
 let store: Stored[] = seed();
 
 export function mockOwnSessionTypes(): OwnSessionTypeRead[] {
-  return store.map(({ questions: _q, bookedCount: _b, ...t }) => t);
+  return store.map(resolve);
 }
 
 export function mockQuestions(id: string): QuestionRead[] | null {
@@ -106,13 +130,12 @@ export function mockQuestions(id: string): QuestionRead[] | null {
 
 export function mockPatchSessionType(
   id: string,
-  patch: Partial<OwnSessionTypeRead>,
+  patch: Partial<Stored>,
 ): OwnSessionTypeRead | null {
   const t = store.find((x) => x.id === id);
   if (!t) return null;
   Object.assign(t, patch);
-  const { questions: _q, bookedCount: _b, ...out } = t;
-  return out;
+  return resolve(t);
 }
 
 /** 'gone' | 'booked' (with the count) | 'deleted'. */
@@ -213,8 +236,9 @@ export function mockCreateSessionType(
     id,
     name,
     description: (body.description as string | null) ?? null,
-    duration_minutes: Number(body.duration_minutes) || 60,
-    min_notice_minutes: Number(body.min_notice_minutes) || 1440,
+    // null or absent = the mentor's default (backend round 3 B), resolved on read.
+    duration_minutes: body.duration_minutes == null ? null : Number(body.duration_minutes),
+    min_notice_minutes: body.min_notice_minutes == null ? null : Number(body.min_notice_minutes),
     meeting_venue: 'daily',
     is_active: true,
     service_offering: offerings[0] ?? null,

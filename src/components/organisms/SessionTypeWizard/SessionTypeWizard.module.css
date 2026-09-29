@@ -319,26 +319,135 @@
   flex: 1;
   min-width: 220px;
   font-size: var(--text-p-xs);
+  /* The design sets none here: the browser's normal, not the app's 1.45. */
+  line-height: normal;
   color: var(--ink-700);
-}
-.link {
-  font-size: var(--text-p-xs);
-  font-weight: var(--weight-semibold);
-  color: var(--blue-600);
 }
 .hoursBox {
   padding: var(--space-2) var(--space-4);
   border: var(--border-hairline) solid var(--border-subtle);
   border-radius: var(--radius-lg);
 }
-.override {
+.titleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+/* The design's title here is an inline span at the browser's normal line height. */
+.titleGroup .sectionTitle {
+  line-height: normal;
+}
+.sectionSub {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-500);
+}
+/* The custom rules, then approval 12px under them (design margin-top: -space-3 on space-6). */
+.customRules {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.approvalRow {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
 }
-.overrideLabel {
-  font-size: var(--text-p-sm);
+/* Design btnEditDefaults / btnEditHours: the DS text button at 32px, 8px 12px. */
+.inlineAction {
+  position: relative;
+  height: 32px;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--text-action);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  line-height: 20px;
+  cursor: pointer;
+}
+.inlineAction:hover:not(:disabled) {
+  color: var(--text-link-hover);
+  text-decoration: underline;
+}
+.inlineAction:disabled {
+  color: var(--ink-400);
+  cursor: default;
+}
+.inlineAction:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+@media (max-width: 767px) {
+  /* Design phone rule [style*="padding: var(--space-3) var(--space-4)"]: 8px 12px. */
+  .approvalRow {
+    padding: var(--space-2) var(--space-3);
+  }
+  /* Drawn at 32px; an invisible 44px tap area (CTA hierarchy rule 5). */
+  .inlineAction::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, var(--touch-target-min));
+    height: var(--touch-target-min);
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* ---- the Booking preferences and weekly hours modals ---- */
+/* Design defRows: the text column gives way at 180px (the rule rows' is 200px). */
+.prefText {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+.hoursModalBox {
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+.modalFooter {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: var(--border-hairline) solid var(--border-muted);
+}
+.zoneNote {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+.zoneNote > :first-child {
+  flex: none;
+  color: var(--ink-500);
+}
+.modalError {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  color: var(--text-danger);
 }
 
 /* ---- step 4 ---- */

@@ -1,8 +1,12 @@
 import { SESSION_TEMPLATES } from './sessionTemplates';
 import {
   blankDraft,
+  applyTemplateLength,
   copyForField,
+  defaultsSummary,
   draftFromTemplate,
+  hasSlotErrors,
+  emptyWeek,
   fieldForPointer,
   parseOptions,
   questionError,
@@ -11,6 +15,7 @@ import {
   toCreateBody,
   toWindows,
   validateStep,
+  weeklySummary,
   type Draft,
 } from './sessionTypeDraft';
 
@@ -113,7 +118,9 @@ describe('toCreateBody', () => {
     );
     expect(body).toMatchObject({
       name: 'SOP review',
-      min_notice_minutes: 2880,
+      // "Use my defaults": length and notice inherit too (backend round 3 B).
+      duration_minutes: null,
+      min_notice_minutes: null,
       service_offering_ids: ['o4', 'o1'],
       icon: 'lightbulb',
       requires_booking_confirmation: null,
@@ -141,6 +148,7 @@ describe('toCreateBody', () => {
     const body = toCreateBody(
       filled({
         rules: 'custom',
+        noticeHours: 48,
         windowDays: 14,
         breakMin: 10,
         approval: 'off',
@@ -150,6 +158,8 @@ describe('toCreateBody', () => {
       ids,
     );
     expect(body).toMatchObject({
+      duration_minutes: 60,
+      min_notice_minutes: 2880,
       booking_window_days: 14,
       break_after_minutes: 10,
       requires_booking_confirmation: false,
@@ -207,6 +217,104 @@ describe('templates', () => {
     });
     expect(d.questions.map((q) => q.kind)).toEqual(['free_text', 'file_upload']);
     expect(new Set(d.questions.map((q) => q.key)).size).toBe(2);
+  });
+
+  it('a template’s length holds: its own rules when it isn’t the mentor’s length (review of #60)', () => {
+    const mine = {
+      durationMin: 45,
+      noticeHours: 72,
+      windowDays: 14,
+      breakMin: 10,
+      requiresApproval: true,
+    };
+    const visa = draftFromTemplate(SESSION_TEMPLATES[1]!); // 45 min
+    const sop = draftFromTemplate(SESSION_TEMPLATES[0]!); // 60 min
+    // The mentor's default is 45: the visa template follows it, the SOP one can't.
+    expect(applyTemplateLength(visa, 45, mine)).toBe(visa);
+    const own = applyTemplateLength(sop, 60, mine);
+    expect(own).toMatchObject({
+      rules: 'custom',
+      durationMin: 60,
+      // The rest from the mentor's defaults, not the blank draft's.
+      noticeHours: 72,
+      windowDays: 14,
+      breakMin: 10,
+    });
+    expect(toCreateBody(own, {}).duration_minutes).toBe(60);
+    // Unknown defaults: the platform's 60.
+    const none = {
+      ...mine,
+      durationMin: null,
+      noticeHours: null,
+      windowDays: null,
+      breakMin: null,
+    };
+    expect(applyTemplateLength(sop, 60, none)).toBe(sop);
+  });
+});
+
+describe('summaries (Session Types.dc.html, rulesFlow=inline)', () => {
+  it('the defaults line: the mentor’s values, the platform’s where unset', () => {
+    expect(
+      defaultsSummary({
+        durationMin: 60,
+        noticeHours: 24,
+        windowDays: 14,
+        breakMin: 15,
+        requiresApproval: true,
+      }),
+    ).toBe(
+      '60 min sessions · at least 24 hours notice · bookable up to 2 weeks ahead · 15 min break · you approve each request',
+    );
+    expect(
+      defaultsSummary({
+        durationMin: null,
+        noticeHours: null,
+        windowDays: null,
+        breakMin: null,
+        requiresApproval: false,
+      }),
+    ).toBe(
+      '60 min sessions · at least 24 hours notice · bookable up to 8 weeks ahead · no break · instant confirm',
+    );
+    // Notice that isn't whole hours (a stored 2000 min) reads "33.3", not the float.
+    expect(
+      defaultsSummary({
+        durationMin: 60,
+        noticeHours: 2000 / 60,
+        windowDays: 14,
+        breakMin: 0,
+        requiresApproval: true,
+      }),
+    ).toContain('at least 33.3 hours notice');
+  });
+
+  it('notice that isn’t a whole number of hours is sent as whole minutes (review r2 of #60)', () => {
+    const d = { ...blankDraft(), rules: 'custom' as const, noticeHours: 2000 / 60 };
+    expect(toCreateBody(d, {}).min_notice_minutes).toBe(2000);
+  });
+
+  it('the weekly line: Monday first, short times, null with no hours', () => {
+    const week = emptyWeek();
+    week[0] = { on: true, slots: [[600, 660]] }; // Sunday
+    week[1] = {
+      on: true,
+      slots: [
+        [1020, 1200],
+        [1230, 1290],
+      ],
+    };
+    week[3] = { on: false, slots: [[540, 600]] }; // off: not shown
+    expect(weeklySummary(week)).toBe('Mon 5 pm–8 pm, 8:30 pm–9:30 pm · Sun 10 am–11 am');
+    expect(weeklySummary(emptyWeek())).toBeNull();
+  });
+
+  it('hours that end first or overlap block a save; days that are off don’t count', () => {
+    const week = emptyWeek();
+    week[2] = { on: true, slots: [[600, 540]] };
+    expect(hasSlotErrors(week)).toBe(true);
+    week[2] = { on: false, slots: [[600, 540]] };
+    expect(hasSlotErrors(week)).toBe(false);
   });
 });
 

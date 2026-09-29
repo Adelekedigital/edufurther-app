@@ -39,6 +39,13 @@
   pointer-events: none;
   color: var(--ink-500);
 }
+.compact .select {
+  height: 36px;
+  padding: 0 var(--space-6) 0 var(--space-2);
+}
+.compact .chevron {
+  right: var(--space-1);
+}
 @media (max-width: 767px) {
   /* Design phone rule: full width, 44px, 16px text (no iOS zoom). */
   .wrap {

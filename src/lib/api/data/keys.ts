@@ -32,6 +32,9 @@ export const keys = {
     all: ['sessionTypes'] as const,
     own: (who: string) => ['sessionTypes', 'own', who] as const,
   },
+  // A mentor's booking preferences and Calendar hours, by their user id.
+  mentorDefaults: (userId: string) => ['mentorDefaults', userId] as const,
+  weeklyHours: (userId: string) => ['weeklyHours', userId] as const,
   booking: {
     sessionTypes: (mentorId: string) => ['booking', 'sessionTypes', mentorId] as const,
     /** Prefix: every offering's slots for one mentor (invalidated after a booking). */

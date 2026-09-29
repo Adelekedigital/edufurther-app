@@ -2,15 +2,18 @@ import { SessionPreviewCard } from '@/components/molecules/SessionPreviewCard/Se
 import { SummarySection } from '@/components/molecules/SummarySection/SummarySection';
 import {
   DAY_NAMES,
-  PLATFORM_BREAK_MIN,
-  PLATFORM_WINDOW_DAYS,
   QUESTION_KIND_LABELS,
   STAGE_LABELS,
+  approvalLabel,
+  breakLabel,
+  hoursLabel,
+  resolveDefaults,
   timeLabel,
+  windowLabel,
   type Draft,
 } from '@/lib/utils/sessionTypeDraft';
 import type { Topic } from '@/types/mentor';
-import { approvalLabel, breakLabel, windowLabel, type Defaults } from './SchedulingStep';
+import type { Defaults } from './SchedulingStep';
 import styles from './SessionTypeWizard.module.css';
 
 /** "Wed 5:00 pm–8:00 pm; Sat 9:00 am–10:00 am". */
@@ -39,24 +42,26 @@ export function ReviewStep({ draft: d, topics, defaults, onEdit }: ReviewStepPro
   const stage = d.stage === 'other' ? d.customStage : d.stage ? STAGE_LABELS[d.stage] : 'Any stage';
   // `defaults` is null until the mentor's own are known: then say "My default"
   // without a value rather than show the platform's as theirs (review of #49).
-  const windowText =
-    d.rules === 'custom'
-      ? `${windowLabel(d.windowDays)} ahead`
-      : defaults
-        ? `${windowLabel(defaults.windowDays ?? PLATFORM_WINDOW_DAYS)} ahead (my default)`
-        : 'My default';
-  const breakText =
-    d.rules === 'custom'
-      ? breakLabel(d.breakMin)
-      : defaults
-        ? `${breakLabel(defaults.breakMin ?? PLATFORM_BREAK_MIN)} (my default)`
-        : 'My default';
+  const custom = d.rules === 'custom';
+  const mine = defaults ? resolveDefaults(defaults) : null;
+  const inherited = (text: (r: NonNullable<typeof mine>) => string) =>
+    mine ? `${text(mine)} (my default)` : 'My default';
+  const lengthText = custom ? `${d.durationMin} min` : inherited((r) => `${r.durationMin} min`);
+  const noticeText = custom
+    ? `${hoursLabel(d.noticeHours)} hours`
+    : inherited((r) => `${hoursLabel(r.noticeHours)} hours`);
+  const windowText = custom
+    ? `${windowLabel(d.windowDays)} ahead`
+    : inherited((r) => `${windowLabel(r.windowDays)} ahead`);
+  const breakText = custom ? breakLabel(d.breakMin) : inherited((r) => breakLabel(r.breakMin));
   const approval =
-    d.approval !== 'inherit'
+    custom && d.approval !== 'inherit'
       ? approvalLabel(d.approval === 'on')
-      : defaults
-        ? `My default (${approvalLabel(defaults.requiresApproval).toLowerCase()})`
+      : mine
+        ? `My default (${approvalLabel(mine.requiresApproval).toLowerCase()})`
         : 'My default';
+  // The card shows the length mentees will book; unknown until the defaults load.
+  const length = custom ? d.durationMin : mine?.durationMin;
   return (
     <div className={styles.body4}>
       <div className={styles.summaries}>
@@ -86,8 +91,8 @@ export function ReviewStep({ draft: d, topics, defaults, onEdit }: ReviewStepPro
           title="Scheduling"
           onEdit={() => onEdit(3)}
           rows={[
-            { k: 'Length', v: `${d.durationMin} min` },
-            { k: 'Minimum notice', v: `${d.noticeHours} hours` },
+            { k: 'Length', v: lengthText },
+            { k: 'Minimum notice', v: noticeText },
             { k: 'Bookable up to', v: windowText },
             { k: 'Break after', v: breakText },
             { k: 'Hours', v: hoursSummary(d) },
@@ -98,7 +103,10 @@ export function ReviewStep({ draft: d, topics, defaults, onEdit }: ReviewStepPro
       <SessionPreviewCard
         name={d.name}
         description={d.description}
-        facts={[`${d.durationMin} min`, ...(topicLabels.length ? topicLabels : ['Any topic'])]}
+        facts={[
+          ...(length ? [`${length} min`] : []),
+          ...(topicLabels.length ? topicLabels : ['Any topic']),
+        ]}
       />
     </div>
   );

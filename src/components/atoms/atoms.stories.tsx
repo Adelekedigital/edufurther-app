@@ -232,6 +232,16 @@ export const Selects: Story = {
         disabled
         options={[{ value: 'x', label: 'Disabled' }]}
       />
+      <Select
+        aria-label="Compact (weekly hours modal)"
+        density="compact"
+        width={104}
+        defaultValue="1020"
+        options={[
+          { value: '1020', label: '5:00 pm' },
+          { value: '1200', label: '8:00 pm' },
+        ]}
+      />
     </div>
   ),
 };

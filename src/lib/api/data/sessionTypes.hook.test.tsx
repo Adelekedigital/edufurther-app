@@ -5,6 +5,7 @@ import {
   useCreateSessionType,
   useDeleteSessionType,
   useOwnSessionTypes,
+  useSaveMentorDefaults,
   useSetLive,
 } from './sessionTypes';
 
@@ -208,5 +209,74 @@ describe('useCreateSessionType', () => {
     act(() => result.current.create({ body, windows: [win(1), win(3)] }, { onSuccess }));
     await waitFor(() => expect(onSuccess).toHaveBeenCalled());
     expect(onSuccess.mock.calls[0]![0]).toEqual({ id: 'new', failedWindows: [win(3)] });
+  });
+});
+
+describe('useSaveMentorDefaults (Booking preferences, review of #60)', () => {
+  it('saves every value it shows (notice in minutes), caches them, and refreshes what follows them', async () => {
+    PATCH.mockResolvedValue({
+      data: { updated: true },
+      response: new Response(null, { status: 200 }),
+    });
+    const qc = new QueryClient();
+    const invalidate = vi.spyOn(qc, 'invalidateQueries');
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useSaveMentorDefaults('m1'), { wrapper });
+    await act(() =>
+      result.current.save({
+        durationMin: 45,
+        noticeHours: 48,
+        windowDays: null, // unset: the platform's, saved as seen
+        breakMin: 15,
+        requiresApproval: false,
+      }),
+    );
+    expect(PATCH.mock.calls[0]![1]).toMatchObject({
+      params: { path: { user_id: 'm1' } },
+      body: {
+        default_duration_minutes: 45,
+        default_min_notice_minutes: 2880,
+        booking_window_days: 56,
+        break_after_minutes: 15,
+        requires_booking_confirmation: false,
+      },
+    });
+    expect(qc.getQueryData(['mentorDefaults', 'm1'])).toMatchObject({
+      durationMin: 45,
+      noticeHours: 48,
+    });
+    const keysHit = invalidate.mock.calls.map((c) => JSON.stringify(c[0]!.queryKey));
+    expect(keysHit).toEqual(
+      expect.arrayContaining(['["booking"]', '["sessionTypes"]', '["mentors"]']),
+    );
+  });
+
+  it('a refusal is our copy, and the cache keeps the old values', async () => {
+    PATCH.mockResolvedValue({
+      error: { title: 'server words', status: 422 },
+      response: new Response(null, { status: 422 }),
+    });
+    const qc = new QueryClient();
+    qc.setQueryData(['mentorDefaults', 'm1'], { durationMin: 60 });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useSaveMentorDefaults('m1'), { wrapper });
+    const e = await result.current
+      .save({
+        durationMin: 30,
+        noticeHours: 24,
+        windowDays: 14,
+        breakMin: 0,
+        requiresApproval: true,
+      })
+      .catch((x: unknown) => x);
+    expect((e as { message: string }).message).toBe(
+      'Your preferences didn’t save. Try again in a moment.',
+    );
+    expect(qc.getQueryData(['mentorDefaults', 'm1'])).toEqual({ durationMin: 60 });
+    await waitFor(() => expect(result.current.error).not.toBeNull());
   });
 });

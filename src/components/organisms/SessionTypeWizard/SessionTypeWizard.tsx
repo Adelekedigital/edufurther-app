@@ -11,7 +11,12 @@ import type { SessionIcon } from '@/types/sessionType';
 import { CoreDetailsStep } from './CoreDetailsStep';
 import { IntakeQuestionsStep } from './IntakeQuestionsStep';
 import { ReviewStep } from './ReviewStep';
-import { SchedulingStep, type Defaults, type DefaultsStatus } from './SchedulingStep';
+import {
+  SchedulingStep,
+  type Defaults,
+  type DefaultsStatus,
+  type WeeklyStatus,
+} from './SchedulingStep';
 import styles from './SessionTypeWizard.module.css';
 
 export type Step = 1 | 2 | 3 | 4;
@@ -52,6 +57,10 @@ type SessionTypeWizardProps = {
   /** Whether `defaults` is the mentor's own yet: never shown as "my default" otherwise. */
   defaultsStatus: DefaultsStatus;
   onRetryDefaults: () => void;
+  onEditDefaults: () => void;
+  weekly: WeeklyStatus;
+  onRetryWeekly: () => void;
+  onEditWeekly: () => void;
   onStep: (step: Step) => void;
   onBack: () => void;
   onNext: () => void;
@@ -144,6 +153,10 @@ export function SessionTypeWizard(p: SessionTypeWizardProps) {
             defaults={p.defaults}
             defaultsStatus={p.defaultsStatus}
             onRetryDefaults={p.onRetryDefaults}
+            onEditDefaults={p.onEditDefaults}
+            weekly={p.weekly}
+            onRetryWeekly={p.onRetryWeekly}
+            onEditWeekly={p.onEditWeekly}
           />
         )}
         {p.step === 4 && (
