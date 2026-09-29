@@ -39,8 +39,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
     .slice(0, 3)
     .map(({ m, shared }) => ({
       ...m,
-      next_available_at: mockNextAvailableAt(m.id),
-      next_available_state: mockAvailabilityState(m.id),
+      // Null whenever the mentor isn't taking bookings (backend #301).
+      next_available_at: m.taking_bookings === false ? null : mockNextAvailableAt(m.id),
+      next_available_state: m.taking_bookings === false ? 'none' : mockAvailabilityState(m.id),
       shared_offering: shared,
     }));
   return NextResponse.json({ data, next_cursor: null } satisfies Page);

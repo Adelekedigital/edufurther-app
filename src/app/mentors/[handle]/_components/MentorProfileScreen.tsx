@@ -34,6 +34,7 @@ import { ProfileMissing } from './ProfileMissing';
 import { ReviewsTab } from './ReviewsTab';
 import { listLabel } from './suggestions';
 import { useOwnerEditing } from './useOwnerEditing';
+import { useBookLink } from './useBookLink';
 import { useProfileBooking } from './useProfileBooking';
 import { useProfileReviewing } from './useProfileReviewing';
 import { useProfileTab } from './useProfileTab';
@@ -72,8 +73,21 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const bookBlocked = !online ? 'Booking needs a connection' : bookBlockedFor(viewer);
   // Mentors can't book (product 2026-09-29, canBookFor): on another mentor's
   // profile every Book control goes away, as for the owner on their own.
-  const mayBook = !isOwner && canBook;
+  const canBookHere = !isOwner && canBook;
+  // …and a mentor who isn't taking bookings (backend #301) offers no Book at
+  // all: the header and booking card say "Not taking bookings" instead.
+  const notTaking = !!p && !p.takingBookings;
+  const mayBook = canBookHere && !notTaking;
   const booking = useProfileBooking({ mentor: p?.mentor ?? null, mayBook, canBook, timeZone });
+  useBookLink({
+    profile: p ?? null,
+    gone: profile.notFound || (!!profile.error && !p),
+    ready: viewer.kind !== 'loading' && online,
+    // Gated like every Book on the page: an account-blocked viewer's link is
+    // dropped (the page's Book says why).
+    allowed: mayBook && !bookBlockedFor(viewer),
+    open: booking.open,
+  });
   const reviews = useProfileReviewing({
     handle,
     mentorId: p?.mentor.id ?? null,
@@ -105,7 +119,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // only the first-mentees card it's "About this mentor".
   const asideLabel =
     listLabel([
-      mayBook && 'booking',
+      // Neutral when nothing can be booked (review of #81).
+      canBookHere && (notTaking ? 'sessions' : 'booking'),
       tab === 'overview' && 'track record',
       similarShown && 'similar mentors',
     ]) ?? 'About this mentor';
@@ -183,6 +198,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
             <ProfileHeader
               profile={p}
               onShowReviews={hasReviews ? () => setTab('reviews') : undefined}
+              // PROVISIONAL copy (design request): the design only names the state.
+              status={canBookHere && notTaking ? 'Not taking bookings' : undefined}
               introEditor={
                 isOwner && owner.introOpen ? (
                   <IntroEditForm
@@ -325,18 +342,19 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               </div>
               {tab !== 'sessions' &&
                 // Never an empty named landmark (the owner's Reviews tab can hold nothing).
-                (mayBook || tab === 'overview' || (!isPhone && !!firstMentees)) && (
+                (canBookHere || tab === 'overview' || (!isPhone && !!firstMentees)) && (
                   // Reviews tab: the design's default `reviewsLayout=focus` drops
                   // the track record (and Similar mentors) from the aside.
                   <aside className={styles.aside} aria-label={asideLabel}>
                     {!isPhone && firstMentees}
-                    {mayBook && (
+                    {canBookHere && (
                       <div id="profile-book" className={styles.scrollTarget}>
                         <BookSessionCard
                           sessionTypes={p.sessionTypes}
                           onBook={booking.open}
                           onCompare={() => setTab('sessions')}
                           bookBlocked={bookBlocked}
+                          notTaking={notTaking}
                         />
                       </div>
                     )}

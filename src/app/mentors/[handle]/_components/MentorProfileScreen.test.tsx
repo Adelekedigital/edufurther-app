@@ -99,7 +99,7 @@ describe('MentorProfileScreen — the four states', () => {
     ).toBeInTheDocument();
     const section = screen.getByRole('region', { name: 'Mentors with similar expertise' });
     expect(section).toHaveTextContent(
-      'They help with statement of purpose, scholarships & funding, and visa and interview, and are taking bookings.',
+      'They help with statement of purpose, scholarships & funding, and visa and interview.',
     );
     expect(within(section).getAllByRole('article')).toHaveLength(similarMentors.length);
     expect(within(section).getByRole('link', { name: 'Explore all mentors' })).toHaveAttribute(
@@ -364,15 +364,13 @@ describe('MentorProfileScreen — new mentors (design reply #45)', () => {
 describe('suggestionsLine', () => {
   const at = (n: number) => similarMentors.slice(0, n);
   it('names up to three shared topics, commas keeping each whole', () => {
-    expect(suggestionsLine(at(0))).toBe('They are taking bookings.');
-    expect(suggestionsLine(at(1))).toBe(
-      'They help with statement of purpose, and are taking bookings.',
-    );
+    expect(suggestionsLine(at(0))).toBe('Other mentors you can explore.');
+    expect(suggestionsLine(at(1))).toBe('They help with statement of purpose.');
     expect(suggestionsLine(at(2))).toBe(
-      'They help with statement of purpose, and scholarships & funding, and are taking bookings.',
+      'They help with statement of purpose, and scholarships & funding.',
     );
     expect(suggestionsLine(at(3))).toBe(
-      'They help with statement of purpose, scholarships & funding, and visa and interview, and are taking bookings.',
+      'They help with statement of purpose, scholarships & funding, and visa and interview.',
     );
   });
   it('says a shared topic once', () => {
@@ -380,8 +378,6 @@ describe('suggestionsLine', () => {
       similarMentors[0]!,
       { ...similarMentors[1]!, sharedTopic: 'Statement of purpose' },
     ];
-    expect(suggestionsLine(twice)).toBe(
-      'They help with statement of purpose, and are taking bookings.',
-    );
+    expect(suggestionsLine(twice)).toBe('They help with statement of purpose.');
   });
 });

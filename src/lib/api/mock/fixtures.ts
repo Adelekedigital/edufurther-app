@@ -246,6 +246,13 @@ const GENERATED: MentorSummaryRead[] = FIRST.map((first, i) => {
   );
 });
 
+/**
+ * Approved and listed, but not bookable right now (backend #301): the profile's
+ * and Explore's "Not taking bookings". Its next-available time is always null.
+ */
+export const NOT_TAKING = new Set(['m-gen-5']);
+for (const m of GENERATED) if (NOT_TAKING.has(m.id)) m.taking_bookings = false;
+
 export const MENTORS: MentorSummaryRead[] = [...DESIGN_SAMPLE, ...GENERATED];
 
 /** "Featured this week" mock: the design's sample bio, with the first landscape test photo and its name. */
