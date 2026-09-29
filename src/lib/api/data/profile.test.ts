@@ -1,4 +1,4 @@
-import { toMentorProfile } from './profile';
+import { stageLine, toMentorProfile } from './profile';
 
 type Read = Parameters<typeof toMentorProfile>[0];
 const read = (over: Partial<Read> = {}): Read =>
@@ -105,6 +105,41 @@ describe('toMentorProfile', () => {
       questions: [],
     });
     expect(p.sessionTypes[1]).toMatchObject({ stage: 'Pre-departure', category: null });
+  });
+
+  it('lists every stage an offering is aimed at, in order (application_stages)', () => {
+    const t = (over: object) =>
+      ({
+        id: 's',
+        name: 'x',
+        duration_minutes: 30,
+        min_notice_minutes: 60,
+        meeting_venue: 'daily',
+        ...over,
+      }) as NonNullable<Read['session_types']>[number];
+    expect(
+      stageLine(
+        t({
+          application_stages: ['drafting_stage', 'revisions'],
+          application_stage: 'drafting_stage',
+        }),
+      ),
+    ).toBe('Drafting, Revising');
+    // `other` reads as the mentor's words, in its place.
+    expect(
+      stageLine(
+        t({
+          application_stages: ['early_exploration', 'other'],
+          custom_stage_label: ' Pre-departure ',
+        }),
+      ),
+    ).toBe('Exploring, Pre-departure');
+    // Empty means any stage: no chip. The list wins over the deprecated field.
+    expect(stageLine(t({ application_stages: [], application_stage: null }))).toBeNull();
+    // An older response without the list still reads its single stage.
+    expect(stageLine(t({ application_stage: 'interviewing' }))).toBe('Interviewing');
+    // `other` with no wording adds nothing.
+    expect(stageLine(t({ application_stages: ['other'], custom_stage_label: '  ' }))).toBeNull();
   });
 
   it('survives a sparse profile', () => {

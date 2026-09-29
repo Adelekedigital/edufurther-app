@@ -52,8 +52,12 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  height: 24px;
-  padding: 0 var(--space-2);
+  /* 24px as drawn; a long stage list ("Exploring, Drafting, Revising…") may
+     wrap on a narrow card, so the chip grows rather than overflowing. */
+  min-height: 24px;
+  max-width: 100%;
+  padding: 2px var(--space-2);
+  line-height: var(--lh-p);
   border-radius: var(--radius-md);
   background: var(--surface-subtle);
 }
