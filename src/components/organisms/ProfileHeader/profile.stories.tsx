@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
 import { Button } from '@/components/atoms/Button/Button';
+import { CoverPicker } from '@/components/molecules/CoverPicker/CoverPicker';
 import { ReviewNote } from '@/components/molecules/ReviewNote/ReviewNote';
 import { ShareMenu } from '@/components/molecules/ShareMenu/ShareMenu';
+import type { CoverArt, CoverKey } from '@/lib/utils/cover';
 import { BookSessionCard } from '../BookSessionCard/BookSessionCard';
 import { FirstMenteesCard } from '../FirstMenteesCard/FirstMenteesCard';
 import { ProfileOverview } from '../ProfileOverview/ProfileOverview';
@@ -48,6 +51,67 @@ export const HeaderNewMentor: Story = {
 export const HeaderPhone: Story = {
   globals: { viewport: { value: 'mobile2', isRotated: false } },
   render: () => <ProfileHeader profile={fullProfile} actions={actions} />,
+};
+
+/** Cover art over a chosen colour: topic icons, the dot pattern, one large icon. */
+export const HeaderCoverArt: Story = {
+  render: () => (
+    <div style={{ ...wide, display: 'grid', gap: 24 }}>
+      {(['icons', 'pattern', 'single'] as const).map((art, i) => (
+        <ProfileHeader
+          key={art}
+          profile={{
+            ...fullProfile,
+            cover: { color: (['mint', 'peach', 'lilac'] as const)[i]!, art },
+          }}
+        />
+      ))}
+    </div>
+  ),
+};
+
+/** The owner's "Change cover", saving to local state (the page saves to the API). */
+function OwnerCover() {
+  const [color, setColor] = useState<CoverKey>('sky');
+  const [art, setArt] = useState<CoverArt>('none');
+  const [savedAt, setSavedAt] = useState(0);
+  return (
+    <ProfileHeader
+      profile={{ ...fullProfile, cover: { color, art } }}
+      bannerTools={
+        <CoverPicker
+          color={color}
+          artOn={art !== 'none'}
+          onPickColor={(k) => {
+            setColor(k);
+            setSavedAt(Date.now());
+          }}
+          onToggleArt={(on) => {
+            setArt(on ? 'icons' : 'none');
+            setSavedAt(Date.now());
+          }}
+          saveState={savedAt ? 'saved' : 'idle'}
+          savedAt={savedAt}
+          hasImage={false}
+          onFile={fn()}
+          uploading={false}
+          uploadError={null}
+          accept="image/jpeg,image/png,image/webp"
+        />
+      }
+    />
+  );
+}
+export const HeaderOwnerCover: Story = {
+  render: () => (
+    <div style={wide}>
+      <OwnerCover />
+    </div>
+  ),
+};
+export const HeaderOwnerCoverPhone: Story = {
+  globals: { viewport: { value: 'mobile2', isRotated: false } },
+  render: () => <OwnerCover />,
 };
 
 export const Overview: Story = {

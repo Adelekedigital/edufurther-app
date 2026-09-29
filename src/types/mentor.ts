@@ -194,6 +194,11 @@ export type MentorProfile = {
   headline: string | null;
   about: string | null;
   bannerUrl: string | null;
+  /** The mentor's chosen cover (null colour: the automatic one) and cover art. */
+  cover: {
+    color: import('@/lib/utils/cover').CoverKey | null;
+    art: import('@/lib/utils/cover').CoverArt;
+  };
   originCountry: string | null;
   studyCountry: string | null;
   languages: string[];

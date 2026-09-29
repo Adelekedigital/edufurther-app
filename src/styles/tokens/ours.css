@@ -32,6 +32,9 @@
   /* Top-of-photo gradient start (Design decisions §8: 45% ink-900 → 0 over the top 45%). */
   --photo-scrim: rgba(16, 25, 40, 0.45);
 
+  /* Cover colour swatch edge, so pale swatches read on white (Mentor Profile.dc.html). */
+  --swatch-edge: rgba(16, 25, 40, 0.08);
+
   /* Plus tag. Gold with dark text — white on gold is ~2:1 (Design decisions: Explore). */
   --plus-fill: #e3b42b;
   --plus-text: #3d2a00;

@@ -2,6 +2,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
+import { coverArt, coverKey } from '@/lib/utils/cover';
 import { safeSocialUrl } from '@/lib/utils/socialUrl';
 import type {
   Mentor,
@@ -159,6 +160,8 @@ export function toMentorProfile(r: MentorPublicRead): MentorProfile {
     headline: r.headline?.trim() || null,
     about: r.about_me?.trim() || null,
     bannerUrl: r.banner_url ?? null,
+    // Checked against our 12 keys: an unknown value falls back to the automatic cover.
+    cover: { color: coverKey(r.cover_color), art: coverArt(r.cover_art) },
     originCountry: r.origin_country ?? null,
     studyCountry: r.primary_study_country ?? null,
     languages: (r.languages ?? []).map((l) => l.display_name),

@@ -64,6 +64,7 @@ export const fullProfile: MentorProfile = {
   about:
     'A sociologist in training, focused on community development, agriculture and food systems, and inequality. I moved from Nigeria to a fully funded PhD at Mississippi State, and I’ve reviewed dozens of SOPs since. I’ll help you shortlist programs that fund, tell a clear story in your statement, and prepare for visa and admissions interviews. Past failures taught me as much as the wins, and I bring both to every session.',
   bannerUrl: null,
+  cover: { color: null, art: 'none' },
   originCountry: 'Nigeria',
   studyCountry: 'United States',
   languages: ['English', 'Yoruba'],

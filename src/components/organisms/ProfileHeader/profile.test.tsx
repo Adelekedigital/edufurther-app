@@ -53,6 +53,41 @@ describe('ProfileHeader', () => {
     expect(circle.style.getPropertyValue('--photo-bg')).toBe(`var(--cover-${key}-ink)`);
   });
 
+  it('uses the mentor’s chosen cover colour over the automatic one', () => {
+    const { container } = render(
+      <ProfileHeader profile={{ ...fullProfile, cover: { color: 'rose', art: 'none' } }} />,
+    );
+    const banner = container.querySelector('section')!.firstElementChild as HTMLElement;
+    expect(banner.style.getPropertyValue('--cover-bg')).toBe('var(--cover-rose-bg)');
+  });
+
+  it('draws the first 3 topics as faint icons, hidden from assistive tech', () => {
+    const { container } = render(
+      <ProfileHeader profile={{ ...fullProfile, cover: { color: null, art: 'icons' } }} />,
+    );
+    const banner = container.querySelector('section')!.firstElementChild as HTMLElement;
+    const art = banner.querySelector('[aria-hidden]')!;
+    expect(art.querySelectorAll('span')).toHaveLength(
+      Math.min(3, fullProfile.mentor.topics.length),
+    );
+  });
+
+  it('draws no art over a banner image', () => {
+    const { container } = render(
+      <ProfileHeader
+        profile={{ ...fullProfile, bannerUrl: '/b.jpg', cover: { color: null, art: 'icons' } }}
+      />,
+    );
+    const banner = container.querySelector('section')!.firstElementChild as HTMLElement;
+    expect(banner.querySelector('[aria-hidden]')).toBeNull();
+    expect(banner.querySelector('img')).toHaveAttribute('src', '/b.jpg');
+  });
+
+  it('puts the owner’s cover tools with the banner', () => {
+    render(<ProfileHeader profile={fullProfile} bannerTools={<button>Change cover</button>} />);
+    expect(screen.getByRole('button', { name: 'Change cover' })).toBeInTheDocument();
+  });
+
   it('says whichever half of the move is known', () => {
     expect(locationLine('Ghana', null)).toBe('From Ghana');
     expect(locationLine(null, 'Canada')).toBe('Studied in Canada');
