@@ -98,6 +98,7 @@ let slotsRemote: unknown = idle;
 vi.mock('@/lib/api/data/booking', () => ({
   useSessionTypes: () => sessionTypesRemote,
   useSlots: () => slotsRemote,
+  useUploadIntakeFile: () => vi.fn(),
   useRequestBooking: () => ({
     request: vi.fn(),
     isPending: false,

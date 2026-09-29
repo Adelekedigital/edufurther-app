@@ -13,7 +13,12 @@ import { BookingFlow } from '@/components/organisms/BookingFlow/BookingFlow';
 import { MentorResults } from '@/components/organisms/MentorResults/MentorResults';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
-import { useRequestBooking, useSessionTypes, useSlots } from '@/lib/api/data/booking';
+import {
+  useRequestBooking,
+  useSessionTypes,
+  useSlots,
+  useUploadIntakeFile,
+} from '@/lib/api/data/booking';
 import { useFeaturedMentor, useMentors, useTopics } from '@/lib/api/data/mentors';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
@@ -76,6 +81,7 @@ export function ExploreScreen() {
   const typeId = bookingTypeId ?? sessionTypes.data?.[0]?.id ?? null;
   const slots = useSlots(booking?.id ?? null, typeId, timeZone);
   const request = useRequestBooking();
+  const uploadIntakeFile = useUploadIntakeFile();
 
   // Hidden while searching and on the no-mentors / error states (Design decisions: featured).
   const noSupply =
@@ -260,6 +266,7 @@ export function ExploreScreen() {
           requestPending={request.isPending}
           requestDone={request.isDone}
           requestError={request.error}
+          onUpload={uploadIntakeFile}
           onClose={closeBooking}
           deviceZone={timeZone}
           firstReasons={firstReasonsFor(booking)}

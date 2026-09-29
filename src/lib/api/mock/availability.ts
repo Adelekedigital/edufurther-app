@@ -62,6 +62,42 @@ export function mockNextAvailableAt(mentorId: string, now = Date.now()): string 
 // variable so the mock compiles against the spec before and after each ships.
 const NO_TOPICS = { service_offerings: [], questions: [] };
 
+const q = (
+  id: string,
+  display_order: number,
+  question_text: string,
+  question_type: 'free_text' | 'file_upload' | 'multi_choice',
+  is_required: boolean,
+  options: string[] = [],
+  allows_multiple = false,
+) => ({
+  id,
+  display_order,
+  question_text,
+  question_type,
+  is_required,
+  allows_multiple,
+  options: options.map((text, i) => ({ id: `${id}-o${i + 1}`, text })),
+});
+export const CV_QUESTIONS = [
+  q('00000000-0000-4000-8000-00000000c001', 0, 'Upload your current CV', 'file_upload', true),
+  q('00000000-0000-4000-8000-00000000c002', 1, 'What is the CV for?', 'multi_choice', true, [
+    'Masters application',
+    'PhD application',
+    'Job search',
+  ]),
+  q(
+    '00000000-0000-4000-8000-00000000c003',
+    2,
+    'Which parts worry you most?',
+    'multi_choice',
+    false,
+    ['Structure', 'Wording', 'Length', 'Gaps'],
+    true,
+  ),
+  q('00000000-0000-4000-8000-00000000c004', 3, 'Anything else I should know?', 'free_text', false),
+];
+
 export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
   {
     id: 'st-general',
@@ -84,6 +120,8 @@ export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
     min_notice_minutes: 1440,
     service_offering: null,
     ...NO_TOPICS,
+    // Every question kind the booking step renders (backend #268, #12, #282).
+    questions: CV_QUESTIONS,
     application_stage: null,
     custom_stage_label: null,
     meeting_venue: 'google_meet',

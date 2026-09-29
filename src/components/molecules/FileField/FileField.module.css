@@ -37,8 +37,36 @@ input:focus-visible + .box {
   border-color: var(--green-600);
   background: var(--green-50);
 }
+.failed {
+  border-color: var(--border-danger);
+}
 .icon {
   color: var(--blue-500);
+}
+.error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-danger);
+}
+.retry {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--blue-600);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.retry:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-xs);
 }
 .main {
   font-size: var(--text-p-xs);
