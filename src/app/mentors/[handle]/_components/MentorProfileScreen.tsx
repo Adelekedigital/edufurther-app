@@ -44,7 +44,7 @@ const NEW_MENTOR_UNDER = 3;
  * (backend mentor-profile reply #1). Editing comes in a later PR. The only place on this route that fetches.
  */
 export function MentorProfileScreen({ handle }: { handle: string }) {
-  const { viewer, member, chrome, account, nav } = useAppShell();
+  const { viewer, member, chrome, account, nav, canBook } = useAppShell();
   const online = useOnline();
   const profile = useMentorProfile(handle);
   const p = profile.data;
@@ -103,6 +103,9 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
 
   const isOwner = !!p && (p.owner !== null || member?.id === p.mentor.id);
   const bookBlocked = !online ? 'Booking needs a connection' : bookBlockedFor(viewer);
+  // Mentors can't book (product 2026-09-29, canBookFor): on another mentor's
+  // profile every Book control goes away, as for the owner on their own.
+  const mayBook = !isOwner && canBook;
 
   // ---- reviews tab ------------------------------------------------------------
   const isGuest = viewer.kind === 'guest';
@@ -131,7 +134,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // only the first-mentees card it's "About this mentor".
   const asideLabel =
     listLabel([
-      !isOwner && 'booking',
+      mayBook && 'booking',
       tab === 'overview' && 'track record',
       similarShown && 'similar mentors',
     ]) ?? 'About this mentor';
@@ -160,7 +163,11 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           award={p.awards[0]?.title ?? null}
           // Blocked booking (guest setup, offline…) is explained on the header's
           // Book; the card just doesn't offer one.
-          onBook={hasSessions && !bookBlocked ? (time) => openBooking(undefined, time) : undefined}
+          onBook={
+            mayBook && hasSessions && !bookBlocked
+              ? (time) => openBooking(undefined, time)
+              : undefined
+          }
         />
       )
     ) : null;
@@ -207,7 +214,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               onShowReviews={hasReviews ? () => setTab('reviews') : undefined}
               actions={
                 <>
-                  {!isOwner && hasSessions && (
+                  {mayBook && hasSessions && (
                     // The view's one filled button: Large (CTA hierarchy).
                     <Button size="large" disabled={!!bookBlocked} onClick={() => openBooking()}>
                       {bookBlocked ?? 'Book a session'}
@@ -275,7 +282,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                         title={`You can review ${p.mentor.firstName} after your first session`}
                         body="Reviews come only from mentees who’ve had a session, so you can trust what you read."
                         action={
-                          hasSessions && !bookBlocked ? (
+                          mayBook && hasSessions && !bookBlocked ? (
                             <Button
                               variant="secondary-outlined"
                               size="medium"
@@ -333,18 +340,18 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                     sessionTypes={p.sessionTypes}
                     onBook={openBooking}
                     bookBlocked={bookBlocked}
-                    canBook={!isOwner}
+                    canBook={mayBook}
                   />
                 )}
               </div>
               {tab !== 'sessions' &&
                 // Never an empty named landmark (the owner's Reviews tab can hold nothing).
-                (!isOwner || tab === 'overview' || (!isPhone && !!firstMentees)) && (
+                (mayBook || tab === 'overview' || (!isPhone && !!firstMentees)) && (
                   // Reviews tab: the design's default `reviewsLayout=focus` drops
                   // the track record (and Similar mentors) from the aside.
                   <aside className={styles.aside} aria-label={asideLabel}>
                     {!isPhone && firstMentees}
-                    {!isOwner && (
+                    {mayBook && (
                       <BookSessionCard
                         sessionTypes={p.sessionTypes}
                         onBook={openBooking}
@@ -368,7 +375,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
         )}
       </div>
 
-      {booking && p && (
+      {booking && p && mayBook && (
         <BookingFlow
           mentor={p.mentor}
           sessionTypes={sessionTypes}
