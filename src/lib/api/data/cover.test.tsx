@@ -215,6 +215,24 @@ describe('useCoverEdit', () => {
     expect(result.current.uploadError).toBeNull();
   });
 
+  it('closing during an upload keeps it: still uploading, and its error still shows (review r2 of #65)', async () => {
+    let fail!: () => void;
+    POST.mockReturnValue(
+      new Promise((r) => {
+        fail = () =>
+          r({ data: undefined, error: {}, response: new Response(null, { status: 422 }) });
+      }),
+    );
+    const { wrapper } = setup();
+    const { result } = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
+    act(() => result.current.upload(file('image/png', 10)));
+    await waitFor(() => expect(result.current.uploading).toBe(true));
+    act(() => result.current.clearMessages());
+    expect(result.current.uploading).toBe(true);
+    await act(async () => fail());
+    await waitFor(() => expect(result.current.uploadError).toMatch(/couldn’t be used/));
+  });
+
   it('closing forgets a failed save’s status', async () => {
     PATCH.mockResolvedValue({
       data: undefined,

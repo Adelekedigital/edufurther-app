@@ -231,4 +231,18 @@ describe('CoverPicker', () => {
     setup();
     expect(trigger()).toHaveAttribute('aria-haspopup', 'dialog');
   });
+
+  it('while uploading, neither a click nor Enter opens the file chooser again', async () => {
+    const open = vi.spyOn(HTMLInputElement.prototype, 'click');
+    try {
+      const { user } = setup({ uploading: true });
+      await user.click(trigger());
+      const up = screen.getByRole('button', { name: 'Uploading…' });
+      await user.click(up);
+      await user.keyboard('{Enter}');
+      expect(open).not.toHaveBeenCalled();
+    } finally {
+      open.mockRestore();
+    }
+  });
 });

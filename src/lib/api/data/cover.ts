@@ -110,12 +110,17 @@ export function useCoverEdit(handle: string, userId: string | null) {
     onError: () => {
       if (burst.current) burst.current.failed = true;
     },
-    onSettled: () => {
+    onSettled: (_d, error) => {
       // This save still counts as pending here: more than one = more queued.
       if (qc.isMutating({ mutationKey }) > 1) return;
       const b = burst.current;
       burst.current = null;
-      if (!b) return;
+      if (!b) {
+        // No profile in the cache when it started: nothing to put back, but
+        // the status still ends (review r2 of #65).
+        setStatus({ state: error ? 'error' : 'saved', stamp: Date.now() });
+        return;
+      }
       update((p) => ({ ...p, cover: b.confirmed }));
       if (b.failed) void qc.invalidateQueries({ queryKey: key });
       setStatus({ state: b.failed ? 'error' : 'saved', stamp: Date.now() });
@@ -170,7 +175,9 @@ export function useCoverEdit(handle: string, userId: string | null) {
     /** Forget the last save's status and any upload error (the picker closed). */
     clearMessages: () => {
       setFileProblem(null);
-      upload.reset();
+      // Never a running upload: reopening must still show it, and its error
+      // if it fails (review r2 of #65).
+      if (!upload.isPending) upload.reset();
       setStatus((s) => (s.state === 'saving' ? s : { state: 'idle', stamp: 0 }));
     },
   };
