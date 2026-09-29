@@ -73,6 +73,8 @@ node scripts/review-page.mjs /           # needs the app running
 11. **Deep checks report findings only.** Never edit during a review, a debug, or
     an audit until the fix and its impact are approved.
 12. **Conventional Commits.** The release tooling parses them.
+13. **No file over 1000 lines of code** (ESLint `max-lines`, comments not counted).
+    Split past 900. Comments say why, briefly.
 
 ## Layout
 

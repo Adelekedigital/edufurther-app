@@ -137,6 +137,8 @@ Prototype files (`support.js`, `image-slot.js`, `dc-import`, `sc-if`) are the pr
    every new or changed element, and list the table in the PR. A mismatch is a bug,
    unless it is a recorded divergence in `references/design-divergence.md`.
 
+- **File size (product, 2026-09-29):** at most 1000 lines of code per file (comments and blank lines not counted), enforced by ESLint `max-lines`. Start splitting a file once it passes 900: a component into sub-components or hooks, a test file by concern with a shared harness. Never raise the limit to pass.
+- **Comments are short:** say why, not what; don't restate the code; no history ("changed in #NN") unless it guards a regression.
 - Route folders kebab-case; components PascalCase.
 - Route-local components live in `src/app/<route>/_components/` until a second route needs them. Page logic shared by routes lives in `src/app/_shell/` (`useAppShell` — chrome and account menu — and `bookBlockedFor`).
 - DS atoms keep the DS names and props (`Button`, `Chip`, `EmptyState`, `Avatar`, `Badge`, …).
