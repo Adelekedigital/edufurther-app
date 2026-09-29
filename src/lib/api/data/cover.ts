@@ -38,6 +38,12 @@ export function bannerProblem(file: File): string | null {
   return null;
 }
 
+/** Copy for a failed removal. */
+export function removeErrorCopy(e: AppError): string {
+  if (e.kind === 'offline') return 'You’re offline. Try again when you’re connected.';
+  return 'The image wasn’t removed. Try again.';
+}
+
 /** Copy for a failed upload: the server's 413/422 mean the file, not the network. */
 export function bannerErrorCopy(e: AppError): string {
   if (e.kind === 'offline') return 'You’re offline. Try again when you’re connected.';
@@ -157,6 +163,28 @@ export function useCoverEdit(handle: string, userId: string | null) {
     },
   });
 
+  // Remove the image (DELETE /users/{id}/banner, 204, idempotent). The cover
+  // shows its colour at once; a failure puts the image back.
+  const remove = useMutation({
+    networkMode: 'always',
+    mutationFn: async () => {
+      if (!userId) throw new Error('No user');
+      const { error, response } = await api.DELETE('/api/v1/users/{user_id}/banner', {
+        params: { path: { user_id: userId } },
+      });
+      if (!response.ok) throw apiError(response.status, error);
+    },
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: key });
+      const before = qc.getQueryData<MentorProfile>(key)?.bannerUrl ?? null;
+      update((p) => ({ ...p, bannerUrl: null }));
+      return { before };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.before) update((p) => ({ ...p, bannerUrl: ctx.before }));
+    },
+  });
+
   return {
     /** Save a colour or art change; shows at once. */
     save: (c: CoverPatch) => save.mutate(c),
@@ -167,17 +195,31 @@ export function useCoverEdit(handle: string, userId: string | null) {
       const problem = bannerProblem(file);
       setFileProblem(problem);
       upload.reset();
+      remove.reset();
       if (!problem) upload.mutate(file);
     },
     uploading: upload.isPending,
-    uploadError:
-      fileProblem ?? (upload.error ? bannerErrorCopy(normaliseError(upload.error)) : null),
+    removeImage: () => {
+      setFileProblem(null);
+      upload.reset();
+      remove.mutate();
+    },
+    removing: remove.isPending,
+    /** The last upload's or removal's problem, whichever came last. */
+    imageError:
+      fileProblem ??
+      (upload.error
+        ? bannerErrorCopy(normaliseError(upload.error))
+        : remove.error
+          ? removeErrorCopy(normaliseError(remove.error))
+          : null),
     /** Forget the last save's status and any upload error (the picker closed). */
     clearMessages: () => {
       setFileProblem(null);
       // Never a running upload: reopening must still show it, and its error
       // if it fails (review r2 of #65).
       if (!upload.isPending) upload.reset();
+      if (!remove.isPending) remove.reset();
       setStatus((s) => (s.state === 'saving' ? s : { state: 'idle', stamp: 0 }));
     },
   };

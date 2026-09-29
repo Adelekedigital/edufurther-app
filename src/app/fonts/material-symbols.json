@@ -41,6 +41,7 @@
     "format_list_numbered",
     "groups",
     "handshake",
+    "hide_image",
     "home",
     "home_pin",
     "hourglass_top",
@@ -92,5 +93,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "24587a3f0673f5d55cf438763995fae360c3378b2d14b9cf27850104f374bcd8"
+  "sha256": "6938cdfb541be1742f2665b924068e1ea121988fd898df6f2111c538d6c7c8ab"
 }

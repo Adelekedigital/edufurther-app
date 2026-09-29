@@ -95,7 +95,9 @@ function OwnerCover() {
           hasImage={false}
           onFile={fn()}
           uploading={false}
-          uploadError={null}
+          onRemoveImage={fn()}
+          removing={false}
+          imageError={null}
           accept="image/jpeg,image/png,image/webp"
         />
       }

@@ -120,6 +120,7 @@ let profile: ProfileRemote;
 vi.mock('@/lib/api/data/profile', () => ({ useMentorProfile: () => profile }));
 const coverSave = vi.fn();
 const coverUpload = vi.fn();
+const coverRemove = vi.fn();
 vi.mock('@/lib/api/data/cover', () => ({
   BANNER_ACCEPT: 'image/jpeg,image/png,image/webp',
   useCoverEdit: () => ({
@@ -128,7 +129,9 @@ vi.mock('@/lib/api/data/cover', () => ({
     savedStamp: 0,
     upload: coverUpload,
     uploading: false,
-    uploadError: null,
+    removeImage: coverRemove,
+    removing: false,
+    imageError: null,
     clearMessages: vi.fn(),
   }),
 }));

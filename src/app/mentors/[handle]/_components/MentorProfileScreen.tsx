@@ -345,7 +345,9 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                     hasImage={!!p.bannerUrl}
                     accept={BANNER_ACCEPT}
                     uploading={coverEdit.uploading}
-                    uploadError={coverEdit.uploadError}
+                    onRemoveImage={coverEdit.removeImage}
+                    removing={coverEdit.removing}
+                    imageError={coverEdit.imageError}
                     onFile={coverEdit.upload}
                     onClose={coverEdit.clearMessages}
                   />

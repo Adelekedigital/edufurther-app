@@ -7,7 +7,8 @@ import { CoverPicker, type CoverSaveState } from './CoverPicker';
 type Extra = Partial<{
   hasImage: boolean;
   uploading: boolean;
-  uploadError: string | null;
+  imageError: string | null;
+  removing: boolean;
   saveState: CoverSaveState;
   savedStamp: number;
 }>;
@@ -16,6 +17,7 @@ function setup(extra: Extra = {}) {
   const onPickColor = vi.fn();
   const onToggleArt = vi.fn();
   const onFile = vi.fn();
+  const onRemoveImage = vi.fn();
   function Host() {
     const [color, setColor] = useState<CoverKey>('sky');
     const [artOn, setArtOn] = useState(false);
@@ -36,14 +38,16 @@ function setup(extra: Extra = {}) {
         hasImage={extra.hasImage ?? false}
         onFile={onFile}
         uploading={extra.uploading ?? false}
-        uploadError={extra.uploadError ?? null}
+        onRemoveImage={onRemoveImage}
+        removing={extra.removing ?? false}
+        imageError={extra.imageError ?? null}
         accept="image/jpeg,image/png,image/webp"
       />
     );
   }
   const user = userEvent.setup();
   const view = render(<Host />);
-  return { user, onPickColor, onToggleArt, onFile, ...view };
+  return { user, onPickColor, onToggleArt, onFile, onRemoveImage, ...view };
 }
 
 const trigger = () => screen.getByRole('button', { name: 'Change cover' });
@@ -115,7 +119,9 @@ describe('CoverPicker', () => {
           hasImage={false}
           onFile={() => {}}
           uploading={false}
-          uploadError={null}
+          onRemoveImage={() => {}}
+          removing={false}
+          imageError={null}
           accept=""
         />,
       );
@@ -134,7 +140,9 @@ describe('CoverPicker', () => {
           hasImage={false}
           onFile={() => {}}
           uploading={false}
-          uploadError={null}
+          onRemoveImage={() => {}}
+          removing={false}
+          imageError={null}
           accept=""
         />,
       );
@@ -155,16 +163,46 @@ describe('CoverPicker', () => {
     expect(onFile).toHaveBeenCalledWith(f);
   });
 
-  it('with an image: says so, offers a new one, and hides the topic toggle', async () => {
-    const { user } = setup({ hasImage: true });
+  it('with an image: no colour reads as picked, and the button removes it (CoverPicker.dc.html)', async () => {
+    const { user, onRemoveImage, onFile, container } = setup({ hasImage: true });
     await user.click(trigger());
-    expect(screen.getByText('Your image is showing on the cover.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Upload a new image' })).toBeInTheDocument();
-    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    const radios = screen.getAllByRole('radio');
+    expect(radios.filter((r) => r.getAttribute('aria-checked') === 'true')).toHaveLength(0);
+    // The group keeps one tab stop, the first swatch, and it has focus.
+    expect(radios[0]).toHaveFocus();
+    expect(radios.filter((r) => r.tabIndex === 0)).toHaveLength(1);
+    // The topics switch stays: it saves the art for when the image goes.
+    expect(screen.getByRole('switch')).toBeInTheDocument();
+    const remove = screen.getByRole('button', { name: 'Remove image' });
+    expect(remove.querySelector('[aria-hidden="true"]')).toHaveTextContent('hide_image');
+    const pick = vi.spyOn(HTMLInputElement.prototype, 'click');
+    try {
+      await user.click(remove);
+      expect(onRemoveImage).toHaveBeenCalledTimes(1);
+      expect(pick).not.toHaveBeenCalled();
+      expect(onFile).not.toHaveBeenCalled();
+      expect(container.querySelector('input[type=file]')).toBeInTheDocument();
+    } finally {
+      pick.mockRestore();
+    }
+  });
+
+  it('while removing: "Removing…", no second removal, and its error shows', async () => {
+    const { user, onRemoveImage } = setup({
+      hasImage: true,
+      removing: true,
+      imageError: 'The image wasn’t removed. Try again.',
+    });
+    await user.click(trigger());
+    const btn = screen.getByRole('button', { name: 'Removing…' });
+    expect(btn).toHaveAttribute('aria-disabled', 'true');
+    await user.click(btn);
+    expect(onRemoveImage).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent('The image wasn’t removed. Try again.');
   });
 
   it('uploading and failed uploads', async () => {
-    const { user } = setup({ uploading: true, uploadError: 'Choose an image under 5 MB.' });
+    const { user } = setup({ uploading: true, imageError: 'Choose an image under 5 MB.' });
     await user.click(trigger());
     expect(screen.getByRole('button', { name: 'Uploading…' })).toHaveAttribute(
       'aria-disabled',
@@ -208,7 +246,9 @@ describe('CoverPicker', () => {
           hasImage={false}
           onFile={() => {}}
           uploading={false}
-          uploadError={null}
+          onRemoveImage={() => {}}
+          removing={false}
+          imageError={null}
           accept=""
           onClose={onClose}
         />
