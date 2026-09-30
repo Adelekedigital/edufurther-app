@@ -99,7 +99,7 @@ export function useSessionTypeSubmit(a: Args) {
     );
   };
 
-  // PROVISIONAL copy — design request #8.
+  // Copy confirmed by design (reply 2026-09-29, #8).
   const partialNote = !partial.length
     ? null
     : refusedQuestions && partial.length === 1

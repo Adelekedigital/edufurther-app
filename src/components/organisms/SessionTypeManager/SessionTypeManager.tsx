@@ -138,7 +138,7 @@ function List({
           title="We couldn’t load your session types"
           description={
             offline
-              ? // PROVISIONAL copy — design request #2.
+              ? // Copy confirmed by design (reply 2026-09-29, #2).
                 'You’re offline. Try again when you reconnect.'
               : 'Something went wrong on our side. Try again in a moment.'
           }

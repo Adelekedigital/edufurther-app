@@ -174,7 +174,7 @@ export function useSaveWeeklyHours(userId: string | null) {
   };
 }
 
-/** Our copy (PROVISIONAL — design request #7). */
+/** Our copy (confirmed by design, reply 2026-09-29, #7). */
 export function hoursError(none: boolean): AppError {
   const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
   return {

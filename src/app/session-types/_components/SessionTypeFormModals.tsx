@@ -102,7 +102,7 @@ export function SavedModal(p: {
       subtitle={
         p.live
           ? `“${p.name}” is live on your profile. Mentees can book it in your open hours.`
-          : // PROVISIONAL copy — design request #8 (a hidden type isn't live).
+          : // Copy confirmed by design (reply 2026-09-29, #8) (a hidden type isn't live).
             `“${p.name}” is saved. It’s hidden, so mentees can’t book it until you switch it on.`
       }
       icon="check_circle"
@@ -144,7 +144,7 @@ export function PublishedModal(p: {
       title="Session type published"
       subtitle={
         failed
-          ? // PROVISIONAL copy — design request #5.
+          ? // Copy confirmed by design (reply 2026-09-29, #5).
             `“${p.name}” is live on your profile, but its dedicated hours didn’t save. Until they do, mentees book it in your Calendar hours.`
           : `“${p.name}” is live on your profile. Mentees can book it in your open hours.`
       }

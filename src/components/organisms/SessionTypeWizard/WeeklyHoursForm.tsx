@@ -48,7 +48,7 @@ export function WeeklyHoursForm({
   const invalid = hasSlotErrors(days) || !!clash;
   return (
     <div className={styles.modalBody}>
-      {/* PROVISIONAL copy — design request #7. */}
+      {/* Copy confirmed by design (reply 2026-09-29, #7). */}
       <p className={styles.zoneNote}>
         <Icon name="schedule" size={16} />
         <span>
@@ -64,7 +64,7 @@ export function WeeklyHoursForm({
         <p role="alert" className={styles.modalError}>
           <Icon name="error" size={18} />
           {tried && invalid
-            ? // PROVISIONAL copy — design request #7.
+            ? // Copy confirmed by design (reply 2026-09-29, #7).
               clash && !hasSlotErrors(days)
               ? `Some of these hours overlap hours you set in ${zoneLabel(clash.zone)}. Change them, then save.`
               : 'Fix the hours marked in red, then save.'

@@ -50,7 +50,7 @@ export function EditSessionTypeScreen({ id }: { id: string }) {
   if (saved.error?.kind === 'notFound')
     return shell(
       <div className={styles.gate}>
-        {/* PROVISIONAL copy — design request #8. */}
+        {/* Copy confirmed by design (reply 2026-09-29, #8). */}
         <EmptyState
           illustration="forms"
           size={120}

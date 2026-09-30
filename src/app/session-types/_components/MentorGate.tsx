@@ -15,7 +15,7 @@ export function mentorGate(viewer: Viewer, isMentor: boolean, returnTo: string):
   if (viewer.kind === 'guest')
     return (
       <Gate
-        // PROVISIONAL copy — design request #3.
+        // Copy confirmed by design (reply 2026-09-29, #3).
         title="Log in to manage your session types"
         description="Session types are what mentees can book with you."
         action={
@@ -70,7 +70,7 @@ export function mentorGate(viewer: Viewer, isMentor: boolean, returnTo: string):
   if (viewer.kind !== 'loading' && !isMentor)
     return (
       <Gate
-        // PROVISIONAL copy — design request #3.
+        // Copy confirmed by design (reply 2026-09-29, #3).
         title="Session types are for mentors"
         description="Once you’re a mentor, this is where you set up what mentees can book with you."
         action={

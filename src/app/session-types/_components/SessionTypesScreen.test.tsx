@@ -408,6 +408,22 @@ describe('SessionTypesScreen', () => {
     );
   });
 
+  it('scheduling the featured type says it also stops being featured (design reply #10)', async () => {
+    viewer = mentor;
+    list = idle({
+      data: [
+        { ...TYPE, isFeatured: true, booked: { count: 2, lastEndsAt: '2026-10-14T12:00:00Z' } },
+      ],
+    });
+    const user = userEvent.setup({ delay: null });
+    render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
+    expect(screen.getByRole('dialog', { name: 'Schedule deletion for Oct 14?' })).toHaveTextContent(
+      'Hidden from mentees now. The 2 booked sessions go ahead first. It also stops being featured.',
+    );
+  });
+
   it('signed in without a usable account: told why, never "for mentors"', () => {
     viewer = { kind: 'accountExists' };
     const { unmount } = render(<SessionTypesScreen />);

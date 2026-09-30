@@ -185,7 +185,7 @@ export function SessionTypeFormScreen({
         ))}
 
       {modal?.kind === 'discard' && (
-        // PROVISIONAL copy — design request #5.
+        // Copy confirmed by design (reply 2026-09-29, #5).
         <DangerConfirm
           title={edit ? 'Discard your changes?' : 'Discard this session type?'}
           subtitle={
