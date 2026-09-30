@@ -166,6 +166,14 @@ const RESTORE = [...ROW_WRITE, 'restore'] as const;
 // Offline, fail at once (our copy says so) rather than pause and send later.
 const ROW_WRITE_OPTS = { networkMode: 'always' } as const;
 
+/**
+ * A refused write (422) may be a window above a platform cap lowered since the
+ * mentor's defaults were cached: reload them, so the form offers the current cap.
+ */
+export function refreshLimitsOnRefusal(qc: QueryClient, error: { status?: number }) {
+  if (error.status === 422) void qc.invalidateQueries({ queryKey: ['mentorDefaults'] });
+}
+
 export function useSetLive(onFailed: (id: string, live: boolean) => void) {
   const failed = useLatest(onFailed);
   const qc = useQueryClient();
@@ -460,6 +468,7 @@ export function useCreateSessionType() {
       const failedWindows = windows.length ? await postWindows(data.id, windows) : [];
       return { id: data.id, failedWindows };
     },
+    onError: (e) => refreshLimitsOnRefusal(qc, e),
     onSuccess: () => {
       attempt.current = null;
       void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });
@@ -556,6 +565,7 @@ export function useSaveMentorDefaults(userId: string | null) {
       if (!result.response.ok) throw saveError(apiError(result.response.status, result.error));
       return { ...r };
     },
+    onError: (e) => refreshLimitsOnRefusal(qc, e),
     onSuccess: (saved) => {
       // The platform's cap and default aren't the mentor's to save: keep them.
       qc.setQueryData<MentorDefaults>(defaultsKey(userId), (before) => ({

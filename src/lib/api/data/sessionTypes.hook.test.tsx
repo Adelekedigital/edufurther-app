@@ -610,5 +610,7 @@ describe('useSaveMentorDefaults (Booking preferences, review of #60)', () => {
     );
     expect(qc.getQueryData(['mentorDefaults', 'm1'])).toEqual({ durationMin: 60 });
     await waitFor(() => expect(result.current.error).not.toBeNull());
+    // A 422 may be a window above a cap lowered since: the defaults (and cap) reload.
+    expect(qc.getQueryState(['mentorDefaults', 'm1'])?.isInvalidated).toBe(true);
   });
 });

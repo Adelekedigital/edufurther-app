@@ -20,7 +20,7 @@ import { planQuestions, toPatchBody, type SavedQuestion } from '@/lib/utils/sess
 import { ApiError, apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
-import { createError, type CreateError } from './sessionTypes';
+import { createError, refreshLimitsOnRefusal, type CreateError } from './sessionTypes';
 import { planHoursSave, toWeeklyHours } from './weeklyHours';
 
 type OwnSessionTypeRead = components['schemas']['OwnSessionTypeRead'];
@@ -363,6 +363,7 @@ export function useSaveSessionType() {
         saved: { questions, windows },
       };
     },
+    onError: (e) => refreshLimitsOnRefusal(qc, e),
     onSettled: (_r, _e, v) => {
       void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });
       void qc.invalidateQueries({ queryKey: keys.mentors.all });
