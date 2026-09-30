@@ -1,40 +1,104 @@
+import Link from 'next/link';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import type { MentorProfile } from '@/types/mentor';
 import styles from './MentorProfileScreen.module.css';
 
-/**
- * Mentor Profile.dc.html owner bar (design reply #35), read-only for now: the
- * "View as mentee" toggle arrives with editing. A profile mentees can't see yet
- * says so, with a lock.
- */
-export function OwnerBar({ profile }: { profile: MentorProfile }) {
+/** What the owner bar says, most important first (see OwnerBar). */
+export function ownerBarState(
+  profile: MentorProfile,
+  preview: boolean,
+): 'preview' | 'declined' | 'pending' | 'unlisted' | 'noTypes' | 'noHours' | 'own' {
   const o = profile.owner;
-  const hidden =
-    o && o.approval === 'declined'
-      ? // PROVISIONAL (design request #42): design wrote pending and unlisted only.
-        'Your profile wasn’t approved. Only you can see it.'
-      : o && o.approval !== 'approved'
-        ? 'Only you can see this until your profile is approved.'
-        : o && !o.listed
-          ? 'Your profile is unlisted. Only you can see it.'
-          : null;
-  // Public, but no session type visible (Mentor Profile.dc.html `visN === 0`).
-  const noTypes = !hidden && !!o?.setupNeeded?.includes('session_type');
+  if (preview) return 'preview';
+  if (o?.approval === 'declined') return 'declined';
+  if (o && o.approval !== 'approved') return 'pending';
+  if (o && !o.listed) return 'unlisted';
+  if (o?.setupNeeded?.includes('session_type')) return 'noTypes';
+  if (o?.setupNeeded?.includes('weekly_hours')) return 'noHours';
+  return 'own';
+}
+
+const OWNER_COPY = {
+  // Design's answer to request #42.
+  declined:
+    'Your profile wasn’t approved, so only you can see it. Contact support to find out what to change.',
+  pending: 'Only you can see this until your profile is approved.',
+  unlisted: 'Your profile is unlisted. Only you can see it.',
+  noTypes:
+    'Mentees see “Not taking bookings” on your profile. Turn on a session type to take bookings again.',
+  preview: 'This is how mentees see your profile.',
+  own: 'You’re viewing your own profile.',
+} as const;
+
+/**
+ * Mentor Profile.dc.html owner bar (design reply #35): what mentees can see,
+ * and "View as mentee". One line, most important first: a profile nobody can
+ * see, then what stops bookings (a visible type, then weekly hours). The
+ * design lets "no session type" win over all of them, which would tell an
+ * unapproved mentor what mentees see (design-divergence.md).
+ *
+ * The toggle keeps its name and shows its state by `aria-pressed` and the fill
+ * (WAI-ARIA APG toggle button): the drawn "Viewing as mentee" label would
+ * change the name as well as the state.
+ */
+export function OwnerBar({
+  profile,
+  preview,
+  onTogglePreview,
+  hoursHref,
+}: {
+  profile: MentorProfile;
+  preview: boolean;
+  onTogglePreview: () => void;
+  /** Where weekly hours are set. */
+  hoursHref: string;
+}) {
+  const state = ownerBarState(profile, preview);
+  const icon =
+    state === 'preview'
+      ? 'visibility'
+      : state === 'noTypes' || state === 'noHours'
+        ? 'event_busy'
+        : state === 'own'
+          ? 'person'
+          : 'lock';
   return (
-    <div className={styles.ownerBar}>
+    <div className={`${styles.ownerBar} ${preview ? styles.ownerBarPreview : ''}`}>
       <span className={styles.ownerText}>
         <Icon
-          name={hidden ? 'lock' : noTypes ? 'event_busy' : 'person'}
+          name={icon}
           size={18}
-          className={hidden || noTypes ? styles.ownerIconLock : styles.ownerIcon}
+          className={
+            state === 'preview'
+              ? styles.ownerIconPreview
+              : state === 'own'
+                ? styles.ownerIcon
+                : styles.ownerIconLock
+          }
         />
-        {hidden ??
-          (noTypes
-            ? 'Mentees see “Not taking bookings” on your profile. Turn on a session type to take bookings again.'
-            : 'You’re viewing your own profile.')}
+        {state === 'noHours' ? (
+          <span>
+            Mentees see “Not taking bookings” until you{' '}
+            <Link href={hoursHref} className={styles.ownerLink}>
+              set your weekly hours
+            </Link>
+            .
+          </span>
+        ) : (
+          OWNER_COPY[state]
+        )}
       </span>
+      <button
+        type="button"
+        aria-pressed={preview}
+        onClick={onTogglePreview}
+        className={styles.previewToggle}
+      >
+        <Icon name="visibility" size={16} />
+        View as mentee
+      </button>
     </div>
   );
 }

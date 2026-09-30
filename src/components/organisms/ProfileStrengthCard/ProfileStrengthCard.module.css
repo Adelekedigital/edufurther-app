@@ -1,0 +1,84 @@
+/* Mentor Profile.dc.html `canEdit` aside: Profile strength. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.title {
+  margin: 0;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+.percent {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+}
+.track {
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--ink-100);
+}
+.fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--blue-500);
+}
+.tips {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+}
+/* Drawn as a bare row (an anchor in the design), for links and buttons alike. */
+.tip {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.tip:hover {
+  color: var(--ink-900);
+}
+.tipIcon {
+  flex: none;
+  color: var(--blue-500);
+}
+.chevron {
+  flex: none;
+  margin-left: auto;
+  color: var(--ink-400);
+}
+@media (max-width: 767px) {
+  .card {
+    padding: var(--space-4);
+  }
+  .tips {
+    gap: 0;
+  }
+  /* A 44px tap row on phones. */
+  .tip {
+    min-height: var(--touch-target-min);
+  }
+}

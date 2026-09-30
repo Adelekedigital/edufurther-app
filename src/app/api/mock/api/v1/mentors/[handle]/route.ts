@@ -13,7 +13,7 @@ import {
   mockProfileIndex,
   OFFERINGS,
 } from '@/lib/api/mock/fixtures';
-import { prefs } from '@/lib/api/mock/bookingPrefs';
+import { prefs, rules } from '@/lib/api/mock/bookingPrefs';
 import { mockBannerUrl, mockCover } from '@/lib/api/mock/coverStore';
 import {
   educationPublic,
@@ -23,6 +23,7 @@ import {
 } from '@/lib/api/mock/entries';
 import { MOCK_PHOTO_FOCUS, mockPhotoUrl } from '@/lib/api/mock/photoStore';
 import { mockText } from '@/lib/api/mock/profileTextStore';
+import { mockOwnSessionTypes } from '@/lib/api/mock/sessionTypes';
 import { mockReviewSummary } from '@/lib/api/mock/reviews';
 
 type MentorPublicRead = components['schemas']['MentorPublicRead'];
@@ -142,6 +143,17 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
     primary_study_country_id: countryIdByName(body.primary_study_country ?? null),
   });
   if (own) {
+    // Owner-only fields (the real API adds them for the mentor themselves):
+    // setup_needed follows their own session types and weekly hours, so the
+    // owner bar and Profile strength change as they're edited here.
+    Object.assign(body, {
+      approval_status: 'approved',
+      listing_status: 'listed',
+      setup_needed: [
+        ...(mockOwnSessionTypes().some((t) => t.is_active) ? [] : ['session_type']),
+        ...(rules.length ? [] : ['weekly_hours']),
+      ],
+    });
     // The owner's uploaded photo, once there is one.
     const photo = mockPhotoUrl(id);
     if (photo) Object.assign(body, { avatar_url: photo, avatar_focus: MOCK_PHOTO_FOCUS });
@@ -206,6 +218,28 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
     if ('about_me' in t) body.about_me = t.about_me ?? null;
     const saved = (prefs as { headline?: string | null }).headline;
     if (saved !== undefined) body.headline = saved?.trim() || null;
+    // Profile strength, by backend #317's rule: nine steps, equal weight,
+    // bookability first.
+    const setup = (body as { setup_needed?: string[] }).setup_needed ?? [];
+    const done: [string, boolean][] = [
+      ['session_type', !setup.includes('session_type')],
+      ['weekly_hours', !setup.includes('weekly_hours')],
+      ['photo', !!body.avatar_url],
+      ['headline', !!body.headline?.trim()],
+      ['about', !!body.about_me?.trim()],
+      ['topics', (body.offerings ?? []).length > 0],
+      [
+        'background',
+        !!body.origin_country && !!body.primary_study_country && (body.languages ?? []).length > 0,
+      ],
+      ['education', (body.education ?? []).length > 0],
+      ['award', (body.scholarships ?? []).length > 0],
+    ];
+    const missing = done.filter(([, ok]) => !ok).map(([code]) => code);
+    body.completeness = {
+      percent: Math.round((100 * (done.length - missing.length)) / done.length),
+      missing,
+    };
   }
   return NextResponse.json(body);
 }

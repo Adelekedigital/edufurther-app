@@ -23,6 +23,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  /* The design's line box, set by its 18px icon glyph: shows once the toggle wraps. */
+  min-height: 22px;
   font-size: var(--text-p-xs);
   color: var(--text-secondary);
 }
@@ -33,6 +35,53 @@
 .ownerIconLock {
   flex: none;
   color: var(--ink-600);
+}
+/* "View as mentee" on: the bar says so in blue (Mentor Profile.dc.html `pvw`). */
+.ownerBarPreview {
+  border-color: var(--blue-100);
+  background: var(--blue-50);
+}
+.ownerIconPreview {
+  flex: none;
+  color: var(--blue-500);
+}
+.ownerLink {
+  font-weight: var(--weight-semibold);
+  color: var(--text-action);
+}
+/* Mentor Profile.dc.html `pvBtn`: 32px, neutral outline; pressed, blue. */
+.previewToggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 32px;
+  padding: 0 var(--space-4);
+  border: var(--border-hairline) solid var(--ink-300);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+  cursor: pointer;
+}
+.previewToggle[aria-pressed='true'] {
+  border-color: var(--blue-500);
+  background: var(--blue-500);
+  color: var(--text-on-action);
+}
+@media (max-width: 767px) {
+  /* Drawn at 32px; a 44px tap area around it. */
+  .previewToggle::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: var(--touch-target-min);
+    transform: translateY(-50%);
+  }
 }
 .tabsRow {
   border-bottom: var(--border-hairline) solid var(--border-subtle);

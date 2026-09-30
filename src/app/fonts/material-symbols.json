@@ -2,6 +2,7 @@
   "names": [
     "account_box",
     "add",
+    "add_circle",
     "add_photo_alternate",
     "alternate_email",
     "arrow_back",
@@ -100,5 +101,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "2d61c432c30d29050c45a24ea9366daf2cd38ba42d911f411b62e6402cd32bc3"
+  "sha256": "1b63836dc7857c4dbd322d9c5e58b381490ca145a9418ae2cf08b1bd0d7df619"
 }
