@@ -144,6 +144,7 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | Share link `edufurther.com/{mentor}/{slug}` | `/mentors/{id}?book={type}`: the profile, with booking started on that type | A page per type is roadmap #72 | #72 |
 | "Featured" badge in orange | Blue accent badge (primary) | The orange ramp is banned in product UI (DS readme) | never |
 | Feature confirm: "…and is highlighted first on your Explore card" | Clause dropped | Explore doesn't show the featured type yet (backend #299); never claim what isn't built | #299 ships |
+| Pending deletion note on phones: the facts row 8px below "Keep it" | 12px more space under the note on phones | "Keep it"'s 45px touch area reaches 20px down; without the room it covered the duration and topic chips, so tapping one cancelled the deletion (Codex review of #92) | design adds the space, or a smaller target |
 | Session type row copy-link and "⋯" buttons on phones: 44px tall (the prototype's global `button{min-height:44px}`) | 32px drawn, an invisible 44px tap area | CTA hierarchy rule 5 | never |
 | Row menu items on phones: the prototype's phone padding rule squeezes them to 22px tall, 8px padding | 44px tall, 12px padding | A 22px target is below the 44px minimum | never |
 | Wizard action bar `position: sticky; top: 0` | Sticks under the shell's sticky header | At top 0 it slid beneath the header | never |

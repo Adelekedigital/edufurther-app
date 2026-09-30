@@ -157,6 +157,10 @@
     row-gap: var(--space-2);
     /* The icon sits on the sentence's first line, not centred on a wrapped one. */
     align-items: start;
+    /* Room for Keep it's 20px of reach below, so it ends where the facts row
+       starts (12px here + the 8px gap): a tap on a chip never cancels the
+       deletion (Codex review of #92). */
+    padding-bottom: var(--space-3);
   }
   /* 16px icon on a 17.4px text line (--lh-p at 12px): centre it on that line. */
   .pendingIcon {
