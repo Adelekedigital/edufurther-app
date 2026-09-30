@@ -71,6 +71,7 @@ describe('toSessionType', () => {
       durationMin: 45,
       description: '',
       questions: [],
+      windowDays: 56,
     });
   });
 });

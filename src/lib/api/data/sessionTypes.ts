@@ -166,6 +166,14 @@ const RESTORE = [...ROW_WRITE, 'restore'] as const;
 // Offline, fail at once (our copy says so) rather than pause and send later.
 const ROW_WRITE_OPTS = { networkMode: 'always' } as const;
 
+/**
+ * A refused write (422) may be a window above a platform cap lowered since the
+ * mentor's defaults were cached: reload them, so the form offers the current cap.
+ */
+export function refreshLimitsOnRefusal(qc: QueryClient, error: { status?: number }) {
+  if (error.status === 422) void qc.invalidateQueries({ queryKey: ['mentorDefaults'] });
+}
+
 export function useSetLive(onFailed: (id: string, live: boolean) => void) {
   const failed = useLatest(onFailed);
   const qc = useQueryClient();
@@ -460,6 +468,7 @@ export function useCreateSessionType() {
       const failedWindows = windows.length ? await postWindows(data.id, windows) : [];
       return { id: data.id, failedWindows };
     },
+    onError: (e) => refreshLimitsOnRefusal(qc, e),
     onSuccess: () => {
       attempt.current = null;
       void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });
@@ -492,7 +501,9 @@ export type MentorDefaults = BookingDefaults;
 const defaultsKey = (userId: string | null) => keys.mentorDefaults(userId ?? 'none');
 
 /** GET /users/{id}/mentor-profile — the defaults a session type inherits. */
-export function useMentorDefaults(userId: string | null): Remote<MentorDefaults> {
+export function useMentorDefaults(
+  userId: string | null,
+): Remote<MentorDefaults> & { refreshing: boolean } {
   const query = useQuery({
     queryKey: defaultsKey(userId),
     enabled: userId !== null,
@@ -506,18 +517,30 @@ export function useMentorDefaults(userId: string | null): Remote<MentorDefaults>
       return {
         durationMin: data.default_duration_minutes ?? null,
         noticeHours: notice == null ? null : notice / 60,
-        windowDays: data.booking_window_days ?? null,
+        // Shown within the current cap: a default saved above a cap lowered since.
+        windowDays:
+          data.booking_window_days == null
+            ? null
+            : Math.min(data.booking_window_days, data.max_booking_window_days),
         breakMin: data.break_after_minutes ?? null,
         requiresApproval: data.requires_booking_confirmation,
+        maxWindowDays: data.max_booking_window_days,
+        platformWindowDays: data.default_booking_window_days,
       };
     },
-    staleTime: 5 * 60 * 1000,
+    // Read fresh each time a form opens: the platform cap in it is a setting
+    // that can change, and a stale one would offer windows the backend refuses.
+    staleTime: 0,
   });
+  // Only what was read while this form is open: a cached copy can carry a cap
+  // since lowered, and the form would offer windows the backend refuses.
+  const fresh = query.isFetchedAfterMount;
   return {
-    data: query.data ?? null,
-    isLoading: query.isPending && userId !== null,
+    data: fresh ? (query.data ?? null) : null,
+    isLoading: userId !== null && !fresh && !query.isError,
     error: query.error ? normaliseError(query.error) : null,
     retry: () => void query.refetch(),
+    refreshing: query.isFetching,
   };
 }
 
@@ -550,8 +573,14 @@ export function useSaveMentorDefaults(userId: string | null) {
       if (!result.response.ok) throw saveError(apiError(result.response.status, result.error));
       return { ...r };
     },
+    onError: (e) => refreshLimitsOnRefusal(qc, e),
     onSuccess: (saved) => {
-      qc.setQueryData(defaultsKey(userId), saved);
+      // The platform's cap and default aren't the mentor's to save: keep them.
+      qc.setQueryData<MentorDefaults>(defaultsKey(userId), (before) => ({
+        ...saved,
+        maxWindowDays: before?.maxWindowDays,
+        platformWindowDays: before?.platformWindowDays,
+      }));
       // Everything that follows the defaults: slots, the own list's lengths
       // ("Use my defaults" types), the profile's Sessions tab (review of #60).
       void qc.invalidateQueries({ queryKey: ['booking'] });

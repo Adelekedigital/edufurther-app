@@ -1,11 +1,13 @@
 import type { BookingDay } from '@/types/mentor';
 
 /**
- * How far ahead booking looks: four weeks, one /slots request (the backend
- * allows 56 days). The modal shows it a week at a time.
+ * How far ahead booking looks when a session type doesn't say: four weeks.
+ * Otherwise it's the type's own window (its effective booking window), shown a
+ * week at a time in one /slots request.
  */
-export const BOOKING_HORIZON_DAYS = 28;
-export const BOOKING_WEEKS = BOOKING_HORIZON_DAYS / 7;
+export const DEFAULT_HORIZON_DAYS = 28;
+/** Pages of seven days the modal offers for a window: 1 for 7 days, 8 for 56. */
+export const weeksIn = (horizonDays: number) => Math.max(1, Math.ceil(horizonDays / 7));
 
 /** The calendar date (YYYY-MM-DD) an instant falls on in `timeZone`. */
 export function dayKey(isoInstant: string, timeZone: string): string {
@@ -61,35 +63,45 @@ export function weekOfDays(
   week: number,
   timeZone: string,
   now = new Date(),
+  horizonDays = Infinity,
 ): BookingDay[] {
   const today = dayKey(now.toISOString(), timeZone);
   const byDate = new Map(days.map((d) => [d.date, d.slots]));
-  return Array.from({ length: 7 }, (_, i) => {
+  // The last page stops at the window's end: days past it aren't "no open
+  // times", they can't be booked at all (a 10-day window: 7, then 3).
+  const count = Math.max(0, Math.min(7, horizonDays - week * 7));
+  return Array.from({ length: count }, (_, i) => {
     const date = addDays(today, week * 7 + i);
     return { date, slots: byDate.get(date) ?? [] };
   });
 }
 
 /**
- * The dates to ask /slots for, so the four weeks on screen are always covered.
- * The picker shows the viewer's today … today+27 in the viewer's zone, but
- * `start`/`end` are calendar dates the backend reads in the mentor's zone —
- * which can be a day either side. A day's margin on each end (30 days, one
- * request; the backend allows 56) covers every zone pair; `visibleDays` then
- * drops whatever falls outside the four weeks.
+ * The dates to ask /slots for, so the window's days on screen are covered.
+ * The picker shows the viewer's today … the window's last day in the viewer's
+ * zone, but `start`/`end` are dates the backend reads in the mentor's zone,
+ * which can be a day either side. The end gets that day's margin. The start
+ * needs none: notice is at least 24 hours, so nothing before the viewer's
+ * tomorrow is bookable in any zone. That keeps the range at the window plus
+ * one day, which the backend allows (its maximum window plus one).
  */
-export function slotWindow(timeZone: string, now = new Date()): { start: string; end: string } {
+export function slotWindow(
+  timeZone: string,
+  horizonDays = DEFAULT_HORIZON_DAYS,
+  now = new Date(),
+): { start: string; end: string } {
   const today = dayKey(now.toISOString(), timeZone);
-  return { start: addDays(today, -1), end: addDays(today, BOOKING_HORIZON_DAYS + 1) };
+  return { start: today, end: addDays(today, horizonDays + 1) };
 }
 
-/** Only the days the picker can show: today … today+27 in the viewer's zone. */
+/** Only the days the picker can show: today … the window's last day, in the viewer's zone. */
 export function visibleDays(
   days: readonly BookingDay[],
   timeZone: string,
   now = new Date(),
+  horizonDays = DEFAULT_HORIZON_DAYS,
 ): BookingDay[] {
   const first = dayKey(now.toISOString(), timeZone);
-  const last = addDays(first, BOOKING_HORIZON_DAYS - 1);
+  const last = addDays(first, horizonDays - 1);
   return days.filter((d) => d.date >= first && d.date <= last);
 }

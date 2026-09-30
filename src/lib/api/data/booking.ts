@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
-import { slotWindow } from '@/lib/utils/slots';
+import { DEFAULT_HORIZON_DAYS, slotWindow } from '@/lib/utils/slots';
 import type {
   AppError,
   BookingRequest,
@@ -46,6 +46,8 @@ export function toSessionType(r: SessionTypeRead): SessionType {
     name: r.name,
     durationMin: r.duration_minutes,
     description: r.description?.trim() ?? '',
+    // The window this type really uses (the platform cap applied), backend #309.
+    windowDays: r.booking_window_days,
     // The live intake form, in the order mentees see it (backend #268).
     questions: [...(r.questions ?? [])]
       .sort((a, b) => a.display_order - b.display_order)
@@ -141,7 +143,9 @@ export function bookingError(e: AppError): AppError {
 // ---- hooks ------------------------------------------------------------------
 
 /** GET /users/{id}/session-types — what this mentor offers. */
-export function useSessionTypes(mentorId: string | null): Remote<SessionType[]> {
+export function useSessionTypes(
+  mentorId: string | null,
+): Remote<SessionType[]> & { refreshing: boolean; updatedAt: number } {
   const query = useQuery({
     queryKey: keys.booking.sessionTypes(mentorId ?? 'none'),
     enabled: mentorId !== null,
@@ -160,6 +164,8 @@ export function useSessionTypes(mentorId: string | null): Remote<SessionType[]> 
     isLoading: query.isPending && mentorId !== null,
     error: query.error ? normaliseError(query.error) : null,
     retry: () => void query.refetch(),
+    refreshing: query.isFetching,
+    updatedAt: query.dataUpdatedAt,
   };
 }
 
@@ -170,14 +176,46 @@ export function useSessionTypes(mentorId: string | null): Remote<SessionType[]> 
 export function useSlots(
   mentorId: string | null,
   sessionTypeId: string | null,
-  /** The viewer's zone: the window is their four weeks (utils/slots.ts slotWindow). */
+  /** The viewer's zone: the window is their days (utils/slots.ts slotWindow). */
   timeZone: string,
 ): Remote<string[]> {
-  const enabled = mentorId !== null && sessionTypeId !== null;
-  const window = slotWindow(timeZone);
+  // The type's own booking window, from the same types query the picker uses
+  // (subscribed, so it's never stale): no request until the window is known.
+  const qc = useQueryClient();
+  const types = useSessionTypes(mentorId);
+  // Opening the flow reads the types again: a cached window can be out of
+  // date if the platform cap or default changed since (either way).
+  const opened = mentorId !== null && sessionTypeId !== null;
+  const refreshTypes = types.retry;
+  // When the flow opens (or the mentor changes), note when the types were
+  // last read; only a read after that sizes the request.
+  const openKey = opened ? mentorId : null;
+  const [opening, setOpening] = useState({ key: null as string | null, readAt: 0 });
+  if (opening.key !== openKey) setOpening({ key: openKey, readAt: types.updatedAt });
+  useEffect(() => {
+    if (openKey) refreshTypes();
+    // Once per opening (or mentor), not on every render's new callback.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openKey]);
+  const current =
+    openKey !== null &&
+    opening.key === openKey &&
+    types.updatedAt > opening.readAt &&
+    !types.refreshing;
+  const horizon =
+    types.data && current
+      ? (types.data.find((t) => t.id === sessionTypeId)?.windowDays ?? DEFAULT_HORIZON_DAYS)
+      : null;
+  const enabled = mentorId !== null && sessionTypeId !== null && horizon !== null;
+  const window = slotWindow(timeZone, horizon ?? DEFAULT_HORIZON_DAYS);
   const query = useQuery({
-    // The window's first day is in the key, so the grid moves on at midnight.
-    queryKey: [...keys.booking.slots(mentorId ?? 'none', sessionTypeId ?? 'none'), window.start],
+    // The window's days are in the key: the grid moves on at midnight, and a
+    // different window length never reuses a shorter range.
+    queryKey: [
+      ...keys.booking.slots(mentorId ?? 'none', sessionTypeId ?? 'none'),
+      window.start,
+      window.end,
+    ],
     enabled,
     queryFn: async ({ signal }) => {
       const { data, error, response } = await api.GET(
@@ -190,16 +228,24 @@ export function useSlots(
           signal,
         },
       );
-      if (!data) throw apiError(response.status, error);
+      if (!data) {
+        // A range the backend refuses: its maximum may have been lowered since
+        // the types were cached. Reload them; the new window makes a new request.
+        if (response.status === 422)
+          void qc.invalidateQueries({ queryKey: keys.booking.sessionTypes(mentorId!) });
+        throw apiError(response.status, error);
+      }
       return data.data.map((s) => s.start);
     },
     // Slots go stale as people book; a minute is short enough and saves a
     // refetch when the type select is toggled back and forth.
     staleTime: 60 * 1000,
   });
+  // Until the window is known the grid is loading, never "no open times".
+  const waiting = opened && horizon === null && !types.error;
   return {
-    data: query.data ?? null,
-    isLoading: query.isPending && enabled,
+    data: horizon === null ? null : (query.data ?? null),
+    isLoading: waiting || (query.isPending && enabled),
     error: query.error ? normaliseError(query.error) : null,
     retry: () => void query.refetch(),
   };

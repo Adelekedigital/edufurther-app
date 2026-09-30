@@ -9,6 +9,7 @@
  * `mockNextAvailableAt` now, the way the backend derives it from one grid.
  */
 import type { components } from '@/lib/api/generated/schema';
+import { DEFAULT_WINDOW_DAYS, MAX_WINDOW_DAYS } from './bookingPrefs';
 import { FEATURED, MENTORS } from './fixtures';
 
 type SessionTypeRead = components['schemas']['SessionTypeRead'];
@@ -106,7 +107,8 @@ export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
       'An open conversation about your study-abroad plans: schools, funding and next steps.',
     duration_minutes: 60,
     min_notice_minutes: 120,
-    booking_window_days: 56,
+    // Its own two weeks (booking modal: two pages).
+    booking_window_days: Math.min(14, MAX_WINDOW_DAYS),
     service_offering: null,
     ...NO_TOPICS,
     application_stage: null,
@@ -119,7 +121,8 @@ export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
     description: 'We go through your CV line by line and fix what admissions teams skim past.',
     duration_minutes: 45,
     min_notice_minutes: 1440,
-    booking_window_days: 56,
+    // The platform's window (booking modal: up to eight pages).
+    booking_window_days: DEFAULT_WINDOW_DAYS,
     service_offering: null,
     ...NO_TOPICS,
     // Every question kind the booking step renders (backend #268, #12, #282).

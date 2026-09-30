@@ -16,12 +16,13 @@ import { Radio } from '@/components/atoms/Radio/Radio';
 import { TimezonePicker } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import { formatDay, formatRating, formatTime } from '@/lib/utils/format';
 import {
-  BOOKING_WEEKS,
+  DEFAULT_HORIZON_DAYS,
   dayKey,
   groupSlotsByDay,
   visibleDays,
   weekIndexOf,
   weekOfDays,
+  weeksIn,
 } from '@/lib/utils/slots';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type {
@@ -130,7 +131,7 @@ export function BookingFlow(p: BookingFlowProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const isPhone = useMediaQuery(PHONE);
-  const [week, setWeek] = useState(0);
+  const [weekState, setWeek] = useState(0);
   // The day the viewer picked (YYYY-MM-DD in their zone), or null → the week's first open day.
   const [dayChoice, setDayChoice] = useState<string | null>(null);
   const [picked_, setTime] = useState<string | null>(null);
@@ -178,6 +179,13 @@ export function BookingFlow(p: BookingFlowProps) {
   const m = p.mentor;
   const types = p.sessionTypes.data ?? [];
   const session = types.find((t) => t.id === p.sessionTypeId) ?? types[0] ?? null;
+  // As far ahead as this type can be booked (its window), a week at a time.
+  const horizon = session?.windowDays ?? DEFAULT_HORIZON_DAYS;
+  const weeks = weeksIn(horizon);
+  // A window that shrank (types refetched) never leaves the page past its end.
+  if (weekState > weeks - 1) setWeek(weeks - 1);
+  // This render uses the clamped page too: the queued update only lands next.
+  const week = Math.min(weekState, weeks - 1);
   // Grouped in the zone the viewer picked, so changing it regroups the days.
   // "Today" moves on at midnight even if nothing else re-renders the modal.
   const [clock, setClock] = useState(() => Date.now());
@@ -186,19 +194,19 @@ export function BookingFlow(p: BookingFlowProps) {
     return () => clearInterval(t);
   }, []);
   const today = dayKey(new Date(clock).toISOString(), zone);
-  // Only the four weeks on screen: the fetch has a day's margin either side.
+  // Only the window's days on screen: the fetch has a day's margin either side.
   const days = useMemo(
-    () => visibleDays(groupSlotsByDay(p.slots.data ?? [], zone), zone, new Date(clock)),
+    () => visibleDays(groupSlotsByDay(p.slots.data ?? [], zone), zone, new Date(clock), horizon),
     // `today` stands in for the clock: the result only changes when the date does.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [p.slots.data, zone, today],
+    [p.slots.data, zone, today, horizon],
   );
   // Seven days at a time, always starting today (product, 2026-09-27); ‹ › move
-  // through the four-week horizon. Empty days stay on show, disabled.
+  // through the type's booking window. Empty days stay on show, disabled.
   const weekDays = useMemo(
-    () => weekOfDays(days, week, zone, new Date(clock)),
+    () => weekOfDays(days, week, zone, new Date(clock), horizon),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [days, week, zone, today],
+    [days, week, zone, today, horizon],
   );
   const chosen = weekDays.findIndex((d) => d.date === dayChoice && d.slots.length > 0);
   const firstOpen = weekDays.findIndex((d) => d.slots.length > 0);
@@ -222,7 +230,7 @@ export function BookingFlow(p: BookingFlowProps) {
       const hit = days.flatMap((d) => d.slots).find((s) => Date.parse(s.startsAt) === at);
       const w = hit ? weekIndexOf(hit.startsAt, zone, new Date(clock)) : -1;
       const errored = seek.errored.filter((x) => x !== id);
-      if (hit && w >= 0 && w < BOOKING_WEEKS) {
+      if (hit && w >= 0 && w < weeks) {
         setSeek({ done: true, tried: seek.tried, errored });
         setWeek(w);
         setDayChoice(dayKey(hit.startsAt, zone));
@@ -255,25 +263,26 @@ export function BookingFlow(p: BookingFlowProps) {
   const weekEmpty = firstOpen < 0 && days.length > 0;
   const nextOpen = useMemo(() => {
     if (!weekEmpty) return null;
-    for (let w = week + 1; w < BOOKING_WEEKS; w++) {
-      const ds = weekOfDays(days, w, zone, new Date(clock));
+    for (let w = week + 1; w < weeks; w++) {
+      const ds = weekOfDays(days, w, zone, new Date(clock), horizon);
       if (ds.some((d) => d.slots.length > 0))
         return {
           week: w,
-          label: `Show ${formatDay(ds[0]!.date).date} – ${formatDay(ds[6]!.date).date}`,
+          label: `Show ${formatDay(ds[0]!.date).date} – ${formatDay(ds.at(-1)!.date).date}`,
         };
     }
     return null;
     // `today` stands in for the clock, as for weekDays.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekEmpty, days, week, zone, today]);
+  }, [weekEmpty, days, week, zone, today, weeks, horizon]);
   // Nothing later but something earlier: say so, not "Check back soon" (review of #26).
   const earlierOpen = weekEmpty && !nextOpen && week > 0;
 
   const weekLabel = (() => {
     const a = formatDay(weekDays[0]!.date).date;
-    const b = formatDay(weekDays[6]!.date).date;
-    return week === 0 ? `Next 7 days · ${a} – ${b}` : `${a} – ${b}`;
+    const b = formatDay(weekDays.at(-1)!.date).date;
+    // A window under a week has fewer days on its only page: say how many.
+    return week === 0 ? `Next ${weekDays.length} days · ${a} – ${b}` : `${a} – ${b}`;
   })();
   const moveWeek = (to: number) => {
     setWeek(to);
@@ -587,7 +596,7 @@ export function BookingFlow(p: BookingFlowProps) {
               week={{
                 label: weekLabel,
                 canPrev: week > 0,
-                canNext: week < BOOKING_WEEKS - 1,
+                canNext: week < weeks - 1,
                 onPrev: () => moveWeek(week - 1),
                 onNext: () => moveWeek(week + 1),
                 nextOpen: nextOpen

@@ -30,6 +30,10 @@ export function BookingPreferencesForm({
   onSave,
 }: BookingPreferencesFormProps) {
   const [v, setV] = useState(() => resolveDefaults(initial));
+  // A cap that arrives lower while the form is open (after a refused save
+  // reloads it) brings the window within it; the other choices stay.
+  const cap = initial.maxWindowDays;
+  if (cap && v.windowDays > cap) setV({ ...v, windowDays: cap });
   const row = (
     label: string,
     hint: string,
@@ -72,7 +76,7 @@ export function BookingPreferencesForm({
           'Bookable up to',
           'How far ahead mentees can book.',
           String(v.windowDays),
-          windowOptions(v.windowDays),
+          windowOptions(v.windowDays, initial.maxWindowDays),
           (x) => setV({ ...v, windowDays: Number(x) }),
         )}
         {row(

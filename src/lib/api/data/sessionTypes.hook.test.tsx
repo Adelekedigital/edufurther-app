@@ -9,6 +9,7 @@ import {
   useSetFeatured,
   useSaveMentorDefaults,
   useSetLive,
+  useMentorDefaults,
 } from './sessionTypes';
 
 const GET = vi.fn();
@@ -487,6 +488,119 @@ describe('useCreateSessionType', () => {
   });
 });
 
+describe('useMentorDefaults (booking window, backend #309)', () => {
+  it('carries the platform cap and default, and shows a saved window above the cap capped', async () => {
+    GET.mockImplementation((path: string) =>
+      Promise.resolve(
+        path.endsWith('/mentor-profile')
+          ? ok({
+              default_duration_minutes: null,
+              default_min_notice_minutes: null,
+              booking_window_days: 28,
+              break_after_minutes: null,
+              requires_booking_confirmation: true,
+              max_booking_window_days: 14,
+              default_booking_window_days: 14,
+            })
+          : ok({ data: [], next_cursor: null }),
+      ),
+    );
+    const { result } = renderHook(() => useMentorDefaults('m1'), { wrapper: setup() });
+    await waitFor(() => expect(result.current.data).not.toBeNull());
+    expect(result.current.data).toMatchObject({
+      windowDays: 14,
+      maxWindowDays: 14,
+      platformWindowDays: 14,
+    });
+  });
+
+  it('a cached copy isn’t offered: the form waits for the read it opens with', async () => {
+    let answer!: () => void;
+    GET.mockImplementation(
+      () =>
+        new Promise((res) => {
+          answer = () =>
+            res(
+              ok({
+                default_duration_minutes: null,
+                default_min_notice_minutes: null,
+                booking_window_days: null,
+                break_after_minutes: null,
+                requires_booking_confirmation: true,
+                max_booking_window_days: 14,
+                default_booking_window_days: 14,
+              }),
+            );
+        }),
+    );
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    // A copy cached before the platform cap was lowered.
+    qc.setQueryData(['mentorDefaults', 'm1'], { windowDays: 56, maxWindowDays: 56 });
+    const { result } = renderHook(() => useMentorDefaults('m1'), {
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+      ),
+    });
+    expect(result.current.data).toBeNull();
+    expect(result.current.isLoading).toBe(true);
+    await act(async () => answer());
+    await waitFor(() => expect(result.current.data?.maxWindowDays).toBe(14));
+  });
+
+  it('reads the defaults (and cap) fresh each time a form opens', async () => {
+    GET.mockImplementation(() =>
+      Promise.resolve(
+        ok({
+          default_duration_minutes: null,
+          default_min_notice_minutes: null,
+          booking_window_days: null,
+          break_after_minutes: null,
+          requires_booking_confirmation: true,
+          max_booking_window_days: 56,
+          default_booking_window_days: 56,
+        }),
+      ),
+    );
+    const wrapper = setup();
+    const first = renderHook(() => useMentorDefaults('m1'), { wrapper });
+    await waitFor(() => expect(first.result.current.data).not.toBeNull());
+    first.unmount();
+    const reads = GET.mock.calls.length;
+    const second = renderHook(() => useMentorDefaults('m1'), { wrapper });
+    await waitFor(() => expect(GET.mock.calls.length).toBe(reads + 1));
+    second.unmount();
+  });
+
+  it('saving the mentor’s preferences keeps the platform cap (found driving the form)', async () => {
+    GET.mockImplementation((path: string) =>
+      Promise.resolve(
+        path.endsWith('/mentor-profile')
+          ? ok({
+              default_duration_minutes: null,
+              default_min_notice_minutes: null,
+              booking_window_days: null,
+              break_after_minutes: null,
+              requires_booking_confirmation: true,
+              max_booking_window_days: 14,
+              default_booking_window_days: 14,
+            })
+          : ok({ data: [], next_cursor: null }),
+      ),
+    );
+    PATCH.mockResolvedValue(ok({ updated: true }));
+    const { result } = renderHook(
+      () => ({ defaults: useMentorDefaults('m1'), save: useSaveMentorDefaults('m1') }),
+      { wrapper: setup() },
+    );
+    await waitFor(() => expect(result.current.defaults.data).not.toBeNull());
+    await act(async () => {
+      await result.current.save.save({ ...result.current.defaults.data!, windowDays: 7 });
+    });
+    await waitFor(() => expect(result.current.defaults.data?.windowDays).toBe(7));
+    expect(result.current.defaults.data?.maxWindowDays).toBe(14);
+  });
+});
+
 describe('useSaveMentorDefaults (Booking preferences, review of #60)', () => {
   it('saves every value it shows (notice in minutes), caches them, and refreshes what follows them', async () => {
     PATCH.mockResolvedValue({
@@ -553,5 +667,7 @@ describe('useSaveMentorDefaults (Booking preferences, review of #60)', () => {
     );
     expect(qc.getQueryData(['mentorDefaults', 'm1'])).toEqual({ durationMin: 60 });
     await waitFor(() => expect(result.current.error).not.toBeNull());
+    // A 422 may be a window above a cap lowered since: the defaults (and cap) reload.
+    expect(qc.getQueryState(['mentorDefaults', 'm1'])?.isInvalidated).toBe(true);
   });
 });

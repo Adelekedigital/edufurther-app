@@ -20,7 +20,7 @@ import { planQuestions, toPatchBody, type SavedQuestion } from '@/lib/utils/sess
 import { ApiError, apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
-import { createError, type CreateError } from './sessionTypes';
+import { createError, refreshLimitsOnRefusal, type CreateError } from './sessionTypes';
 import { planHoursSave, toWeeklyHours } from './weeklyHours';
 
 type OwnSessionTypeRead = components['schemas']['OwnSessionTypeRead'];
@@ -89,7 +89,8 @@ export function toDraft(s: SavedSessionType, defaults: BookingDefaults | null): 
     durationMin: r.duration_minutes,
     noticeHours: r.min_notice_minutes / 60,
     rules: inheritsAll ? 'default' : 'custom',
-    windowDays: r.booking_window_days ?? mine?.windowDays ?? 28,
+    // The window it really uses: a stored value above a cap lowered since is shown capped.
+    windowDays: r.effective_booking_window_days,
     breakMin: r.break_after_minutes ?? mine?.breakMin ?? 15,
     hours: hours.rules.length ? 'custom' : 'default',
     days: hours.rules.length ? hours.days : emptyWeek(),
@@ -362,6 +363,7 @@ export function useSaveSessionType() {
         saved: { questions, windows },
       };
     },
+    onError: (e) => refreshLimitsOnRefusal(qc, e),
     onSettled: (_r, _e, v) => {
       void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });
       void qc.invalidateQueries({ queryKey: keys.mentors.all });
@@ -425,7 +427,9 @@ export function toDuplicateBody(
       custom_stage_label: stages.includes('other') ? (r.custom_stage_label ?? null) : null,
       icon: r.icon ?? null,
       requires_booking_confirmation: r.requires_booking_confirmation ?? null,
-      booking_window_days: r.booking_window_days ?? null,
+      // Its own window as it really applies: a new type can't keep a value
+      // above a platform cap lowered since the original was saved.
+      booking_window_days: r.booking_window_days == null ? null : r.effective_booking_window_days,
       break_after_minutes: r.break_after_minutes ?? null,
       questions: questions.map(toQuestionWrite),
     },

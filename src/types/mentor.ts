@@ -101,6 +101,11 @@ export type SessionType = {
   description: string;
   /** What the mentor asks before the session. */
   questions: IntakeQuestion[];
+  /**
+   * How many days ahead it can be booked (its effective window). Absent only
+   * in older fixtures: the modal then shows its default four weeks.
+   */
+  windowDays?: number;
 };
 
 export type IntakeQuestion = {

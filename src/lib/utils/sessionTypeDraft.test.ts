@@ -18,6 +18,7 @@ import {
   validateStep,
   weeklySummary,
   type Draft,
+  windowPresets,
 } from './sessionTypeDraft';
 
 const ids = { 'document-preparation': 'o4', 'school-selection': 'o1' };
@@ -358,5 +359,15 @@ describe('422 pointers → the owning field and step', () => {
 
   it('a pointer we do not own is the request as a whole', () => {
     expect(fieldForPointer('/query/limit')).toBeNull();
+  });
+});
+
+describe('windowPresets', () => {
+  it('offers the presets under the platform cap, and the cap itself when it isn’t one', () => {
+    expect(windowPresets()).toEqual([7, 14, 28, 56]);
+    expect(windowPresets(56)).toEqual([7, 14, 28, 56]);
+    expect(windowPresets(14)).toEqual([7, 14]);
+    expect(windowPresets(21)).toEqual([7, 14, 21]);
+    expect(windowPresets(90)).toEqual([7, 14, 28, 56, 90]);
   });
 });

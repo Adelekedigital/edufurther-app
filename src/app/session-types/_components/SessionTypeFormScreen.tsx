@@ -157,6 +157,8 @@ export function SessionTypeFormScreen({
             onRetryDefaults={defaults.retry}
             onEditDefaults={() => {
               saveDefaults.reset();
+              // Read the cap again: it can have changed since the form opened.
+              defaults.retry();
               setModal({ kind: 'defaults' });
             }}
             weekly={
@@ -212,7 +214,7 @@ export function SessionTypeFormScreen({
           }}
         />
       )}
-      {modal?.kind === 'defaults' && defaults.data && (
+      {modal?.kind === 'defaults' && defaults.data && !defaults.refreshing && (
         <DefaultsModal
           defaults={defaults.data}
           saving={saveDefaults.isPending}
