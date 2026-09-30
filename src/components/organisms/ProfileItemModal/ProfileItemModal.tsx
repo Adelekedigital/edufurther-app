@@ -29,11 +29,6 @@ type Common = {
   /** Why the last save failed, in our words. */
   error: string | null;
   onClose: () => void;
-  /**
-   * "Delete {noun}", then "Delete this {noun}? This can’t be undone." with
-   * "Keep it" · "Delete {noun}" (design reply #59). Only where it can be deleted.
-   */
-  remove?: { noun: string; onRemove: () => void; removing: boolean };
   /** The page supplies the frame (ModalShell), as for booking and reviews. */
   renderShell: (shell: ItemShell, body: ReactNode) => ReactNode;
 };
@@ -62,6 +57,8 @@ type BackgroundProps = Common & {
 
 type AwardProps = Common & {
   kind: 'award';
+  /** Editing a saved award (else adding one). */
+  editing: boolean;
   /** The award being edited; null adds one. */
   initial: AwardValues | null;
   /** The newest year offered, and a new award's default. */
@@ -109,7 +106,7 @@ const sameSet = (a: string[], b: string[]) =>
  * explains nothing, review of #78). Unchanged, Save just closes.
  */
 export function ProfileItemModal(props: ProfileItemModalProps) {
-  const { saving, error, onClose, remove, renderShell } = props;
+  const { saving, error, onClose, renderShell } = props;
   const catalog = props.catalog ?? { status: 'ready' as const, onRetry: () => undefined };
   const [topics, setTopics] = useState<string[]>(props.kind === 'topics' ? props.initial : []);
   const [bg, setBg] = useState<BackgroundValues>(
@@ -147,7 +144,6 @@ export function ProfileItemModal(props: ProfileItemModalProps) {
   const [problems, setProblems] = useState<
     BackgroundErrors & AwardErrors & EducationErrors & { topics?: string }
   >({});
-  const [confirming, setConfirming] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   // A failed check: focus the first field it names, so its message is read.
@@ -228,7 +224,7 @@ export function ProfileItemModal(props: ProfileItemModalProps) {
         }
       : props.kind === 'award'
         ? {
-            title: props.initial ? 'Edit award' : 'Add an award',
+            title: props.editing ? 'Edit award' : 'Add an award',
             icon: 'workspace_premium',
             subtitle: 'Shown in the Awards section of your profile.',
           }
@@ -258,7 +254,9 @@ export function ProfileItemModal(props: ProfileItemModalProps) {
           ? 'We couldn’t load the topics.'
           : props.kind === 'education'
             ? 'We couldn’t load your education.'
-            : 'We couldn’t load the list of countries.'}{' '}
+            : props.kind === 'award'
+              ? 'We couldn’t load this award.'
+              : 'We couldn’t load the list of countries.'}{' '}
         <button type="button" className={styles.retry} onClick={catalog.onRetry}>
           Try again
         </button>
@@ -318,37 +316,6 @@ export function ProfileItemModal(props: ProfileItemModalProps) {
           {error}
         </p>
       )}
-      {remove &&
-        (confirming ? (
-          <div className={styles.confirm} role="group" aria-label={`Delete this ${remove.noun}?`}>
-            <p className={styles.confirmText}>
-              <strong>Delete this {remove.noun}?</strong> This can’t be undone.
-            </p>
-            <div className={styles.confirmActions}>
-              <Button
-                type="button"
-                variant="text"
-                size="small"
-                onClick={() => setConfirming(false)}
-              >
-                Keep it
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                size="small"
-                aria-disabled={remove.removing || undefined}
-                onClick={() => !remove.removing && remove.onRemove()}
-              >
-                {remove.removing ? 'Deleting…' : `Delete ${remove.noun}`}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <button type="button" className={styles.remove} onClick={() => setConfirming(true)}>
-            Delete {remove.noun}
-          </button>
-        ))}
       <div className={styles.actions}>
         <Button type="button" variant="secondary-outlined" size="large" fullWidth onClick={onClose}>
           Cancel
@@ -365,7 +332,7 @@ export function ProfileItemModal(props: ProfileItemModalProps) {
             ? 'Saving…'
             : props.kind === 'topics'
               ? 'Save topics'
-              : props.kind === 'award' && !props.initial
+              : props.kind === 'award' && !props.editing
                 ? 'Add award'
                 : props.kind === 'education' && !props.editing
                   ? 'Add education'

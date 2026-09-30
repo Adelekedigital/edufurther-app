@@ -32,8 +32,15 @@ export function EducationFields({
   hasOther,
 }: EducationFieldsProps) {
   const hintId = useId();
-  const years = Array.from({ length: 40 }, (_, i) => String(thisYear + 5 - i));
-  const yearOptions = years.map((y) => ({ value: y, label: y }));
+  // The design's 40 years, plus a saved year outside them (review of #93), newest first.
+  const years = [
+    ...new Set([
+      ...Array.from({ length: 40 }, (_, i) => thisYear + 5 - i),
+      values.start,
+      values.end,
+    ]),
+  ].sort((a, b) => b - a);
+  const yearOptions = years.map((y) => ({ value: String(y), label: String(y) }));
   // A saved abbreviation the list doesn't offer (e.g. LLM) stays pickable.
   const degrees = [
     ...((DEGREES as readonly string[]).includes(values.degree) ? [] : [values.degree]),

@@ -69,7 +69,9 @@ describe('MentorProfileScreen — scholarships and awards', () => {
     h.profile = state({ data: own });
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
-    await user.click(screen.getByRole('button', { name: `Edit ${assistantship.title}` }));
+    await user.click(
+      screen.getByRole('button', { name: new RegExp(`^Edit ${assistantship.title}`) }),
+    );
     const dialog = screen.getByRole('dialog', { name: 'Edit award' });
     expect(within(dialog).getByRole('textbox', { name: 'Award name' })).toHaveValue(
       assistantship.title,
@@ -83,22 +85,28 @@ describe('MentorProfileScreen — scholarships and awards', () => {
     expect(screen.getByText('Award saved.')).toBeInTheDocument();
   });
 
-  it('removing asks first, then focus goes to "Add award" (the row is gone)', async () => {
+  it('Delete on the row asks first, then says so and moves focus to "Add award"', async () => {
     h.profile = state({ data: own });
     h.onAwardRemoved = () => {
       h.profile = state({ data: { ...own, awards: [] } });
     };
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
-    await user.click(screen.getByRole('button', { name: `Edit ${assistantship.title}` }));
-    const dialog = screen.getByRole('dialog', { name: 'Edit award' });
-    await user.click(within(dialog).getByRole('button', { name: 'Delete award' }));
+    await user.click(
+      screen.getByRole('button', { name: new RegExp(`^Delete ${assistantship.title}`) }),
+    );
+    const confirm = screen.getByRole('dialog', { name: 'Delete this award?' });
+    expect(confirm).toHaveAccessibleDescription('This can’t be undone.');
+    await user.click(within(confirm).getByRole('button', { name: 'Keep it' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(removeAward).not.toHaveBeenCalled();
     await user.click(
-      within(within(dialog).getByRole('group', { name: 'Delete this award?' })).getByRole(
-        'button',
-        { name: 'Delete award' },
-      ),
+      screen.getByRole('button', { name: new RegExp(`^Delete ${assistantship.title}`) }),
+    );
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Delete this award?' })).getByRole('button', {
+        name: 'Delete award',
+      }),
     );
     expect(removeAward).toHaveBeenCalledWith('a1');
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -114,5 +122,33 @@ describe('MentorProfileScreen — scholarships and awards', () => {
     h.profile = state({ data: { ...fullProfile, awards: [] } });
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.queryByRole('heading', { name: 'Scholarships and awards' })).toBeNull();
+  });
+});
+
+describe('MentorProfileScreen — awards, review of #93', () => {
+  it('adding from the empty invite card puts focus on the heading’s "Add award" (4)', async () => {
+    h.profile = state({ data: { ...own, awards: [] } });
+    h.onAwardAdded = () => {
+      h.profile = state({ data: own });
+    };
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getAllByRole('button', { name: 'Add award' })[1]!);
+    const dialog = screen.getByRole('dialog', { name: 'Add an award' });
+    await user.type(within(dialog).getByRole('textbox', { name: 'Award name' }), 'Chevening');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Awarded by' }), 'FCDO');
+    await user.click(within(dialog).getByRole('button', { name: 'Add award' }));
+    expect(screen.queryByText('Add the funding you’ve won')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Add award' })).toHaveFocus();
+  });
+
+  it('two rows with the same title get Edit names that tell them apart (6)', () => {
+    const twin = { ...assistantship, id: 'a2', meta: 'Stanford University · 2019' };
+    h.profile = state({ data: { ...own, awards: [assistantship, twin] } });
+    render(<MentorProfileScreen handle="gbenga" />);
+    const names = screen
+      .getAllByRole('button', { name: /^Edit Graduate Teaching Assistantship/ })
+      .map((b) => b.getAttribute('aria-label'));
+    expect(new Set(names).size).toBe(2);
   });
 });

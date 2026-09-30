@@ -178,23 +178,6 @@ describe('ProfileItemModal — topics', () => {
     );
     expect(screen.getByText(/no topics to choose from/)).toBeInTheDocument();
   });
-
-  it('Delete (where offered) asks first (design reply #59)', async () => {
-    const onRemove = vi.fn();
-    const { user } = topics({ remove: { noun: 'award', onRemove, removing: false } });
-    await user.click(screen.getByRole('button', { name: 'Delete award' }));
-    expect(onRemove).not.toHaveBeenCalled();
-    const confirm = screen.getByRole('group', { name: 'Delete this award?' });
-    await user.click(within(confirm).getByRole('button', { name: 'Keep it' }));
-    expect(screen.queryByRole('group', { name: 'Delete this award?' })).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Delete award' }));
-    await user.click(
-      within(screen.getByRole('group', { name: 'Delete this award?' })).getByRole('button', {
-        name: 'Delete award',
-      }),
-    );
-    expect(onRemove).toHaveBeenCalledTimes(1);
-  });
 });
 
 describe('ProfileItemModal — review of #85', () => {
@@ -309,6 +292,7 @@ describe('ProfileItemModal — award', () => {
     render(
       <ProfileItemModal
         kind="award"
+        editing={!!initial}
         initial={initial as never}
         thisYear={2026}
         saving={false}
@@ -491,5 +475,50 @@ describe('ProfileItemModal — education', () => {
     expect(
       screen.getByRole('checkbox', { name: 'This is my current or most recent education' }),
     ).not.toBeChecked();
+  });
+});
+
+describe('ProfileItemModal — review of #93', () => {
+  const base = {
+    saving: false,
+    error: null,
+    onSave: vi.fn(),
+    onClose: vi.fn(),
+    renderShell: shell,
+  };
+
+  it('a saved year outside the offered years still shows (1)', () => {
+    render(
+      <ProfileItemModal
+        {...base}
+        kind="education"
+        editing
+        initial={{
+          school: 'UNN',
+          degree: 'PhD',
+          course: 'History',
+          start: 1978,
+          end: 1984,
+          current: false,
+        }}
+        thisYear={2026}
+        hasOther
+      />,
+    );
+    expect(screen.getByRole('combobox', { name: 'Start year' })).toHaveValue('1978');
+    expect(screen.getByRole('combobox', { name: 'End year (or expected)' })).toHaveValue('1984');
+  });
+
+  it('an award dated after this year still shows its year (1)', () => {
+    render(
+      <ProfileItemModal
+        {...base}
+        kind="award"
+        editing
+        initial={{ title: 'Chevening', org: 'FCDO', year: 2027, funding: 'full' }}
+        thisYear={2026}
+      />,
+    );
+    expect(screen.getByRole('combobox', { name: 'Year' })).toHaveValue('2027');
   });
 });

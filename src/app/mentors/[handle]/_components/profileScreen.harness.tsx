@@ -86,6 +86,8 @@ export const h = {
   onBackgroundSaved: null as null | (() => void),
   /** Runs when a remove "lands", before the editor closes (e.g. drop the row). */
   onAwardRemoved: null as null | (() => void),
+  /** Runs when an add "lands", before the editor closes (e.g. show the new row). */
+  onAwardAdded: null as null | (() => void),
 };
 
 export const replace = vi.fn();
@@ -364,7 +366,10 @@ const profileEntriesMock = async () => ({
   useAwardEdit: () => ({
     addAward: (v: unknown, done: () => void) => {
       addAward(v);
-      if (h.itemsOk) done();
+      if (h.itemsOk) {
+        h.onAwardAdded?.();
+        done();
+      }
     },
     editAward: (id: string, before: unknown, after: unknown, done: () => void) => {
       editAward(id, before, after);
@@ -435,6 +440,7 @@ beforeEach(() => {
   h.topicsRefetchFailed = false;
   h.onBackgroundSaved = null;
   h.onAwardRemoved = null;
+  h.onAwardAdded = null;
   addAward.mockReset();
   editAward.mockReset();
   removeAward.mockReset();

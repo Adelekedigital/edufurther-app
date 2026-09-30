@@ -1,7 +1,14 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixture';
-import { addEducation, editEducation, h, removeEducation, state } from './profileScreen.harness';
+import {
+  addEducation,
+  editEducation,
+  h,
+  ownEducation,
+  removeEducation,
+  state,
+} from './profileScreen.harness';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
@@ -86,7 +93,7 @@ describe('MentorProfileScreen — education', () => {
     h.profile = state({ data: own });
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
-    await user.click(screen.getByRole('button', { name: 'Edit MSc, Sociology' }));
+    await user.click(screen.getByRole('button', { name: /^Edit MSc, Sociology/ }));
     const dialog = screen.getByRole('dialog', { name: 'Edit education' });
     expect(within(dialog).getByRole('combobox', { name: 'Degree' })).toHaveValue('MSc');
     await user.selectOptions(
@@ -99,20 +106,49 @@ describe('MentorProfileScreen — education', () => {
     expect(screen.getByText('Education saved.')).toBeInTheDocument();
   });
 
-  it('removing asks first, then says so', async () => {
+  it('Delete on the row asks first, then says so and moves focus to "Add education"', async () => {
     h.profile = state({ data: own });
+
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
-    await user.click(screen.getByRole('button', { name: 'Edit MSc, Sociology' }));
-    const dialog = screen.getByRole('dialog', { name: 'Edit education' });
-    await user.click(within(dialog).getByRole('button', { name: 'Delete education' }));
+    await user.click(screen.getByRole('button', { name: /^Delete MSc, Sociology/ }));
+    const confirm = screen.getByRole('dialog', { name: 'Delete this education?' });
+    expect(confirm).toHaveAccessibleDescription('This can’t be undone.');
+    await user.click(within(confirm).getByRole('button', { name: 'Keep it' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(removeEducation).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: /^Delete MSc, Sociology/ }));
     await user.click(
-      within(within(dialog).getByRole('group', { name: 'Delete this education?' })).getByRole(
-        'button',
-        { name: 'Delete education' },
-      ),
+      within(screen.getByRole('dialog', { name: 'Delete this education?' })).getByRole('button', {
+        name: 'Delete education',
+      }),
     );
     expect(removeEducation).toHaveBeenCalledWith('e2');
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.getByText('Education deleted.')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Add education' })[0]).toHaveFocus();
+  });
+});
+
+describe('MentorProfileScreen — education, review of #93', () => {
+  it('editing only the school leaves the saved degree level alone (2)', async () => {
+    const saved = ownEducation[1]!.levelId;
+    ownEducation[1]!.levelId = 'dl-legacy';
+    try {
+      h.profile = state({
+        data: { ...fullProfile, owner: { approval: 'approved', listed: true } },
+      });
+      const user = userEvent.setup();
+      render(<MentorProfileScreen handle="gbenga" />);
+      await user.click(screen.getByRole('button', { name: /^Edit MSc, Sociology/ }));
+      const dialog = screen.getByRole('dialog', { name: 'Edit education' });
+      const school = within(dialog).getByRole('textbox', { name: 'School' });
+      await user.clear(school);
+      await user.type(school, 'Mississippi State');
+      await user.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+      expect(editEducation).toHaveBeenCalledWith('e2', { school_name_raw: 'Mississippi State' });
+    } finally {
+      ownEducation[1]!.levelId = saved;
+    }
   });
 });

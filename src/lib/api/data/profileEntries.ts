@@ -108,7 +108,11 @@ export function useOwnEducation(userId: string | null, enabled: boolean) {
           degree: degreeFromSaved(e.degree_abbreviation),
           course: e.study_course ?? '',
           start: Number(e.date_start?.slice(0, 4)) || new Date().getFullYear(),
-          end: Number(e.date_end?.slice(0, 4)) || new Date().getFullYear(),
+          // No end saved: its start (not today), so nothing new is sent unless changed.
+          end:
+            Number(e.date_end?.slice(0, 4)) ||
+            Number(e.date_start?.slice(0, 4)) ||
+            new Date().getFullYear(),
           current: e.is_most_recent,
         },
         dateStart: e.date_start ?? null,

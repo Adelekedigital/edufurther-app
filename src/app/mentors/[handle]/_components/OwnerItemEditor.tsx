@@ -157,6 +157,10 @@ function AwardEditor({ id, profile, onClose, onSaved }: EditorProps & { id: stri
   return (
     <ProfileItemModal
       kind="award"
+      editing={!!id}
+      // An award removed elsewhere since the page loaded: a load error, so
+      // Save can't turn the edit into an add (review of #93).
+      catalog={{ status: id && !base ? 'error' : 'ready', onRetry: close }}
       initial={base}
       thisYear={thisYear}
       saving={awards.saving}
@@ -165,15 +169,6 @@ function AwardEditor({ id, profile, onClose, onSaved }: EditorProps & { id: stri
         id && base
           ? awards.editAward(id, base, values, () => onSaved('award', 'saved'))
           : awards.addAward(values, () => onSaved('award', 'added'))
-      }
-      remove={
-        id
-          ? {
-              noun: 'award',
-              removing: awards.removing,
-              onRemove: () => awards.removeAward(id, () => onSaved('award', 'removed')),
-            }
-          : undefined
       }
       onClose={close}
       renderShell={frame(close)}
@@ -202,6 +197,8 @@ function EducationEditor({ id, profile, onClose, onSaved }: EditorProps & { id: 
         ? 'ready'
         : 'loading';
   const levelIdFor = (degree: string) => {
+    // Unchanged degree: its saved level stands, even if legacy (review of #93).
+    if (entry && degree === entry.values.degree) return entry.levelId;
     const code = levelCodeFor(degree);
     // A saved abbreviation the form doesn't list keeps its saved level.
     if (code === undefined) return entry?.levelId ?? null;
@@ -236,15 +233,6 @@ function EducationEditor({ id, profile, onClose, onSaved }: EditorProps & { id: 
           : edu.addEducation(educationBody(values, levelIdFor(values.degree)), () =>
               onSaved('education', 'added'),
             )
-      }
-      remove={
-        id
-          ? {
-              noun: 'education',
-              removing: edu.removing,
-              onRemove: () => edu.removeEducation(id, () => onSaved('education', 'removed')),
-            }
-          : undefined
       }
       onClose={close}
       renderShell={frame(close)}

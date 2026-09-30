@@ -36,6 +36,7 @@ import {
   type ItemOutcome,
   type ItemTarget,
 } from './OwnerItemEditor';
+import { DeleteEntryConfirm } from './DeleteEntryConfirm';
 import { OwnerBar, ProfileSkeleton } from './ProfileParts';
 import { ProfileMissing } from './ProfileMissing';
 import { ReviewsTab } from './ReviewsTab';
@@ -129,6 +130,10 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // The owner's topics, background and awards (ProfileItemModal.dc.html), and
   // what the last save did, for screen readers (the modal closing says nothing).
   const [itemOpen, setItemOpen] = useState<ItemTarget | null>(null);
+  // The row Delete's confirm (product 2026-09-30: Delete beside Edit).
+  const [deleting, setDeleting] = useState<{ kind: 'award' | 'education'; id: string } | null>(
+    null,
+  );
   const [itemSaved, setItemSaved] = useState<{
     text: string;
     id: number;
@@ -143,7 +148,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const educationAdd = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (itemSaved?.kind === 'background') backgroundEdit.current?.focus();
-    if (itemSaved?.outcome !== 'removed') return;
+    // Added from the empty invite card (gone once the row shows), or removed.
+    if (itemSaved?.outcome !== 'removed' && itemSaved?.outcome !== 'added') return;
     if (itemSaved.kind === 'award') awardsAdd.current?.focus();
     if (itemSaved.kind === 'education') educationAdd.current?.focus();
   }, [itemSaved]);
@@ -361,6 +367,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                         ? {
                             onAdd: () => setItemOpen({ kind: 'award', id: null }),
                             onEdit: (id) => setItemOpen({ kind: 'award', id }),
+                            onDelete: (id) => setDeleting({ kind: 'award', id }),
                           }
                         : undefined
                     }
@@ -370,6 +377,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                         ? {
                             onAdd: () => setItemOpen({ kind: 'education', id: null }),
                             onEdit: (id) => setItemOpen({ kind: 'education', id }),
+                            onDelete: (id) => setDeleting({ kind: 'education', id }),
                           }
                         : undefined
                     }
@@ -449,6 +457,23 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           onSaved={(kind, outcome) => {
             setItemOpen(null);
             setItemSaved({ text: SAVED_COPY[kind][outcome], id: Date.now(), kind, outcome });
+          }}
+        />
+      )}
+      {isOwner && p && deleting && (
+        <DeleteEntryConfirm
+          kind={deleting.kind}
+          id={deleting.id}
+          userId={p.mentor.id}
+          onClose={() => setDeleting(null)}
+          onDeleted={() => {
+            setDeleting(null);
+            setItemSaved({
+              text: SAVED_COPY[deleting.kind].removed,
+              id: Date.now(),
+              kind: deleting.kind,
+              outcome: 'removed',
+            });
           }}
         />
       )}

@@ -135,10 +135,6 @@ export const TopicsError: Story = {
 export const TopicsEmpty: Story = {
   render: () => topics({ groups: [] } as Partial<ProfileItemModalProps>),
 };
-/** PROVISIONAL: Remove with its confirm (used by education and awards). */
-export const WithRemove: Story = {
-  render: () => topics({ remove: { noun: 'award', onRemove: fn(), removing: false } }),
-};
 
 export const BackgroundEdit: Story = { render: () => <Background /> };
 export const BackgroundLanguagesLoading: Story = {
@@ -156,6 +152,7 @@ export const Phone: Story = {
 const award = (over: Partial<ProfileItemModalProps> = {}) => (
   <Frame
     kind="award"
+    editing={false}
     initial={null}
     thisYear={2026}
     saving={false}
@@ -177,16 +174,18 @@ export const AwardAdd: Story = { render: () => award() };
 export const AwardEdit: Story = {
   render: () =>
     award({
+      editing: true,
       initial: saved,
-      remove: { noun: 'award', onRemove: fn(), removing: false },
     } as Partial<ProfileItemModalProps>),
 };
 export const AwardSaving: Story = {
-  render: () => award({ initial: saved, saving: true } as Partial<ProfileItemModalProps>),
+  render: () =>
+    award({ editing: true, initial: saved, saving: true } as Partial<ProfileItemModalProps>),
 };
 export const AwardSaveFailed: Story = {
   render: () =>
     award({
+      editing: true,
       initial: saved,
       error: 'That didn’t save. Try again.',
     } as Partial<ProfileItemModalProps>),
@@ -194,6 +193,7 @@ export const AwardSaveFailed: Story = {
 export const AwardLongNames: Story = {
   render: () =>
     award({
+      editing: true,
       initial: {
         ...saved,
         title:
@@ -241,7 +241,6 @@ export const EducationEdit: Story = {
     education({
       editing: true,
       initial: degree,
-      remove: { noun: 'education', onRemove: fn(), removing: false },
     } as Partial<ProfileItemModalProps>),
 };
 export const EducationLoading: Story = {

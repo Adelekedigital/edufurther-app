@@ -151,8 +151,8 @@ export const OverviewOwner: Story = {
       <ProfileOverview
         profile={fullProfile}
         onEditBackground={fn()}
-        awardsEdit={{ onAdd: fn(), onEdit: fn() }}
-        educationEdit={{ onAdd: fn(), onEdit: fn() }}
+        awardsEdit={{ onAdd: fn(), onEdit: fn(), onDelete: fn() }}
+        educationEdit={{ onAdd: fn(), onEdit: fn(), onDelete: fn() }}
       />
     </div>
   ),
@@ -164,8 +164,8 @@ export const OverviewOwnerEmpty: Story = {
       <ProfileOverview
         profile={{ ...newProfile, awards: [], education: [] }}
         onEditBackground={fn()}
-        awardsEdit={{ onAdd: fn(), onEdit: fn() }}
-        educationEdit={{ onAdd: fn(), onEdit: fn() }}
+        awardsEdit={{ onAdd: fn(), onEdit: fn(), onDelete: fn() }}
+        educationEdit={{ onAdd: fn(), onEdit: fn(), onDelete: fn() }}
       />
     </div>
   ),
@@ -186,8 +186,8 @@ export const OverviewOwnerLongAward: Story = {
             },
           ],
         }}
-        awardsEdit={{ onAdd: fn(), onEdit: fn() }}
-        educationEdit={{ onAdd: fn(), onEdit: fn() }}
+        awardsEdit={{ onAdd: fn(), onEdit: fn(), onDelete: fn() }}
+        educationEdit={{ onAdd: fn(), onEdit: fn(), onDelete: fn() }}
       />
     </div>
   ),

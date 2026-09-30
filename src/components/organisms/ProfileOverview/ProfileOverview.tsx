@@ -42,6 +42,8 @@ type ProfileOverviewProps = {
 type EntryEdit = {
   onAdd: () => void;
   onEdit: (id: string) => void;
+  /** Delete, beside Edit on each row (product 2026-09-30: no menu, no delete in the form). */
+  onDelete: (id: string) => void;
 };
 
 /** Mentor Profile.dc.html award badges: only what the mentor said (backend). */
@@ -279,13 +281,24 @@ function EntrySection({
                       </Badge>
                     )}
                     {edit && (
-                      <IconButton
-                        icon="edit"
-                        size="sm"
-                        shape="square"
-                        aria-label={`Edit ${it.title}`}
-                        onClick={() => edit.onEdit(it.id)}
-                      />
+                      <span className={styles.rowActions}>
+                        <IconButton
+                          icon="edit"
+                          size="sm"
+                          shape="square"
+                          // With the meta: two "MSc" rows get different names (review of #93).
+                          aria-label={`Edit ${it.title}${it.meta ? `, ${it.meta}` : ''}`}
+                          onClick={() => edit.onEdit(it.id)}
+                        />
+                        <IconButton
+                          icon="delete"
+                          size="sm"
+                          shape="square"
+                          tone="danger"
+                          aria-label={`Delete ${it.title}${it.meta ? `, ${it.meta}` : ''}`}
+                          onClick={() => edit.onDelete(it.id)}
+                        />
+                      </span>
                     )}
                   </>
                 )

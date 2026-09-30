@@ -35,7 +35,15 @@ export function AwardFields({
   thisYear,
   allowNoYear,
 }: AwardFieldsProps) {
-  const years = Array.from({ length: 35 }, (_, i) => String(thisYear - i));
+  // The design's 35 years, plus a saved year outside them (review of #93), newest first.
+  const years = [
+    ...new Set([
+      ...Array.from({ length: 35 }, (_, i) => thisYear - i),
+      ...(values.year === null ? [] : [values.year]),
+    ]),
+  ]
+    .sort((a, b) => b - a)
+    .map(String);
   const set = <K extends keyof AwardValues>(k: K, v: AwardValues[K]) =>
     onChange({ ...values, [k]: v });
   return (
