@@ -160,6 +160,9 @@ export function useCoverEdit(handle: string, userId: string | null) {
       // A refetch already out would land after this with the old banner.
       await qc.cancelQueries({ queryKey: key });
       update((p) => ({ ...p, bannerUrl: url }));
+      // Refetch what the cancel stopped (e.g. an intro save's); the server has
+      // the new banner by now (review of #99).
+      void qc.invalidateQueries({ queryKey: key });
     },
   });
 

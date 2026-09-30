@@ -77,6 +77,9 @@ export const h = {
   editOk: true,
   introErrors: {} as Record<string, string>,
   aboutError: null as string | null,
+  // The owner's photo upload.
+  photoUploading: false,
+  photoError: null as string | null,
   // The owner's topics and background editors.
   itemsOk: true,
   itemsError: null as string | null,
@@ -100,6 +103,7 @@ export const coverUpload = vi.fn();
 export const coverRemove = vi.fn();
 export const coverPick = vi.fn();
 export const saveIntro = vi.fn();
+export const uploadPhoto = vi.fn();
 export const saveAbout = vi.fn();
 export const saveTopics = vi.fn();
 export const addAward = vi.fn();
@@ -253,6 +257,17 @@ const coverMock = () => ({
   }),
 });
 
+const avatarMock = () => ({
+  useAvatarUpload: () => ({
+    accept: 'image/jpeg,image/png,image/webp',
+    upload: uploadPhoto,
+    uploading: h.photoUploading,
+    error: h.photoError,
+    dismissError: vi.fn(),
+    uploadedStamp: 0,
+  }),
+});
+
 const bookingMock = () => ({
   useSessionTypes: (...a: unknown[]) => {
     sessionTypesArgs(...a);
@@ -398,6 +413,7 @@ export const mocks = {
   similar: similarMock,
   profile: profileMock,
   cover: coverMock,
+  avatar: avatarMock,
   booking: bookingMock,
   profileEdit: profileEditMock,
   profileItems: profileItemsMock,
@@ -433,6 +449,9 @@ beforeEach(() => {
   h.editOk = true;
   h.introErrors = {};
   h.aboutError = null;
+  h.photoUploading = false;
+  h.photoError = null;
+  uploadPhoto.mockReset();
   saveIntro.mockReset();
   saveAbout.mockReset();
   h.itemsOk = true;

@@ -26,6 +26,9 @@ vi.mock('@/lib/api/data/profile', async () =>
 vi.mock('@/lib/api/data/cover', async () =>
   (await import('./profileScreen.harness')).mocks.cover(),
 );
+vi.mock('@/lib/api/data/avatar', async () =>
+  (await import('./profileScreen.harness')).mocks.avatar(),
+);
 vi.mock('@/lib/api/data/profileEdit', async () =>
   (await import('./profileScreen.harness')).mocks.profileEdit(),
 );

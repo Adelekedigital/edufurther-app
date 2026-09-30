@@ -1,0 +1,97 @@
+'use client';
+
+import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { AppError, MentorProfile } from '@/types/mentor';
+import { BANNER_ACCEPT, bannerProblem } from './cover';
+import { apiError, normaliseError } from './errors';
+import { api } from './http';
+import { keys } from './keys';
+import { toFocus } from './mentors';
+import { sessionKey, useSession } from './session';
+
+/** What the photo upload accepts: the same as the banner (backend: JPEG, PNG or WebP, 5 MB). */
+export const PHOTO_ACCEPT = BANNER_ACCEPT;
+
+/** Copy for a failed photo upload: the server's 413/422 mean the file, not the network. */
+export function photoErrorCopy(e: AppError): string {
+  if (e.kind === 'offline') return 'You’re offline. Try again when you’re connected.';
+  if (e.status === 413 || e.status === 422)
+    return 'That image couldn’t be used. Choose a JPEG, PNG or WebP under 5 MB.';
+  return 'The photo didn’t upload. Try again.';
+}
+
+/**
+ * The owner's profile photo (POST /users/{id}/avatar, multipart `file`). The
+ * server strips the photo's metadata, resizes it and finds the face; its reply
+ * carries the new photo and focus, shown at once, then anything listing this
+ * mentor (cards) refetches. A file we can tell is wrong is refused before
+ * it's sent. The old photo stays until the new one is in.
+ */
+export function useAvatarUpload(handle: string, userId: string | null) {
+  const session = useSession();
+  const qc = useQueryClient();
+  const key = keys.mentors.profile(handle, sessionKey(session));
+  const [fileProblem, setFileProblem] = useState<string | null>(null);
+  // Bumped when a photo is in, for the page to announce it.
+  const [uploadedStamp, setUploadedStamp] = useState(0);
+
+  const upload = useMutation({
+    networkMode: 'always',
+    mutationFn: async (file: File) => {
+      if (!userId) throw new Error('No user');
+      const { data, error, response } = await api.POST('/api/v1/users/{user_id}/avatar', {
+        params: { path: { user_id: userId } },
+        // The generated type says `file: string`; multipart sends the File itself.
+        body: { file: '' },
+        bodySerializer: () => {
+          const form = new FormData();
+          form.append('file', file);
+          return form;
+        },
+      });
+      if (!data) throw apiError(response.status, error);
+      if (typeof data.avatar_url !== 'string' || !data.avatar_url) throw apiError(500, undefined);
+      return data;
+    },
+    onSuccess: async (data) => {
+      // A refetch already out would land after this with the old photo.
+      await qc.cancelQueries({ queryKey: key });
+      qc.setQueryData<MentorProfile>(key, (p) =>
+        p
+          ? {
+              ...p,
+              mentor: {
+                ...p.mentor,
+                photoUrl: data.avatar_url,
+                photoFocus: toFocus(data.avatar_focus),
+              },
+            }
+          : p,
+      );
+      setUploadedStamp(Date.now());
+      // The profile (a refetch the cancel above stopped, e.g. an intro save's)
+      // and the cards elsewhere refetch; the server has the new photo by now
+      // (review of #99).
+      void qc.invalidateQueries({ queryKey: keys.mentors.all });
+    },
+  });
+
+  return {
+    accept: PHOTO_ACCEPT,
+    upload: (file: File) => {
+      if (upload.isPending) return;
+      const problem = bannerProblem(file);
+      setFileProblem(problem);
+      upload.reset();
+      if (!problem) upload.mutate(file);
+    },
+    uploading: upload.isPending,
+    error: fileProblem ?? (upload.error ? photoErrorCopy(normaliseError(upload.error)) : null),
+    dismissError: () => {
+      setFileProblem(null);
+      upload.reset();
+    },
+    uploadedStamp,
+  };
+}

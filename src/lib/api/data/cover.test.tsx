@@ -430,6 +430,19 @@ describe('useCoverEdit', () => {
     expect(form.get('file')).toBe(f);
   });
 
+  it('after an upload the profile refetches, so a cancelled refetch isn’t lost (review of #99)', async () => {
+    POST.mockResolvedValue({
+      data: { banner_url: 'https://cdn/b.webp' },
+      error: undefined,
+      response: new Response(null),
+    });
+    const { wrapper, qc, key } = setup();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+    const { result } = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
+    act(() => result.current.upload(file('image/webp', 10)));
+    await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: key }));
+  });
+
   it('says why an upload failed', async () => {
     POST.mockResolvedValue({
       data: undefined,

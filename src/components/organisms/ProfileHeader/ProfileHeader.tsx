@@ -28,6 +28,8 @@ type ProfileHeaderProps = {
    * broken).
    */
   status?: string;
+  /** The owner's camera badge on the photo (Mentor Profile.dc.html `canEdit`). */
+  photoTools?: ReactNode;
   /** The owner's "Edit topics", after the topic chips (Mentor Profile.dc.html `editTopics`). */
   onEditTopics?: () => void;
 };
@@ -53,6 +55,7 @@ export function ProfileHeader({
   introEditor,
   status,
   onEditTopics,
+  photoTools,
 }: ProfileHeaderProps) {
   const m = profile.mentor;
   // Cover colour (Mentor Profile.dc.html): a light banner when there's no
@@ -125,14 +128,17 @@ export function ProfileHeader({
       </div>
       {bannerTools && <div className={styles.bannerTools}>{bannerTools}</div>}
       <div className={styles.head}>
-        <div className={styles.avatar} style={photoStyle}>
-          {m.photoUrl ? (
-            <img src={m.photoUrl} alt={m.name} className={styles.photo} />
-          ) : (
-            <span role="img" aria-label={m.name} className={styles.initials}>
-              {m.initials}
-            </span>
-          )}
+        <div className={styles.avatarWrap}>
+          <div className={styles.avatar} style={photoStyle}>
+            {m.photoUrl ? (
+              <img src={m.photoUrl} alt={m.name} className={styles.photo} />
+            ) : (
+              <span role="img" aria-label={m.name} className={styles.initials}>
+                {m.initials}
+              </span>
+            )}
+          </div>
+          {photoTools}
         </div>
         {introEditor ? (
           <div className={cx(styles.intro, styles.introEdit)}>

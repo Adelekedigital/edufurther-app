@@ -8,6 +8,7 @@ import { AboutEditor } from '@/components/molecules/AboutEditor/AboutEditor';
 import { CoverPicker } from '@/components/molecules/CoverPicker/CoverPicker';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { IntroEditForm } from '@/components/molecules/IntroEditForm/IntroEditForm';
+import { PhotoPicker } from '@/components/molecules/PhotoPicker/PhotoPicker';
 import { ShareMenu } from '@/components/molecules/ShareMenu/ShareMenu';
 import { BookSessionCard } from '@/components/organisms/BookSessionCard/BookSessionCard';
 import { FirstMenteesCard } from '@/components/organisms/FirstMenteesCard/FirstMenteesCard';
@@ -22,6 +23,7 @@ import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { bookBlockedFor } from '@/app/_shell/bookBlocked';
 import { useAppShell } from '@/app/_shell/useAppShell';
+import { useAvatarUpload } from '@/lib/api/data/avatar';
 import { BANNER_ACCEPT, useCoverEdit } from '@/lib/api/data/cover';
 import { useMentorProfile } from '@/lib/api/data/profile';
 import { useSimilarMentors } from '@/lib/api/data/similar';
@@ -124,6 +126,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // The owner's cover (Mentor Profile.dc.html "Change cover"): colour and art
   // save as picked; an image replaces them.
   const coverEdit = useCoverEdit(handle, isOwner && p ? p.mentor.id : null);
+  // No user id for anyone but the owner: the hook then can't upload, whatever calls it.
+  const photo = useAvatarUpload(handle, isOwner && p ? p.mentor.id : null);
   // The owner's name, headline and About (Mentor Profile.dc.html edit mode).
   const editProfileButton = useRef<HTMLButtonElement>(null);
   const owner = useOwnerEditing(p ?? null, isOwner, editProfileButton);
@@ -249,6 +253,18 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               profile={p}
               onShowReviews={hasReviews ? () => setTab('reviews') : undefined}
               onEditTopics={isOwner ? () => setItemOpen({ kind: 'topics' }) : undefined}
+              photoTools={
+                isOwner ? (
+                  <PhotoPicker
+                    hasPhoto={!!p.mentor.photoUrl}
+                    accept={photo.accept}
+                    uploading={photo.uploading}
+                    onFile={photo.upload}
+                    error={photo.error}
+                    onDismissError={photo.dismissError}
+                  />
+                ) : undefined
+              }
               // PROVISIONAL copy (design request): the design only names the state.
               status={canBookHere && notTaking ? 'Not taking bookings' : undefined}
               introEditor={
@@ -479,6 +495,11 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
       )}
       {/* Always there while it's the owner, so a screen reader hears each save. */}
       {isOwner && <LiveRegion message={itemSaved} />}
+      {isOwner && (
+        <LiveRegion
+          message={photo.uploadedStamp ? { text: 'Photo updated.', id: photo.uploadedStamp } : null}
+        />
+      )}
 
       {booking.active && (
         <BookingFlow

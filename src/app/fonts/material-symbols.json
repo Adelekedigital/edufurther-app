@@ -64,7 +64,9 @@
     "palette",
     "payments",
     "person",
+    "photo_camera",
     "power",
+    "progress_activity",
     "psychology",
     "public",
     "quiz",
@@ -98,5 +100,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "ca777ab90faaed6171f7e1a7f3c16525287f4f6a7d8678e3bead4612f4ab242f"
+  "sha256": "2d61c432c30d29050c45a24ea9366daf2cd38ba42d911f411b62e6402cd32bc3"
 }
