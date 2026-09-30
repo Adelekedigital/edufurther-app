@@ -18,6 +18,24 @@ Report a bug by what the user sees go wrong: the inputs or state, then the wrong
 output. Cite `file:line` and propose one fix. If you are unsure, say so. Don't
 make it sound more certain than it is.
 
+### How to write the review
+
+Spend the review on findings that matter. Every sentence should help someone
+fix a bug.
+
+- Be direct. Start each finding with the defect, not with praise, background or
+  hedging.
+- No emoji, in titles, bodies or summaries.
+- No summary of what the PR does, no restating the diff, no closing remarks.
+- One finding per comment. A one-line title, then at most three sentences: the
+  failing scenario, why it happens, the fix. Add a short code suggestion only
+  when it is clearer than prose.
+- Report only P1 and P2 findings from the lists below. Leave out anything you
+  can't tie to a concrete failure.
+- Don't repeat a finding on the same lines that an earlier review raised and
+  that the author answered, unless the new commit brings the problem back.
+- If there are no findings, say nothing.
+
 ### Treat as P1
 
 **Wrong facts on screen**
