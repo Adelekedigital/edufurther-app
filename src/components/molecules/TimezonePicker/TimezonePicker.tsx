@@ -86,11 +86,12 @@ export function TimezonePicker({
         className={styles.trigger}
         aria-expanded={open}
         aria-controls={panelId}
+        // aria-label, not an sr-only span: Chrome reads that span as a block ("… , change time zone").
+        aria-label={`${zoneLabel(value)}, change time zone`}
         onClick={() => (open ? close() : setOpen(true))}
       >
         {zoneLabel(value)}
         <Icon name="edit" size={14} />
-        <span className="sr-only">, change time zone</span>
       </button>
       {open && (
         <div id={panelId} className={styles.panel}>
