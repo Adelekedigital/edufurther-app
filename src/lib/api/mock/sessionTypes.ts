@@ -36,6 +36,20 @@ const LAST_BOOKED_ENDS_AT = new Date(Date.now() + 14 * 86_400_000).toISOString()
 /** The last booked session ends two weeks out: the date a scheduled deletion waits for. */
 const lastBookedEndsAt = (bookedCount: number) => (bookedCount ? LAST_BOOKED_ENDS_AT : null);
 
+/** The platform's window, default and cap alike (the backend's configured values). */
+export const PLATFORM_WINDOW = 56;
+/**
+ * The window a booking can use: the offering's own, else the mentor's default,
+ * else the platform's, never past the platform cap. A stored window can be
+ * longer than a cap lowered after it was saved, so the cap applies on read.
+ */
+export function effectiveWindow(
+  own: number | null | undefined,
+  mentorDefault: number | null | undefined,
+): number {
+  return Math.min(own ?? mentorDefault ?? PLATFORM_WINDOW, PLATFORM_WINDOW);
+}
+
 /** The read: the type's own value, else the mentor's default, else the platform's. */
 function resolve({ questions: _q, bookedCount, ...t }: Stored): OwnSessionTypeRead {
   return {
@@ -46,10 +60,9 @@ function resolve({ questions: _q, bookedCount, ...t }: Stored): OwnSessionTypeRe
     min_notice_minutes: t.min_notice_minutes ?? prefs.default_min_notice_minutes ?? 1440,
     duration_inherited: t.duration_minutes === null,
     min_notice_inherited: t.min_notice_minutes === null,
-    // Backend #309: the window this type really uses (the platform's cap is 56 here).
-    effective_booking_window_days: Math.min(
-      t.booking_window_days ?? prefs.booking_window_days ?? 56,
-      56,
+    effective_booking_window_days: effectiveWindow(
+      t.booking_window_days,
+      prefs.booking_window_days,
     ),
   };
 }
