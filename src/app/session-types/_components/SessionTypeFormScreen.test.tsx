@@ -122,7 +122,7 @@ describe('SessionTypeFormScreen', () => {
   });
 
   it('Continue checks the step: errors on the fields, and it stays', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template={null} />);
     await user.click(next(/Continue to intake questions/));
     expect(screen.getByText('Give your session a name.')).toBeInTheDocument();
@@ -135,7 +135,7 @@ describe('SessionTypeFormScreen', () => {
   });
 
   it('leaving step 1 with changes asks first; without changes it just goes', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const { unmount } = render(<SessionTypeFormScreen template={null} />);
     await user.click(screen.getByRole('button', { name: 'Back to session types' }));
     expect(push).toHaveBeenCalledWith('/session-types');
@@ -151,7 +151,7 @@ describe('SessionTypeFormScreen', () => {
   });
 
   it('publishing sends the questions with the type, once, and opens the published modal', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     create.mockImplementation((_v, opts) => opts.onSuccess({ id: 'new', failedWindows: [] }));
     render(<SessionTypeFormScreen template="sop-review" />);
     await user.click(next(/Continue to intake questions/));
@@ -167,7 +167,7 @@ describe('SessionTypeFormScreen', () => {
   });
 
   it('a name the server refuses sends the mentor back to step 1, on the field', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     create.mockImplementation((_v, opts) =>
       opts.onError({
         kind: 'conflict',
@@ -188,7 +188,7 @@ describe('SessionTypeFormScreen', () => {
   });
 
   it('delete a question confirms first', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
     await user.click(next(/Continue to intake questions/));
     await user.click(screen.getByRole('button', { name: 'Delete question 1' }));
@@ -202,7 +202,7 @@ describe('SessionTypeFormScreen', () => {
   });
 
   it('editing a question, then deleting one above it, saves the right question (review of #49)', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
     await user.click(next(/Continue to intake questions/));
     await user.click(screen.getByRole('button', { name: 'Edit question 2' }));
@@ -220,7 +220,7 @@ describe('SessionTypeFormScreen', () => {
   });
 
   it('a server error on one question shows on that question; a rules error clears when fixed', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     create.mockImplementationOnce((_v, opts) =>
       opts.onError({
         kind: 'validation',
@@ -259,7 +259,7 @@ describe('SessionTypeFormScreen', () => {
   });
 
   it('never shows platform values as "my default" while the mentor’s are loading or failed', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     defaultsMock = { data: null, isLoading: true, error: null, retry: vi.fn() };
     const { unmount } = render(<SessionTypeFormScreen template="sop-review" />);
     await user.click(next(/Continue to intake/));
@@ -279,7 +279,7 @@ describe('SessionTypeFormScreen', () => {
   });
 
   it('"Use my defaults" sends nothing of its own; custom rules send all five', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const toStep3 = async () => {
       await user.click(next(/Continue to intake/));
       await user.click(next(/Continue to scheduling/));
@@ -322,7 +322,7 @@ describe('SessionTypeFormScreen', () => {
   });
 
   it('Edit defaults opens Booking preferences; Save sends every value, Cancel nothing', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
     await user.click(next(/Continue to intake/));
     await user.click(next(/Continue to scheduling/));
@@ -363,7 +363,7 @@ describe('SessionTypeFormScreen', () => {
   });
 
   it('Edit weekly hours shows the Calendar hours and saves them; bad hours block the save', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
     await user.click(next(/Continue to intake/));
     await user.click(next(/Continue to scheduling/));
@@ -402,7 +402,7 @@ describe('SessionTypeFormScreen — review of #60', () => {
   };
 
   it('a failed save keeps Booking preferences open and says so; reopening starts clean', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     saveDefaults.mockRejectedValue({ kind: 'server', message: 'x' });
     defaultsSaveError = {
       kind: 'server',
@@ -418,7 +418,7 @@ describe('SessionTypeFormScreen — review of #60', () => {
   });
 
   it('"Set rules for this session" starts from the mentor’s own values', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     await toStep3(user);
     await user.click(screen.getByRole('radio', { name: /Set rules for this session/ }));
     // READY: 60 min, 48 hrs, 28 days, 15 min — not the blank draft's 24 hrs notice.
@@ -427,7 +427,7 @@ describe('SessionTypeFormScreen — review of #60', () => {
   });
 
   it('a template whose length isn’t the mentor’s starts with its own rules; one that is, follows the defaults', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     // Mock visa interview is 45 min; the mentor's default is 60.
     await toStep3(user, 'mock-visa-interview');
     expect(screen.getByRole('combobox', { name: 'Session length' })).toHaveValue('45');
@@ -435,7 +435,7 @@ describe('SessionTypeFormScreen — review of #60', () => {
   });
 
   it('a stored value that isn’t a design option shows as itself, not the first option', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     defaultsMock = { ...READY, data: { ...READY.data, windowDays: 20 } };
     await toStep3(user);
     await user.click(screen.getByRole('button', { name: 'Edit defaults' }));
@@ -446,7 +446,7 @@ describe('SessionTypeFormScreen — review of #60', () => {
   });
 
   it('defaults that arrive late don’t swallow what the mentor typed (review r2 of #60)', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     defaultsMock = { data: null, isLoading: true, error: null, retry: vi.fn() };
     const { rerender } = render(<SessionTypeFormScreen template="mock-visa-interview" />);
     await user.type(screen.getByRole('textbox', { name: 'Session name' }), ' 2');
@@ -465,7 +465,7 @@ describe('SessionTypeFormScreen — review of #60', () => {
   });
 
   it('new hours overlapping hours kept in another zone can’t be saved, and it says which zone', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     otherSlots = [{ day: 1, slot: [1080, 1140], zone: 'Europe/London' }]; // Mon 6–7 pm, London
     await toStep3(user);
     await user.click(screen.getByRole('button', { name: 'Edit weekly hours' }));
@@ -481,7 +481,7 @@ describe('SessionTypeFormScreen — review of #60', () => {
   });
 
   it('"Best for mentees who are…" takes several stages and sends them all (round 3 A)', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
     const group = screen.getByRole('group', { name: 'Best for mentees who are' });
     expect(screen.getByText('Pick all that apply. Leave empty for any stage.')).toBeInTheDocument();
@@ -510,7 +510,7 @@ describe('SessionTypeFormScreen — review of #60', () => {
   });
 
   it('your own stage: Add renames it (one label), unpicking it clears it, and a stage error clears on change', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
     const group = screen.getByRole('group', { name: 'Best for mentees who are' });
     const own = screen.getByRole('textbox', { name: 'Another stage' });
