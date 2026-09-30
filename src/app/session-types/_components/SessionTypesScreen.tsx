@@ -56,7 +56,7 @@ export function SessionTypesScreen() {
   const [infoIds, setInfoIds] = useState<string[]>([]);
   const onLiveFailed = useCallback(
     (id: string, live: boolean) => {
-      // PROVISIONAL copy — design request #2.
+      // Copy confirmed by design (reply 2026-09-29, #2).
       const text = `Couldn’t ${live ? 'make it live' : 'hide it'}. Check your connection and try again.`;
       setInfoIds((ids) => ids.filter((x) => x !== id));
       setMessages((m) => ({ ...m, [id]: text }));
@@ -92,7 +92,7 @@ export function SessionTypesScreen() {
       info ? [...ids.filter((x) => x !== id), id] : ids.filter((x) => x !== id),
     );
   };
-  // PROVISIONAL copy throughout — design request #9 (the design only adds the row).
+  // Copy confirmed by design throughout (reply 2026-09-29, #9) (the design only adds the row).
   const onDuplicate = (t: OwnSessionType) => {
     if (dup.isPending) return say(t.id, 'Still copying the last one. Try again in a moment.', true);
     // The copy's topics come from the catalog: without it they'd be dropped.
@@ -168,7 +168,7 @@ export function SessionTypesScreen() {
   };
 
   // Featured: one at a time; featuring another asks first (design `feature` confirm).
-  // PROVISIONAL copy throughout — design request #10.
+  // Copy confirmed by design throughout (reply 2026-09-29, #10).
   const HIDDEN_FEATURE = 'Show it to mentees first: a hidden session type can’t be featured.';
   const setFeatured = useSetFeatured((id, featured, e) =>
     say(
@@ -312,7 +312,10 @@ function DeleteConfirm(p: {
       ? `Schedule deletion for ${shortDate(lastEndsAt)}?`
       : 'Schedule deletion?';
   const subtitle = scheduled
-    ? `Hidden from mentees now. The ${count} booked session${count === 1 ? ' goes' : 's go'} ahead first.`
+    ? `Hidden from mentees now. The ${count} booked session${count === 1 ? ' goes' : 's go'} ahead first.${
+        // Design reply 2026-09-29, #10: scheduling un-features it, so the confirm says so.
+        p.type.isFeatured ? ' It also stops being featured.' : ''
+      }`
     : `“${p.type.name}” is removed from your profile and Session types. This can’t be undone.`;
   return (
     <ModalShell

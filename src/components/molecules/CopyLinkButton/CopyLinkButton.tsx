@@ -52,7 +52,7 @@ export function CopyLinkButton({ label, url }: CopyLinkButtonProps) {
         {state === 'copied'
           ? 'Link copied'
           : state === 'failed'
-            ? // PROVISIONAL copy — design request #9.
+            ? // Copy confirmed by design (reply 2026-09-29, #9).
               'Couldn’t copy. Try again.'
             : ''}
       </span>

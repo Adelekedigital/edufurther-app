@@ -684,7 +684,7 @@ export function BookingFlow(p: BookingFlowProps) {
             }
             if (q.kind === 'single')
               return (
-                // PROVISIONAL — choice questions have no booking design yet (design request #6).
+                // Choice questions as built, confirmed by design (reply 2026-09-29, #6).
                 <fieldset key={q.id} className={styles.choice}>
                   <legend className={styles.fieldLabelStrong}>
                     {q.label}
@@ -706,7 +706,7 @@ export function BookingFlow(p: BookingFlowProps) {
             if (q.kind === 'multi') {
               const picked = answers[q.id]?.optionIds ?? [];
               return (
-                // PROVISIONAL — choice questions have no booking design yet (design request #6).
+                // Choice questions as built, confirmed by design (reply 2026-09-29, #6).
                 <div key={q.id} className={styles.field}>
                   <span className={styles.fieldLabelStrong} aria-hidden>
                     {q.label}

@@ -281,13 +281,13 @@ export function requestError(e: unknown): BookingError {
         : { message: 'Check your answer to this question, then send again.' }),
     };
   if (problem?.kind === 'missing')
-    // PROVISIONAL copy — design request #6.
+    // Copy confirmed by design (reply 2026-09-29, #6).
     return {
       ...normaliseError(e),
       message: 'Answer every required question (marked *), then send again.',
     };
   if (problem?.kind === 'stale')
-    // PROVISIONAL copy — design request #6.
+    // Copy confirmed by design (reply 2026-09-29, #6).
     return {
       ...normaliseError(e),
       message: 'The questions for this session changed. Check your answers, then send again.',

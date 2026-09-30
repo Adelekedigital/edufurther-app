@@ -133,7 +133,7 @@ export function SchedulingStep({
               {defaultsStatus === 'loading'
                 ? 'Loading your defaults…'
                 : defaultsStatus === 'failed' || !defaults
-                  ? // PROVISIONAL copy — design request #5.
+                  ? // Copy confirmed by design (reply 2026-09-29, #5).
                     'We couldn’t load your defaults. This session still follows them.'
                   : defaultsSummary(defaults)}
             </span>
@@ -236,7 +236,7 @@ export function SchedulingStep({
               {weekly.status === 'loading'
                 ? 'Loading your weekly hours…'
                 : weekly.status === 'failed'
-                  ? // PROVISIONAL copy — design request #7.
+                  ? // Copy confirmed by design (reply 2026-09-29, #7).
                     'We couldn’t load your weekly hours.'
                   : weekly.summary
                     ? // Times are always shown with their zone named (product rule).

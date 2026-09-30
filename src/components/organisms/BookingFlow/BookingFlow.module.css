@@ -388,7 +388,7 @@
   color: var(--green-700);
 }
 
-/* Choice questions (PROVISIONAL: no booking design yet, design request #6). */
+/* Choice questions (as built, confirmed by design: reply 2026-09-29, #6). */
 .choice {
   display: flex;
   flex-direction: column;

@@ -117,6 +117,10 @@
 .pendingIcon {
   color: var(--red-500);
 }
+/* The sentence: its own grid cell on phones, beside the icon. */
+.pendingText {
+  min-width: 0;
+}
 .keep {
   position: relative;
   padding: 0;
@@ -142,4 +146,32 @@
 }
 .keep[aria-disabled='true'] {
   cursor: progress;
+}
+/* Phones (design reply 2026-09-29, #10): the icon and sentence share the
+   first line; "Keep it" sits on its own line, left-aligned under the sentence. */
+@media (max-width: 767px) {
+  .pending {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: var(--space-2);
+    row-gap: var(--space-2);
+    /* The icon sits on the sentence's first line, not centred on a wrapped one. */
+    align-items: start;
+    /* Room for Keep it's 20px of reach below, so it ends where the facts row
+       starts (12px here + the 8px gap): a tap on a chip never cancels the
+       deletion (Codex review of #92). */
+    padding-bottom: var(--space-3);
+  }
+  /* 16px icon on a 17.4px text line (--lh-p at 12px): centre it on that line. */
+  .pendingIcon {
+    margin-top: 1px;
+  }
+  .keep {
+    grid-column: 2;
+    justify-self: start;
+  }
+  /* Still 45px, but reaching down rather than up into the sentence. */
+  .keep::after {
+    inset: -8px -8px -20px;
+  }
 }

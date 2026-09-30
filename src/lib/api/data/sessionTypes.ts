@@ -405,7 +405,7 @@ export function createError(
       action === 'save'
         ? `We couldn’t save your changes. ${e.message} Try again.`
         : action === 'duplicate'
-          ? // PROVISIONAL copy — design request #9.
+          ? // Copy confirmed by design (reply 2026-09-29, #9).
             `We couldn’t duplicate it. ${e.message} Try again.`
           : `We couldn’t publish it. ${e.message} Try again.`,
   };
@@ -567,7 +567,7 @@ export function useSaveMentorDefaults(userId: string | null) {
   };
 }
 
-/** Our copy for a failed save (PROVISIONAL — design request #7); never the server's. */
+/** Our copy for a failed save (confirmed by design, reply 2026-09-29, #7); never the server's. */
 function saveError(error: unknown): AppError {
   const e = normaliseError(error);
   return {

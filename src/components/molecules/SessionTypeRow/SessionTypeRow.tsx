@@ -108,7 +108,7 @@ export function SessionTypeRow({
         {pending && (
           <p className={styles.pending}>
             <Icon name="schedule" size={16} className={styles.pendingIcon} />
-            {pendingNote(pending)}
+            <span className={styles.pendingText}>{pendingNote(pending)}</span>
             {/* aria-label, not an sr-only span: browsers read that span as a block ("Keep it : name"). */}
             <button
               type="button"
