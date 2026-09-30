@@ -23,6 +23,7 @@ type Stored = Omit<
   | 'min_notice_inherited'
   | 'booked_count'
   | 'last_booked_ends_at'
+  | 'effective_booking_window_days'
 > & {
   duration_minutes: number | null;
   min_notice_minutes: number | null;
@@ -45,6 +46,11 @@ function resolve({ questions: _q, bookedCount, ...t }: Stored): OwnSessionTypeRe
     min_notice_minutes: t.min_notice_minutes ?? prefs.default_min_notice_minutes ?? 1440,
     duration_inherited: t.duration_minutes === null,
     min_notice_inherited: t.min_notice_minutes === null,
+    // Backend #309: the window this type really uses (the platform's cap is 56 here).
+    effective_booking_window_days: Math.min(
+      t.booking_window_days ?? prefs.booking_window_days ?? 56,
+      56,
+    ),
   };
 }
 

@@ -41,6 +41,7 @@ const read = (over: Partial<SavedSessionType['read']> = {}): SavedSessionType['r
   icon: null,
   requires_booking_confirmation: null,
   booking_window_days: null,
+  effective_booking_window_days: 56,
   break_after_minutes: null,
   is_featured: false,
   pending_deletion: null,
