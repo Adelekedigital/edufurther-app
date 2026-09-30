@@ -57,6 +57,8 @@ describe('toMentor', () => {
   it('carries whether anyone can book them; absent reads as bookable', () => {
     expect(toMentor(row({ taking_bookings: false })).takingBookings).toBe(false);
     expect(toMentor(row({ taking_bookings: true })).takingBookings).toBe(true);
+    const { taking_bookings: _dropped, ...absent } = row();
+    expect(toMentor(absent as ReturnType<typeof row>).takingBookings).toBe(true);
   });
   it('keeps the tone stable for an id', () => {
     expect(toMentor(row()).tone).toBe(toMentor(row()).tone);

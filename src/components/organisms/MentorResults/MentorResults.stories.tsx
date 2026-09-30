@@ -147,7 +147,7 @@ export const Cards: StoryObj = {
         <MentorCard key={m.id} mentor={m} onBook={fn()} timeZone="Africa/Lagos" />
       ))}
       <MentorCard mentor={sampleMentors[0]!} onBook={fn()} timeZone="Africa/Lagos" offline />
-      {/* Not taking bookings (backend #301; MentorCard.dc.html `takingBookings: false`). */}
+      {/* Not taking bookings (MentorCard.dc.html `takingBookings: false`). */}
       <MentorCard
         mentor={{ ...sampleMentors[1]!, takingBookings: false, nextAvailableAt: null }}
         onBook={fn()}

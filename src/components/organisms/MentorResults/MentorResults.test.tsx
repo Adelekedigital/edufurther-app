@@ -239,7 +239,7 @@ describe('MentorResults', () => {
     expect(screen.queryByRole('button', { name: /Book session/ })).toBeNull();
   });
 
-  it('a mentor not taking bookings says so and offers the profile; others keep Book (backend PR 301)', () => {
+  it('a mentor not taking bookings says so and offers the profile; others keep Book', () => {
     const onBook = vi.fn();
     render(
       <MentorResults

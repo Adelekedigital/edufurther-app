@@ -55,7 +55,7 @@ export type Mentor = {
   nextAvailableState: 'open' | 'none' | 'unknown';
   /**
    * False: listed, but nobody can book them now (no active session type, or no
-   * weekly hours; backend #301). The card says so and offers the profile, not Book.
+   * weekly hours). The card says so and offers the profile, not Book.
    * Absent = bookable, as the backend defaults it.
    */
   takingBookings?: boolean;

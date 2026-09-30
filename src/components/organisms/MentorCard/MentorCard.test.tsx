@@ -24,7 +24,7 @@ const mentor = (over: Partial<Mentor> = {}): Mentor => ({
   ...over,
 });
 
-describe('MentorCard, not taking bookings (backend PR 301)', () => {
+describe('MentorCard, not taking bookings', () => {
   // The compact card is the profile's suggestion grid: it must not open a dead booking either.
   it.each(['photo', 'compact'] as const)(
     '%s: says so, and offers the profile instead of Book',
@@ -46,4 +46,21 @@ describe('MentorCard, not taking bookings (backend PR 301)', () => {
       expect(screen.queryByRole('button')).toBeNull();
     },
   );
+
+  // Not taking bookings is checked before offline and a blocked viewer, whose labels would show otherwise.
+  it.each([
+    ['offline', { offline: true }],
+    ['a blocked viewer', { bookBlocked: 'Log in to book' }],
+  ] as const)('%s still gets View profile, never a Book button', (_label, extra) => {
+    render(
+      <MentorCard
+        mentor={mentor({ takingBookings: false })}
+        onBook={vi.fn()}
+        timeZone="UTC"
+        {...extra}
+      />,
+    );
+    expect(screen.getByRole('link', { name: 'View profile: Olajuwon Samuel' })).toBeInTheDocument();
+    expect(screen.queryByRole('button')).toBeNull();
+  });
 });

@@ -114,7 +114,9 @@ export function FeaturedMentor({
           </div>
         )}
         <div className={styles.actions}>
-          {!canBook ? (
+          {/* The backend only features bookable mentors, but caches it for a minute: a
+              mentor who just paused must not get a Book that opens nothing. */}
+          {!canBook || m.takingBookings === false ? (
             <ButtonLink
               href={m.profileHref}
               prefetch={false}

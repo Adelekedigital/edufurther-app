@@ -196,7 +196,7 @@ export function MentorCard({
         ) : null}
       </div>
 
-      {/* Nobody can book them: the profile, never a Book that opens nothing (backend #301). */}
+      {/* Nobody can book them: the profile, never a Book that opens nothing. */}
       {!canBook || isSelf || m.takingBookings === false ? (
         <ButtonLink
           href={m.profileHref}
