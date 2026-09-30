@@ -9,6 +9,8 @@ type TipActions = {
   openIntro: () => void;
   openAbout: () => void;
   openItem: (target: ItemTarget) => void;
+  /** Called as a tip opens its editor (the page puts focus back after). */
+  onUse: (code: CompletenessCode) => void;
 };
 
 /** Our copy for each step (the design draws two sample tips only). */
@@ -30,25 +32,40 @@ const LABEL: Record<CompletenessCode, string> = {
  * tips link to Settings, which doesn't exist (design-divergence.md).
  */
 export function strengthTips(missing: CompletenessCode[], a: TipActions): StrengthTip[] {
-  return missing.slice(0, 2).map((code) => {
+  return missing.slice(0, 2).map((code): StrengthTip => {
     const label = LABEL[code];
-    switch (code) {
-      case 'session_type':
-        return { key: code, label, href: a.typesHref };
-      case 'weekly_hours':
-        return { key: code, label, href: a.hoursHref };
-      case 'photo':
-        return { key: code, label, onSelect: a.openPhoto };
-      case 'headline':
-        return { key: code, label, onSelect: a.openIntro };
-      case 'about':
-        return { key: code, label, onSelect: a.openAbout };
-      case 'topics':
-      case 'background':
-        return { key: code, label, onSelect: () => a.openItem({ kind: code }) };
-      case 'education':
-      case 'award':
-        return { key: code, label, onSelect: () => a.openItem({ kind: code, id: null }) };
-    }
+    const tip = pick(code, a);
+    if ('href' in tip && tip.href) return { key: code, label, href: tip.href };
+    const run = tip.onSelect!;
+    return {
+      key: code,
+      label,
+      onSelect: () => {
+        a.onUse(code);
+        run();
+      },
+    };
   });
+}
+
+/** Where each step is done: a page elsewhere, or an editor here. */
+function pick(code: CompletenessCode, a: TipActions): { href?: string; onSelect?: () => void } {
+  switch (code) {
+    case 'session_type':
+      return { href: a.typesHref };
+    case 'weekly_hours':
+      return { href: a.hoursHref };
+    case 'photo':
+      return { onSelect: a.openPhoto };
+    case 'headline':
+      return { onSelect: a.openIntro };
+    case 'about':
+      return { onSelect: a.openAbout };
+    case 'topics':
+    case 'background':
+      return { onSelect: () => a.openItem({ kind: code }) };
+    case 'education':
+    case 'award':
+      return { onSelect: () => a.openItem({ kind: code, id: null }) };
+  }
 }

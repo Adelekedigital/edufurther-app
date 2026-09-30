@@ -146,14 +146,21 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
     // Owner-only fields (the real API adds them for the mentor themselves):
     // setup_needed follows their own session types and weekly hours, so the
     // owner bar and Profile strength change as they're edited here.
+    const setupNeeded = [
+      ...(mockOwnSessionTypes().some((t) => t.is_active) ? [] : ['session_type']),
+      ...(rules.length ? [] : ['weekly_hours']),
+    ];
     Object.assign(body, {
       approval_status: 'approved',
       listing_status: 'listed',
-      setup_needed: [
-        ...(mockOwnSessionTypes().some((t) => t.is_active) ? [] : ['session_type']),
-        ...(rules.length ? [] : ['weekly_hours']),
-      ],
+      setup_needed: setupNeeded,
     });
+    // Bookable only with both, as the real API decides (review of PR 106).
+    if (setupNeeded.length) {
+      body.taking_bookings = false;
+      body.next_available_at = null;
+      body.next_available_state = 'none';
+    }
     // The owner's uploaded photo, once there is one.
     const photo = mockPhotoUrl(id);
     if (photo) Object.assign(body, { avatar_url: photo, avatar_focus: MOCK_PHOTO_FOCUS });

@@ -1,17 +1,36 @@
 import Link from 'next/link';
+import { useId } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import type { MentorProfile } from '@/types/mentor';
 import styles from './MentorProfileScreen.module.css';
 
+/** The "View as mentee" toggle, where focus goes when the strength card is done. */
+export const PREVIEW_TOGGLE_ID = 'profile-preview-toggle';
+
 /** What the owner bar says, most important first (see OwnerBar). */
 export function ownerBarState(
   profile: MentorProfile,
   preview: boolean,
-): 'preview' | 'declined' | 'pending' | 'unlisted' | 'noTypes' | 'noHours' | 'own' {
+):
+  | 'preview'
+  | 'previewUnapproved'
+  | 'previewUnlisted'
+  | 'declined'
+  | 'pending'
+  | 'unlisted'
+  | 'noTypes'
+  | 'noHours'
+  | 'own' {
   const o = profile.owner;
-  if (preview) return 'preview';
+  // A profile nobody else can see never claims mentees see it (review of PR 106).
+  if (preview)
+    return o && o.approval !== 'approved'
+      ? 'previewUnapproved'
+      : o && !o.listed
+        ? 'previewUnlisted'
+        : 'preview';
   if (o?.approval === 'declined') return 'declined';
   if (o && o.approval !== 'approved') return 'pending';
   if (o && !o.listed) return 'unlisted';
@@ -29,6 +48,10 @@ const OWNER_COPY = {
   noTypes:
     'Mentees see “Not taking bookings” on your profile. Turn on a session type to take bookings again.',
   preview: 'This is how mentees see your profile.',
+  previewUnapproved:
+    'Only you can see your profile. This is how it will look to mentees once it’s approved.',
+  previewUnlisted:
+    'Only you can see your profile. This is how it will look to mentees once it’s listed.',
   own: 'You’re viewing your own profile.',
 } as const;
 
@@ -48,22 +71,28 @@ export function OwnerBar({
   preview,
   onTogglePreview,
   hoursHref,
+  previewBlocked,
 }: {
   profile: MentorProfile;
   preview: boolean;
   onTogglePreview: () => void;
   /** Where weekly hours are set. */
   hoursHref: string;
+  /** Why the toggle waits (an inline edit is open), or null. */
+  previewBlocked: string | null;
 }) {
   const state = ownerBarState(profile, preview);
+  const whyId = useId();
   const icon =
     state === 'preview'
       ? 'visibility'
-      : state === 'noTypes' || state === 'noHours'
-        ? 'event_busy'
-        : state === 'own'
-          ? 'person'
-          : 'lock';
+      : state === 'previewUnapproved' || state === 'previewUnlisted'
+        ? 'lock'
+        : state === 'noTypes' || state === 'noHours'
+          ? 'event_busy'
+          : state === 'own'
+            ? 'person'
+            : 'lock';
   return (
     <div className={`${styles.ownerBar} ${preview ? styles.ownerBarPreview : ''}`}>
       <span className={styles.ownerText}>
@@ -71,7 +100,7 @@ export function OwnerBar({
           name={icon}
           size={18}
           className={
-            state === 'preview'
+            state.startsWith('preview')
               ? styles.ownerIconPreview
               : state === 'own'
                 ? styles.ownerIcon
@@ -90,15 +119,27 @@ export function OwnerBar({
           OWNER_COPY[state]
         )}
       </span>
+      {/* aria-disabled, not disabled: it keeps focus and can say why it waits. */}
       <button
+        id={PREVIEW_TOGGLE_ID}
         type="button"
         aria-pressed={preview}
-        onClick={onTogglePreview}
+        aria-disabled={previewBlocked ? true : undefined}
+        aria-describedby={previewBlocked ? whyId : undefined}
+        title={previewBlocked ?? undefined}
+        onClick={() => {
+          if (!previewBlocked) onTogglePreview();
+        }}
         className={styles.previewToggle}
       >
         <Icon name="visibility" size={16} />
         View as mentee
       </button>
+      {previewBlocked && (
+        <span id={whyId} className="sr-only">
+          {previewBlocked}
+        </span>
+      )}
     </div>
   );
 }

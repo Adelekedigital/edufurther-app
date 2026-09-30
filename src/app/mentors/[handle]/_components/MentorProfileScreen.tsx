@@ -31,6 +31,7 @@ import { useSimilarMentors } from '@/lib/api/data/similar';
 import { coverFor } from '@/lib/utils/cover';
 import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
+import type { CompletenessCode } from '@/types/mentor';
 import { useOnline } from '@/lib/utils/useOnline';
 import styles from './MentorProfileScreen.module.css';
 import {
@@ -40,7 +41,13 @@ import {
   type ItemTarget,
 } from './OwnerItemEditor';
 import { DeleteEntryConfirm } from './DeleteEntryConfirm';
-import { NotTakingEmpty, NotTakingNote, OwnerBar, ProfileSkeleton } from './ProfileParts';
+import {
+  NotTakingEmpty,
+  NotTakingNote,
+  OwnerBar,
+  PREVIEW_TOGGLE_ID,
+  ProfileSkeleton,
+} from './ProfileParts';
 import { ProfileMissing } from './ProfileMissing';
 import { ReviewsTab } from './ReviewsTab';
 import { strengthTips } from './strengthTips';
@@ -72,6 +79,10 @@ const SAVED_COPY: Record<ItemKind, Record<ItemOutcome, string>> = {
 
 /** Where weekly hours are set today (the Session types form's hours). */
 const HOURS_HREF = '/session-types';
+/** Session types (a type to turn on). */
+const TYPES_HREF = '/session-types';
+/** The strength card, where focus goes after a tip's step is done. */
+const STRENGTH_ID = 'profile-strength';
 /** The owner's photo input, opened by the "Add a profile photo" tip. */
 const PHOTO_INPUT = 'profile-photo-input';
 
@@ -214,19 +225,30 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const canStartBooking = mayBook && hasSessions && !bookBlocked;
   // Book as a mentee sees it: offered (maybe blocked, with why), or drawn but off in preview.
   const showBook = asMentee && !notTaking;
+  // In preview Book reads as a mentee's, never the owner's own block (review of PR 106).
+  const shownBlock = viewing ? null : bookBlocked;
+  // The toggle waits while an inline edit is open, so a draft is never dropped
+  // (review of PR 106). Its pressed state says the rest; no extra announcement.
+  const previewBlocked =
+    owner.introOpen || owner.aboutOpen ? 'Save or cancel your edit to preview.' : null;
 
-  const [previewSaid, setPreviewSaid] = useState<{ text: string; id: number } | null>(null);
-  const togglePreview = () => {
-    // The inline editors close, as when leaving the tab they're on.
-    if (owner.introOpen) owner.closeIntro();
-    if (owner.aboutOpen) owner.closeAbout();
-    setPreview(!previewOn);
-    // A count, not a time: each switch is a new message for the live region.
-    setPreviewSaid((was) => ({
-      text: previewOn ? 'Back to editing your profile.' : 'Viewing your profile as a mentee.',
-      id: (was?.id ?? 0) + 1,
-    }));
-  };
+  // A tip's step done: its tip (or the whole card, at 100%) goes, and with it
+  // the focus the dialog handed back. Put it on the next tip, else the toggle.
+  const [tipUsed, setTipUsed] = useState<string | null>(null);
+  const [refocus, setRefocus] = useState(0);
+  // Adjusted during render (React's pattern for state that follows props): once
+  // the refetched profile no longer lists the step, it's done.
+  if (tipUsed && completeness && !completeness.missing.includes(tipUsed as CompletenessCode)) {
+    setTipUsed(null);
+    setRefocus((n) => n + 1);
+  }
+  useEffect(() => {
+    if (!refocus) return;
+    // Only when focus was lost with the tip: a save's own focus return wins.
+    if (document.activeElement && document.activeElement !== document.body) return;
+    const next = document.getElementById(STRENGTH_ID)?.querySelector<HTMLElement>('a, button');
+    (next ?? document.getElementById(PREVIEW_TOGGLE_ID))?.focus();
+  }, [refocus]);
 
   // Mentor Profile.dc.html `scrollToBook`: the "no session yet" note's Book
   // takes you to the booking card rather than opening booking itself.
@@ -295,8 +317,9 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               <OwnerBar
                 profile={p}
                 preview={viewing}
-                onTogglePreview={togglePreview}
+                onTogglePreview={() => setPreview(!previewOn)}
                 hoursHref={HOURS_HREF}
+                previewBlocked={previewBlocked}
               />
             )}
             <ProfileHeader
@@ -366,10 +389,10 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                     // The view's one filled button: Large (CTA hierarchy).
                     <Button
                       size="large"
-                      disabled={viewing || !!bookBlocked}
+                      disabled={viewing || !!shownBlock}
                       onClick={() => booking.open()}
                     >
-                      {bookBlocked ?? 'Book a session'}
+                      {shownBlock ?? 'Book a session'}
                     </Button>
                   )}
                   {shareUrl && (
@@ -484,7 +507,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                   <SessionTypeList
                     sessionTypes={p.sessionTypes}
                     onBook={booking.open}
-                    bookBlocked={viewing ? null : bookBlocked}
+                    bookBlocked={shownBlock}
                     canBook={showBook}
                     bookDisabled={viewing}
                   />
@@ -509,17 +532,18 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                             sessionTypes={p.sessionTypes}
                             onBook={booking.open}
                             onCompare={() => setTab('sessions')}
-                            bookBlocked={viewing ? null : bookBlocked}
+                            bookBlocked={shownBlock}
                             bookDisabled={viewing}
                           />
                         </div>
                       ))}
                     {strengthShown && completeness && (
                       <ProfileStrengthCard
+                        id={STRENGTH_ID}
                         percent={completeness.percent}
                         tips={strengthTips(completeness.missing, {
                           hoursHref: HOURS_HREF,
-                          typesHref: '/session-types',
+                          typesHref: TYPES_HREF,
                           openPhoto: () => document.getElementById(PHOTO_INPUT)?.click(),
                           openIntro: owner.openIntro,
                           openAbout: () => {
@@ -527,6 +551,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                             owner.openAbout();
                           },
                           openItem: setItemOpen,
+                          onUse: setTipUsed,
                         })}
                       />
                     )}
@@ -576,7 +601,6 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
       )}
       {/* Always there while it's the owner, so a screen reader hears each save. */}
       {isOwner && <LiveRegion message={itemSaved} />}
-      {isOwner && <LiveRegion message={previewSaid} />}
       {isOwner && (
         <LiveRegion
           message={photo.uploadedStamp ? { text: 'Photo updated.', id: photo.uploadedStamp } : null}

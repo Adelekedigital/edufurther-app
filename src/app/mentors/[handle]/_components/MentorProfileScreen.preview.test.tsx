@@ -1,8 +1,8 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixture';
+import { fullProfile, sessionTypes } from '@/components/organisms/ProfileHeader/profile.fixture';
 import type { MentorProfile } from '@/types/mentor';
-import { h, state } from './profileScreen.harness';
+import { h, remote, replace, state } from './profileScreen.harness';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
@@ -66,7 +66,6 @@ describe('MentorProfileScreen — "View as mentee"', () => {
     expect(bar()).toHaveAttribute('aria-pressed', 'true');
     expect(bar()).toHaveFocus();
     expect(screen.getByText('This is how mentees see your profile.')).toBeInTheDocument();
-    expect(screen.getByText('Viewing your profile as a mentee.')).toBeInTheDocument();
     for (const name of [/Edit profile/, /Change cover/, /Edit topics/, /^Edit /, /^Delete /])
       expect(screen.queryByRole('button', { name })).toBeNull();
     expect(document.querySelector('input[type="file"]')).toBeNull();
@@ -82,18 +81,65 @@ describe('MentorProfileScreen — "View as mentee"', () => {
     await user.click(bar());
     expect(bar()).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByRole('button', { name: 'Edit profile' })).toBeInTheDocument();
-    expect(screen.getByText('Back to editing your profile.')).toBeInTheDocument();
   });
 
-  it('closes an open inline editor, as leaving its tab does', async () => {
+  it('waits while an inline edit is open, so the draft is kept (review of PR 106)', async () => {
     h.profile = state({ data: mine() });
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('button', { name: 'Edit profile' }));
-    expect(screen.getByRole('form', { name: 'Edit your name and headline' })).toBeInTheDocument();
+    const form = screen.getByRole('form', { name: 'Edit your name and headline' });
+    const headline = within(form).getByRole('textbox', { name: 'Headline' });
+    await user.clear(headline);
+    await user.type(headline, 'Draft');
+    expect(bar()).toHaveAttribute('aria-disabled', 'true');
+    expect(bar()).toHaveAccessibleDescription('Save or cancel your edit to preview.');
     await user.click(bar());
+    expect(bar()).toHaveAttribute('aria-pressed', 'false');
+    expect(within(form).getByRole('textbox', { name: 'Headline' })).toHaveValue('Draft');
+  });
+
+  it('a ?book= link never opens booking for the owner, previewing or not', async () => {
+    h.search = new URLSearchParams(`book=${sessionTypes[0]!.id}`);
+    h.sessionTypesRemote = remote(sessionTypes);
+    h.profile = state({ data: mine() });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('dialog')).toBeNull();
     await user.click(bar());
-    expect(screen.queryByRole('form', { name: 'Edit your name and headline' })).toBeNull();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('the Sessions tab: Book drawn but off', async () => {
+    h.search = new URLSearchParams('tab=sessions');
+    h.profile = state({ data: mine() });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('button', { name: /Book session/ })).toBeNull();
+    await user.click(bar());
+    const panel = screen.getByRole('tabpanel');
+    expect(within(panel).getByRole('button', { name: 'Book session' })).toBeDisabled();
+  });
+
+  it('not taking bookings: shows what mentees see (review of PR 106)', async () => {
+    h.profile = state({ data: mine({}, { takingBookings: false }) });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(bar());
+    expect(screen.getAllByText('Not taking bookings').length).toBeGreaterThan(0);
+    expect(screen.getByRole('tab', { name: 'Sessions (0)' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Book/ })).toBeNull();
+  });
+
+  it('offline, Book still reads as a mentee’s (review of PR 106)', async () => {
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    h.profile = state({ data: mine() });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(bar());
+    expect(screen.getByRole('button', { name: 'Book a session' })).toBeDisabled();
+    expect(screen.queryByText('Booking needs a connection')).toBeNull();
+    online.mockRestore();
   });
 });
 
@@ -116,6 +162,28 @@ describe('MentorProfileScreen — the owner bar', () => {
       'href',
       '/session-types',
     );
+  });
+
+  it('previewing a profile nobody else can see says so (review of PR 106)', async () => {
+    const user = userEvent.setup();
+    h.profile = state({ data: mine({ approval: 'pending' }) });
+    const { unmount } = render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(bar());
+    expect(
+      screen.getByText(
+        'Only you can see your profile. This is how it will look to mentees once it’s approved.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('This is how mentees see your profile.')).toBeNull();
+    unmount();
+    h.profile = state({ data: mine({ listed: false }) });
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(bar());
+    expect(
+      screen.getByText(
+        'Only you can see your profile. This is how it will look to mentees once it’s listed.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('most important first: hidden, then no session type, then no hours', () => {
@@ -187,5 +255,47 @@ describe('MentorProfileScreen — Profile strength', () => {
     h.profile = state({ data: mine({ completeness: { percent: 44, missing: ['award'] } }) });
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.getByRole('meter', { name: 'Profile strength' })).toBeInTheDocument();
+  });
+
+  it('a step done from the Reviews tab: About opens on Overview', async () => {
+    h.search = new URLSearchParams('tab=reviews');
+    h.profile = state({ data: mine({ completeness: { percent: 89, missing: ['about'] } }) });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: /Write your About/ }));
+    expect(replace).toHaveBeenCalledWith('/mentors/gbenga', { scroll: false });
+  });
+
+  it('once a tip’s step is done, focus moves to the next tip (review of PR 106)', async () => {
+    h.search = new URLSearchParams('tab=reviews');
+    h.profile = state({
+      data: mine({ completeness: { percent: 78, missing: ['award', 'about'] } }),
+    });
+    const user = userEvent.setup();
+    const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: /Add a scholarship or award/ }));
+    const dialog = screen.getByRole('dialog', { name: 'Add an award' });
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByRole('button', { name: /Add a scholarship or award/ })).toHaveFocus();
+    // The award landed: the refetched profile no longer lists it.
+    h.profile = state({ data: mine({ completeness: { percent: 89, missing: ['about'] } }) });
+    rerender(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('button', { name: /Write your About/ })).toHaveFocus();
+  });
+
+  it('…and to the toggle once the card is gone at 100%', async () => {
+    h.profile = state({ data: mine({ completeness: { percent: 89, missing: ['award'] } }) });
+    const user = userEvent.setup();
+    const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: /Add a scholarship or award/ }));
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Add an award' })).getByRole('button', {
+        name: 'Cancel',
+      }),
+    );
+    h.profile = state({ data: mine({ completeness: { percent: 100, missing: [] } }) });
+    rerender(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('meter')).toBeNull();
+    expect(bar()).toHaveFocus();
   });
 });
