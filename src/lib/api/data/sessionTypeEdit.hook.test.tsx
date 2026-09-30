@@ -534,6 +534,13 @@ describe('useDuplicateSessionType — review of #74', () => {
     });
   });
 
+  it('a window saved above a cap lowered since is copied as it applies, so the copy is accepted', async () => {
+    serve({ booking_window_days: 56, effective_booking_window_days: 14 });
+    POST.mockImplementation(() => reply(201, { id: 'st2', question_ids: [] }));
+    await run();
+    expect(POST.mock.calls[0]![1].body).toMatchObject({ booking_window_days: 14 });
+  });
+
   it('hidden straight after the create, before any hours are copied', async () => {
     const order: string[] = [];
     serve({}, [

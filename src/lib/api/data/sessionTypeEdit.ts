@@ -426,7 +426,9 @@ export function toDuplicateBody(
       custom_stage_label: stages.includes('other') ? (r.custom_stage_label ?? null) : null,
       icon: r.icon ?? null,
       requires_booking_confirmation: r.requires_booking_confirmation ?? null,
-      booking_window_days: r.booking_window_days ?? null,
+      // Its own window as it really applies: a new type can't keep a value
+      // above a platform cap lowered since the original was saved.
+      booking_window_days: r.booking_window_days == null ? null : r.effective_booking_window_days,
       break_after_minutes: r.break_after_minutes ?? null,
       questions: questions.map(toQuestionWrite),
     },

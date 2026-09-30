@@ -11,7 +11,7 @@ const defaults = (over: Partial<MentorDefaults> = {}): MentorDefaults => ({
   ...over,
 });
 
-describe('useSessionTypeDraft: the platform cap (Codex review of #100)', () => {
+describe('useSessionTypeDraft: the platform cap', () => {
   it('brings a window above the cap within it once the defaults arrive, without an unsaved change', () => {
     const { result, rerender } = renderHook(({ d }) => useSessionTypeDraft(undefined, null, d), {
       initialProps: { d: { data: null as MentorDefaults | null, error: null } },

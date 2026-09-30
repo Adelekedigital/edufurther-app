@@ -445,6 +445,28 @@ describe('SessionTypeFormScreen — review of #60', () => {
     expect(within(select).getByRole('option', { name: '20 days' })).toBeInTheDocument();
   });
 
+  it('"Bookable up to" offers only what the platform maximum allows, in the form and in Booking preferences', async () => {
+    const user = userEvent.setup({ delay: null });
+    defaultsMock = { ...READY, data: { ...READY.data, windowDays: 14, maxWindowDays: 14 } };
+    await toStep3(user);
+    await user.click(screen.getByRole('button', { name: 'Edit defaults' }));
+    const dialog = screen.getByRole('dialog', { name: 'Booking preferences' });
+    const prefs = within(dialog).getByRole('combobox', { name: 'Bookable up to' });
+    expect(
+      within(prefs)
+        .getAllByRole('option')
+        .map((o) => o.textContent),
+    ).toEqual(['1 week', '2 weeks']);
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('radio', { name: /Set rules for this session/ }));
+    const own = screen.getByRole('combobox', { name: 'Bookable up to' });
+    expect(
+      within(own)
+        .getAllByRole('option')
+        .map((o) => o.textContent),
+    ).toEqual(['1 week', '2 weeks']);
+  });
+
   it('defaults that arrive late don’t swallow what the mentor typed (review r2 of #60)', async () => {
     const user = userEvent.setup({ delay: null });
     defaultsMock = { data: null, isLoading: true, error: null, retry: vi.fn() };

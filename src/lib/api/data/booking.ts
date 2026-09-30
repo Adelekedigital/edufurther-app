@@ -206,8 +206,7 @@ export function useSlots(
       );
       if (!data) {
         // A range the backend refuses: its maximum may have been lowered since
-        // the types were cached. Reload them; the new window makes a new request
-        // (Codex review of #100).
+        // the types were cached. Reload them; the new window makes a new request.
         if (response.status === 422)
           void qc.invalidateQueries({ queryKey: keys.booking.sessionTypes(mentorId!) });
         throw apiError(response.status, error);

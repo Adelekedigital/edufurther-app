@@ -79,7 +79,7 @@ export function useSessionTypeDraft(
 
   // The platform's cap arrives with the defaults: a window above it (the blank
   // draft's 4 weeks, or rules set before they loaded) is brought within it,
-  // in the baseline too, so it isn't an unsaved change (Codex review of #100).
+  // in the baseline too, so it isn't an unsaved change.
   const cap = defaults.data?.maxWindowDays;
   if (cap && (draft.windowDays > cap || initial.windowDays > cap)) {
     if (initial.windowDays > cap) setInitial({ ...initial, windowDays: cap });
