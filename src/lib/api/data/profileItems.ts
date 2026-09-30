@@ -71,14 +71,14 @@ export function useProfileItems(userId: string | null) {
   const background = useMutation<
     void,
     ItemSaveError,
-    { before: BackgroundSave; after: BackgroundSave }
+    { before: BackgroundSave; after: BackgroundSave; all?: boolean }
   >({
     networkMode: 'always',
-    mutationFn: async ({ before, after }) => {
+    mutationFn: async ({ before, after, all }) => {
       if (!userId) throw new ItemSaveError(generalCopy(null));
       const path = { params: { path: { user_id: userId } } };
       const steps: [Part, () => Promise<{ error?: unknown; response: Response }>][] = [];
-      if (after.originId !== before.originId)
+      if (all || after.originId !== before.originId)
         steps.push([
           'origin',
           () =>
@@ -87,7 +87,7 @@ export function useProfileItems(userId: string | null) {
               body: { origin_country_id: after.originId || null },
             }),
         ]);
-      if (after.studyId !== before.studyId)
+      if (all || after.studyId !== before.studyId)
         steps.push([
           'study',
           () =>
@@ -96,7 +96,7 @@ export function useProfileItems(userId: string | null) {
               body: { primary_study_country_id: after.studyId || null },
             }),
         ]);
-      if (!sameList(after.languageIds, before.languageIds))
+      if (all || !sameList(after.languageIds, before.languageIds))
         steps.push([
           'languages',
           () =>
@@ -125,8 +125,16 @@ export function useProfileItems(userId: string | null) {
     topicsSaving: topics.isPending,
     topicsError: topics.error?.copy ?? null,
     resetTopics: () => topics.reset(),
-    saveBackground: (before: BackgroundSave, after: BackgroundSave, done: () => void) =>
-      background.mutate({ before, after }, { onSuccess: done }),
+    /**
+     * `all`: send every part, not just the diff — after a partial failure the
+     * server's state isn't the opened-with one (review of #85).
+     */
+    saveBackground: (
+      before: BackgroundSave,
+      after: BackgroundSave,
+      done: () => void,
+      opts: { all?: boolean } = {},
+    ) => background.mutate({ before, after, all: opts.all }, { onSuccess: done }),
     backgroundSaving: background.isPending,
     backgroundError: background.error?.copy ?? null,
     resetBackground: () => background.reset(),

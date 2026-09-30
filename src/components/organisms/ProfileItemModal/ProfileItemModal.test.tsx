@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ProfileItemModal, type ItemShell } from './ProfileItemModal';
 
 const shell = (s: ItemShell, body: ReactNode) => (
@@ -190,6 +190,59 @@ describe('ProfileItemModal — topics', () => {
     await user.click(screen.getByRole('button', { name: 'Remove award' }));
     await user.click(screen.getByRole('button', { name: 'Remove' }));
     expect(onRemove).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ProfileItemModal — review of #85', () => {
+  it('the draft starts from the catalog when it arrives, without remounting the frame', () => {
+    let mounts = 0;
+    function Frame({ children }: { children: ReactNode }) {
+      const [id] = useState(() => ++mounts);
+      return (
+        <div role="dialog" aria-label="frame" data-mount={id}>
+          {children}
+        </div>
+      );
+    }
+    const props = {
+      kind: 'topics' as const,
+      groups: [],
+      initial: [] as string[],
+      catalog: { status: 'loading' as const, onRetry: vi.fn() },
+      saving: false,
+      error: null,
+      onSave: vi.fn(),
+      onClose: vi.fn(),
+      renderShell: (_s: ItemShell, body: ReactNode) => <Frame>{body}</Frame>,
+    };
+    const { rerender } = render(<ProfileItemModal {...props} />);
+    rerender(<ProfileItemModal {...props} groups={groups} initial={['o1']} catalog={ready} />);
+    expect(screen.getByRole('button', { name: 'School selection' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(mounts).toBe(1);
+    // A later refetch failure, then success, doesn't reset it.
+    rerender(
+      <ProfileItemModal
+        {...props}
+        groups={groups}
+        initial={['o3']}
+        catalog={{ status: 'error', onRetry: vi.fn() }}
+      />,
+    );
+    rerender(<ProfileItemModal {...props} groups={groups} initial={['o3']} catalog={ready} />);
+    expect(screen.getByRole('button', { name: 'School selection' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('after a failed save, Save always sends, even with the draft as it opened', async () => {
+    const { user, onSave, onClose } = topics({ error: 'That didn’t save. Try again.' });
+    await user.click(screen.getByRole('button', { name: 'Save topics' }));
+    expect(onSave).toHaveBeenCalledWith(['o1']);
+    expect(onClose).not.toHaveBeenCalled();
   });
 });
 

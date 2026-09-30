@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
@@ -108,7 +108,18 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // The owner's topics and background (ProfileItemModal.dc.html), and what
   // the last save was, for screen readers (the modal closing says nothing).
   const [itemOpen, setItemOpen] = useState<ItemKind | null>(null);
-  const [itemSaved, setItemSaved] = useState<{ text: string; id: number } | null>(null);
+  const [itemSaved, setItemSaved] = useState<{
+    text: string;
+    id: number;
+    kind: ItemKind;
+  } | null>(null);
+  // After a background save, focus goes to the heading's Edit: "Add background"
+  // on the empty card that opened it is gone by then (review of #85). Runs
+  // after the dialog's own focus return.
+  const backgroundEdit = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (itemSaved?.kind === 'background') backgroundEdit.current?.focus();
+  }, [itemSaved]);
 
   // Similar mentors: the Overview aside, for mentees and guests. Not the mentor
   // themselves, and not other mentors (product 2026-09-28: it's a mentee-facing
@@ -315,6 +326,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                   <ProfileOverview
                     profile={p}
                     onEditBackground={isOwner ? () => setItemOpen('background') : undefined}
+                    backgroundEditRef={backgroundEdit}
                     aboutEdit={
                       isOwner
                         ? {
@@ -392,6 +404,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
             setItemSaved({
               text: kind === 'topics' ? 'Topics saved.' : 'Background saved.',
               id: Date.now(),
+              kind,
             });
           }}
         />

@@ -80,6 +80,10 @@ export const h = {
   // The owner's topics and background editors.
   itemsOk: true,
   itemsError: null as string | null,
+  /** A failed background refetch of the topics catalog (the cached list stays). */
+  topicsRefetchFailed: false,
+  /** Runs when a background save "lands", before the editor closes (e.g. swap the profile). */
+  onBackgroundSaved: null as null | (() => void),
 };
 
 export const replace = vi.fn();
@@ -253,7 +257,10 @@ const profileItemsMock = () => ({
     resetTopics: vi.fn(),
     saveBackground: (before: unknown, after: unknown, done: () => void) => {
       saveBackground(before, after);
-      if (h.itemsOk) done();
+      if (h.itemsOk) {
+        h.onBackgroundSaved?.();
+        done();
+      }
     },
     backgroundSaving: false,
     backgroundError: h.itemsError,
@@ -274,7 +281,12 @@ const catalogMock = () => ({
 });
 
 const topicsMock = () => ({
-  useTopics: () => ({ topics: catalogTopics, isLoading: false, error: null, retry: vi.fn() }),
+  useTopics: () => ({
+    topics: catalogTopics,
+    isLoading: false,
+    error: h.topicsRefetchFailed ? { kind: 'offline', message: 'You’re offline.' } : null,
+    retry: vi.fn(),
+  }),
 });
 
 /** The mocked modules, by name; each test file registers them with vi.mock. */
@@ -324,6 +336,8 @@ beforeEach(() => {
   saveAbout.mockReset();
   h.itemsOk = true;
   h.itemsError = null;
+  h.topicsRefetchFailed = false;
+  h.onBackgroundSaved = null;
   saveTopics.mockReset();
   saveBackground.mockReset();
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({

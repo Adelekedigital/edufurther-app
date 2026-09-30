@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { FactTile } from '@/components/molecules/FactTile/FactTile';
@@ -25,6 +25,8 @@ type ProfileOverviewProps = {
    * invitation card.
    */
   onEditBackground?: () => void;
+  /** The heading's Edit/Add, for the page to return focus to after a save. */
+  backgroundEditRef?: Ref<HTMLButtonElement>;
 };
 
 /**
@@ -33,7 +35,12 @@ type ProfileOverviewProps = {
  * out, as the design does for a viewer who can't edit. Awards carry no funding
  * badge: the API has no funding field.
  */
-export function ProfileOverview({ profile, aboutEdit, onEditBackground }: ProfileOverviewProps) {
+export function ProfileOverview({
+  profile,
+  aboutEdit,
+  onEditBackground,
+  backgroundEditRef,
+}: ProfileOverviewProps) {
   // When the editor closes, focus goes back to "Edit".
   const editRef = useRef<HTMLButtonElement>(null);
   const editing = !!aboutEdit?.editor;
@@ -146,6 +153,7 @@ export function ProfileOverview({ profile, aboutEdit, onEditBackground }: Profil
             </h2>
             {onEditBackground && (
               <button
+                ref={backgroundEditRef}
                 type="button"
                 className={styles.edit}
                 onClick={onEditBackground}

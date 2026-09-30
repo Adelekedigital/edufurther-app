@@ -71,6 +71,15 @@ export function ProfileItemModal(props: ProfileItemModalProps) {
   const [bg, setBg] = useState<BackgroundValues>(
     props.kind === 'background' ? props.initial : { originId: '', studyId: '', languages: [] },
   );
+  // The draft starts from `initial` once the catalog has arrived (it may open
+  // loading), and only then: a later refetch can't reset what's been picked.
+  // The frame stays mounted throughout (review of #85).
+  const [seeded, setSeeded] = useState(catalog.status === 'ready');
+  if (!seeded && catalog.status === 'ready') {
+    setSeeded(true);
+    if (props.kind === 'topics') setTopics(props.initial);
+    else setBg(props.initial);
+  }
   const [problems, setProblems] = useState<BackgroundErrors & { topics?: string }>({});
   const [confirming, setConfirming] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -92,7 +101,8 @@ export function ProfileItemModal(props: ProfileItemModalProps) {
     if (props.kind === 'topics') {
       if (topics.length === 0) return setProblems({ topics: 'Pick at least one topic.' });
       setProblems({});
-      if (sameSet(topics, props.initial)) return onClose();
+      // After a failed save the server may hold part of it: always send then.
+      if (!error && sameSet(topics, props.initial)) return onClose();
       return props.onSave(topics);
     }
     const next: BackgroundErrors = {
@@ -104,6 +114,7 @@ export function ProfileItemModal(props: ProfileItemModalProps) {
     if (Object.keys(next).length) return;
     const init = props.initial;
     if (
+      !error &&
       bg.originId === init.originId &&
       bg.studyId === init.studyId &&
       sameSet(

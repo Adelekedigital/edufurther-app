@@ -39,6 +39,16 @@ export function LanguagePicker({
 }: LanguagePickerProps) {
   const id = useId();
   const on = (l: LanguageOption) => selected.some((s) => s.id === l.id);
+  const noMatch = query.trim() ? `No languages match “${query.trim()}”.` : 'No languages to show.';
+  // Always in the DOM, so each change is heard (review of #85).
+  const announce =
+    status === 'error'
+      ? 'We couldn’t load languages.'
+      : status === 'loading'
+        ? 'Loading languages…'
+        : results.length === 0
+          ? noMatch
+          : `${results.length} language${results.length === 1 ? '' : 's'}`;
   return (
     <div
       role="group"
@@ -68,6 +78,8 @@ export function LanguagePicker({
           type="search"
           aria-label="Search languages"
           placeholder="Search languages"
+          // Focus lands here when none is picked: read the message with it.
+          aria-describedby={error ? `${id}-error` : undefined}
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
           aria-invalid={!!error || undefined}
@@ -79,6 +91,9 @@ export function LanguagePicker({
           {error}
         </p>
       )}
+      <p role="status" className="sr-only">
+        {announce}
+      </p>
       <div className={styles.results} aria-busy={status === 'loading' || undefined}>
         {status === 'error' ? (
           <p className={styles.note}>
@@ -90,9 +105,7 @@ export function LanguagePicker({
         ) : status === 'loading' && results.length === 0 ? (
           <p className={styles.note}>Loading languages…</p>
         ) : results.length === 0 ? (
-          <p className={styles.note}>
-            {query.trim() ? `No languages match “${query.trim()}”.` : 'No languages to show.'}
-          </p>
+          <p className={styles.note}>{noMatch}</p>
         ) : (
           results.map((l) => {
             const picked = on(l);

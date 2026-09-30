@@ -37,7 +37,8 @@ export function useCountries(enabled: boolean) {
     // Reference data: it changes on deploys, not during a visit.
     staleTime: HOUR,
   });
-  const status: Status = query.error ? 'error' : query.data ? 'ready' : 'loading';
+  // What's cached wins: a failed background refetch keeps the list (review of #85).
+  const status: Status = query.data ? 'ready' : query.error ? 'error' : 'loading';
   return { countries: query.data ?? [], status, retry: () => void query.refetch() };
 }
 
@@ -61,10 +62,13 @@ export function useLanguageSearch(q: string, enabled: boolean) {
     staleTime: HOUR,
     placeholderData: keepPreviousData,
   });
-  const status: Status = query.error
-    ? 'error'
-    : query.isFetching || term !== q.trim()
-      ? 'loading'
-      : 'ready';
+  // An error only when there's nothing for this search: a failed refetch of
+  // results we have keeps them (review of #85).
+  const status: Status =
+    query.error && (!query.data || query.isPlaceholderData)
+      ? 'error'
+      : query.isFetching || term !== q.trim()
+        ? 'loading'
+        : 'ready';
   return { results: query.data ?? [], status, retry: () => void query.refetch() };
 }

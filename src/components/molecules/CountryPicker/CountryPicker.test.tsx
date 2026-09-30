@@ -81,8 +81,24 @@ describe('CountryPicker', () => {
     const box = screen.getByRole('combobox', { name: 'From' });
     await user.clear(box);
     await user.type(box, 'zzz');
-    expect(screen.getByText('No countries match “zzz”.')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('No countries match “zzz”.');
     await user.tab();
     expect(box).toHaveValue('Ghana');
+  });
+
+  it('the list is named, holds only options, and opening highlights the chosen one (review of #85)', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    const box = screen.getByRole('combobox', { name: 'From' });
+    await user.click(box);
+    const list = screen.getByRole('listbox', { name: 'Countries' });
+    expect(box).toHaveAttribute(
+      'aria-activedescendant',
+      screen.getByRole('option', { name: 'Ghana' }).id,
+    );
+    await user.clear(box);
+    await user.type(box, 'zzz');
+    expect(list.querySelectorAll(':scope > :not([role="option"])')).toHaveLength(0);
+    expect(screen.getByRole('status')).toHaveTextContent('No countries match “zzz”.');
   });
 });

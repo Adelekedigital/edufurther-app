@@ -121,6 +121,17 @@ describe('useProfileItems — background', () => {
     expect(spy).toHaveBeenCalledWith({ queryKey: keys.mentors.all });
   });
 
+  it('after a failure, a retry sends every part, not just the diff (review of #85)', async () => {
+    PATCH.mockResolvedValue(ok);
+    PUT.mockResolvedValue(ok);
+    const { result } = setup();
+    const done = vi.fn();
+    act(() => result.current.saveBackground(before, before, done, { all: true }));
+    await waitFor(() => expect(done).toHaveBeenCalled());
+    expect(PATCH).toHaveBeenCalledTimes(2);
+    expect(PUT).toHaveBeenCalledTimes(1);
+  });
+
   it('offline, the first failure says so', async () => {
     vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
     PATCH.mockResolvedValue(fail(503));

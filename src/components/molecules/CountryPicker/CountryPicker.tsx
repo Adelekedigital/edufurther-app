@@ -105,7 +105,17 @@ export function CountryPicker({
           setActive(0);
         }}
         onFocus={(e) => e.target.select()}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          if (open) return;
+          setOpen(true);
+          // Start on the chosen country (review of #85).
+          show(
+            Math.max(
+              0,
+              matches.findIndex((o) => o.id === value),
+            ),
+          );
+        }}
         onBlur={() => {
           setOpen(false);
           setText(null);
@@ -113,29 +123,46 @@ export function CountryPicker({
         onKeyDown={onKeyDown}
       />
       <Icon name={open ? 'expand_less' : 'expand_more'} size={18} className={styles.chevron} />
-      <ul id={listId} ref={listRef} role="listbox" className={styles.list} hidden={!open}>
-        {matches.length === 0 ? (
-          <li className={styles.none}>No countries match “{query.trim()}”.</li>
-        ) : (
-          matches.map((o, i) => (
-            <li
-              key={o.id}
-              id={`${listId}-${o.id}`}
-              role="option"
-              aria-selected={o.id === value}
-              className={cx(styles.option, i === active && styles.active)}
-              // Before the input's blur, so the pick lands.
-              onMouseDown={(e) => {
-                e.preventDefault();
-                pick(o);
-              }}
-            >
-              {o.label}
-              {o.id === value && <Icon name="check" size={16} className={styles.tick} />}
-            </li>
-          ))
-        )}
+      <ul
+        id={listId}
+        ref={listRef}
+        role="listbox"
+        aria-label="Countries"
+        className={styles.list}
+        hidden={!open || matches.length === 0}
+      >
+        {matches.map((o, i) => (
+          <li
+            key={o.id}
+            id={`${listId}-${o.id}`}
+            role="option"
+            aria-selected={o.id === value}
+            className={cx(styles.option, i === active && styles.active)}
+            // Before the input's blur, so the pick lands.
+            onMouseDown={(e) => {
+              e.preventDefault();
+              pick(o);
+            }}
+          >
+            {o.label}
+            {o.id === value && <Icon name="check" size={16} className={styles.tick} />}
+          </li>
+        ))}
       </ul>
+      {/* Beside the list, not in it: a listbox holds only options (review of #85). */}
+      {open && matches.length === 0 && (
+        <p aria-hidden="true" className={cx(styles.list, styles.none)}>
+          No countries match “{query.trim()}”.
+        </p>
+      )}
+      {/* Always in the DOM, so it's heard (failure-modes #32). */}
+      <p role="status" className="sr-only">
+        {open && text !== null
+          ? matches.length === 0
+            ? `No countries match “${query.trim()}”.`
+            : `${matches.length} ${matches.length === 1 ? 'country' : 'countries'}`
+          : ''}
+      </p>
     </div>
   );
 }

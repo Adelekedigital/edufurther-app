@@ -83,6 +83,50 @@ describe('MentorProfileScreen — the owner’s topics', () => {
   });
 });
 
+describe('MentorProfileScreen — review of #85', () => {
+  it('a failed refetch of the topics beside a cached list still opens on the list', async () => {
+    h.profile = state({ data: own });
+    h.topicsRefetchFailed = true;
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: 'Edit topics' }));
+    const dialog = screen.getByRole('dialog', { name: 'What you help with' });
+    expect(within(dialog).getByRole('button', { name: 'School selection' })).toBeInTheDocument();
+    expect(within(dialog).queryByText(/couldn’t load/)).toBeNull();
+  });
+
+  it('saving from the empty "Add background" card puts focus on the heading’s Edit', async () => {
+    h.profile = state({ data: { ...newProfile, owner } });
+    // The save lands: the profile now has a background, so the card goes away.
+    h.onBackgroundSaved = () => {
+      h.profile = state({
+        data: {
+          ...newProfile,
+          owner,
+          originCountry: 'Ghana',
+          studyCountry: 'United States',
+          languages: ['English'],
+        },
+      });
+    };
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="new" />);
+    await user.click(screen.getAllByRole('button', { name: 'Add background' })[1]!);
+    const dialog = screen.getByRole('dialog', { name: 'Edit background' });
+    const from = within(dialog).getByRole('combobox', { name: 'From' });
+    await user.type(from, 'gha');
+    await user.click(within(dialog).getByRole('option', { name: 'Ghana' }));
+    const studied = within(dialog).getByRole('combobox', { name: 'Studied in' });
+    await user.type(studied, 'united');
+    await user.click(within(dialog).getByRole('option', { name: 'United States' }));
+    await user.click(within(dialog).getByRole('button', { name: 'English' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByText('Tell mentees where you’re from')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Edit background' })).toHaveFocus();
+  });
+});
+
 describe('MentorProfileScreen — the owner’s background', () => {
   it('"Edit" opens it prefilled; unchanged, Save closes without sending', async () => {
     h.profile = state({ data: own });

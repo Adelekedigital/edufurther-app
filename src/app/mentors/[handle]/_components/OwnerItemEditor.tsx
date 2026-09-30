@@ -55,15 +55,21 @@ export function OwnerItemEditor({ kind, profile, onClose, onSaved }: Props) {
   };
 
   if (kind === 'topics') {
-    const status = topics.error ? 'error' : topics.isLoading ? 'loading' : 'ready';
+    // What's cached wins over a failed refetch (the catalog is shared with Explore).
+    const status =
+      topics.topics.length > 0
+        ? 'ready'
+        : topics.error
+          ? 'error'
+          : topics.isLoading
+            ? 'loading'
+            : 'ready';
     const options = topics.topics.flatMap((t) =>
       t.id ? [{ id: t.id, slug: t.slug, label: t.label }] : [],
     );
     const initial = options.filter((o) => base.slugs.includes(o.slug)).map((o) => o.id);
     return (
       <ProfileItemModal
-        // The draft starts from the catalog once it's there.
-        key={status}
         kind="topics"
         groups={groupTopics(options)}
         initial={initial}
@@ -81,7 +87,6 @@ export function OwnerItemEditor({ kind, profile, onClose, onSaved }: Props) {
   const before = { originId: b.originId ?? '', studyId: b.studyId ?? '', languages: b.languages };
   return (
     <ProfileItemModal
-      key={countries.status}
       kind="background"
       countries={countries.countries}
       languages={{
@@ -108,6 +113,7 @@ export function OwnerItemEditor({ kind, profile, onClose, onSaved }: Props) {
             languageIds: after.languages.map((l) => l.id),
           },
           () => onSaved('background'),
+          { all: !!items.backgroundError },
         )
       }
       onClose={close}
