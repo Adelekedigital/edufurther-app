@@ -107,22 +107,45 @@ export function ReviewFlow(p: ReviewFlowProps) {
   const newestFirst = [...p.sessions].sort(
     (a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt),
   );
-  const [sessionId, setSessionId] = useState<string | null>(newestFirst[0]?.id ?? null);
+  const [chosen, setSessionId] = useState<string | null>(newestFirst[0]?.id ?? null);
+  // A pick that has left the list (reviewed in another tab, then refetched)
+  // falls back to the newest still there, so what's shown is what's sent
+  // (review of PR 112).
+  const sessionId = p.sessions.some((s) => s.id === chosen) ? chosen : (newestFirst[0]?.id ?? null);
+  const showPicker = p.mode === 'new' && p.sessions.length > 1;
   // ReviewModal.dc.html `compact`: one line with "Change", which opens the rows.
   const [pickOpen, setPickOpen] = useState(false);
+  // The list shrank to one session while open: it closes (adjusted in render).
+  if (pickOpen && !showPicker) setPickOpen(false);
   const changeButton = useRef<HTMLButtonElement>(null);
   const pickRows = useRef<HTMLDivElement>(null);
+  const ratingGroup = useRef<HTMLDivElement>(null);
+  // The pick when the list opened: Escape puts it back.
+  const pickedBefore = useRef<string | null>(null);
   const openPicker = () => {
+    pickedBefore.current = sessionId;
     setPickOpen(true);
     // The picked row takes focus, so the list reads from the current choice.
     requestAnimationFrame(() =>
-      pickRows.current?.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]')?.focus(),
+      pickRows.current
+        ?.querySelector<HTMLElement>(
+          '[role="radio"][aria-checked="true"], [role="radio"][tabindex="0"]',
+        )
+        ?.focus(),
     );
   };
   const closePicker = () => {
     setPickOpen(false);
     requestAnimationFrame(() => changeButton.current?.focus());
   };
+  // Focus inside a picker that just went away (one session left): the rating.
+  useEffect(() => {
+    if (showPicker) return;
+    if (document.activeElement && document.activeElement !== document.body) return;
+    ratingGroup.current
+      ?.querySelector<HTMLElement>('[role="radio"][tabindex="0"], [role="radio"]')
+      ?.focus();
+  }, [showPicker]);
   const [feedbackOpen, setFeedbackOpen] = useState(!!p.initial?.platformNote);
   // One request per click, before the page's `pending` arrives.
   const sent = useRef(false);
@@ -202,7 +225,10 @@ export function ReviewFlow(p: ReviewFlowProps) {
   const next = () => {
     if (p.done) return p.onClose();
     if (step === 1) {
-      if (step1ok) setStep(2);
+      if (step1ok) {
+        setPickOpen(false);
+        setStep(2);
+      }
       return;
     }
     if (step === 2) {
@@ -268,13 +294,23 @@ export function ReviewFlow(p: ReviewFlowProps) {
 
       {!p.done && step === 1 && (
         <>
-          {p.mode === 'new' &&
-            p.sessions.length > 1 &&
+          {showPicker &&
             // ReviewModal.dc.html `sessionPicker=compact`, its default (design
             // reply to #61): the pick on one line, and every choice one "Change"
             // away. Newest first, the newest picked.
             (pickOpen ? (
-              <div ref={pickRows}>
+              // Escape folds the list and keeps the earlier pick; it must not
+              // reach the modal, which would close and drop the review (review
+              // of PR 112). React's listener is below the document's.
+              <div
+                ref={pickRows}
+                onKeyDown={(e) => {
+                  if (e.key !== 'Escape') return;
+                  e.stopPropagation();
+                  setSessionId(pickedBefore.current);
+                  closePicker();
+                }}
+              >
                 <SessionPickRows
                   label="Which session is this about?"
                   rows={newestFirst.map((s) => ({
@@ -307,7 +343,7 @@ export function ReviewFlow(p: ReviewFlowProps) {
                 </button>
               </div>
             ))}
-          <div className={styles.rating}>
+          <div className={styles.rating} ref={ratingGroup}>
             <span className={styles.fieldTitle} id={qid('overall')}>
               How would you rate your time with {first}?
             </span>

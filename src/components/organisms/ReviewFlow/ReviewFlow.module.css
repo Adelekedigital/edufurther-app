@@ -208,8 +208,6 @@
   line-height: var(--lh-p);
   color: var(--text-danger);
 }
-/* ReviewModal.dc.html `hasSelect`: 44px, 14px text, a 20px ink-600 chevron
-   12px from the right (the atom's default is the 37px form select). */
 /* ReviewModal.dc.html `hasCompact`: the picked session, and "Change". */
 .compact {
   display: flex;
