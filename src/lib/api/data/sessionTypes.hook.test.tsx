@@ -514,6 +514,30 @@ describe('useMentorDefaults (booking window, backend #309)', () => {
     });
   });
 
+  it('reads the defaults (and cap) fresh each time a form opens', async () => {
+    GET.mockImplementation(() =>
+      Promise.resolve(
+        ok({
+          default_duration_minutes: null,
+          default_min_notice_minutes: null,
+          booking_window_days: null,
+          break_after_minutes: null,
+          requires_booking_confirmation: true,
+          max_booking_window_days: 56,
+          default_booking_window_days: 56,
+        }),
+      ),
+    );
+    const wrapper = setup();
+    const first = renderHook(() => useMentorDefaults('m1'), { wrapper });
+    await waitFor(() => expect(first.result.current.data).not.toBeNull());
+    first.unmount();
+    const reads = GET.mock.calls.length;
+    const second = renderHook(() => useMentorDefaults('m1'), { wrapper });
+    await waitFor(() => expect(GET.mock.calls.length).toBe(reads + 1));
+    second.unmount();
+  });
+
   it('saving the mentor’s preferences keeps the platform cap (found driving the form)', async () => {
     GET.mockImplementation((path: string) =>
       Promise.resolve(

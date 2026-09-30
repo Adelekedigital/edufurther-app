@@ -526,7 +526,9 @@ export function useMentorDefaults(userId: string | null): Remote<MentorDefaults>
         platformWindowDays: data.default_booking_window_days,
       };
     },
-    staleTime: 5 * 60 * 1000,
+    // Read fresh each time a form opens: the platform cap in it is a setting
+    // that can change, and a stale one would offer windows the backend refuses.
+    staleTime: 0,
   });
   return {
     data: query.data ?? null,
