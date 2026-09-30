@@ -54,6 +54,7 @@ export const fullProfile: MentorProfile = {
     offer: 'free',
     nextAvailableAt: '2026-09-30T15:00:00Z',
     nextAvailableState: 'open',
+    takingBookings: true,
     topics: [
       { slug: 'school-selection', label: 'School selection' },
       { slug: 'visa-and-interview', label: 'Visa and interview' },

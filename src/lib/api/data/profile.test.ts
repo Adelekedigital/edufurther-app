@@ -47,6 +47,8 @@ describe('toMentorProfile', () => {
 
   it('addresses a mentor without a slug by id', () => {
     expect(toMentorProfile(read({ slug: null })).mentor.profileHref).toBe('/mentors/u1');
+    // The card built from the profile carries the same flag as the profile (review of #86).
+    expect(toMentorProfile(read({ taking_bookings: false })).mentor.takingBookings).toBe(false);
   });
 
   it('is the owner only when the owner-only keys are present, even if null', () => {

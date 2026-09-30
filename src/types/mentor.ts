@@ -53,6 +53,11 @@ export type Mentor = {
    * at the moment"). unknown: not recomputed yet or not reported — say nothing.
    */
   nextAvailableState: 'open' | 'none' | 'unknown';
+  /**
+   * False: listed, but nobody can book them now (no active session type, or no
+   * weekly hours). The card says so and offers the profile, not Book.
+   */
+  takingBookings: boolean;
   topics: Topic[];
 };
 

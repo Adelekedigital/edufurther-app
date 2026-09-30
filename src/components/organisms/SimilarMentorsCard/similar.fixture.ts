@@ -19,6 +19,7 @@ const base: Mentor = {
   offer: 'free',
   nextAvailableAt: '2026-10-01T15:00:00Z',
   nextAvailableState: 'open',
+  takingBookings: true,
   topics: [],
 };
 

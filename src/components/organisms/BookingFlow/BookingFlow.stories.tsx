@@ -21,6 +21,7 @@ const mentor: Mentor = {
   offer: 'free',
   nextAvailableAt: null,
   nextAvailableState: 'none',
+  takingBookings: true,
   topics: [],
 };
 const sessionTypes: SessionType[] = [

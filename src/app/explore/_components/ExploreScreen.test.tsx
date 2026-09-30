@@ -34,6 +34,7 @@ const mentor: Mentor = {
   offer: 'free',
   nextAvailableAt: '2026-09-28T12:00:00Z',
   nextAvailableState: 'open',
+  takingBookings: true,
   topics: [],
 };
 vi.mock('@/lib/api/data/mentors', () => ({

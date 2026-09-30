@@ -47,8 +47,9 @@ export async function GET(req: NextRequest) {
   const page = rows.slice(start, start + limit).map((m) => ({
     ...m,
     ...mockCountries(m.id),
-    next_available_at: mockNextAvailableAt(m.id, now),
-    next_available_state: mockAvailabilityState(m.id),
+    // Not taking bookings: no times, as the backend sends (#301).
+    next_available_at: m.taking_bookings === false ? null : mockNextAvailableAt(m.id, now),
+    next_available_state: m.taking_bookings === false ? 'none' : mockAvailabilityState(m.id),
   }));
   const next = start + limit < rows.length ? `c${start + limit}` : null;
 

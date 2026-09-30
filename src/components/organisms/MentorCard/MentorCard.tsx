@@ -54,6 +54,7 @@ type MentorCardProps = {
  * while every session is free; paid "from $X" waits for prices), then either
  * "Next available: …", "No open times at the moment" (only when known to be none), or
  * nothing while it is unknown/refreshing. Without a time, Book reads "See availability".
+ * A mentor not taking bookings reads "Not taking bookings" and offers "View profile".
  * Prefetch is off on profile links: Mentor Profile is not built yet (AppShell PREFETCH note).
  */
 export function MentorCard({
@@ -173,7 +174,13 @@ export function MentorCard({
             Free mentorship available
           </p>
         )}
-        {m.nextAvailableAt ? (
+        {m.takingBookings === false ? (
+          // MentorCard.dc.html `notTakingLine` (design, 2026-09-29).
+          <p className={cx(styles.next, styles.notTaking)}>
+            <Icon name="event_busy" size={14} />
+            Not taking bookings
+          </p>
+        ) : m.nextAvailableAt ? (
           <p className={styles.next}>
             <Icon name="bolt" size={14} />
             Next available:{' '}
@@ -189,7 +196,8 @@ export function MentorCard({
         ) : null}
       </div>
 
-      {!canBook || isSelf ? (
+      {/* Nobody can book them: the profile, never a Book that opens nothing. */}
+      {!canBook || isSelf || m.takingBookings === false ? (
         <ButtonLink
           href={m.profileHref}
           prefetch={false}

@@ -22,6 +22,7 @@ const mentor: Mentor = {
   offer: 'free',
   nextAvailableAt: null,
   nextAvailableState: 'open',
+  takingBookings: true,
   topics: [],
 };
 // st1 has a question (the shape the backend will ship); st2 has none, as today.

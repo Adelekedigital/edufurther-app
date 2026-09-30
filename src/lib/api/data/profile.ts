@@ -126,6 +126,7 @@ export function toMentorProfile(r: MentorPublicRead): MentorProfile {
     offer: 'free',
     nextAvailableAt: r.next_available_at ?? null,
     nextAvailableState: nextAvailableState(r.next_available_state, r.next_available_at),
+    takingBookings: r.taking_bookings ?? true,
     originCountry: r.origin_country ?? null,
     studyCountry: r.primary_study_country ?? null,
     topics: (r.offerings ?? []).map((o) => ({ slug: o.slug, label: o.display_name })),

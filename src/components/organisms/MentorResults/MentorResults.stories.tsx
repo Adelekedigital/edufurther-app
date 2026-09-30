@@ -26,6 +26,7 @@ export const sampleMentors: Mentor[] = [
     offer: 'free',
     nextAvailableAt: soon,
     nextAvailableState: 'open',
+    takingBookings: true,
     topics: [
       { slug: 'a', label: 'Scholarships & funding' },
       { slug: 'b', label: 'Application documents' },
@@ -49,6 +50,7 @@ export const sampleMentors: Mentor[] = [
     offer: 'free',
     nextAvailableAt: soon,
     nextAvailableState: 'open',
+    takingBookings: true,
     topics: [{ slug: 'b', label: 'Application documents' }],
   },
   {
@@ -69,6 +71,7 @@ export const sampleMentors: Mentor[] = [
     offer: 'free',
     nextAvailableAt: null,
     nextAvailableState: 'none',
+    takingBookings: true,
     topics: [{ slug: 'c', label: 'Program selection' }],
   },
   {
@@ -89,6 +92,7 @@ export const sampleMentors: Mentor[] = [
     offer: 'free',
     nextAvailableAt: soon,
     nextAvailableState: 'open',
+    takingBookings: true,
     topics: [
       { slug: 'd', label: 'Career guidance' },
       { slug: 'a', label: 'Scholarships & funding' },
@@ -147,6 +151,18 @@ export const Cards: StoryObj = {
         <MentorCard key={m.id} mentor={m} onBook={fn()} timeZone="Africa/Lagos" />
       ))}
       <MentorCard mentor={sampleMentors[0]!} onBook={fn()} timeZone="Africa/Lagos" offline />
+      {/* Not taking bookings (MentorCard.dc.html `takingBookings: false`). */}
+      <MentorCard
+        mentor={{ ...sampleMentors[1]!, takingBookings: false, nextAvailableAt: null }}
+        onBook={fn()}
+        timeZone="Africa/Lagos"
+      />
+      <MentorCard
+        mentor={{ ...sampleMentors[1]!, takingBookings: false, nextAvailableAt: null }}
+        onBook={fn()}
+        timeZone="Africa/Lagos"
+        variant="compact"
+      />
       <MentorCardSkeleton />
     </div>
   ),
