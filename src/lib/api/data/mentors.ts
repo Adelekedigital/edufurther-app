@@ -54,12 +54,21 @@ export function nextAvailableState(
 
 /**
  * The pages as one list, each mentor once. A mentor whose bookability changes
- * mid-scroll can come back on a later page (bookable ones rank first); the
- * first place they appeared is kept, so no card shows twice.
+ * mid-scroll can come back on a later page (bookable ones rank first): they
+ * stay where they first appeared, with the latest data, so the card says
+ * "Not taking bookings" once that's true (Codex review of #90).
  */
 export function joinPages(pages: Mentor[][]): Mentor[] {
-  const seen = new Set<string>();
-  return pages.flat().filter((m) => !seen.has(m.id) && !!seen.add(m.id));
+  const latest = new Map<string, Mentor>();
+  for (const m of pages.flat()) latest.set(m.id, m);
+  const placed = new Set<string>();
+  const out: Mentor[] = [];
+  for (const m of pages.flat()) {
+    if (placed.has(m.id)) continue;
+    placed.add(m.id);
+    out.push(latest.get(m.id)!);
+  }
+  return out;
 }
 
 export function toMentor(r: MentorSummaryRead): Mentor {

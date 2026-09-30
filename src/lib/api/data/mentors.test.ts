@@ -99,4 +99,12 @@ describe('joinPages', () => {
     ).toEqual(['a', 'b', 'c']);
     expect(joinPages([])).toEqual([]);
   });
+  it('keeps the first place but the latest data: a mentor who stopped taking bookings shows it', () => {
+    const before = toMentor(row({ id: 'a', taking_bookings: true }));
+    const after = toMentor(row({ id: 'a', taking_bookings: false }));
+    const b = toMentor(row({ id: 'b' }));
+    const joined = joinPages([[before, b], [after]]);
+    expect(joined.map((m) => m.id)).toEqual(['a', 'b']);
+    expect(joined[0]!.takingBookings).toBe(false);
+  });
 });
