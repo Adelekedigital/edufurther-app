@@ -39,7 +39,7 @@ import {
   type ItemTarget,
 } from './OwnerItemEditor';
 import { DeleteEntryConfirm } from './DeleteEntryConfirm';
-import { OwnerBar, ProfileSkeleton } from './ProfileParts';
+import { NotTakingEmpty, NotTakingNote, OwnerBar, ProfileSkeleton } from './ProfileParts';
 import { ProfileMissing } from './ProfileMissing';
 import { ReviewsTab } from './ReviewsTab';
 import { listLabel } from './suggestions';
@@ -85,7 +85,11 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const p = profile.data;
   const hasSessions = (p?.sessionTypes.length ?? 0) > 0;
   const hasReviews = (p?.reviews.count ?? 0) > 0;
-  const { tab, setTab } = useProfileTab(hasSessions, hasReviews);
+  // A mentor not taking bookings still has a Sessions tab for everyone but
+  // the owner: it says so (Mentor Profile.dc.html `notTaking`).
+  const notTakingTab =
+    !!p && !p.takingBookings && !(p.owner !== null || member?.id === p.mentor.id);
+  const { tab, setTab } = useProfileTab(hasSessions || notTakingTab, hasReviews);
 
   // Cards only render after a client fetch, so reading the device zone here is safe.
   const [timeZone] = useState(deviceTimeZone);
@@ -174,7 +178,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const asideLabel =
     listLabel([
       // Neutral when nothing can be booked (review of #81).
-      canBookHere && (notTaking ? 'sessions' : 'booking'),
+      canBookHere && 'booking',
       tab === 'overview' && 'track record',
       similarShown && 'similar mentors',
     ]) ?? 'About this mentor';
@@ -340,11 +344,12 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 }}
                 items={[
                   { value: 'overview', label: 'Overview', panelId: 'panel-overview' },
-                  ...(hasSessions
+                  ...(hasSessions || notTakingTab
                     ? [
                         {
                           value: 'sessions',
-                          label: `Sessions (${p.sessionTypes.length})`,
+                          // Nothing to book counts as none (the design's visible count).
+                          label: `Sessions (${notTakingTab ? 0 : p.sessionTypes.length})`,
                           panelId: 'panel-sessions',
                         },
                       ]
@@ -422,6 +427,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                     offerBook={canStartBooking}
                     onBook={scrollToBook}
                   />
+                ) : notTakingTab ? (
+                  <NotTakingEmpty firstName={p.mentor.firstName} />
                 ) : (
                   <SessionTypeList
                     sessionTypes={p.sessionTypes}
@@ -438,17 +445,19 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                   // the track record (and Similar mentors) from the aside.
                   <aside className={styles.aside} aria-label={asideLabel}>
                     {!isPhone && firstMentees}
-                    {canBookHere && (
-                      <div id="profile-book" className={styles.scrollTarget}>
-                        <BookSessionCard
-                          sessionTypes={p.sessionTypes}
-                          onBook={booking.open}
-                          onCompare={() => setTab('sessions')}
-                          bookBlocked={bookBlocked}
-                          notTaking={notTaking}
-                        />
-                      </div>
-                    )}
+                    {canBookHere &&
+                      (notTaking ? (
+                        <NotTakingNote firstName={p.mentor.firstName} />
+                      ) : (
+                        <div id="profile-book" className={styles.scrollTarget}>
+                          <BookSessionCard
+                            sessionTypes={p.sessionTypes}
+                            onBook={booking.open}
+                            onCompare={() => setTab('sessions')}
+                            bookBlocked={bookBlocked}
+                          />
+                        </div>
+                      ))}
                     {tab === 'overview' && <TrackRecordCard profile={p} />}
                     {similarShown && (
                       <SimilarMentorsCard

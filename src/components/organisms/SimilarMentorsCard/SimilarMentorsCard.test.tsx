@@ -107,4 +107,23 @@ describe('inSentence', () => {
     expect(inSentence('CV review')).toBe('CV review');
     expect(inSentence('SOP drafts')).toBe('SOP drafts');
   });
+
+  it('a mentor not taking bookings says so and offers the profile, not a free day (live design)', () => {
+    const item = similarMentors[0]!;
+    const m = { ...item.mentor, takingBookings: false };
+    render(
+      <SimilarMentorsCard
+        mentors={[{ ...item, mentor: m }]}
+        isLoading={false}
+        timeZone="UTC"
+        seeAllHref="/explore"
+      />,
+    );
+    expect(screen.getByText(/Not taking bookings$/)).toBeInTheDocument();
+    expect(screen.queryByText(/Also helps with/)).toBeNull();
+    const link = screen.getByRole('link', { name: `View profile: ${m.name}` });
+    expect(link).toHaveAttribute('href', m.profileHref);
+    if (m.nextAvailableAt)
+      expect(screen.queryByText(formatFreeDay(m.nextAvailableAt, 'UTC'))).toBeNull();
+  });
 });

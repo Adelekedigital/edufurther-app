@@ -1,4 +1,5 @@
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import type { MentorProfile } from '@/types/mentor';
 import styles from './MentorProfileScreen.module.css';
@@ -19,15 +20,20 @@ export function OwnerBar({ profile }: { profile: MentorProfile }) {
         : o && !o.listed
           ? 'Your profile is unlisted. Only you can see it.'
           : null;
+  // Public, but no session type visible (Mentor Profile.dc.html `visN === 0`).
+  const noTypes = !hidden && !!o?.setupNeeded?.includes('session_type');
   return (
     <div className={styles.ownerBar}>
       <span className={styles.ownerText}>
         <Icon
-          name={hidden ? 'lock' : 'person'}
+          name={hidden ? 'lock' : noTypes ? 'event_busy' : 'person'}
           size={18}
-          className={hidden ? styles.ownerIconLock : styles.ownerIcon}
+          className={hidden || noTypes ? styles.ownerIconLock : styles.ownerIcon}
         />
-        {hidden ?? 'You’re viewing your own profile.'}
+        {hidden ??
+          (noTypes
+            ? 'Mentees see “Not taking bookings” on your profile. Turn on a session type to take bookings again.'
+            : 'You’re viewing your own profile.')}
       </span>
     </div>
   );
@@ -61,6 +67,40 @@ export function ProfileSkeleton() {
         </div>
         <Skeleton height="220px" radius="lg" className={styles.skAside} />
       </div>
+    </div>
+  );
+}
+
+/** "{First} isn’t taking bookings right now…" (Mentor Profile.dc.html `notTakingBody`). */
+const notTakingBody = (first: string) =>
+  `${first} isn’t taking bookings right now. You can still message ${first} or explore similar mentors.`;
+
+/**
+ * Where Book would be, for a mentor who isn't taking bookings (Mentor
+ * Profile.dc.html `notTakingSide`): a quiet note in the aside.
+ */
+export function NotTakingNote({ firstName }: { firstName: string }) {
+  return (
+    <section className={styles.notTaking} aria-labelledby="not-taking-h">
+      <h2 id="not-taking-h" className={styles.notTakingTitle}>
+        <Icon name="event_busy" size={20} className={styles.notTakingIcon} />
+        Not taking bookings
+      </h2>
+      <p className={styles.notTakingBody}>{notTakingBody(firstName)}</p>
+    </section>
+  );
+}
+
+/** The Sessions tab for a mentor who isn't taking bookings (Mentor Profile.dc.html `notTaking`). */
+export function NotTakingEmpty({ firstName }: { firstName: string }) {
+  return (
+    <div className={styles.notTakingEmpty}>
+      <EmptyState
+        illustration="calendar-grey"
+        size={96}
+        title="Not taking bookings"
+        description={notTakingBody(firstName)}
+      />
     </div>
   );
 }

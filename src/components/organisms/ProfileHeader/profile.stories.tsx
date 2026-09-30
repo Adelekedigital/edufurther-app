@@ -238,24 +238,6 @@ export const BookCardBlocked: Story = {
   ),
 };
 
-/** Not taking bookings (backend #301): one, several and none visible. Provisional. */
-export const BookCardNotTaking: Story = {
-  render: () => (
-    <div style={{ ...side, display: 'grid', gap: 16 }}>
-      {[[sessionTypes[0]!], sessionTypes, []].map((types, i) => (
-        <BookSessionCard
-          key={i}
-          sessionTypes={types}
-          onBook={fn()}
-          onCompare={fn()}
-          bookBlocked={null}
-          notTaking
-        />
-      ))}
-    </div>
-  ),
-};
-
 export const TrackRecord: Story = {
   render: () => (
     <div style={side}>

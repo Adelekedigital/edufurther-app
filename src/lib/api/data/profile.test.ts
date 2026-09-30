@@ -55,10 +55,15 @@ describe('toMentorProfile', () => {
     expect(toMentorProfile(read()).owner).toBeNull();
     expect(
       toMentorProfile(read({ approval_status: 'pending', listing_status: null })).owner,
-    ).toEqual({ approval: 'pending', listed: true });
+    ).toEqual({ approval: 'pending', listed: true, setupNeeded: [] });
     expect(
       toMentorProfile(read({ approval_status: 'approved', listing_status: 'unlisted' })).owner,
-    ).toEqual({ approval: 'approved', listed: false });
+    ).toEqual({ approval: 'approved', listed: false, setupNeeded: [] });
+    // What stops them taking bookings (owner-only `setup_needed`).
+    expect(
+      toMentorProfile(read({ approval_status: 'approved', setup_needed: ['session_type'] })).owner
+        ?.setupNeeded,
+    ).toEqual(['session_type']);
   });
 
   it('keeps only safe social links', () => {

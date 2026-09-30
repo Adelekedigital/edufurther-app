@@ -11,11 +11,6 @@ type BookSessionCardProps = {
   /** Switches to the Sessions tab. */
   onCompare: () => void;
   bookBlocked: string | null;
-  /**
-   * The mentor isn't taking bookings (backend #301): the offerings stay to
-   * read, without Book, and the card says so. Provisional: not drawn.
-   */
-  notTaking?: boolean;
 };
 
 /**
@@ -30,28 +25,8 @@ export function BookSessionCard({
   onBook,
   onCompare,
   bookBlocked,
-  notTaking = false,
 }: BookSessionCardProps) {
-  const notice = (
-    <p className={styles.notTaking}>
-      <Icon name="event_busy" size={16} />
-      Not taking bookings right now.
-    </p>
-  );
-  if (sessionTypes.length === 0) {
-    if (!notTaking) return null;
-    // Nothing visible to book: the card still says why.
-    return (
-      <section className={styles.card} aria-labelledby="book-h">
-        <div className={styles.single}>
-          <h2 id="book-h" className={styles.h2}>
-            Sessions
-          </h2>
-          {notice}
-        </div>
-      </section>
-    );
-  }
+  if (sessionTypes.length === 0) return null;
 
   if (sessionTypes.length === 1) {
     const s = sessionTypes[0]!;
@@ -77,21 +52,15 @@ export function BookSessionCard({
             <Tag tone="free">Free</Tag>
           </div>
           {s.description && <p className={styles.desc}>{s.description}</p>}
-          {notTaking ? (
-            notice
-          ) : (
-            <>
-              <Button
-                variant="secondary-outlined"
-                fullWidth
-                disabled={!!bookBlocked}
-                onClick={() => onBook(s.id)}
-              >
-                {bookBlocked ?? 'Book this session'}
-              </Button>
-              <p className={styles.helper}>You’ll pick a time and answer a few questions next.</p>
-            </>
-          )}
+          <Button
+            variant="secondary-outlined"
+            fullWidth
+            disabled={!!bookBlocked}
+            onClick={() => onBook(s.id)}
+          >
+            {bookBlocked ?? 'Book this session'}
+          </Button>
+          <p className={styles.helper}>You’ll pick a time and answer a few questions next.</p>
         </div>
       </section>
     );
@@ -101,8 +70,7 @@ export function BookSessionCard({
     <section className={styles.card} aria-labelledby="book-h">
       <div className={styles.multiHead}>
         <h2 id="book-h" className={styles.h2}>
-          {/* Neutral when nothing can be booked (review of #81). */}
-          {notTaking ? 'Sessions' : 'Book a session'}
+          Book a session
         </h2>
         <span className={styles.sub}>{sessionTypes.length} session types</span>
       </div>
@@ -119,21 +87,18 @@ export function BookSessionCard({
                 <Icon name="schedule" size={14} />
                 {s.durationMin} min
               </span>
-              {!notTaking && (
-                <Button
-                  variant="secondary-outlined"
-                  disabled={!!bookBlocked}
-                  onClick={() => onBook(s.id)}
-                >
-                  Book
-                  <span className="sr-only"> {s.name}</span>
-                </Button>
-              )}
+              <Button
+                variant="secondary-outlined"
+                disabled={!!bookBlocked}
+                onClick={() => onBook(s.id)}
+              >
+                Book
+                <span className="sr-only"> {s.name}</span>
+              </Button>
             </div>
           </li>
         ))}
       </ul>
-      {notTaking && <div className={styles.noticeRow}>{notice}</div>}
       <button type="button" className={styles.compare} onClick={onCompare}>
         {sessionTypes.length > 2 ? `See all ${sessionTypes.length} sessions` : 'Compare sessions'}
         <Icon name="arrow_forward" size={16} />

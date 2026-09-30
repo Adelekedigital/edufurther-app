@@ -38,7 +38,9 @@
 .dialog {
   position: absolute;
   right: 0;
-  top: calc(28px + var(--space-2));
+  /* 8px below the trigger at whatever height it has (28px; 44px on phones),
+     CoverPicker.dc.html `place()` (design reply #56). */
+  top: calc(100% + var(--space-2));
   z-index: 21;
   width: 296px;
   display: flex;

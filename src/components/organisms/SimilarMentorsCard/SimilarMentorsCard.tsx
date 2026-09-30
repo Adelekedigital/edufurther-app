@@ -85,16 +85,37 @@ export function SimilarMentorsCard({
                 )}
               </div>
               <div className={styles.bottom}>
-                <span className={styles.overlap}>
-                  <Icon name="join_inner" size={14} className={styles.overlapIcon} />
-                  Also helps with {inSentence(sharedTopic)}
-                </span>
-                {m.nextAvailableState === 'open' && m.nextAvailableAt && (
-                  <Link href={m.profileHref} prefetch={false} className={styles.link}>
-                    {formatFreeDay(m.nextAvailableAt, timeZone)}
-                    <span className="sr-only"> with {m.name}</span>
-                  </Link>
+                {m.takingBookings === false ? (
+                  // Mentor Profile.dc.html similar mentors `notTaking`: says so, and
+                  // offers the profile instead of a free day.
+                  <>
+                    <span className={styles.overlap}>
+                      <Icon name="event_busy" size={14} className={styles.notTakingIcon} />
+                      Not taking bookings
+                    </span>
+                    <Link
+                      href={m.profileHref}
+                      prefetch={false}
+                      className={styles.link}
+                      aria-label={`View profile: ${m.name}`}
+                    >
+                      View profile
+                    </Link>
+                  </>
+                ) : (
+                  <span className={styles.overlap}>
+                    <Icon name="join_inner" size={14} className={styles.overlapIcon} />
+                    Also helps with {inSentence(sharedTopic)}
+                  </span>
                 )}
+                {m.takingBookings !== false &&
+                  m.nextAvailableState === 'open' &&
+                  m.nextAvailableAt && (
+                    <Link href={m.profileHref} prefetch={false} className={styles.link}>
+                      {formatFreeDay(m.nextAvailableAt, timeZone)}
+                      <span className="sr-only"> with {m.name}</span>
+                    </Link>
+                  )}
               </div>
             </li>
           ))}

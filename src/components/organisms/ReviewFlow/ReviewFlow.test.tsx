@@ -63,16 +63,18 @@ describe('ReviewFlow', () => {
     render(
       <ReviewFlow
         {...props({
+          // Out of order on purpose: the rows put the newest first either way.
           sessions: [
-            { id: 's1', startsAt: '2026-09-19T15:00:00Z', typeName: 'SOP draft review' },
             { id: 's2', startsAt: '2026-09-10T15:00:00Z', typeName: 'CV review' },
+            { id: 's1', startsAt: '2026-09-19T15:00:00Z', typeName: 'SOP draft review' },
           ],
         })}
       />,
     );
-    expect(screen.getByRole('combobox', { name: 'Which session is this about?' })).toHaveValue(
-      's1',
-    );
+    const group = screen.getByRole('radiogroup', { name: 'Which session is this about?' });
+    const rows = within(group).getAllByRole('radio');
+    expect(rows.map((r) => r.textContent)).toEqual(['SOP draft reviewSep 19', 'CV reviewSep 10']);
+    expect(rows[0]).toHaveAttribute('aria-checked', 'true');
   });
 
   it('edit: opens filled in; step 2 answers the API didn’t return may stay empty', async () => {

@@ -183,3 +183,36 @@
   font-weight: var(--weight-medium);
   color: var(--text-danger);
 }
+
+/* Not taking bookings (Mentor Profile.dc.html `notTakingSide`, `notTaking`). */
+.notTaking {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-xl);
+  background: var(--ink-50);
+}
+.notTakingTitle {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+.notTakingIcon {
+  color: var(--ink-600);
+}
+.notTakingBody {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+.notTakingEmpty {
+  padding: var(--space-10) var(--space-5);
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-xl);
+}

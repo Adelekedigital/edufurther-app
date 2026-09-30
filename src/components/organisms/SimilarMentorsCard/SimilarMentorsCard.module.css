@@ -105,6 +105,9 @@
 .overlapIcon {
   color: var(--blue-500);
 }
+.notTakingIcon {
+  color: var(--ink-600);
+}
 .link:focus-visible,
 .nameLink:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);

@@ -47,7 +47,8 @@ export function mockReviewable(mentorId: string) {
   if (i < 0 || i % 3 !== 1) return [];
   const DAY = 86_400_000;
   const base = Date.parse('2026-09-19T15:00:00Z');
-  const count = i % 6 === 1 ? 2 : 1;
+  // One mentor with five, so the picker's "Show N more" has something to show.
+  const count = i === 1 ? 5 : i % 6 === 1 ? 2 : 1;
   return Array.from({ length: count }, (_, k) => {
     const t = MOCK_SESSION_TYPES[k % MOCK_SESSION_TYPES.length]!;
     return {
