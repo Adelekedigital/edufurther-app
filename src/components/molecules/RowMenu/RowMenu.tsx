@@ -63,6 +63,10 @@ export function RowMenu({ label, items, triggerRef }: RowMenuProps) {
   // Nothing left to choose: closed during render (no second render from an effect).
   if (open && items.length === 0) setOpen(false);
   useLayoutEffect(() => {
+    // Items can shift under a focused one (no new focus event): keep its place current.
+    const els = [...(menu.current?.querySelectorAll('[role="menuitem"]') ?? [])];
+    const at = els.indexOf(document.activeElement as Element);
+    if (at >= 0) focused.current = at;
     const lost = !document.activeElement || document.activeElement === document.body;
     if (focused.current !== null && lost) {
       if (open) focusAt(Math.min(focused.current, items.length - 1));

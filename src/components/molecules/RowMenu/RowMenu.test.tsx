@@ -52,7 +52,7 @@ describe('RowMenu (WAI-ARIA menu button)', () => {
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
-  describe('an item that goes away while the menu is open (#114)', () => {
+  describe('an item that goes away while the menu is open (issue 114)', () => {
     const item = (key: string, label: string): RowMenuItem => ({
       key,
       icon: 'edit',
@@ -106,6 +106,20 @@ describe('RowMenu (WAI-ARIA menu button)', () => {
       expect(screen.getByRole('button', { name: 'More actions for SOP' })).toHaveFocus();
     });
 
+    it('one that moved since it was focused: focus goes to the item now in its place', async () => {
+      const user = userEvent.setup();
+      const dup = item('dup', 'Duplicate');
+      const { rerender } = render(menuOf([edit, feature, del]));
+      screen.getByRole('button', { name: 'More actions for SOP' }).focus();
+      await user.keyboard('{Enter}');
+      await vi.waitFor(() => expect(screen.getByRole('menuitem', { name: 'Edit' })).toHaveFocus());
+      await user.keyboard('{ArrowDown}'); // Mark as featured, second
+      rerender(menuOf([dup, edit, feature, del])); // now third, still focused
+      expect(screen.getByRole('menuitem', { name: 'Mark as featured' })).toHaveFocus();
+      rerender(menuOf([dup, edit, del]));
+      expect(screen.getByRole('menuitem', { name: 'Delete' })).toHaveFocus();
+    });
+
     it('another one: focus stays where it is', async () => {
       const user = userEvent.setup();
       const { rerender } = render(menuOf([edit, feature, del]));
@@ -117,6 +131,26 @@ describe('RowMenu (WAI-ARIA menu button)', () => {
       rerender(menuOf([edit, del]));
       expect(screen.getByRole('menuitem', { name: 'Delete' })).toHaveFocus();
     });
+  });
+
+  it('a click outside on the page closes it without pulling focus back to the button', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <RowMenu
+          label="More actions for SOP"
+          items={[{ key: 'edit', icon: 'edit', label: 'Edit', onSelect: vi.fn() }]}
+        />
+        <p>Some text</p>
+      </>,
+    );
+    const trigger = screen.getByRole('button', { name: 'More actions for SOP' });
+    trigger.focus();
+    await user.keyboard('{Enter}');
+    await vi.waitFor(() => expect(screen.getByRole('menuitem', { name: 'Edit' })).toHaveFocus());
+    await user.click(screen.getByText('Some text'));
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(trigger).not.toHaveFocus();
   });
 
   it('a click outside closes it', async () => {
