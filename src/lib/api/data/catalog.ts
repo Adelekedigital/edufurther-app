@@ -72,3 +72,22 @@ export function useLanguageSearch(q: string, enabled: boolean) {
         : 'ready';
   return { results: query.data ?? [], status, retry: () => void query.refetch() };
 }
+
+/** The catalog's degree levels ({id, code}), to send `degree_level_id`. */
+export function useDegreeLevels(enabled: boolean) {
+  const query = useQuery({
+    queryKey: keys.catalog.degreeLevels,
+    queryFn: async ({ signal }) => {
+      const { data, response } = await api.GET('/api/v1/catalog/{catalogue}', {
+        params: { path: { catalogue: 'degree-levels' } },
+        signal,
+      });
+      if (!data) throw new ApiError(response.status);
+      return data.data.flatMap((l) => (l.code ? [{ id: l.id, code: l.code }] : []));
+    },
+    enabled,
+    staleTime: HOUR,
+  });
+  const status: Status = query.data ? 'ready' : query.error ? 'error' : 'loading';
+  return { levels: query.data ?? [], status, retry: () => void query.refetch() };
+}

@@ -30,7 +30,12 @@ import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import styles from './MentorProfileScreen.module.css';
-import { OwnerItemEditor, type ItemKind } from './OwnerItemEditor';
+import {
+  OwnerItemEditor,
+  type ItemKind,
+  type ItemOutcome,
+  type ItemTarget,
+} from './OwnerItemEditor';
 import { OwnerBar, ProfileSkeleton } from './ProfileParts';
 import { ProfileMissing } from './ProfileMissing';
 import { ReviewsTab } from './ReviewsTab';
@@ -43,6 +48,22 @@ import { useProfileTab } from './useProfileTab';
 
 // Tests import it from here.
 export { suggestionsLine } from './suggestions';
+
+/** What the page announces after an owner's edit lands. */
+const SAVED_COPY: Record<ItemKind, Record<ItemOutcome, string>> = {
+  topics: { saved: 'Topics saved.', added: 'Topics saved.', removed: 'Topics saved.' },
+  background: {
+    saved: 'Background saved.',
+    added: 'Background saved.',
+    removed: 'Background saved.',
+  },
+  award: { saved: 'Award saved.', added: 'Award added.', removed: 'Award deleted.' },
+  education: {
+    saved: 'Education saved.',
+    added: 'Education added.',
+    removed: 'Education deleted.',
+  },
+};
 
 /** Below this many completed sessions a mentor is "new" (design reply #45). */
 const NEW_MENTOR_UNDER = 3;
@@ -105,20 +126,26 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // The owner's name, headline and About (Mentor Profile.dc.html edit mode).
   const editProfileButton = useRef<HTMLButtonElement>(null);
   const owner = useOwnerEditing(p ?? null, isOwner, editProfileButton);
-  // The owner's topics and background (ProfileItemModal.dc.html), and what
-  // the last save was, for screen readers (the modal closing says nothing).
-  const [itemOpen, setItemOpen] = useState<ItemKind | null>(null);
+  // The owner's topics, background and awards (ProfileItemModal.dc.html), and
+  // what the last save did, for screen readers (the modal closing says nothing).
+  const [itemOpen, setItemOpen] = useState<ItemTarget | null>(null);
   const [itemSaved, setItemSaved] = useState<{
     text: string;
     id: number;
     kind: ItemKind;
+    outcome: ItemOutcome;
   } | null>(null);
-  // After a background save, focus goes to the heading's Edit: "Add background"
-  // on the empty card that opened it is gone by then (review of #85). Runs
-  // after the dialog's own focus return.
+  // Where focus goes when what opened the dialog is gone by the time it
+  // closes: the empty "Add background" card (review of #85), a removed row's
+  // Edit. Runs after the dialog's own focus return.
   const backgroundEdit = useRef<HTMLButtonElement>(null);
+  const awardsAdd = useRef<HTMLButtonElement>(null);
+  const educationAdd = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (itemSaved?.kind === 'background') backgroundEdit.current?.focus();
+    if (itemSaved?.outcome !== 'removed') return;
+    if (itemSaved.kind === 'award') awardsAdd.current?.focus();
+    if (itemSaved.kind === 'education') educationAdd.current?.focus();
   }, [itemSaved]);
 
   // Similar mentors: the Overview aside, for mentees and guests. Not the mentor
@@ -215,7 +242,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
             <ProfileHeader
               profile={p}
               onShowReviews={hasReviews ? () => setTab('reviews') : undefined}
-              onEditTopics={isOwner ? () => setItemOpen('topics') : undefined}
+              onEditTopics={isOwner ? () => setItemOpen({ kind: 'topics' }) : undefined}
               // PROVISIONAL copy (design request): the design only names the state.
               status={canBookHere && notTaking ? 'Not taking bookings' : undefined}
               introEditor={
@@ -325,8 +352,28 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 {tab === 'overview' ? (
                   <ProfileOverview
                     profile={p}
-                    onEditBackground={isOwner ? () => setItemOpen('background') : undefined}
+                    onEditBackground={
+                      isOwner ? () => setItemOpen({ kind: 'background' }) : undefined
+                    }
                     backgroundEditRef={backgroundEdit}
+                    awardsEdit={
+                      isOwner
+                        ? {
+                            onAdd: () => setItemOpen({ kind: 'award', id: null }),
+                            onEdit: (id) => setItemOpen({ kind: 'award', id }),
+                          }
+                        : undefined
+                    }
+                    awardsAddRef={awardsAdd}
+                    educationEdit={
+                      isOwner
+                        ? {
+                            onAdd: () => setItemOpen({ kind: 'education', id: null }),
+                            onEdit: (id) => setItemOpen({ kind: 'education', id }),
+                          }
+                        : undefined
+                    }
+                    educationAddRef={educationAdd}
                     aboutEdit={
                       isOwner
                         ? {
@@ -396,16 +443,12 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
 
       {isOwner && p && itemOpen && (
         <OwnerItemEditor
-          kind={itemOpen}
+          target={itemOpen}
           profile={p}
           onClose={() => setItemOpen(null)}
-          onSaved={(kind) => {
+          onSaved={(kind, outcome) => {
             setItemOpen(null);
-            setItemSaved({
-              text: kind === 'topics' ? 'Topics saved.' : 'Background saved.',
-              id: Date.now(),
-              kind,
-            });
+            setItemSaved({ text: SAVED_COPY[kind][outcome], id: Date.now(), kind, outcome });
           }}
         />
       )}

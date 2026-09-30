@@ -92,6 +92,13 @@ export const fullProfile: MentorProfile = {
       id: 'a1',
       title: 'Graduate Teaching Assistantship',
       meta: 'Mississippi State University · 2021',
+      funding: 'full',
+      values: {
+        title: 'Graduate Teaching Assistantship',
+        org: 'Mississippi State University',
+        year: 2021,
+        funding: 'full',
+      },
     },
   ],
   sessionTypes: [sessionTypes[0]!],

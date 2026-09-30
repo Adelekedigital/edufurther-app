@@ -10,7 +10,10 @@ export const keys = {
     countries: ['catalog', 'countries'] as const,
     /** '' = the common set. */
     languages: (q: string) => ['catalog', 'languages', q] as const,
+    degreeLevels: ['catalog', 'degree-levels'] as const,
   },
+  /** The owner's own education entries (GET /users/{id}/education), for editing. */
+  education: (userId: string) => ['education', userId] as const,
   viewer: {
     all: ['viewer'] as const,
     me: (userId: string) => ['viewer', 'me', userId] as const,

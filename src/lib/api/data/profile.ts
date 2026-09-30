@@ -9,6 +9,7 @@ import type {
   Mentor,
   MentorProfile,
   ReviewSummary,
+  AwardItem,
   ProfileItem,
   ProfileSessionType,
   Remote,
@@ -142,11 +143,17 @@ export function toMentorProfile(r: MentorPublicRead): MentorProfile {
     return [{ id: e.id, title, meta: meta || null }];
   });
 
-  const awards: ProfileItem[] = (r.scholarships ?? []).map((a) => ({
-    id: a.id,
-    title: a.title,
-    meta: [a.institution, a.year ? String(a.year) : null].filter(Boolean).join(' · ') || null,
-  }));
+  const awards: AwardItem[] = (r.scholarships ?? []).map((a) => {
+    // Null when the mentor hasn't said, which is most awards (backend).
+    const funding = a.funding === 'full' || a.funding === 'partial' ? a.funding : null;
+    return {
+      id: a.id,
+      title: a.title,
+      meta: [a.institution, a.year ? String(a.year) : null].filter(Boolean).join(' · ') || null,
+      funding,
+      values: { title: a.title, org: a.institution, year: a.year ?? null, funding },
+    };
+  });
 
   const socials = (
     [

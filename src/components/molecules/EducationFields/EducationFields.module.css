@@ -1,0 +1,59 @@
+/* ProfileItemModal.dc.html `education`. */
+.degreeRow {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: var(--space-3);
+}
+.yearRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+/* The modal's selects are 14px (the atom's default is 12px). */
+.select select {
+  font-size: var(--text-p-sm);
+}
+/* The "current or most recent" card: the whole card toggles it. */
+.current {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  cursor: pointer;
+}
+.on {
+  border-color: var(--blue-500);
+  background: var(--blue-50);
+}
+.current:has(:focus-visible) {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.box {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--blue-500);
+  cursor: pointer;
+}
+.box:focus-visible {
+  outline: none;
+}
+.currentText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.currentTitle {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-medium);
+}
+.currentHint {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-500);
+}

@@ -152,3 +152,124 @@ export const Phone: Story = {
   render: () => <Background />,
   globals: { viewport: { value: 'mobile2', isRotated: false } },
 };
+
+const award = (over: Partial<ProfileItemModalProps> = {}) => (
+  <Frame
+    kind="award"
+    initial={null}
+    thisYear={2026}
+    saving={false}
+    error={null}
+    onSave={fn()}
+    onClose={fn()}
+    renderShell={() => null}
+    {...(over as object)}
+  />
+);
+const saved = {
+  title: 'Fulbright Scholarship',
+  org: 'Stanford University',
+  year: 2022,
+  funding: 'full' as const,
+};
+
+export const AwardAdd: Story = { render: () => award() };
+export const AwardEdit: Story = {
+  render: () =>
+    award({
+      initial: saved,
+      remove: { noun: 'award', onRemove: fn(), removing: false },
+    } as Partial<ProfileItemModalProps>),
+};
+export const AwardSaving: Story = {
+  render: () => award({ initial: saved, saving: true } as Partial<ProfileItemModalProps>),
+};
+export const AwardSaveFailed: Story = {
+  render: () =>
+    award({
+      initial: saved,
+      error: 'That didn’t save. Try again.',
+    } as Partial<ProfileItemModalProps>),
+};
+export const AwardLongNames: Story = {
+  render: () =>
+    award({
+      initial: {
+        ...saved,
+        title:
+          'Mastercard Foundation Scholars Program at the University of Edinburgh School of Social and Political Science',
+        org: 'The University of Edinburgh, College of Arts, Humanities and Social Sciences',
+      },
+    } as Partial<ProfileItemModalProps>),
+};
+export const AwardPhone: Story = {
+  render: () => award(),
+  globals: { viewport: { value: 'mobile2', isRotated: false } },
+};
+
+const education = (over: Partial<ProfileItemModalProps> = {}) => (
+  <Frame
+    kind="education"
+    editing={false}
+    initial={null}
+    thisYear={2026}
+    hasOther={false}
+    saving={false}
+    error={null}
+    onSave={fn()}
+    onClose={fn()}
+    renderShell={() => null}
+    {...(over as object)}
+  />
+);
+const degree = {
+  school: 'Mississippi State University',
+  degree: 'PhD',
+  course: 'Sociology',
+  start: 2023,
+  end: 2027,
+  current: true,
+};
+
+export const EducationAdd: Story = { render: () => education() };
+/** Another degree is current: a new one isn't, and ticking it says it replaces that one. */
+export const EducationAddWithCurrent: Story = {
+  render: () => education({ hasOther: true } as Partial<ProfileItemModalProps>),
+};
+export const EducationEdit: Story = {
+  render: () =>
+    education({
+      editing: true,
+      initial: degree,
+      remove: { noun: 'education', onRemove: fn(), removing: false },
+    } as Partial<ProfileItemModalProps>),
+};
+export const EducationLoading: Story = {
+  render: () =>
+    education({
+      editing: true,
+      catalog: { status: 'loading', onRetry: fn() },
+    } as Partial<ProfileItemModalProps>),
+};
+export const EducationLoadError: Story = {
+  render: () =>
+    education({
+      editing: true,
+      catalog: { status: 'error', onRetry: fn() },
+    } as Partial<ProfileItemModalProps>),
+};
+export const EducationLongSchool: Story = {
+  render: () =>
+    education({
+      editing: true,
+      initial: {
+        ...degree,
+        school: 'The London School of Hygiene and Tropical Medicine, University of London',
+        course: 'Global Health Policy and Health Systems Economics',
+      },
+    } as Partial<ProfileItemModalProps>),
+};
+export const EducationPhone: Story = {
+  render: () => education(),
+  globals: { viewport: { value: 'mobile2', isRotated: false } },
+};

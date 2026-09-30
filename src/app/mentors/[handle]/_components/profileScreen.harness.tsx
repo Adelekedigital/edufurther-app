@@ -84,6 +84,8 @@ export const h = {
   topicsRefetchFailed: false,
   /** Runs when a background save "lands", before the editor closes (e.g. swap the profile). */
   onBackgroundSaved: null as null | (() => void),
+  /** Runs when a remove "lands", before the editor closes (e.g. drop the row). */
+  onAwardRemoved: null as null | (() => void),
 };
 
 export const replace = vi.fn();
@@ -98,6 +100,44 @@ export const coverPick = vi.fn();
 export const saveIntro = vi.fn();
 export const saveAbout = vi.fn();
 export const saveTopics = vi.fn();
+export const addAward = vi.fn();
+export const editAward = vi.fn();
+export const removeAward = vi.fn();
+export const addEducation = vi.fn();
+export const editEducation = vi.fn();
+export const removeEducation = vi.fn();
+
+/** The owner's own degrees, as GET /users/{id}/education gives them. */
+export const ownEducation = [
+  {
+    id: 'e1',
+    values: {
+      school: 'Mississippi State University',
+      degree: 'PhD',
+      course: 'Sociology',
+      start: 2023,
+      end: 2027,
+      current: true,
+    },
+    dateStart: '2023-08-15',
+    dateEnd: '2027-05-15',
+    levelId: 'dl-phd',
+  },
+  {
+    id: 'e2',
+    values: {
+      school: 'Mississippi State University',
+      degree: 'MSc',
+      course: 'Sociology',
+      start: 2021,
+      end: 2023,
+      current: false,
+    },
+    dateStart: '2021-08-15',
+    dateEnd: '2023-05-15',
+    levelId: 'dl-masters',
+  },
+];
 export const saveBackground = vi.fn();
 
 /** The catalog topics (ids for the fixture's slugs) and countries. */
@@ -269,6 +309,16 @@ const profileItemsMock = () => ({
 });
 
 const catalogMock = () => ({
+  useDegreeLevels: () => ({
+    levels: [
+      { id: 'dl-undergraduate', code: 'undergraduate' },
+      { id: 'dl-masters', code: 'masters' },
+      { id: 'dl-mba', code: 'mba' },
+      { id: 'dl-phd', code: 'phd' },
+    ],
+    status: 'ready',
+    retry: vi.fn(),
+  }),
   useCountries: () => ({ countries: catalogCountries, status: 'ready', retry: vi.fn() }),
   useLanguageSearch: () => ({
     results: [
@@ -289,6 +339,51 @@ const topicsMock = () => ({
   }),
 });
 
+const profileEntriesMock = async () => ({
+  // The pure body builders stay real.
+  ...(await vi.importActual<object>('@/lib/api/data/profileEntries')),
+  useOwnEducation: () => ({ entries: ownEducation, status: 'ready', retry: vi.fn() }),
+  useEducationEdit: () => ({
+    addEducation: (body: unknown, done: () => void) => {
+      addEducation(body);
+      if (h.itemsOk) done();
+    },
+    editEducation: (id: string, body: unknown, done: () => void) => {
+      editEducation(id, body);
+      if (h.itemsOk) done();
+    },
+    removeEducation: (id: string, done: () => void) => {
+      removeEducation(id);
+      if (h.itemsOk) done();
+    },
+    saving: false,
+    removing: false,
+    error: h.itemsError,
+    reset: vi.fn(),
+  }),
+  useAwardEdit: () => ({
+    addAward: (v: unknown, done: () => void) => {
+      addAward(v);
+      if (h.itemsOk) done();
+    },
+    editAward: (id: string, before: unknown, after: unknown, done: () => void) => {
+      editAward(id, before, after);
+      if (h.itemsOk) done();
+    },
+    removeAward: (id: string, done: () => void) => {
+      removeAward(id);
+      if (h.itemsOk) {
+        h.onAwardRemoved?.();
+        done();
+      }
+    },
+    saving: false,
+    removing: false,
+    error: h.itemsError,
+    reset: vi.fn(),
+  }),
+});
+
 /** The mocked modules, by name; each test file registers them with vi.mock. */
 export const mocks = {
   navigation: navigationMock,
@@ -301,6 +396,7 @@ export const mocks = {
   booking: bookingMock,
   profileEdit: profileEditMock,
   profileItems: profileItemsMock,
+  profileEntries: profileEntriesMock,
   catalog: catalogMock,
   topics: topicsMock,
 };
@@ -338,6 +434,13 @@ beforeEach(() => {
   h.itemsError = null;
   h.topicsRefetchFailed = false;
   h.onBackgroundSaved = null;
+  h.onAwardRemoved = null;
+  addAward.mockReset();
+  editAward.mockReset();
+  removeAward.mockReset();
+  addEducation.mockReset();
+  editEducation.mockReset();
+  removeEducation.mockReset();
   saveTopics.mockReset();
   saveBackground.mockReset();
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({

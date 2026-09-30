@@ -74,3 +74,8 @@
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
 }
+/* The modal's field labels sit at the font's own line height, as drawn
+   (ProfileItemModal.dc.html spans): 45px from one field to the next. */
+.form label {
+  line-height: normal;
+}

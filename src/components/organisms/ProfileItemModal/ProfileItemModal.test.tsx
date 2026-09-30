@@ -179,16 +179,20 @@ describe('ProfileItemModal — topics', () => {
     expect(screen.getByText(/no topics to choose from/)).toBeInTheDocument();
   });
 
-  it('Remove (where offered) asks first', async () => {
+  it('Delete (where offered) asks first (design reply #59)', async () => {
     const onRemove = vi.fn();
     const { user } = topics({ remove: { noun: 'award', onRemove, removing: false } });
-    await user.click(screen.getByRole('button', { name: 'Remove award' }));
+    await user.click(screen.getByRole('button', { name: 'Delete award' }));
     expect(onRemove).not.toHaveBeenCalled();
-    const confirm = screen.getByRole('group', { name: 'Remove this award?' });
+    const confirm = screen.getByRole('group', { name: 'Delete this award?' });
     await user.click(within(confirm).getByRole('button', { name: 'Keep it' }));
-    expect(screen.queryByRole('group', { name: 'Remove this award?' })).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Remove award' }));
-    await user.click(screen.getByRole('button', { name: 'Remove' }));
+    expect(screen.queryByRole('group', { name: 'Delete this award?' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Delete award' }));
+    await user.click(
+      within(screen.getByRole('group', { name: 'Delete this award?' })).getByRole('button', {
+        name: 'Delete award',
+      }),
+    );
     expect(onRemove).toHaveBeenCalledTimes(1);
   });
 });
@@ -295,5 +299,197 @@ describe('ProfileItemModal — background', () => {
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     expect(onSave).not.toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe('ProfileItemModal — award', () => {
+  const award = (initial: Parameters<typeof ProfileItemModal>[0]['initial'] | null = null) => {
+    const onSave = vi.fn();
+    const onClose = vi.fn();
+    render(
+      <ProfileItemModal
+        kind="award"
+        initial={initial as never}
+        thisYear={2026}
+        saving={false}
+        error={null}
+        onSave={onSave}
+        onClose={onClose}
+        renderShell={shell}
+      />,
+    );
+    return { onSave, onClose, user: userEvent.setup() };
+  };
+  const saved = {
+    title: 'Fulbright Scholarship',
+    org: 'Stanford University',
+    year: 2022,
+    funding: 'partial' as const,
+  };
+
+  it('adds one: "Add an award", this year by default, funding optional', async () => {
+    const { user, onSave } = award();
+    expect(screen.getByRole('dialog', { name: 'Add an award' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Year' })).toHaveValue('2026');
+    await user.type(screen.getByRole('textbox', { name: 'Award name' }), ' Fulbright ');
+    await user.type(screen.getByRole('textbox', { name: 'Awarded by' }), 'Stanford');
+    await user.click(screen.getByRole('radio', { name: 'Full' }));
+    await user.click(screen.getByRole('button', { name: 'Add award' }));
+    expect(onSave).toHaveBeenCalledWith({
+      title: 'Fulbright',
+      org: 'Stanford',
+      year: 2026,
+      funding: 'full',
+    });
+  });
+
+  it('says what’s missing and focuses it', async () => {
+    const { user, onSave } = award();
+    await user.click(screen.getByRole('button', { name: 'Add award' }));
+    expect(onSave).not.toHaveBeenCalled();
+    const name = screen.getByRole('textbox', { name: 'Award name' });
+    expect(name).toHaveAccessibleDescription('Add the award’s name.');
+    expect(name).toHaveFocus();
+    expect(screen.getByRole('textbox', { name: 'Awarded by' })).toHaveAccessibleDescription(
+      'Add who awarded it.',
+    );
+  });
+
+  it('edits one: prefilled, "Not shown" clears the funding; unchanged just closes', async () => {
+    const { user, onSave, onClose } = award(saved);
+    expect(screen.getByRole('dialog', { name: 'Edit award' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Partial' })).toHaveAttribute('aria-checked', 'true');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(onClose).toHaveBeenCalled();
+    expect(onSave).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('radio', { name: 'Not shown' }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(onSave).toHaveBeenCalledWith({ ...saved, funding: null });
+  });
+
+  it('a saved award without a year keeps "No year" rather than getting one', () => {
+    award({ ...saved, year: null });
+    expect(screen.getByRole('combobox', { name: 'Year' })).toHaveValue('');
+    expect(screen.getByRole('option', { name: 'No year' })).toBeInTheDocument();
+  });
+});
+
+describe('ProfileItemModal — education', () => {
+  const education = (
+    initial: Parameters<typeof ProfileItemModal>[0]['initial'] | null = null,
+    hasOther = false,
+  ) => {
+    const onSave = vi.fn();
+    const onClose = vi.fn();
+    render(
+      <ProfileItemModal
+        kind="education"
+        editing={!!initial}
+        initial={initial as never}
+        thisYear={2026}
+        hasOther={hasOther}
+        saving={false}
+        error={null}
+        onSave={onSave}
+        onClose={onClose}
+        renderShell={shell}
+      />,
+    );
+    return { onSave, onClose, user: userEvent.setup() };
+  };
+  const saved = {
+    school: 'Mississippi State University',
+    degree: 'PhD',
+    course: 'Sociology',
+    start: 2023,
+    end: 2027,
+    current: true,
+  };
+
+  it('adds one: current by default when no other degree is', async () => {
+    const { user, onSave } = education();
+    expect(screen.getByRole('dialog', { name: 'Add education' })).toBeInTheDocument();
+    const current = screen.getByRole('checkbox', {
+      name: 'This is my current or most recent education',
+    });
+    expect(current).toBeChecked();
+    expect(current).toHaveAccessibleDescription('Shown under your name and on your mentor card.');
+    await user.type(screen.getByRole('textbox', { name: 'School' }), ' UCL ');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Degree' }), 'MSc');
+    await user.type(screen.getByRole('textbox', { name: 'Course of study' }), 'Public Health');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Start year' }), '2024');
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'End year (or expected)' }),
+      '2025',
+    );
+    await user.click(screen.getByRole('button', { name: 'Add education' }));
+    expect(onSave).toHaveBeenCalledWith({
+      school: 'UCL',
+      degree: 'MSc',
+      course: 'Public Health',
+      start: 2024,
+      end: 2025,
+      current: true,
+    });
+  });
+
+  it('with another marked current, a new one isn’t, and ticking it says it replaces that one', async () => {
+    const { user } = education(null, true);
+    const current = screen.getByRole('checkbox', {
+      name: 'This is my current or most recent education',
+    });
+    expect(current).not.toBeChecked();
+    await user.click(current);
+    expect(current).toHaveAccessibleDescription(
+      'Shown under your name and on your mentor card. Replaces the one currently marked.',
+    );
+  });
+
+  it('says what’s missing, and an end before the start', async () => {
+    const { user, onSave } = education({ ...saved, school: '', start: 2027, end: 2023 });
+    await user.clear(screen.getByRole('textbox', { name: 'Course of study' }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByRole('textbox', { name: 'School' })).toHaveAccessibleDescription(
+      'Add your school.',
+    );
+    expect(screen.getByRole('textbox', { name: 'Course of study' })).toHaveAccessibleDescription(
+      'Add your course of study.',
+    );
+    expect(
+      screen.getByRole('combobox', { name: 'End year (or expected)' }),
+    ).toHaveAccessibleDescription('End year can’t be before the start year.');
+  });
+
+  it('edits one: prefilled; unchanged just closes; a saved degree the list lacks stays', async () => {
+    const { user, onSave, onClose } = education({ ...saved, degree: 'LLM' });
+    expect(screen.getByRole('dialog', { name: 'Edit education' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Degree' })).toHaveValue('LLM');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(onClose).toHaveBeenCalled();
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('a new one waits for the owner’s list: with another current, it starts unticked (screen test)', () => {
+    const props = {
+      kind: 'education' as const,
+      editing: false,
+      initial: null,
+      thisYear: 2026,
+      hasOther: false,
+      catalog: { status: 'loading' as const, onRetry: vi.fn() },
+      saving: false,
+      error: null,
+      onSave: vi.fn(),
+      onClose: vi.fn(),
+      renderShell: shell,
+    };
+    const { rerender } = render(<ProfileItemModal {...props} />);
+    rerender(
+      <ProfileItemModal {...props} hasOther catalog={{ status: 'ready', onRetry: vi.fn() }} />,
+    );
+    expect(
+      screen.getByRole('checkbox', { name: 'This is my current or most recent education' }),
+    ).not.toBeChecked();
   });
 });
