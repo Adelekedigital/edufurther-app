@@ -241,11 +241,13 @@ describe('MentorProfileScreen — the mentor on their own page', () => {
     expect(screen.queryByRole('button', { name: 'Change cover' })).not.toBeInTheDocument();
   });
 
-  it('tells a declined mentor their profile wasn’t approved (review of #21)', () => {
+  it('tells a declined mentor their profile wasn’t approved (review of #21; design reply #42)', () => {
     h.profile = state({ data: { ...fullProfile, owner: { approval: 'declined', listed: true } } });
     render(<MentorProfileScreen handle="gbenga" />);
     expect(
-      screen.getByText('Your profile wasn’t approved. Only you can see it.'),
+      screen.getByText(
+        'Your profile wasn’t approved, so only you can see it. Contact support to find out what to change.',
+      ),
     ).toBeInTheDocument();
   });
 

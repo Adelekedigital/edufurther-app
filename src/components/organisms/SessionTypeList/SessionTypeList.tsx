@@ -11,6 +11,8 @@ type SessionTypeListProps = {
   bookBlocked: string | null;
   /** The owner sees their offerings without Book buttons. */
   canBook: boolean;
+  /** Drawn, but can't be used (the owner's "View as mentee"). */
+  bookDisabled?: boolean;
 };
 
 /**
@@ -23,6 +25,7 @@ export function SessionTypeList({
   onBook,
   bookBlocked,
   canBook,
+  bookDisabled = false,
 }: SessionTypeListProps) {
   return (
     <ul className={styles.grid}>
@@ -51,7 +54,7 @@ export function SessionTypeList({
               {/* Repeated on every card, so outlined (CTA hierarchy). */}
               <Button
                 variant="secondary-outlined"
-                disabled={!!bookBlocked}
+                disabled={!!bookBlocked || bookDisabled}
                 onClick={() => onBook(s.id)}
               >
                 {bookBlocked ?? 'Book session'}

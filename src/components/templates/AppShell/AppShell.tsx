@@ -11,25 +11,27 @@ import { OfflineBanner } from '@/components/molecules/OfflineBanner/OfflineBanne
 import { cx } from '@/lib/utils/cx';
 import styles from './AppShell.module.css';
 
-type NavItem = { label: string; href: string; icon: IconName };
+/** Rail group: `daily` above the divider, `setup` below (design sidebar=grouped). */
+type NavItem = { label: string; href: string; icon: IconName; group: 'daily' | 'setup' };
 
-/** Mentee navigation (design AppShell role=mentee). Routes belong to their own screens. */
+/**
+ * Mentee navigation (design AppShell role=mentee). Messages is held until it's
+ * built (product 2026-09-30). Routes belong to their own screens.
+ */
 const MENTEE_NAV: NavItem[] = [
-  { label: 'Home', href: '/', icon: 'home' },
-  { label: 'Explore', href: '/explore', icon: 'explore' },
-  { label: 'Bookings', href: '/bookings', icon: 'schedule' },
-  { label: 'Messages', href: '/messages', icon: 'chat' },
-  { label: 'Settings', href: '/settings', icon: 'settings' },
+  { label: 'Home', href: '/', icon: 'home', group: 'daily' },
+  { label: 'Explore', href: '/explore', icon: 'explore', group: 'daily' },
+  { label: 'Bookings', href: '/bookings', icon: 'schedule', group: 'daily' },
+  { label: 'Settings', href: '/settings', icon: 'settings', group: 'setup' },
 ];
-/** Mentor navigation (design AppShell role=mentor, sidebar=rail, integrationIn=nav). */
+/** Mentor navigation (design AppShell role=mentor, sidebar=grouped, integrationIn=nav). */
 const MENTOR_NAV: NavItem[] = [
-  { label: 'Home', href: '/', icon: 'home' },
-  { label: 'Sessions', href: '/session-types', icon: 'event_note' },
-  { label: 'Bookings', href: '/bookings', icon: 'schedule' },
-  { label: 'Messages', href: '/messages', icon: 'chat' },
-  { label: 'Calendar', href: '/calendar', icon: 'calendar_month' },
-  { label: 'Integration', href: '/integrations', icon: 'power' },
-  { label: 'Settings', href: '/settings', icon: 'settings' },
+  { label: 'Home', href: '/', icon: 'home', group: 'daily' },
+  { label: 'Bookings', href: '/bookings', icon: 'schedule', group: 'daily' },
+  { label: 'Calendar', href: '/calendar', icon: 'calendar_month', group: 'daily' },
+  { label: 'Sessions', href: '/session-types', icon: 'event_note', group: 'setup' },
+  { label: 'Integration', href: '/integrations', icon: 'power', group: 'setup' },
+  { label: 'Settings', href: '/settings', icon: 'settings', group: 'setup' },
 ];
 /** `unknown`: signed in, role not known yet — no items rather than the wrong set. */
 const NAV = { mentee: MENTEE_NAV, mentor: MENTOR_NAV, unknown: [] as NavItem[] };
@@ -69,7 +71,7 @@ type AppShellProps = {
 };
 
 /**
- * App chrome: header, side rail (≥768px) or bottom tabs (<768px), offline banner.
+ * App chrome: grouped side rail (≥768px) or header + bottom tabs (<768px), offline banner.
  * Not yet here: notifications (no backend) — see design-divergence.md.
  */
 export function AppShell({
@@ -90,6 +92,8 @@ export function AppShell({
   const tabs = primary.flatMap((l) => items.filter((n) => n.label === l));
   const extra = items.filter((n) => !primary.includes(n.label));
   const moreActive = extra.some((n) => n.label === active);
+  const daily = items.filter((n) => n.group === 'daily');
+  const setup = items.filter((n) => n.group === 'setup');
 
   useEffect(() => {
     if (!moreOpen) return;
@@ -108,8 +112,16 @@ export function AppShell({
       <a href="#main" className={styles.skip}>
         Skip to content
       </a>
-      {offline && <OfflineBanner />}
-      <header className={styles.header}>
+      {/* Desktop members get the offline strip over the content instead (below),
+          so it never pushes the full-height rail's avatar off screen. */}
+      {offline && (
+        <div className={cx(member && styles.offlineTop)}>
+          <OfflineBanner />
+        </div>
+      )}
+      {/* Desktop members get the brand in the rail and a bar over the content
+          (design logoIn=sidebar); guests, the pending state and phones keep this. */}
+      <header className={cx(styles.header, member && styles.headerMember)}>
         <Link href="/" prefetch={PREFETCH} className={styles.logo} aria-label="EduFurther home">
           <Image src="/brand/edufurther-logo-full.png" alt="" width={180} height={24} priority />
         </Link>
@@ -128,35 +140,35 @@ export function AppShell({
       <div className={styles.body}>
         {member && (
           <nav aria-label="Main" className={styles.rail}>
-            <div className={styles.railInner}>
-              <ul className={styles.railList}>
-                {items.map((n) => (
-                  <li key={n.href}>
-                    <Link
-                      href={n.href}
-                      prefetch={PREFETCH}
-                      className={styles.railItem}
-                      aria-current={n.label === active ? 'page' : undefined}
-                    >
-                      <span className={styles.railIcon}>
-                        <Icon name={n.icon} size={20} />
-                      </span>
-                      {n.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-              {account && (
-                <div className={styles.railAccount}>
-                  <AccountMenu initial={account.initial} items={account.items} />
-                </div>
+            <Link
+              href="/"
+              prefetch={PREFETCH}
+              className={styles.railLogo}
+              aria-label="EduFurther home"
+            >
+              <Image src="/brand/edufurther-mark-swoosh.png" alt="" width={48} height={20} />
+            </Link>
+            <div className={styles.railScroll}>
+              <RailList items={daily} active={active} />
+              {daily.length > 0 && setup.length > 0 && (
+                <span className={styles.railDivider} aria-hidden />
               )}
+              <RailList items={setup} active={active} />
             </div>
+            {account && <AccountMenu initial={account.initial} items={account.items} />}
           </nav>
         )}
-        <main id="main" className={cx(styles.main, guest && styles.mainGuest)}>
-          {children}
-        </main>
+        <div className={styles.column}>
+          {member && <div className={styles.contentBar} />}
+          {member && offline && (
+            <div className={styles.offlineColumn}>
+              <OfflineBanner />
+            </div>
+          )}
+          <main id="main" className={cx(styles.main, guest && styles.mainGuest)}>
+            {children}
+          </main>
+        </div>
       </div>
 
       {guest && (
@@ -277,5 +289,28 @@ export function AppShell({
         </>
       )}
     </div>
+  );
+}
+
+function RailList({ items, active }: { items: NavItem[]; active: string }) {
+  if (items.length === 0) return null;
+  return (
+    <ul className={styles.railList}>
+      {items.map((n) => (
+        <li key={n.href}>
+          <Link
+            href={n.href}
+            prefetch={PREFETCH}
+            className={styles.railItem}
+            aria-current={n.label === active ? 'page' : undefined}
+          >
+            <span className={styles.railIcon}>
+              <Icon name={n.icon} size={20} />
+            </span>
+            {n.label}
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }

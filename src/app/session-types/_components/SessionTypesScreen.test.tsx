@@ -244,23 +244,23 @@ describe('SessionTypesScreen', () => {
     expect(setFeatured).toHaveBeenCalledWith('a', false);
   });
 
-  it('a hidden type isn’t sent to be featured: the row says to show it first', async () => {
+  it('a hidden type isn’t offered "Mark as featured"; a live one is', async () => {
     viewer = mentor;
     list = idle({
       data: [
         { ...TYPE, isLive: false },
-        { ...TYPE, id: 'b', name: 'Visa prep', isFeatured: true },
+        { ...TYPE, id: 'b', name: 'Visa prep' },
       ],
     });
     const user = userEvent.setup({ delay: null });
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
-    await user.click(screen.getByRole('menuitem', { name: /Mark as featured/ }));
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('menuitem', { name: /featured/ })).toBeNull();
+    expect(screen.getByRole('menuitem', { name: /Delete/ })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    await user.click(screen.getByRole('button', { name: 'More actions for Visa prep' }));
+    expect(screen.getByRole('menuitem', { name: /Mark as featured/ })).toBeInTheDocument();
     expect(setFeatured).not.toHaveBeenCalled();
-    expect(sop()).toHaveTextContent(
-      'Show it to mentees first: a hidden session type can’t be featured.',
-    );
   });
 
   it('a failed feature says why by what went wrong, not always "hidden"', () => {

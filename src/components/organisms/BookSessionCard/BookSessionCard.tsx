@@ -11,6 +11,8 @@ type BookSessionCardProps = {
   /** Switches to the Sessions tab. */
   onCompare: () => void;
   bookBlocked: string | null;
+  /** Drawn, but can't be used (the owner's "View as mentee"). */
+  bookDisabled?: boolean;
 };
 
 /**
@@ -25,6 +27,7 @@ export function BookSessionCard({
   onBook,
   onCompare,
   bookBlocked,
+  bookDisabled = false,
 }: BookSessionCardProps) {
   if (sessionTypes.length === 0) return null;
 
@@ -55,7 +58,7 @@ export function BookSessionCard({
           <Button
             variant="secondary-outlined"
             fullWidth
-            disabled={!!bookBlocked}
+            disabled={!!bookBlocked || bookDisabled}
             onClick={() => onBook(s.id)}
           >
             {bookBlocked ?? 'Book this session'}
@@ -89,7 +92,7 @@ export function BookSessionCard({
               </span>
               <Button
                 variant="secondary-outlined"
-                disabled={!!bookBlocked}
+                disabled={!!bookBlocked || bookDisabled}
                 onClick={() => onBook(s.id)}
               >
                 Book

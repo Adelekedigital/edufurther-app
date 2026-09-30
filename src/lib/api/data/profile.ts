@@ -6,6 +6,8 @@ import { coverArt, coverKey } from '@/lib/utils/cover';
 import { STAGE_LABELS } from '@/lib/utils/sessionTypeDraft';
 import { safeSocialUrl } from '@/lib/utils/socialUrl';
 import type {
+  Completeness,
+  CompletenessCode,
   Mentor,
   MentorProfile,
   ReviewSummary,
@@ -170,7 +172,7 @@ export function toMentorProfile(r: MentorPublicRead): MentorProfile {
   // (mentor-profile reply #1), so their presence is what says "this is you".
   const isOwner = 'approval_status' in r || 'listing_status' in r;
 
-  return {
+  const profile: MentorProfile = {
     mentor,
     names: { first, last },
     // Backend #301: approved, listed and bookable now. Missing reads as true.
@@ -206,6 +208,34 @@ export function toMentorProfile(r: MentorPublicRead): MentorProfile {
           setupNeeded: r.setup_needed ?? [],
         }
       : null,
+  };
+  if (profile.owner) profile.owner.completeness = toCompleteness(r);
+  return profile;
+}
+
+const COMPLETENESS_CODES: readonly string[] = [
+  'session_type',
+  'weekly_hours',
+  'photo',
+  'headline',
+  'about',
+  'topics',
+  'background',
+  'education',
+  'award',
+] satisfies CompletenessCode[];
+
+/**
+ * Profile strength (Mentor Profile.dc.html `canEdit` aside): the owner-only
+ * `completeness` (backend #317; the backend owns the rule and the order).
+ * Codes we don't know are skipped: more may come. None sent, no card.
+ */
+export function toCompleteness(r: MentorPublicRead): Completeness | undefined {
+  const c = r.completeness;
+  if (!c) return undefined;
+  return {
+    percent: Math.max(0, Math.min(100, Math.round(c.percent))),
+    missing: c.missing.filter((m): m is CompletenessCode => COMPLETENESS_CODES.includes(m)),
   };
 }
 

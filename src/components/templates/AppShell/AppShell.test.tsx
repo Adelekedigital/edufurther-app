@@ -9,15 +9,69 @@ const hrefs = (i: 0 | 1) =>
     .getAllByRole('link')
     .map((a) => a.getAttribute('href'));
 
+// Rail items per group (daily, then set up), by href.
+const groups = (i: 0 | 1) =>
+  nav(i)
+    .getAllByRole('list')
+    .map((ul) =>
+      within(ul)
+        .getAllByRole('link')
+        .map((a) => a.getAttribute('href')),
+    );
+
 describe('AppShell navigation', () => {
-  it('mentees get Home, Explore, Bookings, Messages, Settings (the default)', () => {
+  it('mentees get Home, Explore, Bookings | Settings (the default)', () => {
     render(
       <AppShell active="Explore" chrome="member" offline={false}>
         <p>Page</p>
       </AppShell>,
     );
-    expect(hrefs(0)).toEqual(['/', '/explore', '/bookings', '/messages', '/settings']);
+    expect(hrefs(0)).toEqual(['/', '/', '/explore', '/bookings', '/settings']);
+    expect(groups(0)).toEqual([['/', '/explore', '/bookings'], ['/settings']]);
+    // A divider sits between the two groups, and only there.
+    const [daily, setup] = nav(0).getAllByRole('list');
+    expect(daily!.nextElementSibling).toHaveAttribute('aria-hidden');
+    expect(daily!.nextElementSibling!.nextElementSibling).toBe(setup);
     expect(hrefs(1)).toEqual(['/', '/explore', '/bookings']);
+  });
+
+  it('Messages is not shown anywhere until it is built (product, 2026-09-30)', async () => {
+    for (const role of ['mentee', 'mentor'] as const) {
+      const { unmount } = render(
+        <AppShell active="Home" nav={role} chrome="member" offline={false}>
+          <p>Page</p>
+        </AppShell>,
+      );
+      await userEvent.click(nav(1).getByRole('button', { name: 'More' }));
+      expect(screen.queryByRole('link', { name: 'Messages' })).toBeNull();
+      unmount();
+    }
+  });
+
+  it('members get the brand mark at the top of the rail; guests keep the header logo', () => {
+    const { unmount } = render(
+      <AppShell active="Home" nav="mentor" chrome="member" offline={false}>
+        <p>Page</p>
+      </AppShell>,
+    );
+    const home = nav(0).getByRole('link', { name: 'EduFurther home' });
+    expect(home).toHaveAttribute('href', '/');
+    // The swoosh mark, not the wordmark, at the design's 48px.
+    const mark = home.querySelector('img')!;
+    expect(decodeURIComponent(mark.getAttribute('src')!)).toContain(
+      '/brand/edufurther-mark-swoosh.png',
+    );
+    expect(mark).toHaveAttribute('width', '48');
+    unmount();
+    render(
+      <AppShell active="Explore" chrome="guest" offline={false}>
+        <p>Page</p>
+      </AppShell>,
+    );
+    expect(screen.queryByRole('navigation', { name: 'Main' })).toBeNull();
+    expect(
+      within(screen.getByRole('banner')).getByRole('link', { name: 'EduFurther home' }),
+    ).toBeInTheDocument();
   });
 
   it('mentors get the mentor nav, with Sessions linking to session types', () => {
@@ -26,14 +80,9 @@ describe('AppShell navigation', () => {
         <p>Page</p>
       </AppShell>,
     );
-    expect(hrefs(0)).toEqual([
-      '/',
-      '/session-types',
-      '/bookings',
-      '/messages',
-      '/calendar',
-      '/integrations',
-      '/settings',
+    expect(groups(0)).toEqual([
+      ['/', '/bookings', '/calendar'],
+      ['/session-types', '/integrations', '/settings'],
     ]);
     expect(nav(0).getByRole('link', { name: 'Sessions' })).toHaveAttribute('aria-current', 'page');
   });
@@ -71,7 +120,8 @@ describe('AppShell navigation', () => {
         <p>Page</p>
       </AppShell>,
     );
-    for (const i of [0, 1] as const) expect(nav(i).queryAllByRole('link')).toHaveLength(0);
+    expect(nav(0).queryAllByRole('list')).toHaveLength(0);
+    expect(nav(1).queryAllByRole('link')).toHaveLength(0);
     expect(screen.queryByRole('button', { name: 'More' })).toBeNull();
   });
 
@@ -105,5 +155,33 @@ describe('AppShell navigation', () => {
     expect(profile).not.toHaveAttribute('target');
     const matches = screen.getAllByRole('link', { name: /Find my mentor matches/ }).at(-1)!;
     expect(matches).toHaveAttribute('target', '_blank');
+  });
+
+  it('offline: members get the strip over the content column, so the rail keeps its full height; guests get it at the top', () => {
+    const { unmount } = render(
+      <AppShell active="Home" nav="mentor" chrome="member" offline>
+        <p>Page</p>
+      </AppShell>,
+    );
+    const main = screen.getByRole('main');
+    const inColumn = screen
+      .getAllByRole('status')
+      .filter((el) => el.parentElement?.parentElement === main.parentElement);
+    expect(inColumn).toHaveLength(1);
+    expect(screen.getAllByRole('navigation', { name: 'Main' })[0]).not.toContainElement(
+      inColumn[0]!,
+    );
+    unmount();
+    render(
+      <AppShell active="Explore" chrome="guest" offline>
+        <p>Page</p>
+      </AppShell>,
+    );
+    // One strip, above the header.
+    const [strip] = screen.getAllByRole('status');
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+    expect(strip!.compareDocumentPosition(screen.getByRole('banner'))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
   });
 });
