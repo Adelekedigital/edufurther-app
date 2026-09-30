@@ -106,6 +106,7 @@ export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
       'An open conversation about your study-abroad plans: schools, funding and next steps.',
     duration_minutes: 60,
     min_notice_minutes: 120,
+    booking_window_days: 56,
     service_offering: null,
     ...NO_TOPICS,
     application_stage: null,
@@ -118,6 +119,7 @@ export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
     description: 'We go through your CV line by line and fix what admissions teams skim past.',
     duration_minutes: 45,
     min_notice_minutes: 1440,
+    booking_window_days: 56,
     service_offering: null,
     ...NO_TOPICS,
     // Every question kind the booking step renders (backend #268, #12, #282).
