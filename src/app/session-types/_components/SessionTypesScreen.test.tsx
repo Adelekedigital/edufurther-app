@@ -149,7 +149,7 @@ describe('SessionTypesScreen', () => {
 
   it('delete confirms in a danger modal first', async () => {
     viewer = mentor;
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
@@ -164,7 +164,7 @@ describe('SessionTypesScreen', () => {
     list = idle({
       data: [{ ...TYPE, booked: { count: 2, lastEndsAt: '2026-10-14T18:00:00Z' } }],
     });
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
@@ -178,7 +178,7 @@ describe('SessionTypesScreen', () => {
 
   it('with nothing booked, Delete says it can’t be undone and deletes', async () => {
     viewer = mentor;
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
@@ -200,7 +200,7 @@ describe('SessionTypesScreen', () => {
         },
       ],
     });
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<SessionTypesScreen />);
     const row = screen.getByRole('article', { name: 'SOP draft review' });
     expect(row).toHaveTextContent('Scheduled for deletion');
@@ -226,7 +226,7 @@ describe('SessionTypesScreen', () => {
         { ...TYPE, id: 'b', name: 'Visa prep' },
       ],
     });
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<SessionTypesScreen />);
     expect(screen.getByRole('article', { name: 'SOP draft review' })).toHaveTextContent('Featured');
     await user.click(screen.getByRole('button', { name: 'More actions for Visa prep' }));
@@ -249,7 +249,7 @@ describe('SessionTypesScreen', () => {
         { ...TYPE, id: 'b', name: 'Visa prep', isFeatured: true },
       ],
     });
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Mark as featured/ }));
@@ -283,7 +283,7 @@ describe('SessionTypesScreen', () => {
       message: 'We couldn’t delete it. Something went wrong. Try again.',
     };
     remove.mockRejectedValue(deleteErr);
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
@@ -302,7 +302,7 @@ describe('SessionTypesScreen', () => {
       deletesAfter: '2026-10-14T12:00:00Z',
       bookedCount: 2,
     });
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<SessionTypesScreen />);
     act(() => failFeature('a', true, { kind: 'validation', message: '' }));
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
@@ -317,7 +317,7 @@ describe('SessionTypesScreen', () => {
   it('after a delete, focus goes to the next row’s “⋯”, or to Create when none is left', async () => {
     viewer = mentor;
     list = idle({ data: [TYPE, { ...TYPE, id: 'b', name: 'Visa prep' }] });
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const { rerender } = render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
@@ -352,7 +352,7 @@ describe('SessionTypesScreen', () => {
       data: [{ ...TYPE, isLive: false, pendingDeletion: { deletesAfter: null, bookedCount: 1 } }],
     });
     restore.mockImplementation((id: string) => restoreDone(id, 'kept'));
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const { rerender } = render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'Keep it: SOP draft review' }));
     expect(announced()).toContain('Kept. “SOP draft review” is hidden until you show it.');
@@ -375,7 +375,7 @@ describe('SessionTypesScreen', () => {
       ],
     });
     restorePending = ['a'];
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'Keep it: Visa prep' }));
     expect(restore).toHaveBeenCalledWith('b');
@@ -390,7 +390,7 @@ describe('SessionTypesScreen', () => {
         { ...TYPE, id: 'b', name: 'Visa prep', isLive: false, pendingDeletion: pending },
       ],
     });
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const { rerender } = render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'Keep it: SOP draft review' }));
     await user.click(screen.getByRole('button', { name: 'Keep it: Visa prep' }));
@@ -429,7 +429,7 @@ describe('SessionTypesScreen', () => {
   it('the switch asks first: showing, hiding, and hiding the last visible one (design update)', async () => {
     viewer = mentor;
     list = idle({ data: [TYPE, { ...TYPE, id: 'b', name: 'Visa prep', isLive: false }] });
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('switch', { name: 'Visible to mentees: SOP draft review' }));
     // The only visible one: hiding it says what that means for the profile.
@@ -451,7 +451,7 @@ describe('SessionTypesScreen', () => {
 
   it('Duplicate copies with a name not already used, and says what didn’t come across', async () => {
     viewer = mentor;
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     duplicate.mockResolvedValueOnce({
       id: 'new',
       name: 'SOP draft review (copy)',
@@ -471,7 +471,7 @@ describe('SessionTypesScreen', () => {
   });
 
   it('Edit goes to the edit screen; the share link books this type on the profile', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     viewer = mentor;
     const write = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', {
@@ -489,7 +489,7 @@ describe('SessionTypesScreen', () => {
 
   it('Duplicate says it’s copying, then that the copy is hidden; a refusal is said on the row (review of #74)', async () => {
     viewer = mentor;
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     let finish: (v: unknown) => void = () => {};
     duplicate.mockImplementationOnce(() => new Promise((r) => (finish = r)));
     render(<SessionTypesScreen />);
@@ -518,7 +518,7 @@ describe('SessionTypesScreen', () => {
   it('Duplicate waits for the topics, so a copy never loses them', async () => {
     viewer = mentor;
     topicsLoading = true;
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Duplicate/ }));
@@ -537,7 +537,7 @@ describe('SessionTypesScreen', () => {
 
   it('after a duplicate’s note, a failed switch on that row still reads as an error (review r2 of #74)', async () => {
     viewer = mentor;
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     duplicate.mockResolvedValueOnce({ id: 'n', name: 'SOP draft review (copy)', failed: [] });
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));

@@ -353,6 +353,39 @@ describe('row writes (review r2 of #80)', () => {
     ]);
   });
 
+  it('a callback that changed while an earlier restore was waiting: the latest one is called', async () => {
+    list = [
+      { ...row('x', false), pending_deletion: BOOKED },
+      { ...row('y', false), pending_deletion: BOOKED },
+    ];
+    const first = vi.fn();
+    const latest = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ onDone }) => ({
+        list: useOwnSessionTypes(true),
+        r: useRestoreSessionType(vi.fn(), onDone),
+      }),
+      { wrapper: setup(), initialProps: { onDone: first } },
+    );
+    await waitFor(() => expect(result.current.list.data).toHaveLength(2));
+    const answers: Record<string, () => void> = {};
+    POST.mockImplementation(
+      (_p: string, o: { params: { path: { session_type_id: string } } }) =>
+        new Promise((res) => {
+          const id = o.params.path.session_type_id;
+          answers[id] = () => res(ok(row(id, false)));
+        }),
+    );
+    // x is superseded by y: a mutation keeps the options of the render that started it.
+    act(() => result.current.r.restore('x'));
+    act(() => result.current.r.restore('y'));
+    await waitFor(() => expect(POST).toHaveBeenCalledTimes(2));
+    rerender({ onDone: latest });
+    await act(async () => answers.x!());
+    await waitFor(() => expect(latest).toHaveBeenCalledWith('x', 'kept'));
+    expect(first).not.toHaveBeenCalled();
+  });
+
   it('two writes settling in the same tick still refetch the list once', async () => {
     const { result } = renderHook(
       () => ({

@@ -121,7 +121,7 @@ describe('EditSessionTypeScreen', () => {
   });
 
   it('saves only through the save hook, then says "Changes saved"', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<EditSessionTypeScreen id="st1" />);
     const name = screen.getByRole('textbox', { name: 'Session name' });
     await user.clear(name);
@@ -140,7 +140,7 @@ describe('EditSessionTypeScreen', () => {
   });
 
   it('a partial save says what didn’t save, stays, and Save tries again', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     save.mockResolvedValueOnce({
       failed: ['questions'],
       newIds: {},
@@ -163,7 +163,7 @@ describe('EditSessionTypeScreen', () => {
   });
 
   it('a hidden type isn’t "live on your profile"', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     savedMock = ready({ ...SAVED, read: { ...SAVED.read, is_active: false } });
     render(<EditSessionTypeScreen id="st1" />);
     await user.click(screen.getByRole('button', { name: /^Review/ }));
@@ -176,7 +176,7 @@ describe('EditSessionTypeScreen', () => {
   });
 
   it('leaving with changes asks "Discard your changes?"', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<EditSessionTypeScreen id="st1" />);
     await user.type(screen.getByRole('textbox', { name: 'Session name' }), '!');
     await user.click(screen.getByRole('button', { name: 'Back to session types' }));
@@ -202,7 +202,7 @@ describe('EditSessionTypeScreen', () => {
   });
 
   it('a load error offers Try again; loading shows the skeleton', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const retry = vi.fn();
     savedMock = { data: null, isLoading: false, error: { kind: 'server', message: 'x' }, retry };
     const { unmount } = render(<EditSessionTypeScreen id="st1" />);
@@ -218,7 +218,7 @@ describe('EditSessionTypeScreen', () => {
   });
 
   it('a retry after a partial save carries the new ids and what saved (review of #67)', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const savedAfter = {
       questions: [
         ...SAVED.questions,
@@ -256,7 +256,7 @@ describe('EditSessionTypeScreen', () => {
   });
 
   it('an answered option the server wouldn’t change is said on that question', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     save.mockResolvedValueOnce({
       failed: ['questions'],
       newIds: {},
@@ -282,7 +282,7 @@ describe('EditSessionTypeScreen', () => {
   });
 
   it('a refusal alongside another failed question still says "Save again" (review r3 of #67)', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     save.mockResolvedValueOnce({
       failed: ['questions'],
       newIds: {},

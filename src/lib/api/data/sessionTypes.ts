@@ -20,6 +20,7 @@ import {
   type toCreateBody,
   type toWindows,
 } from '@/lib/utils/sessionTypeDraft';
+import { useLatest } from '@/lib/utils/useLatest';
 import { keyForAttempt } from './booking';
 import { ApiError, apiError, normaliseError } from './errors';
 import { api } from './http';
@@ -166,6 +167,7 @@ const RESTORE = [...ROW_WRITE, 'restore'] as const;
 const ROW_WRITE_OPTS = { networkMode: 'always' } as const;
 
 export function useSetLive(onFailed: (id: string, live: boolean) => void) {
+  const failed = useLatest(onFailed);
   const qc = useQueryClient();
   const who = useWho();
   const key = keys.sessionTypes.own(who);
@@ -191,7 +193,7 @@ export function useSetLive(onFailed: (id: string, live: boolean) => void) {
       qc.setQueryData<OwnSessionType[]>(key, (list) =>
         list?.map((t) => (t.id === id ? { ...t, isLive: !live } : t)),
       );
-      onFailed(id, live);
+      failed.current(id, live);
     },
     onSettled: () => settleRowWrite(qc),
   });
@@ -267,6 +269,7 @@ export function useRestoreSessionType(
   onFailed: (id: string, error: AppError) => void,
   onDone: (id: string, result: 'kept' | 'gone') => void,
 ) {
+  const cb = useLatest({ onFailed, onDone });
   const qc = useQueryClient();
   const who = useWho();
   const key = keys.sessionTypes.own(who);
@@ -292,9 +295,9 @@ export function useRestoreSessionType(
           ? list?.filter((t) => t.id !== id)
           : list?.map((t) => (t.id === id ? { ...t, pendingDeletion: null, isLive: false } : t)),
       );
-      onDone(id, r);
+      cb.current.onDone(id, r);
     },
-    onError: (e, id) => onFailed(id, e),
+    onError: (e, id) => cb.current.onFailed(id, e),
     onSettled: () => settleRowWrite(qc),
   });
   // useMutation tracks only its latest call: read every restore still pending.
@@ -312,6 +315,7 @@ export function useRestoreSessionType(
  * back if refused (a hidden or scheduled type: 422 /is_featured).
  */
 export function useSetFeatured(onFailed: (id: string, featured: boolean, error: AppError) => void) {
+  const failed = useLatest(onFailed);
   const qc = useQueryClient();
   const who = useWho();
   const key = keys.sessionTypes.own(who);
@@ -346,7 +350,7 @@ export function useSetFeatured(onFailed: (id: string, featured: boolean, error: 
         qc.setQueryData<OwnSessionType[]>(key, (list) =>
           list?.map((t) => ({ ...t, isFeatured: ctx.wasFeatured.includes(t.id) })),
         );
-      onFailed(id, featured, normaliseError(e));
+      failed.current(id, featured, normaliseError(e));
     },
     onSettled: () => settleRowWrite(qc),
   });
