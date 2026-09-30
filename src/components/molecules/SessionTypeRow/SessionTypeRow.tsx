@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef } from 'react';
 import { cx } from '@/lib/utils/cx';
+import { formatShortDate } from '@/lib/utils/format';
 import { Badge } from '@/components/atoms/Badge/Badge';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Switch } from '@/components/atoms/Switch/Switch';
@@ -187,9 +188,7 @@ export function SessionTypeRow({
 /** Design `pendingNote`: "Hidden. Deleted after its last booked session on Oct 14. The 2 booked sessions go ahead." */
 export function pendingNote(p: { deletesAfter: string | null; bookedCount: number }): string {
   const n = p.bookedCount;
-  const when = p.deletesAfter
-    ? ` on ${new Date(p.deletesAfter).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-    : '';
+  const when = p.deletesAfter ? ` on ${formatShortDate(p.deletesAfter)}` : '';
   // No booked session left: it goes at the next hourly run.
   if (!n) return 'Hidden. Deleted within the hour.';
   return `Hidden. Deleted after its last booked session${when}. The ${n} booked session${n === 1 ? ' goes' : 's go'} ahead.`;

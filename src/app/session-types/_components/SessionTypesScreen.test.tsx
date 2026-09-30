@@ -39,6 +39,7 @@ const TYPE: OwnSessionType = {
   durationMin: 60,
   noticeMin: 1440,
   isLive: true,
+  stages: [],
   topics: [],
   icon: 'video_call',
   iconChoice: null,

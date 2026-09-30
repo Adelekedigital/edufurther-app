@@ -10,7 +10,13 @@ import {
 } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import type { AppError, Remote } from '@/types/mentor';
-import type { DeleteError, DeleteResult, OwnSessionType, SessionIcon } from '@/types/sessionType';
+import type {
+  ApplicationStage,
+  DeleteError,
+  DeleteResult,
+  OwnSessionType,
+  SessionIcon,
+} from '@/types/sessionType';
 import {
   copyForField,
   fieldForPointer,
@@ -52,6 +58,18 @@ export function autoIcon(topicCodes: readonly (string | null | undefined)[]): Se
   return TOPIC_ICON[first] ?? 'video_call';
 }
 
+/**
+ * The stages a session type is aimed at, in the mentor's order; `[]` = any
+ * stage (then the old field isn't read). The single `application_stage` is the
+ * deprecated form, read while a response still lacks the list (backend round 3).
+ */
+export function stagesOf(r: {
+  application_stages?: ApplicationStage[] | null;
+  application_stage?: ApplicationStage | null;
+}): ApplicationStage[] {
+  return r.application_stages ?? (r.application_stage ? [r.application_stage] : []);
+}
+
 export function toOwnSessionType(
   r: OwnSessionTypeRead,
   questionCount: number | null,
@@ -70,6 +88,7 @@ export function toOwnSessionType(
     durationMin: r.duration_minutes,
     noticeMin: r.min_notice_minutes,
     isLive: r.is_active,
+    stages: stagesOf(r),
     topics,
     iconChoice: r.icon ?? null,
     icon: r.icon ?? autoIcon(topics.map((t) => t.code)),
@@ -142,9 +161,10 @@ export function useOwnSessionTypes(enabled: boolean): Remote<OwnSessionType[]> {
 /**
  * Every write to a row shares one key, so the list is refetched once, after
  * the last one settles: a refetch while another write is pending could return
- * its old state and flicker the row back (review of #80).
+ * its old state and flicker the row back (review of #80). A write from another
+ * screen (the profile's quick edits) joins it through `rowWrite`.
  */
-const ROW_WRITE = ['sessionTypes', 'rowWrite'] as const;
+export const ROW_WRITE = ['sessionTypes', 'rowWrite'] as const;
 // A real setTimeout: a test with fake timers must advance them to see the refetch.
 const settling = new WeakSet<QueryClient>();
 function settleRowWrite(qc: QueryClient) {
@@ -163,8 +183,18 @@ function settleRowWrite(qc: QueryClient) {
 }
 /** Restores in flight, by row, so each "Keep it" waits on its own. */
 const RESTORE = [...ROW_WRITE, 'restore'] as const;
-// Offline, fail at once (our copy says so) rather than pause and send later.
-const ROW_WRITE_OPTS = { networkMode: 'always' } as const;
+/**
+ * Everything a row write needs, in one piece so none is forgotten: the shared
+ * key, failing at once offline (our copy says so) rather than pausing (a paused
+ * write would count as pending and hold every refetch back), and the settle.
+ */
+export function rowWrite(qc: QueryClient, mutationKey: readonly string[] = ROW_WRITE) {
+  return {
+    mutationKey,
+    networkMode: 'always' as const,
+    onSettled: () => settleRowWrite(qc),
+  };
+}
 
 /**
  * A refused write (422) may be a window above a platform cap lowered since the
@@ -180,8 +210,7 @@ export function useSetLive(onFailed: (id: string, live: boolean) => void) {
   const who = useWho();
   const key = keys.sessionTypes.own(who);
   const mutation = useMutation({
-    mutationKey: ROW_WRITE,
-    ...ROW_WRITE_OPTS,
+    ...rowWrite(qc),
     mutationFn: async ({ id, live }: { id: string; live: boolean }) => {
       const { data, error, response } = await api.PATCH(
         '/api/v1/me/session-types/{session_type_id}',
@@ -203,7 +232,6 @@ export function useSetLive(onFailed: (id: string, live: boolean) => void) {
       );
       failed.current(id, live);
     },
-    onSettled: () => settleRowWrite(qc),
   });
   return (id: string, live: boolean) => mutation.mutate({ id, live });
 }
@@ -217,8 +245,7 @@ export function useDeleteSessionType() {
   const qc = useQueryClient();
   const who = useWho();
   const mutation = useMutation<DeleteResult, DeleteError, string>({
-    mutationKey: ROW_WRITE,
-    ...ROW_WRITE_OPTS,
+    ...rowWrite(qc),
     mutationFn: async (id) => {
       let result;
       try {
@@ -259,7 +286,6 @@ export function useDeleteSessionType() {
             ),
       );
     },
-    onSettled: () => settleRowWrite(qc),
   });
   return {
     remove: mutation.mutateAsync,
@@ -282,8 +308,7 @@ export function useRestoreSessionType(
   const who = useWho();
   const key = keys.sessionTypes.own(who);
   const mutation = useMutation<'kept' | 'gone', AppError, string>({
-    mutationKey: RESTORE,
-    ...ROW_WRITE_OPTS,
+    ...rowWrite(qc, RESTORE),
     mutationFn: async (id) => {
       const r = await api
         .POST('/api/v1/me/session-types/{session_type_id}/restore', {
@@ -306,7 +331,6 @@ export function useRestoreSessionType(
       cb.current.onDone(id, r);
     },
     onError: (e, id) => cb.current.onFailed(id, e),
-    onSettled: () => settleRowWrite(qc),
   });
   // useMutation tracks only its latest call: read every restore still pending.
   const pendingIds = useMutationState({
@@ -328,8 +352,7 @@ export function useSetFeatured(onFailed: (id: string, featured: boolean, error: 
   const who = useWho();
   const key = keys.sessionTypes.own(who);
   const mutation = useMutation({
-    mutationKey: ROW_WRITE,
-    ...ROW_WRITE_OPTS,
+    ...rowWrite(qc),
     mutationFn: async ({ id, featured }: { id: string; featured: boolean }) => {
       const { data, error, response } = await api.PATCH(
         '/api/v1/me/session-types/{session_type_id}',
@@ -360,7 +383,6 @@ export function useSetFeatured(onFailed: (id: string, featured: boolean, error: 
         );
       failed.current(id, featured, normaliseError(e));
     },
-    onSettled: () => settleRowWrite(qc),
   });
   return (id: string, featured: boolean) => mutation.mutate({ id, featured });
 }

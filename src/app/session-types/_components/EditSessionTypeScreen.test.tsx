@@ -41,6 +41,7 @@ vi.mock('@/lib/api/data/mentors', () => ({
 }));
 vi.mock('@/lib/api/data/sessionTypes', async (orig) => ({
   autoIcon: (await orig<typeof import('@/lib/api/data/sessionTypes')>()).autoIcon,
+  stagesOf: (await orig<typeof import('@/lib/api/data/sessionTypes')>()).stagesOf,
   useCreateSessionType: () => ({ create: vi.fn(), isPending: false, error: null, reset: vi.fn() }),
   useRetryWindows: () => ({ retry: vi.fn(), isPending: false }),
   useMentorDefaults: () => ({

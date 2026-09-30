@@ -22,6 +22,7 @@ import { keys } from './keys';
 import { deriveLabel } from './labels';
 import { nextAvailableState, toFocus, toneFor } from './mentors';
 import { sessionKey, useSession } from './session';
+import { stagesOf } from './sessionTypes';
 
 type MentorPublicRead = components['schemas']['MentorPublicRead'];
 type SessionTypeRead = components['schemas']['SessionTypeRead'];
@@ -81,8 +82,7 @@ function year(date: string | null | undefined): string | null {
  * a response still lacks the list (backend round 3).
  */
 export function stageLine(r: SessionTypeRead): string | null {
-  const stages = r.application_stages ?? (r.application_stage ? [r.application_stage] : []);
-  const labels = stages
+  const labels = stagesOf(r)
     .map((s) => (s === 'other' ? r.custom_stage_label?.trim() || null : STAGE[s]))
     .filter((l): l is string => !!l);
   return labels.length ? [...new Set(labels)].join(', ') : null;

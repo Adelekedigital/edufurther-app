@@ -11,6 +11,11 @@ export function formatRating(r: number): string {
   return r.toFixed(1);
 }
 
+/** An instant as "Oct 12", in the viewer's zone: a deletion date, said the same on the row, the confirm and the announcement. */
+export function formatShortDate(isoInstant: string): string {
+  return new Date(isoInstant).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 /**
  * A calendar date (YYYY-MM-DD, already in the viewer's zone — see
  * utils/slots.ts) as "Mon" / "Sep 28". Formatted in UTC on purpose: the date is
