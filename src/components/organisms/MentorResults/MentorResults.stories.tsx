@@ -26,6 +26,7 @@ export const sampleMentors: Mentor[] = [
     offer: 'free',
     nextAvailableAt: soon,
     nextAvailableState: 'open',
+    takingBookings: true,
     topics: [
       { slug: 'a', label: 'Scholarships & funding' },
       { slug: 'b', label: 'Application documents' },
@@ -49,6 +50,7 @@ export const sampleMentors: Mentor[] = [
     offer: 'free',
     nextAvailableAt: soon,
     nextAvailableState: 'open',
+    takingBookings: true,
     topics: [{ slug: 'b', label: 'Application documents' }],
   },
   {
@@ -69,6 +71,7 @@ export const sampleMentors: Mentor[] = [
     offer: 'free',
     nextAvailableAt: null,
     nextAvailableState: 'none',
+    takingBookings: true,
     topics: [{ slug: 'c', label: 'Program selection' }],
   },
   {
@@ -89,6 +92,7 @@ export const sampleMentors: Mentor[] = [
     offer: 'free',
     nextAvailableAt: soon,
     nextAvailableState: 'open',
+    takingBookings: true,
     topics: [
       { slug: 'd', label: 'Career guidance' },
       { slug: 'a', label: 'Scholarships & funding' },

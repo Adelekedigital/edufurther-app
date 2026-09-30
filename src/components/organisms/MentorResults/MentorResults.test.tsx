@@ -21,6 +21,7 @@ const mentor = (over: Partial<Mentor> = {}): Mentor => ({
   offer: 'free',
   nextAvailableAt: '2026-09-28T12:00:00Z',
   nextAvailableState: 'open',
+  takingBookings: true,
   topics: [{ slug: 'application-documents', label: 'Application documents' }],
   ...over,
 });
