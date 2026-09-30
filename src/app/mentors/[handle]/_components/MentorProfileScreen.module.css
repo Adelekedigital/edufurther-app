@@ -170,3 +170,16 @@
 .scrollTarget {
   scroll-margin-top: var(--space-6);
 }
+
+/* The row Delete's confirm (Session Types' delete pattern). */
+.confirmButtons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.confirmError {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-danger);
+}

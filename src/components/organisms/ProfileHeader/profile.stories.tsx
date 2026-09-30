@@ -144,6 +144,55 @@ export const OverviewSparse: Story = {
   ),
 };
 
+/** The owner: "Add education" / "Add award", Edit on each row, the funding badge. */
+export const OverviewOwner: Story = {
+  render: () => (
+    <div style={{ maxWidth: 640 }}>
+      <ProfileOverview
+        profile={fullProfile}
+        onEditBackground={fn()}
+        awardsEdit={{ onAdd: fn(), onEdit: fn(), onDelete: fn() }}
+        educationEdit={{ onAdd: fn(), onEdit: fn(), onDelete: fn() }}
+      />
+    </div>
+  ),
+};
+/** The owner with nothing added: an invitation in each section. */
+export const OverviewOwnerEmpty: Story = {
+  render: () => (
+    <div style={{ maxWidth: 640 }}>
+      <ProfileOverview
+        profile={{ ...newProfile, awards: [], education: [] }}
+        onEditBackground={fn()}
+        awardsEdit={{ onAdd: fn(), onEdit: fn(), onDelete: fn() }}
+        educationEdit={{ onAdd: fn(), onEdit: fn(), onDelete: fn() }}
+      />
+    </div>
+  ),
+};
+/** A long award name and "Partial funding" beside the Edit. */
+export const OverviewOwnerLongAward: Story = {
+  render: () => (
+    <div style={{ maxWidth: 640 }}>
+      <ProfileOverview
+        profile={{
+          ...fullProfile,
+          awards: [
+            {
+              ...fullProfile.awards[0]!,
+              title:
+                'Mastercard Foundation Scholars Program at the University of Edinburgh School of Social and Political Science',
+              funding: 'partial',
+            },
+          ],
+        }}
+        awardsEdit={{ onAdd: fn(), onEdit: fn(), onDelete: fn() }}
+        educationEdit={{ onAdd: fn(), onEdit: fn(), onDelete: fn() }}
+      />
+    </div>
+  ),
+};
+
 export const Sessions: Story = {
   render: () => (
     <div style={{ maxWidth: 860 }}>

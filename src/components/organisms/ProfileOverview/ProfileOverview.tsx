@@ -2,12 +2,15 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
+import { Badge } from '@/components/atoms/Badge/Badge';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import type { IconName } from '@/components/atoms/Icon/iconNames';
+import { IconButton } from '@/components/atoms/IconButton/IconButton';
 import { FactTile } from '@/components/molecules/FactTile/FactTile';
 import { IconListItem } from '@/components/molecules/IconListItem/IconListItem';
 import { SocialLink } from '@/components/molecules/SocialLink/SocialLink';
 import { cx } from '@/lib/utils/cx';
-import type { MentorProfile } from '@/types/mentor';
+import type { MentorProfile, ProfileItem } from '@/types/mentor';
 import { movedBetween } from '@/lib/utils/format';
 import styles from './ProfileOverview.module.css';
 
@@ -27,19 +30,41 @@ type ProfileOverviewProps = {
   onEditBackground?: () => void;
   /** The heading's Edit/Add, for the page to return focus to after a save. */
   backgroundEditRef?: Ref<HTMLButtonElement>;
+  /** The owner's awards: "Add award" and each row's Edit. */
+  awardsEdit?: EntryEdit;
+  /** The owner's education: "Add education" and each row's Edit. */
+  educationEdit?: EntryEdit;
+  /** Each section's "Add …", for the page to return focus to after a row is removed. */
+  awardsAddRef?: Ref<HTMLButtonElement>;
+  educationAddRef?: Ref<HTMLButtonElement>;
 };
+
+type EntryEdit = {
+  onAdd: () => void;
+  onEdit: (id: string) => void;
+  /** Delete, beside Edit on each row (product 2026-09-30: no menu, no delete in the form). */
+  onDelete: (id: string) => void;
+};
+
+/** Mentor Profile.dc.html award badges: only what the mentor said (backend). */
+const FUNDING_BADGE = { full: 'Fully funded', partial: 'Partial funding' } as const;
 
 /**
  * The Overview tab (Mentor Profile.dc.html): About, social links, Education,
  * Scholarships and awards, Background. A section with nothing in it is left
- * out, as the design does for a viewer who can't edit. Awards carry no funding
- * badge: the API has no funding field.
+ * out, as the design does for a viewer who can't edit; the owner gets an
+ * invitation to add it instead. Awards show "Fully funded" / "Partial
+ * funding" when the mentor said so.
  */
 export function ProfileOverview({
   profile,
   aboutEdit,
   onEditBackground,
   backgroundEditRef,
+  awardsEdit,
+  educationEdit,
+  awardsAddRef,
+  educationAddRef,
 }: ProfileOverviewProps) {
   // When the editor closes, focus goes back to "Edit".
   const editRef = useRef<HTMLButtonElement>(null);
@@ -113,37 +138,35 @@ export function ProfileOverview({
         </section>
       )}
 
-      {p.education.length > 0 && (
-        <section className={styles.section} aria-labelledby="edu-h">
-          <h2 id="edu-h" className={styles.h2}>
-            Education
-          </h2>
-          <div className={styles.list}>
-            {p.education.map((e) => (
-              <IconListItem key={e.id} icon="school" tone="blue" title={e.title} meta={e.meta} />
-            ))}
-          </div>
-        </section>
-      )}
+      <EntrySection
+        id="edu-h"
+        title="Education"
+        icon="school"
+        tone="blue"
+        items={p.education}
+        edit={educationEdit}
+        addRef={educationAddRef}
+        add="Add education"
+        empty={{ title: 'Add your degrees', body: 'Mentees filter by degree and school.' }}
+      />
 
-      {p.awards.length > 0 && (
-        <section className={styles.section} aria-labelledby="awards-h">
-          <h2 id="awards-h" className={styles.h2}>
-            Scholarships and awards
-          </h2>
-          <div className={styles.list}>
-            {p.awards.map((a) => (
-              <IconListItem
-                key={a.id}
-                icon="workspace_premium"
-                tone="gold"
-                title={a.title}
-                meta={a.meta}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+      <EntrySection
+        id="awards-h"
+        title="Scholarships and awards"
+        icon="workspace_premium"
+        tone="gold"
+        items={p.awards.map((a) => ({
+          ...a,
+          badge: a.funding ? FUNDING_BADGE[a.funding] : null,
+        }))}
+        edit={awardsEdit}
+        addRef={awardsAddRef}
+        add="Add award"
+        empty={{
+          title: 'Add the funding you’ve won',
+          body: 'Scholarships and assistantships show mentees you’ve done what they’re trying to do.',
+        }}
+      />
 
       {(facts.length > 0 || onEditBackground) && (
         <section className={styles.section} aria-labelledby="bg-h">
@@ -165,19 +188,13 @@ export function ProfileOverview({
             )}
           </div>
           {facts.length === 0 && onEditBackground && (
-            <div className={styles.bgEmpty}>
-              <span className={styles.bgEmptyIcon}>
-                <Icon name="public" size={20} />
-              </span>
-              <div className={styles.bgEmptyText}>
-                <span className={styles.bgEmptyTitle}>Tell mentees where you’re from</span>
-                <span className={styles.bgEmptyBody}>
-                  Mentees often look for mentors who made the same move. Add your countries and
-                  languages.
-                </span>
-              </div>
-              <Button onClick={onEditBackground}>Add background</Button>
-            </div>
+            <InviteCard
+              icon="public"
+              title="Tell mentees where you’re from"
+              body="Mentees often look for mentors who made the same move. Add your countries and languages."
+              action="Add background"
+              onAction={onEditBackground}
+            />
           )}
           {facts.length > 0 && (
             <div className={styles.facts}>
@@ -194,6 +211,132 @@ export function ProfileOverview({
           )}
         </section>
       )}
+    </div>
+  );
+}
+
+/**
+ * Education or Scholarships and awards (Mentor Profile.dc.html `blocks`). For
+ * the owner: "Add …" in the heading, Edit on each row, and an invitation when
+ * there's nothing yet. Empty for anyone else: left out.
+ */
+function EntrySection({
+  id,
+  title,
+  icon,
+  tone,
+  items,
+  edit,
+  addRef,
+  add,
+  empty,
+}: {
+  id: string;
+  title: string;
+  icon: IconName;
+  tone: 'blue' | 'gold';
+  items: (ProfileItem & { badge?: string | null })[];
+  edit?: EntryEdit;
+  addRef?: Ref<HTMLButtonElement>;
+  add: string;
+  empty: { title: string; body: string };
+}) {
+  if (!items.length && !edit) return null;
+  return (
+    <section className={styles.section} aria-labelledby={id}>
+      <div className={styles.headRow}>
+        <h2 id={id} className={styles.h2}>
+          {title}
+        </h2>
+        {edit && (
+          <button ref={addRef} type="button" className={styles.edit} onClick={edit.onAdd}>
+            <Icon name="add" size={16} />
+            {add}
+          </button>
+        )}
+      </div>
+      {items.length === 0 && edit ? (
+        <InviteCard
+          icon={icon}
+          title={empty.title}
+          body={empty.body}
+          action={add}
+          onAction={edit.onAdd}
+        />
+      ) : (
+        <div className={styles.list}>
+          {items.map((it) => (
+            <IconListItem
+              key={it.id}
+              icon={icon}
+              tone={tone}
+              title={it.title}
+              meta={it.meta}
+              trailing={
+                (it.badge || edit) && (
+                  <>
+                    {it.badge && (
+                      <Badge type="accent" color="green" size="sm">
+                        {it.badge}
+                      </Badge>
+                    )}
+                    {edit && (
+                      <span className={styles.rowActions}>
+                        <IconButton
+                          icon="edit"
+                          size="sm"
+                          shape="square"
+                          // With the meta: two "MSc" rows get different names (review of #93).
+                          aria-label={`Edit ${it.title}${it.meta ? `, ${it.meta}` : ''}`}
+                          onClick={() => edit.onEdit(it.id)}
+                        />
+                        <IconButton
+                          icon="delete"
+                          size="sm"
+                          shape="square"
+                          tone="danger"
+                          // Red at rest: the action is dangerous before it's hovered (product).
+                          className={styles.delete}
+                          aria-label={`Delete ${it.title}${it.meta ? `, ${it.meta}` : ''}`}
+                          onClick={() => edit.onDelete(it.id)}
+                        />
+                      </span>
+                    )}
+                  </>
+                )
+              }
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** The owner's dashed invitation to add what's missing (Mentor Profile.dc.html `showEmpty`). */
+function InviteCard({
+  icon,
+  title,
+  body,
+  action,
+  onAction,
+}: {
+  icon: IconName;
+  title: string;
+  body: string;
+  action: string;
+  onAction: () => void;
+}) {
+  return (
+    <div className={styles.bgEmpty}>
+      <span className={styles.bgEmptyIcon}>
+        <Icon name={icon} size={20} />
+      </span>
+      <div className={styles.bgEmptyText}>
+        <span className={styles.bgEmptyTitle}>{title}</span>
+        <span className={styles.bgEmptyBody}>{body}</span>
+      </div>
+      <Button onClick={onAction}>{action}</Button>
     </div>
   );
 }

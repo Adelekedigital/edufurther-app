@@ -195,6 +195,39 @@ export type ProfileSessionType = SessionType & {
 
 export type ProfileItem = { id: string; title: string; meta: string | null };
 
+export type AwardFunding = 'full' | 'partial';
+/** An award as its edit form holds it (ProfileItemModal.dc.html `award`). */
+export type AwardValues = {
+  title: string;
+  org: string;
+  year: number | null;
+  /** null: not said ("Not shown"). */
+  funding: AwardFunding | null;
+};
+/** A degree as its edit form holds it (ProfileItemModal.dc.html `education`). */
+export type EducationValues = {
+  school: string;
+  /** The abbreviation (PhD, MSc…), or "Other". */
+  degree: string;
+  course: string;
+  start: number;
+  end: number;
+  /** "This is my current or most recent education". */
+  current: boolean;
+};
+/** A degree from the owner's own read, with the dates as saved. */
+export type EducationEntry = {
+  id: string;
+  values: EducationValues;
+  dateStart: string | null;
+  dateEnd: string | null;
+  /** The saved level id, kept when the degree isn't changed. */
+  levelId: string | null;
+};
+
+/** A Scholarships and awards row, with what the owner's editor starts from. */
+export type AwardItem = ProfileItem & { funding: AwardFunding | null; values: AwardValues };
+
 export type MentorProfile = {
   /** The card-shaped mentor: header basics, proof line, BookingFlow. */
   mentor: Mentor;
@@ -222,7 +255,7 @@ export type MentorProfile = {
   /** Only links that passed lib/utils/socialUrl. */
   socials: { kind: SocialKind; href: string }[];
   education: ProfileItem[];
-  awards: ProfileItem[];
+  awards: AwardItem[];
   sessionTypes: ProfileSessionType[];
   mentoringMinutes: number;
   menteesMentored: number;

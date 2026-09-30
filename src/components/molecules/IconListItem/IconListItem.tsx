@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { cx } from '@/lib/utils/cx';
@@ -9,10 +10,12 @@ type IconListItemProps = {
   tone: 'blue' | 'gold';
   title: string;
   meta?: string | null;
+  /** After the text: a badge, the owner's Edit (Mentor Profile.dc.html rows). */
+  trailing?: ReactNode;
 };
 
 /** One row of a profile list: a 40px icon tile, a title and a meta line. */
-export function IconListItem({ icon, tone, title, meta }: IconListItemProps) {
+export function IconListItem({ icon, tone, title, meta, trailing }: IconListItemProps) {
   return (
     <div className={styles.row}>
       <span className={cx(styles.tile, styles[tone])}>
@@ -22,6 +25,7 @@ export function IconListItem({ icon, tone, title, meta }: IconListItemProps) {
         <span className={styles.title}>{title}</span>
         {meta && <span className={styles.meta}>{meta}</span>}
       </span>
+      {trailing}
     </div>
   );
 }

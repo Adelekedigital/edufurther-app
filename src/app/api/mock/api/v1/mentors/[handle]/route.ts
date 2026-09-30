@@ -15,6 +15,12 @@ import {
 } from '@/lib/api/mock/fixtures';
 import { prefs } from '@/lib/api/mock/bookingPrefs';
 import { mockBannerUrl, mockCover } from '@/lib/api/mock/coverStore';
+import {
+  educationPublic,
+  MOCK_DEGREE_LEVELS,
+  seedAwards,
+  seedEducation,
+} from '@/lib/api/mock/entries';
 import { mockText } from '@/lib/api/mock/profileTextStore';
 import { mockReviewSummary } from '@/lib/api/mock/reviews';
 
@@ -102,6 +108,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
             title: 'Graduate Teaching Assistantship',
             institution: m.institution ?? '',
             year: 2023,
+            // Assistantships fund tuition and a stipend: "Fully funded".
+            funding: 'full',
           },
         ],
     completed_sessions: sessions,
@@ -133,6 +141,38 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
     primary_study_country_id: countryIdByName(body.primary_study_country ?? null),
   });
   if (own) {
+    // The owner's degrees (profile editors): seeded from the fixture once.
+    body.education = seedEducation(
+      id,
+      (body.education ?? []).map((e, k) => ({
+        id: e.id,
+        school_name_raw: e.institution ?? '',
+        degree_abbreviation: e.degree ?? null,
+        degree_level_id:
+          MOCK_DEGREE_LEVELS.find((l) =>
+            (e.degree ?? '').toLowerCase().startsWith('phd')
+              ? l.code === 'phd'
+              : /^m/i.test(e.degree ?? '')
+                ? l.code === 'masters'
+                : l.code === 'undergraduate',
+          )?.id ?? null,
+        study_course: e.study_course ?? null,
+        date_start: e.date_start ?? null,
+        date_end: e.date_end ?? null,
+        is_most_recent: k === 0,
+      })),
+    ).map(educationPublic);
+    // The owner's awards (profile editors): seeded from the fixture once.
+    body.scholarships = seedAwards(
+      id,
+      (body.scholarships ?? []).map((a) => ({
+        id: a.id,
+        title: a.title,
+        institution: a.institution,
+        year: a.year ?? null,
+        funding: a.funding ?? null,
+      })),
+    );
     // The owner's topics and background (profile editors).
     const it = mockItems(id);
     if ('origin_country_id' in it)

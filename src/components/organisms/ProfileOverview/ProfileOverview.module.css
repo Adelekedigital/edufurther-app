@@ -159,3 +159,13 @@
   line-height: var(--lh-p);
   color: var(--ink-700);
 }
+/* The owner's Edit and Delete on a row: one pair, not two separate controls. */
+.rowActions {
+  flex: none;
+  display: flex;
+  gap: var(--space-1);
+}
+/* Delete reads as dangerous before it's hovered (product 2026-09-30). */
+.rowActions .delete {
+  color: var(--text-danger);
+}

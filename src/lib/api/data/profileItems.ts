@@ -15,7 +15,8 @@ export class ItemSaveError extends Error {
 }
 
 const offline = (e: unknown) => normaliseError(e).kind === 'offline';
-const generalCopy = (e: unknown) =>
+/** Our line for a failed save: offline, or try again. */
+export const generalCopy = (e: unknown) =>
   offline(e)
     ? 'You’re offline. Your changes are still here; try again when you’re connected.'
     : 'That didn’t save. Try again.';
