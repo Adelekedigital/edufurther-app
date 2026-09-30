@@ -131,7 +131,7 @@ export function BookingFlow(p: BookingFlowProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const isPhone = useMediaQuery(PHONE);
-  const [week, setWeek] = useState(0);
+  const [weekState, setWeek] = useState(0);
   // The day the viewer picked (YYYY-MM-DD in their zone), or null → the week's first open day.
   const [dayChoice, setDayChoice] = useState<string | null>(null);
   const [picked_, setTime] = useState<string | null>(null);
@@ -183,7 +183,9 @@ export function BookingFlow(p: BookingFlowProps) {
   const horizon = session?.windowDays ?? DEFAULT_HORIZON_DAYS;
   const weeks = weeksIn(horizon);
   // A window that shrank (types refetched) never leaves the page past its end.
-  if (week > weeks - 1) setWeek(weeks - 1);
+  if (weekState > weeks - 1) setWeek(weeks - 1);
+  // This render uses the clamped page too: the queued update only lands next.
+  const week = Math.min(weekState, weeks - 1);
   // Grouped in the zone the viewer picked, so changing it regroups the days.
   // "Today" moves on at midnight even if nothing else re-renders the modal.
   const [clock, setClock] = useState(() => Date.now());
@@ -279,7 +281,8 @@ export function BookingFlow(p: BookingFlowProps) {
   const weekLabel = (() => {
     const a = formatDay(weekDays[0]!.date).date;
     const b = formatDay(weekDays.at(-1)!.date).date;
-    return week === 0 ? `Next 7 days · ${a} – ${b}` : `${a} – ${b}`;
+    // A window under a week has fewer days on its only page: say how many.
+    return week === 0 ? `Next ${weekDays.length} days · ${a} – ${b}` : `${a} – ${b}`;
   })();
   const moveWeek = (to: number) => {
     setWeek(to);

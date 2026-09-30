@@ -317,4 +317,25 @@ describe('BookingFlow week view (7 days at a time)', () => {
     expect(screen.getAllByRole('radio', { name: /^\w{3}, Oct \d/ })).toHaveLength(3);
     expect(screen.getByRole('button', { name: 'Later dates' })).toBeDisabled();
   });
+
+  it('a window that shrinks while a later page is open shows the last page it still has', async () => {
+    const user = userEvent.setup();
+    const typed = (windowDays: number) => remote(sessionTypes.map((t) => ({ ...t, windowDays })));
+    const { rerender } = render(<BookingFlow {...props({ sessionTypes: typed(56) })} />);
+    for (let i = 0; i < 3; i++)
+      await user.click(screen.getByRole('button', { name: 'Later dates' }));
+    // The types refresh with a 14-day window: page 4 no longer exists.
+    rerender(<BookingFlow {...props({ sessionTypes: typed(14) })} />);
+    expect(screen.getByText('Oct 4 – Oct 10')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Later dates' })).toBeDisabled();
+  });
+
+  it('a window under a week says how many days its page has', () => {
+    render(
+      <BookingFlow
+        {...props({ sessionTypes: remote(sessionTypes.map((t) => ({ ...t, windowDays: 5 }))) })}
+      />,
+    );
+    expect(screen.getByText('Next 5 days · Sep 27 – Oct 1')).toBeInTheDocument();
+  });
 });
