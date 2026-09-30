@@ -177,6 +177,7 @@ export function useSlots(
 ): Remote<string[]> {
   // The type's own booking window, from the same types query the picker uses
   // (subscribed, so it's never stale): no request until the window is known.
+  const qc = useQueryClient();
   const types = useSessionTypes(mentorId);
   const horizon = types.data
     ? (types.data.find((t) => t.id === sessionTypeId)?.windowDays ?? DEFAULT_HORIZON_DAYS)
@@ -203,7 +204,14 @@ export function useSlots(
           signal,
         },
       );
-      if (!data) throw apiError(response.status, error);
+      if (!data) {
+        // A range the backend refuses: its maximum may have been lowered since
+        // the types were cached. Reload them; the new window makes a new request
+        // (Codex review of #100).
+        if (response.status === 422)
+          void qc.invalidateQueries({ queryKey: keys.booking.sessionTypes(mentorId!) });
+        throw apiError(response.status, error);
+      }
       return data.data.map((s) => s.start);
     },
     // Slots go stale as people book; a minute is short enough and saves a

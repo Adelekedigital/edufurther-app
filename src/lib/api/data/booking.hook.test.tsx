@@ -144,8 +144,8 @@ describe('useRequestBooking: a 422 about the answers (backend answer_problems)',
   });
 });
 
+const DAY = 86_400_000;
 describe('useSlots: the request follows the session type’s window (backend #309)', () => {
-  const DAY = 86_400_000;
   const typeRow = (id: string, window: number) => ({
     id,
     name: id,
@@ -193,5 +193,42 @@ describe('useSlots: the request follows the session type’s window (backend #30
     expect(range()).toBeLessThanOrEqual(56 + 1);
     rerender({ type: 'short' });
     await waitFor(() => expect(range()).toBe(8));
+  });
+
+  it('a range the backend refuses reloads the types, and the new window asks again', async () => {
+    let window = 56;
+    let slotCalls = 0;
+    GET.mockImplementation((path: string) => {
+      if (path.endsWith('/session-types'))
+        return Promise.resolve({
+          data: { data: [typeRow('t', window)], next_cursor: null },
+          error: undefined,
+          response: new Response(null, { status: 200 }),
+        });
+      slotCalls++;
+      // The maximum was lowered to 14 after the types were cached.
+      if (slotCalls === 1) {
+        window = 14;
+        return Promise.resolve({
+          data: undefined,
+          error: {},
+          response: new Response(null, { status: 422 }),
+        });
+      }
+      return Promise.resolve({
+        data: { data: [], next_cursor: null },
+        error: undefined,
+        response: new Response(null, { status: 200 }),
+      });
+    });
+    renderHook(() => useSlots('m1', 't', 'Africa/Lagos'), { wrapper });
+    const ranges = () =>
+      GET.mock.calls
+        .filter(([p]) => String(p).endsWith('/slots'))
+        .map(([, o]) => {
+          const { start, end } = o.params.query as { start: string; end: string };
+          return (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / DAY;
+        });
+    await waitFor(() => expect(ranges()).toEqual([57, 15]));
   });
 });
