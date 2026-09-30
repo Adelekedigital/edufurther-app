@@ -126,7 +126,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // The owner's cover (Mentor Profile.dc.html "Change cover"): colour and art
   // save as picked; an image replaces them.
   const coverEdit = useCoverEdit(handle, isOwner && p ? p.mentor.id : null);
-  // The owner's photo (Mentor Profile.dc.html camera badge).
+  // No user id for anyone but the owner: the hook then can't upload, whatever calls it.
   const photo = useAvatarUpload(handle, isOwner && p ? p.mentor.id : null);
   // The owner's name, headline and About (Mentor Profile.dc.html edit mode).
   const editProfileButton = useRef<HTMLButtonElement>(null);

@@ -65,6 +65,8 @@ describe('MentorProfileScreen — the owner’s photo', () => {
     h.photoError = 'Choose an image under 5 MB.';
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.getByText('Uploading photo…')).toBeInTheDocument();
-    expect(screen.getByRole('alert')).toHaveTextContent('Choose an image under 5 MB.');
+    expect(
+      screen.getByText('Choose an image under 5 MB.', { selector: 'span:not([role])' }),
+    ).toBeInTheDocument();
   });
 });

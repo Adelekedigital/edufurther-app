@@ -43,7 +43,9 @@ describe('PhotoPicker', () => {
     render(
       <PhotoPicker {...base} error="Choose an image under 5 MB." onDismissError={onDismissError} />,
     );
-    expect(screen.getByRole('alert')).toHaveTextContent('Choose an image under 5 MB.');
+    expect(
+      screen.getByText('Choose an image under 5 MB.', { selector: 'span:not([role])' }),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Dismiss' }));
     expect(onDismissError).toHaveBeenCalled();
   });
@@ -68,5 +70,24 @@ describe('PhotoPicker', () => {
     rerender(<PhotoPicker {...base} uploading />);
     expect(screen.getByRole('status')).toBe(status);
     expect(status).toHaveTextContent('Uploading photo…');
+  });
+
+  it('a failed pick is heard through the same always-present status (Codex on #99)', () => {
+    const { rerender } = render(<PhotoPicker {...base} />);
+    const status = screen.getByRole('status');
+    rerender(<PhotoPicker {...base} error="Choose an image under 5 MB." />);
+    expect(screen.getByRole('status')).toBe(status);
+    expect(status).toHaveTextContent('Choose an image under 5 MB.');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('Dismiss puts focus back on the photo control (Codex on #99)', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <PhotoPicker {...base} error="Choose an image under 5 MB." onDismissError={vi.fn()} />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Dismiss' }));
+    rerender(<PhotoPicker {...base} error={null} />);
+    expect(screen.getByLabelText('Change photo')).toHaveFocus();
   });
 });

@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { IconButton } from '@/components/atoms/IconButton/IconButton';
 import { cx } from '@/lib/utils/cx';
@@ -32,6 +33,7 @@ export function PhotoPicker({
   onDismissError,
 }: PhotoPickerProps) {
   const label = hasPhoto ? 'Change photo' : 'Add photo';
+  const input = useRef<HTMLInputElement>(null);
   return (
     <>
       {uploading && (
@@ -39,13 +41,15 @@ export function PhotoPicker({
           <Icon name="progress_activity" size={28} className={styles.spin} />
         </span>
       )}
-      {/* Always there, so the change is heard (review of #99, failure-modes #32). */}
+      {/* Always there, so uploading and a failed pick are heard (review of #99,
+          Codex; failure-modes #32). The card below is visual only. */}
       <span role="status" className="sr-only">
-        {uploading ? 'Uploading photo…' : ''}
+        {uploading ? 'Uploading photo…' : (error ?? '')}
       </span>
       <label className={cx(styles.badge, uploading && styles.disabled)} title={label}>
         <Icon name="photo_camera" size={14} />
         <input
+          ref={input}
           type="file"
           accept={accept}
           aria-label={label}
@@ -65,10 +69,19 @@ export function PhotoPicker({
         />
       </label>
       {error && (
-        <div className={styles.error} role="alert">
+        <div className={styles.error}>
           <Icon name="error" size={16} className={styles.errorIcon} />
           <span className={styles.errorText}>{error}</span>
-          <IconButton icon="close" size="sm" aria-label="Dismiss" onClick={onDismissError} />
+          <IconButton
+            icon="close"
+            size="sm"
+            aria-label="Dismiss"
+            onClick={() => {
+              // The button goes with the message: focus returns to the photo control (Codex).
+              input.current?.focus();
+              onDismissError();
+            }}
+          />
         </div>
       )}
     </>
