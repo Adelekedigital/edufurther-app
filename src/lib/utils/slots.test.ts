@@ -55,7 +55,7 @@ describe('slotWindow / visibleDays (review of #20)', () => {
   // 6pm in Los Angeles on Sep 27 is already Sep 28 in UTC.
   const la = new Date('2026-09-28T01:00:00Z');
 
-  it('asks two days either side of the viewer’s window, and one more at its end (the window plus five days)', () => {
+  it('asks from two days before today to three past the window (end exclusive): the window plus five days', () => {
     expect(slotWindow('America/Los_Angeles', 28, la)).toEqual({
       start: '2026-09-25',
       end: '2026-10-28',
@@ -65,6 +65,31 @@ describe('slotWindow / visibleDays (review of #20)', () => {
       start: '2026-09-26',
       end: '2026-10-29',
     });
+  });
+
+  // #101: the widest gap between two zones' dates is two days (UTC+14 against
+  // UTC−12). A slot at either edge of the viewer's window falls on a mentor date
+  // up to two days out, and must still be inside the requested range.
+  it('covers the viewer’s first minute when the mentor is 26 hours behind', () => {
+    const viewer = 'Pacific/Kiritimati'; // UTC+14
+    const mentor = 'Etc/GMT+12'; // UTC−12
+    const now = new Date('2026-09-28T00:00:00Z'); // 14:00 on Sep 28 for the viewer
+    const { start } = slotWindow(viewer, 28, now);
+    const firstMinute = '2026-09-27T10:00:00Z'; // the viewer's Sep 28, 00:00
+    expect(dayKey(firstMinute, viewer)).toBe('2026-09-28');
+    expect(dayKey(firstMinute, mentor)).toBe('2026-09-26'); // today − 2
+    expect(dayKey(firstMinute, mentor) >= start).toBe(true);
+  });
+
+  it('covers the viewer’s last minute when the mentor is 26 hours ahead', () => {
+    const viewer = 'Etc/GMT+12'; // UTC−12
+    const mentor = 'Pacific/Kiritimati'; // UTC+14
+    const now = new Date('2026-09-28T20:00:00Z'); // 08:00 on Sep 28 for the viewer
+    const { end } = slotWindow(viewer, 28, now);
+    const lastMinute = '2026-10-26T11:59:00Z'; // the viewer's Oct 25 (window's last day), 23:59
+    expect(dayKey(lastMinute, viewer)).toBe('2026-10-25');
+    expect(dayKey(lastMinute, mentor)).toBe('2026-10-27'); // last day + 2
+    expect(dayKey(lastMinute, mentor) < end).toBe(true); // end is exclusive
   });
 
   it('follows the session type’s window: plus five days around it, and its days only', () => {

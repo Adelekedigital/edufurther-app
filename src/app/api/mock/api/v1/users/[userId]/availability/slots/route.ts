@@ -8,6 +8,8 @@ const DAY = 24 * 60 * 60 * 1000;
  * MOCK of GET /api/v1/users/{user_id}/availability/slots: `session_type_id`
  * required, `start`/`end` dates (`end` exclusive, default 7 days); like the
  * backend, a range longer than the platform's maximum window plus five days is a 422.
+ * Unlike the backend, it reads the dates as UTC and generates from now, ignoring
+ * `start`: it checks the range's size, not the zone edges (slots.test.ts does).
  * ENABLE_MOCK_API=1 only.
  */
 export async function GET(req: NextRequest, ctx: { params: Promise<{ userId: string }> }) {

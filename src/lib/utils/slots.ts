@@ -81,8 +81,10 @@ export function weekOfDays(
  * The picker shows the viewer's today … the window's last day in the viewer's
  * zone, but `start`/`end` are dates the backend reads in the mentor's zone,
  * and two zones' dates can differ by two days (UTC−12 against UTC+14). So two
- * days of margin before today, and three after the window's last day: the
- * window plus five days, which the backend allows (its maximum plus five).
+ * days of margin before today, and `end` (exclusive) three days past the
+ * window: the gap needs only two there, the third is the padding the backend
+ * recommends (#312). The window plus five days, which it allows (its maximum
+ * plus five).
  */
 export function slotWindow(
   timeZone: string,
