@@ -50,7 +50,7 @@ function resolve({ questions: _q, bookedCount, ...t }: Stored): OwnSessionTypeRe
 
 const offering = (code: string) => {
   const o = OFFERINGS.find((x) => x.code === code)!;
-  return { code, display_name: o.display_name };
+  return { id: o.id, code, display_name: o.display_name };
 };
 // Backend #9 (merging): `service_offerings[]`, whose first is `service_offering`.
 // Spread from a variable so it compiles against the spec before and after.
@@ -249,7 +249,7 @@ export function mockCreateSessionType(
   const id = `mst-${Date.now().toString(36)}`;
   const offerings = ids.flatMap((oid) => {
     const o = OFFERINGS.find((x) => x.id === oid);
-    return o?.code ? [{ code: o.code, display_name: o.display_name }] : [];
+    return o?.code ? [{ id: o.id, code: o.code, display_name: o.display_name }] : [];
   });
   const questions = qs.map((q, i) => {
     const w = q as {
@@ -408,7 +408,7 @@ export function mockEditSessionType(
   if (Array.isArray(ids)) {
     const offerings = ids.flatMap((oid) => {
       const o = OFFERINGS.find((x) => x.id === oid);
-      return o?.code ? [{ code: o.code, display_name: o.display_name }] : [];
+      return o?.code ? [{ id: o.id, code: o.code, display_name: o.display_name }] : [];
     });
     patch.service_offerings = offerings;
     patch.service_offering = offerings[0] ?? null;
