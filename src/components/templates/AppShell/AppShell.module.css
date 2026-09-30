@@ -158,6 +158,11 @@
   outline-offset: 0;
 }
 
+/* Offline strip: over the content column on desktop, full width on phones. */
+.offlineTop {
+  display: none;
+}
+
 .column {
   flex: 1;
   min-width: 0;
@@ -207,6 +212,12 @@
   }
   .headerMember {
     display: flex;
+  }
+  .offlineTop {
+    display: block;
+  }
+  .offlineColumn {
+    display: none;
   }
   .main {
     /* Room for the fixed tab bar (56px) plus the safe area. */

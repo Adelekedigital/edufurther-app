@@ -112,7 +112,13 @@ export function AppShell({
       <a href="#main" className={styles.skip}>
         Skip to content
       </a>
-      {offline && <OfflineBanner />}
+      {/* Desktop members get the offline strip over the content instead (below),
+          so it never pushes the full-height rail's avatar off screen. */}
+      {offline && (
+        <div className={cx(member && styles.offlineTop)}>
+          <OfflineBanner />
+        </div>
+      )}
       {/* Desktop members get the brand in the rail and a bar over the content
           (design logoIn=sidebar); guests, the pending state and phones keep this. */}
       <header className={cx(styles.header, member && styles.headerMember)}>
@@ -154,6 +160,11 @@ export function AppShell({
         )}
         <div className={styles.column}>
           {member && <div className={styles.contentBar} />}
+          {member && offline && (
+            <div className={styles.offlineColumn}>
+              <OfflineBanner />
+            </div>
+          )}
           <main id="main" className={cx(styles.main, guest && styles.mainGuest)}>
             {children}
           </main>

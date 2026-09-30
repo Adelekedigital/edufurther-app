@@ -156,4 +156,32 @@ describe('AppShell navigation', () => {
     const matches = screen.getAllByRole('link', { name: /Find my mentor matches/ }).at(-1)!;
     expect(matches).toHaveAttribute('target', '_blank');
   });
+
+  it('offline: members get the strip over the content column, so the rail keeps its full height; guests get it at the top', () => {
+    const { unmount } = render(
+      <AppShell active="Home" nav="mentor" chrome="member" offline>
+        <p>Page</p>
+      </AppShell>,
+    );
+    const main = screen.getByRole('main');
+    const inColumn = screen
+      .getAllByRole('status')
+      .filter((el) => el.parentElement?.parentElement === main.parentElement);
+    expect(inColumn).toHaveLength(1);
+    expect(screen.getAllByRole('navigation', { name: 'Main' })[0]).not.toContainElement(
+      inColumn[0]!,
+    );
+    unmount();
+    render(
+      <AppShell active="Explore" chrome="guest" offline>
+        <p>Page</p>
+      </AppShell>,
+    );
+    // One strip, above the header.
+    const [strip] = screen.getAllByRole('status');
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+    expect(strip!.compareDocumentPosition(screen.getByRole('banner'))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
 });
