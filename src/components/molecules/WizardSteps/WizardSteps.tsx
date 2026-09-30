@@ -38,13 +38,14 @@ export function WizardSteps({ steps, current, reached, onSelect, label }: Wizard
                 className={styles.button}
                 disabled={locked}
                 aria-current={isCurrent ? 'step' : undefined}
+                // aria-label, not an sr-only span: Chrome reads that span as a block ("Core details , done").
+                aria-label={done ? `${name}, done` : undefined}
                 onClick={() => onSelect(n)}
               >
                 <span className={styles.dot} aria-hidden>
                   {done ? <Icon name="check" size={14} /> : n}
                 </span>
                 {name}
-                {done && <span className="sr-only">, done</span>}
               </button>
             </li>
           );
