@@ -20,6 +20,8 @@ type FirstMenteesCardProps =
       award: string | null;
       /** Opens booking on that time. Omit to show no button. */
       onBook?: (time: string) => void;
+      /** Drawn, but can't be used (the owner's "View as mentee"). */
+      bookDisabled?: boolean;
     }
   | {
       variant: 'owner';
@@ -107,12 +109,13 @@ export function FirstMenteesCard(p: FirstMenteesCardProps) {
           ))}
         </ul>
       )}
-      {mentee && p.onBook && p.nextTime && when && (
+      {mentee && (p.onBook || p.bookDisabled) && p.nextTime && when && (
         <Button
           variant="secondary-outlined"
           size="medium"
           fullWidth
-          onClick={() => p.onBook!(p.nextTime!)}
+          disabled={p.bookDisabled}
+          onClick={() => p.onBook?.(p.nextTime!)}
         >
           Book {when}
         </Button>

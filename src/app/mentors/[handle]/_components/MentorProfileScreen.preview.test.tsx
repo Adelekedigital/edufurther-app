@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile, sessionTypes } from '@/components/organisms/ProfileHeader/profile.fixture';
 import type { MentorProfile } from '@/types/mentor';
-import { h, remote, replace, state } from './profileScreen.harness';
+import { h, remote, replace, saveTopics, state } from './profileScreen.harness';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
@@ -39,6 +39,16 @@ vi.mock('@/lib/api/data/booking', async () =>
 vi.mock('@/lib/api/data/profileEntries', async () =>
   (await import('./profileScreen.harness')).mocks.profileEntries(),
 );
+vi.mock('@/lib/api/data/profileItems', async () =>
+  (await import('./profileScreen.harness')).mocks.profileItems(),
+);
+vi.mock('@/lib/api/data/catalog', async () =>
+  (await import('./profileScreen.harness')).mocks.catalog(),
+);
+vi.mock('@/lib/api/data/mentors', async (original) => ({
+  ...(await original<object>()),
+  ...(await import('./profileScreen.harness')).mocks.topics(),
+}));
 
 type Owner = NonNullable<MentorProfile['owner']>;
 const mine = (owner: Partial<Owner> = {}, over: Partial<MentorProfile> = {}): MentorProfile => ({
@@ -129,6 +139,29 @@ describe('MentorProfileScreen — "View as mentee"', () => {
     expect(screen.getAllByText('Not taking bookings').length).toBeGreaterThan(0);
     expect(screen.getByRole('tab', { name: 'Sessions (0)' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Book/ })).toBeNull();
+  });
+
+  it('a new mentor: the first-mentees card’s Book is drawn but off too (Codex on PR 106)', async () => {
+    h.profile = state({
+      data: mine(
+        {},
+        {
+          mentor: {
+            ...fullProfile.mentor,
+            completedSessions: 1,
+            nextAvailableState: 'open',
+            nextAvailableAt: '2026-10-02T15:00:00Z',
+          },
+        },
+      ),
+    });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(bar());
+    const books = screen.getAllByRole('button', { name: /^Book/ });
+    // The header, the booking card, and the first-mentees card.
+    expect(books.length).toBeGreaterThanOrEqual(3);
+    for (const b of books) expect(b).toBeDisabled();
   });
 
   it('offline, Book still reads as a mentee’s (review of PR 106)', async () => {
@@ -297,5 +330,44 @@ describe('MentorProfileScreen — Profile strength', () => {
     rerender(<MentorProfileScreen handle="gbenga" />);
     expect(screen.queryByRole('meter')).toBeNull();
     expect(bar()).toHaveFocus();
+  });
+
+  it('a topics save from its tip: focus on "Edit topics" (Codex on PR 106)', async () => {
+    h.profile = state({
+      data: mine({ completeness: { percent: 78, missing: ['topics', 'award'] } }),
+    });
+    // The save lands and the refetched profile no longer lists topics.
+    saveTopics.mockImplementation(() => {
+      h.profile = state({ data: mine({ completeness: { percent: 89, missing: ['award'] } }) });
+    });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: /Add the topics you help with/ }));
+    const dialog = screen.getByRole('dialog', { name: 'What you help with' });
+    await user.click(within(dialog).getByRole('button', { name: 'Test preparation' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Save topics' }));
+    expect(saveTopics).toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Edit topics' })).toHaveFocus();
+  });
+
+  it('an award saved from its tip on Reviews: focus on the next tip (Codex on PR 106)', async () => {
+    h.search = new URLSearchParams('tab=reviews');
+    h.profile = state({
+      data: mine({ completeness: { percent: 78, missing: ['award', 'about'] } }),
+    });
+    // The save lands and the refetched profile no longer lists the award.
+    h.onAwardAdded = () => {
+      h.profile = state({ data: mine({ completeness: { percent: 89, missing: ['about'] } }) });
+    };
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: /Add a scholarship or award/ }));
+    const dialog = screen.getByRole('dialog', { name: 'Add an award' });
+    await user.type(within(dialog).getByRole('textbox', { name: 'Award name' }), 'Fulbright');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Awarded by' }), 'Stanford');
+    await user.click(within(dialog).getByRole('button', { name: 'Add award' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByRole('button', { name: /Write your About/ })).toHaveFocus();
   });
 });

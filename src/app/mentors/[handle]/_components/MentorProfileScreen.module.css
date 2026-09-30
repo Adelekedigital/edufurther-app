@@ -72,6 +72,19 @@
   color: var(--text-on-action);
 }
 @media (max-width: 767px) {
+  /* The inline hours link: a 44px tap area, reaching up into the (plain) text
+     and only 6px down, where the toggle's own area starts (Codex on PR 106). */
+  .ownerLink {
+    position: relative;
+  }
+  .ownerLink::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -21px;
+    bottom: -6px;
+  }
   /* Drawn at 32px; a 44px tap area around it. */
   .previewToggle::after {
     content: '';

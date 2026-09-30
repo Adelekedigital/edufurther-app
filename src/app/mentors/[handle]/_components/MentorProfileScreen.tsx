@@ -86,6 +86,16 @@ const STRENGTH_ID = 'profile-strength';
 /** The owner's photo input, opened by the "Add a profile photo" tip. */
 const PHOTO_INPUT = 'profile-photo-input';
 
+/**
+ * After a save whose opener went with it (a strength tip whose step is now
+ * done): the next tip, else the "View as mentee" toggle. Only when focus was lost.
+ */
+function refocusAfterTip() {
+  if (document.activeElement && document.activeElement !== document.body) return;
+  const next = document.getElementById(STRENGTH_ID)?.querySelector<HTMLElement>('a, button');
+  (next ?? document.getElementById(PREVIEW_TOGGLE_ID))?.focus();
+}
+
 /** Below this many completed sessions a mentor is "new" (design reply #45). */
 const NEW_MENTOR_UNDER = 3;
 
@@ -179,12 +189,18 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const backgroundEdit = useRef<HTMLButtonElement>(null);
   const awardsAdd = useRef<HTMLButtonElement>(null);
   const educationAdd = useRef<HTMLButtonElement>(null);
+  const editTopics = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    if (itemSaved?.kind === 'background') backgroundEdit.current?.focus();
+    if (!itemSaved) return;
+    if (itemSaved.kind === 'background') backgroundEdit.current?.focus();
+    if (itemSaved.kind === 'topics') editTopics.current?.focus();
     // Added from the empty invite card (gone once the row shows), or removed.
-    if (itemSaved?.outcome !== 'removed' && itemSaved?.outcome !== 'added') return;
-    if (itemSaved.kind === 'award') awardsAdd.current?.focus();
-    if (itemSaved.kind === 'education') educationAdd.current?.focus();
+    if (itemSaved.outcome === 'removed' || itemSaved.outcome === 'added') {
+      if (itemSaved.kind === 'award') awardsAdd.current?.focus();
+      if (itemSaved.kind === 'education') educationAdd.current?.focus();
+    }
+    // Opened from a strength tip on a tab without those controls (Codex on PR 106).
+    refocusAfterTip();
   }, [itemSaved]);
 
   // Similar mentors: the Overview aside, for mentees and guests. Not the mentor
@@ -243,11 +259,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
     setRefocus((n) => n + 1);
   }
   useEffect(() => {
-    if (!refocus) return;
-    // Only when focus was lost with the tip: a save's own focus return wins.
-    if (document.activeElement && document.activeElement !== document.body) return;
-    const next = document.getElementById(STRENGTH_ID)?.querySelector<HTMLElement>('a, button');
-    (next ?? document.getElementById(PREVIEW_TOGGLE_ID))?.focus();
+    // A refetch that lands after the editor closed: the same fallback.
+    if (refocus) refocusAfterTip();
   }, [refocus]);
 
   // Mentor Profile.dc.html `scrollToBook`: the "no session yet" note's Book
@@ -279,6 +292,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           // Blocked booking (guest setup, offline…) is explained on the header's
           // Book; the card just doesn't offer one.
           onBook={canStartBooking ? (time) => booking.open(undefined, time) : undefined}
+          // In preview, drawn but off, as every Book is (Codex on PR 106).
+          bookDisabled={viewing}
         />
       ) : null
     ) : null;
@@ -326,6 +341,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               profile={p}
               onShowReviews={hasReviews ? () => setTab('reviews') : undefined}
               onEditTopics={editing ? () => setItemOpen({ kind: 'topics' }) : undefined}
+              editTopicsRef={editTopics}
               photoTools={
                 editing ? (
                   <PhotoPicker

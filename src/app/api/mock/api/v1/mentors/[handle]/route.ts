@@ -155,6 +155,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
       listing_status: 'listed',
       setup_needed: setupNeeded,
     });
+    // The real API lists active types only (Codex on PR 106).
+    if (setupNeeded.includes('session_type')) body.session_types = [];
     // Bookable only with both, as the real API decides (review of PR 106).
     if (setupNeeded.length) {
       body.taking_bookings = false;
