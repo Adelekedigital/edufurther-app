@@ -78,6 +78,14 @@ describe('toDraft (a saved type as the form opens it)', () => {
     });
   });
 
+  it('a window saved above a cap lowered since opens at the capped value', () => {
+    const d = toDraft(
+      saved({ read: read({ booking_window_days: 56, effective_booking_window_days: 14 }) }),
+      defaults,
+    );
+    expect(d.windowDays).toBe(14);
+  });
+
   it('any rule of its own: "Set rules for this session", the inherited ones at the mentor’s values', () => {
     const d = toDraft(
       saved({
@@ -85,6 +93,8 @@ describe('toDraft (a saved type as the form opens it)', () => {
           duration_minutes: 45,
           duration_inherited: false,
           requires_booking_confirmation: false,
+          // Inherited: the backend resolves it to the mentor's 14 days.
+          effective_booking_window_days: 14,
         }),
       }),
       defaults,

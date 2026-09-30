@@ -3,7 +3,7 @@
 import { useMemo, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
-import { slotWindow } from '@/lib/utils/slots';
+import { DEFAULT_HORIZON_DAYS, slotWindow } from '@/lib/utils/slots';
 import type {
   AppError,
   BookingRequest,
@@ -46,6 +46,8 @@ export function toSessionType(r: SessionTypeRead): SessionType {
     name: r.name,
     durationMin: r.duration_minutes,
     description: r.description?.trim() ?? '',
+    // The window this type really uses (the platform cap applied), backend #309.
+    windowDays: r.booking_window_days,
     // The live intake form, in the order mentees see it (backend #268).
     questions: [...(r.questions ?? [])]
       .sort((a, b) => a.display_order - b.display_order)
@@ -170,14 +172,26 @@ export function useSessionTypes(mentorId: string | null): Remote<SessionType[]> 
 export function useSlots(
   mentorId: string | null,
   sessionTypeId: string | null,
-  /** The viewer's zone: the window is their four weeks (utils/slots.ts slotWindow). */
+  /** The viewer's zone: the window is their days (utils/slots.ts slotWindow). */
   timeZone: string,
 ): Remote<string[]> {
   const enabled = mentorId !== null && sessionTypeId !== null;
-  const window = slotWindow(timeZone);
+  // The type's own booking window, from the types list the picker came from
+  // (always loaded first: the type id comes from it). Four weeks otherwise.
+  const qc = useQueryClient();
+  const horizon =
+    qc
+      .getQueryData<SessionType[]>(keys.booking.sessionTypes(mentorId ?? 'none'))
+      ?.find((t) => t.id === sessionTypeId)?.windowDays ?? DEFAULT_HORIZON_DAYS;
+  const window = slotWindow(timeZone, horizon);
   const query = useQuery({
-    // The window's first day is in the key, so the grid moves on at midnight.
-    queryKey: [...keys.booking.slots(mentorId ?? 'none', sessionTypeId ?? 'none'), window.start],
+    // The window's days are in the key: the grid moves on at midnight, and a
+    // different window length never reuses a shorter range.
+    queryKey: [
+      ...keys.booking.slots(mentorId ?? 'none', sessionTypeId ?? 'none'),
+      window.start,
+      window.end,
+    ],
     enabled,
     queryFn: async ({ signal }) => {
       const { data, error, response } = await api.GET(

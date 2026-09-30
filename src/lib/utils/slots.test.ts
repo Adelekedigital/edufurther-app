@@ -1,5 +1,5 @@
 import { formatDay } from './format';
-import { dayKey, groupSlotsByDay, slotWindow, visibleDays, weekIndexOf } from './slots';
+import { dayKey, groupSlotsByDay, slotWindow, visibleDays, weekIndexOf, weeksIn } from './slots';
 
 describe('groupSlotsByDay', () => {
   // Joshua on the dev backend: first slot 05:30Z on Sep 30.
@@ -48,12 +48,32 @@ describe('slotWindow / visibleDays (review of #20)', () => {
   const la = new Date('2026-09-28T01:00:00Z');
 
   it('asks for a day either side of the viewer’s four weeks', () => {
-    expect(slotWindow('America/Los_Angeles', la)).toEqual({
+    expect(slotWindow('America/Los_Angeles', 28, la)).toEqual({
       start: '2026-09-26',
       end: '2026-10-26',
     });
     // East of UTC: Auckland is already on Sep 28, so its window starts the 27th.
-    expect(slotWindow('Pacific/Auckland', la)).toEqual({ start: '2026-09-27', end: '2026-10-27' });
+    expect(slotWindow('Pacific/Auckland', 28, la)).toEqual({
+      start: '2026-09-27',
+      end: '2026-10-27',
+    });
+  });
+
+  it('follows the session type’s window: a day either side of it, and its days only', () => {
+    // A 7-day window: the request spans 9 days, the picker shows 7.
+    expect(slotWindow('America/Los_Angeles', 7, la)).toEqual({
+      start: '2026-09-26',
+      end: '2026-10-05',
+    });
+    const days = ['2026-09-27', '2026-10-03', '2026-10-04'].map((date) => ({ date, slots: [] }));
+    expect(visibleDays(days, 'America/Los_Angeles', la, 7).map((d) => d.date)).toEqual([
+      '2026-09-27',
+      '2026-10-03',
+    ]);
+    expect(weeksIn(7)).toBe(1);
+    expect(weeksIn(14)).toBe(2);
+    expect(weeksIn(56)).toBe(8);
+    expect(weeksIn(10)).toBe(2);
   });
 
   it('keeps only today … today+27 in the viewer’s zone', () => {

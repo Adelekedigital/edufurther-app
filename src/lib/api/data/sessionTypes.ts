@@ -506,9 +506,15 @@ export function useMentorDefaults(userId: string | null): Remote<MentorDefaults>
       return {
         durationMin: data.default_duration_minutes ?? null,
         noticeHours: notice == null ? null : notice / 60,
-        windowDays: data.booking_window_days ?? null,
+        // Shown within the current cap: a default saved above a cap lowered since.
+        windowDays:
+          data.booking_window_days == null
+            ? null
+            : Math.min(data.booking_window_days, data.max_booking_window_days),
         breakMin: data.break_after_minutes ?? null,
         requiresApproval: data.requires_booking_confirmation,
+        maxWindowDays: data.max_booking_window_days,
+        platformWindowDays: data.default_booking_window_days,
       };
     },
     staleTime: 5 * 60 * 1000,
@@ -551,7 +557,12 @@ export function useSaveMentorDefaults(userId: string | null) {
       return { ...r };
     },
     onSuccess: (saved) => {
-      qc.setQueryData(defaultsKey(userId), saved);
+      // The platform's cap and default aren't the mentor's to save: keep them.
+      qc.setQueryData<MentorDefaults>(defaultsKey(userId), (before) => ({
+        ...saved,
+        maxWindowDays: before?.maxWindowDays,
+        platformWindowDays: before?.platformWindowDays,
+      }));
       // Everything that follows the defaults: slots, the own list's lengths
       // ("Use my defaults" types), the profile's Sessions tab (review of #60).
       void qc.invalidateQueries({ queryKey: ['booking'] });

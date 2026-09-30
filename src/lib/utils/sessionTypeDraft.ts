@@ -92,6 +92,14 @@ export const BREAKS = [0, 10, 15, 30];
 export const PLATFORM_DURATION_MIN = 60;
 export const PLATFORM_NOTICE_HOURS = 24;
 export const PLATFORM_WINDOW_DAYS = 56;
+/**
+ * "Bookable up to" choices under the platform's cap: the presets that fit, and
+ * the cap itself when it isn't one (a cap of 21 offers 7, 14 and 21 days).
+ */
+export function windowPresets(max = PLATFORM_WINDOW_DAYS): number[] {
+  const fit = WINDOW_DAYS.filter((d) => d <= max);
+  return fit.includes(max) ? fit : [...fit, max];
+}
 export const PLATFORM_BREAK_MIN = 0;
 
 const DEFAULT_SLOT: Slot = [540, 600];
@@ -349,6 +357,10 @@ export type BookingDefaults = {
   windowDays: number | null;
   breakMin: number | null;
   requiresApproval: boolean;
+  /** The platform's longest window, a setting that can change (backend #309); absent: 56. */
+  maxWindowDays?: number;
+  /** The platform's window for a mentor who sets none; absent: 56. */
+  platformWindowDays?: number;
 };
 
 /** Every default resolved: the mentor's, else the platform's. */
@@ -356,7 +368,7 @@ export function resolveDefaults(d: BookingDefaults) {
   return {
     durationMin: d.durationMin ?? PLATFORM_DURATION_MIN,
     noticeHours: d.noticeHours ?? PLATFORM_NOTICE_HOURS,
-    windowDays: d.windowDays ?? PLATFORM_WINDOW_DAYS,
+    windowDays: d.windowDays ?? d.platformWindowDays ?? PLATFORM_WINDOW_DAYS,
     breakMin: d.breakMin ?? PLATFORM_BREAK_MIN,
     requiresApproval: d.requiresApproval,
   };

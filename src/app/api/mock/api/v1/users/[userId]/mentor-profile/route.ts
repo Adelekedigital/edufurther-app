@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
-import { prefs, problem } from '@/lib/api/mock/bookingPrefs';
+import {
+  DEFAULT_WINDOW_DAYS,
+  MAX_WINDOW_DAYS,
+  prefs,
+  problem,
+  windowOk,
+} from '@/lib/api/mock/bookingPrefs';
 import { MOCK_COUNTRIES, setMockItems } from '@/lib/api/mock/catalog';
 import { OFFERINGS } from '@/lib/api/mock/fixtures';
 
@@ -18,6 +24,8 @@ export async function GET() {
     approval_status: 'approved',
     listing_status: 'listed',
     ...prefs,
+    max_booking_window_days: MAX_WINDOW_DAYS,
+    default_booking_window_days: DEFAULT_WINDOW_DAYS,
     primary_study_program: null,
     primary_study_country: null,
     offerings: [],
@@ -28,7 +36,8 @@ const ALLOWED: Record<string, (v: unknown) => boolean> = {
   default_duration_minutes: (v) => v === null || [30, 45, 60, 90].includes(v as number),
   // Backend round 3: under 24 hours is refused.
   default_min_notice_minutes: (v) => v === null || [1440, 2880, 4320].includes(v as number),
-  booking_window_days: (v) => v === null || (typeof v === 'number' && v >= 1 && v <= 90),
+  // 4 to the platform cap, or the default already stored (backend #309).
+  booking_window_days: (v) => windowOk(v, prefs.booking_window_days),
   break_after_minutes: (v) => v === null || (typeof v === 'number' && v >= 0 && v <= 120),
   requires_booking_confirmation: (v) => typeof v === 'boolean',
   // The owner's headline (profile edit): null or blank clears it; 300 at most.

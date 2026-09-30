@@ -4,7 +4,7 @@
  * the Live switch and delete stick until the server restarts. Samples are the
  * design's (Session Types.dc.html `fromScene`), re-keyed to catalog offerings.
  */
-import { prefs } from './bookingPrefs';
+import { DEFAULT_WINDOW_DAYS, MAX_WINDOW_DAYS, prefs, windowOk } from './bookingPrefs';
 import type { components } from '@/lib/api/generated/schema';
 import { OFFERINGS } from './fixtures';
 
@@ -36,8 +36,8 @@ const LAST_BOOKED_ENDS_AT = new Date(Date.now() + 14 * 86_400_000).toISOString()
 /** The last booked session ends two weeks out: the date a scheduled deletion waits for. */
 const lastBookedEndsAt = (bookedCount: number) => (bookedCount ? LAST_BOOKED_ENDS_AT : null);
 
-/** The platform's window, default and cap alike (the backend's configured values). */
-export const PLATFORM_WINDOW = 56;
+/** The platform's cap, a setting (dev: MOCK_MAX_BOOKING_WINDOW_DAYS). */
+export const PLATFORM_WINDOW = MAX_WINDOW_DAYS;
 /**
  * The window a booking can use: the offering's own, else the mentor's default,
  * else the platform's, never past the platform cap. A stored window can be
@@ -47,7 +47,7 @@ export function effectiveWindow(
   own: number | null | undefined,
   mentorDefault: number | null | undefined,
 ): number {
-  return Math.min(own ?? mentorDefault ?? PLATFORM_WINDOW, PLATFORM_WINDOW);
+  return Math.min(own ?? mentorDefault ?? DEFAULT_WINDOW_DAYS, MAX_WINDOW_DAYS);
 }
 
 /** The read: the type's own value, else the mentor's default, else the platform's. */
@@ -379,6 +379,8 @@ export function mockEditSessionType(
   };
   range('duration_minutes', 5, 480);
   range('min_notice_minutes', 1440, 4320);
+  if (has('booking_window_days') && !windowOk(body.booking_window_days, t.booking_window_days))
+    errors.push({ pointer: '/booking_window_days', message: 'out of range' });
   const stages = has('application_stages') ? body.application_stages : t.application_stages;
   if (has('application_stages')) {
     if (!Array.isArray(stages))

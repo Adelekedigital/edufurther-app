@@ -72,7 +72,7 @@ export function BookingPreferencesForm({
           'Bookable up to',
           'How far ahead mentees can book.',
           String(v.windowDays),
-          windowOptions(v.windowDays),
+          windowOptions(v.windowDays, initial.maxWindowDays),
           (x) => setV({ ...v, windowDays: Number(x) }),
         )}
         {row(

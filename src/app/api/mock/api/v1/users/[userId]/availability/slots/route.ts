@@ -1,11 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { MOCK_SESSION_TYPES, mockMentorExists, mockSlots } from '@/lib/api/mock/availability';
+import { MAX_WINDOW_DAYS } from '@/lib/api/mock/bookingPrefs';
 
 const DAY = 24 * 60 * 60 * 1000;
 
 /**
  * MOCK of GET /api/v1/users/{user_id}/availability/slots: `session_type_id`
- * required, `end` an exclusive date (default 7 days), at most 56 days.
+ * required, `end` an exclusive date (default 7 days), at most the platform's cap plus a day either side.
  * ENABLE_MOCK_API=1 only.
  */
 export async function GET(req: NextRequest, ctx: { params: Promise<{ userId: string }> }) {
@@ -18,7 +19,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ userId: str
   const now = Date.now();
   const endParam = sp.get('end');
   const end = endParam ? Date.parse(`${endParam}T00:00:00Z`) : now + 7 * DAY;
-  if (Number.isNaN(end) || end - now > 56 * DAY)
+  // The platform's cap plus the day's margin either side the frontend asks for.
+  if (Number.isNaN(end) || end - now > (MAX_WINDOW_DAYS + 2) * DAY)
     return NextResponse.json(
       { type: 'about:blank', title: 'Unprocessable Content', status: 422 },
       { status: 422, headers: { 'content-type': 'application/problem+json' } },

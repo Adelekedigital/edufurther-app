@@ -9,6 +9,7 @@ import {
   useSetFeatured,
   useSaveMentorDefaults,
   useSetLive,
+  useMentorDefaults,
 } from './sessionTypes';
 
 const GET = vi.fn();
@@ -484,6 +485,62 @@ describe('useCreateSessionType', () => {
     act(() => result.current.create({ body, windows: [win(1), win(3)] }, { onSuccess }));
     await waitFor(() => expect(onSuccess).toHaveBeenCalled());
     expect(onSuccess.mock.calls[0]![0]).toEqual({ id: 'new', failedWindows: [win(3)] });
+  });
+});
+
+describe('useMentorDefaults (booking window, backend #309)', () => {
+  it('carries the platform cap and default, and shows a saved window above the cap capped', async () => {
+    GET.mockImplementation((path: string) =>
+      Promise.resolve(
+        path.endsWith('/mentor-profile')
+          ? ok({
+              default_duration_minutes: null,
+              default_min_notice_minutes: null,
+              booking_window_days: 28,
+              break_after_minutes: null,
+              requires_booking_confirmation: true,
+              max_booking_window_days: 14,
+              default_booking_window_days: 14,
+            })
+          : ok({ data: [], next_cursor: null }),
+      ),
+    );
+    const { result } = renderHook(() => useMentorDefaults('m1'), { wrapper: setup() });
+    await waitFor(() => expect(result.current.data).not.toBeNull());
+    expect(result.current.data).toMatchObject({
+      windowDays: 14,
+      maxWindowDays: 14,
+      platformWindowDays: 14,
+    });
+  });
+
+  it('saving the mentor’s preferences keeps the platform cap (found driving the form)', async () => {
+    GET.mockImplementation((path: string) =>
+      Promise.resolve(
+        path.endsWith('/mentor-profile')
+          ? ok({
+              default_duration_minutes: null,
+              default_min_notice_minutes: null,
+              booking_window_days: null,
+              break_after_minutes: null,
+              requires_booking_confirmation: true,
+              max_booking_window_days: 14,
+              default_booking_window_days: 14,
+            })
+          : ok({ data: [], next_cursor: null }),
+      ),
+    );
+    PATCH.mockResolvedValue(ok({ updated: true }));
+    const { result } = renderHook(
+      () => ({ defaults: useMentorDefaults('m1'), save: useSaveMentorDefaults('m1') }),
+      { wrapper: setup() },
+    );
+    await waitFor(() => expect(result.current.defaults.data).not.toBeNull());
+    await act(async () => {
+      await result.current.save.save({ ...result.current.defaults.data!, windowDays: 7 });
+    });
+    await waitFor(() => expect(result.current.defaults.data?.windowDays).toBe(7));
+    expect(result.current.defaults.data?.maxWindowDays).toBe(14);
   });
 });
 

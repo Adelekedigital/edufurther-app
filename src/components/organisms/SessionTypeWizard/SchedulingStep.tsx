@@ -6,7 +6,7 @@ import {
   BREAKS,
   DURATIONS,
   NOTICE_HOURS,
-  WINDOW_DAYS,
+  windowPresets,
   breakLabel,
   hoursLabel,
   defaultsSummary,
@@ -40,7 +40,9 @@ const choices = (list: number[], label: (n: number) => string) => (current: numb
   }));
 export const durationOptions = choices(DURATIONS, (m) => `${m} min`);
 export const noticeOptions = choices(NOTICE_HOURS, (h) => `${hoursLabel(h)} hrs`);
-export const windowOptions = choices(WINDOW_DAYS, windowLabel);
+/** Choices under the platform's cap (the mentor's defaults carry it). */
+export const windowOptions = (current: number, max?: number) =>
+  choices(windowPresets(max), windowLabel)(current);
 export const breakOptions = choices(BREAKS, breakLabel);
 
 type SchedulingStepProps = {
@@ -176,7 +178,7 @@ export function SchedulingStep({
               'Bookable up to',
               'How far ahead mentees can book. Your profile shows this range.',
               d.windowDays,
-              windowOptions,
+              (v) => windowOptions(v, defaults?.maxWindowDays),
               (windowDays) => update({ windowDays }),
             )}
             {rule(

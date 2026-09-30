@@ -1,11 +1,13 @@
 import type { BookingDay } from '@/types/mentor';
 
 /**
- * How far ahead booking looks: four weeks, one /slots request (the backend
- * allows 56 days). The modal shows it a week at a time.
+ * How far ahead booking looks when a session type doesn't say: four weeks.
+ * Otherwise it's the type's own window (its effective booking window), shown a
+ * week at a time in one /slots request.
  */
-export const BOOKING_HORIZON_DAYS = 28;
-export const BOOKING_WEEKS = BOOKING_HORIZON_DAYS / 7;
+export const DEFAULT_HORIZON_DAYS = 28;
+/** Pages of seven days the modal offers for a window: 1 for 7 days, 8 for 56. */
+export const weeksIn = (horizonDays: number) => Math.max(1, Math.ceil(horizonDays / 7));
 
 /** The calendar date (YYYY-MM-DD) an instant falls on in `timeZone`. */
 export function dayKey(isoInstant: string, timeZone: string): string {
@@ -72,24 +74,29 @@ export function weekOfDays(
 
 /**
  * The dates to ask /slots for, so the four weeks on screen are always covered.
- * The picker shows the viewer's today … today+27 in the viewer's zone, but
+ * The picker shows the viewer's today … the window's last day in the viewer's zone, but
  * `start`/`end` are calendar dates the backend reads in the mentor's zone —
- * which can be a day either side. A day's margin on each end (30 days, one
- * request; the backend allows 56) covers every zone pair; `visibleDays` then
- * drops whatever falls outside the four weeks.
+ * which can be a day either side. A day's margin on each end (the window plus
+ * two days, one request; the backend allows the maximum window plus that
+ * margin) covers every zone pair; `visibleDays` drops what falls outside.
  */
-export function slotWindow(timeZone: string, now = new Date()): { start: string; end: string } {
+export function slotWindow(
+  timeZone: string,
+  horizonDays = DEFAULT_HORIZON_DAYS,
+  now = new Date(),
+): { start: string; end: string } {
   const today = dayKey(now.toISOString(), timeZone);
-  return { start: addDays(today, -1), end: addDays(today, BOOKING_HORIZON_DAYS + 1) };
+  return { start: addDays(today, -1), end: addDays(today, horizonDays + 1) };
 }
 
-/** Only the days the picker can show: today … today+27 in the viewer's zone. */
+/** Only the days the picker can show: today … the window's last day, in the viewer's zone. */
 export function visibleDays(
   days: readonly BookingDay[],
   timeZone: string,
   now = new Date(),
+  horizonDays = DEFAULT_HORIZON_DAYS,
 ): BookingDay[] {
   const first = dayKey(now.toISOString(), timeZone);
-  const last = addDays(first, BOOKING_HORIZON_DAYS - 1);
+  const last = addDays(first, horizonDays - 1);
   return days.filter((d) => d.date >= first && d.date <= last);
 }

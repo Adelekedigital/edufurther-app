@@ -739,6 +739,28 @@ describe('BookingFlow week view (7 days at a time)', () => {
     expect(screen.getByRole('button', { name: 'Later dates' })).toBeDisabled();
   });
 
+  it('pages only as far as the session type can be booked: one week for 7 days, eight for 56', async () => {
+    const user = userEvent.setup();
+    const typed = (windowDays: number) => remote(sessionTypes.map((t) => ({ ...t, windowDays })));
+    const { unmount } = render(
+      <BookingFlow
+        {...props({
+          sessionTypes: typed(7),
+          slots: remote(['2026-10-01T09:00:00Z', '2026-10-06T09:00:00Z']),
+        })}
+      />,
+    );
+    // Oct 6 is past a 7-day window: never offered, and there's no later page.
+    expect(screen.getByRole('radio', { name: /Oct 1, 1 time/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Later dates' })).toBeDisabled();
+    expect(screen.queryByRole('radio', { name: /Oct 6/ })).toBeNull();
+    unmount();
+    render(<BookingFlow {...props({ sessionTypes: typed(56) })} />);
+    for (let i = 0; i < 7; i++)
+      await user.click(screen.getByRole('button', { name: 'Later dates' }));
+    expect(screen.getByRole('button', { name: 'Later dates' })).toBeDisabled();
+  });
+
   describe('the questions step (backend PRs 268, 12, 282)', () => {
     const toQuestions = async (user: ReturnType<typeof userEvent.setup>) => {
       await user.click(screen.getByRole('radio', { name: '9:00 am' }));

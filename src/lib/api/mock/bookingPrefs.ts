@@ -11,6 +11,21 @@ type AvailabilityRuleRead = components['schemas']['AvailabilityRuleRead'];
 
 const ZONE = 'Africa/Lagos';
 
+/**
+ * The platform's booking window (backend #309): its cap and the fallback.
+ * Both 56, as the backend ships; MOCK_MAX_BOOKING_WINDOW_DAYS lowers the cap
+ * in dev to see a platform that changed it.
+ */
+export const MAX_WINDOW_DAYS = Number(process.env.MOCK_MAX_BOOKING_WINDOW_DAYS ?? 56);
+export const DEFAULT_WINDOW_DAYS = Math.min(56, MAX_WINDOW_DAYS);
+/** The shortest window: longer than the longest notice (72 h), so a type stays bookable. */
+export const MIN_WINDOW_DAYS = 4;
+/** A window write the backend accepts: 4 to the cap, or the value already stored. */
+export const windowOk = (v: unknown, stored: number | null | undefined) =>
+  v === null ||
+  v === stored ||
+  (typeof v === 'number' && Number.isInteger(v) && v >= MIN_WINDOW_DAYS && v <= MAX_WINDOW_DAYS);
+
 export const prefs = {
   // PENDING BACKEND (round 3 B): the two default_* fields.
   default_duration_minutes: 60 as number | null,

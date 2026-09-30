@@ -89,7 +89,8 @@ export function toDraft(s: SavedSessionType, defaults: BookingDefaults | null): 
     durationMin: r.duration_minutes,
     noticeHours: r.min_notice_minutes / 60,
     rules: inheritsAll ? 'default' : 'custom',
-    windowDays: r.booking_window_days ?? mine?.windowDays ?? 28,
+    // The window it really uses: a stored value above a cap lowered since is shown capped.
+    windowDays: r.effective_booking_window_days,
     breakMin: r.break_after_minutes ?? mine?.breakMin ?? 15,
     hours: hours.rules.length ? 'custom' : 'default',
     days: hours.rules.length ? hours.days : emptyWeek(),
