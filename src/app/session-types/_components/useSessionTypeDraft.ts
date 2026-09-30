@@ -96,15 +96,29 @@ export function useSessionTypeDraft(
 
   // "Set rules for this session" starts from the mentor's values, the first time.
   const customSeeded = useRef(false);
+  // Chosen before the defaults loaded: seeded from them when they arrive.
+  const [seedPending, setSeedPending] = useState(false);
   const seedCustom = (patch: Partial<Draft>): Partial<Draft> => {
     let next = patch;
     if (patch.rules === 'custom' && draft.rules !== 'custom' && !customSeeded.current) {
       customSeeded.current = true;
       if (defaults.data) next = { ...customFrom(defaults.data), ...patch };
+      else setSeedPending(true);
     }
     if (draft.rules === 'custom') customSeeded.current = true;
     return next;
   };
+  if (seedPending && defaults.data) {
+    setSeedPending(false);
+    const seed = customFrom(defaults.data);
+    // Only the rules the mentor hasn't changed since choosing them.
+    setDraft((d) => {
+      const out = { ...d };
+      for (const k of Object.keys(seed) as (keyof typeof seed)[])
+        if (d[k] === initial[k]) out[k] = seed[k];
+      return out;
+    });
+  }
 
   return { draft, setDraft, initial, setInitial, base, setBase, seedCustom };
 }

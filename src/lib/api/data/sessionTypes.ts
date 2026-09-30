@@ -501,7 +501,9 @@ export type MentorDefaults = BookingDefaults;
 const defaultsKey = (userId: string | null) => keys.mentorDefaults(userId ?? 'none');
 
 /** GET /users/{id}/mentor-profile — the defaults a session type inherits. */
-export function useMentorDefaults(userId: string | null): Remote<MentorDefaults> {
+export function useMentorDefaults(
+  userId: string | null,
+): Remote<MentorDefaults> & { refreshing: boolean } {
   const query = useQuery({
     queryKey: defaultsKey(userId),
     enabled: userId !== null,
@@ -538,6 +540,7 @@ export function useMentorDefaults(userId: string | null): Remote<MentorDefaults>
     isLoading: userId !== null && !fresh && !query.isError,
     error: query.error ? normaliseError(query.error) : null,
     retry: () => void query.refetch(),
+    refreshing: query.isFetching,
   };
 }
 

@@ -445,6 +445,16 @@ describe('SessionTypeFormScreen — review of #60', () => {
     expect(within(select).getByRole('option', { name: '20 days' })).toBeInTheDocument();
   });
 
+  it('Edit defaults reads the cap again and opens once that read is back', async () => {
+    const user = userEvent.setup({ delay: null });
+    const retry = vi.fn();
+    defaultsMock = { ...READY, retry, refreshing: true } as typeof READY;
+    await toStep3(user);
+    await user.click(screen.getByRole('button', { name: 'Edit defaults' }));
+    expect(retry).toHaveBeenCalled();
+    expect(screen.queryByRole('dialog', { name: 'Booking preferences' })).toBeNull();
+  });
+
   it('"Bookable up to" offers only what the platform maximum allows, in the form and in Booking preferences', async () => {
     const user = userEvent.setup({ delay: null });
     defaultsMock = { ...READY, data: { ...READY.data, windowDays: 14, maxWindowDays: 14 } };

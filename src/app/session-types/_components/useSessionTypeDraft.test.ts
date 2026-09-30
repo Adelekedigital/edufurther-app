@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import type { MentorDefaults } from '@/lib/api/data/sessionTypes';
 import { SESSION_TEMPLATES } from '@/lib/utils/sessionTemplates';
 import { useSessionTypeDraft } from './useSessionTypeDraft';
@@ -40,5 +40,29 @@ describe('useSessionTypeDraft: the platform cap', () => {
     rerender({ d: { data: defaults({ durationMin: 60, maxWindowDays: 14 }), error: null } });
     expect(result.current.draft).toMatchObject({ rules: 'custom', durationMin: 45 });
     expect(result.current.draft.windowDays).toBeLessThanOrEqual(14);
+  });
+
+  it('custom rules chosen before the defaults load are seeded from them when they arrive', () => {
+    const { result, rerender } = renderHook(({ d }) => useSessionTypeDraft(undefined, null, d), {
+      initialProps: { d: { data: null as MentorDefaults | null, error: null } },
+    });
+    act(() => {
+      const next = result.current.seedCustom({ rules: 'custom' });
+      result.current.setDraft((x) => ({ ...x, ...next }));
+    });
+    // The blank draft's four weeks until the defaults arrive…
+    expect(result.current.draft.windowDays).toBe(28);
+    rerender({
+      d: {
+        data: defaults({ durationMin: 45, platformWindowDays: 56, maxWindowDays: 56 }),
+        error: null,
+      },
+    });
+    // …then the mentor's values (their length, the platform's eight weeks).
+    expect(result.current.draft).toMatchObject({
+      rules: 'custom',
+      durationMin: 45,
+      windowDays: 56,
+    });
   });
 });
