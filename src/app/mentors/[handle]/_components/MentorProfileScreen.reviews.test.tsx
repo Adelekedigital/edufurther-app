@@ -190,6 +190,32 @@ describe('MentorProfileScreen — writing a review', () => {
     ]);
   };
 
+  it('Escape in the open session list folds it; the review stays open (review of PR 112)', async () => {
+    const user = userEvent.setup();
+    due();
+    h.reviewableRemote = remote([
+      { id: 's1', startsAt: '2026-09-19T15:00:00Z', typeName: 'SOP draft review' },
+      { id: 's2', startsAt: '2026-09-10T15:00:00Z', typeName: 'CV review' },
+    ]);
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: 'Write a review' }));
+    const dialog = screen.getByRole('dialog', { name: 'How was your session with Gbenga?' });
+    await user.click(within(dialog).getByRole('textbox'));
+    await user.paste('Draft that must survive.');
+    await user.click(within(dialog).getByRole('button', { name: /^Change session/ }));
+    await user.click(within(dialog).getByRole('radio', { name: 'SOP draft review, Sep 19' }));
+    await user.click(within(dialog).getByRole('button', { name: /^Change session/ }));
+    await new Promise((r) => requestAnimationFrame(r));
+    await user.keyboard('{Escape}');
+    expect(
+      screen.getByRole('dialog', { name: 'How was your session with Gbenga?' }),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByRole('textbox')).toHaveValue('Draft that must survive.');
+    // A second Escape, with the list folded, closes the modal as before.
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
   it(
     '"Write a review" opens the flow; it sends once, with the session',
     { timeout: 15_000 },

@@ -9,7 +9,7 @@ import { Textarea } from '@/components/atoms/Input/Input';
 import { Star } from '@/components/atoms/Star/Star';
 import { StepBars } from '@/components/atoms/StepBars/StepBars';
 import { ChoiceScale, type ScaleOption } from '@/components/molecules/ChoiceScale/ChoiceScale';
-import { Select } from '@/components/atoms/Select/Select';
+import { SessionPickRows } from '@/components/molecules/SessionPickRows/SessionPickRows';
 import { StarRating } from '@/components/molecules/StarRating/StarRating';
 import { cx } from '@/lib/utils/cx';
 import { formatTime } from '@/lib/utils/format';
@@ -107,7 +107,45 @@ export function ReviewFlow(p: ReviewFlowProps) {
   const newestFirst = [...p.sessions].sort(
     (a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt),
   );
-  const [sessionId, setSessionId] = useState<string | null>(newestFirst[0]?.id ?? null);
+  const [chosen, setSessionId] = useState<string | null>(newestFirst[0]?.id ?? null);
+  // A pick that has left the list (reviewed in another tab, then refetched)
+  // falls back to the newest still there, so what's shown is what's sent
+  // (review of PR 112).
+  const sessionId = p.sessions.some((s) => s.id === chosen) ? chosen : (newestFirst[0]?.id ?? null);
+  const showPicker = p.mode === 'new' && p.sessions.length > 1;
+  // ReviewModal.dc.html `compact`: one line with "Change", which opens the rows.
+  const [pickOpen, setPickOpen] = useState(false);
+  // The list shrank to one session while open: it closes (adjusted in render).
+  if (pickOpen && !showPicker) setPickOpen(false);
+  const changeButton = useRef<HTMLButtonElement>(null);
+  const pickRows = useRef<HTMLDivElement>(null);
+  const ratingGroup = useRef<HTMLDivElement>(null);
+  // The pick when the list opened: Escape puts it back.
+  const pickedBefore = useRef<string | null>(null);
+  const openPicker = () => {
+    pickedBefore.current = sessionId;
+    setPickOpen(true);
+    // The picked row takes focus, so the list reads from the current choice.
+    requestAnimationFrame(() =>
+      pickRows.current
+        ?.querySelector<HTMLElement>(
+          '[role="radio"][aria-checked="true"], [role="radio"][tabindex="0"]',
+        )
+        ?.focus(),
+    );
+  };
+  const closePicker = () => {
+    setPickOpen(false);
+    requestAnimationFrame(() => changeButton.current?.focus());
+  };
+  // Focus inside a picker that just went away (one session left): the rating.
+  useEffect(() => {
+    if (showPicker) return;
+    if (document.activeElement && document.activeElement !== document.body) return;
+    ratingGroup.current
+      ?.querySelector<HTMLElement>('[role="radio"][tabindex="0"], [role="radio"]')
+      ?.focus();
+  }, [showPicker]);
   const [feedbackOpen, setFeedbackOpen] = useState(!!p.initial?.platformNote);
   // One request per click, before the page's `pending` arrives.
   const sent = useRef(false);
@@ -187,7 +225,10 @@ export function ReviewFlow(p: ReviewFlowProps) {
   const next = () => {
     if (p.done) return p.onClose();
     if (step === 1) {
-      if (step1ok) setStep(2);
+      if (step1ok) {
+        setPickOpen(false);
+        setStep(2);
+      }
       return;
     }
     if (step === 2) {
@@ -253,23 +294,60 @@ export function ReviewFlow(p: ReviewFlowProps) {
 
       {!p.done && step === 1 && (
         <>
-          {p.mode === 'new' && p.sessions.length > 1 && (
-            // ReviewModal.dc.html `hasSelect`, its default (product 2026-09-30: a
-            // dropdown takes less room than rows). Newest first, picked.
-            <label className={styles.field}>
-              <span className={styles.fieldTitle}>Which session is this about?</span>
-              <Select
-                className={styles.sessionSelect}
-                value={sessionId ?? ''}
-                onChange={(e) => setSessionId(e.target.value)}
-                options={newestFirst.map((s) => ({
-                  value: s.id,
-                  label: sessionText(s, p.timeZone),
-                }))}
-              />
-            </label>
-          )}
-          <div className={styles.rating}>
+          {showPicker &&
+            // ReviewModal.dc.html `sessionPicker=compact`, its default (design
+            // reply to #61): the pick on one line, and every choice one "Change"
+            // away. Newest first, the newest picked.
+            (pickOpen ? (
+              // Escape folds the list and keeps the earlier pick; it must not
+              // reach the modal, which would close and drop the review (review
+              // of PR 112).
+              <div
+                ref={pickRows}
+                onKeyDown={(e) => {
+                  if (e.key !== 'Escape') return;
+                  // In the app React listens on the document itself, as the modal
+                  // does, so only stopping the rest of the document's listeners
+                  // keeps the modal open (seen in the PR 112 screen test).
+                  e.nativeEvent.stopImmediatePropagation();
+                  e.stopPropagation();
+                  setSessionId(pickedBefore.current);
+                  closePicker();
+                }}
+              >
+                <SessionPickRows
+                  label="Which session is this about?"
+                  rows={newestFirst.map((s) => ({
+                    id: s.id,
+                    type: s.typeName ?? 'Session',
+                    date: shortDay(s.startsAt, p.timeZone),
+                  }))}
+                  value={sessionId}
+                  onChange={setSessionId}
+                  onPick={closePicker}
+                />
+              </div>
+            ) : (
+              <div className={styles.compact}>
+                <Icon name="event" size={20} className={styles.compactIcon} />
+                <span className={styles.compactText}>
+                  <span className={styles.compactAbout}>About</span>
+                  <strong className={styles.compactPick}>
+                    {picked ? sessionText(picked, p.timeZone) : ''}
+                  </strong>
+                </span>
+                <button
+                  ref={changeButton}
+                  type="button"
+                  className={styles.change}
+                  aria-label={`Change session. ${p.sessions.length} sessions to review`}
+                  onClick={openPicker}
+                >
+                  Change
+                </button>
+              </div>
+            ))}
+          <div className={styles.rating} ref={ratingGroup}>
             <span className={styles.fieldTitle} id={qid('overall')}>
               How would you rate your time with {first}?
             </span>
