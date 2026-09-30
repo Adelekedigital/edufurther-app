@@ -63,16 +63,38 @@ describe('ReviewFlow', () => {
     render(
       <ReviewFlow
         {...props({
+          // Out of order on purpose: the rows put the newest first either way.
           sessions: [
-            { id: 's1', startsAt: '2026-09-19T15:00:00Z', typeName: 'SOP draft review' },
             { id: 's2', startsAt: '2026-09-10T15:00:00Z', typeName: 'CV review' },
+            { id: 's1', startsAt: '2026-09-19T15:00:00Z', typeName: 'SOP draft review' },
           ],
         })}
       />,
     );
-    expect(screen.getByRole('combobox', { name: 'Which session is this about?' })).toHaveValue(
-      's1',
+    const select = screen.getByRole('combobox', { name: 'Which session is this about?' });
+    expect(select).toHaveValue('s1');
+    expect(
+      within(select)
+        .getAllByRole('option')
+        .map((o) => o.textContent),
+    ).toEqual(['SOP draft review · Sep 19', 'CV review · Sep 10']);
+  });
+
+  it('newest first by time, whatever the offsets (review of PR 102)', () => {
+    render(
+      <ReviewFlow
+        {...props({
+          sessions: [
+            // 14:30Z is later than 15:00+01:00 (14:00Z), though its text sorts first.
+            { id: 'z', startsAt: '2026-09-19T14:30:00Z', typeName: 'Later' },
+            { id: 'o', startsAt: '2026-09-19T15:00:00+01:00', typeName: 'Earlier' },
+          ],
+        })}
+      />,
     );
+    const select = screen.getByRole('combobox', { name: 'Which session is this about?' });
+    expect(select).toHaveValue('z');
+    expect(within(select).getAllByRole('option')[0]).toHaveTextContent(/^Later/);
   });
 
   it('edit: opens filled in; step 2 answers the API didn’t return may stay empty', async () => {

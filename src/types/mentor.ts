@@ -266,7 +266,12 @@ export type MentorProfile = {
    * Present only when the viewer is this mentor (backend mentor-profile reply
    * #1): the owner sees their page in any state.
    */
-  owner: { approval: 'pending' | 'approved' | 'declined' | null; listed: boolean } | null;
+  owner: {
+    approval: 'pending' | 'approved' | 'declined' | null;
+    listed: boolean;
+    /** What stops them taking bookings (backend `setup_needed`, owner-only). */
+    setupNeeded?: ('session_type' | 'weekly_hours')[];
+  } | null;
 };
 
 // ---- Reviews (GET /api/v1/mentors/{handle}/reviews) ---------------------------

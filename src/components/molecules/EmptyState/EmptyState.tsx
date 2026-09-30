@@ -2,7 +2,14 @@
 import type { ReactNode } from 'react';
 import styles from './EmptyState.module.css';
 
-export type Illustration = 'search-results' | 'forms' | 'team' | 'calendar' | 'task-templates';
+export type Illustration =
+  | 'search-results'
+  | 'forms'
+  | 'team'
+  | 'calendar'
+  | 'task-templates'
+  /** The design's `tone="grey"` calendar: a state, not an invitation (not taking bookings). */
+  | 'calendar-grey';
 
 type EmptyStateProps = {
   illustration: Illustration;

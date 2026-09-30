@@ -6,10 +6,10 @@ import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { Textarea } from '@/components/atoms/Input/Input';
-import { Select } from '@/components/atoms/Select/Select';
 import { Star } from '@/components/atoms/Star/Star';
 import { StepBars } from '@/components/atoms/StepBars/StepBars';
 import { ChoiceScale, type ScaleOption } from '@/components/molecules/ChoiceScale/ChoiceScale';
+import { Select } from '@/components/atoms/Select/Select';
 import { StarRating } from '@/components/molecules/StarRating/StarRating';
 import { cx } from '@/lib/utils/cx';
 import { formatTime } from '@/lib/utils/format';
@@ -82,11 +82,15 @@ const RECOMMEND: ScaleOption<number>[] = Array.from({ length: 10 }, (_, i) => ({
   label: String(i + 1),
 }));
 
-function sessionText(s: { startsAt: string; typeName: string | null }, timeZone: string) {
-  const day = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone }).format(
-    new Date(s.startsAt),
+/** "Sep 19" in the viewer's zone. */
+function shortDay(iso: string, timeZone: string) {
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone }).format(
+    new Date(iso),
   );
-  return [s.typeName, day].filter(Boolean).join(' · ');
+}
+
+function sessionText(s: { startsAt: string; typeName: string | null }, timeZone: string) {
+  return [s.typeName, shortDay(s.startsAt, timeZone)].filter(Boolean).join(' · ');
 }
 
 /**
@@ -98,7 +102,12 @@ export function ReviewFlow(p: ReviewFlowProps) {
   const first = p.mentorFirstName;
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [a, setA] = useState<ReviewAnswers>({ ...EMPTY, ...p.initial });
-  const [sessionId, setSessionId] = useState<string | null>(p.sessions[0]?.id ?? null);
+  // Newest first, whatever order they come in; the newest is picked to start.
+  // By time, not text: offsets differ (review of PR 102).
+  const newestFirst = [...p.sessions].sort(
+    (a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt),
+  );
+  const [sessionId, setSessionId] = useState<string | null>(newestFirst[0]?.id ?? null);
   const [feedbackOpen, setFeedbackOpen] = useState(!!p.initial?.platformNote);
   // One request per click, before the page's `pending` arrives.
   const sent = useRef(false);
@@ -245,13 +254,15 @@ export function ReviewFlow(p: ReviewFlowProps) {
       {!p.done && step === 1 && (
         <>
           {p.mode === 'new' && p.sessions.length > 1 && (
-            // PROVISIONAL (design request): the design has no way to choose.
+            // ReviewModal.dc.html `hasSelect`, its default (product 2026-09-30: a
+            // dropdown takes less room than rows). Newest first, picked.
             <label className={styles.field}>
               <span className={styles.fieldTitle}>Which session is this about?</span>
               <Select
+                className={styles.sessionSelect}
                 value={sessionId ?? ''}
                 onChange={(e) => setSessionId(e.target.value)}
-                options={p.sessions.map((s) => ({
+                options={newestFirst.map((s) => ({
                   value: s.id,
                   label: sessionText(s, p.timeZone),
                 }))}

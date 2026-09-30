@@ -200,7 +200,11 @@ export function toMentorProfile(r: MentorPublicRead): MentorProfile {
     attendanceRate: r.attendance_rate ?? null,
     reviews: toReviewSummary(r.reviews),
     owner: isOwner
-      ? { approval: r.approval_status ?? null, listed: r.listing_status !== 'unlisted' }
+      ? {
+          approval: r.approval_status ?? null,
+          listed: r.listing_status !== 'unlisted',
+          setupNeeded: r.setup_needed ?? [],
+        }
       : null,
   };
 }

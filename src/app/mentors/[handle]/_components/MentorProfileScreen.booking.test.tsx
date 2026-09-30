@@ -153,49 +153,85 @@ describe('MentorProfileScreen — ?book= links, gated like Book (review of #81)'
   });
 });
 
-describe('MentorProfileScreen — not taking bookings (backend #301)', () => {
-  it('says so in the header, and nothing anywhere offers Book', () => {
+describe('MentorProfileScreen — not taking bookings (design reply #58, live design)', () => {
+  // No promise of messaging: it isn't built (Codex on PR 102).
+  const body = `${profile.mentor.firstName} isn’t taking bookings right now. You can still explore similar mentors.`;
+
+  it('the header says so, the aside has the note, and nothing offers Book', () => {
     h.profile = state({ data: { ...profile, takingBookings: false } });
     render(<MentorProfileScreen handle="gbenga" />);
-    // A status, not a greyed button (product, 2026-09-29).
-    expect(screen.getByText('Not taking bookings')).toBeInTheDocument();
+    const aside = screen.getByRole('complementary');
+    const note = within(aside).getByRole('region', { name: 'Not taking bookings' });
+    expect(note).toHaveTextContent(body);
     expect(screen.queryByRole('button', { name: /Book/ })).toBeNull();
-    expect(screen.getByText('Not taking bookings right now.')).toBeInTheDocument();
-  });
-
-  it('nothing is labelled as booking: the card reads "Sessions", and so does the aside', () => {
-    h.profile = state({ data: { ...profile, takingBookings: false } });
-    render(<MentorProfileScreen handle="gbenga" />);
-    expect(screen.getByRole('heading', { name: 'Sessions' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Book a session' })).toBeNull();
-    expect(screen.getByRole('complementary')).toHaveAccessibleName(/^Sessions/);
   });
 
-  it('the Sessions tab keeps the session types, without Book', () => {
+  it('the Sessions tab shows the empty state, counted as none, instead of the types', () => {
     withLink('tab=sessions');
     h.profile = state({ data: { ...profile, takingBookings: false } });
     render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('tab', { name: 'Sessions (0)' })).toBeInTheDocument();
     const panel = screen.getByRole('tabpanel');
-    expect(within(panel).getByText(second.name)).toBeInTheDocument();
-    expect(within(panel).queryByRole('button', { name: /Book/ })).toBeNull();
+    expect(within(panel).getByRole('heading', { name: 'Not taking bookings' })).toBeInTheDocument();
+    expect(within(panel).getByText(body)).toBeInTheDocument();
+    expect(within(panel).queryByText(second.name)).toBeNull();
   });
 
-  it('with nothing visible to book, the booking card still says why', () => {
+  it('with no visible types the tab is still there, saying so', () => {
+    withLink('tab=sessions');
     h.profile = state({ data: { ...profile, takingBookings: false, sessionTypes: [] } });
     render(<MentorProfileScreen handle="gbenga" />);
-    expect(screen.getByText('Not taking bookings right now.')).toBeInTheDocument();
+    expect(within(screen.getByRole('tabpanel')).getByText(body)).toBeInTheDocument();
   });
 
-  it('the owner sees none of it (their own pending profile reports false too)', () => {
+  it('the owner sees none of that; with no visible type their bar says what mentees see', () => {
     h.profile = state({
       data: {
         ...fullProfile,
         takingBookings: false,
-        owner: { approval: 'pending', listed: true },
+        owner: { approval: 'approved', listed: true, setupNeeded: ['session_type'] },
       },
     });
     render(<MentorProfileScreen handle="gbenga" />);
-    expect(screen.queryByText('Not taking bookings')).toBeNull();
-    expect(screen.queryByText('Not taking bookings right now.')).toBeNull();
+    expect(screen.queryByText(body)).toBeNull();
+    expect(
+      screen.getByText(
+        'Mentees see “Not taking bookings” on your profile. Turn on a session type to take bookings again.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('a pending owner’s bar keeps the approval message (it comes first)', () => {
+    h.profile = state({
+      data: {
+        ...fullProfile,
+        takingBookings: false,
+        owner: { approval: 'pending', listed: true, setupNeeded: ['session_type'] },
+      },
+    });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(
+      screen.getByText('Only you can see this until your profile is approved.'),
+    ).toBeInTheDocument();
+  });
+
+  it('a mentor viewing keeps the read-only session list, with no note (review of PR 102)', () => {
+    h.viewerIsMentor = true;
+    withLink('tab=sessions');
+    h.profile = state({ data: { ...profile, takingBookings: false } });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(
+      screen.getByRole('tab', { name: `Sessions (${profile.sessionTypes.length})` }),
+    ).toBeInTheDocument();
+    const panel = screen.getByRole('tabpanel');
+    expect(within(panel).getByText(second.name)).toBeInTheDocument();
+    expect(screen.queryByText(body)).toBeNull();
+  });
+
+  it('the aside isn’t named for booking when it only says bookings are closed (review of PR 102)', () => {
+    h.profile = state({ data: { ...profile, takingBookings: false } });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('complementary')).toHaveAccessibleName(/^Availability/);
   });
 });
