@@ -11,6 +11,7 @@ const T: OwnSessionType = {
   durationMin: 60,
   noticeMin: 1440,
   isLive: true,
+  stages: [],
   topics: [{ code: 'document-preparation', label: 'Document preparation' }],
   icon: 'edit_document',
   iconChoice: null,

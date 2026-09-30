@@ -17,6 +17,11 @@ export function formatRating(r: number): string {
  * not an instant, and reading it in a zone would move it a day for anyone east
  * of UTC+12.
  */
+/** "Oct 12", in the viewer's zone: a deletion date, said the same on the row, the confirm and the announcement. */
+export function formatShortDate(isoInstant: string): string {
+  return new Date(isoInstant).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 export function formatDay(isoDate: string) {
   const d = new Date(`${isoDate}T12:00:00Z`);
   const fmt = (o: Intl.DateTimeFormatOptions) =>

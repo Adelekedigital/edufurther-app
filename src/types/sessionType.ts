@@ -14,6 +14,15 @@ export const SESSION_ICONS = [
 ] as const;
 export type SessionIcon = (typeof SESSION_ICONS)[number];
 
+/** Where a mentee is in their application (backend ApplicationStage). `other` = the mentor's own words. */
+export type ApplicationStage =
+  | 'early_exploration'
+  | 'drafting_stage'
+  | 'post_submission'
+  | 'revisions'
+  | 'interviewing'
+  | 'other';
+
 /** One of the mentor's own session types, as the management list shows it. */
 export type OwnSessionType = {
   id: string;
@@ -23,6 +32,8 @@ export type OwnSessionType = {
   noticeMin: number;
   /** Live (bookable) or hidden. Backend `is_active`. */
   isLive: boolean;
+  /** The stages it's aimed at, in the mentor's order; empty = any stage. */
+  stages: ApplicationStage[];
   /** Catalog offerings, in the mentor's order, at most 3 (backend #9). */
   topics: { code: string; label: string }[];
   /** The icon to draw: the mentor's pick, else automatic from the topic. */

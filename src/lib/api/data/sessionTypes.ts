@@ -70,6 +70,8 @@ export function toOwnSessionType(
     durationMin: r.duration_minutes,
     noticeMin: r.min_notice_minutes,
     isLive: r.is_active,
+    // The single field is the deprecated form of the list (backend round 3).
+    stages: r.application_stages ?? (r.application_stage ? [r.application_stage] : []),
     topics,
     iconChoice: r.icon ?? null,
     icon: r.icon ?? autoIcon(topics.map((t) => t.code)),
@@ -142,12 +144,13 @@ export function useOwnSessionTypes(enabled: boolean): Remote<OwnSessionType[]> {
 /**
  * Every write to a row shares one key, so the list is refetched once, after
  * the last one settles: a refetch while another write is pending could return
- * its old state and flicker the row back (review of #80).
+ * its old state and flicker the row back (review of #80). Exported so a write
+ * from another screen (the profile's quick edits) joins the same settle.
  */
-const ROW_WRITE = ['sessionTypes', 'rowWrite'] as const;
+export const ROW_WRITE = ['sessionTypes', 'rowWrite'] as const;
 // A real setTimeout: a test with fake timers must advance them to see the refetch.
 const settling = new WeakSet<QueryClient>();
-function settleRowWrite(qc: QueryClient) {
+export function settleRowWrite(qc: QueryClient) {
   // Checked after this mutation stops counting as pending, and once for writes
   // settling in the same tick: otherwise each sees the other and none refetches.
   if (settling.has(qc)) return;
