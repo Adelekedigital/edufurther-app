@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import type { ReactNode } from 'react';
 import { fn } from 'storybook/test';
+import { Icon } from '@/components/atoms/Icon/Icon';
 import type { OwnSessionType } from '@/types/sessionType';
 import {
   DeleteConfirm,
@@ -32,7 +33,8 @@ const T = (over: Partial<OwnSessionType> = {}): OwnSessionType => ({
   ...over,
 });
 // Organism stories can't import ModalShell (a template), so this stand-in
-// frame is 400px like the modal's sm size; the page renders it in ModalShell.
+// frame is 400px like the modal's sm size, with its icon and tone; the page
+// renders it in ModalShell.
 const renderShell = (s: ConfirmShell, body: ReactNode) => (
   <div
     role="dialog"
@@ -47,6 +49,20 @@ const renderShell = (s: ConfirmShell, body: ReactNode) => (
       borderRadius: 16,
     }}
   >
+    <span
+      style={{
+        display: 'grid',
+        placeItems: 'center',
+        width: 'var(--space-12)',
+        height: 'var(--space-12)',
+        borderRadius: 'var(--radius-full)',
+        background: `var(--modal-icon${s.tone ? '-danger' : ''}-bg)`,
+        boxShadow: `0 0 0 6px var(--modal-icon${s.tone ? '-danger' : ''}-ring)`,
+        color: `var(--modal-icon${s.tone ? '-danger' : ''}-ink)`,
+      }}
+    >
+      <Icon name={s.icon} size={24} />
+    </span>
     <div>
       <h2 style={{ margin: 0, fontSize: 18 }}>{s.title}</h2>
       <p style={{ margin: '4px 0 0', color: 'var(--text-tertiary)' }}>{s.subtitle}</p>

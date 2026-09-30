@@ -1,3 +1,4 @@
+/* Modal.dc.html confirm: two equal buttons, --space-3 apart. */
 .buttons {
   display: grid;
   grid-template-columns: 1fr 1fr;

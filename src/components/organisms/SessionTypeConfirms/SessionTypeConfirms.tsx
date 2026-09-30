@@ -45,23 +45,27 @@ export function DeleteConfirm(
         p.type.isFeatured ? ' It also stops being featured.' : ''
       }`
     : `“${p.type.name}” is removed from your profile and Session types. This can’t be undone.`;
-  return p.renderShell(
-    { title, subtitle, icon: 'delete', tone: 'danger', onClose: p.onKeep },
+  return (
     <>
-      {p.error && (
-        <p role="alert" className={styles.error}>
-          {p.error.message}
-        </p>
+      {p.renderShell(
+        { title, subtitle, icon: 'delete', tone: 'danger', onClose: p.onKeep },
+        <>
+          {p.error && (
+            <p role="alert" className={styles.error}>
+              {p.error.message}
+            </p>
+          )}
+          <div className={styles.buttons}>
+            <Button size="large" variant="secondary-outlined" fullWidth onClick={p.onKeep}>
+              Keep it
+            </Button>
+            <Button size="large" variant="destructive" fullWidth onClick={p.onDelete} busy={p.busy}>
+              {scheduled ? 'Schedule deletion' : 'Delete'}
+            </Button>
+          </div>
+        </>,
       )}
-      <div className={styles.buttons}>
-        <Button size="large" variant="secondary-outlined" fullWidth onClick={p.onKeep}>
-          Keep it
-        </Button>
-        <Button size="large" variant="destructive" fullWidth onClick={p.onDelete} busy={p.busy}>
-          {scheduled ? 'Schedule deletion' : 'Delete'}
-        </Button>
-      </div>
-    </>,
+    </>
   );
 }
 
@@ -78,23 +82,27 @@ export function FeatureConfirm(
     onConfirm: () => void;
   },
 ) {
-  return p.renderShell(
-    {
-      title: `Feature “${p.type.name}” instead?`,
-      subtitle: `It moves to the top of your profile. “${p.current.name}” will no longer be featured. You can feature one session type at a time.`,
-      icon: 'star',
-      onClose: p.onCancel,
-    },
+  return (
     <>
-      <div className={styles.buttons}>
-        <Button size="large" variant="secondary-outlined" fullWidth onClick={p.onCancel}>
-          Cancel
-        </Button>
-        <Button size="large" fullWidth onClick={p.onConfirm}>
-          Feature this instead
-        </Button>
-      </div>
-    </>,
+      {p.renderShell(
+        {
+          title: `Feature “${p.type.name}” instead?`,
+          subtitle: `It moves to the top of your profile. “${p.current.name}” will no longer be featured. You can feature one session type at a time.`,
+          icon: 'star',
+          onClose: p.onCancel,
+        },
+        <>
+          <div className={styles.buttons}>
+            <Button size="large" variant="secondary-outlined" fullWidth onClick={p.onCancel}>
+              Cancel
+            </Button>
+            <Button size="large" fullWidth onClick={p.onConfirm}>
+              Feature this instead
+            </Button>
+          </div>
+        </>,
+      )}
+    </>
   );
 }
 
@@ -119,17 +127,21 @@ export function VisibilityConfirm(
     : p.last
       ? 'Your profile will show “Not taking bookings” until a session type is visible again. Booked sessions go ahead.'
       : 'Mentees can’t see or book it. Booked sessions go ahead, and you can show it again anytime.';
-  return p.renderShell(
-    { title, subtitle, icon: p.show ? 'visibility' : 'visibility_off', onClose: p.onCancel },
+  return (
     <>
-      <div className={styles.buttons}>
-        <Button size="large" variant="secondary-outlined" fullWidth onClick={p.onCancel}>
-          {p.show ? 'Cancel' : 'Keep visible'}
-        </Button>
-        <Button size="large" fullWidth onClick={p.onConfirm}>
-          {p.show ? 'Show it' : 'Hide it'}
-        </Button>
-      </div>
-    </>,
+      {p.renderShell(
+        { title, subtitle, icon: p.show ? 'visibility' : 'visibility_off', onClose: p.onCancel },
+        <>
+          <div className={styles.buttons}>
+            <Button size="large" variant="secondary-outlined" fullWidth onClick={p.onCancel}>
+              {p.show ? 'Cancel' : 'Keep visible'}
+            </Button>
+            <Button size="large" fullWidth onClick={p.onConfirm}>
+              {p.show ? 'Show it' : 'Hide it'}
+            </Button>
+          </div>
+        </>,
+      )}
+    </>
   );
 }

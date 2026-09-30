@@ -4,7 +4,6 @@
   border: var(--border-hairline) solid var(--border-subtle);
   border-radius: var(--radius-xl);
 }
-/* Modal.dc.html confirm: two equal buttons, --space-3 apart. */
 .loading {
   max-width: 880px;
   display: flex;

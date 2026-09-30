@@ -11,7 +11,7 @@ import {
 
 // The page frames it in ModalShell; here a dialog with the title and subtitle.
 const renderShell = (s: ConfirmShell, body: ReactNode) => (
-  <div role="dialog" aria-label={s.title} data-tone={s.tone ?? ''}>
+  <div role="dialog" aria-label={s.title} data-tone={s.tone ?? ''} data-icon={s.icon}>
     <p>{s.subtitle}</p>
     <button type="button" onClick={s.onClose}>
       Close
@@ -65,10 +65,22 @@ describe('DeleteConfirm', () => {
     expect(screen.getByRole('button', { name: 'Schedule deletion' })).toBeInTheDocument();
   });
 
+  it('one booked session, and no end time yet: "Schedule deletion?"', () => {
+    render(<DeleteConfirm {...props} type={T({ booked: { count: 1, lastEndsAt: null } })} />);
+    expect(screen.getByRole('dialog', { name: 'Schedule deletion?' })).toBeInTheDocument();
+    expect(screen.getByText(/The 1 booked session goes ahead first\.$/)).toBeInTheDocument();
+  });
+
+  it('marks the delete button busy while it runs', () => {
+    render(<DeleteConfirm {...props} busy type={T()} />);
+    expect(screen.getByRole('button', { name: 'Delete' })).toHaveAttribute('aria-busy', 'true');
+  });
+
   it('is framed as danger, and closing the frame keeps it', async () => {
     const onKeep = vi.fn();
     render(<DeleteConfirm {...props} type={T()} onKeep={onKeep} />);
     expect(screen.getByRole('dialog')).toHaveAttribute('data-tone', 'danger');
+    expect(screen.getByRole('dialog')).toHaveAttribute('data-icon', 'delete');
     await userEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(onKeep).toHaveBeenCalledOnce();
   });
@@ -110,13 +122,35 @@ describe('FeatureConfirm', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Feature this instead' }));
     expect(onConfirm).toHaveBeenCalledOnce();
   });
+
+  it('is not framed as danger, and closing the frame cancels', async () => {
+    const onCancel = vi.fn();
+    render(
+      <FeatureConfirm
+        renderShell={renderShell}
+        type={T()}
+        current={T({ id: 'b', name: 'Visa interview prep' })}
+        onCancel={onCancel}
+        onConfirm={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('dialog')).toHaveAttribute('data-tone', '');
+    expect(screen.getByRole('dialog')).toHaveAttribute('data-icon', 'star');
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(onCancel).toHaveBeenCalledOnce();
+  });
 });
 
 describe('VisibilityConfirm', () => {
   const props = { renderShell, type: T(), onCancel: vi.fn(), onConfirm: vi.fn() };
 
-  it('show', () => {
-    render(<VisibilityConfirm {...props} show last={false} />);
+  it('show, not framed as danger; closing the frame cancels', async () => {
+    const onCancel = vi.fn();
+    render(<VisibilityConfirm {...props} onCancel={onCancel} show last={false} />);
+    expect(screen.getByRole('dialog')).toHaveAttribute('data-tone', '');
+    expect(screen.getByRole('dialog')).toHaveAttribute('data-icon', 'visibility');
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(onCancel).toHaveBeenCalledOnce();
     expect(
       screen.getByRole('dialog', { name: 'Show “SOP draft review” to mentees?' }),
     ).toBeInTheDocument();
@@ -129,6 +163,7 @@ describe('VisibilityConfirm', () => {
       screen.getByRole('dialog', { name: 'Hide “SOP draft review” from mentees?' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Keep visible' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toHaveAttribute('data-icon', 'visibility_off');
     unmount();
     render(<VisibilityConfirm {...props} show={false} last />);
     expect(

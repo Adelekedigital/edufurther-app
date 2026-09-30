@@ -1,5 +1,11 @@
 import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
+import {
+  QueryClient,
+  QueryClientProvider,
+  onlineManager,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import {
   useCreateSessionType,
@@ -10,6 +16,7 @@ import {
   useSaveMentorDefaults,
   useSetLive,
   useMentorDefaults,
+  rowWrite,
 } from './sessionTypes';
 
 const GET = vi.fn();
@@ -294,6 +301,37 @@ describe('useSetFeatured', () => {
 });
 
 describe('row writes (review r2 of #80)', () => {
+  it('a write from another screen joins through rowWrite: the list waits for it too', async () => {
+    let answer: () => void = () => {};
+    const { result } = renderHook(
+      () => {
+        const qc = useQueryClient();
+        return {
+          list: useOwnSessionTypes(true),
+          setLive: useSetLive(vi.fn()),
+          // As the profile's quick edit would write a row.
+          other: useMutation({
+            ...rowWrite(qc),
+            mutationFn: () => new Promise<void>((res) => (answer = res)),
+          }),
+        };
+      },
+      { wrapper: setup() },
+    );
+    await waitFor(() => expect(result.current.list.data).toHaveLength(2));
+    const lists = () =>
+      GET.mock.calls.filter(([path]) => !String(path).endsWith('/questions')).length;
+    const reads = lists();
+    PATCH.mockResolvedValue(ok({ updated: true }));
+    act(() => result.current.other.mutate());
+    act(() => result.current.setLive('y', false));
+    await waitFor(() => expect(PATCH).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 10));
+    expect(lists()).toBe(reads);
+    await act(async () => answer());
+    await waitFor(() => expect(lists()).toBe(reads + 1));
+  });
+
   it('offline, a write fails at once with our offline copy instead of pausing', async () => {
     const onFailed = vi.fn();
     const { result } = renderHook(
