@@ -76,7 +76,12 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
       application_stages: k === 0 ? ['early_exploration'] : ['drafting_stage', 'revisions'],
       application_stage: k === 0 ? 'early_exploration' : 'drafting_stage',
       service_offering: m.offerings?.[k]
-        ? { code: m.offerings[k]!.slug, display_name: m.offerings[k]!.display_name }
+        ? {
+            // backend #305: a LookupRef carries the catalog id.
+            id: OFFERINGS.find((o) => o.code === m.offerings![k]!.slug)?.id ?? m.offerings[k]!.slug,
+            code: m.offerings[k]!.slug,
+            display_name: m.offerings[k]!.display_name,
+          }
         : null,
     })),
     education: [

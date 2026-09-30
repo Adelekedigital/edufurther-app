@@ -21,6 +21,8 @@ vi.mock('./http', () => ({
 const reply = (status: number, data?: unknown) =>
   Promise.resolve({ data, error: undefined, response: new Response(null, { status }) });
 
+// Through a variable, so the fixture compiles with and without LookupRef.id (backend #305).
+const DOCS = { id: 'off-docs', code: 'document-preparation', display_name: 'Document preparation' };
 const read = (over: Partial<SavedSessionType['read']> = {}): SavedSessionType['read'] => ({
   id: 'st1',
   name: 'SOP review',
@@ -31,8 +33,8 @@ const read = (over: Partial<SavedSessionType['read']> = {}): SavedSessionType['r
   min_notice_inherited: true,
   meeting_venue: 'daily',
   is_active: true,
-  service_offering: { code: 'document-preparation', display_name: 'Document preparation' },
-  service_offerings: [{ code: 'document-preparation', display_name: 'Document preparation' }],
+  service_offering: DOCS,
+  service_offerings: [DOCS],
   application_stage: 'drafting_stage',
   application_stages: ['drafting_stage'],
   custom_stage_label: null,
