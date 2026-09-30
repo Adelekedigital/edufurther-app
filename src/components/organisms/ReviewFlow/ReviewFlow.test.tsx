@@ -59,11 +59,12 @@ describe('ReviewFlow', () => {
     expect(within(group).getByRole('radio', { name: '3 stars, Good' })).toHaveFocus();
   });
 
-  it('several sessions: a "Which session?" choice, defaulting to the newest', () => {
+  it('several sessions: the newest on one line; "Change" opens every choice (design `compact`)', async () => {
+    const user = userEvent.setup();
     render(
       <ReviewFlow
         {...props({
-          // Out of order on purpose: the rows put the newest first either way.
+          // Out of order on purpose: the newest is picked and listed first either way.
           sessions: [
             { id: 's2', startsAt: '2026-09-10T15:00:00Z', typeName: 'CV review' },
             { id: 's1', startsAt: '2026-09-19T15:00:00Z', typeName: 'SOP draft review' },
@@ -71,13 +72,49 @@ describe('ReviewFlow', () => {
         })}
       />,
     );
-    const select = screen.getByRole('combobox', { name: 'Which session is this about?' });
-    expect(select).toHaveValue('s1');
-    expect(
-      within(select)
-        .getAllByRole('option')
-        .map((o) => o.textContent),
-    ).toEqual(['SOP draft review · Sep 19', 'CV review · Sep 10']);
+    expect(screen.getByText('SOP draft review · Sep 19')).toBeInTheDocument();
+    expect(screen.queryByRole('radiogroup', { name: 'Which session is this about?' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Change session. 2 sessions to review' }));
+    const group = screen.getByRole('radiogroup', { name: 'Which session is this about?' });
+    const radios = within(group).getAllByRole('radio');
+    expect(radios.map((r) => r.getAttribute('aria-label'))).toEqual([
+      'SOP draft review, Sep 19',
+      'CV review, Sep 10',
+    ]);
+    await new Promise((r) => requestAnimationFrame(r));
+    // Open, focus is on the current pick.
+    expect(radios[0]).toHaveFocus();
+    // Picking folds it back, and focus returns to "Change".
+    await user.click(radios[1]!);
+    expect(screen.queryByRole('radiogroup', { name: 'Which session is this about?' })).toBeNull();
+    expect(screen.getByText('CV review · Sep 10')).toBeInTheDocument();
+    await new Promise((r) => requestAnimationFrame(r));
+    expect(screen.getByRole('button', { name: /^Change session/ })).toHaveFocus();
+  });
+
+  it('by keyboard: arrows move the pick without folding; Enter confirms it', async () => {
+    const user = userEvent.setup();
+    render(
+      <ReviewFlow
+        {...props({
+          sessions: [
+            { id: 's1', startsAt: '2026-09-19T15:00:00Z', typeName: 'SOP draft review' },
+            { id: 's2', startsAt: '2026-09-10T15:00:00Z', typeName: 'CV review' },
+            { id: 's3', startsAt: '2026-09-02T15:00:00Z', typeName: 'Mock interview' },
+          ],
+        })}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: /^Change session/ }));
+    await new Promise((r) => requestAnimationFrame(r));
+    await user.keyboard('{ArrowDown}{ArrowDown}');
+    expect(screen.getByRole('radio', { name: 'Mock interview, Sep 2' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await user.keyboard('{Enter}');
+    expect(screen.queryByRole('radiogroup', { name: 'Which session is this about?' })).toBeNull();
+    expect(screen.getByText('Mock interview · Sep 2')).toBeInTheDocument();
   });
 
   it('newest first by time, whatever the offsets (review of PR 102)', () => {
@@ -92,9 +129,7 @@ describe('ReviewFlow', () => {
         })}
       />,
     );
-    const select = screen.getByRole('combobox', { name: 'Which session is this about?' });
-    expect(select).toHaveValue('z');
-    expect(within(select).getAllByRole('option')[0]).toHaveTextContent(/^Later/);
+    expect(screen.getByText(/^Later ·/, { selector: 'strong' })).toBeInTheDocument();
   });
 
   it('edit: opens filled in; step 2 answers the API didn’t return may stay empty', async () => {
