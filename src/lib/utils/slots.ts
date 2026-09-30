@@ -80,10 +80,9 @@ export function weekOfDays(
  * The dates to ask /slots for, so the window's days on screen are covered.
  * The picker shows the viewer's today … the window's last day in the viewer's
  * zone, but `start`/`end` are dates the backend reads in the mentor's zone,
- * which can be a day either side. The end gets that day's margin. The start
- * needs none: notice is at least 24 hours, so nothing before the viewer's
- * tomorrow is bookable in any zone. That keeps the range at the window plus
- * one day, which the backend allows (its maximum window plus one).
+ * and two zones' dates can differ by two days (UTC−12 against UTC+14). So two
+ * days of margin before today, and three after the window's last day: the
+ * window plus five days, which the backend allows (its maximum plus five).
  */
 export function slotWindow(
   timeZone: string,
@@ -91,7 +90,7 @@ export function slotWindow(
   now = new Date(),
 ): { start: string; end: string } {
   const today = dayKey(now.toISOString(), timeZone);
-  return { start: today, end: addDays(today, horizonDays + 1) };
+  return { start: addDays(today, -2), end: addDays(today, horizonDays + 3) };
 }
 
 /** Only the days the picker can show: today … the window's last day, in the viewer's zone. */

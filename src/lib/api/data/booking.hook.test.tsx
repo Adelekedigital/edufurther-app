@@ -188,11 +188,11 @@ describe('useSlots: the request follows the session type’s window (backend #30
       const { start, end } = call[1].params.query as { start: string; end: string };
       return (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / DAY;
     };
-    await waitFor(() => expect(range()).toBe(57));
-    // The backend refuses more than its maximum window (56) plus one day.
-    expect(range()).toBeLessThanOrEqual(56 + 1);
+    await waitFor(() => expect(range()).toBe(61));
+    // The backend refuses more than its maximum window (56) plus five days.
+    expect(range()).toBeLessThanOrEqual(56 + 5);
     rerender({ type: 'short' });
-    await waitFor(() => expect(range()).toBe(8));
+    await waitFor(() => expect(range()).toBe(12));
   });
 
   it('a range the backend refuses reloads the types, and the new window asks again', async () => {
@@ -229,7 +229,7 @@ describe('useSlots: the request follows the session type’s window (backend #30
           const { start, end } = o.params.query as { start: string; end: string };
           return (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / DAY;
         });
-    await waitFor(() => expect(ranges()).toEqual([57, 15]));
+    await waitFor(() => expect(ranges()).toEqual([61, 19]));
   });
 
   it('opening the flow reads the types again: a cached, since-raised window isn’t used', async () => {
@@ -261,6 +261,6 @@ describe('useSlots: the request follows the session type’s window (backend #30
           const { start, end } = o.params.query as { start: string; end: string };
           return (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / DAY;
         });
-    await waitFor(() => expect(ranges()).toEqual([57]));
+    await waitFor(() => expect(ranges()).toEqual([61]));
   });
 });

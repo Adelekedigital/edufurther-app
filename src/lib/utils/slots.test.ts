@@ -55,23 +55,23 @@ describe('slotWindow / visibleDays (review of #20)', () => {
   // 6pm in Los Angeles on Sep 27 is already Sep 28 in UTC.
   const la = new Date('2026-09-28T01:00:00Z');
 
-  it('asks from the viewer’s today to a day past the window (the window plus one day)', () => {
+  it('asks two days either side of the viewer’s window, and one more at its end (the window plus five days)', () => {
     expect(slotWindow('America/Los_Angeles', 28, la)).toEqual({
-      start: '2026-09-27',
-      end: '2026-10-26',
+      start: '2026-09-25',
+      end: '2026-10-28',
     });
-    // East of UTC: Auckland is already on Sep 28, so its request starts there.
+    // East of UTC: Auckland is already on Sep 28, so its margin starts two days before that.
     expect(slotWindow('Pacific/Auckland', 28, la)).toEqual({
-      start: '2026-09-28',
-      end: '2026-10-27',
+      start: '2026-09-26',
+      end: '2026-10-29',
     });
   });
 
-  it('follows the session type’s window: the window plus a day, and its days only', () => {
-    // A 7-day window: the request spans 9 days, the picker shows 7.
+  it('follows the session type’s window: plus five days around it, and its days only', () => {
+    // A 7-day window: the request spans 12 days, the picker shows 7.
     expect(slotWindow('America/Los_Angeles', 7, la)).toEqual({
-      start: '2026-09-27',
-      end: '2026-10-05',
+      start: '2026-09-25',
+      end: '2026-10-07',
     });
     const days = ['2026-09-27', '2026-10-03', '2026-10-04'].map((date) => ({ date, slots: [] }));
     expect(visibleDays(days, 'America/Los_Angeles', la, 7).map((d) => d.date)).toEqual([
