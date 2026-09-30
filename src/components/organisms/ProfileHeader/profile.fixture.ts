@@ -70,6 +70,14 @@ export const fullProfile: MentorProfile = {
   originCountry: 'Nigeria',
   studyCountry: 'United States',
   languages: ['English', 'Yoruba'],
+  background: {
+    originId: 'c-ng',
+    studyId: 'c-us',
+    languages: [
+      { id: 'en', label: 'English' },
+      { id: 'yo', label: 'Yoruba' },
+    ],
+  },
   socials: [
     { kind: 'linkedin', href: 'https://www.linkedin.com/in/gbenga' },
     { kind: 'youtube', href: 'https://www.youtube.com/@gbenga' },
@@ -122,6 +130,7 @@ export const newProfile: MentorProfile = {
   originCountry: null,
   studyCountry: null,
   languages: [],
+  background: { originId: null, studyId: null, languages: [] },
   socials: [],
   awards: [],
   mentoringMinutes: 0,

@@ -77,6 +77,9 @@ export const h = {
   editOk: true,
   introErrors: {} as Record<string, string>,
   aboutError: null as string | null,
+  // The owner's topics and background editors.
+  itemsOk: true,
+  itemsError: null as string | null,
 };
 
 export const replace = vi.fn();
@@ -90,6 +93,21 @@ export const coverRemove = vi.fn();
 export const coverPick = vi.fn();
 export const saveIntro = vi.fn();
 export const saveAbout = vi.fn();
+export const saveTopics = vi.fn();
+export const saveBackground = vi.fn();
+
+/** The catalog topics (ids for the fixture's slugs) and countries. */
+export const catalogTopics = [
+  { id: 'o1', slug: 'school-selection', label: 'School selection' },
+  { id: 'o6', slug: 'scholarships-funding', label: 'Scholarships & funding' },
+  { id: 'o2', slug: 'visa-and-interview', label: 'Visa and interview' },
+  { id: 'o5', slug: 'test-preparation', label: 'Test preparation' },
+];
+export const catalogCountries = [
+  { id: 'c-ng', label: 'Nigeria' },
+  { id: 'c-us', label: 'United States' },
+  { id: 'c-gh', label: 'Ghana' },
+];
 
 const navigationMock = () => ({
   useRouter: () => ({ replace }),
@@ -224,6 +242,41 @@ const profileEditMock = () => ({
   }),
 });
 
+const profileItemsMock = () => ({
+  useProfileItems: () => ({
+    saveTopics: (ids: string[], done: () => void) => {
+      saveTopics(ids);
+      if (h.itemsOk) done();
+    },
+    topicsSaving: false,
+    topicsError: h.itemsError,
+    resetTopics: vi.fn(),
+    saveBackground: (before: unknown, after: unknown, done: () => void) => {
+      saveBackground(before, after);
+      if (h.itemsOk) done();
+    },
+    backgroundSaving: false,
+    backgroundError: h.itemsError,
+    resetBackground: vi.fn(),
+  }),
+});
+
+const catalogMock = () => ({
+  useCountries: () => ({ countries: catalogCountries, status: 'ready', retry: vi.fn() }),
+  useLanguageSearch: () => ({
+    results: [
+      { id: 'en', label: 'English' },
+      { id: 'fr', label: 'French' },
+    ],
+    status: 'ready',
+    retry: vi.fn(),
+  }),
+});
+
+const topicsMock = () => ({
+  useTopics: () => ({ topics: catalogTopics, isLoading: false, error: null, retry: vi.fn() }),
+});
+
 /** The mocked modules, by name; each test file registers them with vi.mock. */
 export const mocks = {
   navigation: navigationMock,
@@ -235,6 +288,9 @@ export const mocks = {
   cover: coverMock,
   booking: bookingMock,
   profileEdit: profileEditMock,
+  profileItems: profileItemsMock,
+  catalog: catalogMock,
+  topics: topicsMock,
 };
 
 beforeEach(() => {
@@ -266,6 +322,10 @@ beforeEach(() => {
   h.aboutError = null;
   saveIntro.mockReset();
   saveAbout.mockReset();
+  h.itemsOk = true;
+  h.itemsError = null;
+  saveTopics.mockReset();
+  saveBackground.mockReset();
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
     matches: false,
     media: query,

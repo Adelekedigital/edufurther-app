@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { MOCK_ARTS, setMockCover, type MockCover } from '@/lib/api/mock/coverStore';
+import { MOCK_COUNTRIES, setMockItems } from '@/lib/api/mock/catalog';
 import { setMockText, type MockText } from '@/lib/api/mock/profileTextStore';
 import { COVER_KEYS } from '@/lib/utils/cover';
 
@@ -10,7 +11,8 @@ const invalid = (pointer: string) =>
   );
 
 /**
- * MOCK of PATCH /api/v1/users/{user_id}/profile: cover, names and About.
+ * MOCK of PATCH /api/v1/users/{user_id}/profile: cover, names, About and
+ * where they're from (origin_country_id: a catalog id or null).
  * Partial like the backend: only the fields sent are written. Names can't be
  * cleared (422) and are at most 100 characters; About at most 5000, blank is
  * null. ENABLE_MOCK_API=1 only.
@@ -42,6 +44,11 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ userId: strin
     const v = body.about_me;
     if (v !== null && (typeof v !== 'string' || v.length > 5000)) return invalid('/about_me');
     text.about_me = typeof v === 'string' && v.trim() ? v.trim() : null;
+  }
+  if ('origin_country_id' in body) {
+    const v = body.origin_country_id;
+    if (v !== null && !MOCK_COUNTRIES.some((c) => c.id === v)) return invalid('/origin_country_id');
+    setMockItems(userId, { origin_country_id: v as string | null });
   }
   await new Promise((r) => setTimeout(r, 300));
   setMockText(userId, text);

@@ -226,6 +226,40 @@
   align-items: center;
   list-style: none;
 }
+/* The chips sit in the row itself, so "Edit topics" wraps with them. */
+.topicList {
+  display: contents;
+  list-style: none;
+}
+/* Mentor Profile.dc.html `editTopics`: a dashed 28px pill after the chips. */
+.editTopics {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 28px;
+  padding: 0 var(--space-3);
+  border: var(--border-hairline) dashed var(--blue-500);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+}
+.editTopics:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+@media (max-width: 767px) {
+  /* Drawn 28px; an invisible area makes the tap target 44px. */
+  .editTopics::after {
+    content: '';
+    position: absolute;
+    inset: -8px 0;
+  }
+}
 
 /* Under 1024px the location gets its own line with no "·": on a wrap the dot
    was left leading the new line (product, 2026-09-27). */

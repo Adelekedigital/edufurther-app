@@ -1,0 +1,86 @@
+/* Drawn as the ProfileItemModal.dc.html select (37px, ink-300 border, 14px,
+   chevron); the list below is ours (design-divergence.md). */
+.wrap {
+  position: relative;
+  display: flex;
+}
+.input {
+  width: 100%;
+  height: var(--control-h-sm);
+  padding: 0 var(--space-8) 0 var(--space-3);
+  border: var(--border-hairline) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  color: var(--ink-900);
+  box-sizing: border-box;
+}
+.input:hover {
+  border-color: var(--ink-400);
+}
+.input:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 0;
+  border-color: var(--border-focus);
+}
+.invalid {
+  border-color: var(--border-danger);
+}
+.chevron {
+  position: absolute;
+  right: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--ink-500);
+}
+.list {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  right: 0;
+  z-index: 2;
+  max-height: 216px;
+  overflow: auto;
+  margin: 0;
+  padding: var(--space-1) 0;
+  list-style: none;
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-menu);
+}
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: var(--menu-item-h);
+  padding: 0 var(--space-3);
+  font-size: var(--text-p-sm);
+  color: var(--ink-900);
+  cursor: pointer;
+}
+.option:hover,
+.active {
+  background: var(--blue-50);
+}
+.tick {
+  color: var(--blue-500);
+}
+.none {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+@media (max-width: 767px) {
+  /* Design phone rule: 44px, 16px text (no iOS zoom). */
+  .input {
+    min-height: var(--touch-target-min);
+    font-size: var(--text-p-md);
+  }
+  .option {
+    min-height: var(--touch-target-min);
+  }
+}

@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
+import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { AboutEditor } from '@/components/molecules/AboutEditor/AboutEditor';
 import { CoverPicker } from '@/components/molecules/CoverPicker/CoverPicker';
@@ -29,6 +30,7 @@ import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import styles from './MentorProfileScreen.module.css';
+import { OwnerItemEditor, type ItemKind } from './OwnerItemEditor';
 import { OwnerBar, ProfileSkeleton } from './ProfileParts';
 import { ProfileMissing } from './ProfileMissing';
 import { ReviewsTab } from './ReviewsTab';
@@ -103,6 +105,10 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // The owner's name, headline and About (Mentor Profile.dc.html edit mode).
   const editProfileButton = useRef<HTMLButtonElement>(null);
   const owner = useOwnerEditing(p ?? null, isOwner, editProfileButton);
+  // The owner's topics and background (ProfileItemModal.dc.html), and what
+  // the last save was, for screen readers (the modal closing says nothing).
+  const [itemOpen, setItemOpen] = useState<ItemKind | null>(null);
+  const [itemSaved, setItemSaved] = useState<{ text: string; id: number } | null>(null);
 
   // Similar mentors: the Overview aside, for mentees and guests. Not the mentor
   // themselves, and not other mentors (product 2026-09-28: it's a mentee-facing
@@ -198,6 +204,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
             <ProfileHeader
               profile={p}
               onShowReviews={hasReviews ? () => setTab('reviews') : undefined}
+              onEditTopics={isOwner ? () => setItemOpen('topics') : undefined}
               // PROVISIONAL copy (design request): the design only names the state.
               status={canBookHere && notTaking ? 'Not taking bookings' : undefined}
               introEditor={
@@ -307,6 +314,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 {tab === 'overview' ? (
                   <ProfileOverview
                     profile={p}
+                    onEditBackground={isOwner ? () => setItemOpen('background') : undefined}
                     aboutEdit={
                       isOwner
                         ? {
@@ -373,6 +381,23 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           </>
         )}
       </div>
+
+      {isOwner && p && itemOpen && (
+        <OwnerItemEditor
+          kind={itemOpen}
+          profile={p}
+          onClose={() => setItemOpen(null)}
+          onSaved={(kind) => {
+            setItemOpen(null);
+            setItemSaved({
+              text: kind === 'topics' ? 'Topics saved.' : 'Background saved.',
+              id: Date.now(),
+            });
+          }}
+        />
+      )}
+      {/* Always there while it's the owner, so a screen reader hears each save. */}
+      {isOwner && <LiveRegion message={itemSaved} />}
 
       {booking.active && (
         <BookingFlow

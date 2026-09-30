@@ -28,6 +28,8 @@ type ProfileHeaderProps = {
    * broken).
    */
   status?: string;
+  /** The owner's "Edit topics", after the topic chips (Mentor Profile.dc.html `editTopics`). */
+  onEditTopics?: () => void;
 };
 
 /** "From Nigeria, studied in United States", or whichever half is known. */
@@ -50,6 +52,7 @@ export function ProfileHeader({
   bannerTools,
   introEditor,
   status,
+  onEditTopics,
 }: ProfileHeaderProps) {
   const m = profile.mentor;
   // Cover colour (Mentor Profile.dc.html): a light banner when there's no
@@ -172,14 +175,24 @@ export function ProfileHeader({
         {/* Topics sit before the actions in the DOM, so a stacked header (phones)
             reads name → topics → buttons; from 768px CSS order puts them on
             their own line under the row, as drawn. */}
-        {m.topics.length > 0 && (
-          <ul className={styles.topics} aria-label="Helps with">
-            {m.topics.map((t) => (
-              <li key={t.slug}>
-                <Tag tone="topic">{t.label}</Tag>
-              </li>
-            ))}
-          </ul>
+        {(m.topics.length > 0 || onEditTopics) && (
+          <div className={styles.topics}>
+            {m.topics.length > 0 && (
+              <ul className={styles.topicList} aria-label="Helps with">
+                {m.topics.map((t) => (
+                  <li key={t.slug}>
+                    <Tag tone="topic">{t.label}</Tag>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {onEditTopics && (
+              <button type="button" className={styles.editTopics} onClick={onEditTopics}>
+                <Icon name="edit" size={16} />
+                Edit topics
+              </button>
+            )}
+          </div>
         )}
         {(actions || status) && (
           <div className={styles.actions}>

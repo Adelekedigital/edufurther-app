@@ -5,7 +5,14 @@ import {
   mockAvailabilityState,
   mockNextAvailableAt,
 } from '@/lib/api/mock/availability';
-import { FEATURED, MENTORS, mockCountries, mockProfileIndex } from '@/lib/api/mock/fixtures';
+import { countryIdByName, countryName, MOCK_LANGUAGES, mockItems } from '@/lib/api/mock/catalog';
+import {
+  FEATURED,
+  MENTORS,
+  mockCountries,
+  mockProfileIndex,
+  OFFERINGS,
+} from '@/lib/api/mock/fixtures';
 import { prefs } from '@/lib/api/mock/bookingPrefs';
 import { mockBannerUrl, mockCover } from '@/lib/api/mock/coverStore';
 import { mockText } from '@/lib/api/mock/profileTextStore';
@@ -115,7 +122,34 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
     // Backend #301: approved, listed and bookable (fixtures' NOT_TAKING isn't).
     taking_bookings: m.taking_bookings !== false,
   };
+  // The countries by id too (backend: names aren't unique; the writes take ids).
+  Object.assign(body, {
+    origin_country_id: countryIdByName(body.origin_country ?? null),
+    primary_study_country_id: countryIdByName(body.primary_study_country ?? null),
+  });
   if (own) {
+    // The owner's topics and background (profile editors).
+    const it = mockItems(id);
+    if ('origin_country_id' in it)
+      Object.assign(body, {
+        origin_country_id: it.origin_country_id,
+        origin_country: countryName(it.origin_country_id ?? null),
+      });
+    if ('primary_study_country_id' in it)
+      Object.assign(body, {
+        primary_study_country_id: it.primary_study_country_id,
+        primary_study_country: countryName(it.primary_study_country_id ?? null),
+      });
+    if (it.language_ids)
+      body.languages = it.language_ids.flatMap((lid) => {
+        const l = MOCK_LANGUAGES.find((x) => x.id === lid);
+        return l ? [{ id: l.id, display_name: l.display_name, code: l.code }] : [];
+      });
+    if (it.offering_ids)
+      body.offerings = it.offering_ids.flatMap((oid) => {
+        const o = OFFERINGS.find((x) => x.id === oid);
+        return o?.code ? [{ slug: o.code, display_name: o.display_name }] : [];
+      });
     // The owner's edits (PATCH /users/{id}/profile and /mentor-profile).
     const t = mockText(id);
     if (t.first_name) body.first_name = t.first_name;

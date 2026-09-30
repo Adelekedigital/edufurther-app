@@ -175,6 +175,12 @@ export function toMentorProfile(r: MentorPublicRead): MentorProfile {
     originCountry: r.origin_country ?? null,
     studyCountry: r.primary_study_country ?? null,
     languages: (r.languages ?? []).map((l) => l.display_name),
+    // Ids, not names: names aren't unique in the catalog (backend reply).
+    background: {
+      originId: r.origin_country_id ?? null,
+      studyId: r.primary_study_country_id ?? null,
+      languages: (r.languages ?? []).map((l) => ({ id: l.id, label: l.display_name })),
+    },
     socials,
     education,
     awards,
