@@ -52,6 +52,16 @@ export function nextAvailableState(
   return at ? 'open' : 'unknown';
 }
 
+/**
+ * The pages as one list, each mentor once. A mentor whose bookability changes
+ * mid-scroll can come back on a later page (bookable ones rank first); the
+ * first place they appeared is kept, so no card shows twice.
+ */
+export function joinPages(pages: Mentor[][]): Mentor[] {
+  const seen = new Set<string>();
+  return pages.flat().filter((m) => !seen.has(m.id) && !!seen.add(m.id));
+}
+
 export function toMentor(r: MentorSummaryRead): Mentor {
   const first = r.first_name?.trim() || '';
   const last = r.last_name?.trim() || '';
@@ -212,7 +222,7 @@ export function useMentors(filters: MentorFilters): MentorsResult {
   });
 
   const pages = query.data?.pages ?? [];
-  const mentors = pages.flatMap((p) => p.mentors);
+  const mentors = joinPages(pages.map((p) => p.mentors));
   const pageCount = pages.length;
   const total = pages[0]?.total ?? null;
   const nextFailed = query.isFetchNextPageError;
