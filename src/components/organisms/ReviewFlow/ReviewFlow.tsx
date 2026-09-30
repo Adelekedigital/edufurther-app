@@ -301,11 +301,15 @@ export function ReviewFlow(p: ReviewFlowProps) {
             (pickOpen ? (
               // Escape folds the list and keeps the earlier pick; it must not
               // reach the modal, which would close and drop the review (review
-              // of PR 112). React's listener is below the document's.
+              // of PR 112).
               <div
                 ref={pickRows}
                 onKeyDown={(e) => {
                   if (e.key !== 'Escape') return;
+                  // In the app React listens on the document itself, as the modal
+                  // does, so only stopping the rest of the document's listeners
+                  // keeps the modal open (seen in the PR 112 screen test).
+                  e.nativeEvent.stopImmediatePropagation();
                   e.stopPropagation();
                   setSessionId(pickedBefore.current);
                   closePicker();
