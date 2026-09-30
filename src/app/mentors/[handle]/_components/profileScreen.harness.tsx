@@ -15,6 +15,7 @@ import type {
   ReviewPrompt,
   Viewer,
 } from '@/types/mentor';
+import type { OwnSessionType } from '@/types/sessionType';
 
 export type ProfileRemote = Remote<MentorProfile> & { notFound: boolean };
 
@@ -70,6 +71,11 @@ export const h = {
   // The Similar mentors card's list.
   similarRemote: remote(similarMentors) as Remote<typeof similarMentors>,
   profile: state({}),
+  // The owner's own session types (Sessions tab) and the quick edit.
+  ownTypes: idle as Remote<OwnSessionType[]>,
+  quickOk: true,
+  quickPending: false,
+  quickError: null as { copy: string } | null,
   // What the booking modal's queries return.
   sessionTypesRemote: idle as unknown,
   slotsRemote: idle as unknown,
@@ -112,6 +118,26 @@ export const removeAward = vi.fn();
 export const addEducation = vi.fn();
 export const editEducation = vi.fn();
 export const removeEducation = vi.fn();
+export const quickEdit = vi.fn();
+export const restoreType = vi.fn();
+
+/** An owner's session type as Session types lists it. */
+export const ownType = (over: Partial<OwnSessionType> = {}): OwnSessionType => ({
+  id: 'st1',
+  name: 'SOP draft review',
+  description: 'We’ll work through your SOP draft together.',
+  durationMin: 60,
+  noticeMin: 1440,
+  isLive: true,
+  topics: [{ code: 'application-documents', label: 'Application documents' }],
+  icon: 'edit_document',
+  iconChoice: null,
+  questionCount: 0,
+  isFeatured: false,
+  pendingDeletion: null,
+  booked: { count: 0, lastEndsAt: null },
+  ...over,
+});
 
 /** The owner's own degrees, as GET /users/{id}/education gives them. */
 export const ownEducation = [
@@ -268,6 +294,23 @@ const avatarMock = () => ({
   }),
 });
 
+const sessionTypesMock = () => ({
+  useOwnSessionTypes: () => h.ownTypes,
+  useRestoreSessionType: () => ({ restore: restoreType, pendingIds: [] as string[] }),
+});
+
+const sessionTypeQuickMock = () => ({
+  useQuickEditSessionType: () => ({
+    mutate: (vars: unknown, opts?: { onSuccess?: () => void }) => {
+      quickEdit(vars);
+      if (h.quickOk) opts?.onSuccess?.();
+    },
+    isPending: h.quickPending,
+    error: h.quickError,
+    reset: vi.fn(),
+  }),
+});
+
 const bookingMock = () => ({
   useSessionTypes: (...a: unknown[]) => {
     sessionTypesArgs(...a);
@@ -420,6 +463,8 @@ export const mocks = {
   profileEntries: profileEntriesMock,
   catalog: catalogMock,
   topics: topicsMock,
+  sessionTypes: sessionTypesMock,
+  sessionTypeQuick: sessionTypeQuickMock,
 };
 
 beforeEach(() => {
@@ -468,6 +513,12 @@ beforeEach(() => {
   removeEducation.mockReset();
   saveTopics.mockReset();
   saveBackground.mockReset();
+  h.ownTypes = idle;
+  h.quickOk = true;
+  h.quickPending = false;
+  h.quickError = null;
+  quickEdit.mockReset();
+  restoreType.mockReset();
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
     matches: false,
     media: query,

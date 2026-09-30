@@ -13,6 +13,7 @@ import { RowMenu } from './RowMenu/RowMenu';
 import { FileField } from './FileField/FileField';
 import { IconPicker } from './IconPicker/IconPicker';
 import { QuestionRow } from './QuestionRow/QuestionRow';
+import { SessionTypeOwnerFooter } from './SessionTypeOwnerFooter/SessionTypeOwnerFooter';
 import { SessionPreviewCard } from './SessionPreviewCard/SessionPreviewCard';
 import { SummarySection } from './SummarySection/SummarySection';
 import { FormField } from './FormField/FormField';
@@ -643,6 +644,34 @@ export const CopyShareLink: Story = {
       <CopyLinkButton
         label="Copy share link for SOP draft review"
         url="https://edufurther.com/mentors/m1?book=st1"
+      />
+    </div>
+  ),
+};
+
+/** The owner's session card footer (Mentor Profile.dc.html): controls, and the scheduled note. */
+export const SessionOwnerFooter: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 24, maxWidth: 360 }}>
+      <SessionTypeOwnerFooter
+        name="SOP draft review"
+        visible
+        onToggle={fn()}
+        onEdit={fn()}
+        onDelete={fn()}
+        pending={null}
+      />
+      <SessionTypeOwnerFooter
+        name="Program shortlist"
+        visible={false}
+        onToggle={fn()}
+        onEdit={fn()}
+        onDelete={fn()}
+        pending={{
+          note: 'Hidden from mentees. Deleted after its last booked session on Oct 14. The 2 booked sessions go ahead.',
+          onKeep: fn(),
+          keeping: false,
+        }}
       />
     </div>
   ),

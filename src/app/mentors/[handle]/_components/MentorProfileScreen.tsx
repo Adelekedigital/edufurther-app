@@ -43,6 +43,7 @@ import { NotTakingEmpty, NotTakingNote, OwnerBar, ProfileSkeleton } from './Prof
 import { ProfileMissing } from './ProfileMissing';
 import { ReviewsTab } from './ReviewsTab';
 import { listLabel } from './suggestions';
+import { OwnerSessionTypes } from './OwnerSessionTypes';
 import { useOwnerEditing } from './useOwnerEditing';
 import { useBookLink } from './useBookLink';
 import { useProfileBooking } from './useProfileBooking';
@@ -96,7 +97,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // Profile.dc.html `notTaking`); a mentor viewing keeps the read-only list
   // (review of PR 102).
   const notTakingTab = canBookHere && notTaking;
-  const { tab, setTab } = useProfileTab(hasSessions || notTakingTab, hasReviews);
+  // The owner always has the tab: their hidden types and "New session type" are there.
+  const { tab, setTab } = useProfileTab(hasSessions || notTakingTab || isOwner, hasReviews);
 
   // Cards only render after a client fetch, so reading the device zone here is safe.
   const [timeZone] = useState(deviceTimeZone);
@@ -345,7 +347,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 }}
                 items={[
                   { value: 'overview', label: 'Overview', panelId: 'panel-overview' },
-                  ...(hasSessions || notTakingTab
+                  ...(hasSessions || notTakingTab || isOwner
                     ? [
                         {
                           value: 'sessions',
@@ -430,6 +432,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                   />
                 ) : notTakingTab ? (
                   <NotTakingEmpty firstName={p.mentor.firstName} />
+                ) : isOwner ? (
+                  <OwnerSessionTypes shown={p.sessionTypes} />
                 ) : (
                   <SessionTypeList
                     sessionTypes={p.sessionTypes}

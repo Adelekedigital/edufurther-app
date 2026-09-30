@@ -26,6 +26,19 @@
   align-items: center;
   gap: var(--space-2);
 }
+.tags {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+/* The owner's hidden or pending card: greyed, only they see it (ownerDeco). */
+.dim {
+  background: var(--ink-50);
+}
+.dim .name {
+  color: var(--ink-600);
+}
 .price {
   font-size: var(--text-p-sm);
   font-weight: var(--weight-semibold);
@@ -74,8 +87,50 @@
   border-top: var(--border-hairline) solid var(--border-muted);
 }
 
+/* The owner's "New session type" tile (Mentor Profile.dc.html `canEdit`). */
+.newItem {
+  display: flex;
+  max-width: 360px;
+}
+.newTile {
+  flex: 1;
+  /* Content-box, as the design renders it: 160px plus the padding (202px). */
+  box-sizing: content-box;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border: var(--border-hairline) dashed var(--ink-300);
+  border-radius: var(--radius-xl);
+  text-align: center;
+  text-decoration: none;
+  color: var(--ink-900);
+}
+.newTile:hover {
+  border-color: var(--blue-500);
+  background: var(--blue-50);
+}
+.newIcon {
+  color: var(--blue-500);
+}
+.newTitle {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-700);
+}
+.newHint {
+  max-width: 240px;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+
 @media (max-width: 767px) {
-  .card {
+  .card,
+  .newTile {
     padding: var(--space-4);
   }
   .foot > * {
