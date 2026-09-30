@@ -221,14 +221,23 @@ export function useSetLive(onFailed: (id: string, live: boolean) => void) {
     },
     onMutate: async ({ id, live }) => {
       await qc.cancelQueries({ queryKey: key });
+      const wasFeatured = !!qc
+        .getQueryData<OwnSessionType[]>(key)
+        ?.find((t) => t.id === id && t.isFeatured);
+      // Hiding un-features it (the server does too): the badge goes at once.
       qc.setQueryData<OwnSessionType[]>(key, (list) =>
-        list?.map((t) => (t.id === id ? { ...t, isLive: live } : t)),
+        list?.map((t) =>
+          t.id === id ? { ...t, isLive: live, isFeatured: live && t.isFeatured } : t,
+        ),
       );
+      return { wasFeatured };
     },
-    onError: (_e, { id, live }) => {
+    onError: (_e, { id, live }, ctx) => {
       // Roll back this row only: another row's switch may be in flight too.
       qc.setQueryData<OwnSessionType[]>(key, (list) =>
-        list?.map((t) => (t.id === id ? { ...t, isLive: !live } : t)),
+        list?.map((t) =>
+          t.id === id ? { ...t, isLive: !live, isFeatured: ctx?.wasFeatured ?? t.isFeatured } : t,
+        ),
       );
       failed.current(id, live);
     },

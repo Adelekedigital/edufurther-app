@@ -14,7 +14,7 @@ type SessionTypeRowProps = {
   onLiveChange: (live: boolean) => void;
   onDelete: () => void;
   onEdit: () => void;
-  /** Mark as / remove from featured (the menu); absent while deletion is scheduled. */
+  /** Mark as / remove from featured (the menu); absent while hidden (hiding un-features) or while deletion is scheduled. */
   onFeature: (featured: boolean) => void;
   /** Cancel a scheduled deletion (the row's "Keep it"). */
   onRestore: () => void;
@@ -164,12 +164,18 @@ export function SessionTypeRow({
             ...(pending
               ? []
               : [
-                  {
-                    key: 'feature',
-                    icon: 'star' as const,
-                    label: t.isFeatured ? 'Remove from featured' : 'Mark as featured',
-                    onSelect: () => onFeature(!t.isFeatured),
-                  },
+                  // Only a live type can be featured (product, 2026-09-30); hiding
+                  // un-features it at once (useSetLive), so a hidden one has neither.
+                  ...(t.isLive
+                    ? [
+                        {
+                          key: 'feature',
+                          icon: 'star' as const,
+                          label: t.isFeatured ? 'Remove from featured' : 'Mark as featured',
+                          onSelect: () => onFeature(!t.isFeatured),
+                        },
+                      ]
+                    : []),
                   {
                     key: 'delete',
                     icon: 'delete' as const,
