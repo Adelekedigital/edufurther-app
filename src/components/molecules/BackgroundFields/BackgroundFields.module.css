@@ -1,0 +1,6 @@
+/* ProfileItemModal.dc.html `background`: two country pickers, 1fr 1fr. */
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}

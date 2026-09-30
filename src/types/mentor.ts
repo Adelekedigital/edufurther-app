@@ -208,6 +208,12 @@ export type MentorProfile = {
   originCountry: string | null;
   studyCountry: string | null;
   languages: string[];
+  /** The same background by id, for the owner's editor (the writes take ids). */
+  background: {
+    originId: string | null;
+    studyId: string | null;
+    languages: { id: string; label: string }[];
+  };
   /** Only links that passed lib/utils/socialUrl. */
   socials: { kind: SocialKind; href: string }[];
   education: ProfileItem[];

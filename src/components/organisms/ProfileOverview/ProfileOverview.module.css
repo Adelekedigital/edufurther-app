@@ -121,3 +121,41 @@
   line-height: var(--lh-p);
   color: var(--text-tertiary);
 }
+/* Mentor Profile.dc.html `bgEmptyOwner`: the owner's invitation to add a background. */
+.bgEmpty {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-4) var(--space-5);
+  border: var(--border-hairline) dashed var(--blue-500);
+  border-radius: var(--radius-xl);
+  background: var(--blue-50);
+}
+.bgEmptyIcon {
+  width: var(--space-10);
+  height: var(--space-10);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--surface-card);
+  color: var(--blue-500);
+}
+.bgEmptyText {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.bgEmptyTitle {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.bgEmptyBody {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}

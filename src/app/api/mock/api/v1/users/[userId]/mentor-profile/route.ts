@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prefs, problem } from '@/lib/api/mock/bookingPrefs';
+import { MOCK_COUNTRIES, setMockItems } from '@/lib/api/mock/catalog';
+import { OFFERINGS } from '@/lib/api/mock/fixtures';
 
 /**
  * MOCK of GET /api/v1/users/{id}/mentor-profile — only what Session Types reads:
@@ -33,13 +35,26 @@ const ALLOWED: Record<string, (v: unknown) => boolean> = {
   headline: (v) => v === null || (typeof v === 'string' && v.trim().length <= 300),
 };
 
-/** MOCK of PATCH /api/v1/users/{id}/mentor-profile: the booking preferences only. */
-export async function PATCH(req: Request) {
+/** The owner's topics and where they studied (profile editors); kept per user. */
+const ITEMS: Record<string, (v: unknown) => boolean> = {
+  offering_ids: (v) =>
+    Array.isArray(v) &&
+    new Set(v).size === v.length &&
+    v.every((id) => OFFERINGS.some((o) => o.id === id)),
+  primary_study_country_id: (v) => v === null || MOCK_COUNTRIES.some((c) => c.id === v),
+};
+
+/**
+ * MOCK of PATCH /api/v1/users/{id}/mentor-profile: the booking preferences,
+ * the headline, and the owner's topics and where they studied.
+ */
+export async function PATCH(req: Request, ctx: { params: Promise<{ userId: string }> }) {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
+  const { userId } = await ctx.params;
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   await new Promise((r) => setTimeout(r, 400));
   for (const [k, v] of Object.entries(body)) {
-    const ok = ALLOWED[k];
+    const ok = ALLOWED[k] ?? ITEMS[k];
     if (ok && !ok(v))
       return NextResponse.json(
         {
@@ -50,5 +65,6 @@ export async function PATCH(req: Request) {
       );
   }
   for (const k of Object.keys(ALLOWED)) if (k in body) Object.assign(prefs, { [k]: body[k] });
+  for (const k of Object.keys(ITEMS)) if (k in body) setMockItems(userId, { [k]: body[k] });
   return NextResponse.json({ updated: true });
 }

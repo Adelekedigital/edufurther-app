@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react';
+import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { FactTile } from '@/components/molecules/FactTile/FactTile';
 import { IconListItem } from '@/components/molecules/IconListItem/IconListItem';
@@ -18,6 +19,14 @@ type ProfileOverviewProps = {
    * place of the text while it's open.
    */
   aboutEdit?: { onEdit: () => void; editor: ReactNode | null };
+  /**
+   * The owner's Background editing (Mentor Profile.dc.html `editBackground`):
+   * "Edit" in the heading row, or with nothing added yet, "Add" and an
+   * invitation card.
+   */
+  onEditBackground?: () => void;
+  /** The heading's Edit/Add, for the page to return focus to after a save. */
+  backgroundEditRef?: Ref<HTMLButtonElement>;
 };
 
 /**
@@ -26,7 +35,12 @@ type ProfileOverviewProps = {
  * out, as the design does for a viewer who can't edit. Awards carry no funding
  * badge: the API has no funding field.
  */
-export function ProfileOverview({ profile, aboutEdit }: ProfileOverviewProps) {
+export function ProfileOverview({
+  profile,
+  aboutEdit,
+  onEditBackground,
+  backgroundEditRef,
+}: ProfileOverviewProps) {
   // When the editor closes, focus goes back to "Edit".
   const editRef = useRef<HTMLButtonElement>(null);
   const editing = !!aboutEdit?.editor;
@@ -131,16 +145,47 @@ export function ProfileOverview({ profile, aboutEdit }: ProfileOverviewProps) {
         </section>
       )}
 
-      {facts.length > 0 && (
+      {(facts.length > 0 || onEditBackground) && (
         <section className={styles.section} aria-labelledby="bg-h">
-          <h2 id="bg-h" className={styles.h2}>
-            Background
-          </h2>
-          <div className={styles.facts}>
-            {facts.map((f) => (
-              <FactTile key={f.label} {...f} />
-            ))}
+          <div className={styles.headRow}>
+            <h2 id="bg-h" className={styles.h2}>
+              Background
+            </h2>
+            {onEditBackground && (
+              <button
+                ref={backgroundEditRef}
+                type="button"
+                className={styles.edit}
+                onClick={onEditBackground}
+                aria-label={facts.length ? 'Edit background' : 'Add background'}
+              >
+                <Icon name={facts.length ? 'edit' : 'add'} size={16} />
+                {facts.length ? 'Edit' : 'Add'}
+              </button>
+            )}
           </div>
+          {facts.length === 0 && onEditBackground && (
+            <div className={styles.bgEmpty}>
+              <span className={styles.bgEmptyIcon}>
+                <Icon name="public" size={20} />
+              </span>
+              <div className={styles.bgEmptyText}>
+                <span className={styles.bgEmptyTitle}>Tell mentees where you’re from</span>
+                <span className={styles.bgEmptyBody}>
+                  Mentees often look for mentors who made the same move. Add your countries and
+                  languages.
+                </span>
+              </div>
+              <Button onClick={onEditBackground}>Add background</Button>
+            </div>
+          )}
+          {facts.length > 0 && (
+            <div className={styles.facts}>
+              {facts.map((f) => (
+                <FactTile key={f.label} {...f} />
+              ))}
+            </div>
+          )}
           {moved && (
             <p className={styles.moved}>
               <Icon name="flight_takeoff" size={16} className={styles.movedIcon} />

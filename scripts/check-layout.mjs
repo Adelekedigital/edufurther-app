@@ -53,7 +53,9 @@ const CHECKS = [
     widths: [390, 600, 767, 768, 1024, 1440],
     run: () => {
       const head = document.getElementById('profile-name')?.closest('section');
-      const topics = head?.querySelector('ul[aria-label="Helps with"]');
+      // The topics row: the chip list is display: contents inside it, so the
+      // owner's "Edit topics" wraps with the chips (the list has no box).
+      const topics = head?.querySelector('ul[aria-label="Helps with"]')?.parentElement;
       // The actions row, found by the Share button: Book's label changes when
       // booking is blocked ("Can't book right now"), Share's never does.
       const actions = head?.querySelector('button[aria-label="Share profile"]')?.parentElement

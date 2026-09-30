@@ -5,6 +5,12 @@ export const keys = {
   topics: {
     all: ['topics'] as const,
   },
+  /** Reference lists the owner's profile forms are built from (GET /catalog/{catalogue}). */
+  catalog: {
+    countries: ['catalog', 'countries'] as const,
+    /** '' = the common set. */
+    languages: (q: string) => ['catalog', 'languages', q] as const,
+  },
   viewer: {
     all: ['viewer'] as const,
     me: (userId: string) => ['viewer', 'me', userId] as const,
