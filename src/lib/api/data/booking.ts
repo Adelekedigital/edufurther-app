@@ -187,15 +187,21 @@ export function useSlots(
   // date if the platform cap or default changed since (either way).
   const opened = mentorId !== null && sessionTypeId !== null;
   const refreshTypes = types.retry;
-  const [openedAt, setOpenedAt] = useState<number | null>(null);
+  // When the flow opens (or the mentor changes), note when the types were
+  // last read; only a read after that sizes the request.
+  const openKey = opened ? mentorId : null;
+  const [opening, setOpening] = useState({ key: null as string | null, readAt: 0 });
+  if (opening.key !== openKey) setOpening({ key: openKey, readAt: types.updatedAt });
   useEffect(() => {
-    setOpenedAt(opened ? Date.now() : null);
-    if (opened) refreshTypes();
+    if (openKey) refreshTypes();
     // Once per opening (or mentor), not on every render's new callback.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opened, mentorId]);
-  // Only a window read since this opening sizes the request.
-  const current = openedAt !== null && types.updatedAt >= openedAt && !types.refreshing;
+  }, [openKey]);
+  const current =
+    openKey !== null &&
+    opening.key === openKey &&
+    types.updatedAt > opening.readAt &&
+    !types.refreshing;
   const horizon =
     types.data && current
       ? (types.data.find((t) => t.id === sessionTypeId)?.windowDays ?? DEFAULT_HORIZON_DAYS)
