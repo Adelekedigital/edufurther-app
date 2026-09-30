@@ -202,9 +202,9 @@ export function BookingFlow(p: BookingFlowProps) {
   // Seven days at a time, always starting today (product, 2026-09-27); ‹ › move
   // through the type's booking window. Empty days stay on show, disabled.
   const weekDays = useMemo(
-    () => weekOfDays(days, week, zone, new Date(clock)),
+    () => weekOfDays(days, week, zone, new Date(clock), horizon),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [days, week, zone, today],
+    [days, week, zone, today, horizon],
   );
   const chosen = weekDays.findIndex((d) => d.date === dayChoice && d.slots.length > 0);
   const firstOpen = weekDays.findIndex((d) => d.slots.length > 0);
@@ -262,23 +262,23 @@ export function BookingFlow(p: BookingFlowProps) {
   const nextOpen = useMemo(() => {
     if (!weekEmpty) return null;
     for (let w = week + 1; w < weeks; w++) {
-      const ds = weekOfDays(days, w, zone, new Date(clock));
+      const ds = weekOfDays(days, w, zone, new Date(clock), horizon);
       if (ds.some((d) => d.slots.length > 0))
         return {
           week: w,
-          label: `Show ${formatDay(ds[0]!.date).date} – ${formatDay(ds[6]!.date).date}`,
+          label: `Show ${formatDay(ds[0]!.date).date} – ${formatDay(ds.at(-1)!.date).date}`,
         };
     }
     return null;
     // `today` stands in for the clock, as for weekDays.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekEmpty, days, week, zone, today, weeks]);
+  }, [weekEmpty, days, week, zone, today, weeks, horizon]);
   // Nothing later but something earlier: say so, not "Check back soon" (review of #26).
   const earlierOpen = weekEmpty && !nextOpen && week > 0;
 
   const weekLabel = (() => {
     const a = formatDay(weekDays[0]!.date).date;
-    const b = formatDay(weekDays[6]!.date).date;
+    const b = formatDay(weekDays.at(-1)!.date).date;
     return week === 0 ? `Next 7 days · ${a} – ${b}` : `${a} – ${b}`;
   })();
   const moveWeek = (to: number) => {

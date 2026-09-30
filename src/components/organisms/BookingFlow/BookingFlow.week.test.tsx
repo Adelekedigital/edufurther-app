@@ -303,4 +303,18 @@ describe('BookingFlow week view (7 days at a time)', () => {
       await user.click(screen.getByRole('button', { name: 'Later dates' }));
     expect(screen.getByRole('button', { name: 'Later dates' })).toBeDisabled();
   });
+
+  it('a window that isn’t whole weeks: the last page stops at its end, labelled to it', async () => {
+    const user = userEvent.setup();
+    render(
+      <BookingFlow
+        {...props({ sessionTypes: remote(sessionTypes.map((t) => ({ ...t, windowDays: 10 }))) })}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Later dates' }));
+    // Sep 27 + 10 days: Oct 4, 5 and 6, and nothing past the window.
+    expect(screen.getByText('Oct 4 – Oct 6')).toBeInTheDocument();
+    expect(screen.getAllByRole('radio', { name: /^\w{3}, Oct \d/ })).toHaveLength(3);
+    expect(screen.getByRole('button', { name: 'Later dates' })).toBeDisabled();
+  });
 });

@@ -63,10 +63,14 @@ export function weekOfDays(
   week: number,
   timeZone: string,
   now = new Date(),
+  horizonDays = Infinity,
 ): BookingDay[] {
   const today = dayKey(now.toISOString(), timeZone);
   const byDate = new Map(days.map((d) => [d.date, d.slots]));
-  return Array.from({ length: 7 }, (_, i) => {
+  // The last page stops at the window's end: days past it aren't "no open
+  // times", they can't be booked at all (a 10-day window: 7, then 3).
+  const count = Math.max(0, Math.min(7, horizonDays - week * 7));
+  return Array.from({ length: count }, (_, i) => {
     const date = addDays(today, week * 7 + i);
     return { date, slots: byDate.get(date) ?? [] };
   });

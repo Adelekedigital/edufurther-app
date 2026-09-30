@@ -514,6 +514,39 @@ describe('useMentorDefaults (booking window, backend #309)', () => {
     });
   });
 
+  it('a cached copy isn’t offered: the form waits for the read it opens with', async () => {
+    let answer!: () => void;
+    GET.mockImplementation(
+      () =>
+        new Promise((res) => {
+          answer = () =>
+            res(
+              ok({
+                default_duration_minutes: null,
+                default_min_notice_minutes: null,
+                booking_window_days: null,
+                break_after_minutes: null,
+                requires_booking_confirmation: true,
+                max_booking_window_days: 14,
+                default_booking_window_days: 14,
+              }),
+            );
+        }),
+    );
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    // A copy cached before the platform cap was lowered.
+    qc.setQueryData(['mentorDefaults', 'm1'], { windowDays: 56, maxWindowDays: 56 });
+    const { result } = renderHook(() => useMentorDefaults('m1'), {
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+      ),
+    });
+    expect(result.current.data).toBeNull();
+    expect(result.current.isLoading).toBe(true);
+    await act(async () => answer());
+    await waitFor(() => expect(result.current.data?.maxWindowDays).toBe(14));
+  });
+
   it('reads the defaults (and cap) fresh each time a form opens', async () => {
     GET.mockImplementation(() =>
       Promise.resolve(

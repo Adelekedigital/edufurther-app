@@ -231,4 +231,36 @@ describe('useSlots: the request follows the session type’s window (backend #30
         });
     await waitFor(() => expect(ranges()).toEqual([57, 15]));
   });
+
+  it('opening the flow reads the types again: a cached, since-raised window isn’t used', async () => {
+    // Cached with 14 days; the platform default has since gone up to 56.
+    qc.setQueryData(
+      ['booking', 'sessionTypes', 'm1'],
+      [{ id: 't', name: 't', durationMin: 60, description: '', questions: [], windowDays: 14 }],
+    );
+    GET.mockImplementation((path: string) =>
+      Promise.resolve(
+        path.endsWith('/session-types')
+          ? {
+              data: { data: [typeRow('t', 56)], next_cursor: null },
+              error: undefined,
+              response: new Response(null, { status: 200 }),
+            }
+          : {
+              data: { data: [], next_cursor: null },
+              error: undefined,
+              response: new Response(null, { status: 200 }),
+            },
+      ),
+    );
+    renderHook(() => useSlots('m1', 't', 'Africa/Lagos'), { wrapper });
+    const ranges = () =>
+      GET.mock.calls
+        .filter(([p]) => String(p).endsWith('/slots'))
+        .map(([, o]) => {
+          const { start, end } = o.params.query as { start: string; end: string };
+          return (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / DAY;
+        });
+    await waitFor(() => expect(ranges()).toEqual([57]));
+  });
 });

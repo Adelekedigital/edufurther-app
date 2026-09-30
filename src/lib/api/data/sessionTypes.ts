@@ -530,9 +530,12 @@ export function useMentorDefaults(userId: string | null): Remote<MentorDefaults>
     // that can change, and a stale one would offer windows the backend refuses.
     staleTime: 0,
   });
+  // Only what was read while this form is open: a cached copy can carry a cap
+  // since lowered, and the form would offer windows the backend refuses.
+  const fresh = query.isFetchedAfterMount;
   return {
-    data: query.data ?? null,
-    isLoading: query.isPending && userId !== null,
+    data: fresh ? (query.data ?? null) : null,
+    isLoading: userId !== null && !fresh && !query.isError,
     error: query.error ? normaliseError(query.error) : null,
     retry: () => void query.refetch(),
   };

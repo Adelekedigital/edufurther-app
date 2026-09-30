@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { DEFAULT_HORIZON_DAYS, slotWindow } from '@/lib/utils/slots';
@@ -143,7 +143,9 @@ export function bookingError(e: AppError): AppError {
 // ---- hooks ------------------------------------------------------------------
 
 /** GET /users/{id}/session-types — what this mentor offers. */
-export function useSessionTypes(mentorId: string | null): Remote<SessionType[]> {
+export function useSessionTypes(
+  mentorId: string | null,
+): Remote<SessionType[]> & { refreshing: boolean; updatedAt: number } {
   const query = useQuery({
     queryKey: keys.booking.sessionTypes(mentorId ?? 'none'),
     enabled: mentorId !== null,
@@ -162,6 +164,8 @@ export function useSessionTypes(mentorId: string | null): Remote<SessionType[]> 
     isLoading: query.isPending && mentorId !== null,
     error: query.error ? normaliseError(query.error) : null,
     retry: () => void query.refetch(),
+    refreshing: query.isFetching,
+    updatedAt: query.dataUpdatedAt,
   };
 }
 
@@ -179,9 +183,23 @@ export function useSlots(
   // (subscribed, so it's never stale): no request until the window is known.
   const qc = useQueryClient();
   const types = useSessionTypes(mentorId);
-  const horizon = types.data
-    ? (types.data.find((t) => t.id === sessionTypeId)?.windowDays ?? DEFAULT_HORIZON_DAYS)
-    : null;
+  // Opening the flow reads the types again: a cached window can be out of
+  // date if the platform cap or default changed since (either way).
+  const opened = mentorId !== null && sessionTypeId !== null;
+  const refreshTypes = types.retry;
+  const [openedAt, setOpenedAt] = useState<number | null>(null);
+  useEffect(() => {
+    setOpenedAt(opened ? Date.now() : null);
+    if (opened) refreshTypes();
+    // Once per opening (or mentor), not on every render's new callback.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opened, mentorId]);
+  // Only a window read since this opening sizes the request.
+  const current = openedAt !== null && types.updatedAt >= openedAt && !types.refreshing;
+  const horizon =
+    types.data && current
+      ? (types.data.find((t) => t.id === sessionTypeId)?.windowDays ?? DEFAULT_HORIZON_DAYS)
+      : null;
   const enabled = mentorId !== null && sessionTypeId !== null && horizon !== null;
   const window = slotWindow(timeZone, horizon ?? DEFAULT_HORIZON_DAYS);
   const query = useQuery({
@@ -217,9 +235,11 @@ export function useSlots(
     // refetch when the type select is toggled back and forth.
     staleTime: 60 * 1000,
   });
+  // Until the window is known the grid is loading, never "no open times".
+  const waiting = opened && horizon === null && !types.error;
   return {
-    data: query.data ?? null,
-    isLoading: query.isPending && enabled,
+    data: horizon === null ? null : (query.data ?? null),
+    isLoading: waiting || (query.isPending && enabled),
     error: query.error ? normaliseError(query.error) : null,
     retry: () => void query.refetch(),
   };

@@ -1,5 +1,13 @@
 import { formatDay } from './format';
-import { dayKey, groupSlotsByDay, slotWindow, visibleDays, weekIndexOf, weeksIn } from './slots';
+import {
+  dayKey,
+  groupSlotsByDay,
+  slotWindow,
+  visibleDays,
+  weekIndexOf,
+  weekOfDays,
+  weeksIn,
+} from './slots';
 
 describe('groupSlotsByDay', () => {
   // Joshua on the dev backend: first slot 05:30Z on Sep 30.
@@ -74,6 +82,9 @@ describe('slotWindow / visibleDays (review of #20)', () => {
     expect(weeksIn(14)).toBe(2);
     expect(weeksIn(56)).toBe(8);
     expect(weeksIn(10)).toBe(2);
+    // A 10-day window: the second page stops at its end (3 days), not 7.
+    expect(weekOfDays([], 1, 'America/Los_Angeles', la, 10)).toHaveLength(3);
+    expect(weekOfDays([], 0, 'America/Los_Angeles', la, 10)).toHaveLength(7);
   });
 
   it('keeps only today … today+27 in the viewer’s zone', () => {
