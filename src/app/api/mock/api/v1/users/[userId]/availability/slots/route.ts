@@ -7,7 +7,9 @@ const DAY = 24 * 60 * 60 * 1000;
 /**
  * MOCK of GET /api/v1/users/{user_id}/availability/slots: `session_type_id`
  * required, `start`/`end` dates (`end` exclusive, default 7 days); like the
- * backend, a range longer than the platform's maximum window plus one day is a 422.
+ * backend, a range longer than the platform's maximum window plus five days is a 422.
+ * Unlike the backend, it reads the dates as UTC and generates from now, ignoring
+ * `start`: it checks the range's size, not the zone edges (slots.test.ts does).
  * ENABLE_MOCK_API=1 only.
  */
 export async function GET(req: NextRequest, ctx: { params: Promise<{ userId: string }> }) {
@@ -22,8 +24,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ userId: str
   const endParam = sp.get('end');
   const start = startParam ? Date.parse(`${startParam}T00:00:00Z`) : now;
   const end = endParam ? Date.parse(`${endParam}T00:00:00Z`) : now + 7 * DAY;
-  // The contract's rule: end after start, and at most the maximum window + 1 day.
-  if (Number.isNaN(start) || Number.isNaN(end) || end <= start || end - start > (MAX_WINDOW_DAYS + 1) * DAY)
+  // The contract's rule: end after start, and at most the maximum window + 5 days.
+  if (Number.isNaN(start) || Number.isNaN(end) || end <= start || end - start > (MAX_WINDOW_DAYS + 5) * DAY)
     return NextResponse.json(
       { type: 'about:blank', title: 'Unprocessable Content', status: 422 },
       { status: 422, headers: { 'content-type': 'application/problem+json' } },

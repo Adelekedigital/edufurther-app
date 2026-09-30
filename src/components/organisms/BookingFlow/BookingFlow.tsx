@@ -194,7 +194,7 @@ export function BookingFlow(p: BookingFlowProps) {
     return () => clearInterval(t);
   }, []);
   const today = dayKey(new Date(clock).toISOString(), zone);
-  // Only the window's days on screen: the fetch has a day's margin either side.
+  // Only the window's days on screen: the fetch has a margin either side (slotWindow).
   const days = useMemo(
     () => visibleDays(groupSlotsByDay(p.slots.data ?? [], zone), zone, new Date(clock), horizon),
     // `today` stands in for the clock: the result only changes when the date does.
