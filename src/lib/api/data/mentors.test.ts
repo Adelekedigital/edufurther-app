@@ -1,5 +1,5 @@
 import { deriveLabel } from './labels';
-import { toFocus, toMentor } from './mentors';
+import { toFocus, joinPages, toMentor } from './mentors';
 
 const row = (over: Record<string, unknown> = {}) => ({
   id: 'abc',
@@ -83,5 +83,20 @@ describe('toFocus (backend avatar_focus, #240)', () => {
       y: 0.2,
     });
     expect(toMentor(row()).photoFocus).toBeNull();
+  });
+});
+
+describe('joinPages', () => {
+  it('shows each mentor once, where they first appeared, when a later page repeats them', () => {
+    const a = toMentor(row({ id: 'a' }));
+    const b = toMentor(row({ id: 'b' }));
+    const c = toMentor(row({ id: 'c' }));
+    expect(
+      joinPages([
+        [a, b],
+        [b, c],
+      ]).map((m) => m.id),
+    ).toEqual(['a', 'b', 'c']);
+    expect(joinPages([])).toEqual([]);
   });
 });
