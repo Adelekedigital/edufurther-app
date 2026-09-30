@@ -96,9 +96,10 @@
   padding: 0 var(--space-6) var(--space-5);
   margin-top: -48px;
 }
-.avatar {
-  width: 112px;
-  height: 112px;
+/* The photo and, for the owner, its camera badge (outside the clipped circle,
+   Mentor Profile.dc.html `avatar`). */
+.avatarWrap {
+  position: relative;
   flex: none;
   /* DIVERGENCE (product, design request #47): pinned 10px into the banner,
      where the design draws it at desktop. With the design's flex-end the
@@ -106,6 +107,10 @@
   align-self: flex-start;
   /* .head pulls the row up 48px; 38px down leaves the photo 10px into the banner. */
   margin-top: 38px;
+}
+.avatar {
+  width: 112px;
+  height: 112px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -281,11 +286,13 @@
     padding: 0 var(--space-4) var(--space-4);
     margin-top: -36px;
   }
+  .avatarWrap {
+    align-self: auto;
+    margin-top: 0;
+  }
   .avatar {
     width: 72px;
     height: 72px;
-    align-self: auto;
-    margin-top: 0;
   }
   .initials {
     font-size: 26px;
