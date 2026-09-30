@@ -17,3 +17,6 @@ next-env.d.ts
 openapi/
 src/lib/api/generated/
 docs/handoff/
+
+# Local one-off scripts (screen-test recorders, probes): never committed.
+scripts/.tmp-*
