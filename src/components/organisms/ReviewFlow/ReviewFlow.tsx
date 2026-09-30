@@ -103,7 +103,7 @@ export function ReviewFlow(p: ReviewFlowProps) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [a, setA] = useState<ReviewAnswers>({ ...EMPTY, ...p.initial });
   // Newest first, whatever order they come in; the newest is picked to start.
-  // By time, not text: offsets differ (review of #102).
+  // By time, not text: offsets differ (review of PR 102).
   const newestFirst = [...p.sessions].sort(
     (a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt),
   );

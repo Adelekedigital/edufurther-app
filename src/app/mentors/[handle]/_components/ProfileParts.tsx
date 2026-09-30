@@ -73,7 +73,9 @@ export function ProfileSkeleton() {
 
 /** "{First} isn’t taking bookings right now…" (Mentor Profile.dc.html `notTakingBody`). */
 const notTakingBody = (first: string) =>
-  `${first} isn’t taking bookings right now. You can still message ${first} or explore similar mentors.`;
+  // The design adds "You can still message {First}": messaging isn't built, so
+  // it isn't promised (Codex on PR 102; design-divergence.md).
+  `${first} isn’t taking bookings right now. You can still explore similar mentors.`;
 
 /**
  * Where Book would be, for a mentor who isn't taking bookings (Mentor

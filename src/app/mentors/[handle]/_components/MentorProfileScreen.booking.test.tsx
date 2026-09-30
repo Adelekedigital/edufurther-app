@@ -154,7 +154,8 @@ describe('MentorProfileScreen — ?book= links, gated like Book (review of #81)'
 });
 
 describe('MentorProfileScreen — not taking bookings (design reply #58, live design)', () => {
-  const body = `${profile.mentor.firstName} isn’t taking bookings right now. You can still message ${profile.mentor.firstName} or explore similar mentors.`;
+  // No promise of messaging: it isn't built (Codex on PR 102).
+  const body = `${profile.mentor.firstName} isn’t taking bookings right now. You can still explore similar mentors.`;
 
   it('the header says so, the aside has the note, and nothing offers Book', () => {
     h.profile = state({ data: { ...profile, takingBookings: false } });
@@ -215,7 +216,7 @@ describe('MentorProfileScreen — not taking bookings (design reply #58, live de
     ).toBeInTheDocument();
   });
 
-  it('a mentor viewing keeps the read-only session list, with no note (review of #102)', () => {
+  it('a mentor viewing keeps the read-only session list, with no note (review of PR 102)', () => {
     h.viewerIsMentor = true;
     withLink('tab=sessions');
     h.profile = state({ data: { ...profile, takingBookings: false } });
@@ -228,7 +229,7 @@ describe('MentorProfileScreen — not taking bookings (design reply #58, live de
     expect(screen.queryByText(body)).toBeNull();
   });
 
-  it('the aside isn’t named for booking when it only says bookings are closed (review of #102)', () => {
+  it('the aside isn’t named for booking when it only says bookings are closed (review of PR 102)', () => {
     h.profile = state({ data: { ...profile, takingBookings: false } });
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.getByRole('complementary')).toHaveAccessibleName(/^Availability/);

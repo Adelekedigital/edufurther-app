@@ -80,7 +80,7 @@ describe('ReviewFlow', () => {
     ).toEqual(['SOP draft review · Sep 19', 'CV review · Sep 10']);
   });
 
-  it('newest first by time, whatever the offsets (review of #102)', () => {
+  it('newest first by time, whatever the offsets (review of PR 102)', () => {
     render(
       <ReviewFlow
         {...props({

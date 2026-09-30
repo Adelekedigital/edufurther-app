@@ -96,7 +96,7 @@ export function SimilarMentorsCard({
                     <Link
                       href={m.profileHref}
                       prefetch={false}
-                      className={styles.link}
+                      className={`${styles.link} ${styles.tapLink}`}
                       aria-label={`View profile: ${m.name}`}
                     >
                       View profile

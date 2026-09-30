@@ -294,3 +294,15 @@ describe('CoverPicker', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Image removed');
   });
 });
+
+describe('CoverPicker popover placement (design reply 56; Codex on PR 102)', () => {
+  it('sits 8px below the trigger at whatever height it has, never a fixed offset', async () => {
+    // CI's layout check runs a mentee build, which has no owner cover control,
+    // so the rule itself is pinned: a fixed top overlapped the 44px phone button.
+    const { readFileSync } = await import('node:fs');
+    const css = readFileSync('src/components/molecules/CoverPicker/CoverPicker.module.css', 'utf8');
+    const dialog = css.match(/\.dialog\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(dialog).toMatch(/top:\s*calc\(100%\s*\+\s*var\(--space-2\)\)/);
+    expect(css).toMatch(/\.root\s*\{[^}]*position:\s*relative/);
+  });
+});

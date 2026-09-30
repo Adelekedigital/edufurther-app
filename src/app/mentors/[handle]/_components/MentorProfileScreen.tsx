@@ -94,7 +94,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const notTaking = !!p && !p.takingBookings;
   // For someone who could book, the Sessions tab says so too (Mentor
   // Profile.dc.html `notTaking`); a mentor viewing keeps the read-only list
-  // (review of #102).
+  // (review of PR 102).
   const notTakingTab = canBookHere && notTaking;
   const { tab, setTab } = useProfileTab(hasSessions || notTakingTab, hasReviews);
 
