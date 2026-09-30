@@ -197,6 +197,26 @@ describe('MentorProfileScreen — the owner bar', () => {
     );
   });
 
+  it('declined: "Contact support" links to the configured address; plain without one', () => {
+    vi.stubEnv('NEXT_PUBLIC_SUPPORT_EMAIL', 'support@example.com');
+    h.profile = state({ data: mine({ approval: 'declined' }) });
+    const { unmount } = render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('link', { name: 'Contact support' })).toHaveAttribute(
+      'href',
+      'mailto:support@example.com',
+    );
+    unmount();
+    vi.stubEnv('NEXT_PUBLIC_SUPPORT_EMAIL', 'not an address');
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('link', { name: 'Contact support' })).toBeNull();
+    expect(
+      screen.getByText(
+        'Your profile wasn’t approved, so only you can see it. Contact support to find out what to change.',
+      ),
+    ).toBeInTheDocument();
+    vi.unstubAllEnvs();
+  });
+
   it('previewing a profile nobody else can see says so (review of PR 106)', async () => {
     const user = userEvent.setup();
     h.profile = state({ data: mine({ approval: 'pending' }) });

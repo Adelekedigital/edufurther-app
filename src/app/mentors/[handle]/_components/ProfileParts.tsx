@@ -9,6 +9,16 @@ import styles from './MentorProfileScreen.module.css';
 /** The "View as mentee" toggle, where focus goes when the strength card is done. */
 export const PREVIEW_TOGGLE_ID = 'profile-preview-toggle';
 
+/**
+ * Where "Contact support" goes for a declined mentor (design reply #42 links
+ * it). Config, since there's no support page yet; unset, the words stay plain.
+ * Read at render so tests can set it; Next inlines it at build.
+ */
+function supportEmail(): string | null {
+  const v = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim();
+  return v && /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(v) ? v : null;
+}
+
 /** What the owner bar says, most important first (see OwnerBar). */
 export function ownerBarState(
   profile: MentorProfile,
@@ -107,7 +117,15 @@ export function OwnerBar({
                 : styles.ownerIconLock
           }
         />
-        {state === 'noHours' ? (
+        {state === 'declined' && supportEmail() ? (
+          <span>
+            Your profile wasn’t approved, so only you can see it.{' '}
+            <a href={`mailto:${supportEmail()}`} className={styles.ownerLink}>
+              Contact support
+            </a>{' '}
+            to find out what to change.
+          </span>
+        ) : state === 'noHours' ? (
           <span>
             Mentees see “Not taking bookings” until you{' '}
             <Link href={hoursHref} className={styles.ownerLink}>
