@@ -214,4 +214,23 @@ describe('MentorProfileScreen — not taking bookings (design reply #58, live de
       screen.getByText('Only you can see this until your profile is approved.'),
     ).toBeInTheDocument();
   });
+
+  it('a mentor viewing keeps the read-only session list, with no note (review of #102)', () => {
+    h.viewerIsMentor = true;
+    withLink('tab=sessions');
+    h.profile = state({ data: { ...profile, takingBookings: false } });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(
+      screen.getByRole('tab', { name: `Sessions (${profile.sessionTypes.length})` }),
+    ).toBeInTheDocument();
+    const panel = screen.getByRole('tabpanel');
+    expect(within(panel).getByText(second.name)).toBeInTheDocument();
+    expect(screen.queryByText(body)).toBeNull();
+  });
+
+  it('the aside isn’t named for booking when it only says bookings are closed (review of #102)', () => {
+    h.profile = state({ data: { ...profile, takingBookings: false } });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('complementary')).toHaveAccessibleName(/^Availability/);
+  });
 });

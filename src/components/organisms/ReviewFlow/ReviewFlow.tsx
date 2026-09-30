@@ -9,7 +9,7 @@ import { Textarea } from '@/components/atoms/Input/Input';
 import { Star } from '@/components/atoms/Star/Star';
 import { StepBars } from '@/components/atoms/StepBars/StepBars';
 import { ChoiceScale, type ScaleOption } from '@/components/molecules/ChoiceScale/ChoiceScale';
-import { SessionPickRows } from '@/components/molecules/SessionPickRows/SessionPickRows';
+import { Select } from '@/components/atoms/Select/Select';
 import { StarRating } from '@/components/molecules/StarRating/StarRating';
 import { cx } from '@/lib/utils/cx';
 import { formatTime } from '@/lib/utils/format';
@@ -103,7 +103,10 @@ export function ReviewFlow(p: ReviewFlowProps) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [a, setA] = useState<ReviewAnswers>({ ...EMPTY, ...p.initial });
   // Newest first, whatever order they come in; the newest is picked to start.
-  const newestFirst = [...p.sessions].sort((a, b) => b.startsAt.localeCompare(a.startsAt));
+  // By time, not text: offsets differ (review of #102).
+  const newestFirst = [...p.sessions].sort(
+    (a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt),
+  );
   const [sessionId, setSessionId] = useState<string | null>(newestFirst[0]?.id ?? null);
   const [feedbackOpen, setFeedbackOpen] = useState(!!p.initial?.platformNote);
   // One request per click, before the page's `pending` arrives.
@@ -251,17 +254,20 @@ export function ReviewFlow(p: ReviewFlowProps) {
       {!p.done && step === 1 && (
         <>
           {p.mode === 'new' && p.sessions.length > 1 && (
-            // ReviewModal.dc.html `hasRows` (design reply #54): newest first, selected.
-            <SessionPickRows
-              label="Which session is this about?"
-              value={sessionId}
-              onChange={setSessionId}
-              rows={newestFirst.map((s) => ({
-                id: s.id,
-                type: s.typeName ?? 'Session',
-                date: shortDay(s.startsAt, p.timeZone),
-              }))}
-            />
+            // ReviewModal.dc.html `hasSelect`, its default (product 2026-09-30: a
+            // dropdown takes less room than rows). Newest first, picked.
+            <label className={styles.field}>
+              <span className={styles.fieldTitle}>Which session is this about?</span>
+              <Select
+                className={styles.sessionSelect}
+                value={sessionId ?? ''}
+                onChange={(e) => setSessionId(e.target.value)}
+                options={newestFirst.map((s) => ({
+                  value: s.id,
+                  label: sessionText(s, p.timeZone),
+                }))}
+              />
+            </label>
           )}
           <div className={styles.rating}>
             <span className={styles.fieldTitle} id={qid('overall')}>

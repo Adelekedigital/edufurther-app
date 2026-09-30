@@ -71,10 +71,30 @@ describe('ReviewFlow', () => {
         })}
       />,
     );
-    const group = screen.getByRole('radiogroup', { name: 'Which session is this about?' });
-    const rows = within(group).getAllByRole('radio');
-    expect(rows.map((r) => r.textContent)).toEqual(['SOP draft reviewSep 19', 'CV reviewSep 10']);
-    expect(rows[0]).toHaveAttribute('aria-checked', 'true');
+    const select = screen.getByRole('combobox', { name: 'Which session is this about?' });
+    expect(select).toHaveValue('s1');
+    expect(
+      within(select)
+        .getAllByRole('option')
+        .map((o) => o.textContent),
+    ).toEqual(['SOP draft review · Sep 19', 'CV review · Sep 10']);
+  });
+
+  it('newest first by time, whatever the offsets (review of #102)', () => {
+    render(
+      <ReviewFlow
+        {...props({
+          sessions: [
+            // 14:30Z is later than 15:00+01:00 (14:00Z), though its text sorts first.
+            { id: 'z', startsAt: '2026-09-19T14:30:00Z', typeName: 'Later' },
+            { id: 'o', startsAt: '2026-09-19T15:00:00+01:00', typeName: 'Earlier' },
+          ],
+        })}
+      />,
+    );
+    const select = screen.getByRole('combobox', { name: 'Which session is this about?' });
+    expect(select).toHaveValue('z');
+    expect(within(select).getAllByRole('option')[0]).toHaveTextContent(/^Later/);
   });
 
   it('edit: opens filled in; step 2 answers the API didn’t return may stay empty', async () => {

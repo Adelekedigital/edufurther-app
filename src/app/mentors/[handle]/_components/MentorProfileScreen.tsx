@@ -85,10 +85,17 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const p = profile.data;
   const hasSessions = (p?.sessionTypes.length ?? 0) > 0;
   const hasReviews = (p?.reviews.count ?? 0) > 0;
-  // A mentor not taking bookings still has a Sessions tab for everyone but
-  // the owner: it says so (Mentor Profile.dc.html `notTaking`).
-  const notTakingTab =
-    !!p && !p.takingBookings && !(p.owner !== null || member?.id === p.mentor.id);
+  const isOwner = !!p && (p.owner !== null || member?.id === p.mentor.id);
+  // Mentors can't book (product 2026-09-29, canBookFor): on another mentor's
+  // profile every Book control goes away, as for the owner on their own.
+  const canBookHere = !isOwner && canBook;
+  // …and a mentor who isn't taking bookings (backend #301) offers no Book at
+  // all: the header and aside say "Not taking bookings" instead.
+  const notTaking = !!p && !p.takingBookings;
+  // For someone who could book, the Sessions tab says so too (Mentor
+  // Profile.dc.html `notTaking`); a mentor viewing keeps the read-only list
+  // (review of #102).
+  const notTakingTab = canBookHere && notTaking;
   const { tab, setTab } = useProfileTab(hasSessions || notTakingTab, hasReviews);
 
   // Cards only render after a client fetch, so reading the device zone here is safe.
@@ -99,14 +106,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const [shareOpen, setShareOpen] = useState(false);
   const isPhone = useMediaQuery('(max-width: 767px)');
 
-  const isOwner = !!p && (p.owner !== null || member?.id === p.mentor.id);
   const bookBlocked = !online ? 'Booking needs a connection' : bookBlockedFor(viewer);
-  // Mentors can't book (product 2026-09-29, canBookFor): on another mentor's
-  // profile every Book control goes away, as for the owner on their own.
-  const canBookHere = !isOwner && canBook;
-  // …and a mentor who isn't taking bookings (backend #301) offers no Book at
-  // all: the header and booking card say "Not taking bookings" instead.
-  const notTaking = !!p && !p.takingBookings;
   const mayBook = canBookHere && !notTaking;
   const booking = useProfileBooking({ mentor: p?.mentor ?? null, mayBook, canBook, timeZone });
   useBookLink({
@@ -178,7 +178,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const asideLabel =
     listLabel([
       // Neutral when nothing can be booked (review of #81).
-      canBookHere && 'booking',
+      // Neutral when it only says bookings are closed (review of #81, #102).
+      canBookHere && (notTaking ? 'availability' : 'booking'),
       tab === 'overview' && 'track record',
       similarShown && 'similar mentors',
     ]) ?? 'About this mentor';

@@ -86,7 +86,7 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | ReviewModal recommend scale 0–10 (11 buttons) | 1–10 (10 buttons, "1 · Not likely") | The API has no 0 (`nps_recommend_score` 1–10) | never |
 | ReviewModal "You can edit it until tomorrow at 6:00 pm" | The real deadline, "until 4:32 pm" (10-minute window, a backend setting; `editable_until`) | Product 2026-09-29: the backend's window | never |
 | ReviewModal "What could have made it even better? We pass this on to {first}…" | Left out | No API field for anonymised feedback to the mentor | #56 |
-| ReviewModal: which session | Radio rows as drawn (ReviewModal.dc.html `hasRows`, design reply #54), newest first and picked; 3 show, "Show N more". The file's `sessionPicker` default is still `select`; the reply says rows | Design reply #54 | — |
+| ReviewModal: which session | The dropdown: ReviewModal.dc.html `hasSelect`, the file's `sessionPicker` default (44px, 14px, "{type} · {Mon D}", newest first and picked). The file also draws `rows`, and design reply #54 said rows | Product 2026-09-30: the dropdown takes less room | design request #61: settle one |
 | ReviewModal preview "Amara O. · University of Lagos · SOP review" | First name only, then the session type | /me has no last initial or school | /me adds them |
 | Review note `again` ("You've had 3 more sessions since your last review") | Not shown | The API gives no count of sessions since the last review | backend adds it |
 | Reviews "Show fewer reviews" after expanding | Not offered | Reviews page from the server (cursor); collapsing would drop fetched pages | never |
