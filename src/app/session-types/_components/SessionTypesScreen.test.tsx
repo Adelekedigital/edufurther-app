@@ -172,6 +172,8 @@ describe('SessionTypesScreen', () => {
     expect(dialog).toHaveTextContent(
       'Hidden from mentees now. The 2 booked sessions go ahead first.',
     );
+    // Not featured: nothing about featuring (design reply #10 adds it for the featured type only).
+    expect(dialog).not.toHaveTextContent(/featured/);
     await user.click(within(dialog).getByRole('button', { name: 'Schedule deletion' }));
     expect(remove).toHaveBeenCalledWith('a');
   });
