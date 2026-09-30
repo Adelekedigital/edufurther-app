@@ -295,6 +295,8 @@ function EntrySection({
                           size="sm"
                           shape="square"
                           tone="danger"
+                          // Red at rest: the action is dangerous before it's hovered (product).
+                          className={styles.delete}
                           aria-label={`Delete ${it.title}${it.meta ? `, ${it.meta}` : ''}`}
                           onClick={() => edit.onDelete(it.id)}
                         />
