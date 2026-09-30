@@ -28,6 +28,10 @@ describe('AppShell navigation', () => {
     );
     expect(hrefs(0)).toEqual(['/', '/', '/explore', '/bookings', '/settings']);
     expect(groups(0)).toEqual([['/', '/explore', '/bookings'], ['/settings']]);
+    // A divider sits between the two groups, and only there.
+    const [daily, setup] = nav(0).getAllByRole('list');
+    expect(daily!.nextElementSibling).toHaveAttribute('aria-hidden');
+    expect(daily!.nextElementSibling!.nextElementSibling).toBe(setup);
     expect(hrefs(1)).toEqual(['/', '/explore', '/bookings']);
   });
 
@@ -50,7 +54,14 @@ describe('AppShell navigation', () => {
         <p>Page</p>
       </AppShell>,
     );
-    expect(nav(0).getByRole('link', { name: 'EduFurther home' })).toHaveAttribute('href', '/');
+    const home = nav(0).getByRole('link', { name: 'EduFurther home' });
+    expect(home).toHaveAttribute('href', '/');
+    // The swoosh mark, not the wordmark, at the design's 48px.
+    const mark = home.querySelector('img')!;
+    expect(decodeURIComponent(mark.getAttribute('src')!)).toContain(
+      '/brand/edufurther-mark-swoosh.png',
+    );
+    expect(mark).toHaveAttribute('width', '48');
     unmount();
     render(
       <AppShell active="Explore" chrome="guest" offline={false}>
