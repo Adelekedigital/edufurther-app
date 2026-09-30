@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { SessionType } from '@/types/mentor';
-import type { FirstReason } from './BookingFlow';
+import type { FirstReason } from './types';
 import styles from './BookingFlow.module.css';
 
 // Small pieces both layouts place: the offering select, the chosen time, and

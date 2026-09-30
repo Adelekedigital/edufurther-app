@@ -11,7 +11,8 @@ type Props = {
   mentorMeta: string;
   profileLink: ReactNode;
   session: SessionType | null;
-  /** Several offerings: the select; one: its name. */
+  /** Several offerings: the select (typeSelect); one: its name. */
+  manyTypes: boolean;
   typeSelect: ReactNode;
   steps: { at: number; total: number; label: string; show: boolean };
   /** A whole-flow state (loading, error, none, sent), shown instead of the columns. */
@@ -46,7 +47,9 @@ export function BookingFlowDesktop(p: Props) {
       {p.status ?? (
         <div className={styles.columns}>
           <aside className={styles.aside} aria-label="Session">
-            {p.typeSelect ?? (
+            {p.manyTypes ? (
+              p.typeSelect
+            ) : (
               <div className={styles.field}>
                 <span className={styles.fieldLabel}>Session</span>
                 <span className={styles.sessionName}>{p.session?.name}</span>

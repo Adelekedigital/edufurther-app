@@ -12,10 +12,13 @@ export function isAnswered(a: IntakeAnswer | undefined): boolean {
  * The intake answers, and file answers in flight or refused (by question id; a
  * done one is in `answers`).
  */
-export function useIntakeAnswers(
-  onUpload: ((file: File) => Promise<IntakeFile>) | undefined,
-  requestError: { questionId?: string; fileGone?: boolean } | null,
-) {
+export function useIntakeAnswers({
+  onUpload,
+  requestError,
+}: {
+  onUpload?: (file: File) => Promise<IntakeFile>;
+  requestError: { questionId?: string; fileGone?: boolean } | null;
+}) {
   const [answers, setAnswers] = useState<Record<string, IntakeAnswer>>({});
   const [uploads, setUploads] = useState<Record<string, Upload>>({});
   const answer = (id: string, a: IntakeAnswer) => setAnswers((x) => ({ ...x, [id]: a }));

@@ -25,7 +25,10 @@ import { SignupStep } from './SignupStep';
 import { TimeStep } from './TimeStep';
 import { isAnswered, useIntakeAnswers } from './useIntakeAnswers';
 import { useTimeChoice } from './useTimeChoice';
+import type { FirstReason } from './types';
 import styles from './BookingFlow.module.css';
+
+export type { FirstReason };
 
 type Step = 'time' | 'signup' | 'questions' | 'done';
 
@@ -33,13 +36,6 @@ const STEP_LABEL: Record<Exclude<Step, 'done'>, string> = {
   time: 'Pick a date and time',
   signup: 'Create your free account',
   questions: 'Questions from',
-};
-
-export type FirstReason = {
-  icon: 'flight_takeoff' | 'workspace_premium';
-  /** The bold lead, e.g. "Made the move you’re planning." */
-  k: string;
-  v: string;
 };
 
 export type BookingFlowProps = {
@@ -120,13 +116,13 @@ export function BookingFlow(p: BookingFlowProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const isPhone = useMediaQuery(PHONE);
-  const intake = useIntakeAnswers(p.onUpload, p.requestError);
+  const intake = useIntakeAnswers({ onUpload: p.onUpload, requestError: p.requestError });
   const [email, setEmail] = useState('');
 
   const m = p.mentor;
   const types = p.sessionTypes.data ?? [];
   const session = types.find((t) => t.id === p.sessionTypeId) ?? types[0] ?? null;
-  const tc = useTimeChoice({
+  const timeChoice = useTimeChoice({
     types,
     session,
     slots: p.slots,
@@ -135,7 +131,7 @@ export function BookingFlow(p: BookingFlowProps) {
     requestDone: p.requestDone,
     onSessionTypeChange: p.onSessionTypeChange,
   });
-  const { time, zone } = tc;
+  const { time, zone } = timeChoice;
 
   const hasQuestions = (session?.questions.length ?? 0) > 0;
   const steps = useMemo<Step[]>(() => {
@@ -224,7 +220,7 @@ export function BookingFlow(p: BookingFlowProps) {
   };
   const chooseType = (id: string) => {
     // The viewer chose: stop looking for the requested time, and start over on it.
-    tc.reset();
+    timeChoice.reset();
     p.onSessionTypeChange(id);
     intake.reset();
   };
@@ -309,26 +305,26 @@ export function BookingFlow(p: BookingFlowProps) {
         <TimeStep
           zone={zone}
           deviceZone={p.deviceZone}
-          onZoneChange={tc.setZone}
+          onZoneChange={timeChoice.setZone}
           slots={p.slots}
-          seeking={tc.seeking}
-          missed={tc.initialMissed}
-          noOpenDays={tc.days.length === 0}
+          seeking={timeChoice.seeking}
+          missed={timeChoice.initialMissed}
+          noOpenDays={timeChoice.days.length === 0}
           noTimes={noTimes}
           picker={{
-            days: tc.weekDays,
-            dayIndex: tc.dayAt,
-            onDayChange: tc.chooseDay,
+            days: timeChoice.weekDays,
+            dayIndex: timeChoice.dayAt,
+            onDayChange: timeChoice.chooseDay,
             time,
             onTimeChange: (t) => {
-              tc.setTime(t);
+              timeChoice.setTime(t);
               // Times are only picked on the time step. If the flow came back here
               // because the old time was taken, the saved step still points
               // further on; picking must not jump there without Continue.
               setStepIndex(0);
             },
             timeZone: zone,
-            week: tc.week,
+            week: timeChoice.week,
           }}
         />
       )}
@@ -432,7 +428,8 @@ export function BookingFlow(p: BookingFlowProps) {
       mentorMeta={mentorMeta}
       profileLink={profileLink}
       session={session}
-      typeSelect={types.length > 1 ? typeSelect : null}
+      manyTypes={types.length > 1}
+      typeSelect={typeSelect}
       steps={{ at, total: steps.length, label: subtitle, show: step !== 'done' && !oneStep }}
       status={status}
       pickedRow={pickedRow}
