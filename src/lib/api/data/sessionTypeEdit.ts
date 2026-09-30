@@ -13,14 +13,13 @@ import {
   type DayHours,
   type Draft,
   type DraftQuestion,
-  type Stage,
 } from '@/lib/utils/sessionTypeDraft';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { planQuestions, toPatchBody, type SavedQuestion } from '@/lib/utils/sessionTypeEdit';
 import { ApiError, apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
-import { createError, refreshLimitsOnRefusal, type CreateError } from './sessionTypes';
+import { createError, refreshLimitsOnRefusal, stagesOf, type CreateError } from './sessionTypes';
 import { planHoursSave, toWeeklyHours } from './weeklyHours';
 
 type OwnSessionTypeRead = components['schemas']['OwnSessionTypeRead'];
@@ -75,7 +74,7 @@ export function toDraft(s: SavedSessionType, defaults: BookingDefaults | null): 
     name: r.name,
     description: r.description ?? '',
     topics: offerings.map((o) => o.code),
-    stages: (r.application_stages ?? (r.application_stage ? [r.application_stage] : [])) as Stage[],
+    stages: stagesOf(r),
     customStage: r.custom_stage_label ?? '',
     icon: r.icon ?? null,
     questions: s.questions.map((q): DraftQuestion => ({
@@ -404,8 +403,7 @@ export function toDuplicateBody(
     : r.service_offering
       ? [r.service_offering]
       : [];
-  const stages = (r.application_stages ??
-    (r.application_stage ? [r.application_stage] : [])) as Stage[];
+  const stages = stagesOf(r);
   const questions: DraftQuestion[] = s.questions.map((q) => ({
     key: q.id,
     text: q.text,

@@ -3,16 +3,10 @@
  * data with pure functions: validation per step, the create body, the weekly
  * hours → per-type windows, and 422 pointers → the field and step that own them.
  */
-import type { SessionIcon } from '@/types/sessionType';
+import type { ApplicationStage, SessionIcon } from '@/types/sessionType';
 import type { SessionTemplate } from './sessionTemplates';
 
-export type Stage =
-  | 'early_exploration'
-  | 'drafting_stage'
-  | 'post_submission'
-  | 'revisions'
-  | 'interviewing'
-  | 'other';
+export type Stage = ApplicationStage;
 
 /** Design chip labels ("Best for mentees who are…"). `other` carries the mentor's own words. */
 export const STAGE_LABELS: Record<Exclude<Stage, 'other'>, string> = {

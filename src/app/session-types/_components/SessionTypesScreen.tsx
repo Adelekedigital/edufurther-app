@@ -1,8 +1,13 @@
 'use client';
 
 import { useCallback, useRef, useState, type ReactNode } from 'react';
-import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
+import {
+  DeleteConfirm,
+  FeatureConfirm,
+  VisibilityConfirm,
+  type ConfirmShell,
+} from '@/components/organisms/SessionTypeConfirms/SessionTypeConfirms';
 import { SessionTypeManager } from '@/components/organisms/SessionTypeManager/SessionTypeManager';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
@@ -16,10 +21,11 @@ import {
   useSetFeatured,
   useSetLive,
 } from '@/lib/api/data/sessionTypes';
+import { formatShortDate } from '@/lib/utils/format';
 import { SESSION_TEMPLATES, templateHint } from '@/lib/utils/sessionTemplates';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { Remote } from '@/types/mentor';
-import type { DeleteError, OwnSessionType } from '@/types/sessionType';
+import type { OwnSessionType } from '@/types/sessionType';
 import { useAppShell } from '../../_shell/useAppShell';
 import { mentorGate } from './MentorGate';
 import styles from './SessionTypesScreen.module.css';
@@ -32,6 +38,12 @@ const TEMPLATES = SESSION_TEMPLATES.map((t) => ({
   name: t.name,
   hint: templateHint(t),
 }));
+
+const confirmShell = (shell: ConfirmShell, body: ReactNode) => (
+  <ModalShell {...shell} size="sm">
+    {body}
+  </ModalShell>
+);
 
 /** /session-types — the mentor's own session types (Session Types.dc.html, List). */
 export function SessionTypesScreen() {
@@ -160,7 +172,7 @@ export function SessionTypesScreen() {
         } else
           announce(
             r.deletesAfter
-              ? `Deletion scheduled for ${shortDate(r.deletesAfter)}. Hidden from mentees now.`
+              ? `Deletion scheduled for ${formatShortDate(r.deletesAfter)}. Hidden from mentees now.`
               : 'Deletion scheduled. Hidden from mentees now.',
           );
       })
@@ -168,7 +180,9 @@ export function SessionTypesScreen() {
   };
 
   // Featured: one at a time; featuring another asks first (design `feature` confirm).
-  // Copy confirmed by design throughout (reply 2026-09-29, #10).
+  // Copy confirmed by design throughout (reply 2026-09-29, #10). A hidden type
+  // isn't offered "Mark as featured"; the server still refuses one hidden
+  // elsewhere meanwhile, and that refusal says why.
   const HIDDEN_FEATURE = 'Show it to mentees first: a hidden session type can’t be featured.';
   const setFeatured = useSetFeatured((id, featured, e) =>
     say(
@@ -187,8 +201,6 @@ export function SessionTypesScreen() {
   } | null>(null);
   const onFeature = (t: OwnSessionType, featured: boolean) => {
     clearMessage(t.id);
-    // Known to be refused: say so, rather than confirm and roll back.
-    if (featured && !t.isLive) return say(t.id, HIDDEN_FEATURE, false);
     const current = (list.data ?? []).find((x) => x.isFeatured && x.id !== t.id);
     if (featured && current) return setFeaturing({ type: t, current });
     setFeatured(t.id, featured);
@@ -254,6 +266,7 @@ export function SessionTypesScreen() {
       {body}
       {visibility && (
         <VisibilityConfirm
+          renderShell={confirmShell}
           type={visibility.type}
           show={visibility.show}
           last={lastVisible}
@@ -266,6 +279,7 @@ export function SessionTypesScreen() {
       )}
       {featuring && (
         <FeatureConfirm
+          renderShell={confirmShell}
           type={featuring.type}
           current={featuring.current}
           onCancel={() => setFeaturing(null)}
@@ -277,6 +291,7 @@ export function SessionTypesScreen() {
       )}
       {confirming && (
         <DeleteConfirm
+          renderShell={confirmShell}
           type={confirming}
           busy={del.isPending}
           error={del.error}
@@ -286,129 +301,5 @@ export function SessionTypesScreen() {
       )}
       <LiveRegion message={announcement} />
     </AppShell>
-  );
-}
-
-const shortDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-/**
- * Delete confirms in a danger modal (project rule). With sessions still booked
- * it's the design's "Schedule deletion for {date}?": hidden now, deleted after
- * the last one (backend round 4).
- */
-function DeleteConfirm(p: {
-  type: OwnSessionType;
-  busy: boolean;
-  error: DeleteError | null;
-  onKeep: () => void;
-  onDelete: () => void;
-}) {
-  const { count, lastEndsAt } = p.type.booked;
-  const scheduled = count > 0;
-  const title = !scheduled
-    ? 'Delete this session type?'
-    : lastEndsAt
-      ? `Schedule deletion for ${shortDate(lastEndsAt)}?`
-      : 'Schedule deletion?';
-  const subtitle = scheduled
-    ? `Hidden from mentees now. The ${count} booked session${count === 1 ? ' goes' : 's go'} ahead first.${
-        // Design reply 2026-09-29, #10: scheduling un-features it, so the confirm says so.
-        p.type.isFeatured ? ' It also stops being featured.' : ''
-      }`
-    : `“${p.type.name}” is removed from your profile and Session types. This can’t be undone.`;
-  return (
-    <ModalShell
-      title={title}
-      subtitle={subtitle}
-      icon="delete"
-      tone="danger"
-      size="sm"
-      onClose={p.onKeep}
-    >
-      {p.error && (
-        <p role="alert" className={styles.error}>
-          {p.error.message}
-        </p>
-      )}
-      <div className={styles.buttons}>
-        <Button size="large" variant="secondary-outlined" fullWidth onClick={p.onKeep}>
-          Keep it
-        </Button>
-        <Button size="large" variant="destructive" fullWidth onClick={p.onDelete} busy={p.busy}>
-          {scheduled ? 'Schedule deletion' : 'Delete'}
-        </Button>
-      </div>
-    </ModalShell>
-  );
-}
-
-/**
- * Featuring another type (Session Types.dc.html `feature` confirm). The
- * design's "…and is highlighted first on your Explore card" waits for Explore
- * to show it (backend #299): never claim what isn't built.
- */
-function FeatureConfirm(p: {
-  type: OwnSessionType;
-  current: OwnSessionType;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  return (
-    <ModalShell
-      title={`Feature “${p.type.name}” instead?`}
-      subtitle={`It moves to the top of your profile. “${p.current.name}” will no longer be featured. You can feature one session type at a time.`}
-      icon="star"
-      size="sm"
-      onClose={p.onCancel}
-    >
-      <div className={styles.buttons}>
-        <Button size="large" variant="secondary-outlined" fullWidth onClick={p.onCancel}>
-          Cancel
-        </Button>
-        <Button size="large" fullWidth onClick={p.onConfirm}>
-          Feature this instead
-        </Button>
-      </div>
-    </ModalShell>
-  );
-}
-
-/** Show / hide (Session Types.dc.html `toggle` confirm): not destructive, so blue. */
-function VisibilityConfirm(p: {
-  type: OwnSessionType;
-  show: boolean;
-  /** Hiding the only visible type. */
-  last: boolean;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  const title = p.show
-    ? `Show “${p.type.name}” to mentees?`
-    : p.last
-      ? 'Hide your last session type?'
-      : `Hide “${p.type.name}” from mentees?`;
-  const subtitle = p.show
-    ? 'It appears on your profile and Explore, and mentees can book it in your open hours.'
-    : p.last
-      ? 'Your profile will show “Not taking bookings” until a session type is visible again. Booked sessions go ahead.'
-      : 'Mentees can’t see or book it. Booked sessions go ahead, and you can show it again anytime.';
-  return (
-    <ModalShell
-      title={title}
-      subtitle={subtitle}
-      icon={p.show ? 'visibility' : 'visibility_off'}
-      size="sm"
-      onClose={p.onCancel}
-    >
-      <div className={styles.buttons}>
-        <Button size="large" variant="secondary-outlined" fullWidth onClick={p.onCancel}>
-          {p.show ? 'Cancel' : 'Keep visible'}
-        </Button>
-        <Button size="large" fullWidth onClick={p.onConfirm}>
-          {p.show ? 'Show it' : 'Hide it'}
-        </Button>
-      </div>
-    </ModalShell>
   );
 }

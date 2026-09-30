@@ -16,7 +16,6 @@
   font-family: var(--font-ui);
   font-size: var(--text-p-sm);
   font-weight: var(--weight-semibold);
-  box-shadow: 0 0 0 1.5px var(--white);
 }
 .avatar:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);

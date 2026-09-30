@@ -33,6 +33,7 @@ describe('toOwnSessionType', () => {
       durationMin: 60,
       noticeMin: 1440,
       isLive: true,
+      stages: [],
       topics: [{ code: 'document-preparation', label: 'Document preparation' }],
       icon: 'edit_document',
       iconChoice: null,
@@ -41,6 +42,20 @@ describe('toOwnSessionType', () => {
       pendingDeletion: null,
       booked: { count: 0, lastEndsAt: null },
     });
+  });
+
+  it('the stages, in the mentor’s order; the deprecated single field when the list is missing', () => {
+    expect(
+      toOwnSessionType(own({ application_stages: ['revisions', 'drafting_stage'] }), 0).stages,
+    ).toEqual(['revisions', 'drafting_stage']);
+    expect(toOwnSessionType(own({ application_stage: 'interviewing' }), 0).stages).toEqual([
+      'interviewing',
+    ]);
+    // An empty list is "any stage", not a reason to read the old field.
+    expect(
+      toOwnSessionType(own({ application_stages: [], application_stage: 'interviewing' }), 0)
+        .stages,
+    ).toEqual([]);
   });
 
   it('featured, a scheduled deletion, and the booked figures (round 4)', () => {

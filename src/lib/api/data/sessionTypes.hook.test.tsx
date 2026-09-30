@@ -1,5 +1,11 @@
 import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
+import {
+  QueryClient,
+  QueryClientProvider,
+  onlineManager,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import {
   useCreateSessionType,
@@ -10,6 +16,7 @@ import {
   useSaveMentorDefaults,
   useSetLive,
   useMentorDefaults,
+  rowWrite,
 } from './sessionTypes';
 
 const GET = vi.fn();
@@ -116,6 +123,44 @@ describe('useSetLive', () => {
     expect(onFailed).toHaveBeenCalledWith('x', false);
     await act(async () => passY());
     await waitFor(() => expect(live('y')).toBe(false));
+  });
+
+  it('hiding the featured type un-features it at once; a refused hide puts the badge back', async () => {
+    list = [{ ...row('x'), is_featured: true }, row('y')];
+    const onFailed = vi.fn();
+    const { result } = renderHook(
+      () => ({ list: useOwnSessionTypes(true), setLive: useSetLive(onFailed) }),
+      { wrapper: setup() },
+    );
+    await waitFor(() => expect(result.current.list.data).toHaveLength(2));
+    const x = () => result.current.list.data!.find((t) => t.id === 'x')!;
+    expect(x().isFeatured).toBe(true);
+    let answer!: () => void;
+    PATCH.mockImplementation(() => new Promise((res) => (answer = () => res(fail(500)))));
+    act(() => result.current.setLive('x', false));
+    await waitFor(() => expect(x()).toMatchObject({ isLive: false, isFeatured: false }));
+    // The refetch after it settles never lands: only the rollback can restore the badge.
+    hang();
+    await act(async () => answer());
+    await waitFor(() => expect(x()).toMatchObject({ isLive: true, isFeatured: true }));
+    expect(onFailed).toHaveBeenCalledWith('x', false);
+  });
+
+  it('showing a type doesn’t feature it', async () => {
+    list = [row('x', false), row('y')];
+    const { result } = renderHook(
+      () => ({ list: useOwnSessionTypes(true), setLive: useSetLive(vi.fn()) }),
+      { wrapper: setup() },
+    );
+    await waitFor(() => expect(result.current.list.data).toHaveLength(2));
+    PATCH.mockImplementation(() => new Promise(() => {}));
+    act(() => result.current.setLive('x', true));
+    await waitFor(() =>
+      expect(result.current.list.data!.find((t) => t.id === 'x')).toMatchObject({
+        isLive: true,
+        isFeatured: false,
+      }),
+    );
   });
 });
 
@@ -294,6 +339,37 @@ describe('useSetFeatured', () => {
 });
 
 describe('row writes (review r2 of #80)', () => {
+  it('a write from another screen joins through rowWrite: the list waits for it too', async () => {
+    let answer: () => void = () => {};
+    const { result } = renderHook(
+      () => {
+        const qc = useQueryClient();
+        return {
+          list: useOwnSessionTypes(true),
+          setLive: useSetLive(vi.fn()),
+          // As the profile's quick edit would write a row.
+          other: useMutation({
+            ...rowWrite(qc),
+            mutationFn: () => new Promise<void>((res) => (answer = res)),
+          }),
+        };
+      },
+      { wrapper: setup() },
+    );
+    await waitFor(() => expect(result.current.list.data).toHaveLength(2));
+    const lists = () =>
+      GET.mock.calls.filter(([path]) => !String(path).endsWith('/questions')).length;
+    const reads = lists();
+    PATCH.mockResolvedValue(ok({ updated: true }));
+    act(() => result.current.other.mutate());
+    act(() => result.current.setLive('y', false));
+    await waitFor(() => expect(PATCH).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 10));
+    expect(lists()).toBe(reads);
+    await act(async () => answer());
+    await waitFor(() => expect(lists()).toBe(reads + 1));
+  });
+
   it('offline, a write fails at once with our offline copy instead of pausing', async () => {
     const onFailed = vi.fn();
     const { result } = renderHook(

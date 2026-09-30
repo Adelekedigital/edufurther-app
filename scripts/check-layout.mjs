@@ -11,6 +11,8 @@
  * A check may list several routes (each run at every width). `run` returns
  * null (pass), an error string (fail), or { cannot } when the page it needs
  * isn't there: a missing element is "could not run", not a layout failure.
+ * A check that must drive the page (open a modal, ask Chrome itself) gives
+ * `drive(page)` instead of `run`, with the same return values.
  *
  * Exit codes (as review-page): 0 pass, 1 a layout check failed, 2 could not run.
  * A failing width is screenshotted into .review/ for the CI artifact.
@@ -113,6 +115,41 @@ const CHECKS = [
         : 'card is not between the tabs and the tab panel';
     },
   },
+  {
+    // Codex review of #104: Chrome read the sr-only span as a separate block
+    // ("Lagos (WAT) , change time zone"). jsdom can't see that, so ask
+    // Chrome's own accessibility tree for the name it gives screen readers.
+    name: 'time-zone button name in Chrome',
+    slug: 'timezone-button-name',
+    route: '/explore',
+    ready: 'article button',
+    widths: [1440],
+    timezoneId: 'Africa/Lagos',
+    drive: async (page) => {
+      const book = page.getByRole('button', { name: /^(Book session with|See availability)/ });
+      if ((await book.count()) === 0) return { cannot: 'no Book button on Explore' };
+      await book.first().click();
+      // Found by its text, not its markup, so an implementation change that
+      // breaks the name fails here rather than "could not run".
+      const trigger = page.getByRole('dialog').locator('button', { hasText: 'Lagos (WAT)' });
+      if (
+        !(await trigger.waitFor({ timeout: 15000 }).then(
+          () => true,
+          () => false,
+        ))
+      )
+        return { cannot: 'time-zone button not found in the booking modal' };
+      const cdp = await page.context().newCDPSession(page);
+      const { nodes } = await cdp.send('Accessibility.getFullAXTree');
+      const names = nodes
+        .filter((n) => n.role?.value === 'button' && /time zone/.test(n.name?.value ?? ''))
+        .map((n) => n.name.value);
+      const want = 'Lagos (WAT), change time zone';
+      return names.includes(want)
+        ? null
+        : `Chrome names it ${JSON.stringify(names)}, want "${want}"`;
+    },
+  },
 ];
 
 function cannotRun(msg) {
@@ -125,7 +162,10 @@ let failed = 0;
 for (const check of CHECKS) {
   for (const route of [check.route].flat()) {
     for (const width of check.widths) {
-      const page = await browser.newPage({ viewport: { width, height: 900 } });
+      const page = await browser.newPage({
+        viewport: { width, height: 900 },
+        timezoneId: check.timezoneId,
+      });
       try {
         await page.goto(`${BASE}${route}`, { waitUntil: 'networkidle' });
       } catch (e) {
@@ -134,7 +174,7 @@ for (const check of CHECKS) {
       }
       // The profile fetches in the browser; networkidle can land on the skeleton.
       await page.waitForSelector(check.ready, { timeout: 15000 }).catch(() => {});
-      const result = await page.evaluate(check.run);
+      const result = check.drive ? await check.drive(page) : await page.evaluate(check.run);
       if (result && typeof result === 'object') {
         await browser.close();
         cannotRun(`${check.name} at ${width}px on ${route}: ${result.cannot}`);
