@@ -31,10 +31,10 @@ describe('PhotoPicker', () => {
     expect(input.value).toBe('');
   });
 
-  it('while uploading: a spinner is announced and the picker is off', () => {
+  it('while uploading: a spinner is announced and the picker is marked off', () => {
     render(<PhotoPicker {...base} uploading />);
     expect(screen.getByRole('status')).toHaveTextContent('Uploading photo…');
-    expect(screen.getByLabelText('Change photo')).toBeDisabled();
+    expect(screen.getByLabelText('Change photo')).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('a failed pick says why, and can be dismissed', async () => {
@@ -46,5 +46,27 @@ describe('PhotoPicker', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Choose an image under 5 MB.');
     await user.click(screen.getByRole('button', { name: 'Dismiss' }));
     expect(onDismissError).toHaveBeenCalled();
+  });
+
+  it('stays focusable while uploading, and ignores a second pick (review of #99)', async () => {
+    const user = userEvent.setup();
+    const onFile = vi.fn();
+    render(<PhotoPicker {...base} uploading onFile={onFile} />);
+    const input = screen.getByLabelText('Change photo');
+    expect(input).not.toBeDisabled();
+    expect(input).toHaveAttribute('aria-disabled', 'true');
+    input.focus();
+    expect(input).toHaveFocus();
+    await user.upload(input, png);
+    expect(onFile).not.toHaveBeenCalled();
+  });
+
+  it('its status is always there, so "Uploading photo…" is heard (review of #99)', () => {
+    const { rerender } = render(<PhotoPicker {...base} />);
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent('');
+    rerender(<PhotoPicker {...base} uploading />);
+    expect(screen.getByRole('status')).toBe(status);
+    expect(status).toHaveTextContent('Uploading photo…');
   });
 });

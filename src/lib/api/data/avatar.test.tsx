@@ -99,4 +99,15 @@ describe('useAvatarUpload', () => {
     finish({ data: { avatar_url: 'https://cdn/x.webp' }, response: new Response(null) });
     await waitFor(() => expect(result.current.uploading).toBe(false));
   });
+
+  it('after the upload the profile and lists refetch, so a cancelled refetch isn’t lost (review of #99)', async () => {
+    POST.mockResolvedValue({
+      data: { avatar_url: 'https://cdn/new.webp', avatar_focus: null },
+      response: new Response(null),
+    });
+    const { result, spy } = setup();
+    act(() => result.current.upload(file('image/png', 10)));
+    await waitFor(() => expect(result.current.uploadedStamp).toBeGreaterThan(0));
+    expect(spy).toHaveBeenCalledWith({ queryKey: keys.mentors.all });
+  });
 });

@@ -92,3 +92,11 @@
   line-height: var(--lh-p);
   color: var(--text-primary);
 }
+/* Phones: the photo sits on its own line above the name, so the message takes
+   its own line under it instead of covering the name (review of #99). */
+@media (max-width: 767px) {
+  .error {
+    position: static;
+    margin-top: var(--space-2);
+  }
+}

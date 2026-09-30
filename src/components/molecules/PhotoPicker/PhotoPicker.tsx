@@ -35,11 +35,14 @@ export function PhotoPicker({
   return (
     <>
       {uploading && (
-        <span className={styles.busy} role="status">
+        <span className={styles.busy} aria-hidden>
           <Icon name="progress_activity" size={28} className={styles.spin} />
-          <span className="sr-only">Uploading photo…</span>
         </span>
       )}
+      {/* Always there, so the change is heard (review of #99, failure-modes #32). */}
+      <span role="status" className="sr-only">
+        {uploading ? 'Uploading photo…' : ''}
+      </span>
       <label className={cx(styles.badge, uploading && styles.disabled)} title={label}>
         <Icon name="photo_camera" size={14} />
         <input
@@ -47,12 +50,17 @@ export function PhotoPicker({
           accept={accept}
           aria-label={label}
           className={styles.input}
-          disabled={uploading}
+          // aria-disabled, not disabled: disabling it after a pick drops the
+          // focus it has (review of #99). A pick while uploading is ignored.
+          aria-disabled={uploading || undefined}
+          onClick={(e) => {
+            if (uploading) e.preventDefault();
+          }}
           onChange={(e) => {
             const f = e.target.files?.[0];
             // The same file can be picked again after an error.
             e.target.value = '';
-            if (f) onFile(f);
+            if (f && !uploading) onFile(f);
           }}
         />
       </label>

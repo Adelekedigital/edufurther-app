@@ -70,8 +70,10 @@ export function useAvatarUpload(handle: string, userId: string | null) {
           : p,
       );
       setUploadedStamp(Date.now());
-      // Cards elsewhere (Explore, suggestions) show the photo too.
-      void qc.invalidateQueries({ queryKey: keys.mentors.all, refetchType: 'inactive' });
+      // The profile (a refetch the cancel above stopped, e.g. an intro save's)
+      // and the cards elsewhere refetch; the server has the new photo by now
+      // (review of #99).
+      void qc.invalidateQueries({ queryKey: keys.mentors.all });
     },
   });
 
