@@ -114,7 +114,8 @@ describe('SessionTypeManager — the four states', () => {
     );
     await user.click(screen.getByRole('switch', { name: /SOP draft review/ }));
     expect(onLiveChange).toHaveBeenCalledWith('a', false);
-    // The row menu (Session Types.dc.html): Edit, Duplicate, Delete.
+    // The row menu (Session Types.dc.html): Edit, Duplicate, Delete; a hidden
+    // type isn't offered "Mark as featured".
     const more = screen.getByRole('button', { name: 'More actions for Visa interview prep' });
     await user.click(more);
     const menu = screen.getByRole('menu', { name: 'More actions for Visa interview prep' });
@@ -122,7 +123,7 @@ describe('SessionTypeManager — the four states', () => {
       within(menu)
         .getAllByRole('menuitem')
         .map((m: HTMLElement) => m.textContent),
-    ).toEqual(['editEdit', 'content_copyDuplicate', 'starMark as featured', 'deleteDelete']);
+    ).toEqual(['editEdit', 'content_copyDuplicate', 'deleteDelete']);
     await user.click(within(menu).getByRole('menuitem', { name: /Delete/ }));
     expect(onDelete).toHaveBeenCalledWith(expect.objectContaining({ id: 'b' }));
     await user.click(more);
