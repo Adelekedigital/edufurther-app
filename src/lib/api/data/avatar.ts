@@ -74,6 +74,8 @@ export function useAvatarUpload(handle: string, userId: string | null) {
       // and the cards elsewhere refetch; the server has the new photo by now
       // (review of #99).
       void qc.invalidateQueries({ queryKey: keys.mentors.all });
+      // The sidebar avatar reads /me.
+      void qc.invalidateQueries({ queryKey: keys.viewer.all });
     },
   });
 

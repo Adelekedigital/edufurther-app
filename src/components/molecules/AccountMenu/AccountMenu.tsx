@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
+import type { CoverKey } from '@/lib/utils/cover';
 import { cx } from '@/lib/utils/cx';
 import styles from './AccountMenu.module.css';
 
@@ -18,18 +20,27 @@ export type AccountMenuItem = {
 );
 
 type AccountMenuProps = {
-  /** The viewer's initial, shown in the avatar button. */
-  initial: string;
+  /**
+   * The viewer as the button shows them: their photo (cropped at `focus`), else
+   * their initial on their cover colour's deep tone, as on their profile.
+   */
+  avatar: {
+    initial: string;
+    src?: string | null;
+    focus?: { x: number; y: number } | null;
+    cover: CoverKey;
+  };
   items: AccountMenuItem[];
 };
 
 /**
  * Account avatar + menu at the foot of the side rail (AppShell.dc.html: 36px
- * green-900 circle, menu 212px wide, 36px items, Logout red after a divider).
+ * circle on the viewer's colour, menu 212px wide, 36px items, Logout red after
+ * a divider). The photo is ours: the design draws the initial only.
  * WAI-ARIA menu button: arrows / Home / End move, Escape and Tab close, focus
  * returns to the button.
  */
-export function AccountMenu({ initial, items }: AccountMenuProps) {
+export function AccountMenu({ avatar, items }: AccountMenuProps) {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
@@ -146,7 +157,14 @@ export function AccountMenu({ initial, items }: AccountMenuProps) {
           }
         }}
       >
-        {initial}
+        <Avatar
+          size="nav"
+          initials={avatar.initial}
+          tone={avatar.cover}
+          src={avatar.src}
+          focus={avatar.focus}
+          alt=""
+        />
       </button>
     </div>
   );

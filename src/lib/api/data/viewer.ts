@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { authConfigured } from '@/lib/vendor/supabase/config';
 import type { Viewer } from '@/types/mentor';
+import { coverKey } from '@/lib/utils/cover';
 import { ApiError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
@@ -31,6 +32,14 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     credits: me.credits
       ? { balance: me.credits.balance, allowance: me.credits.allowance, state: me.credits.state }
       : null,
+    avatarUrl: me.profile?.avatar_url ?? null,
+    avatarFocus: me.profile?.avatar_focus ?? null,
+    coverKey: coverKey(me.profile?.cover_color),
+    // The nav follows the mentor role whenever a mentor profile exists, so the
+    // badge does too.
+    awaitingResponse: me.mentor_profile
+      ? (me.booking_counts?.as_mentor?.awaiting_your_response ?? null)
+      : (me.booking_counts?.as_mentee?.awaiting_mentor ?? null),
   };
 }
 
@@ -47,6 +56,10 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     isMentor: false,
     completedSessions: 0,
     credits: { balance: 3, allowance: 3, state: 'on_track' },
+    avatarUrl: '/api/mock/avatars/mentor-01.webp',
+    avatarFocus: { x: 0.5, y: 0.35 },
+    coverKey: null,
+    awaitingResponse: 1,
   },
   mentor: {
     kind: 'member',
@@ -58,6 +71,11 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     isMentor: true,
     completedSessions: 0,
     credits: null,
+    // No photo, like the mock profile it owns: the initial on its cover tone.
+    avatarUrl: null,
+    avatarFocus: null,
+    coverKey: null,
+    awaitingResponse: 12,
   },
 };
 

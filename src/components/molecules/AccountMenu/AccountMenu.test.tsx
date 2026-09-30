@@ -6,7 +6,7 @@ const setup = () => {
   const onLogout = vi.fn();
   render(
     <AccountMenu
-      initial="E"
+      avatar={{ initial: 'E', cover: 'lilac' }}
       items={[
         { key: 'profile', label: 'View profile', icon: 'account_box', href: '/mentors/u1' },
         {
@@ -63,5 +63,23 @@ describe('AccountMenu', () => {
     expect(profile).not.toHaveAttribute('target');
     await userEvent.click(profile);
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  it('shows the photo when there is one, else the initial on the cover’s deep tone', () => {
+    const { rerender } = render(
+      <AccountMenu
+        avatar={{ initial: 'E', cover: 'mint', src: '/p.webp', focus: { x: 0.5, y: 0.2 } }}
+        items={[]}
+      />,
+    );
+    const button = screen.getByRole('button', { name: 'Account menu' });
+    const img = button.querySelector('img')!;
+    expect(img).toHaveAttribute('src', '/p.webp');
+    expect(img).toHaveAttribute('alt', '');
+    expect(img.parentElement!.style.getPropertyValue('--avatar-y')).toBe('20.0%');
+    rerender(<AccountMenu avatar={{ initial: 'E', cover: 'mint' }} items={[]} />);
+    expect(button.querySelector('img')).toBeNull();
+    expect(button).toHaveTextContent('E');
+    expect(button.firstElementChild!.getAttribute('style')).toContain('var(--cover-mint-ink)');
   });
 });

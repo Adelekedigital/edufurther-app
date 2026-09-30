@@ -5,17 +5,12 @@
 .avatar {
   width: var(--space-9);
   height: var(--space-9);
+  padding: 0;
   border-radius: var(--radius-full);
   border: none;
   cursor: pointer;
-  background: var(--green-900);
-  color: var(--white);
+  background: none;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-ui);
-  font-size: var(--text-p-sm);
-  font-weight: var(--weight-semibold);
 }
 .avatar:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);

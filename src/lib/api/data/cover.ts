@@ -129,6 +129,8 @@ export function useCoverEdit(handle: string, userId: string | null) {
       }
       update((p) => ({ ...p, cover: b.confirmed }));
       if (b.failed) void qc.invalidateQueries({ queryKey: key });
+      // The sidebar avatar takes the cover's deep tone from /me.
+      void qc.invalidateQueries({ queryKey: keys.viewer.all });
       setStatus({ state: b.failed ? 'error' : 'saved', stamp: Date.now() });
     },
   });

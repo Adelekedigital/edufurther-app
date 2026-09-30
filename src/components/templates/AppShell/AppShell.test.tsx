@@ -19,6 +19,8 @@ const groups = (i: 0 | 1) =>
         .map((a) => a.getAttribute('href')),
     );
 
+const AV = { initial: 'G', cover: 'sky' as const };
+
 describe('AppShell navigation', () => {
   it('mentees get Home, Explore, Bookings | Settings (the default)', () => {
     render(
@@ -133,7 +135,7 @@ describe('AppShell navigation', () => {
         chrome="member"
         offline={false}
         account={{
-          initial: 'G',
+          avatar: AV,
           items: [
             { key: 'profile', label: 'View profile', icon: 'account_box', href: '/mentors/u1' },
             {
@@ -183,5 +185,74 @@ describe('AppShell navigation', () => {
     expect(strip!.compareDocumentPosition(screen.getByRole('banner'))).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
+  });
+
+  it('Bookings count: a pill on the rail and the phone tab, "9+" above nine, read as words', () => {
+    const { rerender } = render(
+      <AppShell
+        active="Home"
+        nav="mentor"
+        chrome="member"
+        offline={false}
+        account={{
+          avatar: AV,
+          items: [],
+          counts: { Bookings: { count: 2, label: '2 requests awaiting your response' } },
+        }}
+      >
+        <p>Page</p>
+      </AppShell>,
+    );
+    for (const i of [0, 1] as const) {
+      const link = nav(i).getByRole('link', {
+        name: /Bookings, 2 requests awaiting your response/,
+      });
+      expect(link).toHaveAttribute('href', '/bookings');
+      expect(within(link).getByText('2')).toHaveAttribute('aria-hidden', 'true');
+    }
+    rerender(
+      <AppShell
+        active="Bookings"
+        nav="mentor"
+        chrome="member"
+        offline={false}
+        account={{
+          avatar: AV,
+          items: [],
+          counts: { Bookings: { count: 12, label: '12 requests awaiting your response' } },
+        }}
+      >
+        <p>Page</p>
+      </AppShell>,
+    );
+    expect(
+      within(nav(0).getByRole('link', { name: /Bookings, 12 requests/ })).getByText('9+'),
+    ).toBeInTheDocument();
+  });
+
+  it('no pill and no extra words at 0 or with no count', () => {
+    const { rerender } = render(
+      <AppShell
+        active="Home"
+        nav="mentee"
+        chrome="member"
+        offline={false}
+        account={{
+          avatar: AV,
+          items: [],
+          counts: { Bookings: { count: 0, label: '0 requests awaiting the mentor' } },
+        }}
+      >
+        <p>Page</p>
+      </AppShell>,
+    );
+    const name = () => nav(0).getByRole('link', { name: /Bookings/ }).textContent;
+    expect(name()).not.toMatch(/0|awaiting/);
+    rerender(
+      <AppShell active="Home" nav="mentee" chrome="member" offline={false}>
+        <p>Page</p>
+      </AppShell>,
+    );
+    expect(name()).not.toMatch(/awaiting/);
   });
 });

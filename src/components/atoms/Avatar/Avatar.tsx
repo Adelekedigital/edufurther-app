@@ -1,20 +1,23 @@
 /* eslint-disable @next/next/no-img-element -- remote avatars of unknown host/size; see performance notes in design-divergence.md */
 import type { CSSProperties } from 'react';
 import { cx } from '@/lib/utils/cx';
+import type { CoverKey } from '@/lib/utils/cover';
 import type { AvatarTone } from '@/types/mentor';
 import { Icon } from '../Icon/Icon';
 import styles from './Avatar.module.css';
 
 type AvatarProps = {
-  /** DS sizes: sm 32 / md 40 / lg 48 / xl 56. */
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  /** DS sizes: sm 32 / md 40 / lg 48 / xl 56; nav 36 is ours (the sidebar account button, AppShell.dc.html). */
+  size?: 'sm' | 'nav' | 'md' | 'lg' | 'xl';
   /** Empty with `tone="plain"`: the DS icon avatar (a person glyph), e.g. a deleted user. */
   initials: string;
   /**
    * 1–6: white initials on an --avatar-tone-* colour (mentors).
    * plain: the DS default, dark initials on blue-50 (review authors).
+   * A cover key: white initials on that cover's deep tone (the person's own
+   * colour, as on their profile).
    */
-  tone: AvatarTone | 'plain';
+  tone: AvatarTone | 'plain' | CoverKey;
   src?: string | null;
   /** The person's name. Pass "" when a visible name sits right next to it. */
   alt: string;
@@ -38,7 +41,10 @@ export function Avatar({
   const plain = tone === 'plain';
   const blank = plain && !src && !initials;
   const style = {
-    ...(!plain && { '--avatar-bg': `var(--avatar-tone-${tone})` }),
+    ...(!plain && {
+      '--avatar-bg':
+        typeof tone === 'number' ? `var(--avatar-tone-${tone})` : `var(--cover-${tone}-ink)`,
+    }),
     ...(focus && {
       '--avatar-x': `${(focus.x * 100).toFixed(1)}%`,
       '--avatar-y': `${(focus.y * 100).toFixed(1)}%`,
@@ -71,4 +77,4 @@ export function Avatar({
 }
 
 /** DS Avatar `type="icon"`: the glyph is 55% of the circle (lg/xl: the nearest Icon size). */
-const AVATAR_ICON = { sm: 18, md: 22, lg: 28, xl: 28 } as const;
+const AVATAR_ICON = { sm: 18, nav: 20, md: 22, lg: 28, xl: 28 } as const;
