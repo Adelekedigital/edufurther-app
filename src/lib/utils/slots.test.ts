@@ -47,22 +47,22 @@ describe('slotWindow / visibleDays (review of #20)', () => {
   // 6pm in Los Angeles on Sep 27 is already Sep 28 in UTC.
   const la = new Date('2026-09-28T01:00:00Z');
 
-  it('asks for a day either side of the viewer’s four weeks', () => {
+  it('asks from the viewer’s today to a day past the window (the window plus one day)', () => {
     expect(slotWindow('America/Los_Angeles', 28, la)).toEqual({
-      start: '2026-09-26',
+      start: '2026-09-27',
       end: '2026-10-26',
     });
-    // East of UTC: Auckland is already on Sep 28, so its window starts the 27th.
+    // East of UTC: Auckland is already on Sep 28, so its request starts there.
     expect(slotWindow('Pacific/Auckland', 28, la)).toEqual({
-      start: '2026-09-27',
+      start: '2026-09-28',
       end: '2026-10-27',
     });
   });
 
-  it('follows the session type’s window: a day either side of it, and its days only', () => {
+  it('follows the session type’s window: the window plus a day, and its days only', () => {
     // A 7-day window: the request spans 9 days, the picker shows 7.
     expect(slotWindow('America/Los_Angeles', 7, la)).toEqual({
-      start: '2026-09-26',
+      start: '2026-09-27',
       end: '2026-10-05',
     });
     const days = ['2026-09-27', '2026-10-03', '2026-10-04'].map((date) => ({ date, slots: [] }));

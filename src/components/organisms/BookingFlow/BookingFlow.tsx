@@ -182,6 +182,8 @@ export function BookingFlow(p: BookingFlowProps) {
   // As far ahead as this type can be booked (its window), a week at a time.
   const horizon = session?.windowDays ?? DEFAULT_HORIZON_DAYS;
   const weeks = weeksIn(horizon);
+  // A window that shrank (types refetched) never leaves the page past its end.
+  if (week > weeks - 1) setWeek(weeks - 1);
   // Grouped in the zone the viewer picked, so changing it regroups the days.
   // "Today" moves on at midnight even if nothing else re-renders the modal.
   const [clock, setClock] = useState(() => Date.now());

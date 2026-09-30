@@ -175,15 +175,14 @@ export function useSlots(
   /** The viewer's zone: the window is their days (utils/slots.ts slotWindow). */
   timeZone: string,
 ): Remote<string[]> {
-  const enabled = mentorId !== null && sessionTypeId !== null;
-  // The type's own booking window, from the types list the picker came from
-  // (always loaded first: the type id comes from it). Four weeks otherwise.
-  const qc = useQueryClient();
-  const horizon =
-    qc
-      .getQueryData<SessionType[]>(keys.booking.sessionTypes(mentorId ?? 'none'))
-      ?.find((t) => t.id === sessionTypeId)?.windowDays ?? DEFAULT_HORIZON_DAYS;
-  const window = slotWindow(timeZone, horizon);
+  // The type's own booking window, from the same types query the picker uses
+  // (subscribed, so it's never stale): no request until the window is known.
+  const types = useSessionTypes(mentorId);
+  const horizon = types.data
+    ? (types.data.find((t) => t.id === sessionTypeId)?.windowDays ?? DEFAULT_HORIZON_DAYS)
+    : null;
+  const enabled = mentorId !== null && sessionTypeId !== null && horizon !== null;
+  const window = slotWindow(timeZone, horizon ?? DEFAULT_HORIZON_DAYS);
   const query = useQuery({
     // The window's days are in the key: the grid moves on at midnight, and a
     // different window length never reuses a shorter range.

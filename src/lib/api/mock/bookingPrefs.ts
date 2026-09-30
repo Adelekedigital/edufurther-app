@@ -16,7 +16,8 @@ const ZONE = 'Africa/Lagos';
  * Both 56, as the backend ships; MOCK_MAX_BOOKING_WINDOW_DAYS lowers the cap
  * in dev to see a platform that changed it.
  */
-export const MAX_WINDOW_DAYS = Number(process.env.MOCK_MAX_BOOKING_WINDOW_DAYS ?? 56);
+// A missing or malformed value keeps the shipped 56.
+export const MAX_WINDOW_DAYS = Number(process.env.MOCK_MAX_BOOKING_WINDOW_DAYS) || 56;
 export const DEFAULT_WINDOW_DAYS = Math.min(56, MAX_WINDOW_DAYS);
 /** The shortest window: longer than the longest notice (72 h), so a type stays bookable. */
 export const MIN_WINDOW_DAYS = 4;

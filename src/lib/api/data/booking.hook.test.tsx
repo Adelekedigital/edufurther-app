@@ -1,10 +1,16 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { useRequestBooking, useUploadIntakeFile } from './booking';
+import { useRequestBooking, useSlots, useUploadIntakeFile } from './booking';
 
 const POST = vi.fn();
-vi.mock('./http', () => ({ api: { POST: (...args: unknown[]) => POST(...args) } }));
+const GET = vi.fn();
+vi.mock('./http', () => ({
+  api: {
+    POST: (...args: unknown[]) => POST(...args),
+    GET: (...args: unknown[]) => GET(...args),
+  },
+}));
 
 let qc: QueryClient;
 function wrapper({ children }: { children: ReactNode }) {
@@ -12,6 +18,7 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 beforeEach(() => {
   POST.mockReset();
+  GET.mockReset();
   qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 });
 
@@ -134,5 +141,57 @@ describe('useRequestBooking: a 422 about the answers (backend answer_problems)',
   it('a 422 about the time is still the time', async () => {
     refuse([{ pointer: '/starts_at', message: 'not offered' }]);
     expect((await send()).message).toBe('That time isn’t available any more. Pick another time.');
+  });
+});
+
+describe('useSlots: the request follows the session type’s window (backend #309)', () => {
+  const DAY = 86_400_000;
+  const typeRow = (id: string, window: number) => ({
+    id,
+    name: id,
+    description: null,
+    duration_minutes: 60,
+    min_notice_minutes: 1440,
+    booking_window_days: window,
+    questions: [],
+  });
+
+  it('waits for the types, then asks for the window plus a day, within the backend’s limit', async () => {
+    let answerTypes!: () => void;
+    GET.mockImplementation((path: string) =>
+      path.endsWith('/session-types')
+        ? new Promise(
+            (res) =>
+              (answerTypes = () =>
+                res({
+                  data: { data: [typeRow('short', 7), typeRow('long', 56)], next_cursor: null },
+                  error: undefined,
+                  response: new Response(null, { status: 200 }),
+                })),
+          )
+        : Promise.resolve({
+            data: { data: [], next_cursor: null },
+            error: undefined,
+            response: new Response(null, { status: 200 }),
+          }),
+    );
+    const { rerender } = renderHook(({ type }) => useSlots('m1', type, 'Africa/Lagos'), {
+      wrapper,
+      initialProps: { type: 'long' },
+    });
+    await waitFor(() => expect(GET).toHaveBeenCalledTimes(1));
+    // No slots request while the window is unknown.
+    expect(GET.mock.calls.some(([p]) => String(p).endsWith('/slots'))).toBe(false);
+    await act(async () => answerTypes());
+    const range = () => {
+      const call = GET.mock.calls.filter(([p]) => String(p).endsWith('/slots')).pop()!;
+      const { start, end } = call[1].params.query as { start: string; end: string };
+      return (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / DAY;
+    };
+    await waitFor(() => expect(range()).toBe(57));
+    // The backend refuses more than its maximum window (56) plus one day.
+    expect(range()).toBeLessThanOrEqual(56 + 1);
+    rerender({ type: 'short' });
+    await waitFor(() => expect(range()).toBe(8));
   });
 });
