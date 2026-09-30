@@ -9,15 +9,58 @@ const hrefs = (i: 0 | 1) =>
     .getAllByRole('link')
     .map((a) => a.getAttribute('href'));
 
+// Rail items per group (daily, then set up), by href.
+const groups = (i: 0 | 1) =>
+  nav(i)
+    .getAllByRole('list')
+    .map((ul) =>
+      within(ul)
+        .getAllByRole('link')
+        .map((a) => a.getAttribute('href')),
+    );
+
 describe('AppShell navigation', () => {
-  it('mentees get Home, Explore, Bookings, Messages, Settings (the default)', () => {
+  it('mentees get Home, Explore, Bookings | Settings (the default)', () => {
     render(
       <AppShell active="Explore" chrome="member" offline={false}>
         <p>Page</p>
       </AppShell>,
     );
-    expect(hrefs(0)).toEqual(['/', '/explore', '/bookings', '/messages', '/settings']);
+    expect(hrefs(0)).toEqual(['/', '/', '/explore', '/bookings', '/settings']);
+    expect(groups(0)).toEqual([['/', '/explore', '/bookings'], ['/settings']]);
     expect(hrefs(1)).toEqual(['/', '/explore', '/bookings']);
+  });
+
+  it('Messages is not shown anywhere until it is built (product, 2026-09-30)', async () => {
+    for (const role of ['mentee', 'mentor'] as const) {
+      const { unmount } = render(
+        <AppShell active="Home" nav={role} chrome="member" offline={false}>
+          <p>Page</p>
+        </AppShell>,
+      );
+      await userEvent.click(nav(1).getByRole('button', { name: 'More' }));
+      expect(screen.queryByRole('link', { name: 'Messages' })).toBeNull();
+      unmount();
+    }
+  });
+
+  it('members get the brand mark at the top of the rail; guests keep the header logo', () => {
+    const { unmount } = render(
+      <AppShell active="Home" nav="mentor" chrome="member" offline={false}>
+        <p>Page</p>
+      </AppShell>,
+    );
+    expect(nav(0).getByRole('link', { name: 'EduFurther home' })).toHaveAttribute('href', '/');
+    unmount();
+    render(
+      <AppShell active="Explore" chrome="guest" offline={false}>
+        <p>Page</p>
+      </AppShell>,
+    );
+    expect(screen.queryByRole('navigation', { name: 'Main' })).toBeNull();
+    expect(
+      within(screen.getByRole('banner')).getByRole('link', { name: 'EduFurther home' }),
+    ).toBeInTheDocument();
   });
 
   it('mentors get the mentor nav, with Sessions linking to session types', () => {
@@ -26,14 +69,9 @@ describe('AppShell navigation', () => {
         <p>Page</p>
       </AppShell>,
     );
-    expect(hrefs(0)).toEqual([
-      '/',
-      '/session-types',
-      '/bookings',
-      '/messages',
-      '/calendar',
-      '/integrations',
-      '/settings',
+    expect(groups(0)).toEqual([
+      ['/', '/bookings', '/calendar'],
+      ['/session-types', '/integrations', '/settings'],
     ]);
     expect(nav(0).getByRole('link', { name: 'Sessions' })).toHaveAttribute('aria-current', 'page');
   });
@@ -71,7 +109,8 @@ describe('AppShell navigation', () => {
         <p>Page</p>
       </AppShell>,
     );
-    for (const i of [0, 1] as const) expect(nav(i).queryAllByRole('link')).toHaveLength(0);
+    expect(nav(0).queryAllByRole('list')).toHaveLength(0);
+    expect(nav(1).queryAllByRole('link')).toHaveLength(0);
     expect(screen.queryByRole('button', { name: 'More' })).toBeNull();
   });
 
