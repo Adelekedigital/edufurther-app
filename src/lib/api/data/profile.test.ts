@@ -1,5 +1,7 @@
 import { stageLine, toMentorProfile } from './profile';
 
+const mine = { approval_status: 'approved' as const };
+
 type Read = Parameters<typeof toMentorProfile>[0];
 const read = (over: Partial<Read> = {}): Read =>
   ({
@@ -55,10 +57,10 @@ describe('toMentorProfile', () => {
     expect(toMentorProfile(read()).owner).toBeNull();
     expect(
       toMentorProfile(read({ approval_status: 'pending', listing_status: null })).owner,
-    ).toEqual({ approval: 'pending', listed: true, setupNeeded: [] });
+    ).toMatchObject({ approval: 'pending', listed: true, setupNeeded: [] });
     expect(
       toMentorProfile(read({ approval_status: 'approved', listing_status: 'unlisted' })).owner,
-    ).toEqual({ approval: 'approved', listed: false, setupNeeded: [] });
+    ).toMatchObject({ approval: 'approved', listed: false, setupNeeded: [] });
     // What stops them taking bookings (owner-only `setup_needed`).
     expect(
       toMentorProfile(read({ approval_status: 'approved', setup_needed: ['session_type'] })).owner
@@ -171,5 +173,22 @@ describe('toMentorProfile', () => {
     expect(p.mentor.reviewCount).toBe(0);
     expect(p.education).toEqual([]);
     expect(p.about).toBeNull();
+  });
+
+  describe('completeness (Profile strength)', () => {
+    it('the owner’s, as the backend sends it; codes we don’t know are skipped', () => {
+      const c = toMentorProfile(
+        read({
+          ...mine,
+          completeness: { percent: 67, missing: ['weekly_hours', 'video_intro', 'about'] },
+        }),
+      ).owner!.completeness;
+      expect(c).toEqual({ percent: 67, missing: ['weekly_hours', 'about'] });
+    });
+
+    it('none sent, none shown; never for anyone else', () => {
+      expect(toMentorProfile(read(mine)).owner?.completeness).toBeUndefined();
+      expect(toMentorProfile(read()).owner).toBeNull();
+    });
   });
 });
