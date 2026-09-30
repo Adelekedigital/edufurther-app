@@ -1,7 +1,16 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixture';
-import { h, ownType, quickEdit, remote, restoreType, state } from './profileScreen.harness';
+import {
+  h,
+  ownType,
+  quickEdit,
+  remote,
+  removeType,
+  restoreType,
+  setLive,
+  state,
+} from './profileScreen.harness';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
@@ -123,8 +132,9 @@ describe('MentorProfileScreen — the owner’s session types', () => {
     expect(
       within(dialog).getByText('Changes show on your profile straight away.'),
     ).toBeInTheDocument();
-    // No price: sessions are free until payments ship.
-    expect(within(dialog).queryByText('Price')).toBeNull();
+    // Price reads "Free", not editable, until payments are designed (design reply #62).
+    expect(within(dialog).getByText('Price')).toHaveTextContent('PriceFree');
+    expect(within(dialog).queryByRole('radiogroup')).toBeNull();
     expect(within(dialog).getByRole('link', { name: /Open full editor/ })).toHaveAttribute(
       'href',
       '/session-types/st1/edit',
@@ -133,10 +143,10 @@ describe('MentorProfileScreen — the owner’s session types', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Save changes' }));
     expect(quickEdit).toHaveBeenCalledWith({ id: 'st1', durationMin: 45, live: undefined });
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(screen.getByText('SOP draft review saved.')).toBeInTheDocument();
+    expect(screen.getByText('“SOP draft review” saved.')).toBeInTheDocument();
   });
 
-  it('quick edit can hide the type', async () => {
+  it('quick edit hides a type; the last visible one asks first (design `hideLast`)', async () => {
     onSessions();
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
@@ -144,7 +154,97 @@ describe('MentorProfileScreen — the owner’s session types', () => {
     const dialog = screen.getByRole('dialog', { name: 'Edit SOP draft review' });
     await user.click(within(dialog).getByRole('switch', { name: 'Visible to mentees' }));
     await user.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+    // The only visible type: nothing is saved until the mentor confirms.
+    expect(quickEdit).not.toHaveBeenCalled();
+    const confirm = screen.getByRole('dialog', { name: 'Hide your last session type?' });
+    await user.click(within(confirm).getByRole('button', { name: 'Hide it' }));
     expect(quickEdit).toHaveBeenCalledWith({ id: 'st1', durationMin: undefined, live: false });
+  });
+
+  it('quick edit hides one of several visible types straight away', async () => {
+    onSessions([ownType(), ownType({ id: 'st2', name: 'CV review' })]);
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: 'Edit SOP draft review' }));
+    const dialog = screen.getByRole('dialog', { name: 'Edit SOP draft review' });
+    await user.click(within(dialog).getByRole('switch', { name: 'Visible to mentees' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+    expect(quickEdit).toHaveBeenCalledWith({ id: 'st1', durationMin: undefined, live: false });
+    expect(screen.queryByRole('dialog', { name: /Hide/ })).toBeNull();
+  });
+
+  it('the card switch asks first (Session types’ confirm), then saves', async () => {
+    onSessions();
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(
+      screen.getByRole('switch', { name: 'Visible to mentees: Mock visa interview' }),
+    );
+    expect(setLive).not.toHaveBeenCalled();
+    const confirm = screen.getByRole('dialog', { name: 'Show “Mock visa interview” to mentees?' });
+    await user.click(within(confirm).getByRole('button', { name: 'Show it' }));
+    expect(setLive).toHaveBeenCalledWith('st9', true);
+    // Keeping it as it was saves nothing.
+    await user.click(screen.getByRole('switch', { name: 'Visible to mentees: SOP draft review' }));
+    const hide = screen.getByRole('dialog', { name: 'Hide your last session type?' });
+    await user.click(within(hide).getByRole('button', { name: 'Keep visible' }));
+    expect(setLive).toHaveBeenCalledTimes(1);
+  });
+
+  it('a refused switch says so', () => {
+    onSessions();
+    render(<MentorProfileScreen handle="gbenga" />);
+    act(() => h.onLiveFailed?.('st9', true));
+    expect(
+      screen.getByText('Couldn’t make it live. Check your connection and try again.'),
+    ).toBeInTheDocument();
+  });
+
+  it('Delete asks first; deleted, it says so and focus moves on', async () => {
+    onSessions([ownType(), ownType({ id: 'st2', name: 'CV review' })]);
+    removeType.mockResolvedValue({ kind: 'deleted' });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
+    const confirm = screen.getByRole('dialog', { name: 'Delete this session type?' });
+    await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
+    expect(removeType).toHaveBeenCalledWith('st1');
+    expect(await screen.findByText('“SOP draft review” was deleted.')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Edit CV review' })).toHaveFocus();
+  });
+
+  it('Delete with sessions booked schedules it, and says when', async () => {
+    onSessions([ownType({ booked: { count: 2, lastEndsAt: '2026-10-14T15:00:00Z' } })]);
+    removeType.mockResolvedValue({
+      kind: 'scheduled',
+      deletesAfter: '2026-10-14T15:00:00Z',
+      bookedCount: 2,
+    });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
+    const confirm = screen.getByRole('dialog', { name: 'Schedule deletion for Oct 14?' });
+    await user.click(within(confirm).getByRole('button', { name: 'Schedule deletion' }));
+    expect(
+      await screen.findByText('Deletion scheduled for Oct 14. Hidden from mentees now.'),
+    ).toBeInTheDocument();
+  });
+
+  it('a hidden type’s stage comes from Session types', () => {
+    onSessions([
+      ownType(),
+      ownType({
+        id: 'st9',
+        name: 'Mock visa interview',
+        isLive: false,
+        stages: ['interviewing', 'revisions'],
+      }),
+    ]);
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(
+      within(card('Mock visa interview')).getByText('Interviewing, Revising'),
+    ).toBeInTheDocument();
   });
 
   it('nothing changed: Save closes without a request', async () => {

@@ -1,11 +1,11 @@
 'use client';
 
-import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DURATIONS } from '@/lib/utils/sessionTypeDraft';
 import { apiError } from './errors';
 import { api } from './http';
-import { keys } from './keys';
 import { generalCopy, ItemSaveError } from './profileItems';
+import { rowWrite } from './sessionTypes';
 
 export type QuickEdit = {
   id: string;
@@ -14,31 +14,17 @@ export type QuickEdit = {
   live?: boolean;
 };
 
-// The same key as the Session types rows' writes (sessionTypes.ts), so a list
-// refetch never lands between this save and a switch still in flight. Swap for
-// the exported ROW_WRITE and settleRowWrite once they land (confirms PR).
-const ROW_WRITE = ['sessionTypes', 'rowWrite'] as const;
-function settle(qc: QueryClient) {
-  if (qc.isMutating({ mutationKey: ROW_WRITE }) > 1) return;
-  return Promise.all([
-    qc.invalidateQueries({ queryKey: keys.sessionTypes.all }),
-    // What mentees see and can book: the profile, Explore cards, the booking flow.
-    qc.invalidateQueries({ queryKey: keys.mentors.all }),
-    qc.invalidateQueries({ queryKey: ['booking'] }),
-  ]);
-}
-
 /**
  * The profile's quick edit (Mentor Profile.dc.html `editType`): length and
  * visibility, PATCH /me/session-types/{id}. Not optimistic: the modal waits for
- * the save and the refetch, then closes.
+ * the save. Session types' row-write bundle refetches the list, the profile and
+ * booking once no other row write is in flight, so the refetch never races a
+ * switch (and an offline save fails at once rather than pausing).
  */
 export function useQuickEditSessionType() {
   const qc = useQueryClient();
   return useMutation<void, ItemSaveError, QuickEdit>({
-    mutationKey: ROW_WRITE,
-    // Offline, fail at once with our copy rather than pause and send later.
-    networkMode: 'always',
+    ...rowWrite(qc),
     mutationFn: async ({ id, durationMin, live }) => {
       if (durationMin !== undefined && !DURATIONS.includes(durationMin))
         throw new ItemSaveError(generalCopy(null));
@@ -55,6 +41,5 @@ export function useQuickEditSessionType() {
         throw new ItemSaveError(generalCopy(e));
       }
     },
-    onSettled: () => settle(qc),
   });
 }

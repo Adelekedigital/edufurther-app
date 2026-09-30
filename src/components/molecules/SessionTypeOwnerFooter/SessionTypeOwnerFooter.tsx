@@ -20,8 +20,8 @@ type SessionTypeOwnerFooterProps = {
 
 /**
  * The owner's controls on a session-type card (Mentor Profile.dc.html
- * `canEdit` footer): "Visible to mentees", Edit, and Delete in red, so the
- * danger reads before the click (product 2026-09-30).
+ * `canEdit` footer): "Visible to mentees", Edit, and Delete (grey, red on hover,
+ * as everywhere: design reply #62.3).
  */
 export function SessionTypeOwnerFooter({
   name,
@@ -73,7 +73,6 @@ export function SessionTypeOwnerFooter({
           tone="danger"
           aria-label={`Delete ${name}`}
           title="Delete"
-          className={styles.delete}
           onClick={onDelete}
         />
       </span>

@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { coverArt, coverKey } from '@/lib/utils/cover';
-import { STAGE_LABELS } from '@/lib/utils/sessionTypeDraft';
+import { stageText } from '@/lib/utils/stageText';
 import { safeSocialUrl } from '@/lib/utils/socialUrl';
 import type {
   Mentor,
@@ -28,12 +28,6 @@ type MentorPublicRead = components['schemas']['MentorPublicRead'];
 type SessionTypeRead = components['schemas']['SessionTypeRead'];
 type ApplicationStage = components['schemas']['ApplicationStage'];
 type Venue = components['schemas']['ConferencingProvider'];
-
-// One wording with the Session Types wizard (product, 2026-09-29): its labels.
-const STAGE: Record<ApplicationStage, string | null> = {
-  ...STAGE_LABELS,
-  other: null, // custom_stage_label carries it
-};
 
 const VENUE: Record<Venue, string> = {
   google_meet: 'Google Meet',
@@ -82,10 +76,7 @@ function year(date: string | null | undefined): string | null {
  * a response still lacks the list (backend round 3).
  */
 export function stageLine(r: SessionTypeRead): string | null {
-  const labels = stagesOf(r)
-    .map((s) => (s === 'other' ? r.custom_stage_label?.trim() || null : STAGE[s]))
-    .filter((l): l is string => !!l);
-  return labels.length ? [...new Set(labels)].join(', ') : null;
+  return stageText(stagesOf(r), r.custom_stage_label ?? null);
 }
 
 function toProfileSessionType(r: SessionTypeRead): ProfileSessionType {

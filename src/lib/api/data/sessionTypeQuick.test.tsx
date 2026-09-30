@@ -25,7 +25,7 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('useQuickEditSessionType', () => {
-  it('sends only what changed, then refreshes what mentees see', async () => {
+  it('sends only what changed, then refreshes what mentees see (Session types’ row-write bundle)', async () => {
     PATCH.mockResolvedValue(ok());
     const { result, spy } = setup();
     await act(() => result.current.mutateAsync({ id: 'st1', durationMin: 45 }));
@@ -33,8 +33,14 @@ describe('useQuickEditSessionType', () => {
       params: { path: { session_type_id: 'st1' } },
       body: { duration_minutes: 45 },
     });
-    const refreshed = spy.mock.calls.map((c) => c[0]?.queryKey);
-    expect(refreshed).toEqual([keys.sessionTypes.all, keys.mentors.all, ['booking']]);
+    // Session types' row-write bundle refetches once no row write is in flight.
+    await waitFor(() =>
+      expect(spy.mock.calls.map((c) => c[0]?.queryKey)).toEqual([
+        keys.sessionTypes.all,
+        keys.mentors.all,
+        ['booking'],
+      ]),
+    );
   });
 
   it('visibility alone sends is_active', async () => {
@@ -74,13 +80,5 @@ describe('useQuickEditSessionType', () => {
     act(() => result.current.mutate({ id: 'st1', live: true }));
     await waitFor(() => expect(result.current.error?.copy).toMatch(/You’re offline/));
     online.mockRestore();
-  });
-
-  it('leaves the refetch to a row write still in flight (shared key)', async () => {
-    PATCH.mockResolvedValue(ok());
-    const { qc, result, spy } = setup();
-    vi.spyOn(qc, 'isMutating').mockReturnValue(2);
-    await act(() => result.current.mutateAsync({ id: 'st1', live: true }));
-    expect(spy).not.toHaveBeenCalled();
   });
 });

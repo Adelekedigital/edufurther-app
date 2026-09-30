@@ -294,9 +294,8 @@ function EntrySection({
                           icon="delete"
                           size="sm"
                           shape="square"
+                          // Grey at rest, red on hover, as everywhere (design reply #62.3).
                           tone="danger"
-                          // Red at rest: the action is dangerous before it's hovered (product).
-                          className={styles.delete}
                           aria-label={`Delete ${it.title}${it.meta ? `, ${it.meta}` : ''}`}
                           onClick={() => edit.onDelete(it.id)}
                         />

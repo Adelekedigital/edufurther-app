@@ -25,8 +25,8 @@ type SessionTypeQuickEditProps = {
 
 /**
  * The profile's quick edit, inside the "Edit {name}" modal (Mentor
- * Profile.dc.html `quickOpen`): length and visibility. No price: sessions are
- * free until payments ship (design-divergence.md).
+ * Profile.dc.html `quickOpen`): length and visibility. Price reads "Free", not
+ * editable, until payments are designed (design reply #62).
  */
 export function SessionTypeQuickEdit({
   initial,
@@ -55,6 +55,10 @@ export function SessionTypeQuickEdit({
   };
   return (
     <form className={styles.form} onSubmit={submit} noValidate>
+      <p className={styles.field}>
+        Price
+        <span className={styles.free}>Free</span>
+      </p>
       <label className={styles.field}>
         Length
         <Select

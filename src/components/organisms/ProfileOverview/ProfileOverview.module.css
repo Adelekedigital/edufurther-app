@@ -165,7 +165,3 @@
   display: flex;
   gap: var(--space-1);
 }
-/* Delete reads as dangerous before it's hovered (product 2026-09-30). */
-.rowActions .delete {
-  color: var(--text-danger);
-}

@@ -76,6 +76,8 @@ export const h = {
   quickOk: true,
   quickPending: false,
   quickError: null as { copy: string } | null,
+  /** The switch's failure callback, so a test can make it fail. */
+  onLiveFailed: null as null | ((id: string, live: boolean) => void),
   // What the booking modal's queries return.
   sessionTypesRemote: idle as unknown,
   slotsRemote: idle as unknown,
@@ -120,6 +122,8 @@ export const editEducation = vi.fn();
 export const removeEducation = vi.fn();
 export const quickEdit = vi.fn();
 export const restoreType = vi.fn();
+export const setLive = vi.fn();
+export const removeType = vi.fn();
 
 /** An owner's session type as Session types lists it. */
 export const ownType = (over: Partial<OwnSessionType> = {}): OwnSessionType => ({
@@ -129,6 +133,7 @@ export const ownType = (over: Partial<OwnSessionType> = {}): OwnSessionType => (
   durationMin: 60,
   noticeMin: 1440,
   isLive: true,
+  stages: [],
   topics: [{ code: 'application-documents', label: 'Application documents' }],
   icon: 'edit_document',
   iconChoice: null,
@@ -297,6 +302,16 @@ const avatarMock = () => ({
 const sessionTypesMock = () => ({
   useOwnSessionTypes: () => h.ownTypes,
   useRestoreSessionType: () => ({ restore: restoreType, pendingIds: [] as string[] }),
+  useSetLive: (failed: (id: string, live: boolean) => void) => {
+    h.onLiveFailed = failed;
+    return setLive;
+  },
+  useDeleteSessionType: () => ({
+    remove: removeType,
+    isPending: false,
+    error: null,
+    reset: vi.fn(),
+  }),
 });
 
 const sessionTypeQuickMock = () => ({
@@ -519,6 +534,9 @@ beforeEach(() => {
   h.quickError = null;
   quickEdit.mockReset();
   restoreType.mockReset();
+  setLive.mockReset();
+  removeType.mockReset();
+  h.onLiveFailed = null;
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
     matches: false,
     media: query,
