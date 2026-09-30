@@ -1,5 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import type { MentorDefaults } from '@/lib/api/data/sessionTypes';
+import { SESSION_TEMPLATES } from '@/lib/utils/sessionTemplates';
 import { useSessionTypeDraft } from './useSessionTypeDraft';
 
 const defaults = (over: Partial<MentorDefaults> = {}): MentorDefaults => ({
@@ -28,5 +29,16 @@ describe('useSessionTypeDraft: the platform cap', () => {
       useSessionTypeDraft(undefined, null, { data: defaults({ maxWindowDays: 56 }), error: null }),
     );
     expect(result.current.draft.windowDays).toBe(28);
+  });
+
+  it('a template settling on its own rules as a low cap arrives keeps them, within the cap', () => {
+    // Mock visa interview is 45 min; the mentor's default is 60, so it settles on its own rules.
+    const tmpl = SESSION_TEMPLATES.find((t) => t.key === 'mock-visa-interview')!;
+    const { result, rerender } = renderHook(({ d }) => useSessionTypeDraft(undefined, tmpl, d), {
+      initialProps: { d: { data: null as MentorDefaults | null, error: null } },
+    });
+    rerender({ d: { data: defaults({ durationMin: 60, maxWindowDays: 14 }), error: null } });
+    expect(result.current.draft).toMatchObject({ rules: 'custom', durationMin: 45 });
+    expect(result.current.draft.windowDays).toBeLessThanOrEqual(14);
   });
 });

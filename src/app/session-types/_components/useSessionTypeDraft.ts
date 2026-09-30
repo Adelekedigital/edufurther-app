@@ -81,9 +81,11 @@ export function useSessionTypeDraft(
   // draft's 4 weeks, or rules set before they loaded) is brought within it,
   // in the baseline too, so it isn't an unsaved change.
   const cap = defaults.data?.maxWindowDays;
+  // Functional updates: they apply on top of a template's settlement queued in
+  // the same render, never over it.
   if (cap && (draft.windowDays > cap || initial.windowDays > cap)) {
-    if (initial.windowDays > cap) setInitial({ ...initial, windowDays: cap });
-    if (draft.windowDays > cap) setDraft({ ...draft, windowDays: cap });
+    setInitial((i) => (i.windowDays > cap ? { ...i, windowDays: cap } : i));
+    setDraft((d) => (d.windowDays > cap ? { ...d, windowDays: cap } : d));
   }
 
   // The type as saved: from the loader, then from each save's own outcome, so a

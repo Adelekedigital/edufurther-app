@@ -251,6 +251,9 @@ export function mockCreateSessionType(
   const label = typeof body.custom_stage_label === 'string' ? body.custom_stage_label.trim() : '';
   if (hasOther !== !!label)
     errors.push({ pointer: '/custom_stage_label', message: 'required exactly with other' });
+  // 4 to the platform cap, like the backend (a new type has no stored value to resend).
+  if ('booking_window_days' in body && !windowOk(body.booking_window_days, null))
+    errors.push({ pointer: '/booking_window_days', message: 'out of range' });
   if (errors.length)
     return {
       status: 422,
