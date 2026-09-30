@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Mentor } from '@/types/mentor';
 import { MentorResults, type MentorResultsProps } from './MentorResults';
@@ -237,5 +237,39 @@ describe('MentorResults', () => {
     render(<MentorResults {...props({ mentors: [mentor()], selfId: 'm1' })} />);
     expect(screen.getByRole('link', { name: 'View profile: Olajuwon Samuel' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Book session/ })).toBeNull();
+  });
+
+  it('a mentor not taking bookings says so and offers the profile; others keep Book (backend PR 301)', () => {
+    const onBook = vi.fn();
+    render(
+      <MentorResults
+        {...props({
+          onBook,
+          mentors: [
+            // Even with a time left over from before, the card never offers it.
+            mentor({ takingBookings: false, nextAvailableAt: '2026-10-01T09:00:00Z' }),
+            mentor({
+              id: 'm2',
+              name: 'Tunde Adeyemi',
+              firstName: 'Tunde',
+              profileHref: '/mentors/m2',
+            }),
+          ],
+        })}
+      />,
+    );
+    const [paused, open] = screen.getAllByRole('article');
+    expect(paused).toHaveTextContent('Not taking bookings');
+    expect(paused).not.toHaveTextContent('Next available');
+    expect(
+      within(paused!).getByRole('link', { name: 'View profile: Olajuwon Samuel' }),
+    ).toHaveAttribute('href', '/mentors/m1');
+    expect(
+      within(paused!).queryByRole('button', { name: /Book session|See availability/ }),
+    ).toBeNull();
+    expect(
+      within(open!).getByRole('button', { name: /Book session with Tunde|See availability/ }),
+    ).toBeInTheDocument();
+    expect(open).not.toHaveTextContent('Not taking bookings');
   });
 });

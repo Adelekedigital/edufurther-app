@@ -169,6 +169,10 @@
   gap: var(--space-1);
   color: var(--text-tertiary);
 }
+/* MentorCard.dc.html `notTakingLine`: a shade darker than the other lines. */
+.notTaking {
+  color: var(--ink-600);
+}
 /* Design uses a bare <strong>: browser default weight, bold (700). */
 .nextTime {
   color: var(--green-700);
