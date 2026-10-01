@@ -178,11 +178,14 @@ export function SessionTypesScreen() {
   // Focus moves on after a removal, unless a dialog is open: another row's
   // delete confirm, or the visibility or feature confirm. Focus is in that
   // dialog, and its close returns focus to where it opened.
+  // Behind the visibility or feature confirm the target waits and applies when
+  // it closes: that dialog's own row may be the one removed.
   const otherDialogRef = useLatest(!!visibility || !!featuring);
+  const [deferredFocus, setDeferredFocus] = useState<{ menuOf: string } | 'create' | null>(null);
   const moveFocusAfter = (after: { menuOf: string } | 'create', id: string) => {
     if (confirmingRef.current && confirmingRef.current.id !== id) return;
-    if (otherDialogRef.current) return;
-    setFocusAfterRemoval(after);
+    if (otherDialogRef.current) setDeferredFocus(after);
+    else setFocusAfterRemoval(after);
   };
   // A delete that couldn't be confirmed: if the refetched list no longer has
   // it, focus moves on as after a delete (adjusted during render).
@@ -193,7 +196,12 @@ export function SessionTypesScreen() {
   if (unconfirmed && list.data && !list.data.some((x) => x.id === unconfirmed.id)) {
     setUnconfirmed(null);
     // Any open dialog owns focus, this row's reopened confirm too.
-    if (!confirming && !visibility && !featuring) setFocusAfterRemoval(unconfirmed.after);
+    if (visibility || featuring) setDeferredFocus(unconfirmed.after);
+    else if (!confirming) setFocusAfterRemoval(unconfirmed.after);
+  }
+  if (deferredFocus && !visibility && !featuring && !confirming) {
+    setDeferredFocus(null);
+    setFocusAfterRemoval(deferredFocus);
   }
   const neighbour = (id: string): { menuOf: string } | 'create' => {
     const rows = list.data ?? [];

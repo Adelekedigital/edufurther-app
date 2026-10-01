@@ -385,6 +385,29 @@ describe('SessionTypesScreen', () => {
     remove.mockResolvedValue({ kind: 'deleted' });
   });
 
+  it('a delete that lands behind its own row’s visibility confirm moves focus on once that closes', async () => {
+    viewer = mentor;
+    list = idle({ data: [TYPE, { ...TYPE, id: 'b', name: 'Visa prep' }] });
+    let finish!: (r: { kind: 'deleted' }) => void;
+    remove.mockImplementation(() => new Promise((res) => (finish = res)));
+    const user = userEvent.setup({ delay: null });
+    const { rerender } = render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }));
+    await user.keyboard('{Escape}');
+    // The same row's switch opens its visibility confirm; the delete then lands.
+    await user.click(screen.getByRole('switch', { name: /SOP draft review/ }));
+    await act(async () => finish({ kind: 'deleted' }));
+    list = idle({ data: [{ ...TYPE, id: 'b', name: 'Visa prep' }] });
+    rerender(<SessionTypesScreen />);
+    await user.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'More actions for Visa prep' })).toHaveFocus(),
+    );
+    remove.mockResolvedValue({ kind: 'deleted' });
+  });
+
   it('a row whose delete is still out stays busy after another row’s Keep it', async () => {
     viewer = mentor;
     list = idle({ data: [TYPE, { ...TYPE, id: 'b', name: 'Visa prep' }] });
