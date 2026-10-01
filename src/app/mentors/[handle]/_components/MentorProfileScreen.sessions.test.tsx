@@ -196,7 +196,9 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     ).toBeInTheDocument();
     expect(card('SOP draft review')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Edit CV review' }));
-    expect(screen.queryByRole('alert')).toBeNull();
+    expect(
+      within(screen.getByRole('dialog', { name: 'Edit CV review' })).queryByText(/didn’t save/),
+    ).toBeNull();
   });
 
   it('"Keep visible" after a quick edit still saves the length (review of PR 119)', async () => {
@@ -252,10 +254,14 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('button', { name: 'Edit SOP draft review' }));
-    expect(screen.getByRole('alert')).toHaveTextContent('That didn’t save. Try again.');
+    const dialog = screen.getByRole('dialog', { name: 'Edit SOP draft review' });
+    expect(within(dialog).getByText('That didn’t save. Try again.')).toBeVisible();
     await user.selectOptions(screen.getByRole('combobox', { name: 'Length' }), '90');
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     expect(screen.getByRole('dialog', { name: 'Edit SOP draft review' })).toBeInTheDocument();
+    // Said in the page's live region, which is always there (Codex on PR 119).
+    const live = screen.getAllByRole('status').find((r) => r.textContent?.includes('didn’t save'));
+    expect(live).toHaveTextContent('That didn’t save. Try again.');
   });
 
   it('an older length stays offered, so opening quick edit never changes it', async () => {
@@ -311,6 +317,14 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     ]);
     render(<MentorProfileScreen handle="gbenga" />);
     expect(within(card('Essay sprint')).getByText('Drafting, Revising')).toBeInTheDocument();
+  });
+
+  it('the mentor’s own stage wording shows on the owner card (Codex on PR 119)', () => {
+    onSessions([
+      ownType({ id: 'st7', name: 'Essay sprint', stages: ['other'], customStage: 'Pre-departure' }),
+    ]);
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(within(card('Essay sprint')).getByText('Pre-departure')).toBeInTheDocument();
   });
 
   it('in "View as mentee", the mentee view: no owner controls', async () => {

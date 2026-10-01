@@ -16,7 +16,7 @@ type SessionTypeQuickEditProps = {
   /** The full editor, for everything else. */
   fullHref: string;
   saving: boolean;
-  /** Why the last save failed, or null. */
+  /** Why the last save failed, or null. Shown here; the page announces it. */
   error: string | null;
   /** Only what changed; nothing changed closes without a save. */
   onSave: (changed: Partial<QuickEditValues>) => void;
@@ -94,11 +94,9 @@ export function SessionTypeQuickEdit({
           <Icon name="arrow_forward" size={16} />
         </Link>
       </div>
-      {error && (
-        <p role="alert" className={styles.error}>
-          {error}
-        </p>
-      )}
+      {/* Visual only: a region that arrives full is often not read out, so the
+          page's always-present live region says it (Codex on PR 119). */}
+      {error && <p className={styles.error}>{error}</p>}
       <div className={styles.actions}>
         <Button type="button" variant="secondary-outlined" size="large" onClick={onCancel}>
           Cancel

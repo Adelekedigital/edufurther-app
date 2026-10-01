@@ -63,8 +63,9 @@ describe('SessionTypeQuickEdit', () => {
     expect(p.onSave).not.toHaveBeenCalled();
   });
 
-  it('says why a save failed', () => {
+  it('shows why a save failed (the page’s live region says it)', () => {
     render(<SessionTypeQuickEdit {...props()} error="That didn’t save. Try again." />);
-    expect(screen.getByRole('alert')).toHaveTextContent('That didn’t save. Try again.');
+    expect(screen.getByText('That didn’t save. Try again.')).toBeVisible();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });

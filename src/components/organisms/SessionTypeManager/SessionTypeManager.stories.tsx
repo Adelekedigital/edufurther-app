@@ -18,6 +18,7 @@ const T = (over: Partial<OwnSessionType>): OwnSessionType => ({
   noticeMin: 1440,
   isLive: true,
   stages: [],
+  customStage: null,
   topics: [{ code: 'document-preparation', label: 'Document preparation' }],
   icon: 'edit_document',
   iconChoice: null,

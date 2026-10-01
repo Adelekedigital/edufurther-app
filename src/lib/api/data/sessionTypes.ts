@@ -89,6 +89,7 @@ export function toOwnSessionType(
     noticeMin: r.min_notice_minutes,
     isLive: r.is_active,
     stages: stagesOf(r),
+    customStage: r.custom_stage_label?.trim() || null,
     topics,
     iconChoice: r.icon ?? null,
     icon: r.icon ?? autoIcon(topics.map((t) => t.code)),

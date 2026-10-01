@@ -118,6 +118,9 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // "View as mentee" (Mentor Profile.dc.html `pvw`): the owner sees the page as
   // a mentee does, with Book drawn but off. Page state: a reload is back to editing.
   const [previewOn, setPreview] = useState(false);
+  // The owner's active count, from their own list once the Sessions tab has
+  // loaded it: it changes before the profile refetches (Codex on PR 119).
+  const [ownActive, setOwnActive] = useState<number | null>(null);
   const viewing = isOwner && previewOn;
   const editing = isOwner && !previewOn;
   // Mentors can't book (product 2026-09-29, canBookFor): on another mentor's
@@ -441,7 +444,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                         {
                           value: 'sessions',
                           // Nothing to book counts as none (the design's visible count).
-                          label: `Sessions (${notTakingTab ? 0 : p.sessionTypes.length})`,
+                          label: `Sessions (${notTakingTab ? 0 : editing && ownActive !== null ? ownActive : p.sessionTypes.length})`,
                           panelId: 'panel-sessions',
                         },
                       ]
@@ -522,7 +525,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 ) : notTakingTab ? (
                   <NotTakingEmpty firstName={p.mentor.firstName} />
                 ) : editing ? (
-                  <OwnerSessionTypes shown={p.sessionTypes} />
+                  <OwnerSessionTypes shown={p.sessionTypes} onActiveCount={setOwnActive} />
                 ) : (
                   <SessionTypeList
                     sessionTypes={p.sessionTypes}

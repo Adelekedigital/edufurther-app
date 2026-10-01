@@ -44,7 +44,7 @@ function toCard(t: OwnSessionType, shown: ProfileSessionType | undefined): Profi
     durationMin: t.durationMin,
     questions: shown?.questions ?? [],
     category: t.topics[0]?.label ?? null,
-    stage: shown?.stage ?? stageText(t.stages, null),
+    stage: shown?.stage ?? stageText(t.stages, t.customStage),
     venue: shown?.venue ?? '',
   };
 }
@@ -52,6 +52,11 @@ function toCard(t: OwnSessionType, shown: ProfileSessionType | undefined): Profi
 type Props = {
   /** What mentees see: shown if the owner's own list fails. */
   shown: ProfileSessionType[];
+  /**
+   * The number of active types, as this list has it: the tab's count follows
+   * it, so a hide shows in both at once (Codex on PR 119). Null until loaded.
+   */
+  onActiveCount?: (n: number | null) => void;
 };
 
 /**
@@ -62,11 +67,15 @@ type Props = {
  * types, which the hide confirm says. The confirms are Session types' own, so
  * each action asks the same way wherever it's done.
  */
-export function OwnerSessionTypes({ shown }: Props) {
+export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
   const own = useOwnSessionTypes(true);
   // Active only: hidden and scheduled types are Session types' business.
   const list = own.data?.filter((t) => t.isLive && !t.pendingDeletion);
   const liveCount = list?.length ?? 0;
+  const activeCount = list ? list.length : null;
+  useEffect(() => {
+    onActiveCount?.(activeCount);
+  }, [activeCount, onActiveCount]);
   const nameOf = (id: string) => own.data?.find((t) => t.id === id)?.name ?? 'it';
   const [said, setSaid] = useState<{ text: string; id: number } | null>(null);
   const say = (text: string) => setSaid((was) => ({ text, id: (was?.id ?? 0) + 1 }));
@@ -117,11 +126,11 @@ export function OwnerSessionTypes({ shown }: Props) {
         if (save.live === false) leaving(t, hiddenNow(t));
         else say(`“${t.name}” saved.`);
       },
-      // A hide is saved after the modal has closed, so it can't show the
-      // error: say it, and leave nothing behind for the next Edit (review of
-      // PR 119). A length save keeps the modal and its error.
+      // Every failure is said in the live region (Codex on PR 119). A hide is
+      // saved after the modal closed, so it leaves nothing behind for the
+      // next Edit (review of PR 119); a length save keeps the modal's error.
       onError: (e) => {
-        if (save.live !== false) return;
+        if (save.live !== false) return say(e.copy);
         say(`Couldn’t hide “${t.name}”. ${e.copy}`);
         quick.reset();
       },
@@ -261,7 +270,11 @@ export function OwnerSessionTypes({ shown }: Props) {
           type={deleting}
           busy={del.isPending}
           error={del.error}
-          onKeep={closeDelete}
+          // Mid-delete, "Keep it", Escape and the close do nothing: closing
+          // can't stop the request (Codex on PR 119).
+          onKeep={() => {
+            if (!del.isPending) closeDelete();
+          }}
           onDelete={() => onDelete(deleting)}
         />
       )}

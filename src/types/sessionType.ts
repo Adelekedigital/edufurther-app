@@ -34,6 +34,8 @@ export type OwnSessionType = {
   isLive: boolean;
   /** The stages it's aimed at, in the mentor's order; empty = any stage. */
   stages: ApplicationStage[];
+  /** The mentor's own words for the `other` stage, or null. */
+  customStage: string | null;
   /** Catalog offerings, in the mentor's order, at most 3 (backend #9). */
   topics: { code: string; label: string }[];
   /** The icon to draw: the mentor's pick, else automatic from the topic. */
