@@ -154,7 +154,7 @@ export function SessionTypesScreen() {
   // Closed (×) while its delete was out: the delete carries on, and the row
   // says how it went, a refusal included (product, 2026-10-01).
   // By row: a dismissed delete must not close, or show its state in, another
-  // row's confirm opened meanwhile (Codex on #121).
+  // row's confirm opened meanwhile.
   const dismissed = useRef(new Set<string>());
   // The row the delete hook's refusal belongs to, and every delete still out,
   // by row: the hook only tracks its latest call, and a reset (another row's
@@ -172,7 +172,7 @@ export function SessionTypesScreen() {
   );
   const onFocused = useCallback(() => setFocusAfterRemoval(null), []);
   // Focus moves on after a removal, unless another row's confirm is open: focus
-  // is in that dialog, and its close returns focus to its own row (Codex on #121).
+  // is in that dialog, and its close returns focus to its own row.
   const moveFocusAfter = (after: { menuOf: string } | 'create', id: string) => {
     if (confirmingRef.current && confirmingRef.current.id !== id) return;
     setFocusAfterRemoval(after);

@@ -291,7 +291,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     expect(screen.getByRole('button', { name: 'Edit CV review' })).toHaveFocus();
   });
 
-  it('a delete that couldn’t be confirmed closes the confirm and says so (#121)', async () => {
+  it('a delete that couldn’t be confirmed closes the confirm and says so', async () => {
     onSessions();
     removeType.mockResolvedValue({ kind: 'unknown' });
     const user = userEvent.setup();
