@@ -15,8 +15,9 @@ import { sessionKey, useSession } from './session';
 export const PHOTO_ACCEPT = BANNER_ACCEPT;
 
 /** Copy for a failed photo upload: the server's 413/422 mean the file, not the network. */
+// Copy: ProfilePhoto.dc.html's notes (design, 2026-10-01).
 export function photoErrorCopy(e: AppError): string {
-  if (e.kind === 'offline') return 'You’re offline. Try again when you’re connected.';
+  if (e.kind === 'offline') return 'You’re offline, so the photo didn’t upload.';
   if (e.status === 413 || e.status === 422)
     return 'That image couldn’t be used. Choose a JPEG, PNG or WebP under 5 MB.';
   return 'The photo didn’t upload. Try again.';
@@ -24,8 +25,9 @@ export function photoErrorCopy(e: AppError): string {
 
 /** Copy for a failed removal. */
 export function photoRemoveErrorCopy(e: AppError): string {
-  if (e.kind === 'offline') return 'You’re offline. Try again when you’re connected.';
-  return 'The photo wasn’t removed. Try again.';
+  if (e.kind === 'offline')
+    return 'You’re offline, so your photo wasn’t removed. Try again when you’re back online.';
+  return 'Your photo wasn’t removed. Try again.';
 }
 
 /**
@@ -117,6 +119,8 @@ export function useAvatarUpload(handle: string, userId: string | null) {
     onError: () => void qc.invalidateQueries({ queryKey: key }),
   });
 
+  const errorFrom: 'upload' | 'remove' | null =
+    fileProblem || upload.error ? 'upload' : remove.error ? 'remove' : null;
   return {
     accept: PHOTO_ACCEPT,
     upload: (file: File) => {
@@ -142,6 +146,8 @@ export function useAvatarUpload(handle: string, userId: string | null) {
         : remove.error
           ? photoRemoveErrorCopy(normaliseError(remove.error))
           : null),
+    /** Which action `error` is about: a failed removal offers "Try again". */
+    errorFrom,
     dismissError: () => {
       setFileProblem(null);
       upload.reset();

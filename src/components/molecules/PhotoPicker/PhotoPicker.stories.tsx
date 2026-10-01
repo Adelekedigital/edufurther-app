@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ComponentProps, type ReactNode } from 'react';
 import { fn } from 'storybook/test';
 import { PhotoPicker } from './PhotoPicker';
 
-/** Mentor Profile.dc.html: the owner's camera badge on the 112px photo. */
+/** ProfilePhoto.dc.html: the owner's camera badge on the 112px photo. */
 const Photo = ({ children, empty }: { children: ReactNode; empty?: boolean }) => (
   <div style={{ position: 'relative', width: 112, height: 112, margin: 24 }}>
     <div
@@ -45,6 +45,33 @@ export const Uploading: Story = { args: { uploading: true } };
 export const WrongType: Story = { args: { error: 'Choose a JPEG, PNG or WebP image.' } };
 export const TooBig: Story = { args: { error: 'Choose an image under 5 MB.' } };
 export const Offline: Story = {
-  args: { error: 'You’re offline. Try again when you’re connected.' },
+  args: { error: 'You’re offline, so the photo didn’t upload.', errorFrom: 'upload' },
+};
+export const WithMenu: Story = { args: { onRemove: fn(), onRetryRemove: fn() } };
+export const Removing: Story = { args: { onRemove: fn(), removing: true } };
+export const RemoveFailed: Story = {
+  args: {
+    onRemove: fn(),
+    onRetryRemove: fn(),
+    error: 'Your photo wasn’t removed. Try again.',
+    errorFrom: 'remove',
+  },
+};
+/** A removal lands after mount, as on the page, so "Photo removed." shows. */
+const JustRemoved = (args: ComponentProps<typeof PhotoPicker>) => {
+  const [stamp, setStamp] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setStamp(1), 0);
+    return () => clearTimeout(t);
+  }, []);
+  return <PhotoPicker {...args} removedStamp={stamp} />;
+};
+export const Removed: Story = {
+  args: { hasPhoto: false, onRemove: fn() },
+  render: (args) => (
+    <Photo empty>
+      <JustRemoved {...args} />
+    </Photo>
+  ),
 };
 export const Phone: Story = { globals: { viewport: { value: 'mobile2', isRotated: false } } };

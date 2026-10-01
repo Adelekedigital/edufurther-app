@@ -374,9 +374,12 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                     uploading={photo.uploading}
                     onFile={photo.upload}
                     error={photo.error}
+                    errorFrom={photo.errorFrom}
                     onDismissError={photo.dismissError}
                     onRemove={() => setPhotoRemoving(true)}
+                    onRetryRemove={photo.remove}
                     removing={photo.removing}
+                    removedStamp={photo.removedStamp}
                   />
                 ) : undefined
               }

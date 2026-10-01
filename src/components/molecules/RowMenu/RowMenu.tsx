@@ -46,6 +46,17 @@ type RowMenuProps = {
      */
     disabled?: boolean;
   };
+  /**
+   * A menu drawn its own way (the photo menu, ProfilePhoto.dc.html): classes
+   * for the menu, every item, every item's icon, and a danger item, over the
+   * row menu's own.
+   */
+  menu?: {
+    className?: string;
+    itemClassName?: string;
+    iconClassName?: string;
+    dangerClassName?: string;
+  };
 };
 
 /**
@@ -56,7 +67,7 @@ type RowMenuProps = {
  * open (the row changed under it), focus moves to the item now in its place,
  * or back to the button when none is left (#114).
  */
-export function RowMenu({ label, items, triggerRef, trigger }: RowMenuProps) {
+export function RowMenu({ label, items, triggerRef, trigger, menu: drawn }: RowMenuProps) {
   const [open, setOpen] = useState(false);
   const inert = !!trigger?.disabled;
   const menuId = useId();
@@ -162,7 +173,11 @@ export function RowMenu({ label, items, triggerRef, trigger }: RowMenuProps) {
           id={menuId}
           role="menu"
           aria-label={label}
-          className={cx(styles.menu, trigger?.align === 'start' && styles.menuStart)}
+          className={cx(
+            styles.menu,
+            trigger?.align === 'start' && styles.menuStart,
+            drawn?.className,
+          )}
           onKeyDown={onMenuKey}
         >
           {items.map((it, i) => (
@@ -171,14 +186,19 @@ export function RowMenu({ label, items, triggerRef, trigger }: RowMenuProps) {
               type="button"
               role="menuitem"
               tabIndex={-1}
-              className={cx(styles.item, it.danger && styles.danger)}
+              className={cx(
+                styles.item,
+                drawn?.itemClassName,
+                it.danger && styles.danger,
+                it.danger && drawn?.dangerClassName,
+              )}
               onFocus={() => (focused.current = i)}
               onClick={() => {
                 close(true);
                 it.onSelect();
               }}
             >
-              <Icon name={it.icon} size={18} />
+              <Icon name={it.icon} size={18} className={drawn?.iconClassName} />
               {it.label}
             </button>
           ))}

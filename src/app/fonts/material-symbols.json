@@ -61,6 +61,7 @@
     "more_horiz",
     "my_location",
     "new_releases",
+    "no_photography",
     "open_in_new",
     "palette",
     "payments",
@@ -92,6 +93,7 @@
     "toll",
     "translate",
     "tune",
+    "upload",
     "upload_file",
     "verified_user",
     "video_call",
@@ -101,5 +103,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "1b63836dc7857c4dbd322d9c5e58b381490ca145a9418ae2cf08b1bd0d7df619"
+  "sha256": "53e55548af06919bdb81d33b9edbe4c338dc74818e45ff437af6bff6bb87190b"
 }

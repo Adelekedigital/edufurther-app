@@ -5,9 +5,9 @@ import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import styles from './MentorProfileScreen.module.css';
 
 /**
- * "Remove photo" (FE #98, design reply to #60: accepted, drawn later). The
- * project's delete pattern: a danger confirm, "Keep it" first and the filled
- * destructive button last. Confirming closes it; the photo shows the removal.
+ * "Remove photo" (ProfilePhoto.dc.html `confirmOpen`): a danger confirm, "Keep
+ * it" first and the filled destructive button last. Confirming closes it; the
+ * photo shows the removal.
  */
 export function RemovePhotoConfirm({
   onKeep,
@@ -19,8 +19,8 @@ export function RemovePhotoConfirm({
   return (
     <ModalShell
       title="Remove your photo?"
-      subtitle="Your initials show in its place."
-      icon="delete"
+      subtitle="Your initials show instead until you add a new one."
+      icon="no_photography"
       tone="danger"
       size="sm"
       onClose={onKeep}

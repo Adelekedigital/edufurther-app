@@ -177,7 +177,7 @@ describe('useAvatarUpload', () => {
       withPhoto(qc);
       act(() => result.current.remove());
       await waitFor(() =>
-        expect(result.current.error).toBe('The photo wasn’t removed. Try again.'),
+        expect(result.current.error).toBe('Your photo wasn’t removed. Try again.'),
       );
       expect(result.current.removedStamp).toBe(0);
       expect(qc.getQueryData<MentorProfile>(key)?.mentor.photoUrl).toBe('https://cdn/me.webp');
@@ -189,11 +189,23 @@ describe('useAvatarUpload', () => {
       const { result } = setup();
       act(() => result.current.remove());
       await waitFor(() =>
-        expect(result.current.error).toBe('The photo wasn’t removed. Try again.'),
+        expect(result.current.error).toBe('Your photo wasn’t removed. Try again.'),
       );
       act(() => result.current.dismissError());
       await waitFor(() => expect(result.current.error).toBeNull());
       expect(photoRemoveErrorCopy({ kind: 'offline', message: '' })).toMatch(/offline/);
     });
+  });
+
+  it('errorFrom: which action the error is about, so a failed removal offers Try again (review of PR 135)', async () => {
+    DELETE.mockResolvedValue({ error: {}, response: new Response(null, { status: 500 }) });
+    const { result } = setup();
+    expect(result.current.errorFrom).toBeNull();
+    act(() => result.current.remove());
+    await waitFor(() => expect(result.current.errorFrom).toBe('remove'));
+    act(() => result.current.dismissError());
+    await waitFor(() => expect(result.current.errorFrom).toBeNull());
+    act(() => result.current.upload(file('image/gif', 10)));
+    expect(result.current.errorFrom).toBe('upload');
   });
 });

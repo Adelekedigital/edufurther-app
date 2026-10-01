@@ -196,4 +196,24 @@ describe('RowMenu (WAI-ARIA menu button)', () => {
     await user.keyboard('{ArrowDown}');
     expect(screen.queryByRole('menu')).toBeNull();
   });
+
+  it('a menu drawn its own way takes its classes, a danger item its own too', async () => {
+    const user = userEvent.setup();
+    render(
+      <RowMenu
+        label="Photo options"
+        trigger={{ icon: 'photo_camera' }}
+        menu={{ className: 'm', itemClassName: 'i', dangerClassName: 'd' }}
+        items={[
+          { key: 'a', icon: 'upload', label: 'Upload a new photo', onSelect: vi.fn() },
+          { key: 'b', icon: 'delete', label: 'Remove photo', onSelect: vi.fn(), danger: true },
+        ]}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Photo options' }));
+    expect(screen.getByRole('menu')).toHaveClass('m');
+    expect(screen.getByRole('menuitem', { name: /Upload/ })).toHaveClass('i');
+    expect(screen.getByRole('menuitem', { name: /Upload/ })).not.toHaveClass('d');
+    expect(screen.getByRole('menuitem', { name: /Remove/ })).toHaveClass('i', 'd');
+  });
 });
