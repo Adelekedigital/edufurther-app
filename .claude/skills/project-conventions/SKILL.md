@@ -147,6 +147,7 @@ Prototype files (`support.js`, `image-slot.js`, `dc-import`, `sc-if`) are the pr
 - DS atoms keep the DS names and props (`Button`, `Chip`, `EmptyState`, `Avatar`, `Badge`, …).
 - `src/lib/api/data/` exports one hook per resource-and-shape, named `useX`.
 - Tokens are referenced semantically where an alias exists (`--text-secondary`), by ramp otherwise (`--ink-700`). Never by value.
+- **Tabs within a page never drop work, and never ask (product, 2026-10-01).** Switching tabs is moving around one page, not leaving it, so it gets no "Discard your changes?" dialog. Any panel that can hold an edit (an open editor, a draft, a half-filled form) renders as `<TabPanel keepMounted>` (`atoms/Tabs/TabPanel`): it stays in the page, hidden, while another tab shows, and is just as it was on coming back. Its `useLeaveGuard` stays live, so leaving the page from another tab still asks. Panels with nothing to edit can render only while selected (the default). A control in a kept panel may be hidden: before moving focus to one, check it isn't inside `[hidden]`. Used by the Mentor Profile (Overview, for the owner). Use it for Settings and any other tabbed page with forms; Session types' wizard steps are separate steps, not tabs.
 
 ---
 

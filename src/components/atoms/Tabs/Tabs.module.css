@@ -39,3 +39,9 @@
   align-items: center;
   gap: var(--space-2);
 }
+
+/* A kept panel while another tab shows: out of view and of the accessibility
+   tree. Outranks a page class that sets its display. */
+.panel[hidden] {
+  display: none;
+}

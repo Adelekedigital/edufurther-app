@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixture';
 import { h, replace, saveAbout, saveIntro, state } from './profileScreen.harness';
-import { hasUnsavedChanges, unsavedLabel } from '@/lib/utils/leaveGuard';
+import { hasUnsavedChanges } from '@/lib/utils/leaveGuard';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
@@ -102,16 +102,6 @@ describe('MentorProfileScreen — the owner edits their profile', () => {
     expect(beforeArg).toMatchObject({ headline: own.headline });
   });
 
-  it('leaving Overview closes the About editor', async () => {
-    h.profile = state({ data: own });
-    const user = userEvent.setup();
-    render(<MentorProfileScreen handle="gbenga" />);
-    await user.click(screen.getByRole('button', { name: 'Edit About' }));
-    expect(screen.getByRole('textbox', { name: 'About' })).toBeInTheDocument();
-    await user.click(screen.getByRole('tab', { name: /Sessions/ }));
-    expect(screen.queryByRole('textbox', { name: 'About' })).toBeNull();
-  });
-
   it('an empty About invites the owner to write one', () => {
     h.profile = state({ data: { ...own, about: null } });
     render(<MentorProfileScreen handle="gbenga" />);
@@ -126,94 +116,35 @@ describe('MentorProfileScreen — the owner edits their profile', () => {
     expect(screen.queryByRole('button', { name: 'Edit About' })).toBeNull();
   });
 
-  describe('a tab switch with unsaved About text asks first (#134)', () => {
-    const typeAndSwitch = async (user: ReturnType<typeof userEvent.setup>) => {
+  describe('a tab switch keeps the About draft, and never asks (#134)', () => {
+    it('Overview → Reviews → Overview: the editor and its text are still there', async () => {
+      h.profile = state({ data: own });
+      const user = userEvent.setup();
+      const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
       await user.click(screen.getByRole('button', { name: 'Edit About' }));
       await user.type(screen.getByRole('textbox', { name: 'About' }), ' More.');
-      await user.click(screen.getByRole('tab', { name: /Sessions/ }));
-      return screen.getByRole('dialog', { name: 'Discard your changes?' });
-    };
-
-    it('"Keep editing" stays on Overview with the text', async () => {
-      h.profile = state({ data: own });
-      const user = userEvent.setup();
-      render(<MentorProfileScreen handle="gbenga" />);
-      const dialog = await typeAndSwitch(user);
-      expect(dialog).toHaveTextContent('Your changes to your About section won’t be saved.');
-      expect(replace).not.toHaveBeenCalled();
-      await user.click(within(dialog).getByRole('button', { name: 'Keep editing' }));
+      await user.click(screen.getByRole('tab', { name: /Reviews/ }));
       expect(screen.queryByRole('dialog')).toBeNull();
-      expect(screen.getByRole('textbox', { name: 'About' })).toHaveValue(`${own.about} More.`);
-      expect(replace).not.toHaveBeenCalled();
-      // Back on the selected tab, not the one it was going to (review of PR 137).
-      expect(screen.getByRole('tab', { name: 'Overview' })).toHaveFocus();
-    });
-
-    it('"Discard" closes the editor and switches', async () => {
-      h.profile = state({ data: own });
-      const user = userEvent.setup();
-      render(<MentorProfileScreen handle="gbenga" />);
-      const dialog = await typeAndSwitch(user);
-      await user.click(within(dialog).getByRole('button', { name: 'Discard' }));
-      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(replace).toHaveBeenCalledWith(
+        expect.stringContaining('tab=reviews'),
+        expect.anything(),
+      );
+      // As the router leaves it: on Reviews, the draft out of view, still guarded.
+      h.search = new URLSearchParams('tab=reviews');
+      rerender(<MentorProfileScreen handle="gbenga" />);
       expect(screen.queryByRole('textbox', { name: 'About' })).toBeNull();
-      expect(replace).toHaveBeenCalledWith(
-        expect.stringContaining('tab=sessions'),
-        expect.anything(),
-      );
-      expect(saveAbout).not.toHaveBeenCalled();
-      expect(screen.getByRole('tab', { name: /Sessions/ })).toHaveFocus();
-    });
-
-    it('Escape is "Keep editing"', async () => {
-      h.profile = state({ data: own });
-      const user = userEvent.setup();
-      render(<MentorProfileScreen handle="gbenga" />);
-      await typeAndSwitch(user);
-      await user.keyboard('{Escape}');
-      expect(screen.queryByRole('dialog')).toBeNull();
-      expect(screen.getByRole('textbox', { name: 'About' })).toHaveValue(`${own.about} More.`);
-      expect(replace).not.toHaveBeenCalled();
-    });
-
-    it('the header rating asks too, as it changes tab', async () => {
-      h.profile = state({ data: own });
-      const user = userEvent.setup();
-      render(<MentorProfileScreen handle="gbenga" />);
-      await user.click(screen.getByRole('button', { name: 'Edit About' }));
-      await user.type(screen.getByRole('textbox', { name: 'About' }), ' More.');
-      await user.click(screen.getByRole('button', { name: /reviews\)/ }));
-      expect(screen.getByRole('dialog', { name: 'Discard your changes?' })).toBeInTheDocument();
-      expect(replace).not.toHaveBeenCalled();
-    });
-
-    it('the tab already selected doesn’t ask', async () => {
-      h.profile = state({ data: own });
-      const user = userEvent.setup();
-      render(<MentorProfileScreen handle="gbenga" />);
-      await user.click(screen.getByRole('button', { name: 'Edit About' }));
-      await user.type(screen.getByRole('textbox', { name: 'About' }), ' More.');
-      await user.click(screen.getByRole('tab', { name: 'Overview' }));
-      expect(screen.queryByRole('dialog')).toBeNull();
-      expect(screen.getByRole('textbox', { name: 'About' })).toHaveValue(`${own.about} More.`);
-    });
-
-    it('only About’s changes ask: an edited intro with About untouched switches, and stays guarded', async () => {
-      h.profile = state({ data: own });
-      const user = userEvent.setup();
-      render(<MentorProfileScreen handle="gbenga" />);
-      await user.click(screen.getByRole('button', { name: 'Edit profile' }));
-      const form = screen.getByRole('form', { name: 'Edit your name and headline' });
-      await user.type(within(form).getByRole('textbox', { name: 'Headline' }), ' too');
-      await user.click(screen.getByRole('button', { name: 'Edit About' }));
-      await user.click(screen.getByRole('tab', { name: /Sessions/ }));
-      expect(screen.queryByRole('dialog')).toBeNull();
-      expect(replace).toHaveBeenCalledWith(
-        expect.stringContaining('tab=sessions'),
-        expect.anything(),
-      );
       expect(hasUnsavedChanges()).toBe(true);
-      expect(unsavedLabel()).toBe('your intro');
+      h.search = new URLSearchParams('tab=overview');
+      rerender(<MentorProfileScreen handle="gbenga" />);
+      expect(screen.getByRole('textbox', { name: 'About' })).toHaveValue(`${own.about} More.`);
+      expect(saveAbout).not.toHaveBeenCalled();
+    });
+
+    it('a mentee’s profile still renders one panel at a time', () => {
+      h.profile = state({ data: fullProfile });
+      h.search = new URLSearchParams('tab=reviews');
+      render(<MentorProfileScreen handle="gbenga" />);
+      expect(document.getElementById('panel-overview')).toBeNull();
     });
   });
 });
