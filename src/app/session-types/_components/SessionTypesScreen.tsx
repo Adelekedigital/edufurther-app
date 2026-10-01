@@ -156,8 +156,12 @@ export function SessionTypesScreen() {
   // By row: a dismissed delete must not close, or show its state in, another
   // row's confirm opened meanwhile (Codex on #121).
   const dismissed = useRef(new Set<string>());
-  // The row the delete hook's state (busy, a refusal) belongs to.
+  // The row the delete hook's refusal belongs to, and every delete still out,
+  // by row: the hook only tracks its latest call, and a reset (another row's
+  // Keep it) would make a row whose delete is still out look idle.
   const [deleteFor, setDeleteFor] = useState<string | null>(null);
+  const [pendingDeletes, setPendingDeletes] = useState<string[]>([]);
+  const settleDelete = (id: string) => setPendingDeletes((ids) => ids.filter((x) => x !== id));
   const dismissConfirm = () => {
     if (confirming) dismissed.current.add(confirming.id);
     setConfirming(null);
@@ -181,7 +185,8 @@ export function SessionTypesScreen() {
   } | null>(null);
   if (unconfirmed && list.data && !list.data.some((x) => x.id === unconfirmed.id)) {
     setUnconfirmed(null);
-    if (!confirming || confirming.id === unconfirmed.id) setFocusAfterRemoval(unconfirmed.after);
+    // Any open confirm owns focus, this row's too: reopened before the refetch.
+    if (!confirming) setFocusAfterRemoval(unconfirmed.after);
   }
   const neighbour = (id: string): { menuOf: string } | 'create' => {
     const rows = list.data ?? [];
@@ -193,9 +198,11 @@ export function SessionTypesScreen() {
     const after = neighbour(t.id);
     dismissed.current.delete(t.id);
     setDeleteFor(t.id);
+    setPendingDeletes((ids) => [...ids, t.id]);
     void del
       .remove(t.id)
       .then((r) => {
+        settleDelete(t.id);
         // Only this row's confirm: another may have opened since a dismiss.
         setConfirming((c) => (c?.id === t.id ? null : c));
         dismissed.current.delete(t.id);
@@ -215,6 +222,7 @@ export function SessionTypesScreen() {
           );
       })
       .catch((e: DeleteError) => {
+        settleDelete(t.id);
         // The confirm shows a refusal; once dismissed, the row does.
         if (!dismissed.current.delete(t.id)) return;
         say(t.id, e.message, false);
@@ -335,7 +343,7 @@ export function SessionTypesScreen() {
         <DeleteConfirm
           renderShell={confirmShell}
           type={confirming}
-          busy={del.isPending && deleteFor === confirming.id}
+          busy={pendingDeletes.includes(confirming.id)}
           error={deleteFor === confirming.id ? del.error : null}
           onKeep={closeConfirm}
           onDismiss={dismissConfirm}

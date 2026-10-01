@@ -340,6 +340,48 @@ describe('SessionTypesScreen', () => {
     remove.mockResolvedValue({ kind: 'deleted' });
   });
 
+  it('a row whose delete is still out stays busy after another row’s Keep it', async () => {
+    viewer = mentor;
+    list = idle({ data: [TYPE, { ...TYPE, id: 'b', name: 'Visa prep' }] });
+    remove.mockImplementation(() => new Promise(() => {}));
+    const user = userEvent.setup({ delay: null });
+    render(<SessionTypesScreen />);
+    const openDelete = async (name: string) => {
+      await user.click(screen.getByRole('button', { name: `More actions for ${name}` }));
+      await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
+    };
+    await openDelete('SOP draft review');
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }));
+    await user.keyboard('{Escape}'); // dismissed; its delete carries on
+    await openDelete('Visa prep');
+    await user.click(screen.getByRole('button', { name: 'Keep it' }));
+    await openDelete('SOP draft review');
+    expect(screen.getByRole('button', { name: 'Keep it' })).toBeDisabled();
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }));
+    expect(remove).toHaveBeenCalledTimes(1); // no second DELETE for the same row
+    remove.mockResolvedValue({ kind: 'deleted' });
+  });
+
+  it('a confirm reopened on an unconfirmed row keeps focus when the refetch drops it', async () => {
+    viewer = mentor;
+    list = idle({ data: [TYPE, { ...TYPE, id: 'b', name: 'Visa prep' }] });
+    remove.mockResolvedValue({ kind: 'unknown' });
+    const user = userEvent.setup({ delay: null });
+    const { rerender } = render(<SessionTypesScreen />);
+    const openDelete = async () => {
+      await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+      await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
+    };
+    await openDelete();
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await openDelete(); // reopened before the refetch lands
+    list = idle({ data: [{ ...TYPE, id: 'b', name: 'Visa prep' }] });
+    rerender(<SessionTypesScreen />);
+    expect(screen.getByRole('dialog')).toContainElement(document.activeElement as HTMLElement);
+    remove.mockResolvedValue({ kind: 'deleted' });
+  });
+
   it('no answer in time: the confirm closes, says so, and focus moves on once the list drops it', async () => {
     viewer = mentor;
     list = idle({ data: [TYPE, { ...TYPE, id: 'b', name: 'Visa prep' }] });
