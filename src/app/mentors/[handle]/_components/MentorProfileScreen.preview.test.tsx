@@ -396,4 +396,52 @@ describe('MentorProfileScreen — Profile strength', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.getByRole('button', { name: /Write your About/ })).toHaveFocus();
   });
+
+  describe('About kept on Overview while another tab shows (review of PR 137)', () => {
+    it('opened from its tip on Reviews: focused once Overview shows', async () => {
+      h.search = new URLSearchParams('tab=reviews');
+      h.profile = state({ data: mine({ completeness: { percent: 89, missing: ['about'] } }) });
+      const user = userEvent.setup();
+      const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+      const tip = screen.getByRole('button', { name: /Write your About/ });
+      await user.click(tip);
+      // A browser leaves focus on the tip: the editor mounted hidden.
+      tip.focus();
+      h.search = new URLSearchParams('tab=overview');
+      rerender(<MentorProfileScreen handle="gbenga" />);
+      expect(screen.getByRole('textbox', { name: 'About' })).toHaveFocus();
+    });
+
+    it('on another tab, "View as mentee" says where the open edit is', async () => {
+      h.profile = state({ data: mine() });
+      const user = userEvent.setup();
+      const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+      await user.click(screen.getByRole('button', { name: 'Edit About' }));
+      h.search = new URLSearchParams('tab=reviews');
+      rerender(<MentorProfileScreen handle="gbenga" />);
+      expect(bar()).toHaveAttribute('aria-disabled', 'true');
+      expect(bar()).toHaveAccessibleDescription(
+        'Save or cancel your About edit on Overview to preview.',
+      );
+    });
+
+    it('a save failing while Overview is hidden is said outside it', async () => {
+      h.profile = state({ data: mine() });
+      const user = userEvent.setup();
+      const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+      await user.click(screen.getByRole('button', { name: 'Edit About' }));
+      h.search = new URLSearchParams('tab=reviews');
+      rerender(<MentorProfileScreen handle="gbenga" />);
+      h.aboutError = 'Something went wrong. Try again.';
+      rerender(<MentorProfileScreen handle="gbenga" />);
+      expect(
+        screen
+          .getAllByRole('status')
+          .some(
+            (s) =>
+              s.textContent === 'Your About section wasn’t saved. Something went wrong. Try again.',
+          ),
+      ).toBe(true);
+    });
+  });
 });

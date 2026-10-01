@@ -39,3 +39,10 @@
   align-items: center;
   gap: var(--space-2);
 }
+
+/* A kept panel while another tab shows: out of view and of the accessibility
+   tree. `hidden` must win over any page rule that sets the panel's display,
+   however specific: the one place !important is the right tool. */
+.panel[hidden] {
+  display: none !important;
+}

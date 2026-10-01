@@ -249,4 +249,43 @@ describe('PhotoPicker', () => {
       expect(screen.queryByText('Photo removed.')).toBeNull();
     });
   });
+
+  describe('focus after a first photo (issue 136)', () => {
+    const empty = { ...base, hasPhoto: false, onRemove: vi.fn() };
+
+    it('"Add photo" had focus: once the photo is in, focus is on "Photo options"', () => {
+      const { rerender } = render(<PhotoPicker {...empty} />);
+      const input = screen.getByLabelText('Add photo') as HTMLInputElement;
+      act(() => input.focus());
+      // A pick here (as a user's: a file chosen in the picker).
+      fireEvent.change(input, { target: { files: [png] } });
+      rerender(<PhotoPicker {...empty} uploading />);
+      rerender(<PhotoPicker {...empty} hasPhoto />);
+      expect(screen.getByRole('button', { name: 'Photo options' })).toHaveFocus();
+    });
+
+    it('a photo that arrives without a pick here (a refetch) doesn’t move focus (review of PR 137)', () => {
+      const { rerender } = render(<PhotoPicker {...empty} />);
+      expect(document.activeElement).toBe(document.body);
+      rerender(<PhotoPicker {...empty} hasPhoto />);
+      expect(screen.getByRole('button', { name: 'Photo options' })).not.toHaveFocus();
+    });
+
+    it('a pick here, then focus moved on: it stays where it went (Codex on PR 137)', () => {
+      const ui = (props: Partial<typeof empty> = {}) => (
+        <>
+          <button type="button">Elsewhere</button>
+          <PhotoPicker {...empty} {...props} />
+        </>
+      );
+      const { rerender } = render(ui());
+      const input = screen.getByLabelText('Add photo') as HTMLInputElement;
+      act(() => input.focus());
+      fireEvent.change(input, { target: { files: [png] } });
+      rerender(ui({ uploading: true }));
+      act(() => screen.getByRole('button', { name: 'Elsewhere' }).focus());
+      rerender(ui({ hasPhoto: true }));
+      expect(screen.getByRole('button', { name: 'Elsewhere' })).toHaveFocus();
+    });
+  });
 });

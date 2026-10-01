@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixture';
-import { h, saveAbout, saveIntro, state } from './profileScreen.harness';
+import { h, replace, saveAbout, saveIntro, state } from './profileScreen.harness';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
@@ -101,16 +101,6 @@ describe('MentorProfileScreen — the owner edits their profile', () => {
     expect(beforeArg).toMatchObject({ headline: own.headline });
   });
 
-  it('leaving Overview closes the About editor', async () => {
-    h.profile = state({ data: own });
-    const user = userEvent.setup();
-    render(<MentorProfileScreen handle="gbenga" />);
-    await user.click(screen.getByRole('button', { name: 'Edit About' }));
-    expect(screen.getByRole('textbox', { name: 'About' })).toBeInTheDocument();
-    await user.click(screen.getByRole('tab', { name: /Sessions/ }));
-    expect(screen.queryByRole('textbox', { name: 'About' })).toBeNull();
-  });
-
   it('an empty About invites the owner to write one', () => {
     h.profile = state({ data: { ...own, about: null } });
     render(<MentorProfileScreen handle="gbenga" />);
@@ -123,5 +113,50 @@ describe('MentorProfileScreen — the owner edits their profile', () => {
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.queryByRole('button', { name: 'Edit profile' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Edit About' })).toBeNull();
+  });
+
+  describe('a tab switch keeps the About draft, and never asks (#134)', () => {
+    it('Overview → Reviews → Overview: the editor and its text are still there', async () => {
+      h.profile = state({ data: own });
+      const user = userEvent.setup();
+      const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+      await user.click(screen.getByRole('button', { name: 'Edit About' }));
+      await user.type(screen.getByRole('textbox', { name: 'About' }), ' More.');
+      await user.click(screen.getByRole('tab', { name: /Reviews/ }));
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(replace).toHaveBeenCalledWith(
+        expect.stringContaining('tab=reviews'),
+        expect.anything(),
+      );
+      // As the router leaves it: on Reviews, the draft out of view, still guarded.
+      h.search = new URLSearchParams('tab=reviews');
+      rerender(<MentorProfileScreen handle="gbenga" />);
+      expect(screen.queryByRole('textbox', { name: 'About' })).toBeNull();
+      h.search = new URLSearchParams('tab=overview');
+      rerender(<MentorProfileScreen handle="gbenga" />);
+      expect(screen.getByRole('textbox', { name: 'About' })).toHaveValue(`${own.about} More.`);
+      expect(saveAbout).not.toHaveBeenCalled();
+    });
+
+    it('leaving the page from another tab still asks, through the app (Codex on PR 137)', async () => {
+      h.profile = state({ data: own });
+      const user = userEvent.setup();
+      const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+      await user.click(screen.getByRole('button', { name: 'Edit About' }));
+      await user.type(screen.getByRole('textbox', { name: 'About' }), ' More.');
+      h.search = new URLSearchParams('tab=reviews');
+      rerender(<MentorProfileScreen handle="gbenga" />);
+      await user.click(screen.getAllByRole('link', { name: /Bookings/ })[0]!);
+      expect(screen.getByRole('dialog', { name: 'Discard your changes?' })).toHaveTextContent(
+        'your About section',
+      );
+    });
+
+    it('a mentee’s profile still renders one panel at a time', () => {
+      h.profile = state({ data: fullProfile });
+      h.search = new URLSearchParams('tab=reviews');
+      render(<MentorProfileScreen handle="gbenga" />);
+      expect(document.getElementById('panel-overview')).toBeNull();
+    });
   });
 });

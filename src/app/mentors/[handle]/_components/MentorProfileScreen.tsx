@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
+import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
 import { AboutEditor } from '@/components/molecules/AboutEditor/AboutEditor';
 import { CoverPicker } from '@/components/molecules/CoverPicker/CoverPicker';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
@@ -59,6 +60,7 @@ import { useBookLink } from './useBookLink';
 import { useProfileBooking } from './useProfileBooking';
 import { useProfileReviewing } from './useProfileReviewing';
 import { useProfileTab } from './useProfileTab';
+import { focusIfShown } from '@/lib/utils/focus';
 
 // Tests import it from here.
 export { suggestionsLine } from './suggestions';
@@ -138,7 +140,6 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const notTakingTab = asMentee && notTaking;
   // The owner, editing, always has the tab: "New session type" is there.
   const { tab, setTab } = useProfileTab(hasSessions || notTakingTab || editing, hasReviews);
-
   // Cards only render after a client fetch, so reading the device zone here is safe.
   const [timeZone] = useState(deviceTimeZone);
   // The profile only exists after a client fetch, so `window` is there by then.
@@ -193,13 +194,31 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const [deleting, setDeleting] = useState<{ kind: 'award' | 'education'; id: string } | null>(
     null,
   );
-  // The Sessions tab's outcomes, here so a delete settling after a tab switch
-  // is still said (Codex on PR 130).
-  const [sessionsSaid, setSessionsSaid] = useState<{ text: string; id: number } | null>(null);
-  const saySessions = useCallback(
-    (text: string) => setSessionsSaid((was) => ({ text, id: (was?.id ?? 0) + 1 })),
+  // The owner's outcomes that land out of view: a session-type delete settling
+  // after a tab switch (Codex on PR 130), an About save failing while Overview
+  // is hidden behind another tab (review of PR 137). Outside the panels, so
+  // always heard.
+  const [ownerSaid, setOwnerSaid] = useState<{ text: string; id: number } | null>(null);
+  const sayOwner = useCallback(
+    (text: string) => setOwnerSaid((was) => ({ text, id: (was?.id ?? 0) + 1 })),
     [],
   );
+  const [seenAboutError, setSeenAboutError] = useState(owner.aboutError);
+  if (owner.aboutError !== seenAboutError) {
+    setSeenAboutError(owner.aboutError);
+    if (owner.aboutError && tab !== 'overview')
+      sayOwner(`Your About section wasn’t saved. ${owner.aboutError}`);
+  }
+  // About opened from a tip on another tab: its editor mounts while Overview is
+  // still hidden, so it's focused once Overview shows (review of PR 137).
+  // Counted on request; the effect remembers which it has done.
+  const [aboutFocus, setAboutFocus] = useState(0);
+  const aboutFocused = useRef(0);
+  useEffect(() => {
+    if (aboutFocus === aboutFocused.current || tab !== 'overview') return;
+    if (focusIfShown(document.querySelector<HTMLElement>('#panel-overview textarea')))
+      aboutFocused.current = aboutFocus;
+  }, [tab, aboutFocus, owner.aboutOpen]);
   const [itemSaved, setItemSaved] = useState<{
     text: string;
     id: number;
@@ -215,12 +234,13 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const editTopics = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!itemSaved) return;
-    if (itemSaved.kind === 'background') backgroundEdit.current?.focus();
-    if (itemSaved.kind === 'topics') editTopics.current?.focus();
+    // Overview's controls may be in its kept panel, hidden behind another tab.
+    if (itemSaved.kind === 'background') focusIfShown(backgroundEdit.current);
+    if (itemSaved.kind === 'topics') focusIfShown(editTopics.current);
     // Added from the empty invite card (gone once the row shows), or removed.
     if (itemSaved.outcome === 'removed' || itemSaved.outcome === 'added') {
-      if (itemSaved.kind === 'award') awardsAdd.current?.focus();
-      if (itemSaved.kind === 'education') educationAdd.current?.focus();
+      if (itemSaved.kind === 'award') focusIfShown(awardsAdd.current);
+      if (itemSaved.kind === 'education') focusIfShown(educationAdd.current);
     }
     // Opened from a strength tip on a tab without those controls (Codex on PR 106).
     refocusAfterTip();
@@ -268,8 +288,13 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const shownBlock = viewing ? null : bookBlocked;
   // The toggle waits while an inline edit is open, so a draft is never dropped
   // (review of PR 106). Its pressed state says the rest; no extra announcement.
+  // On another tab, About's editor is out of view: say where it is.
   const previewBlocked =
-    owner.introOpen || owner.aboutOpen ? 'Save or cancel your edit to preview.' : null;
+    owner.aboutOpen && tab !== 'overview'
+      ? 'Save or cancel your About edit on Overview to preview.'
+      : owner.introOpen || owner.aboutOpen
+        ? 'Save or cancel your edit to preview.'
+        : null;
 
   // A tip's step done: its tip (or the whole card, at 100%) goes, and with it
   // the focus the dialog handed back. Put it on the next tip, else the toggle.
@@ -455,11 +480,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               <Tabs
                 label="Profile"
                 value={tab}
-                onChange={(t) => {
-                  // The About editor lives on Overview: leaving closes it.
-                  if (owner.aboutOpen) owner.closeAbout();
-                  setTab(t);
-                }}
+                onChange={setTab}
                 items={[
                   { value: 'overview', label: 'Overview', panelId: 'panel-overview' },
                   ...(hasSessions || notTakingTab || editing
@@ -488,81 +509,85 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
             {isPhone && firstMentees}
 
             <div className={styles.cols}>
-              <div
+              {/* Overview stays in the page while the owner edits: a tab switch
+                  keeps an open editor and its draft, and never asks (#134,
+                  product 2026-10-01). */}
+              <TabPanel
+                id="panel-overview"
+                active={tab === 'overview'}
+                keepMounted={editing}
                 className={styles.main}
-                role="tabpanel"
-                id={`panel-${tab}`}
-                aria-labelledby={`panel-${tab}-tab`}
               >
-                {tab === 'overview' ? (
-                  <ProfileOverview
-                    profile={p}
-                    onEditBackground={
-                      editing ? () => setItemOpen({ kind: 'background' }) : undefined
-                    }
-                    backgroundEditRef={backgroundEdit}
-                    awardsEdit={
-                      editing
-                        ? {
-                            onAdd: () => setItemOpen({ kind: 'award', id: null }),
-                            onEdit: (id) => setItemOpen({ kind: 'award', id }),
-                            onDelete: (id) => setDeleting({ kind: 'award', id }),
-                          }
-                        : undefined
-                    }
-                    awardsAddRef={awardsAdd}
-                    educationEdit={
-                      editing
-                        ? {
-                            onAdd: () => setItemOpen({ kind: 'education', id: null }),
-                            onEdit: (id) => setItemOpen({ kind: 'education', id }),
-                            onDelete: (id) => setDeleting({ kind: 'education', id }),
-                          }
-                        : undefined
-                    }
-                    educationAddRef={educationAdd}
-                    aboutEdit={
-                      editing
-                        ? {
-                            onEdit: owner.openAbout,
-                            editor: owner.aboutOpen ? (
-                              <AboutEditor
-                                initial={p.about ?? ''}
-                                onSave={owner.saveAbout}
-                                onCancel={owner.closeAbout}
-                                saving={owner.aboutSaving}
-                                error={owner.aboutError}
-                              />
-                            ) : null,
-                          }
-                        : undefined
-                    }
-                  />
-                ) : tab === 'reviews' ? (
-                  <ReviewsTab
-                    profile={p}
-                    reviews={reviews}
-                    offerBook={canStartBooking}
-                    onBook={scrollToBook}
-                  />
-                ) : notTakingTab ? (
-                  <NotTakingEmpty firstName={p.mentor.firstName} />
-                ) : editing ? (
-                  <OwnerSessionTypes
-                    shown={p.sessionTypes}
-                    onActiveCount={setOwnActive}
-                    onSay={saySessions}
-                  />
-                ) : (
-                  <SessionTypeList
-                    sessionTypes={p.sessionTypes}
-                    onBook={booking.open}
-                    bookBlocked={shownBlock}
-                    canBook={showBook}
-                    bookDisabled={viewing}
-                  />
-                )}
-              </div>
+                <ProfileOverview
+                  profile={p}
+                  onEditBackground={editing ? () => setItemOpen({ kind: 'background' }) : undefined}
+                  backgroundEditRef={backgroundEdit}
+                  awardsEdit={
+                    editing
+                      ? {
+                          onAdd: () => setItemOpen({ kind: 'award', id: null }),
+                          onEdit: (id) => setItemOpen({ kind: 'award', id }),
+                          onDelete: (id) => setDeleting({ kind: 'award', id }),
+                        }
+                      : undefined
+                  }
+                  awardsAddRef={awardsAdd}
+                  educationEdit={
+                    editing
+                      ? {
+                          onAdd: () => setItemOpen({ kind: 'education', id: null }),
+                          onEdit: (id) => setItemOpen({ kind: 'education', id }),
+                          onDelete: (id) => setDeleting({ kind: 'education', id }),
+                        }
+                      : undefined
+                  }
+                  educationAddRef={educationAdd}
+                  aboutEdit={
+                    editing
+                      ? {
+                          onEdit: owner.openAbout,
+                          editor: owner.aboutOpen ? (
+                            <AboutEditor
+                              initial={p.about ?? ''}
+                              onSave={owner.saveAbout}
+                              onCancel={owner.closeAbout}
+                              saving={owner.aboutSaving}
+                              error={owner.aboutError}
+                            />
+                          ) : null,
+                        }
+                      : undefined
+                  }
+                />
+              </TabPanel>
+              {tab !== 'overview' && (
+                <TabPanel id={`panel-${tab}`} active className={styles.main}>
+                  {tab === 'reviews' ? (
+                    <ReviewsTab
+                      profile={p}
+                      reviews={reviews}
+                      offerBook={canStartBooking}
+                      onBook={scrollToBook}
+                    />
+                  ) : notTakingTab ? (
+                    <NotTakingEmpty firstName={p.mentor.firstName} />
+                  ) : editing ? (
+                    <OwnerSessionTypes
+                      shown={p.sessionTypes}
+                      onActiveCount={setOwnActive}
+                      onSay={sayOwner}
+                    />
+                  ) : (
+                    <SessionTypeList
+                      sessionTypes={p.sessionTypes}
+                      onBook={booking.open}
+                      bookBlocked={shownBlock}
+                      canBook={showBook}
+                      bookDisabled={viewing}
+                    />
+                  )}
+                </TabPanel>
+              )}
               {tab !== 'sessions' &&
                 // Never an empty named landmark (the owner's Reviews tab can hold nothing).
                 (asMentee ||
@@ -597,6 +622,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                           openPhoto: () => document.getElementById(PHOTO_INPUT)?.click(),
                           openIntro: owner.openIntro,
                           openAbout: () => {
+                            setAboutFocus((n) => n + 1);
                             setTab('overview');
                             owner.openAbout();
                           },
@@ -651,7 +677,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
       )}
       {/* Always there while it's the owner, so a screen reader hears each save. */}
       {isOwner && <LiveRegion message={itemSaved} />}
-      {isOwner && <LiveRegion message={sessionsSaid} />}
+      {isOwner && <LiveRegion message={ownerSaid} />}
       {editing && photoRemoving && (
         <RemovePhotoConfirm
           onKeep={() => setPhotoRemoving(false)}
