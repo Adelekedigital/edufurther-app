@@ -132,7 +132,7 @@ describe('planBlockSave', () => {
     ]);
   });
 
-  it('never touches part-day blocks or overrides, and recreates nothing before today', () => {
+  it('never touches part-day blocks or overrides; a split keeps the block’s past days', () => {
     const plan = planBlockSave(
       [
         block('part', '2026-10-05', '2026-10-06', { start_time: '09:00:00', end_time: '12:00:00' }),
@@ -144,7 +144,9 @@ describe('planBlockSave', () => {
       'Africa/Lagos',
     );
     expect(plan.remove.map((e) => e.id)).toEqual(['span']);
+    // Today (Oct 1) was unblocked; the past days (Sep 28–30) and Oct 2 come back.
     expect(plan.add).toEqual([
+      { start: '2026-09-28', end: '2026-10-01', timezone: 'Africa/Lagos' },
       { start: '2026-10-02', end: '2026-10-03', timezone: 'Africa/Lagos' },
     ]);
   });

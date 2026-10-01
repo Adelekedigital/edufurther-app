@@ -133,8 +133,9 @@ const wholeDayBlocks = (exceptions: ExceptionRead[]) =>
  * run is split by deleting and recreating it).
  * - Days before today aren't the page's to change: they count as kept, so a
  *   past block, or one running through today, stays as it is.
- * - A block that loses a day is deleted; its other days from today on are
- *   recreated in the block's own zone. New days take `timeZone` (the hours').
+ * - A block that loses a day is deleted and its other days are recreated in
+ *   the block's own zone, its past days included (the record of being away
+ *   stays; the backend accepts past dates). New days take `timeZone`.
  * - Part-day blocks and overrides are never touched.
  */
 export function planBlockSave(
@@ -156,11 +157,13 @@ export function planBlockSave(
     }
   }
   const byZone = new Map<string, string[]>();
+  const put = (d: string, zone: string) => byZone.set(zone, [...(byZone.get(zone) ?? []), d]);
   for (const d of want) {
     if (covered.has(d) || d < today) continue;
-    const zone = zoneOf.get(d) ?? timeZone;
-    byZone.set(zone, [...(byZone.get(zone) ?? []), d]);
+    put(d, zoneOf.get(d) ?? timeZone);
   }
+  // A removed block's past days come back as they were.
+  for (const [d, zone] of zoneOf) if (d < today && !covered.has(d)) put(d, zone);
   const add = [...byZone].flatMap(([zone, days]) =>
     runsOf(days).map((r) => ({ ...r, timezone: zone })),
   );
