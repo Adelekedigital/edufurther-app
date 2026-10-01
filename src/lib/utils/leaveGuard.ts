@@ -4,22 +4,26 @@ import { useEffect, useRef } from 'react';
 
 /**
  * Unsaved-changes guards, app-wide (product, 2026-10-01). A form with edits it
- * hasn't saved calls `useLeaveGuard(dirty, 'your About section')` and is then
- * protected however the user leaves:
+ * hasn't saved calls `useLeaveGuard(dirty, 'your About section')`. Then:
  * - an in-app link (sidebar, tabs, cards): AppShell asks "Discard your
  *   changes?" (Keep editing / Discard) before following it;
  * - Logout: the same question, before the session ends;
  * - reload, close, a typed address: the browser's own "Leave site?" prompt
  *   (browsers allow no custom dialog there).
- * The browser's Back button isn't caught yet (tracked as an issue).
+ * Not caught: the browser's Back/Forward (#132), and in-page controls that
+ * close a form without a link, like profile tabs (#134); those screens ask
+ * through `hasUnsavedChanges` / `discardUnsaved` themselves.
  */
 const dirtyGuards = new Map<symbol, string>();
-let discarding = false;
+/** Forms whose edits the user chose to discard; they count again once edited. */
+const discarded = new Set<symbol>();
 let released = false;
 
-/** True while any mounted form has changes it hasn't saved. */
+const live = () => [...dirtyGuards.entries()].filter(([key]) => !discarded.has(key));
+
+/** True while any mounted form has changes it hasn't saved (and that weren't discarded). */
 export function hasUnsavedChanges(): boolean {
-  return !released && !discarding && dirtyGuards.size > 0;
+  return !released && live().length > 0;
 }
 
 /**
@@ -27,28 +31,31 @@ export function hasUnsavedChanges(): boolean {
  * section and your intro", or "this page" when no form says.
  */
 export function unsavedLabel(): string {
-  const all = [...new Set(dirtyGuards.values())];
+  const all = [...new Set(live().map(([, label]) => label))];
   if (all.length === 0) return 'this page';
   if (all.length === 1) return all[0]!;
   return `${all.slice(0, -1).join(', ')} and ${all.at(-1)}`;
 }
 
 /**
- * The user chose "Discard": the guard stands down, browser prompt included, so
- * a navigation Next turns into a full load (a missing route, say) isn't
- * stopped a second time. Only until they type again: if the page is still
- * there (a cancelled navigation) and they keep editing, it guards as before.
+ * The user chose "Discard": the forms dirty right now stop counting, browser
+ * prompt included, so a navigation Next turns into a full load (a missing
+ * route, say) isn't stopped a second time. Only those forms, and only until
+ * they're edited again: any other form, on this page or the next, guards as
+ * usual, and a page still there after a cancelled navigation guards again on
+ * the next edit (typing, a select, or a click on anything but a link: chips,
+ * switches and segmented controls are buttons).
  */
 export function discardUnsaved() {
-  discarding = true;
-  document.addEventListener(
-    'input',
-    () => {
-      discarding = false;
-    },
-    { once: true, capture: true },
-  );
+  dirtyGuards.forEach((_label, key) => discarded.add(key));
+  const rearm = (e: Event) => {
+    if (e.type === 'click' && (e.target as Element | null)?.closest?.('a[href]')) return;
+    discarded.clear();
+    REARM_EVENTS.forEach((t) => document.removeEventListener(t, rearm, true));
+  };
+  REARM_EVENTS.forEach((t) => document.addEventListener(t, rearm, true));
 }
+const REARM_EVENTS = ['input', 'change', 'click'] as const;
 
 /**
  * The user chose to leave anyway (Logout confirmed): no browser prompt from
@@ -70,13 +77,15 @@ export function useLeaveGuard(dirty: boolean, label = 'this page') {
     if (dirty) dirtyGuards.set(key, label);
     else dirtyGuards.delete(key);
     return () => {
+      // A change of state (clean, or dirty again) or unmounting starts fresh.
       dirtyGuards.delete(key);
+      discarded.delete(key);
     };
   }, [dirty, label]);
 
   useEffect(() => {
     const onUnload = (e: BeforeUnloadEvent) => {
-      if (!dirtyRef.current || released || discarding) return;
+      if (!dirtyRef.current || released || discarded.has(id.current!)) return;
       e.preventDefault();
     };
     window.addEventListener('beforeunload', onUnload);

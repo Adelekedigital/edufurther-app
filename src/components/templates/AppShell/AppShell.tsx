@@ -9,6 +9,7 @@ import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { AccountMenu, type AccountMenuItem } from '@/components/molecules/AccountMenu/AccountMenu';
 import { OfflineBanner } from '@/components/molecules/OfflineBanner/OfflineBanner';
 import { hasUnsavedChanges, heldLink, discardUnsaved, unsavedLabel } from '@/lib/utils/leaveGuard';
+import { fullNavigate } from '@/lib/utils/hardNavigate';
 import { UnsavedChangesDialog } from './UnsavedChangesDialog';
 import { cx } from '@/lib/utils/cx';
 import styles from './AppShell.module.css';
@@ -113,7 +114,9 @@ export function AppShell({
   useEffect(() => {
     if (!moreOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      // A dialog over the sheet (e.g. "Discard your changes?") takes Escape
+      // itself: the sheet stays, as it does after "Keep editing".
+      if (e.key === 'Escape' && !document.querySelector('[role="dialog"][aria-modal="true"]')) {
         setMoreOpen(false);
         moreRef.current?.focus();
       }
@@ -410,7 +413,7 @@ function LinkGuard() {
           }
         } else if (new URL(a.href).origin === window.location.origin) {
           // The link is gone (re-rendered): a full load instead, same site only.
-          window.location.assign(a.href);
+          fullNavigate(a.href);
         }
       }}
     />
