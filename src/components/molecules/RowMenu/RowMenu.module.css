@@ -41,6 +41,11 @@
     var(--shadow-menu),
     inset 0 0 0 1px var(--ink-200);
 }
+/* Lined up with the button's start (a trigger near the left edge, e.g. the photo badge). */
+.menuStart {
+  right: auto;
+  left: 0;
+}
 .item {
   display: flex;
   align-items: center;

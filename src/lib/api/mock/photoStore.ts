@@ -5,13 +5,25 @@
  */
 type Photo = { bytes: ArrayBuffer; type: string; version: number };
 
-const g = globalThis as typeof globalThis & { __mockPhotos?: Map<string, Photo> };
+const g = globalThis as typeof globalThis & {
+  __mockPhotos?: Map<string, Photo>;
+  __mockPhotosRemoved?: Set<string>;
+};
 const store = (g.__mockPhotos ??= new Map());
+// Owners who removed their photo (DELETE /users/{id}/avatar): no photo at all,
+// not the fixture's sample.
+const removed = (g.__mockPhotosRemoved ??= new Set());
 
 export const mockPhoto = (userId: string): Photo | undefined => store.get(userId);
 export function setMockPhoto(userId: string, bytes: ArrayBuffer, type: string) {
+  removed.delete(userId);
   store.set(userId, { bytes, type, version: (store.get(userId)?.version ?? 0) + 1 });
 }
+export function removeMockPhoto(userId: string) {
+  store.delete(userId);
+  removed.add(userId);
+}
+export const mockPhotoRemoved = (userId: string) => removed.has(userId);
 export function mockPhotoUrl(userId: string): string | null {
   const p = store.get(userId);
   return p ? `/api/mock/photos/${encodeURIComponent(userId)}?v=${p.version}` : null;

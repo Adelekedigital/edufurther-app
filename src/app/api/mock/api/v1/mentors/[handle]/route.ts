@@ -21,7 +21,7 @@ import {
   seedAwards,
   seedEducation,
 } from '@/lib/api/mock/entries';
-import { MOCK_PHOTO_FOCUS, mockPhotoUrl } from '@/lib/api/mock/photoStore';
+import { MOCK_PHOTO_FOCUS, mockPhotoRemoved, mockPhotoUrl } from '@/lib/api/mock/photoStore';
 import { mockText } from '@/lib/api/mock/profileTextStore';
 import { mockOwnSessionTypes } from '@/lib/api/mock/sessionTypes';
 import { mockReviewSummary } from '@/lib/api/mock/reviews';
@@ -166,6 +166,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
     // The owner's uploaded photo, once there is one.
     const photo = mockPhotoUrl(id);
     if (photo) Object.assign(body, { avatar_url: photo, avatar_focus: MOCK_PHOTO_FOCUS });
+    else if (mockPhotoRemoved(id)) Object.assign(body, { avatar_url: null, avatar_focus: null });
     // The owner's degrees (profile editors): seeded from the fixture once.
     body.education = seedEducation(
       id,

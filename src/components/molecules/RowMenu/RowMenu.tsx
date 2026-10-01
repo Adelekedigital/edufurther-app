@@ -34,7 +34,13 @@ type RowMenuProps = {
    * A different trigger than the "⋯" (e.g. the profile photo's camera badge).
    * Its name still comes from `label`; behaviour and keys are unchanged.
    */
-  trigger?: { icon: IconName; size?: ComponentProps<typeof Icon>['size']; className?: string };
+  trigger?: {
+    icon: IconName;
+    size?: ComponentProps<typeof Icon>['size'];
+    className?: string;
+    /** Which edge the menu lines up with: the button's end (default) or start. */
+    align?: 'start' | 'end';
+  };
 };
 
 /**
@@ -144,7 +150,9 @@ export function RowMenu({ label, items, triggerRef, trigger }: RowMenuProps) {
           id={menuId}
           role="menu"
           aria-label={label}
-          className={styles.menu}
+          className={
+            trigger?.align === 'start' ? `${styles.menu} ${styles.menuStart}` : styles.menu
+          }
           onKeyDown={onMenuKey}
         >
           {items.map((it, i) => (

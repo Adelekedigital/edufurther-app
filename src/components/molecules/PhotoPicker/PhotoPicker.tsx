@@ -71,7 +71,13 @@ export function PhotoPicker({
             <RowMenu
               label="Change or remove photo"
               triggerRef={menuButton}
-              trigger={{ icon: 'photo_camera', size: 14, className: styles.badgeButton }}
+              // Opens rightward: the photo sits near the left edge on phones.
+              trigger={{
+                icon: 'photo_camera',
+                size: 14,
+                className: styles.badgeButton,
+                align: 'start',
+              }}
               items={[
                 {
                   key: 'change',
