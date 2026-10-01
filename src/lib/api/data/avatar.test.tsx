@@ -177,7 +177,7 @@ describe('useAvatarUpload', () => {
       withPhoto(qc);
       act(() => result.current.remove());
       await waitFor(() =>
-        expect(result.current.error).toBe('The photo wasn’t removed. Try again.'),
+        expect(result.current.error).toBe('Your photo wasn’t removed. Try again.'),
       );
       expect(result.current.removedStamp).toBe(0);
       expect(qc.getQueryData<MentorProfile>(key)?.mentor.photoUrl).toBe('https://cdn/me.webp');
@@ -189,7 +189,7 @@ describe('useAvatarUpload', () => {
       const { result } = setup();
       act(() => result.current.remove());
       await waitFor(() =>
-        expect(result.current.error).toBe('The photo wasn’t removed. Try again.'),
+        expect(result.current.error).toBe('Your photo wasn’t removed. Try again.'),
       );
       act(() => result.current.dismissError());
       await waitFor(() => expect(result.current.error).toBeNull());

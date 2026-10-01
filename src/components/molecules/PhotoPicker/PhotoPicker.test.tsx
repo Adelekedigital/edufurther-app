@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PhotoPicker } from './PhotoPicker';
 
@@ -97,9 +97,9 @@ describe('PhotoPicker', () => {
       const click = vi.spyOn(HTMLInputElement.prototype, 'click');
       const user = userEvent.setup();
       render(<PhotoPicker {...base} onRemove={onRemove} inputId="pic" />);
-      const badge = screen.getByRole('button', { name: 'Change or remove photo' });
+      const badge = screen.getByRole('button', { name: 'Photo options' });
       await user.click(badge);
-      await user.click(screen.getByRole('menuitem', { name: /Change photo/ }));
+      await user.click(screen.getByRole('menuitem', { name: /Upload a new photo/ }));
       expect(click.mock.contexts.some((el) => (el as HTMLInputElement).id === 'pic')).toBe(true);
       click.mockRestore();
       await user.click(badge);
@@ -110,7 +110,7 @@ describe('PhotoPicker', () => {
     it('while busy: the same badge, inert (it keeps focus), and it says so (review of PR 125)', async () => {
       const user = userEvent.setup();
       render(<PhotoPicker {...base} onRemove={vi.fn()} removing />);
-      const badge = screen.getByRole('button', { name: 'Change or remove photo' });
+      const badge = screen.getByRole('button', { name: 'Photo options' });
       expect(badge).toHaveAttribute('aria-disabled', 'true');
       await user.click(badge);
       expect(screen.queryByRole('menu')).toBeNull();
@@ -120,16 +120,96 @@ describe('PhotoPicker', () => {
     it('Dismiss returns focus to the menu button (review of PR 125)', async () => {
       const user = userEvent.setup();
       render(
-        <PhotoPicker {...base} onRemove={vi.fn()} error="The photo wasn’t removed. Try again." />,
+        <PhotoPicker {...base} onRemove={vi.fn()} error="Your photo wasn’t removed. Try again." />,
       );
       await user.click(screen.getByRole('button', { name: 'Dismiss' }));
-      expect(screen.getByRole('button', { name: 'Change or remove photo' })).toHaveFocus();
+      expect(screen.getByRole('button', { name: 'Photo options' })).toHaveFocus();
     });
 
     it('without a photo, no menu: "Add photo" picks straight away', () => {
       render(<PhotoPicker {...base} hasPhoto={false} onRemove={vi.fn()} />);
-      expect(screen.queryByRole('button', { name: 'Change or remove photo' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Photo options' })).toBeNull();
       expect(screen.getByLabelText('Add photo')).toHaveAttribute('type', 'file');
+    });
+  });
+
+  describe('the notes under the photo (ProfilePhoto.dc.html)', () => {
+    const removed = { ...base, hasPhoto: false, onRemove: vi.fn() };
+
+    it('a removal shows "Photo removed." with Add photo and Dismiss; Dismiss returns to the badge', async () => {
+      const user = userEvent.setup();
+      const { rerender } = render(<PhotoPicker {...removed} removedStamp={0} />);
+      expect(screen.queryByText(/Your initials show until/)).toBeNull();
+      rerender(<PhotoPicker {...removed} removedStamp={1} />);
+      expect(screen.getByText('Photo removed.')).toBeInTheDocument();
+      expect(screen.getByText(/Your initials show until you add a new one/)).toBeInTheDocument();
+      expect(screen.getAllByLabelText('Add photo')).toHaveLength(2);
+      await user.click(screen.getByRole('button', { name: 'Dismiss' }));
+      expect(screen.queryByText('Photo removed.')).toBeNull();
+      expect(screen.getByLabelText('Add photo')).toHaveFocus();
+    });
+
+    it('it goes after 6s, but waits while pointed at', () => {
+      vi.useFakeTimers();
+      try {
+        const { rerender } = render(<PhotoPicker {...removed} removedStamp={0} />);
+        rerender(<PhotoPicker {...removed} removedStamp={1} />);
+        const note = screen.getByText('Photo removed.').closest('div')!;
+        fireEvent.mouseEnter(note);
+        act(() => vi.advanceTimersByTime(7000));
+        expect(screen.getByText('Photo removed.')).toBeInTheDocument();
+        fireEvent.mouseLeave(note);
+        act(() => vi.advanceTimersByTime(6000));
+        expect(screen.queryByText('Photo removed.')).toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('a pick from the note hands over the file and closes it', async () => {
+      const user = userEvent.setup();
+      const onFile = vi.fn();
+      const { rerender } = render(<PhotoPicker {...removed} onFile={onFile} removedStamp={0} />);
+      rerender(<PhotoPicker {...removed} onFile={onFile} removedStamp={1} />);
+      await user.upload(
+        within(screen.getByText('Photo removed.').closest('div')!).getByLabelText(
+          'Add photo',
+        ) as HTMLInputElement,
+        png,
+      );
+      expect(onFile).toHaveBeenCalledWith(png);
+      expect(screen.queryByText('Photo removed.')).toBeNull();
+    });
+
+    it('a failed removal offers "Try again", which removes again from the badge', async () => {
+      const user = userEvent.setup();
+      const retry = vi.fn();
+      render(
+        <PhotoPicker
+          {...base}
+          onRemove={vi.fn()}
+          onRetryRemove={retry}
+          error="Your photo wasn’t removed. Try again."
+          errorFrom="remove"
+        />,
+      );
+      await user.click(screen.getByRole('button', { name: 'Try again' }));
+      expect(retry).toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: 'Photo options' })).toHaveFocus();
+    });
+
+    it('a failed upload offers Dismiss only', () => {
+      render(
+        <PhotoPicker
+          {...base}
+          onRemove={vi.fn()}
+          onRetryRemove={vi.fn()}
+          error="The photo didn’t upload. Try again."
+          errorFrom="upload"
+        />,
+      );
+      expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+      expect(screen.getByRole('button', { name: 'Dismiss' })).toBeInTheDocument();
     });
   });
 });

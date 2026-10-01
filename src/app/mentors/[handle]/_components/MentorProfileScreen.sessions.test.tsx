@@ -555,7 +555,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
       const user = userEvent.setup();
       render(<MentorProfileScreen handle="gbenga" />);
       await dismissDelete(user);
-      await user.click(screen.getByRole('button', { name: 'Change or remove photo' }));
+      await user.click(screen.getByRole('button', { name: 'Photo options' }));
       await user.click(screen.getByRole('menuitem', { name: /Remove photo/ }));
       const photoDialog = screen.getByRole('dialog', { name: 'Remove your photo?' });
       const focused = document.activeElement;

@@ -1,8 +1,7 @@
 'use client';
 
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
-import { IconButton } from '@/components/atoms/IconButton/IconButton';
 import { RowMenu } from '@/components/molecules/RowMenu/RowMenu';
 import { cx } from '@/lib/utils/cx';
 import styles from './PhotoPicker.module.css';
@@ -18,20 +17,31 @@ type PhotoPickerProps = {
   onFile: (file: File) => void;
   /** Why the last pick, or removal, didn't work, in our words. */
   error: string | null;
+  /** Which action `error` is about: a failed removal offers "Try again". */
+  errorFrom?: 'upload' | 'remove' | null;
   onDismissError: () => void;
   /**
-   * With a photo, the badge becomes a menu: "Change photo" and "Remove photo"
-   * (FE #98; the page confirms). Omit to keep the badge a plain picker.
+   * With a photo, the badge becomes a menu: "Upload a new photo" and "Remove
+   * photo" (the page confirms). Omit to keep the badge a plain picker.
    */
   onRemove?: () => void;
+  /** Removes again, unasked: a failed removal's "Try again". */
+  onRetryRemove?: () => void;
   removing?: boolean;
+  /** Moves when a removal lands: "Photo removed." shows under the photo. */
+  removedStamp?: number;
 };
 
+/** How long "Photo removed." stays, unless pointed at or focused (design: 6s). */
+const REMOVED_FOR = 6000;
+
 /**
- * The owner's photo control (Mentor Profile.dc.html `canEdit`): a 24px camera
- * badge on the photo's corner that opens the file picker. While it uploads the
- * photo is dimmed under a spinner; a failed pick says why under the photo.
- * Sits inside the photo's positioned wrapper.
+ * The owner's photo control (ProfilePhoto.dc.html): a 24px camera badge on the
+ * photo's corner. Without a photo it opens the file picker; with one it opens
+ * "Upload a new photo" / "Remove photo". While busy the photo dims under a
+ * spinner and the badge greys; outcomes show in a note under the photo
+ * ("Photo removed.", or why it failed). Sits inside the photo's positioned
+ * wrapper.
  */
 export function PhotoPicker({
   hasPhoto,
@@ -39,10 +49,13 @@ export function PhotoPicker({
   uploading,
   onFile,
   error,
+  errorFrom = null,
   onDismissError,
   inputId,
   onRemove,
+  onRetryRemove,
   removing = false,
+  removedStamp = 0,
 }: PhotoPickerProps) {
   const label = hasPhoto ? 'Change photo' : 'Add photo';
   const input = useRef<HTMLInputElement>(null);
@@ -53,6 +66,39 @@ export function PhotoPicker({
   const asMenu = hasPhoto && !!onRemove;
   const pick = (f: File | undefined) => {
     if (f && !busy) onFile(f);
+  };
+  const onPicked = (e: { target: HTMLInputElement }) => {
+    const f = e.target.files?.[0];
+    // The same file can be picked again after an error.
+    e.target.value = '';
+    pick(f);
+  };
+  // "Photo removed.": from each removal until Dismiss, a pick, or 6s pass
+  // (adjusted during render). Pointed at or focused, it waits.
+  const [seenStamp, setSeenStamp] = useState(removedStamp);
+  const [removedNote, setRemovedNote] = useState(false);
+  const [held, setHeld] = useState(false);
+  if (removedStamp !== seenStamp) {
+    setSeenStamp(removedStamp);
+    setRemovedNote(removedStamp > 0);
+  }
+  const showRemoved = removedNote && !hasPhoto && !busy && !error;
+  useEffect(() => {
+    if (!showRemoved || held) return;
+    const t = setTimeout(() => setRemovedNote(false), REMOVED_FOR);
+    return () => clearTimeout(t);
+  }, [showRemoved, held]);
+  // A note's buttons go with it: focus returns to the badge (Codex on #99).
+  const focusBadge = () => (asMenu ? menuButton.current : input.current)?.focus();
+  const closeRemoved = () => {
+    setRemovedNote(false);
+    setHeld(false);
+  };
+  const hold = {
+    onMouseEnter: () => setHeld(true),
+    onMouseLeave: () => setHeld(false),
+    onFocus: () => setHeld(true),
+    onBlur: () => setHeld(false),
   };
   return (
     <>
@@ -70,7 +116,7 @@ export function PhotoPicker({
         <>
           <span className={styles.badgeSpot}>
             <RowMenu
-              label="Change or remove photo"
+              label="Photo options"
               triggerRef={menuButton}
               // Opens rightward: the photo sits near the left edge on phones.
               trigger={{
@@ -80,11 +126,16 @@ export function PhotoPicker({
                 align: 'start',
                 disabled: busy,
               }}
+              menu={{
+                className: styles.photoMenu,
+                itemClassName: styles.photoItem,
+                dangerClassName: styles.photoDanger,
+              }}
               items={[
                 {
-                  key: 'change',
-                  icon: 'add_photo_alternate',
-                  label: 'Change photo',
+                  key: 'upload',
+                  icon: 'upload',
+                  label: 'Upload a new photo',
                   onSelect: () => input.current?.click(),
                 },
                 {
@@ -97,7 +148,7 @@ export function PhotoPicker({
               ]}
             />
           </span>
-          {/* The picker "Change photo" opens: reached through the menu only. */}
+          {/* The picker "Upload a new photo" opens: reached through the menu only. */}
           <input
             ref={input}
             id={inputId}
@@ -106,11 +157,7 @@ export function PhotoPicker({
             tabIndex={-1}
             aria-hidden
             className={styles.input}
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              e.target.value = '';
-              pick(f);
-            }}
+            onChange={onPicked}
           />
         </>
       ) : (
@@ -129,29 +176,78 @@ export function PhotoPicker({
             onClick={(e) => {
               if (busy) e.preventDefault();
             }}
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              // The same file can be picked again after an error.
-              e.target.value = '';
-              pick(f);
-            }}
+            onChange={onPicked}
           />
         </label>
       )}
+      {/* The notes are visual: the status region above, and the page's own,
+          say each outcome (an inserted region is often skipped). */}
       {error && (
-        <div className={styles.error}>
-          <Icon name="error" size={16} className={styles.errorIcon} />
-          <span className={styles.errorText}>{error}</span>
-          <IconButton
-            icon="close"
-            size="sm"
-            aria-label="Dismiss"
-            onClick={() => {
-              // The button goes with the message: focus returns to the photo control (Codex).
-              (asMenu ? menuButton.current : input.current)?.focus();
-              onDismissError();
-            }}
-          />
+        <div className={cx(styles.note, styles.noteDanger)}>
+          <Icon name="error" size={18} className={styles.noteIconDanger} />
+          <span className={styles.noteBody}>
+            <span className={styles.noteText}>{error}</span>
+            <span className={styles.noteActions}>
+              {errorFrom === 'remove' && onRetryRemove && (
+                <button
+                  type="button"
+                  className={styles.noteAction}
+                  onClick={() => {
+                    focusBadge();
+                    onRetryRemove();
+                  }}
+                >
+                  Try again
+                </button>
+              )}
+              <button
+                type="button"
+                className={styles.noteDismiss}
+                onClick={() => {
+                  focusBadge();
+                  onDismissError();
+                }}
+              >
+                Dismiss
+              </button>
+            </span>
+          </span>
+        </div>
+      )}
+      {showRemoved && (
+        <div className={styles.note} {...hold}>
+          <Icon name="check_circle" size={18} className={styles.noteIconSuccess} />
+          <span className={styles.noteBody}>
+            <span className={styles.noteText}>
+              <strong>Photo removed.</strong> Your initials show until you add a new one.
+            </span>
+            <span className={styles.noteActions}>
+              <label className={styles.noteAction}>
+                Add photo
+                <input
+                  type="file"
+                  accept={accept}
+                  aria-label="Add photo"
+                  className={styles.input}
+                  onChange={(e) => {
+                    closeRemoved();
+                    focusBadge();
+                    onPicked(e);
+                  }}
+                />
+              </label>
+              <button
+                type="button"
+                className={styles.noteDismiss}
+                onClick={() => {
+                  focusBadge();
+                  closeRemoved();
+                }}
+              >
+                Dismiss
+              </button>
+            </span>
+          </span>
         </div>
       )}
     </>
