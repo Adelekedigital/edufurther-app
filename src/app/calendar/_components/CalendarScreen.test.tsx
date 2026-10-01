@@ -75,9 +75,11 @@ vi.mock('@/lib/api/data/sessionTypes', () => ({
     reset: vi.fn(),
   }),
 }));
+let booked: Remote<string[]>;
+let blocked: Remote<string[]>;
 vi.mock('@/lib/api/data/calendar', () => ({
-  useBookedDays: () => remote<string[]>([]),
-  useBlockedDays: () => remote<string[]>([]),
+  useBookedDays: () => booked,
+  useBlockedDays: () => blocked,
 }));
 
 const mentor = (over: Partial<Extract<Viewer, { kind: 'member' }>> = {}): Viewer => ({
@@ -105,6 +107,8 @@ beforeEach(() => {
   saveHours.mockReset().mockResolvedValue(undefined);
   saveDefaults.mockReset().mockResolvedValue(DEFAULTS);
   saveHoursError = null;
+  booked = remote<string[]>([]);
+  blocked = remote<string[]>([]);
 });
 
 const tuesdaySwitch = () => screen.getByRole('switch', { name: 'Tuesday' });
@@ -153,6 +157,24 @@ describe('CalendarScreen', () => {
     expect(arg.timeZone).toBe('Africa/Lagos');
     expect(arg.days[2].on).toBe(true);
     expect(arg.current).toBe(HOURS);
+    // The save resolves once the hours are read back: the draft goes with the bar.
+    expect(await screen.findByText('Your weekly hours are saved.')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Unsaved changes' })).toBeNull();
+    expect(hasUnsavedChanges()).toBe(false);
+  });
+
+  it('a failed save’s message goes once the hours are back as saved', async () => {
+    saveHoursError = { kind: 'server', message: 'Your hours didn’t save. Try again in a moment.' };
+    const user = userEvent.setup();
+    const { rerender } = render(<CalendarScreen />);
+    await user.click(tuesdaySwitch());
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    await user.click(tuesdaySwitch());
+    // The mocked mutation keeps its error; the screen asked for it to be reset.
+    saveHoursError = null;
+    rerender(<CalendarScreen />);
+    await user.click(tuesdaySwitch());
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('won’t save hours that end before they start, and says why', async () => {
@@ -220,6 +242,29 @@ describe('CalendarScreen', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: 'We couldn’t load your calendar' }),
     ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(retry).toHaveBeenCalled();
+  });
+
+  it('a failed scheduling window load is an error too, not an endless skeleton', () => {
+    defaults = {
+      ...remote<MentorDefaults>(null, { error: { kind: 'server', message: 'x' } }),
+      refreshing: false,
+    };
+    render(<CalendarScreen />);
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'We couldn’t load your calendar' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Loading your calendar')).toBeNull();
+  });
+
+  it('booked sessions that fail to load leave the month up, with Try again', async () => {
+    const retry = vi.fn();
+    booked = remote<string[]>(null, { error: { kind: 'server', message: 'x' }, retry });
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    expect(screen.getByText(/We couldn’t load your booked sessions\./)).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: /2026|2027/ })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(retry).toHaveBeenCalled();
   });

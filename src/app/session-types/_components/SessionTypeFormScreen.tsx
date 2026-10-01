@@ -20,7 +20,7 @@ import { SESSION_TEMPLATES } from '@/lib/utils/sessionTemplates';
 import { weeklySummary, type Draft } from '@/lib/utils/sessionTypeDraft';
 import { useOnline } from '@/lib/utils/useOnline';
 import { useAppShell } from '../../_shell/useAppShell';
-import { mentorGate } from '../../_shell/MentorGate';
+import { mentorGate, SESSION_TYPES_GATE } from '../../_shell/MentorGate';
 import {
   DangerConfirm,
   DefaultsModal,
@@ -109,6 +109,7 @@ export function SessionTypeFormScreen({
     viewer,
     isMentor,
     edit ? `/session-types/${edit.id}/edit` : '/session-types/new',
+    SESSION_TYPES_GATE,
   );
   const loading = viewer.kind === 'loading' || topicsLoading;
 

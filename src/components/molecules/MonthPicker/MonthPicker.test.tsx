@@ -14,7 +14,7 @@ describe('MonthPicker, read-only (Month at a glance)', () => {
         showLegend
       />,
     );
-    expect(screen.getByRole('grid', { name: 'October 2026' })).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: 'October 2026' })).toBeInTheDocument();
     expect(screen.getByText('Monday, October 12, blocked')).toBeInTheDocument();
     expect(screen.getByText('Sunday, October 4, session booked')).toBeInTheDocument();
     expect(screen.getByText('Monday, October 5, open for bookings')).toBeInTheDocument();
@@ -28,9 +28,9 @@ describe('MonthPicker, read-only (Month at a glance)', () => {
     render(<MonthPicker readOnly today="2026-12-20" />);
     expect(screen.getByRole('button', { name: 'Previous month' })).toBeDisabled();
     await user.click(screen.getByRole('button', { name: 'Next month' }));
-    expect(screen.getByRole('grid', { name: 'January 2027' })).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: 'January 2027' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Previous month' }));
-    expect(screen.getByRole('grid', { name: 'December 2026' })).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: 'December 2026' })).toBeInTheDocument();
   });
 });
 

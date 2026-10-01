@@ -36,7 +36,7 @@ export function mentorGate(
   viewer: Viewer,
   isMentor: boolean,
   returnTo: string,
-  copy: GateCopy = SESSION_TYPES_GATE,
+  copy: GateCopy,
 ): ReactNode {
   const ill = copy.illustration;
   if (viewer.kind === 'guest')

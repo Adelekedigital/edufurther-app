@@ -169,13 +169,26 @@ export function useSaveWeeklyHours(userId: string | null) {
       );
       const results = [...removed, ...added];
       const failed = results.filter((x) => !x).length;
-      if (failed) throw hoursError(failed === results.length);
+      if (failed) {
+        const moved = timeZone !== current.timeZone;
+        // A partly failed move leaves the hours split across two zones: say that.
+        if (moved && failed < results.length && navigator.onLine !== false)
+          throw {
+            kind: 'server',
+            // PROVISIONAL copy (calendar design request).
+            message:
+              'Some of your hours didn’t move to the new time zone. Discard your changes to see where they are, then try again.',
+          } satisfies AppError;
+        throw hoursError(failed === results.length);
+      }
     },
-    onSettled: () => {
-      void qc.invalidateQueries({ queryKey: keys.weeklyHours(userId ?? 'none') });
+    // The save resolves once the hours are read back, so a screen holding a
+    // draft can drop it without the old hours showing in between.
+    onSettled: async () => {
       // Slots, the profile's "Book {next open time}", cards' "Free {day}".
       void qc.invalidateQueries({ queryKey: ['booking'] });
       void qc.invalidateQueries({ queryKey: keys.mentors.all });
+      await qc.invalidateQueries({ queryKey: keys.weeklyHours(userId ?? 'none') });
     },
   });
   return {

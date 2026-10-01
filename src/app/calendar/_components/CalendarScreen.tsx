@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useId, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
@@ -76,7 +76,7 @@ export function CalendarScreen() {
     if (invalid || !weekly.data) return;
     saveWeekly.save({ current: weekly.data, days: draft.days, timeZone: draft.timeZone }).then(
       () => {
-        draft.markSaved();
+        draft.clear();
         setTried(false);
         announce('Your weekly hours are saved.');
       },
@@ -84,11 +84,18 @@ export function CalendarScreen() {
     );
   };
   const onDiscard = () => {
-    draft.discard();
+    draft.clear();
     saveWeekly.reset();
     setTried(false);
     announce('Your changes were discarded.');
   };
+
+  // A failed save's message belongs to that draft: once the hours match what's
+  // saved again, it goes.
+  const { error: saveError, reset: resetSave } = saveWeekly;
+  useEffect(() => {
+    if (!draft.dirty && saveError) resetSave();
+  }, [draft.dirty, saveError, resetSave]);
 
   const gate = mentorGate(viewer, isMentor, '/calendar', CALENDAR_GATE);
   const loading = viewer.kind === 'loading' || weekly.isLoading || defaults.isLoading;
@@ -97,7 +104,7 @@ export function CalendarScreen() {
   let body: ReactNode;
   if (gate) body = gate;
   // Error before empty: a failed load never reads as "no hours".
-  else if (failed && !weekly.data)
+  else if (failed && (!weekly.data || !defaults.data))
     body = (
       <div className={styles.state}>
         <EmptyState

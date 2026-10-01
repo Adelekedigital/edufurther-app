@@ -88,6 +88,7 @@ export function MonthPicker({
   const cells = monthCells({ month, today, min, selected, booked, available });
   const days = cells.filter((c): c is Extract<MonthCell, { kind: 'day' }> => c.kind === 'day');
   const pickable = !readOnly && !!onPick;
+  const cellRole = pickable ? 'gridcell' : 'cell';
   const floor = min ?? today;
   // The one tab stop: the last focused day, else the first blocked day, else today, else the 1st.
   const stop =
@@ -164,10 +165,10 @@ export function MonthPicker({
         </div>
       </div>
       <div
-        role="grid"
+        // Pickable it is a grid (arrow keys); read-only a plain table to read through.
+        role={pickable ? 'grid' : 'table'}
         className={styles.grid}
         aria-labelledby={headingId}
-        aria-readonly={readOnly || undefined}
       >
         <div role="row" className={styles.weekdays}>
           {WEEKDAYS.map((w, i) => (
@@ -186,7 +187,7 @@ export function MonthPicker({
             <div key={r} role="row" className={styles.week}>
               {row.map((c, i) =>
                 c.kind === 'pad' ? (
-                  <span key={`p${i}`} role="gridcell" className={styles.pad} />
+                  <span key={`p${i}`} role={cellRole} className={styles.pad} />
                 ) : (
                   <Day
                     key={c.iso}
@@ -267,8 +268,7 @@ function Day({
   );
   return (
     <span
-      role="gridcell"
-      aria-selected={pickable ? c.selected : undefined}
+      role={pickable ? 'gridcell' : 'cell'}
       className={cx(
         styles.cell,
         band && styles.band,

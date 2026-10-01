@@ -11,7 +11,7 @@ import { useMentorDefaults } from '@/lib/api/data/sessionTypes';
 import type { BookingDefaults } from '@/lib/utils/sessionTypeDraft';
 import { useOnline } from '@/lib/utils/useOnline';
 import { useAppShell } from '../../_shell/useAppShell';
-import { mentorGate } from '../../_shell/MentorGate';
+import { mentorGate, SESSION_TYPES_GATE } from '../../_shell/MentorGate';
 import { SessionTypeFormScreen } from './SessionTypeFormScreen';
 import styles from './SessionTypesScreen.module.css';
 
@@ -41,7 +41,7 @@ export function EditSessionTypeScreen({ id }: { id: string }) {
   if (saved.data && draft && !topics.isLoading)
     return <SessionTypeFormScreen template={null} edit={{ id, saved: saved.data, draft }} />;
 
-  const gate = mentorGate(viewer, isMentor, `/session-types/${id}/edit`);
+  const gate = mentorGate(viewer, isMentor, `/session-types/${id}/edit`, SESSION_TYPES_GATE);
   const shell = (body: ReactNode) => (
     <AppShell active="Sessions" nav={nav} chrome={chrome} account={account} offline={!online}>
       {gate ?? body}
