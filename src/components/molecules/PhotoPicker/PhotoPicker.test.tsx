@@ -255,10 +255,20 @@ describe('PhotoPicker', () => {
 
     it('"Add photo" had focus: once the photo is in, focus is on "Photo options"', () => {
       const { rerender } = render(<PhotoPicker {...empty} />);
-      act(() => screen.getByLabelText('Add photo').focus());
+      const input = screen.getByLabelText('Add photo') as HTMLInputElement;
+      act(() => input.focus());
+      // A pick here (as a user's: a file chosen in the picker).
+      fireEvent.change(input, { target: { files: [png] } });
       rerender(<PhotoPicker {...empty} uploading />);
       rerender(<PhotoPicker {...empty} hasPhoto />);
       expect(screen.getByRole('button', { name: 'Photo options' })).toHaveFocus();
+    });
+
+    it('a photo that arrives without a pick here (a refetch) doesn’t move focus (review of PR 137)', () => {
+      const { rerender } = render(<PhotoPicker {...empty} />);
+      expect(document.activeElement).toBe(document.body);
+      rerender(<PhotoPicker {...empty} hasPhoto />);
+      expect(screen.getByRole('button', { name: 'Photo options' })).not.toHaveFocus();
     });
 
     it('focus elsewhere stays where it is', () => {

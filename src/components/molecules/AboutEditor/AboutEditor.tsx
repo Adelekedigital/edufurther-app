@@ -13,6 +13,8 @@ type AboutEditorProps = {
   onCancel: () => void;
   saving: boolean;
   error?: string | null;
+  /** Whether the text differs from what it opened on, as it changes. */
+  onDirtyChange?: (dirty: boolean) => void;
 };
 
 /**
@@ -20,12 +22,23 @@ type AboutEditorProps = {
  * a 600-character textarea, Save, Cancel and "n / 600". The textarea has focus
  * on open; Escape cancels.
  */
-export function AboutEditor({ initial, onSave, onCancel, saving, error }: AboutEditorProps) {
+export function AboutEditor({
+  initial,
+  onSave,
+  onCancel,
+  saving,
+  error,
+  onDirtyChange,
+}: AboutEditorProps) {
   const [text, setText] = useState(initial);
   // Leaving with edits asks first (any in-app link, Logout, the browser's
   // prompt). Against the text it opened on: a refetch mid-edit isn't an edit.
   const [opened] = useState(initial);
   useLeaveGuard(text !== opened, 'your About section');
+  const dirty = text !== opened;
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
   const ref = useRef<HTMLTextAreaElement>(null);
   const errorId = useId();
   // A failed save: back to the text, whose description now carries why.

@@ -23,7 +23,6 @@ import { TrackRecordCard } from '@/components/organisms/TrackRecordCard/TrackRec
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { UnsavedChangesDialog } from '@/components/templates/AppShell/UnsavedChangesDialog';
-import { discardUnsaved, hasUnsavedChanges, unsavedLabel } from '@/lib/utils/leaveGuard';
 import { bookBlockedFor } from '@/app/_shell/bookBlocked';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { useAvatarUpload } from '@/lib/api/data/avatar';
@@ -60,7 +59,7 @@ import { useOwnerEditing } from './useOwnerEditing';
 import { useBookLink } from './useBookLink';
 import { useProfileBooking } from './useProfileBooking';
 import { useProfileReviewing } from './useProfileReviewing';
-import { useProfileTab } from './useProfileTab';
+import { useProfileTab, type ProfileTab } from './useProfileTab';
 
 // Tests import it from here.
 export { suggestionsLine } from './suggestions';
@@ -140,11 +139,24 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const notTakingTab = asMentee && notTaking;
   // The owner, editing, always has the tab: "New session type" is there.
   const { tab, setTab } = useProfileTab(hasSessions || notTakingTab || editing, hasReviews);
-  // A tab switch with unsaved About text asks first, as a link does (#134):
-  // the tab it was going to, and what the dialog names.
-  const [leaving, setLeaving] = useState<{ to: Parameters<typeof setTab>[0]; what: string } | null>(
-    null,
-  );
+  // A tab switch with unsaved About text asks first, as a link does (#134).
+  // About's own changes, not the app's: an open intro isn't the tab's to drop
+  // (review of PR 137). Every tab change goes through goTab.
+  const [aboutDirty, setAboutDirty] = useState(false);
+  const [leavingTo, setLeavingTo] = useState<ProfileTab | null>(null);
+  // Where focus goes once the dialog is gone: the tab that's selected then
+  // (keyboard selection, and Safari's unfocused clicks, left it elsewhere).
+  const [focusTab, setFocusTab] = useState<{ tab: ProfileTab; n: number } | null>(null);
+  useEffect(() => {
+    if (focusTab) document.getElementById(`panel-${focusTab.tab}-tab`)?.focus();
+  }, [focusTab]);
+  const goTab = (t: ProfileTab) => {
+    if (t === tab) return;
+    if (owner.aboutOpen && aboutDirty) return setLeavingTo(t);
+    // The About editor lives on Overview: leaving closes it.
+    if (owner.aboutOpen) owner.closeAbout();
+    setTab(t);
+  };
 
   // Cards only render after a client fetch, so reading the device zone here is safe.
   const [timeZone] = useState(deviceTimeZone);
@@ -369,7 +381,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
             )}
             <ProfileHeader
               profile={p}
-              onShowReviews={hasReviews ? () => setTab('reviews') : undefined}
+              onShowReviews={hasReviews ? () => goTab('reviews') : undefined}
               onEditTopics={editing ? () => setItemOpen({ kind: 'topics' }) : undefined}
               editTopicsRef={editTopics}
               photoTools={
@@ -462,14 +474,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               <Tabs
                 label="Profile"
                 value={tab}
-                onChange={(t) => {
-                  // The About editor lives on Overview: leaving closes it, and
-                  // with unsaved text, asks first (#134).
-                  if (owner.aboutOpen && hasUnsavedChanges())
-                    return setLeaving({ to: t, what: unsavedLabel() });
-                  if (owner.aboutOpen) owner.closeAbout();
-                  setTab(t);
-                }}
+                onChange={(t) => goTab(t as ProfileTab)}
                 items={[
                   { value: 'overview', label: 'Overview', panelId: 'panel-overview' },
                   ...(hasSessions || notTakingTab || editing
@@ -542,6 +547,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                                 onCancel={owner.closeAbout}
                                 saving={owner.aboutSaving}
                                 error={owner.aboutError}
+                                onDirtyChange={setAboutDirty}
                               />
                             ) : null,
                           }
@@ -591,7 +597,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                           <BookSessionCard
                             sessionTypes={p.sessionTypes}
                             onBook={booking.open}
-                            onCompare={() => setTab('sessions')}
+                            onCompare={() => goTab('sessions')}
                             bookBlocked={shownBlock}
                             bookDisabled={viewing}
                           />
@@ -662,15 +668,19 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
       {/* Always there while it's the owner, so a screen reader hears each save. */}
       {isOwner && <LiveRegion message={itemSaved} />}
       {isOwner && <LiveRegion message={sessionsSaid} />}
-      {leaving && (
+      {leavingTo && (
         <UnsavedChangesDialog
-          what={leaving.what}
-          onKeep={() => setLeaving(null)}
+          what="your About section"
+          onKeep={() => {
+            setLeavingTo(null);
+            setFocusTab((f) => ({ tab, n: (f?.n ?? 0) + 1 }));
+          }}
+          // The page stays: closing the editor drops its guard with it.
           onDiscard={() => {
-            discardUnsaved();
             owner.closeAbout();
-            setTab(leaving.to);
-            setLeaving(null);
+            setTab(leavingTo);
+            setLeavingTo(null);
+            setFocusTab((f) => ({ tab: leavingTo, n: (f?.n ?? 0) + 1 }));
           }}
         />
       )}

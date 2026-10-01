@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixture';
 import { h, replace, saveAbout, saveIntro, state } from './profileScreen.harness';
+import { hasUnsavedChanges, unsavedLabel } from '@/lib/utils/leaveGuard';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
@@ -144,6 +145,8 @@ describe('MentorProfileScreen — the owner edits their profile', () => {
       expect(screen.queryByRole('dialog')).toBeNull();
       expect(screen.getByRole('textbox', { name: 'About' })).toHaveValue(`${own.about} More.`);
       expect(replace).not.toHaveBeenCalled();
+      // Back on the selected tab, not the one it was going to (review of PR 137).
+      expect(screen.getByRole('tab', { name: 'Overview' })).toHaveFocus();
     });
 
     it('"Discard" closes the editor and switches', async () => {
@@ -154,8 +157,63 @@ describe('MentorProfileScreen — the owner edits their profile', () => {
       await user.click(within(dialog).getByRole('button', { name: 'Discard' }));
       expect(screen.queryByRole('dialog')).toBeNull();
       expect(screen.queryByRole('textbox', { name: 'About' })).toBeNull();
-      expect(replace).toHaveBeenCalled();
+      expect(replace).toHaveBeenCalledWith(
+        expect.stringContaining('tab=sessions'),
+        expect.anything(),
+      );
       expect(saveAbout).not.toHaveBeenCalled();
+      expect(screen.getByRole('tab', { name: /Sessions/ })).toHaveFocus();
+    });
+
+    it('Escape is "Keep editing"', async () => {
+      h.profile = state({ data: own });
+      const user = userEvent.setup();
+      render(<MentorProfileScreen handle="gbenga" />);
+      await typeAndSwitch(user);
+      await user.keyboard('{Escape}');
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(screen.getByRole('textbox', { name: 'About' })).toHaveValue(`${own.about} More.`);
+      expect(replace).not.toHaveBeenCalled();
+    });
+
+    it('the header rating asks too, as it changes tab', async () => {
+      h.profile = state({ data: own });
+      const user = userEvent.setup();
+      render(<MentorProfileScreen handle="gbenga" />);
+      await user.click(screen.getByRole('button', { name: 'Edit About' }));
+      await user.type(screen.getByRole('textbox', { name: 'About' }), ' More.');
+      await user.click(screen.getByRole('button', { name: /reviews\)/ }));
+      expect(screen.getByRole('dialog', { name: 'Discard your changes?' })).toBeInTheDocument();
+      expect(replace).not.toHaveBeenCalled();
+    });
+
+    it('the tab already selected doesn’t ask', async () => {
+      h.profile = state({ data: own });
+      const user = userEvent.setup();
+      render(<MentorProfileScreen handle="gbenga" />);
+      await user.click(screen.getByRole('button', { name: 'Edit About' }));
+      await user.type(screen.getByRole('textbox', { name: 'About' }), ' More.');
+      await user.click(screen.getByRole('tab', { name: 'Overview' }));
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(screen.getByRole('textbox', { name: 'About' })).toHaveValue(`${own.about} More.`);
+    });
+
+    it('only About’s changes ask: an edited intro with About untouched switches, and stays guarded', async () => {
+      h.profile = state({ data: own });
+      const user = userEvent.setup();
+      render(<MentorProfileScreen handle="gbenga" />);
+      await user.click(screen.getByRole('button', { name: 'Edit profile' }));
+      const form = screen.getByRole('form', { name: 'Edit your name and headline' });
+      await user.type(within(form).getByRole('textbox', { name: 'Headline' }), ' too');
+      await user.click(screen.getByRole('button', { name: 'Edit About' }));
+      await user.click(screen.getByRole('tab', { name: /Sessions/ }));
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(replace).toHaveBeenCalledWith(
+        expect.stringContaining('tab=sessions'),
+        expect.anything(),
+      );
+      expect(hasUnsavedChanges()).toBe(true);
+      expect(unsavedLabel()).toBe('your intro');
     });
   });
 });
