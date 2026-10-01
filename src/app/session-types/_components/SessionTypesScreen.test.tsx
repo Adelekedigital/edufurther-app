@@ -312,6 +312,32 @@ describe('SessionTypesScreen', () => {
     remove.mockResolvedValue({ kind: 'deleted' });
   });
 
+  it('a dismissed delete doesn’t make another row’s confirm busy, or close it', async () => {
+    viewer = mentor;
+    list = idle({ data: [TYPE, { ...TYPE, id: 'b', name: 'Visa prep' }] });
+    let finish!: (r: { kind: 'deleted' }) => void;
+    remove.mockImplementation(() => new Promise((res) => (finish = res)));
+    const user = userEvent.setup({ delay: null });
+    const { rerender } = render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }));
+    deletePending = true;
+    rerender(<SessionTypesScreen />);
+    await user.keyboard('{Escape}');
+    // Another row's delete, while the first is still out.
+    await user.click(screen.getByRole('button', { name: 'More actions for Visa prep' }));
+    await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
+    const second = screen.getByRole('dialog', { name: 'Delete this session type?' });
+    expect(within(second).getByRole('button', { name: 'Keep it' })).toBeEnabled();
+    // The first one's answer leaves the second confirm open.
+    deletePending = false;
+    await act(async () => finish({ kind: 'deleted' }));
+    expect(screen.getByRole('dialog', { name: 'Delete this session type?' })).toBeInTheDocument();
+    expect(screen.getByText(/“Visa prep” is removed/)).toBeInTheDocument();
+    remove.mockResolvedValue({ kind: 'deleted' });
+  });
+
   it('no answer in time: the confirm closes, says so, and focus moves on once the list drops it', async () => {
     viewer = mentor;
     list = idle({ data: [TYPE, { ...TYPE, id: 'b', name: 'Visa prep' }] });

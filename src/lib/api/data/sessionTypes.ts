@@ -176,11 +176,15 @@ function settleRowWrite(qc: QueryClient) {
   setTimeout(() => {
     settling.delete(qc);
     if (qc.isMutating({ mutationKey: ROW_WRITE }) > 0) return;
-    void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });
-    // What mentees can book, and the featured type: Explore cards and the profile.
-    void qc.invalidateQueries({ queryKey: keys.mentors.all });
-    void qc.invalidateQueries({ queryKey: ['booking'] });
+    refreshAfterRowWrite(qc);
   }, 0);
+}
+/** Everything a row write can change: the lists, and what mentees see and book. */
+function refreshAfterRowWrite(qc: QueryClient) {
+  void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });
+  // What mentees can book, and the featured type: Explore cards and the profile.
+  void qc.invalidateQueries({ queryKey: keys.mentors.all });
+  void qc.invalidateQueries({ queryKey: ['booking'] });
 }
 /** Restores in flight, by row, so each "Keep it" waits on its own. */
 const RESTORE = [...ROW_WRITE, 'restore'] as const;
@@ -297,10 +301,7 @@ export function useDeleteSessionType() {
     onSuccess: (r, id) => {
       // A timed-out delete may still land after the settle's refetch: look again later.
       if (r.kind === 'unknown') {
-        setTimeout(
-          () => void qc.invalidateQueries({ queryKey: keys.sessionTypes.all }),
-          DELETE_TIMEOUT_MS,
-        );
+        setTimeout(() => refreshAfterRowWrite(qc), DELETE_TIMEOUT_MS);
         return;
       }
       qc.setQueryData<OwnSessionType[]>(keys.sessionTypes.own(who), (list) =>

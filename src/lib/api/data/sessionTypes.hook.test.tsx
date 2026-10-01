@@ -209,10 +209,21 @@ describe('useDeleteSessionType', () => {
       expect(result.current.list.data!.map((t) => t.id)).toEqual(['x', 'y']);
       await vi.advanceTimersByTimeAsync(1);
       await vi.waitFor(() => expect(GET.mock.calls.length).toBeGreaterThan(reads));
-      // The server may finish it after that refetch: the list is read once more later.
+      // The server may finish it after that refetch: everything a delete changes
+      // is read once more later (the list, and the profile and booking caches).
       const settled = GET.mock.calls.length;
+      const invalidate = vi.spyOn(QueryClient.prototype, 'invalidateQueries');
       await vi.advanceTimersByTimeAsync(DELETE_TIMEOUT_MS);
       await vi.waitFor(() => expect(GET.mock.calls.length).toBeGreaterThan(settled));
+      const keysHit = invalidate.mock.calls.map(([f]) => JSON.stringify(f?.queryKey));
+      expect(keysHit).toEqual(
+        expect.arrayContaining([
+          JSON.stringify(['sessionTypes']),
+          JSON.stringify(['mentors']),
+          JSON.stringify(['booking']),
+        ]),
+      );
+      invalidate.mockRestore();
     } finally {
       vi.useRealTimers();
     }

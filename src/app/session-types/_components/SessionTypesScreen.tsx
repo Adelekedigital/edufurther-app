@@ -150,9 +150,13 @@ export function SessionTypesScreen() {
   };
   // Closed (×) while its delete was out: the delete carries on, and the row
   // says how it went, a refusal included (product, 2026-10-01).
-  const dismissed = useRef(false);
+  // By row: a dismissed delete must not close, or show its state in, another
+  // row's confirm opened meanwhile (Codex on #121).
+  const dismissed = useRef(new Set<string>());
+  // The row the delete hook's state (busy, a refusal) belongs to.
+  const [deleteFor, setDeleteFor] = useState<string | null>(null);
   const dismissConfirm = () => {
-    dismissed.current = true;
+    if (confirming) dismissed.current.add(confirming.id);
     setConfirming(null);
   };
   // A removed row takes its buttons with it: focus the next row's "⋯", or Create.
@@ -178,11 +182,14 @@ export function SessionTypesScreen() {
   };
   const onDelete = (t: OwnSessionType) => {
     const after = neighbour(t.id);
-    dismissed.current = false;
+    dismissed.current.delete(t.id);
+    setDeleteFor(t.id);
     void del
       .remove(t.id)
       .then((r) => {
-        closeConfirm();
+        // Only this row's confirm: another may have opened since a dismiss.
+        setConfirming((c) => (c?.id === t.id ? null : c));
+        dismissed.current.delete(t.id);
         clearMessage(t.id);
         // PROVISIONAL copy: no answer in time; the refetched list shows what happened.
         if (r.kind === 'unknown') {
@@ -200,8 +207,7 @@ export function SessionTypesScreen() {
       })
       .catch((e: DeleteError) => {
         // The confirm shows a refusal; once dismissed, the row does.
-        if (!dismissed.current) return;
-        del.reset();
+        if (!dismissed.current.delete(t.id)) return;
         say(t.id, e.message, false);
       });
   };
@@ -320,8 +326,8 @@ export function SessionTypesScreen() {
         <DeleteConfirm
           renderShell={confirmShell}
           type={confirming}
-          busy={del.isPending}
-          error={del.error}
+          busy={del.isPending && deleteFor === confirming.id}
+          error={deleteFor === confirming.id ? del.error : null}
           onKeep={closeConfirm}
           onDismiss={dismissConfirm}
           onDelete={() => onDelete(confirming)}
