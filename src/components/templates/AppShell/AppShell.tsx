@@ -8,7 +8,8 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { AccountMenu, type AccountMenuItem } from '@/components/molecules/AccountMenu/AccountMenu';
 import { OfflineBanner } from '@/components/molecules/OfflineBanner/OfflineBanner';
-import { LogoutConfirm } from './LogoutConfirm';
+import { hasUnsavedChanges, heldLink, discardUnsaved, unsavedLabel } from '@/lib/utils/leaveGuard';
+import { UnsavedChangesDialog } from './UnsavedChangesDialog';
 import { cx } from '@/lib/utils/cx';
 import styles from './AppShell.module.css';
 
@@ -242,7 +243,15 @@ export function AppShell({
         </nav>
       )}
 
-      {account?.logoutConfirm && <LogoutConfirm {...account.logoutConfirm} />}
+      {account?.logoutConfirm && (
+        <UnsavedChangesDialog
+          what={unsavedLabel()}
+          logout
+          onKeep={account.logoutConfirm.onKeep}
+          onDiscard={account.logoutConfirm.onLogout}
+        />
+      )}
+      <LinkGuard />
 
       {moreOpen && (
         <>
@@ -352,4 +361,58 @@ function CountBadge({ count }: { count?: { count: number } }) {
  */
 function nameWithCount(label: string, count?: { count: number; label: string }) {
   return count && count.count > 0 ? `${label}, ${count.label}` : undefined;
+}
+
+/**
+ * In-app links while a form has unsaved changes (lib/utils/leaveGuard): the
+ * click is held and "Discard your changes?" asks first. Discard replays the
+ * same click past the guard, so Next follows it as usual. Every app page
+ * renders inside AppShell, so every page gets this.
+ */
+function LinkGuard() {
+  const [held, setHeld] = useState<HTMLAnchorElement | null>(null);
+  const pass = useRef(false);
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (pass.current) {
+        pass.current = false;
+        return;
+      }
+      if (!hasUnsavedChanges()) return;
+      const a = heldLink(e);
+      if (!a) return;
+      // Capture phase on document: before Next's Link handler sees it.
+      e.preventDefault();
+      e.stopPropagation();
+      setHeld(a);
+    };
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
+  }, []);
+
+  if (!held) return null;
+  return (
+    <UnsavedChangesDialog
+      what={unsavedLabel()}
+      onKeep={() => setHeld(null)}
+      onDiscard={() => {
+        const a = held;
+        setHeld(null);
+        discardUnsaved();
+        if (a.isConnected) {
+          // click() dispatches synchronously; the flag can't outlive it.
+          pass.current = true;
+          try {
+            a.click();
+          } finally {
+            pass.current = false;
+          }
+        } else if (new URL(a.href).origin === window.location.origin) {
+          // The link is gone (re-rendered): a full load instead, same site only.
+          window.location.assign(a.href);
+        }
+      }}
+    />
+  );
 }
