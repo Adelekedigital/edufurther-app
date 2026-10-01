@@ -85,6 +85,10 @@ export function SessionTypesScreen() {
   };
   // The switch asks first (Session Types.dc.html `toggle`): showing and hiding
   // each confirm, and hiding the last visible type says what that means.
+  const [featuring, setFeaturing] = useState<{
+    type: OwnSessionType;
+    current: OwnSessionType;
+  } | null>(null);
   const [visibility, setVisibility] = useState<{ type: OwnSessionType; show: boolean } | null>(
     null,
   );
@@ -171,11 +175,17 @@ export function SessionTypesScreen() {
     null,
   );
   const onFocused = useCallback(() => setFocusAfterRemoval(null), []);
-  // Focus moves on after a removal, unless another row's confirm is open: focus
-  // is in that dialog, and its close returns focus to its own row.
+  // Focus moves on after a removal, unless a dialog is open: another row's
+  // delete confirm, or the visibility or feature confirm. Focus is in that
+  // dialog, and its close returns focus to where it opened.
+  // Behind the visibility or feature confirm the target waits and applies when
+  // it closes: that dialog's own row may be the one removed.
+  const otherDialogRef = useLatest(!!visibility || !!featuring);
+  const [deferredFocus, setDeferredFocus] = useState<{ menuOf: string } | 'create' | null>(null);
   const moveFocusAfter = (after: { menuOf: string } | 'create', id: string) => {
     if (confirmingRef.current && confirmingRef.current.id !== id) return;
-    setFocusAfterRemoval(after);
+    if (otherDialogRef.current) setDeferredFocus(after);
+    else setFocusAfterRemoval(after);
   };
   // A delete that couldn't be confirmed: if the refetched list no longer has
   // it, focus moves on as after a delete (adjusted during render).
@@ -185,8 +195,13 @@ export function SessionTypesScreen() {
   } | null>(null);
   if (unconfirmed && list.data && !list.data.some((x) => x.id === unconfirmed.id)) {
     setUnconfirmed(null);
-    // Any open confirm owns focus, this row's too: reopened before the refetch.
-    if (!confirming) setFocusAfterRemoval(unconfirmed.after);
+    // Any open dialog owns focus, this row's reopened confirm too.
+    if (visibility || featuring) setDeferredFocus(unconfirmed.after);
+    else if (!confirming) setFocusAfterRemoval(unconfirmed.after);
+  }
+  if (deferredFocus && !visibility && !featuring && !confirming) {
+    setDeferredFocus(null);
+    setFocusAfterRemoval(deferredFocus);
   }
   const neighbour = (id: string): { menuOf: string } | 'create' => {
     const rows = list.data ?? [];
@@ -196,6 +211,8 @@ export function SessionTypesScreen() {
   };
   const onDelete = (t: OwnSessionType) => {
     const after = neighbour(t.id);
+    // A new delete replaces any earlier unconfirmed one's focus target.
+    setUnconfirmed((u) => (u?.id === t.id ? null : u));
     dismissed.current.delete(t.id);
     setDeleteFor(t.id);
     setPendingDeletes((ids) => [...ids, t.id]);
@@ -245,10 +262,6 @@ export function SessionTypesScreen() {
       false,
     ),
   );
-  const [featuring, setFeaturing] = useState<{
-    type: OwnSessionType;
-    current: OwnSessionType;
-  } | null>(null);
   const onFeature = (t: OwnSessionType, featured: boolean) => {
     clearMessage(t.id);
     const current = (list.data ?? []).find((x) => x.isFeatured && x.id !== t.id);
@@ -296,6 +309,11 @@ export function SessionTypesScreen() {
       onLiveChange={askVisibility}
       onDelete={(t) => {
         clearMessage(t.id);
+        // Reopened with nothing out: an earlier refusal (shown on the row
+        // after a dismiss) isn't the dialog's to show again. With its delete
+        // still out, the reopened confirm owns that delete's outcome.
+        if (!pendingDeletes.includes(t.id)) setDeleteFor((f) => (f === t.id ? null : f));
+        dismissed.current.delete(t.id);
         setConfirming(t);
       }}
       onEdit={(t) => router.push(`/session-types/${encodeURIComponent(t.id)}/edit`)}

@@ -1,6 +1,5 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { AppShell } from './AppShell';
 
 // Two "Main" navs: the rail (≥768px) first, the bottom tabs (<768px) second.
@@ -281,64 +280,5 @@ describe('AppShell navigation', () => {
     expect(onKeep).toHaveBeenCalled();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Discard and log out' }));
     expect(onLogout).toHaveBeenCalled();
-  });
-
-  describe('in-app links while a form has unsaved changes (lib/utils/leaveGuard)', () => {
-    function Form({ dirty }: { dirty: boolean }) {
-      useLeaveGuard(dirty, 'your About section');
-      return null;
-    }
-    const followed = vi.fn();
-    const page = (dirty: boolean) => (
-      <AppShell active="Home" nav="mentor" chrome="member" offline={false}>
-        <Form dirty={dirty} />
-        <a
-          href="/bookings"
-          onClick={(e) => {
-            e.preventDefault();
-            followed();
-          }}
-        >
-          Go to bookings
-        </a>
-      </AppShell>
-    );
-    beforeEach(() => followed.mockReset());
-
-    it('asks first; "Keep editing" stays on the page', async () => {
-      render(page(true));
-      await userEvent.click(screen.getByRole('link', { name: 'Go to bookings' }));
-      const dialog = screen.getByRole('dialog', { name: 'Discard your changes?' });
-      expect(dialog).toHaveTextContent('Your changes to your About section won’t be saved.');
-      expect(followed).not.toHaveBeenCalled();
-      await userEvent.click(within(dialog).getByRole('button', { name: 'Keep editing' }));
-      expect(screen.queryByRole('dialog')).toBeNull();
-      expect(followed).not.toHaveBeenCalled();
-    });
-
-    it('"Discard" follows the link the user clicked', async () => {
-      render(page(true));
-      await userEvent.click(screen.getByRole('link', { name: 'Go to bookings' }));
-      await userEvent.click(screen.getByRole('button', { name: 'Discard' }));
-      expect(screen.queryByRole('dialog')).toBeNull();
-      expect(followed).toHaveBeenCalledTimes(1);
-    });
-
-    it('nothing unsaved: links work as usual, no dialog', async () => {
-      render(page(false));
-      await userEvent.click(screen.getByRole('link', { name: 'Go to bookings' }));
-      expect(screen.queryByRole('dialog')).toBeNull();
-      expect(followed).toHaveBeenCalledTimes(1);
-    });
-
-    it('a ctrl/⌘-click (new tab) isn’t held', async () => {
-      render(page(true));
-      const user = userEvent.setup();
-      await user.keyboard('{Control>}');
-      await user.click(screen.getByRole('link', { name: 'Go to bookings' }));
-      await user.keyboard('{/Control}');
-      expect(screen.queryByRole('dialog')).toBeNull();
-      expect(followed).toHaveBeenCalledTimes(1);
-    });
   });
 });

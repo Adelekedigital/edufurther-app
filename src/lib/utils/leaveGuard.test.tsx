@@ -61,7 +61,10 @@ describe('useLeaveGuard', () => {
 });
 
 describe('discardUnsaved ("Discard" in the dialog)', () => {
-  it('the guard stands down, browser prompt included, so the navigation goes through', async () => {
+  const fire = (type: string, target: Element = document.body) =>
+    target.dispatchEvent(new Event(type, { bubbles: true }));
+
+  it('the forms dirty now stand down, browser prompt included, so the navigation goes through', async () => {
     const { useLeaveGuard, hasUnsavedChanges, discardUnsaved } = await load();
     const { unmount } = renderHook(() => useLeaveGuard(true, 'your intro'));
     discardUnsaved();
@@ -70,13 +73,45 @@ describe('discardUnsaved ("Discard" in the dialog)', () => {
     unmount();
   });
 
-  it('…only until they type again: a page still there (navigation cancelled) guards as before', async () => {
-    const { useLeaveGuard, hasUnsavedChanges, discardUnsaved } = await load();
-    const { unmount } = renderHook(() => useLeaveGuard(true, 'your intro'));
+  it('a form edited afterwards (the next page) is guarded at once, with no typing in between', async () => {
+    const { useLeaveGuard, hasUnsavedChanges, unsavedLabel, discardUnsaved } = await load();
+    const old = renderHook(() => useLeaveGuard(true, 'your intro'));
     discardUnsaved();
-    document.body.dispatchEvent(new Event('input', { bubbles: true }));
+    old.unmount();
+    // e.g. only the duration chips changed on the next page: no input event.
+    const next = renderHook(() => useLeaveGuard(true, 'this session type'));
     expect(hasUnsavedChanges()).toBe(true);
+    expect(unsavedLabel()).toBe('this session type');
     expect(unloadPrevented()).toBe(true);
+    next.unmount();
+  });
+
+  it.each(['input', 'change'])(
+    'a page still there (navigation cancelled): the next %s guards it again',
+    async (type) => {
+      const { useLeaveGuard, hasUnsavedChanges, discardUnsaved } = await load();
+      const { unmount } = renderHook(() => useLeaveGuard(true));
+      discardUnsaved();
+      fire(type);
+      expect(hasUnsavedChanges()).toBe(true);
+      expect(unloadPrevented()).toBe(true);
+      unmount();
+    },
+  );
+
+  it('…and so does a click on a chip, switch or any button (they fire no input), but not on a link', async () => {
+    const { useLeaveGuard, hasUnsavedChanges, discardUnsaved } = await load();
+    const { unmount } = renderHook(() => useLeaveGuard(true));
+    discardUnsaved();
+    const a = document.createElement('a');
+    a.href = '/bookings';
+    document.body.appendChild(a);
+    fire('click', a); // the replayed link click: still discarded
+    expect(hasUnsavedChanges()).toBe(false);
+    const chip = document.createElement('button');
+    document.body.appendChild(chip);
+    fire('click', chip);
+    expect(hasUnsavedChanges()).toBe(true);
     unmount();
   });
 });
