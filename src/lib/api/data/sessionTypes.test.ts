@@ -85,6 +85,7 @@ describe('toOwnSessionType', () => {
     expect(autoIcon(['interview-preparation'])).toBe('record_voice_over');
     expect(autoIcon(['something-new'])).toBe('video_call');
     expect(autoIcon([])).toBe('video_call');
+    expect(autoIcon([null, 'test-preparation'])).toBe('video_call');
   });
 
   it('every catalog offering has its own icon; the first topic wins, however many there are', () => {

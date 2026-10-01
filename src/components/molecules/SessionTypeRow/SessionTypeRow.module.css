@@ -58,20 +58,33 @@
   margin: 0;
   padding: 0;
   display: flex;
-  flex-wrap: wrap;
+  /* One line: the topics chip gives way (ellipsis), so rows keep one height. */
+  flex-wrap: nowrap;
   gap: var(--space-2);
+  min-width: 0;
 }
 .fact {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  /* 24px as drawn; a long topic list wraps instead of spilling out. */
+  /* 24px as drawn. */
   min-height: 24px;
+  flex: none;
   padding: 0 var(--space-2);
   border-radius: var(--radius-md);
   background: var(--ink-50);
   font-size: var(--text-p-xs);
   color: var(--ink-700);
+}
+/* Topics: two then "+N"; still too long (a phone), it ends in "…". */
+.factTopics {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.factText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 /* On the hidden row's ink-50 ground the chips would vanish; lift them to white. */
 .hidden .fact {

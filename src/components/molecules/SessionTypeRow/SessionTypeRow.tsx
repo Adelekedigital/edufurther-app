@@ -78,8 +78,9 @@ export function SessionTypeRow({
     onFocused?.();
   }, [focusMenu, onFocused]);
   const qn = t.questionCount;
-  // Two topics, then "+N": every row keeps one line of facts (product,
-  // 2026-09-30). The full list is read out and shown on hover.
+  // Two topics, then "+N" (product, 2026-09-30); the chip ends in "…" if even
+  // that is too long, so every row keeps one line of facts. The full list is
+  // read out and shown on hover.
   const names = t.topics.map((x) => x.label);
   const topics =
     names.length > 2
@@ -135,16 +136,18 @@ export function SessionTypeRow({
         )}
         <ul className={styles.facts}>
           {facts.map((f) => (
-            <li key={f.icon} className={styles.fact} title={f.full}>
+            <li key={f.icon} className={cx(styles.fact, f.icon === 'sell' && styles.factTopics)}>
               <Icon name={f.icon} size={14} className={styles.factIcon} />
-              {f.full ? (
-                <>
-                  <span aria-hidden>{f.label}</span>
-                  <span className="sr-only">{f.full}</span>
-                </>
-              ) : (
-                f.label
-              )}
+              {/* The hover title sits on the visible text: on the li it would become
+                  the item's name and the list could be read twice. */}
+              <span
+                aria-hidden={f.full ? true : undefined}
+                title={f.full}
+                className={styles.factText}
+              >
+                {f.label}
+              </span>
+              {f.full && <span className="sr-only">{f.full}</span>}
             </li>
           ))}
         </ul>

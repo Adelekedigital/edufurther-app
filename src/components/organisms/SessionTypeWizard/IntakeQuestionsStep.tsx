@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
@@ -69,6 +69,12 @@ export function IntakeQuestionsStep({
   const editing = found >= 0 ? found : null;
   const choice = q.kind === 'single' || q.kind === 'multi';
   const editorError = tried ? questionError({ ...q, options: parseOptions(q.options) }) : null;
+  // The question's own error shows on it; any other is about a choice question's options.
+  const questionErr = editorError && !q.text.trim() ? editorError : null;
+  const optionsErr = editorError && !questionErr ? editorError : null;
+  const questionErrId = useId();
+  const optionsErrId = useId();
+  const optionsRef = useRef<HTMLInputElement>(null);
 
   const move = (from: number, to: number) => {
     if (to < 0 || to >= qs.length || from === to) return;
@@ -202,8 +208,8 @@ export function IntakeQuestionsStep({
             aria-label="Question"
             value={q.text}
             maxLength={500}
-            invalid={!!editorError}
-            aria-describedby={editorError ? 'question-editor-error' : undefined}
+            invalid={!!questionErr}
+            aria-describedby={questionErr ? questionErrId : undefined}
             placeholder={
               q.kind === 'file_upload'
                 ? 'e.g. Upload your current SOP draft'
@@ -211,25 +217,39 @@ export function IntakeQuestionsStep({
             }
             onChange={(e) => setQ({ ...q, text: e.target.value })}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                save();
-              }
+              if (e.key !== 'Enter') return;
+              e.preventDefault();
+              // A choice question isn't finished yet: Enter moves on to its options.
+              if (choice) optionsRef.current?.focus();
+              else save();
             }}
           />
-          {editorError && (
-            <p id="question-editor-error" className={styles.fieldError}>
-              {editorError}
+          {questionErr && (
+            <p id={questionErrId} role="alert" className={styles.fieldError}>
+              {questionErr}
             </p>
           )}
           {choice && (
             <div className={styles.options}>
               <Input
+                ref={optionsRef}
                 aria-label="Answer options"
                 value={q.options}
+                invalid={!!optionsErr}
+                aria-describedby={optionsErr ? optionsErrId : undefined}
                 placeholder="Options, separated by commas"
                 onChange={(e) => setQ({ ...q, options: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key !== 'Enter') return;
+                  e.preventDefault();
+                  save();
+                }}
               />
+              {optionsErr && (
+                <p id={optionsErrId} role="alert" className={styles.fieldError}>
+                  {optionsErr}
+                </p>
+              )}
               <button
                 type="button"
                 className={styles.textLink}

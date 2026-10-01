@@ -111,6 +111,12 @@ describe('SessionTypeManager — the four states', () => {
         data: [
           { ...T, id: 'a', name: 'Three topics', topics: three },
           { ...T, id: 'b', name: 'Two topics', topics: three.slice(0, 2) },
+          {
+            ...T,
+            id: 'd',
+            name: 'Four topics',
+            topics: [...three, { code: 'test-preparation', label: 'Test preparation' }],
+          },
           { ...T, id: 'c', name: 'No topics', topics: [] },
         ],
       }),
@@ -125,6 +131,12 @@ describe('SessionTypeManager — the four states', () => {
         'Document preparation, Interview preparation, Scholarships & financial aid',
       ),
     ).toHaveClass('sr-only');
+    // The hover title is on the visible text, not the list item (read once).
+    expect(many).toHaveAttribute(
+      'title',
+      'Document preparation, Interview preparation, Scholarships & financial aid',
+    );
+    expect(row('Four topics')).toHaveTextContent('Document preparation, Interview preparation, +2');
     expect(row('Two topics')).toHaveTextContent('Document preparation, Interview preparation');
     expect(row('Two topics')).not.toHaveTextContent('+');
     expect(row('No topics')).toHaveTextContent('Any topic');
