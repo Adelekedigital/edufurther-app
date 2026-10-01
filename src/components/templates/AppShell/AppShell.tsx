@@ -401,10 +401,15 @@ function LinkGuard() {
         setHeld(null);
         discardUnsaved();
         if (a.isConnected) {
+          // click() dispatches synchronously; the flag can't outlive it.
           pass.current = true;
-          a.click();
-        } else {
-          // The link is gone (re-rendered): a full load instead.
+          try {
+            a.click();
+          } finally {
+            pass.current = false;
+          }
+        } else if (new URL(a.href).origin === window.location.origin) {
+          // The link is gone (re-rendered): a full load instead, same site only.
           window.location.assign(a.href);
         }
       }}

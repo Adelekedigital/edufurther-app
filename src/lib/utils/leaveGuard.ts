@@ -14,12 +14,12 @@ import { useEffect, useRef } from 'react';
  * The browser's Back button isn't caught yet (tracked as an issue).
  */
 const dirtyGuards = new Map<symbol, string>();
-const discarded = new Set<symbol>();
+let discarding = false;
 let released = false;
 
 /** True while any mounted form has changes it hasn't saved. */
 export function hasUnsavedChanges(): boolean {
-  return dirtyGuards.size > 0;
+  return !released && !discarding && dirtyGuards.size > 0;
 }
 
 /**
@@ -34,13 +34,20 @@ export function unsavedLabel(): string {
 }
 
 /**
- * The user chose "Discard" for these edits: their browser prompt stands down
- * too, so a navigation Next turns into a full load (a missing route, say)
- * isn't stopped a second time. Forms on the next page guard as usual.
+ * The user chose "Discard": the guard stands down, browser prompt included, so
+ * a navigation Next turns into a full load (a missing route, say) isn't
+ * stopped a second time. Only until they type again: if the page is still
+ * there (a cancelled navigation) and they keep editing, it guards as before.
  */
 export function discardUnsaved() {
-  dirtyGuards.forEach((_label, key) => discarded.add(key));
-  dirtyGuards.clear();
+  discarding = true;
+  document.addEventListener(
+    'input',
+    () => {
+      discarding = false;
+    },
+    { once: true, capture: true },
+  );
 }
 
 /**
@@ -64,13 +71,12 @@ export function useLeaveGuard(dirty: boolean, label = 'this page') {
     else dirtyGuards.delete(key);
     return () => {
       dirtyGuards.delete(key);
-      discarded.delete(key);
     };
   }, [dirty, label]);
 
   useEffect(() => {
     const onUnload = (e: BeforeUnloadEvent) => {
-      if (!dirtyRef.current || released || discarded.has(id.current!)) return;
+      if (!dirtyRef.current || released || discarding) return;
       e.preventDefault();
     };
     window.addEventListener('beforeunload', onUnload);

@@ -61,7 +61,7 @@ describe('useLeaveGuard', () => {
 });
 
 describe('discardUnsaved ("Discard" in the dialog)', () => {
-  it('those edits stop guarding (no browser prompt as the page goes), and nothing counts as unsaved', async () => {
+  it('the guard stands down, browser prompt included, so the navigation goes through', async () => {
     const { useLeaveGuard, hasUnsavedChanges, discardUnsaved } = await load();
     const { unmount } = renderHook(() => useLeaveGuard(true, 'your intro'));
     discardUnsaved();
@@ -70,14 +70,24 @@ describe('discardUnsaved ("Discard" in the dialog)', () => {
     unmount();
   });
 
-  it('a form on the next page still guards', async () => {
-    const { useLeaveGuard, discardUnsaved } = await load();
-    const first = renderHook(() => useLeaveGuard(true));
+  it('…only until they type again: a page still there (navigation cancelled) guards as before', async () => {
+    const { useLeaveGuard, hasUnsavedChanges, discardUnsaved } = await load();
+    const { unmount } = renderHook(() => useLeaveGuard(true, 'your intro'));
     discardUnsaved();
-    first.unmount();
-    const next = renderHook(() => useLeaveGuard(true));
+    document.body.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(hasUnsavedChanges()).toBe(true);
     expect(unloadPrevented()).toBe(true);
-    next.unmount();
+    unmount();
+  });
+});
+
+describe('releaseLeaveGuards (Logout confirmed)', () => {
+  it('nothing counts as unsaved any more, so a link clicked during logout isn’t held', async () => {
+    const { useLeaveGuard, hasUnsavedChanges, releaseLeaveGuards } = await load();
+    const { unmount } = renderHook(() => useLeaveGuard(true));
+    releaseLeaveGuards();
+    expect(hasUnsavedChanges()).toBe(false);
+    unmount();
   });
 });
 

@@ -22,8 +22,10 @@ type AboutEditorProps = {
  */
 export function AboutEditor({ initial, onSave, onCancel, saving, error }: AboutEditorProps) {
   const [text, setText] = useState(initial);
-  // Leaving with edits asks first (any in-app link, Logout, the browser's prompt).
-  useLeaveGuard(text !== initial, 'your About section');
+  // Leaving with edits asks first (any in-app link, Logout, the browser's
+  // prompt). Against the text it opened on: a refetch mid-edit isn't an edit.
+  const [opened] = useState(initial);
+  useLeaveGuard(text !== opened, 'your About section');
   const ref = useRef<HTMLTextAreaElement>(null);
   const errorId = useId();
   // A failed save: back to the text, whose description now carries why.

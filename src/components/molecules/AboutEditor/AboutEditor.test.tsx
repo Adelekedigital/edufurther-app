@@ -59,4 +59,13 @@ describe('AboutEditor', () => {
     for (let n = 0; n < 6; n++) await user.type(box, '{Backspace}');
     expect(hasUnsavedChanges()).toBe(false);
   });
+
+  it('a refetch that changes the saved text mid-edit isn’t counted as an edit', async () => {
+    const { rerender } = render(
+      <AboutEditor initial="One." onSave={vi.fn()} onCancel={vi.fn()} saving={false} />,
+    );
+    expect(hasUnsavedChanges()).toBe(false);
+    rerender(<AboutEditor initial="Two." onSave={vi.fn()} onCancel={vi.fn()} saving={false} />);
+    expect(hasUnsavedChanges()).toBe(false);
+  });
 });
