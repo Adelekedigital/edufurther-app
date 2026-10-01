@@ -166,7 +166,10 @@ export function SessionTypesScreen() {
       .then((r) => {
         closeConfirm();
         clearMessage(t.id);
-        if (r.kind === 'deleted') {
+        // PROVISIONAL copy: no answer in time; the refetched list shows what happened.
+        if (r.kind === 'unknown')
+          announce('We couldn’t confirm the delete. The list has been refreshed.');
+        else if (r.kind === 'deleted') {
           setFocusAfterRemoval(after);
           announce(`“${t.name}” was deleted.`);
         } else

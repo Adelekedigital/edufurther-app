@@ -54,13 +54,19 @@ const setLive = vi.fn();
 let failLive: (id: string, live: boolean) => void = () => {};
 const remove = vi.fn().mockResolvedValue({ kind: 'deleted' });
 let deleteErr: DeleteError | null = null;
+let deletePending = false;
 vi.mock('@/lib/api/data/sessionTypes', () => ({
   useOwnSessionTypes: () => list,
   useSetLive: (onFailed: (id: string, live: boolean) => void) => {
     failLive = onFailed;
     return setLive;
   },
-  useDeleteSessionType: () => ({ remove, isPending: false, error: deleteErr, reset: vi.fn() }),
+  useDeleteSessionType: () => ({
+    remove,
+    isPending: deletePending,
+    error: deleteErr,
+    reset: vi.fn(),
+  }),
   useSetFeatured: (onFailed: typeof failFeature) => {
     failFeature = onFailed;
     return setFeatured;
@@ -105,6 +111,7 @@ const idle = (over: Partial<Remote<OwnSessionType[]>> = {}): Remote<OwnSessionTy
 beforeEach(() => {
   list = idle({ data: [TYPE] });
   deleteErr = null;
+  deletePending = false;
   setLive.mockClear();
   setFeatured.mockClear();
   restore.mockReset();
@@ -278,6 +285,31 @@ describe('SessionTypesScreen', () => {
       expect(sop()).toHaveTextContent(text);
       expect(announced()).toContain(text);
     }
+  });
+
+  it('while the delete is out, Escape and Keep it don’t close the confirm', async () => {
+    viewer = mentor;
+    deletePending = true;
+    const user = userEvent.setup({ delay: null });
+    render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
+    expect(screen.getByRole('button', { name: 'Keep it' })).toBeDisabled();
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('dialog', { name: 'Delete this session type?' })).toBeInTheDocument();
+  });
+
+  it('no answer in time: the confirm closes and says it couldn’t confirm', async () => {
+    viewer = mentor;
+    remove.mockResolvedValue({ kind: 'unknown' });
+    const user = userEvent.setup({ delay: null });
+    render(<SessionTypesScreen />);
+    await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
+    await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(announced()).toContain('We couldn’t confirm the delete. The list has been refreshed.');
+    remove.mockResolvedValue({ kind: 'deleted' });
   });
 
   it('a failed delete keeps the confirm open with our copy', async () => {

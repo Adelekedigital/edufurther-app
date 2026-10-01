@@ -56,4 +56,7 @@ export type DeleteError = AppError;
 
 /** What a DELETE did: gone, or hidden now and deleted after its last booked session. */
 export type DeleteResult =
-  { kind: 'deleted' } | { kind: 'scheduled'; deletesAfter: string | null; bookedCount: number };
+  | { kind: 'deleted' }
+  | { kind: 'scheduled'; deletesAfter: string | null; bookedCount: number }
+  /** No answer in time: it may or may not have gone through (the list is refetched). */
+  | { kind: 'unknown' };

@@ -251,6 +251,12 @@ export function useSetLive(onFailed: (id: string, live: boolean) => void) {
  * are booked on it, so it's hidden now (and un-featured) and deleted after the
  * last one; the row shows that until then (backend round 4).
  */
+/**
+ * How long a delete may take before the confirm lets go. The confirm can't be
+ * closed while it's out, so a stalled connection must not hold it for good.
+ */
+export const DELETE_TIMEOUT_MS = 20_000;
+
 export function useDeleteSessionType() {
   const qc = useQueryClient();
   const who = useWho();
@@ -258,13 +264,21 @@ export function useDeleteSessionType() {
     ...rowWrite(qc),
     mutationFn: async (id) => {
       let result;
+      const timeout = new AbortController();
+      const timer = setTimeout(() => timeout.abort(), DELETE_TIMEOUT_MS);
       try {
         result = await api.DELETE('/api/v1/me/session-types/{session_type_id}', {
           params: { path: { session_type_id: id } },
+          signal: timeout.signal,
         });
       } catch (e) {
+        // No answer in time: the server may have deleted it, so not a refusal.
+        // The settle refetches the list, which says what happened.
+        if (timeout.signal.aborted) return { kind: 'unknown' };
         // Network failure: our copy, never the browser's "Failed to fetch".
         throw deleteError(e);
+      } finally {
+        clearTimeout(timer);
       }
       const { data, error, response } = result;
       // Already gone (deleted from another tab or device): what the mentor wanted.
@@ -281,6 +295,7 @@ export function useDeleteSessionType() {
     // A list fetch already under way would land after this and bring the row back.
     onMutate: () => qc.cancelQueries({ queryKey: keys.sessionTypes.own(who) }),
     onSuccess: (r, id) => {
+      if (r.kind === 'unknown') return;
       qc.setQueryData<OwnSessionType[]>(keys.sessionTypes.own(who), (list) =>
         r.kind === 'deleted'
           ? list?.filter((t) => t.id !== id)
