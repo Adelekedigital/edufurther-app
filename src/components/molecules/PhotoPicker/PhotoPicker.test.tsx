@@ -90,4 +90,34 @@ describe('PhotoPicker', () => {
     rerender(<PhotoPicker {...base} error={null} />);
     expect(screen.getByLabelText('Change photo')).toHaveFocus();
   });
+
+  describe('with a photo and Remove (FE #98)', () => {
+    it('the badge is a menu: "Change photo" opens the picker, "Remove photo" asks the page', async () => {
+      const onRemove = vi.fn();
+      const click = vi.spyOn(HTMLInputElement.prototype, 'click');
+      const user = userEvent.setup();
+      render(<PhotoPicker {...base} onRemove={onRemove} inputId="pic" />);
+      const badge = screen.getByRole('button', { name: 'Change or remove photo' });
+      await user.click(badge);
+      await user.click(screen.getByRole('menuitem', { name: /Change photo/ }));
+      expect(click.mock.contexts.some((el) => (el as HTMLInputElement).id === 'pic')).toBe(true);
+      click.mockRestore();
+      await user.click(badge);
+      await user.click(screen.getByRole('menuitem', { name: /Remove photo/ }));
+      expect(onRemove).toHaveBeenCalled();
+    });
+
+    it('while removing: the photo dims, the badge is the plain one, disabled, and it says so', () => {
+      render(<PhotoPicker {...base} onRemove={vi.fn()} removing />);
+      expect(screen.queryByRole('button', { name: 'Change or remove photo' })).toBeNull();
+      expect(screen.getByLabelText('Change photo')).toHaveAttribute('aria-disabled', 'true');
+      expect(screen.getByRole('status')).toHaveTextContent('Removing photo…');
+    });
+
+    it('without a photo, no menu: "Add photo" picks straight away', () => {
+      render(<PhotoPicker {...base} hasPhoto={false} onRemove={vi.fn()} />);
+      expect(screen.queryByRole('button', { name: 'Change or remove photo' })).toBeNull();
+      expect(screen.getByLabelText('Add photo')).toHaveAttribute('type', 'file');
+    });
+  });
 });

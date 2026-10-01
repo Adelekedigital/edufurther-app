@@ -87,6 +87,7 @@ export const h = {
   aboutError: null as string | null,
   // The owner's photo upload.
   photoUploading: false,
+  photoRemoving: false,
   photoError: null as string | null,
   // The owner's topics and background editors.
   itemsOk: true,
@@ -112,6 +113,7 @@ export const coverRemove = vi.fn();
 export const coverPick = vi.fn();
 export const saveIntro = vi.fn();
 export const uploadPhoto = vi.fn();
+export const removePhoto = vi.fn();
 export const saveAbout = vi.fn();
 export const saveTopics = vi.fn();
 export const addAward = vi.fn();
@@ -296,6 +298,9 @@ const avatarMock = () => ({
     error: h.photoError,
     dismissError: vi.fn(),
     uploadedStamp: 0,
+    remove: removePhoto,
+    removing: h.photoRemoving,
+    removedStamp: 0,
   }),
 });
 
@@ -527,6 +532,8 @@ beforeEach(() => {
   h.introErrors = {};
   h.aboutError = null;
   h.photoUploading = false;
+  h.photoRemoving = false;
+  removePhoto.mockReset();
   h.photoError = null;
   uploadPhoto.mockReset();
   saveIntro.mockReset();

@@ -161,4 +161,22 @@ describe('RowMenu (WAI-ARIA menu button)', () => {
     await user.click(screen.getByRole('button', { name: 'Outside' }));
     expect(screen.queryByRole('menu')).toBeNull();
   });
+
+  it('a custom trigger: its icon and class, named by `label`, behaving the same', async () => {
+    const pick = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <RowMenu
+        label="Change or remove photo"
+        trigger={{ icon: 'photo_camera', size: 14, className: 'badge' }}
+        items={[{ key: 'a', icon: 'edit', label: 'Change photo', onSelect: pick }]}
+      />,
+    );
+    const trigger = screen.getByRole('button', { name: 'Change or remove photo' });
+    expect(trigger).toHaveClass('badge');
+    expect(trigger).toHaveTextContent('photo_camera');
+    await user.click(trigger);
+    await user.click(screen.getByRole('menuitem', { name: /Change photo/ }));
+    expect(pick).toHaveBeenCalled();
+  });
 });

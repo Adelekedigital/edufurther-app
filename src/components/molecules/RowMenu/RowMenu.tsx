@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type ComponentProps,
   type RefObject,
 } from 'react';
 import { cx } from '@/lib/utils/cx';
@@ -29,6 +30,11 @@ type RowMenuProps = {
   items: RowMenuItem[];
   /** The "⋯" button, for a list that moves focus to it (after a row is removed). */
   triggerRef?: RefObject<HTMLButtonElement | null>;
+  /**
+   * A different trigger than the "⋯" (e.g. the profile photo's camera badge).
+   * Its name still comes from `label`; behaviour and keys are unchanged.
+   */
+  trigger?: { icon: IconName; size?: ComponentProps<typeof Icon>['size']; className?: string };
 };
 
 /**
@@ -39,7 +45,7 @@ type RowMenuProps = {
  * open (the row changed under it), focus moves to the item now in its place,
  * or back to the button when none is left (#114).
  */
-export function RowMenu({ label, items, triggerRef }: RowMenuProps) {
+export function RowMenu({ label, items, triggerRef, trigger }: RowMenuProps) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
   const button = useRef<HTMLButtonElement>(null);
@@ -122,7 +128,7 @@ export function RowMenu({ label, items, triggerRef }: RowMenuProps) {
           if (triggerRef) triggerRef.current = el;
         }}
         type="button"
-        className={styles.trigger}
+        className={trigger?.className ?? styles.trigger}
         aria-label={label}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -130,7 +136,7 @@ export function RowMenu({ label, items, triggerRef }: RowMenuProps) {
         onClick={() => (open ? close(false) : openAt(0))}
         onKeyDown={onButtonKey}
       >
-        <Icon name="more_horiz" size={20} />
+        <Icon name={trigger?.icon ?? 'more_horiz'} size={trigger?.size ?? 20} />
       </button>
       {open && (
         <div
