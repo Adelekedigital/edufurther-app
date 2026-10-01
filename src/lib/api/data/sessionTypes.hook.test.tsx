@@ -9,6 +9,7 @@ import {
 import { act, renderHook, waitFor } from '@testing-library/react';
 import {
   useCreateSessionType,
+  DELETE_TIMEOUT_MS,
   useDeleteSessionType,
   useOwnSessionTypes,
   useRestoreSessionType,
@@ -173,6 +174,59 @@ describe('useDeleteSessionType', () => {
     await waitFor(() => expect(result.current.error).not.toBeNull());
     expect(result.current.error!.message).toMatch(/We couldn’t delete it/);
     expect(result.current.error!.message).not.toContain('Failed to fetch');
+  });
+
+  it('no answer in time: it lets go as "unknown" (not a refusal), and the list is refetched', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      list = [row('x'), row('y')];
+      const { result } = renderHook(
+        () => ({ list: useOwnSessionTypes(true), del: useDeleteSessionType() }),
+        { wrapper: setup() },
+      );
+      await vi.waitFor(() => expect(result.current.list.data).toHaveLength(2));
+      const reads = GET.mock.calls.length;
+      // A stalled connection: no answer, until the request is aborted.
+      DELETE.mockImplementation(
+        (_p: string, opts: { signal: AbortSignal }) =>
+          new Promise((_res, rej) =>
+            opts.signal.addEventListener('abort', () =>
+              rej(new DOMException('aborted', 'AbortError')),
+            ),
+          ),
+      );
+      let outcome: unknown;
+      act(() => {
+        void result.current.del.remove('x').then((r) => (outcome = r));
+      });
+      await vi.advanceTimersByTimeAsync(DELETE_TIMEOUT_MS - 1);
+      expect(outcome).toBeUndefined();
+      expect(result.current.del.isPending).toBe(true);
+      await vi.advanceTimersByTimeAsync(1);
+      await vi.waitFor(() => expect(outcome).toEqual({ kind: 'unknown' }));
+      expect(result.current.del.error).toBeNull();
+      // The row isn't removed by guesswork; the settle refetches the list.
+      expect(result.current.list.data!.map((t) => t.id)).toEqual(['x', 'y']);
+      await vi.advanceTimersByTimeAsync(1);
+      await vi.waitFor(() => expect(GET.mock.calls.length).toBeGreaterThan(reads));
+      // The server may finish it after that refetch: everything a delete changes
+      // is read once more later (the list, and the profile and booking caches).
+      const settled = GET.mock.calls.length;
+      const invalidate = vi.spyOn(QueryClient.prototype, 'invalidateQueries');
+      await vi.advanceTimersByTimeAsync(DELETE_TIMEOUT_MS);
+      await vi.waitFor(() => expect(GET.mock.calls.length).toBeGreaterThan(settled));
+      const keysHit = invalidate.mock.calls.map(([f]) => JSON.stringify(f?.queryKey));
+      expect(keysHit).toEqual(
+        expect.arrayContaining([
+          JSON.stringify(['sessionTypes']),
+          JSON.stringify(['mentors']),
+          JSON.stringify(['booking']),
+        ]),
+      );
+      invalidate.mockRestore();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   // The list refetch never answers in these tests: what the cache shows came

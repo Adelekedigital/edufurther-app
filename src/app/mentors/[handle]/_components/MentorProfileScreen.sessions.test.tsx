@@ -291,6 +291,21 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     expect(screen.getByRole('button', { name: 'Edit CV review' })).toHaveFocus();
   });
 
+  it('a delete that couldn’t be confirmed closes the confirm and says so', async () => {
+    onSessions();
+    removeType.mockResolvedValue({ kind: 'unknown' });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
+    const confirm = screen.getByRole('dialog', { name: 'Delete this session type?' });
+    await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
+    expect(removeType).toHaveBeenCalledWith('st1');
+    expect(
+      await screen.findByText('We couldn’t confirm the delete. The list has been refreshed.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
   it('Delete with sessions booked schedules it, says when, and where to manage it', async () => {
     onSessions([ownType({ booked: { count: 2, lastEndsAt: '2026-10-14T15:00:00Z' } })]);
     removeType.mockResolvedValue({

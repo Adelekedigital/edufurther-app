@@ -77,6 +77,28 @@ describe('DeleteConfirm', () => {
     expect(screen.getByRole('button', { name: 'Delete' })).toHaveAttribute('aria-busy', 'true');
   });
 
+  it('while the delete is out: Keep it is off; closing dismisses, or waits without onDismiss', async () => {
+    const onKeep = vi.fn();
+    const onDismiss = vi.fn();
+    const { rerender } = render(
+      <DeleteConfirm {...props} busy onKeep={onKeep} onDismiss={onDismiss} type={T()} />,
+    );
+    expect(screen.getByRole('button', { name: 'Keep it' })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(onDismiss).toHaveBeenCalledOnce();
+    expect(onKeep).not.toHaveBeenCalled();
+    // No onDismiss: closing waits for the answer.
+    rerender(<DeleteConfirm {...props} busy onKeep={onKeep} type={T()} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(onKeep).not.toHaveBeenCalled();
+    // Answered: closing keeps it again.
+    rerender(<DeleteConfirm {...props} onKeep={onKeep} onDismiss={onDismiss} type={T()} />);
+    expect(screen.getByRole('button', { name: 'Keep it' })).toBeEnabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(onKeep).toHaveBeenCalledOnce();
+    expect(onDismiss).toHaveBeenCalledOnce();
+  });
+
   it('is framed as danger, and closing the frame keeps it', async () => {
     const onKeep = vi.fn();
     render(<DeleteConfirm {...props} type={T()} onKeep={onKeep} />);
