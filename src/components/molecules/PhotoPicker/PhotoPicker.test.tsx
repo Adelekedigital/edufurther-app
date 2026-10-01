@@ -179,6 +179,8 @@ describe('PhotoPicker', () => {
       );
       expect(onFile).toHaveBeenCalledWith(png);
       expect(screen.queryByText('Photo removed.')).toBeNull();
+      // Its input goes with it: focus is on the badge's.
+      expect(screen.getByLabelText('Add photo')).toHaveFocus();
     });
 
     it('a failed removal offers "Try again", which removes again from the badge', async () => {
@@ -210,6 +212,41 @@ describe('PhotoPicker', () => {
       );
       expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
       expect(screen.getByRole('button', { name: 'Dismiss' })).toBeInTheDocument();
+    });
+  });
+
+  describe('the removed note stays put while needed (review of PR 135)', () => {
+    const removed = { ...base, hasPhoto: false, onRemove: vi.fn() };
+
+    it('with focus in it, the mouse leaving doesn’t start its 6s', () => {
+      vi.useFakeTimers();
+      try {
+        const { rerender } = render(<PhotoPicker {...removed} removedStamp={0} />);
+        rerender(<PhotoPicker {...removed} removedStamp={1} />);
+        const note = screen.getByText('Photo removed.').closest('div')!;
+        fireEvent.mouseEnter(note);
+        act(() => screen.getByRole('button', { name: 'Dismiss' }).focus());
+        fireEvent.mouseLeave(note);
+        act(() => vi.advanceTimersByTime(7000));
+        expect(screen.getByText('Photo removed.')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Dismiss' })).toHaveFocus();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('a pick through the badge ends it: it doesn’t come back after a failed upload is dismissed', async () => {
+      const user = userEvent.setup();
+      const { rerender } = render(<PhotoPicker {...removed} removedStamp={0} />);
+      rerender(<PhotoPicker {...removed} removedStamp={1} />);
+      const note = screen.getByText('Photo removed.').closest('div')!;
+      const badgeInput = screen.getAllByLabelText('Add photo').find((el) => !note.contains(el))!;
+      await user.upload(badgeInput as HTMLInputElement, png);
+      rerender(
+        <PhotoPicker {...removed} removedStamp={1} error="The photo didn’t upload. Try again." />,
+      );
+      rerender(<PhotoPicker {...removed} removedStamp={1} />);
+      expect(screen.queryByText('Photo removed.')).toBeNull();
     });
   });
 });

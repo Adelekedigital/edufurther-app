@@ -91,6 +91,7 @@ export const h = {
   photoRemovedStamp: 0,
   deleteError: null as { kind: string; message: string } | null,
   photoError: null as string | null,
+  photoErrorFrom: null as 'upload' | 'remove' | null,
   // The owner's topics and background editors.
   itemsOk: true,
   itemsError: null as string | null,
@@ -298,6 +299,7 @@ const avatarMock = () => ({
     upload: uploadPhoto,
     uploading: h.photoUploading,
     error: h.photoError,
+    errorFrom: h.photoErrorFrom,
     dismissError: vi.fn(),
     uploadedStamp: 0,
     remove: removePhoto,
@@ -539,6 +541,7 @@ beforeEach(() => {
   h.deleteError = null;
   removePhoto.mockReset();
   h.photoError = null;
+  h.photoErrorFrom = null;
   uploadPhoto.mockReset();
   saveIntro.mockReset();
   saveAbout.mockReset();

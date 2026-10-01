@@ -119,6 +119,8 @@ export function useAvatarUpload(handle: string, userId: string | null) {
     onError: () => void qc.invalidateQueries({ queryKey: key }),
   });
 
+  const errorFrom: 'upload' | 'remove' | null =
+    fileProblem || upload.error ? 'upload' : remove.error ? 'remove' : null;
   return {
     accept: PHOTO_ACCEPT,
     upload: (file: File) => {
@@ -145,8 +147,7 @@ export function useAvatarUpload(handle: string, userId: string | null) {
           ? photoRemoveErrorCopy(normaliseError(remove.error))
           : null),
     /** Which action `error` is about: a failed removal offers "Try again". */
-    errorFrom: (fileProblem || upload.error ? 'upload' : remove.error ? 'remove' : null) as
-      'upload' | 'remove' | null,
+    errorFrom,
     dismissError: () => {
       setFileProblem(null);
       upload.reset();

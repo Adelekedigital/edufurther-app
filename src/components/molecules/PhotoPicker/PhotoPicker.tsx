@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type FocusEvent } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { RowMenu } from '@/components/molecules/RowMenu/RowMenu';
 import { cx } from '@/lib/utils/cx';
@@ -67,38 +67,52 @@ export function PhotoPicker({
   const pick = (f: File | undefined) => {
     if (f && !busy) onFile(f);
   };
+  // "Photo removed.": from each removal until Dismiss, any pick, or 6s pass
+  // (adjusted during render). Pointed at, or with focus in it, it waits: the
+  // two tracked apart, so leaving with the mouse can't close it under focus
+  // (review of PR 135).
+  const [seenStamp, setSeenStamp] = useState(removedStamp);
+  const [removedNote, setRemovedNote] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [focusIn, setFocusIn] = useState(false);
+  if (removedStamp !== seenStamp) {
+    setSeenStamp(removedStamp);
+    setRemovedNote(removedStamp > 0);
+    // A note gone under the pointer or focus never got its leave or blur.
+    setHovered(false);
+    setFocusIn(false);
+  }
+  const closeRemoved = () => {
+    setRemovedNote(false);
+    setHovered(false);
+    setFocusIn(false);
+  };
   const onPicked = (e: { target: HTMLInputElement }) => {
     const f = e.target.files?.[0];
     // The same file can be picked again after an error.
     e.target.value = '';
+    // Any pick ends "Photo removed.", so it can't come back after a failed
+    // upload is dismissed (review of PR 135).
+    if (f) closeRemoved();
     pick(f);
   };
-  // "Photo removed.": from each removal until Dismiss, a pick, or 6s pass
-  // (adjusted during render). Pointed at or focused, it waits.
-  const [seenStamp, setSeenStamp] = useState(removedStamp);
-  const [removedNote, setRemovedNote] = useState(false);
-  const [held, setHeld] = useState(false);
-  if (removedStamp !== seenStamp) {
-    setSeenStamp(removedStamp);
-    setRemovedNote(removedStamp > 0);
-  }
   const showRemoved = removedNote && !hasPhoto && !busy && !error;
+  const held = hovered || focusIn;
   useEffect(() => {
     if (!showRemoved || held) return;
     const t = setTimeout(() => setRemovedNote(false), REMOVED_FOR);
     return () => clearTimeout(t);
-  }, [showRemoved, held]);
+  }, [showRemoved, held, seenStamp]);
   // A note's buttons go with it: focus returns to the badge (Codex on #99).
   const focusBadge = () => (asMenu ? menuButton.current : input.current)?.focus();
-  const closeRemoved = () => {
-    setRemovedNote(false);
-    setHeld(false);
-  };
   const hold = {
-    onMouseEnter: () => setHeld(true),
-    onMouseLeave: () => setHeld(false),
-    onFocus: () => setHeld(true),
-    onBlur: () => setHeld(false),
+    onMouseEnter: () => setHovered(true),
+    onMouseLeave: () => setHovered(false),
+    onFocus: () => setFocusIn(true),
+    onBlur: (e: FocusEvent) => {
+      // Moving between its own buttons isn't leaving it.
+      if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocusIn(false);
+    },
   };
   return (
     <>
@@ -129,6 +143,7 @@ export function PhotoPicker({
               menu={{
                 className: styles.photoMenu,
                 itemClassName: styles.photoItem,
+                iconClassName: styles.photoIcon,
                 dangerClassName: styles.photoDanger,
               }}
               items={[
@@ -224,13 +239,12 @@ export function PhotoPicker({
             <span className={styles.noteActions}>
               <label className={styles.noteAction}>
                 Add photo
+                {/* Named by its label: the badge's own "Add photo", as a shortcut. */}
                 <input
                   type="file"
                   accept={accept}
-                  aria-label="Add photo"
                   className={styles.input}
                   onChange={(e) => {
-                    closeRemoved();
                     focusBadge();
                     onPicked(e);
                   }}

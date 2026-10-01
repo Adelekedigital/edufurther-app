@@ -227,14 +227,14 @@
   font-size: var(--text-p-xs);
   font-weight: var(--weight-medium);
 }
-.photoItem.photoItem > span:first-child {
+.photoIcon.photoIcon {
   color: var(--ink-600);
 }
 .photoDanger.photoDanger {
   border-top: none;
   color: var(--red-500);
 }
-.photoDanger.photoDanger > span:first-child {
+.photoDanger.photoDanger .photoIcon {
   color: inherit;
 }
 .photoDanger.photoDanger:hover,

@@ -111,7 +111,10 @@ describe('MentorProfileScreen — the owner’s photo', () => {
     await new Promise((r) => requestAnimationFrame(r));
     // The badge (first), not the note's own "Add photo".
     expect(document.getElementById('profile-photo-input')).toHaveFocus();
-    expect(screen.getAllByText('Photo removed.').length).toBeGreaterThan(0);
+    // Said in a region that's always there, not only shown in the note.
+    expect(screen.getAllByRole('status').some((s) => s.textContent === 'Photo removed.')).toBe(
+      true,
+    );
     expect(screen.getByText(/Your initials show until you add a new one/)).toBeInTheDocument();
   });
 
@@ -137,6 +140,22 @@ describe('MentorProfileScreen — the owner’s photo', () => {
     h.photoError = 'Your photo wasn’t removed. Try again.';
     rerender(<MentorProfileScreen handle="gbenga" />);
     expect(screen.getByRole('button', { name: 'Photo options' })).toHaveFocus();
-    expect(screen.getAllByText('Your photo wasn’t removed. Try again.').length).toBeGreaterThan(0);
+    expect(
+      screen
+        .getAllByRole('status')
+        .some((s) => s.textContent === 'Your photo wasn’t removed. Try again.'),
+    ).toBe(true);
+  });
+
+  it('a failed removal’s "Try again" removes again, without asking (review of PR 135)', async () => {
+    const withPhoto = { ...own, mentor: { ...own.mentor, photoUrl: 'https://cdn/me.webp' } };
+    h.profile = state({ data: withPhoto });
+    h.photoError = 'Your photo wasn’t removed. Try again.';
+    h.photoErrorFrom = 'remove';
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(removePhoto).toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

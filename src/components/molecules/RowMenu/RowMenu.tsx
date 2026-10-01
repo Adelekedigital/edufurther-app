@@ -48,9 +48,15 @@ type RowMenuProps = {
   };
   /**
    * A menu drawn its own way (the photo menu, ProfilePhoto.dc.html): classes
-   * for the menu, every item, and a danger item, over the row menu's own.
+   * for the menu, every item, every item's icon, and a danger item, over the
+   * row menu's own.
    */
-  menu?: { className?: string; itemClassName?: string; dangerClassName?: string };
+  menu?: {
+    className?: string;
+    itemClassName?: string;
+    iconClassName?: string;
+    dangerClassName?: string;
+  };
 };
 
 /**
@@ -192,7 +198,7 @@ export function RowMenu({ label, items, triggerRef, trigger, menu: drawn }: RowM
                 it.onSelect();
               }}
             >
-              <Icon name={it.icon} size={18} />
+              <Icon name={it.icon} size={18} className={drawn?.iconClassName} />
               {it.label}
             </button>
           ))}
