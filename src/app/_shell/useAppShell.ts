@@ -3,6 +3,7 @@
 import type { AccountMenuItem } from '@/components/molecules/AccountMenu/AccountMenu';
 import { useSignOut } from '@/lib/api/data/auth';
 import { useViewer } from '@/lib/api/data/viewer';
+import { coverFor } from '@/lib/utils/cover';
 import { canBookFor } from './bookBlocked';
 import type { Viewer } from '@/types/mentor';
 
@@ -94,6 +95,28 @@ export function useAppShell() {
         : ('mentee' as const),
     /** Mentors can't book (product, 2026-09-29): "View profile" instead of Book. */
     canBook: canBookFor(viewer),
-    account: chrome === 'member' ? { initial: member?.initial ?? '', items } : undefined,
+    account:
+      chrome === 'member'
+        ? {
+            avatar: {
+              initial: member?.initial ?? '',
+              src: member?.avatarUrl ?? null,
+              focus: member?.avatarFocus ?? null,
+              // Same colour as their profile's banner and photo circle.
+              cover: member?.coverKey ?? coverFor(member?.id ?? ''),
+            },
+            items,
+            /** Bookings badge: requests awaiting a response (product, 2026-09-30). */
+            counts: countsFor(member),
+          }
+        : undefined,
   };
+}
+
+/** The nav's count badges. Only Bookings has one; Messages waits (hidden). */
+export function countsFor(member: Extract<Viewer, { kind: 'member' }> | null) {
+  const n = member?.awaitingResponse ?? 0;
+  if (!member || n <= 0) return {};
+  const who = member.isMentor ? 'awaiting your response' : 'awaiting the mentor';
+  return { Bookings: { count: n, label: `${n} ${n === 1 ? 'request' : 'requests'} ${who}` } };
 }

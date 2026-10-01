@@ -100,7 +100,7 @@ describe('useAvatarUpload', () => {
     await waitFor(() => expect(result.current.uploading).toBe(false));
   });
 
-  it('after the upload the profile and lists refetch, so a cancelled refetch isn’t lost (review of #99)', async () => {
+  it('after the upload the profile, lists and /me refetch (the sidebar avatar), so a cancelled refetch isn’t lost (review of #99)', async () => {
     POST.mockResolvedValue({
       data: { avatar_url: 'https://cdn/new.webp', avatar_focus: null },
       response: new Response(null),
@@ -109,5 +109,22 @@ describe('useAvatarUpload', () => {
     act(() => result.current.upload(file('image/png', 10)));
     await waitFor(() => expect(result.current.uploadedStamp).toBeGreaterThan(0));
     expect(spy).toHaveBeenCalledWith({ queryKey: keys.mentors.all });
+    expect(spy).toHaveBeenCalledWith({ queryKey: keys.viewer.all });
+  });
+
+  it('the sidebar’s cached viewer takes the new photo at once, even before /me refetches', async () => {
+    POST.mockResolvedValue({
+      data: { avatar_url: 'https://cdn/new.webp', avatar_focus: { x: 0.5, y: 0.3 } },
+      response: new Response(null),
+    });
+    const { result, qc } = setup();
+    const me = keys.viewer.me('m1');
+    qc.setQueryData(me, { kind: 'member', id: 'm1', avatarUrl: null, avatarFocus: null });
+    act(() => result.current.upload(file('image/png', 10)));
+    await waitFor(() => expect(result.current.uploadedStamp).toBeGreaterThan(0));
+    expect(qc.getQueryData(me)).toMatchObject({
+      avatarUrl: 'https://cdn/new.webp',
+      avatarFocus: { x: 0.5, y: 0.3 },
+    });
   });
 });

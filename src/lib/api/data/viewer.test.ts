@@ -54,4 +54,38 @@ describe('toViewer (backend auth reply #3)', () => {
     expect(v.completedSessions).toBe(2);
     expect(v.credits).toEqual({ balance: 1, allowance: 3, state: 'low' });
   });
+
+  it('carries the photo, its focus and the cover colour for the sidebar avatar', () => {
+    const v = toViewer(
+      me({
+        profile: {
+          avatar_url: 'https://x.supabase.co/a.webp',
+          avatar_focus: { x: 0.4, y: 0.3 },
+          cover_color: 'mint',
+        } as Me['profile'],
+      }),
+    );
+    expect(v).toMatchObject({
+      avatarUrl: 'https://x.supabase.co/a.webp',
+      avatarFocus: { x: 0.4, y: 0.3 },
+      coverKey: 'mint',
+    });
+    expect(toViewer(me({ profile: null })).coverKey).toBeNull();
+  });
+
+  it('the Bookings count follows the nav role: a mentor profile uses the mentor count', () => {
+    const counts = {
+      as_mentor: { awaiting_your_response: 4, upcoming: 9 },
+      as_mentee: { awaiting_mentor: 2, upcoming: 1 },
+    } as Me['booking_counts'];
+    const mentor = me({
+      booking_counts: counts,
+      mentor_profile: { approval_status: 'pending' } as Me['mentor_profile'],
+    });
+    expect(toViewer(mentor).awaitingResponse).toBe(4);
+    expect(toViewer(me({ booking_counts: counts })).awaitingResponse).toBe(2);
+    expect(
+      toViewer(me({ booking_counts: { as_mentor: null, as_mentee: null } })).awaitingResponse,
+    ).toBeNull();
+  });
 });

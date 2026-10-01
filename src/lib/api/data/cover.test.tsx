@@ -84,14 +84,16 @@ describe('useCoverEdit', () => {
     DELETE.mockReset();
   });
 
-  it('shows a pick at once and saves just that field', async () => {
+  it('shows a pick at once and saves just that field; /me refetches for the sidebar avatar', async () => {
     let finish!: () => void;
     PATCH.mockReturnValue(
       new Promise((r) => {
         finish = () => r({ data: {}, error: undefined, response: new Response(null) });
       }),
     );
-    const { wrapper, read } = setup();
+    const { qc, wrapper, read } = setup();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+    qc.setQueryData(keys.viewer.me('u1'), { kind: 'member', id: 'u1', coverKey: 'sky' });
     const { result } = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
     act(() => result.current.save({ color: 'lilac' }));
     await waitFor(() => expect(read().cover.color).toBe('lilac'));
@@ -103,6 +105,8 @@ describe('useCoverEdit', () => {
     await act(async () => finish());
     await waitFor(() => expect(result.current.saveState).toBe('saved'));
     expect(result.current.savedStamp).toBeGreaterThan(0);
+    expect(spy).toHaveBeenCalledWith({ queryKey: keys.viewer.all });
+    expect(qc.getQueryData(keys.viewer.me('u1'))).toMatchObject({ coverKey: 'lilac' });
   });
 
   it('a failed save puts back what’s saved, says so, and refetches', async () => {

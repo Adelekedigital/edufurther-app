@@ -1,5 +1,5 @@
 import type { Viewer } from '@/types/mentor';
-import { accountItems } from './useAppShell';
+import { accountItems, countsFor } from './useAppShell';
 
 vi.mock('@/lib/api/data/auth', () => ({ useSignOut: () => vi.fn() }));
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => ({ kind: 'guest' }) }));
@@ -54,5 +54,22 @@ describe('accountItems (AppShell.dc.html account menu)', () => {
 
   it('no member (loading, or not signed in as a member): Logout only', () => {
     expect(accountItems(null, vi.fn()).map((i) => i.label)).toEqual(['Logout']);
+  });
+});
+
+describe('countsFor (the Bookings badge)', () => {
+  it('words the count by role, singular and plural', () => {
+    expect(countsFor(member({ awaitingResponse: 1 }))).toEqual({
+      Bookings: { count: 1, label: '1 request awaiting your response' },
+    });
+    expect(countsFor(member({ isMentor: false, isMentee: true, awaitingResponse: 3 }))).toEqual({
+      Bookings: { count: 3, label: '3 requests awaiting the mentor' },
+    });
+  });
+
+  it('no badge at 0, with no count, or before /me answers', () => {
+    expect(countsFor(member({ awaitingResponse: 0 }))).toEqual({});
+    expect(countsFor(member())).toEqual({});
+    expect(countsFor(null)).toEqual({});
   });
 });

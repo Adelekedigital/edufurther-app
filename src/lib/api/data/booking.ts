@@ -280,6 +280,8 @@ export function useRequestBooking() {
     },
     onSuccess: () => {
       attempt.current = null;
+      // The mentee's Bookings badge counts requests awaiting the mentor (/me).
+      void queryClient.invalidateQueries({ queryKey: keys.viewer.all });
     },
     onSettled: (_data, error, req) => {
       // The questions changed under the modal (a required one we didn't show, or

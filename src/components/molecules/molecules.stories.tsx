@@ -209,7 +209,7 @@ export const AccountMenuRail: Story = {
   render: () => (
     <div style={{ paddingTop: 200, paddingLeft: 24, background: 'var(--blue-50)', width: 88 }}>
       <AccountMenu
-        initial="E"
+        avatar={{ initial: 'E', cover: 'lilac' }}
         items={[
           {
             key: 'matches',
