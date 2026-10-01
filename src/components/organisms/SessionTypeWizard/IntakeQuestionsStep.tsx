@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
+import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { Input } from '@/components/atoms/Input/Input';
@@ -75,6 +76,9 @@ export function IntakeQuestionsStep({
   const questionErrId = useId();
   const optionsErrId = useId();
   const optionsRef = useRef<HTMLInputElement>(null);
+  // Said through an always-mounted region: a role="alert" mounted with its
+  // text in it is often missed (Codex on #123). The paragraphs are visual.
+  const [said, setSaid] = useState<{ text: string; id: number } | null>(null);
 
   const move = (from: number, to: number) => {
     if (to < 0 || to >= qs.length || from === to) return;
@@ -91,7 +95,11 @@ export function IntakeQuestionsStep({
   const save = () => {
     setTried(true);
     const options = choice ? parseOptions(q.options) : [];
-    if (questionError({ ...q, options })) return;
+    const error = questionError({ ...q, options });
+    if (error) {
+      setSaid((was) => ({ text: error, id: (was?.id ?? 0) + 1 }));
+      return;
+    }
     const item: DraftQuestion = {
       key: editing === null ? newKey() : editingKey!,
       text: q.text.trim(),
@@ -225,7 +233,7 @@ export function IntakeQuestionsStep({
             }}
           />
           {questionErr && (
-            <p id={questionErrId} role="alert" className={styles.fieldError}>
+            <p id={questionErrId} className={styles.fieldError}>
               {questionErr}
             </p>
           )}
@@ -246,7 +254,7 @@ export function IntakeQuestionsStep({
                 }}
               />
               {optionsErr && (
-                <p id={optionsErrId} role="alert" className={styles.fieldError}>
+                <p id={optionsErrId} className={styles.fieldError}>
                   {optionsErr}
                 </p>
               )}
@@ -275,6 +283,7 @@ export function IntakeQuestionsStep({
         Every extra question lowers bookings. Ask only what you need to prepare. You can ask the
         rest in the session.
       </Notice>
+      <LiveRegion message={said} />
     </div>
   );
 }

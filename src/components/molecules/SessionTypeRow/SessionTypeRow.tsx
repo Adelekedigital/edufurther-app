@@ -82,11 +82,19 @@ export function SessionTypeRow({
   // that is too long, so every row keeps one line of facts. The full list is
   // read out and shown on hover.
   const names = t.topics.map((x) => x.label);
+  // `title`: every topic, on hover, whenever the chip could be cut short;
+  // `full`: also read out, when the visible text is shortened to "+N".
+  const all = names.join(', ');
   const topics =
     names.length > 2
-      ? { label: `${names.slice(0, 2).join(', ')}, +${names.length - 2}`, full: names.join(', ') }
-      : { label: names.join(', ') || 'Any topic' };
-  const facts: { icon: 'schedule' | 'quiz' | 'sell'; label: string; full?: string }[] = [
+      ? { label: `${names.slice(0, 2).join(', ')}, +${names.length - 2}`, full: all, title: all }
+      : { label: all || 'Any topic', title: all || undefined };
+  const facts: {
+    icon: 'schedule' | 'quiz' | 'sell';
+    label: string;
+    full?: string;
+    title?: string;
+  }[] = [
     { icon: 'schedule' as const, label: `${t.durationMin} min` },
     ...(qn === null
       ? []
@@ -142,7 +150,7 @@ export function SessionTypeRow({
                   the item's name and the list could be read twice. */}
               <span
                 aria-hidden={f.full ? true : undefined}
-                title={f.full}
+                title={f.title}
                 className={styles.factText}
               >
                 {f.label}

@@ -39,6 +39,11 @@ describe('IntakeQuestionsStep editor', () => {
     await user.type(question, 'Which intake?');
     await user.type(options, 'Fall{Enter}');
     expect(options).toHaveAccessibleDescription('Add at least two options.');
+    // Said through the always-mounted live region, not a freshly mounted alert.
+    expect(screen.getAllByRole('status').map((el) => el.textContent)).toContain(
+      'Add at least two options.',
+    );
+    expect(screen.queryByRole('alert')).toBeNull();
     expect(options).toHaveAttribute('aria-invalid', 'true');
     expect(question).not.toHaveAttribute('aria-invalid', 'true');
     await user.clear(question);
@@ -70,5 +75,9 @@ describe('IntakeQuestionsStep editor', () => {
     expect(
       question.compareDocumentPosition(options) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+    // The order a keyboard user meets them.
+    question.focus();
+    await user.tab();
+    expect(options).toHaveFocus();
   });
 });

@@ -116,6 +116,30 @@ const CHECKS = [
     },
   },
   {
+    // Product (2026-09-30, PR 123): a session type's facts (length, questions,
+    // topics: two then "+N", ellipsed if still long) stay on one line inside
+    // the row, so every row keeps one height.
+    name: 'session type facts on one line',
+    slug: 'session-type-facts',
+    route: '/session-types',
+    ready: 'article ul',
+    widths: [390, 600, 767, 768, 1024],
+    run: () => {
+      const rows = [...document.querySelectorAll('article')];
+      if (!rows.length) return { cannot: 'no session type rows' };
+      for (const row of rows) {
+        const facts = row.querySelector('ul');
+        if (!facts) continue;
+        const items = [...facts.children].map((li) => li.getBoundingClientRect());
+        if (items.some((r) => Math.abs(r.top - items[0].top) > 1))
+          return `facts wrap in "${row.querySelector('h2')?.textContent}"`;
+        if (facts.getBoundingClientRect().right > row.getBoundingClientRect().right + 0.5)
+          return `facts spill out of "${row.querySelector('h2')?.textContent}"`;
+      }
+      return null;
+    },
+  },
+  {
     // Codex review of #104: Chrome read the sr-only span as a separate block
     // ("Lagos (WAT) , change time zone"). jsdom can't see that, so ask
     // Chrome's own accessibility tree for the name it gives screen readers.
