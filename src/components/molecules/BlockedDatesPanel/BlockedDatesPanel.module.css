@@ -81,6 +81,15 @@
 .remove:hover {
   background: var(--blue-50);
 }
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--red-600);
+}
 .remove[aria-disabled='true'] {
   cursor: progress;
   opacity: 0.5;

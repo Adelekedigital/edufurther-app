@@ -109,11 +109,12 @@ describe('planBlockSave', () => {
       [block('a', '2026-10-12', '2026-10-15')],
       ['2026-10-12', '2026-10-13', '2026-10-14', '2026-10-20', '2026-10-21', '2026-10-23'],
       TODAY,
+      'Africa/Lagos',
     );
     expect(plan.remove).toEqual([]);
     expect(plan.add).toEqual([
-      { start: '2026-10-20', end: '2026-10-22' },
-      { start: '2026-10-23', end: '2026-10-24' },
+      { start: '2026-10-20', end: '2026-10-22', timezone: 'Africa/Lagos' },
+      { start: '2026-10-23', end: '2026-10-24', timezone: 'Africa/Lagos' },
     ]);
   });
 
@@ -122,11 +123,12 @@ describe('planBlockSave', () => {
       [block('a', '2026-10-12', '2026-10-15')],
       ['2026-10-12', '2026-10-14'],
       TODAY,
+      'Africa/Lagos',
     );
     expect(plan.remove.map((e) => e.id)).toEqual(['a']);
     expect(plan.add).toEqual([
-      { start: '2026-10-12', end: '2026-10-13' },
-      { start: '2026-10-14', end: '2026-10-15' },
+      { start: '2026-10-12', end: '2026-10-13', timezone: 'Africa/Lagos' },
+      { start: '2026-10-14', end: '2026-10-15', timezone: 'Africa/Lagos' },
     ]);
   });
 
@@ -139,9 +141,39 @@ describe('planBlockSave', () => {
       ],
       ['2026-09-28', '2026-09-29', '2026-10-02'],
       TODAY,
+      'Africa/Lagos',
     );
     expect(plan.remove.map((e) => e.id)).toEqual(['span']);
-    expect(plan.add).toEqual([{ start: '2026-10-02', end: '2026-10-03' }]);
+    expect(plan.add).toEqual([
+      { start: '2026-10-02', end: '2026-10-03', timezone: 'Africa/Lagos' },
+    ]);
+  });
+
+  it('leaves a past block, and one running through today, alone (the page sends days from today on)', () => {
+    const plan = planBlockSave(
+      [block('past', '2026-09-20', '2026-09-23'), block('through', '2026-09-30', '2026-10-04')],
+      // What the screen sends: the upcoming days only, plus a new one in November.
+      ['2026-10-01', '2026-10-02', '2026-10-03', '2026-11-10'],
+      TODAY,
+      'Africa/Lagos',
+    );
+    expect(plan.remove).toEqual([]);
+    expect(plan.add).toEqual([
+      { start: '2026-11-10', end: '2026-11-11', timezone: 'Africa/Lagos' },
+    ]);
+  });
+
+  it('a split keeps the block’s own zone; new days take the hours’ zone', () => {
+    const plan = planBlockSave(
+      [block('a', '2026-10-12', '2026-10-15')],
+      ['2026-10-12', '2026-10-20'],
+      TODAY,
+      'Europe/London',
+    );
+    expect(plan.add).toEqual([
+      { start: '2026-10-12', end: '2026-10-13', timezone: 'Africa/Lagos' },
+      { start: '2026-10-20', end: '2026-10-21', timezone: 'Europe/London' },
+    ]);
   });
 });
 
@@ -172,7 +204,7 @@ describe('useSaveBlockedDays', () => {
     POST.mockReset();
   });
 
-  it('deletes first, then creates whole-day runs in the hours zone, end exclusive', async () => {
+  it('deletes first, then creates whole-day runs, end exclusive', async () => {
     const order: string[] = [];
     DELETE.mockImplementation(() => (order.push('delete'), reply(204)));
     POST.mockImplementation(() => (order.push('post'), reply(201)));
@@ -186,7 +218,8 @@ describe('useSaveBlockedDays', () => {
       end_date: '2026-10-13',
       start_time: null,
       end_time: null,
-      timezone: 'Europe/London',
+      // Split from a Lagos block: it keeps Lagos, whatever the hours' zone.
+      timezone: 'Africa/Lagos',
       reason: null,
     });
   });

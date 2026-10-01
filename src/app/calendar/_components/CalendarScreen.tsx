@@ -53,14 +53,16 @@ export function CalendarScreen() {
   const defaults = useMentorDefaults(mentorId);
   const saveDefaults = useSaveMentorDefaults(mentorId);
   const draft = useHoursDraft(weekly.data, deviceZone);
-  const booked = useBookedDays(mentorId, draft.timeZone);
+  // Days are counted in the zone the hours are saved in, until a new one is saved.
+  const savedZone = weekly.data?.timeZone ?? draft.timeZone;
+  const booked = useBookedDays(mentorId, savedZone);
   const blocked = useBlockedDays(mentorId);
   const saveBlocked = useSaveBlockedDays(mentorId);
   useLeaveGuard(draft.dirty, 'your weekly hours');
 
   const [windowOpen, setWindowOpen] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
-  const [unblocking, setUnblocking] = useState<string | null>(null);
+  const [unblockError, setUnblockError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState<{ text: string; id: number } | null>(null);
   const announce = useCallback(
     (text: string) => setAnnouncement((a) => ({ text, id: (a?.id ?? 0) + 1 })),
@@ -84,7 +86,7 @@ export function CalendarScreen() {
           message:
             failure.kind === 'offline'
               ? 'You’re offline, so we couldn’t save. Your changes are still here. Save again when you reconnect.'
-              : failure.message.startsWith('Some of')
+              : failure.partial
                 ? failure.message
                 : 'We couldn’t save your hours. Your changes are still here. Try again.',
         }
@@ -117,9 +119,10 @@ export function CalendarScreen() {
     if (!saveDefaults.isPending) setWindowOpen(false);
   };
 
-  // Blocked days are counted in the zone the hours are kept in (what's saved).
-  const blockZone = weekly.data?.timeZone ?? draft.timeZone;
+  const blockZone = savedZone;
   const blockToday = todayIn(blockZone);
+  // One blocked-dates save at a time: each plans from the days as last read.
+  const blockBusy = saveBlocked.isPending;
   const upcomingBlocked = (blocked.data?.days ?? []).filter((d) => d >= blockToday);
   const saveBlocks = (wanted: string[]) =>
     saveBlocked.save({
@@ -129,7 +132,9 @@ export function CalendarScreen() {
       timeZone: blockZone,
     });
   const openBlockOut = () => {
+    if (blockBusy) return;
     saveBlocked.reset();
+    setUnblockError(null);
     setBlockOpen(true);
   };
   const closeBlockOut = () => {
@@ -137,13 +142,15 @@ export function CalendarScreen() {
   };
   // A chip's ×: no confirm (one tap puts it back), the result is read out.
   const unblock = (day: string) => {
-    setUnblocking(day);
-    saveBlocks(upcomingBlocked.filter((d) => d !== day))
-      .then(
-        () => announce(`${shortDay(day)} is open again.`),
-        (e: { message: string }) => announce(e.message),
-      )
-      .finally(() => setUnblocking(null));
+    if (blockBusy) return;
+    setUnblockError(null);
+    saveBlocks(upcomingBlocked.filter((d) => d !== day)).then(
+      () => announce(`${shortDay(day)} is open again.`),
+      (e: { message: string }) => {
+        setUnblockError(e.message);
+        announce(e.message);
+      },
+    );
   };
 
   // A failed save's message belongs to that draft: once the hours match what's
@@ -216,7 +223,7 @@ export function CalendarScreen() {
     );
   else {
     const hasHours = weekly.data!.days.some((d) => d.on);
-    const today = todayIn(draft.timeZone);
+    const today = blockToday;
     const range = bookableRange(today, defaults.data!);
     body = (
       <>
@@ -266,7 +273,12 @@ export function CalendarScreen() {
               <h2 id={monthTitleId} className={styles.cardTitle}>
                 Month at a glance
               </h2>
-              <button type="button" className={styles.blockedBtn} onClick={openBlockOut}>
+              <button
+                type="button"
+                className={styles.blockedBtn}
+                aria-disabled={blockBusy || undefined}
+                onClick={openBlockOut}
+              >
                 <Icon name="event_busy" size={16} className={styles.blockedBtnIcon} />
                 {upcomingBlocked.length
                   ? `Blocked dates (${upcomingBlocked.length})`
@@ -312,7 +324,8 @@ export function CalendarScreen() {
                 days={upcomingBlocked}
                 onEdit={openBlockOut}
                 onUnblock={unblock}
-                busyDay={unblocking}
+                busy={blockBusy}
+                error={unblockError}
               />
             )}
           </section>

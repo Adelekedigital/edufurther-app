@@ -42,17 +42,63 @@ describe('BlockedDatesPanel', () => {
     expect(screen.getByRole('button', { name: 'Block dates' })).toHaveFocus();
   });
 
-  it('a day being unblocked waits', async () => {
+  it('while a save is on its way, every × and Edit wait', async () => {
     const onUnblock = vi.fn();
+    render(<BlockedDatesPanel days={['2026-10-12']} onEdit={vi.fn()} onUnblock={onUnblock} busy />);
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Unblock Mon, Oct 12' }));
+    expect(onUnblock).not.toHaveBeenCalled();
+  });
+
+  it('shows why an unblock failed, under the chips', () => {
     render(
       <BlockedDatesPanel
         days={['2026-10-12']}
         onEdit={vi.fn()}
-        onUnblock={onUnblock}
-        busyDay="2026-10-12"
+        onUnblock={vi.fn()}
+        error="We couldn’t save your blocked dates. Try again."
       />,
     );
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Unblock Mon, Oct 12' }));
-    expect(onUnblock).not.toHaveBeenCalled();
+    expect(screen.getByText('We couldn’t save your blocked dates. Try again.')).toBeInTheDocument();
+  });
+
+  it('after a failed unblock, a later change doesn’t pull focus to a chip', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <BlockedDatesPanel
+        days={['2026-10-12', '2026-10-13']}
+        onEdit={vi.fn()}
+        onUnblock={vi.fn()}
+        busy
+      />,
+    );
+    // busy: the click is ignored; then a click that fails (the day stays).
+    rerender(
+      <BlockedDatesPanel
+        days={['2026-10-12', '2026-10-13']}
+        onEdit={vi.fn()}
+        onUnblock={vi.fn()}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Unblock Mon, Oct 12' }));
+    rerender(
+      <BlockedDatesPanel
+        days={['2026-10-12', '2026-10-13']}
+        onEdit={vi.fn()}
+        onUnblock={vi.fn()}
+        busy
+      />,
+    );
+    rerender(
+      <BlockedDatesPanel
+        days={['2026-10-12', '2026-10-13']}
+        onEdit={vi.fn()}
+        onUnblock={vi.fn()}
+      />,
+    );
+    document.body.focus();
+    (document.activeElement as HTMLElement | null)?.blur();
+    // Later, Oct 12 goes another way (the modal): focus stays where it is.
+    rerender(<BlockedDatesPanel days={['2026-10-13']} onEdit={vi.fn()} onUnblock={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'Unblock Tue, Oct 13' })).not.toHaveFocus();
   });
 });

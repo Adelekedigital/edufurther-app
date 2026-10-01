@@ -128,32 +128,48 @@ const wholeDayBlocks = (exceptions: ExceptionRead[]) =>
   exceptions.filter((e) => e.type === 'block' && !e.start_time && !e.end_time);
 
 /**
- * What to delete and create so the whole-day blocks are exactly `wanted`
- * (backend calendar reply #6: one block per run of days, a run is split by
- * deleting and recreating it). A block whose days are all still wanted stays
- * as it is; part-day blocks and overrides are never touched. Nothing is
- * recreated before `today`: a past day can't be booked anyway.
+ * What to delete and create so the whole-day blocks from `today` on are
+ * exactly `wanted` (backend calendar reply #6: one block per run of days, a
+ * run is split by deleting and recreating it).
+ * - Days before today aren't the page's to change: they count as kept, so a
+ *   past block, or one running through today, stays as it is.
+ * - A block that loses a day is deleted; its other days from today on are
+ *   recreated in the block's own zone. New days take `timeZone` (the hours').
+ * - Part-day blocks and overrides are never touched.
  */
 export function planBlockSave(
   exceptions: ExceptionRead[],
   wanted: readonly string[],
   today: string,
+  timeZone: string,
 ) {
   const want = new Set(wanted);
   const covered = new Set<string>();
+  const zoneOf = new Map<string, string>();
   const remove: ExceptionRead[] = [];
   for (const e of wholeDayBlocks(exceptions)) {
     const days = blockedDaysOf([e]);
-    if (days.every((d) => want.has(d))) days.forEach((d) => covered.add(d));
-    else remove.push(e);
+    if (days.every((d) => d < today || want.has(d))) days.forEach((d) => covered.add(d));
+    else {
+      remove.push(e);
+      for (const d of days) if (!zoneOf.has(d)) zoneOf.set(d, e.timezone);
+    }
   }
-  const add = runsOf([...want].filter((d) => !covered.has(d) && d >= today));
+  const byZone = new Map<string, string[]>();
+  for (const d of want) {
+    if (covered.has(d) || d < today) continue;
+    const zone = zoneOf.get(d) ?? timeZone;
+    byZone.set(zone, [...(byZone.get(zone) ?? []), d]);
+  }
+  const add = [...byZone].flatMap(([zone, days]) =>
+    runsOf(days).map((r) => ({ ...r, timezone: zone })),
+  );
   return { remove, add };
 }
 
 /**
- * Save the blocked days: delete first, then create the runs in `timeZone`
- * (the mentor's hours zone). Separate requests, so a partial failure is
+ * Save the blocked days: delete first, then create the runs (a split block
+ * keeps its zone; new days take `timeZone`, the mentor's hours zone). Separate requests, so a partial failure is
  * possible: the days are re-read either way and the error says so.
  */
 export function useSaveBlockedDays(userId: string | null) {
@@ -164,7 +180,7 @@ export function useSaveBlockedDays(userId: string | null) {
     { exceptions: ExceptionRead[]; wanted: readonly string[]; today: string; timeZone: string }
   >({
     mutationFn: async ({ exceptions, wanted, today, timeZone }) => {
-      const { remove, add } = planBlockSave(exceptions, wanted, today);
+      const { remove, add } = planBlockSave(exceptions, wanted, today, timeZone);
       const path = { user_id: userId! };
       const removed = await Promise.all(
         remove.map((e) =>
@@ -187,7 +203,7 @@ export function useSaveBlockedDays(userId: string | null) {
                 end_date: r.end,
                 start_time: null,
                 end_time: null,
-                timezone: timeZone,
+                timezone: r.timezone,
                 reason: null,
               },
             })

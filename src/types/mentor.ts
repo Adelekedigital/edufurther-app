@@ -79,6 +79,8 @@ export type AppErrorKind =
 
 export type AppError = {
   kind: AppErrorKind;
+  /** Some of a multi-request save went through (e.g. a few weekly hours): the message says so. */
+  partial?: boolean;
   /** Safe to show a user. Never the server's `detail`. */
   message: string;
   status?: number;

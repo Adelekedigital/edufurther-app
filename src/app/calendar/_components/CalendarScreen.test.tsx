@@ -82,13 +82,14 @@ let booked: Remote<BookedDay[]>;
 let blocked: Remote<Blocked>;
 const saveBlocked = vi.fn();
 let blockedPending = false;
+let blockedError: AppError | null = null;
 vi.mock('@/lib/api/data/calendar', () => ({
   useBookedDays: () => booked,
   useBlockedDays: () => blocked,
   useSaveBlockedDays: () => ({
     save: saveBlocked,
     isPending: blockedPending,
-    error: null,
+    error: blockedError,
     reset: vi.fn(),
   }),
 }));
@@ -124,6 +125,7 @@ beforeEach(() => {
   blocked = remote<Blocked>({ days: [], exceptions: [] });
   saveBlocked.mockReset().mockResolvedValue(undefined);
   blockedPending = false;
+  blockedError = null;
 });
 
 const tuesdaySwitch = () => screen.getByRole('switch', { name: 'Tuesday' });
@@ -384,6 +386,42 @@ describe('CalendarScreen', () => {
     await user.click(screen.getByRole('button', { name: 'Unblock Mon, Oct 12' }));
     expect(saveBlocked.mock.calls[0]![0].wanted).toEqual(['2099-10-13']);
     await waitFor(() => expect(announced()).toContain('Mon, Oct 12 is open again.'));
+  });
+
+  it('a failed unblock keeps the chip and says why, on screen and out loud', async () => {
+    blocked = remote<Blocked>({ days: ['2099-10-12'], exceptions: [] });
+    saveBlocked.mockRejectedValue({ message: 'We couldn’t save your blocked dates. Try again.' });
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    await user.click(screen.getByRole('button', { name: 'Unblock Mon, Oct 12' }));
+    expect(
+      await screen.findByText('We couldn’t save your blocked dates. Try again.', { selector: 'p' }),
+    ).toBeInTheDocument();
+    expect(announced()).toContain('We couldn’t save your blocked dates. Try again.');
+    expect(screen.getByRole('button', { name: 'Unblock Mon, Oct 12' })).toBeInTheDocument();
+  });
+
+  it('while a blocked-dates save is on its way, another unblock or the modal waits', async () => {
+    blocked = remote<Blocked>({ days: ['2099-10-12', '2099-10-13'], exceptions: [] });
+    blockedPending = true;
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    await user.click(screen.getByRole('button', { name: 'Unblock Tue, Oct 13' }));
+    await user.click(screen.getByRole('button', { name: 'Blocked dates (2)' }));
+    expect(saveBlocked).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog', { name: 'Block out dates' })).toBeNull();
+  });
+
+  it('a failed modal save keeps the modal open and says why', async () => {
+    blockedError = { kind: 'server', message: 'We couldn’t save your blocked dates. Try again.' };
+    saveBlocked.mockRejectedValue(blockedError);
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    await user.click(screen.getByRole('button', { name: 'Blocked dates' }));
+    const dialog = screen.getByRole('dialog', { name: 'Block out dates' });
+    expect(
+      within(dialog).getByText('We couldn’t save your blocked dates. Try again.'),
+    ).toBeInTheDocument();
   });
 
   it('the block-out modal can’t be closed while its save is on its way', async () => {

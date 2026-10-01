@@ -5,6 +5,8 @@ import styles from './CalendarScreen.module.css';
 export function CalendarSkeleton() {
   return (
     <div role="status" aria-label="Loading your calendar" className={styles.loading}>
+      {/* A live region with no text may not be read out. */}
+      <span className="sr-only">Loading your calendar</span>
       <div className={cx(styles.block, styles.blockSettings)} />
       <div className={styles.columns}>
         <div className={cx(styles.block, styles.blockHours)} />

@@ -13,8 +13,10 @@ type BlockedDatesPanelProps = {
   onEdit: () => void;
   /** A chip's ×: unblock that day. */
   onUnblock: (iso: string) => void;
-  /** A day being unblocked: its × waits. */
-  busyDay?: string | null;
+  /** A save is on its way: every × and Edit wait (each save plans from the days as read). */
+  busy?: boolean;
+  /** Why the last unblock failed; shown under the chips (the page reads it out). */
+  error?: string | null;
 };
 
 /**
@@ -22,7 +24,13 @@ type BlockedDatesPanelProps = {
  * (`hasBlocked`), or the dashed "Away on some days?" card (`noBlocked`). When
  * a chip goes, focus moves to the next chip, else to the action.
  */
-export function BlockedDatesPanel({ days, onEdit, onUnblock, busyDay }: BlockedDatesPanelProps) {
+export function BlockedDatesPanel({
+  days,
+  onEdit,
+  onUnblock,
+  busy = false,
+  error = null,
+}: BlockedDatesPanelProps) {
   const chips = useRef(new Map<string, HTMLButtonElement>());
   const action = useRef<HTMLButtonElement>(null);
   // The day whose chip was removed with focus on it: focus goes next once it's gone.
@@ -34,6 +42,14 @@ export function BlockedDatesPanel({ days, onEdit, onUnblock, busyDay }: BlockedD
     const next = days.find((d) => d > gone) ?? days[days.length - 1];
     (next ? chips.current.get(next) : action.current)?.focus();
   }, [days]);
+  // The save is over and the day is still here (it failed): forget it, so a
+  // later change elsewhere doesn't pull focus to a chip.
+  useEffect(() => {
+    if (!busy && leaving.current && days.includes(leaving.current)) leaving.current = null;
+  }, [busy, days]);
+  const edit = () => {
+    if (!busy) onEdit();
+  };
 
   if (!days.length)
     return (
@@ -46,7 +62,7 @@ export function BlockedDatesPanel({ days, onEdit, onUnblock, busyDay }: BlockedD
           Block holidays or busy weeks so mentees can’t book them. Your weekly hours stay the same.
         </span>
         {/* Calendar v2 draws this one 32px (btnEditBlock with nothing blocked). */}
-        <Button ref={action} size="small" onClick={onEdit}>
+        <Button ref={action} size="small" aria-disabled={busy || undefined} onClick={edit}>
           Block dates
         </Button>
       </div>
@@ -59,7 +75,14 @@ export function BlockedDatesPanel({ days, onEdit, onUnblock, busyDay }: BlockedD
           <Icon name="event_busy" size={20} className={styles.icon} />
           {days.length} blocked date{days.length === 1 ? '' : 's'}
         </span>
-        <Button ref={action} variant="text" size="small" className={styles.edit} onClick={onEdit}>
+        <Button
+          ref={action}
+          variant="text"
+          size="small"
+          className={styles.edit}
+          aria-disabled={busy || undefined}
+          onClick={edit}
+        >
           Edit
         </Button>
       </div>
@@ -75,9 +98,9 @@ export function BlockedDatesPanel({ days, onEdit, onUnblock, busyDay }: BlockedD
               type="button"
               className={styles.remove}
               aria-label={`Unblock ${shortDay(d)}`}
-              aria-disabled={busyDay === d || undefined}
+              aria-disabled={busy || undefined}
               onClick={() => {
-                if (busyDay === d) return;
+                if (busy) return;
                 leaving.current = d;
                 onUnblock(d);
               }}
@@ -87,6 +110,12 @@ export function BlockedDatesPanel({ days, onEdit, onUnblock, busyDay }: BlockedD
           </li>
         ))}
       </ul>
+      {error && (
+        <p className={styles.error}>
+          <Icon name="error" size={16} />
+          {error}
+        </p>
+      )}
     </div>
   );
 }
