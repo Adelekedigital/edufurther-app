@@ -1,12 +1,20 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import {
+  createContext,
+  createElement,
+  useContext,
+  useMemo,
+  useSyncExternalStore,
+  type ReactNode,
+} from 'react';
 import { onSessionChange, type SessionState } from '@/lib/vendor/supabase/browser';
 
 /**
- * The Supabase session as a React store. `unknown` until the SDK reports the
- * stored session (first client render), so nothing flashes guest chrome at a
- * signed-in visitor.
+ * The Supabase session as a React store. Until the SDK reports the stored
+ * session it is the server's hint (the proxy verified the cookie), so the
+ * first render already has the right chrome; with no hint it is `unknown`, so
+ * nothing flashes guest chrome at a signed-in visitor.
  */
 export type Session = { status: 'unknown' } | SessionState;
 
@@ -31,11 +39,37 @@ function subscribe(listener: () => void) {
 
 const UNKNOWN: Session = { status: 'unknown' };
 
+const HintContext = createContext<SessionState | null>(null);
+
+/** The server's answer to "who is signed in?" for the first render (root layout). */
+export function SessionHintProvider({
+  hint,
+  children,
+}: {
+  hint: SessionState | null;
+  children: ReactNode;
+}) {
+  const status = hint?.status ?? null;
+  const userId = hint?.status === 'present' ? hint.userId : null;
+  const value = useMemo<SessionState | null>(
+    () =>
+      status === 'present' && userId
+        ? { status: 'present', userId }
+        : status === 'none'
+          ? { status: 'none' }
+          : null,
+    [status, userId],
+  );
+  return createElement(HintContext.Provider, { value }, children);
+}
+
 export function useSession(): Session {
+  const before: Session = useContext(HintContext) ?? UNKNOWN;
   return useSyncExternalStore(
     subscribe,
-    () => current,
-    () => UNKNOWN,
+    // The SDK's report wins as soon as there is one.
+    () => (current.status === 'unknown' ? before : current),
+    () => before,
   );
 }
 
