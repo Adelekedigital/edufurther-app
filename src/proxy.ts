@@ -10,8 +10,10 @@ import { SESSION_HINT_HEADER, refreshSessionCookies } from '@/lib/vendor/supabas
 export function proxy(request: NextRequest) {
   return refreshSessionCookies(request, (userId) => {
     const headers = new Headers(request.headers);
-    // Always ours: a value a client sent under this name is replaced.
-    headers.set(SESSION_HINT_HEADER, userId ?? 'none');
+    // Always ours: a value a client sent under this name is replaced, or
+    // removed when the check failed (no hint: the browser decides, as before).
+    if (userId === undefined) headers.delete(SESSION_HINT_HEADER);
+    else headers.set(SESSION_HINT_HEADER, userId ?? 'none');
     return NextResponse.next({ request: { headers } });
   });
 }

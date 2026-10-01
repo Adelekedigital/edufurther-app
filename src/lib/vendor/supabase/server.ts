@@ -27,18 +27,22 @@ export async function exchangeCodeForSession(code: string): Promise<boolean> {
  * Request header the proxy sets for the page render: the signed-in user's id,
  * or "none". A hint for which chrome to draw first (no wordmark-then-sidebar
  * swap on refresh), never an authorization claim: data calls carry their own
- * token. The proxy always overwrites whatever a client sent under this name.
+ * token. On every path the proxy runs on, it replaces or removes whatever a
+ * client sent under this name; paths its matcher skips (e.g. ones with a dot)
+ * can carry a client's own value, which only changes that client's chrome.
  */
 export const SESSION_HINT_HEADER = 'x-ef-session';
 
 /**
  * Proxy (src/proxy.ts): refresh an expiring session, pass the new cookies to
  * both the request (for this render) and the response (for the browser), and
- * hand `respond` the verified user id (null: not signed in, or auth is off).
+ * hand `respond` the verified user id: null when there's no session (or auth
+ * is off), undefined when the check failed (e.g. a refresh that didn't reach
+ * Supabase), so a signed-in visitor isn't drawn as a guest by mistake.
  */
 export async function refreshSessionCookies(
   request: NextRequest,
-  respond: (userId: string | null) => NextResponse,
+  respond: (userId: string | null | undefined) => NextResponse,
 ): Promise<NextResponse> {
   if (!authConfigured) return respond(null);
   const refreshed: { name: string; value: string; options: CookieOptions }[] = [];
@@ -52,10 +56,12 @@ export async function refreshSessionCookies(
     },
   });
   // Verifies the JWT and refreshes it when expired.
-  const { data } = await sb.auth.getClaims();
+  // No session: no data and no error. A failed check carries an error.
+  const { data, error } = await sb.auth.getClaims();
   const sub = data?.claims?.sub;
+  const userId = error ? undefined : typeof sub === 'string' && sub !== '' ? sub : null;
   // Built after the refresh, so this render sees the new cookies.
-  const response = respond(typeof sub === 'string' && sub !== '' ? sub : null);
+  const response = respond(userId);
   refreshed.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
   return response;
 }
