@@ -25,7 +25,7 @@ export function TimeStep(p: Props) {
     <>
       <TimezonePicker value={p.zone} onChange={p.onZoneChange} deviceZone={p.deviceZone} />
       {p.missed && !p.picker.time && !p.seeking && !p.slots.isLoading && !p.slots.error && (
-        // PROVISIONAL copy (design request #50).
+        // Our copy, approved as built (design request #50, reply 2026-09-30).
         <p className={styles.missedNote} role="status">
           That time was just taken. Here’s what’s open.
         </p>
