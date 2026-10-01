@@ -1,8 +1,11 @@
 export {};
 
 const signOutCall = vi.fn();
+const stopAutoRefresh = vi.fn(async () => {});
 vi.mock('@supabase/ssr', () => ({
-  createBrowserClient: () => ({ auth: { signOut: (o: unknown) => signOutCall(o) } }),
+  createBrowserClient: () => ({
+    auth: { signOut: (o: unknown) => signOutCall(o), stopAutoRefresh: () => stopAutoRefresh() },
+  }),
 }));
 vi.mock('./config', () => ({
   SUPABASE_URL: 'https://x.supabase.co',
@@ -10,7 +13,7 @@ vi.mock('./config', () => ({
   authConfigured: true,
 }));
 
-const { signOut } = await import('./browser');
+const { signOut, SIGN_OUT_TIMEOUT_MS } = await import('./browser');
 
 const setCookies = () => {
   document.cookie = 'sb-proj-auth-token.0=a; path=/';
@@ -20,6 +23,7 @@ const setCookies = () => {
 
 describe('signOut (Logout ends this device’s session)', () => {
   afterEach(() => {
+    vi.useRealTimers();
     document.cookie.split(';').forEach((c) => {
       const n = c.split('=')[0]!.trim();
       if (n) document.cookie = `${n}=; Max-Age=0; path=/`;
@@ -46,6 +50,30 @@ describe('signOut (Logout ends this device’s session)', () => {
     setCookies();
     signOutCall.mockRejectedValue(new TypeError('network'));
     await signOut();
+    expect(document.cookie).not.toContain('sb-proj-auth-token');
+  });
+
+  it('Supabase never answers: after the time limit the auth cookies are cleared and Logout goes on', async () => {
+    vi.useFakeTimers();
+    setCookies();
+    signOutCall.mockReturnValue(new Promise(() => {}));
+    const done = signOut();
+    await vi.advanceTimersByTimeAsync(SIGN_OUT_TIMEOUT_MS + 1);
+    await done;
+    expect(document.cookie).not.toContain('sb-proj-auth-token');
+  });
+
+  it('gave up, then a late refresh writes the cookie back: auto-refresh stops and the page clears it as it goes', async () => {
+    vi.useFakeTimers();
+    setCookies();
+    signOutCall.mockReturnValue(new Promise(() => {}));
+    const done = signOut();
+    await vi.advanceTimersByTimeAsync(SIGN_OUT_TIMEOUT_MS + 1);
+    await done;
+    expect(stopAutoRefresh).toHaveBeenCalled();
+    // The SDK's refresh lands while /login is loading.
+    document.cookie = 'sb-proj-auth-token=refreshed; path=/';
+    window.dispatchEvent(new Event('pagehide'));
     expect(document.cookie).not.toContain('sb-proj-auth-token');
   });
 });

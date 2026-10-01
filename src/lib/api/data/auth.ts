@@ -1,12 +1,12 @@
 'use client';
 
 import { useCallback } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { hardNavigate } from '@/lib/utils/hardNavigate';
+import { releaseLeaveGuards } from '@/lib/utils/leaveGuard';
 import { safeReturnTo } from '@/lib/utils/safeReturnTo';
 import { sendEmailCode, signOut, verifyEmailCode } from '@/lib/vendor/supabase/browser';
 import { authConfigured } from '@/lib/vendor/supabase/config';
-import { keys } from './keys';
+import { beginSignOut } from './session';
 
 export { authConfigured };
 export type { AuthFailure } from '@/lib/vendor/supabase/browser';
@@ -23,16 +23,25 @@ export function sendSignInCode(email: string, next: string) {
 export const verifySignInCode = verifyEmailCode;
 
 /**
- * Sign out, drop everything cached for this viewer, then load the login page
- * (product, 2026-09-30). The session ends first: /login sends a signed-in
- * visitor straight on to `next`.
+ * Logout (product, 2026-09-30): end the session, then a full load of /login.
+ * - The screen is frozen first (beginSignOut), so it isn't redrawn signed out
+ *   or loading in the moment before /login replaces it.
+ * - The session ends before navigating: /login sends a signed-in visitor on.
+ * - No cache clearing: the full load discards everything this page held.
+ * - /login loads even if signing out fails or stalls (signOut clears this
+ *   device's cookies itself when the SDK can't, or after 3 s).
+ * - Forms' "Leave site?" prompt is released: the user already chose to leave.
  */
 export function useSignOut() {
-  const qc = useQueryClient();
   return useCallback(async () => {
-    await signOut();
-    qc.removeQueries({ queryKey: keys.viewer.all });
-    qc.removeQueries({ queryKey: keys.mentors.all });
+    beginSignOut();
+    // Unsaved changes were confirmed away already (useAppShell asks first).
+    releaseLeaveGuards();
+    try {
+      await signOut();
+    } catch {
+      // signOut clears this device's cookies itself; nothing to add here.
+    }
     hardNavigate('/login');
-  }, [qc]);
+  }, []);
 }

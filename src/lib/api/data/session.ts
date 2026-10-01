@@ -21,10 +21,26 @@ export type Session = { status: 'unknown' } | SessionState;
 let current: Session = { status: 'unknown' };
 const listeners = new Set<() => void>();
 let stop: (() => void) | null = null;
+let leaving = false;
+
+/**
+ * Logout has begun: from here the store ignores the SDK, so the SIGNED_OUT it
+ * fires doesn't redraw the screen as a guest before /login replaces the page.
+ * Never undone: the page is about to be thrown away.
+ */
+export function beginSignOut() {
+  leaving = true;
+  // If the browser ever restores this page from its back/forward cache, it
+  // would show the signed-out user's screen: reload it instead.
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted) window.location.reload();
+  });
+}
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
   stop ??= onSessionChange((s) => {
+    if (leaving) return;
     const same =
       current.status === s.status &&
       (s.status !== 'present' || (current.status === 'present' && current.userId === s.userId));

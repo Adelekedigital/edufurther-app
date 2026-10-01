@@ -73,15 +73,32 @@ export async function verifyEmailCode(
   return error ? { ok: false, reason: failure(error) } : { ok: true };
 }
 
+/** Past this, Logout stops waiting for Supabase and ends the session here. */
+export const SIGN_OUT_TIMEOUT_MS = 3000;
+
 export async function signOut(): Promise<void> {
   const sb = supabase();
   if (!sb) return;
   // 'local': end this device's session. The backend sees the token stop arriving.
-  const { error } = await sb.auth.signOut({ scope: 'local' }).catch((e: unknown) => ({ error: e }));
+  const ended = sb.auth.signOut({ scope: 'local' }).catch((e: unknown) => ({ error: e }));
+  // A stalled request (captive portal, a refresh holding the SDK's lock) would
+  // leave Logout doing nothing.
+  const timedOut = new Promise<{ error: Error }>((resolve) =>
+    setTimeout(() => resolve({ error: new Error('sign-out timed out') }), SIGN_OUT_TIMEOUT_MS),
+  );
+  const { error } = await Promise.race([ended, timedOut]);
   // The SDK keeps the session when it can't refresh it first (Supabase
-  // unreachable). Logging out must still end it here: drop the auth cookies;
-  // the token then expires on its own.
-  if (error) clearAuthCookies();
+  // unreachable) or didn't finish. Logging out must still end it here: drop
+  // the auth cookies; the token then expires on its own.
+  if (error) {
+    clearAuthCookies();
+    // A refresh still in flight could write a new session cookie while /login
+    // loads, leaving the user signed in after Logout. Stop the SDK's own
+    // refreshing, and clear once more as this page goes: after `pagehide`
+    // nothing on it can run.
+    void sb.auth.stopAutoRefresh();
+    window.addEventListener('pagehide', clearAuthCookies, { once: true });
+  }
 }
 
 /** The SDK's session cookies (`sb-<project>-auth-token`, chunked as `.0`, `.1`…). */

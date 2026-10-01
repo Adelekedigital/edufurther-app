@@ -47,4 +47,18 @@ describe('useSession: the server’s hint until the SDK reports', () => {
     act(() => report!({ status: 'present', userId: 'u2' }));
     expect(result.current).toEqual({ status: 'present', userId: 'u2' });
   });
+
+  it('Logout under way (beginSignOut): the SDK’s SIGNED_OUT doesn’t redraw the screen as a guest', async () => {
+    const { useSession, SessionHintProvider, beginSignOut } = await load();
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <SessionHintProvider hint={{ status: 'present', userId: 'u1' }}>
+        {children}
+      </SessionHintProvider>
+    );
+    const { result } = renderHook(() => useSession(), { wrapper });
+    act(() => report!({ status: 'present', userId: 'u1' }));
+    beginSignOut();
+    act(() => report!({ status: 'none' }));
+    expect(result.current).toEqual({ status: 'present', userId: 'u1' });
+  });
 });
