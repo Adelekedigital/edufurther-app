@@ -90,7 +90,15 @@ export async function signOut(): Promise<void> {
   // The SDK keeps the session when it can't refresh it first (Supabase
   // unreachable) or didn't finish. Logging out must still end it here: drop
   // the auth cookies; the token then expires on its own.
-  if (error) clearAuthCookies();
+  if (error) {
+    clearAuthCookies();
+    // A refresh still in flight could write a new session cookie while /login
+    // loads, leaving the user signed in after Logout. Stop the SDK's own
+    // refreshing, and clear once more as this page goes: after `pagehide`
+    // nothing on it can run.
+    void sb.auth.stopAutoRefresh();
+    window.addEventListener('pagehide', clearAuthCookies, { once: true });
+  }
 }
 
 /** The SDK's session cookies (`sb-<project>-auth-token`, chunked as `.0`, `.1`…). */
