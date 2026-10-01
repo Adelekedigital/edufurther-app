@@ -6,6 +6,7 @@ import { ExploreScreen } from './ExploreScreen';
 let canBook = true;
 vi.mock('@/app/_shell/useAppShell', () => ({
   MATCH_CALL_URL: '',
+  isMenteeSide: () => false,
   useAppShell: () => ({
     viewer: { kind: 'guest' },
     member: null,
