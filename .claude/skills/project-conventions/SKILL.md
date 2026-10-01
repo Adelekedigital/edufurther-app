@@ -27,6 +27,7 @@ Sources, so the next sync can diff against them: the design project's
 | Decision | Reason | Would reopen if |
 |---|---|---|
 | Next.js App Router, React, TypeScript | Handoff target (`HANDOFF_PLAN.md`) | — |
+| Vercel deploys `main` only: PR branches get no preview deploy (`git.deploymentEnabled`), and a push that only changes tests, stories, docs, `.claude/`, CI or the check scripts skips the build (`scripts/vercel-ignore.mjs`). PR review rounds go out as one push | Product, 2026-10-01: the Hobby plan allows 100 deployments a day across every session, and the limit was hit. CI doesn't use previews (page-review builds its own) | **On a paid Vercel plan, turn PR preview deploys back on** (drop `git.deploymentEnabled`); keep the ignore step |
 | Build order: DS tokens → DS atoms → shared components → screens | Handoff README §1; `design-sync` | — |
 | Build the **chosen default** of every design tweak; alternatives are "to test" and not built unless product asks | Handoff README §9 | product requests an A/B |
 | One screen per session. This repo's sessions coordinate with the backend session by written handoff requests | User instruction, 2026-09-26 | — |
