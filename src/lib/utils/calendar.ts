@@ -165,3 +165,54 @@ export function shortDay(iso: string): string {
     timeZone: 'UTC',
   });
 }
+
+/** "When will you be back?" choices (Calendar v2 `opts`). */
+export type ReturnChoice = '1w' | '2w' | '1m' | 'custom' | 'indef';
+export const RETURN_CHOICES: { key: ReturnChoice; label: string; days?: number }[] = [
+  { key: '1w', label: '1 week', days: 7 },
+  { key: '2w', label: '2 weeks', days: 14 },
+  { key: '1m', label: '1 month', days: 30 },
+  { key: 'custom', label: 'Pick a date' },
+  { key: 'indef', label: 'Not sure yet' },
+];
+
+/**
+ * The return date a choice means (YYYY-MM-DD in the mentor's zone): null for
+ * "Not sure yet", undefined while "Pick a date" has no date yet.
+ */
+export function returnOnFor(
+  choice: ReturnChoice,
+  today: string,
+  picked: string | null,
+): string | null | undefined {
+  if (choice === 'indef') return null;
+  if (choice === 'custom') return picked ?? undefined;
+  return addDays(today, RETURN_CHOICES.find((c) => c.key === choice)!.days!);
+}
+
+/** Calendar v2 `returnSummary` (reminder copy, product 2026-10-01). */
+export const returnSummary = (back: string | null) =>
+  back
+    ? `We’ll remind you on ${shortDay(back)} to switch back.`
+    : 'You’ll stay busy until you switch yourself back.';
+
+/** Calendar v2 `busyBody`. */
+export const busyBody = (back: string | null) =>
+  back
+    ? `Mentees can’t find or book you right now. We’ll remind you on ${shortDay(back)} to switch back. Sessions you already have stay booked.`
+    : 'Mentees can’t find or book you right now. Sessions you already have stay booked. Switch back whenever you’re ready.';
+
+/** Calendar v2 `doneBody`. */
+export const doneBody = (back: string | null) =>
+  back
+    ? `You’re set as busy. We’ll remind you on ${shortDay(back)} to switch back to available.`
+    : 'You’re set as busy until you switch yourself back to available.';
+
+/** Booked days a busy stretch covers: from today up to (not including) the return day. */
+export function sessionsWhileBusy<T extends { day: string }>(
+  booked: readonly T[],
+  today: string,
+  back: string | null,
+): T[] {
+  return booked.filter((b) => b.day >= today && (back === null || b.day < back));
+}

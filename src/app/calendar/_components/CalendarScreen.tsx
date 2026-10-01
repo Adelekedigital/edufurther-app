@@ -11,14 +11,25 @@ import { Notice } from '@/components/molecules/Notice/Notice';
 import { SettingSummaryRow } from '@/components/molecules/SettingSummaryRow/SettingSummaryRow';
 import { StatusPill } from '@/components/molecules/StatusPill/StatusPill';
 import { BlockOutForm } from '@/components/organisms/BlockOutForm/BlockOutForm';
+import { ReturnDateForm } from '@/components/organisms/ReturnDateForm/ReturnDateForm';
 import { SchedulingWindowForm } from '@/components/organisms/SchedulingWindowForm/SchedulingWindowForm';
+import { VideoProviderForm } from '@/components/organisms/VideoProviderForm/VideoProviderForm';
 import { WeeklyHoursCard } from '@/components/organisms/WeeklyHoursCard/WeeklyHoursCard';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useBlockedDays, useBookedDays, useSaveBlockedDays } from '@/lib/api/data/calendar';
+import { useConferencing, useSaveConferencing } from '@/lib/api/data/conferencing';
+import { useMentorStatus, usePause, useResume } from '@/lib/api/data/mentorStatus';
 import { useMentorDefaults, useSaveMentorDefaults } from '@/lib/api/data/sessionTypes';
 import { useSaveWeeklyHours, useWeeklyHours } from '@/lib/api/data/weeklyHours';
-import { bookableRange, shortDay, todayIn, windowSummary } from '@/lib/utils/calendar';
+import {
+  bookableRange,
+  busyBody,
+  doneBody,
+  shortDay,
+  todayIn,
+  windowSummary,
+} from '@/lib/utils/calendar';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { useOnline } from '@/lib/utils/useOnline';
@@ -58,9 +69,19 @@ export function CalendarScreen() {
   const booked = useBookedDays(mentorId, savedZone);
   const blocked = useBlockedDays(mentorId);
   const saveBlocked = useSaveBlockedDays(mentorId);
+  const status = useMentorStatus(mentorId);
+  const pause = usePause(mentorId);
+  const resume = useResume(mentorId);
+  const video = useConferencing(mentorId);
+  const saveVideo = useSaveConferencing(mentorId);
   useLeaveGuard(draft.dirty, 'your weekly hours');
 
   const [windowOpen, setWindowOpen] = useState(false);
+  const [returnOpen, setReturnOpen] = useState(false);
+  // "Availability updated": the return date just set (null = no date), or closed.
+  const [done, setDone] = useState<{ back: string | null } | null>(null);
+  const [videoOpen, setVideoOpen] = useState(false);
+  const statusSwitch = useRef<HTMLButtonElement>(null);
   const [blockOpen, setBlockOpen] = useState(false);
   const [unblockError, setUnblockError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState<{ text: string; id: number } | null>(null);
@@ -153,6 +174,39 @@ export function CalendarScreen() {
     );
   };
 
+  // Busy: a pause with an optional return date (a reminder, never an automatic
+  // switch back). The pill's switch and "Change return date" open the modal.
+  const busy = !!status.data?.pausedByMentor;
+  const focusSwitch = () => requestAnimationFrame(() => statusSwitch.current?.focus());
+  const openReturn = () => {
+    pause.reset();
+    setReturnOpen(true);
+  };
+  const closeReturn = () => {
+    if (!pause.isPending) setReturnOpen(false);
+  };
+  const setBusy = (back: string | null) =>
+    pause.pause({ returnOn: back }).then(
+      () => {
+        setReturnOpen(false);
+        setDone({ back });
+      },
+      (e: { message: string }) => announce(e.message),
+    );
+  const setAvailable = () => {
+    if (resume.isPending) return;
+    resume.resume().then(
+      () => {
+        announce('You’re available again. Mentees can book you.');
+        focusSwitch();
+      },
+      (e: { message: string }) => announce(e.message),
+    );
+  };
+  const closeVideo = () => {
+    if (!saveVideo.isPending) setVideoOpen(false);
+  };
+
   // A failed save's message belongs to that draft: once the hours match what's
   // saved again, it goes.
   const { error: saveError, reset: resetSave } = saveWeekly;
@@ -228,116 +282,178 @@ export function CalendarScreen() {
     body = (
       <>
         <PageHeader>
-          {/* Busy and its switch come with the busy flow (PR 3); until then only a listed
-              mentor with hours is "Available". */}
-          {member?.isListedMentor && hasHours && (
-            <StatusPill tone="available" label="Available" hint="Open for new bookings" />
+          {/* Busy for a mentor who paused themselves; Available for a listed one with
+              hours. An admin-unlisted mentor gets neither (they can't change it). */}
+          {busy ? (
+            <StatusPill
+              tone="busy"
+              label="Busy"
+              hint={
+                status.data?.returnOn ? `Back ${shortDay(status.data.returnOn)}` : 'No return date'
+              }
+              switchRef={statusSwitch}
+              onChange={(on) => on && setAvailable()}
+            />
+          ) : (
+            status.data?.listed &&
+            hasHours && (
+              <StatusPill
+                tone="available"
+                label="Available"
+                hint="Open for new bookings"
+                switchRef={statusSwitch}
+                onChange={(on) => !on && openReturn()}
+              />
+            )
           )}
         </PageHeader>
 
-        <section aria-label="Session settings" className={styles.settings}>
-          <SettingSummaryRow
-            icon="date_range"
-            title="Scheduling window"
-            summary={windowSummary(defaults.data!)}
-            actionLabel="Change scheduling window"
-            onChange={() => {
-              saveDefaults.reset();
-              setWindowOpen(true);
-            }}
-          />
-        </section>
-
-        <div className={styles.columns}>
-          <WeeklyHoursCard
-            className={styles.hoursCard}
-            days={draft.days}
-            onDays={draft.setDays}
-            timeZone={draft.timeZone}
-            onTimeZone={draft.setTimeZone}
-            titleRef={hoursTitle}
-            deviceZone={deviceZone}
-            otherZones={weekly.data!.otherZones}
-            note={
-              !hasHours && (
-                <div className={styles.note}>
-                  <Notice tone="info" icon="info">
-                    Mentees can find and book you once you set your weekly hours.
-                  </Notice>
-                </div>
-              )
-            }
-          />
-          <section aria-labelledby={monthTitleId} className={styles.monthCard}>
-            <div className={styles.monthHead}>
-              <h2 id={monthTitleId} className={styles.cardTitle}>
-                Month at a glance
-              </h2>
-              <button
-                type="button"
-                className={styles.blockedBtn}
-                aria-disabled={blockBusy || undefined}
-                onClick={openBlockOut}
-              >
-                <Icon name="event_busy" size={16} className={styles.blockedBtnIcon} />
-                {upcomingBlocked.length
-                  ? `Blocked dates (${upcomingBlocked.length})`
-                  : 'Blocked dates'}
-              </button>
-            </div>
-            <MonthPicker
-              readOnly
-              today={today}
-              selected={blocked.data?.days ?? []}
-              booked={(booked.data ?? []).map((b) => b.day)}
-              available={draft.days.flatMap((d, i) => (d.on ? [i] : []))}
-              // Open only where a mentee could book: past the notice, within the window.
-              openFrom={range.from}
-              openUntil={range.until}
-              showLegend
+        {busy && (
+          <section className={styles.busy}>
+            <EmptyState
+              illustration="calendar-grey"
+              title="You’re taking a break"
+              description={busyBody(status.data?.returnOn ?? null)}
             />
-            {(booked.error || blocked.error) && (
-              <div role="alert" className={styles.partial}>
-                <Icon name="error" size={16} className={styles.partialIcon} />
-                <span className={styles.partialMsg}>
-                  {booked.error && blocked.error
-                    ? 'We couldn’t load your booked sessions or blocked dates.'
-                    : booked.error
-                      ? 'We couldn’t load your booked sessions.'
-                      : 'We couldn’t load your blocked dates.'}
-                </span>
-                <Button
-                  variant="text"
-                  size="small"
-                  onClick={() => {
-                    if (booked.error) booked.retry();
-                    if (blocked.error) blocked.retry();
+            <div className={styles.busyActions}>
+              <Button busy={resume.isPending} onClick={setAvailable}>
+                I’m back, set me available
+              </Button>
+              <Button variant="secondary-outlined" onClick={openReturn}>
+                Change return date
+              </Button>
+            </div>
+          </section>
+        )}
+
+        {!busy && (
+          <>
+            <section aria-label="Session settings" className={styles.settings}>
+              <SettingSummaryRow
+                icon="date_range"
+                title="Scheduling window"
+                summary={windowSummary(defaults.data!)}
+                actionLabel="Change scheduling window"
+                onChange={() => {
+                  saveDefaults.reset();
+                  setWindowOpen(true);
+                }}
+              />
+              {video.data && (
+                <SettingSummaryRow
+                  icon="video_chat"
+                  title={
+                    video.data.provider === 'custom'
+                      ? 'Sessions run on your personal meeting link'
+                      : `Sessions run on ${video.data.provider === 'google_meet' ? 'Google Meet' : 'EduFurther video'}`
+                  }
+                  summary={
+                    video.data.provider === 'custom'
+                      ? // PROVISIONAL (calendar design request, PR 3).
+                        'The same link is reused for every mentee.'
+                      : 'A private link is created for every booking. Nothing to paste.'
+                  }
+                  actionLabel="Change video for sessions"
+                  onChange={() => {
+                    saveVideo.reset();
+                    setVideoOpen(true);
                   }}
-                >
-                  Try again
-                </Button>
-              </div>
-            )}
-            {/* While blocked days can't load, the panel would say there are none. */}
-            {!blocked.error && blocked.data && (
-              <BlockedDatesPanel
-                days={upcomingBlocked}
-                onEdit={openBlockOut}
-                onUnblock={unblock}
-                busy={blockBusy}
-                error={unblockError}
+                />
+              )}
+            </section>
+
+            <div className={styles.columns}>
+              <WeeklyHoursCard
+                className={styles.hoursCard}
+                days={draft.days}
+                onDays={draft.setDays}
+                timeZone={draft.timeZone}
+                onTimeZone={draft.setTimeZone}
+                titleRef={hoursTitle}
+                deviceZone={deviceZone}
+                otherZones={weekly.data!.otherZones}
+                note={
+                  !hasHours && (
+                    <div className={styles.note}>
+                      <Notice tone="info" icon="info">
+                        Mentees can find and book you once you set your weekly hours.
+                      </Notice>
+                    </div>
+                  )
+                }
+              />
+              <section aria-labelledby={monthTitleId} className={styles.monthCard}>
+                <div className={styles.monthHead}>
+                  <h2 id={monthTitleId} className={styles.cardTitle}>
+                    Month at a glance
+                  </h2>
+                  <button
+                    type="button"
+                    className={styles.blockedBtn}
+                    aria-disabled={blockBusy || undefined}
+                    onClick={openBlockOut}
+                  >
+                    <Icon name="event_busy" size={16} className={styles.blockedBtnIcon} />
+                    {upcomingBlocked.length
+                      ? `Blocked dates (${upcomingBlocked.length})`
+                      : 'Blocked dates'}
+                  </button>
+                </div>
+                <MonthPicker
+                  readOnly
+                  today={today}
+                  selected={blocked.data?.days ?? []}
+                  booked={(booked.data ?? []).map((b) => b.day)}
+                  available={draft.days.flatMap((d, i) => (d.on ? [i] : []))}
+                  // Open only where a mentee could book: past the notice, within the window.
+                  openFrom={range.from}
+                  openUntil={range.until}
+                  showLegend
+                />
+                {(booked.error || blocked.error) && (
+                  <div role="alert" className={styles.partial}>
+                    <Icon name="error" size={16} className={styles.partialIcon} />
+                    <span className={styles.partialMsg}>
+                      {booked.error && blocked.error
+                        ? 'We couldn’t load your booked sessions or blocked dates.'
+                        : booked.error
+                          ? 'We couldn’t load your booked sessions.'
+                          : 'We couldn’t load your blocked dates.'}
+                    </span>
+                    <Button
+                      variant="text"
+                      size="small"
+                      onClick={() => {
+                        if (booked.error) booked.retry();
+                        if (blocked.error) blocked.retry();
+                      }}
+                    >
+                      Try again
+                    </Button>
+                  </div>
+                )}
+                {/* While blocked days can't load, the panel would say there are none. */}
+                {!blocked.error && blocked.data && (
+                  <BlockedDatesPanel
+                    days={upcomingBlocked}
+                    onEdit={openBlockOut}
+                    onUnblock={unblock}
+                    busy={blockBusy}
+                    error={unblockError}
+                  />
+                )}
+              </section>
+            </div>
+
+            {draft.dirty && (
+              <SaveBar
+                saving={saveWeekly.isPending}
+                problem={problem}
+                onDiscard={onDiscard}
+                onSave={onSave}
               />
             )}
-          </section>
-        </div>
-
-        {draft.dirty && (
-          <SaveBar
-            saving={saveWeekly.isPending}
-            problem={problem}
-            onDiscard={onDiscard}
-            onSave={onSave}
-          />
+          </>
         )}
       </>
     );
@@ -387,11 +503,79 @@ export function CalendarScreen() {
             booked={(booked.data ?? []).filter((b) => b.day >= blockToday)}
             saving={saveBlocked.isPending}
             error={saveBlocked.error?.message ?? null}
+            onEdit={() => saveBlocked.error && saveBlocked.reset()}
             onSave={(days) =>
               saveBlocks(days).then(
                 () => {
                   setBlockOpen(false);
-                  announce('Your blocked dates are saved.');
+                  announce('Blocked dates saved.');
+                },
+                (e: { message: string }) => announce(e.message),
+              )
+            }
+          />
+        </ModalShell>
+      )}
+      {returnOpen && (
+        <ModalShell title="When will you be back?" size="md" onClose={closeReturn}>
+          <ReturnDateForm
+            today={blockToday}
+            booked={booked.data ?? []}
+            saving={pause.isPending}
+            error={pause.error?.message ?? null}
+            onCancel={closeReturn}
+            onSave={setBusy}
+          />
+        </ModalShell>
+      )}
+      {done && (
+        <ModalShell
+          title="Availability updated"
+          size="sm"
+          onClose={() => {
+            setDone(null);
+            focusSwitch();
+          }}
+        >
+          <div className={styles.done}>
+            <EmptyState
+              illustration="calendar"
+              size={120}
+              title={`See you soon, ${member?.firstName ?? 'there'}`}
+              description={doneBody(done.back)}
+            />
+            <Button
+              size="large"
+              fullWidth
+              onClick={() => {
+                setDone(null);
+                focusSwitch();
+              }}
+            >
+              Done
+            </Button>
+          </div>
+        </ModalShell>
+      )}
+      {videoOpen && video.data && (
+        <ModalShell
+          title="Video for sessions"
+          subtitle="We create a private link for each booking and add it to your invite and your mentee’s."
+          icon="video_chat"
+          size="lg"
+          onClose={closeVideo}
+        >
+          <VideoProviderForm
+            initial={video.data.provider}
+            customUrl={video.data.customUrl}
+            saving={saveVideo.isPending}
+            error={saveVideo.error?.message ?? null}
+            onCancel={closeVideo}
+            onSave={(provider) =>
+              saveVideo.save({ provider, customUrl: video.data?.customUrl ?? null }).then(
+                () => {
+                  setVideoOpen(false);
+                  announce('Your video setting is saved.');
                 },
                 (e: { message: string }) => announce(e.message),
               )

@@ -30,7 +30,9 @@ export const Chip = forwardRef<HTMLButtonElement, ChipProps>(function Chip(
     <button
       ref={ref}
       type={type ?? 'button'}
-      aria-pressed={pressed}
+      // In a radiogroup (one choice of several) it's a radio: checked, not pressed.
+      aria-pressed={rest.role === 'radio' ? undefined : pressed}
+      aria-checked={rest.role === 'radio' ? pressed : undefined}
       className={cx(
         styles.chip,
         look === 'pill' && styles.pill,

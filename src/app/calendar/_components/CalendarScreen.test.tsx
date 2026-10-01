@@ -1,6 +1,8 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Blocked, BookedDay } from '@/lib/api/data/calendar';
+import type { Conferencing } from '@/lib/api/data/conferencing';
+import type { MentorStatus } from '@/lib/api/data/mentorStatus';
 import type { WeeklyHours } from '@/lib/api/data/weeklyHours';
 import type { MentorDefaults } from '@/lib/api/data/sessionTypes';
 import { emptyWeek } from '@/lib/utils/sessionTypeDraft';
@@ -78,6 +80,21 @@ vi.mock('@/lib/api/data/sessionTypes', () => ({
     reset: vi.fn(),
   }),
 }));
+let status: Remote<MentorStatus>;
+const pause = vi.fn();
+const resume = vi.fn();
+let pauseError: AppError | null = null;
+vi.mock('@/lib/api/data/mentorStatus', () => ({
+  useMentorStatus: () => status,
+  usePause: () => ({ pause, isPending: false, error: pauseError, reset: vi.fn() }),
+  useResume: () => ({ resume, isPending: false, error: null, reset: vi.fn() }),
+}));
+let video: Remote<Conferencing>;
+const saveVideo = vi.fn();
+vi.mock('@/lib/api/data/conferencing', () => ({
+  useConferencing: () => video,
+  useSaveConferencing: () => ({ save: saveVideo, isPending: false, error: null, reset: vi.fn() }),
+}));
 let booked: Remote<BookedDay[]>;
 let blocked: Remote<Blocked>;
 const saveBlocked = vi.fn();
@@ -126,6 +143,12 @@ beforeEach(() => {
   saveBlocked.mockReset().mockResolvedValue(undefined);
   blockedPending = false;
   blockedError = null;
+  status = remote<MentorStatus>({ listed: true, pausedByMentor: false, returnOn: null });
+  pause.mockReset().mockResolvedValue(undefined);
+  resume.mockReset().mockResolvedValue(undefined);
+  pauseError = null;
+  video = remote<Conferencing>({ provider: 'daily', customUrl: null, isDefault: true });
+  saveVideo.mockReset().mockResolvedValue(undefined);
 });
 
 const tuesdaySwitch = () => screen.getByRole('switch', { name: 'Tuesday' });
@@ -307,8 +330,8 @@ describe('CalendarScreen', () => {
     expect(screen.queryByText('Available')).toBeNull();
   });
 
-  it('an unlisted mentor isn’t shown as available (busy comes with PR 3)', () => {
-    viewer = mentor({ isListedMentor: false });
+  it('an admin-unlisted mentor sees no status (they can’t change it)', () => {
+    status = remote<MentorStatus>({ listed: false, pausedByMentor: false, returnOn: null });
     render(<CalendarScreen />);
     expect(screen.queryByText('Available')).toBeNull();
   });
@@ -373,7 +396,7 @@ describe('CalendarScreen', () => {
     expect(saveBlocked).toHaveBeenCalledTimes(1);
     expect(saveBlocked.mock.calls[0]![0].wanted).toHaveLength(1);
     expect(saveBlocked.mock.calls[0]![0].timeZone).toBe('Africa/Lagos');
-    expect(await screen.findByText('Your blocked dates are saved.')).toBeInTheDocument();
+    expect(await screen.findByText('Blocked dates saved.')).toBeInTheDocument();
     expect(screen.queryByRole('dialog', { name: 'Block out dates' })).toBeNull();
   });
 
@@ -448,5 +471,77 @@ describe('CalendarScreen', () => {
     expect(
       screen.getAllByRole('link', { name: 'Log in' }).map((a) => a.getAttribute('href')),
     ).toContain('/login?next=%2Fcalendar');
+  });
+});
+
+describe('CalendarScreen: busy and video', () => {
+  it('switching off asks when they’ll be back; Set as busy pauses with that date', async () => {
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    await user.click(screen.getByRole('switch', { name: 'Available for new bookings' }));
+    const dialog = screen.getByRole('dialog', { name: 'When will you be back?' });
+    expect(within(dialog).getByRole('button', { name: 'Set as busy' })).toBeDisabled();
+    await user.click(within(dialog).getByRole('radio', { name: 'Not sure yet' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Set as busy' }));
+    expect(pause).toHaveBeenCalledWith({ returnOn: null });
+    expect(await screen.findByRole('dialog', { name: 'Availability updated' })).toHaveTextContent(
+      'See you soon, Gbenga',
+    );
+    expect(
+      screen.getByText('You’re set as busy until you switch yourself back to available.'),
+    ).toBeInTheDocument();
+  });
+
+  it('while busy: the break card replaces the editing; I’m back resumes', async () => {
+    status = remote<MentorStatus>({ listed: false, pausedByMentor: true, returnOn: '2099-10-16' });
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    expect(screen.getByText('Busy')).toBeInTheDocument();
+    expect(screen.getByText('Back Fri, Oct 16')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'You’re taking a break' })).toBeInTheDocument();
+    expect(
+      screen.getByText(/We’ll remind you on Fri, Oct 16 to switch back\./),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Weekly hours' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'I’m back, set me available' }));
+    expect(resume).toHaveBeenCalled();
+    await waitFor(() => expect(announced()).toContain('You’re available again.'));
+  });
+
+  it('Change return date opens the modal again', async () => {
+    status = remote<MentorStatus>({ listed: false, pausedByMentor: true, returnOn: null });
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    expect(screen.getByText('No return date')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Change return date' }));
+    expect(screen.getByRole('dialog', { name: 'When will you be back?' })).toBeInTheDocument();
+  });
+
+  it('a failed pause keeps the modal open and says why', async () => {
+    pauseError = {
+      kind: 'server',
+      status: 409,
+      message:
+        'Your profile was taken off the listing by EduFurther, so you can’t change this yourself. Contact support.',
+    };
+    pause.mockRejectedValue(pauseError);
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    await user.click(screen.getByRole('switch', { name: 'Available for new bookings' }));
+    const dialog = screen.getByRole('dialog', { name: 'When will you be back?' });
+    expect(within(dialog).getByText(/taken off the listing by EduFurther/)).toBeInTheDocument();
+  });
+
+  it('shows where sessions run and saves a new provider; no Zoom', async () => {
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    expect(screen.getByText('Sessions run on EduFurther video')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Change video for sessions' }));
+    const dialog = screen.getByRole('dialog', { name: 'Video for sessions' });
+    expect(within(dialog).queryByText(/Zoom/)).toBeNull();
+    await user.click(within(dialog).getByRole('radio', { name: /Google Meet/ }));
+    await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+    expect(saveVideo).toHaveBeenCalledWith({ provider: 'google_meet', customUrl: null });
+    await waitFor(() => expect(announced()).toContain('Your video setting is saved.'));
   });
 });

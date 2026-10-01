@@ -18,6 +18,8 @@ type BlockOutFormProps = {
   saving: boolean;
   /** Our copy for a save that failed; the page announces it. */
   error: string | null;
+  /** A day was picked or unpicked: the page clears a failed save's message. */
+  onEdit?: () => void;
   onSave: (days: string[]) => void;
 };
 
@@ -35,12 +37,24 @@ export function saveBlockLabel(initial: readonly string[], draft: readonly strin
  * tap days on, a note when a picked day has a session (blocking won't cancel
  * it), then the save. The draft lives here: closing the modal drops it.
  */
-export function BlockOutForm({ today, initial, booked, saving, error, onSave }: BlockOutFormProps) {
+export function BlockOutForm({
+  today,
+  initial,
+  booked,
+  saving,
+  error,
+  onEdit,
+  onSave,
+}: BlockOutFormProps) {
   const [draft, setDraft] = useState(initial);
-  const toggle = (d: string) =>
+  const toggle = (d: string) => {
+    onEdit?.();
     setDraft((s) => (s.includes(d) ? s.filter((x) => x !== d) : [...s, d].sort()));
-  const label = saveBlockLabel(initial, draft);
-  const clashes = booked.filter((b) => draft.includes(b.day));
+  };
+  // After a failed save the button retries (Calendar v2 `saveBlockLabel`).
+  const label = error ? 'Try again' : saveBlockLabel(initial, draft);
+  // Only days picked now: a day already blocked was already said (design `hitDays`).
+  const clashes = booked.filter((b) => draft.includes(b.day) && !initial.includes(b.day));
   const clashDays = [...new Set(clashes.map((c) => c.day))].sort();
   return (
     <div className={styles.body}>
@@ -82,16 +96,16 @@ export function BlockOutForm({ today, initial, booked, saving, error, onSave }: 
         </Notice>
       )}
       {error && (
-        <p className={styles.error}>
-          <Icon name="error" size={18} />
+        <span role="alert" className={styles.error}>
+          <Icon name="error" size={16} className={styles.errorIcon} />
           {error}
-        </p>
+        </span>
       )}
       <Button
         size="large"
         fullWidth
         busy={saving}
-        disabled={label === 'Select dates to block'}
+        disabled={saveBlockLabel(initial, draft) === 'Select dates to block'}
         onClick={() => onSave(draft)}
       >
         {label}

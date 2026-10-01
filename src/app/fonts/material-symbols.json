@@ -100,11 +100,12 @@
     "upload_file",
     "verified_user",
     "video_call",
+    "video_chat",
     "videocam",
     "visibility",
     "visibility_off",
     "work",
     "workspace_premium"
   ],
-  "sha256": "a7228c42c220cbf5e4522ac5e51717c626915cb068e8fd763dc4ea375467495b"
+  "sha256": "842c9e4426da878bd3e43ce88daf02f64423bbbbfe08d3b0bd7fa6213818729d"
 }

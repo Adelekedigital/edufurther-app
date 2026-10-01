@@ -1,0 +1,51 @@
+/* Calendar v2 `returnOpen`: the modal's children, spaced as Modal.dc.html (--space-5). */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+/* Pulled up under the modal title (design margin-top: calc(space-3 * -1)). */
+.intro {
+  margin: calc(var(--space-3) * -1) 0 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--ink-50);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+}
+.summaryIcon {
+  color: var(--blue-500);
+}
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--red-600);
+}
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+@media (max-width: 767px) {
+  .footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}

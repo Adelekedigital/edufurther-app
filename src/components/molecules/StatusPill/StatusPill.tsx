@@ -1,3 +1,4 @@
+import type { Ref } from 'react';
 import { Switch } from '@/components/atoms/Switch/Switch';
 import { cx } from '@/lib/utils/cx';
 import styles from './StatusPill.module.css';
@@ -10,10 +11,12 @@ type StatusPillProps = {
   hint: string;
   /** With a handler, the pill carries the design's switch (on = available). */
   onChange?: (available: boolean) => void;
+  /** The switch, for focus to land on after a modal it opened closes. */
+  switchRef?: Ref<HTMLButtonElement>;
 };
 
 /** Calendar v2 header status: a dot, label and hint, and the availability switch. */
-export function StatusPill({ tone, label, hint, onChange }: StatusPillProps) {
+export function StatusPill({ tone, label, hint, onChange, switchRef }: StatusPillProps) {
   return (
     <div className={cx(styles.pill, styles[tone])}>
       <span aria-hidden className={styles.dot} />
@@ -23,6 +26,7 @@ export function StatusPill({ tone, label, hint, onChange }: StatusPillProps) {
       </div>
       {onChange && (
         <Switch
+          ref={switchRef}
           checked={tone === 'available'}
           onChange={onChange}
           aria-label="Available for new bookings"

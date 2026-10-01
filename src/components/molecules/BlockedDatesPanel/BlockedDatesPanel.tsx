@@ -59,7 +59,8 @@ export function BlockedDatesPanel({
           Away on some days?
         </span>
         <span className={styles.body}>
-          Block holidays or busy weeks so mentees can’t book them. Your weekly hours stay the same.
+          {/* Ours: "Your weekly hours stay the same." dropped (product 2026-10-01: it confused). */}
+          Block holidays or busy weeks so mentees can’t book them.
         </span>
         {/* Calendar v2 draws this one 32px (btnEditBlock with nothing blocked). */}
         <Button ref={action} size="small" aria-disabled={busy || undefined} onClick={edit}>
