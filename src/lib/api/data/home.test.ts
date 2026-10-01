@@ -1,7 +1,4 @@
-import { fetchHome, homeFor } from './home';
-
-const token = vi.fn<() => Promise<string | null>>();
-vi.mock('@/lib/vendor/supabase/server', () => ({ serverAccessToken: () => token() }));
+import { HOME_ME_TIMEOUT_MS, fetchHome, homeFor } from './home';
 
 type Me = Parameters<typeof homeFor>[0];
 const mentorProfile = {} as NonNullable<NonNullable<Me>['mentor_profile']>;
@@ -18,62 +15,73 @@ describe('homeFor: where / sends each viewer (product, 2026-09-30)', () => {
   });
 });
 
+const json = (body: object) =>
+  new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json' } });
+
 describe('fetchHome', () => {
+  beforeEach(() => {
+    vi.stubEnv('NEXT_PUBLIC_MOCK_VIEWER', '');
+    vi.stubEnv('BACKEND_URL', 'https://api.test');
+  });
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
-    token.mockReset();
+    vi.useRealTimers();
   });
 
-  it('verified signed out: Explore without asking the backend', async () => {
-    vi.stubEnv('NEXT_PUBLIC_MOCK_VIEWER', '');
+  it('no token (signed out, or the proxy couldn’t verify): Explore without asking the backend', async () => {
     const f = vi.fn();
     vi.stubGlobal('fetch', f);
-    expect(await fetchHome({ signedIn: false })).toBe('/explore');
+    expect(await fetchHome({ accessToken: null })).toBe('/explore');
     expect(f).not.toHaveBeenCalled();
   });
 
-  it('signed in: asks /me with the user’s own token, uncached', async () => {
-    vi.stubEnv('NEXT_PUBLIC_MOCK_VIEWER', '');
-    vi.stubEnv('BACKEND_URL', 'https://api.test');
-    token.mockResolvedValue('tok');
-    const f = vi.fn(
-      async (_req: Request) =>
-        new Response(JSON.stringify({ is_admin: false, mentor_profile: { id: 'm' } }), {
-          headers: { 'content-type': 'application/json' },
-        }),
+  it('a token: asks /me with it, uncached, and goes where the answer says', async () => {
+    const f = vi.fn(async (_req: Request) =>
+      json({ is_admin: false, mentor_profile: { id: 'm' } }),
     );
     vi.stubGlobal('fetch', f);
-    expect(await fetchHome({ signedIn: true })).toBe('/dashboard');
+    expect(await fetchHome({ accessToken: 'tok' })).toBe('/dashboard');
     const req = f.mock.calls[0]![0];
     expect(req.url).toBe('https://api.test/api/v1/me');
     expect(req.headers.get('authorization')).toBe('Bearer tok');
     expect(req.cache).toBe('no-store');
   });
 
-  it('a failed /me (401, network) or no token: Explore, which shows the account notices', async () => {
-    vi.stubEnv('NEXT_PUBLIC_MOCK_VIEWER', '');
-    vi.stubEnv('BACKEND_URL', 'https://api.test');
-    token.mockResolvedValue('tok');
+  it('a failed /me (401, network): Explore, which shows the account notices', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => new Response(null, { status: 401 })),
     );
-    expect(await fetchHome({ signedIn: true })).toBe('/explore');
+    expect(await fetchHome({ accessToken: 'tok' })).toBe('/explore');
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => Promise.reject(new TypeError('fetch failed'))),
     );
-    expect(await fetchHome({ signedIn: true })).toBe('/explore');
-    token.mockResolvedValue(null);
-    expect(await fetchHome({ signedIn: true })).toBe('/explore');
+    expect(await fetchHome({ accessToken: 'tok' })).toBe('/explore');
+  });
+
+  it(`a /me slower than ${HOME_ME_TIMEOUT_MS} ms: stops waiting and goes to Explore`, async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (req: Request) =>
+          new Promise<Response>((_resolve, reject) =>
+            req.signal.addEventListener('abort', () => reject(req.signal.reason)),
+          ),
+      ),
+    );
+    const home = fetchHome({ accessToken: 'tok' });
+    await vi.advanceTimersByTimeAsync(HOME_ME_TIMEOUT_MS + 1);
+    expect(await home).toBe('/explore');
   });
 
   it('mock mode: the env viewer, or ?mockViewer (own keys only)', async () => {
     vi.stubEnv('NEXT_PUBLIC_MOCK_VIEWER', 'mentee');
-    expect(await fetchHome({ signedIn: false })).toBe('/explore');
-    expect(await fetchHome({ signedIn: false, mockViewer: 'mentor' })).toBe('/dashboard');
-    expect(await fetchHome({ signedIn: false, mockViewer: 'admin' })).toBe('/admin');
-    expect(await fetchHome({ signedIn: false, mockViewer: 'constructor' })).toBe('/explore');
+    expect(await fetchHome({ accessToken: null })).toBe('/explore');
+    expect(await fetchHome({ accessToken: null, mockViewer: 'mentor' })).toBe('/dashboard');
+    expect(await fetchHome({ accessToken: null, mockViewer: 'admin' })).toBe('/admin');
+    expect(await fetchHome({ accessToken: null, mockViewer: 'constructor' })).toBe('/explore');
   });
 });

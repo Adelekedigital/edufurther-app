@@ -74,8 +74,24 @@ export async function verifyEmailCode(
 }
 
 export async function signOut(): Promise<void> {
+  const sb = supabase();
+  if (!sb) return;
   // 'local': end this device's session. The backend sees the token stop arriving.
-  await supabase()?.auth.signOut({ scope: 'local' });
+  const { error } = await sb.auth.signOut({ scope: 'local' }).catch((e: unknown) => ({ error: e }));
+  // The SDK keeps the session when it can't refresh it first (Supabase
+  // unreachable). Logging out must still end it here: drop the auth cookies;
+  // the token then expires on its own.
+  if (error) clearAuthCookies();
+}
+
+/** The SDK's session cookies (`sb-<project>-auth-token`, chunked as `.0`, `.1`…). */
+function clearAuthCookies() {
+  for (const part of document.cookie.split(';')) {
+    const name = part.split('=')[0]?.trim();
+    if (name && /^sb-.+-auth-token(\.\d+)?$/.test(name)) {
+      document.cookie = `${name}=; Max-Age=0; path=/`;
+    }
+  }
 }
 
 /**

@@ -13,6 +13,7 @@ vi.mock('@supabase/ssr', () => ({
         o.cookies.setAll([{ name: 'sb-x-auth-token', value: 'fresh', options: { path: '/' } }]);
         return getClaims();
       },
+      getSession: async () => ({ data: { session: { access_token: 'tok-fresh' } } }),
     },
   }),
 }));
@@ -51,5 +52,22 @@ describe('proxy: the session hint for the render', () => {
     expect(forwarded(res, 'x-ef-session')).toBeNull();
     // The client's value is dropped too, not passed through.
     expect(res.headers.get('x-middleware-override-headers')).not.toContain('x-ef-session');
+  });
+
+  it('/ gets the verified (refreshed) token for its server call; other pages never do', async () => {
+    getClaims.mockResolvedValue({ data: { claims: { sub: 'u1' } }, error: null });
+    const home = await proxy(new NextRequest('https://app.test/'));
+    expect(forwarded(home, 'x-ef-access-token')).toBe('tok-fresh');
+    const explore = await proxy(new NextRequest('https://app.test/explore'));
+    expect(forwarded(explore, 'x-ef-access-token')).toBeNull();
+  });
+
+  it('a token header a client sent is removed, never passed on', async () => {
+    getClaims.mockResolvedValue({ data: null, error: null });
+    const res = await proxy(
+      new NextRequest('https://app.test/', { headers: { 'x-ef-access-token': 'someone-elses' } }),
+    );
+    expect(forwarded(res, 'x-ef-access-token')).toBeNull();
+    expect(res.headers.get('x-middleware-override-headers')).not.toContain('x-ef-access-token');
   });
 });

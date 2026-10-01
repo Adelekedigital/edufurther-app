@@ -24,21 +24,6 @@ export async function exchangeCodeForSession(code: string): Promise<boolean> {
 }
 
 /**
- * The signed-in user's access token, for a server-side API call during a page
- * render (the proxy refreshed it just before). Read-only: a render can't set
- * cookies. Unverified here; the backend verifies it like any bearer token.
- */
-export async function serverAccessToken(): Promise<string | null> {
-  if (!authConfigured) return null;
-  const jar = await cookies();
-  const sb = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    cookies: { getAll: () => jar.getAll(), setAll: () => {} },
-  });
-  const { data } = await sb.auth.getSession();
-  return data.session?.access_token ?? null;
-}
-
-/**
  * Request header the proxy sets for the page render: the signed-in user's id,
  * or "none". A hint for which chrome to draw first (no wordmark-then-sidebar
  * swap on refresh), never an authorization claim: data calls carry their own
@@ -49,6 +34,16 @@ export async function serverAccessToken(): Promise<string | null> {
 export const SESSION_HINT_HEADER = 'x-ef-session';
 
 /**
+ * Request header carrying the access token the proxy just verified (and, if
+ * needed, refreshed and saved), for the one render that calls the API on the
+ * server (`/`). The render never builds a Supabase client: one there could
+ * refresh the token without being able to save the new cookies, leaving the
+ * browser a rotated-out refresh token. Set only for `/`; any client value is
+ * removed.
+ */
+export const ACCESS_TOKEN_HEADER = 'x-ef-access-token';
+
+/**
  * Proxy (src/proxy.ts): refresh an expiring session, pass the new cookies to
  * both the request (for this render) and the response (for the browser), and
  * hand `respond` the verified user id: null when there's no session (or auth
@@ -57,9 +52,12 @@ export const SESSION_HINT_HEADER = 'x-ef-session';
  */
 export async function refreshSessionCookies(
   request: NextRequest,
-  respond: (userId: string | null | undefined) => NextResponse,
+  respond: (session: {
+    userId: string | null | undefined;
+    accessToken: string | null;
+  }) => NextResponse,
 ): Promise<NextResponse> {
-  if (!authConfigured) return respond(null);
+  if (!authConfigured) return respond({ userId: null, accessToken: null });
   const refreshed: { name: string; value: string; options: CookieOptions }[] = [];
   const sb = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     cookies: {
@@ -75,8 +73,12 @@ export async function refreshSessionCookies(
   const { data, error } = await sb.auth.getClaims();
   const sub = data?.claims?.sub;
   const userId = error ? undefined : typeof sub === 'string' && sub !== '' ? sub : null;
+  // The token getClaims just checked (any refresh already went to setAll).
+  const accessToken = userId
+    ? ((await sb.auth.getSession()).data.session?.access_token ?? null)
+    : null;
   // Built after the refresh, so this render sees the new cookies.
-  const response = respond(userId);
+  const response = respond({ userId, accessToken });
   refreshed.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
   return response;
 }

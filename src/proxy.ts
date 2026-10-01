@@ -1,5 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { SESSION_HINT_HEADER, refreshSessionCookies } from '@/lib/vendor/supabase/server';
+import {
+  ACCESS_TOKEN_HEADER,
+  SESSION_HINT_HEADER,
+  refreshSessionCookies,
+} from '@/lib/vendor/supabase/server';
 
 /**
  * Next 16 proxy (formerly middleware): keeps the Supabase session cookie fresh
@@ -8,12 +12,17 @@ import { SESSION_HINT_HEADER, refreshSessionCookies } from '@/lib/vendor/supabas
  * so it draws the member or guest chrome first instead of swapping after load.
  */
 export function proxy(request: NextRequest) {
-  return refreshSessionCookies(request, (userId) => {
+  return refreshSessionCookies(request, ({ userId, accessToken }) => {
     const headers = new Headers(request.headers);
     // Always ours: a value a client sent under this name is replaced, or
     // removed when the check failed (no hint: the browser decides, as before).
     if (userId === undefined) headers.delete(SESSION_HINT_HEADER);
     else headers.set(SESSION_HINT_HEADER, userId ?? 'none');
+    // Only `/` calls the API on the server (to pick the viewer's home).
+    headers.delete(ACCESS_TOKEN_HEADER);
+    if (accessToken && request.nextUrl.pathname === '/') {
+      headers.set(ACCESS_TOKEN_HEADER, accessToken);
+    }
     return NextResponse.next({ request: { headers } });
   });
 }

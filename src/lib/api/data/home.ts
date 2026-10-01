@@ -1,6 +1,5 @@
 import createClient from 'openapi-fetch';
 import type { components, paths } from '@/lib/api/generated/schema';
-import { serverAccessToken } from '@/lib/vendor/supabase/server';
 
 /**
  * Where `/` sends each viewer (product, 2026-09-30). Server-only: app/page.tsx
@@ -26,16 +25,19 @@ const MOCK_ROLES: Record<string, Me | null> = {
   admin: { is_admin: true, mentor_profile: null },
 };
 
+/** Past this, `/` stops waiting and sends the viewer to Explore, which loads them itself. */
+export const HOME_ME_TIMEOUT_MS = 2500;
+
 /**
- * The viewer's home. `signedIn: false` (the proxy verified there's no session)
- * skips the backend; otherwise /me is asked with the user's own token. Any
- * failure falls back to Explore, which shows the account notices itself.
+ * The viewer's home. `accessToken` is the one the proxy just verified (null:
+ * signed out, or the check failed), so this never touches Supabase. A failed
+ * or slow /me falls back to Explore, which shows the account notices.
  */
 export async function fetchHome({
-  signedIn,
+  accessToken,
   mockViewer = null,
 }: {
-  signedIn: boolean;
+  accessToken: string | null;
   mockViewer?: string | null;
 }): Promise<Home> {
   const mock = process.env.NEXT_PUBLIC_MOCK_VIEWER;
@@ -44,17 +46,16 @@ export async function fetchHome({
     const key = mockViewer && Object.hasOwn(MOCK_ROLES, mockViewer) ? mockViewer : mock;
     return homeFor(Object.hasOwn(MOCK_ROLES, key) ? MOCK_ROLES[key]! : null);
   }
-  if (!signedIn) return '/explore';
-  const token = await serverAccessToken();
   const base = process.env.BACKEND_URL?.trim();
-  if (!token || !base) return '/explore';
+  if (!accessToken || !base) return '/explore';
   // The server's own instance: http.ts's client is for the browser (same-origin
   // base, the SDK's token). This one calls the backend directly, per request.
   const api = createClient<paths>({ baseUrl: base });
   try {
     const { data } = await api.GET('/api/v1/me', {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${accessToken}` },
       cache: 'no-store',
+      signal: AbortSignal.timeout(HOME_ME_TIMEOUT_MS),
     });
     return homeFor(data ?? null);
   } catch {

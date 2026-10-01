@@ -1,7 +1,7 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { fetchHome } from '@/lib/api/data/home';
-import { SESSION_HINT_HEADER } from '@/lib/vendor/supabase/server';
+import { ACCESS_TOKEN_HEADER } from '@/lib/vendor/supabase/server';
 
 /**
  * `/` has no page of its own: each viewer goes to their home (lib/api/data/home).
@@ -12,12 +12,12 @@ export default async function Home({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  // "none" = the proxy verified there's no session; anything else may be a member.
-  const hint = (await headers()).get(SESSION_HINT_HEADER);
+  // The proxy's verified token, set for `/` only; absent = signed out or unknown.
+  const accessToken = (await headers()).get(ACCESS_TOKEN_HEADER);
   const { mockViewer } = await searchParams;
   redirect(
     await fetchHome({
-      signedIn: hint !== 'none',
+      accessToken,
       mockViewer: typeof mockViewer === 'string' ? mockViewer : null,
     }),
   );
