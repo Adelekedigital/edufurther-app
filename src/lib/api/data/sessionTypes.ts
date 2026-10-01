@@ -301,7 +301,9 @@ export function useDeleteSessionType() {
     onSuccess: (r, id) => {
       // A timed-out delete may still land after the settle's refetch: look again later.
       if (r.kind === 'unknown') {
-        setTimeout(() => refreshAfterRowWrite(qc), DELETE_TIMEOUT_MS);
+        // Through the row-write guard: if another row write is out, its settle
+        // refreshes instead (a refresh now could undo its optimistic change).
+        setTimeout(() => settleRowWrite(qc), DELETE_TIMEOUT_MS);
         return;
       }
       qc.setQueryData<OwnSessionType[]>(keys.sessionTypes.own(who), (list) =>

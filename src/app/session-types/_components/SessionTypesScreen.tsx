@@ -23,6 +23,7 @@ import {
 } from '@/lib/api/data/sessionTypes';
 import { formatShortDate } from '@/lib/utils/format';
 import { SESSION_TEMPLATES, templateHint } from '@/lib/utils/sessionTemplates';
+import { useLatest } from '@/lib/utils/useLatest';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { Remote } from '@/types/mentor';
 import type { DeleteError, OwnSessionType } from '@/types/sessionType';
@@ -143,6 +144,8 @@ export function SessionTypesScreen() {
       : null;
 
   const [confirming, setConfirming] = useState<OwnSessionType | null>(null);
+  // Read when a delete answers: another row's confirm may be open by then.
+  const confirmingRef = useLatest(confirming);
   const del = useDeleteSessionType();
   const closeConfirm = () => {
     setConfirming(null);
@@ -164,6 +167,12 @@ export function SessionTypesScreen() {
     null,
   );
   const onFocused = useCallback(() => setFocusAfterRemoval(null), []);
+  // Focus moves on after a removal, unless another row's confirm is open: focus
+  // is in that dialog, and its close returns focus to its own row (Codex on #121).
+  const moveFocusAfter = (after: { menuOf: string } | 'create', id: string) => {
+    if (confirmingRef.current && confirmingRef.current.id !== id) return;
+    setFocusAfterRemoval(after);
+  };
   // A delete that couldn't be confirmed: if the refetched list no longer has
   // it, focus moves on as after a delete (adjusted during render).
   const [unconfirmed, setUnconfirmed] = useState<{
@@ -172,7 +181,7 @@ export function SessionTypesScreen() {
   } | null>(null);
   if (unconfirmed && list.data && !list.data.some((x) => x.id === unconfirmed.id)) {
     setUnconfirmed(null);
-    setFocusAfterRemoval(unconfirmed.after);
+    if (!confirming || confirming.id === unconfirmed.id) setFocusAfterRemoval(unconfirmed.after);
   }
   const neighbour = (id: string): { menuOf: string } | 'create' => {
     const rows = list.data ?? [];
@@ -196,7 +205,7 @@ export function SessionTypesScreen() {
           setUnconfirmed({ id: t.id, after });
           announce('We couldn’t confirm the delete. The list has been refreshed.');
         } else if (r.kind === 'deleted') {
-          setFocusAfterRemoval(after);
+          moveFocusAfter(after, t.id);
           announce(`“${t.name}” was deleted.`);
         } else
           announce(

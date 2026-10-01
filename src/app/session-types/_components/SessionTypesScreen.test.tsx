@@ -335,6 +335,8 @@ describe('SessionTypesScreen', () => {
     await act(async () => finish({ kind: 'deleted' }));
     expect(screen.getByRole('dialog', { name: 'Delete this session type?' })).toBeInTheDocument();
     expect(screen.getByText(/“Visa prep” is removed/)).toBeInTheDocument();
+    // Nor does it pull focus out of the open dialog onto a background row.
+    expect(screen.getByRole('dialog')).toContainElement(document.activeElement as HTMLElement);
     remove.mockResolvedValue({ kind: 'deleted' });
   });
 
