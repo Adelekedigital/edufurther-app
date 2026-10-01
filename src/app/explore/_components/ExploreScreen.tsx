@@ -27,7 +27,7 @@ import type { Mentor } from '@/types/mentor';
 import { firstReasonsFor } from './firstReasons';
 import styles from './ExploreScreen.module.css';
 import { bookBlockedFor } from '@/app/_shell/bookBlocked';
-import { MATCH_CALL_URL, useAppShell } from '@/app/_shell/useAppShell';
+import { MATCH_CALL_URL, isMenteeSide, useAppShell } from '@/app/_shell/useAppShell';
 import { pillLayout, useFloatingPrompt } from './useFloatingPrompt';
 
 /** Results update this long after typing stops; Enter applies at once (Design decisions §1). */
@@ -94,11 +94,10 @@ export function ExploreScreen() {
   const featuredQuery = useFeaturedMentor(featuredOn);
   const featured = featuredQuery.featured;
 
-  // Mentees, or new members who aren't mentors either (no goal yet = not onboarded).
+  // isMenteeSide: mentees and new members, never a mentor (pending included).
   const showMatchPrompt =
     !!MATCH_CALL_URL &&
-    !!member &&
-    (member.isMentee || !member.isApprovedMentor) &&
+    isMenteeSide(member) &&
     member.completedSessions <= MATCH_PROMPT_MAX_SESSIONS;
   const matchPrompt = showMatchPrompt ? (
     <MatchPrompt href={MATCH_CALL_URL} external body={MATCH_PROMPT_BODY} />

@@ -1,5 +1,5 @@
 import type { Viewer } from '@/types/mentor';
-import { accountItems, countsFor } from './useAppShell';
+import { accountItems, countsFor, isMenteeSide } from './useAppShell';
 
 vi.mock('@/lib/api/data/auth', () => ({ useSignOut: () => vi.fn() }));
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => ({ kind: 'guest' }) }));
@@ -44,12 +44,21 @@ describe('accountItems (AppShell.dc.html account menu)', () => {
     expect(signOut).toHaveBeenCalled();
   });
 
-  it("the design's order with both: View profile, Find my mentor matches, Logout (pending mentor)", async () => {
+  it('"Find my mentor matches" is for mentees only: never a mentor, pending included (product, 2026-09-30)', async () => {
     vi.stubEnv('NEXT_PUBLIC_MATCH_CALL_URL', 'https://cal.example/match');
     vi.resetModules();
     const { accountItems: fresh } = await import('./useAppShell');
-    const items = fresh(member({ isApprovedMentor: false }), vi.fn());
-    expect(items.map((i) => i.label)).toEqual(['View profile', 'Find my mentor matches', 'Logout']);
+    const labels = (m: Member) => fresh(m, vi.fn()).map((i) => i.label);
+    expect(labels(member({ isApprovedMentor: false }))).toEqual(['View profile', 'Logout']);
+    expect(labels(member())).toEqual(['View profile', 'Logout']);
+    expect(labels(member({ isMentor: false, isApprovedMentor: false, isMentee: true }))).toEqual([
+      'Find my mentor matches',
+      'Logout',
+    ]);
+    // Signed up, no goal yet and no mentor profile: still a would-be mentee.
+    expect(labels(member({ isMentor: false, isApprovedMentor: false, isMentee: false }))).toContain(
+      'Find my mentor matches',
+    );
   });
 
   it('no member (loading, or not signed in as a member): Logout only', () => {
@@ -71,5 +80,29 @@ describe('countsFor (the Bookings badge)', () => {
     expect(countsFor(member({ awaitingResponse: 0 }))).toEqual({});
     expect(countsFor(member())).toEqual({});
     expect(countsFor(null)).toEqual({});
+  });
+});
+
+describe('isMenteeSide (who gets "Find my mentor matches", menu and Explore)', () => {
+  it.each([
+    ['a mentee', { isMentor: false, isApprovedMentor: false, isMentee: true }, true],
+    [
+      'a new member, no goal and no mentor profile',
+      { isMentor: false, isApprovedMentor: false, isMentee: false },
+      true,
+    ],
+    ['a pending mentor', { isMentor: true, isApprovedMentor: false, isMentee: false }, false],
+    ['an approved mentor', { isMentor: true, isApprovedMentor: true, isMentee: false }, false],
+    [
+      'a mentor who also has a goal',
+      { isMentor: true, isApprovedMentor: false, isMentee: true },
+      false,
+    ],
+  ] as const)('%s → %s', (_who, flags, yes) => {
+    expect(isMenteeSide(member(flags))).toBe(yes);
+  });
+
+  it('no member yet: no', () => {
+    expect(isMenteeSide(null)).toBe(false);
   });
 });

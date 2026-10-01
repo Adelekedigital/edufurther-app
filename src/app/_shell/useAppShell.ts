@@ -33,6 +33,15 @@ export function chromeFor(viewer: Viewer): ShellChrome {
 type Member = Extract<Viewer, { kind: 'member' }>;
 
 /**
+ * Who gets "Find my mentor matches" (account menu, Explore's prompt): mentees,
+ * and new members with no goal yet. A mentor profile in any state, pending
+ * included, is a mentor: one role per account (product, 2026-09-29/30).
+ */
+export function isMenteeSide(member: Member | null): member is Member {
+  return !!member && !member.isMentor;
+}
+
+/**
  * The account menu (AppShell.dc.html `menuItems`), in the design's order:
  * View profile, Find my mentor matches, Logout. "View profile" is the viewer's
  * own Mentor Profile, so mentors only: mentees have no profile page yet (#50).
@@ -50,8 +59,7 @@ export function accountItems(member: Member | null, signOut: () => void): Accoun
           },
         ]
       : []),
-    // Only once we know the viewer is a mentee (or a new member, not a mentor).
-    ...(MATCH_CALL_URL && member && (member.isMentee || !member.isApprovedMentor)
+    ...(MATCH_CALL_URL && isMenteeSide(member)
       ? [
           {
             key: 'matches',
