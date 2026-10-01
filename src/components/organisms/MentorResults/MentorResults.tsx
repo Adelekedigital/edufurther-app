@@ -96,8 +96,8 @@ export function MentorResults(p: MentorResultsProps) {
         {p.hasFilters ? (
           <EmptyState
             illustration="search-results"
-            // PROVISIONAL copy: topics now match ANY-of (backend reply #1, revised), so the
-            // design's "match all of that" / "remove a topic" no longer holds. Sent to design.
+            // Topics match ANY-of (backend reply #1, revised), so the design's "match all of
+            // that" / "remove a topic" doesn't hold. Ours, approved as built (design request #13).
             title="No mentors match that"
             description={
               p.query
