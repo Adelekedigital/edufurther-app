@@ -128,7 +128,7 @@ export function OwnerBar({
         ) : state === 'noHours' ? (
           <span>
             Mentees see “Not taking bookings” until you{' '}
-            <Link href={hoursHref} className={styles.ownerLink}>
+            <Link href={hoursHref} prefetch={false} className={styles.ownerLink}>
               set your weekly hours
             </Link>
             .

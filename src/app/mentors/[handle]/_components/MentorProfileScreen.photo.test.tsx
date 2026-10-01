@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixture';
-import { h, state, uploadPhoto } from './profileScreen.harness';
+import { h, removePhoto, state, uploadPhoto } from './profileScreen.harness';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
@@ -68,5 +68,73 @@ describe('MentorProfileScreen — the owner’s photo', () => {
     expect(
       screen.getByText('Choose an image under 5 MB.', { selector: 'span:not([role])' }),
     ).toBeInTheDocument();
+  });
+
+  it('"Remove photo" asks first; "Keep it" keeps it, "Remove photo" removes it (FE #98)', async () => {
+    const withPhoto = { ...own, mentor: { ...own.mentor, photoUrl: 'https://cdn/me.webp' } };
+    h.profile = state({ data: withPhoto });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    const badge = screen.getByRole('button', { name: 'Change or remove photo' });
+    await user.click(badge);
+    await user.click(screen.getByRole('menuitem', { name: /Remove photo/ }));
+    let dialog = screen.getByRole('dialog', { name: 'Remove your photo?' });
+    expect(dialog).toHaveTextContent('Your initials show in its place.');
+    await user.click(screen.getByRole('button', { name: 'Keep it' }));
+    expect(removePhoto).not.toHaveBeenCalled();
+    await user.click(badge);
+    await user.click(screen.getByRole('menuitem', { name: /Remove photo/ }));
+    dialog = screen.getByRole('dialog', { name: 'Remove your photo?' });
+    await user.click(screen.getByRole('button', { name: 'Remove photo' }));
+    expect(removePhoto).toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('not in "View as mentee": no photo control at all', async () => {
+    const withPhoto = { ...own, mentor: { ...own.mentor, photoUrl: 'https://cdn/me.webp' } };
+    h.profile = state({ data: withPhoto });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('button', { name: 'Change or remove photo' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'View as mentee' }));
+    expect(screen.queryByRole('button', { name: 'Change or remove photo' })).toBeNull();
+  });
+
+  it('removed: "Photo removed." is said and focus lands on "Add photo" (review of PR 125)', async () => {
+    const withPhoto = { ...own, mentor: { ...own.mentor, photoUrl: 'https://cdn/me.webp' } };
+    h.profile = state({ data: withPhoto });
+    const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+    // The removal lands: no photo, and the hook's stamp moves.
+    h.profile = state({ data: { ...withPhoto, mentor: { ...withPhoto.mentor, photoUrl: null } } });
+    h.photoRemovedStamp = 1;
+    rerender(<MentorProfileScreen handle="gbenga" />);
+    await new Promise((r) => requestAnimationFrame(r));
+    expect(screen.getByLabelText('Add photo')).toHaveFocus();
+    expect(screen.getByText('Photo removed.')).toBeInTheDocument();
+  });
+
+  it('while it goes, and if it fails, focus stays on the badge (review of PR 125)', async () => {
+    const withPhoto = { ...own, mentor: { ...own.mentor, photoUrl: 'https://cdn/me.webp' } };
+    h.profile = state({ data: withPhoto });
+    const user = userEvent.setup();
+    const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+    const badge = screen.getByRole('button', { name: 'Change or remove photo' });
+    await user.click(badge);
+    await user.click(screen.getByRole('menuitem', { name: /Remove photo/ }));
+    await user.click(screen.getByRole('button', { name: 'Remove photo' }));
+    // Removing: the same badge, inert.
+    h.photoRemoving = true;
+    rerender(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('button', { name: 'Change or remove photo' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: 'Change or remove photo' })).toHaveFocus();
+    // It failed: still there, still focused, and it says why.
+    h.photoRemoving = false;
+    h.photoError = 'The photo wasn’t removed. Try again.';
+    rerender(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('button', { name: 'Change or remove photo' })).toHaveFocus();
+    expect(screen.getAllByText('The photo wasn’t removed. Try again.').length).toBeGreaterThan(0);
   });
 });

@@ -22,6 +22,12 @@ export function photoErrorCopy(e: AppError): string {
   return 'The photo didn’t upload. Try again.';
 }
 
+/** Copy for a failed removal. */
+export function photoRemoveErrorCopy(e: AppError): string {
+  if (e.kind === 'offline') return 'You’re offline. Try again when you’re connected.';
+  return 'The photo wasn’t removed. Try again.';
+}
+
 /**
  * The owner's profile photo (POST /users/{id}/avatar, multipart `file`). The
  * server strips the photo's metadata, resizes it and finds the face; its reply
@@ -34,8 +40,9 @@ export function useAvatarUpload(handle: string, userId: string | null) {
   const qc = useQueryClient();
   const key = keys.mentors.profile(handle, sessionKey(session));
   const [fileProblem, setFileProblem] = useState<string | null>(null);
-  // Bumped when a photo is in, for the page to announce it.
+  // Bumped when a photo is in, or gone, for the page to announce it.
   const [uploadedStamp, setUploadedStamp] = useState(0);
+  const [removedStamp, setRemovedStamp] = useState(0);
 
   const upload = useMutation({
     networkMode: 'always',
@@ -84,6 +91,32 @@ export function useAvatarUpload(handle: string, userId: string | null) {
     },
   });
 
+  // DELETE /users/{id}/avatar (backend #319): 204, and again when there's
+  // none. A 404 means "not yours" (anyone but the owner gets it), so it's a
+  // failure, never "removed" (review of PR 125); the profile refetches to the
+  // truth. The initials show at once on success, then everything refetches.
+  const remove = useMutation({
+    networkMode: 'always',
+    mutationFn: async () => {
+      if (!userId) throw new Error('No user');
+      const { error, response } = await api.DELETE('/api/v1/users/{user_id}/avatar', {
+        params: { path: { user_id: userId } },
+      });
+      if (!response.ok) throw apiError(response.status, error);
+    },
+    onSuccess: async () => {
+      await qc.cancelQueries({ queryKey: key });
+      qc.setQueryData<MentorProfile>(key, (p) =>
+        p ? { ...p, mentor: { ...p.mentor, photoUrl: null, photoFocus: null } } : p,
+      );
+      setRemovedStamp(Date.now());
+      void qc.invalidateQueries({ queryKey: keys.mentors.all });
+      patchViewer(qc, { avatarUrl: null, avatarFocus: null });
+      void qc.invalidateQueries({ queryKey: keys.viewer.all });
+    },
+    onError: () => void qc.invalidateQueries({ queryKey: key }),
+  });
+
   return {
     accept: PHOTO_ACCEPT,
     upload: (file: File) => {
@@ -91,14 +124,30 @@ export function useAvatarUpload(handle: string, userId: string | null) {
       const problem = bannerProblem(file);
       setFileProblem(problem);
       upload.reset();
+      remove.reset();
       if (!problem) upload.mutate(file);
     },
     uploading: upload.isPending,
-    error: fileProblem ?? (upload.error ? photoErrorCopy(normaliseError(upload.error)) : null),
+    remove: () => {
+      if (remove.isPending || upload.isPending) return;
+      setFileProblem(null);
+      upload.reset();
+      remove.mutate();
+    },
+    removing: remove.isPending,
+    error:
+      fileProblem ??
+      (upload.error
+        ? photoErrorCopy(normaliseError(upload.error))
+        : remove.error
+          ? photoRemoveErrorCopy(normaliseError(remove.error))
+          : null),
     dismissError: () => {
       setFileProblem(null);
       upload.reset();
+      remove.reset();
     },
     uploadedStamp,
+    removedStamp,
   };
 }

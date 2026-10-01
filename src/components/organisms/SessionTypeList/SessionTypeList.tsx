@@ -88,7 +88,8 @@ export function SessionTypeList(p: SessionTypeListProps) {
       ))}
       {owner && (
         <li className={styles.newItem}>
-          <Link href={owner.newHref} className={styles.newTile}>
+          {/* Not prefetched: an aborted prefetch reads as a failed request (failure-modes #25). */}
+          <Link href={owner.newHref} prefetch={false} className={styles.newTile}>
             <Icon name="add" size={24} className={styles.newIcon} />
             <span className={styles.newTitle}>New session type</span>
             <span className={styles.newHint}>

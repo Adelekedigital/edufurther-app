@@ -90,4 +90,46 @@ describe('PhotoPicker', () => {
     rerender(<PhotoPicker {...base} error={null} />);
     expect(screen.getByLabelText('Change photo')).toHaveFocus();
   });
+
+  describe('with a photo and Remove (FE #98)', () => {
+    it('the badge is a menu: "Change photo" opens the picker, "Remove photo" asks the page', async () => {
+      const onRemove = vi.fn();
+      const click = vi.spyOn(HTMLInputElement.prototype, 'click');
+      const user = userEvent.setup();
+      render(<PhotoPicker {...base} onRemove={onRemove} inputId="pic" />);
+      const badge = screen.getByRole('button', { name: 'Change or remove photo' });
+      await user.click(badge);
+      await user.click(screen.getByRole('menuitem', { name: /Change photo/ }));
+      expect(click.mock.contexts.some((el) => (el as HTMLInputElement).id === 'pic')).toBe(true);
+      click.mockRestore();
+      await user.click(badge);
+      await user.click(screen.getByRole('menuitem', { name: /Remove photo/ }));
+      expect(onRemove).toHaveBeenCalled();
+    });
+
+    it('while busy: the same badge, inert (it keeps focus), and it says so (review of PR 125)', async () => {
+      const user = userEvent.setup();
+      render(<PhotoPicker {...base} onRemove={vi.fn()} removing />);
+      const badge = screen.getByRole('button', { name: 'Change or remove photo' });
+      expect(badge).toHaveAttribute('aria-disabled', 'true');
+      await user.click(badge);
+      expect(screen.queryByRole('menu')).toBeNull();
+      expect(screen.getByRole('status')).toHaveTextContent('Removing photo…');
+    });
+
+    it('Dismiss returns focus to the menu button (review of PR 125)', async () => {
+      const user = userEvent.setup();
+      render(
+        <PhotoPicker {...base} onRemove={vi.fn()} error="The photo wasn’t removed. Try again." />,
+      );
+      await user.click(screen.getByRole('button', { name: 'Dismiss' }));
+      expect(screen.getByRole('button', { name: 'Change or remove photo' })).toHaveFocus();
+    });
+
+    it('without a photo, no menu: "Add photo" picks straight away', () => {
+      render(<PhotoPicker {...base} hasPhoto={false} onRemove={vi.fn()} />);
+      expect(screen.queryByRole('button', { name: 'Change or remove photo' })).toBeNull();
+      expect(screen.getByLabelText('Add photo')).toHaveAttribute('type', 'file');
+    });
+  });
 });

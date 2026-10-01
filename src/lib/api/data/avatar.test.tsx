@@ -3,11 +3,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixture';
 import type { MentorProfile } from '@/types/mentor';
-import { photoErrorCopy, useAvatarUpload } from './avatar';
+import { photoErrorCopy, photoRemoveErrorCopy, useAvatarUpload } from './avatar';
 import { keys } from './keys';
 
 const POST = vi.fn();
-vi.mock('./http', () => ({ api: { POST: (...a: unknown[]) => POST(...a) } }));
+const DELETE = vi.fn();
+vi.mock('./http', () => ({
+  api: {
+    POST: (...a: unknown[]) => POST(...a),
+    DELETE: (...a: unknown[]) => DELETE(...a),
+  },
+}));
 vi.mock('./session', () => ({
   useSession: () => ({ status: 'present', userId: 'm1' }),
   sessionKey: () => 'm1',
@@ -30,6 +36,7 @@ function setup() {
 
 beforeEach(() => {
   POST.mockReset();
+  DELETE.mockReset();
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -125,6 +132,68 @@ describe('useAvatarUpload', () => {
     expect(qc.getQueryData(me)).toMatchObject({
       avatarUrl: 'https://cdn/new.webp',
       avatarFocus: { x: 0.5, y: 0.3 },
+    });
+  });
+
+  describe('remove (FE #98)', () => {
+    const withPhoto = (qc: import('@tanstack/react-query').QueryClient) =>
+      qc.setQueryData<MentorProfile>(key, {
+        ...fullProfile,
+        mentor: {
+          ...fullProfile.mentor,
+          photoUrl: 'https://cdn/me.webp',
+          photoFocus: { x: 0.5, y: 0.4 },
+        },
+      });
+
+    it('DELETEs, then the initials show at once, here and in the sidebar, and everything refetches', async () => {
+      DELETE.mockResolvedValue({ response: new Response(null, { status: 204 }) });
+      const { result, qc, spy } = setup();
+      withPhoto(qc);
+      const me = keys.viewer.me('m1');
+      qc.setQueryData(me, {
+        kind: 'member',
+        id: 'm1',
+        avatarUrl: 'https://cdn/me.webp',
+        avatarFocus: null,
+      });
+      act(() => result.current.remove());
+      await waitFor(() => expect(result.current.removedStamp).toBeGreaterThan(0));
+      expect(DELETE).toHaveBeenCalledWith('/api/v1/users/{user_id}/avatar', {
+        params: { path: { user_id: 'm1' } },
+      });
+      expect(qc.getQueryData<MentorProfile>(key)?.mentor).toMatchObject({
+        photoUrl: null,
+        photoFocus: null,
+      });
+      expect(qc.getQueryData(me)).toMatchObject({ avatarUrl: null, avatarFocus: null });
+      expect(spy).toHaveBeenCalledWith({ queryKey: keys.mentors.all });
+      expect(spy).toHaveBeenCalledWith({ queryKey: keys.viewer.all });
+    });
+
+    it('a 404 means "not yours": a failure, the photo kept, the profile refetched (review of PR 125)', async () => {
+      DELETE.mockResolvedValue({ error: {}, response: new Response(null, { status: 404 }) });
+      const { result, qc, spy } = setup();
+      withPhoto(qc);
+      act(() => result.current.remove());
+      await waitFor(() =>
+        expect(result.current.error).toBe('The photo wasn’t removed. Try again.'),
+      );
+      expect(result.current.removedStamp).toBe(0);
+      expect(qc.getQueryData<MentorProfile>(key)?.mentor.photoUrl).toBe('https://cdn/me.webp');
+      expect(spy).toHaveBeenCalledWith({ queryKey: key });
+    });
+
+    it('a failure says so in our words, and dismissing clears it', async () => {
+      DELETE.mockResolvedValue({ error: {}, response: new Response(null, { status: 500 }) });
+      const { result } = setup();
+      act(() => result.current.remove());
+      await waitFor(() =>
+        expect(result.current.error).toBe('The photo wasn’t removed. Try again.'),
+      );
+      act(() => result.current.dismissError());
+      await waitFor(() => expect(result.current.error).toBeNull());
+      expect(photoRemoveErrorCopy({ kind: 'offline', message: '' })).toMatch(/offline/);
     });
   });
 });

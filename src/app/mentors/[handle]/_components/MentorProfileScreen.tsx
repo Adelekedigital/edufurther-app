@@ -41,6 +41,7 @@ import {
   type ItemTarget,
 } from './OwnerItemEditor';
 import { DeleteEntryConfirm } from './DeleteEntryConfirm';
+import { RemovePhotoConfirm } from './RemovePhotoConfirm';
 import {
   NotTakingEmpty,
   NotTakingNote,
@@ -178,6 +179,16 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // The owner's topics, background and awards (ProfileItemModal.dc.html), and
   // what the last save did, for screen readers (the modal closing says nothing).
   const [itemOpen, setItemOpen] = useState<ItemTarget | null>(null);
+  // The photo's remove confirm is the page's, like its other dialogs: it must
+  // outlive the badge menu that opens it, which closes on the pick (Codex on PR 125).
+  const [photoRemoving, setPhotoRemoving] = useState(false);
+  // Removed: the badge is now "Add photo"; focus goes there (the menu it came from is gone).
+  // A frame later, so "Photo removed." isn't cut off by the focus move (review of PR 125).
+  useEffect(() => {
+    if (!photo.removedStamp) return;
+    const f = requestAnimationFrame(() => document.getElementById(PHOTO_INPUT)?.focus());
+    return () => cancelAnimationFrame(f);
+  }, [photo.removedStamp]);
   // The row Delete's confirm (product 2026-09-30: Delete beside Edit).
   const [deleting, setDeleting] = useState<{ kind: 'award' | 'education'; id: string } | null>(
     null,
@@ -357,6 +368,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                     onFile={photo.upload}
                     error={photo.error}
                     onDismissError={photo.dismissError}
+                    onRemove={() => setPhotoRemoving(true)}
+                    removing={photo.removing}
                   />
                 ) : undefined
               }
@@ -624,9 +637,24 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
       )}
       {/* Always there while it's the owner, so a screen reader hears each save. */}
       {isOwner && <LiveRegion message={itemSaved} />}
+      {editing && photoRemoving && (
+        <RemovePhotoConfirm
+          onKeep={() => setPhotoRemoving(false)}
+          onRemove={() => {
+            setPhotoRemoving(false);
+            photo.remove();
+          }}
+        />
+      )}
       {isOwner && (
         <LiveRegion
-          message={photo.uploadedStamp ? { text: 'Photo updated.', id: photo.uploadedStamp } : null}
+          message={
+            photo.removedStamp > photo.uploadedStamp
+              ? { text: 'Photo removed.', id: photo.removedStamp }
+              : photo.uploadedStamp
+                ? { text: 'Photo updated.', id: photo.uploadedStamp }
+                : null
+          }
         />
       )}
 

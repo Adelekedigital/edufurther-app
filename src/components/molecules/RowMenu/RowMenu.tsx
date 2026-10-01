@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type ComponentProps,
   type RefObject,
 } from 'react';
 import { cx } from '@/lib/utils/cx';
@@ -29,6 +30,22 @@ type RowMenuProps = {
   items: RowMenuItem[];
   /** The "⋯" button, for a list that moves focus to it (after a row is removed). */
   triggerRef?: RefObject<HTMLButtonElement | null>;
+  /**
+   * A different trigger than the "⋯" (e.g. the profile photo's camera badge).
+   * Its name still comes from `label`; behaviour and keys are unchanged.
+   */
+  trigger?: {
+    icon: IconName;
+    size?: ComponentProps<typeof Icon>['size'];
+    className?: string;
+    /** Which edge the menu lines up with: the button's end (default) or start. */
+    align?: 'start' | 'end';
+    /**
+     * Shown but inert (the photo badge while a photo uploads or goes): it keeps
+     * focus, unlike a swapped-out control, and doesn't open (review of PR 125).
+     */
+    disabled?: boolean;
+  };
 };
 
 /**
@@ -39,8 +56,9 @@ type RowMenuProps = {
  * open (the row changed under it), focus moves to the item now in its place,
  * or back to the button when none is left (#114).
  */
-export function RowMenu({ label, items, triggerRef }: RowMenuProps) {
+export function RowMenu({ label, items, triggerRef, trigger }: RowMenuProps) {
   const [open, setOpen] = useState(false);
+  const inert = !!trigger?.disabled;
   const menuId = useId();
   const button = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
@@ -61,7 +79,7 @@ export function RowMenu({ label, items, triggerRef }: RowMenuProps) {
   // to the page, where the menu's keys no longer reach.
   const focused = useRef<number | null>(null);
   // Nothing left to choose: closed during render (no second render from an effect).
-  if (open && items.length === 0) setOpen(false);
+  if (open && (items.length === 0 || inert)) setOpen(false);
   useLayoutEffect(() => {
     // Items can shift under a focused one (no new focus event): keep its place current.
     const els = [...(menu.current?.querySelectorAll('[role="menuitem"]') ?? [])];
@@ -86,6 +104,7 @@ export function RowMenu({ label, items, triggerRef }: RowMenuProps) {
   }, [open]);
 
   const onButtonKey = (e: KeyboardEvent) => {
+    if (inert) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       openAt(0);
@@ -122,15 +141,20 @@ export function RowMenu({ label, items, triggerRef }: RowMenuProps) {
           if (triggerRef) triggerRef.current = el;
         }}
         type="button"
-        className={styles.trigger}
+        className={trigger?.className ?? styles.trigger}
         aria-label={label}
         aria-haspopup="menu"
+        aria-disabled={inert || undefined}
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
-        onClick={() => (open ? close(false) : openAt(0))}
+        onClick={() => {
+          if (inert) return;
+          if (open) close(false);
+          else openAt(0);
+        }}
         onKeyDown={onButtonKey}
       >
-        <Icon name="more_horiz" size={20} />
+        <Icon name={trigger?.icon ?? 'more_horiz'} size={trigger?.size ?? 20} />
       </button>
       {open && (
         <div
@@ -138,7 +162,7 @@ export function RowMenu({ label, items, triggerRef }: RowMenuProps) {
           id={menuId}
           role="menu"
           aria-label={label}
-          className={styles.menu}
+          className={cx(styles.menu, trigger?.align === 'start' && styles.menuStart)}
           onKeyDown={onMenuKey}
         >
           {items.map((it, i) => (

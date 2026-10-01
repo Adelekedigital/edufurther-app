@@ -89,7 +89,7 @@ export function SessionTypeQuickEdit({
         <span className={styles.infoText}>
           Name, description, questions and booking rules are in the full editor.
         </span>
-        <Link href={fullHref} className={styles.infoLink}>
+        <Link href={fullHref} prefetch={false} className={styles.infoLink}>
           Open full editor
           <Icon name="arrow_forward" size={16} />
         </Link>
