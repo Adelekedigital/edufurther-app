@@ -89,6 +89,7 @@ export const h = {
   photoUploading: false,
   photoRemoving: false,
   photoRemovedStamp: 0,
+  deleteError: null as { kind: string; message: string } | null,
   photoError: null as string | null,
   // The owner's topics and background editors.
   itemsOk: true,
@@ -314,7 +315,7 @@ const sessionTypesMock = () => ({
   useDeleteSessionType: () => ({
     remove: removeType,
     isPending: false,
-    error: null,
+    error: h.deleteError,
     reset: vi.fn(),
   }),
 });
@@ -535,6 +536,7 @@ beforeEach(() => {
   h.photoUploading = false;
   h.photoRemoving = false;
   h.photoRemovedStamp = 0;
+  h.deleteError = null;
   removePhoto.mockReset();
   h.photoError = null;
   uploadPhoto.mockReset();

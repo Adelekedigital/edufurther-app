@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
-import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Notice } from '@/components/molecules/Notice/Notice';
@@ -17,8 +16,9 @@ import { useQuickEditSessionType, type QuickEdit } from '@/lib/api/data/sessionT
 import { useDeleteSessionType, useOwnSessionTypes, useSetLive } from '@/lib/api/data/sessionTypes';
 import { formatShortDate } from '@/lib/utils/format';
 import { stageText } from '@/lib/utils/stageText';
+import { useLatest } from '@/lib/utils/useLatest';
 import type { ProfileSessionType } from '@/types/mentor';
-import type { OwnSessionType } from '@/types/sessionType';
+import type { DeleteError, OwnSessionType } from '@/types/sessionType';
 import styles from './MentorProfileScreen.module.css';
 
 const NEW_HREF = '/session-types/new';
@@ -57,6 +57,11 @@ type Props = {
    * it, so a hide shows in both at once (Codex on PR 119). Null until loaded.
    */
   onActiveCount?: (n: number | null) => void;
+  /**
+   * Says an outcome in the screen's live region, which outlives this tab: a
+   * delete still out when the owner switches tab is still said (Codex on PR 130).
+   */
+  onSay: (text: string) => void;
 };
 
 /**
@@ -67,7 +72,7 @@ type Props = {
  * types, which the hide confirm says. The confirms are Session types' own, so
  * each action asks the same way wherever it's done.
  */
-export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
+export function OwnerSessionTypes({ shown, onActiveCount, onSay: say }: Props) {
   const own = useOwnSessionTypes(true);
   // Active only: hidden and scheduled types are Session types' business.
   const list = own.data?.filter((t) => t.isLive && !t.pendingDeletion);
@@ -77,8 +82,6 @@ export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
     onActiveCount?.(activeCount);
   }, [activeCount, onActiveCount]);
   const nameOf = (id: string) => own.data?.find((t) => t.id === id)?.name ?? 'it';
-  const [said, setSaid] = useState<{ text: string; id: number } | null>(null);
-  const say = (text: string) => setSaid((was) => ({ text, id: (was?.id ?? 0) + 1 }));
 
   // A card that leaves (hidden, deleted or scheduled) takes its buttons with
   // it: focus the next card's Edit, or the "New session type" tile. By id, so
@@ -87,17 +90,24 @@ export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
   const [focusAfter, setFocusAfter] = useState<{ id: string | null; n: number } | null>(null);
   useEffect(() => {
     if (!focusAfter) return;
+    // Any dialog open, the page's own included (Remove photo): focus is in it,
+    // and it returns focus itself when it closes (Codex on PR 130).
+    if (document.querySelector('[aria-modal="true"]')) return;
     const card = [...document.querySelectorAll<HTMLElement>('[data-session-type-id]')].find(
       (c) => c.dataset.sessionTypeId === focusAfter.id,
     );
     const edit = card?.querySelector<HTMLElement>('button[aria-label^="Edit "]');
     (edit ?? document.querySelector<HTMLElement>(`a[href="${NEW_HREF}"]`))?.focus();
   }, [focusAfter]);
-  const leaving = (t: OwnSessionType, text: string) => {
+  const nextOf = (id: string) => {
     const rows = list ?? [];
-    const i = rows.findIndex((x) => x.id === t.id);
-    const next = rows[i + 1] ?? rows[i - 1];
-    setFocusAfter((f) => ({ id: next?.id ?? null, n: (f?.n ?? 0) + 1 }));
+    const i = rows.findIndex((x) => x.id === id);
+    return (rows[i + 1] ?? rows[i - 1])?.id ?? null;
+  };
+  const focusOn = (next: string | null) => setFocusAfter((f) => ({ id: next, n: (f?.n ?? 0) + 1 }));
+  const leaving = (t: OwnSessionType, text: string) => {
+    setUnconfirmed((u) => (u?.id === t.id ? null : u));
+    focusOn(nextOf(t.id));
     say(text);
   };
   const hiddenNow = (t: OwnSessionType) =>
@@ -115,6 +125,8 @@ export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
   const quick = useQuickEditSessionType();
   const [editing, setEditing] = useState<string | null>(null);
   const target = list?.find((t) => t.id === editing) ?? null;
+  // Its card gone (deleted meanwhile): the editor is closed for good.
+  if (editing && list && !target) setEditing(null);
   const closeEdit = () => {
     quick.reset();
     setEditing(null);
@@ -138,25 +150,88 @@ export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
 
   const del = useDeleteSessionType();
   const [deleting, setDeleting] = useState<OwnSessionType | null>(null);
+  // Mid-delete, the × dismisses the confirm: the delete carries on and the
+  // live region says how it went, a refusal included (product, 2026-10-01;
+  // as Session types). By card, as is what's still out: the hook tracks only
+  // its latest call.
+  const dismissed = useRef(new Set<string>());
+  const [deleteFor, setDeleteFor] = useState<string | null>(null);
+  const [pendingDeletes, setPendingDeletes] = useState<string[]>([]);
+  const settleDelete = (id: string) => setPendingDeletes((ids) => ids.filter((x) => x !== id));
   const closeDelete = () => {
     setDeleting(null);
     del.reset();
   };
+  const dismissDelete = () => {
+    if (deleting) dismissed.current.add(deleting.id);
+    setDeleting(null);
+  };
+  // Which dialog is open now, and for which card, for a delete that ends after
+  // its confirm was dismissed: focus moves on unless another card's dialog is
+  // open (focus is in it, and it returns focus itself). The card's own close
+  // with it (review of PR 130).
+  const openNow = useLatest(
+    deleting
+      ? `delete:${deleting.id}`
+      : hiding
+        ? `hide:${hiding.type.id}`
+        : target
+          ? `edit:${target.id}`
+          : null,
+  );
+  // A delete that couldn't be confirmed: if the refetched list no longer has
+  // it, focus moves on as after a delete (adjusted during render).
+  const [unconfirmed, setUnconfirmed] = useState<{ id: string; next: string | null } | null>(null);
+  if (unconfirmed && list && !list.some((x) => x.id === unconfirmed.id)) {
+    setUnconfirmed(null);
+    if (!deleting && !hiding && !target) focusOn(unconfirmed.next);
+  }
+  // Opening a card's confirm: one with nothing out starts clean (an old
+  // refusal, already said, isn't shown again); one still out owns its outcome
+  // again, so it isn't said twice (review of PR 130).
+  const askDelete = (id: string) => {
+    if (!pendingDeletes.includes(id)) setDeleteFor((f) => (f === id ? null : f));
+    dismissed.current.delete(id);
+    setDeleting(list?.find((x) => x.id === id) ?? null);
+  };
   const onDelete = (t: OwnSessionType) => {
+    const next = nextOf(t.id);
+    setUnconfirmed((u) => (u?.id === t.id ? null : u));
+    dismissed.current.delete(t.id);
+    setDeleteFor(t.id);
+    setPendingDeletes((ids) => [...ids, t.id]);
     void del
       .remove(t.id)
       .then((r) => {
-        closeDelete();
-        if (r.kind === 'deleted') return leaving(t, `“${t.name}” was deleted.`);
-        // No answer in time: the card may still be here, so focus stays; the list is refetched.
-        if (r.kind === 'unknown')
+        settleDelete(t.id);
+        dismissed.current.delete(t.id);
+        // Only this card's confirm: another may have opened since a dismiss.
+        const open = openNow.current;
+        const elsewhere = open !== null && !open.endsWith(`:${t.id}`);
+        setDeleting((d) => (d?.id === t.id ? null : d));
+        // Gone, or leaving the profile: its other dialogs close with it.
+        const move = (text: string) => {
+          setHiding((x) => (x?.type.id === t.id ? null : x));
+          setEditing((x) => (x === t.id ? null : x));
+          if (!elsewhere) focusOn(next);
+          say(text);
+        };
+        if (r.kind === 'deleted') return move(`“${t.name}” was deleted.`);
+        // No answer in time: the card may still be here; the refetch decides.
+        if (r.kind === 'unknown') {
+          setUnconfirmed({ id: t.id, next });
           return say('We couldn’t confirm the delete. The list has been refreshed.');
+        }
         const when = r.deletesAfter
           ? `Deletion scheduled for ${formatShortDate(r.deletesAfter)}.`
           : 'Deletion scheduled.';
-        leaving(t, `${when} Hidden from mentees now. Manage it in Session types.`);
+        move(`${when} Hidden from mentees now. Manage it in Session types.`);
       })
-      .catch(() => undefined);
+      .catch((e: DeleteError) => {
+        settleDelete(t.id);
+        // The confirm shows a refusal; once dismissed, the live region does.
+        if (dismissed.current.delete(t.id)) say(`“${t.name}” wasn’t deleted. ${e.message}`);
+      });
   };
 
   const cards = list?.map((t) =>
@@ -197,7 +272,7 @@ export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
               const t = list?.find((x) => x.id === id);
               if (t) setHiding({ type: t });
             },
-            onDelete: (id) => setDeleting(list?.find((x) => x.id === id) ?? null),
+            onDelete: askDelete,
             onEdit: setEditing,
             newHref: NEW_HREF,
           }}
@@ -271,17 +346,17 @@ export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
         <DeleteConfirm
           renderShell={confirmShell}
           type={deleting}
-          busy={del.isPending}
-          error={del.error}
-          // Mid-delete, "Keep it", Escape and the close do nothing: closing
-          // can't stop the request (Codex on PR 119).
+          busy={pendingDeletes.includes(deleting.id)}
+          error={deleteFor === deleting.id ? del.error : null}
+          // Mid-delete, "Keep it" does nothing (closing can't stop the
+          // request); the × or Escape dismisses it and the delete carries on.
           onKeep={() => {
-            if (!del.isPending) closeDelete();
+            if (!pendingDeletes.includes(deleting.id)) closeDelete();
           }}
+          onDismiss={dismissDelete}
           onDelete={() => onDelete(deleting)}
         />
       )}
-      <LiveRegion message={said} />
     </>
   );
 }

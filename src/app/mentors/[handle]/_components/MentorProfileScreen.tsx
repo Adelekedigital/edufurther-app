@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
@@ -192,6 +192,13 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // The row Delete's confirm (product 2026-09-30: Delete beside Edit).
   const [deleting, setDeleting] = useState<{ kind: 'award' | 'education'; id: string } | null>(
     null,
+  );
+  // The Sessions tab's outcomes, here so a delete settling after a tab switch
+  // is still said (Codex on PR 130).
+  const [sessionsSaid, setSessionsSaid] = useState<{ text: string; id: number } | null>(null);
+  const saySessions = useCallback(
+    (text: string) => setSessionsSaid((was) => ({ text, id: (was?.id ?? 0) + 1 })),
+    [],
   );
   const [itemSaved, setItemSaved] = useState<{
     text: string;
@@ -538,7 +545,11 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 ) : notTakingTab ? (
                   <NotTakingEmpty firstName={p.mentor.firstName} />
                 ) : editing ? (
-                  <OwnerSessionTypes shown={p.sessionTypes} onActiveCount={setOwnActive} />
+                  <OwnerSessionTypes
+                    shown={p.sessionTypes}
+                    onActiveCount={setOwnActive}
+                    onSay={saySessions}
+                  />
                 ) : (
                   <SessionTypeList
                     sessionTypes={p.sessionTypes}
@@ -637,6 +648,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
       )}
       {/* Always there while it's the owner, so a screen reader hears each save. */}
       {isOwner && <LiveRegion message={itemSaved} />}
+      {isOwner && <LiveRegion message={sessionsSaid} />}
       {editing && photoRemoving && (
         <RemovePhotoConfirm
           onKeep={() => setPhotoRemoving(false)}

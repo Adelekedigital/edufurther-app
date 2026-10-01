@@ -362,4 +362,206 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(retry).toHaveBeenCalled();
   });
+
+  describe('a delete still out when its confirm is closed (Codex on #121)', () => {
+    const deferred = () => {
+      let settle!: { ok: (v: unknown) => void; fail: (e: unknown) => void };
+      const promise = new Promise((ok, fail) => (settle = { ok, fail }));
+      return { promise, ...settle };
+    };
+    const startDelete = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
+      const confirm = screen.getByRole('dialog', { name: 'Delete this session type?' });
+      await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
+      return confirm;
+    };
+
+    it('busy, "Keep it" waits; the × closes it and the delete carries on', async () => {
+      onSessions();
+      const d = deferred();
+      removeType.mockReturnValue(d.promise);
+      const user = userEvent.setup();
+      render(<MentorProfileScreen handle="gbenga" />);
+      const confirm = await startDelete(user);
+      expect(within(confirm).getByRole('button', { name: 'Keep it' })).toBeDisabled();
+      await user.click(within(confirm).getByRole('button', { name: 'Close' }));
+      expect(screen.queryByRole('dialog')).toBeNull();
+      await act(async () => d.ok({ kind: 'deleted' }));
+      expect(screen.getByText('“SOP draft review” was deleted.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Edit CV review' })).toHaveFocus();
+    });
+
+    it('a refusal after the × is still said', async () => {
+      onSessions();
+      const d = deferred();
+      removeType.mockReturnValue(d.promise);
+      const user = userEvent.setup();
+      render(<MentorProfileScreen handle="gbenga" />);
+      await startDelete(user);
+      await user.keyboard('{Escape}'); // as the ×: dismissed, the delete carries on
+      expect(screen.queryByRole('dialog')).toBeNull();
+      await act(async () =>
+        d.fail({
+          kind: 'server',
+          message: 'We couldn’t delete it. Something went wrong. Try again.',
+        }),
+      );
+      expect(
+        screen.getByText(
+          '“SOP draft review” wasn’t deleted. We couldn’t delete it. Something went wrong. Try again.',
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it('ending while another dialog is open leaves focus in that dialog', async () => {
+      onSessions();
+      const d = deferred();
+      removeType.mockReturnValue(d.promise);
+      const user = userEvent.setup();
+      render(<MentorProfileScreen handle="gbenga" />);
+      const confirm = await startDelete(user);
+      await user.click(within(confirm).getByRole('button', { name: 'Close' }));
+      await user.click(screen.getByRole('button', { name: 'Edit CV review' }));
+      const editor = screen.getByRole('dialog');
+      const focused = document.activeElement;
+      expect(editor).toContainElement(focused as HTMLElement);
+      await act(async () => d.ok({ kind: 'deleted' }));
+      expect(document.activeElement).toBe(focused);
+    });
+  });
+
+  it('unconfirmed, then gone from the refetched list: focus moves on (Codex on #121)', async () => {
+    onSessions();
+    removeType.mockResolvedValue({ kind: 'unknown' });
+    const user = userEvent.setup();
+    const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
+    const confirm = screen.getByRole('dialog', { name: 'Delete this session type?' });
+    await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
+    await screen.findByText('We couldn’t confirm the delete. The list has been refreshed.');
+    // The refetch: it was deleted after all.
+    h.ownTypes = remote([cv, hidden, pending]);
+    rerender(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('button', { name: 'Edit CV review' })).toHaveFocus();
+  });
+
+  describe('a dismissed delete and the card’s other dialogs (review of PR 130)', () => {
+    const deferred = () => {
+      let settle!: { ok: (v: unknown) => void; fail: (e: unknown) => void };
+      const promise = new Promise((ok, fail) => (settle = { ok, fail }));
+      return { promise, ...settle };
+    };
+    const dismissDelete = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
+      const confirm = screen.getByRole('dialog', { name: 'Delete this session type?' });
+      await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
+      await user.click(within(confirm).getByRole('button', { name: 'Close' }));
+    };
+
+    it('the card’s hide confirm closes when its delete lands, and focus moves on', async () => {
+      onSessions();
+      const d = deferred();
+      removeType.mockReturnValue(d.promise);
+      const user = userEvent.setup();
+      render(<MentorProfileScreen handle="gbenga" />);
+      await dismissDelete(user);
+      await user.click(
+        screen.getByRole('switch', { name: 'Visible to mentees: SOP draft review' }),
+      );
+      expect(screen.getByRole('dialog', { name: /Hide “SOP draft review”/ })).toBeInTheDocument();
+      await act(async () => d.ok({ kind: 'deleted' }));
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(setLive).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: 'Edit CV review' })).toHaveFocus();
+    });
+
+    it('a refusal already said isn’t shown again when its confirm reopens', async () => {
+      onSessions();
+      const d = deferred();
+      removeType.mockReturnValue(d.promise);
+      const user = userEvent.setup();
+      const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+      await dismissDelete(user);
+      const refusal = { kind: 'server', message: 'We couldn’t delete it. Try again.' };
+      await act(async () => d.fail(refusal));
+      // As the hook leaves it: the refusal stays its error until reset.
+      h.deleteError = refusal;
+      rerender(<MentorProfileScreen handle="gbenga" />);
+      await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
+      expect(
+        within(screen.getByRole('dialog', { name: 'Delete this session type?' })).queryByRole(
+          'alert',
+        ),
+      ).toBeNull();
+    });
+
+    it('unconfirmed and gone while another dialog is open: focus stays in it', async () => {
+      onSessions();
+      removeType.mockResolvedValue({ kind: 'unknown' });
+      const user = userEvent.setup();
+      const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+      await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
+      const confirm = screen.getByRole('dialog', { name: 'Delete this session type?' });
+      await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
+      await screen.findByText('We couldn’t confirm the delete. The list has been refreshed.');
+      await user.click(screen.getByRole('button', { name: 'Edit CV review' }));
+      const focused = document.activeElement;
+      expect(screen.getByRole('dialog')).toContainElement(focused as HTMLElement);
+      h.ownTypes = remote([cv, hidden, pending]);
+      rerender(<MentorProfileScreen handle="gbenga" />);
+      expect(document.activeElement).toBe(focused);
+    });
+  });
+
+  describe('a dismissed delete beyond the tab (Codex on PR 130)', () => {
+    const deferred = () => {
+      let settle!: { ok: (v: unknown) => void; fail: (e: unknown) => void };
+      const promise = new Promise((ok, fail) => (settle = { ok, fail }));
+      return { promise, ...settle };
+    };
+    const dismissDelete = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
+      const confirm = screen.getByRole('dialog', { name: 'Delete this session type?' });
+      await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
+      await user.click(within(confirm).getByRole('button', { name: 'Close' }));
+    };
+
+    it('settling after a switch to Overview, it is still said', async () => {
+      onSessions();
+      const d = deferred();
+      removeType.mockReturnValue(d.promise);
+      const user = userEvent.setup();
+      const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+      await dismissDelete(user);
+      await user.click(screen.getByRole('tab', { name: 'Overview' }));
+      h.search = new URLSearchParams('tab=overview');
+      rerender(<MentorProfileScreen handle="gbenga" />);
+      expect(screen.queryByRole('button', { name: 'Edit CV review' })).toBeNull();
+      await act(async () =>
+        d.fail({ kind: 'server', message: 'We couldn’t delete it. Try again.' }),
+      );
+      expect(
+        screen.getByText('“SOP draft review” wasn’t deleted. We couldn’t delete it. Try again.'),
+      ).toBeInTheDocument();
+    });
+
+    it('settling while Remove photo is open leaves focus in that dialog', async () => {
+      onSessions();
+      h.profile = state({
+        data: { ...own, mentor: { ...own.mentor, photoUrl: 'https://cdn/me.webp' } },
+      });
+      const d = deferred();
+      removeType.mockReturnValue(d.promise);
+      const user = userEvent.setup();
+      render(<MentorProfileScreen handle="gbenga" />);
+      await dismissDelete(user);
+      await user.click(screen.getByRole('button', { name: 'Change or remove photo' }));
+      await user.click(screen.getByRole('menuitem', { name: /Remove photo/ }));
+      const photoDialog = screen.getByRole('dialog', { name: 'Remove your photo?' });
+      const focused = document.activeElement;
+      expect(photoDialog).toContainElement(focused as HTMLElement);
+      await act(async () => d.ok({ kind: 'deleted' }));
+      expect(document.activeElement).toBe(focused);
+    });
+  });
 });
