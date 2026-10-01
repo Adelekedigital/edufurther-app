@@ -1,4 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm spec:pull && pnpm gen:api && pnpm build"
+  "buildCommand": "pnpm spec:pull && pnpm gen:api && pnpm build",
+  "git": {
+    "deploymentEnabled": {
+      "**": false,
+      "main": true
+    }
+  },
+  "ignoreCommand": "node scripts/vercel-ignore.mjs"
 }
