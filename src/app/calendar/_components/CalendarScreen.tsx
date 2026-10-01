@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useId, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
@@ -15,7 +15,7 @@ import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useBlockedDays, useBookedDays } from '@/lib/api/data/calendar';
 import { useMentorDefaults, useSaveMentorDefaults } from '@/lib/api/data/sessionTypes';
 import { useSaveWeeklyHours, useWeeklyHours } from '@/lib/api/data/weeklyHours';
-import { todayIn, windowSummary } from '@/lib/utils/calendar';
+import { bookableRange, todayIn, windowSummary } from '@/lib/utils/calendar';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { useOnline } from '@/lib/utils/useOnline';
@@ -62,32 +62,43 @@ export function CalendarScreen() {
     [],
   );
 
+  const hoursTitle = useRef<HTMLHeadingElement>(null);
   const invalid = draft.slotErrors || !!draft.clash;
-  const blockReason =
-    !tried || !invalid
-      ? null
-      : // The Session Types modal's copy (confirmed by design, reply 2026-09-29, #7).
-        draft.clash && !draft.slotErrors
-        ? `Some of these hours overlap hours you set in ${zoneLabel(draft.clash.zone)}. Change them, then save.`
-        : 'Fix the hours marked in red, then save.';
+  // The Session Types modal's copy (confirmed by design, reply 2026-09-29, #7).
+  const invalidReason =
+    draft.clash && !draft.slotErrors
+      ? `Some of these hours overlap hours you set in ${zoneLabel(draft.clash.zone)}. Change them, then save.`
+      : 'Fix the hours marked in red, then save.';
+  const blockReason = tried && invalid ? invalidReason : null;
 
+  // The save bar goes with the draft: focus moves to the hours' title first,
+  // so it never drops to the page.
+  const focusHours = () => hoursTitle.current?.focus();
   const onSave = () => {
     setTried(true);
-    if (invalid || !weekly.data) return;
-    saveWeekly.save({ current: weekly.data, days: draft.days, timeZone: draft.timeZone }).then(
+    if (invalid) return announce(invalidReason);
+    if (!weekly.data) return;
+    const sent = { days: draft.days, timeZone: draft.timeZone };
+    saveWeekly.save({ current: weekly.data, ...sent }).then(
       () => {
-        draft.clear();
+        focusHours();
+        draft.clearIf(sent);
         setTried(false);
         announce('Your weekly hours are saved.');
       },
-      () => {},
+      (e: { message: string }) => announce(e.message),
     );
   };
   const onDiscard = () => {
+    focusHours();
     draft.clear();
     saveWeekly.reset();
     setTried(false);
     announce('Your changes were discarded.');
+  };
+  // A sent save can't be called back: the modal stays until it answers.
+  const closeWindow = () => {
+    if (!saveDefaults.isPending) setWindowOpen(false);
   };
 
   // A failed save's message belongs to that draft: once the hours match what's
@@ -137,6 +148,7 @@ export function CalendarScreen() {
   else {
     const hasHours = weekly.data.days.some((d) => d.on);
     const today = todayIn(draft.timeZone);
+    const range = bookableRange(today, defaults.data);
     body = (
       <>
         <header className={styles.header}>
@@ -174,6 +186,7 @@ export function CalendarScreen() {
             onDays={draft.setDays}
             timeZone={draft.timeZone}
             onTimeZone={draft.setTimeZone}
+            titleRef={hoursTitle}
             deviceZone={deviceZone}
             otherZones={weekly.data.otherZones}
             note={
@@ -197,6 +210,9 @@ export function CalendarScreen() {
               selected={blocked.data ?? []}
               booked={booked.data ?? []}
               available={draft.days.flatMap((d, i) => (d.on ? [i] : []))}
+              // Open only where a mentee could book: past the notice, within the window.
+              openFrom={range.from}
+              openUntil={range.until}
               showLegend
             />
             {(booked.error || blocked.error) && (
@@ -245,21 +261,21 @@ export function CalendarScreen() {
           subtitle="When mentees can book you and how long sessions last. Applies to every session type."
           icon="date_range"
           size="md"
-          onClose={() => setWindowOpen(false)}
+          onClose={closeWindow}
         >
           <SchedulingWindowForm
             initial={defaults.data}
             days={draft.days}
             saving={saveDefaults.isPending}
             error={saveDefaults.error?.message ?? null}
-            onCancel={() => setWindowOpen(false)}
+            onCancel={closeWindow}
             onSave={(next) =>
               saveDefaults.save(next).then(
                 () => {
                   setWindowOpen(false);
                   announce('Your scheduling window is saved.');
                 },
-                () => {},
+                (e: { message: string }) => announce(e.message),
               )
             }
           />

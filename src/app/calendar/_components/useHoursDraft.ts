@@ -41,7 +41,15 @@ export function useHoursDraft(saved: WeeklyHours | null, deviceZone: string) {
     clash: clash ?? null,
     setDays: (next: DayHours[]) => setDraft({ days: next, timeZone }),
     setTimeZone: (zone: string) => setDraft({ days, timeZone: zone }),
-    /** Discard, or after a save (which resolves once the hours are read back). */
+    /** Discard. */
     clear: () => setDraft(null),
+    /**
+     * After a save (it resolves once the hours are read back): drop the draft
+     * only if it's still what was saved, so an edit made meanwhile stays.
+     */
+    clearIf: (sent: Draft) =>
+      setDraft((d) =>
+        d && sameWeek(d.days, sent.days) && d.timeZone === sent.timeZone ? null : d,
+      ),
   };
 }

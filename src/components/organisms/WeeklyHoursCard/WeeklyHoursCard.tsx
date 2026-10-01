@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react';
+import { useId, type ReactNode, type Ref } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { TimezonePicker, zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import { WeeklyHoursEditor } from '@/components/organisms/SessionTypeWizard/WeeklyHoursEditor';
@@ -18,6 +18,8 @@ type WeeklyHoursCardProps = {
   otherZones?: string[];
   /** A note above the days, e.g. why mentees can't book yet. */
   note?: ReactNode;
+  /** Takes focus when a control that had it goes away (the page's save bar). */
+  titleRef?: Ref<HTMLHeadingElement>;
   className?: string;
 };
 
@@ -33,6 +35,7 @@ export function WeeklyHoursCard({
   deviceZone,
   otherZones = [],
   note,
+  titleRef,
   className,
 }: WeeklyHoursCardProps) {
   const titleId = useId();
@@ -40,7 +43,7 @@ export function WeeklyHoursCard({
     <section aria-labelledby={titleId} className={cx(styles.card, className)}>
       <div className={styles.head}>
         <div className={styles.titles}>
-          <h2 id={titleId} className={styles.title}>
+          <h2 id={titleId} ref={titleRef} tabIndex={-1} className={styles.title}>
             Weekly hours
           </h2>
           <TimezonePicker value={timeZone} onChange={onTimeZone} deviceZone={deviceZone} />

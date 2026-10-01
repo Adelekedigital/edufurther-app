@@ -21,6 +21,7 @@
   gap: var(--space-1);
 }
 .navBtn {
+  position: relative;
   width: var(--space-8);
   height: var(--space-8);
   display: flex;
@@ -181,4 +182,12 @@ button.day:not(.selected, .mid, [aria-disabled='true']):hover {
   height: 6px;
   border-radius: var(--radius-full);
   background: var(--calendar-booked);
+}
+/* Phones: a 44px tap area around the drawn 32px control. */
+@media (max-width: 767px) {
+  .navBtn::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+  }
 }

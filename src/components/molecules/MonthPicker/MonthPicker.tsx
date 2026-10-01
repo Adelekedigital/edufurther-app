@@ -18,6 +18,9 @@ type MonthPickerProps = {
   booked?: readonly string[];
   /** Weekdays (0 = Sunday) with open hours, tinted green. */
   available?: readonly number[];
+  /** Only days in this range are tinted open (notice to booking window). */
+  openFrom?: string;
+  openUntil?: string;
   /** No picking: the month at a glance. */
   readOnly?: boolean;
   onPick?: (iso: string) => void;
@@ -75,6 +78,8 @@ export function MonthPicker({
   selected = [],
   booked = [],
   available,
+  openFrom,
+  openUntil,
   readOnly = false,
   onPick,
   showLegend = false,
@@ -85,7 +90,7 @@ export function MonthPicker({
   const dayRefs = useRef(new Map<string, HTMLButtonElement>());
   const headingId = useId();
   const month = monthStart(today, offset);
-  const cells = monthCells({ month, today, min, selected, booked, available });
+  const cells = monthCells({ month, today, min, selected, booked, available, openFrom, openUntil });
   const days = cells.filter((c): c is Extract<MonthCell, { kind: 'day' }> => c.kind === 'day');
   const pickable = !readOnly && !!onPick;
   const cellRole = pickable ? 'gridcell' : 'cell';

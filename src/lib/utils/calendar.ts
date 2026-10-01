@@ -21,9 +21,13 @@ export function weeklyTotal(days: DayHours[]): string {
   return `${hours} hrs a week · ${open} day${open > 1 ? 's' : ''}`;
 }
 
-/** How many sessions of `durationMin` the week's hours fit (design `slotCount`). */
-export const slotCount = (days: DayHours[], durationMin: number) =>
-  Math.floor(weeklyMinutes(days) / durationMin);
+/** How many sessions of `durationMin` the week's hours fit, slot by slot (a session can't span two). */
+export function slotCount(days: DayHours[], durationMin: number): number {
+  let n = 0;
+  for (const d of days)
+    if (d.on) for (const [a, b] of d.slots) if (b > a) n += Math.floor((b - a) / durationMin);
+  return n;
+}
 
 /** Calendar v2 notice labels: "24 hours", "2 days". */
 export const noticeLabel = (hours: number) =>
@@ -85,6 +89,9 @@ export function monthCells(p: {
   booked: readonly string[];
   /** Weekdays (0 = Sunday) with open hours; absent: no day is marked open. */
   available?: readonly number[];
+  /** Only days in this range can be open (minimum notice to the booking window). */
+  openFrom?: string;
+  openUntil?: string;
 }): MonthCell[] {
   const sel = new Set(p.selected);
   const booked = new Set(p.booked);
@@ -112,8 +119,27 @@ export function monthCells(p: {
       joinPrev: selected && n > 1 && weekday > 0 && sel.has(addDays(iso, -1)),
       joinNext: selected && n < length && weekday < 6 && sel.has(addDays(iso, 1)),
       booked: booked.has(iso),
-      open: !!avail && !past && !selected && avail.has(weekday),
+      open:
+        !!avail &&
+        !past &&
+        !selected &&
+        avail.has(weekday) &&
+        (!p.openFrom || iso >= p.openFrom) &&
+        (!p.openUntil || iso <= p.openUntil),
     });
   }
   return cells;
+}
+
+/**
+ * The days a mentee could book in, in the mentor's zone: from the first day
+ * minimum notice allows to the last day of the booking window.
+ */
+export function bookableRange(today: string, d: BookingDefaults): { from: string; until: string } {
+  const r = resolveDefaults(d);
+  const windowDays = d.maxWindowDays ? Math.min(r.windowDays, d.maxWindowDays) : r.windowDays;
+  return {
+    from: addDays(today, Math.floor(r.noticeHours / 24)),
+    until: addDays(today, windowDays),
+  };
 }

@@ -1,5 +1,6 @@
 import { emptyWeek } from './sessionTypeDraft';
 import {
+  bookableRange,
   monthCells,
   monthStart,
   noticeLabel,
@@ -30,8 +31,20 @@ describe('weeklyTotal', () => {
 
 describe('slotCount', () => {
   it('counts whole sessions of the length across the week', () => {
-    expect(slotCount(week({ 1: [[540, 630]], 2: [[540, 570]] }), 60)).toBe(2);
+    expect(slotCount(week({ 1: [[540, 690]], 2: [[540, 600]] }), 60)).toBe(3);
     expect(slotCount(week({ 1: [[540, 570]] }), 60)).toBe(0);
+    // Two hour-long openings fit no 90-minute session: a session can't span two.
+    expect(
+      slotCount(
+        week({
+          1: [
+            [540, 600],
+            [660, 720],
+          ],
+        }),
+        90,
+      ),
+    ).toBe(0);
   });
 });
 
@@ -122,6 +135,34 @@ describe('monthCells', () => {
     expect(at(13)).toMatchObject({ open: false, selected: true });
     expect(at(20)).toMatchObject({ open: true, booked: true });
     expect(at(5)).toMatchObject({ past: true, open: false });
+  });
+
+  it('marks open only between the notice and the end of the booking window', () => {
+    const d = days(
+      monthCells({
+        month: '2026-10-01',
+        today: '2026-10-01',
+        selected: [],
+        booked: [],
+        available: [0, 1, 2, 3, 4, 5, 6],
+        openFrom: '2026-10-02',
+        openUntil: '2026-10-08',
+      }),
+    );
+    expect(d.filter((c) => c.open).map((c) => c.day)).toEqual([2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it('bookableRange: notice in whole days, the window capped', () => {
+    expect(
+      bookableRange('2026-10-01', {
+        durationMin: 60,
+        noticeHours: 48,
+        windowDays: 56,
+        breakMin: 0,
+        requiresApproval: false,
+        maxWindowDays: 14,
+      }),
+    ).toEqual({ from: '2026-10-03', until: '2026-10-15' });
   });
 
   it('pages months from today’s', () => {

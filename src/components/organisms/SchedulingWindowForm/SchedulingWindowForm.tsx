@@ -23,7 +23,7 @@ type SchedulingWindowFormProps = {
   /** The weekly hours on screen: a length they can't fit is said under the rows. */
   days: DayHours[];
   saving: boolean;
-  /** Our copy for a save that failed; announced. */
+  /** Our copy for a save that failed; the page announces it. */
   error: string | null;
   onCancel: () => void;
   onSave: (next: BookingDefaults) => void;
@@ -112,13 +112,20 @@ export function SchedulingWindowForm({
         <p className={styles.fit}>Your weekly hours are too short for this session length.</p>
       )}
       {error && (
-        <p role="alert" className={styles.error}>
+        <p className={styles.error}>
           <Icon name="error" size={18} />
           {error}
         </p>
       )}
       <div className={styles.footer}>
-        <Button size="large" variant="secondary-outlined" fullWidth onClick={onCancel}>
+        <Button
+          size="large"
+          variant="secondary-outlined"
+          fullWidth
+          // A sent save can't be called back: no cancelling while it's on its way.
+          disabled={saving}
+          onClick={onCancel}
+        >
           Cancel
         </Button>
         <Button

@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { WeeklyHours } from '@/lib/api/data/weeklyHours';
 import type { MentorDefaults } from '@/lib/api/data/sessionTypes';
@@ -55,22 +55,24 @@ const DEFAULTS: MentorDefaults = {
 let weekly: Remote<WeeklyHours>;
 let defaults: Remote<MentorDefaults> & { refreshing: boolean };
 const saveHours = vi.fn();
+const resetSave = vi.fn();
 let saveHoursError: AppError | null = null;
 const saveDefaults = vi.fn();
+let defaultsPending = false;
 vi.mock('@/lib/api/data/weeklyHours', () => ({
   useWeeklyHours: () => weekly,
   useSaveWeeklyHours: () => ({
     save: saveHours,
     isPending: false,
     error: saveHoursError,
-    reset: vi.fn(),
+    reset: resetSave,
   }),
 }));
 vi.mock('@/lib/api/data/sessionTypes', () => ({
   useMentorDefaults: () => defaults,
   useSaveMentorDefaults: () => ({
     save: saveDefaults,
-    isPending: false,
+    isPending: defaultsPending,
     error: null,
     reset: vi.fn(),
   }),
@@ -107,11 +109,19 @@ beforeEach(() => {
   saveHours.mockReset().mockResolvedValue(undefined);
   saveDefaults.mockReset().mockResolvedValue(DEFAULTS);
   saveHoursError = null;
+  defaultsPending = false;
+  resetSave.mockReset();
   booked = remote<string[]>([]);
   blocked = remote<string[]>([]);
 });
 
 const tuesdaySwitch = () => screen.getByRole('switch', { name: 'Tuesday' });
+/** What the page's live region last read out. */
+const announced = () =>
+  screen
+    .getAllByRole('status')
+    .map((s) => s.textContent)
+    .join(' | ');
 
 describe('CalendarScreen', () => {
   it('shows the hours, the window summary and the listed mentor as available', () => {
@@ -161,6 +171,32 @@ describe('CalendarScreen', () => {
     expect(await screen.findByText('Your weekly hours are saved.')).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Unsaved changes' })).toBeNull();
     expect(hasUnsavedChanges()).toBe(false);
+    // The bar's button went: focus is on the hours, not lost to the page.
+    expect(screen.getByRole('heading', { name: 'Weekly hours' })).toHaveFocus();
+  });
+
+  it('Discard moves focus to the hours before the bar goes', async () => {
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    await user.click(tuesdaySwitch());
+    await user.click(screen.getByRole('button', { name: 'Discard' }));
+    expect(screen.getByRole('heading', { name: 'Weekly hours' })).toHaveFocus();
+  });
+
+  it('an edit made while the save is on its way stays (with the bar)', async () => {
+    let finish: () => void = () => {};
+    saveHours.mockImplementation(() => new Promise<void>((r) => (finish = r)));
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    await user.click(tuesdaySwitch());
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    await user.click(screen.getByRole('switch', { name: 'Thursday' }));
+    await act(async () => finish());
+    expect(screen.getByRole('switch', { name: 'Thursday' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(screen.getByRole('region', { name: 'Unsaved changes' })).toBeInTheDocument();
   });
 
   it('a failed save’s message goes once the hours are back as saved', async () => {
@@ -168,13 +204,15 @@ describe('CalendarScreen', () => {
     const user = userEvent.setup();
     const { rerender } = render(<CalendarScreen />);
     await user.click(tuesdaySwitch());
-    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText('Your hours didn’t save. Try again in a moment.')).toBeInTheDocument();
+    resetSave.mockClear();
+    // Back to the saved hours: the old failure is reset, not shown on the next edit.
     await user.click(tuesdaySwitch());
-    // The mocked mutation keeps its error; the screen asked for it to be reset.
+    expect(resetSave).toHaveBeenCalled();
     saveHoursError = null;
     rerender(<CalendarScreen />);
     await user.click(tuesdaySwitch());
-    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByText('Your hours didn’t save. Try again in a moment.')).toBeNull();
   });
 
   it('won’t save hours that end before they start, and says why', async () => {
@@ -184,7 +222,10 @@ describe('CalendarScreen', () => {
     await user.selectOptions(within(monday).getByRole('combobox', { name: /end time/i }), '540');
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     expect(saveHours).not.toHaveBeenCalled();
-    expect(screen.getByRole('alert')).toHaveTextContent('Fix the hours marked in red, then save.');
+    const bar = screen.getByRole('region', { name: 'Unsaved changes' });
+    expect(within(bar).getByText('Fix the hours marked in red, then save.')).toBeInTheDocument();
+    // Read out by the live region that was already there.
+    expect(announced()).toContain('Fix the hours marked in red, then save.');
   });
 
   it('a failed save keeps the edits and says so', async () => {
@@ -192,7 +233,7 @@ describe('CalendarScreen', () => {
     const user = userEvent.setup();
     render(<CalendarScreen />);
     await user.click(tuesdaySwitch());
-    expect(screen.getByRole('alert')).toHaveTextContent('Your hours didn’t save.');
+    expect(screen.getByText(/Your hours didn’t save\./)).toBeInTheDocument();
     expect(tuesdaySwitch()).toHaveAttribute('aria-checked', 'true');
   });
 
@@ -209,6 +250,32 @@ describe('CalendarScreen', () => {
     expect(saveDefaults).toHaveBeenCalledWith(
       expect.objectContaining({ noticeHours: 48, requiresApproval: true }),
     );
+    expect(await screen.findByText('Your scheduling window is saved.')).toBeInTheDocument();
+  });
+
+  it('a failed scheduling window save is read out', async () => {
+    saveDefaults.mockRejectedValue({
+      message: 'Your preferences didn’t save. Try again in a moment.',
+    });
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    await user.click(screen.getByRole('button', { name: 'Change scheduling window' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(announced()).toContain('Your preferences didn’t save. Try again in a moment.'),
+    );
+  });
+
+  it('the scheduling window can’t be closed while its save is on its way', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<CalendarScreen />);
+    await user.click(screen.getByRole('button', { name: 'Change scheduling window' }));
+    defaultsPending = true;
+    rerender(<CalendarScreen />);
+    const dialog = screen.getByRole('dialog', { name: 'Scheduling window' });
+    expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('dialog', { name: 'Scheduling window' })).toBeInTheDocument();
   });
 
   it('with no hours yet, says what setting them does and isn’t "Available"', () => {

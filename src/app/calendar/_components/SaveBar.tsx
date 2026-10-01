@@ -19,7 +19,8 @@ export function SaveBar(p: {
       <div className={styles.saveText}>
         <span className={styles.saveTitle}>You have unsaved changes to your hours.</span>
         {p.error && (
-          <span role="alert" className={styles.saveError}>
+          // Shown here; the page's live region (already in the DOM) reads it out.
+          <span className={styles.saveError}>
             <Icon name="error" size={16} />
             {p.error}
           </span>
