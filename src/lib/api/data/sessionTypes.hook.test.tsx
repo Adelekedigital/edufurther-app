@@ -209,6 +209,10 @@ describe('useDeleteSessionType', () => {
       expect(result.current.list.data!.map((t) => t.id)).toEqual(['x', 'y']);
       await vi.advanceTimersByTimeAsync(1);
       await vi.waitFor(() => expect(GET.mock.calls.length).toBeGreaterThan(reads));
+      // The server may finish it after that refetch: the list is read once more later.
+      const settled = GET.mock.calls.length;
+      await vi.advanceTimersByTimeAsync(DELETE_TIMEOUT_MS);
+      await vi.waitFor(() => expect(GET.mock.calls.length).toBeGreaterThan(settled));
     } finally {
       vi.useRealTimers();
     }

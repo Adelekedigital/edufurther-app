@@ -25,7 +25,7 @@ import { formatShortDate } from '@/lib/utils/format';
 import { SESSION_TEMPLATES, templateHint } from '@/lib/utils/sessionTemplates';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { Remote } from '@/types/mentor';
-import type { OwnSessionType } from '@/types/sessionType';
+import type { DeleteError, OwnSessionType } from '@/types/sessionType';
 import { useAppShell } from '../../_shell/useAppShell';
 import { mentorGate } from './MentorGate';
 import styles from './SessionTypesScreen.module.css';
@@ -148,11 +148,28 @@ export function SessionTypesScreen() {
     setConfirming(null);
     del.reset();
   };
+  // Closed (×) while its delete was out: the delete carries on, and the row
+  // says how it went, a refusal included (product, 2026-10-01).
+  const dismissed = useRef(false);
+  const dismissConfirm = () => {
+    dismissed.current = true;
+    setConfirming(null);
+  };
   // A removed row takes its buttons with it: focus the next row's "⋯", or Create.
   const [focusAfterRemoval, setFocusAfterRemoval] = useState<{ menuOf: string } | 'create' | null>(
     null,
   );
   const onFocused = useCallback(() => setFocusAfterRemoval(null), []);
+  // A delete that couldn't be confirmed: if the refetched list no longer has
+  // it, focus moves on as after a delete (adjusted during render).
+  const [unconfirmed, setUnconfirmed] = useState<{
+    id: string;
+    after: { menuOf: string } | 'create';
+  } | null>(null);
+  if (unconfirmed && list.data && !list.data.some((x) => x.id === unconfirmed.id)) {
+    setUnconfirmed(null);
+    setFocusAfterRemoval(unconfirmed.after);
+  }
   const neighbour = (id: string): { menuOf: string } | 'create' => {
     const rows = list.data ?? [];
     const i = rows.findIndex((x) => x.id === id);
@@ -161,15 +178,17 @@ export function SessionTypesScreen() {
   };
   const onDelete = (t: OwnSessionType) => {
     const after = neighbour(t.id);
+    dismissed.current = false;
     void del
       .remove(t.id)
       .then((r) => {
         closeConfirm();
         clearMessage(t.id);
         // PROVISIONAL copy: no answer in time; the refetched list shows what happened.
-        if (r.kind === 'unknown')
+        if (r.kind === 'unknown') {
+          setUnconfirmed({ id: t.id, after });
           announce('We couldn’t confirm the delete. The list has been refreshed.');
-        else if (r.kind === 'deleted') {
+        } else if (r.kind === 'deleted') {
           setFocusAfterRemoval(after);
           announce(`“${t.name}” was deleted.`);
         } else
@@ -179,7 +198,12 @@ export function SessionTypesScreen() {
               : 'Deletion scheduled. Hidden from mentees now.',
           );
       })
-      .catch(() => undefined);
+      .catch((e: DeleteError) => {
+        // The confirm shows a refusal; once dismissed, the row does.
+        if (!dismissed.current) return;
+        del.reset();
+        say(t.id, e.message, false);
+      });
   };
 
   // Featured: one at a time; featuring another asks first (design `feature` confirm).
@@ -299,6 +323,7 @@ export function SessionTypesScreen() {
           busy={del.isPending}
           error={del.error}
           onKeep={closeConfirm}
+          onDismiss={dismissConfirm}
           onDelete={() => onDelete(confirming)}
         />
       )}

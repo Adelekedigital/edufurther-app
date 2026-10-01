@@ -22,7 +22,9 @@ type Framed = { renderShell: (shell: ConfirmShell, body: ReactNode) => ReactNode
  * Delete confirms in a danger modal (project rule). With sessions still booked
  * it's the design's "Schedule deletion for {date}?": hidden now, deleted after
  * the last one (backend round 4). While the request is out it can't be kept:
- * the DELETE can't be called back, so "Keep it" and closing wait for it.
+ * the DELETE can't be called back, so "Keep it" is off. Closing (Escape, ×)
+ * dismisses it (`onDismiss`: the delete carries on and the page says how it
+ * went); without `onDismiss` it waits for the answer.
  */
 export function DeleteConfirm(
   p: Framed & {
@@ -30,6 +32,8 @@ export function DeleteConfirm(
     busy: boolean;
     error: DeleteError | null;
     onKeep: () => void;
+    /** The close button while the delete is out (product, 2026-10-01). */
+    onDismiss?: () => void;
     onDelete: () => void;
   },
 ) {
@@ -46,11 +50,17 @@ export function DeleteConfirm(
         p.type.isFeatured ? ' It also stops being featured.' : ''
       }`
     : `“${p.type.name}” is removed from your profile and Session types. This can’t be undone.`;
-  const keep = p.busy ? () => {} : p.onKeep;
+  const close = p.busy ? (p.onDismiss ?? (() => {})) : p.onKeep;
   return (
     <>
       {p.renderShell(
-        { title, subtitle, icon: 'delete', tone: 'danger', onClose: keep },
+        {
+          title,
+          subtitle,
+          icon: 'delete',
+          tone: 'danger',
+          onClose: close,
+        },
         <>
           {p.error && (
             <p role="alert" className={styles.error}>
@@ -62,7 +72,7 @@ export function DeleteConfirm(
               size="large"
               variant="secondary-outlined"
               fullWidth
-              onClick={keep}
+              onClick={p.onKeep}
               disabled={p.busy}
             >
               Keep it

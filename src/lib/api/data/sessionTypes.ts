@@ -295,7 +295,14 @@ export function useDeleteSessionType() {
     // A list fetch already under way would land after this and bring the row back.
     onMutate: () => qc.cancelQueries({ queryKey: keys.sessionTypes.own(who) }),
     onSuccess: (r, id) => {
-      if (r.kind === 'unknown') return;
+      // A timed-out delete may still land after the settle's refetch: look again later.
+      if (r.kind === 'unknown') {
+        setTimeout(
+          () => void qc.invalidateQueries({ queryKey: keys.sessionTypes.all }),
+          DELETE_TIMEOUT_MS,
+        );
+        return;
+      }
       qc.setQueryData<OwnSessionType[]>(keys.sessionTypes.own(who), (list) =>
         r.kind === 'deleted'
           ? list?.filter((t) => t.id !== id)
