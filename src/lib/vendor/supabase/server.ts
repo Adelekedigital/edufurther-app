@@ -24,6 +24,21 @@ export async function exchangeCodeForSession(code: string): Promise<boolean> {
 }
 
 /**
+ * The signed-in user's access token, for a server-side API call during a page
+ * render (the proxy refreshed it just before). Read-only: a render can't set
+ * cookies. Unverified here; the backend verifies it like any bearer token.
+ */
+export async function serverAccessToken(): Promise<string | null> {
+  if (!authConfigured) return null;
+  const jar = await cookies();
+  const sb = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    cookies: { getAll: () => jar.getAll(), setAll: () => {} },
+  });
+  const { data } = await sb.auth.getSession();
+  return data.session?.access_token ?? null;
+}
+
+/**
  * Request header the proxy sets for the page render: the signed-in user's id,
  * or "none". A hint for which chrome to draw first (no wordmark-then-sidebar
  * swap on refresh), never an authorization claim: data calls carry their own

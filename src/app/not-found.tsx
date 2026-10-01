@@ -3,7 +3,8 @@ import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import styles from './not-found.module.css';
 
 // PROVISIONAL copy — no 404 design yet. Screens owned by other sessions
-// (Home, Bookings, Messages, Settings, Mentor profile) land here until built.
+// (Bookings, Settings, /dashboard and /admin, where / sends mentors and admins)
+// land here until built.
 export default function NotFound() {
   return (
     <main className={styles.page}>
