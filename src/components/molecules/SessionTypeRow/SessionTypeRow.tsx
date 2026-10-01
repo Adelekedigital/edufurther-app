@@ -78,12 +78,19 @@ export function SessionTypeRow({
     onFocused?.();
   }, [focusMenu, onFocused]);
   const qn = t.questionCount;
-  const facts = [
+  // Two topics, then "+N": every row keeps one line of facts (product,
+  // 2026-09-30). The full list is read out and shown on hover.
+  const names = t.topics.map((x) => x.label);
+  const topics =
+    names.length > 2
+      ? { label: `${names.slice(0, 2).join(', ')}, +${names.length - 2}`, full: names.join(', ') }
+      : { label: names.join(', ') || 'Any topic' };
+  const facts: { icon: 'schedule' | 'quiz' | 'sell'; label: string; full?: string }[] = [
     { icon: 'schedule' as const, label: `${t.durationMin} min` },
     ...(qn === null
       ? []
       : [{ icon: 'quiz' as const, label: `${qn} question${qn === 1 ? '' : 's'}` }]),
-    { icon: 'sell' as const, label: t.topics.map((x) => x.label).join(', ') || 'Any topic' },
+    { icon: 'sell' as const, ...topics },
   ];
   return (
     <article className={cx(styles.row, !t.isLive && styles.hidden)} aria-labelledby={nameId}>
@@ -128,9 +135,16 @@ export function SessionTypeRow({
         )}
         <ul className={styles.facts}>
           {facts.map((f) => (
-            <li key={f.icon} className={styles.fact}>
+            <li key={f.icon} className={styles.fact} title={f.full}>
               <Icon name={f.icon} size={14} className={styles.factIcon} />
-              {f.label}
+              {f.full ? (
+                <>
+                  <span aria-hidden>{f.label}</span>
+                  <span className="sr-only">{f.full}</span>
+                </>
+              ) : (
+                f.label
+              )}
             </li>
           ))}
         </ul>

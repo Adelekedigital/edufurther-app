@@ -100,6 +100,36 @@ describe('SessionTypeManager — the four states', () => {
     );
   });
 
+  it('topics: two, then "+N"; the full list is read out (product, 2026-09-30)', () => {
+    const three = [
+      { code: 'document-preparation', label: 'Document preparation' },
+      { code: 'interview-preparation', label: 'Interview preparation' },
+      { code: 'scholarships-financial-aid', label: 'Scholarships & financial aid' },
+    ];
+    setup(
+      remote({
+        data: [
+          { ...T, id: 'a', name: 'Three topics', topics: three },
+          { ...T, id: 'b', name: 'Two topics', topics: three.slice(0, 2) },
+          { ...T, id: 'c', name: 'No topics', topics: [] },
+        ],
+      }),
+    );
+    const row = (name: string) => screen.getByRole('article', { name });
+    const many = within(row('Three topics')).getByText(
+      'Document preparation, Interview preparation, +1',
+    );
+    expect(many).toHaveAttribute('aria-hidden');
+    expect(
+      within(row('Three topics')).getByText(
+        'Document preparation, Interview preparation, Scholarships & financial aid',
+      ),
+    ).toHaveClass('sr-only');
+    expect(row('Two topics')).toHaveTextContent('Document preparation, Interview preparation');
+    expect(row('Two topics')).not.toHaveTextContent('+');
+    expect(row('No topics')).toHaveTextContent('Any topic');
+  });
+
   it('content: each type is a named row; the switch and delete report the row', async () => {
     const user = userEvent.setup();
     const { onLiveChange, onDelete, onEdit, onDuplicate } = setup(

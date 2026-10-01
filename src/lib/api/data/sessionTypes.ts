@@ -41,8 +41,9 @@ type MentorProfileWrite = components['schemas']['MentorProfileWrite'];
 
 /**
  * Automatic icon from the topics (design `autoIcon`, re-keyed to the catalog's
- * offering codes — design-divergence.md): the first topic's icon; none, or three
- * or more (a general call), is the video call.
+ * offering codes — design-divergence.md): the first topic's icon, however many
+ * there are (product, 2026-09-30; the design made three or more a video call);
+ * none, or one without an icon, is the video call.
  */
 const TOPIC_ICON: Record<string, SessionIcon> = {
   'test-preparation': 'quiz',
@@ -54,7 +55,7 @@ const TOPIC_ICON: Record<string, SessionIcon> = {
 };
 export function autoIcon(topicCodes: readonly (string | null | undefined)[]): SessionIcon {
   const first = topicCodes[0];
-  if (!first || topicCodes.length >= 3) return 'video_call';
+  if (!first) return 'video_call';
   return TOPIC_ICON[first] ?? 'video_call';
 }
 

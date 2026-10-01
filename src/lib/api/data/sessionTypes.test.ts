@@ -87,7 +87,7 @@ describe('toOwnSessionType', () => {
     expect(autoIcon([])).toBe('video_call');
   });
 
-  it('every catalog offering has its own icon, first topic wins, 3+ is a general call', () => {
+  it('every catalog offering has its own icon; the first topic wins, however many there are', () => {
     // The backend's real codes (service_offerings seed) — the old map missed four.
     expect(
       [
@@ -100,9 +100,8 @@ describe('toOwnSessionType', () => {
       ].map((c) => autoIcon([c])),
     ).toEqual(['quiz', 'edit_document', 'school', 'school', 'payments', 'record_voice_over']);
     expect(autoIcon(['scholarships-financial-aid', 'school-selection'])).toBe('payments');
-    expect(autoIcon(['test-preparation', 'school-selection', 'program-selection'])).toBe(
-      'video_call',
-    );
+    // Three or more still follow the first (product, 2026-09-30).
+    expect(autoIcon(['test-preparation', 'school-selection', 'program-selection'])).toBe('quiz');
   });
 
   it('switched off reads as not live; description may be missing', () => {

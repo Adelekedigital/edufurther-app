@@ -198,23 +198,6 @@ export function IntakeQuestionsStep({
               <span aria-hidden>Required</span>
             </span>
           </div>
-          {choice && (
-            <div className={styles.options}>
-              <Input
-                aria-label="Answer options"
-                value={q.options}
-                placeholder="Options, separated by commas"
-                onChange={(e) => setQ({ ...q, options: e.target.value })}
-              />
-              <button
-                type="button"
-                className={styles.textLink}
-                onClick={() => setQ({ ...q, kind: 'single', options: 'Yes, No' })}
-              >
-                Use Yes / No
-              </button>
-            </div>
-          )}
           <Input
             aria-label="Question"
             value={q.text}
@@ -238,6 +221,23 @@ export function IntakeQuestionsStep({
             <p id="question-editor-error" className={styles.fieldError}>
               {editorError}
             </p>
+          )}
+          {choice && (
+            <div className={styles.options}>
+              <Input
+                aria-label="Answer options"
+                value={q.options}
+                placeholder="Options, separated by commas"
+                onChange={(e) => setQ({ ...q, options: e.target.value })}
+              />
+              <button
+                type="button"
+                className={styles.textLink}
+                onClick={() => setQ({ ...q, kind: 'single', options: 'Yes, No' })}
+              >
+                Use Yes / No
+              </button>
+            </div>
           )}
           <div className={styles.editorButtons}>
             <Button variant="secondary-outlined" onClick={save}>
