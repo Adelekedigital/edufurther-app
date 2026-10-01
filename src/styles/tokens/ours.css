@@ -108,9 +108,9 @@
   /* Wizard step number (Session Types.dc.html literal 11px; no DS step). */
   --step-dot-text: 11px;
 
-  /* Calendar "Session booked" dot (MonthPicker.dc.html draws --orange-500,
-     which is banned in product UI): the warm dark of the gold ramp. */
-  --calendar-booked: var(--yellow-900);
+  /* Calendar booked-day ring (MonthPicker.dc.html `GOLD_LT`, a literal with
+     no DS token; bookedStyle=ring, 2026-10-01). */
+  --calendar-booked-ring: oklch(0.72 0.11 75);
 
   /* Breakpoint, for reference: CSS media queries cannot read a var, so the
      number 768px is repeated in modules. Keep them equal. */

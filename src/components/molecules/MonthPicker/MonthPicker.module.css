@@ -108,6 +108,7 @@
   font-size: var(--text-p-xs);
   font-weight: var(--weight-regular);
   color: var(--ink-900);
+  box-sizing: border-box;
 }
 button.day {
   cursor: pointer;
@@ -118,8 +119,8 @@ button.day[aria-disabled='true'] {
 button.day:not(.selected, .mid, [aria-disabled='true']):hover {
   background: var(--ink-100);
 }
+/* Open: the green tint only (with the booked ring, the green edge was dropped). */
 .open {
-  border-color: var(--green-600);
   background: var(--green-50);
 }
 /* Today's ring wins over an open day's green (design: isToday first). */
@@ -140,54 +141,59 @@ button.day:not(.selected, .mid, [aria-disabled='true']):hover {
 .strong {
   font-weight: var(--weight-semibold);
 }
-.dot {
-  position: absolute;
-  left: 50%;
-  bottom: 3px;
-  width: 4px;
-  height: 4px;
-  margin-left: -2px;
-  border-radius: var(--radius-full);
-  background: var(--calendar-booked);
+/* Booked (design `bookedStyle=ring`): a 2px gold ring inside the day; on a
+   blocked end, a white inner ring and the gold outside it. */
+.booked {
+  box-shadow: inset 0 0 0 2px var(--calendar-booked-ring);
 }
-.dotOnBlue {
-  background: var(--white);
+.bookedOnBlue {
+  box-shadow:
+    inset 0 0 0 2px var(--white),
+    0 0 0 2px var(--calendar-booked-ring);
 }
 .legend {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-4);
   font-size: var(--text-p-xs);
-  color: var(--ink-500);
+  color: var(--ink-600);
 }
 .key {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
+/* One 16px swatch per key, each drawn like the day it explains. */
 .swatch {
-  width: 10px;
-  height: 10px;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  box-sizing: border-box;
   border-radius: var(--radius-full);
+  border: var(--border-hairline) solid transparent;
 }
 .swatchOpen {
   background: var(--green-50);
-  box-shadow: inset 0 0 0 1px var(--green-600);
 }
 .swatchBlocked {
   background: var(--blue-500);
+  border-color: var(--blue-500);
 }
 .swatchBooked {
-  width: 6px;
-  height: 6px;
-  border-radius: var(--radius-full);
-  background: var(--calendar-booked);
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--calendar-booked-ring);
 }
-/* Phones: a 44px tap area around the drawn 32px control. */
+/* Phones: a 44px tap area around the drawn 32px controls and 36px days. */
 @media (max-width: 767px) {
-  .navBtn::after {
+  .navBtn::after,
+  button.day::after {
     content: '';
     position: absolute;
+  }
+  .navBtn::after {
     inset: -6px;
+  }
+  button.day::after {
+    inset: -4px;
   }
 }

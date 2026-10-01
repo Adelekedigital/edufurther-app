@@ -20,7 +20,8 @@ describe('MonthPicker, read-only (Month at a glance)', () => {
     expect(screen.getByText('Monday, October 5, open for bookings')).toBeInTheDocument();
     // Nothing to pick: no day is a button.
     expect(screen.queryByRole('button', { name: /October 12/ })).toBeNull();
-    expect(screen.getByText('Open for bookings')).toBeInTheDocument();
+    expect(screen.getByText('Open')).toBeInTheDocument();
+    expect(screen.getByText('Booked')).toBeInTheDocument();
   });
 
   it('pages forward and back, never before this month', async () => {

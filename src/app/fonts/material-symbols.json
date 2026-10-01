@@ -28,6 +28,7 @@
     "description",
     "drag_indicator",
     "edit",
+    "edit_calendar",
     "edit_document",
     "error",
     "event",
@@ -48,6 +49,7 @@
     "home",
     "home_pin",
     "hourglass_top",
+    "info",
     "ios_share",
     "join_inner",
     "label",
@@ -104,5 +106,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "122d4855fa5cfa9350359a1c26148a457b6fb436b78bdcef58ee6791fbb106c5"
+  "sha256": "a7228c42c220cbf5e4522ac5e51717c626915cb068e8fd763dc4ea375467495b"
 }

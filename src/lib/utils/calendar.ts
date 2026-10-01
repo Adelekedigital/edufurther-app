@@ -143,3 +143,25 @@ export function bookableRange(today: string, d: BookingDefaults): { from: string
     until: addDays(today, windowDays),
   };
 }
+
+/** Days (YYYY-MM-DD) as runs of consecutive days: `end` is exclusive, like a block's `end_date`. */
+export function runsOf(days: readonly string[]): { start: string; end: string }[] {
+  const sorted = [...new Set(days)].sort();
+  const runs: { start: string; end: string }[] = [];
+  for (const d of sorted) {
+    const last = runs[runs.length - 1];
+    if (last && last.end === d) last.end = addDays(d, 1);
+    else runs.push({ start: d, end: addDays(d, 1) });
+  }
+  return runs;
+}
+
+/** "Mon, Oct 12" (Calendar v2 `short`), for a calendar date. */
+export function shortDay(iso: string): string {
+  return new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+}

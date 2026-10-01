@@ -14,7 +14,7 @@ type MonthPickerProps = {
   min?: string;
   /** Blocked days (design `selected`). */
   selected?: readonly string[];
-  /** Days with a session booked: a dot under the number. */
+  /** Days with a session booked: a gold ring round the day (design `bookedStyle=ring`). */
   booked?: readonly string[];
   /** Weekdays (0 = Sunday) with open hours, tinted green. */
   available?: readonly number[];
@@ -68,7 +68,7 @@ const weeks = (cells: MonthCell[]) => {
 
 /**
  * MonthPicker.dc.html, `soft` layout: one month, Sunday first. Blocked runs
- * join into one band, open weekdays are tinted green, booked days get a dot.
+ * join into one band, open weekdays are tinted green, booked days get a gold ring.
  * Read-only it's a summary; with `onPick` the days are buttons in one tab
  * stop, moved through with the arrow keys (ours).
  */
@@ -222,7 +222,7 @@ export function MonthPicker({
           {available && (
             <span className={styles.key}>
               <span aria-hidden className={cx(styles.swatch, styles.swatchOpen)} />
-              Open for bookings
+              Open
             </span>
           )}
           <span className={styles.key}>
@@ -230,8 +230,8 @@ export function MonthPicker({
             Blocked
           </span>
           <span className={styles.key}>
-            <span aria-hidden className={styles.swatchBooked} />
-            Session booked
+            <span aria-hidden className={cx(styles.swatch, styles.swatchBooked)} />
+            Booked
           </span>
         </div>
       )}
@@ -265,11 +265,9 @@ function Day({
     c.today && !c.selected && styles.today,
     c.open && styles.open,
     c.selected && (mid ? styles.mid : styles.selected),
+    c.booked && (c.selected && !mid ? styles.bookedOnBlue : styles.booked),
     c.past && styles.past,
     (c.today || c.selected) && styles.strong,
-  );
-  const dot = c.booked && (
-    <span aria-hidden className={cx(styles.dot, c.selected && !mid && styles.dotOnBlue)} />
   );
   return (
     <span
@@ -294,13 +292,11 @@ function Day({
           onKeyDown={onKey}
         >
           {c.day}
-          {dot}
         </button>
       ) : (
         <span className={dayClass}>
           <span aria-hidden>{c.day}</span>
           <span className="sr-only">{label}</span>
-          {dot}
         </span>
       )}
     </span>

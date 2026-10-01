@@ -175,6 +175,7 @@ export function useSaveWeeklyHours(userId: string | null) {
         if (moved && failed < results.length && navigator.onLine !== false)
           throw {
             kind: 'server',
+            partial: true,
             // PROVISIONAL copy (calendar design request).
             message:
               'Some of your hours didn’t move to the new time zone. Discard your changes to see where they are, then try again.',
@@ -204,6 +205,7 @@ export function hoursError(none: boolean): AppError {
   const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
   return {
     kind: offline ? 'offline' : 'server',
+    partial: !offline && !none,
     message: offline
       ? 'You’re offline. Your hours didn’t save. Try again when you reconnect.'
       : none
