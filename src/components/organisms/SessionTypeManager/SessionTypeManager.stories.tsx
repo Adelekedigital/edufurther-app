@@ -166,6 +166,16 @@ export const EdgeCases: Story = {
             topics: [],
             icon: 'video_call',
           }),
+          // Two topics, then "+N" (product, 2026-09-30).
+          T({
+            id: 'many',
+            name: 'Scholarship and interview prep',
+            topics: [
+              { code: 'document-preparation', label: 'Document preparation' },
+              { code: 'interview-preparation', label: 'Interview preparation' },
+              { code: 'scholarships-financial-aid', label: 'Scholarships & financial aid' },
+            ],
+          }),
           ...TYPES.slice(1),
         ],
       })}

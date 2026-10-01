@@ -78,12 +78,28 @@ export function SessionTypeRow({
     onFocused?.();
   }, [focusMenu, onFocused]);
   const qn = t.questionCount;
-  const facts = [
+  // Two topics, then "+N" (product, 2026-09-30); the chip ends in "…" if even
+  // that is too long, so every row keeps one line of facts. The full list is
+  // read out and shown on hover.
+  const names = t.topics.map((x) => x.label);
+  // `title`: every topic, on hover, whenever the chip could be cut short;
+  // `full`: also read out, when the visible text is shortened to "+N".
+  const all = names.join(', ');
+  const topics =
+    names.length > 2
+      ? { label: `${names.slice(0, 2).join(', ')}, +${names.length - 2}`, full: all, title: all }
+      : { label: all || 'Any topic', title: all || undefined };
+  const facts: {
+    icon: 'schedule' | 'quiz' | 'sell';
+    label: string;
+    full?: string;
+    title?: string;
+  }[] = [
     { icon: 'schedule' as const, label: `${t.durationMin} min` },
     ...(qn === null
       ? []
       : [{ icon: 'quiz' as const, label: `${qn} question${qn === 1 ? '' : 's'}` }]),
-    { icon: 'sell' as const, label: t.topics.map((x) => x.label).join(', ') || 'Any topic' },
+    { icon: 'sell' as const, ...topics },
   ];
   return (
     <article className={cx(styles.row, !t.isLive && styles.hidden)} aria-labelledby={nameId}>
@@ -128,9 +144,18 @@ export function SessionTypeRow({
         )}
         <ul className={styles.facts}>
           {facts.map((f) => (
-            <li key={f.icon} className={styles.fact}>
+            <li key={f.icon} className={cx(styles.fact, f.icon === 'sell' && styles.factTopics)}>
               <Icon name={f.icon} size={14} className={styles.factIcon} />
-              {f.label}
+              {/* The hover title sits on the visible text: on the li it would become
+                  the item's name and the list could be read twice. */}
+              <span
+                aria-hidden={f.full ? true : undefined}
+                title={f.title}
+                className={styles.factText}
+              >
+                {f.label}
+              </span>
+              {f.full && <span className="sr-only">{f.full}</span>}
             </li>
           ))}
         </ul>

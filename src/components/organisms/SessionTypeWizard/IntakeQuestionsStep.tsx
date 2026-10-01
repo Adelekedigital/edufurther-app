@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
+import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { Input } from '@/components/atoms/Input/Input';
@@ -69,6 +70,15 @@ export function IntakeQuestionsStep({
   const editing = found >= 0 ? found : null;
   const choice = q.kind === 'single' || q.kind === 'multi';
   const editorError = tried ? questionError({ ...q, options: parseOptions(q.options) }) : null;
+  // The question's own error shows on it; any other is about a choice question's options.
+  const questionErr = editorError && !q.text.trim() ? editorError : null;
+  const optionsErr = editorError && !questionErr ? editorError : null;
+  const questionErrId = useId();
+  const optionsErrId = useId();
+  const optionsRef = useRef<HTMLInputElement>(null);
+  // Said through an always-mounted region: a role="alert" mounted with its
+  // text in it is often missed (Codex on #123). The paragraphs are visual.
+  const [said, setSaid] = useState<{ text: string; id: number } | null>(null);
 
   const move = (from: number, to: number) => {
     if (to < 0 || to >= qs.length || from === to) return;
@@ -85,7 +95,11 @@ export function IntakeQuestionsStep({
   const save = () => {
     setTried(true);
     const options = choice ? parseOptions(q.options) : [];
-    if (questionError({ ...q, options })) return;
+    const error = questionError({ ...q, options });
+    if (error) {
+      setSaid((was) => ({ text: error, id: (was?.id ?? 0) + 1 }));
+      return;
+    }
     const item: DraftQuestion = {
       key: editing === null ? newKey() : editingKey!,
       text: q.text.trim(),
@@ -198,14 +212,52 @@ export function IntakeQuestionsStep({
               <span aria-hidden>Required</span>
             </span>
           </div>
+          <Input
+            aria-label="Question"
+            value={q.text}
+            maxLength={500}
+            invalid={!!questionErr}
+            aria-describedby={questionErr ? questionErrId : undefined}
+            placeholder={
+              q.kind === 'file_upload'
+                ? 'e.g. Upload your current SOP draft'
+                : 'e.g. Which part of your SOP are you unsure about?'
+            }
+            onChange={(e) => setQ({ ...q, text: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter') return;
+              e.preventDefault();
+              // A choice question isn't finished yet: Enter moves on to its options.
+              if (choice) optionsRef.current?.focus();
+              else save();
+            }}
+          />
+          {questionErr && (
+            <p id={questionErrId} className={styles.fieldError}>
+              {questionErr}
+            </p>
+          )}
           {choice && (
             <div className={styles.options}>
               <Input
+                ref={optionsRef}
                 aria-label="Answer options"
                 value={q.options}
+                invalid={!!optionsErr}
+                aria-describedby={optionsErr ? optionsErrId : undefined}
                 placeholder="Options, separated by commas"
                 onChange={(e) => setQ({ ...q, options: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key !== 'Enter') return;
+                  e.preventDefault();
+                  save();
+                }}
               />
+              {optionsErr && (
+                <p id={optionsErrId} className={styles.fieldError}>
+                  {optionsErr}
+                </p>
+              )}
               <button
                 type="button"
                 className={styles.textLink}
@@ -214,30 +266,6 @@ export function IntakeQuestionsStep({
                 Use Yes / No
               </button>
             </div>
-          )}
-          <Input
-            aria-label="Question"
-            value={q.text}
-            maxLength={500}
-            invalid={!!editorError}
-            aria-describedby={editorError ? 'question-editor-error' : undefined}
-            placeholder={
-              q.kind === 'file_upload'
-                ? 'e.g. Upload your current SOP draft'
-                : 'e.g. Which part of your SOP are you unsure about?'
-            }
-            onChange={(e) => setQ({ ...q, text: e.target.value })}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                save();
-              }
-            }}
-          />
-          {editorError && (
-            <p id="question-editor-error" className={styles.fieldError}>
-              {editorError}
-            </p>
           )}
           <div className={styles.editorButtons}>
             <Button variant="secondary-outlined" onClick={save}>
@@ -255,6 +283,7 @@ export function IntakeQuestionsStep({
         Every extra question lowers bookings. Ask only what you need to prepare. You can ask the
         rest in the session.
       </Notice>
+      <LiveRegion message={said} />
     </div>
   );
 }
