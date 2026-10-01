@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { NextRequest, NextResponse } from 'next/server';
 import { SUPABASE_ANON_KEY, SUPABASE_URL, authConfigured } from './config';
@@ -24,26 +24,38 @@ export async function exchangeCodeForSession(code: string): Promise<boolean> {
 }
 
 /**
- * Proxy (src/proxy.ts): refresh an expiring session and pass the new cookies to
- * both the request (for this render) and the response (for the browser).
+ * Request header the proxy sets for the page render: the signed-in user's id,
+ * or "none". A hint for which chrome to draw first (no wordmark-then-sidebar
+ * swap on refresh), never an authorization claim: data calls carry their own
+ * token. The proxy always overwrites whatever a client sent under this name.
+ */
+export const SESSION_HINT_HEADER = 'x-ef-session';
+
+/**
+ * Proxy (src/proxy.ts): refresh an expiring session, pass the new cookies to
+ * both the request (for this render) and the response (for the browser), and
+ * hand `respond` the verified user id (null: not signed in, or auth is off).
  */
 export async function refreshSessionCookies(
   request: NextRequest,
-  next: () => NextResponse,
+  respond: (userId: string | null) => NextResponse,
 ): Promise<NextResponse> {
-  let response = next();
-  if (!authConfigured) return response;
+  if (!authConfigured) return respond(null);
+  const refreshed: { name: string; value: string; options: CookieOptions }[] = [];
   const sb = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     cookies: {
       getAll: () => request.cookies.getAll(),
       setAll: (list) => {
         list.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = next();
-        list.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+        refreshed.push(...list);
       },
     },
   });
-  // Verifies the JWT and refreshes it when expired; the result itself is unused.
-  await sb.auth.getClaims();
+  // Verifies the JWT and refreshes it when expired.
+  const { data } = await sb.auth.getClaims();
+  const sub = data?.claims?.sub;
+  // Built after the refresh, so this render sees the new cookies.
+  const response = respond(typeof sub === 'string' && sub !== '' ? sub : null);
+  refreshed.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
   return response;
 }
