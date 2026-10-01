@@ -8,6 +8,7 @@
 export const ICON_NAMES = [
   'account_box',
   'add',
+  'add_circle',
   'add_photo_alternate',
   'alternate_email',
   'arrow_back',

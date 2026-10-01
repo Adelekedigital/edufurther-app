@@ -84,6 +84,30 @@ describe('BookingFlow on phones (sheet)', () => {
     await user.click(screen.getByRole('button', { name: /CV review/ }));
     expect(screen.queryByRole('link', { name: 'View profile' })).not.toBeInTheDocument();
   });
+
+  it('the summary offers the session-type choice on step 1 only, and only with several types', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<BookingFlow {...props()} />);
+    await user.click(screen.getByRole('button', { name: /General mentorship/ }));
+    expect(screen.getByRole('combobox', { name: 'Session type' })).toBeInTheDocument();
+    // Past the time step the answers belong to this type: no switching there.
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+    await user.click(screen.getByRole('button', { name: 'Continue to questions' }));
+    expect(screen.getByRole('button', { name: /General mentorship/ })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(screen.queryByRole('combobox', { name: 'Session type' })).not.toBeInTheDocument();
+    unmount();
+
+    render(
+      <BookingFlow
+        {...props({ sessionTypes: remote([sessionTypes[1]!]), sessionTypeId: 'st2' })}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: /CV review/ }));
+    expect(screen.queryByRole('combobox', { name: 'Session type' })).not.toBeInTheDocument();
+  });
 });
 
 describe('BookingFlow on wider screens', () => {
@@ -95,6 +119,27 @@ describe('BookingFlow on wider screens', () => {
     expect(screen.queryByTestId('footer')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View profile' })).toBeInTheDocument();
+  });
+
+  it('with one session type, names it instead of offering a choice', () => {
+    render(
+      <BookingFlow
+        {...props({ sessionTypes: remote([sessionTypes[1]!]), sessionTypeId: 'st2' })}
+      />,
+    );
+    const aside = screen.getByRole('complementary', { name: 'Session' });
+    expect(within(aside).queryByRole('combobox')).not.toBeInTheDocument();
+    expect(within(aside).getByText('Session')).toBeInTheDocument();
+    expect(within(aside).getByText('CV review')).toBeInTheDocument();
+  });
+
+  it('locks the session-type choice after the time step', async () => {
+    const user = userEvent.setup();
+    render(<BookingFlow {...props()} />);
+    expect(screen.getByRole('combobox', { name: 'Session type' })).toBeEnabled();
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+    await user.click(screen.getByRole('button', { name: 'Continue to questions' }));
+    expect(screen.getByRole('combobox', { name: 'Session type' })).toBeDisabled();
   });
 
   it('shows the price, Free, and the credit it uses, next to the length', () => {
@@ -316,6 +361,29 @@ describe('BookingFlow on real slots', () => {
     render(<BookingFlow {...props({ onSessionTypeChange })} />);
     await user.selectOptions(screen.getByRole('combobox', { name: 'Session type' }), 'st2');
     expect(onSessionTypeChange).toHaveBeenCalledWith('st2');
+  });
+
+  it('switching type starts it over: this week, no time chosen', async () => {
+    const user = userEvent.setup();
+    function Page() {
+      const [typeId, setTypeId] = useState('st2');
+      return (
+        <BookingFlow
+          {...props({
+            sessionTypeId: typeId,
+            onSessionTypeChange: setTypeId,
+            slots: remote([...slots, '2026-10-06T09:00:00Z']),
+          })}
+        />
+      );
+    }
+    render(<Page />);
+    await user.click(screen.getByRole('button', { name: 'Later dates' }));
+    await user.click(screen.getByRole('radio', { name: '9:00 am' })); // Tue, Oct 6
+    expect(screen.getByRole('button', { name: /^Request Tue, Oct 6/ })).toBeEnabled();
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Session type' }), 'st1');
+    expect(screen.getByText('Next 7 days · Sep 27 – Oct 3')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pick a time' })).toBeDisabled();
   });
 
   it('stays on the time step when a new time is picked after the old one was taken', async () => {

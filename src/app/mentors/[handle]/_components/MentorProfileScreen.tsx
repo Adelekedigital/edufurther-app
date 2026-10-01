@@ -12,6 +12,7 @@ import { PhotoPicker } from '@/components/molecules/PhotoPicker/PhotoPicker';
 import { ShareMenu } from '@/components/molecules/ShareMenu/ShareMenu';
 import { BookSessionCard } from '@/components/organisms/BookSessionCard/BookSessionCard';
 import { FirstMenteesCard } from '@/components/organisms/FirstMenteesCard/FirstMenteesCard';
+import { ProfileStrengthCard } from '@/components/organisms/ProfileStrengthCard/ProfileStrengthCard';
 import { BookingFlow } from '@/components/organisms/BookingFlow/BookingFlow';
 import { ProfileHeader } from '@/components/organisms/ProfileHeader/ProfileHeader';
 import { ProfileOverview } from '@/components/organisms/ProfileOverview/ProfileOverview';
@@ -30,6 +31,7 @@ import { useSimilarMentors } from '@/lib/api/data/similar';
 import { coverFor } from '@/lib/utils/cover';
 import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
+import type { CompletenessCode } from '@/types/mentor';
 import { useOnline } from '@/lib/utils/useOnline';
 import styles from './MentorProfileScreen.module.css';
 import {
@@ -39,9 +41,16 @@ import {
   type ItemTarget,
 } from './OwnerItemEditor';
 import { DeleteEntryConfirm } from './DeleteEntryConfirm';
-import { NotTakingEmpty, NotTakingNote, OwnerBar, ProfileSkeleton } from './ProfileParts';
+import {
+  NotTakingEmpty,
+  NotTakingNote,
+  OwnerBar,
+  PREVIEW_TOGGLE_ID,
+  ProfileSkeleton,
+} from './ProfileParts';
 import { ProfileMissing } from './ProfileMissing';
 import { ReviewsTab } from './ReviewsTab';
+import { strengthTips } from './strengthTips';
 import { listLabel } from './suggestions';
 import { OwnerSessionTypes } from './OwnerSessionTypes';
 import { useOwnerEditing } from './useOwnerEditing';
@@ -69,6 +78,25 @@ const SAVED_COPY: Record<ItemKind, Record<ItemOutcome, string>> = {
   },
 };
 
+/** Where weekly hours are set today (the Session types form's hours). */
+const HOURS_HREF = '/session-types';
+/** Session types (a type to turn on). */
+const TYPES_HREF = '/session-types';
+/** The strength card, where focus goes after a tip's step is done. */
+const STRENGTH_ID = 'profile-strength';
+/** The owner's photo input, opened by the "Add a profile photo" tip. */
+const PHOTO_INPUT = 'profile-photo-input';
+
+/**
+ * After a save whose opener went with it (a strength tip whose step is now
+ * done): the next tip, else the "View as mentee" toggle. Only when focus was lost.
+ */
+function refocusAfterTip() {
+  if (document.activeElement && document.activeElement !== document.body) return;
+  const next = document.getElementById(STRENGTH_ID)?.querySelector<HTMLElement>('a, button');
+  (next ?? document.getElementById(PREVIEW_TOGGLE_ID))?.focus();
+}
+
 /** Below this many completed sessions a mentor is "new" (design reply #45). */
 const NEW_MENTOR_UNDER = 3;
 
@@ -87,18 +115,25 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const hasSessions = (p?.sessionTypes.length ?? 0) > 0;
   const hasReviews = (p?.reviews.count ?? 0) > 0;
   const isOwner = !!p && (p.owner !== null || member?.id === p.mentor.id);
+  // "View as mentee" (Mentor Profile.dc.html `pvw`): the owner sees the page as
+  // a mentee does, with Book drawn but off. Page state: a reload is back to editing.
+  const [previewOn, setPreview] = useState(false);
+  const viewing = isOwner && previewOn;
+  const editing = isOwner && !previewOn;
   // Mentors can't book (product 2026-09-29, canBookFor): on another mentor's
   // profile every Book control goes away, as for the owner on their own.
   const canBookHere = !isOwner && canBook;
+  // Who sees the booking side of the page: someone who can book, or the owner previewing.
+  const asMentee = canBookHere || viewing;
   // …and a mentor who isn't taking bookings (backend #301) offers no Book at
   // all: the header and aside say "Not taking bookings" instead.
   const notTaking = !!p && !p.takingBookings;
   // For someone who could book, the Sessions tab says so too (Mentor
   // Profile.dc.html `notTaking`); a mentor viewing keeps the read-only list
   // (review of PR 102).
-  const notTakingTab = canBookHere && notTaking;
-  // The owner always has the tab: their hidden types and "New session type" are there.
-  const { tab, setTab } = useProfileTab(hasSessions || notTakingTab || isOwner, hasReviews);
+  const notTakingTab = asMentee && notTaking;
+  // The owner, editing, always has the tab: "New session type" is there.
+  const { tab, setTab } = useProfileTab(hasSessions || notTakingTab || editing, hasReviews);
 
   // Cards only render after a client fetch, so reading the device zone here is safe.
   const [timeZone] = useState(deviceTimeZone);
@@ -156,32 +191,47 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const backgroundEdit = useRef<HTMLButtonElement>(null);
   const awardsAdd = useRef<HTMLButtonElement>(null);
   const educationAdd = useRef<HTMLButtonElement>(null);
+  const editTopics = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    if (itemSaved?.kind === 'background') backgroundEdit.current?.focus();
+    if (!itemSaved) return;
+    if (itemSaved.kind === 'background') backgroundEdit.current?.focus();
+    if (itemSaved.kind === 'topics') editTopics.current?.focus();
     // Added from the empty invite card (gone once the row shows), or removed.
-    if (itemSaved?.outcome !== 'removed' && itemSaved?.outcome !== 'added') return;
-    if (itemSaved.kind === 'award') awardsAdd.current?.focus();
-    if (itemSaved.kind === 'education') educationAdd.current?.focus();
+    if (itemSaved.outcome === 'removed' || itemSaved.outcome === 'added') {
+      if (itemSaved.kind === 'award') awardsAdd.current?.focus();
+      if (itemSaved.kind === 'education') educationAdd.current?.focus();
+    }
+    // Opened from a strength tip on a tab without those controls (Codex on PR 106).
+    refocusAfterTip();
   }, [itemSaved]);
 
   // Similar mentors: the Overview aside, for mentees and guests. Not the mentor
   // themselves, and not other mentors (product 2026-09-28: it's a mentee-facing
   // suggestion, and mentors' nav has no Explore). Waits for who is looking.
   const showSimilar =
-    !!p && !isOwner && tab === 'overview' && viewer.kind !== 'loading' && !member?.isMentor;
+    !!p &&
+    tab === 'overview' &&
+    viewer.kind !== 'loading' &&
+    (viewing || (!isOwner && !member?.isMentor));
   // The "isn't available" page offers them to everyone (Mentor Profile.dc.html
   // notFound; mentors see "View profile" on the cards). The endpoint answers
   // for hidden and unknown handles alike (#38).
   const similar = useSimilarMentors(handle, showSimilar || profile.notFound);
   // The card hides itself when the list is empty or failed.
   const similarShown = showSimilar && (similar.isLoading || !!similar.data?.length);
+  // Profile strength (Mentor Profile.dc.html `canEdit` aside, FE #40): the
+  // owner, editing, on the tabs that have an aside; gone at 100%.
+  const completeness = p?.owner?.completeness ?? null;
+  const strengthShown =
+    editing && tab !== 'sessions' && !!completeness && completeness.percent < 100;
   // The aside's name lists what it holds for this viewer on this tab; with
   // only the first-mentees card it's "About this mentor".
   const asideLabel =
     listLabel([
       // Neutral when nothing can be booked (review of #81).
       // Neutral when it only says bookings are closed (review of #81, #102).
-      canBookHere && (notTaking ? 'availability' : 'booking'),
+      asMentee && (notTaking ? 'availability' : 'booking'),
+      strengthShown && 'profile strength',
       tab === 'overview' && 'track record',
       similarShown && 'similar mentors',
     ]) ?? 'About this mentor';
@@ -191,6 +241,29 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // the OwnerBar explains that instead). No owner block → public.
   const isPublic = !p?.owner || (p.owner.approval === 'approved' && p.owner.listed);
   const canStartBooking = mayBook && hasSessions && !bookBlocked;
+  // Book as a mentee sees it: offered (maybe blocked, with why), or drawn but off in preview.
+  const showBook = asMentee && !notTaking;
+  // In preview Book reads as a mentee's, never the owner's own block (review of PR 106).
+  const shownBlock = viewing ? null : bookBlocked;
+  // The toggle waits while an inline edit is open, so a draft is never dropped
+  // (review of PR 106). Its pressed state says the rest; no extra announcement.
+  const previewBlocked =
+    owner.introOpen || owner.aboutOpen ? 'Save or cancel your edit to preview.' : null;
+
+  // A tip's step done: its tip (or the whole card, at 100%) goes, and with it
+  // the focus the dialog handed back. Put it on the next tip, else the toggle.
+  const [tipUsed, setTipUsed] = useState<string | null>(null);
+  const [refocus, setRefocus] = useState(0);
+  // Adjusted during render (React's pattern for state that follows props): once
+  // the refetched profile no longer lists the step, it's done.
+  if (tipUsed && completeness && !completeness.missing.includes(tipUsed as CompletenessCode)) {
+    setTipUsed(null);
+    setRefocus((n) => n + 1);
+  }
+  useEffect(() => {
+    // A refetch that lands after the editor closed: the same fallback.
+    if (refocus) refocusAfterTip();
+  }, [refocus]);
 
   // Mentor Profile.dc.html `scrollToBook`: the "no session yet" note's Book
   // takes you to the booking card rather than opening booking itself.
@@ -205,11 +278,11 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // Phones: under the tabs, on both tabs.
   const firstMentees =
     p && p.mentor.completedSessions < NEW_MENTOR_UNDER ? (
-      isOwner ? (
+      editing ? (
         isPublic ? (
           <FirstMenteesCard variant="owner" onShare={() => setShareOpen(true)} />
         ) : null
-      ) : mayBook ? (
+      ) : showBook ? (
         // The invitation to book: not for mentors, who can't (review of #54).
         <FirstMenteesCard
           variant="mentee"
@@ -221,6 +294,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           // Blocked booking (guest setup, offline…) is explained on the header's
           // Book; the card just doesn't offer one.
           onBook={canStartBooking ? (time) => booking.open(undefined, time) : undefined}
+          // In preview, drawn but off, as every Book is (Codex on PR 106).
+          bookDisabled={viewing}
         />
       ) : null
     ) : null;
@@ -255,14 +330,24 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           />
         ) : (
           <>
-            {isOwner && <OwnerBar profile={p} />}
+            {isOwner && (
+              <OwnerBar
+                profile={p}
+                preview={viewing}
+                onTogglePreview={() => setPreview(!previewOn)}
+                hoursHref={HOURS_HREF}
+                previewBlocked={previewBlocked}
+              />
+            )}
             <ProfileHeader
               profile={p}
               onShowReviews={hasReviews ? () => setTab('reviews') : undefined}
-              onEditTopics={isOwner ? () => setItemOpen({ kind: 'topics' }) : undefined}
+              onEditTopics={editing ? () => setItemOpen({ kind: 'topics' }) : undefined}
+              editTopicsRef={editTopics}
               photoTools={
-                isOwner ? (
+                editing ? (
                   <PhotoPicker
+                    inputId={PHOTO_INPUT}
                     hasPhoto={!!p.mentor.photoUrl}
                     accept={photo.accept}
                     uploading={photo.uploading}
@@ -272,10 +357,10 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                   />
                 ) : undefined
               }
-              // PROVISIONAL copy (design request): the design only names the state.
-              status={canBookHere && notTaking ? 'Not taking bookings' : undefined}
+              // As drawn (design reply #58).
+              status={asMentee && notTaking ? 'Not taking bookings' : undefined}
               introEditor={
-                isOwner && owner.introOpen ? (
+                editing && owner.introOpen ? (
                   <IntroEditForm
                     initial={owner.introValues}
                     onSave={owner.saveIntro}
@@ -286,7 +371,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 ) : undefined
               }
               bannerTools={
-                isOwner ? (
+                editing ? (
                   <CoverPicker
                     color={p.cover.color ?? coverFor(p.mentor.id)}
                     artOn={p.cover.art !== 'none'}
@@ -308,7 +393,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               }
               actions={
                 <>
-                  {isOwner && !owner.introOpen && (
+                  {editing && !owner.introOpen && (
                     <Button
                       ref={editProfileButton}
                       variant="secondary-outlined"
@@ -318,10 +403,14 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                       Edit profile
                     </Button>
                   )}
-                  {mayBook && hasSessions && (
+                  {showBook && hasSessions && (
                     // The view's one filled button: Large (CTA hierarchy).
-                    <Button size="large" disabled={!!bookBlocked} onClick={() => booking.open()}>
-                      {bookBlocked ?? 'Book a session'}
+                    <Button
+                      size="large"
+                      disabled={viewing || !!shownBlock}
+                      onClick={() => booking.open()}
+                    >
+                      {shownBlock ?? 'Book a session'}
                     </Button>
                   )}
                   {shareUrl && (
@@ -347,7 +436,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 }}
                 items={[
                   { value: 'overview', label: 'Overview', panelId: 'panel-overview' },
-                  ...(hasSessions || notTakingTab || isOwner
+                  ...(hasSessions || notTakingTab || editing
                     ? [
                         {
                           value: 'sessions',
@@ -383,11 +472,11 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                   <ProfileOverview
                     profile={p}
                     onEditBackground={
-                      isOwner ? () => setItemOpen({ kind: 'background' }) : undefined
+                      editing ? () => setItemOpen({ kind: 'background' }) : undefined
                     }
                     backgroundEditRef={backgroundEdit}
                     awardsEdit={
-                      isOwner
+                      editing
                         ? {
                             onAdd: () => setItemOpen({ kind: 'award', id: null }),
                             onEdit: (id) => setItemOpen({ kind: 'award', id }),
@@ -397,7 +486,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                     }
                     awardsAddRef={awardsAdd}
                     educationEdit={
-                      isOwner
+                      editing
                         ? {
                             onAdd: () => setItemOpen({ kind: 'education', id: null }),
                             onEdit: (id) => setItemOpen({ kind: 'education', id }),
@@ -407,7 +496,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                     }
                     educationAddRef={educationAdd}
                     aboutEdit={
-                      isOwner
+                      editing
                         ? {
                             onEdit: owner.openAbout,
                             editor: owner.aboutOpen ? (
@@ -432,25 +521,29 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                   />
                 ) : notTakingTab ? (
                   <NotTakingEmpty firstName={p.mentor.firstName} />
-                ) : isOwner ? (
+                ) : editing ? (
                   <OwnerSessionTypes shown={p.sessionTypes} />
                 ) : (
                   <SessionTypeList
                     sessionTypes={p.sessionTypes}
                     onBook={booking.open}
-                    bookBlocked={bookBlocked}
-                    canBook={mayBook}
+                    bookBlocked={shownBlock}
+                    canBook={showBook}
+                    bookDisabled={viewing}
                   />
                 )}
               </div>
               {tab !== 'sessions' &&
                 // Never an empty named landmark (the owner's Reviews tab can hold nothing).
-                (canBookHere || tab === 'overview' || (!isPhone && !!firstMentees)) && (
+                (asMentee ||
+                  tab === 'overview' ||
+                  strengthShown ||
+                  (!isPhone && !!firstMentees)) && (
                   // Reviews tab: the design's default `reviewsLayout=focus` drops
                   // the track record (and Similar mentors) from the aside.
                   <aside className={styles.aside} aria-label={asideLabel}>
                     {!isPhone && firstMentees}
-                    {canBookHere &&
+                    {asMentee &&
                       (notTaking ? (
                         <NotTakingNote firstName={p.mentor.firstName} />
                       ) : (
@@ -459,10 +552,29 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                             sessionTypes={p.sessionTypes}
                             onBook={booking.open}
                             onCompare={() => setTab('sessions')}
-                            bookBlocked={bookBlocked}
+                            bookBlocked={shownBlock}
+                            bookDisabled={viewing}
                           />
                         </div>
                       ))}
+                    {strengthShown && completeness && (
+                      <ProfileStrengthCard
+                        id={STRENGTH_ID}
+                        percent={completeness.percent}
+                        tips={strengthTips(completeness.missing, {
+                          hoursHref: HOURS_HREF,
+                          typesHref: TYPES_HREF,
+                          openPhoto: () => document.getElementById(PHOTO_INPUT)?.click(),
+                          openIntro: owner.openIntro,
+                          openAbout: () => {
+                            setTab('overview');
+                            owner.openAbout();
+                          },
+                          openItem: setItemOpen,
+                          onUse: setTipUsed,
+                        })}
+                      />
+                    )}
                     {tab === 'overview' && <TrackRecordCard profile={p} />}
                     {similarShown && (
                       <SimilarMentorsCard

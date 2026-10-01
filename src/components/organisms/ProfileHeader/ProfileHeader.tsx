@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element -- remote avatars and banners of unknown host/size; see performance notes in design-divergence.md */
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, ReactNode, Ref } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Star } from '@/components/atoms/Star/Star';
 import { Tag } from '@/components/atoms/Tag/Tag';
@@ -30,6 +30,8 @@ type ProfileHeaderProps = {
   status?: string;
   /** The owner's camera badge on the photo (Mentor Profile.dc.html `canEdit`). */
   photoTools?: ReactNode;
+  /** Where focus returns after a topics save (a strength tip that opened it is gone). */
+  editTopicsRef?: Ref<HTMLButtonElement>;
   /** The owner's "Edit topics", after the topic chips (Mentor Profile.dc.html `editTopics`). */
   onEditTopics?: () => void;
 };
@@ -55,6 +57,7 @@ export function ProfileHeader({
   introEditor,
   status,
   onEditTopics,
+  editTopicsRef,
   photoTools,
 }: ProfileHeaderProps) {
   const m = profile.mentor;
@@ -193,7 +196,12 @@ export function ProfileHeader({
               </ul>
             )}
             {onEditTopics && (
-              <button type="button" className={styles.editTopics} onClick={onEditTopics}>
+              <button
+                ref={editTopicsRef}
+                type="button"
+                className={styles.editTopics}
+                onClick={onEditTopics}
+              >
                 <Icon name="edit" size={16} />
                 Edit topics
               </button>

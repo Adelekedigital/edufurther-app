@@ -123,7 +123,7 @@ export function ProfileOverview({
           ) : p.about ? (
             <About text={p.about} />
           ) : aboutEdit ? (
-            // PROVISIONAL: the design draws no empty About for the owner.
+            // Ours, approved as built (design reply 2026-09-30).
             <p className={styles.aboutEmpty}>
               Tell mentees about your path: what you studied, where, and what you can help with.
             </p>

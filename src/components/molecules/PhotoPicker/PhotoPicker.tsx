@@ -7,6 +7,8 @@ import { cx } from '@/lib/utils/cx';
 import styles from './PhotoPicker.module.css';
 
 type PhotoPickerProps = {
+  /** The file input's id, so something else on the page can open the picker. */
+  inputId?: string;
   /** The owner has a photo: "Change photo", else "Add photo". */
   hasPhoto: boolean;
   /** File types the picker offers (the upload's own list). */
@@ -31,6 +33,7 @@ export function PhotoPicker({
   onFile,
   error,
   onDismissError,
+  inputId,
 }: PhotoPickerProps) {
   const label = hasPhoto ? 'Change photo' : 'Add photo';
   const input = useRef<HTMLInputElement>(null);
@@ -50,6 +53,7 @@ export function PhotoPicker({
         <Icon name="photo_camera" size={14} />
         <input
           ref={input}
+          id={inputId}
           type="file"
           accept={accept}
           aria-label={label}

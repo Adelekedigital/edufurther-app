@@ -27,6 +27,8 @@ type SessionTypeListProps = {
   canBook: boolean;
   /** The owner's own view (Mentor Profile.dc.html `canEdit`); replaces `sessionTypes`. */
   owner?: SessionTypeOwnerActions;
+  /** Drawn, but can't be used (the owner's "View as mentee"). */
+  bookDisabled?: boolean;
 };
 
 /**
@@ -40,6 +42,7 @@ export function SessionTypeList({
   bookBlocked,
   canBook,
   owner,
+  bookDisabled = false,
 }: SessionTypeListProps) {
   const cards: (ProfileSessionType & Partial<OwnerSessionCard>)[] = owner
     ? owner.cards
@@ -98,7 +101,7 @@ export function SessionTypeList({
                   {/* Repeated on every card, so outlined (CTA hierarchy). */}
                   <Button
                     variant="secondary-outlined"
-                    disabled={!!bookBlocked}
+                    disabled={!!bookBlocked || bookDisabled}
                     onClick={() => onBook(s.id)}
                   >
                     {bookBlocked ?? 'Book session'}

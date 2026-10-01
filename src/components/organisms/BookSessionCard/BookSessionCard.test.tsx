@@ -18,4 +18,13 @@ describe('BookSessionCard', () => {
     const { container } = render(<BookSessionCard {...props} sessionTypes={[]} />);
     expect(container).toBeEmptyDOMElement();
   });
+
+  it('drawn but off (the owner’s "View as mentee"): labels as usual, disabled', () => {
+    const { rerender } = render(
+      <BookSessionCard {...props} bookDisabled sessionTypes={[sessionTypes[0]!]} />,
+    );
+    expect(screen.getByRole('button', { name: 'Book this session' })).toBeDisabled();
+    rerender(<BookSessionCard {...props} bookDisabled sessionTypes={sessionTypes} />);
+    for (const b of screen.getAllByRole('button', { name: /^Book/ })) expect(b).toBeDisabled();
+  });
 });

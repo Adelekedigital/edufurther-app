@@ -1,6 +1,14 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type RefObject,
+} from 'react';
 import { cx } from '@/lib/utils/cx';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
@@ -27,7 +35,9 @@ type RowMenuProps = {
  * "⋯" row actions (Session Types.dc.html row menu): a menu button (WAI-ARIA
  * Authoring Practices, Menu Button) — Enter/Space/↓ open on the first item, ↑
  * on the last; arrows, Home and End move; Escape and Tab close, Escape back
- * to the button; a click outside closes.
+ * to the button; a click outside closes. If the focused item goes away while
+ * open (the row changed under it), focus moves to the item now in its place,
+ * or back to the button when none is left (#114).
  */
 export function RowMenu({ label, items, triggerRef }: RowMenuProps) {
   const [open, setOpen] = useState(false);
@@ -47,6 +57,23 @@ export function RowMenu({ label, items, triggerRef }: RowMenuProps) {
     setOpen(false);
     if (refocus) button.current?.focus();
   };
+  // The item that last had focus, by position: an unmounted item drops focus
+  // to the page, where the menu's keys no longer reach.
+  const focused = useRef<number | null>(null);
+  // Nothing left to choose: closed during render (no second render from an effect).
+  if (open && items.length === 0) setOpen(false);
+  useLayoutEffect(() => {
+    // Items can shift under a focused one (no new focus event): keep its place current.
+    const els = [...(menu.current?.querySelectorAll('[role="menuitem"]') ?? [])];
+    const at = els.indexOf(document.activeElement as Element);
+    if (at >= 0) focused.current = at;
+    const lost = !document.activeElement || document.activeElement === document.body;
+    if (focused.current !== null && lost) {
+      if (open) focusAt(Math.min(focused.current, items.length - 1));
+      else if (items.length === 0) button.current?.focus();
+    }
+    if (!open) focused.current = null;
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -114,13 +141,14 @@ export function RowMenu({ label, items, triggerRef }: RowMenuProps) {
           className={styles.menu}
           onKeyDown={onMenuKey}
         >
-          {items.map((it) => (
+          {items.map((it, i) => (
             <button
               key={it.key}
               type="button"
               role="menuitem"
               tabIndex={-1}
               className={cx(styles.item, it.danger && styles.danger)}
+              onFocus={() => (focused.current = i)}
               onClick={() => {
                 close(true);
                 it.onSelect();
