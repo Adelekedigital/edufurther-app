@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, type QueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { authConfigured } from '@/lib/vendor/supabase/config';
 import type { Viewer } from '@/types/mentor';
@@ -147,4 +147,21 @@ export function useViewer(): Viewer {
   if (query.data === UNLINKED) return { kind: 'unlinked' };
   if (query.data === ACCOUNT_EXISTS) return { kind: 'accountExists' };
   return query.data;
+}
+
+type Member = Extract<Viewer, { kind: 'member' }>;
+
+/**
+ * A write the viewer just made (photo, cover colour), copied into the cached
+ * /me at once, so the sidebar matches the profile even if the refetch fails.
+ */
+export function patchViewer(
+  qc: QueryClient,
+  patch: Partial<Pick<Member, 'avatarUrl' | 'avatarFocus' | 'coverKey'>>,
+) {
+  qc.setQueriesData<unknown>({ queryKey: keys.viewer.all }, (v: unknown) =>
+    typeof v === 'object' && v !== null && (v as Viewer).kind === 'member'
+      ? { ...(v as Member), ...patch }
+      : v,
+  );
 }

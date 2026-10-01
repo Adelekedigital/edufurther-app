@@ -211,13 +211,13 @@ export function AppShell({
               prefetch={PREFETCH}
               className={styles.tab}
               aria-current={n.label === active ? 'page' : undefined}
+              aria-label={nameWithCount(n.label, counts[n.label])}
             >
               <span className={styles.tabIcon}>
                 <Icon name={n.icon} size={22} />
                 <CountBadge count={counts[n.label]} />
               </span>
               {n.label}
-              <CountLabel count={counts[n.label]} />
             </Link>
           ))}
           {nav !== 'unknown' && (
@@ -316,13 +316,13 @@ function RailList({ items, active, counts }: { items: NavItem[]; active: string;
             prefetch={PREFETCH}
             className={styles.railItem}
             aria-current={n.label === active ? 'page' : undefined}
+            aria-label={nameWithCount(n.label, counts[n.label])}
           >
             <span className={styles.railIcon}>
               <Icon name={n.icon} size={20} />
               <CountBadge count={counts[n.label]} />
             </span>
             {n.label}
-            <CountLabel count={counts[n.label]} />
           </Link>
         </li>
       ))}
@@ -340,8 +340,11 @@ function CountBadge({ count }: { count?: { count: number } }) {
   );
 }
 
-/** The count in words, for the link's name (the pill itself is hidden). */
-function CountLabel({ count }: { count?: { count: number; label: string } }) {
-  if (!count || count.count <= 0) return null;
-  return <span className="sr-only">, {count.label}</span>;
+/**
+ * The link's whole name with its count ("Bookings, 2 requests awaiting your
+ * response"), as one label: a hidden text piece gets an extra space in Chrome
+ * and can escape the rail's scroll clip. Undefined leaves the visible name.
+ */
+function nameWithCount(label: string, count?: { count: number; label: string }) {
+  return count && count.count > 0 ? `${label}, ${count.label}` : undefined;
 }

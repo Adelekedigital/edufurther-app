@@ -205,7 +205,7 @@ describe('AppShell navigation', () => {
     );
     for (const i of [0, 1] as const) {
       const link = nav(i).getByRole('link', {
-        name: /Bookings, 2 requests awaiting your response/,
+        name: 'Bookings, 2 requests awaiting your response',
       });
       expect(link).toHaveAttribute('href', '/bookings');
       expect(within(link).getByText('2')).toHaveAttribute('aria-hidden', 'true');

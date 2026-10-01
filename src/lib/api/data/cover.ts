@@ -8,6 +8,7 @@ import type { AppError, MentorProfile } from '@/types/mentor';
 import { apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
+import { patchViewer } from './viewer';
 import { sessionKey, useSession } from './session';
 
 type UserProfileWrite = components['schemas']['UserProfileWrite'];
@@ -129,7 +130,9 @@ export function useCoverEdit(handle: string, userId: string | null) {
       }
       update((p) => ({ ...p, cover: b.confirmed }));
       if (b.failed) void qc.invalidateQueries({ queryKey: key });
-      // The sidebar avatar takes the cover's deep tone from /me.
+      // The sidebar avatar takes the cover's deep tone from /me: what's saved
+      // (confirmed, even after a failed pick) now, and a refetch.
+      patchViewer(qc, { coverKey: b.confirmed.color });
       void qc.invalidateQueries({ queryKey: keys.viewer.all });
       setStatus({ state: b.failed ? 'error' : 'saved', stamp: Date.now() });
     },

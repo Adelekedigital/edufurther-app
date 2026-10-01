@@ -7,6 +7,7 @@ import { BANNER_ACCEPT, bannerProblem } from './cover';
 import { apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
+import { patchViewer } from './viewer';
 import { toFocus } from './mentors';
 import { sessionKey, useSession } from './session';
 
@@ -74,7 +75,11 @@ export function useAvatarUpload(handle: string, userId: string | null) {
       // and the cards elsewhere refetch; the server has the new photo by now
       // (review of #99).
       void qc.invalidateQueries({ queryKey: keys.mentors.all });
-      // The sidebar avatar reads /me.
+      // The sidebar avatar reads /me: show the new photo now, and refetch.
+      patchViewer(qc, {
+        avatarUrl: data.avatar_url,
+        avatarFocus: toFocus(data.avatar_focus),
+      });
       void qc.invalidateQueries({ queryKey: keys.viewer.all });
     },
   });
