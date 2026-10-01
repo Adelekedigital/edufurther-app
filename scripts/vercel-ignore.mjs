@@ -13,7 +13,9 @@ if (!prev) process.exit(1);
 
 let files;
 try {
-  files = execSync(`git diff --name-only ${prev} HEAD`, { encoding: 'utf8' })
+  // --no-renames: a rename lists both paths, so code renamed into a test name
+  // still counts as a deployed change.
+  files = execSync(`git diff --name-only --no-renames ${prev} HEAD`, { encoding: 'utf8' })
     .split('\n')
     .filter(Boolean);
 } catch {
@@ -25,7 +27,8 @@ const NOT_DEPLOYED = [
   /^\.github\//,
   /^\.storybook\//,
   /^docs\//,
-  /\.md$/,
+  // Markdown at the root only: public/ serves its files.
+  /^[^/]+\.md$/,
   /\.(test|stories)\.[cm]?[jt]sx?$/,
   /\.(testkit|harness)\.[jt]sx?$/,
   /^vitest\.(config|setup)\.ts$/,
