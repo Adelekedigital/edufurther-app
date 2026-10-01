@@ -1,5 +1,4 @@
 import { Button } from '@/components/atoms/Button/Button';
-import { Icon } from '@/components/atoms/Icon/Icon';
 import { IconButton } from '@/components/atoms/IconButton/IconButton';
 import { Switch } from '@/components/atoms/Switch/Switch';
 import styles from './SessionTypeOwnerFooter.module.css';
@@ -7,55 +6,30 @@ import styles from './SessionTypeOwnerFooter.module.css';
 type SessionTypeOwnerFooterProps = {
   /** The type's name, for the controls' accessible names. */
   name: string;
-  visible: boolean;
-  onToggle: (visible: boolean) => void;
+  /** The switch is on (the profile shows active types only); turning it off hides. */
+  onHide: () => void;
   onEdit: () => void;
   onDelete: () => void;
-  /**
-   * Scheduled for deletion: the note replaces the controls, with "Keep it"
-   * (Mentor Profile.dc.html `pendingDelete`).
-   */
-  pending: { note: string; onKeep: () => void; keeping: boolean } | null;
 };
 
 /**
  * The owner's controls on a session-type card (Mentor Profile.dc.html
- * `canEdit` footer): "Visible to mentees", Edit, and Delete (grey, red on hover,
- * as everywhere: design reply #62.3).
+ * `canEdit` footer): "Visible to mentees", Edit, and Delete (grey, red on
+ * hover, as everywhere: design reply #62.3).
  */
 export function SessionTypeOwnerFooter({
   name,
-  visible,
-  onToggle,
+  onHide,
   onEdit,
   onDelete,
-  pending,
 }: SessionTypeOwnerFooterProps) {
-  if (pending)
-    return (
-      <div className={styles.foot}>
-        <span className={styles.note}>
-          <Icon name="schedule" size={16} className={styles.noteIcon} />
-          {pending.note}
-        </span>
-        <Button
-          variant="secondary-outlined"
-          size="small"
-          busy={pending.keeping}
-          onClick={pending.onKeep}
-          aria-label={`Keep it: ${name}`}
-        >
-          Keep it
-        </Button>
-      </div>
-    );
   return (
     <div className={styles.foot}>
       <Switch
-        checked={visible}
-        onChange={onToggle}
+        checked
+        onChange={onHide}
         aria-label={`Visible to mentees: ${name}`}
-        title={visible ? 'Visible to mentees' : 'Hidden from mentees'}
+        title="Visible to mentees"
       />
       <span className={styles.actions}>
         <Button

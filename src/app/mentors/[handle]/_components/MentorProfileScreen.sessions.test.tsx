@@ -1,16 +1,7 @@
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixture';
-import {
-  h,
-  ownType,
-  quickEdit,
-  remote,
-  removeType,
-  restoreType,
-  setLive,
-  state,
-} from './profileScreen.harness';
+import { h, ownType, quickEdit, remote, removeType, setLive, state } from './profileScreen.harness';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
@@ -117,6 +108,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     expect(
       screen.getByText('“SOP draft review” is hidden. You can show it again in Session types.'),
     ).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'SOP draft review' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Edit CV review' })).toHaveFocus();
   });
 
@@ -145,7 +137,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     render(<MentorProfileScreen handle="gbenga" />);
     act(() => h.onLiveFailed?.('st1', false));
     expect(
-      screen.getByText('Couldn’t hide it. Check your connection and try again.'),
+      screen.getByText('Couldn’t hide “SOP draft review”. Check your connection and try again.'),
     ).toBeInTheDocument();
   });
 
@@ -186,6 +178,61 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     expect(
       screen.getByText('“SOP draft review” is hidden. You can show it again in Session types.'),
     ).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'SOP draft review' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Edit CV review' })).toHaveFocus();
+  });
+
+  it('a hide from quick edit that fails says so, and the next Edit starts clean (review of PR 119)', async () => {
+    onSessions();
+    h.quickOk = false;
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: 'Edit SOP draft review' }));
+    await user.click(screen.getByRole('switch', { name: 'Visible to mentees' }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    await user.click(screen.getByRole('button', { name: 'Hide it' }));
+    expect(
+      screen.getByText('Couldn’t hide “SOP draft review”. That didn’t save. Try again.'),
+    ).toBeInTheDocument();
+    expect(card('SOP draft review')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Edit CV review' }));
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('"Keep visible" after a quick edit still saves the length (review of PR 119)', async () => {
+    onSessions();
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: 'Edit SOP draft review' }));
+    const dialog = screen.getByRole('dialog', { name: 'Edit SOP draft review' });
+    await user.selectOptions(within(dialog).getByRole('combobox', { name: 'Length' }), '45');
+    await user.click(within(dialog).getByRole('switch', { name: 'Visible to mentees' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+    await user.click(screen.getByRole('button', { name: 'Keep visible' }));
+    expect(quickEdit).toHaveBeenCalledWith({ id: 'st1', durationMin: 45, live: undefined });
+    expect(within(card('SOP draft review')).getByText('45 min')).toBeInTheDocument();
+  });
+
+  it('two types with one name: focus goes to the right next card (review of PR 119)', async () => {
+    onSessions([ownType({ name: 'Same' }), ownType({ id: 'st2', name: 'Same' })]);
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getAllByRole('switch', { name: 'Visible to mentees: Same' })[0]!);
+    await user.click(screen.getByRole('button', { name: 'Hide it' }));
+    const focused = document.activeElement as HTMLElement;
+    expect(focused).toHaveAccessibleName('Edit Same');
+    expect(focused.closest('[data-session-type-id]')).toHaveAttribute(
+      'data-session-type-id',
+      'st2',
+    );
+  });
+
+  it('while their list loads: placeholders, not the mentee view', () => {
+    onSessions();
+    h.ownTypes = { data: null, isLoading: true, error: null, retry: vi.fn() };
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByText('Loading your session types')).toBeInTheDocument();
+    expect(screen.queryByRole('switch')).toBeNull();
   });
 
   it('nothing changed: Save closes without a request', async () => {

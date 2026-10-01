@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DURATIONS } from '@/lib/utils/sessionTypeDraft';
+import type { OwnSessionType } from '@/types/sessionType';
 import { apiError } from './errors';
 import { api } from './http';
 import { generalCopy, ItemSaveError } from './profileItems';
@@ -40,6 +41,21 @@ export function useQuickEditSessionType() {
       } catch (e) {
         throw new ItemSaveError(generalCopy(e));
       }
+    },
+    // The card shows the save at once (a hidden one leaves); the bundle's
+    // refetch still has the last word (review of PR 119).
+    onSuccess: (_d, { id, durationMin, live }) => {
+      qc.setQueriesData<OwnSessionType[]>({ queryKey: ['sessionTypes', 'own'] }, (list) =>
+        list?.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                ...(durationMin !== undefined && { durationMin }),
+                ...(live !== undefined && { isLive: live }),
+              }
+            : t,
+        ),
+      );
     },
   });
 }

@@ -121,7 +121,6 @@ export const addEducation = vi.fn();
 export const editEducation = vi.fn();
 export const removeEducation = vi.fn();
 export const quickEdit = vi.fn();
-export const restoreType = vi.fn();
 export const setLive = vi.fn();
 export const removeType = vi.fn();
 
@@ -301,7 +300,6 @@ const avatarMock = () => ({
 
 const sessionTypesMock = () => ({
   useOwnSessionTypes: () => h.ownTypes,
-  useRestoreSessionType: () => ({ restore: restoreType, pendingIds: [] as string[] }),
   useSetLive: (failed: (id: string, live: boolean) => void) => {
     h.onLiveFailed = failed;
     return setLive;
@@ -314,11 +312,29 @@ const sessionTypesMock = () => ({
   }),
 });
 
+/** As the real hooks leave the cache: the owner's list after a save. */
+const patchOwn = (id: string, patch: { durationMin?: number; isLive?: boolean }) => {
+  if (h.ownTypes.data)
+    h.ownTypes = {
+      ...h.ownTypes,
+      data: h.ownTypes.data.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+    };
+};
+
 const sessionTypeQuickMock = () => ({
   useQuickEditSessionType: () => ({
-    mutate: (vars: unknown, opts?: { onSuccess?: () => void }) => {
+    mutate: (
+      vars: { id: string; durationMin?: number; live?: boolean },
+      opts?: { onSuccess?: () => void; onError?: (e: { copy: string }) => void },
+    ) => {
       quickEdit(vars);
-      if (h.quickOk) opts?.onSuccess?.();
+      if (!h.quickOk)
+        return opts?.onError?.(h.quickError ?? { copy: 'That didn’t save. Try again.' });
+      patchOwn(vars.id, {
+        ...(vars.durationMin !== undefined && { durationMin: vars.durationMin }),
+        ...(vars.live !== undefined && { isLive: vars.live }),
+      });
+      opts?.onSuccess?.();
     },
     isPending: h.quickPending,
     error: h.quickError,
@@ -533,8 +549,9 @@ beforeEach(() => {
   h.quickPending = false;
   h.quickError = null;
   quickEdit.mockReset();
-  restoreType.mockReset();
   setLive.mockReset();
+  // The switch is optimistic: the card leaves at once.
+  setLive.mockImplementation((id: string, live: boolean) => patchOwn(id, { isLive: live }));
   removeType.mockReset();
   h.onLiveFailed = null;
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({

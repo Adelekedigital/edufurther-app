@@ -198,18 +198,6 @@ export type ProfileSessionType = SessionType & {
   venue: string;
 };
 
-/**
- * The owner's own card on the profile: their offering with its visibility
- * (Mentor Profile.dc.html `ownerDeco`). A hidden or pending type shows only to them.
- */
-export type OwnerSessionCard = ProfileSessionType & {
-  visible: boolean;
-  /** Scheduled for deletion after its booked sessions: the note to show. */
-  pendingNote: string | null;
-  /** "Keep it" is saving. */
-  keeping: boolean;
-};
-
 /** A step towards a complete profile (backend `completeness.missing`, owner-only). */
 export type CompletenessCode =
   | 'photo'

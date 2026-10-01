@@ -81,4 +81,19 @@ describe('useQuickEditSessionType', () => {
     await waitFor(() => expect(result.current.error?.copy).toMatch(/You’re offline/));
     online.mockRestore();
   });
+
+  it('the owner’s list shows the save at once (review of PR 119)', async () => {
+    PATCH.mockResolvedValue(ok());
+    const { qc, result } = setup();
+    const key = ['sessionTypes', 'own', 'u1'];
+    qc.setQueryData(key, [
+      { id: 'st1', durationMin: 60, isLive: true },
+      { id: 'st2', durationMin: 30, isLive: true },
+    ]);
+    await act(() => result.current.mutateAsync({ id: 'st1', durationMin: 45, live: false }));
+    expect(qc.getQueryData(key)).toEqual([
+      { id: 'st1', durationMin: 45, isLive: false },
+      { id: 'st2', durationMin: 30, isLive: true },
+    ]);
+  });
 });

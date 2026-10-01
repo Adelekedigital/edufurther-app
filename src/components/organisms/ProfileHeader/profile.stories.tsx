@@ -201,31 +201,16 @@ export const Sessions: Story = {
   ),
 };
 
-/** The owner's view (Mentor Profile.dc.html `canEdit`): visible, hidden, scheduled, and the tile. */
+/** The owner's view (Mentor Profile.dc.html `canEdit`): active types only (product), and the tile. */
 export const SessionsOwner: Story = {
   render: () => (
     <div style={{ maxWidth: 860 }}>
       <SessionTypeList
-        sessionTypes={[]}
-        onBook={fn()}
-        bookBlocked={null}
-        canBook={false}
         owner={{
-          cards: [
-            { ...sessionTypes[0]!, visible: true, pendingNote: null, keeping: false },
-            { ...sessionTypes[1]!, visible: false, pendingNote: null, keeping: false },
-            {
-              ...sessionTypes[2]!,
-              visible: false,
-              pendingNote:
-                'Hidden from mentees. Deleted after its last booked session on Oct 14. The 2 booked sessions go ahead.',
-              keeping: false,
-            },
-          ],
-          onToggle: fn(),
+          cards: sessionTypes,
+          onHide: fn(),
           onEdit: fn(),
           onDelete: fn(),
-          onKeep: fn(),
           newHref: '/session-types/new',
         }}
       />

@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Button } from '@/components/atoms/Button/Button';
+import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import {
   DeleteConfirm,
@@ -16,8 +17,9 @@ import { useQuickEditSessionType, type QuickEdit } from '@/lib/api/data/sessionT
 import { useDeleteSessionType, useOwnSessionTypes, useSetLive } from '@/lib/api/data/sessionTypes';
 import { formatShortDate } from '@/lib/utils/format';
 import { stageText } from '@/lib/utils/stageText';
-import type { OwnerSessionCard, ProfileSessionType } from '@/types/mentor';
+import type { ProfileSessionType } from '@/types/mentor';
 import type { OwnSessionType } from '@/types/sessionType';
+import styles from './MentorProfileScreen.module.css';
 
 const NEW_HREF = '/session-types/new';
 /** Where a hidden type comes back, said wherever the profile hides one. */
@@ -34,10 +36,7 @@ const confirmShell = (shell: ConfirmShell, body: ReactNode) => (
  * says it best (the mentor's own stage wording included); Session types'
  * stages fill in until the profile has refetched.
  */
-export function toOwnerCard(
-  t: OwnSessionType,
-  shown: ProfileSessionType | undefined,
-): OwnerSessionCard {
+function toCard(t: OwnSessionType, shown: ProfileSessionType | undefined): ProfileSessionType {
   return {
     id: t.id,
     name: t.name,
@@ -47,14 +46,11 @@ export function toOwnerCard(
     category: t.topics[0]?.label ?? null,
     stage: shown?.stage ?? stageText(t.stages, null),
     venue: shown?.venue ?? '',
-    visible: true,
-    pendingNote: null,
-    keeping: false,
   };
 }
 
 type Props = {
-  /** What mentees see: shown until the owner's own list arrives, or if it fails. */
+  /** What mentees see: shown if the owner's own list fails. */
   shown: ProfileSessionType[];
 };
 
@@ -71,34 +67,38 @@ export function OwnerSessionTypes({ shown }: Props) {
   // Active only: hidden and scheduled types are Session types' business.
   const list = own.data?.filter((t) => t.isLive && !t.pendingDeletion);
   const liveCount = list?.length ?? 0;
+  const nameOf = (id: string) => own.data?.find((t) => t.id === id)?.name ?? 'it';
   const [said, setSaid] = useState<{ text: string; id: number } | null>(null);
   const say = (text: string) => setSaid((was) => ({ text, id: (was?.id ?? 0) + 1 }));
 
   // A card that leaves (hidden, deleted or scheduled) takes its buttons with
-  // it: focus the next card's Edit, or the "New session type" tile. A count,
-  // so two in a row still move focus.
-  const [focusAfter, setFocusAfter] = useState<{ edit: string | null; n: number } | null>(null);
+  // it: focus the next card's Edit, or the "New session type" tile. By id, so
+  // two types with one name can't confuse it; a count, so two in a row still
+  // move focus.
+  const [focusAfter, setFocusAfter] = useState<{ id: string | null; n: number } | null>(null);
   useEffect(() => {
     if (!focusAfter) return;
-    const label = focusAfter.edit && `Edit ${focusAfter.edit}`;
-    const edit = [...document.querySelectorAll<HTMLElement>('button[aria-label]')].find(
-      (b) => b.getAttribute('aria-label') === label,
+    const card = [...document.querySelectorAll<HTMLElement>('[data-session-type-id]')].find(
+      (c) => c.dataset.sessionTypeId === focusAfter.id,
     );
+    const edit = card?.querySelector<HTMLElement>('button[aria-label^="Edit "]');
     (edit ?? document.querySelector<HTMLElement>(`a[href="${NEW_HREF}"]`))?.focus();
   }, [focusAfter]);
   const leaving = (t: OwnSessionType, text: string) => {
     const rows = list ?? [];
     const i = rows.findIndex((x) => x.id === t.id);
     const next = rows[i + 1] ?? rows[i - 1];
-    setFocusAfter((f) => ({ edit: next?.name ?? null, n: (f?.n ?? 0) + 1 }));
+    setFocusAfter((f) => ({ id: next?.id ?? null, n: (f?.n ?? 0) + 1 }));
     say(text);
   };
   const hiddenNow = (t: OwnSessionType) =>
     `“${t.name}” is hidden. You can show it again in Session types.`;
 
-  // The switch: optimistic, and a refusal says so (Session types' copy).
-  const setLive = useSetLive((_id, live) =>
-    say(`Couldn’t ${live ? 'make it live' : 'hide it'}. Check your connection and try again.`),
+  // The switch: optimistic; a refusal brings the card back and says which.
+  const setLive = useSetLive((id, live) =>
+    say(
+      `Couldn’t ${live ? 'make' : 'hide'} “${nameOf(id)}”${live ? ' live' : ''}. Check your connection and try again.`,
+    ),
   );
   // Hiding asks first; `then` is a quick edit's save waiting on it.
   const [hiding, setHiding] = useState<{ type: OwnSessionType; then?: QuickEdit } | null>(null);
@@ -116,6 +116,14 @@ export function OwnerSessionTypes({ shown }: Props) {
         closeEdit();
         if (save.live === false) leaving(t, hiddenNow(t));
         else say(`“${t.name}” saved.`);
+      },
+      // A hide is saved after the modal has closed, so it can't show the
+      // error: say it, and leave nothing behind for the next Edit (review of
+      // PR 119). A length save keeps the modal and its error.
+      onError: (e) => {
+        if (save.live !== false) return;
+        say(`Couldn’t hide “${t.name}”. ${e.copy}`);
+        quick.reset();
       },
     });
 
@@ -140,7 +148,7 @@ export function OwnerSessionTypes({ shown }: Props) {
   };
 
   const cards = list?.map((t) =>
-    toOwnerCard(
+    toCard(
       t,
       shown.find((s) => s.id === t.id),
     ),
@@ -156,28 +164,41 @@ export function OwnerSessionTypes({ shown }: Props) {
           </Button>
         </Notice>
       )}
-      <SessionTypeList
-        sessionTypes={shown}
-        onBook={() => undefined}
-        bookBlocked={null}
-        canBook={false}
-        owner={
-          cards
-            ? {
-                cards,
-                // Every card here is visible: the switch only hides.
-                onToggle: (id) => {
-                  const t = list?.find((x) => x.id === id);
-                  if (t) setHiding({ type: t });
-                },
-                onDelete: (id) => setDeleting(list?.find((x) => x.id === id) ?? null),
-                onEdit: setEditing,
-                onKeep: () => undefined,
-                newHref: NEW_HREF,
-              }
-            : undefined
-        }
-      />
+      {own.isLoading ? (
+        // The owner's list: card-sized placeholders, so the controls never
+        // pop in over the mentee view (review of PR 119).
+        <ul className={styles.ownerLoading} aria-busy>
+          <span className="sr-only" role="status">
+            Loading your session types
+          </span>
+          {Array.from({ length: Math.max(1, shown.length) }, (_, i) => (
+            <li key={i}>
+              <Skeleton width="100%" height="240px" radius="lg" />
+            </li>
+          ))}
+        </ul>
+      ) : cards ? (
+        <SessionTypeList
+          owner={{
+            cards,
+            onHide: (id) => {
+              const t = list?.find((x) => x.id === id);
+              if (t) setHiding({ type: t });
+            },
+            onDelete: (id) => setDeleting(list?.find((x) => x.id === id) ?? null),
+            onEdit: setEditing,
+            newHref: NEW_HREF,
+          }}
+        />
+      ) : (
+        // The owner's list failed: what mentees see, with the retry above.
+        <SessionTypeList
+          sessionTypes={shown}
+          onBook={() => undefined}
+          bookBlocked={null}
+          canBook={false}
+        />
+      )}
       {target && (
         <ModalShell
           title={`Edit ${target.name}`}
@@ -200,7 +221,7 @@ export function OwnerSessionTypes({ shown }: Props) {
               };
               // Hiding asks first, as the switch does: it leaves the profile.
               if (changed.visible === false) {
-                setEditing(null);
+                closeEdit();
                 setHiding({ type: target, then: save });
               } else saveQuick(target, save);
             }}
@@ -218,7 +239,13 @@ export function OwnerSessionTypes({ shown }: Props) {
               ? `Your profile will show “Not taking bookings” until one is visible again. Booked sessions go ahead. ${SHOW_AGAIN}`
               : `It leaves your profile and Explore, and mentees can’t book it. Booked sessions go ahead. ${SHOW_AGAIN}`
           }
-          onCancel={() => setHiding(null)}
+          onCancel={() => {
+            const { type, then } = hiding;
+            setHiding(null);
+            // "Keep visible" keeps the type, not the rest of the edit away:
+            // a length changed in quick edit still saves (review of PR 119).
+            if (then?.durationMin !== undefined) saveQuick(type, { ...then, live: undefined });
+          }}
           onConfirm={() => {
             const { type, then } = hiding;
             setHiding(null);

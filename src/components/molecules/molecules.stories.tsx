@@ -649,30 +649,11 @@ export const CopyShareLink: Story = {
   ),
 };
 
-/** The owner's session card footer (Mentor Profile.dc.html): controls, and the scheduled note. */
+/** The owner's session card footer (Mentor Profile.dc.html): visible, Edit, Delete. */
 export const SessionOwnerFooter: Story = {
   render: () => (
-    <div style={{ display: 'grid', gap: 24, maxWidth: 360 }}>
-      <SessionTypeOwnerFooter
-        name="SOP draft review"
-        visible
-        onToggle={fn()}
-        onEdit={fn()}
-        onDelete={fn()}
-        pending={null}
-      />
-      <SessionTypeOwnerFooter
-        name="Program shortlist"
-        visible={false}
-        onToggle={fn()}
-        onEdit={fn()}
-        onDelete={fn()}
-        pending={{
-          note: 'Hidden from mentees. Deleted after its last booked session on Oct 14. The 2 booked sessions go ahead.',
-          onKeep: fn(),
-          keeping: false,
-        }}
-      />
+    <div style={{ maxWidth: 360 }}>
+      <SessionTypeOwnerFooter name="SOP draft review" onHide={fn()} onEdit={fn()} onDelete={fn()} />
     </div>
   ),
 };
