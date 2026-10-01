@@ -107,11 +107,23 @@ describe('PhotoPicker', () => {
       expect(onRemove).toHaveBeenCalled();
     });
 
-    it('while removing: the photo dims, the badge is the plain one, disabled, and it says so', () => {
+    it('while busy: the same badge, inert (it keeps focus), and it says so (review of PR 125)', async () => {
+      const user = userEvent.setup();
       render(<PhotoPicker {...base} onRemove={vi.fn()} removing />);
-      expect(screen.queryByRole('button', { name: 'Change or remove photo' })).toBeNull();
-      expect(screen.getByLabelText('Change photo')).toHaveAttribute('aria-disabled', 'true');
+      const badge = screen.getByRole('button', { name: 'Change or remove photo' });
+      expect(badge).toHaveAttribute('aria-disabled', 'true');
+      await user.click(badge);
+      expect(screen.queryByRole('menu')).toBeNull();
       expect(screen.getByRole('status')).toHaveTextContent('Removing photo…');
+    });
+
+    it('Dismiss returns focus to the menu button (review of PR 125)', async () => {
+      const user = userEvent.setup();
+      render(
+        <PhotoPicker {...base} onRemove={vi.fn()} error="The photo wasn’t removed. Try again." />,
+      );
+      await user.click(screen.getByRole('button', { name: 'Dismiss' }));
+      expect(screen.getByRole('button', { name: 'Change or remove photo' })).toHaveFocus();
     });
 
     it('without a photo, no menu: "Add photo" picks straight away', () => {

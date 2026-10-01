@@ -48,8 +48,9 @@ export function PhotoPicker({
   const input = useRef<HTMLInputElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
   const busy = uploading || removing;
-  // While busy the plain badge shows, disabled: there's nothing to choose.
-  const asMenu = hasPhoto && !!onRemove && !busy;
+  // The same button whether or not it's busy: swapping it out mid-upload or
+  // mid-removal dropped focus to the page (review of PR 125). Busy, it's inert.
+  const asMenu = hasPhoto && !!onRemove;
   const pick = (f: File | undefined) => {
     if (f && !busy) onFile(f);
   };
@@ -77,6 +78,7 @@ export function PhotoPicker({
                 size: 14,
                 className: styles.badgeButton,
                 align: 'start',
+                disabled: busy,
               }}
               items={[
                 {

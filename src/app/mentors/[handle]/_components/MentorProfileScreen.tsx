@@ -183,8 +183,11 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // "Remove photo" asks first (FE #98).
   const [photoRemoving, setPhotoRemoving] = useState(false);
   // Removed: the badge is now "Add photo"; focus goes there (the menu it came from is gone).
+  // A frame later, so "Photo removed." isn't cut off by the focus move (review of PR 125).
   useEffect(() => {
-    if (photo.removedStamp) document.getElementById(PHOTO_INPUT)?.focus();
+    if (!photo.removedStamp) return;
+    const f = requestAnimationFrame(() => document.getElementById(PHOTO_INPUT)?.focus());
+    return () => cancelAnimationFrame(f);
   }, [photo.removedStamp]);
   const [deleting, setDeleting] = useState<{ kind: 'award' | 'education'; id: string } | null>(
     null,

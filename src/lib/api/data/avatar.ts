@@ -92,8 +92,9 @@ export function useAvatarUpload(handle: string, userId: string | null) {
   });
 
   // DELETE /users/{id}/avatar (backend #319): 204, and again when there's
-  // none; anyone but the owner gets 404, which here means nothing to remove.
-  // The initials show at once, then everything showing the photo refetches.
+  // none. A 404 means "not yours" (anyone but the owner gets it), so it's a
+  // failure, never "removed" (review of PR 125); the profile refetches to the
+  // truth. The initials show at once on success, then everything refetches.
   const remove = useMutation({
     networkMode: 'always',
     mutationFn: async () => {
@@ -101,7 +102,7 @@ export function useAvatarUpload(handle: string, userId: string | null) {
       const { error, response } = await api.DELETE('/api/v1/users/{user_id}/avatar', {
         params: { path: { user_id: userId } },
       });
-      if (!response.ok && response.status !== 404) throw apiError(response.status, error);
+      if (!response.ok) throw apiError(response.status, error);
     },
     onSuccess: async () => {
       await qc.cancelQueries({ queryKey: key });
@@ -113,6 +114,7 @@ export function useAvatarUpload(handle: string, userId: string | null) {
       patchViewer(qc, { avatarUrl: null, avatarFocus: null });
       void qc.invalidateQueries({ queryKey: keys.viewer.all });
     },
+    onError: () => void qc.invalidateQueries({ queryKey: key }),
   });
 
   return {

@@ -8,16 +8,22 @@ type Photo = { bytes: ArrayBuffer; type: string; version: number };
 const g = globalThis as typeof globalThis & {
   __mockPhotos?: Map<string, Photo>;
   __mockPhotosRemoved?: Set<string>;
+  __mockPhotoVersions?: Map<string, number>;
 };
 const store = (g.__mockPhotos ??= new Map());
 // Owners who removed their photo (DELETE /users/{id}/avatar): no photo at all,
 // not the fixture's sample.
 const removed = (g.__mockPhotosRemoved ??= new Set());
+// Each owner's photo number, kept across removals, so a new upload never
+// reuses an old URL the browser has cached (review of PR 125).
+const versions = (g.__mockPhotoVersions ??= new Map<string, number>());
 
 export const mockPhoto = (userId: string): Photo | undefined => store.get(userId);
 export function setMockPhoto(userId: string, bytes: ArrayBuffer, type: string) {
   removed.delete(userId);
-  store.set(userId, { bytes, type, version: (store.get(userId)?.version ?? 0) + 1 });
+  const version = (versions.get(userId) ?? 0) + 1;
+  versions.set(userId, version);
+  store.set(userId, { bytes, type, version });
 }
 export function removeMockPhoto(userId: string) {
   store.delete(userId);

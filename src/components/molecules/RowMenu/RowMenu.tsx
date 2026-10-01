@@ -40,6 +40,11 @@ type RowMenuProps = {
     className?: string;
     /** Which edge the menu lines up with: the button's end (default) or start. */
     align?: 'start' | 'end';
+    /**
+     * Shown but inert (the photo badge while a photo uploads or goes): it keeps
+     * focus, unlike a swapped-out control, and doesn't open (review of PR 125).
+     */
+    disabled?: boolean;
   };
 };
 
@@ -53,6 +58,7 @@ type RowMenuProps = {
  */
 export function RowMenu({ label, items, triggerRef, trigger }: RowMenuProps) {
   const [open, setOpen] = useState(false);
+  const inert = !!trigger?.disabled;
   const menuId = useId();
   const button = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
@@ -73,7 +79,7 @@ export function RowMenu({ label, items, triggerRef, trigger }: RowMenuProps) {
   // to the page, where the menu's keys no longer reach.
   const focused = useRef<number | null>(null);
   // Nothing left to choose: closed during render (no second render from an effect).
-  if (open && items.length === 0) setOpen(false);
+  if (open && (items.length === 0 || inert)) setOpen(false);
   useLayoutEffect(() => {
     // Items can shift under a focused one (no new focus event): keep its place current.
     const els = [...(menu.current?.querySelectorAll('[role="menuitem"]') ?? [])];
@@ -98,6 +104,7 @@ export function RowMenu({ label, items, triggerRef, trigger }: RowMenuProps) {
   }, [open]);
 
   const onButtonKey = (e: KeyboardEvent) => {
+    if (inert) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       openAt(0);
@@ -137,9 +144,14 @@ export function RowMenu({ label, items, triggerRef, trigger }: RowMenuProps) {
         className={trigger?.className ?? styles.trigger}
         aria-label={label}
         aria-haspopup="menu"
+        aria-disabled={inert || undefined}
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
-        onClick={() => (open ? close(false) : openAt(0))}
+        onClick={() => {
+          if (inert) return;
+          if (open) close(false);
+          else openAt(0);
+        }}
         onKeyDown={onButtonKey}
       >
         <Icon name={trigger?.icon ?? 'more_horiz'} size={trigger?.size ?? 20} />
@@ -150,9 +162,7 @@ export function RowMenu({ label, items, triggerRef, trigger }: RowMenuProps) {
           id={menuId}
           role="menu"
           aria-label={label}
-          className={
-            trigger?.align === 'start' ? `${styles.menu} ${styles.menuStart}` : styles.menu
-          }
+          className={cx(styles.menu, trigger?.align === 'start' && styles.menuStart)}
           onKeyDown={onMenuKey}
         >
           {items.map((it, i) => (

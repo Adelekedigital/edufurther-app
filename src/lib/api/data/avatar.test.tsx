@@ -171,12 +171,17 @@ describe('useAvatarUpload', () => {
       expect(spy).toHaveBeenCalledWith({ queryKey: keys.viewer.all });
     });
 
-    it('a 404 is nothing to remove: the same outcome', async () => {
-      DELETE.mockResolvedValue({ response: new Response(null, { status: 404 }) });
-      const { result } = setup();
+    it('a 404 means "not yours": a failure, the photo kept, the profile refetched (review of PR 125)', async () => {
+      DELETE.mockResolvedValue({ error: {}, response: new Response(null, { status: 404 }) });
+      const { result, qc, spy } = setup();
+      withPhoto(qc);
       act(() => result.current.remove());
-      await waitFor(() => expect(result.current.removedStamp).toBeGreaterThan(0));
-      expect(result.current.error).toBeNull();
+      await waitFor(() =>
+        expect(result.current.error).toBe('The photo wasn’t removed. Try again.'),
+      );
+      expect(result.current.removedStamp).toBe(0);
+      expect(qc.getQueryData<MentorProfile>(key)?.mentor.photoUrl).toBe('https://cdn/me.webp');
+      expect(spy).toHaveBeenCalledWith({ queryKey: key });
     });
 
     it('a failure says so in our words, and dismissing clears it', async () => {

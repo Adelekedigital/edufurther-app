@@ -179,4 +179,21 @@ describe('RowMenu (WAI-ARIA menu button)', () => {
     await user.click(screen.getByRole('menuitem', { name: /Change photo/ }));
     expect(pick).toHaveBeenCalled();
   });
+
+  it('an inert trigger says so and doesn’t open', async () => {
+    const user = userEvent.setup();
+    render(
+      <RowMenu
+        label="Change or remove photo"
+        trigger={{ icon: 'photo_camera', disabled: true }}
+        items={[{ key: 'a', icon: 'edit', label: 'Change photo', onSelect: vi.fn() }]}
+      />,
+    );
+    const trigger = screen.getByRole('button', { name: 'Change or remove photo' });
+    expect(trigger).toHaveAttribute('aria-disabled', 'true');
+    await user.click(trigger);
+    trigger.focus();
+    await user.keyboard('{ArrowDown}');
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
 });
