@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Button } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Notice } from '@/components/molecules/Notice/Notice';
@@ -58,6 +57,11 @@ type Props = {
    * it, so a hide shows in both at once (Codex on PR 119). Null until loaded.
    */
   onActiveCount?: (n: number | null) => void;
+  /**
+   * Says an outcome in the screen's live region, which outlives this tab: a
+   * delete still out when the owner switches tab is still said (Codex on PR 130).
+   */
+  onSay: (text: string) => void;
 };
 
 /**
@@ -68,7 +72,7 @@ type Props = {
  * types, which the hide confirm says. The confirms are Session types' own, so
  * each action asks the same way wherever it's done.
  */
-export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
+export function OwnerSessionTypes({ shown, onActiveCount, onSay: say }: Props) {
   const own = useOwnSessionTypes(true);
   // Active only: hidden and scheduled types are Session types' business.
   const list = own.data?.filter((t) => t.isLive && !t.pendingDeletion);
@@ -78,8 +82,6 @@ export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
     onActiveCount?.(activeCount);
   }, [activeCount, onActiveCount]);
   const nameOf = (id: string) => own.data?.find((t) => t.id === id)?.name ?? 'it';
-  const [said, setSaid] = useState<{ text: string; id: number } | null>(null);
-  const say = (text: string) => setSaid((was) => ({ text, id: (was?.id ?? 0) + 1 }));
 
   // A card that leaves (hidden, deleted or scheduled) takes its buttons with
   // it: focus the next card's Edit, or the "New session type" tile. By id, so
@@ -88,6 +90,9 @@ export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
   const [focusAfter, setFocusAfter] = useState<{ id: string | null; n: number } | null>(null);
   useEffect(() => {
     if (!focusAfter) return;
+    // Any dialog open, the page's own included (Remove photo): focus is in it,
+    // and it returns focus itself when it closes (Codex on PR 130).
+    if (document.querySelector('[aria-modal="true"]')) return;
     const card = [...document.querySelectorAll<HTMLElement>('[data-session-type-id]')].find(
       (c) => c.dataset.sessionTypeId === focusAfter.id,
     );
@@ -101,6 +106,7 @@ export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
   };
   const focusOn = (next: string | null) => setFocusAfter((f) => ({ id: next, n: (f?.n ?? 0) + 1 }));
   const leaving = (t: OwnSessionType, text: string) => {
+    setUnconfirmed((u) => (u?.id === t.id ? null : u));
     focusOn(nextOf(t.id));
     say(text);
   };
@@ -119,6 +125,8 @@ export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
   const quick = useQuickEditSessionType();
   const [editing, setEditing] = useState<string | null>(null);
   const target = list?.find((t) => t.id === editing) ?? null;
+  // Its card gone (deleted meanwhile): the editor is closed for good.
+  if (editing && list && !target) setEditing(null);
   const closeEdit = () => {
     quick.reset();
     setEditing(null);
@@ -158,20 +166,37 @@ export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
     if (deleting) dismissed.current.add(deleting.id);
     setDeleting(null);
   };
-  // Which dialog is open now, for a delete that ends after its own closed: focus
-  // moves on only if none is (focus is in it, and it returns focus itself).
+  // Which dialog is open now, and for which card, for a delete that ends after
+  // its confirm was dismissed: focus moves on unless another card's dialog is
+  // open (focus is in it, and it returns focus itself). The card's own close
+  // with it (review of PR 130).
   const openNow = useLatest(
-    deleting ? `delete:${deleting.id}` : hiding ? 'hide' : editing ? 'edit' : null,
+    deleting
+      ? `delete:${deleting.id}`
+      : hiding
+        ? `hide:${hiding.type.id}`
+        : target
+          ? `edit:${target.id}`
+          : null,
   );
   // A delete that couldn't be confirmed: if the refetched list no longer has
   // it, focus moves on as after a delete (adjusted during render).
   const [unconfirmed, setUnconfirmed] = useState<{ id: string; next: string | null } | null>(null);
   if (unconfirmed && list && !list.some((x) => x.id === unconfirmed.id)) {
     setUnconfirmed(null);
-    if (!deleting && !hiding && !editing) focusOn(unconfirmed.next);
+    if (!deleting && !hiding && !target) focusOn(unconfirmed.next);
   }
+  // Opening a card's confirm: one with nothing out starts clean (an old
+  // refusal, already said, isn't shown again); one still out owns its outcome
+  // again, so it isn't said twice (review of PR 130).
+  const askDelete = (id: string) => {
+    if (!pendingDeletes.includes(id)) setDeleteFor((f) => (f === id ? null : f));
+    dismissed.current.delete(id);
+    setDeleting(list?.find((x) => x.id === id) ?? null);
+  };
   const onDelete = (t: OwnSessionType) => {
     const next = nextOf(t.id);
+    setUnconfirmed((u) => (u?.id === t.id ? null : u));
     dismissed.current.delete(t.id);
     setDeleteFor(t.id);
     setPendingDeletes((ids) => [...ids, t.id]);
@@ -181,9 +206,13 @@ export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
         settleDelete(t.id);
         dismissed.current.delete(t.id);
         // Only this card's confirm: another may have opened since a dismiss.
-        const elsewhere = openNow.current !== null && openNow.current !== `delete:${t.id}`;
+        const open = openNow.current;
+        const elsewhere = open !== null && !open.endsWith(`:${t.id}`);
         setDeleting((d) => (d?.id === t.id ? null : d));
+        // Gone, or leaving the profile: its other dialogs close with it.
         const move = (text: string) => {
+          setHiding((x) => (x?.type.id === t.id ? null : x));
+          setEditing((x) => (x === t.id ? null : x));
           if (!elsewhere) focusOn(next);
           say(text);
         };
@@ -243,7 +272,7 @@ export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
               const t = list?.find((x) => x.id === id);
               if (t) setHiding({ type: t });
             },
-            onDelete: (id) => setDeleting(list?.find((x) => x.id === id) ?? null),
+            onDelete: askDelete,
             onEdit: setEditing,
             newHref: NEW_HREF,
           }}
@@ -328,7 +357,6 @@ export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
           onDelete={() => onDelete(deleting)}
         />
       )}
-      <LiveRegion message={said} />
     </>
   );
 }
