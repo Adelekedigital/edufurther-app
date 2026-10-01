@@ -34,7 +34,9 @@ export function SimilarMentorsCard({
         <h2 id="similar-mentors" className={styles.title}>
           Similar mentors
         </h2>
-        <Link href={seeAllHref} className={styles.link}>
+        {/* Off like the rest: /explore renders per request, and Next cancels
+            its own prefetch stream mid-way (failure-modes #25). */}
+        <Link href={seeAllHref} className={styles.link} prefetch={false}>
           See all<span className="sr-only"> mentors</span>
         </Link>
       </div>

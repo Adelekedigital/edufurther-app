@@ -1,0 +1,51 @@
+export {};
+
+const signOutCall = vi.fn();
+vi.mock('@supabase/ssr', () => ({
+  createBrowserClient: () => ({ auth: { signOut: (o: unknown) => signOutCall(o) } }),
+}));
+vi.mock('./config', () => ({
+  SUPABASE_URL: 'https://x.supabase.co',
+  SUPABASE_ANON_KEY: 'k',
+  authConfigured: true,
+}));
+
+const { signOut } = await import('./browser');
+
+const setCookies = () => {
+  document.cookie = 'sb-proj-auth-token.0=a; path=/';
+  document.cookie = 'sb-proj-auth-token.1=b; path=/';
+  document.cookie = 'theme=dark; path=/';
+};
+
+describe('signOut (Logout ends this device’s session)', () => {
+  afterEach(() => {
+    document.cookie.split(';').forEach((c) => {
+      const n = c.split('=')[0]!.trim();
+      if (n) document.cookie = `${n}=; Max-Age=0; path=/`;
+    });
+  });
+
+  it('the SDK signs out locally; its own cookie handling is left alone', async () => {
+    setCookies();
+    signOutCall.mockResolvedValue({ error: null });
+    await signOut();
+    expect(signOutCall).toHaveBeenCalledWith({ scope: 'local' });
+    expect(document.cookie).toContain('sb-proj-auth-token.0=a');
+  });
+
+  it('Supabase unreachable (the SDK keeps the session): the auth cookies are cleared anyway, others kept', async () => {
+    setCookies();
+    signOutCall.mockResolvedValue({ error: new Error('Failed to fetch') });
+    await signOut();
+    expect(document.cookie).not.toContain('sb-proj-auth-token');
+    expect(document.cookie).toContain('theme=dark');
+  });
+
+  it('the SDK throws: the same', async () => {
+    setCookies();
+    signOutCall.mockRejectedValue(new TypeError('network'));
+    await signOut();
+    expect(document.cookie).not.toContain('sb-proj-auth-token');
+  });
+});
