@@ -11,7 +11,7 @@ import { useMentorDefaults } from '@/lib/api/data/sessionTypes';
 import type { BookingDefaults } from '@/lib/utils/sessionTypeDraft';
 import { useOnline } from '@/lib/utils/useOnline';
 import { useAppShell } from '../../_shell/useAppShell';
-import { mentorGate } from './MentorGate';
+import { mentorGate } from '../../_shell/MentorGate';
 import { SessionTypeFormScreen } from './SessionTypeFormScreen';
 import styles from './SessionTypesScreen.module.css';
 

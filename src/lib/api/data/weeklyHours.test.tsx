@@ -187,3 +187,36 @@ describe('useSaveWeeklyHours', () => {
     });
   });
 });
+
+describe('moving the hours to another zone (Calendar)', () => {
+  it('plans every rule removed and every slot re-added, clock times kept', () => {
+    const rules = [rule('a', 1, '17:00:00', '20:00:00'), rule('b', 6, '09:00:00', '13:00:00')];
+    const w = toWeeklyHours(rules, 'Africa/Lagos');
+    const plan = planHoursSave(w.rules, w.days, true);
+    expect(plan.remove.map((r) => r.id)).toEqual(['a', 'b']);
+    expect(plan.add).toEqual([
+      { day: 1, slot: [1020, 1200] },
+      { day: 6, slot: [540, 780] },
+    ]);
+  });
+
+  it('saves the new rules in the chosen zone', async () => {
+    const qc = new QueryClient();
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    );
+    DELETE.mockReset();
+    POST.mockReset();
+    DELETE.mockImplementation(() => reply(200));
+    POST.mockImplementation(() => reply(201));
+    const current = toWeeklyHours([rule('a', 1, '17:00:00', '20:00:00')], 'Africa/Lagos');
+    const { result } = renderHook(() => useSaveWeeklyHours('m1'), { wrapper });
+    await result.current.save({ current, days: current.days, timeZone: 'Europe/London' });
+    expect(DELETE.mock.calls[0]![1].params.path.rule_id).toBe('a');
+    expect(POST.mock.calls[0]![1].body).toMatchObject({
+      day_of_week: 1,
+      start_time: '17:00:00',
+      timezone: 'Europe/London',
+    });
+  });
+});

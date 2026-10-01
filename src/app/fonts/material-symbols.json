@@ -23,6 +23,7 @@
     "close",
     "cloud_off",
     "content_copy",
+    "date_range",
     "delete",
     "description",
     "drag_indicator",
@@ -103,5 +104,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "53e55548af06919bdb81d33b9edbe4c338dc74818e45ff437af6bff6bb87190b"
+  "sha256": "122d4855fa5cfa9350359a1c26148a457b6fb436b78bdcef58ee6791fbb106c5"
 }

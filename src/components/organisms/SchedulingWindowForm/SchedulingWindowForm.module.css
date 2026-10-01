@@ -1,0 +1,60 @@
+/* Calendar v2, Scheduling window modal (`windowOpen`). */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+.rows {
+  display: flex;
+  flex-direction: column;
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+}
+.row + .row {
+  border-top: var(--border-hairline) solid var(--border-muted);
+}
+.text {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.label {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-medium);
+}
+.hint {
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+.fit {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+.error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  color: var(--text-danger);
+}
+.footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+@media (max-width: 767px) {
+  .row {
+    padding: var(--space-2) var(--space-3);
+  }
+}

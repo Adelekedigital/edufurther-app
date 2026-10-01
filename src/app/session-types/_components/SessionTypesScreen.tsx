@@ -28,7 +28,7 @@ import { useOnline } from '@/lib/utils/useOnline';
 import type { Remote } from '@/types/mentor';
 import type { DeleteError, OwnSessionType } from '@/types/sessionType';
 import { useAppShell } from '../../_shell/useAppShell';
-import { mentorGate } from './MentorGate';
+import { mentorGate } from '../../_shell/MentorGate';
 import styles from './SessionTypesScreen.module.css';
 
 const CREATE_HREF = '/session-types/new';

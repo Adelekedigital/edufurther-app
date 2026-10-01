@@ -20,7 +20,7 @@ import { SESSION_TEMPLATES } from '@/lib/utils/sessionTemplates';
 import { weeklySummary, type Draft } from '@/lib/utils/sessionTypeDraft';
 import { useOnline } from '@/lib/utils/useOnline';
 import { useAppShell } from '../../_shell/useAppShell';
-import { mentorGate } from './MentorGate';
+import { mentorGate } from '../../_shell/MentorGate';
 import {
   DangerConfirm,
   DefaultsModal,

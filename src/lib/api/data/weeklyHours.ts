@@ -78,8 +78,16 @@ const keyOf = (day: number, [a, b]: Slot): RuleKey => `${day}|${a}|${b}`;
 const ruleKey = (r: AvailabilityRuleRead): RuleKey =>
   keyOf(r.day_of_week, [minutes(r.start_time, false), minutes(r.end_time, true)]);
 
-/** What to delete and add to turn `rules` into `days`; unchanged hours are left alone. */
-export function planHoursSave(rules: AvailabilityRuleRead[], days: DayHours[]) {
+/**
+ * What to delete and add to turn `rules` into `days`; unchanged hours are left
+ * alone. Moving the hours to another zone (Calendar's "Times shown in") keeps
+ * their clock times and re-adds every one in that zone.
+ */
+export function planHoursSave(rules: AvailabilityRuleRead[], days: DayHours[], moveZone = false) {
+  if (moveZone) {
+    const add = days.flatMap((d, day) => (d.on ? d.slots.map((slot) => ({ day, slot })) : []));
+    return { remove: rules, add };
+  }
   const wanted = new Map<RuleKey, { day: number; slot: Slot }>();
   days.forEach((d, day) => {
     if (d.on) for (const slot of d.slots) wanted.set(keyOf(day, slot), { day, slot });
@@ -124,9 +132,13 @@ export function useWeeklyHours(userId: string | null): Remote<WeeklyHours> {
  */
 export function useSaveWeeklyHours(userId: string | null) {
   const qc = useQueryClient();
-  const mutation = useMutation<void, AppError, { current: WeeklyHours; days: DayHours[] }>({
-    mutationFn: async ({ current, days }) => {
-      const { remove, add } = planHoursSave(current.rules, days);
+  const mutation = useMutation<
+    void,
+    AppError,
+    { current: WeeklyHours; days: DayHours[]; timeZone?: string }
+  >({
+    mutationFn: async ({ current, days, timeZone = current.timeZone }) => {
+      const { remove, add } = planHoursSave(current.rules, days, timeZone !== current.timeZone);
       const path = { user_id: userId! };
       const removed = await Promise.all(
         remove.map((r) =>
@@ -147,7 +159,7 @@ export function useSaveWeeklyHours(userId: string | null) {
                 day_of_week: day,
                 start_time: hhmm(a),
                 end_time: hhmm(b),
-                timezone: current.timeZone,
+                timezone: timeZone,
                 is_active: true,
               },
             })

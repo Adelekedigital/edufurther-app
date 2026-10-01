@@ -28,6 +28,7 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     isMentee: me.goal != null,
     isApprovedMentor: me.mentor_profile?.approval_status === 'approved',
     isMentor: me.mentor_profile != null,
+    isListedMentor: me.mentor_profile?.listing_status === 'listed',
     completedSessions: me.mentee_completed_sessions,
     credits: me.credits
       ? { balance: me.credits.balance, allowance: me.credits.allowance, state: me.credits.state }
@@ -69,6 +70,7 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     isMentee: false,
     isApprovedMentor: true,
     isMentor: true,
+    isListedMentor: true,
     completedSessions: 0,
     credits: null,
     // No photo, like the mock profile it owns: the initial on its cover tone.

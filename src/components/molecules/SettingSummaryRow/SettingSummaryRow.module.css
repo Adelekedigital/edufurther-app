@@ -1,0 +1,33 @@
+/* Calendar v2 settings row: summaryWindow / linkedSetup. */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.tile {
+  width: var(--space-8);
+  height: var(--space-8);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--blue-50);
+  color: var(--blue-500);
+}
+.text {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.title {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-medium);
+}
+.summary {
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
