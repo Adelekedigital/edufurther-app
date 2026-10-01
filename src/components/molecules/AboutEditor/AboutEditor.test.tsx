@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { hasUnsavedChanges, unsavedLabel } from '@/lib/utils/leaveGuard';
 import { AboutEditor } from './AboutEditor';
 
 function setup(extra: Partial<Parameters<typeof AboutEditor>[0]> = {}) {
@@ -46,5 +47,16 @@ describe('AboutEditor', () => {
     // The failure is the textarea's description, and focus is back on it.
     expect(box).toHaveAccessibleDescription('That didn’t save. Try again.');
     expect(box).toHaveFocus();
+  });
+
+  it('an edit counts as unsaved (leaving asks first: links, Logout, the browser); undoing it doesn’t', async () => {
+    const { user } = setup();
+    expect(hasUnsavedChanges()).toBe(false);
+    const box = screen.getByRole('textbox', { name: 'About' });
+    await user.type(box, ' More.');
+    expect(hasUnsavedChanges()).toBe(true);
+    expect(unsavedLabel()).toBe('your About section');
+    for (let n = 0; n < 6; n++) await user.type(box, '{Backspace}');
+    expect(hasUnsavedChanges()).toBe(false);
   });
 });

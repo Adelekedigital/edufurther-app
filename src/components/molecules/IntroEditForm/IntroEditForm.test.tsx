@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { hasUnsavedChanges, unsavedLabel } from '@/lib/utils/leaveGuard';
 import { IntroEditForm } from './IntroEditForm';
 
 const initial = { firstName: 'Gbenga', lastName: 'Elufisan', headline: 'PhD Sociology' };
@@ -103,5 +104,16 @@ describe('IntroEditForm', () => {
     expect(btn).toHaveAttribute('aria-disabled', 'true');
     await user.click(btn);
     expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('an edit counts as unsaved (leaving asks first: links, Logout, the browser); undoing it doesn’t', async () => {
+    const { user } = setup();
+    expect(hasUnsavedChanges()).toBe(false);
+    const box = screen.getByRole('textbox', { name: 'Headline' });
+    await user.type(box, ' at LSE');
+    expect(hasUnsavedChanges()).toBe(true);
+    expect(unsavedLabel()).toBe('your intro');
+    for (let n = 0; n < 7; n++) await user.type(box, '{Backspace}');
+    expect(hasUnsavedChanges()).toBe(false);
   });
 });

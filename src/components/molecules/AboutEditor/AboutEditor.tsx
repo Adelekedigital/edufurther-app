@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { Button } from '@/components/atoms/Button/Button';
 import { Textarea } from '@/components/atoms/Input/Input';
 import { ABOUT_MAX } from '@/lib/utils/profileLimits';
@@ -21,6 +22,8 @@ type AboutEditorProps = {
  */
 export function AboutEditor({ initial, onSave, onCancel, saving, error }: AboutEditorProps) {
   const [text, setText] = useState(initial);
+  // Leaving with edits asks first (any in-app link, Logout, the browser's prompt).
+  useLeaveGuard(text !== initial, 'your About section');
   const ref = useRef<HTMLTextAreaElement>(null);
   const errorId = useId();
   // A failed save: back to the text, whose description now carries why.

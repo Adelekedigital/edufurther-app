@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { Button } from '@/components/atoms/Button/Button';
 import { Input } from '@/components/atoms/Input/Input';
 import { FormField } from '@/components/molecules/FormField/FormField';
@@ -34,6 +35,8 @@ export function IntroEditForm({
   errors = {},
 }: IntroEditFormProps) {
   const [v, setV] = useState(initial);
+  // Leaving with edits asks first (any in-app link, Logout, the browser's prompt).
+  useLeaveGuard(JSON.stringify(v) !== JSON.stringify(initial), 'your intro');
   const first = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => first.current?.focus(), []);

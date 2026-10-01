@@ -86,7 +86,7 @@ export function SessionTypeFormScreen({
   });
   const published = modal?.kind === 'published' || modal?.kind === 'saved';
   const dirty = !published && JSON.stringify(d.draft) !== JSON.stringify(d.initial);
-  useLeaveGuard(dirty);
+  useLeaveGuard(dirty, edit ? 'this session type' : 'this new session type');
 
   const update = (patch: Partial<Draft>) => {
     const next = d.seedCustom(patch);

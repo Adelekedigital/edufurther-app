@@ -1,4 +1,5 @@
 import { renderHook } from '@testing-library/react';
+import { heldLink } from './leaveGuard';
 
 async function load() {
   vi.resetModules();
@@ -38,5 +39,75 @@ describe('useLeaveGuard', () => {
     releaseLeaveGuards();
     expect(unloadPrevented()).toBe(false);
     unmount();
+  });
+
+  it('names what has unsaved changes for the dialog; "this page" when nothing says', async () => {
+    const { useLeaveGuard, unsavedLabel } = await load();
+    expect(unsavedLabel()).toBe('this page');
+    const { unmount } = renderHook(() => useLeaveGuard(true, 'your intro'));
+    expect(unsavedLabel()).toBe('your intro');
+    unmount();
+  });
+
+  it('several forms with edits: names them all', async () => {
+    const { useLeaveGuard, unsavedLabel } = await load();
+    const a = renderHook(() => useLeaveGuard(true, 'your About section'));
+    const b = renderHook(() => useLeaveGuard(true, 'your intro'));
+    expect(unsavedLabel()).toBe('your About section and your intro');
+    const c = renderHook(() => useLeaveGuard(true, 'your topics'));
+    expect(unsavedLabel()).toBe('your About section, your intro and your topics');
+    [a, b, c].forEach((h) => h.unmount());
+  });
+});
+
+describe('discardUnsaved ("Discard" in the dialog)', () => {
+  it('those edits stop guarding (no browser prompt as the page goes), and nothing counts as unsaved', async () => {
+    const { useLeaveGuard, hasUnsavedChanges, discardUnsaved } = await load();
+    const { unmount } = renderHook(() => useLeaveGuard(true, 'your intro'));
+    discardUnsaved();
+    expect(hasUnsavedChanges()).toBe(false);
+    expect(unloadPrevented()).toBe(false);
+    unmount();
+  });
+
+  it('a form on the next page still guards', async () => {
+    const { useLeaveGuard, discardUnsaved } = await load();
+    const first = renderHook(() => useLeaveGuard(true));
+    discardUnsaved();
+    first.unmount();
+    const next = renderHook(() => useLeaveGuard(true));
+    expect(unloadPrevented()).toBe(true);
+    next.unmount();
+  });
+});
+
+describe('heldLink: which link clicks wait for "Discard your changes?"', () => {
+  const link = (href: string, attrs: Record<string, string> = {}) => {
+    const a = document.createElement('a');
+    a.href = href;
+    Object.entries(attrs).forEach(([k, v]) => a.setAttribute(k, v));
+    document.body.appendChild(a);
+    return a;
+  };
+  const clickOn = (a: HTMLAnchorElement, init: MouseEventInit = {}) => {
+    const e = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0, ...init });
+    Object.defineProperty(e, 'target', { value: a });
+    return heldLink(e);
+  };
+
+  it('an in-app link to another page: held', () => {
+    const a = link('/bookings');
+    expect(clickOn(a)).toBe(a);
+  });
+
+  it.each([
+    ['a new tab (target=_blank)', () => link('/bookings', { target: '_blank' }), {}],
+    ['a download', () => link('/file.pdf', { download: '' }), {}],
+    ['another site', () => link('https://cal.example/match'), {}],
+    ['the same page (a hash)', () => link(`${window.location.pathname}#top`), {}],
+    ['a ctrl/⌘-click', () => link('/bookings'), { ctrlKey: true }],
+    ['a middle click', () => link('/bookings'), { button: 1 }],
+  ] as const)('%s: not held', (_what, make, init) => {
+    expect(clickOn(make(), init)).toBeNull();
   });
 });
