@@ -56,10 +56,14 @@ export const keys = {
   // A mentor's booking preferences and Calendar hours, by their user id.
   mentorDefaults: (userId: string) => ['mentorDefaults', userId] as const,
   weeklyHours: (userId: string) => ['weeklyHours', userId] as const,
-  /** The mentor's upcoming booked sessions (Calendar's month dots). */
-  bookedSessions: (userId: string) => ['bookedSessions', userId] as const,
-  /** Whole days the mentor blocked (availability exceptions). */
-  blockedDays: (userId: string) => ['blockedDays', userId] as const,
+  /** Calendar: one parent, so a change can refresh booked and blocked days together. */
+  calendar: {
+    all: ['calendar'] as const,
+    /** The mentor's upcoming booked sessions (the month's dots). */
+    booked: (userId: string) => ['calendar', 'booked', userId] as const,
+    /** Whole days the mentor blocked (availability exceptions). */
+    blocked: (userId: string) => ['calendar', 'blocked', userId] as const,
+  },
   /** A review as its author reads it (GET /reviews/{id}), to pre-fill Edit. */
   reviews: {
     authoredAll: ['reviews', 'authored'] as const,

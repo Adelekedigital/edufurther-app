@@ -74,6 +74,39 @@
   font-size: var(--text-p-md);
   font-weight: var(--weight-semibold);
 }
+.monthHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+/* "Blocked dates (N)" next to the title: opens the block-out modal. */
+.blockedBtn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 28px;
+  padding: 0 var(--space-2);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+.blockedBtn:hover {
+  background: var(--ink-50);
+}
+.blockedBtn:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.blockedBtnIcon {
+  color: var(--blue-500);
+}
 .note {
   margin-top: var(--space-3);
 }
@@ -177,6 +210,11 @@
   }
   .blockMonth {
     max-width: none;
+  }
+  .blockedBtn::after {
+    content: '';
+    position: absolute;
+    inset: -8px 0;
   }
   /* Above the phone tab bar, and the safe area. */
   .saveBar {

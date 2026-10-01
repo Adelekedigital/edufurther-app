@@ -1,0 +1,14 @@
+/* Calendar v2 `blockoutOpen`: the modal's children, spaced as Modal.dc.html (--space-5). */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+.error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  color: var(--text-danger);
+}

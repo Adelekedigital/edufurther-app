@@ -2,6 +2,8 @@ import { emptyWeek } from './sessionTypeDraft';
 import {
   bookableRange,
   monthCells,
+  runsOf,
+  shortDay,
   monthStart,
   noticeLabel,
   slotCount,
@@ -168,5 +170,17 @@ describe('monthCells', () => {
   it('pages months from today’s', () => {
     expect(monthStart('2026-12-15', 1)).toBe('2027-01-01');
     expect(monthStart('2026-10-31', 0)).toBe('2026-10-01');
+  });
+});
+
+describe('runsOf and shortDay', () => {
+  it('groups days into runs, end exclusive, across a month end', () => {
+    expect(runsOf(['2026-10-31', '2026-11-01', '2026-10-05', '2026-10-05'])).toEqual([
+      { start: '2026-10-05', end: '2026-10-06' },
+      { start: '2026-10-31', end: '2026-11-02' },
+    ]);
+  });
+  it('names a day as the design does', () => {
+    expect(shortDay('2026-10-12')).toBe('Mon, Oct 12');
   });
 });

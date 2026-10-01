@@ -183,11 +183,17 @@ button.day:not(.selected, .mid, [aria-disabled='true']):hover {
   border-radius: var(--radius-full);
   background: var(--calendar-booked);
 }
-/* Phones: a 44px tap area around the drawn 32px control. */
+/* Phones: a 44px tap area around the drawn 32px controls and 36px days. */
 @media (max-width: 767px) {
-  .navBtn::after {
+  .navBtn::after,
+  button.day::after {
     content: '';
     position: absolute;
+  }
+  .navBtn::after {
     inset: -6px;
+  }
+  button.day::after {
+    inset: -4px;
   }
 }

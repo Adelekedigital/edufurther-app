@@ -4,19 +4,21 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNod
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
+import { BlockedDatesPanel } from '@/components/molecules/BlockedDatesPanel/BlockedDatesPanel';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { MonthPicker } from '@/components/molecules/MonthPicker/MonthPicker';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { SettingSummaryRow } from '@/components/molecules/SettingSummaryRow/SettingSummaryRow';
 import { StatusPill } from '@/components/molecules/StatusPill/StatusPill';
+import { BlockOutForm } from '@/components/organisms/BlockOutForm/BlockOutForm';
 import { SchedulingWindowForm } from '@/components/organisms/SchedulingWindowForm/SchedulingWindowForm';
 import { WeeklyHoursCard } from '@/components/organisms/WeeklyHoursCard/WeeklyHoursCard';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
-import { useBlockedDays, useBookedDays } from '@/lib/api/data/calendar';
+import { useBlockedDays, useBookedDays, useSaveBlockedDays } from '@/lib/api/data/calendar';
 import { useMentorDefaults, useSaveMentorDefaults } from '@/lib/api/data/sessionTypes';
 import { useSaveWeeklyHours, useWeeklyHours } from '@/lib/api/data/weeklyHours';
-import { bookableRange, todayIn, windowSummary } from '@/lib/utils/calendar';
+import { bookableRange, shortDay, todayIn, windowSummary } from '@/lib/utils/calendar';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { useOnline } from '@/lib/utils/useOnline';
@@ -53,9 +55,12 @@ export function CalendarScreen() {
   const draft = useHoursDraft(weekly.data, deviceZone);
   const booked = useBookedDays(mentorId, draft.timeZone);
   const blocked = useBlockedDays(mentorId);
+  const saveBlocked = useSaveBlockedDays(mentorId);
   useLeaveGuard(draft.dirty, 'your weekly hours');
 
   const [windowOpen, setWindowOpen] = useState(false);
+  const [blockOpen, setBlockOpen] = useState(false);
+  const [unblocking, setUnblocking] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState<{ text: string; id: number } | null>(null);
   const announce = useCallback(
     (text: string) => setAnnouncement((a) => ({ text, id: (a?.id ?? 0) + 1 })),
@@ -110,6 +115,35 @@ export function CalendarScreen() {
   // A sent save can't be called back: the modal stays until it answers.
   const closeWindow = () => {
     if (!saveDefaults.isPending) setWindowOpen(false);
+  };
+
+  // Blocked days are counted in the zone the hours are kept in (what's saved).
+  const blockZone = weekly.data?.timeZone ?? draft.timeZone;
+  const blockToday = todayIn(blockZone);
+  const upcomingBlocked = (blocked.data?.days ?? []).filter((d) => d >= blockToday);
+  const saveBlocks = (wanted: string[]) =>
+    saveBlocked.save({
+      exceptions: blocked.data?.exceptions ?? [],
+      wanted,
+      today: blockToday,
+      timeZone: blockZone,
+    });
+  const openBlockOut = () => {
+    saveBlocked.reset();
+    setBlockOpen(true);
+  };
+  const closeBlockOut = () => {
+    if (!saveBlocked.isPending) setBlockOpen(false);
+  };
+  // A chip's ×: no confirm (one tap puts it back), the result is read out.
+  const unblock = (day: string) => {
+    setUnblocking(day);
+    saveBlocks(upcomingBlocked.filter((d) => d !== day))
+      .then(
+        () => announce(`${shortDay(day)} is open again.`),
+        (e: { message: string }) => announce(e.message),
+      )
+      .finally(() => setUnblocking(null));
   };
 
   // A failed save's message belongs to that draft: once the hours match what's
@@ -228,14 +262,22 @@ export function CalendarScreen() {
             }
           />
           <section aria-labelledby={monthTitleId} className={styles.monthCard}>
-            <h2 id={monthTitleId} className={styles.cardTitle}>
-              Month at a glance
-            </h2>
+            <div className={styles.monthHead}>
+              <h2 id={monthTitleId} className={styles.cardTitle}>
+                Month at a glance
+              </h2>
+              <button type="button" className={styles.blockedBtn} onClick={openBlockOut}>
+                <Icon name="event_busy" size={16} className={styles.blockedBtnIcon} />
+                {upcomingBlocked.length
+                  ? `Blocked dates (${upcomingBlocked.length})`
+                  : 'Blocked dates'}
+              </button>
+            </div>
             <MonthPicker
               readOnly
               today={today}
-              selected={blocked.data ?? []}
-              booked={booked.data ?? []}
+              selected={blocked.data?.days ?? []}
+              booked={(booked.data ?? []).map((b) => b.day)}
               available={draft.days.flatMap((d, i) => (d.on ? [i] : []))}
               // Open only where a mentee could book: past the notice, within the window.
               openFrom={range.from}
@@ -263,6 +305,15 @@ export function CalendarScreen() {
                   Try again
                 </Button>
               </div>
+            )}
+            {/* While blocked days can't load, the panel would say there are none. */}
+            {!blocked.error && blocked.data && (
+              <BlockedDatesPanel
+                days={upcomingBlocked}
+                onEdit={openBlockOut}
+                onUnblock={unblock}
+                busyDay={unblocking}
+              />
             )}
           </section>
         </div>
@@ -303,6 +354,31 @@ export function CalendarScreen() {
                 () => {
                   setWindowOpen(false);
                   announce('Your scheduling window is saved.');
+                },
+                (e: { message: string }) => announce(e.message),
+              )
+            }
+          />
+        </ModalShell>
+      )}
+      {blockOpen && blocked.data && (
+        <ModalShell
+          title="Block out dates"
+          subtitle="Tap the days you’re away. Mentees won’t be able to book them."
+          size="md"
+          onClose={closeBlockOut}
+        >
+          <BlockOutForm
+            today={blockToday}
+            initial={upcomingBlocked}
+            booked={(booked.data ?? []).filter((b) => b.day >= blockToday)}
+            saving={saveBlocked.isPending}
+            error={saveBlocked.error?.message ?? null}
+            onSave={(days) =>
+              saveBlocks(days).then(
+                () => {
+                  setBlockOpen(false);
+                  announce('Your blocked dates are saved.');
                 },
                 (e: { message: string }) => announce(e.message),
               )
