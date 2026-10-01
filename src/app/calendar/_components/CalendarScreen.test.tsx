@@ -204,7 +204,7 @@ describe('CalendarScreen', () => {
     const user = userEvent.setup();
     const { rerender } = render(<CalendarScreen />);
     await user.click(tuesdaySwitch());
-    expect(screen.getByText('Your hours didn’t save. Try again in a moment.')).toBeInTheDocument();
+    expect(screen.getByText(/We couldn’t save your hours\./)).toBeInTheDocument();
     resetSave.mockClear();
     // Back to the saved hours: the old failure is reset, not shown on the next edit.
     await user.click(tuesdaySwitch());
@@ -212,7 +212,7 @@ describe('CalendarScreen', () => {
     saveHoursError = null;
     rerender(<CalendarScreen />);
     await user.click(tuesdaySwitch());
-    expect(screen.queryByText('Your hours didn’t save. Try again in a moment.')).toBeNull();
+    expect(screen.queryByText(/We couldn’t save your hours\./)).toBeNull();
   });
 
   it('won’t save hours that end before they start, and says why', async () => {
@@ -220,12 +220,13 @@ describe('CalendarScreen', () => {
     render(<CalendarScreen />);
     const monday = screen.getByRole('group', { name: 'Monday' });
     await user.selectOptions(within(monday).getByRole('combobox', { name: /end time/i }), '540');
-    await user.click(screen.getByRole('button', { name: 'Save changes' }));
-    expect(saveHours).not.toHaveBeenCalled();
     const bar = screen.getByRole('region', { name: 'Unsaved changes' });
-    expect(within(bar).getByText('Fix the hours marked in red, then save.')).toBeInTheDocument();
-    // Read out by the live region that was already there.
-    expect(announced()).toContain('Fix the hours marked in red, then save.');
+    // Calendar v2 scene Invalid hours: said at once, read out by the bar's status, Save off.
+    expect(within(bar).getByRole('status')).toHaveTextContent(
+      'Fix the hours marked in red, then save.',
+    );
+    expect(within(bar).getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    expect(saveHours).not.toHaveBeenCalled();
   });
 
   it('a failed save keeps the edits and says so', async () => {
@@ -233,7 +234,12 @@ describe('CalendarScreen', () => {
     const user = userEvent.setup();
     render(<CalendarScreen />);
     await user.click(tuesdaySwitch());
-    expect(screen.getByText(/Your hours didn’t save\./)).toBeInTheDocument();
+    const bar = screen.getByRole('region', { name: 'Unsaved changes' });
+    // Calendar v2 scene Save failed: the edits stay, the message says so, Save becomes Try again.
+    expect(within(bar).getByRole('status')).toHaveTextContent(
+      'We couldn’t save your hours. Your changes are still here. Try again.',
+    );
+    expect(within(bar).getByRole('button', { name: 'Try again' })).toBeInTheDocument();
     expect(tuesdaySwitch()).toHaveAttribute('aria-checked', 'true');
   });
 
@@ -297,7 +303,9 @@ describe('CalendarScreen', () => {
   it('loads with a skeleton, never "no hours"', () => {
     weekly = remote<WeeklyHours>(null, { isLoading: true });
     render(<CalendarScreen />);
-    expect(screen.getByText('Loading your calendar')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Loading your calendar' })).toBeInTheDocument();
+    // The page header stays (Calendar v2 scene Loading).
+    expect(screen.getByRole('heading', { level: 1, name: 'Your calendar' })).toBeInTheDocument();
     expect(screen.queryByText('No hours set')).toBeNull();
   });
 
@@ -306,8 +314,9 @@ describe('CalendarScreen', () => {
     weekly = remote<WeeklyHours>(null, { error: { kind: 'server', message: 'x' }, retry });
     const user = userEvent.setup();
     render(<CalendarScreen />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Your calendar' })).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { level: 1, name: 'We couldn’t load your calendar' }),
+      screen.getByRole('heading', { level: 2, name: 'We couldn’t load your calendar' }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(retry).toHaveBeenCalled();
@@ -320,9 +329,9 @@ describe('CalendarScreen', () => {
     };
     render(<CalendarScreen />);
     expect(
-      screen.getByRole('heading', { level: 1, name: 'We couldn’t load your calendar' }),
+      screen.getByRole('heading', { level: 2, name: 'We couldn’t load your calendar' }),
     ).toBeInTheDocument();
-    expect(screen.queryByText('Loading your calendar')).toBeNull();
+    expect(screen.queryByRole('status', { name: 'Loading your calendar' })).toBeNull();
   });
 
   it('booked sessions that fail to load leave the month up, with Try again', async () => {
