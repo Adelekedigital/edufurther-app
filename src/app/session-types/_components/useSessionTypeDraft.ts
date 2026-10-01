@@ -123,18 +123,8 @@ export function useSessionTypeDraft(
   return { draft, setDraft, initial, setInitial, base, setBase, seedCustom };
 }
 
-/** Leaving with changes asks first: the browser's own prompt on reload / close. */
-export function useLeaveGuard(dirty: boolean) {
-  const dirtyRef = useRef(dirty);
-  useEffect(() => {
-    dirtyRef.current = dirty;
-  }, [dirty]);
-  useEffect(() => {
-    const onUnload = (e: BeforeUnloadEvent) => {
-      if (!dirtyRef.current) return;
-      e.preventDefault();
-    };
-    window.addEventListener('beforeunload', onUnload);
-    return () => window.removeEventListener('beforeunload', onUnload);
-  }, []);
-}
+/**
+ * Leaving with changes asks first: the browser's prompt on reload / close, and
+ * Logout's own confirm. Shared, so every form gets both (lib/utils/leaveGuard).
+ */
+export { useLeaveGuard } from '@/lib/utils/leaveGuard';

@@ -10,7 +10,7 @@ vi.mock('./config', () => ({
   authConfigured: true,
 }));
 
-const { signOut } = await import('./browser');
+const { signOut, SIGN_OUT_TIMEOUT_MS } = await import('./browser');
 
 const setCookies = () => {
   document.cookie = 'sb-proj-auth-token.0=a; path=/';
@@ -47,5 +47,16 @@ describe('signOut (Logout ends this device’s session)', () => {
     signOutCall.mockRejectedValue(new TypeError('network'));
     await signOut();
     expect(document.cookie).not.toContain('sb-proj-auth-token');
+  });
+
+  it('Supabase never answers: after the time limit the auth cookies are cleared and Logout goes on', async () => {
+    vi.useFakeTimers();
+    setCookies();
+    signOutCall.mockReturnValue(new Promise(() => {}));
+    const done = signOut();
+    await vi.advanceTimersByTimeAsync(SIGN_OUT_TIMEOUT_MS + 1);
+    await done;
+    expect(document.cookie).not.toContain('sb-proj-auth-token');
+    vi.useRealTimers();
   });
 });

@@ -30,6 +30,11 @@ let leaving = false;
  */
 export function beginSignOut() {
   leaving = true;
+  // If the browser ever restores this page from its back/forward cache, it
+  // would show the signed-out user's screen: reload it instead.
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted) window.location.reload();
+  });
 }
 
 function subscribe(listener: () => void) {

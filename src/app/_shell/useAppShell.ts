@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import type { AccountMenuItem } from '@/components/molecules/AccountMenu/AccountMenu';
 import { useSignOut } from '@/lib/api/data/auth';
 import { useViewer } from '@/lib/api/data/viewer';
 import { coverFor } from '@/lib/utils/cover';
+import { hasUnsavedChanges } from '@/lib/utils/leaveGuard';
 import { canBookFor } from './bookBlocked';
 import type { Viewer } from '@/types/mentor';
 
@@ -87,9 +89,15 @@ export function accountItems(member: Member | null, signOut: () => void): Accoun
 export function useAppShell() {
   const viewer = useViewer();
   const signOut = useSignOut();
+  // Logout with unsaved changes asks first: the browser's own prompt would
+  // only come after the session had ended (review of PR 127).
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
   const chrome = chromeFor(viewer);
   const member = viewer.kind === 'member' ? viewer : null;
-  const items = accountItems(member, () => void signOut());
+  const items = accountItems(member, () => {
+    if (hasUnsavedChanges()) setConfirmingLogout(true);
+    else void signOut();
+  });
   return {
     viewer,
     member,
@@ -116,6 +124,15 @@ export function useAppShell() {
             items,
             /** Bookings badge: requests awaiting a response (product, 2026-09-30). */
             counts: countsFor(member),
+            logoutConfirm: confirmingLogout
+              ? {
+                  onKeep: () => setConfirmingLogout(false),
+                  onLogout: () => {
+                    setConfirmingLogout(false);
+                    void signOut();
+                  },
+                }
+              : undefined,
           }
         : undefined,
   };

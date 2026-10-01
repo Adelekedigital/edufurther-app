@@ -13,6 +13,7 @@ vi.mock('@/lib/utils/hardNavigate', () => ({
   hardNavigate: vi.fn((path: string) => order.push(`go ${path}`)),
 }));
 vi.mock('./session', () => ({ beginSignOut: () => order.push('freeze') }));
+vi.mock('@/lib/utils/leaveGuard', () => ({ releaseLeaveGuards: () => order.push('release') }));
 
 const { useSignOut } = await import('./auth');
 
@@ -26,13 +27,14 @@ describe('useSignOut (Logout)', () => {
     await act(() => result.current());
     // Frozen first: no signed-out redraw. Signed out before /login, which would
     // send a signed-in visitor straight back on.
-    expect(order).toEqual(['freeze', 'signOut', 'go /login']);
+    expect(order).toEqual(['freeze', 'release', 'signOut', 'go /login']);
   });
 
   it('signing out throws: /login loads anyway, so nobody is left on a half signed-out page', async () => {
     signOut.mockRejectedValueOnce(new Error('network'));
     const { result } = renderHook(() => useSignOut());
-    await act(() => result.current().catch(() => {}));
-    expect(order).toEqual(['freeze', 'go /login']);
+    // Never rejects: the menu calls it as `void signOut()`.
+    await act(() => result.current());
+    expect(order).toEqual(['freeze', 'release', 'go /login']);
   });
 });

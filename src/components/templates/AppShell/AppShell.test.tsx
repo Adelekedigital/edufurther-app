@@ -255,4 +255,30 @@ describe('AppShell navigation', () => {
     );
     expect(name()).not.toMatch(/awaiting/);
   });
+
+  it('Logout with unsaved changes: a confirm with "Keep editing" first and "Log out" last', async () => {
+    const onKeep = vi.fn();
+    const onLogout = vi.fn();
+    render(
+      <AppShell
+        active="Sessions"
+        nav="mentor"
+        chrome="member"
+        offline={false}
+        account={{ avatar: AV, items: [], logoutConfirm: { onKeep, onLogout } }}
+      >
+        <p>Page</p>
+      </AppShell>,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Log out with unsaved changes?' });
+    const buttons = within(dialog)
+      .getAllByRole('button')
+      .map((b) => b.textContent)
+      .filter((t) => t === 'Keep editing' || t === 'Log out');
+    expect(buttons).toEqual(['Keep editing', 'Log out']);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Keep editing' }));
+    expect(onKeep).toHaveBeenCalled();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Log out' }));
+    expect(onLogout).toHaveBeenCalled();
+  });
 });

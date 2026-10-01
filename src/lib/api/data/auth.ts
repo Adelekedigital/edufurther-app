@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react';
 import { hardNavigate } from '@/lib/utils/hardNavigate';
+import { releaseLeaveGuards } from '@/lib/utils/leaveGuard';
 import { safeReturnTo } from '@/lib/utils/safeReturnTo';
 import { sendEmailCode, signOut, verifyEmailCode } from '@/lib/vendor/supabase/browser';
 import { authConfigured } from '@/lib/vendor/supabase/config';
@@ -27,16 +28,20 @@ export const verifySignInCode = verifyEmailCode;
  *   or loading in the moment before /login replaces it.
  * - The session ends before navigating: /login sends a signed-in visitor on.
  * - No cache clearing: the full load discards everything this page held.
- * - /login loads even if signing out throws (signOut clears this device's
- *   cookies itself when the SDK can't).
+ * - /login loads even if signing out fails or stalls (signOut clears this
+ *   device's cookies itself when the SDK can't, or after 3 s).
+ * - Forms' "Leave site?" prompt is released: the user already chose to leave.
  */
 export function useSignOut() {
   return useCallback(async () => {
     beginSignOut();
+    // Unsaved changes were confirmed away already (useAppShell asks first).
+    releaseLeaveGuards();
     try {
       await signOut();
-    } finally {
-      hardNavigate('/login');
+    } catch {
+      // signOut clears this device's cookies itself; nothing to add here.
     }
+    hardNavigate('/login');
   }, []);
 }

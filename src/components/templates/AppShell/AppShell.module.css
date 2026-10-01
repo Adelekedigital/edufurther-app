@@ -381,3 +381,11 @@
     box-shadow: var(--shadow-bar-up);
   }
 }
+
+/* Logout confirm footer (LogoutConfirm): two equal large buttons, as the
+   project's other confirms. */
+.confirmButtons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}

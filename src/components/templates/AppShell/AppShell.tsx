@@ -8,6 +8,7 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { AccountMenu, type AccountMenuItem } from '@/components/molecules/AccountMenu/AccountMenu';
 import { OfflineBanner } from '@/components/molecules/OfflineBanner/OfflineBanner';
+import { LogoutConfirm } from './LogoutConfirm';
 import { cx } from '@/lib/utils/cx';
 import styles from './AppShell.module.css';
 
@@ -75,6 +76,8 @@ type AppShellProps = {
      * `label` is read after the item's name ("Bookings, 2 requests awaiting…").
      */
     counts?: Counts;
+    /** Logout with unsaved changes: the confirm is open (useAppShell). */
+    logoutConfirm?: { onKeep: () => void; onLogout: () => void };
   };
   offline: boolean;
   children: ReactNode;
@@ -238,6 +241,8 @@ export function AppShell({
           )}
         </nav>
       )}
+
+      {account?.logoutConfirm && <LogoutConfirm {...account.logoutConfirm} />}
 
       {moreOpen && (
         <>
