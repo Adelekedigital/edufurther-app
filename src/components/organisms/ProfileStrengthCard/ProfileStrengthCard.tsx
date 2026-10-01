@@ -58,7 +58,7 @@ export function ProfileStrengthCard({ id: cardId, percent, tips }: ProfileStreng
             return (
               <li key={t.key}>
                 {t.href ? (
-                  <Link href={t.href} className={styles.tip}>
+                  <Link href={t.href} prefetch={false} className={styles.tip}>
                     {body}
                   </Link>
                 ) : (
