@@ -271,20 +271,20 @@ describe('PhotoPicker', () => {
       expect(screen.getByRole('button', { name: 'Photo options' })).not.toHaveFocus();
     });
 
-    it('focus elsewhere stays where it is', () => {
-      const { rerender } = render(
+    it('a pick here, then focus moved on: it stays where it went (Codex on PR 137)', () => {
+      const ui = (props: Partial<typeof empty> = {}) => (
         <>
           <button type="button">Elsewhere</button>
-          <PhotoPicker {...empty} />
-        </>,
+          <PhotoPicker {...empty} {...props} />
+        </>
       );
+      const { rerender } = render(ui());
+      const input = screen.getByLabelText('Add photo') as HTMLInputElement;
+      act(() => input.focus());
+      fireEvent.change(input, { target: { files: [png] } });
+      rerender(ui({ uploading: true }));
       act(() => screen.getByRole('button', { name: 'Elsewhere' }).focus());
-      rerender(
-        <>
-          <button type="button">Elsewhere</button>
-          <PhotoPicker {...empty} hasPhoto />
-        </>,
-      );
+      rerender(ui({ hasPhoto: true }));
       expect(screen.getByRole('button', { name: 'Elsewhere' })).toHaveFocus();
     });
   });

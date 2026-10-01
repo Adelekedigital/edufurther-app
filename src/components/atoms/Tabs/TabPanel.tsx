@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react';
+import type { ComponentProps } from 'react';
 import { cx } from '@/lib/utils/cx';
 import styles from './Tabs.module.css';
 
-type TabPanelProps = {
+type TabPanelProps = Omit<ComponentProps<'div'>, 'id' | 'role' | 'hidden'> & {
   /** The id its tab's `panelId` names; the tab is `${id}-tab`. */
   id: string;
   /** Its tab is the selected one. */
@@ -14,18 +14,29 @@ type TabPanelProps = {
    * never drops work, and never asks first (product, 2026-10-01).
    */
   keepMounted?: boolean;
-  className?: string;
-  children: ReactNode;
 };
 
 /**
  * One tab's panel (WAI-ARIA tabs): labelled by its tab. Unless `keepMounted`,
- * it's rendered only while selected.
+ * it's rendered only while selected. Other div props (a ref, `tabIndex={0}`
+ * for a panel with nothing focusable in it) pass through.
+ *
+ * In a kept panel: focus a control only once it shows (`focusIfShown`,
+ * lib/utils/focus), and say async outcomes (a save failing) in a live region
+ * outside it; a hidden panel is neither seen nor heard.
  */
-export function TabPanel({ id, active, keepMounted = false, className, children }: TabPanelProps) {
+export function TabPanel({
+  id,
+  active,
+  keepMounted = false,
+  className,
+  children,
+  ...rest
+}: TabPanelProps) {
   if (!active && !keepMounted) return null;
   return (
     <div
+      {...rest}
       role="tabpanel"
       id={id}
       aria-labelledby={`${id}-tab`}

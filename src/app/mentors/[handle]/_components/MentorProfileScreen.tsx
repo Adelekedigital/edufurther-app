@@ -60,6 +60,7 @@ import { useBookLink } from './useBookLink';
 import { useProfileBooking } from './useProfileBooking';
 import { useProfileReviewing } from './useProfileReviewing';
 import { useProfileTab } from './useProfileTab';
+import { focusIfShown } from '@/lib/utils/focus';
 
 // Tests import it from here.
 export { suggestionsLine } from './suggestions';
@@ -93,11 +94,6 @@ const PHOTO_INPUT = 'profile-photo-input';
  * After a save whose opener went with it (a strength tip whose step is now
  * done): the next tip, else the "View as mentee" toggle. Only when focus was lost.
  */
-/** Focus, unless it's in a panel kept but hidden behind another tab. */
-function focusIfShown(el: HTMLElement | null) {
-  if (el && !el.closest('[hidden]')) el.focus();
-}
-
 function refocusAfterTip() {
   if (document.activeElement && document.activeElement !== document.body) return;
   const next = document.getElementById(STRENGTH_ID)?.querySelector<HTMLElement>('a, button');
@@ -198,13 +194,31 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const [deleting, setDeleting] = useState<{ kind: 'award' | 'education'; id: string } | null>(
     null,
   );
-  // The Sessions tab's outcomes, here so a delete settling after a tab switch
-  // is still said (Codex on PR 130).
-  const [sessionsSaid, setSessionsSaid] = useState<{ text: string; id: number } | null>(null);
-  const saySessions = useCallback(
-    (text: string) => setSessionsSaid((was) => ({ text, id: (was?.id ?? 0) + 1 })),
+  // The owner's outcomes that land out of view: a session-type delete settling
+  // after a tab switch (Codex on PR 130), an About save failing while Overview
+  // is hidden behind another tab (review of PR 137). Outside the panels, so
+  // always heard.
+  const [ownerSaid, setOwnerSaid] = useState<{ text: string; id: number } | null>(null);
+  const sayOwner = useCallback(
+    (text: string) => setOwnerSaid((was) => ({ text, id: (was?.id ?? 0) + 1 })),
     [],
   );
+  const [seenAboutError, setSeenAboutError] = useState(owner.aboutError);
+  if (owner.aboutError !== seenAboutError) {
+    setSeenAboutError(owner.aboutError);
+    if (owner.aboutError && tab !== 'overview')
+      sayOwner(`Your About section wasn’t saved. ${owner.aboutError}`);
+  }
+  // About opened from a tip on another tab: its editor mounts while Overview is
+  // still hidden, so it's focused once Overview shows (review of PR 137).
+  // Counted on request; the effect remembers which it has done.
+  const [aboutFocus, setAboutFocus] = useState(0);
+  const aboutFocused = useRef(0);
+  useEffect(() => {
+    if (aboutFocus === aboutFocused.current || tab !== 'overview') return;
+    if (focusIfShown(document.querySelector<HTMLElement>('#panel-overview textarea')))
+      aboutFocused.current = aboutFocus;
+  }, [tab, aboutFocus, owner.aboutOpen]);
   const [itemSaved, setItemSaved] = useState<{
     text: string;
     id: number;
@@ -274,8 +288,13 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const shownBlock = viewing ? null : bookBlocked;
   // The toggle waits while an inline edit is open, so a draft is never dropped
   // (review of PR 106). Its pressed state says the rest; no extra announcement.
+  // On another tab, About's editor is out of view: say where it is.
   const previewBlocked =
-    owner.introOpen || owner.aboutOpen ? 'Save or cancel your edit to preview.' : null;
+    owner.aboutOpen && tab !== 'overview'
+      ? 'Save or cancel your About edit on Overview to preview.'
+      : owner.introOpen || owner.aboutOpen
+        ? 'Save or cancel your edit to preview.'
+        : null;
 
   // A tip's step done: its tip (or the whole card, at 100%) goes, and with it
   // the focus the dialog handed back. Put it on the next tip, else the toggle.
@@ -556,7 +575,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                     <OwnerSessionTypes
                       shown={p.sessionTypes}
                       onActiveCount={setOwnActive}
-                      onSay={saySessions}
+                      onSay={sayOwner}
                     />
                   ) : (
                     <SessionTypeList
@@ -603,6 +622,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                           openPhoto: () => document.getElementById(PHOTO_INPUT)?.click(),
                           openIntro: owner.openIntro,
                           openAbout: () => {
+                            setAboutFocus((n) => n + 1);
                             setTab('overview');
                             owner.openAbout();
                           },
@@ -657,7 +677,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
       )}
       {/* Always there while it's the owner, so a screen reader hears each save. */}
       {isOwner && <LiveRegion message={itemSaved} />}
-      {isOwner && <LiveRegion message={sessionsSaid} />}
+      {isOwner && <LiveRegion message={ownerSaid} />}
       {editing && photoRemoving && (
         <RemovePhotoConfirm
           onKeep={() => setPhotoRemoving(false)}

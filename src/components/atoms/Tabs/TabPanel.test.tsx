@@ -35,4 +35,16 @@ describe('TabPanel', () => {
     );
     expect(screen.getByRole('textbox', { name: 'Draft' })).toHaveValue('half-written');
   });
+
+  it('passes other div props through (tabIndex for a panel with nothing focusable)', () => {
+    render(
+      <>
+        <button id="p-tab">Tab</button>
+        <TabPanel id="p" active tabIndex={0}>
+          Text only
+        </TabPanel>
+      </>,
+    );
+    expect(screen.getByRole('tabpanel', { name: 'Tab' })).toHaveAttribute('tabindex', '0');
+  });
 });

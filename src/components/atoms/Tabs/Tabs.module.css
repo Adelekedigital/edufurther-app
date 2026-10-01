@@ -41,7 +41,8 @@
 }
 
 /* A kept panel while another tab shows: out of view and of the accessibility
-   tree. Outranks a page class that sets its display. */
+   tree. `hidden` must win over any page rule that sets the panel's display,
+   however specific: the one place !important is the right tool. */
 .panel[hidden] {
-  display: none;
+  display: none !important;
 }
