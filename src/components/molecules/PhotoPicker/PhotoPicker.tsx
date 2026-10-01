@@ -64,6 +64,20 @@ export function PhotoPicker({
   // The same button whether or not it's busy: swapping it out mid-upload or
   // mid-removal dropped focus to the page (review of PR 125). Busy, it's inert.
   const asMenu = hasPhoto && !!onRemove;
+  // A first photo turns "Add photo" into the menu button: the input that had
+  // focus is gone, so focus goes to the button, unless it's already elsewhere
+  // (#136). Counted during render; the effect moves it.
+  const [wasMenu, setWasMenu] = useState(asMenu);
+  const [becameMenu, setBecameMenu] = useState(0);
+  if (asMenu !== wasMenu) {
+    setWasMenu(asMenu);
+    if (asMenu) setBecameMenu((n) => n + 1);
+  }
+  useEffect(() => {
+    if (!becameMenu) return;
+    if (document.activeElement && document.activeElement !== document.body) return;
+    menuButton.current?.focus();
+  }, [becameMenu]);
   const pick = (f: File | undefined) => {
     if (f && !busy) onFile(f);
   };

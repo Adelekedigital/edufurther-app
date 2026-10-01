@@ -22,6 +22,8 @@ import { SimilarMentorsCard } from '@/components/organisms/SimilarMentorsCard/Si
 import { TrackRecordCard } from '@/components/organisms/TrackRecordCard/TrackRecordCard';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
+import { UnsavedChangesDialog } from '@/components/templates/AppShell/UnsavedChangesDialog';
+import { discardUnsaved, hasUnsavedChanges, unsavedLabel } from '@/lib/utils/leaveGuard';
 import { bookBlockedFor } from '@/app/_shell/bookBlocked';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { useAvatarUpload } from '@/lib/api/data/avatar';
@@ -138,6 +140,11 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const notTakingTab = asMentee && notTaking;
   // The owner, editing, always has the tab: "New session type" is there.
   const { tab, setTab } = useProfileTab(hasSessions || notTakingTab || editing, hasReviews);
+  // A tab switch with unsaved About text asks first, as a link does (#134):
+  // the tab it was going to, and what the dialog names.
+  const [leaving, setLeaving] = useState<{ to: Parameters<typeof setTab>[0]; what: string } | null>(
+    null,
+  );
 
   // Cards only render after a client fetch, so reading the device zone here is safe.
   const [timeZone] = useState(deviceTimeZone);
@@ -456,7 +463,10 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 label="Profile"
                 value={tab}
                 onChange={(t) => {
-                  // The About editor lives on Overview: leaving closes it.
+                  // The About editor lives on Overview: leaving closes it, and
+                  // with unsaved text, asks first (#134).
+                  if (owner.aboutOpen && hasUnsavedChanges())
+                    return setLeaving({ to: t, what: unsavedLabel() });
                   if (owner.aboutOpen) owner.closeAbout();
                   setTab(t);
                 }}
@@ -652,6 +662,18 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
       {/* Always there while it's the owner, so a screen reader hears each save. */}
       {isOwner && <LiveRegion message={itemSaved} />}
       {isOwner && <LiveRegion message={sessionsSaid} />}
+      {leaving && (
+        <UnsavedChangesDialog
+          what={leaving.what}
+          onKeep={() => setLeaving(null)}
+          onDiscard={() => {
+            discardUnsaved();
+            owner.closeAbout();
+            setTab(leaving.to);
+            setLeaving(null);
+          }}
+        />
+      )}
       {editing && photoRemoving && (
         <RemovePhotoConfirm
           onKeep={() => setPhotoRemoving(false)}

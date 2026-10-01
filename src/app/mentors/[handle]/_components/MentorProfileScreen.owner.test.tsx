@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixture';
-import { h, saveAbout, saveIntro, state } from './profileScreen.harness';
+import { h, replace, saveAbout, saveIntro, state } from './profileScreen.harness';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
@@ -123,5 +123,39 @@ describe('MentorProfileScreen — the owner edits their profile', () => {
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.queryByRole('button', { name: 'Edit profile' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Edit About' })).toBeNull();
+  });
+
+  describe('a tab switch with unsaved About text asks first (#134)', () => {
+    const typeAndSwitch = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(screen.getByRole('button', { name: 'Edit About' }));
+      await user.type(screen.getByRole('textbox', { name: 'About' }), ' More.');
+      await user.click(screen.getByRole('tab', { name: /Sessions/ }));
+      return screen.getByRole('dialog', { name: 'Discard your changes?' });
+    };
+
+    it('"Keep editing" stays on Overview with the text', async () => {
+      h.profile = state({ data: own });
+      const user = userEvent.setup();
+      render(<MentorProfileScreen handle="gbenga" />);
+      const dialog = await typeAndSwitch(user);
+      expect(dialog).toHaveTextContent('Your changes to your About section won’t be saved.');
+      expect(replace).not.toHaveBeenCalled();
+      await user.click(within(dialog).getByRole('button', { name: 'Keep editing' }));
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(screen.getByRole('textbox', { name: 'About' })).toHaveValue(`${own.about} More.`);
+      expect(replace).not.toHaveBeenCalled();
+    });
+
+    it('"Discard" closes the editor and switches', async () => {
+      h.profile = state({ data: own });
+      const user = userEvent.setup();
+      render(<MentorProfileScreen handle="gbenga" />);
+      const dialog = await typeAndSwitch(user);
+      await user.click(within(dialog).getByRole('button', { name: 'Discard' }));
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(screen.queryByRole('textbox', { name: 'About' })).toBeNull();
+      expect(replace).toHaveBeenCalled();
+      expect(saveAbout).not.toHaveBeenCalled();
+    });
   });
 });

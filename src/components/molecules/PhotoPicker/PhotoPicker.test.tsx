@@ -249,4 +249,33 @@ describe('PhotoPicker', () => {
       expect(screen.queryByText('Photo removed.')).toBeNull();
     });
   });
+
+  describe('focus after a first photo (issue 136)', () => {
+    const empty = { ...base, hasPhoto: false, onRemove: vi.fn() };
+
+    it('"Add photo" had focus: once the photo is in, focus is on "Photo options"', () => {
+      const { rerender } = render(<PhotoPicker {...empty} />);
+      act(() => screen.getByLabelText('Add photo').focus());
+      rerender(<PhotoPicker {...empty} uploading />);
+      rerender(<PhotoPicker {...empty} hasPhoto />);
+      expect(screen.getByRole('button', { name: 'Photo options' })).toHaveFocus();
+    });
+
+    it('focus elsewhere stays where it is', () => {
+      const { rerender } = render(
+        <>
+          <button type="button">Elsewhere</button>
+          <PhotoPicker {...empty} />
+        </>,
+      );
+      act(() => screen.getByRole('button', { name: 'Elsewhere' }).focus());
+      rerender(
+        <>
+          <button type="button">Elsewhere</button>
+          <PhotoPicker {...empty} hasPhoto />
+        </>,
+      );
+      expect(screen.getByRole('button', { name: 'Elsewhere' })).toHaveFocus();
+    });
+  });
 });
