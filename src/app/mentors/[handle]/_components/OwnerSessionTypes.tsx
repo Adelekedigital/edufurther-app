@@ -148,6 +148,9 @@ export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
       .then((r) => {
         closeDelete();
         if (r.kind === 'deleted') return leaving(t, `“${t.name}” was deleted.`);
+        // No answer in time (#121): the card may still be here, so focus stays; the list is refetched.
+        if (r.kind === 'unknown')
+          return say('We couldn’t confirm the delete. The list has been refreshed.');
         const when = r.deletesAfter
           ? `Deletion scheduled for ${formatShortDate(r.deletesAfter)}.`
           : 'Deletion scheduled.';
