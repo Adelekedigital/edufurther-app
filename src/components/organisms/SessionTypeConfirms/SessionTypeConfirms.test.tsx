@@ -77,6 +77,19 @@ describe('DeleteConfirm', () => {
     expect(screen.getByRole('button', { name: 'Delete' })).toHaveAttribute('aria-busy', 'true');
   });
 
+  it('can’t be kept while the delete is out: Keep it and closing wait for it', async () => {
+    const onKeep = vi.fn();
+    const { rerender } = render(<DeleteConfirm {...props} busy onKeep={onKeep} type={T()} />);
+    expect(screen.getByRole('button', { name: 'Keep it' })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(onKeep).not.toHaveBeenCalled();
+    // Answered (refused): it can be kept again.
+    rerender(<DeleteConfirm {...props} onKeep={onKeep} type={T()} />);
+    expect(screen.getByRole('button', { name: 'Keep it' })).toBeEnabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(onKeep).toHaveBeenCalledOnce();
+  });
+
   it('is framed as danger, and closing the frame keeps it', async () => {
     const onKeep = vi.fn();
     render(<DeleteConfirm {...props} type={T()} onKeep={onKeep} />);

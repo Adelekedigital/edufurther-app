@@ -21,7 +21,8 @@ type Framed = { renderShell: (shell: ConfirmShell, body: ReactNode) => ReactNode
 /**
  * Delete confirms in a danger modal (project rule). With sessions still booked
  * it's the design's "Schedule deletion for {date}?": hidden now, deleted after
- * the last one (backend round 4).
+ * the last one (backend round 4). While the request is out it can't be kept:
+ * the DELETE can't be called back, so "Keep it" and closing wait for it.
  */
 export function DeleteConfirm(
   p: Framed & {
@@ -45,10 +46,11 @@ export function DeleteConfirm(
         p.type.isFeatured ? ' It also stops being featured.' : ''
       }`
     : `“${p.type.name}” is removed from your profile and Session types. This can’t be undone.`;
+  const keep = p.busy ? () => {} : p.onKeep;
   return (
     <>
       {p.renderShell(
-        { title, subtitle, icon: 'delete', tone: 'danger', onClose: p.onKeep },
+        { title, subtitle, icon: 'delete', tone: 'danger', onClose: keep },
         <>
           {p.error && (
             <p role="alert" className={styles.error}>
@@ -56,7 +58,13 @@ export function DeleteConfirm(
             </p>
           )}
           <div className={styles.buttons}>
-            <Button size="large" variant="secondary-outlined" fullWidth onClick={p.onKeep}>
+            <Button
+              size="large"
+              variant="secondary-outlined"
+              fullWidth
+              onClick={keep}
+              disabled={p.busy}
+            >
               Keep it
             </Button>
             <Button size="large" variant="destructive" fullWidth onClick={p.onDelete} busy={p.busy}>
