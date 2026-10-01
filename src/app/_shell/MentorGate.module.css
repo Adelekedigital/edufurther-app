@@ -1,0 +1,6 @@
+.gate {
+  max-width: 880px;
+  padding: var(--space-10) var(--space-5);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+}

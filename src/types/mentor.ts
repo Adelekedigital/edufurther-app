@@ -176,6 +176,8 @@ export type Viewer =
        * mentor navigation and may manage session types (backend reply #6).
        */
       isMentor: boolean;
+      /** The mentor profile appears in search (`listing_status` listed). Absent: not known. */
+      isListedMentor?: boolean;
       /** Sessions had as a mentee; drives the match prompt (≤ 2 → shown). */
       completedSessions: number;
       /** Null for users without a mentee goal (no credit block). */

@@ -28,7 +28,7 @@ import { useOnline } from '@/lib/utils/useOnline';
 import type { Remote } from '@/types/mentor';
 import type { DeleteError, OwnSessionType } from '@/types/sessionType';
 import { useAppShell } from '../../_shell/useAppShell';
-import { mentorGate } from './MentorGate';
+import { mentorGate, SESSION_TYPES_GATE } from '../../_shell/MentorGate';
 import styles from './SessionTypesScreen.module.css';
 
 const CREATE_HREF = '/session-types/new';
@@ -301,7 +301,7 @@ export function SessionTypesScreen() {
     restore.restore(t.id);
   };
 
-  const body: ReactNode = mentorGate(viewer, isMentor, '/session-types') ?? (
+  const body: ReactNode = mentorGate(viewer, isMentor, '/session-types', SESSION_TYPES_GATE) ?? (
     <SessionTypeManager
       list={list}
       messages={messages}

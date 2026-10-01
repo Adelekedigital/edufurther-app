@@ -1,0 +1,190 @@
+/* Calendar v2.dc.html, scene Available (data-screen-label "Calendar v2"). */
+.page {
+  max-width: 1120px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  font-family: var(--font-ui);
+  color: var(--ink-900);
+}
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-4);
+}
+.intro {
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.title {
+  margin: 0;
+  font-size: var(--text-h6);
+  line-height: var(--lh-h6);
+  letter-spacing: var(--ls-h6);
+  font-weight: var(--weight-semibold);
+}
+.lede {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+/* "Session settings": the design's divider sits above each row; the first
+   row has nothing above it here, so rows are divided between (divergence). */
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}
+.settings > * + * {
+  padding-top: var(--space-4);
+  border-top: var(--border-hairline) solid var(--border-muted);
+}
+.columns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-6);
+}
+.hoursCard {
+  flex: 1 1 560px;
+}
+.monthCard {
+  flex: 1 1 320px;
+  max-width: 380px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  box-sizing: border-box;
+}
+.cardTitle {
+  margin: 0;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+.note {
+  margin-top: var(--space-2);
+}
+.partial {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-500);
+}
+.textBtn {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-action);
+  border-radius: var(--radius-xs);
+}
+.textBtn:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.state {
+  max-width: 880px;
+  padding: var(--space-10) var(--space-5);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+}
+
+/* Ours: the save bar (product 2026-10-01; the design saves as you go). */
+.saveBar {
+  position: sticky;
+  bottom: var(--space-4);
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-float);
+}
+.saveText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.saveTitle {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-medium);
+}
+.saveError {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  color: var(--text-danger);
+}
+.saveActions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+/* Loading frame (ours). */
+.skeletonCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-sizing: border-box;
+}
+.skeletonRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.skeletonLines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* Phones: the handoff's tighter padding (§7.3); the month card takes the full width. */
+@media (max-width: 767px) {
+  .settings {
+    padding: var(--space-4);
+  }
+  .monthCard {
+    max-width: none;
+    padding: var(--space-4);
+  }
+  .state {
+    padding: var(--space-8) var(--space-4);
+  }
+  /* Above the phone tab bar (56px) and the safe area. */
+  .saveBar {
+    bottom: calc(56px + env(safe-area-inset-bottom) + var(--space-2));
+  }
+  .saveActions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
