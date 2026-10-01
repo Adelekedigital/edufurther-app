@@ -362,4 +362,86 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(retry).toHaveBeenCalled();
   });
+
+  describe('a delete still out when its confirm is closed (Codex on #121)', () => {
+    const deferred = () => {
+      let settle!: { ok: (v: unknown) => void; fail: (e: unknown) => void };
+      const promise = new Promise((ok, fail) => (settle = { ok, fail }));
+      return { promise, ...settle };
+    };
+    const startDelete = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
+      const confirm = screen.getByRole('dialog', { name: 'Delete this session type?' });
+      await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
+      return confirm;
+    };
+
+    it('busy, "Keep it" waits; the × closes it and the delete carries on', async () => {
+      onSessions();
+      const d = deferred();
+      removeType.mockReturnValue(d.promise);
+      const user = userEvent.setup();
+      render(<MentorProfileScreen handle="gbenga" />);
+      const confirm = await startDelete(user);
+      expect(within(confirm).getByRole('button', { name: 'Keep it' })).toBeDisabled();
+      await user.click(within(confirm).getByRole('button', { name: 'Close' }));
+      expect(screen.queryByRole('dialog')).toBeNull();
+      await act(async () => d.ok({ kind: 'deleted' }));
+      expect(screen.getByText('“SOP draft review” was deleted.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Edit CV review' })).toHaveFocus();
+    });
+
+    it('a refusal after the × is still said', async () => {
+      onSessions();
+      const d = deferred();
+      removeType.mockReturnValue(d.promise);
+      const user = userEvent.setup();
+      render(<MentorProfileScreen handle="gbenga" />);
+      await startDelete(user);
+      await user.keyboard('{Escape}'); // as the ×: dismissed, the delete carries on
+      expect(screen.queryByRole('dialog')).toBeNull();
+      await act(async () =>
+        d.fail({
+          kind: 'server',
+          message: 'We couldn’t delete it. Something went wrong. Try again.',
+        }),
+      );
+      expect(
+        screen.getByText(
+          '“SOP draft review” wasn’t deleted. We couldn’t delete it. Something went wrong. Try again.',
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it('ending while another dialog is open leaves focus in that dialog', async () => {
+      onSessions();
+      const d = deferred();
+      removeType.mockReturnValue(d.promise);
+      const user = userEvent.setup();
+      render(<MentorProfileScreen handle="gbenga" />);
+      const confirm = await startDelete(user);
+      await user.click(within(confirm).getByRole('button', { name: 'Close' }));
+      await user.click(screen.getByRole('button', { name: 'Edit CV review' }));
+      const editor = screen.getByRole('dialog');
+      const focused = document.activeElement;
+      expect(editor).toContainElement(focused as HTMLElement);
+      await act(async () => d.ok({ kind: 'deleted' }));
+      expect(document.activeElement).toBe(focused);
+    });
+  });
+
+  it('unconfirmed, then gone from the refetched list: focus moves on (Codex on #121)', async () => {
+    onSessions();
+    removeType.mockResolvedValue({ kind: 'unknown' });
+    const user = userEvent.setup();
+    const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
+    const confirm = screen.getByRole('dialog', { name: 'Delete this session type?' });
+    await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
+    await screen.findByText('We couldn’t confirm the delete. The list has been refreshed.');
+    // The refetch: it was deleted after all.
+    h.ownTypes = remote([cv, hidden, pending]);
+    rerender(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('button', { name: 'Edit CV review' })).toHaveFocus();
+  });
 });

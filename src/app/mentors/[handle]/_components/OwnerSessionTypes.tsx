@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Button } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
@@ -17,8 +17,9 @@ import { useQuickEditSessionType, type QuickEdit } from '@/lib/api/data/sessionT
 import { useDeleteSessionType, useOwnSessionTypes, useSetLive } from '@/lib/api/data/sessionTypes';
 import { formatShortDate } from '@/lib/utils/format';
 import { stageText } from '@/lib/utils/stageText';
+import { useLatest } from '@/lib/utils/useLatest';
 import type { ProfileSessionType } from '@/types/mentor';
-import type { OwnSessionType } from '@/types/sessionType';
+import type { DeleteError, OwnSessionType } from '@/types/sessionType';
 import styles from './MentorProfileScreen.module.css';
 
 const NEW_HREF = '/session-types/new';
@@ -93,11 +94,14 @@ export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
     const edit = card?.querySelector<HTMLElement>('button[aria-label^="Edit "]');
     (edit ?? document.querySelector<HTMLElement>(`a[href="${NEW_HREF}"]`))?.focus();
   }, [focusAfter]);
-  const leaving = (t: OwnSessionType, text: string) => {
+  const nextOf = (id: string) => {
     const rows = list ?? [];
-    const i = rows.findIndex((x) => x.id === t.id);
-    const next = rows[i + 1] ?? rows[i - 1];
-    setFocusAfter((f) => ({ id: next?.id ?? null, n: (f?.n ?? 0) + 1 }));
+    const i = rows.findIndex((x) => x.id === id);
+    return (rows[i + 1] ?? rows[i - 1])?.id ?? null;
+  };
+  const focusOn = (next: string | null) => setFocusAfter((f) => ({ id: next, n: (f?.n ?? 0) + 1 }));
+  const leaving = (t: OwnSessionType, text: string) => {
+    focusOn(nextOf(t.id));
     say(text);
   };
   const hiddenNow = (t: OwnSessionType) =>
@@ -138,25 +142,67 @@ export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
 
   const del = useDeleteSessionType();
   const [deleting, setDeleting] = useState<OwnSessionType | null>(null);
+  // Mid-delete, the × dismisses the confirm: the delete carries on and the
+  // live region says how it went, a refusal included (product, 2026-10-01;
+  // as Session types). By card, as is what's still out: the hook tracks only
+  // its latest call.
+  const dismissed = useRef(new Set<string>());
+  const [deleteFor, setDeleteFor] = useState<string | null>(null);
+  const [pendingDeletes, setPendingDeletes] = useState<string[]>([]);
+  const settleDelete = (id: string) => setPendingDeletes((ids) => ids.filter((x) => x !== id));
   const closeDelete = () => {
     setDeleting(null);
     del.reset();
   };
+  const dismissDelete = () => {
+    if (deleting) dismissed.current.add(deleting.id);
+    setDeleting(null);
+  };
+  // Which dialog is open now, for a delete that ends after its own closed: focus
+  // moves on only if none is (focus is in it, and it returns focus itself).
+  const openNow = useLatest(
+    deleting ? `delete:${deleting.id}` : hiding ? 'hide' : editing ? 'edit' : null,
+  );
+  // A delete that couldn't be confirmed: if the refetched list no longer has
+  // it, focus moves on as after a delete (adjusted during render).
+  const [unconfirmed, setUnconfirmed] = useState<{ id: string; next: string | null } | null>(null);
+  if (unconfirmed && list && !list.some((x) => x.id === unconfirmed.id)) {
+    setUnconfirmed(null);
+    if (!deleting && !hiding && !editing) focusOn(unconfirmed.next);
+  }
   const onDelete = (t: OwnSessionType) => {
+    const next = nextOf(t.id);
+    dismissed.current.delete(t.id);
+    setDeleteFor(t.id);
+    setPendingDeletes((ids) => [...ids, t.id]);
     void del
       .remove(t.id)
       .then((r) => {
-        closeDelete();
-        if (r.kind === 'deleted') return leaving(t, `“${t.name}” was deleted.`);
-        // No answer in time: the card may still be here, so focus stays; the list is refetched.
-        if (r.kind === 'unknown')
+        settleDelete(t.id);
+        dismissed.current.delete(t.id);
+        // Only this card's confirm: another may have opened since a dismiss.
+        const elsewhere = openNow.current !== null && openNow.current !== `delete:${t.id}`;
+        setDeleting((d) => (d?.id === t.id ? null : d));
+        const move = (text: string) => {
+          if (!elsewhere) focusOn(next);
+          say(text);
+        };
+        if (r.kind === 'deleted') return move(`“${t.name}” was deleted.`);
+        // No answer in time: the card may still be here; the refetch decides.
+        if (r.kind === 'unknown') {
+          setUnconfirmed({ id: t.id, next });
           return say('We couldn’t confirm the delete. The list has been refreshed.');
+        }
         const when = r.deletesAfter
           ? `Deletion scheduled for ${formatShortDate(r.deletesAfter)}.`
           : 'Deletion scheduled.';
-        leaving(t, `${when} Hidden from mentees now. Manage it in Session types.`);
+        move(`${when} Hidden from mentees now. Manage it in Session types.`);
       })
-      .catch(() => undefined);
+      .catch((e: DeleteError) => {
+        settleDelete(t.id);
+        // The confirm shows a refusal; once dismissed, the live region does.
+        if (dismissed.current.delete(t.id)) say(`“${t.name}” wasn’t deleted. ${e.message}`);
+      });
   };
 
   const cards = list?.map((t) =>
@@ -271,13 +317,14 @@ export function OwnerSessionTypes({ shown, onActiveCount }: Props) {
         <DeleteConfirm
           renderShell={confirmShell}
           type={deleting}
-          busy={del.isPending}
-          error={del.error}
-          // Mid-delete, "Keep it", Escape and the close do nothing: closing
-          // can't stop the request (Codex on PR 119).
+          busy={pendingDeletes.includes(deleting.id)}
+          error={deleteFor === deleting.id ? del.error : null}
+          // Mid-delete, "Keep it" does nothing (closing can't stop the
+          // request); the × or Escape dismisses it and the delete carries on.
           onKeep={() => {
-            if (!del.isPending) closeDelete();
+            if (!pendingDeletes.includes(deleting.id)) closeDelete();
           }}
+          onDismiss={dismissDelete}
           onDelete={() => onDelete(deleting)}
         />
       )}
