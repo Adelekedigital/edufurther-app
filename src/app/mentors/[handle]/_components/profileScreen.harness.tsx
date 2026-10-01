@@ -15,6 +15,7 @@ import type {
   ReviewPrompt,
   Viewer,
 } from '@/types/mentor';
+import type { OwnSessionType } from '@/types/sessionType';
 
 export type ProfileRemote = Remote<MentorProfile> & { notFound: boolean };
 
@@ -70,6 +71,13 @@ export const h = {
   // The Similar mentors card's list.
   similarRemote: remote(similarMentors) as Remote<typeof similarMentors>,
   profile: state({}),
+  // The owner's own session types (Sessions tab) and the quick edit.
+  ownTypes: idle as Remote<OwnSessionType[]>,
+  quickOk: true,
+  quickPending: false,
+  quickError: null as { copy: string } | null,
+  /** The switch's failure callback, so a test can make it fail. */
+  onLiveFailed: null as null | ((id: string, live: boolean) => void),
   // What the booking modal's queries return.
   sessionTypesRemote: idle as unknown,
   slotsRemote: idle as unknown,
@@ -112,6 +120,29 @@ export const removeAward = vi.fn();
 export const addEducation = vi.fn();
 export const editEducation = vi.fn();
 export const removeEducation = vi.fn();
+export const quickEdit = vi.fn();
+export const setLive = vi.fn();
+export const removeType = vi.fn();
+
+/** An owner's session type as Session types lists it. */
+export const ownType = (over: Partial<OwnSessionType> = {}): OwnSessionType => ({
+  id: 'st1',
+  name: 'SOP draft review',
+  description: 'We’ll work through your SOP draft together.',
+  durationMin: 60,
+  noticeMin: 1440,
+  isLive: true,
+  stages: [],
+  customStage: null,
+  topics: [{ code: 'application-documents', label: 'Application documents' }],
+  icon: 'edit_document',
+  iconChoice: null,
+  questionCount: 0,
+  isFeatured: false,
+  pendingDeletion: null,
+  booked: { count: 0, lastEndsAt: null },
+  ...over,
+});
 
 /** The owner's own degrees, as GET /users/{id}/education gives them. */
 export const ownEducation = [
@@ -268,6 +299,50 @@ const avatarMock = () => ({
   }),
 });
 
+const sessionTypesMock = () => ({
+  useOwnSessionTypes: () => h.ownTypes,
+  useSetLive: (failed: (id: string, live: boolean) => void) => {
+    h.onLiveFailed = failed;
+    return setLive;
+  },
+  useDeleteSessionType: () => ({
+    remove: removeType,
+    isPending: false,
+    error: null,
+    reset: vi.fn(),
+  }),
+});
+
+/** As the real hooks leave the cache: the owner's list after a save. */
+const patchOwn = (id: string, patch: { durationMin?: number; isLive?: boolean }) => {
+  if (h.ownTypes.data)
+    h.ownTypes = {
+      ...h.ownTypes,
+      data: h.ownTypes.data.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+    };
+};
+
+const sessionTypeQuickMock = () => ({
+  useQuickEditSessionType: () => ({
+    mutate: (
+      vars: { id: string; durationMin?: number; live?: boolean },
+      opts?: { onSuccess?: () => void; onError?: (e: { copy: string }) => void },
+    ) => {
+      quickEdit(vars);
+      if (!h.quickOk)
+        return opts?.onError?.(h.quickError ?? { copy: 'That didn’t save. Try again.' });
+      patchOwn(vars.id, {
+        ...(vars.durationMin !== undefined && { durationMin: vars.durationMin }),
+        ...(vars.live !== undefined && { isLive: vars.live }),
+      });
+      opts?.onSuccess?.();
+    },
+    isPending: h.quickPending,
+    error: h.quickError,
+    reset: vi.fn(),
+  }),
+});
+
 const bookingMock = () => ({
   useSessionTypes: (...a: unknown[]) => {
     sessionTypesArgs(...a);
@@ -420,6 +495,8 @@ export const mocks = {
   profileEntries: profileEntriesMock,
   catalog: catalogMock,
   topics: topicsMock,
+  sessionTypes: sessionTypesMock,
+  sessionTypeQuick: sessionTypeQuickMock,
 };
 
 beforeEach(() => {
@@ -468,6 +545,16 @@ beforeEach(() => {
   removeEducation.mockReset();
   saveTopics.mockReset();
   saveBackground.mockReset();
+  h.ownTypes = idle;
+  h.quickOk = true;
+  h.quickPending = false;
+  h.quickError = null;
+  quickEdit.mockReset();
+  setLive.mockReset();
+  // The switch is optimistic: the card leaves at once.
+  setLive.mockImplementation((id: string, live: boolean) => patchOwn(id, { isLive: live }));
+  removeType.mockReset();
+  h.onLiveFailed = null;
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
     matches: false,
     media: query,

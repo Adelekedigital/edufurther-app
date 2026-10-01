@@ -278,3 +278,12 @@
   border: var(--border-hairline) solid var(--ink-200);
   border-radius: var(--radius-xl);
 }
+/* The owner's Sessions tab while their list loads: the cards' grid. */
+.ownerLoading {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: var(--space-4);
+  list-style: none;
+}

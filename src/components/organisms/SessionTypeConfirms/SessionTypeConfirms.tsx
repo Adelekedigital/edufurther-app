@@ -113,6 +113,11 @@ export function VisibilityConfirm(
     show: boolean;
     /** Hiding the only visible type. */
     last: boolean;
+    /**
+     * The wording under the title, where the place it's asked from needs its
+     * own (the profile: the type leaves the page). Defaults to Session types' copy.
+     */
+    subtitle?: string;
     onCancel: () => void;
     onConfirm: () => void;
   },
@@ -122,11 +127,13 @@ export function VisibilityConfirm(
     : p.last
       ? 'Hide your last session type?'
       : `Hide “${p.type.name}” from mentees?`;
-  const subtitle = p.show
-    ? 'It appears on your profile and Explore, and mentees can book it in your open hours.'
-    : p.last
-      ? 'Your profile will show “Not taking bookings” until a session type is visible again. Booked sessions go ahead.'
-      : 'Mentees can’t see or book it. Booked sessions go ahead, and you can show it again anytime.';
+  const subtitle =
+    p.subtitle ??
+    (p.show
+      ? 'It appears on your profile and Explore, and mentees can book it in your open hours.'
+      : p.last
+        ? 'Your profile will show “Not taking bookings” until a session type is visible again. Booked sessions go ahead.'
+        : 'Mentees can’t see or book it. Booked sessions go ahead, and you can show it again anytime.');
   return (
     <>
       {p.renderShell(

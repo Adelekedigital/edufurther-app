@@ -13,6 +13,7 @@ import { RowMenu } from './RowMenu/RowMenu';
 import { FileField } from './FileField/FileField';
 import { IconPicker } from './IconPicker/IconPicker';
 import { QuestionRow } from './QuestionRow/QuestionRow';
+import { SessionTypeOwnerFooter } from './SessionTypeOwnerFooter/SessionTypeOwnerFooter';
 import { SessionPreviewCard } from './SessionPreviewCard/SessionPreviewCard';
 import { SummarySection } from './SummarySection/SummarySection';
 import { FormField } from './FormField/FormField';
@@ -644,6 +645,15 @@ export const CopyShareLink: Story = {
         label="Copy share link for SOP draft review"
         url="https://edufurther.com/mentors/m1?book=st1"
       />
+    </div>
+  ),
+};
+
+/** The owner's session card footer (Mentor Profile.dc.html): visible, Edit, Delete. */
+export const SessionOwnerFooter: Story = {
+  render: () => (
+    <div style={{ maxWidth: 360 }}>
+      <SessionTypeOwnerFooter name="SOP draft review" onHide={fn()} onEdit={fn()} onDelete={fn()} />
     </div>
   ),
 };

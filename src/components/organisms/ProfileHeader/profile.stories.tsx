@@ -201,6 +201,23 @@ export const Sessions: Story = {
   ),
 };
 
+/** The owner's view (Mentor Profile.dc.html `canEdit`): active types only (product), and the tile. */
+export const SessionsOwner: Story = {
+  render: () => (
+    <div style={{ maxWidth: 860 }}>
+      <SessionTypeList
+        owner={{
+          cards: sessionTypes,
+          onHide: fn(),
+          onEdit: fn(),
+          onDelete: fn(),
+          newHref: '/session-types/new',
+        }}
+      />
+    </div>
+  ),
+};
+
 export const BookCardOneOffering: Story = {
   render: () => (
     <div style={side}>

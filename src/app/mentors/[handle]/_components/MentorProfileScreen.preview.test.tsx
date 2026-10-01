@@ -39,6 +39,12 @@ vi.mock('@/lib/api/data/booking', async () =>
 vi.mock('@/lib/api/data/profileEntries', async () =>
   (await import('./profileScreen.harness')).mocks.profileEntries(),
 );
+vi.mock('@/lib/api/data/sessionTypes', async () =>
+  (await import('./profileScreen.harness')).mocks.sessionTypes(),
+);
+vi.mock('@/lib/api/data/sessionTypeQuick', async () =>
+  (await import('./profileScreen.harness')).mocks.sessionTypeQuick(),
+);
 vi.mock('@/lib/api/data/profileItems', async () =>
   (await import('./profileScreen.harness')).mocks.profileItems(),
 );

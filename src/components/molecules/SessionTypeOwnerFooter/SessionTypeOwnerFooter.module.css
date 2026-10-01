@@ -1,0 +1,15 @@
+/* Mentor Profile.dc.html: the owner's card footer. */
+.foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding-top: var(--space-3);
+  border-top: var(--border-hairline) solid var(--ink-100);
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
