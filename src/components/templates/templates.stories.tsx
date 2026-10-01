@@ -15,7 +15,7 @@ const Filler = () => (
 );
 
 const account = {
-  initial: 'E',
+  avatar: { initial: 'E', cover: 'lilac' as const },
   items: [
     {
       key: 'matches',
@@ -31,6 +31,23 @@ const account = {
 export const ShellMentee: Story = {
   render: () => (
     <AppShell active="Explore" chrome="member" account={account} offline={false}>
+      <Filler />
+    </AppShell>
+  ),
+};
+/** Bookings badge (design `badges`, grouped rail): "9+" above nine; also on the phone tab (ours). */
+export const ShellMentorBadge: Story = {
+  render: () => (
+    <AppShell
+      active="Home"
+      nav="mentor"
+      chrome="member"
+      account={{
+        ...account,
+        counts: { Bookings: { count: 12, label: '12 requests awaiting your response' } },
+      }}
+      offline={false}
+    >
       <Filler />
     </AppShell>
   ),

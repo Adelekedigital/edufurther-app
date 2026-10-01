@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ButtonLink } from '@/components/atoms/Button/Button';
@@ -49,6 +49,8 @@ const PRIMARY_TABS = {
  */
 const PREFETCH = false;
 
+type Counts = Partial<Record<string, { count: number; label: string }>>;
+
 type AppShellProps = {
   /** Label of the current section, e.g. "Explore". */
   active: string;
@@ -65,7 +67,15 @@ type AppShellProps = {
    */
   chrome: 'guest' | 'member' | 'pending';
   /** Member account menu (rail foot; appended to the More sheet on phones). */
-  account?: { initial: string; items: AccountMenuItem[] };
+  account?: {
+    avatar: ComponentProps<typeof AccountMenu>['avatar'];
+    items: AccountMenuItem[];
+    /**
+     * Count badges by nav label, e.g. Bookings: requests awaiting a response.
+     * `label` is read after the item's name ("Bookings, 2 requests awaiting…").
+     */
+    counts?: Counts;
+  };
   offline: boolean;
   children: ReactNode;
 };
@@ -92,6 +102,7 @@ export function AppShell({
   const tabs = primary.flatMap((l) => items.filter((n) => n.label === l));
   const extra = items.filter((n) => !primary.includes(n.label));
   const moreActive = extra.some((n) => n.label === active);
+  const counts = account?.counts ?? {};
   const daily = items.filter((n) => n.group === 'daily');
   const setup = items.filter((n) => n.group === 'setup');
 
@@ -149,13 +160,13 @@ export function AppShell({
               <Image src="/brand/edufurther-mark-swoosh.png" alt="" width={48} height={20} />
             </Link>
             <div className={styles.railScroll}>
-              <RailList items={daily} active={active} />
+              <RailList items={daily} active={active} counts={counts} />
               {daily.length > 0 && setup.length > 0 && (
                 <span className={styles.railDivider} aria-hidden />
               )}
-              <RailList items={setup} active={active} />
+              <RailList items={setup} active={active} counts={counts} />
             </div>
-            {account && <AccountMenu initial={account.initial} items={account.items} />}
+            {account && <AccountMenu avatar={account.avatar} items={account.items} />}
           </nav>
         )}
         <div className={styles.column}>
@@ -200,9 +211,11 @@ export function AppShell({
               prefetch={PREFETCH}
               className={styles.tab}
               aria-current={n.label === active ? 'page' : undefined}
+              aria-label={nameWithCount(n.label, counts[n.label])}
             >
               <span className={styles.tabIcon}>
                 <Icon name={n.icon} size={22} />
+                <CountBadge count={counts[n.label]} />
               </span>
               {n.label}
             </Link>
@@ -292,7 +305,7 @@ export function AppShell({
   );
 }
 
-function RailList({ items, active }: { items: NavItem[]; active: string }) {
+function RailList({ items, active, counts }: { items: NavItem[]; active: string; counts: Counts }) {
   if (items.length === 0) return null;
   return (
     <ul className={styles.railList}>
@@ -303,9 +316,11 @@ function RailList({ items, active }: { items: NavItem[]; active: string }) {
             prefetch={PREFETCH}
             className={styles.railItem}
             aria-current={n.label === active ? 'page' : undefined}
+            aria-label={nameWithCount(n.label, counts[n.label])}
           >
             <span className={styles.railIcon}>
               <Icon name={n.icon} size={20} />
+              <CountBadge count={counts[n.label]} />
             </span>
             {n.label}
           </Link>
@@ -313,4 +328,23 @@ function RailList({ items, active }: { items: NavItem[]; active: string }) {
       ))}
     </ul>
   );
+}
+
+/** Red count pill on a nav icon (design `badges`): "9+" above nine, none at 0. */
+function CountBadge({ count }: { count?: { count: number } }) {
+  if (!count || count.count <= 0) return null;
+  return (
+    <span className={styles.badge} aria-hidden>
+      {count.count > 9 ? '9+' : count.count}
+    </span>
+  );
+}
+
+/**
+ * The link's whole name with its count ("Bookings, 2 requests awaiting your
+ * response"), as one label: a hidden text piece gets an extra space in Chrome
+ * and can escape the rail's scroll clip. Undefined leaves the visible name.
+ */
+function nameWithCount(label: string, count?: { count: number; label: string }) {
+  return count && count.count > 0 ? `${label}, ${count.label}` : undefined;
 }

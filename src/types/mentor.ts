@@ -180,6 +180,20 @@ export type Viewer =
       completedSessions: number;
       /** Null for users without a mentee goal (no credit block). */
       credits: { balance: number; allowance: number; state: CreditState } | null;
+      // The sidebar's avatar and badge. Optional so hand-built test viewers
+      // needn't list them; absent reads as none.
+      /** Profile photo (backend `profile.avatar_url`); none shows the initial. */
+      avatarUrl?: string | null;
+      /** Where the face is in the photo (0–1 each way). */
+      avatarFocus?: { x: number; y: number } | null;
+      /** Saved cover colour; none falls back to coverFor(id), as the profile does. */
+      coverKey?: CoverKey | null;
+      /**
+       * Booking requests awaiting a response, for the Bookings badge (product
+       * 2026-09-30): as mentor, the ones waiting on them; as mentee, theirs
+       * waiting on the mentor. Null when /me has no count for that role.
+       */
+      awaitingResponse?: number | null;
     };
 
 export type CreditState = 'on_track' | 'moderate' | 'low' | 'exhausted';

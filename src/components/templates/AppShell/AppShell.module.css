@@ -135,6 +135,7 @@
   color: var(--text-secondary);
 }
 .railIcon {
+  position: relative;
   width: var(--space-10);
   height: var(--space-8);
   display: flex;
@@ -144,6 +145,25 @@
 }
 .railItem:hover .railIcon {
   background: var(--ink-100);
+}
+/* Count pill (AppShell.dc.html grouped rail): stays red on the current item. */
+.badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: var(--radius-full);
+  background: var(--red-500);
+  box-shadow: 0 0 0 2px var(--white);
+  color: var(--white);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  line-height: 18px;
+  text-align: center;
 }
 /* activeStyle=none: no ground, no ring; the blue icon and label carry it. */
 .railItem[aria-current='page'] {
@@ -257,6 +277,8 @@
     color: var(--text-primary);
   }
   .tabIcon {
+    /* The phone badge is ours (design draws counts on the rail only). */
+    position: relative;
     width: 48px;
     height: 28px;
     border-radius: var(--radius-md);

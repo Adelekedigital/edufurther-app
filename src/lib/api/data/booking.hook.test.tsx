@@ -264,3 +264,21 @@ describe('useSlots: the request follows the session type’s window (backend #30
     await waitFor(() => expect(ranges()).toEqual([61]));
   });
 });
+
+describe('useRequestBooking: a sent request', () => {
+  it('refreshes /me, so the mentee’s Bookings badge counts it', async () => {
+    const invalidate = vi.spyOn(qc, 'invalidateQueries');
+    POST.mockResolvedValue({ data: { id: 'b1' }, error: undefined, response: new Response(null) });
+    const { result } = renderHook(() => useRequestBooking(), { wrapper });
+    act(() =>
+      result.current.request({
+        mentorId: 'm1',
+        sessionTypeId: 'st',
+        startsAt: '2026-09-30T09:00:00Z',
+        answers: {},
+      }),
+    );
+    await waitFor(() => expect(result.current.isDone).toBe(true));
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['viewer'] });
+  });
+});
