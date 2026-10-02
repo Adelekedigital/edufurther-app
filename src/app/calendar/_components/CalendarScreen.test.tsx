@@ -39,6 +39,12 @@ const monday = () => {
   days[1] = { on: true, slots: [[1020, 1200]] };
   return days;
 };
+/** Monday 5:00–5:30 pm: shorter than a 60-min session. */
+const shortMonday = () => {
+  const days = emptyWeek();
+  days[1] = { on: true, slots: [[1020, 1050]] };
+  return days;
+};
 const HOURS: WeeklyHours = {
   days: monday(),
   timeZone: 'Africa/Lagos',
@@ -71,7 +77,10 @@ vi.mock('@/lib/api/data/weeklyHours', () => ({
     reset: resetSave,
   }),
 }));
+// The types offered: Calendar hours must fit the shortest.
+let ownTypes: { data: { durationMin: number; isLive: boolean }[] | null } = { data: [] };
 vi.mock('@/lib/api/data/sessionTypes', () => ({
+  useOwnSessionTypes: () => ownTypes,
   useMentorDefaults: () => defaults,
   useSaveMentorDefaults: () => ({
     save: saveDefaults,
@@ -138,6 +147,7 @@ const mentor = (over: Partial<Extract<Viewer, { kind: 'member' }>> = {}): Viewer
 
 beforeEach(() => {
   viewer = mentor();
+  ownTypes = { data: [] };
   weekly = remote(HOURS);
   defaults = { ...remote(DEFAULTS), refreshing: false };
   saveHours.mockReset().mockResolvedValue(undefined);
@@ -259,11 +269,11 @@ describe('CalendarScreen', () => {
     expect(screen.queryByText(/We couldn’t save your hours\./)).toBeNull();
   });
 
-  it('won’t save hours that end before they start, and says why', async () => {
+  it('won’t save hours too short for a session, and says why', async () => {
+    weekly = remote({ ...HOURS, days: shortMonday() });
     const user = userEvent.setup();
     render(<CalendarScreen />);
-    const monday = screen.getByRole('group', { name: 'Monday' });
-    await user.selectOptions(within(monday).getByRole('combobox', { name: /end time/i }), '540');
+    await user.click(tuesdaySwitch());
     const bar = screen.getByRole('region', { name: 'Unsaved changes' });
     // Calendar v2 scene Invalid hours: said at once, read out by the bar's status, Save off.
     expect(within(bar).getByRole('status')).toHaveTextContent(
@@ -271,6 +281,64 @@ describe('CalendarScreen', () => {
     );
     expect(within(bar).getByRole('button', { name: 'Save changes' })).toBeDisabled();
     expect(saveHours).not.toHaveBeenCalled();
+  });
+
+  describe('hours fit the shortest session (product, 2026-10-01)', () => {
+    const endTimes = () =>
+      within(
+        within(screen.getByRole('group', { name: 'Monday' })).getByRole('combobox', {
+          name: /end time/i,
+        }),
+      )
+        .getAllByRole('option')
+        .map((o) => (o as HTMLOptionElement).value);
+
+    it('end times start a default length after the start', () => {
+      render(<CalendarScreen />);
+      expect(endTimes()[0]).toBe('1080');
+    });
+
+    it('a shorter live session type lowers it; a hidden one doesn’t', () => {
+      ownTypes = {
+        data: [
+          { durationMin: 30, isLive: true },
+          { durationMin: 45, isLive: false },
+        ],
+      };
+      render(<CalendarScreen />);
+      expect(endTimes()[0]).toBe('1050');
+    });
+
+    it('a start moved past the end takes the end along', async () => {
+      const user = userEvent.setup();
+      render(<CalendarScreen />);
+      const monday = screen.getByRole('group', { name: 'Monday' });
+      await user.selectOptions(
+        within(monday).getByRole('combobox', { name: /start time/i }),
+        '1200',
+      );
+      expect(within(monday).getByRole('combobox', { name: /end time/i })).toHaveValue('1260');
+    });
+
+    it('until the session types are known, nothing is refused on a guess', () => {
+      ownTypes = { data: null };
+      weekly = remote({ ...HOURS, days: shortMonday() });
+      render(<CalendarScreen />);
+      expect(screen.queryByText(/shorter than a/)).toBeNull();
+      expect(endTimes()).toContain('1050');
+    });
+
+    it('saved hours shorter than a session say why under the slot', () => {
+      weekly = remote({ ...HOURS, days: shortMonday() });
+      render(<CalendarScreen />);
+      const end = within(screen.getByRole('group', { name: 'Monday' })).getByRole('combobox', {
+        name: /end time/i,
+      });
+      expect(end).toHaveValue('1050');
+      expect(end).toHaveAccessibleDescription(
+        'Mentees can’t book this: it’s shorter than a 60-min session.',
+      );
+    });
   });
 
   it('a failed save keeps the edits and says so', async () => {
@@ -649,10 +717,10 @@ describe('CalendarScreen: busy and video', () => {
   });
 
   it('unsaved and invalid hours: says to fix and save first, focus on the hours', async () => {
+    weekly = remote({ ...HOURS, days: shortMonday() });
     const user = userEvent.setup();
     render(<CalendarScreen />);
-    const monday = screen.getByRole('group', { name: 'Monday' });
-    await user.selectOptions(within(monday).getByRole('combobox', { name: /end time/i }), '540');
+    await user.click(tuesdaySwitch());
     await user.click(screen.getByRole('switch', { name: 'Available for new bookings' }));
     const bar = screen.getByRole('region', { name: 'Unsaved changes' });
     expect(within(bar).getByRole('status')).toHaveTextContent(

@@ -44,10 +44,13 @@ export function useWizardSteps(editing: boolean) {
         for (const k of Object.keys(next)) if (k.startsWith('slot-')) delete next[k as FieldKey];
       return next;
     });
-  /** Next on steps 1–3; on the last, true when the whole draft can be sent. */
-  const advance = (draft: Draft): boolean => {
+  /**
+   * Next on steps 1–3; on the last, true when the whole draft can be sent.
+   * `minLength`: the type's length, which its own hours must fit.
+   */
+  const advance = (draft: Draft, minLength = 0): boolean => {
     if (step < 4) {
-      const e = validateStep(draft, step as 1 | 2 | 3);
+      const e = validateStep(draft, step as 1 | 2 | 3, minLength);
       if (Object.keys(e).length) {
         setErrors(e);
         return false;
@@ -58,7 +61,7 @@ export function useWizardSteps(editing: boolean) {
       goTo(n);
       return false;
     }
-    const all = { ...validateStep(draft, 1), ...validateStep(draft, 3) };
+    const all = { ...validateStep(draft, 1), ...validateStep(draft, 3, minLength) };
     if (Object.keys(all).length) {
       showErrors(all);
       return false;

@@ -20,8 +20,13 @@ import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useBlockedDays, useBookedDays, useSaveBlockedDays } from '@/lib/api/data/calendar';
 import { useConferencing, useSaveConferencing } from '@/lib/api/data/conferencing';
 import { useMentorStatus, usePause, useResume } from '@/lib/api/data/mentorStatus';
-import { useMentorDefaults, useSaveMentorDefaults } from '@/lib/api/data/sessionTypes';
+import {
+  useMentorDefaults,
+  useOwnSessionTypes,
+  useSaveMentorDefaults,
+} from '@/lib/api/data/sessionTypes';
 import { useSaveWeeklyHours, useWeeklyHours } from '@/lib/api/data/weeklyHours';
+import { shortestLength } from '@/lib/utils/sessionTypeDraft';
 import {
   bookableRange,
   bookedRange,
@@ -65,7 +70,11 @@ export function CalendarScreen() {
   const saveWeekly = useSaveWeeklyHours(mentorId);
   const defaults = useMentorDefaults(mentorId);
   const saveDefaults = useSaveMentorDefaults(mentorId);
-  const draft = useHoursDraft(weekly.data, deviceZone);
+  // Hours must fit the shortest session offered (product, 2026-10-01); until
+  // the types are known, nothing is enforced.
+  const own = useOwnSessionTypes(isMentor);
+  const minLength = shortestLength(defaults.data?.durationMin, own.data);
+  const draft = useHoursDraft(weekly.data, deviceZone, minLength);
   // Days are counted in the zone the hours are saved in, until a new one is saved.
   const savedZone = weekly.data?.timeZone ?? draft.timeZone;
   // The backend counts session dates in the account's zone (#326) and judges
@@ -431,6 +440,7 @@ export function CalendarScreen() {
                 titleRef={hoursTitle}
                 deviceZone={deviceZone}
                 otherZones={weekly.data!.otherZones}
+                minLength={minLength}
                 note={
                   !hasHours && (
                     <div className={styles.note}>

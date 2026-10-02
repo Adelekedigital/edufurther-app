@@ -19,6 +19,11 @@ import {
   weeklySummary,
   type Draft,
   windowPresets,
+  endOptions as endTimes,
+  fitSlot,
+  newSlotLength,
+  shortestLength,
+  typeLength,
 } from './sessionTypeDraft';
 
 const ids = { 'document-preparation': 'o4', 'school-selection': 'o1' };
@@ -369,5 +374,65 @@ describe('windowPresets', () => {
     expect(windowPresets(14)).toEqual([7, 14]);
     expect(windowPresets(21)).toEqual([7, 14, 21]);
     expect(windowPresets(90)).toEqual([7, 14, 28, 56, 90]);
+  });
+});
+
+describe('hours fit the shortest session (product, 2026-10-01)', () => {
+  const values = (start: number, min: number, current: number) =>
+    endTimes(start, min, current).map((o) => Number(o.value));
+
+  it('shortest length: the default and live types; hidden ones; types not known yet', () => {
+    expect(shortestLength(60, [{ durationMin: 30, isLive: true }])).toBe(30);
+    expect(shortestLength(60, [{ durationMin: 30, isLive: false }])).toBe(60);
+    expect(shortestLength(90, [])).toBe(90);
+    expect(shortestLength(null, [])).toBe(60);
+    expect(shortestLength(undefined, [])).toBe(60);
+    expect(shortestLength(60, null)).toBe(0);
+    expect(shortestLength(60, undefined)).toBe(0);
+  });
+
+  it('end times start a session after the start, on the half hour, to midnight', () => {
+    expect(values(540, 60, 600)[0]).toBe(600);
+    expect(values(540, 90, 630)[0]).toBe(630);
+    expect(values(540, 45, 600)[0]).toBe(600);
+    expect(values(540, 60, 600).at(-1)).toBe(1440);
+  });
+
+  it('a shorter saved end stays listed; no minimum lists every time', () => {
+    expect(values(1020, 60, 1050)).toContain(1050);
+    expect(values(1020, 60, 1080)).not.toContain(1050);
+    expect(values(540, 0, 600)).toHaveLength(49);
+  });
+
+  it('a too-short slot is an error after the others; never past midnight', () => {
+    expect(slotError([[540, 570]], 0, 60)).toBe(
+      'Mentees can’t book this: it’s shorter than a 60-min session.',
+    );
+    expect(slotError([[540, 600]], 0, 60)).toBeNull();
+    expect(slotError([[600, 540]], 0, 60)).toBe('End time must be after the start time.');
+    expect(slotError([[540, 570]], 0)).toBeNull();
+    expect(fitSlot([1410, 1440], 60)).toEqual([1410, 1440]);
+    expect(fitSlot([1020, 1050], 60)).toEqual([1020, 1080]);
+    expect(fitSlot([1020, 1050], 45)).toEqual([1020, 1080]);
+    expect(fitSlot([1020, 1200], 60)).toEqual([1020, 1200]);
+  });
+
+  it('new slots: an hour, or the session when longer', () => {
+    expect(newSlotLength(30)).toBe(60);
+    expect(newSlotLength(90)).toBe(90);
+    expect(newSlotLength(0)).toBe(60);
+  });
+
+  it('a type’s length: its own with custom rules, else the default', () => {
+    expect(typeLength({ rules: 'custom', durationMin: 90 }, 30)).toBe(90);
+    expect(typeLength({ rules: 'default', durationMin: 90 }, 30)).toBe(30);
+    expect(typeLength({ rules: 'default', durationMin: 90 }, null)).toBe(60);
+  });
+
+  it('a type’s own hours shorter than its length block step 3', () => {
+    const d = { ...blankDraft(), hours: 'custom' as const, rules: 'custom' as const };
+    d.days[1] = { on: true, slots: [[540, 600]] };
+    expect(validateStep(d, 3, 90)['slot-1-0']).toMatch(/shorter than a 90-min session/);
+    expect(validateStep(d, 3, 60)['slot-1-0']).toBeUndefined();
   });
 });

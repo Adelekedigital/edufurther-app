@@ -19,9 +19,10 @@ export const sameWeek = (a: DayHours[], b: DayHours[]) => asSaved(a) === asSaved
  * Calendar's weekly hours and zone as edited, over what's saved. Edits stay in
  * the draft until "Save changes"; a zone change counts only when there are
  * hours to move. `clash` is a slot overlapping hours kept in another zone (the
- * backend compares clock times on a weekday whatever the zone).
+ * backend compares clock times on a weekday whatever the zone). A slot shorter
+ * than `minLength` (the shortest session offered) is a slot error.
  */
-export function useHoursDraft(saved: WeeklyHours | null, deviceZone: string) {
+export function useHoursDraft(saved: WeeklyHours | null, deviceZone: string, minLength = 0) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const days = draft?.days ?? saved?.days ?? emptyWeek();
   const timeZone = draft?.timeZone ?? saved?.timeZone ?? deviceZone;
@@ -37,7 +38,7 @@ export function useHoursDraft(saved: WeeklyHours | null, deviceZone: string) {
     days,
     timeZone,
     dirty,
-    slotErrors: hasSlotErrors(days),
+    slotErrors: hasSlotErrors(days, minLength),
     clash: clash ?? null,
     setDays: (next: DayHours[]) => setDraft({ days: next, timeZone }),
     setTimeZone: (zone: string) => setDraft({ days, timeZone: zone }),

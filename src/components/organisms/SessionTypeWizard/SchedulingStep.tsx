@@ -10,6 +10,7 @@ import {
   breakLabel,
   hoursLabel,
   defaultsSummary,
+  typeLength,
   windowLabel,
   type BookingDefaults,
   type Draft,
@@ -263,7 +264,11 @@ export function SchedulingStep({
         )}
         {d.hours === 'custom' && (
           <div className={styles.hoursBox}>
-            <WeeklyHoursEditor days={d.days} onChange={(days) => update({ days })} />
+            <WeeklyHoursEditor
+              days={d.days}
+              onChange={(days) => update({ days })}
+              minLength={typeLength(d, defaults?.durationMin)}
+            />
           </div>
         )}
         {errors.hours && <p className={styles.fieldError}>{errors.hours}</p>}

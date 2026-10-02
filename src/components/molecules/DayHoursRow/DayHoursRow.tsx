@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import { cx } from '@/lib/utils/cx';
-import { TIME_OPTIONS, type DayHours, type Slot } from '@/lib/utils/sessionTypeDraft';
+import { endOptions, startOptions, type DayHours, type Slot } from '@/lib/utils/sessionTypeDraft';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Select } from '@/components/atoms/Select/Select';
 import { Switch } from '@/components/atoms/Switch/Switch';
@@ -9,8 +9,10 @@ import styles from './DayHoursRow.module.css';
 type DayHoursRowProps = {
   day: string;
   hours: DayHours;
-  /** Per slot: our message, or null (end before start, overlap). */
+  /** Per slot: our message, or null (end before start, overlap, too short). */
   errors: (string | null)[];
+  /** The shortest session these hours serve: end times start that long after the start. */
+  minLength?: number;
   onToggle: (on: boolean) => void;
   onSlot: (k: number, slot: Slot) => void;
   onRemove: (k: number) => void;
@@ -20,9 +22,13 @@ type DayHoursRowProps = {
   variant?: 'list' | 'compact';
 };
 
-/** Design `errorShort`. */
+/** Design `errorShort`; "Too short" is provisional (calendar-design-request §6). */
 const shortError = (err: string) =>
-  err.startsWith('End time') ? 'Ends before it starts' : 'Overlaps';
+  err.startsWith('End time')
+    ? 'Ends before it starts'
+    : err.startsWith('These')
+      ? 'Overlaps'
+      : 'Too short';
 
 /**
  * One day of weekly hours (TimeSlots.dc.html, variant list or compact): a switch, then
@@ -38,6 +44,7 @@ export function DayHoursRow({
   onRemove,
   onAdd,
   onCopyAll,
+  minLength = 0,
   variant = 'list',
 }: DayHoursRowProps) {
   const id = useId();
@@ -67,7 +74,7 @@ export function DayHoursRow({
                     density="compact"
                     width={104}
                     className={styles.cTime}
-                    options={TIME_OPTIONS}
+                    options={startOptions(minLength, a)}
                     value={String(a)}
                     invalid={!!err}
                     aria-describedby={err ? errId : undefined}
@@ -81,7 +88,7 @@ export function DayHoursRow({
                     density="compact"
                     width={104}
                     className={styles.cTime}
-                    options={TIME_OPTIONS}
+                    options={endOptions(a, minLength, b)}
                     value={String(b)}
                     invalid={!!err}
                     aria-describedby={err ? errId : undefined}
@@ -151,7 +158,7 @@ export function DayHoursRow({
                     aria-label={`${day} start time`}
                     width={128}
                     className={styles.time}
-                    options={TIME_OPTIONS}
+                    options={startOptions(minLength, a)}
                     value={String(a)}
                     invalid={!!err}
                     aria-describedby={err ? errId : undefined}
@@ -162,7 +169,7 @@ export function DayHoursRow({
                     aria-label={`${day} end time`}
                     width={128}
                     className={styles.time}
-                    options={TIME_OPTIONS}
+                    options={endOptions(a, minLength, b)}
                     value={String(b)}
                     invalid={!!err}
                     aria-describedby={err ? errId : undefined}

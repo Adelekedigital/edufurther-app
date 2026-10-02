@@ -151,6 +151,33 @@ export const WeeklyHoursErrors: Story = {
   },
 };
 
+/** Hours fit the shortest session (product, 2026-10-01): end times, Add hours, errors. */
+const fitStory = (minLength: number, tooShort = false): Story => ({
+  render: function Render() {
+    const [days, setDays] = useState(() => {
+      const d = sample();
+      // Sunday 12:00–12:30 pm: saved before the rule, now too short.
+      if (tooShort) d[0] = { on: true, slots: [[720, 750]] };
+      return d;
+    });
+    return (
+      <div style={{ maxWidth: 720 }}>
+        <WeeklyHoursCard
+          days={days}
+          onDays={setDays}
+          timeZone="Africa/Lagos"
+          onTimeZone={fn()}
+          deviceZone="Africa/Lagos"
+          minLength={minLength}
+        />
+      </div>
+    );
+  },
+});
+export const WeeklyHoursShortest30 = fitStory(30);
+export const WeeklyHoursShortest90 = fitStory(90);
+export const WeeklyHoursTooShort = fitStory(60, true);
+
 const DEFAULTS = {
   durationMin: 60,
   noticeHours: 24,

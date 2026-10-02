@@ -62,6 +62,8 @@ export function DefaultsModal(p: {
 
 export function WeeklyModal(p: {
   weekly: NonNullable<ReturnType<typeof useWeeklyHours>['data']>;
+  /** The shortest session offered: these hours must fit it. */
+  minLength: number;
   saving: boolean;
   error: string | null;
   onClose: () => void;
@@ -80,6 +82,7 @@ export function WeeklyModal(p: {
         timeZone={p.weekly.timeZone}
         otherZones={p.weekly.otherZones}
         otherSlots={p.weekly.otherSlots}
+        minLength={p.minLength}
         saving={p.saving}
         error={p.error}
         onCancel={p.onClose}
