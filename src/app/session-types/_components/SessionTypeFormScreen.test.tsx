@@ -50,7 +50,9 @@ const READY = {
 };
 let createError: unknown = null;
 // The types offered: Calendar hours must fit the shortest.
-let ownTypes: { data: { durationMin: number; isLive: boolean }[] | null } = { data: [] };
+let ownTypes: {
+  data: { durationMin: number; isLive: boolean; usesOwnWindows: boolean }[] | null;
+} = { data: [] };
 vi.mock('@/lib/api/data/sessionTypes', async (orig) => ({
   useOwnSessionTypes: () => ownTypes,
   autoIcon: (await orig<typeof import('@/lib/api/data/sessionTypes')>()).autoIcon,
@@ -367,7 +369,7 @@ describe('SessionTypeFormScreen', () => {
   });
 
   it('Edit weekly hours: a shorter live session type lowers where end times start', async () => {
-    ownTypes = { data: [{ durationMin: 30, isLive: true }] };
+    ownTypes = { data: [{ durationMin: 30, isLive: true, usesOwnWindows: false }] };
     const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
     await user.click(next(/Continue to intake/));

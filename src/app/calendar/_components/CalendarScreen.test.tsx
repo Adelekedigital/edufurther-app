@@ -78,7 +78,9 @@ vi.mock('@/lib/api/data/weeklyHours', () => ({
   }),
 }));
 // The types offered: Calendar hours must fit the shortest.
-let ownTypes: { data: { durationMin: number; isLive: boolean }[] | null } = { data: [] };
+let ownTypes: {
+  data: { durationMin: number; isLive: boolean; usesOwnWindows: boolean }[] | null;
+} = { data: [] };
 vi.mock('@/lib/api/data/sessionTypes', () => ({
   useOwnSessionTypes: () => ownTypes,
   useMentorDefaults: () => defaults,
@@ -301,12 +303,18 @@ describe('CalendarScreen', () => {
     it('a shorter live session type lowers it; a hidden one doesn’t', () => {
       ownTypes = {
         data: [
-          { durationMin: 30, isLive: true },
-          { durationMin: 45, isLive: false },
+          { durationMin: 30, isLive: true, usesOwnWindows: false },
+          { durationMin: 45, isLive: false, usesOwnWindows: false },
         ],
       };
       render(<CalendarScreen />);
       expect(endTimes()[0]).toBe('1050');
+    });
+
+    it('a shorter type with its own windows doesn’t lower it (#146)', () => {
+      ownTypes = { data: [{ durationMin: 30, isLive: true, usesOwnWindows: true }] };
+      render(<CalendarScreen />);
+      expect(endTimes()[0]).toBe('1080');
     });
 
     it('a start moved past the end takes the end along', async () => {

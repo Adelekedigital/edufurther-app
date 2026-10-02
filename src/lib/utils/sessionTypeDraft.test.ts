@@ -382,8 +382,16 @@ describe('hours fit the shortest session (product, 2026-10-01)', () => {
     endTimes(start, min, current).map((o) => Number(o.value));
 
   it('shortest length: the default and live types; hidden ones; types not known yet', () => {
-    expect(shortestLength(60, [{ durationMin: 30, isLive: true }])).toBe(30);
-    expect(shortestLength(60, [{ durationMin: 30, isLive: false }])).toBe(60);
+    const type = (durationMin: number, isLive = true, usesOwnWindows = false) => ({
+      durationMin,
+      isLive,
+      usesOwnWindows,
+    });
+    expect(shortestLength(60, [type(30)])).toBe(30);
+    expect(shortestLength(60, [type(30, false)])).toBe(60);
+    // #146: a type with its own windows books there, not into the Calendar hours.
+    expect(shortestLength(60, [type(30, true, true)])).toBe(60);
+    expect(shortestLength(60, [type(30, true, true), type(45)])).toBe(45);
     expect(shortestLength(90, [])).toBe(90);
     expect(shortestLength(null, [])).toBe(60);
     expect(shortestLength(undefined, [])).toBe(0);

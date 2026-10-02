@@ -89,6 +89,7 @@ export function toOwnSessionType(
     durationMin: r.duration_minutes,
     noticeMin: r.min_notice_minutes,
     isLive: r.is_active,
+    usesOwnWindows: r.uses_own_windows ?? false,
     stages: stagesOf(r),
     customStage: r.custom_stage_label?.trim() || null,
     topics,
@@ -547,7 +548,13 @@ export function useRetryWindows() {
   const qc = useQueryClient();
   const mutation = useMutation<WindowBody[], AppError, { id: string; windows: WindowBody[] }>({
     mutationFn: ({ id, windows }) => postWindows(id, windows),
-    onSettled: () => void qc.invalidateQueries({ queryKey: ['booking'] }),
+    // The list too: saved windows make the type book there (`uses_own_windows`),
+    // which moves the Calendar hours minimum (#146).
+    onSettled: () =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: ['booking'] }),
+        qc.invalidateQueries({ queryKey: keys.sessionTypes.all }),
+      ]),
   });
   return { retry: mutation.mutateAsync, isPending: mutation.isPending };
 }

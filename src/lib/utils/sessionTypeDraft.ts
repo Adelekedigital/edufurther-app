@@ -201,18 +201,20 @@ export function slotError(slots: Slot[], k: number, minLength = 0): string | nul
 const toStep = (m: number) => Math.ceil(m / 30) * 30;
 
 /**
- * The shortest session the mentor offers: their default length and each live
- * type's (reads return the resolved length). Calendar hours must fit it.
+ * The shortest session booked into the Calendar hours: the mentor's default
+ * length and each live type's that follows those hours; a type with its own
+ * windows books there instead (#146). Reads return the resolved length.
  * Types or defaults not known yet (loading, or failed; `undefined`): 0, so
  * nothing valid is refused on a guess (review of the hours PR, Codex on #148).
  * A default that's known but unset (`null`) is the platform's.
  */
 export function shortestLength(
   defaultMin: number | null | undefined,
-  types: readonly { durationMin: number; isLive: boolean }[] | null | undefined,
+  types:
+    readonly { durationMin: number; isLive: boolean; usesOwnWindows: boolean }[] | null | undefined,
 ): number {
   if (!types || defaultMin === undefined) return 0;
-  const live = types.filter((t) => t.isLive).map((t) => t.durationMin);
+  const live = types.filter((t) => t.isLive && !t.usesOwnWindows).map((t) => t.durationMin);
   return Math.min(defaultMin ?? PLATFORM_DURATION_MIN, ...live);
 }
 

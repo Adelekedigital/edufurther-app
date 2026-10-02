@@ -33,6 +33,7 @@ describe('toOwnSessionType', () => {
       durationMin: 60,
       noticeMin: 1440,
       isLive: true,
+      usesOwnWindows: false,
       stages: [],
       customStage: null,
       topics: [{ code: 'document-preparation', label: 'Document preparation' }],
@@ -43,6 +44,12 @@ describe('toOwnSessionType', () => {
       pendingDeletion: null,
       booked: { count: 0, lastEndsAt: null },
     });
+  });
+
+  it('own windows: as the backend says; an older backend without the field follows the Calendar', () => {
+    expect(toOwnSessionType(own({ uses_own_windows: true }), 0).usesOwnWindows).toBe(true);
+    const { uses_own_windows: _gone, ...older } = own();
+    expect(toOwnSessionType(older as Own, 0).usesOwnWindows).toBe(false);
   });
 
   it('the stages, in the mentor’s order; the deprecated single field when the list is missing', () => {
