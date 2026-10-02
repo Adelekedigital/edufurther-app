@@ -80,9 +80,12 @@ vi.mock('@/lib/api/data/weeklyHours', () => ({
 // The types offered: Calendar hours must fit the shortest.
 let ownTypes: {
   data: { durationMin: number; isLive: boolean; usesOwnWindows: boolean }[] | null;
+  isLoading?: boolean;
+  error?: { kind: string; message: string } | null;
+  retry?: () => void;
 } = { data: [] };
 vi.mock('@/lib/api/data/sessionTypes', () => ({
-  useOwnSessionTypes: () => ownTypes,
+  useOwnSessionTypes: () => ({ isLoading: false, error: null, retry: vi.fn(), ...ownTypes }),
   useMentorDefaults: () => defaults,
   useSaveMentorDefaults: () => ({
     save: saveDefaults,
@@ -329,14 +332,6 @@ describe('CalendarScreen', () => {
       expect(within(monday).getByRole('combobox', { name: /end time/i })).toHaveValue('1380');
     });
 
-    it('until the session types are known, nothing is refused on a guess', () => {
-      ownTypes = { data: null };
-      weekly = remote({ ...HOURS, days: shortMonday() });
-      render(<CalendarScreen />);
-      expect(screen.queryByText(/Too short for your/)).toBeNull();
-      expect(endTimes()).toContain('1050');
-    });
-
     it('saved hours shorter than a session say why under the slot', () => {
       weekly = remote({ ...HOURS, days: shortMonday() });
       render(<CalendarScreen />);
@@ -439,6 +434,33 @@ describe('CalendarScreen', () => {
     expect(
       screen.getByRole('heading', { level: 2, name: 'We couldn’t load your calendar' }),
     ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(retry).toHaveBeenCalled();
+  });
+
+  it('waits for the session types before offering the hours (#147)', () => {
+    ownTypes = { data: null, isLoading: true };
+    render(<CalendarScreen />);
+    expect(screen.getByRole('status', { name: 'Loading your calendar' })).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Monday' })).toBeNull();
+  });
+
+  it('a failed refresh after the types loaded keeps the editor and its draft', () => {
+    ownTypes = { data: [], error: { kind: 'server', message: 'x' } };
+    render(<CalendarScreen />);
+    expect(screen.getByRole('group', { name: 'Monday' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'We couldn’t load your calendar' })).toBeNull();
+  });
+
+  it('session types that fail to load are an error with Try again, never the editor (#147)', async () => {
+    const retry = vi.fn();
+    ownTypes = { data: null, error: { kind: 'server', message: 'x' }, retry };
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'We couldn’t load your calendar' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Monday' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(retry).toHaveBeenCalled();
   });

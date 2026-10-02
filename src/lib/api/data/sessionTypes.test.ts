@@ -21,12 +21,13 @@ const own = (over: Partial<Own> = {}): Own =>
     pending_deletion: null,
     booked_count: 0,
     last_booked_ends_at: null as string | null,
+    question_count: 2,
     ...over,
   }) as Own;
 
 describe('toOwnSessionType', () => {
   it('maps the list fields and trims the description', () => {
-    expect(toOwnSessionType(own(), 2)).toEqual({
+    expect(toOwnSessionType(own())).toEqual({
       id: 't1',
       name: 'SOP draft review',
       description: 'Leave with a revision list.',
@@ -47,37 +48,33 @@ describe('toOwnSessionType', () => {
   });
 
   it('own windows: as the backend says; an older backend without the field follows the Calendar', () => {
-    expect(toOwnSessionType(own({ uses_own_windows: true }), 0).usesOwnWindows).toBe(true);
+    expect(toOwnSessionType(own({ uses_own_windows: true })).usesOwnWindows).toBe(true);
     const { uses_own_windows: _gone, ...older } = own();
-    expect(toOwnSessionType(older as Own, 0).usesOwnWindows).toBe(false);
+    expect(toOwnSessionType(older as Own).usesOwnWindows).toBe(false);
   });
 
   it('the stages, in the mentor’s order; the deprecated single field when the list is missing', () => {
     expect(
-      toOwnSessionType(own({ application_stages: ['revisions', 'drafting_stage'] }), 0).stages,
+      toOwnSessionType(own({ application_stages: ['revisions', 'drafting_stage'] })).stages,
     ).toEqual(['revisions', 'drafting_stage']);
-    expect(toOwnSessionType(own({ application_stage: 'interviewing' }), 0).stages).toEqual([
+    expect(toOwnSessionType(own({ application_stage: 'interviewing' })).stages).toEqual([
       'interviewing',
     ]);
     // An empty list is "any stage", not a reason to read the old field.
     expect(
-      toOwnSessionType(own({ application_stages: [], application_stage: 'interviewing' }), 0)
-        .stages,
+      toOwnSessionType(own({ application_stages: [], application_stage: 'interviewing' })).stages,
     ).toEqual([]);
   });
 
   it('featured, a scheduled deletion, and the booked figures (round 4)', () => {
-    const t = toOwnSessionType(
-      {
-        ...own({
-          is_featured: true,
-          pending_deletion: { deletes_after: '2026-10-14T18:00:00Z', booked_count: 2 },
-        }),
-        booked_count: 2,
-        last_booked_ends_at: '2026-10-14T18:00:00Z',
-      } as Own,
-      0,
-    );
+    const t = toOwnSessionType({
+      ...own({
+        is_featured: true,
+        pending_deletion: { deletes_after: '2026-10-14T18:00:00Z', booked_count: 2 },
+      }),
+      booked_count: 2,
+      last_booked_ends_at: '2026-10-14T18:00:00Z',
+    } as Own);
     expect(t).toMatchObject({
       isFeatured: true,
       pendingDeletion: { deletesAfter: '2026-10-14T18:00:00Z', bookedCount: 2 },
@@ -86,9 +83,9 @@ describe('toOwnSessionType', () => {
   });
 
   it('a chosen icon wins; no choice follows the topic; no topic is the video call', () => {
-    expect(toOwnSessionType(own({ icon: 'lightbulb' }), 0).icon).toBe('lightbulb');
-    expect(toOwnSessionType(own({ icon: 'lightbulb' }), 0).iconChoice).toBe('lightbulb');
-    expect(toOwnSessionType(own({ service_offering: null }), 0).icon).toBe('video_call');
+    expect(toOwnSessionType(own({ icon: 'lightbulb' })).icon).toBe('lightbulb');
+    expect(toOwnSessionType(own({ icon: 'lightbulb' })).iconChoice).toBe('lightbulb');
+    expect(toOwnSessionType(own({ service_offering: null })).icon).toBe('video_call');
     expect(autoIcon(['interview-preparation'])).toBe('record_voice_over');
     expect(autoIcon(['something-new'])).toBe('video_call');
     expect(autoIcon([])).toBe('video_call');
@@ -113,10 +110,15 @@ describe('toOwnSessionType', () => {
   });
 
   it('switched off reads as not live; description may be missing', () => {
-    const t = toOwnSessionType(own({ is_active: false, description: null }), null);
+    const t = toOwnSessionType(own({ is_active: false, description: null }));
     expect(t.isLive).toBe(false);
     expect(t.description).toBe('');
-    expect(t.questionCount).toBeNull();
+  });
+
+  it('the question count comes with the list (#147); a missing one hides the chip', () => {
+    expect(toOwnSessionType(own({ question_count: 0 })).questionCount).toBe(0);
+    const { question_count: _gone, ...older } = own();
+    expect(toOwnSessionType(older as Own).questionCount).toBeNull();
   });
 });
 

@@ -25,6 +25,7 @@ type Stored = Omit<
   | 'last_booked_ends_at'
   | 'effective_booking_window_days'
   | 'uses_own_windows'
+  | 'question_count'
 > & {
   duration_minutes: number | null;
   min_notice_minutes: number | null;
@@ -52,9 +53,11 @@ export function effectiveWindow(
 }
 
 /** The read: the type's own value, else the mentor's default, else the platform's. */
-function resolve({ questions: _q, bookedCount, ...t }: Stored): OwnSessionTypeRead {
+function resolve({ questions, bookedCount, ...t }: Stored): OwnSessionTypeRead {
   return {
     ...t,
+    // Backend #333: the same count GET …/questions returns.
+    question_count: questions.length,
     booked_count: bookedCount,
     last_booked_ends_at: lastBookedEndsAt(bookedCount),
     // Backend #329: any live window of its own, and it books there only.
