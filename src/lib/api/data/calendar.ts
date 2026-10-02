@@ -68,7 +68,7 @@ export function useBookedDays(
   range: { from: string; to: string },
 ): Remote<BookedDay[]> {
   const query = useQuery({
-    queryKey: keys.calendar.booked(userId ?? 'none', range.from, range.to),
+    queryKey: keys.calendar.bookedRange(userId ?? 'none', range.from, range.to),
     enabled: userId !== null,
     queryFn: ({ signal }) => fetchBookedSessions(userId!, range, signal),
     staleTime: 60 * 1000,

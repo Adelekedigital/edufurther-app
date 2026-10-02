@@ -98,6 +98,7 @@ vi.mock('@/lib/api/data/conferencing', () => ({
 }));
 let booked: Remote<BookedDay[]>;
 let bookedRange: { from: string; to: string } | null = null;
+let bookedUser: string | null = null;
 let blocked: Remote<Blocked>;
 const saveBlocked = vi.fn();
 let blockedPending = false;
@@ -105,6 +106,7 @@ let blockedError: AppError | null = null;
 vi.mock('@/lib/api/data/calendar', () => ({
   useBookedDays: (...a: unknown[]) => {
     bookedRange = a[2] as { from: string; to: string };
+    bookedUser = a[0] as string | null;
     return booked;
   },
   useBlockedDays: () => blocked,
@@ -691,5 +693,21 @@ describe('CalendarScreen: busy and video', () => {
       await user.click(within(month).getByRole('button', { name: 'Next month' }));
     expect(bookedRange!.from).toBe(first.from);
     expect(bookedRange!.to > first.to).toBe(true);
+  });
+
+  it('booked days wait for the hours and the window before loading', () => {
+    defaults = { ...remote<MentorDefaults>(null, { isLoading: true }), refreshing: false };
+    render(<CalendarScreen />);
+    expect(bookedUser).toBeNull();
+  });
+
+  it('booked days count from today in the account’s zone', () => {
+    viewer = mentor({ timeZone: 'Pacific/Kiritimati' });
+    render(<CalendarScreen />);
+    expect(bookedUser).toBe('m1');
+    const kiritimati = new Intl.DateTimeFormat('en-CA', { timeZone: 'Pacific/Kiritimati' }).format(
+      new Date(),
+    );
+    expect(bookedRange!.from).toBe(kiritimati);
   });
 });

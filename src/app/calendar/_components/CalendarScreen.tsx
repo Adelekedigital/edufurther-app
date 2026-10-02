@@ -24,7 +24,7 @@ import { useMentorDefaults, useSaveMentorDefaults } from '@/lib/api/data/session
 import { useSaveWeeklyHours, useWeeklyHours } from '@/lib/api/data/weeklyHours';
 import {
   bookableRange,
-  monthStart,
+  bookedRange,
   busyBody,
   busyHint,
   doneBody,
@@ -33,7 +33,6 @@ import {
   windowSummary,
 } from '@/lib/utils/calendar';
 import { deviceTimeZone } from '@/lib/utils/format';
-import { addDays } from '@/lib/utils/slots';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { useOnline } from '@/lib/utils/useOnline';
 import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
@@ -72,19 +71,21 @@ export function CalendarScreen() {
   // The backend counts session dates in the account's zone (#326) and judges
   // return dates there too (#324).
   const accountToday = safeToday(member?.timeZone, savedZone);
-  // Booked days from today: the shown month, and as far as the pickers can go
-  // (the booking window), at least 90 days.
+  // Booked days from today: as far as the month on screen and any modal's picker
+  // have paged, the booking window, and at least 90 days.
   const [shownMonth, setShownMonth] = useState<string | null>(null);
-  const bookedTo = [
-    monthStart(shownMonth ?? accountToday, 1),
-    addDays(accountToday, 91),
-    defaults.data ? addDays(bookableRange(accountToday, defaults.data).until, 1) : '',
-  ].sort()[2]!;
-  // Waits for the hours: until then "today" would be counted in the device's zone.
-  const booked = useBookedDays(weekly.data ? mentorId : null, savedZone, {
-    from: accountToday,
-    to: bookedTo,
-  });
+  const [modalMonth, setModalMonth] = useState<string | null>(null);
+  const booked = useBookedDays(
+    // Waits for the hours ("today" would be the device's zone) and the window
+    // (the range would widen, and load again).
+    weekly.data && defaults.data ? mentorId : null,
+    savedZone,
+    bookedRange(
+      accountToday,
+      [shownMonth, modalMonth],
+      defaults.data ? bookableRange(accountToday, defaults.data).until : null,
+    ),
+  );
   const blocked = useBlockedDays(mentorId);
   const saveBlocked = useSaveBlockedDays(mentorId);
   const status = useMentorStatus(mentorId);
@@ -580,6 +581,7 @@ export function CalendarScreen() {
             saving={saveBlocked.isPending}
             error={saveBlocked.error?.message ?? null}
             onEdit={() => saveBlocked.error && saveBlocked.reset()}
+            onMonthChange={setModalMonth}
             onSave={(days) =>
               saveBlocks(days).then(
                 () => {
@@ -601,6 +603,7 @@ export function CalendarScreen() {
             error={pause.error?.message ?? null}
             onCancel={closeReturn}
             onEdit={() => pause.error && pause.reset()}
+            onMonthChange={setModalMonth}
             onSave={setBusy}
           />
         </ModalShell>

@@ -225,3 +225,23 @@ export function sessionsWhileBusy<T extends { day: string }>(
 ): T[] {
   return booked.filter((b) => b.day >= today && (back === null || b.day < back));
 }
+
+/**
+ * The booked-sessions range to ask for (backend #326: account-zone dates, `to`
+ * exclusive). From today to the furthest of: the end of every month on screen,
+ * the booking window, and 90 days. One more day at the end: dots are drawn in
+ * the hours' zone, which can be a day behind the account's (a session late on
+ * the 31st there is already the 1st here).
+ */
+export function bookedRange(
+  today: string,
+  shownMonths: readonly (string | null)[],
+  windowUntil: string | null,
+): { from: string; to: string } {
+  const ends = [
+    addDays(today, 91),
+    ...shownMonths.filter((m): m is string => !!m).map((m) => monthStart(m, 1)),
+    ...(windowUntil ? [addDays(windowUntil, 1)] : []),
+  ].sort();
+  return { from: today, to: addDays(ends[ends.length - 1]!, 1) };
+}
