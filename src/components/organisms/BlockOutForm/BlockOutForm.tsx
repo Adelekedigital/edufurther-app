@@ -9,6 +9,8 @@ import { shortDay } from '@/lib/utils/calendar';
 import styles from './BlockOutForm.module.css';
 
 type BlockOutFormProps = {
+  /** The picker's month changed: the page loads booked days that far. */
+  onMonthChange?: (month: string) => void;
   /** Today (YYYY-MM-DD) in the mentor's zone: earlier days can't be picked. */
   today: string;
   /** The days blocked now, from today on. */
@@ -45,6 +47,7 @@ export function BlockOutForm({
   error,
   onEdit,
   onSave,
+  onMonthChange,
 }: BlockOutFormProps) {
   const [draft, setDraft] = useState(initial);
   const toggle = (d: string) => {
@@ -64,6 +67,7 @@ export function BlockOutForm({
         selected={draft}
         booked={booked.map((b) => b.day)}
         onPick={toggle}
+        onMonthChange={onMonthChange}
         showLegend
       />
       {clashDays.length > 0 && (

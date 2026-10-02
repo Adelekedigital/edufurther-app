@@ -15,7 +15,7 @@ const party = (id: string, first: string) => ({
  * first, one page. Two upcoming sessions (the month view's dots), one past.
  * ENABLE_MOCK_API=1 only.
  */
-export async function GET(_req: Request, ctx: { params: Promise<{ userId: string }> }) {
+export async function GET(req: Request, ctx: { params: Promise<{ userId: string }> }) {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
   const { userId } = await ctx.params;
   await new Promise((r) => setTimeout(r, 150));
@@ -44,12 +44,23 @@ export async function GET(_req: Request, ctx: { params: Promise<{ userId: string
     created_at: at(-10, 9),
     mentee_attendance_rate: null,
   });
+  // from / to (dates, `to` exclusive) and repeatable status (backend #326).
+  const q = new URL(req.url).searchParams;
+  const from = q.get('from');
+  const to = q.get('to');
+  const statuses = q.getAll('status');
+  const all = [
+    session('s-3', at(9, 16), 'pending_mentor_approval'),
+    session('s-2', at(3, 16), 'confirmed'),
+    session('s-1', at(-5, 16), 'completed'),
+  ];
   return NextResponse.json({
-    data: [
-      session('s-3', at(9, 16), 'pending_mentor_approval'),
-      session('s-2', at(3, 16), 'confirmed'),
-      session('s-1', at(-5, 16), 'completed'),
-    ],
+    data: all.filter(
+      (s) =>
+        (!from || s.starts_at.slice(0, 10) >= from) &&
+        (!to || s.starts_at.slice(0, 10) < to) &&
+        (!statuses.length || statuses.includes(s.status)),
+    ),
     next_cursor: null,
   });
 }

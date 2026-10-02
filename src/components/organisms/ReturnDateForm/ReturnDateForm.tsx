@@ -18,6 +18,8 @@ import { addDays } from '@/lib/utils/slots';
 import styles from './ReturnDateForm.module.css';
 
 type ReturnDateFormProps = {
+  /** The picker's month changed: the page loads booked days that far. */
+  onMonthChange?: (month: string) => void;
   /** Today (YYYY-MM-DD) in the mentor's zone. */
   today: string;
   /** Booked days and who with: sessions inside the busy stretch stay booked. */
@@ -47,6 +49,7 @@ export function ReturnDateForm({
   onCancel,
   onEdit,
   onSave,
+  onMonthChange,
 }: ReturnDateFormProps) {
   const [choice, setChoiceState] = useState<ReturnChoice | null>(null);
   const [picked, setPickedState] = useState<string | null>(null);
@@ -115,6 +118,7 @@ export function ReturnDateForm({
           selected={picked ? [picked] : []}
           booked={booked.map((b) => b.day)}
           onPick={setPicked}
+          onMonthChange={onMonthChange}
         />
       )}
       {days.length > 0 && (

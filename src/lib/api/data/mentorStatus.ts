@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { components } from '@/lib/api/generated/schema';
 import type { AppError, Remote } from '@/types/mentor';
 import { apiError, normaliseError } from './errors';
 import { api } from './http';
@@ -16,13 +17,13 @@ export type MentorStatus = {
   returnOn: string | null;
 };
 
-/**
- * `paused_by_mentor` and `return_on` are PENDING BACKEND (calendar reply #1,
- * backend PR #324): read untyped until the published spec has them.
- */
-type PendingFields = { paused_by_mentor?: boolean; return_on?: string | null };
+type MentorProfileRead = components['schemas']['MentorProfileRead'];
 
-export function toMentorStatus(p: { listing_status: string } & PendingFields): MentorStatus {
+/** Busy only when the mentor paused themselves (backend #324); an admin unlisting isn't busy. */
+export function toMentorStatus(
+  p: Pick<MentorProfileRead, 'listing_status'> &
+    Partial<Pick<MentorProfileRead, 'paused_by_mentor' | 'return_on'>>,
+): MentorStatus {
   return {
     listed: p.listing_status === 'listed',
     pausedByMentor: !!p.paused_by_mentor,
@@ -41,7 +42,7 @@ export function useMentorStatus(userId: string | null): Remote<MentorStatus> {
         signal,
       });
       if (!data) throw apiError(response.status, error);
-      return toMentorStatus(data as typeof data & PendingFields);
+      return toMentorStatus(data);
     },
   });
   return {
@@ -93,8 +94,7 @@ export function usePause(userId: string | null) {
       try {
         r = await api.POST('/api/v1/users/{user_id}/mentor-profile/pause', {
           params: { path: { user_id: userId! } },
-          // PENDING BACKEND (#324): the body isn't in the published spec yet.
-          ...({ body: { return_on: returnOn } } as object),
+          body: { return_on: returnOn },
         });
       } catch (e) {
         throw statusError(e, true);

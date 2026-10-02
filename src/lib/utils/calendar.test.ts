@@ -200,3 +200,20 @@ describe('busy copy once the return date has passed', () => {
     expect(busyBody('2026-10-08', '2026-10-01')).toContain('We’ll remind you on Thu, Oct 8');
   });
 });
+
+describe('bookedRange', () => {
+  it('reaches the furthest of 90 days, every month on screen and the window, plus a day', async () => {
+    const { bookedRange } = await import('./calendar');
+    // 90 days from Oct 1 is the furthest: Dec 31, then a day of slack.
+    expect(bookedRange('2026-10-01', [null], null)).toEqual({
+      from: '2026-10-01',
+      to: '2027-01-01',
+    });
+    // A month paged to February: its end (Mar 1) plus a day.
+    expect(bookedRange('2026-10-01', ['2027-02-01', null], null).to).toBe('2027-03-02');
+    // A modal paged further than the page.
+    expect(bookedRange('2026-10-01', ['2026-10-01', '2027-04-01'], null).to).toBe('2027-05-02');
+    // A booking window past 90 days: its last day, the day after, then slack.
+    expect(bookedRange('2026-10-01', [null], '2027-02-10').to).toBe('2027-02-12');
+  });
+});

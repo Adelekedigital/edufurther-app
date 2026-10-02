@@ -71,3 +71,16 @@ describe('MonthPicker, pickable', () => {
     );
   });
 });
+
+describe('MonthPicker onMonthChange', () => {
+  it('reports the month on mount and as it pages', async () => {
+    const onMonthChange = vi.fn();
+    const user = userEvent.setup();
+    render(<MonthPicker readOnly today="2026-10-15" onMonthChange={onMonthChange} />);
+    expect(onMonthChange).toHaveBeenLastCalledWith('2026-10-01');
+    await user.click(screen.getByRole('button', { name: 'Next month' }));
+    expect(onMonthChange).toHaveBeenLastCalledWith('2026-11-01');
+    await user.click(screen.getByRole('button', { name: 'Previous month' }));
+    expect(onMonthChange).toHaveBeenLastCalledWith('2026-10-01');
+  });
+});

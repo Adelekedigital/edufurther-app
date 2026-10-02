@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react';
-import { blockedDaysOf, fetchBookedStarts, planBlockSave, useSaveBlockedDays } from './calendar';
+import { blockedDaysOf, fetchBookedSessions, planBlockSave, useSaveBlockedDays } from './calendar';
 
 const GET = vi.fn();
 const DELETE = vi.fn();
@@ -14,7 +14,6 @@ vi.mock('./http', () => ({
   },
 }));
 
-const NOW = Date.parse('2026-10-01T12:00:00Z');
 const s = (id: string, starts: string, status = 'confirmed', mentor = 'm1') => ({
   id,
   mentor_id: mentor,
@@ -26,43 +25,47 @@ const s = (id: string, starts: string, status = 'confirmed', mentor = 'm1') => (
 const page = (data: unknown[], next: string | null) =>
   Promise.resolve({ data: { data, next_cursor: next }, response: new Response(null) });
 
-describe('fetchBookedStarts', () => {
+describe('fetchBookedSessions', () => {
   beforeEach(() => GET.mockReset());
+  const RANGE = { from: '2026-10-01', to: '2026-12-31' };
 
-  it('keeps the mentor’s confirmed and pending sessions and stops at the first older one', async () => {
+  it('asks for the range and both live statuses, pages to the end, keeps the mentor’s own', async () => {
     GET.mockImplementationOnce(() =>
       page(
         [
           s('a', '2026-10-09T16:00:00Z', 'pending_mentor_approval'),
-          s('b', '2026-10-08T16:00:00Z', 'cancelled'),
           s('c', '2026-10-07T16:00:00Z', 'confirmed', 'someone-else'),
           s('d', '2026-10-04T16:00:00Z'),
         ],
         'next',
       ),
-    ).mockImplementationOnce(() =>
-      page([s('e', '2026-10-02T09:00:00Z'), s('f', '2026-09-20T09:00:00Z')], 'more'),
-    );
-    const starts = await fetchBookedStarts('m1', undefined, NOW);
-    expect(starts).toEqual([
+    ).mockImplementationOnce(() => page([s('e', '2026-10-02T09:00:00Z')], null));
+    const got = await fetchBookedSessions('m1', RANGE);
+    expect(got).toEqual([
       { startsAt: '2026-10-09T16:00:00Z', mentee: null },
       { startsAt: '2026-10-04T16:00:00Z', mentee: 'Taofeeq' },
       { startsAt: '2026-10-02T09:00:00Z', mentee: null },
     ]);
-    // Stopped at f: no third page.
     expect(GET).toHaveBeenCalledTimes(2);
-    expect(GET.mock.calls[1]![1].params.query).toEqual({ limit: 50, cursor: 'next' });
+    expect(GET.mock.calls[0]![1].params.query).toEqual({
+      limit: 50,
+      cursor: undefined,
+      from: '2026-10-01',
+      to: '2026-12-31',
+      status: ['confirmed', 'pending_mentor_approval'],
+    });
+    expect(GET.mock.calls[1]![1].params.query.cursor).toBe('next');
   });
 
-  it('throws when the list fails', async () => {
+  it('throws when the list fails (a 422 included)', async () => {
     GET.mockImplementationOnce(() =>
       Promise.resolve({
         data: undefined,
         error: {},
-        response: new Response(null, { status: 500 }),
+        response: new Response(null, { status: 422 }),
       }),
     );
-    await expect(fetchBookedStarts('m1', undefined, NOW)).rejects.toBeTruthy();
+    await expect(fetchBookedSessions('m1', RANGE)).rejects.toBeTruthy();
   });
 });
 

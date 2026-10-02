@@ -24,6 +24,7 @@ import { useMentorDefaults, useSaveMentorDefaults } from '@/lib/api/data/session
 import { useSaveWeeklyHours, useWeeklyHours } from '@/lib/api/data/weeklyHours';
 import {
   bookableRange,
+  bookedRange,
   busyBody,
   busyHint,
   doneBody,
@@ -67,7 +68,24 @@ export function CalendarScreen() {
   const draft = useHoursDraft(weekly.data, deviceZone);
   // Days are counted in the zone the hours are saved in, until a new one is saved.
   const savedZone = weekly.data?.timeZone ?? draft.timeZone;
-  const booked = useBookedDays(mentorId, savedZone);
+  // The backend counts session dates in the account's zone (#326) and judges
+  // return dates there too (#324).
+  const accountToday = safeToday(member?.timeZone, savedZone);
+  // Booked days from today: as far as the month on screen and any modal's picker
+  // have paged, the booking window, and at least 90 days.
+  const [shownMonth, setShownMonth] = useState<string | null>(null);
+  const [modalMonth, setModalMonth] = useState<string | null>(null);
+  const booked = useBookedDays(
+    // Waits for the hours ("today" would be the device's zone) and the window
+    // (the range would widen, and load again).
+    weekly.data && defaults.data ? mentorId : null,
+    savedZone,
+    bookedRange(
+      accountToday,
+      [shownMonth, modalMonth],
+      defaults.data ? bookableRange(accountToday, defaults.data).until : null,
+    ),
+  );
   const blocked = useBlockedDays(mentorId);
   const saveBlocked = useSaveBlockedDays(mentorId);
   const status = useMentorStatus(mentorId);
@@ -182,9 +200,6 @@ export function CalendarScreen() {
   // Busy: a pause with an optional return date (a reminder, never an automatic
   // switch back). The pill's switch and "Change return date" open the modal.
   const busy = !!status.data?.pausedByMentor;
-  // The backend judges a return date against today in the account's zone
-  // (calendar reply on #324), which can differ from the hours' zone.
-  const accountToday = safeToday(member?.timeZone, savedZone);
   const focusSwitch = () => requestAnimationFrame(() => statusSwitch.current?.focus());
   const openReturn = () => {
     if (resume.isPending) return;
@@ -453,6 +468,7 @@ export function CalendarScreen() {
                   openFrom={range.from}
                   openUntil={range.until}
                   showLegend
+                  onMonthChange={setShownMonth}
                 />
                 {(booked.error || blocked.error) && (
                   <div role="alert" className={styles.partial}>
@@ -565,6 +581,7 @@ export function CalendarScreen() {
             saving={saveBlocked.isPending}
             error={saveBlocked.error?.message ?? null}
             onEdit={() => saveBlocked.error && saveBlocked.reset()}
+            onMonthChange={setModalMonth}
             onSave={(days) =>
               saveBlocks(days).then(
                 () => {
@@ -586,6 +603,7 @@ export function CalendarScreen() {
             error={pause.error?.message ?? null}
             onCancel={closeReturn}
             onEdit={() => pause.error && pause.reset()}
+            onMonthChange={setModalMonth}
             onSave={setBusy}
           />
         </ModalShell>
