@@ -22,13 +22,13 @@ type DayHoursRowProps = {
   variant?: 'list' | 'compact';
 };
 
-/** Design `errorShort`; "Too short" is provisional (calendar-design-request §6). */
-const shortError = (err: string) =>
+/** Design `errorShort` (TimeSlots.dc.html). */
+const shortError = (err: string, minLength: number) =>
   err.startsWith('End time')
     ? 'Ends before it starts'
-    : err.startsWith('These')
-      ? 'Overlaps'
-      : 'Too short';
+    : err.startsWith('Too short')
+      ? `Under ${minLength} min`
+      : 'Overlaps';
 
 /**
  * One day of weekly hours (TimeSlots.dc.html, variant list or compact): a switch, then
@@ -105,7 +105,7 @@ export function DayHoursRow({
                   </button>
                   {err && (
                     <span id={errId} className={styles.cError}>
-                      <span aria-hidden="true">{shortError(err)}</span>
+                      <span aria-hidden="true">{shortError(err, minLength)}</span>
                       <span className="sr-only">{err}</span>
                     </span>
                   )}

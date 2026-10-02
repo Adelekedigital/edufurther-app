@@ -55,7 +55,7 @@ describe('WeeklyHoursEditor: hours fit the shortest session', () => {
     expect(times(/end time/)[1]).toBe('1440');
     // Both are under 90 minutes: the saved 60-min slot and the new 11 pm one.
     expect(
-      within(monday()).getAllByText('Mentees can’t book this: it’s shorter than a 90-min session.'),
+      within(monday()).getAllByText('Too short for your 90-min sessions. Make it at least 90 min.'),
     ).toHaveLength(2);
   });
 
@@ -65,6 +65,14 @@ describe('WeeklyHoursEditor: hours fit the shortest session', () => {
       within(monday()).getByRole('combobox', { name: /start time/ }),
     ).getAllByRole('option');
     expect((starts.at(-1) as HTMLOptionElement).value).toBe('1350');
+  });
+
+  it('Add hours with a 30-min minimum makes a 30-min slot (design add)', async () => {
+    const user = userEvent.setup();
+    render(<Harness start={week({ on: true, slots: [[540, 600]] })} minLength={30} />);
+    await user.click(within(monday()).getByRole('button', { name: /Add hours/ }));
+    expect(times(/start time/)).toEqual(['540', '660']);
+    expect(times(/end time/)).toEqual(['600', '690']);
   });
 
   it('a day switched on gets slots long enough to book', async () => {
@@ -81,15 +89,15 @@ describe('WeeklyHoursEditor: hours fit the shortest session', () => {
     expect(times(/end time/)).toEqual(['570']);
   });
 
-  it('compact: a too-short slot says "Too short", and the full reason to screen readers', () => {
+  it('compact: a too-short slot says "Under 60 min", and the full reason to screen readers', () => {
     render(
       <Harness start={week({ on: true, slots: [[540, 570]] })} minLength={60} variant="compact" />,
     );
-    expect(within(monday()).getByText('Too short')).toBeInTheDocument();
+    expect(within(monday()).getByText('Under 60 min')).toBeInTheDocument();
     const end = within(monday()).getByRole('combobox', { name: /end time/ });
     expect(end).toHaveAttribute('aria-invalid', 'true');
     expect(document.getElementById(end.getAttribute('aria-describedby')!)).toHaveTextContent(
-      'Mentees can’t book this: it’s shorter than a 60-min session.',
+      'Too short for your 60-min sessions. Make it at least 60 min.',
     );
   });
 

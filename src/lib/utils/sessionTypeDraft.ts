@@ -189,12 +189,11 @@ export function stepOf(field: FieldKey): 1 | 2 | 3 {
 export function slotError(slots: Slot[], k: number, minLength = 0): string | null {
   const [a, b] = slots[k]!;
   if (b <= a) return 'End time must be after the start time.';
+  // TimeSlots.dc.html `scene="tooShort"` (design, 2026-10-02): checked before overlaps.
+  if (b - a < minLength)
+    return `Too short for your ${minLength}-min sessions. Make it at least ${minLength} min.`;
   const overlaps = slots.some(([c, e], j) => j !== k && a < e && c < b);
-  if (overlaps) return 'These hours overlap with another time on this day.';
-  // Provisional copy, listed for design (calendar-design-request §6).
-  return b - a < minLength
-    ? `Mentees can’t book this: it’s shorter than a ${minLength}-min session.`
-    : null;
+  return overlaps ? 'These hours overlap with another time on this day.' : null;
 }
 
 /** Up to the next half hour, the time lists' step. */
@@ -239,7 +238,16 @@ export function startOptions(minLength: number, current: number) {
   return TIME_OPTIONS.filter((o) => Number(o.value) <= last || Number(o.value) === current);
 }
 
-/** A slot whose start moved: the end moves too when the slot would be too short. */
+/**
+ * A slot whose start moved to `start` (TimeSlots.dc.html `setFrom`): it keeps
+ * its length, never shorter than a session, and ends by midnight.
+ */
+export function moveStart([a, b]: Slot, start: number, minLength: number): Slot {
+  const len = Math.max(toStep(minLength), b - a, 30);
+  return [start, Math.min(start + len, 1440)];
+}
+
+/** A day switched on: a slot too short for a session gets its end moved to fit one. */
 export function fitSlot([a, b]: Slot, minLength: number): Slot {
   return minLength > 0 && b - a < minLength ? [a, Math.min(toStep(a + minLength), 1440)] : [a, b];
 }
@@ -272,8 +280,8 @@ export function withDraft(
   return types.map((t) => (t.id === id ? { ...drafted(t.isLive), id } : t));
 }
 
-/** A new slot's length: an hour, or the shortest session when that's longer. */
-export const newSlotLength = (minLength: number) => Math.max(60, toStep(minLength));
+/** A new slot's length (design `add`): the shortest session, on the half hour; an hour with no minimum. */
+export const newSlotLength = (minLength: number) => (minLength > 0 ? toStep(minLength) : 60);
 
 /** `minLength`: the type's length, which its own hours must fit (step 3). */
 export function validateStep(d: Draft, step: 1 | 2 | 3, minLength = 0): FieldErrors {
