@@ -582,6 +582,19 @@ describe('useCreateSessionType', () => {
     expect(key(2)).not.toBe(key(0));
   });
 
+  it('a create whose reply is lost still refreshes the list and its counts', async () => {
+    POST.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+    const invalidate = vi.spyOn(qc, 'invalidateQueries');
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useCreateSessionType(), { wrapper });
+    act(() => result.current.create({ body, windows: [] }));
+    await waitFor(() => expect(result.current.error).not.toBeNull());
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: keys.sessionTypes.all });
+  });
+
   it('422 errors[] land on our fields in our copy; 409 is a name already used', async () => {
     const wrapper = setup();
     POST.mockResolvedValueOnce({

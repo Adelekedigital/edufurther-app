@@ -118,7 +118,11 @@ function useWho(): string {
   return sessionKey(useSession());
 }
 
-/** GET /me/session-types: one request, question counts included (backend #333, #147). */
+/**
+ * The mentor's session types. The question counts come with the list, so the
+ * Calendar and the session-type form can read lengths without loading each
+ * type's questions.
+ */
 export function useOwnSessionTypes(enabled: boolean): Remote<OwnSessionType[]> {
   const who = useWho();
   const query = useQuery({
