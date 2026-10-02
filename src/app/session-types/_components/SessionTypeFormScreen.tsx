@@ -21,6 +21,7 @@ import { SESSION_TEMPLATES } from '@/lib/utils/sessionTemplates';
 import {
   shortestLength,
   typeLength,
+  withDraft,
   weeklySummary,
   type Draft,
 } from '@/lib/utils/sessionTypeDraft';
@@ -75,10 +76,14 @@ export function SessionTypeFormScreen({
   const retry = useRetryWindows();
   // Calendar hours must fit the shortest session offered (product, 2026-10-01).
   const own = useOwnSessionTypes(isMentor);
-  const calendarMin = shortestLength(defaults.data?.durationMin, own.data);
 
   const tmpl = edit ? null : (SESSION_TEMPLATES.find((x) => x.key === template) ?? null);
   const d = useSessionTypeDraft(edit, tmpl, defaults);
+  // The type as this form will save it counts too (Codex on #149).
+  const calendarMin = shortestLength(
+    defaults.data?.durationMin,
+    withDraft(own.data, edit?.id ?? null, d.draft, defaults.data?.durationMin),
+  );
   const steps = useWizardSteps(!!edit);
   const [modal, setModal] = useState<Modal | null>(null);
   const submit = useSessionTypeSubmit({

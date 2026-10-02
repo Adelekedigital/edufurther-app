@@ -24,6 +24,7 @@ import {
   newSlotLength,
   shortestLength,
   typeLength,
+  withDraft,
 } from './sessionTypeDraft';
 
 const ids = { 'document-preparation': 'o4', 'school-selection': 'o1' };
@@ -442,5 +443,38 @@ describe('hours fit the shortest session (product, 2026-10-01)', () => {
     d.days[1] = { on: true, slots: [[540, 600]] };
     expect(validateStep(d, 3, 90)['slot-1-0']).toMatch(/shorter than a 90-min session/);
     expect(validateStep(d, 3, 60)['slot-1-0']).toBeUndefined();
+  });
+});
+
+describe('withDraft: the Calendar minimum counts the type as the form will save it (Codex on #149)', () => {
+  const saved = [
+    { id: 'a', durationMin: 60, isLive: true, usesOwnWindows: true },
+    { id: 'b', durationMin: 90, isLive: true, usesOwnWindows: false },
+  ];
+  const draft = (hours: 'default' | 'custom', durationMin = 60) => ({
+    rules: 'custom' as const,
+    durationMin,
+    hours,
+  });
+
+  it('a type switched from its own hours back to Calendar hours counts', () => {
+    expect(shortestLength(90, saved)).toBe(90);
+    expect(shortestLength(90, withDraft(saved, 'a', draft('default'), 90))).toBe(60);
+  });
+
+  it('a type switched to its own hours stops counting', () => {
+    expect(shortestLength(120, withDraft(saved, 'b', draft('custom', 90), 120))).toBe(120);
+  });
+
+  it('a new type counts once it follows the Calendar; hidden stays hidden', () => {
+    expect(shortestLength(90, withDraft(saved, null, draft('default', 45), 90))).toBe(45);
+    expect(shortestLength(90, withDraft(saved, null, draft('custom', 45), 90))).toBe(90);
+    const hidden = [{ id: 'h', durationMin: 90, isLive: false, usesOwnWindows: true }];
+    expect(shortestLength(120, withDraft(hidden, 'h', draft('default', 30), 120))).toBe(120);
+  });
+
+  it('types not known yet stay unknown', () => {
+    expect(withDraft(null, null, draft('default'), 60)).toBeNull();
+    expect(withDraft(undefined, 'a', draft('default'), 60)).toBeUndefined();
   });
 });

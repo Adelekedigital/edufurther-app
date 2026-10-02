@@ -248,6 +248,30 @@ export function fitSlot([a, b]: Slot, minLength: number): Slot {
 export const typeLength = (d: Pick<Draft, 'rules' | 'durationMin'>, defaultMin?: number | null) =>
   d.rules === 'custom' ? d.durationMin : (defaultMin ?? PLATFORM_DURATION_MIN);
 
+type LengthOf = { id?: string; durationMin: number; isLive: boolean; usesOwnWindows: boolean };
+
+/**
+ * The types as they'll be once this form saves: the one being edited (`id`),
+ * or a new one (`id` null, live once published), as the draft has it. A type
+ * switched back to Calendar hours counts for the Calendar minimum before its
+ * own windows are deleted (Codex on #149).
+ */
+export function withDraft(
+  types: readonly LengthOf[] | null | undefined,
+  id: string | null,
+  d: Pick<Draft, 'rules' | 'durationMin' | 'hours'>,
+  defaultMin: number | null | undefined,
+): LengthOf[] | null | undefined {
+  if (!types) return types;
+  const drafted = (isLive: boolean): LengthOf => ({
+    durationMin: typeLength(d, defaultMin),
+    isLive,
+    usesOwnWindows: d.hours === 'custom',
+  });
+  if (id === null) return [...types, drafted(true)];
+  return types.map((t) => (t.id === id ? { ...drafted(t.isLive), id } : t));
+}
+
 /** A new slot's length: an hour, or the shortest session when that's longer. */
 export const newSlotLength = (minLength: number) => Math.max(60, toStep(minLength));
 
