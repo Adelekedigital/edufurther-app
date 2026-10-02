@@ -60,7 +60,8 @@ export const keys = {
   calendar: {
     all: ['calendar'] as const,
     /** The mentor's upcoming booked sessions (the month's dots). */
-    booked: (userId: string) => ['calendar', 'booked', userId] as const,
+    booked: (userId: string, from = '', to = '') =>
+      ['calendar', 'booked', userId, from, to] as const,
     /** Whole days the mentor blocked (availability exceptions). */
     blocked: (userId: string) => ['calendar', 'blocked', userId] as const,
     /** Listed, busy (paused by the mentor) and the return date. */

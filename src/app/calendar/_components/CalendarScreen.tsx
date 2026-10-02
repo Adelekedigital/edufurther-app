@@ -24,6 +24,7 @@ import { useMentorDefaults, useSaveMentorDefaults } from '@/lib/api/data/session
 import { useSaveWeeklyHours, useWeeklyHours } from '@/lib/api/data/weeklyHours';
 import {
   bookableRange,
+  monthStart,
   busyBody,
   busyHint,
   doneBody,
@@ -32,6 +33,7 @@ import {
   windowSummary,
 } from '@/lib/utils/calendar';
 import { deviceTimeZone } from '@/lib/utils/format';
+import { addDays } from '@/lib/utils/slots';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { useOnline } from '@/lib/utils/useOnline';
 import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
@@ -67,7 +69,22 @@ export function CalendarScreen() {
   const draft = useHoursDraft(weekly.data, deviceZone);
   // Days are counted in the zone the hours are saved in, until a new one is saved.
   const savedZone = weekly.data?.timeZone ?? draft.timeZone;
-  const booked = useBookedDays(mentorId, savedZone);
+  // The backend counts session dates in the account's zone (#326) and judges
+  // return dates there too (#324).
+  const accountToday = safeToday(member?.timeZone, savedZone);
+  // Booked days from today: the shown month, and as far as the pickers can go
+  // (the booking window), at least 90 days.
+  const [shownMonth, setShownMonth] = useState<string | null>(null);
+  const bookedTo = [
+    monthStart(shownMonth ?? accountToday, 1),
+    addDays(accountToday, 91),
+    defaults.data ? addDays(bookableRange(accountToday, defaults.data).until, 1) : '',
+  ].sort()[2]!;
+  // Waits for the hours: until then "today" would be counted in the device's zone.
+  const booked = useBookedDays(weekly.data ? mentorId : null, savedZone, {
+    from: accountToday,
+    to: bookedTo,
+  });
   const blocked = useBlockedDays(mentorId);
   const saveBlocked = useSaveBlockedDays(mentorId);
   const status = useMentorStatus(mentorId);
@@ -182,9 +199,6 @@ export function CalendarScreen() {
   // Busy: a pause with an optional return date (a reminder, never an automatic
   // switch back). The pill's switch and "Change return date" open the modal.
   const busy = !!status.data?.pausedByMentor;
-  // The backend judges a return date against today in the account's zone
-  // (calendar reply on #324), which can differ from the hours' zone.
-  const accountToday = safeToday(member?.timeZone, savedZone);
   const focusSwitch = () => requestAnimationFrame(() => statusSwitch.current?.focus());
   const openReturn = () => {
     if (resume.isPending) return;
@@ -453,6 +467,7 @@ export function CalendarScreen() {
                   openFrom={range.from}
                   openUntil={range.until}
                   showLegend
+                  onMonthChange={setShownMonth}
                 />
                 {(booked.error || blocked.error) && (
                   <div role="alert" className={styles.partial}>

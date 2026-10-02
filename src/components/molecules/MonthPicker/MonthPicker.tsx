@@ -25,6 +25,8 @@ type MonthPickerProps = {
   readOnly?: boolean;
   onPick?: (iso: string) => void;
   showLegend?: boolean;
+  /** The month shown changed (YYYY-MM-01): the page can load what it needs for it. */
+  onMonthChange?: (month: string) => void;
 };
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -83,6 +85,7 @@ export function MonthPicker({
   readOnly = false,
   onPick,
   showLegend = false,
+  onMonthChange,
 }: MonthPickerProps) {
   const [offset, setOffset] = useState(0);
   const [focusIso, setFocusIso] = useState<string | null>(null);
@@ -102,6 +105,10 @@ export function MonthPicker({
     days.find((c) => c.iso === today)?.iso ??
     days.find((c) => !c.past)?.iso ??
     days[0]!.iso;
+
+  useEffect(() => {
+    onMonthChange?.(month);
+  }, [month, onMonthChange]);
 
   useEffect(() => {
     if (!moved.current || !focusIso) return;

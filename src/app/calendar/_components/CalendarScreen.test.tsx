@@ -97,12 +97,16 @@ vi.mock('@/lib/api/data/conferencing', () => ({
   useSaveConferencing: () => ({ save: saveVideo, isPending: false, error: null, reset: vi.fn() }),
 }));
 let booked: Remote<BookedDay[]>;
+let bookedRange: { from: string; to: string } | null = null;
 let blocked: Remote<Blocked>;
 const saveBlocked = vi.fn();
 let blockedPending = false;
 let blockedError: AppError | null = null;
 vi.mock('@/lib/api/data/calendar', () => ({
-  useBookedDays: () => booked,
+  useBookedDays: (...a: unknown[]) => {
+    bookedRange = a[2] as { from: string; to: string };
+    return booked;
+  },
   useBlockedDays: () => blocked,
   useSaveBlockedDays: () => ({
     save: saveBlocked,
@@ -675,5 +679,17 @@ describe('CalendarScreen: busy and video', () => {
     status = remote<MentorStatus>({ listed: false, pausedByMentor: true, returnOn: '2099-10-16' });
     render(<CalendarScreen />);
     expect(screen.getByText('Back Fri, Oct 16')).toBeInTheDocument();
+  });
+
+  it('booked days load from today, and paging the month further widens the range', async () => {
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    const first = bookedRange!;
+    expect(first.from <= first.to).toBe(true);
+    const month = screen.getByRole('heading', { name: 'Month at a glance' }).closest('section')!;
+    for (let i = 0; i < 5; i++)
+      await user.click(within(month).getByRole('button', { name: 'Next month' }));
+    expect(bookedRange!.from).toBe(first.from);
+    expect(bookedRange!.to > first.to).toBe(true);
   });
 });

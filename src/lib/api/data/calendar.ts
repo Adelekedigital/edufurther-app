@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { runsOf } from '@/lib/utils/calendar';
 import { addDays, dayKey } from '@/lib/utils/slots';
@@ -16,60 +16,63 @@ type ExceptionRead = components['schemas']['AvailabilityExceptionRead'];
 /** A booked day: still happening, or waiting on the mentor. */
 const ACTIVE: SessionRead['status'][] = ['confirmed', 'pending_mentor_approval'];
 const PAGE = 50;
-/** 500 sessions back is far past anything the month view shows. */
+/** 500 sessions in one range is far past any month a mentor could fill. */
 const MAX_PAGES = 10;
-const DAY_MS = 24 * 60 * 60 * 1000;
 
-/**
- * The start instants of the mentor's upcoming booked sessions. The list is
- * newest first by start (backend `list_sessions`), so paging stops at the first
- * session that started before yesterday: everything after it is older.
- * PENDING BACKEND: swap for the `from`/`to`/`status` filter (calendar reply #3).
- */
 export type BookedSession = { startsAt: string; mentee: string | null };
 
-export async function fetchBookedStarts(
+/**
+ * The mentor's confirmed and pending sessions from `from` (inclusive) to `to`
+ * (exclusive): dates in the caller's account zone (backend #326). Sessions they
+ * booked as a mentee are left out.
+ */
+export async function fetchBookedSessions(
   userId: string,
+  range: { from: string; to: string },
   signal?: AbortSignal,
-  now = Date.now(),
 ): Promise<BookedSession[]> {
-  const cutoff = now - DAY_MS;
-  const starts: BookedSession[] = [];
+  const sessions: BookedSession[] = [];
   let cursor: string | undefined;
   for (let page = 0; page < MAX_PAGES; page++) {
     const { data, error, response } = await api.GET('/api/v1/users/{user_id}/sessions', {
-      params: { path: { user_id: userId }, query: { limit: PAGE, cursor } },
+      params: {
+        path: { user_id: userId },
+        query: { limit: PAGE, cursor, from: range.from, to: range.to, status: ACTIVE },
+      },
       signal,
     });
     if (!data) throw apiError(response.status, error);
-    let older = false;
-    for (const s of data.data) {
-      if (Date.parse(s.starts_at) < cutoff) {
-        older = true;
-        break;
-      }
-      if (s.mentor_id === userId && ACTIVE.includes(s.status))
-        starts.push({
+    for (const s of data.data)
+      if (s.mentor_id === userId)
+        sessions.push({
           startsAt: s.starts_at,
           mentee: (!s.mentee.deleted && s.mentee.first_name?.trim()) || null,
         });
-    }
-    if (older || !data.next_cursor) break;
+    if (!data.next_cursor) break;
     cursor = data.next_cursor;
   }
-  return starts;
+  return sessions;
 }
 
 /** A booked day (YYYY-MM-DD, in the shown zone) and who it's with. */
 export type BookedDay = { day: string; mentee: string | null };
 
-/** The days the mentor has a session booked on, in `timeZone`, one entry per session. */
-export function useBookedDays(userId: string | null, timeZone: string): Remote<BookedDay[]> {
+/**
+ * The days the mentor has a session booked on in `range` (account-zone dates),
+ * bucketed in `timeZone` (the zone the calendar shows), one entry per session.
+ * A wider range keeps the days already shown while it loads.
+ */
+export function useBookedDays(
+  userId: string | null,
+  timeZone: string,
+  range: { from: string; to: string },
+): Remote<BookedDay[]> {
   const query = useQuery({
-    queryKey: keys.calendar.booked(userId ?? 'none'),
+    queryKey: keys.calendar.booked(userId ?? 'none', range.from, range.to),
     enabled: userId !== null,
-    queryFn: ({ signal }) => fetchBookedStarts(userId!, signal),
+    queryFn: ({ signal }) => fetchBookedSessions(userId!, range, signal),
     staleTime: 60 * 1000,
+    placeholderData: keepPreviousData,
   });
   const days = useMemo(
     () => query.data?.map((s) => ({ day: dayKey(s.startsAt, timeZone), mentee: s.mentee })) ?? null,
