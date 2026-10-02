@@ -70,8 +70,8 @@ export function CalendarScreen() {
   const saveWeekly = useSaveWeeklyHours(mentorId);
   const defaults = useMentorDefaults(mentorId);
   const saveDefaults = useSaveMentorDefaults(mentorId);
-  // Hours must fit the shortest session offered (product, 2026-10-01); until
-  // the types are known, nothing is enforced.
+  // Hours must fit the shortest session offered (product, 2026-10-01). The page
+  // waits for the types (#147); 0 (nothing enforced) only before it's ready.
   const own = useOwnSessionTypes(isMentor);
   const minLength = shortestLength(defaults.data?.durationMin, own.data);
   const draft = useHoursDraft(weekly.data, deviceZone, minLength);
@@ -271,9 +271,14 @@ export function CalendarScreen() {
   // The status decides between editing and the break card, so the page waits
   // for it too: a busy mentor must never see the editor (or no way back).
   const loading =
-    viewer.kind === 'loading' || weekly.isLoading || defaults.isLoading || status.isLoading;
-  const failed = weekly.error ?? defaults.error ?? status.error;
-  const ready = !!weekly.data && !!defaults.data && !!status.data && isMentor;
+    viewer.kind === 'loading' ||
+    weekly.isLoading ||
+    defaults.isLoading ||
+    status.isLoading ||
+    own.isLoading;
+  // The session types set the hours minimum, so Save waits for them (#147).
+  const failed = weekly.error ?? defaults.error ?? status.error ?? own.error;
+  const ready = !!weekly.data && !!defaults.data && !!status.data && !!own.data && isMentor;
 
   let panel: ReactNode = null;
   if (viewer.kind === 'guest')
@@ -311,6 +316,7 @@ export function CalendarScreen() {
             weekly.retry();
             defaults.retry();
             status.retry();
+            own.retry();
           }}
         >
           Try again

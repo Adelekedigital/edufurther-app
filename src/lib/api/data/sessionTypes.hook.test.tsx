@@ -56,6 +56,7 @@ const row = (id: string, is_active = true) => ({
   pending_deletion: null as { deletes_after: string | null; booked_count: number } | null,
   booked_count: 0,
   last_booked_ends_at: null as string | null,
+  question_count: 1,
 });
 const ok = (data: unknown, status = 200) => ({
   data,
@@ -83,16 +84,22 @@ const hang = () => GET.mockImplementation(() => new Promise(() => {}));
 let list: ReturnType<typeof row>[];
 beforeEach(() => {
   list = [row('x'), row('y')];
-  GET.mockReset().mockImplementation((path: string) =>
-    Promise.resolve(
-      path.endsWith('/questions')
-        ? ok({ data: [], next_cursor: null })
-        : ok({ data: list, next_cursor: null }),
-    ),
-  );
+  // One request for the list: no per-type /questions calls (#147).
+  GET.mockReset().mockImplementation(() => Promise.resolve(ok({ data: list, next_cursor: null })));
   PATCH.mockReset();
   DELETE.mockReset();
   POST.mockReset();
+});
+
+describe('useOwnSessionTypes (#147)', () => {
+  it('one request: the question counts come with the list', async () => {
+    list = [{ ...row('x'), question_count: 3 }, row('y')];
+    const { result } = renderHook(() => useOwnSessionTypes(true), { wrapper: setup() });
+    await waitFor(() => expect(result.current.data).not.toBeNull());
+    expect(result.current.data!.map((t) => t.questionCount)).toEqual([3, 1]);
+    expect(GET).toHaveBeenCalledTimes(1);
+    expect(GET.mock.calls[0]![0]).toBe('/api/v1/me/session-types');
+  });
 });
 
 describe('useSetLive', () => {
@@ -375,8 +382,7 @@ describe('useSetFeatured', () => {
       { wrapper: setup() },
     );
     await waitFor(() => expect(result.current.list.data).toHaveLength(2));
-    const lists = () =>
-      GET.mock.calls.filter(([path]) => !String(path).endsWith('/questions')).length;
+    const lists = () => GET.mock.calls.length;
     const reads = lists();
     const answers: (() => void)[] = [];
     PATCH.mockImplementation(
@@ -413,8 +419,7 @@ describe('row writes (review r2 of #80)', () => {
       { wrapper: setup() },
     );
     await waitFor(() => expect(result.current.list.data).toHaveLength(2));
-    const lists = () =>
-      GET.mock.calls.filter(([path]) => !String(path).endsWith('/questions')).length;
+    const lists = () => GET.mock.calls.length;
     const reads = lists();
     PATCH.mockResolvedValue(ok({ updated: true }));
     act(() => result.current.other.mutate());
@@ -529,8 +534,7 @@ describe('row writes (review r2 of #80)', () => {
       { wrapper: setup() },
     );
     await waitFor(() => expect(result.current.list.data).toHaveLength(2));
-    const lists = () =>
-      GET.mock.calls.filter(([path]) => !String(path).endsWith('/questions')).length;
+    const lists = () => GET.mock.calls.length;
     const reads = lists();
     let answer!: () => void;
     const gate = new Promise<void>((res) => (answer = res));
@@ -576,6 +580,19 @@ describe('useCreateSessionType', () => {
     act(() => result.current.create({ body: { name: 'Other' } as never, windows: [] }));
     await waitFor(() => expect(POST).toHaveBeenCalledTimes(3));
     expect(key(2)).not.toBe(key(0));
+  });
+
+  it('a create whose reply is lost still refreshes the list and its counts', async () => {
+    POST.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+    const invalidate = vi.spyOn(qc, 'invalidateQueries');
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useCreateSessionType(), { wrapper });
+    act(() => result.current.create({ body, windows: [] }));
+    await waitFor(() => expect(result.current.error).not.toBeNull());
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: keys.sessionTypes.all });
   });
 
   it('422 errors[] land on our fields in our copy; 409 is a name already used', async () => {

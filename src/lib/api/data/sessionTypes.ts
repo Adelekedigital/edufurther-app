@@ -71,10 +71,7 @@ export function stagesOf(r: {
   return r.application_stages ?? (r.application_stage ? [r.application_stage] : []);
 }
 
-export function toOwnSessionType(
-  r: OwnSessionTypeRead,
-  questionCount: number | null,
-): OwnSessionType {
+export function toOwnSessionType(r: OwnSessionTypeRead): OwnSessionType {
   // `service_offerings` (backend #9); the single field is its first, kept for one release.
   const list = r.service_offerings?.length
     ? r.service_offerings
@@ -95,7 +92,8 @@ export function toOwnSessionType(
     topics,
     iconChoice: r.icon ?? null,
     icon: r.icon ?? autoIcon(topics.map((t) => t.code)),
-    questionCount,
+    // On the list since backend #333 (#147); null hides the chip if it's ever missing.
+    questionCount: r.question_count ?? null,
     isFeatured: r.is_featured,
     pendingDeletion: r.pending_deletion
       ? {
@@ -121,9 +119,9 @@ function useWho(): string {
 }
 
 /**
- * GET /me/session-types, with each form's question count (GET …/questions per
- * type; a form holds at most 5, and a mentor offers a handful). A count that
- * fails to load hides that chip rather than failing the list.
+ * The mentor's session types. The question counts come with the list, so the
+ * Calendar and the session-type form can read lengths without loading each
+ * type's questions.
  */
 export function useOwnSessionTypes(enabled: boolean): Remote<OwnSessionType[]> {
   const who = useWho();
@@ -133,18 +131,7 @@ export function useOwnSessionTypes(enabled: boolean): Remote<OwnSessionType[]> {
     queryFn: async ({ signal }) => {
       const { data, error, response } = await api.GET('/api/v1/me/session-types', { signal });
       if (!data) throw apiError(response.status, error);
-      const counts = await Promise.all(
-        data.data.map(async (t) => {
-          const q = await api
-            .GET('/api/v1/me/session-types/{session_type_id}/questions', {
-              params: { path: { session_type_id: t.id } },
-              signal,
-            })
-            .catch(() => null);
-          return q?.data ? q.data.data.length : null;
-        }),
-      );
-      return data.data.map((t, i) => toOwnSessionType(t, counts[i] ?? null));
+      return data.data.map(toOwnSessionType);
     },
     staleTime: 30 * 1000,
   });
@@ -530,6 +517,10 @@ export function useCreateSessionType() {
     onError: (e) => refreshLimitsOnRefusal(qc, e),
     onSuccess: () => {
       attempt.current = null;
+    },
+    // Settled, not only succeeded: a create the server kept but whose reply was
+    // lost still refreshes the list and its counts (review of #147).
+    onSettled: () => {
       void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });
       void qc.invalidateQueries({ queryKey: keys.mentors.all });
       void qc.invalidateQueries({ queryKey: ['booking'] });
