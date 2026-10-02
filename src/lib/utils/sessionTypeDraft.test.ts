@@ -386,7 +386,7 @@ describe('hours fit the shortest session (product, 2026-10-01)', () => {
     expect(shortestLength(60, [{ durationMin: 30, isLive: false }])).toBe(60);
     expect(shortestLength(90, [])).toBe(90);
     expect(shortestLength(null, [])).toBe(60);
-    expect(shortestLength(undefined, [])).toBe(60);
+    expect(shortestLength(undefined, [])).toBe(0);
     expect(shortestLength(60, null)).toBe(0);
     expect(shortestLength(60, undefined)).toBe(0);
   });

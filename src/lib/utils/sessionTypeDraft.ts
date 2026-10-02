@@ -203,14 +203,15 @@ const toStep = (m: number) => Math.ceil(m / 30) * 30;
 /**
  * The shortest session the mentor offers: their default length and each live
  * type's (reads return the resolved length). Calendar hours must fit it.
- * Types not known yet (loading, or failed): 0, so nothing valid is refused on
- * a guess (review of the hours PR).
+ * Types or defaults not known yet (loading, or failed; `undefined`): 0, so
+ * nothing valid is refused on a guess (review of the hours PR, Codex on #148).
+ * A default that's known but unset (`null`) is the platform's.
  */
 export function shortestLength(
   defaultMin: number | null | undefined,
   types: readonly { durationMin: number; isLive: boolean }[] | null | undefined,
 ): number {
-  if (!types) return 0;
+  if (!types || defaultMin === undefined) return 0;
   const live = types.filter((t) => t.isLive).map((t) => t.durationMin);
   return Math.min(defaultMin ?? PLATFORM_DURATION_MIN, ...live);
 }
