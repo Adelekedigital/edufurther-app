@@ -16,7 +16,9 @@ export type Conferencing = {
 };
 
 /** GET /me/conferencing: where the mentor's sessions run by default (backend #323). */
-export function useConferencing(userId: string | null): Remote<Conferencing> {
+export function useConferencing(
+  userId: string | null,
+): Remote<Conferencing> & { retrying: boolean } {
   const query = useQuery({
     queryKey: keys.calendar.video(userId ?? 'none'),
     enabled: userId !== null,
@@ -35,6 +37,7 @@ export function useConferencing(userId: string | null): Remote<Conferencing> {
     isLoading: query.isPending && userId !== null,
     error: query.error ? normaliseError(query.error) : null,
     retry: () => void query.refetch(),
+    retrying: query.isFetching,
   };
 }
 

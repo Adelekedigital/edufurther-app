@@ -90,7 +90,7 @@ vi.mock('@/lib/api/data/mentorStatus', () => ({
   usePause: () => ({ pause, isPending: false, error: pauseError, reset: vi.fn() }),
   useResume: () => ({ resume, isPending: resumePending, error: null, reset: vi.fn() }),
 }));
-let video: Remote<Conferencing>;
+let video: Remote<Conferencing> & { retrying?: boolean };
 const saveVideo = vi.fn();
 vi.mock('@/lib/api/data/conferencing', () => ({
   useConferencing: () => video,
@@ -629,5 +629,51 @@ describe('CalendarScreen: busy and video', () => {
     await waitFor(() =>
       expect(screen.getByRole('switch', { name: 'Available for new bookings' })).toHaveFocus(),
     );
+  });
+
+  it('already busy with unsaved hours: Change return date still opens', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<CalendarScreen />);
+    await user.click(screen.getByRole('switch', { name: 'Tuesday' }));
+    // Paused from another tab: the status refetches while the draft stays.
+    status = remote<MentorStatus>({ listed: false, pausedByMentor: true, returnOn: null });
+    rerender(<CalendarScreen />);
+    await user.click(screen.getByRole('button', { name: 'Change return date' }));
+    expect(screen.getByRole('dialog', { name: 'When will you be back?' })).toBeInTheDocument();
+  });
+
+  it('unsaved and invalid hours: says to fix and save first, focus on the hours', async () => {
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    const monday = screen.getByRole('group', { name: 'Monday' });
+    await user.selectOptions(within(monday).getByRole('combobox', { name: /end time/i }), '540');
+    await user.click(screen.getByRole('switch', { name: 'Available for new bookings' }));
+    const bar = screen.getByRole('region', { name: 'Unsaved changes' });
+    expect(within(bar).getByRole('status')).toHaveTextContent(
+      'Fix the hours marked in red, then save before setting yourself as busy.',
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Weekly hours' })).toHaveFocus(),
+    );
+  });
+
+  it('a failed I’m back message goes when the return modal opens', async () => {
+    status = remote<MentorStatus>({ listed: false, pausedByMentor: true, returnOn: null });
+    resume.mockRejectedValue({ message: 'We couldn’t set you as available. Try again.' });
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    await user.click(screen.getByRole('button', { name: 'I’m back, set me available' }));
+    await screen.findByText('We couldn’t set you as available. Try again.', { selector: 'p' });
+    await user.click(screen.getByRole('button', { name: 'Change return date' }));
+    expect(
+      screen.queryByText('We couldn’t set you as available. Try again.', { selector: 'p' }),
+    ).toBeNull();
+  });
+
+  it('an account zone the browser can’t read falls back, no crash', () => {
+    viewer = mentor({ timeZone: 'Not/AZone' });
+    status = remote<MentorStatus>({ listed: false, pausedByMentor: true, returnOn: '2099-10-16' });
+    render(<CalendarScreen />);
+    expect(screen.getByText('Back Fri, Oct 16')).toBeInTheDocument();
   });
 });

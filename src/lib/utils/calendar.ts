@@ -201,7 +201,7 @@ export const returnSummary = (back: string | null) =>
  * busy after it: then the copy says it has passed (PROVISIONAL, design request PR 3).
  */
 export const busyBody = (back: string | null, today: string) =>
-  back && back <= today
+  back && back < today
     ? `Mentees can’t find or book you right now. Your return date, ${shortDay(back)}, has passed. Switch back when you’re ready. Sessions you already have stay booked.`
     : back
       ? `Mentees can’t find or book you right now. We’ll remind you on ${shortDay(back)} to switch back. Sessions you already have stay booked.`
@@ -209,7 +209,7 @@ export const busyBody = (back: string | null, today: string) =>
 
 /** The busy pill's hint: "Back Thu, Oct 8", "Return date passed", "No return date". */
 export const busyHint = (back: string | null, today: string) =>
-  !back ? 'No return date' : back <= today ? 'Return date passed' : `Back ${shortDay(back)}`;
+  !back ? 'No return date' : back < today ? 'Return date passed' : `Back ${shortDay(back)}`;
 
 /** Calendar v2 `doneBody`. */
 export const doneBody = (back: string | null) =>

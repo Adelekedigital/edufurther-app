@@ -184,16 +184,20 @@ export function CalendarScreen() {
   const busy = !!status.data?.pausedByMentor;
   // The backend judges a return date against today in the account's zone
   // (calendar reply on #324), which can differ from the hours' zone.
-  const accountToday = todayIn(member?.timeZone ?? savedZone);
+  const accountToday = safeToday(member?.timeZone, savedZone);
   const focusSwitch = () => requestAnimationFrame(() => statusSwitch.current?.focus());
   const openReturn = () => {
     if (resume.isPending) return;
-    // Unsaved hours would sit unseen behind the break card: save or discard first.
-    if (draft.dirty) {
+    // Going busy hides the editor: unsaved hours would sit unseen behind the
+    // break card, so they're saved or discarded first. (Already busy: nothing
+    // to hide, "Change return date" opens straight away.)
+    if (!busy && draft.dirty) {
       setHoldForHours(true);
-      requestAnimationFrame(() => saveHoursBtn.current?.focus());
+      // Save is off while hours are invalid: then the hours' title takes focus.
+      requestAnimationFrame(() => (invalid ? hoursTitle.current : saveHoursBtn.current)?.focus());
       return;
     }
+    setResumeError(null);
     pause.reset();
     setReturnOpen(true);
   };
@@ -375,6 +379,7 @@ export function CalendarScreen() {
                   summary="We couldn’t load your video setting."
                   actionText="Try again"
                   actionLabel="Try loading your video setting again"
+                  busy={video.retrying}
                   onChange={video.retry}
                 />
               )}
@@ -488,14 +493,21 @@ export function CalendarScreen() {
               <SaveBar
                 saving={saveWeekly.isPending}
                 problem={
-                  problem ??
-                  (holdForHours
+                  holdForHours && problem?.kind === 'invalid'
                     ? {
-                        kind: 'hold',
+                        kind: 'invalid',
                         // PROVISIONAL (calendar design request, PR 3).
-                        message: 'Save or discard your hours first, then set yourself as busy.',
+                        message:
+                          'Fix the hours marked in red, then save before setting yourself as busy.',
                       }
-                    : null)
+                    : (problem ??
+                      (holdForHours
+                        ? {
+                            kind: 'hold',
+                            // PROVISIONAL (calendar design request, PR 3).
+                            message: 'Save or discard your hours first, then set yourself as busy.',
+                          }
+                        : null))
                 }
                 onDiscard={onDiscard}
                 onSave={onSave}
@@ -661,4 +673,16 @@ function Panel({ title, body, children }: { title: string; body: string; childre
       {children}
     </section>
   );
+}
+
+/** Today in the account's zone; a zone the browser can't read falls back to the hours' zone. */
+function safeToday(zone: string | undefined, fallback: string): string {
+  if (zone) {
+    try {
+      return todayIn(zone);
+    } catch {
+      // A legacy or unknown zone name: RangeError from Intl.
+    }
+  }
+  return todayIn(fallback);
 }

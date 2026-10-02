@@ -14,6 +14,8 @@ type SettingSummaryRowProps = {
   actionLabel: string;
   /** The button's text; "Change" unless the row offers something else ("Try again"). */
   actionText?: string;
+  /** The action is on its way (a retry). */
+  busy?: boolean;
 };
 
 /**
@@ -22,7 +24,7 @@ type SettingSummaryRowProps = {
  */
 export const SettingSummaryRow = forwardRef<HTMLButtonElement, SettingSummaryRowProps>(
   function SettingSummaryRow(
-    { icon, title, summary, onChange, actionLabel, actionText = 'Change' },
+    { icon, title, summary, onChange, actionLabel, actionText = 'Change', busy },
     ref,
   ) {
     return (
@@ -39,6 +41,7 @@ export const SettingSummaryRow = forwardRef<HTMLButtonElement, SettingSummaryRow
           // A section action: medium (CTA hierarchy; the design script draws it 40px).
           variant="secondary-outlined"
           aria-label={actionLabel}
+          busy={busy}
           onClick={onChange}
         >
           {actionText}
