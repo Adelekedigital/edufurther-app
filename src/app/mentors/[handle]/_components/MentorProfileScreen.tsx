@@ -81,8 +81,8 @@ const SAVED_COPY: Record<ItemKind, Record<ItemOutcome, string>> = {
   },
 };
 
-/** Where weekly hours are set today (the Session types form's hours). */
-const HOURS_HREF = '/session-types';
+/** Where weekly hours are set: the Calendar page. */
+const HOURS_HREF = '/calendar';
 /** Session types (a type to turn on). */
 const TYPES_HREF = '/session-types';
 /** The strength card, where focus goes after a tip's step is done. */
