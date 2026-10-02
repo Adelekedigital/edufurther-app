@@ -81,8 +81,8 @@ function useRefreshAfterStatus(userId: string | null) {
 }
 
 /**
- * POST /users/{id}/mentor-profile/pause, with an optional return date (no
- * body = "Not sure yet"). Again while busy just changes the date. Resolves once
+ * POST /users/{id}/mentor-profile/pause, with an optional return date
+ * (`return_on: null` = "Not sure yet"). Again while busy just changes the date. Resolves once
  * the status is read back.
  */
 export function usePause(userId: string | null) {

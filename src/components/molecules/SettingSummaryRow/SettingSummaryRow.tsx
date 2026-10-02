@@ -12,6 +12,8 @@ type SettingSummaryRowProps = {
   onChange: () => void;
   /** Names what "Change" changes, e.g. "Change scheduling window". */
   actionLabel: string;
+  /** The button's text; "Change" unless the row offers something else ("Try again"). */
+  actionText?: string;
 };
 
 /**
@@ -19,7 +21,10 @@ type SettingSummaryRowProps = {
  * title and a one-line summary, and a "Change" button.
  */
 export const SettingSummaryRow = forwardRef<HTMLButtonElement, SettingSummaryRowProps>(
-  function SettingSummaryRow({ icon, title, summary, onChange, actionLabel }, ref) {
+  function SettingSummaryRow(
+    { icon, title, summary, onChange, actionLabel, actionText = 'Change' },
+    ref,
+  ) {
     return (
       <div className={styles.row}>
         <span aria-hidden className={styles.tile}>
@@ -36,7 +41,7 @@ export const SettingSummaryRow = forwardRef<HTMLButtonElement, SettingSummaryRow
           aria-label={actionLabel}
           onClick={onChange}
         >
-          Change
+          {actionText}
         </Button>
       </div>
     );

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react';
 import { ApiError } from './errors';
-import { statusError, toMentorStatus, usePause } from './mentorStatus';
+import { statusError, toMentorStatus, usePause, useResume } from './mentorStatus';
 
 const POST = vi.fn();
 vi.mock('./http', () => ({ api: { POST: (...a: unknown[]) => POST(...a) } }));
@@ -58,5 +58,37 @@ describe('usePause', () => {
     POST.mockResolvedValue({ response: new Response(null, { status: 409 }), error: {} });
     const { result } = renderHook(() => usePause('m1'), { wrapper });
     await expect(result.current.pause({ returnOn: null })).rejects.toMatchObject({ status: 409 });
+  });
+});
+
+describe('useResume', () => {
+  beforeEach(() => POST.mockReset());
+  it('resumes, and refreshes the viewer, status, slots and cards', async () => {
+    POST.mockResolvedValue({ response: new Response(null, { status: 200 }) });
+    const qc = new QueryClient();
+    const invalidate = vi.spyOn(qc, 'invalidateQueries');
+    const { result } = renderHook(() => useResume('m1'), {
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+      ),
+    });
+    await result.current.resume();
+    expect(POST.mock.calls[0]![0]).toBe('/api/v1/users/{user_id}/mentor-profile/resume');
+    const keys = invalidate.mock.calls.map((c) => JSON.stringify(c[0]!.queryKey));
+    expect(keys).toEqual(
+      expect.arrayContaining([
+        '["viewer"]',
+        '["booking"]',
+        '["mentors"]',
+        '["calendar","status","m1"]',
+      ]),
+    );
+  });
+  it('a failure is our copy', async () => {
+    POST.mockResolvedValue({ response: new Response(null, { status: 500 }), error: {} });
+    const { result } = renderHook(() => useResume('m1'), { wrapper });
+    await expect(result.current.resume()).rejects.toMatchObject({
+      message: 'We couldn’t set you as available. Try again.',
+    });
   });
 });

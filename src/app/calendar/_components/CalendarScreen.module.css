@@ -144,6 +144,15 @@
   justify-content: center;
   gap: var(--space-3);
 }
+.busyError {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--red-600);
+}
 /* "Availability updated" (Calendar v2 `doneOpen`). */
 .done {
   display: flex;

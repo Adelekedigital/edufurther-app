@@ -25,6 +25,7 @@ import { useSaveWeeklyHours, useWeeklyHours } from '@/lib/api/data/weeklyHours';
 import {
   bookableRange,
   busyBody,
+  busyHint,
   doneBody,
   shortDay,
   todayIn,
@@ -82,6 +83,10 @@ export function CalendarScreen() {
   const [done, setDone] = useState<{ back: string | null } | null>(null);
   const [videoOpen, setVideoOpen] = useState(false);
   const statusSwitch = useRef<HTMLButtonElement>(null);
+  const saveHoursBtn = useRef<HTMLButtonElement>(null);
+  // Going busy waited on unsaved hours: the bar says so until they're saved or discarded.
+  const [holdForHours, setHoldForHours] = useState(false);
+  const [resumeError, setResumeError] = useState<string | null>(null);
   const [blockOpen, setBlockOpen] = useState(false);
   const [unblockError, setUnblockError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState<{ text: string; id: number } | null>(null);
@@ -177,8 +182,18 @@ export function CalendarScreen() {
   // Busy: a pause with an optional return date (a reminder, never an automatic
   // switch back). The pill's switch and "Change return date" open the modal.
   const busy = !!status.data?.pausedByMentor;
+  // The backend judges a return date against today in the account's zone
+  // (calendar reply on #324), which can differ from the hours' zone.
+  const accountToday = todayIn(member?.timeZone ?? savedZone);
   const focusSwitch = () => requestAnimationFrame(() => statusSwitch.current?.focus());
   const openReturn = () => {
+    if (resume.isPending) return;
+    // Unsaved hours would sit unseen behind the break card: save or discard first.
+    if (draft.dirty) {
+      setHoldForHours(true);
+      requestAnimationFrame(() => saveHoursBtn.current?.focus());
+      return;
+    }
     pause.reset();
     setReturnOpen(true);
   };
@@ -195,12 +210,16 @@ export function CalendarScreen() {
     );
   const setAvailable = () => {
     if (resume.isPending) return;
+    setResumeError(null);
     resume.resume().then(
       () => {
         announce('You’re available again. Mentees can book you.');
         focusSwitch();
       },
-      (e: { message: string }) => announce(e.message),
+      (e: { message: string }) => {
+        setResumeError(e.message);
+        announce(e.message);
+      },
     );
   };
   const closeVideo = () => {
@@ -213,6 +232,7 @@ export function CalendarScreen() {
   useEffect(() => {
     if (!draft.dirty && saveError) resetSave();
   }, [draft.dirty, saveError, resetSave]);
+  if (holdForHours && !draft.dirty) setHoldForHours(false);
 
   // Unlinked and existing-account notices keep the shared gate; the rest are
   // Calendar v2 panels under the page header.
@@ -220,9 +240,12 @@ export function CalendarScreen() {
     viewer.kind === 'unlinked' || viewer.kind === 'accountExists'
       ? mentorGate(viewer, isMentor, '/calendar', CALENDAR_GATE)
       : null;
-  const loading = viewer.kind === 'loading' || weekly.isLoading || defaults.isLoading;
-  const failed = weekly.error ?? defaults.error;
-  const ready = !!weekly.data && !!defaults.data && isMentor;
+  // The status decides between editing and the break card, so the page waits
+  // for it too: a busy mentor must never see the editor (or no way back).
+  const loading =
+    viewer.kind === 'loading' || weekly.isLoading || defaults.isLoading || status.isLoading;
+  const failed = weekly.error ?? defaults.error ?? status.error;
+  const ready = !!weekly.data && !!defaults.data && !!status.data && isMentor;
 
   let panel: ReactNode = null;
   if (viewer.kind === 'guest')
@@ -259,6 +282,7 @@ export function CalendarScreen() {
             if (viewer.kind === 'error') return viewer.retry();
             weekly.retry();
             defaults.retry();
+            status.retry();
           }}
         >
           Try again
@@ -288,9 +312,7 @@ export function CalendarScreen() {
             <StatusPill
               tone="busy"
               label="Busy"
-              hint={
-                status.data?.returnOn ? `Back ${shortDay(status.data.returnOn)}` : 'No return date'
-              }
+              hint={busyHint(status.data?.returnOn ?? null, accountToday)}
               switchRef={statusSwitch}
               onChange={(on) => on && setAvailable()}
             />
@@ -313,16 +335,22 @@ export function CalendarScreen() {
             <EmptyState
               illustration="calendar-grey"
               title="You’re taking a break"
-              description={busyBody(status.data?.returnOn ?? null)}
+              description={busyBody(status.data?.returnOn ?? null, accountToday)}
             />
             <div className={styles.busyActions}>
               <Button busy={resume.isPending} onClick={setAvailable}>
                 I’m back, set me available
               </Button>
-              <Button variant="secondary-outlined" onClick={openReturn}>
+              <Button variant="secondary-outlined" disabled={resume.isPending} onClick={openReturn}>
                 Change return date
               </Button>
             </div>
+            {resumeError && (
+              <p className={styles.busyError}>
+                <Icon name="error" size={16} />
+                {resumeError}
+              </p>
+            )}
           </section>
         )}
 
@@ -339,6 +367,17 @@ export function CalendarScreen() {
                   setWindowOpen(true);
                 }}
               />
+              {video.error && !video.data && (
+                <SettingSummaryRow
+                  icon="video_chat"
+                  title="Video for sessions"
+                  // PROVISIONAL (calendar design request, PR 3).
+                  summary="We couldn’t load your video setting."
+                  actionText="Try again"
+                  actionLabel="Try loading your video setting again"
+                  onChange={video.retry}
+                />
+              )}
               {video.data && (
                 <SettingSummaryRow
                   icon="video_chat"
@@ -448,9 +487,19 @@ export function CalendarScreen() {
             {draft.dirty && (
               <SaveBar
                 saving={saveWeekly.isPending}
-                problem={problem}
+                problem={
+                  problem ??
+                  (holdForHours
+                    ? {
+                        kind: 'hold',
+                        // PROVISIONAL (calendar design request, PR 3).
+                        message: 'Save or discard your hours first, then set yourself as busy.',
+                      }
+                    : null)
+                }
                 onDiscard={onDiscard}
                 onSave={onSave}
+                saveRef={saveHoursBtn}
               />
             )}
           </>
@@ -519,11 +568,12 @@ export function CalendarScreen() {
       {returnOpen && (
         <ModalShell title="When will you be back?" size="md" onClose={closeReturn}>
           <ReturnDateForm
-            today={blockToday}
+            today={accountToday}
             booked={booked.data ?? []}
             saving={pause.isPending}
             error={pause.error?.message ?? null}
             onCancel={closeReturn}
+            onEdit={() => pause.error && pause.reset()}
             onSave={setBusy}
           />
         </ModalShell>

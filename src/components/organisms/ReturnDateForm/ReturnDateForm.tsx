@@ -26,6 +26,8 @@ type ReturnDateFormProps = {
   /** Our copy for a pause that failed; the page announces it. */
   error: string | null;
   onCancel: () => void;
+  /** A choice changed: the page clears a failed save's message. */
+  onEdit?: () => void;
   /** null = "Not sure yet". */
   onSave: (returnOn: string | null) => void;
 };
@@ -43,10 +45,19 @@ export function ReturnDateForm({
   saving,
   error,
   onCancel,
+  onEdit,
   onSave,
 }: ReturnDateFormProps) {
-  const [choice, setChoice] = useState<ReturnChoice | null>(null);
-  const [picked, setPicked] = useState<string | null>(null);
+  const [choice, setChoiceState] = useState<ReturnChoice | null>(null);
+  const [picked, setPickedState] = useState<string | null>(null);
+  const setChoice = (c: ReturnChoice) => {
+    onEdit?.();
+    setChoiceState(c);
+  };
+  const setPicked = (d: string) => {
+    onEdit?.();
+    setPickedState(d);
+  };
   const chips = useRef<(HTMLButtonElement | null)[]>([]);
   const back = choice ? returnOnFor(choice, today, picked) : undefined;
   const valid = back !== undefined;

@@ -1,21 +1,28 @@
+import type { Ref } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { cx } from '@/lib/utils/cx';
 import styles from './CalendarScreen.module.css';
 
-export type SaveProblem = { message: string; kind: 'invalid' | 'failed' };
+/** invalid: Save is off; failed: Save retries; hold: something waits on these hours. */
+export type SaveProblem = { message: string; kind: 'invalid' | 'failed' | 'hold' };
 
 /**
  * Calendar v2 scenes Unsaved changes / Invalid hours / Save failed: the bar
  * shown while the hours differ from what's saved. Its message is a status
  * region, so a change to it (invalid, failed) is read out.
  */
-export function SaveBar(p: {
+export function SaveBar({
+  saveRef,
+  ...p
+}: {
   saving: boolean;
   /** Why the hours can't be saved (Save is off), or why the last save failed. */
   problem: SaveProblem | null;
   onDiscard: () => void;
   onSave: () => void;
+  /** Save changes, for focus to land on (going busy waits on these hours). */
+  saveRef?: Ref<HTMLButtonElement>;
 }) {
   return (
     <div className={styles.saveBar} role="region" aria-label="Unsaved changes">
@@ -34,6 +41,7 @@ export function SaveBar(p: {
           Discard
         </Button>
         <Button
+          ref={saveRef}
           size="large"
           fullWidth
           busy={p.saving}

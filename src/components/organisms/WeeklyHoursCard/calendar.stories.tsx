@@ -7,8 +7,6 @@ import { Notice } from '@/components/molecules/Notice/Notice';
 import { SettingSummaryRow } from '@/components/molecules/SettingSummaryRow/SettingSummaryRow';
 import { StatusPill } from '@/components/molecules/StatusPill/StatusPill';
 import { BlockOutForm } from '@/components/organisms/BlockOutForm/BlockOutForm';
-import { ReturnDateForm } from '@/components/organisms/ReturnDateForm/ReturnDateForm';
-import { VideoProviderForm } from '@/components/organisms/VideoProviderForm/VideoProviderForm';
 import { SchedulingWindowForm } from '@/components/organisms/SchedulingWindowForm/SchedulingWindowForm';
 import { emptyWeek, type DayHours } from '@/lib/utils/sessionTypeDraft';
 import { WeeklyHoursCard } from './WeeklyHoursCard';
@@ -254,66 +252,6 @@ export const BlockOutConflictAndFailed: Story = {
         ]}
         saving={false}
         error="Some of your dates didn’t save. Check them, then try again."
-        onSave={fn()}
-      />
-    </div>
-  ),
-};
-
-export const ReturnDate: Story = {
-  render: () => (
-    <div style={{ maxWidth: 432 }}>
-      <ReturnDateForm
-        today="2026-09-26"
-        booked={[{ day: '2026-10-04', mentee: 'Taofeeq' }]}
-        saving={false}
-        error={null}
-        onCancel={fn()}
-        onSave={fn()}
-      />
-    </div>
-  ),
-};
-
-export const ReturnDateFailed: Story = {
-  render: () => (
-    <div style={{ maxWidth: 432 }}>
-      <ReturnDateForm
-        today="2026-09-26"
-        booked={[]}
-        saving={false}
-        error="We couldn’t set you as busy. Try again."
-        onCancel={fn()}
-        onSave={fn()}
-      />
-    </div>
-  ),
-};
-
-export const VideoProvider: Story = {
-  render: () => (
-    <div style={{ maxWidth: 512 }}>
-      <VideoProviderForm
-        initial="daily"
-        customUrl={null}
-        saving={false}
-        error={null}
-        onCancel={fn()}
-        onSave={fn()}
-      />
-    </div>
-  ),
-};
-
-export const VideoProviderPersonalLinkAndFailed: Story = {
-  render: () => (
-    <div style={{ maxWidth: 512 }}>
-      <VideoProviderForm
-        initial="custom"
-        customUrl="https://meet.example.com/a-very-long-personal-room-name-that-wraps"
-        saving={false}
-        error="We couldn’t save your video setting. Try again."
-        onCancel={fn()}
         onSave={fn()}
       />
     </div>

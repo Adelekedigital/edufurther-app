@@ -180,6 +180,8 @@ export type Viewer =
       isMentor: boolean;
       /** The mentor profile appears in search (`listing_status` listed). Absent: not known. */
       isListedMentor?: boolean;
+      /** The account's IANA zone (`/me` timezone): the backend judges "today" in it (return dates). */
+      timeZone?: string;
       /** Sessions had as a mentee; drives the match prompt (≤ 2 → shown). */
       completedSessions: number;
       /** Null for users without a mentee goal (no credit block). */

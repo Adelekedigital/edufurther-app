@@ -74,4 +74,21 @@ describe('ReturnDateForm', () => {
     await user.click(screen.getByRole('button', { name: 'Set as busy' }));
     expect(onSave).toHaveBeenCalledWith(null);
   });
+
+  it('a new choice tells the page (it clears a failed save’s message)', async () => {
+    const onEdit = vi.fn();
+    render(
+      <ReturnDateForm
+        today="2026-10-01"
+        booked={[]}
+        saving={false}
+        error="Pick a return date after today."
+        onCancel={vi.fn()}
+        onEdit={onEdit}
+        onSave={vi.fn()}
+      />,
+    );
+    await userEvent.setup().click(screen.getByRole('radio', { name: '2 weeks' }));
+    expect(onEdit).toHaveBeenCalled();
+  });
 });
