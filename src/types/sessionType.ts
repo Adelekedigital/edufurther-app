@@ -32,6 +32,11 @@ export type OwnSessionType = {
   noticeMin: number;
   /** Live (bookable) or hidden. Backend `is_active`. */
   isLive: boolean;
+  /**
+   * Books into its own scheduling windows, not the mentor's Calendar hours
+   * (backend #329, `uses_own_windows`).
+   */
+  usesOwnWindows: boolean;
   /** The stages it's aimed at, in the mentor's order; empty = any stage. */
   stages: ApplicationStage[];
   /** The mentor's own words for the `other` stage, or null. */

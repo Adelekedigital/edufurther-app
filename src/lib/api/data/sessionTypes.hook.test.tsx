@@ -17,8 +17,10 @@ import {
   useSaveMentorDefaults,
   useSetLive,
   useMentorDefaults,
+  useRetryWindows,
   rowWrite,
 } from './sessionTypes';
+import { keys } from './keys';
 
 const GET = vi.fn();
 const PATCH = vi.fn();
@@ -728,6 +730,31 @@ describe('useMentorDefaults (booking window, backend #309)', () => {
     });
     await waitFor(() => expect(result.current.defaults.data?.windowDays).toBe(7));
     expect(result.current.defaults.data?.maxWindowDays).toBe(14);
+  });
+});
+
+describe('useRetryWindows (#146)', () => {
+  it('a retried window refreshes the session-type list, so the Calendar minimum follows', async () => {
+    POST.mockResolvedValue({ response: new Response(null, { status: 201 }) });
+    const qc = new QueryClient();
+    const invalidate = vi.spyOn(qc, 'invalidateQueries');
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useRetryWindows(), { wrapper });
+    const window = {
+      day_of_week: 1,
+      start_time: '09:00:00',
+      end_time: '10:00:00',
+      timezone: 'Africa/Lagos',
+      is_active: true,
+    };
+    await act(async () => {
+      expect(await result.current.retry({ id: 't1', windows: [window] })).toEqual([]);
+    });
+    await waitFor(() =>
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: keys.sessionTypes.all }),
+    );
   });
 });
 

@@ -27,6 +27,7 @@ const T = (over: Partial<OwnSessionType> = {}): OwnSessionType => ({
   durationMin: 60,
   noticeMin: 1440,
   isLive: true,
+  usesOwnWindows: false,
   stages: [],
   customStage: null,
   topics: [],

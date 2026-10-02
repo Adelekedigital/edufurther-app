@@ -40,7 +40,9 @@ vi.mock('@/lib/api/data/mentors', () => ({
   }),
 }));
 // The types offered: Calendar hours must fit the shortest.
-let ownTypes: { data: { durationMin: number; isLive: boolean }[] | null } = { data: [] };
+let ownTypes: {
+  data: { durationMin: number; isLive: boolean; usesOwnWindows: boolean }[] | null;
+} = { data: [] };
 vi.mock('@/lib/api/data/sessionTypes', async (orig) => ({
   useOwnSessionTypes: () => ownTypes,
   autoIcon: (await orig<typeof import('@/lib/api/data/sessionTypes')>()).autoIcon,

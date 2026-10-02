@@ -201,18 +201,20 @@ export function slotError(slots: Slot[], k: number, minLength = 0): string | nul
 const toStep = (m: number) => Math.ceil(m / 30) * 30;
 
 /**
- * The shortest session the mentor offers: their default length and each live
- * type's (reads return the resolved length). Calendar hours must fit it.
+ * The shortest session booked into the Calendar hours: the mentor's default
+ * length and each live type's that follows those hours; a type with its own
+ * windows books there instead (#146). Reads return the resolved length.
  * Types or defaults not known yet (loading, or failed; `undefined`): 0, so
  * nothing valid is refused on a guess (review of the hours PR, Codex on #148).
  * A default that's known but unset (`null`) is the platform's.
  */
 export function shortestLength(
   defaultMin: number | null | undefined,
-  types: readonly { durationMin: number; isLive: boolean }[] | null | undefined,
+  types:
+    readonly { durationMin: number; isLive: boolean; usesOwnWindows: boolean }[] | null | undefined,
 ): number {
   if (!types || defaultMin === undefined) return 0;
-  const live = types.filter((t) => t.isLive).map((t) => t.durationMin);
+  const live = types.filter((t) => t.isLive && !t.usesOwnWindows).map((t) => t.durationMin);
   return Math.min(defaultMin ?? PLATFORM_DURATION_MIN, ...live);
 }
 
@@ -245,6 +247,30 @@ export function fitSlot([a, b]: Slot, minLength: number): Slot {
 /** This type's length: its own with custom rules, else the mentor's default. */
 export const typeLength = (d: Pick<Draft, 'rules' | 'durationMin'>, defaultMin?: number | null) =>
   d.rules === 'custom' ? d.durationMin : (defaultMin ?? PLATFORM_DURATION_MIN);
+
+type LengthOf = { id?: string; durationMin: number; isLive: boolean; usesOwnWindows: boolean };
+
+/**
+ * The types as they'll be once this form saves: the one being edited (`id`),
+ * or a new one (`id` null, live once published), as the draft has it. A type
+ * switched back to Calendar hours counts for the Calendar minimum before its
+ * own windows are deleted (Codex on #149).
+ */
+export function withDraft(
+  types: readonly LengthOf[] | null | undefined,
+  id: string | null,
+  d: Pick<Draft, 'rules' | 'durationMin' | 'hours'>,
+  defaultMin: number | null | undefined,
+): LengthOf[] | null | undefined {
+  if (!types) return types;
+  const drafted = (isLive: boolean): LengthOf => ({
+    durationMin: typeLength(d, defaultMin),
+    isLive,
+    usesOwnWindows: d.hours === 'custom',
+  });
+  if (id === null) return [...types, drafted(true)];
+  return types.map((t) => (t.id === id ? { ...drafted(t.isLive), id } : t));
+}
 
 /** A new slot's length: an hour, or the shortest session when that's longer. */
 export const newSlotLength = (minLength: number) => Math.max(60, toStep(minLength));

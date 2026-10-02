@@ -33,6 +33,7 @@ const read = (over: Partial<SavedSessionType['read']> = {}): SavedSessionType['r
   min_notice_inherited: true,
   meeting_venue: 'daily',
   is_active: true,
+  uses_own_windows: false,
   service_offering: DOCS,
   service_offerings: [DOCS],
   application_stage: 'drafting_stage',

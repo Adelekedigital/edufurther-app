@@ -24,6 +24,7 @@ type Stored = Omit<
   | 'booked_count'
   | 'last_booked_ends_at'
   | 'effective_booking_window_days'
+  | 'uses_own_windows'
 > & {
   duration_minutes: number | null;
   min_notice_minutes: number | null;
@@ -56,6 +57,8 @@ function resolve({ questions: _q, bookedCount, ...t }: Stored): OwnSessionTypeRe
     ...t,
     booked_count: bookedCount,
     last_booked_ends_at: lastBookedEndsAt(bookedCount),
+    // Backend #329: any live window of its own, and it books there only.
+    uses_own_windows: (windows[t.id] ?? []).some((w) => w.is_active),
     duration_minutes: t.duration_minutes ?? prefs.default_duration_minutes ?? 60,
     min_notice_minutes: t.min_notice_minutes ?? prefs.default_min_notice_minutes ?? 1440,
     duration_inherited: t.duration_minutes === null,
