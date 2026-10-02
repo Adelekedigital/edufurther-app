@@ -29,6 +29,7 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     isApprovedMentor: me.mentor_profile?.approval_status === 'approved',
     isMentor: me.mentor_profile != null,
     isListedMentor: me.mentor_profile?.listing_status === 'listed',
+    timeZone: me.timezone || undefined,
     completedSessions: me.mentee_completed_sessions,
     credits: me.credits
       ? { balance: me.credits.balance, allowance: me.credits.allowance, state: me.credits.state }

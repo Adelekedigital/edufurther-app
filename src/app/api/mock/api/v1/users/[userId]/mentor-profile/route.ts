@@ -7,6 +7,7 @@ import {
   windowOk,
 } from '@/lib/api/mock/bookingPrefs';
 import { MOCK_COUNTRIES, setMockItems } from '@/lib/api/mock/catalog';
+import { mentorStatus } from '@/lib/api/mock/mentorStatusStore';
 import { OFFERINGS } from '@/lib/api/mock/fixtures';
 
 /**
@@ -22,7 +23,8 @@ export async function GET() {
     headline: null,
     years_of_experience: null,
     approval_status: 'approved',
-    listing_status: 'listed',
+    // Listed, or busy (paused by the mentor) with a return date (calendar reply #1).
+    ...mentorStatus,
     ...prefs,
     max_booking_window_days: MAX_WINDOW_DAYS,
     default_booking_window_days: DEFAULT_WINDOW_DAYS,

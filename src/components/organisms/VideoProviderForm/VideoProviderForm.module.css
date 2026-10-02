@@ -1,0 +1,106 @@
+/* Calendar v2 `videoOpen`: the modal's children, spaced as Modal.dc.html (--space-5). */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-ui);
+  color: var(--ink-900);
+}
+.card.on {
+  border-color: var(--blue-500);
+  background: var(--blue-50);
+}
+.card:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.tile {
+  width: var(--space-10);
+  height: var(--space-10);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  box-shadow: inset 0 0 0 1px var(--ink-200);
+}
+.blue {
+  color: var(--blue-500);
+}
+.green {
+  color: var(--green-600);
+}
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.desc {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-500);
+  overflow-wrap: anywhere;
+}
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-medium);
+  color: var(--green-700);
+}
+/* The Radio atom's drawing (DS FormControl radio, 20): the card is the control. */
+.radio {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: var(--radius-full);
+  background: var(--white);
+  box-shadow: inset 0 0 0 1.5px var(--ink-300);
+}
+.on .radio {
+  background: radial-gradient(circle, var(--action-primary) 4.5px, var(--white) 5px);
+  box-shadow: inset 0 0 0 1.5px var(--action-primary);
+}
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--red-600);
+}
+.footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}

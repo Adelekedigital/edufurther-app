@@ -45,14 +45,12 @@ describe('BlockOutForm', () => {
     );
   });
 
-  it('lists the days when sessions fall on several picked days', async () => {
-    const { user } = setup(
-      [
-        { day: '2026-10-04', mentee: 'Taofeeq' },
-        { day: '2026-10-06', mentee: 'Ada' },
-      ],
-      ['2026-10-04'],
-    );
+  it('lists the days when sessions fall on several newly picked days', async () => {
+    const { user } = setup([
+      { day: '2026-10-04', mentee: 'Taofeeq' },
+      { day: '2026-10-06', mentee: 'Ada' },
+    ]);
+    await user.click(screen.getByRole('button', { name: /October 4, session booked/ }));
     await user.click(screen.getByRole('button', { name: /October 6, session booked/ }));
     expect(screen.getByRole('status')).toHaveTextContent(
       'You have sessions on Sun, Oct 4 and Tue, Oct 6. Blocking these days won’t cancel them.',
@@ -75,5 +73,29 @@ describe('BlockOutForm', () => {
     expect(past).toHaveAttribute('aria-disabled', 'true');
     await userEvent.setup().click(past);
     expect(screen.getByRole('button', { name: 'Select dates to block' })).toBeDisabled();
+  });
+
+  it('a day blocked already isn’t a new clash (design `hitDays`)', () => {
+    setup([{ day: '2026-10-04', mentee: 'Taofeeq' }], ['2026-10-04']);
+    expect(screen.queryByText(/Blocking the day/)).toBeNull();
+  });
+
+  it('after a failed save the button retries, and picking a day tells the page', async () => {
+    const onEdit = vi.fn();
+    render(
+      <BlockOutForm
+        today="2026-10-01"
+        initial={[]}
+        booked={[]}
+        saving={false}
+        error="We couldn’t save your blocked dates. Try again."
+        onEdit={onEdit}
+        onSave={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('We couldn’t save your blocked dates.');
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole('button', { name: /Monday, October 12/ }));
+    expect(onEdit).toHaveBeenCalled();
   });
 });

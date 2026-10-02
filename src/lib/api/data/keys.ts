@@ -63,6 +63,10 @@ export const keys = {
     booked: (userId: string) => ['calendar', 'booked', userId] as const,
     /** Whole days the mentor blocked (availability exceptions). */
     blocked: (userId: string) => ['calendar', 'blocked', userId] as const,
+    /** Listed, busy (paused by the mentor) and the return date. */
+    status: (userId: string) => ['calendar', 'status', userId] as const,
+    /** Where sessions run (GET /me/conferencing). */
+    video: (userId: string) => ['calendar', 'video', userId] as const,
   },
   /** A review as its author reads it (GET /reviews/{id}), to pre-fill Edit. */
   reviews: {

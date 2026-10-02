@@ -4,11 +4,15 @@
   flex-direction: column;
   gap: var(--space-5);
 }
+/* Calendar v2 `hasBlockErr`. */
 .error {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-2);
-  margin: 0;
   font-size: var(--text-p-xs);
-  color: var(--text-danger);
+  line-height: var(--lh-p);
+  color: var(--red-600);
+}
+.errorIcon {
+  line-height: 18px;
 }

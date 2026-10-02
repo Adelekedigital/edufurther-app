@@ -106,6 +106,7 @@ export const ICON_NAMES = [
   'upload_file',
   'verified_user',
   'video_call',
+  'video_chat',
   'videocam',
   'visibility',
   'visibility_off',
