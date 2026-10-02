@@ -11,13 +11,19 @@ import { useTopics } from '@/lib/api/data/mentors';
 import {
   autoIcon,
   useMentorDefaults,
+  useOwnSessionTypes,
   useRetryWindows,
   useSaveMentorDefaults,
   type Created,
 } from '@/lib/api/data/sessionTypes';
 import { useSaveWeeklyHours, useWeeklyHours } from '@/lib/api/data/weeklyHours';
 import { SESSION_TEMPLATES } from '@/lib/utils/sessionTemplates';
-import { weeklySummary, type Draft } from '@/lib/utils/sessionTypeDraft';
+import {
+  shortestLength,
+  typeLength,
+  weeklySummary,
+  type Draft,
+} from '@/lib/utils/sessionTypeDraft';
 import { useOnline } from '@/lib/utils/useOnline';
 import { useAppShell } from '../../_shell/useAppShell';
 import { mentorGate, SESSION_TYPES_GATE } from '../../_shell/MentorGate';
@@ -67,6 +73,9 @@ export function SessionTypeFormScreen({
   const weekly = useWeeklyHours(mentorId);
   const saveWeekly = useSaveWeeklyHours(mentorId);
   const retry = useRetryWindows();
+  // Calendar hours must fit the shortest session offered (product, 2026-10-01).
+  const own = useOwnSessionTypes(isMentor);
+  const calendarMin = shortestLength(defaults.data?.durationMin, own.data);
 
   const tmpl = edit ? null : (SESSION_TEMPLATES.find((x) => x.key === template) ?? null);
   const d = useSessionTypeDraft(edit, tmpl, defaults);
@@ -95,7 +104,7 @@ export function SessionTypeFormScreen({
     submit.resetError();
   };
   const onNext = () => {
-    if (steps.advance(d.draft)) submit.submit();
+    if (steps.advance(d.draft, typeLength(d.draft, defaults.data?.durationMin))) submit.submit();
   };
   const onBack = () => {
     if (steps.step > 1) return steps.goTo((steps.step - 1) as typeof steps.step);
@@ -232,6 +241,7 @@ export function SessionTypeFormScreen({
       {modal?.kind === 'weekly' && weekly.data && (
         <WeeklyModal
           weekly={weekly.data}
+          minLength={calendarMin}
           saving={saveWeekly.isPending}
           error={saveWeekly.error?.message ?? null}
           onClose={close}

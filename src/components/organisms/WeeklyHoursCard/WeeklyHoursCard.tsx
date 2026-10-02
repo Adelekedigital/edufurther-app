@@ -16,6 +16,8 @@ type WeeklyHoursCardProps = {
   deviceZone: string;
   /** Zones of other active hours: not shown here, and left as they are. */
   otherZones?: string[];
+  /** The shortest session offered: these hours must fit it. */
+  minLength?: number;
   /** A note above the days, e.g. why mentees can't book yet. */
   note?: ReactNode;
   /** Takes focus when a control that had it goes away (the page's save bar). */
@@ -34,6 +36,7 @@ export function WeeklyHoursCard({
   onTimeZone,
   deviceZone,
   otherZones = [],
+  minLength = 0,
   note,
   titleRef,
   className,
@@ -60,7 +63,7 @@ export function WeeklyHoursCard({
             they are.
           </p>
         )}
-        <WeeklyHoursEditor days={days} onChange={onDays} />
+        <WeeklyHoursEditor days={days} onChange={onDays} minLength={minLength} />
       </div>
     </section>
   );

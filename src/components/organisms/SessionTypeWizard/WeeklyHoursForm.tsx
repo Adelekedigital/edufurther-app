@@ -16,6 +16,8 @@ type WeeklyHoursFormProps = {
   otherZones?: string[];
   /** Those hours' clock times: a slot overlapping one can't be saved (the backend refuses it). */
   otherSlots?: { day: number; slot: [number, number]; zone: string }[];
+  /** The shortest session these hours serve; shorter slots block the save. */
+  minLength?: number;
   saving: boolean;
   /** Our copy for a save that failed; announced. */
   error: string | null;
@@ -26,14 +28,15 @@ type WeeklyHoursFormProps = {
 /**
  * The "Your weekly hours" modal's body (Session Types.dc.html `hoursOpen`):
  * the mentor's Calendar hours in the compact editor, then Cancel / Save hours.
- * Hours that end before they start, or overlap, are shown on the slot and
- * block the save.
+ * Hours that end before they start, overlap, or are shorter than `minLength`
+ * are shown on the slot and block the save.
  */
 export function WeeklyHoursForm({
   initial,
   timeZone,
   otherZones = [],
   otherSlots = [],
+  minLength = 0,
   saving,
   error,
   onCancel,
@@ -45,7 +48,8 @@ export function WeeklyHoursForm({
   const clash = otherSlots.find((o) =>
     days[o.day]?.on ? days[o.day]!.slots.some(([a, b]) => a < o.slot[1] && o.slot[0] < b) : false,
   );
-  const invalid = hasSlotErrors(days) || !!clash;
+  const slotErrors = hasSlotErrors(days, minLength);
+  const invalid = slotErrors || !!clash;
   return (
     <div className={styles.modalBody}>
       {/* Copy confirmed by design (reply 2026-09-29, #7). */}
@@ -58,14 +62,14 @@ export function WeeklyHoursForm({
         </span>
       </p>
       <div className={styles.hoursModalBox}>
-        <WeeklyHoursEditor variant="compact" days={days} onChange={setDays} />
+        <WeeklyHoursEditor variant="compact" days={days} onChange={setDays} minLength={minLength} />
       </div>
       {(error || (tried && invalid)) && (
         <p role="alert" className={styles.modalError}>
           <Icon name="error" size={18} />
           {tried && invalid
             ? // Copy confirmed by design (reply 2026-09-29, #7).
-              clash && !hasSlotErrors(days)
+              clash && !slotErrors
               ? `Some of these hours overlap hours you set in ${zoneLabel(clash.zone)}. Change them, then save.`
               : 'Fix the hours marked in red, then save.'
             : error}

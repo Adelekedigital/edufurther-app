@@ -182,14 +182,75 @@ export function stepOf(field: FieldKey): 1 | 2 | 3 {
   return 3;
 }
 
-export function slotError(slots: Slot[], k: number): string | null {
+/**
+ * A slot's problem, or null. `minLength`: the shortest session these hours
+ * serve; a slot shorter than it can never be booked (product, 2026-10-01).
+ */
+export function slotError(slots: Slot[], k: number, minLength = 0): string | null {
   const [a, b] = slots[k]!;
   if (b <= a) return 'End time must be after the start time.';
   const overlaps = slots.some(([c, e], j) => j !== k && a < e && c < b);
-  return overlaps ? 'These hours overlap with another time on this day.' : null;
+  if (overlaps) return 'These hours overlap with another time on this day.';
+  // Provisional copy, listed for design (calendar-design-request §6).
+  return b - a < minLength
+    ? `Mentees can’t book this: it’s shorter than a ${minLength}-min session.`
+    : null;
 }
 
-export function validateStep(d: Draft, step: 1 | 2 | 3): FieldErrors {
+/** Up to the next half hour, the time lists' step. */
+const toStep = (m: number) => Math.ceil(m / 30) * 30;
+
+/**
+ * The shortest session the mentor offers: their default length and each live
+ * type's (reads return the resolved length). Calendar hours must fit it.
+ * Types or defaults not known yet (loading, or failed; `undefined`): 0, so
+ * nothing valid is refused on a guess (review of the hours PR, Codex on #148).
+ * A default that's known but unset (`null`) is the platform's.
+ */
+export function shortestLength(
+  defaultMin: number | null | undefined,
+  types: readonly { durationMin: number; isLive: boolean }[] | null | undefined,
+): number {
+  if (!types || defaultMin === undefined) return 0;
+  const live = types.filter((t) => t.isLive).map((t) => t.durationMin);
+  return Math.min(defaultMin ?? PLATFORM_DURATION_MIN, ...live);
+}
+
+/**
+ * End times for a slot starting at `start`: from start + `minLength` (on the
+ * half hour) to midnight. `current` stays listed when it's shorter, so a saved
+ * slot still shows; its error says why. No minimum: every time, as before.
+ */
+export function endOptions(start: number, minLength: number, current: number) {
+  if (minLength <= 0) return TIME_OPTIONS;
+  const from = toStep(start + minLength);
+  return TIME_OPTIONS.filter((o) => Number(o.value) >= from || Number(o.value) === current);
+}
+
+/**
+ * Start times with room for a `minLength` session before midnight; `current`
+ * stays listed. No minimum: every time, as before.
+ */
+export function startOptions(minLength: number, current: number) {
+  if (minLength <= 0) return TIME_OPTIONS;
+  const last = 1440 - toStep(minLength);
+  return TIME_OPTIONS.filter((o) => Number(o.value) <= last || Number(o.value) === current);
+}
+
+/** A slot whose start moved: the end moves too when the slot would be too short. */
+export function fitSlot([a, b]: Slot, minLength: number): Slot {
+  return minLength > 0 && b - a < minLength ? [a, Math.min(toStep(a + minLength), 1440)] : [a, b];
+}
+
+/** This type's length: its own with custom rules, else the mentor's default. */
+export const typeLength = (d: Pick<Draft, 'rules' | 'durationMin'>, defaultMin?: number | null) =>
+  d.rules === 'custom' ? d.durationMin : (defaultMin ?? PLATFORM_DURATION_MIN);
+
+/** A new slot's length: an hour, or the shortest session when that's longer. */
+export const newSlotLength = (minLength: number) => Math.max(60, toStep(minLength));
+
+/** `minLength`: the type's length, which its own hours must fit (step 3). */
+export function validateStep(d: Draft, step: 1 | 2 | 3, minLength = 0): FieldErrors {
   const e: FieldErrors = {};
   if (step === 1) {
     if (!d.name.trim()) e.name = 'Give your session a name.';
@@ -206,7 +267,7 @@ export function validateStep(d: Draft, step: 1 | 2 | 3): FieldErrors {
     d.days.forEach((day, i) => {
       if (!day.on) return;
       day.slots.forEach((_, k) => {
-        const msg = slotError(day.slots, k);
+        const msg = slotError(day.slots, k, minLength);
         if (msg) e[`slot-${i}-${k}`] = msg;
       });
     });
@@ -408,9 +469,11 @@ export function weeklySummary(days: DayHours[]): string | null {
   return parts.length ? parts.join(' · ') : null;
 }
 
-/** Any slot that ends before it starts, or overlaps: the hours can't be saved. */
-export function hasSlotErrors(days: DayHours[]): boolean {
-  return days.some((d) => d.on && d.slots.some((_, k) => slotError(d.slots, k) !== null));
+/** Any slot that ends before it starts, overlaps or is too short: the hours can't be saved. */
+export function hasSlotErrors(days: DayHours[], minLength = 0): boolean {
+  return days.some(
+    (d) => d.on && d.slots.some((_, k) => slotError(d.slots, k, minLength) !== null),
+  );
 }
 
 /** "Set rules for this session" starts from the mentor's own values (review of #60). */

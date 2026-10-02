@@ -199,7 +199,7 @@ describe('MentorProfileScreen — the owner bar', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'set your weekly hours' })).toHaveAttribute(
       'href',
-      '/session-types',
+      '/calendar',
     );
   });
 
@@ -288,7 +288,7 @@ describe('MentorProfileScreen — Profile strength', () => {
     );
     expect(within(aside).getByRole('link', { name: /Set your weekly hours/ })).toHaveAttribute(
       'href',
-      '/session-types',
+      '/calendar',
     );
     expect(within(aside).queryByText(/Write your About/)).toBeNull();
     await user.click(within(aside).getByRole('button', { name: /Add a scholarship or award/ }));

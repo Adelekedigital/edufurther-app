@@ -49,7 +49,10 @@ const READY = {
   retry: vi.fn(),
 };
 let createError: unknown = null;
+// The types offered: Calendar hours must fit the shortest.
+let ownTypes: { data: { durationMin: number; isLive: boolean }[] | null } = { data: [] };
 vi.mock('@/lib/api/data/sessionTypes', async (orig) => ({
+  useOwnSessionTypes: () => ownTypes,
   autoIcon: (await orig<typeof import('@/lib/api/data/sessionTypes')>()).autoIcon,
   useCreateSessionType: () => ({ create, isPending: false, error: createError, reset: vi.fn() }),
   useRetryWindows: () => ({ retry: vi.fn(), isPending: false }),
@@ -98,6 +101,7 @@ vi.mock('@/lib/api/data/sessionTypeEdit', () => ({
 
 beforeEach(() => {
   push.mockReset();
+  ownTypes = { data: [] };
   create.mockReset();
   createError = null;
   defaultsMock = READY;
@@ -362,6 +366,18 @@ describe('SessionTypeFormScreen', () => {
     await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
+  it('Edit weekly hours: a shorter live session type lowers where end times start', async () => {
+    ownTypes = { data: [{ durationMin: 30, isLive: true }] };
+    const user = userEvent.setup({ delay: null });
+    render(<SessionTypeFormScreen template="sop-review" />);
+    await user.click(next(/Continue to intake/));
+    await user.click(next(/Continue to scheduling/));
+    await user.click(screen.getByRole('button', { name: 'Edit weekly hours' }));
+    const dialog = screen.getByRole('dialog', { name: 'Your weekly hours' });
+    const end = within(dialog).getByRole('combobox', { name: 'Monday end time' });
+    expect((within(end).getAllByRole('option')[0] as HTMLOptionElement).value).toBe('1050');
+  });
+
   it('Edit weekly hours shows the Calendar hours and saves them; bad hours block the save', async () => {
     const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
@@ -373,16 +389,23 @@ describe('SessionTypeFormScreen', () => {
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Edit weekly hours' }));
     const dialog = screen.getByRole('dialog', { name: 'Your weekly hours' });
-    // 4:00 pm, before the 5:00 pm start.
+    // End times start a session length (the 60-min default) after the start.
+    const end = within(dialog).getByRole('combobox', { name: 'Monday end time' });
+    expect((within(end).getAllByRole('option')[0] as HTMLOptionElement).value).toBe('1080');
+    // A second slot moved onto the first overlaps it.
+    await user.click(within(dialog).getByRole('button', { name: 'Add hours on Monday' }));
     await user.selectOptions(
-      within(dialog).getByRole('combobox', { name: 'Monday end time' }),
-      '960',
+      within(dialog).getAllByRole('combobox', { name: 'Monday start time' })[1]!,
+      '1050',
     );
-    expect(within(dialog).getByText('Ends before it starts')).toBeInTheDocument();
+    expect(within(dialog).getAllByText('Overlaps').length).toBeGreaterThan(0);
     await user.click(within(dialog).getByRole('button', { name: 'Save hours' }));
     expect(saveHours).not.toHaveBeenCalled();
     expect(within(dialog).getByRole('alert')).toHaveTextContent(
       'Fix the hours marked in red, then save.',
+    );
+    await user.click(
+      within(dialog).getAllByRole('button', { name: 'Remove these hours on Monday' })[1]!,
     );
     await user.selectOptions(
       within(dialog).getByRole('combobox', { name: 'Monday end time' }),
