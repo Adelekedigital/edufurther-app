@@ -317,7 +317,7 @@ describe('CalendarScreen', () => {
       expect(endTimes()[0]).toBe('1080');
     });
 
-    it('a start moved past the end takes the end along', async () => {
+    it('a moved start moves the slot, keeping its length (design setFrom)', async () => {
       const user = userEvent.setup();
       render(<CalendarScreen />);
       const monday = screen.getByRole('group', { name: 'Monday' });
@@ -325,14 +325,15 @@ describe('CalendarScreen', () => {
         within(monday).getByRole('combobox', { name: /start time/i }),
         '1200',
       );
-      expect(within(monday).getByRole('combobox', { name: /end time/i })).toHaveValue('1260');
+      // 5–8 pm moved to start at 8 pm stays three hours: 8–11 pm.
+      expect(within(monday).getByRole('combobox', { name: /end time/i })).toHaveValue('1380');
     });
 
     it('until the session types are known, nothing is refused on a guess', () => {
       ownTypes = { data: null };
       weekly = remote({ ...HOURS, days: shortMonday() });
       render(<CalendarScreen />);
-      expect(screen.queryByText(/shorter than a/)).toBeNull();
+      expect(screen.queryByText(/Too short for your/)).toBeNull();
       expect(endTimes()).toContain('1050');
     });
 
@@ -344,7 +345,7 @@ describe('CalendarScreen', () => {
       });
       expect(end).toHaveValue('1050');
       expect(end).toHaveAccessibleDescription(
-        'Mentees can’t book this: it’s shorter than a 60-min session.',
+        'Too short for your 60-min sessions. Make it at least 60 min.',
       );
     });
   });

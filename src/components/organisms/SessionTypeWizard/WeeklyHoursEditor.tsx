@@ -2,6 +2,7 @@ import { DayHoursRow } from '@/components/molecules/DayHoursRow/DayHoursRow';
 import {
   DAY_NAMES,
   fitSlot,
+  moveStart,
   newSlotLength,
   slotError,
   type DayHours,
@@ -14,9 +15,10 @@ type WeeklyHoursEditorProps = {
   /** compact: the weekly-hours modal (TimeSlots.dc.html `compact`). */
   variant?: 'list' | 'compact';
   /**
-   * The shortest session these hours serve (product, 2026-10-01): end times
-   * start that long after the start, a moved start takes the end along, new
-   * slots are long enough, and a shorter slot is an error. 0 = no minimum.
+   * The shortest session these hours serve (TimeSlots.dc.html `minLen`): end
+   * times start that long after the start, a moved start keeps the slot's
+   * length, new slots are that long, and a shorter slot is an error. 0 = no
+   * minimum.
    */
   minLength?: number;
 };
@@ -61,9 +63,10 @@ export function WeeklyHoursEditor({
           }
           onSlot={(k, s) =>
             update((d) => {
-              // A moved start takes the end along; a picked end stays as picked.
-              const moved = s[0] !== d[i]!.slots[k]![0];
-              d[i]!.slots[k] = moved ? fitSlot(s, minLength) : s;
+              // A moved start moves the slot, keeping its length (design `setFrom`);
+              // a picked end stays as picked.
+              const old = d[i]!.slots[k]!;
+              d[i]!.slots[k] = s[0] !== old[0] ? moveStart(old, s[0], minLength) : s;
             })
           }
           onRemove={(k) =>

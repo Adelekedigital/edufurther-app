@@ -21,6 +21,7 @@ import {
   windowPresets,
   endOptions as endTimes,
   fitSlot,
+  moveStart,
   newSlotLength,
   shortestLength,
   typeLength,
@@ -413,9 +414,26 @@ describe('hours fit the shortest session (product, 2026-10-01)', () => {
     expect(values(540, 0, 600)).toHaveLength(49);
   });
 
+  it('design order: ends before it starts, then too short, then overlaps', () => {
+    const slots: [number, number][] = [
+      [540, 570],
+      [550, 700],
+    ];
+    expect(slotError(slots, 0, 60)).toMatch(/^Too short/);
+    expect(slotError(slots, 1, 60)).toMatch(/^These hours overlap/);
+  });
+
+  it('a moved start keeps the slot’s length, never shorter than a session, by midnight', () => {
+    expect(moveStart([1020, 1200], 1200, 60)).toEqual([1200, 1380]);
+    expect(moveStart([1020, 1050], 600, 60)).toEqual([600, 660]);
+    expect(moveStart([1020, 1080], 1410, 60)).toEqual([1410, 1440]);
+    expect(moveStart([600, 540], 700, 0)).toEqual([700, 730]);
+    expect(moveStart([540, 600], 480, 45)).toEqual([480, 540]);
+  });
+
   it('a too-short slot is an error after the others; never past midnight', () => {
     expect(slotError([[540, 570]], 0, 60)).toBe(
-      'Mentees can’t book this: it’s shorter than a 60-min session.',
+      'Too short for your 60-min sessions. Make it at least 60 min.',
     );
     expect(slotError([[540, 600]], 0, 60)).toBeNull();
     expect(slotError([[600, 540]], 0, 60)).toBe('End time must be after the start time.');
@@ -426,8 +444,9 @@ describe('hours fit the shortest session (product, 2026-10-01)', () => {
     expect(fitSlot([1020, 1200], 60)).toEqual([1020, 1200]);
   });
 
-  it('new slots: an hour, or the session when longer', () => {
-    expect(newSlotLength(30)).toBe(60);
+  it('new slots: as long as the shortest session (design), an hour with no minimum', () => {
+    expect(newSlotLength(30)).toBe(30);
+    expect(newSlotLength(45)).toBe(60);
     expect(newSlotLength(90)).toBe(90);
     expect(newSlotLength(0)).toBe(60);
   });
@@ -441,7 +460,7 @@ describe('hours fit the shortest session (product, 2026-10-01)', () => {
   it('a type’s own hours shorter than its length block step 3', () => {
     const d = { ...blankDraft(), hours: 'custom' as const, rules: 'custom' as const };
     d.days[1] = { on: true, slots: [[540, 600]] };
-    expect(validateStep(d, 3, 90)['slot-1-0']).toMatch(/shorter than a 90-min session/);
+    expect(validateStep(d, 3, 90)['slot-1-0']).toMatch(/Too short for your 90-min sessions/);
     expect(validateStep(d, 3, 60)['slot-1-0']).toBeUndefined();
   });
 });
