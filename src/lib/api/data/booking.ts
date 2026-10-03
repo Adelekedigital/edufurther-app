@@ -133,6 +133,23 @@ export function bookingError(e: AppError): AppError {
     case 'noCredit':
       // PROVISIONAL copy — design request #37.
       return { ...e, message: 'You’re out of credits, so this session can’t be booked yet.' };
+    // The three booking limits (backend #342). Copy approved by the owner; none
+    // of it suggests cancelling, and none of it says "pick another time",
+    // because another time would be refused in exactly the same way.
+    case 'bookingOverlap':
+      return { ...e, message: 'This time overlaps with another session you have.' };
+    case 'bookingLimitReached':
+      return {
+        ...e,
+        message:
+          'You already have 2 sessions pending or coming up. You can book another once one of them has taken place.',
+      };
+    case 'bookingWithMentorExists':
+      return {
+        ...e,
+        message:
+          'You already have a session pending or coming up with this mentor. You can book them again after it.',
+      };
     case 'notFound':
       return { ...e, message: 'This session can’t be booked any more.' };
     default:

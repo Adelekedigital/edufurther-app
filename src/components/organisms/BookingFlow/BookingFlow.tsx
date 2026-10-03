@@ -102,6 +102,13 @@ export type BookingFlowProps = {
 
 const PHONE = '(max-width: 767px)';
 
+/** The refusals a different time cannot fix (backend 342). */
+const BOOKING_LIMIT_KINDS: AppError['kind'][] = [
+  'bookingOverlap',
+  'bookingWithMentorExists',
+  'bookingLimitReached',
+];
+
 /**
  * BookingModal's content, `flow=timeFirst`: time → (guest: sign up) →
  * (questions, when the offering has any) → request sent. No payment step:
@@ -359,7 +366,20 @@ export function BookingFlow(p: BookingFlowProps) {
       {p.requestError && !refusedOnScreen && (
         <p role="alert" className={styles.error}>
           <Icon name="error" size={16} />
-          {p.requestError.message}
+          {/* A booking limit is about what this mentee already has, not about
+              the time, so it names the mentor and points at the list rather
+              than inviting another attempt that would be refused the same way. */}
+          {p.requestError.kind === 'bookingWithMentorExists'
+            ? `You already have a session pending or coming up with ${m.firstName}. You can book them again after it.`
+            : p.requestError.message}
+          {BOOKING_LIMIT_KINDS.includes(p.requestError.kind) && (
+            <>
+              {' '}
+              <Link href="/bookings" className={styles.errorLink}>
+                See your bookings
+              </Link>
+            </>
+          )}
         </p>
       )}
     </>

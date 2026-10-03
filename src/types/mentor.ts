@@ -74,6 +74,14 @@ export type AppErrorKind =
   | 'conflict'
   /** 409 `/problems/insufficient-credit`: retrying will not help. */
   | 'noCredit'
+  /**
+   * The three mentee booking limits (backend #342). None of them is about the
+   * time, so none of them is fixed by picking another one — which is why they
+   * are separate kinds rather than a plain `conflict`.
+   */
+  | 'bookingOverlap'
+  | 'bookingWithMentorExists'
+  | 'bookingLimitReached'
   | 'server'
   | 'unknown';
 
