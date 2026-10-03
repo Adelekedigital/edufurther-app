@@ -33,7 +33,7 @@ describe('the desktop aside', () => {
     expect(screen.getByRole('complementary', { name: 'Booking details' })).toBeVisible();
   });
 
-  it('leaves the page scrollable and does not steal focus', async () => {
+  it('leaves the page scrollable — it is not a dialog', () => {
     render(
       <>
         <button type="button">Outside</button>
@@ -41,8 +41,32 @@ describe('the desktop aside', () => {
       </>,
     );
     expect(document.body.style.overflow).not.toBe('hidden');
+  });
+
+  it('takes focus when it opens: "See details" must not be silent', async () => {
+    render(
+      <>
+        <button type="button">Outside</button>
+        <BookingDetailsPanel {...props()} />
+      </>,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('complementary', { name: 'Booking details' })).toHaveFocus(),
+    );
+  });
+
+  it('but does not keep focus: Tab leaves it, unlike the sheet', async () => {
+    render(
+      <>
+        <BookingDetailsPanel {...props()} />
+        <button type="button">After</button>
+      </>,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('complementary', { name: 'Booking details' })).toHaveFocus(),
+    );
     await userEvent.tab();
-    expect(screen.getByRole('button', { name: 'Outside' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Close details' })).toHaveFocus();
   });
 });
 

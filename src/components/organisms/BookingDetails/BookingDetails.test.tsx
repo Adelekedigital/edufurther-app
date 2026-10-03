@@ -201,3 +201,38 @@ describe('a sweep has no name', () => {
     expect(screen.getByText(heading)).toBeVisible();
   });
 });
+
+describe('join feedback lives in the panel', () => {
+  const live = sampleBookingFor({
+    startsAt: at(-0.05),
+    endsAt: at(1),
+    joinOpensAt: at(-0.2),
+    joinClosesAt: at(0.3),
+  });
+
+  it('a failure is said here, not left on a page the sheet covers', () => {
+    panel({ booking: live, onJoin: vi.fn(), joinProblem: 'This session isn’t open to join right now.' });
+    expect(screen.getByRole('alert')).toHaveTextContent('isn’t open to join right now');
+  });
+
+  it('a blocked popup’s link is reachable from inside the panel', () => {
+    panel({
+      booking: live,
+      onJoin: vi.fn(),
+      joinNotice: <a href="https://meet.test/x">Open the session</a>,
+    });
+    expect(screen.getByRole('link', { name: 'Open the session' })).toBeVisible();
+  });
+});
+
+describe('the reason is still loading', () => {
+  it('claims neither a reason nor a failure while it is still coming', () => {
+    panel({
+      booking: sampleBookingFor({ status: 'cancelled', startsAt: at(-300), endsAt: at(-299) }),
+      outcomeLoading: true,
+      outcomeFailed: true,
+    });
+    expect(screen.queryByText('We couldn’t load why this ended.')).not.toBeInTheDocument();
+    expect(screen.queryByText(/cancelled this session/)).not.toBeInTheDocument();
+  });
+});

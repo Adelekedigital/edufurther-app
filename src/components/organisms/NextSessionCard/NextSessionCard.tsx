@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { RowMenu, type RowMenuItem } from '@/components/molecules/RowMenu/RowMenu';
 import { cx } from '@/lib/utils/cx';
 import {
   bookingHeading,
@@ -20,6 +21,8 @@ type NextSessionCardProps = {
   /** Records attendance and hands back where to go. */
   onJoin: () => void;
   joining?: boolean;
+  /** The ⋯ menu — "See details", as the design's hero has. */
+  menu?: RowMenuItem[];
   now?: Date;
 };
 
@@ -44,6 +47,7 @@ export function NextSessionCard({
   timeZone,
   onJoin,
   joining,
+  menu,
   now = new Date(),
 }: NextSessionCardProps) {
   const when = nextSessionWhen(b, now);
@@ -62,6 +66,13 @@ export function NextSessionCard({
           <Icon name={when.icon} size={14} />
           {when.label}
         </span>
+        {!!menu?.length && (
+          <RowMenu
+            label={`More options for ${bookingHeading(b)}`}
+            items={menu}
+            trigger={{ icon: 'more_horiz', size: 20, className: styles.more }}
+          />
+        )}
       </div>
 
       <div className={styles.who}>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
@@ -49,9 +49,9 @@ export function BookingDetailsPanel({
 
   if (!asSheet) {
     return (
-      <aside id="booking-details" aria-labelledby={titleId} className={styles.aside}>
+      <Aside titleId={titleId} bookingId={details.booking?.id ?? null}>
         {body}
-      </aside>
+      </Aside>
     );
   }
   return <Sheet ref={sheetRef} titleId={titleId} body={body} onClose={details.onClose} />;
@@ -103,6 +103,46 @@ function Fallback({
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * The desktop aside. Not a dialog — the list beside it stays usable — so it
+ * does not trap focus. It does move focus in when it opens and give it back
+ * when it closes: without that, "See details" from a row menu leaves a screen
+ * reader where it was, with no sign anything happened.
+ */
+function Aside({
+  titleId,
+  bookingId,
+  children,
+}: {
+  titleId: string;
+  bookingId: string | null;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLElement>(null);
+  const opener = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const panel = ref.current;
+    opener.current = document.activeElement as HTMLElement | null;
+    panel?.focus();
+    return () => {
+      // Only if focus is still inside: the person may have clicked elsewhere.
+      if (panel?.contains(document.activeElement)) opener.current?.focus?.();
+    };
+    // On open and whenever it swaps to another booking, not on every render.
+  }, [bookingId]);
+  return (
+    <aside
+      ref={ref}
+      id="booking-details"
+      aria-labelledby={titleId}
+      tabIndex={-1}
+      className={styles.aside}
+    >
+      {children}
+    </aside>
   );
 }
 
