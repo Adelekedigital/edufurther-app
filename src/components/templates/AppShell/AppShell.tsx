@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
@@ -10,6 +11,10 @@ import { AccountMenu, type AccountMenuItem } from '@/components/molecules/Accoun
 import { OfflineBanner } from '@/components/molecules/OfflineBanner/OfflineBanner';
 import { hasUnsavedChanges, heldLink, discardUnsaved, unsavedLabel } from '@/lib/utils/leaveGuard';
 import { fullNavigate } from '@/lib/utils/hardNavigate';
+import { CreditsPill } from '@/components/molecules/CreditsPill/CreditsPill';
+import { CreditsSummary } from '@/components/molecules/CreditsSummary/CreditsSummary';
+import type { CreditsView } from '@/lib/utils/credits';
+import { CreditsExplainer } from './CreditsExplainer';
 import { UnsavedChangesDialog } from './UnsavedChangesDialog';
 import { cx } from '@/lib/utils/cx';
 import styles from './AppShell.module.css';
@@ -78,6 +83,8 @@ type AppShellProps = {
      * `label` is read after the item's name ("Bookings, 2 requests awaiting…").
      */
     counts?: Counts;
+    /** A mentee's monthly credits (pill, menu block, "Your credits"); none for mentors. */
+    credits?: CreditsView;
     /** Logout with unsaved changes: the confirm is open (useAppShell). */
     logoutConfirm?: { onKeep: () => void; onLogout: () => void };
   };
@@ -101,6 +108,56 @@ export function AppShell({
   const member = chrome === 'member';
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLButtonElement>(null);
+  // "Your credits": opened from the pill or "How credits work"; focus goes back
+  // to whatever opened it.
+  const credits = account?.credits;
+  const creditsId = useId();
+  // Open on the page it was opened on: a new page (AppShell stays mounted
+  // across routes) closes it with no effect.
+  const pathname = usePathname();
+  const [creditsOpenOn, setCreditsOpenOn] = useState<string | null | undefined>(undefined);
+  const creditsOpen = creditsOpenOn !== undefined && creditsOpenOn === pathname;
+  const creditsOpener = useRef<HTMLElement | null>(null);
+  const openCredits = (from: HTMLElement | null) => {
+    creditsOpener.current = from;
+    setMoreOpen(false);
+    setCreditsOpenOn(pathname);
+  };
+  const closeCredits = () => {
+    setCreditsOpenOn(undefined);
+    // Crossing the 768px breakpoint while open hides the pill that opened it:
+    // fall back to the pill that's showing now.
+    const opener = creditsOpener.current;
+    const shown = (el: Element | null) => !!el && el.getClientRects().length > 0;
+    const pill = [...document.querySelectorAll<HTMLElement>('[data-credits-pill]')].find(shown);
+    (opener && !shown(opener) && opener.hasAttribute('data-credits-pill') && pill
+      ? pill
+      : opener
+    )?.focus();
+  };
+  // Phones: the page behind the sheet doesn't scroll (as under ModalShell).
+  useEffect(() => {
+    if (!creditsOpen || !window.matchMedia?.('(max-width: 767px)').matches) return;
+    const before = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = before;
+    };
+  }, [creditsOpen]);
+  // One pill shows at a time (the bar's on desktop, the header's on phones).
+  const togglePill = (from: HTMLButtonElement) => {
+    if (creditsOpen) return closeCredits();
+    openCredits(from);
+  };
+  const pill = () =>
+    credits ? (
+      <CreditsPill
+        credits={credits}
+        expanded={creditsOpen}
+        controls={creditsId}
+        onClick={togglePill}
+      />
+    ) : null;
   const items = NAV[nav];
   const primary = PRIMARY_TABS[nav];
   // In the design's pick order: mentor tabs read Home, Calendar, Bookings.
@@ -143,6 +200,7 @@ export function AppShell({
         <Link href="/" prefetch={PREFETCH} className={styles.logo} aria-label="EduFurther home">
           <Image src="/brand/edufurther-logo-full.png" alt="" width={180} height={24} priority />
         </Link>
+        {member && credits && <div className={styles.headerCredits}>{pill()}</div>}
         {guest && (
           <div className={styles.guestActions}>
             <ButtonLink href="/login" prefetch={PREFETCH} variant="secondary-outlined" size="large">
@@ -173,11 +231,23 @@ export function AppShell({
               )}
               <RailList items={setup} active={active} counts={counts} />
             </div>
-            {account && <AccountMenu avatar={account.avatar} items={account.items} />}
+            {account && (
+              <AccountMenu
+                avatar={account.avatar}
+                items={account.items}
+                credits={
+                  credits && {
+                    view: credits,
+                    // The menu has just returned focus to its button: come back there.
+                    onHowItWorks: () => openCredits(document.activeElement as HTMLElement),
+                  }
+                }
+              />
+            )}
           </nav>
         )}
         <div className={styles.column}>
-          {member && <div className={styles.contentBar} />}
+          {member && <div className={styles.contentBar}>{pill()}</div>}
           {member && offline && (
             <div className={styles.offlineColumn}>
               <OfflineBanner />
@@ -246,6 +316,9 @@ export function AppShell({
         </nav>
       )}
 
+      {creditsOpen && credits && (
+        <CreditsExplainer id={creditsId} credits={credits} onClose={closeCredits} />
+      )}
       {account?.logoutConfirm && (
         <UnsavedChangesDialog
           what={unsavedLabel()}
@@ -261,6 +334,9 @@ export function AppShell({
           <div className={styles.sheetScrim} aria-hidden onClick={() => setMoreOpen(false)} />
           <div id="more-sheet" className={styles.sheet}>
             <span className={styles.handle} aria-hidden />
+            {credits && (
+              <CreditsSummary credits={credits} onHowItWorks={() => openCredits(moreRef.current)} />
+            )}
             <ul className={styles.sheetList}>
               {extra.map((n) => (
                 <li key={n.href}>

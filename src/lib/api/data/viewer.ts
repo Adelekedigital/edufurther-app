@@ -32,7 +32,12 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     timeZone: me.timezone || undefined,
     completedSessions: me.mentee_completed_sessions,
     credits: me.credits
-      ? { balance: me.credits.balance, allowance: me.credits.allowance, state: me.credits.state }
+      ? {
+          balance: me.credits.balance,
+          allowance: me.credits.allowance,
+          state: me.credits.state,
+          nextResetAt: me.credits.next_reset_at ?? null,
+        }
       : null,
     avatarUrl: me.profile?.avatar_url ?? null,
     avatarFocus: me.profile?.avatar_focus ?? null,
@@ -57,7 +62,7 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     isApprovedMentor: false,
     isMentor: false,
     completedSessions: 0,
-    credits: { balance: 3, allowance: 3, state: 'on_track' },
+    credits: { balance: 3, allowance: 4, state: 'on_track', nextResetAt: '2026-11-01T00:00:00Z' },
     avatarUrl: '/api/mock/avatars/mentor-01.webp',
     avatarFocus: { x: 0.5, y: 0.35 },
     coverKey: null,

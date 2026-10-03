@@ -41,6 +41,8 @@
   /* Compact Plus / warning-note ground (design literal #fef6e7). */
   --warning-subtle: #fef6e7;
   --warning-text: var(--yellow-900);
+  /* Hover on a low-credits pill (AppShell.dc.html literal #fdeccb). */
+  --warning-subtle-hover: #fdeccb;
   /* Mentor Profile.dc.html literal #fffbef: the gold tile behind award and
      mentoring-time icons (with --yellow-900 glyphs). Not in the DS ramp. */
   --gold-subtle: #fffbef;
