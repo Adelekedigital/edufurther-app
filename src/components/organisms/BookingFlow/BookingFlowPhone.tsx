@@ -50,7 +50,12 @@ export function PhoneFooter(p: {
         <Button size="large" fullWidth onClick={p.onClose}>
           Done
         </Button>
-        <ButtonLink href="/bookings" variant="secondary-outlined" size="large" fullWidth>
+        <ButtonLink
+          href="/bookings"
+          variant="secondary-outlined"
+          size="large"
+          fullWidth
+        >
           View my bookings
         </ButtonLink>
       </>

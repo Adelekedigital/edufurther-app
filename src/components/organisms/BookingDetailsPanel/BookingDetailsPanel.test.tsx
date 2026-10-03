@@ -101,9 +101,7 @@ describe('the phone sheet', () => {
           <button type="button" onClick={() => setOpen(true)}>
             Opener
           </button>
-          {open && (
-            <BookingDetailsPanel {...props({ asSheet: true, onClose: () => setOpen(false) })} />
-          )}
+          {open && <BookingDetailsPanel {...props({ asSheet: true, onClose: () => setOpen(false) })} />}
         </>
       );
     }
@@ -162,11 +160,7 @@ describe('a ?booking= link opened cold', () => {
   });
 
   it('offline says to come back', () => {
-    render(
-      <BookingDetailsPanel
-        {...props({ booking: null, error: { kind: 'offline', message: 'x' } })}
-      />,
-    );
+    render(<BookingDetailsPanel {...props({ booking: null, error: { kind: 'offline', message: 'x' } })} />);
     expect(screen.getByRole('alert')).toHaveTextContent('You’re offline.');
   });
 

@@ -132,12 +132,7 @@ export function BookingDetails({
           <h2 id={titleId} className={styles.title}>
             Booking details
           </h2>
-          <button
-            type="button"
-            aria-label="Close details"
-            onClick={onClose}
-            className={styles.close}
-          >
+          <button type="button" aria-label="Close details" onClick={onClose} className={styles.close}>
             <Icon name="close" size={20} />
           </button>
         </div>
