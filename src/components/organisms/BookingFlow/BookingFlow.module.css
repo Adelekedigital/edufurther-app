@@ -411,3 +411,14 @@
 .req {
   color: var(--text-danger);
 }
+
+/* "See your bookings", beside a booking-limit refusal. Ours: the design has no
+   booking limits, so it never drew one. */
+.errorLink {
+  color: var(--blue-500);
+  font-weight: var(--weight-semibold);
+  text-decoration: underline;
+}
+.errorLink:hover {
+  color: var(--blue-700);
+}

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { act, getDefaultNormalizer, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { bookingError } from '@/lib/api/data/booking';
+import { apiError, normaliseError } from '@/lib/api/data/errors';
 import type { Mentor, Remote, SessionType } from '@/types/mentor';
 import { BookingFlow, type BookingFlowProps } from './BookingFlow';
 import {
@@ -662,5 +664,65 @@ describe('BookingFlow questions', () => {
         within(screen.getByRole('group', { name: /What is it for\?/ })).getByRole('alert'),
       ).toBe(alert);
     });
+  });
+});
+
+describe('a booking limit refuses the request (backend 342)', () => {
+  beforeEach(() => setPhone(false));
+
+  // The real pipeline: the server's problem type through normaliseError and
+  // bookingError, so the test covers the copy the user actually sees.
+  const limit = (type: string) =>
+    props({
+      sessionTypeId: 'st1',
+      requestError: bookingError(normaliseError(apiError(409, { type }))),
+    });
+  const OVERLAP = '/problems/booking-overlap';
+  const WITH_MENTOR = '/problems/booking-with-mentor-exists';
+  const LIMIT = '/problems/booking-limit-reached';
+
+  it('names the mentor the mentee just tried to book', () => {
+    render(<BookingFlow {...limit(WITH_MENTOR)} />);
+    expect(
+      screen.getByText(/You already have a session pending or coming up with Olajuwon\./),
+    ).toBeVisible();
+  });
+
+  it('points at the bookings list instead of inviting another attempt', () => {
+    render(<BookingFlow {...limit(LIMIT)} />);
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('You already have 2 sessions pending or coming up.');
+    expect(within(alert).getByRole('link', { name: 'See your bookings' })).toHaveAttribute(
+      'href',
+      '/bookings',
+    );
+  });
+
+  it('an overlap says what overlaps, and never "pick another time"', () => {
+    render(<BookingFlow {...limit(OVERLAP)} />);
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('This time overlaps with another session you have.');
+    expect(alert).not.toHaveTextContent(/another time|just taken/i);
+  });
+
+  it('none of the three suggests cancelling', () => {
+    for (const type of [OVERLAP, WITH_MENTOR, LIMIT]) {
+      const { unmount } = render(<BookingFlow {...limit(type)} />);
+      expect(screen.getByRole('alert')).not.toHaveTextContent(/cancel/i);
+      unmount();
+    }
+  });
+
+  it('an ordinary failure keeps its own copy and offers no link', () => {
+    render(
+      <BookingFlow
+        {...props({
+          sessionTypeId: 'st1',
+          requestError: { kind: 'conflict', message: 'That time was just taken.' },
+        })}
+      />,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('That time was just taken.');
+    expect(screen.queryByRole('link', { name: 'See your bookings' })).not.toBeInTheDocument();
   });
 });

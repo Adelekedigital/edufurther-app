@@ -1,4 +1,4 @@
-import type { AppError } from '@/types/mentor';
+import type { AppError, AppErrorKind } from '@/types/mentor';
 
 /** Thrown by the data layer; carries the HTTP status when there is one. */
 export class ApiError extends Error {
@@ -21,6 +21,25 @@ export function apiError(status: number, body: unknown): ApiError {
     typeof p.type === 'string' ? p.type : undefined,
   );
 }
+
+/**
+ * The three booking-limit refusals: problem type → our kind and a message that
+ * stands on its own. The booking flow words them again with the mentor's name
+ * and a link, which only it has.
+ */
+const BOOKING_LIMITS: [string, AppErrorKind, string][] = [
+  ['/problems/booking-overlap', 'bookingOverlap', 'This time overlaps with another session you have.'],
+  [
+    '/problems/booking-with-mentor-exists',
+    'bookingWithMentorExists',
+    'You already have a session pending or coming up with this mentor.',
+  ],
+  [
+    '/problems/booking-limit-reached',
+    'bookingLimitReached',
+    'You already have 2 sessions pending or coming up.',
+  ],
+];
 
 /**
  * A 4xx is the answer, not a blip: only a server error is worth one more go.
@@ -46,6 +65,13 @@ export function normaliseError(error: unknown): AppError {
     if (s === 404) return { kind: 'notFound', message: 'We couldn’t find that.', status: s };
     if (s === 409 && error.type?.endsWith('/problems/insufficient-credit'))
       return { kind: 'noCredit', message: 'You’re out of credits.', status: s };
+    // The mentee booking limits. Kept apart from plain `conflict` because the
+    // generic 409 copy ("that time was just taken, pick another") is advice
+    // that cannot succeed for any of them.
+    if (s === 409 && error.type) {
+      const limit = BOOKING_LIMITS.find(([suffix]) => error.type!.endsWith(suffix));
+      if (limit) return { kind: limit[1], message: limit[2], status: s };
+    }
     if (s === 409)
       return { kind: 'conflict', message: 'That changed while you were looking.', status: s };
     if (s === 422) return { kind: 'validation', message: 'That request wasn’t valid.', status: s };

@@ -29,6 +29,58 @@ describe('booking errors (POST /sessions)', () => {
     expect(e(409, { type: '/problems/insufficient-credit' }).message).toMatch(/out of credits/);
     expect(e(500).message).toMatch(/Try again/);
   });
+
+  describe('the mentee booking limits (backend #342)', () => {
+    const e = (type: string) => normaliseError(apiError(409, { type }));
+    const worded = (type: string) => bookingError(e(type));
+
+    it('each refusal gets its own kind — none of them is a plain conflict', () => {
+      expect(e('/problems/booking-overlap').kind).toBe('bookingOverlap');
+      expect(e('/problems/booking-with-mentor-exists').kind).toBe('bookingWithMentorExists');
+      expect(e('/problems/booking-limit-reached').kind).toBe('bookingLimitReached');
+    });
+
+    it('a problem type we do not know still reads as a conflict', () => {
+      expect(e('/problems/something-new').kind).toBe('conflict');
+    });
+
+    it('none of them says "pick another time" — another time is refused the same way', () => {
+      for (const type of [
+        '/problems/booking-overlap',
+        '/problems/booking-with-mentor-exists',
+        '/problems/booking-limit-reached',
+      ])
+        expect(worded(type).message).not.toMatch(/another time|just taken/i);
+    });
+
+    it('none of them suggests cancelling, as the owner required', () => {
+      for (const type of [
+        '/problems/booking-overlap',
+        '/problems/booking-with-mentor-exists',
+        '/problems/booking-limit-reached',
+      ])
+        expect(worded(type).message).not.toMatch(/cancel/i);
+    });
+
+    it('says what is actually in the way', () => {
+      expect(worded('/problems/booking-overlap').message).toBe(
+        'This time overlaps with another session you have.',
+      );
+      expect(worded('/problems/booking-limit-reached').message).toMatch(
+        /already have 2 sessions pending or coming up/,
+      );
+      expect(worded('/problems/booking-with-mentor-exists').message).toMatch(
+        /pending or coming up with this mentor/,
+      );
+    });
+
+    it('never shows the server’s own detail', () => {
+      expect(
+        bookingError(normaliseError(apiError(409, { type: '/problems/booking-overlap', detail: 'secret' })))
+          .message,
+      ).not.toMatch(/secret/);
+    });
+  });
 });
 
 describe('keyForAttempt (Idempotency-Key per booking attempt)', () => {
