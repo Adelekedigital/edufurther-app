@@ -146,5 +146,22 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       asc ? a.starts_at.localeCompare(b.starts_at) : b.starts_at.localeCompare(a.starts_at),
     );
 
-  return NextResponse.json({ data: rows, next_cursor: null });
+  // Paged like the real thing, so the History "Show more" path — including the
+  // 422 on a cursor from the other direction — can be exercised in dev.
+  const limit = Math.min(Number(q.get('limit')) || 10, 50);
+  const cursor = q.get('cursor');
+  let offset = 0;
+  if (cursor) {
+    const parsed = /^o(d+)(a|d)$/.exec(cursor);
+    // A cursor from the other ordering is a 422: restart from page 1.
+    if (!parsed || parsed[2] !== (asc ? 'a' : 'd'))
+      return NextResponse.json(
+        { type: '/problems/bad-cursor', title: 'That cursor is no longer valid.', status: 422 },
+        { status: 422, headers: { 'content-type': 'application/problem+json' } },
+      );
+    offset = Number(parsed[1]);
+  }
+  const page = rows.slice(offset, offset + limit);
+  const next = offset + limit < rows.length ? `o${offset + limit}${asc ? 'a' : 'd'}` : null;
+  return NextResponse.json({ data: page, next_cursor: next });
 }

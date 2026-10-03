@@ -3,7 +3,7 @@
 import { useCallback } from 'react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
-import { HISTORY_STATUSES, respondDeadline } from '@/lib/utils/bookings';
+import { HISTORY_STATUSES, respondDeadline, safeMeetingUrl } from '@/lib/utils/bookings';
 import { coverFor } from '@/lib/utils/cover';
 import { dayKey } from '@/lib/utils/slots';
 import type { Booking, BookingParty, BookingStatus, JoinResult } from '@/types/booking';
@@ -54,7 +54,9 @@ function toParty(p: PartyRead): BookingParty {
     // A deleted account keeps its row — the session still happened — but loses
     // its name, as the reviews list already does.
     name: p.deleted || !name ? 'Deleted user' : name,
-    firstName: p.deleted || !first ? 'Deleted user' : first,
+    // A live account with only a surname keeps it: the row says "Waiting for
+    // Okafor to confirm", not "Waiting for Deleted user".
+    firstName: p.deleted ? 'Deleted user' : first || name || 'Deleted user',
     initials: p.deleted ? '' : `${first[0] ?? ''}${last[0] ?? ''}`.toUpperCase(),
     avatarUrl: p.deleted ? null : (p.avatar_url ?? null),
     avatarFocus: p.deleted ? null : (p.avatar_focus ?? null),
@@ -131,30 +133,32 @@ function remote<T>(
 
 /**
  * Confirmed sessions from today on, soonest first — the Upcoming tab, whose
- * first row is the hero. `from` is a calendar date in the caller's own zone,
- * which is what the backend compares against (#326).
+ * first row is the hero.
+ *
+ * `accountZone` is the zone on the account (`/me timezone`), **not** the zone
+ * the viewer picked for display: the backend reads `from` in the caller's own
+ * zone (#326), so a display override would ask for the wrong day. It is in the
+ * query key as well, because `from` is an input to the result — without it,
+ * crossing midnight (or changing the account zone) would serve yesterday's
+ * page for ever.
  */
 export function useUpcomingBookings(
   userId: string | null,
-  timeZone: string,
+  accountZone: string,
   active = true,
 ): Remote<Booking[]> {
   const session = useSession();
   const enabled = active && !!userId && session.status !== 'unknown';
+  // Today, not now: a session that started an hour ago is still joinable for
+  // fifteen minutes and must not vanish mid-session.
+  const from = dayKey(new Date().toISOString(), accountZone);
   const query = useQuery({
-    queryKey: keys.bookings.upcoming(sessionKey(session)),
+    queryKey: keys.bookings.upcoming(sessionKey(session), from),
     enabled,
     queryFn: async ({ signal }) => {
       const { rows } = await fetchPage(
         userId!,
-        {
-          status: ['confirmed'],
-          limit: PAGE,
-          order: 'asc',
-          // Today, not now: a session that started an hour ago is still
-          // joinable for fifteen minutes and must not vanish mid-session.
-          from: dayKey(new Date().toISOString(), timeZone),
-        },
+        { status: ['confirmed'], limit: PAGE, order: 'asc', from },
         signal,
       );
       return rows;
@@ -272,7 +276,12 @@ export function useJoinSession() {
       });
       if (!data) throw apiError(response.status, error);
       const url = (data as { meeting_url?: unknown }).meeting_url;
-      return { meetingUrl: typeof url === 'string' ? url : null };
+      // Checked here, not at the call site, so an unsafe value can never reach
+      // the view model. A `custom` venue is a mentor's own typed link — someone
+      // else's text on our page — and gets the same treatment as a profile URL
+      // (lib/utils/socialUrl). A rejected link reads as "no venue", which is
+      // what it is.
+      return { meetingUrl: safeMeetingUrl(typeof url === 'string' ? url : null) };
     },
     // Joining sets our own joined_at, so the row is now stale.
     onSuccess: () => void qc.invalidateQueries({ queryKey: keys.bookings.all }),

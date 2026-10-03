@@ -30,6 +30,8 @@ type BookingsPanelProps = {
   /** More exists beyond what is loaded (History). */
   hasMore?: boolean;
   isLoadingMore?: boolean;
+  /** The next page failed: said under the button, where the click was. */
+  loadMoreError?: AppError | null;
   /** The heading above the box, where the design has one. */
   heading?: string;
   intro?: ReactNode;
@@ -59,6 +61,7 @@ export function BookingsPanel({
   total,
   hasMore,
   isLoadingMore,
+  loadMoreError,
   heading,
   intro,
   actionsFor,
@@ -67,7 +70,10 @@ export function BookingsPanel({
 }: BookingsPanelProps) {
   if (isLoading) return <PanelSkeleton />;
 
-  if (error) {
+  // Only when there is nothing to show. A background refetch that fails (the
+  // list is refetched on refocus) must not replace a list someone is reading
+  // with an error — the profile does the same.
+  if (error && bookings.length === 0) {
     const offline = error.kind === 'offline';
     return (
       <div className={styles.state}>
@@ -134,6 +140,11 @@ export function BookingsPanel({
                       : `Showing ${visible.length}`,
                   onClick: showMore,
                   busy: isLoadingMore,
+                  error: loadMoreError
+                    ? loadMoreError.kind === 'offline'
+                      ? 'You’re offline. Try again when you reconnect.'
+                      : 'We couldn’t load more. Try again.'
+                    : undefined,
                 }
               : undefined
           }

@@ -6,6 +6,7 @@ import { Chip } from '@/components/atoms/Chip/Chip';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Tabs, type TabItem } from '@/components/atoms/Tabs/Tabs';
 import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
+import { Notice } from '@/components/molecules/Notice/Notice';
 import { TimezonePicker } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import { NextSessionCard } from '@/components/organisms/NextSessionCard/NextSessionCard';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
@@ -19,6 +20,7 @@ import { normaliseError } from '@/lib/api/data/errors';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { BookingStatus } from '@/types/booking';
+import { canBookFor } from '../../_shell/bookBlocked';
 import { BOOKINGS_GATE, memberGate } from '../../_shell/MentorGate';
 import { useAppShell } from '../../_shell/useAppShell';
 import { BookingsPanel } from './BookingsPanel';
@@ -44,15 +46,29 @@ export function BookingsScreen() {
   const { tab, setTab } = useBookingsTab();
   const userId = member?.id ?? null;
   const isMentor = !!member?.isMentor;
+  const canBook = canBookFor(viewer);
+
+  // A minute is enough for every deadline on this page, and keeps "Starts in
+  // 8 min" honest. Without it, Join never enables for someone already looking
+  // at the page, and a lapsing request keeps its countdown (BookingFlow's
+  // useTimeChoice does the same).
+  const [clock, setClock] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setClock(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+  const now = useMemo(() => new Date(clock), [clock]);
 
   const deviceZone = useMemo(() => deviceTimeZone(), []);
   // The account's zone is what the backend judges dates in; the picker is the
   // viewer's own override for this visit.
   const [zone, setZone] = useState<string | null>(null);
   const timeZone = zone ?? member?.timeZone ?? deviceZone;
+  // What the backend compares `from` against — never the display override.
+  const accountZone = member?.timeZone ?? deviceZone;
 
   const [filters, setFilters] = useState<BookingStatus[]>([]);
-  const upcoming = useUpcomingBookings(userId, timeZone, tab === 'upcoming');
+  const upcoming = useUpcomingBookings(userId, accountZone, tab === 'upcoming');
   const pending = usePendingBookings(userId, tab === 'pending');
   const history = useBookingHistory(userId, filters, tab === 'history');
 
@@ -60,6 +76,9 @@ export function BookingsScreen() {
   // A repeated failure must be heard again, so each message carries a new id.
   const [joinProblem, setJoinProblem] = useState<{ text: string; id: number } | null>(null);
   const say = useCallback((text: string) => setJoinProblem({ text, id: Date.now() }), []);
+  // The browser blocked the new tab: offer the link rather than leaving the
+  // click looking broken.
+  const [blockedUrl, setBlockedUrl] = useState<string | null>(null);
 
   const reveal = {
     upcoming: useRevealed(),
@@ -90,19 +109,42 @@ export function BookingsScreen() {
     { value: 'history', label: 'History', panelId: 'bookings-history' },
   ];
 
+  // Addressed to one side only when every row is on that side. A dual-role
+  // account with one incoming and one outgoing request gets neither line,
+  // because either would be wrong above half the list (failure log #38).
+  const pendingRows = pending.data ?? [];
+  const hosting = pendingRows.some((b) => b.side === 'mentor');
+  const sending = pendingRows.some((b) => b.side === 'mentee');
+  const pendingIntro =
+    hosting && !sending
+      ? // PR 1 has no accept or decline control, so the line stops at the fact.
+        'These mentees asked for a time.'
+      : sending && !hosting
+        ? 'Requests you sent that your mentor hasn’t confirmed yet.'
+        : undefined;
+
   const toggleFilter = (s: BookingStatus) =>
     setFilters((on) => (on.includes(s) ? on.filter((x) => x !== s) : [...on, s]));
 
   const onJoin = useCallback(
     (sessionId: string) => {
       setJoinProblem(null);
+      setBlockedUrl(null);
       join.mutate(sessionId, {
         onSuccess: ({ meetingUrl }) => {
-          // The call records attendance either way; only the venue can be missing.
-          if (meetingUrl) window.open(meetingUrl, '_blank', 'noopener,noreferrer');
-          else say('You’re marked as here, but this session has no meeting link yet.');
+          // Attendance is recorded either way — the rest is only about getting
+          // there. The POST is awaited, so this open is outside the click's
+          // gesture and a popup blocker can swallow it; `open` returns null
+          // when it does, and silence would read as a dead button.
+          if (!meetingUrl) {
+            say('You’re marked as here, but this session has no meeting link yet.');
+            return;
+          }
+          const opened = window.open(meetingUrl, '_blank', 'noopener,noreferrer');
+          if (!opened) setBlockedUrl(meetingUrl);
         },
         onError: (e) => {
+          setBlockedUrl(null);
           const err = normaliseError(e);
           say(
             err.status === 409
@@ -132,6 +174,15 @@ export function BookingsScreen() {
           <Tabs items={items} value={tab} onChange={setTab} label="Bookings" />
 
           <LiveRegion message={joinProblem} />
+          {blockedUrl && (
+            <Notice tone="info">
+              Your browser blocked the meeting window.{' '}
+              <a href={blockedUrl} target="_blank" rel="noopener noreferrer">
+                Open the session
+              </a>
+              . You’re already marked as here.
+            </Notice>
+          )}
 
           <TabPanel id="bookings-upcoming" active={tab === 'upcoming'}>
             <BookingsPanel
@@ -143,6 +194,7 @@ export function BookingsScreen() {
               timeZone={timeZone}
               isMentor={isMentor}
               heading={later.length ? 'Later' : undefined}
+              now={now}
               total={later.length}
               shown={reveal.upcoming.shown}
               showMore={reveal.upcoming.showMore}
@@ -153,6 +205,7 @@ export function BookingsScreen() {
                   timeZone={timeZone}
                   onJoin={() => onJoin(next.id)}
                   joining={join.isPending}
+                  now={now}
                 />
               )}
             </BookingsPanel>
@@ -167,14 +220,9 @@ export function BookingsScreen() {
               retry={pending.retry}
               timeZone={timeZone}
               isMentor={isMentor}
-              intro={
-                // Read from the rows, not the viewer's role: one account can
-                // host some of these and have sent others.
-                (pending.data ?? []).some((b) => b.side === 'mentor')
-                  ? 'These mentees asked for a time. Accept to confirm it, or decline so they can pick another.'
-                  : 'Requests you sent that your mentor hasn’t confirmed yet.'
-              }
+              intro={pendingIntro}
               total={pending.data?.length}
+              now={now}
               shown={reveal.pending.shown}
               showMore={reveal.pending.showMore}
             />
@@ -212,11 +260,12 @@ export function BookingsScreen() {
               // more is coming the API sends none, so the caption says less.
               total={history.hasMore ? undefined : history.bookings.length}
               hasMore={history.hasMore}
+              loadMoreError={history.loadMoreError}
               isLoadingMore={history.isLoadingMore}
               actionsFor={(b) =>
                 // Only a session this viewer booked can be booked again, and a
-                // mentor never books at all (canBookFor).
-                !isMentor && b.side === 'mentee' && b.status === 'completed' ? (
+                // mentor never books at all.
+                canBook && b.side === 'mentee' && b.status === 'completed' ? (
                   <ButtonLink
                     href={`/mentors/${b.other.id}`}
                     prefetch={false}

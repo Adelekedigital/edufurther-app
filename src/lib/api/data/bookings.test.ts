@@ -79,6 +79,12 @@ describe('toBooking', () => {
     expect(b.other.deleted).toBe(true);
   });
 
+  it('a live account with only a surname is not "Deleted user"', () => {
+    const b = toBooking(row({ mentee: party('them', null, 'Okafor') }), 'me');
+    expect(b.other.name).toBe('Okafor');
+    expect(b.other.firstName).toBe('Okafor');
+  });
+
   it('survives a party with no name at all', () => {
     const b = toBooking(row({ mentee: party('them', null, null) }), 'me');
     expect(b.other.name).toBe('Deleted user');

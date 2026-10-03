@@ -1,6 +1,5 @@
 import type { Booking, BookingParty, BookingStatus } from '@/types/booking';
 import {
-  attendanceLine,
   bookingHeading,
   formatRespondIn,
   fullDate,
@@ -10,9 +9,9 @@ import {
   joinState,
   nextSessionWhen,
   otherTimeLine,
+  safeMeetingUrl,
   respondDeadline,
   statusTag,
-  tabOf,
   timeRange,
 } from './bookings';
 
@@ -71,21 +70,6 @@ describe('respondDeadline / isLapsed', () => {
 
   it('only a pending request can lapse', () => {
     expect(isLapsed(booking({ status: 'confirmed', startsAt: at(-10) }), NOW)).toBe(false);
-  });
-});
-
-describe('tabOf', () => {
-  it.each([
-    ['pending', 'pending'],
-    ['confirmed', 'upcoming'],
-    ['completed', 'history'],
-    ['cancelled', 'history'],
-    ['declined', 'history'],
-    ['expired', 'history'],
-    ['noShow', 'history'],
-    ['withdrawn', 'history'],
-  ] as [BookingStatus, string][])('%s → %s', (status, tab) => {
-    expect(tabOf(booking({ status }))).toBe(tab);
   });
 });
 
@@ -162,12 +146,6 @@ describe('copy', () => {
     expect(bookingHeading(booking({ title: null }))).toBe('Session with Amara Okafor');
   });
 
-  it('shows an attendance rate only to the mentor, and only with data', () => {
-    expect(attendanceLine(booking({ menteeAttendanceRate: 92 }))).toBe('Attendance rate: 92%');
-    expect(attendanceLine(booking({ menteeAttendanceRate: null }))).toBe('Mentee');
-    expect(attendanceLine(booking({ side: 'mentee', menteeAttendanceRate: 92 }))).toBe('Mentor');
-  });
-
   it('reads times in the viewer’s zone, not the stored one', () => {
     const b = booking({ startsAt: '2026-10-04T16:00:00Z', endsAt: '2026-10-04T17:00:00Z' });
     expect(timeRange(b, 'Africa/Lagos')).toBe('5:00 pm to 6:00 pm');
@@ -227,5 +205,58 @@ describe('otherTimeLine', () => {
   it('spells a multi-word city properly', () => {
     const b2 = booking({ other: party({ timeZone: 'America/Port_of_Spain' }) });
     expect(otherTimeLine(b2, 'Africa/Lagos')?.text).toContain('in Port of Spain');
+  });
+});
+
+describe('safeMeetingUrl', () => {
+  it('passes an https link through', () => {
+    expect(safeMeetingUrl('https://meet.example.com/abc')).toBe('https://meet.example.com/abc');
+    expect(safeMeetingUrl('  https://meet.example.com/abc  ')).toBe('https://meet.example.com/abc');
+  });
+
+  it('refuses anything that is not https — a custom venue is someone else’s text', () => {
+    expect(safeMeetingUrl('javascript:alert(1)')).toBeNull();
+    expect(safeMeetingUrl('data:text/html,<script>alert(1)</script>')).toBeNull();
+    expect(safeMeetingUrl('http://meet.example.com/abc')).toBeNull();
+    expect(safeMeetingUrl('ms-msdt:/id')).toBeNull();
+    expect(safeMeetingUrl('/room/abc')).toBeNull();
+    expect(safeMeetingUrl('not a url')).toBeNull();
+    expect(safeMeetingUrl(null)).toBeNull();
+  });
+
+  it('refuses embedded credentials', () => {
+    expect(safeMeetingUrl('https://user:pass@meet.example.com/abc')).toBeNull();
+  });
+});
+
+describe('nextSessionWhen counts calendar days', () => {
+  // Saturday 1 pm UTC. Monday noon is two sleeps away, not "Tomorrow".
+  const sat = new Date('2026-10-03T13:00:00Z');
+  it('a Monday session on a Saturday afternoon is "In 2 days"', () => {
+    const b = booking({ startsAt: '2026-10-05T12:00:00Z' });
+    expect(nextSessionWhen(b, sat, 'UTC').label).toBe('In 2 days');
+  });
+  it('tomorrow is tomorrow, however few hours away', () => {
+    expect(nextSessionWhen(booking({ startsAt: '2026-10-04T01:00:00Z' }), sat, 'UTC').label).toBe(
+      'Tomorrow',
+    );
+  });
+  it('the same day stays in hours', () => {
+    expect(nextSessionWhen(booking({ startsAt: '2026-10-03T22:00:00Z' }), sat, 'UTC').label).toBe(
+      'Starts in 9 h',
+    );
+  });
+  it('counts the days in the viewer’s zone, not UTC', () => {
+    // 11pm Saturday UTC is already Sunday in Lagos.
+    const b = booking({ startsAt: '2026-10-03T23:00:00Z' });
+    expect(nextSessionWhen(b, sat, 'UTC').label).toBe('Starts in 10 h');
+    expect(nextSessionWhen(b, sat, 'Africa/Lagos').label).toBe('Tomorrow');
+  });
+});
+
+describe('otherTimeLine survives a bad zone', () => {
+  it('says nothing rather than taking the row down', () => {
+    const b = booking({ other: party({ timeZone: 'Not/AZone' }) });
+    expect(otherTimeLine(b, 'Africa/Lagos')).toBeNull();
   });
 });

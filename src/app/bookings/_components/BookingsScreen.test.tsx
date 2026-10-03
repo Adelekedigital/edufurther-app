@@ -1,6 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { BookingHistoryResult } from '@/lib/api/data/bookings';
+import { ApiError } from '@/lib/api/data/errors';
 import type { Booking, BookingParty } from '@/types/booking';
 import type { AppError, Remote, Viewer } from '@/types/mentor';
 import { BookingsScreen } from './BookingsScreen';
@@ -253,7 +254,7 @@ describe('Pending', () => {
   it('a mentor is told these are theirs to answer', () => {
     pending = remote([booking({ status: 'pending', respondBy: at(5) })]);
     render(<BookingsScreen />);
-    expect(screen.getByText(/These mentees asked for a time/)).toBeVisible();
+    expect(screen.getByText('These mentees asked for a time.')).toBeVisible();
     expect(screen.getByText('Respond within 5h')).toBeVisible();
   });
 
@@ -270,6 +271,16 @@ describe('Pending', () => {
     render(<BookingsScreen />);
     expect(screen.getByText('Unconfirmed')).toBeVisible();
     expect(screen.queryByText(/Respond within/)).not.toBeInTheDocument();
+  });
+
+  it('a mixed list is addressed to neither side — either line would be wrong', () => {
+    pending = remote([
+      booking({ id: 'in', status: 'pending', side: 'mentor', respondBy: at(5) }),
+      booking({ id: 'out', status: 'pending', side: 'mentee', respondBy: at(5) }),
+    ]);
+    render(<BookingsScreen />);
+    expect(screen.queryByText(/These mentees asked for a time/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Requests you sent/)).not.toBeInTheDocument();
   });
 
   it('empty is about requests, not sessions', () => {
@@ -315,7 +326,7 @@ describe('History', () => {
     expect(screen.getByRole('heading', { name: 'No sessions match these filters' })).toBeVisible();
   });
 
-  it('only a session the viewer booked can be booked again, and never by a mentor', () => {
+  it('only a session the viewer booked can be booked again', () => {
     history = hist({
       bookings: [
         booking({ id: 'mine', status: 'completed', side: 'mentee' }),
@@ -324,11 +335,21 @@ describe('History', () => {
     });
     viewer = { ...MEMBER, isMentor: false, isApprovedMentor: false, isMentee: true };
     render(<BookingsScreen />);
-    expect(screen.getAllByRole('link', { name: 'Book again' })).toHaveLength(1);
+    const links = screen.getAllByRole('link', { name: 'Book again' });
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAttribute('href', '/mentors/p1');
+  });
 
+  it('a mentor is never offered Book again — mentors cannot book', () => {
+    history = hist({
+      bookings: [
+        booking({ id: 'mine', status: 'completed', side: 'mentee' }),
+        booking({ id: 'hosted', status: 'completed', side: 'mentor' }),
+      ],
+    });
     viewer = MEMBER;
     render(<BookingsScreen />);
-    expect(screen.queryAllByRole('link', { name: 'Book again' })).toHaveLength(1);
+    expect(screen.queryByRole('link', { name: 'Book again' })).not.toBeInTheDocument();
   });
 
   it('asks the server for another page when the reveal runs past what is loaded', async () => {
@@ -374,5 +395,63 @@ describe('what time it is for the other person', () => {
     });
     render(<BookingsScreen />);
     expect(screen.queryByText(/for Kwame in Accra/)).not.toBeInTheDocument();
+  });
+});
+
+describe('Join, when the browser gets in the way', () => {
+  const live = () =>
+    booking({ id: 'live', startsAt: at(-0.05), joinOpensAt: at(-0.2), joinClosesAt: at(0.2) });
+
+  it('a blocked popup offers the link instead of looking like a dead button', async () => {
+    upcoming = remote([live()]);
+    join.mockImplementation((_id, { onSuccess }) =>
+      onSuccess({ meetingUrl: 'https://meet.test/abc' }),
+    );
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Join session' }));
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: 'Open the session' })).toHaveAttribute(
+        'href',
+        'https://meet.test/abc',
+      ),
+    );
+    expect(screen.getByText(/already marked as here/)).toBeVisible();
+    open.mockRestore();
+  });
+
+  it('a 409 says the window is shut, not that something broke', async () => {
+    upcoming = remote([live()]);
+    join.mockImplementation((_id, { onError }) => onError(new ApiError(409)));
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Join session' }));
+    await waitFor(() =>
+      expect(screen.getByText('This session isn’t open to join right now.')).toBeInTheDocument(),
+    );
+  });
+});
+
+describe('a list already on screen survives a failed refetch', () => {
+  it('keeps the rows rather than replacing them with an error', () => {
+    tab = 'history';
+    history = hist({
+      bookings: [booking({ status: 'completed' })],
+      error: { kind: 'server', message: 'x' } as AppError,
+    });
+    render(<BookingsScreen />);
+    expect(screen.getByText(/School shortlist session with/)).toBeVisible();
+    expect(
+      screen.queryByRole('heading', { name: 'We couldn’t load your bookings' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('a failed "Show more" is said under the button', () => {
+    tab = 'history';
+    history = hist({
+      bookings: Array.from({ length: 6 }, (_, i) => booking({ id: `h${i}`, status: 'completed' })),
+      loadMoreError: { kind: 'server', message: 'x' } as AppError,
+    });
+    render(<BookingsScreen />);
+    expect(screen.getByRole('alert')).toHaveTextContent('We couldn’t load more. Try again.');
   });
 });

@@ -41,3 +41,9 @@
   font-size: var(--text-p-xs);
   color: var(--ink-600);
 }
+
+/* A "Show more" that failed. Ours: the design never drew the case. */
+.error {
+  font-size: var(--text-p-xs);
+  color: var(--red-600);
+}

@@ -9,6 +9,8 @@ type MoreProps = {
   caption: string;
   onClick: () => void;
   busy?: boolean;
+  /** The last attempt failed. Said here, under the button that was pressed. */
+  error?: string;
 };
 
 type BookingListProps = {
@@ -42,6 +44,11 @@ export function BookingList({ label, heading, intro, children, more }: BookingLi
             {more.label}
           </Button>
           <span className={styles.count}>{more.caption}</span>
+          {more.error && (
+            <span role="alert" className={styles.error}>
+              {more.error}
+            </span>
+          )}
         </div>
       )}
     </section>

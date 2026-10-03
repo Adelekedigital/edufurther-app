@@ -4,7 +4,7 @@
  * the same rule can be tested directly and used in a row, a hero or a panel.
  */
 import { formatTime } from '@/lib/utils/format';
-import type { Booking, BookingStatus, BookingTab } from '@/types/booking';
+import type { Booking, BookingStatus } from '@/types/booking';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -35,13 +35,6 @@ export function respondDeadline(b: Booking): string {
  */
 export function isLapsed(b: Booking, now = new Date()): boolean {
   return b.status === 'pending' && new Date(respondDeadline(b)).getTime() <= now.getTime();
-}
-
-/** Which tab a booking belongs to. A lapsed request stays in Pending until the sweep moves it. */
-export function tabOf(b: Booking): BookingTab {
-  if (b.status === 'pending') return 'pending';
-  if (b.status === 'confirmed') return 'upcoming';
-  return 'history';
 }
 
 /**
@@ -88,11 +81,6 @@ export function joinOpensInMinutes(b: Booking): number | null {
   return ms > 0 ? Math.round(ms / MINUTE) : null;
 }
 
-/** A session that has started but whose join window is still open. */
-export function isInProgress(b: Booking, now = new Date()): boolean {
-  return joinState(b, now) === 'open' && new Date(b.startsAt).getTime() <= now.getTime();
-}
-
 /**
  * The hero's when-pill: how far off the next session is, in the design's own
  * vocabulary (Bookings.dc.html `nextIn`), but computed rather than picked from
@@ -102,6 +90,7 @@ export function isInProgress(b: Booking, now = new Date()): boolean {
 export function nextSessionWhen(
   b: Booking,
   now = new Date(),
+  timeZone = 'UTC',
 ): { label: string; icon: 'event' | 'schedule' | 'radio_button_checked'; live: boolean } {
   const ms = new Date(b.startsAt).getTime() - now.getTime();
   if (ms <= 0) {
@@ -109,12 +98,25 @@ export function nextSessionWhen(
     return { label: `Started ${mins} min ago`, icon: 'radio_button_checked', live: true };
   }
   if (ms < HOUR)
-    return { label: `Starts in ${Math.max(1, Math.round(ms / MINUTE))} min`, icon: 'schedule', live: false };
-  const days = Math.floor(ms / (24 * HOUR));
-  if (days < 1)
-    return { label: `Starts in ${Math.round(ms / HOUR)} h`, icon: 'schedule', live: false };
-  if (days < 2) return { label: 'Tomorrow', icon: 'event', live: false };
+    return {
+      label: `Starts in ${Math.max(1, Math.round(ms / MINUTE))} min`,
+      icon: 'schedule',
+      live: false,
+    };
+  // Counted in calendar days in the viewer's zone, not in 24-hour blocks:
+  // on Saturday afternoon, a Monday session is "In 2 days", never "Tomorrow".
+  const days = daysBetween(now, new Date(b.startsAt), timeZone);
+  if (days === 0)
+    return { label: `Starts in ${Math.max(1, Math.round(ms / HOUR))} h`, icon: 'schedule', live: false };
+  if (days === 1) return { label: 'Tomorrow', icon: 'event', live: false };
   return { label: `In ${days} days`, icon: 'event', live: false };
+}
+
+/** Whole calendar days from `a` to `b`, counted in `zone`. */
+function daysBetween(a: Date, b: Date, zone: string): number {
+  const day = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: zone }).format(d);
+  const utc = (key: string) => Date.parse(`${key}T00:00:00Z`);
+  return Math.round((utc(day(b)) - utc(day(a))) / (24 * HOUR));
 }
 
 export type StatusTone = 'success' | 'warning' | 'danger';
@@ -159,6 +161,39 @@ export function timeRange(b: Booking, timeZone: string): string {
   return `${formatTime(b.startsAt, timeZone)} to ${formatTime(b.endsAt, timeZone)}`;
 }
 
+/**
+ * Whether Intl will accept this zone. Another account's profile field reaches
+ * us here, and `Intl.DateTimeFormat` throws a RangeError on anything that is
+ * not a real IANA name — which would take the whole row down over one line of
+ * nice-to-have context.
+ */
+function isRenderableZone(zone: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: zone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * A meeting link we are willing to send someone to. The join response is an
+ * untyped object, and a `custom` venue is a mentor's own typed URL — someone
+ * else's text on our page — so it gets the same check as a profile link
+ * (lib/utils/socialUrl): https only, and no embedded credentials. Anything
+ * else reads as "no venue", which is the truth from the viewer's side.
+ */
+export function safeMeetingUrl(value: string | null): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value.trim());
+    if (url.protocol !== 'https:' || url.username || url.password) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 /** A zone's city, as the line names it: "Africa/Port_Harcourt" → "Port Harcourt". */
 function cityOf(zone: string): string {
   return (zone.split('/')[1] ?? '').replace(/_/g, ' ');
@@ -193,7 +228,7 @@ export function otherTimeLine(
   viewerZone: string,
 ): { text: string; odd: boolean } | null {
   const zone = b.other.timeZone;
-  if (!zone || zone === viewerZone) return null;
+  if (!zone || zone === viewerZone || !isRenderableZone(zone)) return null;
   const first = b.other.firstName;
   const city = cityOf(zone);
   const hour = hourIn(b.startsAt, zone);
@@ -229,12 +264,4 @@ export function fullDate(isoInstant: string, timeZone: string): string {
     year: 'numeric',
     timeZone,
   }).format(new Date(isoInstant));
-}
-
-/** "Attendance rate: 92%" under the mentee's name, or just "Mentee" with no data. */
-export function attendanceLine(b: Booking): string {
-  if (b.side !== 'mentor') return 'Mentor';
-  return b.menteeAttendanceRate == null
-    ? 'Mentee'
-    : `Attendance rate: ${b.menteeAttendanceRate}%`;
 }
