@@ -6,7 +6,7 @@ import type { BookingStatus } from '@/types/booking';
 import { AccountMenu } from './AccountMenu/AccountMenu';
 import { BookingDayBadge } from './BookingDayBadge/BookingDayBadge';
 import { BookingStatusTag } from './BookingStatusTag/BookingStatusTag';
-import { RespondBadge } from './RespondBadge/RespondBadge';
+import { DeadlinePill } from './DeadlinePill/DeadlinePill';
 import { DayTimePicker } from './DayTimePicker/DayTimePicker';
 import { EmptyState } from './EmptyState/EmptyState';
 import { FactTile } from './FactTile/FactTile';
@@ -682,21 +682,28 @@ export const BookingOutcomes: Story = {
   ),
 };
 
-/** Bookings.dc.html: the countdown on a request. Warm under a day, grey above. */
-export const RespondCountdown: Story = {
-  render: () => {
-    const now = new Date('2026-10-03T12:00:00Z');
-    const at = (h: number) => new Date(now.getTime() + h * 3_600_000).toISOString();
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-        <RespondBadge deadline={at(0.5)} now={now} />
-        <RespondBadge deadline={at(5)} now={now} />
-        <RespondBadge deadline={at(50)} now={now} />
-        {/* Past its deadline: nothing, so a dead row gets no live countdown. */}
-        <RespondBadge deadline={at(-1)} now={now} />
-      </div>
-    );
-  },
+/**
+ * Bookings.dc.html: how long a pending request has left. One pill, both sides —
+ * the mentor is told what to do, the mentee who it waits on.
+ */
+export const PendingDeadline: Story = {
+  render: () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+      {/* The mentor's side: theirs to answer. */}
+      <DeadlinePill icon="timer" urgent>
+        Respond within 30 min
+      </DeadlinePill>
+      <DeadlinePill icon="timer" urgent>
+        Respond within 5h
+      </DeadlinePill>
+      <DeadlinePill icon="timer">Respond within 3 days</DeadlinePill>
+      {/* The mentee's side: nothing to do but wait — until it is nearly too late. */}
+      <DeadlinePill icon="hourglass_top">Waiting for Amara to confirm</DeadlinePill>
+      <DeadlinePill icon="timer" urgent>
+        Amara has 18h left to confirm
+      </DeadlinePill>
+    </div>
+  ),
 };
 
 /** Bookings.dc.html: the day block at the head of a booking row. */

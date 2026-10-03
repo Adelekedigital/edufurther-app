@@ -2,14 +2,14 @@ import type { ReactNode } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { BookingDayBadge } from '@/components/molecules/BookingDayBadge/BookingDayBadge';
 import { BookingStatusTag } from '@/components/molecules/BookingStatusTag/BookingStatusTag';
-import { RespondBadge } from '@/components/molecules/RespondBadge/RespondBadge';
+import { DeadlinePill } from '@/components/molecules/DeadlinePill/DeadlinePill';
 import {
   bookingHeading,
   fullDate,
   isLapsed,
   otherTimeLine,
-  respondDeadline,
   timeRange,
+  waitingPill,
 } from '@/lib/utils/bookings';
 import { RowMenu, type RowMenuItem } from '@/components/molecules/RowMenu/RowMenu';
 import { cx } from '@/lib/utils/cx';
@@ -47,10 +47,8 @@ export function BookingRow({
 }: BookingRowProps) {
   const past = b.status !== 'confirmed' && b.status !== 'pending';
   const lapsed = isLapsed(b, now);
-  // A mentee's own request is waiting on the mentor; the mentor's is waiting on
-  // them, and gets a countdown instead.
-  const waiting = b.status === 'pending' && b.side === 'mentee' && !lapsed;
-  const countdown = b.status === 'pending' && b.side === 'mentor' && !lapsed;
+  // One pill for both sides: what is left to do, and how long is left to do it.
+  const pill = waitingPill(b, now);
   const other = otherTimeLine(b, timeZone);
 
   return (
@@ -79,14 +77,10 @@ export function BookingRow({
             </span>
           </span>
         )}
-        {waiting && (
-          <span className={styles.waiting}>
-            <Icon name="hourglass_top" size={14} />
-            Waiting for {b.other.firstName} to confirm
-          </span>
-        )}
-        {countdown && (
-          <RespondBadge deadline={respondDeadline(b)} now={now} className={styles.badge} />
+        {pill && (
+          <DeadlinePill icon={pill.icon} urgent={pill.urgent} className={styles.badge}>
+            {pill.text}
+          </DeadlinePill>
         )}
       </div>
       {(actions || !!menu?.length) && (
