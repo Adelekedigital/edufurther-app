@@ -144,7 +144,7 @@ describe('copy', () => {
 
   it('title counts monthly credits; the pill name starts with the total (WCAG 2.5.3)', () => {
     const four = v(4, [{ count: 1, expires: false, expiresOn: null }]);
-    expect(creditsTitle(four)).toBe('3 of 3 monthly credits left');
+    expect(creditsTitle(four)).toBe('3 of 3 left this month');
     expect(creditsAria(four)).toBe('4 credits left: 3 monthly, 1 bonus, monthly resets Nov 1');
     expect(creditsAria(v(3))).toBe('3 credits left, monthly resets Nov 1');
     expect(creditsAria(v(1))).toBe('1 credit left, monthly resets Nov 1');
@@ -182,18 +182,20 @@ describe('copy', () => {
   it('points: no "3 every month" promise; "don\'t carry over" only when the monthly ones lapse', () => {
     expect(creditsPoints(v(4, [{ count: 1, expires: false, expiresOn: null }]))).toEqual([
       'Each session you request uses 1 credit.',
-      'Monthly credits reset on Nov 1. Unused ones don’t carry over.',
+      'Monthly credits reset on Nov 1.',
+      'Unused monthly credits don’t carry over.',
       'Bonus credits come from your starter credit or support. Some never expire.',
-      'Credits that expire soonest are used first.',
+      'Expiring credits are used first.',
     ]);
     // No bonus held: no bonus point. No monthly part: no reset point.
     expect(creditsPoints(v(3))).not.toContainEqual(expect.stringMatching(/Bonus/));
     expect(creditsPoints({ ...v(3), showMonthly: false })).toEqual([
       'Each session you request uses 1 credit.',
-      'Credits that expire soonest are used first.',
+      'Expiring credits are used first.',
     ]);
-    expect(creditsPoints({ ...v(3), monthlyLapses: false })[1]).toBe(
-      'Monthly credits reset on Nov 1.',
+    // Held monthly credits that never lapse: the reset, no "don't carry over".
+    expect(creditsPoints({ ...v(3), monthlyLapses: false })).not.toContain(
+      'Unused monthly credits don’t carry over.',
     );
   });
 });
