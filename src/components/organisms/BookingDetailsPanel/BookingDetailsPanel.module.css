@@ -1,0 +1,32 @@
+/* Bookings.dc.html: the two frames the details panel wears. */
+
+/* Desktop — an aside beside the list, sticky, scrolling on its own. */
+.aside {
+  flex: 0 0 380px;
+  position: sticky;
+  top: var(--space-6);
+  max-height: calc(100vh - 64px - var(--space-6) * 2);
+  display: flex;
+  flex-direction: column;
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-xl);
+  background: var(--white);
+  overflow: hidden;
+}
+
+/* Phone — the whole screen. No scrim: there is nothing behind it to see. */
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  font-family: var(--font-ui);
+  color: var(--ink-900);
+}
+
+/* Clear of the home indicator, as the design's footer is. */
+.sheet > :last-child {
+  padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
+}

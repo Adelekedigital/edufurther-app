@@ -98,3 +98,37 @@
     padding-left: calc(48px + var(--space-4));
   }
 }
+
+/* Its details are on show (Bookings.dc.html `sel`). */
+.selected {
+  background: var(--blue-50);
+}
+
+/* Bookings.dc.html's "⋯": 40px on desktop, 44px on a phone — the DS trigger is
+   32px, which is Session Types' value, not this screen's. */
+.more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--ink-500);
+  cursor: pointer;
+}
+.more:hover {
+  background: var(--ink-100);
+  color: var(--ink-900);
+}
+.more:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+@media (max-width: 767px) {
+  .more {
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+  }
+}

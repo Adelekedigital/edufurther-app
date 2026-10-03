@@ -199,6 +199,37 @@ export function usePendingBookings(userId: string | null, active = true): Remote
   return remote(query, () => void query.refetch(), enabled);
 }
 
+/**
+ * One booking (GET /sessions/{id}). The backend confirms this returns exactly
+ * what a list row holds, so the panel only reaches for it when the row is not
+ * already loaded — a `?booking=` link opened cold, or a tab that has not
+ * fetched. Opening the panel from the list costs no request at all.
+ */
+export function useBooking(
+  id: string | null,
+  userId: string | null,
+  active: boolean,
+): Remote<Booking> {
+  const session = useSession();
+  const enabled = active && !!id && !!userId && session.status !== 'unknown';
+  const query = useQuery({
+    queryKey: keys.bookings.one(id ?? '', sessionKey(session)),
+    enabled,
+    queryFn: async ({ signal }) => {
+      const { data, error, response } = await api.GET('/api/v1/sessions/{session_id}', {
+        params: { path: { session_id: id! } },
+        signal,
+      });
+      if (!data) throw apiError(response.status, error);
+      return toBooking(data, userId!);
+    },
+    staleTime: 30_000,
+    networkMode: 'always',
+    retry: retryOnce,
+  });
+  return remote(query, () => void query.refetch(), enabled);
+}
+
 export type BookingHistoryResult = {
   bookings: Booking[];
   isLoading: boolean;

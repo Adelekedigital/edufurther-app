@@ -1,0 +1,163 @@
+/* Bookings.dc.html details panel body: shared by the aside and the sheet. */
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-5);
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.title {
+  flex: 1;
+  margin: 0;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.whoText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.name {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+
+.value {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.note {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  text-wrap: pretty;
+}
+
+/* Why it ended this way. Ours: the design has no reason block, because the
+   API had nowhere to put one when it was drawn. */
+.reason {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  text-wrap: pretty;
+  font-style: italic;
+  color: var(--ink-700);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: var(--border-hairline) solid var(--ink-100);
+}
+
+.metaItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.metaValue {
+  font-size: var(--text-p-xs);
+}
+
+.status {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+}
+.success {
+  color: var(--green-700);
+}
+.warning {
+  color: var(--yellow-900);
+}
+.danger {
+  color: var(--red-600);
+}
+.info {
+  color: var(--blue-700);
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-top: var(--border-hairline) solid var(--ink-100);
+}
+
+.lock {
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+
+/* Bookings.dc.html's close: 40px here, not the 32px of the DS IconButton and
+   not its 44px `lg` — its own value, so its own control (house rule 2). The
+   negative margin pulls it level with the heading's cap height. */
+.close {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin: calc(var(--space-2) * -1) calc(var(--space-2) * -1) 0 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--ink-700);
+  cursor: pointer;
+}
+.close:hover {
+  background: var(--ink-50);
+}
+.close:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
+/* The phone sheet's own rule: a full 44px target (handoff §7.3). */
+@media (max-width: 767px) {
+  .close {
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+  }
+}

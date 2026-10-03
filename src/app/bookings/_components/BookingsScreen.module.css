@@ -42,3 +42,22 @@
   flex-direction: column;
   gap: var(--space-3);
 }
+
+/* The list, and the details aside beside it (Bookings.dc.html). The design
+   pushes the aside down by a measured margin so it starts below the tabs; two
+   rows put it there with nothing to measure. */
+.columns {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-6);
+}
+
+.column {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* The page makes room for the aside only while it is open. */
+.withAside {
+  max-width: 1320px;
+}

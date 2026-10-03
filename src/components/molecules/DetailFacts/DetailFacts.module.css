@@ -1,0 +1,22 @@
+/* Bookings.dc.html details panel: the grey box of when-and-where facts. */
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--ink-50);
+  font-size: var(--text-p-xs);
+  color: var(--ink-700);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.row svg {
+  flex: none;
+  color: var(--ink-500);
+}

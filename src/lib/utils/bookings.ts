@@ -119,6 +119,38 @@ function daysBetween(a: Date, b: Date, zone: string): number {
   return Math.round((utc(day(b)) - utc(day(a))) / (24 * HOUR));
 }
 
+/**
+ * "Attendance rate: 92%" under the other person's name in the details panel,
+ * or just what they are when there is no figure. Never "0%" from nothing: null
+ * means no data, and a mentee with no history is not an unreliable one.
+ */
+export function attendanceLine(b: Booking): string {
+  if (b.side !== 'mentor') return 'Mentor';
+  return b.menteeAttendanceRate == null ? 'Mentee' : `Attendance rate: ${b.menteeAttendanceRate}%`;
+}
+
+/**
+ * The panel's own status line, which says more than the row's tag: a request
+ * carries its deadline, and a confirmed session is named rather than left to
+ * the tab it sits in.
+ */
+export function panelStatus(
+  b: Booking,
+  now = new Date(),
+): { label: string; tone: StatusTone | 'info' } {
+  if (b.status === 'pending') {
+    if (isLapsed(b, now)) return { label: 'Unconfirmed', tone: 'warning' };
+    const side = b.side === 'mentor' ? 'you' : b.other.firstName;
+    return {
+      label: `Respond within ${formatRespondIn(respondDeadline(b), now)} · waiting for ${side}`,
+      tone: 'info',
+    };
+  }
+  if (b.status === 'confirmed') return { label: 'Upcoming', tone: 'info' };
+  const tag = statusTag(b.status);
+  return tag ? { label: tag.label, tone: tag.tone } : { label: 'Upcoming', tone: 'info' };
+}
+
 export type StatusTone = 'success' | 'warning' | 'danger';
 
 /**

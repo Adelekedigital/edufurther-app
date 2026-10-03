@@ -11,6 +11,8 @@ import {
   respondDeadline,
   timeRange,
 } from '@/lib/utils/bookings';
+import { RowMenu, type RowMenuItem } from '@/components/molecules/RowMenu/RowMenu';
+import { cx } from '@/lib/utils/cx';
 import type { Booking } from '@/types/booking';
 import styles from './BookingRow.module.css';
 
@@ -20,6 +22,10 @@ type BookingRowProps = {
   timeZone: string;
   /** The row's controls. Nothing renders where a tab has no action yet. */
   actions?: ReactNode;
+  /** The ⋯ menu's items. Nothing renders when there are none. */
+  menu?: RowMenuItem[];
+  /** Its details are the ones on show: the design's --blue-50 ground. */
+  selected?: boolean;
   /** Injected in tests and stories; the clock otherwise. */
   now?: Date;
 };
@@ -31,7 +37,14 @@ type BookingRowProps = {
  * The screen passes the controls, so the same row serves Upcoming, Pending and
  * History without knowing which it is in.
  */
-export function BookingRow({ booking: b, timeZone, actions, now = new Date() }: BookingRowProps) {
+export function BookingRow({
+  booking: b,
+  timeZone,
+  actions,
+  menu,
+  selected,
+  now = new Date(),
+}: BookingRowProps) {
   const past = b.status !== 'confirmed' && b.status !== 'pending';
   const lapsed = isLapsed(b, now);
   // A mentee's own request is waiting on the mentor; the mentor's is waiting on
@@ -41,7 +54,7 @@ export function BookingRow({ booking: b, timeZone, actions, now = new Date() }: 
   const other = otherTimeLine(b, timeZone);
 
   return (
-    <div className={styles.row}>
+    <div className={cx(styles.row, selected && styles.selected)}>
       <BookingDayBadge startsAt={b.startsAt} timeZone={timeZone} />
       <div className={styles.content}>
         <span className={styles.title}>
@@ -76,7 +89,18 @@ export function BookingRow({ booking: b, timeZone, actions, now = new Date() }: 
           <RespondBadge deadline={respondDeadline(b)} now={now} className={styles.badge} />
         )}
       </div>
-      {actions && <div className={styles.actions}>{actions}</div>}
+      {(actions || menu?.length) && (
+        <div className={styles.actions}>
+          {actions}
+          {!!menu?.length && (
+            <RowMenu
+              label={`More options for ${bookingHeading(b)}`}
+              items={menu}
+              trigger={{ icon: 'more_horiz', size: 20, className: styles.more }}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }
