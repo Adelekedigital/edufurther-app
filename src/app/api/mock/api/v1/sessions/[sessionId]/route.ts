@@ -8,7 +8,12 @@ import { NextResponse } from 'next/server';
 /** The mock viewer this page is being read as (viewer.ts MOCK_VIEWERS). */
 export function mockViewerId(req: Request): string {
   const referer = req.headers.get('referer');
-  const asked = referer ? new URL(referer).searchParams.get('mockViewer') : null;
+  let asked: string | null = null;
+  // An opaque or malformed Referer is normal (a privacy setting, a redirect);
+  // it must fall back, not take the route down.
+  try {
+    if (referer) asked = new URL(referer).searchParams.get('mockViewer');
+  } catch {}
   const which = asked ?? process.env.NEXT_PUBLIC_MOCK_VIEWER ?? 'mentee';
   return which === 'mentor' ? 'mock-mentor' : 'mock-viewer';
 }
