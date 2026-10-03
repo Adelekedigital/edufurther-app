@@ -59,8 +59,9 @@ export function creditsAria(v: CreditsView): string {
  * "Your credits": the design's explainer with the product's existing "How does
  * it work?" copy folded in (product, 2026-10-03), kept to what the backend
  * does today. Refunds (backend decision 229): a request withdrawn, declined
- * or unanswered; a mentor cancelling or missing the session; a mentee
- * cancelling with at least 12 hours to go (the boundary included).
+ * or unanswered; a mentor cancelling; a mentor no-show only when the mentee
+ * joined (attendance is whoever pressed Join); a mentee cancelling with at
+ * least 12 hours to go (the boundary included).
  */
 export function creditsLead(v: CreditsView): string | null {
   return isOut(v) ? 'You’ve used this month’s credits.' : null;
@@ -69,13 +70,23 @@ export function creditsLead(v: CreditsView): string | null {
 export function creditsPoints(v: CreditsView): string[] {
   return [
     'Each session you request uses 1 credit.',
-    'You get it back if you withdraw the request, or your mentor declines it, doesn’t reply in time, cancels, or misses the session.',
-    'Cancel at least 12 hours before and you get it back; later than that, the credit is used.',
     v.resetsOn
       ? `Your credits reset on ${v.resetsOn}.`
       : 'Your credits reset at the start of each month.',
   ];
 }
+
+/** Behind the explainer's "Refund policy" toggle, closed by default. */
+export const REFUND_POLICY = {
+  lead: 'You get the credit back if',
+  items: [
+    'your mentor declines or doesn’t reply',
+    'your mentor cancels',
+    'your mentor misses a session you joined',
+    'you withdraw a request',
+    'you cancel 12+ hours before',
+  ],
+};
 
 export const CREDITS_PURPOSE =
   'Credits help you book the sessions that move you forward, and give mentors the time to support you well.';
