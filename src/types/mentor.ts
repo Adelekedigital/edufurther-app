@@ -185,7 +185,13 @@ export type Viewer =
       /** Sessions had as a mentee; drives the match prompt (≤ 2 → shown). */
       completedSessions: number;
       /** Null for users without a mentee goal (no credit block). */
-      credits: { balance: number; allowance: number; state: CreditState } | null;
+      credits: {
+        balance: number;
+        allowance: number;
+        state: CreditState;
+        /** When the monthly credits reset (backend `next_reset_at`, midnight UTC). */
+        nextResetAt?: string | null;
+      } | null;
       // The sidebar's avatar and badge. Optional so hand-built test viewers
       // needn't list them; absent reads as none.
       /** Profile photo (backend `profile.avatar_url`); none shows the initial. */

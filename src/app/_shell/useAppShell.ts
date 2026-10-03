@@ -5,6 +5,7 @@ import type { AccountMenuItem } from '@/components/molecules/AccountMenu/Account
 import { useSignOut } from '@/lib/api/data/auth';
 import { useViewer } from '@/lib/api/data/viewer';
 import { coverFor } from '@/lib/utils/cover';
+import { creditsView } from '@/lib/utils/credits';
 import { hasUnsavedChanges } from '@/lib/utils/leaveGuard';
 import { canBookFor } from './bookBlocked';
 import type { Viewer } from '@/types/mentor';
@@ -122,6 +123,8 @@ export function useAppShell() {
               cover: member?.coverKey ?? coverFor(member?.id ?? ''),
             },
             items,
+            /** Mentees only: their monthly credits (AppShell.dc.html creditsIn=both). */
+            credits: isMenteeSide(member) ? (creditsView(member.credits) ?? undefined) : undefined,
             /** Bookings badge: requests awaiting a response (product, 2026-09-30). */
             counts: countsFor(member),
             logoutConfirm: confirmingLogout

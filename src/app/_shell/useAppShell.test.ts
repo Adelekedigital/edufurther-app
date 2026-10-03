@@ -1,5 +1,6 @@
 import type { Viewer } from '@/types/mentor';
 import { accountItems, countsFor, isMenteeSide } from './useAppShell';
+import { creditsView } from '@/lib/utils/credits';
 
 vi.mock('@/lib/api/data/auth', () => ({ useSignOut: () => vi.fn() }));
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => ({ kind: 'guest' }) }));
@@ -104,5 +105,24 @@ describe('isMenteeSide (who gets "Find my mentor matches", menu and Explore)', (
 
   it('no member yet: no', () => {
     expect(isMenteeSide(null)).toBe(false);
+  });
+});
+
+describe('credits in the shell: mentees only', () => {
+  const c = {
+    balance: 3,
+    allowance: 4,
+    state: 'on_track' as const,
+    nextResetAt: '2026-11-01T00:00:00Z',
+  };
+  it('a mentee (or a new member) with credits gets them; a mentor never does', () => {
+    const mentee = member({ isMentor: false, isApprovedMentor: false, isMentee: true, credits: c });
+    expect(isMenteeSide(mentee) ? creditsView(mentee.credits) : null).toEqual({
+      left: 3,
+      total: 4,
+      resetsOn: 'Nov 1',
+    });
+    const mentor = member({ credits: c });
+    expect(isMenteeSide(mentor)).toBe(false);
   });
 });
