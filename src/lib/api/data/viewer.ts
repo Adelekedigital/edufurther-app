@@ -42,7 +42,27 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     awaitingResponse: me.mentor_profile
       ? (me.booking_counts?.as_mentor?.awaiting_your_response ?? null)
       : (me.booking_counts?.as_mentee?.awaiting_mentor ?? null),
+    bookingCounts: {
+      pending: sumSides(
+        me.booking_counts?.as_mentor?.awaiting_your_response,
+        me.booking_counts?.as_mentee?.awaiting_mentor,
+      ),
+      upcoming: sumSides(
+        me.booking_counts?.as_mentor?.upcoming,
+        me.booking_counts?.as_mentee?.upcoming,
+      ),
+    },
   };
+}
+
+/**
+ * The Bookings tabs mix both sides in one list, so their counts add up — a
+ * mentor who also books as a mentee has two of each (backend reply §10). Null
+ * only when neither side has a number: zero is a real count, and treating it
+ * as "unknown" would blank a tab that is legitimately empty.
+ */
+function sumSides(a: number | null | undefined, b: number | null | undefined): number | null {
+  return a == null && b == null ? null : (a ?? 0) + (b ?? 0);
 }
 
 /** Local dev / CI page review without auth (NEXT_PUBLIC_MOCK_VIEWER). */
@@ -62,6 +82,7 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     avatarFocus: { x: 0.5, y: 0.35 },
     coverKey: null,
     awaitingResponse: 1,
+    bookingCounts: { pending: 3, upcoming: 6 },
   },
   mentor: {
     kind: 'member',
@@ -79,6 +100,7 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     avatarFocus: null,
     coverKey: null,
     awaitingResponse: 12,
+    bookingCounts: { pending: 3, upcoming: 6 },
   },
 };
 

@@ -1,0 +1,43 @@
+/* Bookings.dc.html: a tab's list — optional heading and intro, the bordered
+   box of rows, and the "Show more" footer. */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.heading {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.intro {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+
+/* The rows carry the corner radii themselves (inset by the box's 1px border),
+   as the design does, so a selected row's ground never squares the box off. */
+.box {
+  display: flex;
+  flex-direction: column;
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-xl);
+  background: var(--white);
+}
+
+.more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding-top: var(--space-1);
+}
+
+.count {
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}

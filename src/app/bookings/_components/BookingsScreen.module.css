@@ -1,0 +1,44 @@
+/* Bookings.dc.html: the page column. The design caps it at 920px, leaving room
+   for the details aside that PR 2 adds beside it. */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 920px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-h6);
+  line-height: var(--lh-h6);
+  letter-spacing: var(--ls-h6);
+  font-weight: var(--weight-semibold);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+/* Error and empty: the design's centred block with generous air above it. */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-16) var(--space-4);
+}
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}

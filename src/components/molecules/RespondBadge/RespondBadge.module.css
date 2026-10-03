@@ -1,0 +1,21 @@
+/* Bookings.dc.html: the pending row's countdown pill. */
+.badge {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--ink-100);
+  color: var(--ink-700);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+/* Under a day left. */
+.urgent {
+  background: var(--gold-subtle);
+  color: var(--yellow-900);
+}

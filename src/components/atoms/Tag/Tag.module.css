@@ -79,3 +79,26 @@
     padding: 0 var(--space-2);
   }
 }
+
+/* Bookings.dc.html: a past session's outcome, as a full-radius pill. Same
+   colours as `free`/`mine` for success, but a different radius and padding —
+   so a separate class, not a reuse. */
+.success,
+.warning,
+.danger {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  font-weight: var(--weight-semibold);
+}
+.success {
+  background: var(--green-50);
+  color: var(--green-700);
+}
+.warning {
+  background: var(--gold-subtle);
+  color: var(--yellow-900);
+}
+.danger {
+  background: var(--red-50);
+  color: var(--red-600);
+}

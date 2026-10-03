@@ -10,8 +10,11 @@
     "arrow_forward",
     "arrow_upward",
     "badge",
+    "bedtime",
+    "block",
     "bolt",
     "calendar_month",
+    "calendar_today",
     "campaign",
     "chat",
     "check",
@@ -35,6 +38,7 @@
     "event_available",
     "event_busy",
     "event_note",
+    "event_repeat",
     "expand_less",
     "expand_more",
     "explore",
@@ -93,6 +97,7 @@
     "smart_display",
     "star",
     "task_alt",
+    "timer",
     "toll",
     "translate",
     "tune",
@@ -107,5 +112,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "842c9e4426da878bd3e43ce88daf02f64423bbbbfe08d3b0bd7fa6213818729d"
+  "sha256": "8202fa78ef2c5fab6b8d99ebf854676c1e08acceada0fb33dd39ce290acbc61b"
 }
