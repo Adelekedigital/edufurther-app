@@ -194,11 +194,15 @@ export type Viewer =
       completedSessions: number;
       /** Null for users without a mentee goal (no credit block). */
       credits: {
+        /** Everything spendable: monthly + bonus. */
         balance: number;
-        allowance: number;
         state: CreditState;
         /** When the monthly credits reset (backend `next_reset_at`, midnight UTC). */
         nextResetAt?: string | null;
+        /** `expiresAt` null: none held, or none of those held expire. */
+        monthly: { balance: number; ceiling: number; expiresAt: string | null };
+        /** Starter, invite and support grants; groups soonest expiry first. */
+        bonus: { balance: number; groups: { count: number; expiresAt: string | null }[] };
       } | null;
       // The sidebar's avatar and badge. Optional so hand-built test viewers
       // needn't list them; absent reads as none.

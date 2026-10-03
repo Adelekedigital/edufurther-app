@@ -110,16 +110,20 @@ describe('isMenteeSide (who gets "Find my mentor matches", menu and Explore)', (
 
 describe('credits in the shell: mentees only', () => {
   const c = {
-    balance: 3,
-    allowance: 4,
+    balance: 4,
     state: 'on_track' as const,
     nextResetAt: '2026-11-01T00:00:00Z',
+    monthly: { balance: 3, ceiling: 3, expiresAt: '2026-11-01T00:00:00Z' },
+    bonus: { balance: 1, groups: [{ count: 1, expiresAt: null }] },
   };
   it('a mentee (or a new member) with credits gets them; a mentor never does', () => {
     const mentee = member({ isMentor: false, isApprovedMentor: false, isMentee: true, credits: c });
     expect(isMenteeSide(mentee) ? creditsView(mentee.credits) : null).toEqual({
-      left: 3,
-      total: 4,
+      left: 4,
+      monthlyLeft: 3,
+      monthlyTotal: 3,
+      bonus: [{ count: 1, expiresOn: null }],
+      monthlyLapses: true,
       resetsOn: 'Nov 1',
     });
     const mentor = member({ credits: c });

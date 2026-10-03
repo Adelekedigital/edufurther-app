@@ -3,15 +3,27 @@
 import { useId } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { cx } from '@/lib/utils/cx';
-import { creditsTitle, isLow, type CreditsView } from '@/lib/utils/credits';
+import { bonusLine, creditsTitle, isLow, type CreditsView } from '@/lib/utils/credits';
 import styles from './CreditsSummary.module.css';
 
-/** One segment per credit this month: filled for those left (yellow when low). */
+/** One segment per monthly credit: filled for those left (yellow when low). */
 export function CreditsBar({ credits }: { credits: CreditsView }) {
   return (
     <span className={cx(styles.bar, isLow(credits) && styles.low)} aria-hidden>
-      {Array.from({ length: credits.total }, (_, i) => (
-        <span key={i} className={cx(styles.seg, i < credits.left && styles.filled)} />
+      {Array.from({ length: credits.monthlyTotal }, (_, i) => (
+        <span key={i} className={cx(styles.seg, i < credits.monthlyLeft && styles.filled)} />
+      ))}
+    </span>
+  );
+}
+
+/** "+1 bonus credit · never expires": one line per expiry group (#158). */
+export function BonusLines({ credits, className }: { credits: CreditsView; className?: string }) {
+  if (credits.bonus.length === 0) return null;
+  return (
+    <span className={cx(styles.bonus, className)}>
+      {credits.bonus.map((g) => (
+        <span key={`${g.expiresOn}`}>{bonusLine(g)}</span>
       ))}
     </span>
   );
@@ -50,6 +62,7 @@ export function CreditsSummary({
         </span>
       </div>
       <CreditsBar credits={credits} />
+      <BonusLines credits={credits} />
       <div className={styles.foot}>
         {credits.resetsOn ? (
           <span id={`${id}-r`} className={styles.sub}>

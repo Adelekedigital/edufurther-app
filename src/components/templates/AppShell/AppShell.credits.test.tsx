@@ -16,7 +16,15 @@ const shell = (credits?: CreditsView) =>
       <p>Page</p>
     </AppShell>,
   );
-const three = { left: 3, total: 4, resetsOn: 'Nov 1' };
+// 3 of 3 monthly plus the starter credit: 4 to spend.
+const three: CreditsView = {
+  left: 4,
+  monthlyLeft: 3,
+  monthlyTotal: 3,
+  bonus: [{ count: 1, expiresOn: null }],
+  monthlyLapses: true,
+  resetsOn: 'Nov 1',
+};
 // Two pills render (the desktop bar's and the phone header's); CSS shows one.
 const firstPill = () => screen.getAllByRole('button', { name: /credits left/ })[0]!;
 
@@ -32,9 +40,16 @@ describe('AppShell: a mentee’s credits', () => {
     const pill = firstPill();
     await user.click(pill);
     const dialog = screen.getByRole('dialog', { name: 'Your credits' });
-    expect(dialog).toHaveTextContent('3 of 4 credits left');
+    // #158: the title and bar count monthly credits; bonus is its own line.
+    expect(dialog).toHaveTextContent('3 of 3 monthly credits left');
+    expect(dialog).toHaveTextContent('+1 bonus credit · never expires');
     expect(dialog).toHaveTextContent('Each session you request uses 1 credit.');
-    expect(dialog).toHaveTextContent('Your credits reset on Nov 1.');
+    expect(dialog).toHaveTextContent(
+      'Monthly credits reset on Nov 1. Unused ones don’t carry over.',
+    );
+    expect(dialog).toHaveTextContent('Credits that expire soonest are used first.');
+    // No promise of 3 every month: the grant needs an invite first.
+    expect(dialog).not.toHaveTextContent(/3 credits (on|every)/);
     expect(within(dialog).getByRole('link', { name: 'See my bookings' })).toHaveAttribute(
       'href',
       '/bookings',
@@ -44,6 +59,8 @@ describe('AppShell: a mentee’s credits', () => {
     // Closed by default, so the card leads with the balance.
     const toggle = within(dialog).getByRole('button', { name: 'Refund policy' });
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    // No reference to a panel that isn't there yet.
+    expect(toggle).not.toHaveAttribute('aria-controls');
     expect(dialog).not.toHaveTextContent('you cancel 12+ hours before');
     await user.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
@@ -66,10 +83,11 @@ describe('AppShell: a mentee’s credits', () => {
     const menu = screen.getByRole('menu', { name: 'Account' });
     const group = within(menu).getByRole('group', { name: 'Credits' });
     expect(group).toHaveTextContent('Resets Nov 1');
+    expect(group).toHaveTextContent('+1 bonus credit · never expires');
     const how = within(group).getByRole('menuitem', { name: 'How credits work' });
     // Opening the menu focuses its first item: the credits one.
     expect(how).toHaveFocus();
-    expect(how).toHaveAccessibleDescription('3 of 4 credits left Resets Nov 1');
+    expect(how).toHaveAccessibleDescription('3 of 3 monthly credits left Resets Nov 1');
     await user.keyboard('{Enter}');
     expect(screen.getByRole('dialog', { name: 'Your credits' })).toBeInTheDocument();
     expect(screen.queryByRole('menu')).toBeNull();
@@ -101,7 +119,7 @@ describe('AppShell: a mentee’s credits', () => {
   });
 
   it('out of credits: the explainer says so', async () => {
-    shell({ left: 0, total: 4, resetsOn: 'Nov 1' });
+    shell({ ...three, left: 0, monthlyLeft: 0, bonus: [] });
     await userEvent.click(screen.getAllByRole('button', { name: /No credits left/ })[0]!);
     expect(screen.getByRole('dialog', { name: 'Your credits' })).toHaveTextContent(
       'You’ve used this month’s credits.',
@@ -118,5 +136,11 @@ describe('AppShell: a mentee’s credits', () => {
     header!.getClientRects = () => [{}] as unknown as DOMRectList;
     await user.keyboard('{Escape}');
     expect(header).toHaveFocus();
+  });
+
+  it('the pill reads the total and its parts; no bonus line when there is none', () => {
+    shell({ ...three, left: 3, bonus: [] });
+    expect(firstPill()).toHaveAccessibleName('3 credits left, resets Nov 1');
+    expect(screen.queryByText(/bonus credit/)).toBeNull();
   });
 });

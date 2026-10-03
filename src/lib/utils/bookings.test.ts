@@ -163,7 +163,9 @@ describe('otherTimeLine', () => {
   });
 
   it('says what time it is for them, and where they are', () => {
-    expect(otherTimeLine(b, 'America/New_York')?.text).toBe('5:00 pm to 6:00 pm for Amara in Lagos');
+    expect(otherTimeLine(b, 'America/New_York')?.text).toBe(
+      '5:00 pm to 6:00 pm for Amara in Lagos',
+    );
   });
 
   it('is silent when their zone is the viewer’s — it would only repeat the row', () => {
@@ -171,7 +173,9 @@ describe('otherTimeLine', () => {
   });
 
   it('is silent when their zone is unknown', () => {
-    expect(otherTimeLine({ ...b, other: party({ timeZone: null }) }, 'America/New_York')).toBeNull();
+    expect(
+      otherTimeLine({ ...b, other: party({ timeZone: null }) }, 'America/New_York'),
+    ).toBeNull();
   });
 
   it('flags an hour nobody wants, and says which end of the day it is', () => {

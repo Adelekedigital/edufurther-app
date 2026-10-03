@@ -41,6 +41,15 @@
 .low .seg.filled {
   background: var(--warning-text);
 }
+/* Not in the design (#158): the design's secondary text style, no new tokens. */
+.bonus {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
 .foot {
   display: flex;
   align-items: center;

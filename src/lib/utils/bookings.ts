@@ -129,7 +129,11 @@ export function nextSessionWhen(
   // on Saturday afternoon, a Monday session is "In 2 days", never "Tomorrow".
   const days = daysBetween(now, new Date(b.startsAt), timeZone);
   if (days === 0)
-    return { label: `Starts in ${Math.max(1, Math.round(ms / HOUR))} h`, icon: 'schedule', live: false };
+    return {
+      label: `Starts in ${Math.max(1, Math.round(ms / HOUR))} h`,
+      icon: 'schedule',
+      live: false,
+    };
   if (days === 1) return { label: 'Tomorrow', icon: 'event', live: false };
   return { label: `In ${days} days`, icon: 'event', live: false };
 }
@@ -165,7 +169,9 @@ export function panelStatus(
     // The same words as the row it was opened from, so the panel never tells a
     // mentee to "respond" to a request only their mentor can answer.
     const pill = waitingPill(b, now);
-    return pill ? { label: pill.text, tone: pill.urgent ? 'warning' : 'info' } : { label: 'Unconfirmed', tone: 'warning' };
+    return pill
+      ? { label: pill.text, tone: pill.urgent ? 'warning' : 'info' }
+      : { label: 'Unconfirmed', tone: 'warning' };
   }
   if (b.status === 'confirmed') return { label: 'Upcoming', tone: 'info' };
   const tag = statusTag(b.status);

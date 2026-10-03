@@ -5,7 +5,14 @@ import { CreditsPill } from './CreditsPill';
 const pill = (left: number, onClick = vi.fn()) => {
   render(
     <CreditsPill
-      credits={{ left, total: 4, resetsOn: 'Nov 1' }}
+      credits={{
+        left,
+        monthlyLeft: left,
+        monthlyTotal: 3,
+        bonus: [],
+        monthlyLapses: true,
+        resetsOn: 'Nov 1',
+      }}
       expanded={false}
       controls="credits"
       onClick={onClick}
@@ -17,7 +24,7 @@ const pill = (left: number, onClick = vi.fn()) => {
 describe('CreditsPill', () => {
   it('reads in full and shows "3 credits"', () => {
     const b = pill(3);
-    expect(b).toHaveAccessibleName('3 credits left of 4, resets Nov 1');
+    expect(b).toHaveAccessibleName('3 credits left, resets Nov 1');
     expect(b).toHaveTextContent(/3\s*credits/);
     expect(b).toHaveAttribute('aria-expanded', 'false');
   });
