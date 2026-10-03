@@ -110,7 +110,8 @@ export const isOut = (v: CreditsView) => v.left === 0;
 export function creditsTitle(v: CreditsView): string {
   if (isOut(v)) return 'No credits left';
   if (!v.showMonthly) return `${v.left} ${v.left === 1 ? 'credit' : 'credits'} left`;
-  return `${v.monthlyLeft} of ${v.monthlyTotal} monthly credits left`;
+  // Short enough for one line in the account menu (product, 2026-10-03).
+  return `${v.monthlyLeft} of ${v.monthlyTotal} left this month`;
 }
 
 /** "+1 bonus credit · never expires", "+2 bonus credits · expire Oct 31". */
@@ -156,13 +157,14 @@ export function creditsPoints(v: CreditsView): string[] {
     : 'Monthly credits reset at the start of each month.';
   return [
     'Each session you request uses 1 credit.',
+    ...(v.showMonthly ? [reset] : []),
     // Held monthly credits that never expire (a data anomaly): no claim.
-    ...(v.showMonthly ? [v.monthlyLapses ? `${reset} Unused ones don’t carry over.` : reset] : []),
+    ...(v.showMonthly && v.monthlyLapses ? ['Unused monthly credits don’t carry over.'] : []),
     // No "invites": there's no invite feature to point at yet.
     ...(v.bonus.length > 0
       ? ['Bonus credits come from your starter credit or support. Some never expire.']
       : []),
-    'Credits that expire soonest are used first.',
+    'Expiring credits are used first.',
   ];
 }
 
