@@ -9,12 +9,16 @@
 }
 
 /* The box's radius, inset by its 1px border, so the first and last rows do not
-   square off its corners. */
+   square off its corners. Set one corner at a time, never the `border-radius`
+   shorthand: in a one-row list both selectors match the same element, and a
+   shorthand would let `:last-child` blank the top corners the design rounds. */
 .row:first-child {
-  border-radius: calc(var(--radius-xl) - 1px) calc(var(--radius-xl) - 1px) 0 0;
+  border-top-left-radius: calc(var(--radius-xl) - 1px);
+  border-top-right-radius: calc(var(--radius-xl) - 1px);
 }
 .row:last-child {
-  border-radius: 0 0 calc(var(--radius-xl) - 1px) calc(var(--radius-xl) - 1px);
+  border-bottom-left-radius: calc(var(--radius-xl) - 1px);
+  border-bottom-right-radius: calc(var(--radius-xl) - 1px);
 }
 .row:not(:first-child) {
   border-top: var(--border-hairline) solid var(--ink-100);

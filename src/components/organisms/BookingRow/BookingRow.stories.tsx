@@ -61,6 +61,24 @@ type Story = StoryObj<typeof BookingRow>;
 
 export const Upcoming: Story = {};
 
+/**
+ * A list of exactly one. Both `:first-child` and `:last-child` match it, so all
+ * four corners must round — a shorthand here once left the top two square
+ * inside a rounded box (failure log #40).
+ */
+export const OnlyRow: Story = {};
+
+/** Three rows: the corners belong to the first and last, dividers between. */
+export const InAList: Story = {
+  render: (args) => (
+    <>
+      <BookingRow {...args} booking={sampleBooking({ id: 'a' })} />
+      <BookingRow {...args} booking={sampleBooking({ id: 'b', title: 'Visa practice' })} />
+      <BookingRow {...args} booking={sampleBooking({ id: 'c', title: 'Quick CV check' })} />
+    </>
+  ),
+};
+
 /** The mentor's side of a request: a countdown, because it is theirs to answer. */
 export const PendingForMentor: Story = {
   args: { booking: sampleBooking({ status: 'pending', respondBy: at(5) }) },
