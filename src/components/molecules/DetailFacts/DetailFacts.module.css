@@ -20,3 +20,10 @@
   flex: none;
   color: var(--ink-500);
 }
+
+/* Handoff §7.3: `--space-3 --space-4` tightens to `--space-2 --space-3`. */
+@media (max-width: 767px) {
+  .facts {
+    padding: var(--space-2) var(--space-3);
+  }
+}

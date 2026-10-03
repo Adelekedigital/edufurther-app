@@ -101,3 +101,10 @@
     height: var(--touch-target-min);
   }
 }
+
+/* Handoff §7.3: the sheet's own body and its fallback match the panel body. */
+@media (max-width: 767px) {
+  .fallback {
+    padding: var(--space-4);
+  }
+}

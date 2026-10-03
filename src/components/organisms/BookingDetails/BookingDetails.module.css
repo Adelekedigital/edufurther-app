@@ -182,3 +182,16 @@
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: 2px;
 }
+
+/* Handoff §7.3 phone rules, as the design's global block applies them. */
+@media (max-width: 767px) {
+  .body {
+    padding: var(--space-4);
+  }
+  .footer {
+    padding: var(--space-3) var(--space-4);
+  }
+  .meta {
+    gap: var(--space-4);
+  }
+}

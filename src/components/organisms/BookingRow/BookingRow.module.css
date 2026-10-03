@@ -132,3 +132,11 @@
     height: var(--touch-target-min);
   }
 }
+
+/* Handoff §7.3 phone rules, per component: the design's global block tightens
+   `--space-4 --space-5` to `--space-3 --space-4` under 768px. */
+@media (max-width: 767px) {
+  .row {
+    padding: var(--space-3) var(--space-4);
+  }
+}
