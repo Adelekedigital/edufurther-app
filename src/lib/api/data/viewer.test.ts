@@ -53,9 +53,6 @@ describe('toViewer (backend auth reply #3)', () => {
           allowance: 3,
           state: 'low',
           next_reset_at: '2026-10-01T00:00:00Z',
-          // Backend 344 split the balance into a monthly allowance and bonus
-          // grants. toViewer reads neither yet; they are here because the
-          // contract requires them.
           monthly: { balance: 1, ceiling: 3, expires_at: '2026-10-01T00:00:00Z', unlocked: true },
           bonus: { balance: 0, groups: [] },
         },
@@ -64,9 +61,10 @@ describe('toViewer (backend auth reply #3)', () => {
     expect(v.completedSessions).toBe(2);
     expect(v.credits).toEqual({
       balance: 1,
-      allowance: 3,
       state: 'low',
       nextResetAt: '2026-10-01T00:00:00Z',
+      monthly: { balance: 1, ceiling: 3, expiresAt: '2026-10-01T00:00:00Z', unlocked: true },
+      bonus: { balance: 0, groups: [] },
     });
   });
 

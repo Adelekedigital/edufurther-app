@@ -34,9 +34,21 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     credits: me.credits
       ? {
           balance: me.credits.balance,
-          allowance: me.credits.allowance,
           state: me.credits.state,
           nextResetAt: me.credits.next_reset_at ?? null,
+          monthly: {
+            balance: me.credits.monthly.balance,
+            ceiling: me.credits.monthly.ceiling,
+            expiresAt: me.credits.monthly.expires_at,
+            unlocked: me.credits.monthly.unlocked,
+          },
+          bonus: {
+            balance: me.credits.bonus.balance,
+            groups: me.credits.bonus.groups.map((g) => ({
+              count: g.count,
+              expiresAt: g.expires_at,
+            })),
+          },
         }
       : null,
     avatarUrl: me.profile?.avatar_url ?? null,
@@ -82,7 +94,13 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     isApprovedMentor: false,
     isMentor: false,
     completedSessions: 0,
-    credits: { balance: 3, allowance: 4, state: 'on_track', nextResetAt: '2026-11-01T00:00:00Z' },
+    credits: {
+      balance: 4,
+      state: 'on_track',
+      nextResetAt: '2026-11-01T00:00:00Z',
+      monthly: { balance: 3, ceiling: 3, expiresAt: '2026-11-01T00:00:00Z', unlocked: true },
+      bonus: { balance: 1, groups: [{ count: 1, expiresAt: null }] },
+    },
     avatarUrl: '/api/mock/avatars/mentor-01.webp',
     avatarFocus: { x: 0.5, y: 0.35 },
     coverKey: null,

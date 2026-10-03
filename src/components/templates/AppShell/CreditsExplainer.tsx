@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import Link from 'next/link';
 import { Icon } from '@/components/atoms/Icon/Icon';
-import { CreditsBar } from '@/components/molecules/CreditsSummary/CreditsSummary';
+import { BonusLines, CreditsBar } from '@/components/molecules/CreditsSummary/CreditsSummary';
 import { cx } from '@/lib/utils/cx';
 import {
   CREDITS_PURPOSE,
@@ -88,7 +88,8 @@ export function CreditsExplainer({
           <Icon name="toll" size={20} className={styles.icon} />
           <span className={styles.title}>{creditsTitle(credits)}</span>
         </div>
-        <CreditsBar credits={credits} />
+        {credits.showMonthly && <CreditsBar credits={credits} />}
+        <BonusLines credits={credits} />
         {creditsLead(credits) && <span className={styles.body}>{creditsLead(credits)}</span>}
         <ul className={styles.points}>
           {creditsPoints(credits).map((t) => (
@@ -100,7 +101,8 @@ export function CreditsExplainer({
             type="button"
             className={styles.policyToggle}
             aria-expanded={policyOpen}
-            aria-controls={policyId}
+            // Only while the panel exists: a dangling reference reads as nothing.
+            aria-controls={policyOpen ? policyId : undefined}
             onClick={() => setPolicyOpen((o) => !o)}
           >
             Refund policy
