@@ -55,6 +55,24 @@
   line-height: var(--lh-p);
   color: var(--text-secondary);
 }
+.points {
+  margin: 0;
+  padding-left: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-secondary);
+}
+/* The closing line (product copy): quieter, like the design's secondary text. */
+.purpose {
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
 .link {
   align-self: flex-start;
   font-family: var(--font-ui);

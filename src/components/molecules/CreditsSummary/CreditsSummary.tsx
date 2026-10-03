@@ -1,5 +1,6 @@
 'use client';
 
+import { useId } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { cx } from '@/lib/utils/cx';
 import { creditsTitle, isLow, type CreditsView } from '@/lib/utils/credits';
@@ -24,24 +25,50 @@ export function CreditsBar({ credits }: { credits: CreditsView }) {
 export function CreditsSummary({
   credits,
   onHowItWorks,
+  asMenuItem,
 }: {
   credits: CreditsView;
   onHowItWorks: () => void;
+  /**
+   * Inside a role="menu" (the account menu): the block becomes a labelled
+   * group whose "How credits work" is a menu item the arrow keys reach,
+   * described by the title and reset line.
+   */
+  asMenuItem?: { ref: (el: HTMLButtonElement | null) => void };
 }) {
+  const id = useId();
   return (
-    <div className={cx(styles.summary, isLow(credits) && styles.low)}>
+    <div
+      className={cx(styles.summary, isLow(credits) && styles.low)}
+      role={asMenuItem ? 'group' : undefined}
+      aria-label={asMenuItem ? 'Credits' : undefined}
+    >
       <div className={styles.head}>
         <Icon name="toll" size={18} className={styles.icon} />
-        <span className={styles.title}>{creditsTitle(credits)}</span>
+        <span id={`${id}-t`} className={styles.title}>
+          {creditsTitle(credits)}
+        </span>
       </div>
       <CreditsBar credits={credits} />
       <div className={styles.foot}>
         {credits.resetsOn ? (
-          <span className={styles.sub}>Resets {credits.resetsOn}</span>
+          <span id={`${id}-r`} className={styles.sub}>
+            Resets {credits.resetsOn}
+          </span>
         ) : (
           <span />
         )}
-        <button type="button" className={styles.link} onClick={onHowItWorks}>
+        <button
+          type="button"
+          className={styles.link}
+          onClick={onHowItWorks}
+          {...(asMenuItem && {
+            ref: asMenuItem.ref,
+            role: 'menuitem',
+            tabIndex: -1,
+            'aria-describedby': credits.resetsOn ? `${id}-t ${id}-r` : `${id}-t`,
+          })}
+        >
           How credits work
         </button>
       </div>

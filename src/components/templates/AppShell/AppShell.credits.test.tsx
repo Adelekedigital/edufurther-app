@@ -33,39 +33,68 @@ describe('AppShell: a mentee’s credits', () => {
     await user.click(pill);
     const dialog = screen.getByRole('dialog', { name: 'Your credits' });
     expect(dialog).toHaveTextContent('3 of 4 credits left');
-    expect(dialog).toHaveTextContent(
-      'Each free session uses 1 credit. Your credits reset on Nov 1.',
-    );
+    expect(dialog).toHaveTextContent('Each session you request uses 1 credit.');
+    expect(dialog).toHaveTextContent('Your credits reset on Nov 1.');
     expect(within(dialog).getByRole('link', { name: 'See my bookings' })).toHaveAttribute(
       'href',
       '/bookings',
     );
-    // No refund promise: cancellations don't refund yet (backend #335).
-    expect(dialog).not.toHaveTextContent(/credit comes back/);
+    // Refunds that exist today only: no promise about cancelling (backend #335).
+    expect(dialog).toHaveTextContent(/withdraw a request, or your mentor declines it/);
+    expect(dialog).not.toHaveTextContent(/cancel/i);
     expect(pill).toHaveAttribute('aria-expanded', 'true');
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog', { name: 'Your credits' })).toBeNull();
     expect(pill).toHaveFocus();
   });
 
-  it('the account menu shows the credits block above the menu, and "How credits work" opens the explainer', async () => {
+  it('account menu: the credits group comes first; the keyboard reaches "How credits work", and focus returns to the avatar', async () => {
     shell(three);
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Account menu' }));
-    expect(screen.getByText('Resets Nov 1')).toBeInTheDocument();
-    // The block isn't a menu item: the menu holds items only.
+    const avatar = screen.getByRole('button', { name: 'Account menu' });
+    await user.click(avatar);
     const menu = screen.getByRole('menu', { name: 'Account' });
-    expect(within(menu).queryByText('How credits work')).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'How credits work' }));
+    const group = within(menu).getByRole('group', { name: 'Credits' });
+    expect(group).toHaveTextContent('Resets Nov 1');
+    const how = within(group).getByRole('menuitem', { name: 'How credits work' });
+    // Opening the menu focuses its first item: the credits one.
+    expect(how).toHaveFocus();
+    expect(how).toHaveAccessibleDescription('3 of 4 credits left Resets Nov 1');
+    await user.keyboard('{Enter}');
     expect(screen.getByRole('dialog', { name: 'Your credits' })).toBeInTheDocument();
     expect(screen.queryByRole('menu')).toBeNull();
+    await user.keyboard('{Escape}');
+    expect(avatar).toHaveFocus();
+  });
+
+  it('More sheet (phones): "How credits work" opens the explainer; closing returns focus to More', async () => {
+    shell(three);
+    const user = userEvent.setup();
+    const more = screen.getByRole('button', { name: 'More' });
+    await user.click(more);
+    const sheet = document.getElementById('more-sheet')!;
+    await user.click(within(sheet).getByRole('button', { name: 'How credits work' }));
+    expect(document.getElementById('more-sheet')).toBeNull();
+    await user.keyboard('{Escape}');
+    expect(more).toHaveFocus();
+  });
+
+  it('Tab stays inside "Your credits"', async () => {
+    shell(three);
+    const user = userEvent.setup();
+    await user.click(firstPill());
+    const dialog = screen.getByRole('dialog', { name: 'Your credits' });
+    for (let i = 0; i < 5; i++) {
+      await user.tab();
+      expect(dialog).toContainElement(document.activeElement as HTMLElement);
+    }
   });
 
   it('out of credits: the explainer says so', async () => {
     shell({ left: 0, total: 4, resetsOn: 'Nov 1' });
     await userEvent.click(screen.getAllByRole('button', { name: /No credits left/ })[0]!);
     expect(screen.getByRole('dialog', { name: 'Your credits' })).toHaveTextContent(
-      'You’ve used this month’s credits. They reset on Nov 1.',
+      'You’ve used this month’s credits.',
     );
   });
 });

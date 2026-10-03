@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
@@ -111,17 +112,30 @@ export function AppShell({
   // to whatever opened it.
   const credits = account?.credits;
   const creditsId = useId();
-  const [creditsOpen, setCreditsOpen] = useState(false);
+  // Open on the page it was opened on: a new page (AppShell stays mounted
+  // across routes) closes it with no effect.
+  const pathname = usePathname();
+  const [creditsOpenOn, setCreditsOpenOn] = useState<string | null | undefined>(undefined);
+  const creditsOpen = creditsOpenOn !== undefined && creditsOpenOn === pathname;
   const creditsOpener = useRef<HTMLElement | null>(null);
   const openCredits = (from: HTMLElement | null) => {
     creditsOpener.current = from;
     setMoreOpen(false);
-    setCreditsOpen(true);
+    setCreditsOpenOn(pathname);
   };
   const closeCredits = () => {
-    setCreditsOpen(false);
+    setCreditsOpenOn(undefined);
     creditsOpener.current?.focus();
   };
+  // Phones: the page behind the sheet doesn't scroll (as under ModalShell).
+  useEffect(() => {
+    if (!creditsOpen || !window.matchMedia?.('(max-width: 767px)').matches) return;
+    const before = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = before;
+    };
+  }, [creditsOpen]);
   // One pill shows at a time (the bar's on desktop, the header's on phones).
   const togglePill = (from: HTMLButtonElement) => {
     if (creditsOpen) return closeCredits();

@@ -1,6 +1,7 @@
 import {
   creditsAria,
-  creditsBody,
+  creditsLead,
+  creditsPoints,
   creditsTitle,
   creditsView,
   isLow,
@@ -36,8 +37,16 @@ describe('design states and copy (AppShell.dc.html, creditStyle=green)', () => {
   it('plenty: not low', () => {
     expect(isLow(v(2))).toBe(false);
     expect(creditsTitle(v(3))).toBe('3 of 4 credits left');
-    expect(creditsAria(v(3))).toBe('3 of 4 credits left, resets Nov 1');
-    expect(creditsBody(v(3))).toBe('Each free session uses 1 credit. Your credits reset on Nov 1.');
+    // Starts with what the pill shows ("3 credits"): WCAG 2.5.3.
+    expect(creditsAria(v(3))).toBe('3 credits left of 4, resets Nov 1');
+    expect(creditsAria(v(1))).toBe('1 credit left of 4, resets Nov 1');
+    expect(creditsAria(v(0))).toBe('No credits left, resets Nov 1');
+    expect(creditsLead(v(3))).toBeNull();
+    expect(creditsPoints(v(3))).toEqual([
+      'Each session you request uses 1 credit.',
+      'If you withdraw a request, or your mentor declines it or doesn’t reply in time, the credit comes back.',
+      'Your credits reset on Nov 1.',
+    ]);
   });
 
   it('1 left is low; none is out', () => {
@@ -45,6 +54,19 @@ describe('design states and copy (AppShell.dc.html, creditStyle=green)', () => {
     expect(isOut(v(1))).toBe(false);
     expect(isOut(v(0))).toBe(true);
     expect(creditsTitle(v(0))).toBe('No credits left');
-    expect(creditsBody(v(0))).toBe('You’ve used this month’s credits. They reset on Nov 1.');
+    expect(creditsLead(v(0))).toBe('You’ve used this month’s credits.');
+  });
+});
+
+describe('hardening', () => {
+  it('an unreadable reset date shows no date, never "Invalid Date"', () => {
+    expect(resetDay('not-a-date')).toBeNull();
+    expect(
+      creditsView({ balance: 2, allowance: 4, nextResetAt: 'not-a-date' })?.resetsOn,
+    ).toBeNull();
+  });
+
+  it('a balance above the allowance never reads "5 of 4"', () => {
+    expect(creditsView({ balance: 5, allowance: 4 })).toMatchObject({ left: 5, total: 5 });
   });
 });

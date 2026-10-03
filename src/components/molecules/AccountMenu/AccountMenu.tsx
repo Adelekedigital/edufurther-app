@@ -84,20 +84,27 @@ export function AccountMenu({ avatar, items, credits }: AccountMenuProps) {
       {open && <div className={styles.backdrop} aria-hidden onClick={() => close(false)} />}
       {open && (
         <div className={styles.menu}>
-          {credits && (
-            <CreditsSummary
-              credits={credits.view}
-              onHowItWorks={() => {
-                close(true);
-                credits.onHowItWorks();
-              }}
-            />
-          )}
           <div id={menuId} role="menu" aria-label="Account" onKeyDown={onMenuKey}>
+            {credits && (
+              <CreditsSummary
+                credits={credits.view}
+                onHowItWorks={() => {
+                  close(true);
+                  credits.onHowItWorks();
+                }}
+                asMenuItem={{
+                  ref: (el) => {
+                    itemRefs.current[0] = el;
+                  },
+                }}
+              />
+            )}
             {items.map((it, k) => {
               const cls = cx(styles.item, it.danger && styles.danger);
+              // The credits item, when there is one, comes first.
+              const at = k + (credits ? 1 : 0);
               const ref = (el: HTMLElement | null) => {
-                itemRefs.current[k] = el;
+                itemRefs.current[at] = el;
               };
               const body = (
                 <>
