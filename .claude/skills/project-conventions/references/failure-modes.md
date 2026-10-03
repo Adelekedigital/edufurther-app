@@ -120,3 +120,26 @@ render ever observes and no cleanup can reach. Only tracking every URL minted
 **Check:** when a resource needs explicit release, the thing that creates it and
 the thing that frees it must be reachable from each other. "Create it somewhere
 that runs less often" is not the same as pairing them.
+
+### #48 — A wrapping flex row puts the corner control wherever it likes
+
+The ⋯ was grouped with the row's actions, which deliberately take their own
+full-width line on a phone. With no actions in the row, the menu went with them
+and landed under the card — reported from a real phone-width view, not by any
+check. `review-page` was clean at 390px throughout: nothing it measures objects
+to a control being in the wrong place.
+
+The fix also needed `.content` to take a zero flex basis, because a 240px basis
+made the first line too wide and wrapped the ⋯ even after it was separated.
+
+**Check:** a control the design pins to a corner does not belong in a flex group
+that is allowed to wrap. And a screenshot at phone width is not optional because
+the automated page review passed.
+
+### #49 — Gating a whole element on an attribute that is now conditional
+
+Making `aria-controls` conditional on the panel existing, I used the same value
+to decide whether to render the preview box at all — so the box disappeared
+whenever the panel was closed, which is almost always. One test caught it.
+
+**Check:** when a prop becomes optional, look at every condition that reads it.

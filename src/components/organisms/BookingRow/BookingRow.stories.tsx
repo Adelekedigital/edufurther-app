@@ -35,6 +35,7 @@ export const sampleBooking = (over: Partial<Booking> = {}): Booking => ({
   durationMin: 60,
   title: 'School shortlist',
   note: 'I have nine programs and need to cut it to five. Funding matters most.',
+  answersPreview: null,
   createdAt: at(-240),
   respondBy: null,
   joinOpensAt: null,

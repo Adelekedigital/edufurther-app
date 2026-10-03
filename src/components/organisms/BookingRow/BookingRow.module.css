@@ -77,6 +77,21 @@
   box-sizing: border-box;
   flex: 0 0 auto;
   margin-left: auto;
+  order: 1;
+}
+
+/* The ⋯ is a corner, not an action (Bookings.dc.html `moreIn: 'corner'`, the
+   declared default): `flex: none` so it never takes a line of its own,
+   `align-self: flex-start` so it stays at the top of a row however tall the
+   content grows, and pulled out by space-2 so it sits in the corner rather
+   than inside the padding. It is separate from `.actions` because the actions
+   take their own full-width line on a phone, and the menu must not go with
+   them — that is what put it under the card. */
+.menuCorner {
+  order: 2;
+  flex: none;
+  align-self: flex-start;
+  margin: calc(var(--space-2) * -1) calc(var(--space-2) * -1) 0 0;
 }
 
 /* The design's own reflow point for this row: below it the actions take their
@@ -87,6 +102,14 @@
     flex: 1 1 100%;
     margin-left: 0;
     padding-left: calc(48px + var(--space-4));
+    /* After the ⋯, which keeps the first line's corner. */
+    order: 3;
+  }
+  /* A zero basis rather than 240px: the content takes whatever is left after
+     the badge and the ⋯, instead of demanding a width that pushes the ⋯ onto
+     a line of its own. That is what dropped it under the card on a phone. */
+  .content {
+    flex: 1 1 0;
   }
 }
 

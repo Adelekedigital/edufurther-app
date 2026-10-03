@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { BookingDayBadge } from '@/components/molecules/BookingDayBadge/BookingDayBadge';
 import { BookingStatusTag } from '@/components/molecules/BookingStatusTag/BookingStatusTag';
+import { AnswerPreview } from '@/components/molecules/AnswerPreview/AnswerPreview';
 import { DeadlinePill } from '@/components/molecules/DeadlinePill/DeadlinePill';
 import {
   bookingHeading,
@@ -26,6 +27,13 @@ type BookingRowProps = {
   menu?: RowMenuItem[];
   /** Its details are the ones on show: the design's --blue-50 ground. */
   selected?: boolean;
+  /**
+   * Opens the details panel with every answer shown. Absent on History, where
+   * the design does not show the preview at all.
+   */
+  onOpenAnswers?: () => void;
+  /** The panel the preview's button reveals. */
+  answersControls?: string;
   /** Injected in tests and stories; the clock otherwise. */
   now?: Date;
 };
@@ -43,6 +51,8 @@ export function BookingRow({
   actions,
   menu,
   selected,
+  onOpenAnswers,
+  answersControls,
   now = new Date(),
 }: BookingRowProps) {
   const past = b.status !== 'confirmed' && b.status !== 'pending';
@@ -82,17 +92,24 @@ export function BookingRow({
             {pill.text}
           </DeadlinePill>
         )}
+        {/* What the mentee answered, in brief. Rides along on the list
+            response, so a page of rows makes no extra requests. */}
+        {b.answersPreview && onOpenAnswers && (
+          <AnswerPreview
+            preview={b.answersPreview}
+            onOpenAll={onOpenAnswers}
+            controls={answersControls}
+          />
+        )}
       </div>
-      {(actions || !!menu?.length) && (
-        <div className={styles.actions}>
-          {actions}
-          {!!menu?.length && (
-            <RowMenu
-              label={`More options for ${bookingHeading(b)}`}
-              items={menu}
-              trigger={{ icon: 'more_horiz', size: 20, className: styles.more }}
-            />
-          )}
+      {!!actions && <div className={styles.actions}>{actions}</div>}
+      {!!menu?.length && (
+        <div className={styles.menuCorner}>
+          <RowMenu
+            label={`More options for ${bookingHeading(b)}`}
+            items={menu}
+            trigger={{ icon: 'more_horiz', size: 20, className: styles.more }}
+          />
         </div>
       )}
     </div>

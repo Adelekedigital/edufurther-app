@@ -1,0 +1,74 @@
+/* Bookings.dc.html: the booking form in brief, on a row and on the hero. */
+.box {
+  margin-top: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--ink-50);
+}
+
+.question {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+
+.answer {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-900);
+  text-wrap: pretty;
+  /* Two lines, then cut. The design's own clamp. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* "See all N answers". Shared by the row box and the hero, which has no box. */
+.more {
+  align-self: flex-start;
+  min-height: 32px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-700);
+  text-align: left;
+}
+.more:hover {
+  color: var(--blue-500);
+}
+.more:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
+/* Inside the box the button sits flush with the padding; the design pulls the
+   bottom back so the box does not grow a second gap. */
+.box .more {
+  margin-bottom: calc(var(--space-2) * -1);
+}
+
+/* On the hero there is no box, and the link hangs under the note. */
+.bare {
+  margin-bottom: calc(var(--space-2) * -1);
+}
+
+/* A phone keeps the 32px look with a reachable target (CTA hierarchy). */
+@media (max-width: 767px) {
+  .more::after {
+    content: '';
+    position: absolute;
+    inset: -6px 0;
+  }
+  .more {
+    position: relative;
+  }
+}

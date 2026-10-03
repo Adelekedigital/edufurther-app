@@ -60,8 +60,13 @@ export type Booking = {
    * neither — an older row with no type at all.
    */
   title: string | null;
-  /** What the mentee wrote when booking. The only prep material the API exposes. */
+  /**
+   * What the mentee wrote when booking — a free note to the mentor, separate
+   * from the form (backend, 2026-10-03). A migrated booking has only this.
+   */
   note: string | null;
+  /** The booking form in brief; null when nothing was answered. */
+  answersPreview: AnswersPreview | null;
   /** When it was booked. */
   createdAt: string;
   /**
@@ -88,6 +93,20 @@ export type JoinResult = {
 /** The one Word type the upload accepts; spelled out because it is unreadable inline. */
 type IntakeDocType =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+/**
+ * The booking form in brief, carried on every list row so the rows cost no
+ * extra requests. The whole form is `GET /sessions/{id}/answers`.
+ */
+export type AnswersPreview = {
+  count: number;
+  first: {
+    /** The question as it reads **now** (backend #350), not at booking time. */
+    question: string;
+    /** Plain text: what was written, the options joined, or a file's name. */
+    text: string;
+  };
+};
 
 /** A file a mentee answered with. The bucket is private: it is fetched, never linked. */
 export type AnswerFile = {

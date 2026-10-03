@@ -85,6 +85,16 @@ export function toBooking(s: SessionRead, viewerId: string): Booking {
     durationMin: s.duration_minutes,
     // The mentee's own words first; the offering's name is the fallback.
     title: s.topic?.trim() || s.session_type?.name?.trim() || null,
+    // Carried on every list row, so a page of twenty costs no extra requests.
+    answersPreview: s.answers_preview
+      ? {
+          count: s.answers_preview.count,
+          first: {
+            question: s.answers_preview.first.question_text,
+            text: s.answers_preview.first.text,
+          },
+        }
+      : null,
     note: s.booking_message?.trim() || null,
     createdAt: s.created_at,
     respondBy: s.respond_by ?? null,
