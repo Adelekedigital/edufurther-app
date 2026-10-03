@@ -52,7 +52,12 @@ describe('toViewer (backend auth reply #3)', () => {
       }),
     );
     expect(v.completedSessions).toBe(2);
-    expect(v.credits).toEqual({ balance: 1, allowance: 3, state: 'low' });
+    expect(v.credits).toEqual({
+      balance: 1,
+      allowance: 3,
+      state: 'low',
+      nextResetAt: '2026-10-01T00:00:00Z',
+    });
   });
 
   it('carries the photo, its focus and the cover colour for the sidebar avatar', () => {

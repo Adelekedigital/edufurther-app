@@ -1,0 +1,54 @@
+/* Values from AppShell.dc.html (creditStyle=green, pillish). */
+.hit {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+/* Ours: the ring follows the pill's shape. */
+.hit:focus-visible {
+  border-radius: var(--radius-full);
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.pill {
+  height: 32px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-3) 0 var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--green-50);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  white-space: nowrap;
+  transition: background 120ms;
+}
+.hit:hover .pill {
+  background: var(--green-100);
+}
+.icon {
+  color: var(--green-700);
+}
+/* 1 left or none. */
+.low {
+  background: var(--warning-subtle);
+  color: var(--warning-text);
+}
+.hit:hover .low {
+  background: var(--warning-subtle-hover);
+}
+.low .icon {
+  color: var(--warning-text);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pill {
+    transition: none;
+  }
+}

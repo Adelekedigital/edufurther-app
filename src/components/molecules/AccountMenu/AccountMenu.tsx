@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
+import { CreditsSummary } from '@/components/molecules/CreditsSummary/CreditsSummary';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import type { CoverKey } from '@/lib/utils/cover';
+import type { CreditsView } from '@/lib/utils/credits';
 import { cx } from '@/lib/utils/cx';
 import styles from './AccountMenu.module.css';
 
@@ -31,6 +33,11 @@ type AccountMenuProps = {
     cover: CoverKey;
   };
   items: AccountMenuItem[];
+  /**
+   * A mentee's credits, at the top of the menu (AppShell.dc.html creditMenu).
+   * Outside the role="menu" list: it's text and a link, not a menu item.
+   */
+  credits?: { view: CreditsView; onHowItWorks: () => void };
 };
 
 /**
@@ -40,7 +47,7 @@ type AccountMenuProps = {
  * WAI-ARIA menu button: arrows / Home / End move, Escape and Tab close, focus
  * returns to the button.
  */
-export function AccountMenu({ avatar, items }: AccountMenuProps) {
+export function AccountMenu({ avatar, items, credits }: AccountMenuProps) {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
@@ -76,69 +83,74 @@ export function AccountMenu({ avatar, items }: AccountMenuProps) {
     <div className={styles.root}>
       {open && <div className={styles.backdrop} aria-hidden onClick={() => close(false)} />}
       {open && (
-        <div
-          id={menuId}
-          role="menu"
-          aria-label="Account"
-          className={styles.menu}
-          onKeyDown={onMenuKey}
-        >
-          {items.map((it, k) => {
-            const cls = cx(styles.item, it.danger && styles.danger);
-            const ref = (el: HTMLElement | null) => {
-              itemRefs.current[k] = el;
-            };
-            const body = (
-              <>
-                <Icon name={it.icon} size={16} />
-                {it.label}
-              </>
-            );
-            // In-app links go through next/link (no full reload: the session and
-            // cache survive, review of #61); external ones open a new tab.
-            return it.href !== undefined && !it.external ? (
-              <Link
-                key={it.key}
-                ref={ref}
-                role="menuitem"
-                tabIndex={-1}
-                className={cls}
-                href={it.href}
-                onClick={() => close(false)}
-              >
-                {body}
-              </Link>
-            ) : it.href !== undefined ? (
-              <a
-                key={it.key}
-                ref={ref}
-                role="menuitem"
-                tabIndex={-1}
-                className={cls}
-                href={it.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => close(false)}
-              >
-                {body}
-              </a>
-            ) : (
-              <button
-                key={it.key}
-                ref={ref}
-                type="button"
-                role="menuitem"
-                tabIndex={-1}
-                className={cls}
-                onClick={() => {
-                  close(true);
-                  it.onSelect();
-                }}
-              >
-                {body}
-              </button>
-            );
-          })}
+        <div className={styles.menu}>
+          {credits && (
+            <CreditsSummary
+              credits={credits.view}
+              onHowItWorks={() => {
+                close(true);
+                credits.onHowItWorks();
+              }}
+            />
+          )}
+          <div id={menuId} role="menu" aria-label="Account" onKeyDown={onMenuKey}>
+            {items.map((it, k) => {
+              const cls = cx(styles.item, it.danger && styles.danger);
+              const ref = (el: HTMLElement | null) => {
+                itemRefs.current[k] = el;
+              };
+              const body = (
+                <>
+                  <Icon name={it.icon} size={16} />
+                  {it.label}
+                </>
+              );
+              // In-app links go through next/link (no full reload: the session and
+              // cache survive, review of #61); external ones open a new tab.
+              return it.href !== undefined && !it.external ? (
+                <Link
+                  key={it.key}
+                  ref={ref}
+                  role="menuitem"
+                  tabIndex={-1}
+                  className={cls}
+                  href={it.href}
+                  onClick={() => close(false)}
+                >
+                  {body}
+                </Link>
+              ) : it.href !== undefined ? (
+                <a
+                  key={it.key}
+                  ref={ref}
+                  role="menuitem"
+                  tabIndex={-1}
+                  className={cls}
+                  href={it.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => close(false)}
+                >
+                  {body}
+                </a>
+              ) : (
+                <button
+                  key={it.key}
+                  ref={ref}
+                  type="button"
+                  role="menuitem"
+                  tabIndex={-1}
+                  className={cls}
+                  onClick={() => {
+                    close(true);
+                    it.onSelect();
+                  }}
+                >
+                  {body}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
       <button

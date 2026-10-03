@@ -1,0 +1,117 @@
+/* Values from AppShell.dc.html ("Your credits": creditsIn=both, green). */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: transparent;
+}
+/* Desktop: a popover under the pill, top right. */
+.panel {
+  position: fixed;
+  top: 60px;
+  right: 24px;
+  z-index: 41;
+  width: 280px;
+  max-width: calc(100% - 32px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  box-shadow:
+    var(--shadow-menu),
+    inset 0 0 0 var(--border-hairline) var(--ink-200);
+}
+.panel:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+.handle,
+.gotIt {
+  display: none;
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.icon {
+  color: var(--green-700);
+}
+.low .icon {
+  color: var(--warning-text);
+}
+.title {
+  font-family: var(--font-ui);
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+.body {
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-secondary);
+}
+.link {
+  align-self: flex-start;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-link);
+  text-decoration: none;
+}
+.link:hover {
+  color: var(--blue-700);
+}
+.link:focus-visible,
+.gotIt:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.link:focus-visible {
+  border-radius: var(--radius-xs);
+}
+
+/* Phones: a bottom sheet with a handle and "Got it". */
+@media (max-width: 767px) {
+  .scrim {
+    background: var(--overlay-scrim-sheet);
+  }
+  .panel {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 390px;
+    margin: 0 auto;
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    padding: var(--space-3) var(--space-5) var(--space-6);
+    padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
+  }
+  .handle {
+    display: block;
+    align-self: center;
+    width: 36px;
+    height: 4px;
+    margin-bottom: var(--space-1);
+    border-radius: var(--radius-full);
+    background: var(--ink-200);
+  }
+  .gotIt {
+    display: block;
+    height: 48px;
+    width: 100%;
+    border: var(--border-hairline) solid var(--ink-300);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+    cursor: pointer;
+    font-family: var(--font-button);
+    font-size: var(--text-p-sm);
+    font-weight: var(--weight-bold);
+    color: var(--text-primary);
+  }
+}
