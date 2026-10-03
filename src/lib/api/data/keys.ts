@@ -97,5 +97,9 @@ export const keys = {
     // Statuses are sorted so two orders of the same filter share one entry.
     history: (who: string, statuses: readonly string[]) =>
       ['bookings', 'history', who, [...statuses].sort()] as const,
+    /** One booking, for a ?booking= link opened cold (GET /sessions/{id}). */
+    one: (id: string, who: string) => ['bookings', 'one', id, who] as const,
+    /** Why a past booking ended as it did (GET /sessions/{id}/events). */
+    events: (id: string, who: string) => ['bookings', 'events', id, who] as const,
   },
 };

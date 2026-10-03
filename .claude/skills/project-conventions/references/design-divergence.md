@@ -224,6 +224,11 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | History filter chips: Canceled / Missed / Completed | The same three chips, each mapping to one API status | The API has six past outcomes; declined, expired and withdrawn are reachable only with no chip on | design covers six outcomes |
 | History "Showing 5 of 13" | "Showing 5" until the last page is in, then "of N" | History pages by cursor and the API sends no total (contract: total on the first page is "coming") | the API sends a total |
 | Status names for declined / expired / withdrawn (not drawn) | Declined (danger), Unconfirmed (warning), Withdrawn (warning) | Three of the six outcomes have no design. "Unconfirmed" is the backend’s own word for expired | design names them |
+| Details panel has no "why it ended" block | A cancelled, declined, withdrawn, expired or missed booking says who ended it and quotes what they wrote | `/sessions/{id}/events` is the only place the written reason lives, and it is what a past booking is opened for. The API had nowhere to keep one when the panel was drawn | design draws it — the copy is ours until then |
+| Details panel: "Notes from {first}" | "What you asked for" when the viewer is the mentee | It is their own message; the design wrote the mentor's side only | design writes the mentee's side |
+| Details aside pushed down by a measured `margin-top` (`asideMt`, read off the tabs) | The header and tabs are one row, the list and aside the next | Same position, nothing to measure, and no reflow on resize | — |
+| Which booking is open lives in component state | `?booking={id}` in the URL, beside `?tab=` | It survives a refresh and can be sent to someone, and it is what makes the single-booking read worth having | — |
+| Details panel close is 40px; the row "⋯" 40px desktop / 44px phone | Built at those values with local controls | The DS `IconButton` is 32/44 and `RowMenu`'s trigger 32px — those are Session Types' values, not this screen's, so reusing them would have been the look-alike trap | the DS adds a 40px size |
 
 ## Rules
 

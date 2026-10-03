@@ -52,7 +52,6 @@ export function PhoneFooter(p: {
         </Button>
         <ButtonLink
           href="/bookings"
-          prefetch={false}
           variant="secondary-outlined"
           size="large"
           fullWidth

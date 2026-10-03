@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { BookingList } from '@/components/organisms/BookingList/BookingList';
 import { BookingRow } from '@/components/organisms/BookingRow/BookingRow';
+import type { RowMenuItem } from '@/components/molecules/RowMenu/RowMenu';
 import type { AppError } from '@/types/mentor';
 import type { Booking, BookingTab } from '@/types/booking';
 import { emptyFor } from './empties';
@@ -37,6 +38,10 @@ type BookingsPanelProps = {
   intro?: ReactNode;
   /** The controls for one row, decided by the tab. */
   actionsFor?: (b: Booking) => ReactNode;
+  /** The ⋯ menu for one row. */
+  menuFor?: (id: string) => RowMenuItem[];
+  /** Whose details are on show. */
+  selectedId?: string | null;
   /** Rendered above the list (the Upcoming tab's hero). */
   children?: ReactNode;
   now?: Date;
@@ -65,6 +70,8 @@ export function BookingsPanel({
   heading,
   intro,
   actionsFor,
+  menuFor,
+  selectedId,
   children,
   now,
 }: BookingsPanelProps) {
@@ -155,6 +162,8 @@ export function BookingsPanel({
               booking={b}
               timeZone={timeZone}
               actions={actionsFor?.(b)}
+              menu={menuFor?.(b.id)}
+              selected={selectedId === b.id}
               now={now}
             />
           ))}

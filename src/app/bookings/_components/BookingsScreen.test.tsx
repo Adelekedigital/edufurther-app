@@ -7,11 +7,16 @@ import type { AppError, Remote, Viewer } from '@/types/mentor';
 import { BookingsScreen } from './BookingsScreen';
 
 let tab = 'upcoming';
+let selectedBooking: string | null = null;
 const replace = vi.fn();
 vi.mock('next/navigation', () => ({
   usePathname: () => '/bookings',
   useRouter: () => ({ replace, push: vi.fn() }),
-  useSearchParams: () => new URLSearchParams(tab === 'upcoming' ? '' : `tab=${tab}`),
+  useSearchParams: () => {
+    const q = new URLSearchParams(tab === 'upcoming' ? '' : `tab=${tab}`);
+    if (selectedBooking) q.set('booking', selectedBooking);
+    return q;
+  },
 }));
 
 let viewer: Viewer;
@@ -29,11 +34,20 @@ let upcoming: Remote<Booking[]>;
 let pending: Remote<Booking[]>;
 let history: BookingHistoryResult;
 const join = vi.fn();
+// What `useBooking` was asked to do: the panel must not refetch a loaded row.
+let bookingActive = false;
 vi.mock('@/lib/api/data/bookings', () => ({
   useUpcomingBookings: () => upcoming,
   usePendingBookings: () => pending,
   useBookingHistory: () => history,
   useJoinSession: () => ({ mutate: join, isPending: false }),
+  useBooking: (_id: string | null, _userId: string | null, active: boolean) => {
+    bookingActive = active;
+    return { data: null, isLoading: false, error: null, retry: vi.fn() };
+  },
+}));
+vi.mock('@/lib/api/data/sessionEvents', () => ({
+  useBookingOutcome: () => ({ data: null, isLoading: false, error: null, retry: vi.fn() }),
 }));
 
 const remote = <T,>(data: T | null, over: Partial<Remote<T>> = {}): Remote<T> => ({
@@ -103,9 +117,25 @@ const MEMBER: Extract<Viewer, { kind: 'member' }> = {
   bookingCounts: { pending: 2, upcoming: 3 },
 };
 
+// jsdom has no matchMedia; the screen reads it to choose aside vs sheet.
+// Follows the stub ExploreScreen.test.tsx already uses.
+let narrow = false;
 beforeEach(() => {
   vi.setSystemTime(NOW);
+  narrow = false;
+  window.matchMedia = vi.fn().mockImplementation((q: string) => ({
+    matches: narrow,
+    media: q,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
   tab = 'upcoming';
+  selectedBooking = null;
+  bookingActive = false;
   viewer = MEMBER;
   upcoming = remote<Booking[]>([]);
   pending = remote<Booking[]>([]);
@@ -453,5 +483,73 @@ describe('a list already on screen survives a failed refetch', () => {
     });
     render(<BookingsScreen />);
     expect(screen.getByRole('alert')).toHaveTextContent('We couldn’t load more. Try again.');
+  });
+});
+
+describe('the details panel', () => {
+  beforeEach(() => {
+    upcoming = remote([
+      booking({ id: 'a', title: 'Statement of Purpose' }),
+      booking({ id: 'b', title: 'Visa practice', startsAt: at(48), endsAt: at(49) }),
+    ]);
+  });
+
+  it('every row offers it, and the menu says which way it goes', async () => {
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: /More options for Visa practice/ }));
+    expect(screen.getByRole('menuitem', { name: 'See details' })).toBeVisible();
+  });
+
+  it('opening it puts the booking in the URL', async () => {
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: /More options for Visa practice/ }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'See details' }));
+    expect(replace).toHaveBeenCalledWith('/bookings?booking=b', { scroll: false });
+  });
+
+  it('a ?booking= link opens it, with the row marked', () => {
+    selectedBooking = 'b';
+    render(<BookingsScreen />);
+    expect(screen.getByRole('complementary', { name: 'Booking details' })).toBeVisible();
+  });
+
+  it('closing it takes the booking back out of the URL', async () => {
+    selectedBooking = 'b';
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Close details' }));
+    expect(replace).toHaveBeenCalledWith('/bookings', { scroll: false });
+  });
+
+  it('a booking already in the list is not fetched again', () => {
+    selectedBooking = 'b';
+    render(<BookingsScreen />);
+    // useBooking is called with active=false when the row is already loaded.
+    expect(bookingActive).toBe(false);
+  });
+
+  it('a booking the list does not hold is fetched', () => {
+    selectedBooking = 'not-in-any-list';
+    render(<BookingsScreen />);
+    expect(bookingActive).toBe(true);
+  });
+});
+
+describe('the panel changes shape, not content', () => {
+  beforeEach(() => {
+    upcoming = remote([booking({ id: 'b', title: 'Visa practice' })]);
+    selectedBooking = 'b';
+  });
+
+  it('is an aside beside the list on a wide screen', () => {
+    render(<BookingsScreen />);
+    expect(screen.getByRole('complementary', { name: 'Booking details' })).toBeVisible();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('takes the whole screen on a phone, as a dialog', async () => {
+    narrow = true;
+    render(<BookingsScreen />);
+    expect(await screen.findByRole('dialog', { name: 'Booking details' })).toBeVisible();
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
   });
 });

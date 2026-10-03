@@ -82,7 +82,7 @@ export function BookingFlowDesktop(p: Props) {
       <div className={styles.footer}>
         {p.done ? (
           <>
-            <ButtonLink href="/bookings" prefetch={false} variant="secondary-outlined" size="large">
+            <ButtonLink href="/bookings" variant="secondary-outlined" size="large">
               View my bookings
             </ButtonLink>
             <Button size="large" onClick={p.onClose}>

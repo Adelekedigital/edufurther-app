@@ -8,24 +8,30 @@ import { Tabs, type TabItem } from '@/components/atoms/Tabs/Tabs';
 import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { TimezonePicker } from '@/components/molecules/TimezonePicker/TimezonePicker';
+import { BookingDetailsPanel } from '@/components/organisms/BookingDetailsPanel/BookingDetailsPanel';
 import { NextSessionCard } from '@/components/organisms/NextSessionCard/NextSessionCard';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import {
+  useBooking,
   useBookingHistory,
   useJoinSession,
   usePendingBookings,
   useUpcomingBookings,
 } from '@/lib/api/data/bookings';
+import { useBookingOutcome } from '@/lib/api/data/sessionEvents';
 import { normaliseError } from '@/lib/api/data/errors';
 import { deviceTimeZone } from '@/lib/utils/format';
+import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { BookingStatus } from '@/types/booking';
 import { canBookFor } from '../../_shell/bookBlocked';
 import { BOOKINGS_GATE, memberGate } from '../../_shell/MentorGate';
+import { cx } from '@/lib/utils/cx';
 import { useAppShell } from '../../_shell/useAppShell';
 import { BookingsPanel } from './BookingsPanel';
 import { useBookingsTab } from './useBookingsTab';
 import { useRevealed } from './useRevealed';
+import { useSelectedBooking } from './useSelectedBooking';
 import styles from './BookingsScreen.module.css';
 
 /**
@@ -71,6 +77,19 @@ export function BookingsScreen() {
   const upcoming = useUpcomingBookings(userId, accountZone, tab === 'upcoming');
   const pending = usePendingBookings(userId, tab === 'pending');
   const history = useBookingHistory(userId, filters, tab === 'history');
+
+  const { selected, select, toggle } = useSelectedBooking();
+  // The design's own breakpoint for this screen: below it the aside has no
+  // room beside the 920px column, so the panel takes the whole screen.
+  const asSheet = useMediaQuery('(max-width: 1099px)');
+  // Whichever list is loaded may already hold it — opening the panel from a row
+  // costs no request. A ?booking= link opened cold has to ask.
+  const loaded = [...(upcoming.data ?? []), ...(pending.data ?? []), ...history.bookings].find(
+    (b) => b.id === selected,
+  );
+  const fetched = useBooking(selected, userId, !!selected && !loaded);
+  const open = loaded ?? fetched.data;
+  const outcome = useBookingOutcome(open ?? null, userId, !!open);
 
   const join = useJoinSession();
   // A repeated failure must be heard again, so each message carries a new id.
@@ -123,6 +142,15 @@ export function BookingsScreen() {
         ? 'Requests you sent that your mentor hasn’t confirmed yet.'
         : undefined;
 
+  const detailsMenu = (id: string) => [
+    {
+      key: 'details',
+      icon: 'info' as const,
+      label: selected === id ? 'Hide details' : 'See details',
+      onSelect: () => toggle(id),
+    },
+  ];
+
   const toggleFilter = (s: BookingStatus) =>
     setFilters((on) => (on.includes(s) ? on.filter((x) => x !== s) : [...on, s]));
 
@@ -165,13 +193,16 @@ export function BookingsScreen() {
   return (
     <AppShell active="Bookings" nav={nav} chrome={chrome} account={account} offline={!online}>
       {gate ?? (
-        <div className={styles.page}>
+        <div className={cx(styles.page, (open || selected) && !asSheet && styles.withAside)}>
           <header className={styles.header}>
             <h1 className={styles.title}>Bookings</h1>
             <TimezonePicker value={timeZone} onChange={setZone} deviceZone={deviceZone} />
           </header>
 
           <Tabs items={items} value={tab} onChange={setTab} label="Bookings" />
+
+          <div className={styles.columns}>
+            <div className={styles.column}>
 
           <LiveRegion message={joinProblem} />
           {blockedUrl && (
@@ -196,6 +227,8 @@ export function BookingsScreen() {
               heading={later.length ? 'Later' : undefined}
               now={now}
               total={later.length}
+              menuFor={detailsMenu}
+              selectedId={selected}
               shown={reveal.upcoming.shown}
               showMore={reveal.upcoming.showMore}
             >
@@ -223,6 +256,8 @@ export function BookingsScreen() {
               intro={pendingIntro}
               total={pending.data?.length}
               now={now}
+              menuFor={detailsMenu}
+              selectedId={selected}
               shown={reveal.pending.shown}
               showMore={reveal.pending.showMore}
             />
@@ -249,6 +284,8 @@ export function BookingsScreen() {
               timeZone={timeZone}
               isMentor={isMentor}
               filtered={filters.length > 0}
+              menuFor={detailsMenu}
+              selectedId={selected}
               shown={reveal.history.shown}
               showMore={() => {
                 reveal.history.showMore();
@@ -278,6 +315,25 @@ export function BookingsScreen() {
               }
             />
           </TabPanel>
+            </div>
+            {(open || selected) && (
+              <BookingDetailsPanel
+                asSheet={asSheet}
+                booking={open ?? null}
+                timeZone={timeZone}
+                outcome={outcome.data}
+                outcomeFailed={!!outcome.error}
+                retryOutcome={outcome.retry}
+                isLoading={fetched.isLoading}
+                error={fetched.error}
+                retry={fetched.retry}
+                onClose={() => select(null)}
+                onJoin={open ? () => onJoin(open.id) : undefined}
+                joining={join.isPending}
+                now={now}
+              />
+            )}
+          </div>
         </div>
       )}
     </AppShell>

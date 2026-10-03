@@ -23,6 +23,13 @@ export function apiError(status: number, body: unknown): ApiError {
 }
 
 /**
+ * A 4xx is the answer, not a blip: only a server error is worth one more go.
+ * Shared so two query hooks cannot drift into different retry behaviour.
+ */
+export const retryOnce = (count: number, error: unknown) =>
+  !(error instanceof ApiError && error.status < 500) && count < 1;
+
+/**
  * One error shape for every consumer (data-layer skill). Problem Details
  * `detail` is never surfaced: the backend says it is not guaranteed safe
  * (ADR 0016), so copy is ours, chosen by status.
