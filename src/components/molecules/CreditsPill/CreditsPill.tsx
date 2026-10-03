@@ -27,6 +27,7 @@ export const CreditsPill = forwardRef<
       ref={ref}
       type="button"
       className={styles.hit}
+      data-credits-pill=""
       aria-label={creditsAria(credits)}
       aria-expanded={expanded}
       aria-controls={expanded ? controls : undefined}

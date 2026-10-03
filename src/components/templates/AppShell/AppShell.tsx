@@ -125,7 +125,15 @@ export function AppShell({
   };
   const closeCredits = () => {
     setCreditsOpenOn(undefined);
-    creditsOpener.current?.focus();
+    // Crossing the 768px breakpoint while open hides the pill that opened it:
+    // fall back to the pill that's showing now.
+    const opener = creditsOpener.current;
+    const shown = (el: Element | null) => !!el && el.getClientRects().length > 0;
+    const pill = [...document.querySelectorAll<HTMLElement>('[data-credits-pill]')].find(shown);
+    (opener && !shown(opener) && opener.hasAttribute('data-credits-pill') && pill
+      ? pill
+      : opener
+    )?.focus();
   };
   // Phones: the page behind the sheet doesn't scroll (as under ModalShell).
   useEffect(() => {

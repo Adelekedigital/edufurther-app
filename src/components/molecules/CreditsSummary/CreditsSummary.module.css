@@ -66,6 +66,17 @@
 .link:hover {
   color: var(--blue-700);
 }
+/* Phones: a 44px tap area around the 32px link (project rule), same look. */
+@media (max-width: 767px) {
+  .link {
+    position: relative;
+  }
+  .link::after {
+    content: '';
+    position: absolute;
+    inset: -6px 0;
+  }
+}
 .link:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);

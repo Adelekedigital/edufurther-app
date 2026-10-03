@@ -97,4 +97,16 @@ describe('AppShell: a mentee’s credits', () => {
       'You’ve used this month’s credits.',
     );
   });
+
+  it('closing after the layout switched (desktop ↔ phone) focuses the pill that is showing now', async () => {
+    shell(three);
+    const user = userEvent.setup();
+    const [bar, header] = screen.getAllByRole('button', { name: /credits left/ });
+    await user.click(bar!);
+    // The window crossed 768px: the bar's pill is hidden, the header's shows.
+    bar!.getClientRects = () => [] as unknown as DOMRectList;
+    header!.getClientRects = () => [{}] as unknown as DOMRectList;
+    await user.keyboard('{Escape}');
+    expect(header).toHaveFocus();
+  });
 });
