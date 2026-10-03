@@ -91,3 +91,32 @@ fixture made it look like a duplication bug. Found by looking at the page in a
 real browser, not by any test.
 
 **Check:** fixtures for two independent fields get visibly different content.
+
+### #46 — Two dialogs, one Escape
+
+The Bookings details panel is itself a dialog below 1100px. Opening the intake
+file viewer on top of it gave two `useFocusTrap`s listening on `document`, so a
+single Escape ran both handlers: the viewer closed *and* the panel closed,
+dropping `?booking=` and losing the user's place. The scroll lock had the same
+shape — the inner dialog closing restored `body` overflow while the outer one
+was still open.
+
+The first fix was a mount-ordered stack, and it was wrong: React runs a child's
+effect **before** its parent's, so two dialogs opening in one commit register
+inside-out and the "last pushed" is the outermost. Document order is the signal
+that holds for both nesting and portalled siblings.
+
+**Check:** before adding a second dialog anywhere, ask what `document`-level
+listeners already exist. Mount order is not nesting order.
+
+### #47 — A query function is not a safe place for a side effect either
+
+Moving `createObjectURL` out of `useMemo` and into the query function fixed the
+render-phase leak but not the problem: with `gcTime: 0`, StrictMode's double
+mount collects the first attempt and refetches, so a URL is minted that no
+render ever observes and no cleanup can reach. Only tracking every URL minted
+*per file* and releasing them together actually closes it.
+
+**Check:** when a resource needs explicit release, the thing that creates it and
+the thing that frees it must be reachable from each other. "Create it somewhere
+that runs less often" is not the same as pairing them.

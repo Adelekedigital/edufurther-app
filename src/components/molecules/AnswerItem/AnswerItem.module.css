@@ -63,3 +63,10 @@
   line-height: var(--lh-p);
   color: var(--ink-500);
 }
+
+/* The filename is another user's text, and a U+202E in it would otherwise
+   reorder the words beside it — the size label, "no longer available", the
+   whole phrase. Isolating it bounds the override to the name itself. */
+.filename {
+  unicode-bidi: isolate;
+}

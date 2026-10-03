@@ -23,6 +23,9 @@ import styles from './BookingDetails.module.css';
 /** Two answers, then "Show all N" — the design's own count. */
 const ANSWER_PREVIEW = 2;
 
+/** Ties the disclosure button to what it reveals. */
+const ANSWERS_ID = 'booking-answers';
+
 type BookingDetailsProps = {
   booking: Booking;
   timeZone: string;
@@ -179,17 +182,28 @@ export function BookingDetails({
           </div>
         )}
         {!answersLoading && !answersFailed && !!answers?.length && (
-          <section aria-label={answersTitle} className={styles.answers}>
-            <span className={styles.answersTitle}>{answersTitle}</span>
+          /* A div, not a <section aria-label>: inside a dialog a labelled
+             section reads as a duplicate page landmark (the same decision
+             ModalShell records for its header and footer). */
+          <div className={styles.answers}>
+            <h3 className={styles.answersTitle} id={ANSWERS_ID}>
+              {answersTitle}
+            </h3>
             {shownAnswers.map((a) => (
               <AnswerItem key={a.questionId} answer={a} onOpenFile={onOpenFile} />
             ))}
             {answers.length > ANSWER_PREVIEW && onToggleAnswers && (
-              <button type="button" onClick={onToggleAnswers} className={styles.ansMore}>
+              <button
+                type="button"
+                onClick={onToggleAnswers}
+                className={styles.ansMore}
+                aria-expanded={!!answersExpanded}
+                aria-controls={ANSWERS_ID}
+              >
                 {answersExpanded ? 'Show less' : `Show all ${answers.length} answers`}
               </button>
             )}
-          </section>
+          </div>
         )}
         {/* The note is a separate field from the form, not a copy of it
             (backend, 2026-10-03): a mentee may write one, answer a form, or

@@ -116,7 +116,7 @@ export function BookingsScreen() {
   const outcome = useBookingOutcome(open ?? null, userId, !!open);
   // Only while the panel is open: a list of twenty rows must not make twenty
   // requests. One per booking, cached for the visit.
-  const answers = useBookingAnswers(open?.id ?? null, !!open);
+  const answers = useBookingAnswers(open?.id ?? null, userId ?? '', !!open);
   const [expandedFor, setExpandedFor] = useState<string | null>(null);
   const [viewing, setViewing] = useState<AnswerFile | null>(null);
   const showPanel = ready && (!!open || !!selected);

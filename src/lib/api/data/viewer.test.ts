@@ -56,7 +56,7 @@ describe('toViewer (backend auth reply #3)', () => {
           // Backend 344 split the balance into a monthly allowance and bonus
           // grants. toViewer reads neither yet; they are here because the
           // contract requires them.
-          monthly: { balance: 1, ceiling: 3, expires_at: '2026-10-01T00:00:00Z' },
+          monthly: { balance: 1, ceiling: 3, expires_at: '2026-10-01T00:00:00Z', unlocked: true },
           bonus: { balance: 0, groups: [] },
         },
       }),

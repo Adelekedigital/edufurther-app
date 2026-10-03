@@ -4,7 +4,8 @@ import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
-import { canPreview, fileSize, useIntakeFile } from '@/lib/api/data/intakeFiles';
+import { canPreview, useIntakeFile } from '@/lib/api/data/intakeFiles';
+import { fileSize } from '@/lib/utils/format';
 import type { AnswerFile } from '@/types/booking';
 import styles from './BookingsScreen.module.css';
 
@@ -54,7 +55,7 @@ export function IntakeFileViewer({ file, onClose }: IntakeFileViewerProps) {
       )}
     </div>
   ) : fetched.isLoading || !fetched.url ? (
-    <Skeleton height="320px" radius="lg" />
+    <Skeleton height="min(70vh, 640px)" radius="lg" />
   ) : previewable ? (
     // The browser's own PDF viewer, which is the point: scroll, zoom, select,
     // print, all for free.
@@ -69,7 +70,10 @@ export function IntakeFileViewer({ file, onClose }: IntakeFileViewerProps) {
     // would only look like a mitigation.
     <object
       data={fetched.url}
-      type={file.contentType}
+      // The literal, not file.contentType: this branch is already gated on
+      // canPreview, so the two are provably equal here, and writing it out
+      // means a later change to VIEWABLE cannot quietly widen what lands here.
+      type="application/pdf"
       className={styles.frame}
       aria-label={file.filename}
     >

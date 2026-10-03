@@ -730,7 +730,7 @@ export const BookingAnswers: Story = {
     const pdf = {
       id: 'f1',
       filename: 'SOP-draft-v2.pdf',
-      contentType: 'application/pdf',
+      contentType: 'application/pdf' as const,
       size: 182_400,
       available: true,
     };

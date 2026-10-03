@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { components } from '@/lib/api/generated/schema';
 import { toAnswer } from './sessionAnswers';
-import { canPreview, fileSize } from './intakeFiles';
+import { canPreview } from './intakeFiles';
+import { fileSize } from '@/lib/utils/format';
 
 type Read = components['schemas']['SessionAnswerRead'];
 

@@ -85,11 +85,19 @@ export type JoinResult = {
   meetingUrl: string | null;
 };
 
+/** The one Word type the upload accepts; spelled out because it is unreadable inline. */
+type IntakeDocType =
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
 /** A file a mentee answered with. The bucket is private: it is fetched, never linked. */
 export type AnswerFile = {
   id: string;
   filename: string;
-  contentType: string;
+  /** PDF or .docx, decided from the file's bytes server-side. Declared here
+   *  rather than pulled from the generated schema — this file is the view
+   *  model and seven components import it. Narrow on purpose: `canPreview`
+   *  leans on it. */
+  contentType: 'application/pdf' | IntakeDocType;
   size: number;
   /** False once retention has removed it: say so rather than offer a dead button. */
   available: boolean;

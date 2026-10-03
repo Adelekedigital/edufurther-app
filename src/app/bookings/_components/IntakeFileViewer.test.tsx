@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -120,5 +121,40 @@ describe('IntakeFileViewer — a file is read in the app, not just acquired', ()
     await screen.findByRole('link', { name: /Download/ });
     await userEvent.keyboard('{Escape}');
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe('the viewer narrows what it trusts', () => {
+  it('the preview is declared application/pdf outright, never the file’s own string', async () => {
+    view(PDF);
+    const obj = await waitFor(() => {
+      const o = document.querySelector('object');
+      expect(o).not.toBeNull();
+      return o!;
+    });
+    // Gated on canPreview, so the two are equal here — but asserting the
+    // literal is what stops a later change to VIEWABLE widening it silently.
+    expect(obj.getAttribute('type')).toBe('application/pdf');
+  });
+
+  it('gives back every URL it minted, including one no render ever saw', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { unmount } = render(
+      <StrictMode>
+        <QueryClientProvider client={client}>
+          <IntakeFileViewer file={PDF} onClose={vi.fn()} />
+        </QueryClientProvider>
+      </StrictMode>,
+    );
+    await screen.findByRole('link', { name: /Download/ });
+    unmount();
+    // StrictMode's double mount collects the first attempt and refetches, so
+    // more than one URL exists for this file and only the last reaches the DOM.
+    // The one nobody saw is the one that used to stay resolvable for the life
+    // of the page — another user's private document.
+    await waitFor(() => {
+      expect(created.length).toBeGreaterThan(0);
+      expect([...revoked].sort()).toEqual([...created].sort());
+    });
   });
 });

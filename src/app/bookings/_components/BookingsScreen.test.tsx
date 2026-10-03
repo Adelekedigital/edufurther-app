@@ -53,6 +53,12 @@ let answers: { data: unknown; isLoading: boolean; error: unknown; retry: () => v
 vi.mock('@/lib/api/data/sessionAnswers', () => ({
   useBookingAnswers: () => answers,
 }));
+// The viewer fetches bytes; this screen's tests are about the wiring that opens
+// it, so the fetch is stubbed at the data boundary like every other read here.
+vi.mock('@/lib/api/data/intakeFiles', () => ({
+  useIntakeFile: () => ({ url: 'blob:stub', isLoading: false, error: null, retry: vi.fn() }),
+  canPreview: () => true,
+}));
 
 const remote = <T,>(data: T | null, over: Partial<Remote<T>> = {}): Remote<T> => ({
   data,
@@ -594,5 +600,54 @@ describe('the review round on the panel', () => {
     render(<BookingsScreen />);
     const aside = await screen.findByRole('complementary', { name: 'Booking details' });
     await waitFor(() => expect(aside).toHaveFocus());
+  });
+});
+
+describe('the booking form answers, wired up', () => {
+  beforeEach(() => {
+    upcoming = remote([
+      booking({ id: 'a', title: 'Statement of Purpose' }),
+      booking({ id: 'b', title: 'Visa practice', startsAt: at(48), endsAt: at(49) }),
+    ]);
+  });
+
+  const PDF = {
+    id: 'f1',
+    filename: 'SOP-draft-v2.pdf',
+    contentType: 'application/pdf' as const,
+    size: 182_400,
+    available: true,
+  };
+  const some = [
+    { questionId: 'q1', question: 'Q1?', kind: 'free_text' as const, retired: false, text: 'A1.', file: null },
+    { questionId: 'q2', question: 'Q2?', kind: 'free_text' as const, retired: false, text: 'A2.', file: null },
+    { questionId: 'q3', question: 'Q3?', kind: 'free_text' as const, retired: false, text: 'A3.', file: null },
+  ];
+
+  it('the panel shows them, and the disclosure reveals the rest', async () => {
+    selectedBooking = 'b';
+    answers = { data: some, isLoading: false, error: null, retry: vi.fn() };
+    render(<BookingsScreen />);
+    expect(screen.queryByText('A3.')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Show all 3 answers' }));
+    expect(screen.getByText('A3.')).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Show less' }));
+    expect(screen.queryByText('A3.')).not.toBeInTheDocument();
+  });
+
+  it('a file answer opens the viewer over the panel', async () => {
+    selectedBooking = 'b';
+    answers = {
+      data: [{ ...some[0]!, kind: 'file_upload' as const, text: PDF.filename, file: PDF }],
+      isLoading: false,
+      error: null,
+      retry: vi.fn(),
+    };
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Open SOP-draft-v2.pdf' }));
+    // The panel is still there underneath: the viewer is stacked, not a
+    // replacement, and Escape must close only the top one.
+    expect(screen.getByRole('dialog')).toBeVisible();
+    expect(screen.getByRole('complementary', { name: 'Booking details' })).toBeVisible();
   });
 });

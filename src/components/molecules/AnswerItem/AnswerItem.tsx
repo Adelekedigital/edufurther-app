@@ -1,6 +1,6 @@
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { cx } from '@/lib/utils/cx';
-import { fileSize } from '@/lib/api/data/intakeFiles';
+import { fileSize } from '@/lib/utils/format';
 import type { AnswerFile, BookingAnswer } from '@/types/booking';
 import styles from './AnswerItem.module.css';
 
@@ -25,7 +25,17 @@ export function AnswerItem({ answer: a, onOpenFile }: AnswerItemProps) {
         {a.retired && ' (no longer asked)'}
       </span>
       {a.file ? (
-        a.file.available && onOpenFile ? (
+        // Three different facts, not two: it is gone, or it is here but nothing
+        // can open it, or it opens. Folding the middle case into the first told
+        // a mentee their upload had been deleted because a caller forgot a prop.
+        !a.file.available ? (
+          <p className={styles.gone}>
+            <span className={styles.filename} dir="ltr">
+              {a.file.filename}
+            </span>{' '}
+            — no longer available
+          </p>
+        ) : onOpenFile ? (
           <button
             type="button"
             className={styles.file}
@@ -33,11 +43,17 @@ export function AnswerItem({ answer: a, onOpenFile }: AnswerItemProps) {
             aria-label={`Open ${a.file.filename}`}
           >
             <Icon name="description" size={18} />
-            {a.file.filename}
+            <span className={styles.filename} dir="ltr">
+              {a.file.filename}
+            </span>
             <span className={styles.size}>{fileSize(a.file.size)}</span>
           </button>
         ) : (
-          <p className={styles.gone}>{a.file.filename} — no longer available</p>
+          <p className={styles.answer}>
+            <span className={styles.filename} dir="ltr">
+              {a.file.filename}
+            </span>
+          </p>
         )
       ) : (
         <p className={styles.answer}>{a.text}</p>

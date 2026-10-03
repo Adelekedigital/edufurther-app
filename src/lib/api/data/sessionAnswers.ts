@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import type { BookingAnswer } from '@/types/booking';
 import type { Remote } from '@/types/mentor';
-import { apiError, normaliseError, retryOnce } from './errors';
+import { remote } from './bookings';
+import { apiError, retryOnce } from './errors';
 import { api } from './http';
 import { keys } from './keys';
 import { sessionKey, useSession } from './session';
@@ -55,10 +56,13 @@ export function toAnswer(a: SessionAnswerRead): BookingAnswer {
  */
 export function useBookingAnswers(
   bookingId: string | null,
+  userId: string,
   active: boolean,
 ): Remote<BookingAnswer[]> {
   const session = useSession();
-  const enabled = active && !!bookingId && session.status !== 'unknown';
+  // `!!userId` like every other read on this screen: this is the one hook that
+  // would otherwise fire before we know who is asking.
+  const enabled = active && !!bookingId && !!userId && session.status !== 'unknown';
   const query = useQuery({
     queryKey: keys.bookings.answers(bookingId ?? '', sessionKey(session)),
     enabled,
@@ -75,10 +79,7 @@ export function useBookingAnswers(
     networkMode: 'always',
     retry: retryOnce,
   });
-  return {
-    data: query.data ?? null,
-    isLoading: enabled && query.isPending,
-    error: query.isError ? normaliseError(query.error) : null,
-    retry: () => void query.refetch(),
-  };
+  // The shared shape, so `isLoading` cannot come to mean one thing here and
+  // another in the hook beside it.
+  return remote(query, () => void query.refetch(), enabled);
 }

@@ -114,7 +114,7 @@ async function fetchPage(
 }
 
 
-function remote<T>(
+export function remote<T>(
   q: { data: T | undefined; isPending: boolean; isError: boolean; error: unknown },
   refetch: () => void,
   enabled: boolean,

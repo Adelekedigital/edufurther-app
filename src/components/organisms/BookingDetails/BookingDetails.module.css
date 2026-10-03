@@ -213,8 +213,12 @@
 }
 
 .answersTitle {
+  /* A real heading now, so the UA margin has to go: the parent is a flex
+     column with a gap, and the two would add up. */
+  margin: 0;
   font-size: var(--text-p-xs);
   font-weight: var(--weight-semibold);
+  line-height: var(--lh-p);
 }
 
 /* "Show all N answers" / "Show less". Its own class rather than .retry: the
