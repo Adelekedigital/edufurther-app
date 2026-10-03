@@ -39,9 +39,10 @@ describe('AppShell: a mentee’s credits', () => {
       'href',
       '/bookings',
     );
-    // Refunds that exist today only: no promise about cancelling (backend #335).
-    expect(dialog).toHaveTextContent(/withdraw a request, or your mentor declines it/);
-    expect(dialog).not.toHaveTextContent(/cancel/i);
+    // The backend's refund rule (decision 229): 12 hours' notice, not the design's 1.
+    expect(dialog).toHaveTextContent(/cancels, or misses the session/);
+    expect(dialog).toHaveTextContent('Cancel at least 12 hours before and you get it back');
+    expect(dialog).not.toHaveTextContent(/1 hour/);
     expect(pill).toHaveAttribute('aria-expanded', 'true');
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog', { name: 'Your credits' })).toBeNull();

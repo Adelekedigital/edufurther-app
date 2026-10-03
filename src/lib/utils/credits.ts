@@ -58,8 +58,9 @@ export function creditsAria(v: CreditsView): string {
 /**
  * "Your credits": the design's explainer with the product's existing "How does
  * it work?" copy folded in (product, 2026-10-03), kept to what the backend
- * does today. Refunds: withdraw, decline and expiry return the credit;
- * cancelling a confirmed session doesn't yet (backend #335), so no promise.
+ * does today. Refunds (backend decision 229): a request withdrawn, declined
+ * or unanswered; a mentor cancelling or missing the session; a mentee
+ * cancelling with at least 12 hours to go (the boundary included).
  */
 export function creditsLead(v: CreditsView): string | null {
   return isOut(v) ? 'You’ve used this month’s credits.' : null;
@@ -68,7 +69,8 @@ export function creditsLead(v: CreditsView): string | null {
 export function creditsPoints(v: CreditsView): string[] {
   return [
     'Each session you request uses 1 credit.',
-    'If you withdraw a request, or your mentor declines it or doesn’t reply in time, the credit comes back.',
+    'You get it back if you withdraw the request, or your mentor declines it, doesn’t reply in time, cancels, or misses the session.',
+    'Cancel at least 12 hours before and you get it back; later than that, the credit is used.',
     v.resetsOn
       ? `Your credits reset on ${v.resetsOn}.`
       : 'Your credits reset at the start of each month.',

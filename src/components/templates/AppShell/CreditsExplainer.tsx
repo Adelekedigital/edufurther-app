@@ -22,8 +22,8 @@ import styles from './CreditsExplainer.module.css';
  *
  * The copy (lib/utils/credits) folds the product's "How does it work?" into
  * the design's explainer. The design's note ("Cancel more than 1 hour before…
- * the credit comes back") is replaced by the refunds that exist today:
- * cancellations don't refund yet (backend #335).
+ * the credit comes back") is replaced by the backend's rule (decision 229):
+ * the notice is 12 hours, not 1.
  */
 export function CreditsExplainer({
   id,
@@ -93,7 +93,7 @@ export function CreditsExplainer({
           ))}
         </ul>
         <span className={styles.purpose}>{CREDITS_PURPOSE}</span>
-        <Link href="/bookings" prefetch={false} className={styles.link} onClick={onClose}>
+        <Link href="/bookings" className={styles.link} onClick={onClose}>
           See my bookings
         </Link>
         <button type="button" className={styles.gotIt} onClick={onClose}>
