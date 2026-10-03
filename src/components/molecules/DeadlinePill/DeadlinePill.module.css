@@ -1,4 +1,4 @@
-/* Bookings.dc.html: the pending row's countdown pill. */
+/* Bookings.dc.html: how long a pending request has left, on either side. */
 .badge {
   align-self: flex-start;
   display: flex;

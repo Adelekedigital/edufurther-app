@@ -61,17 +61,8 @@
   gap: var(--space-1);
 }
 
-.metaItem svg,
-.waiting svg {
+.metaItem svg {
   color: var(--ink-500);
-}
-
-.waiting {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: var(--text-p-xs);
-  color: var(--ink-700);
 }
 
 .badge {

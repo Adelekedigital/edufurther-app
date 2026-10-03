@@ -56,6 +56,28 @@ export function isRespondUrgent(deadlineIso: string, now = new Date()): boolean 
 }
 
 /**
+ * What the pending pill says, for whichever side is looking
+ * (Bookings.dc.html, `waitingStyle=pill`).
+ *
+ * The mentor is told what to do and by when. The mentee cannot act at all, so
+ * theirs names who it waits on — and once the deadline is close it says how
+ * close, because "waiting" stops being useful when it is nearly too late.
+ */
+export function waitingPill(
+  b: Booking,
+  now = new Date(),
+): { icon: 'timer' | 'hourglass_top'; text: string; urgent: boolean } | null {
+  if (b.status !== 'pending' || isLapsed(b, now)) return null;
+  const deadline = respondDeadline(b);
+  const urgent = isRespondUrgent(deadline, now);
+  const left = formatRespondIn(deadline, now);
+  if (b.side === 'mentor') return { icon: 'timer', text: `Respond within ${left}`, urgent };
+  return urgent
+    ? { icon: 'timer', text: `${b.other.firstName} has ${left} left to confirm`, urgent: true }
+    : { icon: 'hourglass_top', text: `Waiting for ${b.other.firstName} to confirm`, urgent: false };
+}
+
+/**
  * Where the join window sits. `none` is a session that has no window at all —
  * anything not confirmed, and older rows the backend never stamped.
  */
@@ -140,11 +162,10 @@ export function panelStatus(
 ): { label: string; tone: StatusTone | 'info' } {
   if (b.status === 'pending') {
     if (isLapsed(b, now)) return { label: 'Unconfirmed', tone: 'warning' };
-    const side = b.side === 'mentor' ? 'you' : b.other.firstName;
-    return {
-      label: `Respond within ${formatRespondIn(respondDeadline(b), now)} · waiting for ${side}`,
-      tone: 'info',
-    };
+    // The same words as the row it was opened from, so the panel never tells a
+    // mentee to "respond" to a request only their mentor can answer.
+    const pill = waitingPill(b, now);
+    return pill ? { label: pill.text, tone: pill.urgent ? 'warning' : 'info' } : { label: 'Unconfirmed', tone: 'warning' };
   }
   if (b.status === 'confirmed') return { label: 'Upcoming', tone: 'info' };
   const tag = statusTag(b.status);

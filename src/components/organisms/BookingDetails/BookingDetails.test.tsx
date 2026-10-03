@@ -49,9 +49,20 @@ describe('what the panel says', () => {
     expect(screen.getByText('What you asked for')).toBeVisible();
   });
 
-  it('a request carries its deadline and who it waits on', () => {
+  it('a mentor is told what to do and by when', () => {
     panel({ booking: sampleBookingFor({ status: 'pending', respondBy: at(5) }) });
-    expect(screen.getByText('Respond within 5h · waiting for you')).toBeVisible();
+    expect(screen.getByText('Respond within 5h')).toBeVisible();
+  });
+
+  it('a mentee is never told to respond to a request only their mentor can answer', () => {
+    panel({ booking: sampleBookingFor({ status: 'pending', side: 'mentee', respondBy: at(40) }) });
+    expect(screen.getByText('Waiting for Amara to confirm')).toBeVisible();
+    expect(screen.queryByText(/Respond within/)).not.toBeInTheDocument();
+  });
+
+  it('close to the deadline, the mentee sees how long is left', () => {
+    panel({ booking: sampleBookingFor({ status: 'pending', side: 'mentee', respondBy: at(18) }) });
+    expect(screen.getByText('Amara has 18h left to confirm')).toBeVisible();
   });
 
   it('a lapsed request says so instead of counting down', () => {
