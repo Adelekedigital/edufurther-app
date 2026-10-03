@@ -157,8 +157,8 @@ export function creditsPoints(v: CreditsView): string[] {
     : 'Monthly credits reset at the start of each month.';
   return [
     'Each session you request uses 1 credit.',
-    // Held monthly credits that never expire (a data anomaly): no claim.
     ...(v.showMonthly ? [reset] : []),
+    // Held monthly credits that never expire (a data anomaly): no claim.
     ...(v.showMonthly && v.monthlyLapses ? ['Unused monthly credits don’t carry over.'] : []),
     // No "invites": there's no invite feature to point at yet.
     ...(v.bonus.length > 0

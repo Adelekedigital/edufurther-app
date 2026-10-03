@@ -194,8 +194,10 @@ describe('copy', () => {
       'Expiring credits are used first.',
     ]);
     // Held monthly credits that never lapse: the reset, no "don't carry over".
-    expect(creditsPoints({ ...v(3), monthlyLapses: false })).not.toContain(
-      'Unused monthly credits don’t carry over.',
-    );
+    expect(creditsPoints({ ...v(3), monthlyLapses: false })).toEqual([
+      'Each session you request uses 1 credit.',
+      'Monthly credits reset on Nov 1.',
+      'Expiring credits are used first.',
+    ]);
   });
 });
