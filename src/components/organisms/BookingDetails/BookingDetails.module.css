@@ -161,3 +161,24 @@
     height: var(--touch-target-min);
   }
 }
+
+/* Retry for the reason block. A text button: it is a small aside inside the
+   panel, not one of its actions. */
+.retry {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+}
+.retry:hover {
+  color: var(--blue-700);
+}
+.retry:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+}

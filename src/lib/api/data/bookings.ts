@@ -8,7 +8,7 @@ import { coverFor } from '@/lib/utils/cover';
 import { dayKey } from '@/lib/utils/slots';
 import type { Booking, BookingParty, BookingStatus, JoinResult } from '@/types/booking';
 import type { AppError, Remote } from '@/types/mentor';
-import { ApiError, apiError, normaliseError } from './errors';
+import { ApiError, apiError, normaliseError, retryOnce } from './errors';
 import { api } from './http';
 import { keys } from './keys';
 import { sessionKey, useSession } from './session';
@@ -113,10 +113,6 @@ async function fetchPage(
   return { rows: data.data.map((s) => toBooking(s, userId)), next: data.next_cursor ?? undefined };
 }
 
-
-/** A 4xx is the answer, not a blip; only a server error is worth one retry. */
-const retryOnce = (count: number, e: unknown) =>
-  !(e instanceof ApiError && e.status < 500) && count < 1;
 
 function remote<T>(
   q: { data: T | undefined; isPending: boolean; isError: boolean; error: unknown },

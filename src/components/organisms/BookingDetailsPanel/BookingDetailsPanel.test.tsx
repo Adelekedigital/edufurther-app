@@ -105,3 +105,45 @@ describe('the phone sheet', () => {
     expect(screen.getByRole('button', { name: 'Outside' })).not.toHaveFocus();
   });
 });
+
+describe('a ?booking= link opened cold', () => {
+  it('shows the frame while it loads, not a blank space', () => {
+    render(<BookingDetailsPanel {...props({ booking: null, isLoading: true })} />);
+    expect(screen.getByRole('complementary', { name: 'Booking details' })).toBeVisible();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('says it failed, and offers a retry', async () => {
+    const retry = vi.fn();
+    render(
+      <BookingDetailsPanel
+        {...props({ booking: null, error: { kind: 'server', message: 'x' }, retry })}
+      />,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('We couldn’t load this booking.');
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(retry).toHaveBeenCalled();
+  });
+
+  it('a booking that is gone says so, and offers no pointless retry', () => {
+    render(
+      <BookingDetailsPanel
+        {...props({ booking: null, error: { kind: 'notFound', message: 'x' }, retry: vi.fn() })}
+      />,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('That booking isn’t there any more.');
+    expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
+  });
+
+  it('offline says to come back', () => {
+    render(<BookingDetailsPanel {...props({ booking: null, error: { kind: 'offline', message: 'x' } })} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('You’re offline.');
+  });
+
+  it('still closes while it has nothing to show', async () => {
+    const onClose = vi.fn();
+    render(<BookingDetailsPanel {...props({ booking: null, isLoading: true, onClose })} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Close details' }));
+    expect(onClose).toHaveBeenCalled();
+  });
+});

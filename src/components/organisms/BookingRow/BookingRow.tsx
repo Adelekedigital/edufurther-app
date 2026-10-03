@@ -89,7 +89,7 @@ export function BookingRow({
           <RespondBadge deadline={respondDeadline(b)} now={now} className={styles.badge} />
         )}
       </div>
-      {(actions || menu?.length) && (
+      {(actions || !!menu?.length) && (
         <div className={styles.actions}>
           {actions}
           {!!menu?.length && (

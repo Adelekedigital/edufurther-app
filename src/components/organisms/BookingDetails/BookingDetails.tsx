@@ -25,28 +25,35 @@ type BookingDetailsProps = {
   onClose: () => void;
   /** Why it ended as it did. History rows only; null while loading or absent. */
   outcome?: BookingOutcome | null;
+  /**
+   * The reason could not be fetched. Said out loud rather than left to read as
+   * "nobody wrote one" — absence and failure look identical otherwise, and
+   * this block is the reason a past booking gets opened.
+   */
+  outcomeFailed?: boolean;
+  retryOutcome?: () => void;
   onJoin?: () => void;
   joining?: boolean;
   now?: Date;
 };
 
-/** "Amara cancelled it" / "You withdrew it" / "It expired", for the reason block. */
+/**
+ * "Amara cancelled this session" / "You withdrew this request" / "Nobody
+ * answered in time". A sweep has no name, so its sentence is passive rather
+ * than blaming the session for acting on itself.
+ */
 function outcomeHeading(o: BookingOutcome, b: Booking): string {
-  const them = b.other.firstName;
-  const verb: Record<BookingOutcome['status'], string> = {
-    cancelled: 'cancelled this session',
-    declined: 'declined this request',
-    withdrawn: 'withdrew this request',
-    expired: 'expired',
-    noShow: 'was missed',
-    completed: '',
-    confirmed: '',
-    pending: '',
-  };
   if (o.status === 'expired') return 'Nobody answered in time';
   if (o.status === 'noShow') return 'This session was missed';
-  if (o.by === 'system') return `This session ${verb[o.status]}`;
-  return `${o.by === 'you' ? 'You' : them} ${verb[o.status]}`;
+  const WORDS: Partial<Record<BookingOutcome['status'], { did: string; done: string }>> = {
+    cancelled: { did: 'cancelled this session', done: 'This session was cancelled' },
+    declined: { did: 'declined this request', done: 'This request was declined' },
+    withdrawn: { did: 'withdrew this request', done: 'This request was withdrawn' },
+  };
+  const words = WORDS[o.status];
+  if (!words) return '';
+  if (o.by === 'system') return words.done;
+  return `${o.by === 'you' ? 'You' : b.other.firstName} ${words.did}`;
 }
 
 /**
@@ -64,6 +71,8 @@ export function BookingDetails({
   titleId,
   onClose,
   outcome,
+  outcomeFailed,
+  retryOutcome,
   onJoin,
   joining,
   now = new Date(),
@@ -132,6 +141,16 @@ export function BookingDetails({
           <div className={styles.notes}>
             <span className={styles.label}>{outcomeHeading(outcome, b)}</span>
             {outcome.reason && <p className={styles.reason}>“{outcome.reason}”</p>}
+          </div>
+        )}
+        {!outcome && outcomeFailed && (
+          <div className={styles.notes} role="alert">
+            <span className={styles.label}>We couldn’t load why this ended.</span>
+            {retryOutcome && (
+              <button type="button" onClick={retryOutcome} className={styles.retry}>
+                Try again
+              </button>
+            )}
           </div>
         )}
 

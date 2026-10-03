@@ -30,3 +30,74 @@
 .sheet > :last-child {
   padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
 }
+
+/* A ?booking= link opened cold: the panel's own loading and error states.
+   Ours — the design never drew the panel without a booking to put in it. */
+.fallback {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-5);
+}
+
+.fallbackHead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.fallbackTitle {
+  flex: 1;
+  margin: 0;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+
+.close {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin: calc(var(--space-2) * -1) calc(var(--space-2) * -1) 0 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--ink-700);
+  cursor: pointer;
+}
+.close:hover {
+  background: var(--ink-50);
+}
+.close:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.problem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.problemText {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+
+@media (max-width: 767px) {
+  .close {
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+  }
+}

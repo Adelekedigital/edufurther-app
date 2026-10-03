@@ -155,3 +155,38 @@ describe('a deleted account', () => {
     expect(screen.queryByText(/ for Deleted user in /)).not.toBeInTheDocument();
   });
 });
+
+describe('when the reason cannot be loaded', () => {
+  const cancelled = sampleBookingFor({ status: 'cancelled', startsAt: at(-300), endsAt: at(-299) });
+
+  it('says so, instead of reading as "nobody wrote one"', async () => {
+    const retryOutcome = vi.fn();
+    panel({ booking: cancelled, outcomeFailed: true, retryOutcome });
+    expect(screen.getByRole('alert')).toHaveTextContent('We couldn’t load why this ended.');
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(retryOutcome).toHaveBeenCalled();
+  });
+
+  it('stays quiet once the reason has arrived', () => {
+    panel({
+      booking: cancelled,
+      outcomeFailed: true,
+      outcome: { status: 'cancelled', reason: 'Clash.', by: 'them', at: at(-320) },
+    });
+    expect(screen.queryByText('We couldn’t load why this ended.')).not.toBeInTheDocument();
+  });
+});
+
+describe('a sweep has no name', () => {
+  it.each([
+    ['cancelled', 'This session was cancelled'],
+    ['declined', 'This request was declined'],
+    ['withdrawn', 'This request was withdrawn'],
+  ] as const)('%s reads passively, not "this session cancelled this session"', (status, heading) => {
+    panel({
+      booking: sampleBookingFor({ status, startsAt: at(-300), endsAt: at(-299) }),
+      outcome: { status, reason: null, by: 'system', at: at(-320) },
+    });
+    expect(screen.getByText(heading)).toBeVisible();
+  });
+});

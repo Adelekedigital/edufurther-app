@@ -193,7 +193,7 @@ export function BookingsScreen() {
   return (
     <AppShell active="Bookings" nav={nav} chrome={chrome} account={account} offline={!online}>
       {gate ?? (
-        <div className={cx(styles.page, open && !asSheet && styles.withAside)}>
+        <div className={cx(styles.page, (open || selected) && !asSheet && styles.withAside)}>
           <header className={styles.header}>
             <h1 className={styles.title}>Bookings</h1>
             <TimezonePicker value={timeZone} onChange={setZone} deviceZone={deviceZone} />
@@ -316,14 +316,19 @@ export function BookingsScreen() {
             />
           </TabPanel>
             </div>
-            {open && (
+            {(open || selected) && (
               <BookingDetailsPanel
                 asSheet={asSheet}
-                booking={open}
+                booking={open ?? null}
                 timeZone={timeZone}
                 outcome={outcome.data}
+                outcomeFailed={!!outcome.error}
+                retryOutcome={outcome.retry}
+                isLoading={fetched.isLoading}
+                error={fetched.error}
+                retry={fetched.retry}
                 onClose={() => select(null)}
-                onJoin={() => onJoin(open.id)}
+                onJoin={open ? () => onJoin(open.id) : undefined}
                 joining={join.isPending}
                 now={now}
               />

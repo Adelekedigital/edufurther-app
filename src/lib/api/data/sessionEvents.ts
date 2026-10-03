@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import type { Booking, BookingStatus } from '@/types/booking';
 import type { Remote } from '@/types/mentor';
-import { ApiError, apiError, normaliseError } from './errors';
+import { apiError, normaliseError, retryOnce } from './errors';
 import { api } from './http';
 import { keys } from './keys';
 import { sessionKey, useSession } from './session';
@@ -104,7 +104,7 @@ export function useBookingOutcome(
     // The past does not change.
     staleTime: 5 * 60_000,
     networkMode: 'always',
-    retry: (count, e) => !(e instanceof ApiError && e.status < 500) && count < 1,
+    retry: retryOnce,
   });
   return {
     data: query.data ?? null,

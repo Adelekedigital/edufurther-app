@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { mockViewerId } from '../route';
 
 /**
  * MOCK of GET /api/v1/sessions/{id}/events — the lifecycle, whose last event
@@ -17,7 +18,7 @@ const OUTCOME: Record<string, { to: string; actor: 'them' | 'you' | 'system'; te
     'h-7': { to: 'withdrawn', actor: 'you', text: null },
   };
 
-export async function GET(_req: Request, ctx: { params: Promise<{ sessionId: string }> }) {
+export async function GET(req: Request, ctx: { params: Promise<{ sessionId: string }> }) {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
   const { sessionId } = await ctx.params;
   await new Promise((r) => setTimeout(r, 120));
@@ -40,7 +41,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ sessionId: str
       id: `${sessionId}-2`,
       from_status: 'confirmed',
       to_status: end.to,
-      actor_id: end.actor === 'system' ? null : end.actor === 'you' ? 'mock-viewer' : `mock-${sessionId}`,
+      actor_id:
+        end.actor === 'system' ? null : end.actor === 'you' ? mockViewerId(req) : `mock-${sessionId}`,
       actor_type: end.actor === 'system' ? 'system' : 'user',
       reason_code: null,
       reason_text: end.text,
