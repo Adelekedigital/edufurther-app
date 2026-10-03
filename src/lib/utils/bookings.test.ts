@@ -9,6 +9,7 @@ import {
   joinState,
   nextSessionWhen,
   otherTimeLine,
+  waitingPill,
   safeMeetingUrl,
   respondDeadline,
   statusTag,
@@ -258,5 +259,50 @@ describe('otherTimeLine survives a bad zone', () => {
   it('says nothing rather than taking the row down', () => {
     const b = booking({ other: party({ timeZone: 'Not/AZone' }) });
     expect(otherTimeLine(b, 'Africa/Lagos')).toBeNull();
+  });
+});
+
+describe('waitingPill', () => {
+  const pending = (over: Partial<Booking> = {}) =>
+    booking({ status: 'pending', respondBy: at(40), ...over });
+
+  it('tells the mentor what to do and by when', () => {
+    expect(waitingPill(pending({ side: 'mentor' }), NOW)).toEqual({
+      icon: 'timer',
+      text: 'Respond within 40h',
+      urgent: false,
+    });
+  });
+
+  it('tells the mentee who it waits on, while there is time', () => {
+    expect(waitingPill(pending({ side: 'mentee' }), NOW)).toEqual({
+      icon: 'hourglass_top',
+      text: 'Waiting for Amara to confirm',
+      urgent: false,
+    });
+  });
+
+  it('once it is close, the mentee is told how close — "waiting" stops helping', () => {
+    expect(waitingPill(pending({ side: 'mentee', respondBy: at(18) }), NOW)).toEqual({
+      icon: 'timer',
+      text: 'Amara has 18h left to confirm',
+      urgent: true,
+    });
+  });
+
+  it('the mentor’s own pill goes warm on the same deadline', () => {
+    expect(waitingPill(pending({ side: 'mentor', respondBy: at(18) }), NOW)).toMatchObject({
+      text: 'Respond within 18h',
+      urgent: true,
+    });
+  });
+
+  it('nothing for a lapsed request: the countdown would be a lie', () => {
+    expect(waitingPill(pending({ respondBy: at(-1) }), NOW)).toBeNull();
+  });
+
+  it('nothing for anything that is not pending', () => {
+    expect(waitingPill(booking({ status: 'confirmed' }), NOW)).toBeNull();
+    expect(waitingPill(booking({ status: 'completed' }), NOW)).toBeNull();
   });
 });

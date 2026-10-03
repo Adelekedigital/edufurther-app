@@ -104,6 +104,20 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       topic: 'Application timeline',
       respondBy: at(3, 9),
     }),
+    // The viewer's own request, close to its deadline: the mentee-side pill.
+    session('p-4', at(5, 15), 'pending_mentor_approval', ['Wanjiru', 'Kamau'], {
+      topic: 'Research proposal',
+      respondBy: at(0, 22),
+      asMentee: true,
+      zone: 'Africa/Nairobi',
+    }),
+    // And one with time to spare, so both mentee states show.
+    session('p-5', at(12, 11), 'pending_mentor_approval', ['Kofi', 'Mensah'], {
+      topic: 'Essay feedback',
+      respondBy: at(6, 9),
+      asMentee: true,
+      zone: 'Africa/Accra',
+    }),
     session('p-3', at(1, 11), 'pending_mentor_approval', ['Kofi', 'Mensah'], {
       topic: 'Mock interview',
       respondBy: at(-1, 9),

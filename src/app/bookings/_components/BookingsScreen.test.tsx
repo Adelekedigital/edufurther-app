@@ -288,12 +288,19 @@ describe('Pending', () => {
     expect(screen.getByText('Respond within 5h')).toBeVisible();
   });
 
-  it('a mentee’s own request says who it is waiting on, with no countdown', () => {
-    pending = remote([booking({ status: 'pending', side: 'mentee', respondBy: at(5) })]);
+  it('a mentee’s own request says who it is waiting on, and never "respond"', () => {
+    pending = remote([booking({ status: 'pending', side: 'mentee', respondBy: at(40) })]);
     render(<BookingsScreen />);
     expect(screen.getByText(/Requests you sent/)).toBeVisible();
     expect(screen.getByText('Waiting for Amara to confirm')).toBeVisible();
     expect(screen.queryByText(/Respond within/)).not.toBeInTheDocument();
+  });
+
+  it('close to the deadline, the mentee is told how long the mentor has left', () => {
+    pending = remote([booking({ status: 'pending', side: 'mentee', respondBy: at(18) })]);
+    render(<BookingsScreen />);
+    expect(screen.getByText('Amara has 18h left to confirm')).toBeVisible();
+    expect(screen.queryByText(/Waiting for/)).not.toBeInTheDocument();
   });
 
   it('a lapsed request stays in the list, labelled, with nothing left to do', () => {
