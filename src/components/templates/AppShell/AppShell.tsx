@@ -52,8 +52,9 @@ const PRIMARY_TABS = {
 /**
  * Prefetch is off until the other screens exist: Next 16 holds prefetch streams
  * open for routes that 404, which never lets the page reach network idle.
- * Turn it back on (delete prefetch={PREFETCH}) once Home/Bookings/Messages/Settings
- * and the Log in / Sign up pages ship.
+ * Turn it back on (delete prefetch={PREFETCH}) once Home/Messages/Settings and the
+ * Log in / Sign up pages ship. Bookings shipped (PR 154) and is safe to prefetch —
+ * a static shell that fetches in the browser — but the flag is per-nav, not per-item.
  */
 const PREFETCH = false;
 
