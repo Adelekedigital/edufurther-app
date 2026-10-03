@@ -18,6 +18,10 @@ export function useBookingsTab() {
   const tab: BookingTab = TABS.find((t) => t === asked) ?? 'upcoming';
   const setTab = (next: string) => {
     const qs = new URLSearchParams(params.toString());
+    // The open panel belongs to a row on the tab being left. Keeping it would
+    // strand it with nothing highlighted, and once that tab's cache is dropped
+    // the app would refetch a booking it had already shown.
+    qs.delete('booking');
     // Upcoming is the default, so it stays out of the URL; anything else that
     // was on the link (utm_*) survives the change.
     if (next === 'pending' || next === 'history') qs.set('tab', next);

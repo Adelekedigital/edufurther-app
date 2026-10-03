@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { DetailFacts, type Fact } from '@/components/molecules/DetailFacts/DetailFacts';
 import { cx } from '@/lib/utils/cx';
 import {
@@ -34,6 +36,12 @@ type BookingDetailsProps = {
   retryOutcome?: () => void;
   onJoin?: () => void;
   joining?: boolean;
+  /** Said under Join, because on a phone this panel covers the page entirely. */
+  joinNotice?: ReactNode;
+  /** The same message in words, for the panel's own alert. */
+  joinProblem?: string | null;
+  /** The reason is still being fetched: the block has a shape, not a gap. */
+  outcomeLoading?: boolean;
   now?: Date;
 };
 
@@ -73,8 +81,11 @@ export function BookingDetails({
   outcome,
   outcomeFailed,
   retryOutcome,
+  outcomeLoading,
   onJoin,
   joining,
+  joinNotice,
+  joinProblem,
   now = new Date(),
 }: BookingDetailsProps) {
   const status = panelStatus(b, now);
@@ -143,7 +154,13 @@ export function BookingDetails({
             {outcome.reason && <p className={styles.reason}>“{outcome.reason}”</p>}
           </div>
         )}
-        {!outcome && outcomeFailed && (
+        {!outcome && outcomeLoading && (
+          <div className={styles.notes} aria-hidden="true">
+            <Skeleton height="16px" width="55%" />
+            <Skeleton height="16px" />
+          </div>
+        )}
+        {!outcome && !outcomeLoading && outcomeFailed && (
           <div className={styles.notes} role="alert">
             <span className={styles.label}>We couldn’t load why this ended.</span>
             {retryOutcome && (
@@ -181,6 +198,12 @@ export function BookingDetails({
           {join === 'before' && opensIn != null && (
             <span className={styles.lock}>Join opens {opensIn} minutes before</span>
           )}
+          {joinProblem && (
+            <p role="alert" className={styles.joinProblem}>
+              {joinProblem}
+            </p>
+          )}
+          {joinNotice}
         </div>
       )}
     </>

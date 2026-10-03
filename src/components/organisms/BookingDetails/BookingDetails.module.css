@@ -195,3 +195,12 @@
     gap: var(--space-4);
   }
 }
+
+/* A join that did not work, said in the panel because on a phone the panel is
+   the whole screen. Ours: the design has no failure state for Join. */
+.joinProblem {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--red-600);
+}

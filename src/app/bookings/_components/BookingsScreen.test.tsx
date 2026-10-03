@@ -560,3 +560,34 @@ describe('the panel changes shape, not content', () => {
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
   });
 });
+
+describe('the review round on the panel', () => {
+  beforeEach(() => {
+    upcoming = remote([
+      booking({ id: 'a', title: 'Statement of Purpose' }),
+      booking({ id: 'b', title: 'Visa practice', startsAt: at(48), endsAt: at(49) }),
+    ]);
+  });
+
+  it('the next session can be opened too — it had no way in', async () => {
+    render(<BookingsScreen />);
+    const hero = screen.getByRole('region', { name: 'Next session' });
+    await userEvent.click(within(hero).getByRole('button', { name: /More options/ }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'See details' }));
+    expect(replace).toHaveBeenCalledWith('/bookings?booking=a', { scroll: false });
+  });
+
+  it('switching tab closes the panel: its row is no longer on screen', async () => {
+    selectedBooking = 'b';
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('tab', { name: /History/ }));
+    expect(replace).toHaveBeenCalledWith('/bookings?tab=history', { scroll: false });
+  });
+
+  it('the aside takes focus when it opens, so the action is not silent', async () => {
+    selectedBooking = 'b';
+    render(<BookingsScreen />);
+    const aside = await screen.findByRole('complementary', { name: 'Booking details' });
+    await waitFor(() => expect(aside).toHaveFocus());
+  });
+});

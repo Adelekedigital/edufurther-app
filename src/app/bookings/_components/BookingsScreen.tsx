@@ -21,6 +21,7 @@ import {
 import { useBookingOutcome } from '@/lib/api/data/sessionEvents';
 import { normaliseError } from '@/lib/api/data/errors';
 import { deviceTimeZone } from '@/lib/utils/format';
+import { useHydrated } from '@/lib/utils/useHydrated';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { BookingStatus } from '@/types/booking';
@@ -44,6 +45,23 @@ const FILTERS: { label: string; status: BookingStatus }[] = [
   { label: 'Missed', status: 'noShow' },
   { label: 'Completed', status: 'completed' },
 ];
+
+/**
+ * The browser swallowed the new tab. Said wherever the Join was pressed, with
+ * the link, because the attendance is already recorded and this is the only
+ * route left to the meeting.
+ */
+function BlockedNotice({ url }: { url: string }) {
+  return (
+    <Notice tone="info">
+      Your browser blocked the meeting window.{' '}
+      <a href={url} target="_blank" rel="noopener noreferrer">
+        Open the session
+      </a>
+      . You’re already marked as here.
+    </Notice>
+  );
+}
 
 /** `/bookings` — the sessions a person has booked or been booked for (Bookings.dc.html). */
 export function BookingsScreen() {
@@ -82,6 +100,10 @@ export function BookingsScreen() {
   // The design's own breakpoint for this screen: below it the aside has no
   // room beside the 920px column, so the panel takes the whole screen.
   const asSheet = useMediaQuery('(max-width: 1099px)');
+  // matchMedia answers `false` until the client runs, so a phone opening a
+  // ?booking= link would paint the 380px aside beside the list and then swap to
+  // the sheet. The panel is secondary, so it waits a frame rather than jump.
+  const ready = useHydrated();
   // Whichever list is loaded may already hold it — opening the panel from a row
   // costs no request. A ?booking= link opened cold has to ask.
   const loaded = [...(upcoming.data ?? []), ...(pending.data ?? []), ...history.bookings].find(
@@ -90,6 +112,7 @@ export function BookingsScreen() {
   const fetched = useBooking(selected, userId, !!selected && !loaded);
   const open = loaded ?? fetched.data;
   const outcome = useBookingOutcome(open ?? null, userId, !!open);
+  const showPanel = ready && (!!open || !!selected);
 
   const join = useJoinSession();
   // A repeated failure must be heard again, so each message carries a new id.
@@ -98,6 +121,10 @@ export function BookingsScreen() {
   // The browser blocked the new tab: offer the link rather than leaving the
   // click looking broken.
   const [blockedUrl, setBlockedUrl] = useState<string | null>(null);
+  // Which Join was pressed. On a phone the panel is a full-screen sheet over
+  // everything, so a message left on the page behind it cannot be seen or
+  // clicked — and the blocked-popup link is the only way to the meeting.
+  const [joinFrom, setJoinFrom] = useState<'hero' | 'panel' | null>(null);
 
   const reveal = {
     upcoming: useRevealed(),
@@ -155,9 +182,10 @@ export function BookingsScreen() {
     setFilters((on) => (on.includes(s) ? on.filter((x) => x !== s) : [...on, s]));
 
   const onJoin = useCallback(
-    (sessionId: string) => {
+    (sessionId: string, from: 'hero' | 'panel') => {
       setJoinProblem(null);
       setBlockedUrl(null);
+      setJoinFrom(from);
       join.mutate(sessionId, {
         onSuccess: ({ meetingUrl }) => {
           // Attendance is recorded either way — the rest is only about getting
@@ -193,7 +221,7 @@ export function BookingsScreen() {
   return (
     <AppShell active="Bookings" nav={nav} chrome={chrome} account={account} offline={!online}>
       {gate ?? (
-        <div className={cx(styles.page, (open || selected) && !asSheet && styles.withAside)}>
+        <div className={cx(styles.page, showPanel && !asSheet && styles.withAside)}>
           <header className={styles.header}>
             <h1 className={styles.title}>Bookings</h1>
             <TimezonePicker value={timeZone} onChange={setZone} deviceZone={deviceZone} />
@@ -204,16 +232,10 @@ export function BookingsScreen() {
           <div className={styles.columns}>
             <div className={styles.column}>
 
+          {/* One live region for the whole page: sr-only, so it is heard even
+              while the sheet covers everything. */}
           <LiveRegion message={joinProblem} />
-          {blockedUrl && (
-            <Notice tone="info">
-              Your browser blocked the meeting window.{' '}
-              <a href={blockedUrl} target="_blank" rel="noopener noreferrer">
-                Open the session
-              </a>
-              . You’re already marked as here.
-            </Notice>
-          )}
+          {blockedUrl && joinFrom !== 'panel' && <BlockedNotice url={blockedUrl} />}
 
           <TabPanel id="bookings-upcoming" active={tab === 'upcoming'}>
             <BookingsPanel
@@ -236,8 +258,9 @@ export function BookingsScreen() {
                 <NextSessionCard
                   booking={next}
                   timeZone={timeZone}
-                  onJoin={() => onJoin(next.id)}
+                  onJoin={() => onJoin(next.id, 'hero')}
                   joining={join.isPending}
+                  menu={detailsMenu(next.id)}
                   now={now}
                 />
               )}
@@ -316,19 +339,24 @@ export function BookingsScreen() {
             />
           </TabPanel>
             </div>
-            {(open || selected) && (
+            {showPanel && (
               <BookingDetailsPanel
                 asSheet={asSheet}
                 booking={open ?? null}
                 timeZone={timeZone}
+                joinNotice={
+                  joinFrom === 'panel' && blockedUrl ? <BlockedNotice url={blockedUrl} /> : null
+                }
+                joinProblem={joinFrom === 'panel' ? (joinProblem?.text ?? null) : null}
                 outcome={outcome.data}
+                outcomeLoading={outcome.isLoading}
                 outcomeFailed={!!outcome.error}
                 retryOutcome={outcome.retry}
                 isLoading={fetched.isLoading}
                 error={fetched.error}
                 retry={fetched.retry}
                 onClose={() => select(null)}
-                onJoin={open ? () => onJoin(open.id) : undefined}
+                onJoin={open ? () => onJoin(open.id, 'panel') : undefined}
                 joining={join.isPending}
                 now={now}
               />
