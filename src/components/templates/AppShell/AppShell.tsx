@@ -52,8 +52,9 @@ const PRIMARY_TABS = {
 /**
  * Prefetch is off until the other screens exist: Next 16 holds prefetch streams
  * open for routes that 404, which never lets the page reach network idle.
- * Turn it back on (delete prefetch={PREFETCH}) once Home/Bookings/Messages/Settings
- * and the Log in / Sign up pages ship.
+ * Turn it back on (delete prefetch={PREFETCH}) once Home/Messages/Settings and the
+ * Log in / Sign up pages ship (Bookings has; the credits explainer's link to
+ * it prefetches).
  */
 const PREFETCH = false;
 

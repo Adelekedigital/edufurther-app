@@ -73,6 +73,41 @@
   line-height: var(--lh-p);
   color: var(--ink-600);
 }
+/* "Refund policy": a quiet toggle so the card leads with the balance. */
+.policy {
+  border-top: var(--border-hairline) solid var(--ink-100);
+  border-bottom: var(--border-hairline) solid var(--ink-100);
+}
+.policyToggle {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+.policyToggle:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-xs);
+}
+.policyBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-bottom: var(--space-3);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-secondary);
+}
 .link {
   align-self: flex-start;
   font-family: var(--font-ui);
