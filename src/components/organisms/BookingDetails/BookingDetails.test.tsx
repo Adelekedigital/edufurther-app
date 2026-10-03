@@ -42,11 +42,11 @@ describe('what the panel says', () => {
     expect(screen.queryByText(/Notes from/)).not.toBeInTheDocument();
   });
 
-  it('labels the note by whose it is', () => {
-    panel({ booking: sampleBookingFor({ note: 'Nine programs.' }) });
-    expect(screen.getByText('Notes from Amara')).toBeVisible();
-    panel({ booking: sampleBookingFor({ note: 'Nine programs.', side: 'mentee' }) });
-    expect(screen.getByText('What you asked for')).toBeVisible();
+  it('the note is labelled by whose it is', () => {
+    panel({ booking: sampleBookingFor({ note: 'Nine programs.' }), answers: [] });
+    expect(screen.getByText('Note from Amara')).toBeVisible();
+    panel({ booking: sampleBookingFor({ note: 'Nine programs.', side: 'mentee' }), answers: [] });
+    expect(screen.getByText('Your note')).toBeVisible();
   });
 
   it('a mentor is told what to do and by when', () => {

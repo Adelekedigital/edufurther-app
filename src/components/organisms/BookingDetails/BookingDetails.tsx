@@ -3,6 +3,7 @@ import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
+import { AnswerItem } from '@/components/molecules/AnswerItem/AnswerItem';
 import { DetailFacts, type Fact } from '@/components/molecules/DetailFacts/DetailFacts';
 import { cx } from '@/lib/utils/cx';
 import {
@@ -16,8 +17,11 @@ import {
 } from '@/lib/utils/bookings';
 import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import type { BookingOutcome } from '@/lib/api/data/sessionEvents';
-import type { Booking } from '@/types/booking';
+import type { AnswerFile, Booking, BookingAnswer } from '@/types/booking';
 import styles from './BookingDetails.module.css';
+
+/** Two answers, then "Show all N" — the design's own count. */
+const ANSWER_PREVIEW = 2;
 
 type BookingDetailsProps = {
   booking: Booking;
@@ -42,6 +46,15 @@ type BookingDetailsProps = {
   joinProblem?: string | null;
   /** The reason is still being fetched: the block has a shape, not a gap. */
   outcomeLoading?: boolean;
+  /** What the mentee wrote on the booking form (GET /sessions/{id}/answers). */
+  answers?: BookingAnswer[] | null;
+  answersLoading?: boolean;
+  answersFailed?: boolean;
+  retryAnswers?: () => void;
+  /** All of them, rather than the first two. */
+  answersExpanded?: boolean;
+  onToggleAnswers?: () => void;
+  onOpenFile?: (file: AnswerFile) => void;
   now?: Date;
 };
 
@@ -82,6 +95,13 @@ export function BookingDetails({
   outcomeFailed,
   retryOutcome,
   outcomeLoading,
+  answers,
+  answersLoading,
+  answersFailed,
+  retryAnswers,
+  answersExpanded,
+  onToggleAnswers,
+  onOpenFile,
   onJoin,
   joining,
   joinNotice,
@@ -93,6 +113,8 @@ export function BookingDetails({
   const join = joinState(b, now);
   const opensIn = joinOpensInMinutes(b);
   const showJoin = !!onJoin && (join === 'open' || join === 'before');
+  const answersTitle = b.side === 'mentee' ? 'Your answers' : `Answers from ${b.other.firstName}`;
+  const shownAnswers = answersExpanded ? (answers ?? []) : (answers ?? []).slice(0, ANSWER_PREVIEW);
 
   const facts: Fact[] = [
     { icon: 'calendar_today', text: fullDate(b.startsAt, timeZone) },
@@ -136,10 +158,48 @@ export function BookingDetails({
           </div>
         )}
 
+        {/* What the mentee wrote on the booking form. Replaces the single
+            "Notes from…" block: the form is what they actually said, and
+            booking_message was only ever the first of it. */}
+        {answersLoading && (
+          <div className={styles.notes} aria-hidden="true">
+            <Skeleton height="16px" width="45%" />
+            <Skeleton height="16px" />
+            <Skeleton height="16px" width="70%" />
+          </div>
+        )}
+        {!answersLoading && answersFailed && (
+          <div className={styles.notes} role="alert">
+            <span className={styles.label}>We couldn’t load the answers.</span>
+            {retryAnswers && (
+              <button type="button" onClick={retryAnswers} className={styles.retry}>
+                Try again
+              </button>
+            )}
+          </div>
+        )}
+        {!answersLoading && !answersFailed && !!answers?.length && (
+          <section aria-label={answersTitle} className={styles.answers}>
+            <span className={styles.answersTitle}>{answersTitle}</span>
+            {shownAnswers.map((a) => (
+              <AnswerItem key={a.questionId} answer={a} onOpenFile={onOpenFile} />
+            ))}
+            {answers.length > ANSWER_PREVIEW && onToggleAnswers && (
+              <button type="button" onClick={onToggleAnswers} className={styles.ansMore}>
+                {answersExpanded ? 'Show less' : `Show all ${answers.length} answers`}
+              </button>
+            )}
+          </section>
+        )}
+        {/* The note is a separate field from the form, not a copy of it
+            (backend, 2026-10-03): a mentee may write one, answer a form, or
+            both, and a migrated booking has only this. It follows the answers
+            because it is the bit they added rather than the bit they were
+            asked. */}
         {b.note && (
           <div className={styles.notes}>
             <span className={styles.label}>
-              {b.side === 'mentee' ? 'What you asked for' : `Notes from ${b.other.firstName}`}
+              {b.side === 'mentee' ? 'Your note' : `Note from ${b.other.firstName}`}
             </span>
             <p className={styles.note}>{b.note}</p>
           </div>

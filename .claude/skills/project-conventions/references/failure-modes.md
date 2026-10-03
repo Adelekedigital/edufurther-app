@@ -67,3 +67,27 @@ prevents it. If nothing prevents it yet, say so — that row is a to-do.
 | 41 | _(real, 2026-10-03, Bookings PR 2 review)_ `{(actions || menu?.length) && …}` would render a bare **`0`** inside a row | An empty array’s `length` is `0`, which React renders as text rather than skipping, unlike `false`/`null`. Latent here only because the one caller always passes an item | Coerce a length test to boolean in JSX: `{(actions || !!menu?.length) && …}`. Any `&&` guard on `.length`, `.size` or a number in JSX needs the same |
 | 42 | _(real, 2026-10-03, Bookings PR 2 review)_ The details panel’s reason heading read "This session cancelled this session" for a system actor | The verb table already contained the object ("cancelled this session"), and the system branch prefixed "This session" to it. Only `expired` and `no_show` had their own early returns | A sentence built from a name plus a verb needs a second, **passive** form for the actor that has no name ("This session was cancelled"). Covered for all three statuses in BookingDetails.test |
 | 43 | _(real, 2026-10-03, spotted by product on the merged screen)_ Bookings' rows, hero and details panel kept their desktop padding on phones; the design tightens all of it | The design's phone rules live in `AppShell.dc.html`'s global `<style>` block, which we deliberately never port (it overrides by attribute-substring selectors). Handoff §7.3 asks for the same rules as per-component CSS at 768px, and other screens do it — Bookings just never did. **The fidelity check did not catch it because every measurement was taken at 1440px** | Read that block when porting a screen and reimplement the rules it would have hit per component (`--space-5`→`--space-4`; `--space-4 --space-5`→`--space-3 --space-4`; `--space-3 --space-4`→`--space-2 --space-3`; `gap --space-6`→`--space-4`). Measure computed styles at **390px as well as 1440px** before a PR |
+
+### #44 — A "mitigation" the element does not support
+
+Rendering another user's uploaded PDF, I wrote `<object>` with a comment saying
+it was sandboxed. `<object>` has no `sandbox` attribute, and a sandboxed
+`<iframe>` cannot load a `blob:` URL without `allow-same-origin`, which hands
+the origin straight back. The comment would have been read by the next person,
+and by a reviewer, as a control that was in place.
+
+Headless Chromium has no PDF viewer, so the empirical test came back identical
+for every sandbox value — inconclusive, not reassuring.
+
+**Check:** before writing a comment that names a security control, confirm the
+element actually supports it. If the real containment belongs to the browser,
+say that it is the browser's and not ours.
+
+### #45 — A mock that makes a correct screen look broken
+
+The answers mock reused `booking_message` as the first answer's text, so the
+hero and the panel showed the same sentence twice. The code was right; the
+fixture made it look like a duplication bug. Found by looking at the page in a
+real browser, not by any test.
+
+**Check:** fixtures for two independent fields get visibly different content.

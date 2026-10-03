@@ -84,3 +84,26 @@ export type JoinResult = {
   /** Where to go. Null means attendance was recorded but there is no venue. */
   meetingUrl: string | null;
 };
+
+/** A file a mentee answered with. The bucket is private: it is fetched, never linked. */
+export type AnswerFile = {
+  id: string;
+  filename: string;
+  contentType: string;
+  size: number;
+  /** False once retention has removed it: say so rather than offer a dead button. */
+  available: boolean;
+};
+
+/** One of the mentee's answers to the mentor's booking form. */
+export type BookingAnswer = {
+  questionId: string;
+  /** The question's wording **as it stands now** (backend #350). */
+  question: string;
+  kind: 'free_text' | 'file_upload' | 'multi_choice';
+  /** The question has since been dropped from the form; the answer survives. */
+  retired: boolean;
+  /** The answer in words: free text as written, choices joined, a file named. */
+  text: string;
+  file: AnswerFile | null;
+};

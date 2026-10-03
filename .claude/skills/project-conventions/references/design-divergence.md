@@ -258,3 +258,17 @@ Defined in `src/styles/tokens/ours.css`. A redesign must not silently drop them:
 | `--step-dot-text`                                                                                       | Session Types wizard step number, literal 11px                                               |
 | `--swatch-edge`                                                                                         | Mentor Profile.dc.html cover swatch ring, `rgba(16,25,40,.08)`                               |
 | reduced-motion durations                                                                                | not drawn                                                                                    |
+
+### Bookings — the mentee's answers (`answers=panel`), 2026-10-03
+
+| # | Design | Built | Why |
+|---|---|---|---|
+| 16 | Every question is listed, with a grey "No answer" for the blanks | Only answered questions are listed | `/answers` returns only answered ones, and the backend does not record which questions were on the form at booking. Merging with today's form would show questions the mentee was never asked. Confirmed with the backend 2026-10-03; raised with design. |
+| 17 | No state for a question the mentor has since removed | The question is italic with "(no longer asked)" beside it | `retired: true` exists in the contract and the answer still shows. **Provisional copy**, listed for design. |
+| 18 | The answers replace the "Notes from {first}" block outright | Both are shown, each under its own label — "Answers from {first}" then "Note from {first}" | `booking_message` and the form are independent fields, both current (backend 2026-10-03). The design's fixture builds its answers *from* the message, so it never had to choose. Dropping the block would hide a real message whenever a form exists. |
+| 19 | A file answer is plain text | A button that opens the file in a viewer | The bucket is private, so a file cannot be linked at all — it has to be fetched with the token. Given that, product chose viewing over downloading: a PDF renders in the browser's own viewer with Download beside it. |
+| 20 | `hero.note` is labelled "What {first} wants to cover" | "Note from {first}" / "Your note" | In the new design that label belongs to the answers preview. Leaving it would give one field two names on one screen. The preview takes the label back when the rows are built. |
+
+**Not built here:** the row preview box and `hero.ansLink`. They need
+`SessionRead.answers_preview`, which went live mid-build (backend #352) and
+follows in its own PR, as planned.

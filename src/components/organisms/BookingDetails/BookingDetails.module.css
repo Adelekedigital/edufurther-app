@@ -204,3 +204,37 @@
   line-height: var(--lh-p);
   color: var(--red-600);
 }
+
+/* The booking form's answers (Bookings.dc.html `answers=panel`). */
+.answers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.answersTitle {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+}
+
+/* "Show all N answers" / "Show less". Its own class rather than .retry: the
+   design declares text-p-xs here, where .retry is a 14px body control. */
+.ansMore {
+  align-self: flex-start;
+  min-height: 32px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-700);
+}
+.ansMore:hover {
+  color: var(--blue-500);
+}
+.ansMore:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+}

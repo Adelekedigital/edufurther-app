@@ -56,7 +56,10 @@ export function NextSessionCard({
   const other = otherTimeLine(b, timeZone);
   const lockId = useId();
   const coverLabel =
-    b.side === 'mentee' ? 'What you want to cover' : `What ${b.other.firstName} wants to cover`;
+    // The note, not the form. "What X wants to cover" is the answers preview's
+    // label in the new design, so this field takes the panel's wording and the
+    // two stop being two names for one thing.
+    b.side === 'mentee' ? 'Your note' : `Note from ${b.other.firstName}`;
 
   return (
     <section aria-label="Next session" className={styles.card}>

@@ -101,5 +101,9 @@ export const keys = {
     one: (id: string, who: string) => ['bookings', 'one', id, who] as const,
     /** Why a past booking ended as it did (GET /sessions/{id}/events). */
     events: (id: string, who: string) => ['bookings', 'events', id, who] as const,
+    /** What the mentee wrote when booking (GET /sessions/{id}/answers). */
+    answers: (id: string, who: string) => ['bookings', 'answers', id, who] as const,
   },
+  /** One intake file's bytes, held only while its viewer is open (gcTime 0). */
+  intakeFile: (id: string, who: string) => ['intakeFile', id, who] as const,
 };

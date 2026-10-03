@@ -49,6 +49,10 @@ vi.mock('@/lib/api/data/bookings', () => ({
 vi.mock('@/lib/api/data/sessionEvents', () => ({
   useBookingOutcome: () => ({ data: null, isLoading: false, error: null, retry: vi.fn() }),
 }));
+let answers: { data: unknown; isLoading: boolean; error: unknown; retry: () => void };
+vi.mock('@/lib/api/data/sessionAnswers', () => ({
+  useBookingAnswers: () => answers,
+}));
 
 const remote = <T,>(data: T | null, over: Partial<Remote<T>> = {}): Remote<T> => ({
   data,
@@ -140,6 +144,7 @@ beforeEach(() => {
   upcoming = remote<Booking[]>([]);
   pending = remote<Booking[]>([]);
   history = hist();
+  answers = { data: [], isLoading: false, error: null, retry: vi.fn() };
   join.mockReset();
   replace.mockReset();
 });
