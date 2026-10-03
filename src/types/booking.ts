@@ -84,3 +84,34 @@ export type JoinResult = {
   /** Where to go. Null means attendance was recorded but there is no venue. */
   meetingUrl: string | null;
 };
+
+/** The one Word type the upload accepts; spelled out because it is unreadable inline. */
+type IntakeDocType =
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+/** A file a mentee answered with. The bucket is private: it is fetched, never linked. */
+export type AnswerFile = {
+  id: string;
+  filename: string;
+  /** PDF or .docx, decided from the file's bytes server-side. Declared here
+   *  rather than pulled from the generated schema — this file is the view
+   *  model and seven components import it. Narrow on purpose: `canPreview`
+   *  leans on it. */
+  contentType: 'application/pdf' | IntakeDocType;
+  size: number;
+  /** False once retention has removed it: say so rather than offer a dead button. */
+  available: boolean;
+};
+
+/** One of the mentee's answers to the mentor's booking form. */
+export type BookingAnswer = {
+  questionId: string;
+  /** The question's wording **as it stands now** (backend #350). */
+  question: string;
+  kind: 'free_text' | 'file_upload' | 'multi_choice';
+  /** The question has since been dropped from the form; the answer survives. */
+  retired: boolean;
+  /** The answer in words: free text as written, choices joined, a file named. */
+  text: string;
+  file: AnswerFile | null;
+};

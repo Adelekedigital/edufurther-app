@@ -18,17 +18,19 @@ import {
   usePendingBookings,
   useUpcomingBookings,
 } from '@/lib/api/data/bookings';
+import { useBookingAnswers } from '@/lib/api/data/sessionAnswers';
 import { useBookingOutcome } from '@/lib/api/data/sessionEvents';
 import { normaliseError } from '@/lib/api/data/errors';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { useHydrated } from '@/lib/utils/useHydrated';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
-import type { BookingStatus } from '@/types/booking';
+import type { AnswerFile, BookingStatus } from '@/types/booking';
 import { canBookFor } from '../../_shell/bookBlocked';
 import { BOOKINGS_GATE, memberGate } from '../../_shell/MentorGate';
 import { cx } from '@/lib/utils/cx';
 import { useAppShell } from '../../_shell/useAppShell';
+import { IntakeFileViewer } from './IntakeFileViewer';
 import { BookingsPanel } from './BookingsPanel';
 import { useBookingsTab } from './useBookingsTab';
 import { useRevealed } from './useRevealed';
@@ -112,7 +114,14 @@ export function BookingsScreen() {
   const fetched = useBooking(selected, userId, !!selected && !loaded);
   const open = loaded ?? fetched.data;
   const outcome = useBookingOutcome(open ?? null, userId, !!open);
+  // Only while the panel is open: a list of twenty rows must not make twenty
+  // requests. One per booking, cached for the visit.
+  const answers = useBookingAnswers(open?.id ?? null, userId ?? '', !!open);
+  const [expandedFor, setExpandedFor] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<AnswerFile | null>(null);
   const showPanel = ready && (!!open || !!selected);
+  const openId = open?.id ?? null;
+  const answersExpanded = !!openId && expandedFor === openId;
 
   const join = useJoinSession();
   // A repeated failure must be heard again, so each message carries a new id.
@@ -350,6 +359,13 @@ export function BookingsScreen() {
                 joinProblem={joinFrom === 'panel' ? (joinProblem?.text ?? null) : null}
                 outcome={outcome.data}
                 outcomeLoading={outcome.isLoading}
+                answers={answers.data}
+                answersLoading={answers.isLoading}
+                answersFailed={!!answers.error}
+                retryAnswers={answers.retry}
+                answersExpanded={answersExpanded}
+                onToggleAnswers={() => setExpandedFor(answersExpanded ? null : openId)}
+                onOpenFile={setViewing}
                 outcomeFailed={!!outcome.error}
                 retryOutcome={outcome.retry}
                 isLoading={fetched.isLoading}
@@ -362,6 +378,7 @@ export function BookingsScreen() {
               />
             )}
           </div>
+          {viewing && <IntakeFileViewer file={viewing} onClose={() => setViewing(null)} />}
         </div>
       )}
     </AppShell>

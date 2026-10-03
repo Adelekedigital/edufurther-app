@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
 import type { BookingStatus } from '@/types/booking';
 import { AccountMenu } from './AccountMenu/AccountMenu';
+import { AnswerItem } from './AnswerItem/AnswerItem';
 import { BookingDayBadge } from './BookingDayBadge/BookingDayBadge';
 import { BookingStatusTag } from './BookingStatusTag/BookingStatusTag';
 import { DeadlinePill } from './DeadlinePill/DeadlinePill';
@@ -716,4 +717,71 @@ export const BookingDay: Story = {
       <BookingDayBadge startsAt="2026-10-04T23:30:00Z" timeZone="Pacific/Auckland" />
     </div>
   ),
+};
+
+/**
+ * Bookings.dc.html details panel: what the mentee answered on the booking form.
+ * Every kind of answer, plus the two the design has no state for — a question
+ * the mentor has since dropped, and a file retention has removed.
+ */
+export const BookingAnswers: Story = {
+  render: () => {
+    const base = { questionId: 'q', question: '', kind: 'free_text' as const, retired: false, file: null };
+    const pdf = {
+      id: 'f1',
+      filename: 'SOP-draft-v2.pdf',
+      contentType: 'application/pdf' as const,
+      size: 182_400,
+      available: true,
+    };
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', maxWidth: 380 }}>
+        <AnswerItem
+          answer={{
+            ...base,
+            question: 'What do you want to cover?',
+            text: 'I need help reviewing my essays before the December deadline.',
+          }}
+        />
+        {/* Long enough to prove the wrap, since the panel is 380px. */}
+        <AnswerItem
+          answer={{
+            ...base,
+            question: 'Anything else I should know?',
+            text: 'I recently started my postgraduate scholarship application. I have attended several webinars and gathered useful information about the programs I am interested in, and I would like to talk about which of the nine on my list are realistic.',
+          }}
+        />
+        <AnswerItem
+          answer={{
+            ...base,
+            question: 'Where are you in your application?',
+            kind: 'multi_choice',
+            text: 'Shortlisting programs, First draft written',
+          }}
+        />
+        <AnswerItem
+          answer={{ ...base, question: 'Upload your draft or CV', kind: 'file_upload', text: pdf.filename, file: pdf }}
+          onOpenFile={fn()}
+        />
+        <AnswerItem
+          answer={{
+            ...base,
+            question: 'Attach anything you want me to read',
+            kind: 'file_upload',
+            text: 'shortlist.docx',
+            file: { ...pdf, filename: 'shortlist.docx', available: false },
+          }}
+          onOpenFile={fn()}
+        />
+        <AnswerItem
+          answer={{
+            ...base,
+            question: 'Which funding are you applying for?',
+            retired: true,
+            text: 'Chevening, and the departmental scholarship if it reopens.',
+          }}
+        />
+      </div>
+    );
+  },
 };

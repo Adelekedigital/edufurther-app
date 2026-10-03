@@ -1,0 +1,72 @@
+/* Bookings.dc.html details panel: one question and its answer. */
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.question {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+
+.answer {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  text-wrap: pretty;
+  color: var(--ink-900);
+}
+
+/* A question the mentor has since dropped. Its answer still stands, but the
+   question is no longer asked — ours: the design has no such state. */
+.retired {
+  font-style: italic;
+}
+
+/* A file answer: opens the viewer. Looks like the answer it stands in for, so
+   the row reads as one thing rather than a control bolted on. */
+.file {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target-min);
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-700);
+  text-align: left;
+}
+.file:hover {
+  color: var(--blue-500);
+}
+.file:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
+.size {
+  font-weight: var(--weight-regular);
+  color: var(--ink-600);
+}
+
+/* Retention has removed it. */
+.gone {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--ink-500);
+}
+
+/* The filename is another user's text, and a U+202E in it would otherwise
+   reorder the words beside it — the size label, "no longer available", the
+   whole phrase. Isolating it bounds the override to the name itself. */
+.filename {
+  unicode-bidi: isolate;
+}

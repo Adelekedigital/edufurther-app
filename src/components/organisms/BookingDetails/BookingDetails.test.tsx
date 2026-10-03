@@ -42,11 +42,11 @@ describe('what the panel says', () => {
     expect(screen.queryByText(/Notes from/)).not.toBeInTheDocument();
   });
 
-  it('labels the note by whose it is', () => {
-    panel({ booking: sampleBookingFor({ note: 'Nine programs.' }) });
-    expect(screen.getByText('Notes from Amara')).toBeVisible();
-    panel({ booking: sampleBookingFor({ note: 'Nine programs.', side: 'mentee' }) });
-    expect(screen.getByText('What you asked for')).toBeVisible();
+  it('the note is labelled by whose it is', () => {
+    panel({ booking: sampleBookingFor({ note: 'Nine programs.' }), answers: [] });
+    expect(screen.getByText('Note from Amara')).toBeVisible();
+    panel({ booking: sampleBookingFor({ note: 'Nine programs.', side: 'mentee' }), answers: [] });
+    expect(screen.getByText('Your note')).toBeVisible();
   });
 
   it('a mentor is told what to do and by when', () => {
@@ -234,5 +234,79 @@ describe('the reason is still loading', () => {
     });
     expect(screen.queryByText('We couldn’t load why this ended.')).not.toBeInTheDocument();
     expect(screen.queryByText(/cancelled this session/)).not.toBeInTheDocument();
+  });
+});
+
+describe('the booking form answers', () => {
+  const answer = (i: number) => ({
+    questionId: `q${i}`,
+    question: `Question ${i}?`,
+    kind: 'free_text' as const,
+    retired: false,
+    text: `Answer ${i}.`,
+    file: null,
+  });
+  const six = [1, 2, 3, 4, 5, 6].map(answer);
+
+  it('shows two, then offers the rest by count', () => {
+    panel({ answers: six, onToggleAnswers: vi.fn() });
+    expect(screen.getByText('Answer 1.')).toBeVisible();
+    expect(screen.getByText('Answer 2.')).toBeVisible();
+    expect(screen.queryByText('Answer 3.')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show all 6 answers' })).toBeVisible();
+  });
+
+  it('two or fewer need no disclosure at all', () => {
+    panel({ answers: [answer(1), answer(2)], onToggleAnswers: vi.fn() });
+    expect(screen.queryByRole('button', { name: /Show all/ })).not.toBeInTheDocument();
+  });
+
+  it('the disclosure says what it does and what it controls', () => {
+    panel({ answers: six, onToggleAnswers: vi.fn() });
+    const button = screen.getByRole('button', { name: 'Show all 6 answers' });
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(button).toHaveAttribute('aria-controls', 'booking-answers');
+  });
+
+  it('expanded, it shows all of them and offers the way back', () => {
+    panel({ answers: six, answersExpanded: true, onToggleAnswers: vi.fn() });
+    expect(screen.getByText('Answer 6.')).toBeVisible();
+    const button = screen.getByRole('button', { name: 'Show less' });
+    expect(button).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('is titled by whose answers they are', () => {
+    panel({ answers: [answer(1)] });
+    expect(screen.getByRole('heading', { name: 'Answers from Amara' })).toBeVisible();
+    panel({ booking: sampleBookingFor({ side: 'mentee' }), answers: [answer(1)] });
+    expect(screen.getByRole('heading', { name: 'Your answers' })).toBeVisible();
+  });
+
+  it('a failure is said plainly, with a way to try again — and before any empty state', () => {
+    const retryAnswers = vi.fn();
+    panel({ answers: null, answersFailed: true, retryAnswers });
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('We couldn’t load the answers.');
+    // Never the server's own words (RFC 9457 `detail`).
+    expect(alert).not.toHaveTextContent(/detail|500|Internal/i);
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeVisible();
+  });
+
+  it('while loading it shows a shape, not a heading with nothing under it', () => {
+    panel({ answers: null, answersLoading: true });
+    expect(screen.queryByRole('heading', { name: /Answers from/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('a booking with no form renders no empty heading', () => {
+    panel({ answers: [] });
+    expect(screen.queryByRole('heading', { name: /Answers from|Your answers/ })).not.toBeInTheDocument();
+  });
+
+  it('the answers and the note are both kept — they are different fields', () => {
+    panel({ booking: sampleBookingFor({ note: 'Nine programs.' }), answers: [answer(1)] });
+    expect(screen.getByRole('heading', { name: 'Answers from Amara' })).toBeVisible();
+    expect(screen.getByText('Note from Amara')).toBeVisible();
+    expect(screen.getByText('Nine programs.')).toBeVisible();
   });
 });

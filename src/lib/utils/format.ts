@@ -125,3 +125,11 @@ export function movedBetween(
     ? { from: origin, to: countryInSentence(study) }
     : null;
 }
+
+/** "1.2 MB" — the size beside a file's name. */
+export function fileSize(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes < 0) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  return kb < 1024 ? `${Math.round(kb)} KB` : `${(kb / 1024).toFixed(1)} MB`;
+}

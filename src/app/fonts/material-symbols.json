@@ -29,6 +29,7 @@
     "date_range",
     "delete",
     "description",
+    "download",
     "drag_indicator",
     "edit",
     "edit_calendar",
@@ -112,5 +113,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "8202fa78ef2c5fab6b8d99ebf854676c1e08acceada0fb33dd39ce290acbc61b"
+  "sha256": "336868fcfb3b953ef91e6cc3fb53f7e3ad7953dc0a428c5a36a5d39026152343"
 }

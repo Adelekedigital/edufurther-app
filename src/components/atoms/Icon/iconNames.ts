@@ -35,6 +35,7 @@ export const ICON_NAMES = [
   'date_range',
   'delete',
   'description',
+  'download',
   'drag_indicator',
   'edit',
   'edit_calendar',
