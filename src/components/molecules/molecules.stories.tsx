@@ -668,14 +668,7 @@ export const BookingOutcomes: Story = {
   render: () => (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
       {(
-        [
-          'completed',
-          'cancelled',
-          'noShow',
-          'declined',
-          'expired',
-          'withdrawn',
-        ] as BookingStatus[]
+        ['completed', 'cancelled', 'noShow', 'declined', 'expired', 'withdrawn'] as BookingStatus[]
       ).map((s) => (
         <BookingStatusTag key={s} status={s} />
       ))}

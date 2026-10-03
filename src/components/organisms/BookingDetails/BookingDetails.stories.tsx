@@ -167,7 +167,13 @@ export const DeletedParty: Story = {
     booking: sampleBookingFor({
       status: 'completed',
       ...past(300),
-      other: sampleParty({ name: 'Deleted user', firstName: 'Deleted user', initials: '', deleted: true, timeZone: null }),
+      other: sampleParty({
+        name: 'Deleted user',
+        firstName: 'Deleted user',
+        initials: '',
+        deleted: true,
+        timeZone: null,
+      }),
     }),
   },
 };
@@ -176,7 +182,10 @@ export const LongEverything: Story = {
   args: {
     booking: sampleBookingFor({
       title: 'Scholarship and funding strategy for competitive postgraduate programs',
-      other: sampleParty({ name: 'Oluwadamilare Adebayo-Ogunleye Chukwuemeka', firstName: 'Oluwadamilare' }),
+      other: sampleParty({
+        name: 'Oluwadamilare Adebayo-Ogunleye Chukwuemeka',
+        firstName: 'Oluwadamilare',
+      }),
       note: 'I recently started my postgraduate scholarship application. I have attended several webinars, gathered useful information, and need help reviewing my essays before the December deadline. I also want to talk about recommendation letters, and whether my shortlist is realistic given my funding situation.',
     }),
   },

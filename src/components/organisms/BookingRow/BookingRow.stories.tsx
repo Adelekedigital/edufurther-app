@@ -97,7 +97,11 @@ export const Lapsed: Story = {
 /** Past rows carry the full date: a day badge alone loses the year. */
 export const Completed: Story = {
   args: {
-    booking: sampleBooking({ status: 'completed', startsAt: at(-24 * 90), endsAt: at(-24 * 90 + 1) }),
+    booking: sampleBooking({
+      status: 'completed',
+      startsAt: at(-24 * 90),
+      endsAt: at(-24 * 90 + 1),
+    }),
     actions: (
       <Button variant="secondary-outlined" size="small">
         Book again

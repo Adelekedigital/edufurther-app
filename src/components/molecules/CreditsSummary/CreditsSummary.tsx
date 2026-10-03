@@ -18,12 +18,13 @@ export function CreditsBar({ credits }: { credits: CreditsView }) {
 }
 
 /** "+1 bonus credit · never expires": one line per expiry group (#158). */
-export function BonusLines({ credits, className }: { credits: CreditsView; className?: string }) {
+export function BonusLines({ credits, id }: { credits: CreditsView; id?: string }) {
   if (credits.bonus.length === 0) return null;
   return (
-    <span className={cx(styles.bonus, className)}>
+    <span id={id} className={styles.bonus}>
       {credits.bonus.map((g) => (
-        <span key={`${g.expiresOn}`}>{bonusLine(g)}</span>
+        // Merged by day in creditsView, so one line per (expires, day).
+        <span key={`${g.expires}-${g.expiresOn}`}>{bonusLine(g)}</span>
       ))}
     </span>
   );
@@ -61,8 +62,8 @@ export function CreditsSummary({
           {creditsTitle(credits)}
         </span>
       </div>
-      <CreditsBar credits={credits} />
-      <BonusLines credits={credits} />
+      {credits.showMonthly && <CreditsBar credits={credits} />}
+      <BonusLines credits={credits} id={`${id}-b`} />
       <div className={styles.foot}>
         {credits.resetsOn ? (
           <span id={`${id}-r`} className={styles.sub}>
@@ -79,7 +80,13 @@ export function CreditsSummary({
             ref: asMenuItem.ref,
             role: 'menuitem',
             tabIndex: -1,
-            'aria-describedby': credits.resetsOn ? `${id}-t ${id}-r` : `${id}-t`,
+            'aria-describedby': [
+              `${id}-t`,
+              credits.bonus.length > 0 && `${id}-b`,
+              credits.resetsOn && `${id}-r`,
+            ]
+              .filter(Boolean)
+              .join(' '),
           })}
         >
           How credits work

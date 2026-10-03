@@ -12,39 +12,63 @@ export type CreditsView = {
   left: number;
   monthlyLeft: number;
   monthlyTotal: number;
-  /** One line per expiry group: soonest first, never-expiring last. */
-  bonus: { count: number; expiresOn: string | null }[];
+  /**
+   * One line per expiry day: soonest first, never-expiring last. Groups the
+   * backend splits by instant are merged by day, so two support grants that
+   * lapse on the same day read as one line.
+   */
+  bonus: BonusGroup[];
+  /**
+   * Whether the monthly part shows (title, bar, reset). Not for a mentee who
+   * doesn't get the monthly grant yet and holds none: "0 of 3 monthly" would
+   * describe credits they don't receive.
+   */
+  showMonthly: boolean;
   /**
    * Whether the monthly credits held lapse at month end. False only when some
    * are held and none expire (migrated balances can be non-expiring); null
    * `expires_at` with none held still lapses, so test the balance first.
    */
   monthlyLapses: boolean;
-  /** "Nov 1", or null when the backend gave no reset date. */
+  /** When the monthly credits reset ("Nov 1"); null with no date or no monthly part. */
   resetsOn: string | null;
 };
+
+/** `expires` with no `expiresOn`: a date that couldn't be read. Never "never". */
+export type BonusGroup = { count: number; expires: boolean; expiresOn: string | null };
 
 type Credits = {
   balance: number;
   nextResetAt?: string | null;
-  monthly: { balance: number; ceiling: number; expiresAt: string | null };
+  monthly: { balance: number; ceiling: number; expiresAt: string | null; unlocked: boolean };
   bonus: { balance: number; groups: { count: number; expiresAt: string | null }[] };
 };
 
-export function creditsView(c: Credits | null | undefined): CreditsView | null {
+export function creditsView(
+  c: Credits | null | undefined,
+  now: Date = new Date(),
+): CreditsView | null {
   if (!c) return null;
   const monthlyLeft = Math.max(0, c.monthly.balance);
+  const showMonthly = c.monthly.unlocked || monthlyLeft > 0;
+  const bonus: BonusGroup[] = [];
+  for (const g of c.bonus.groups) {
+    if (g.count <= 0) continue;
+    const expiresOn = g.expiresAt ? lastDay(g.expiresAt, now) : null;
+    const same = bonus.find((b) => b.expires === !!g.expiresAt && b.expiresOn === expiresOn);
+    if (same) same.count += g.count;
+    else bonus.push({ count: g.count, expires: !!g.expiresAt, expiresOn });
+  }
   return {
     left: Math.max(0, c.balance),
     monthlyLeft,
     // Clamped: a late refund can briefly lift the balance past the ceiling,
     // and the bar never reads "4 of 3".
     monthlyTotal: Math.max(1, c.monthly.ceiling, monthlyLeft),
-    bonus: c.bonus.groups
-      .filter((g) => g.count > 0)
-      .map((g) => ({ count: g.count, expiresOn: g.expiresAt ? lastDay(g.expiresAt) : null })),
+    bonus,
+    showMonthly,
     monthlyLapses: monthlyLeft === 0 || c.monthly.expiresAt !== null,
-    resetsOn: c.nextResetAt ? resetDay(c.nextResetAt) : null,
+    resetsOn: showMonthly && c.nextResetAt ? resetDay(c.nextResetAt) : null,
   };
 }
 
@@ -66,10 +90,17 @@ export function resetDay(iso: string): string | null {
  * `expires_at` is the instant credits stop working (midnight UTC on the 1st),
  * so the last day they work is the day before: "expire Oct 31".
  */
-export function lastDay(iso: string): string | null {
+export function lastDay(iso: string, now: Date = new Date()): string | null {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  return resetDay(new Date(d.getTime() - 1).toISOString());
+  const last = new Date(d.getTime() - 1);
+  // A starter or support credit can run past this year: "Oct 31, 2027".
+  return last.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    ...(last.getUTCFullYear() !== now.getUTCFullYear() && { year: 'numeric' }),
+    timeZone: 'UTC',
+  });
 }
 
 /** Design: 1 left or none is "low" (yellow); none is "out". Totals, not monthly. */
@@ -77,18 +108,18 @@ export const isLow = (v: CreditsView) => v.left <= 1;
 export const isOut = (v: CreditsView) => v.left === 0;
 
 export function creditsTitle(v: CreditsView): string {
-  return isOut(v)
-    ? 'No credits left'
-    : `${v.monthlyLeft} of ${v.monthlyTotal} monthly credits left`;
+  if (isOut(v)) return 'No credits left';
+  if (!v.showMonthly) return `${v.left} ${v.left === 1 ? 'credit' : 'credits'} left`;
+  return `${v.monthlyLeft} of ${v.monthlyTotal} monthly credits left`;
 }
 
 /** "+1 bonus credit · never expires", "+2 bonus credits · expire Oct 31". */
-export function bonusLine(g: { count: number; expiresOn: string | null }): string {
+export function bonusLine(g: BonusGroup): string {
   const one = g.count === 1;
-  const when = g.expiresOn
-    ? `${one ? 'expires' : 'expire'} ${g.expiresOn}`
-    : `${one ? 'never expires' : 'never expire'}`;
-  return `+${g.count} bonus ${one ? 'credit' : 'credits'} · ${when}`;
+  const head = `+${g.count} bonus ${one ? 'credit' : 'credits'}`;
+  if (!g.expires) return `${head} · ${one ? 'never expires' : 'never expire'}`;
+  // An unreadable date: say nothing about when, never "never".
+  return g.expiresOn ? `${head} · ${one ? 'expires' : 'expire'} ${g.expiresOn}` : head;
 }
 
 /**
@@ -101,8 +132,8 @@ export function creditsAria(v: CreditsView): string {
   const head = isOut(v)
     ? 'No credits left'
     : `${v.left} ${v.left === 1 ? 'credit' : 'credits'} left` +
-      (bonus > 0 ? `: ${v.monthlyLeft} monthly, ${bonus} bonus` : '');
-  return v.resetsOn ? `${head}, resets ${v.resetsOn}` : head;
+      (bonus > 0 && v.showMonthly ? `: ${v.monthlyLeft} monthly, ${bonus} bonus` : '');
+  return v.resetsOn ? `${head}, monthly resets ${v.resetsOn}` : head;
 }
 
 /**
@@ -115,7 +146,8 @@ export function creditsAria(v: CreditsView): string {
  * least 12 hours to go (the boundary included).
  */
 export function creditsLead(v: CreditsView): string | null {
-  return isOut(v) ? 'You’ve used this month’s credits.' : null;
+  if (!isOut(v)) return null;
+  return v.showMonthly ? 'You’ve used this month’s credits.' : 'You’ve used your credits.';
 }
 
 export function creditsPoints(v: CreditsView): string[] {
@@ -124,9 +156,12 @@ export function creditsPoints(v: CreditsView): string[] {
     : 'Monthly credits reset at the start of each month.';
   return [
     'Each session you request uses 1 credit.',
-    // Held monthly credits that never expire (migrated) don't lapse: no claim.
-    v.monthlyLapses ? `${reset} Unused ones don’t carry over.` : reset,
-    'Bonus credits come from your starter credit, invites or support. Some never expire.',
+    // Held monthly credits that never expire (a data anomaly): no claim.
+    ...(v.showMonthly ? [v.monthlyLapses ? `${reset} Unused ones don’t carry over.` : reset] : []),
+    // No "invites": there's no invite feature to point at yet.
+    ...(v.bonus.length > 0
+      ? ['Bonus credits come from your starter credit or support. Some never expire.']
+      : []),
     'Credits that expire soonest are used first.',
   ];
 }

@@ -30,19 +30,19 @@ type PanelProps = Omit<Parameters<typeof BookingDetails>[0], 'titleId' | 'bookin
  * The sheet covers the screen, so it is one — and takes the app's dialog
  * behaviour whole (`useFocusTrap`), rather than a second opinion about Escape.
  */
-export function BookingDetailsPanel({
-  asSheet,
-  isLoading,
-  error,
-  retry,
-  ...details
-}: PanelProps) {
+export function BookingDetailsPanel({ asSheet, isLoading, error, retry, ...details }: PanelProps) {
   const titleId = useId();
   const sheetRef = useRef<HTMLDivElement>(null);
   // A link opened cold has no row to read from, so the panel owns all four
   // states itself — a blank frame while it loads, and a sayable failure.
   const body = !details.booking ? (
-    <Fallback titleId={titleId} isLoading={!!isLoading} error={error} retry={retry} onClose={details.onClose} />
+    <Fallback
+      titleId={titleId}
+      isLoading={!!isLoading}
+      error={error}
+      retry={retry}
+      onClose={details.onClose}
+    />
   ) : (
     <BookingDetails {...details} booking={details.booking} titleId={titleId} />
   );

@@ -40,7 +40,12 @@ export function BookingList({ label, heading, intro, children, more }: BookingLi
       <div className={styles.box}>{children}</div>
       {more && (
         <div className={styles.more}>
-          <Button variant="secondary-outlined" size="medium" onClick={more.onClick} busy={more.busy}>
+          <Button
+            variant="secondary-outlined"
+            size="medium"
+            onClick={more.onClick}
+            busy={more.busy}
+          >
             {more.label}
           </Button>
           <span className={styles.count}>{more.caption}</span>

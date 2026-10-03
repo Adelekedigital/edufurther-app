@@ -113,7 +113,7 @@ describe('credits in the shell: mentees only', () => {
     balance: 4,
     state: 'on_track' as const,
     nextResetAt: '2026-11-01T00:00:00Z',
-    monthly: { balance: 3, ceiling: 3, expiresAt: '2026-11-01T00:00:00Z' },
+    monthly: { balance: 3, ceiling: 3, expiresAt: '2026-11-01T00:00:00Z', unlocked: true },
     bonus: { balance: 1, groups: [{ count: 1, expiresAt: null }] },
   };
   it('a mentee (or a new member) with credits gets them; a mentor never does', () => {
@@ -122,7 +122,8 @@ describe('credits in the shell: mentees only', () => {
       left: 4,
       monthlyLeft: 3,
       monthlyTotal: 3,
-      bonus: [{ count: 1, expiresOn: null }],
+      bonus: [{ count: 1, expires: false, expiresOn: null }],
+      showMonthly: true,
       monthlyLapses: true,
       resetsOn: 'Nov 1',
     });

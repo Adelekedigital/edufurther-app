@@ -10,6 +10,7 @@ const pill = (left: number, onClick = vi.fn()) => {
         monthlyLeft: left,
         monthlyTotal: 3,
         bonus: [],
+        showMonthly: true,
         monthlyLapses: true,
         resetsOn: 'Nov 1',
       }}
@@ -24,7 +25,7 @@ const pill = (left: number, onClick = vi.fn()) => {
 describe('CreditsPill', () => {
   it('reads in full and shows "3 credits"', () => {
     const b = pill(3);
-    expect(b).toHaveAccessibleName('3 credits left, resets Nov 1');
+    expect(b).toHaveAccessibleName('3 credits left, monthly resets Nov 1');
     expect(b).toHaveTextContent(/3\s*credits/);
     expect(b).toHaveAttribute('aria-expanded', 'false');
   });
@@ -37,7 +38,7 @@ describe('CreditsPill', () => {
     const b = pill(0);
     expect(b).toHaveTextContent('No credits');
     expect(b).not.toHaveTextContent('0');
-    expect(b).toHaveAccessibleName('No credits left, resets Nov 1');
+    expect(b).toHaveAccessibleName('No credits left, monthly resets Nov 1');
   });
 
   it('opens "Your credits"', async () => {

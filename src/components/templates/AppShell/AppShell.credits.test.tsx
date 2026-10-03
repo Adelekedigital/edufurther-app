@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { CreditsView } from '@/lib/utils/credits';
 import { AppShell } from './AppShell';
@@ -21,12 +21,13 @@ const three: CreditsView = {
   left: 4,
   monthlyLeft: 3,
   monthlyTotal: 3,
-  bonus: [{ count: 1, expiresOn: null }],
+  bonus: [{ count: 1, expires: false, expiresOn: null }],
+  showMonthly: true,
   monthlyLapses: true,
   resetsOn: 'Nov 1',
 };
 // Two pills render (the desktop bar's and the phone header's); CSS shows one.
-const firstPill = () => screen.getAllByRole('button', { name: /credits left/ })[0]!;
+const firstPill = () => screen.getAllByRole('button', { name: /credits? left/ })[0]!;
 
 describe('AppShell: a mentee’s credits', () => {
   it('no credits (mentors, or none sent): no pill', () => {
@@ -87,7 +88,9 @@ describe('AppShell: a mentee’s credits', () => {
     const how = within(group).getByRole('menuitem', { name: 'How credits work' });
     // Opening the menu focuses its first item: the credits one.
     expect(how).toHaveFocus();
-    expect(how).toHaveAccessibleDescription('3 of 3 monthly credits left Resets Nov 1');
+    expect(how).toHaveAccessibleDescription(
+      '3 of 3 monthly credits left +1 bonus credit · never expires Resets Nov 1',
+    );
     await user.keyboard('{Enter}');
     expect(screen.getByRole('dialog', { name: 'Your credits' })).toBeInTheDocument();
     expect(screen.queryByRole('menu')).toBeNull();
@@ -140,7 +143,31 @@ describe('AppShell: a mentee’s credits', () => {
 
   it('the pill reads the total and its parts; no bonus line when there is none', () => {
     shell({ ...three, left: 3, bonus: [] });
-    expect(firstPill()).toHaveAccessibleName('3 credits left, resets Nov 1');
+    expect(firstPill()).toHaveAccessibleName('3 credits left, monthly resets Nov 1');
     expect(screen.queryByText(/bonus credit/)).toBeNull();
+  });
+
+  it('monthly grant not unlocked (starter only): no monthly title, bar or reset; neutral when out', async () => {
+    const starter: CreditsView = {
+      ...three,
+      left: 1,
+      monthlyLeft: 0,
+      showMonthly: false,
+      resetsOn: null,
+    };
+    shell(starter);
+    const user = userEvent.setup();
+    await user.click(firstPill());
+    const dialog = screen.getByRole('dialog', { name: 'Your credits' });
+    expect(dialog).toHaveTextContent('1 credit left');
+    expect(dialog).not.toHaveTextContent(/monthly/i);
+    expect(dialog).toHaveTextContent('+1 bonus credit · never expires');
+    await user.keyboard('{Escape}');
+    cleanup();
+    shell({ ...starter, left: 0, bonus: [] });
+    await user.click(screen.getAllByRole('button', { name: /No credits left/ })[0]!);
+    expect(screen.getByRole('dialog', { name: 'Your credits' })).toHaveTextContent(
+      'You’ve used your credits.',
+    );
   });
 });

@@ -200,7 +200,13 @@ export type Viewer =
         /** When the monthly credits reset (backend `next_reset_at`, midnight UTC). */
         nextResetAt?: string | null;
         /** `expiresAt` null: none held, or none of those held expire. */
-        monthly: { balance: number; ceiling: number; expiresAt: string | null };
+        monthly: {
+          balance: number;
+          ceiling: number;
+          expiresAt: string | null;
+          /** Whether the account gets the monthly grant (a goal + an invite unlock). */
+          unlocked: boolean;
+        };
         /** Starter, invite and support grants; groups soonest expiry first. */
         bonus: { balance: number; groups: { count: number; expiresAt: string | null }[] };
       } | null;

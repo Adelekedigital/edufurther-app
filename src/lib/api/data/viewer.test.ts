@@ -63,7 +63,7 @@ describe('toViewer (backend auth reply #3)', () => {
       balance: 1,
       state: 'low',
       nextResetAt: '2026-10-01T00:00:00Z',
-      monthly: { balance: 1, ceiling: 3, expiresAt: '2026-10-01T00:00:00Z' },
+      monthly: { balance: 1, ceiling: 3, expiresAt: '2026-10-01T00:00:00Z', unlocked: true },
       bonus: { balance: 0, groups: [] },
     });
   });

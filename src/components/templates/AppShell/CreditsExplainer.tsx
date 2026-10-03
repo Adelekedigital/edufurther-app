@@ -88,7 +88,7 @@ export function CreditsExplainer({
           <Icon name="toll" size={20} className={styles.icon} />
           <span className={styles.title}>{creditsTitle(credits)}</span>
         </div>
-        <CreditsBar credits={credits} />
+        {credits.showMonthly && <CreditsBar credits={credits} />}
         <BonusLines credits={credits} />
         {creditsLead(credits) && <span className={styles.body}>{creditsLead(credits)}</span>}
         <ul className={styles.points}>

@@ -85,12 +85,18 @@ describe('why it ended', () => {
   });
 
   it('addresses the viewer when it was them', () => {
-    panel({ booking: cancelled, outcome: { status: 'cancelled', reason: null, by: 'you', at: at(-320) } });
+    panel({
+      booking: cancelled,
+      outcome: { status: 'cancelled', reason: null, by: 'you', at: at(-320) },
+    });
     expect(screen.getByText('You cancelled this session')).toBeVisible();
   });
 
   it('with no reason written, the heading stands alone — no empty quote', () => {
-    panel({ booking: cancelled, outcome: { status: 'cancelled', reason: null, by: 'them', at: at(-320) } });
+    panel({
+      booking: cancelled,
+      outcome: { status: 'cancelled', reason: null, by: 'them', at: at(-320) },
+    });
     expect(screen.getByText('Amara cancelled this session')).toBeVisible();
     expect(screen.queryByText('“”')).not.toBeInTheDocument();
   });
@@ -193,13 +199,16 @@ describe('a sweep has no name', () => {
     ['cancelled', 'This session was cancelled'],
     ['declined', 'This request was declined'],
     ['withdrawn', 'This request was withdrawn'],
-  ] as const)('%s reads passively, not "this session cancelled this session"', (status, heading) => {
-    panel({
-      booking: sampleBookingFor({ status, startsAt: at(-300), endsAt: at(-299) }),
-      outcome: { status, reason: null, by: 'system', at: at(-320) },
-    });
-    expect(screen.getByText(heading)).toBeVisible();
-  });
+  ] as const)(
+    '%s reads passively, not "this session cancelled this session"',
+    (status, heading) => {
+      panel({
+        booking: sampleBookingFor({ status, startsAt: at(-300), endsAt: at(-299) }),
+        outcome: { status, reason: null, by: 'system', at: at(-320) },
+      });
+      expect(screen.getByText(heading)).toBeVisible();
+    },
+  );
 });
 
 describe('join feedback lives in the panel', () => {
@@ -211,7 +220,11 @@ describe('join feedback lives in the panel', () => {
   });
 
   it('a failure is said here, not left on a page the sheet covers', () => {
-    panel({ booking: live, onJoin: vi.fn(), joinProblem: 'This session isn’t open to join right now.' });
+    panel({
+      booking: live,
+      onJoin: vi.fn(),
+      joinProblem: 'This session isn’t open to join right now.',
+    });
     expect(screen.getByRole('alert')).toHaveTextContent('isn’t open to join right now');
   });
 
