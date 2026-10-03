@@ -7,13 +7,24 @@ import type { Illustration } from '@/components/molecules/EmptyState/EmptyState'
 import type { Viewer } from '@/types/mentor';
 import styles from './MentorGate.module.css';
 
-/** What a mentor-only page says to someone who can't use it. */
-export type GateCopy = {
+/** What any signed-in page says to someone who isn't signed in — or can't be. */
+export type MemberGateCopy = {
   illustration: Illustration;
   guestTitle: string;
   guestDescription: string;
+};
+
+/** What a mentor-only page says to someone who can't use it. */
+export type GateCopy = MemberGateCopy & {
   nonMentorTitle: string;
   nonMentorDescription: string;
+};
+
+/** Bookings' copy (PROVISIONAL — undesigned; docs/handoff/bookings-design-request.md). */
+export const BOOKINGS_GATE: MemberGateCopy = {
+  illustration: 'calendar',
+  guestTitle: 'Log in to see your bookings',
+  guestDescription: 'Your bookings are the sessions you’ve booked or been booked for.',
 };
 
 /** Session Types' copy (confirmed by design, reply 2026-09-29, #3). */
@@ -38,6 +49,31 @@ export function mentorGate(
   returnTo: string,
   copy: GateCopy,
 ): ReactNode {
+  const shared = memberGate(viewer, returnTo, copy);
+  if (shared) return shared;
+  if (viewer.kind !== 'loading' && !isMentor)
+    return (
+      <Gate
+        illustration={copy.illustration}
+        title={copy.nonMentorTitle}
+        description={copy.nonMentorDescription}
+        action={
+          <ButtonLink href="/explore" size="large" variant="secondary-outlined">
+            Find a mentor
+          </ButtonLink>
+        }
+      />
+    );
+  return null;
+}
+
+/**
+ * The branches every signed-in page shares: a guest, a `/me` that failed, and
+ * the two states where an identity exists but no usable account does. Null
+ * means "a member, or not known yet" — render the page, which shows its own
+ * loading rather than flashing a gate at someone who is signed in.
+ */
+export function memberGate(viewer: Viewer, returnTo: string, copy: MemberGateCopy): ReactNode {
   const ill = copy.illustration;
   if (viewer.kind === 'guest')
     return (
@@ -93,19 +129,6 @@ export function mentorGate(
         action={
           <ButtonLink href="/explore" size="large" variant="secondary-outlined">
             Browse mentors
-          </ButtonLink>
-        }
-      />
-    );
-  if (viewer.kind !== 'loading' && !isMentor)
-    return (
-      <Gate
-        illustration={ill}
-        title={copy.nonMentorTitle}
-        description={copy.nonMentorDescription}
-        action={
-          <ButtonLink href="/explore" size="large" variant="secondary-outlined">
-            Find a mentor
           </ButtonLink>
         }
       />

@@ -9,6 +9,14 @@ export type TabItem = {
   label: string;
   /** id of the tabpanel this tab controls. */
   panelId: string;
+  /** A count pill after the label. `null` or absent draws none. */
+  count?: number | null;
+  /**
+   * What the count means, read after the label ("Pending, 2 awaiting your
+   * response"). The pill itself is hidden from the accessibility tree, so a
+   * count without this is a number nobody can hear.
+   */
+  countLabel?: string;
 };
 
 type TabsProps = {
@@ -62,12 +70,20 @@ export function Tabs({ items, value, onChange, label, className }: TabsProps) {
             id={`${it.panelId}-tab`}
             aria-selected={on}
             aria-controls={it.panelId}
+            aria-label={it.countLabel ? `${it.label}, ${it.countLabel}` : undefined}
             tabIndex={on ? 0 : -1}
             className={cx(styles.tab, on && styles.on)}
             onClick={() => onChange(it.value)}
             onKeyDown={(e) => onKey(e, i)}
           >
-            <span className={styles.label}>{it.label}</span>
+            <span className={styles.label}>
+              {it.label}
+              {it.count != null && (
+                <span aria-hidden="true" className={styles.count}>
+                  {it.count}
+                </span>
+              )}
+            </span>
           </button>
         );
       })}

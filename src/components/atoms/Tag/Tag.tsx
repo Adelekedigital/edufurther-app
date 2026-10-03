@@ -12,8 +12,22 @@ type TagProps = {
    * praise   — 28px round blue tag with an icon, "Most praised for" on reviews.
    * mine     — small green tag, "Your review" on the viewer's own review.
    * badge    — plain chip beside a name (compact MentorCard's "Top-rated").
+   * success / warning / danger — a full-radius outcome pill (Bookings: how a
+   *            past session ended). Not the same spec as `free`, which is a
+   *            rounded-rect in the same green.
    */
-  tone: 'on-photo' | 'neutral' | 'topic' | 'info' | 'free' | 'praise' | 'mine' | 'badge';
+  tone:
+    | 'on-photo'
+    | 'neutral'
+    | 'topic'
+    | 'info'
+    | 'free'
+    | 'praise'
+    | 'mine'
+    | 'badge'
+    | 'success'
+    | 'warning'
+    | 'danger';
   children: ReactNode;
   className?: string;
 };

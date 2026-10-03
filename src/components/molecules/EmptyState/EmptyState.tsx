@@ -8,6 +8,8 @@ export type Illustration =
   | 'team'
   | 'calendar'
   | 'task-templates'
+  /** Bookings: past sessions that are over and kept. */
+  | 'project-tasks'
   /** The design's `tone="grey"` calendar: a state, not an invitation (not taking bookings). */
   | 'calendar-grey';
 

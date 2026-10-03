@@ -1,0 +1,96 @@
+/* Bookings.dc.html `layout=agendaV2`: one booking in a list. */
+.row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background: var(--white);
+}
+
+/* The box's radius, inset by its 1px border, so the first and last rows do not
+   square off its corners. */
+.row:first-child {
+  border-radius: calc(var(--radius-xl) - 1px) calc(var(--radius-xl) - 1px) 0 0;
+}
+.row:last-child {
+  border-radius: 0 0 calc(var(--radius-xl) - 1px) calc(var(--radius-xl) - 1px);
+}
+.row:not(:first-child) {
+  border-top: var(--border-hairline) solid var(--ink-100);
+}
+
+.content {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.heading {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  text-wrap: pretty;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.metaItem svg,
+.waiting svg {
+  color: var(--ink-500);
+}
+
+.waiting {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  color: var(--ink-700);
+}
+
+.badge {
+  margin-top: var(--space-1);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+/* The design's own reflow point for this row: below it the actions take their
+   own line, indented past the day badge (48px + the row's gap) so they read as
+   belonging to the booking above them. */
+@media (max-width: 1099px) {
+  .actions {
+    flex: 1 1 100%;
+    margin-left: 0;
+    padding-left: calc(48px + var(--space-4));
+  }
+}

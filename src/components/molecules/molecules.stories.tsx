@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { addDays } from '@/lib/utils/slots';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
+import type { BookingStatus } from '@/types/booking';
 import { AccountMenu } from './AccountMenu/AccountMenu';
+import { BookingDayBadge } from './BookingDayBadge/BookingDayBadge';
+import { BookingStatusTag } from './BookingStatusTag/BookingStatusTag';
+import { RespondBadge } from './RespondBadge/RespondBadge';
 import { DayTimePicker } from './DayTimePicker/DayTimePicker';
 import { EmptyState } from './EmptyState/EmptyState';
 import { FactTile } from './FactTile/FactTile';
@@ -654,6 +658,55 @@ export const SessionOwnerFooter: Story = {
   render: () => (
     <div style={{ maxWidth: 360 }}>
       <SessionTypeOwnerFooter name="SOP draft review" onHide={fn()} onEdit={fn()} onDelete={fn()} />
+    </div>
+  ),
+};
+
+/** Bookings.dc.html: how a past session ended. Six outcomes, three tones. */
+export const BookingOutcomes: Story = {
+  render: () => (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+      {(
+        [
+          'completed',
+          'cancelled',
+          'noShow',
+          'declined',
+          'expired',
+          'withdrawn',
+        ] as BookingStatus[]
+      ).map((s) => (
+        <BookingStatusTag key={s} status={s} />
+      ))}
+    </div>
+  ),
+};
+
+/** Bookings.dc.html: the countdown on a request. Warm under a day, grey above. */
+export const RespondCountdown: Story = {
+  render: () => {
+    const now = new Date('2026-10-03T12:00:00Z');
+    const at = (h: number) => new Date(now.getTime() + h * 3_600_000).toISOString();
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+        <RespondBadge deadline={at(0.5)} now={now} />
+        <RespondBadge deadline={at(5)} now={now} />
+        <RespondBadge deadline={at(50)} now={now} />
+        {/* Past its deadline: nothing, so a dead row gets no live countdown. */}
+        <RespondBadge deadline={at(-1)} now={now} />
+      </div>
+    );
+  },
+};
+
+/** Bookings.dc.html: the day block at the head of a booking row. */
+export const BookingDay: Story = {
+  render: () => (
+    <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+      <BookingDayBadge startsAt="2026-10-04T16:00:00Z" timeZone="Africa/Lagos" />
+      <BookingDayBadge startsAt="2026-12-25T09:00:00Z" timeZone="Africa/Lagos" />
+      {/* The same instant, two zones, two days. */}
+      <BookingDayBadge startsAt="2026-10-04T23:30:00Z" timeZone="Pacific/Auckland" />
     </div>
   ),
 };

@@ -83,4 +83,19 @@ export const keys = {
     slots: (mentorId: string, sessionTypeId: string) =>
       ['booking', 'slots', mentorId, sessionTypeId] as const,
   },
+  /**
+   * The Bookings screen (GET /users/{id}/sessions). `who` = the session
+   * identity: one account's sessions are never another's, and signing out must
+   * not leave them in the cache.
+   */
+  bookings: {
+    all: ['bookings'] as const,
+    // `from` (today in the account's zone) is an input to the result, so it is
+    // in the key: without it the page would survive midnight unchanged.
+    upcoming: (who: string, from: string) => ['bookings', 'upcoming', who, from] as const,
+    pending: (who: string) => ['bookings', 'pending', who] as const,
+    // Statuses are sorted so two orders of the same filter share one entry.
+    history: (who: string, statuses: readonly string[]) =>
+      ['bookings', 'history', who, [...statuses].sort()] as const,
+  },
 };

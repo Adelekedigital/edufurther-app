@@ -206,6 +206,12 @@ export type Viewer =
        * waiting on the mentor. Null when /me has no count for that role.
        */
       awaitingResponse?: number | null;
+      /**
+       * The Bookings tabs' counts, both sides added together (backend reply
+       * §10). Distinct from `awaitingResponse`, which is one side only because
+       * the nav badge follows the viewer's role.
+       */
+      bookingCounts?: { pending: number | null; upcoming: number | null };
     };
 
 export type CreditState = 'on_track' | 'moderate' | 'low' | 'exhausted';
