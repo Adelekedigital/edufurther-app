@@ -44,7 +44,6 @@ describe('design states and copy (AppShell.dc.html, creditStyle=green)', () => {
     expect(creditsLead(v(3))).toBeNull();
     expect(creditsPoints(v(3))).toEqual([
       'Each session you request uses 1 credit.',
-      'If you withdraw a request, or your mentor declines it or doesn’t reply in time, the credit comes back.',
       'Your credits reset on Nov 1.',
     ]);
   });

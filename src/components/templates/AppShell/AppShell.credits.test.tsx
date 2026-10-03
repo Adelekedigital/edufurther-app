@@ -39,9 +39,19 @@ describe('AppShell: a mentee’s credits', () => {
       'href',
       '/bookings',
     );
-    // Refunds that exist today only: no promise about cancelling (backend #335).
-    expect(dialog).toHaveTextContent(/withdraw a request, or your mentor declines it/);
-    expect(dialog).not.toHaveTextContent(/cancel/i);
+    // The backend's refund rule (decision 229): 12 hours, not the design's 1;
+    // a no-show refunds only when the mentee joined.
+    // Closed by default, so the card leads with the balance.
+    const toggle = within(dialog).getByRole('button', { name: 'Refund policy' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(dialog).not.toHaveTextContent('you cancel 12+ hours before');
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    const body = document.getElementById(toggle.getAttribute('aria-controls')!)!;
+    expect(within(body).getAllByRole('listitem')).toHaveLength(5);
+    expect(body).toHaveTextContent('your mentor misses a session you joined');
+    expect(body).toHaveTextContent('you cancel 12+ hours before');
+    expect(dialog).not.toHaveTextContent(/1 hour/);
     expect(pill).toHaveAttribute('aria-expanded', 'true');
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog', { name: 'Your credits' })).toBeNull();

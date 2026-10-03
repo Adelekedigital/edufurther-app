@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import Link from 'next/link';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { CreditsBar } from '@/components/molecules/CreditsSummary/CreditsSummary';
@@ -11,6 +11,7 @@ import {
   creditsPoints,
   creditsTitle,
   isLow,
+  REFUND_POLICY,
   type CreditsView,
 } from '@/lib/utils/credits';
 import styles from './CreditsExplainer.module.css';
@@ -22,8 +23,8 @@ import styles from './CreditsExplainer.module.css';
  *
  * The copy (lib/utils/credits) folds the product's "How does it work?" into
  * the design's explainer. The design's note ("Cancel more than 1 hour before…
- * the credit comes back") is replaced by the refunds that exist today:
- * cancellations don't refund yet (backend #335).
+ * the credit comes back") is replaced by the backend's rule (decision 229):
+ * the notice is 12 hours, not 1.
  */
 export function CreditsExplainer({
   id,
@@ -35,6 +36,8 @@ export function CreditsExplainer({
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [policyOpen, setPolicyOpen] = useState(false);
+  const policyId = useId();
 
   useEffect(() => {
     ref.current?.focus();
@@ -92,8 +95,30 @@ export function CreditsExplainer({
             <li key={t}>{t}</li>
           ))}
         </ul>
+        <div className={styles.policy}>
+          <button
+            type="button"
+            className={styles.policyToggle}
+            aria-expanded={policyOpen}
+            aria-controls={policyId}
+            onClick={() => setPolicyOpen((o) => !o)}
+          >
+            Refund policy
+            <Icon name={policyOpen ? 'expand_less' : 'expand_more'} size={18} />
+          </button>
+          {policyOpen && (
+            <div id={policyId} className={styles.policyBody}>
+              {REFUND_POLICY.lead}
+              <ul className={styles.points}>
+                {REFUND_POLICY.items.map((t) => (
+                  <li key={t}>{t}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
         <span className={styles.purpose}>{CREDITS_PURPOSE}</span>
-        <Link href="/bookings" prefetch={false} className={styles.link} onClick={onClose}>
+        <Link href="/bookings" className={styles.link} onClick={onClose}>
           See my bookings
         </Link>
         <button type="button" className={styles.gotIt} onClick={onClose}>
