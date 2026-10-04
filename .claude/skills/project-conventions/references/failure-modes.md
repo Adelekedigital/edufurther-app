@@ -166,7 +166,80 @@ whole string is the reliable form.
 
 **Check:** assert the computed accessible name in a test, not the markup.
 
-### #52 — A dedupe key built from a CSS-module class name
+### #52 — A design variant the atom silently did not have
+
+I built Accept as a filled primary and Decline as an outlined button. The design
+says `secondary-outlined` and `text-destructive`. The second did not exist on our
+Button atom at all — it is in the DS bundle, but was never ported — so there was
+nothing to fail, and a plausible-looking pair of buttons shipped straight past a
+reading of the markup.
+
+**Check:** when the design names a DS variant, confirm the atom actually has
+that variant before using "the closest one". A missing variant is not a type
+error.
+
+### #53 — Two live regions, one query
+
+`getByRole('status')` matched both the page's own `sr-only` live region and the
+new Notice, and the test failed on ambiguity rather than on the behaviour. The
+fix is to assert the words, not the role.
+
+**Check:** on a screen that already has a live region, query new status content
+by its text.
+
+### #54 — A stale mirror reads exactly like a design that does not exist
+
+A parallel build was told to read `SuggestTime.dc.html`, found it absent from
+the local design mirror, and correctly reported "the design draws nothing here"
+— then invented the component and recorded the divergence. The file exists in
+the design project; only the mirror was out of date. The record was false and
+had to be corrected, and the invented half had a specification all along.
+
+**Check:** before recording that something is undrawn, list the design project
+itself rather than the mirror. The mirror is a cache, and nothing about a
+missing file says whether it was never drawn or merely never pulled.
+
+### #55 — A link I never followed
+
+"Book this time" pushed `/mentors/{id}?at={instant}`. **Nothing reads `at`.** The
+profile understands `?book={sessionTypeId}` and `?tab=`, and nothing else — so
+the one action the whole mentee-side feature exists for landed them on a profile
+with the flow closed, the held time unfound, and a stray parameter left in the
+URL to be shared along with it. "Leave a review" had the same shape: it linked
+to `?tab=reviews`, and that tab did not exist for a mentor with no reviews yet —
+precisely the mentor the mentee was being sent to review.
+
+Both were written as if the destination already understood the link. Neither was
+followed.
+
+**Check:** after writing a link, open it. A URL parameter is a contract with the
+page at the other end, and nothing fails loudly when that page ignores it.
+
+### #56 — "Show everything" is not a design for real data
+
+"Pick another day" revealed every remaining slot. With a month of open hours
+that is forty-eight chips, 1240px of them, pushing the dialog's own buttons
+roughly 900px below the fold on a phone. The fixture had three.
+
+The label was wrong too: it did not pick a day, it expanded a list — the name
+was inherited from the design's month-picker modal, which was the thing that
+would have prevented the pile-up.
+
+**Check:** size a list against the data the product will really have, not the
+fixture. And when a design's affordance is skipped, do not keep its label.
+
+### #57 — Copy that concludes from a failed read
+
+When the slots read failed, the step said "…so there's nothing to offer here."
+It could not see the mentor's times, so it had no basis for saying whether there
+were any — a mentor with a full calendar was told there was nothing. The earlier
+round had already split "no open times" from "could not load", and still the
+second branch kept the first's conclusion.
+
+**Check:** a failure may describe itself. It may not draw the conclusion the
+success path would have drawn.
+
+### #58 — A dedupe key built from a CSS-module class name
 
 **2026-10-03, /login.** The report said "focus order 3 stop(s)" and stopped at
 "Continue with email" — the Google button and the switch link below it were

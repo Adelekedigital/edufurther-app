@@ -209,3 +209,39 @@ describe('intake questions (backend #268, #12, #282)', () => {
     for (const s of [409, 413, 422, 500]) expect(msg(s)).not.toContain('server text');
   });
 });
+
+describe('the upload rate limit (backend #358)', () => {
+  const at = (seconds?: string) =>
+    uploadError(
+      apiError(
+        429,
+        { type: '/problems/rate-limited' },
+        new Response(null, { status: 429, headers: seconds ? { 'Retry-After': seconds } : {} }),
+      ),
+    );
+
+  it('says when, in minutes, rather than "try again" — which cannot work for an hour', () => {
+    expect(at('720').message).toBe(
+      'You’ve uploaded a lot of files in the last hour. Try again in 12 minutes.',
+    );
+  });
+
+  it('rounds up, and never promises zero minutes', () => {
+    expect(at('30').message).toMatch(/in 1 minute\./);
+    expect(at('61').message).toMatch(/in 2 minutes\./);
+  });
+
+  it('without a Retry-After it still does not tell you to retry now', () => {
+    expect(at().message).toBe(
+      'You’ve uploaded a lot of files in the last hour. Try again a little later.',
+    );
+  });
+
+  it('never shows the server’s own words', () => {
+    expect(at('600').message).not.toMatch(/rate-limited|problems/);
+  });
+
+  it('the 409 for unused uploads still comes first', () => {
+    expect(uploadError(apiError(409, {})).message).toMatch(/too many files waiting/);
+  });
+});

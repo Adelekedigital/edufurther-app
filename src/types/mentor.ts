@@ -82,6 +82,8 @@ export type AppErrorKind =
   | 'bookingOverlap'
   | 'bookingWithMentorExists'
   | 'bookingLimitReached'
+  /** 429: the server is asking for a pause, and says how long (backend #358). */
+  | 'rateLimited'
   | 'server'
   | 'unknown';
 
@@ -92,6 +94,8 @@ export type AppError = {
   /** Safe to show a user. Never the server's `detail`. */
   message: string;
   status?: number;
+  /** `Retry-After` in seconds, on a 429. Carried so the copy can say when. */
+  retryAfter?: number;
 };
 
 /** One fetched value as a view sees it: the page passes these down. */

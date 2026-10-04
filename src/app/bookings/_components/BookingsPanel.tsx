@@ -38,8 +38,10 @@ type BookingsPanelProps = {
   intro?: ReactNode;
   /** The controls for one row, decided by the tab. */
   actionsFor?: (b: Booking) => ReactNode;
+  /** A full-width block under the row's detail. */
+  noticeFor?: (b: Booking) => ReactNode;
   /** The ⋯ menu for one row. */
-  menuFor?: (id: string) => RowMenuItem[];
+  menuFor?: (b: Booking) => RowMenuItem[];
   /**
    * Opens the details panel on a booking with every answer shown. Left out on
    * History, where the design shows no preview.
@@ -77,6 +79,7 @@ export function BookingsPanel({
   heading,
   intro,
   actionsFor,
+  noticeFor,
   menuFor,
   onOpenAnswers,
   answersControls,
@@ -171,7 +174,8 @@ export function BookingsPanel({
               booking={b}
               timeZone={timeZone}
               actions={actionsFor?.(b)}
-              menu={menuFor?.(b.id)}
+              notice={noticeFor?.(b)}
+              menu={menuFor?.(b)}
               selected={selectedId === b.id}
               onOpenAnswers={onOpenAnswers ? () => onOpenAnswers(b.id) : undefined}
               answersControls={answersControls}

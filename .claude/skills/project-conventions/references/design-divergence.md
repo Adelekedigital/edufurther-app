@@ -293,6 +293,81 @@ basis below 1100px so it shrinks rather than pushing the ⋯ onto its own line.
 | 23 | The hero link carries the design's `-space-2` pull at every width | On phones it takes a 44px target and no negative pull | At 390 the link sat 32px tall with 8px to "Join session", which posts attendance and opens the meeting. A low thumb hit the wrong action, and an invisible tap overlay would have reached into Join itself. The room has to come from somewhere. |
 | 24 | The hero's "See all N answers" | "See the answer" when there is one | "See all 1 answers" is not a sentence, and on the hero "all" has no referent because no answer is shown there. |
 
+### Bookings — the actions (PR 3a), 2026-10-03
+
+| # | Design | Built | Why |
+|---|---|---|---|
+| 25 | No dialog is drawn for decline, cancel or withdraw | A ModalShell confirm, ours | They cannot be undone and they move someone else's credit. The one rule it enforces is that the credit outcome is stated **before** the confirm button. Listed for design. |
+| 26 | `reason_code` is a nine-value enum | Four offered | The other five (`mentor_no_show`, `mentee_no_show`, `expired_no_response`, `rescheduled`, `admin_action`) are system-set; a person picking "admin action" means nothing. |
+| 27 | Button `text-destructive` is in the DS but was missing from our atom | Added, with the hover darkened | The DS hover `--red-300` is 3.15:1 on white, under AA. Ours darkens to `--red-700` (8.4:1); rest `--red-500` is 5.13:1. The same divergence the filled `destructive` already carried. |
+| 28 | The mentor's cancel has no slot question | A switch, defaulting to "I'm still free at this time" | `release_slot` exists on the contract and defaults true. The backend's reasoning is worth keeping: an hour offered while you are busy arrives as a booking you can decline; an hour withheld while you are free arrives as nothing at all. |
+
+**Copy decisions taken by the owner, 2026-10-03** (design's draft
+`Copy - Booking outcomes (provisional).md`, which left three calls open):
+
+1. **"Expired", not "Closed"** — it matches the API's own status and says why
+   nothing happened, where "closed" would equally describe a cancellation. The
+   draft's details line said "closed"; it now says "expired" to agree with the tag.
+2. **Three chips, with "Canceled" renamed "Didn't happen"** — a declined or
+   expired request was never cancelled by anyone. Missed keeps its own chip
+   because the data supports the distinction the owner cares about: a session at
+   least one person attended is not one nobody came to.
+3. **"Reason from {first}", not "{first}'s note"** — the same panel already
+   carries "Note from {first}" for the booking message, and the two would blur.
+
+### Bookings — ours, not the design's (PR 3a)
+
+**The overlap warning is built as drawn** ("This overlaps your session with X on
+Y. Accepting books both") and it **warns rather than blocks**, because accepting
+both may be exactly what a mentor means. Back-to-back sessions are not a clash.
+### Bookings — the mentee's view of a suggested time (`suggestTime=on`), 2026-10-03
+
+The design's `SuggestTime` component is the **mentor's** panel for offering
+another time while declining or cancelling (`Bookings.next.dc.html` lines
+364–390, `hold-hours="{{ 2 }}"`).
+
+> **Corrected 2026-10-03.** This section first said `SuggestTime.dc.html` does
+> not exist. **It does** — the local mirror was stale, and a missing file reads
+> identically to a design that was never drawn. The file specifies the mentor's
+> side in full: a chips picker of the earliest open slots, a "Pick another day"
+> modal with a MonthPicker, a `lock_clock` hold line naming the hours, a
+> 500-character message pre-filled with a draft, and a collapsible "What
+> {first} gets" preview. Pull the mirror fresh before concluding anything is
+> undrawn.
+
+There is still no drawing of what the **mentee** then sees, so
+the whole of `organisms/SuggestionNotice` and `molecules/SuggestionCountdown`
+is ours, listed here rather than in a design request because the contract
+(`SessionRead.suggestion`, backend #339) shipped first.
+
+| #   | Design                                                | Built                                                                                                                                                                                                      | Why                                                                                                                                                                                                                                                                                                               |
+| --- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 25  | No mentee-side view of an offered time                | A card at the hero's spec (`--blue-50` on `--blue-100`, `--radius-xl`, `--space-5` padding, `--space-4` on phones): eyebrow, "{First} offered another time", the time in the viewer's zone, the hold, "Book this time" | An offer is the one thing on a declined booking the mentee can still act on. Borrowing the hero's box makes it read as part of this screen; inventing a third card style would not. **Provisional — the first thing to replace when design draws it.**                                                             |
+| 26  | — (the hold is only a `hold-hours` input to the offer) | A countdown pill at `DeadlinePill`'s exact spec: hours **and** minutes above an hour ("1h 58m left"), minutes alone below it ("58m left"), "Less than a minute left" in the last minute, "Hold lapsed" after | The screen already has one "how long is left" pill; a second drawn differently would read as a different control. Floored, never rounded up — a hold must not claim time it has not got. `1h` alone would be true for a whole hour of a two-hour hold, which is why the minutes stay.                               |
+| 27  | —                                                     | The ticking text is `aria-hidden`; a `role="status"` beside it carries the **band** ("More than an hour…", "Less than an hour…", "Less than 10 minutes…", "The hold…has lapsed.")                           | A polite region carrying "4m left" interrupts every minute, which is unusable. The band changes at most three times in a two-hour hold and every change is a real change of situation. The region is in the page from the start (failure log #32).                                                                  |
+| 28  | —                                                     | Under ten minutes the pill turns `--warning-subtle` / `--warning-text`, and the spoken band says "Less than 10 minutes" at the same moment                                                                 | Never colour alone. Ten minutes is the point where the answer stops being "later today".                                                                                                                                                                                                                          |
+| 29  | —                                                     | A `status: 'active'` row whose `held_until` is past renders the lapsed state, and the Book control is left out                                                                                              | The backend computes `suggestion.status` on every read, so a row fetched while the hold was alive keeps saying `active` — expected, not a bug (backend, 2026-10-03). The clock settles what to show, a re-read settles what it is. Offering a one-tap book on a hold nobody is keeping is a control that can only mislead. |
+| 30  | —                                                     | Lapsed copy: "It is open to anyone again, so it may still be free or someone else may have taken it." No action, no "two hours" in prose                                                                   | An expired hold does **not** mean the time is gone, only that it is no longer kept (backend: re-read `/slots`), so promising either way would be a guess. The two-hour hold is not a field, and a number repeated in prose goes stale the day it changes (row 219).                                                 |
+| 31  | —                                                     | `booked`: `--green-50` / `--green-100`, "You booked the time {First} offered", "It is in your bookings now.", no countdown. A booked offer past its hold is still booked, never lapsed                      | Settled, not urgent. The hold running out says nothing about a time the mentee already took.                                                                                                                                                                                                                       |
+| 32  | —                                                     | The Book control's accessible name is the whole time ("Book Oct 8, 2026 · 4:00 pm to 5:00 pm"), in `aria-label`                                                                                            | "Book this time" says nothing when a page holds more than one offer, and a name assembled from fragments trims itself apart (failure log #51).                                                                                                                                                                     |
+
+### Bookings — the mentor offers another time (PR 3b), 2026-10-04
+
+Built from `SuggestTime.dc.html` (which exists — see the correction above).
+
+| # | Design | Built | Why |
+|---|---|---|---|
+| 33 | "Pick another day" opens a modal with a MonthPicker and that day's times | The link reveals the rest of the open slots as chips | The month picker needs a second source of availability — which days are open — that the slots call does not give us. Two sources for one fact drift. The chips carry every real slot, so nothing is unreachable; the modal is the better affordance once a day-level availability read exists. |
+| 34 | A 500-character "Message to {first}", pre-filled with a drafted message naming the time and the hold | The shared `ReasonField` note, no pre-fill | One note per action, not two: the contract has a single `reason_text`, and a second box would either send nothing or silently overwrite. A pre-filled draft also sends words the mentor did not write unless they notice. **Worth design's view** — the draft is a real kindness and we may be wrong to drop it. |
+| 35 | A collapsible "What {first} gets" preview of the message and the offer card | Not built | It previews a message we do not send separately (see 34) and an email we do not control. It would be a drawing of something else's behaviour. |
+| 36 | The hold line reads "Held for {first} for {N} hours" | Same, with "two" spelled out | `hold_hours` is not a field on the contract; two hours is the backend's fixed policy. Spelled rather than numeric so it reads as prose, and listed here because the number will go stale if the policy changes. |
+
+**Ours, not the design's:** the step distinguishes *three* states, where the
+design draws one list — "you have no open times", "we could not load them", and
+"we cannot show them for this session". Telling a mentor they have no open times
+when the read simply failed is a claim about their own calendar that we cannot
+make.
+
 ### Auth — "Continue with Google", 2026-10-03
 
 The design has no standalone auth screen (design request, auth #1), so there is
@@ -301,8 +376,8 @@ nothing to diverge *from* here. The spec followed instead is Google's own:
 
 | # | Google's guidelines | Built | Why |
 |---|---|---|---|
-| 25 | Their drawn button: white ground, `#747775` border, `#1f1f1f` label, Roboto Medium | Our `Button variant="secondary-outlined" size="large"` — our border, our Inter label, and the label is `--blue-500` | A second button system on one screen, drawn to another brand's spec, would sit beside "Continue with email" looking like a different product. **The blue label is the visible divergence** and is the part to confirm with design when the auth screen is designed. |
-| 26 | The G mark is never recoloured or redrawn | Unchanged, inline SVG, its four brand colours as literals | They are Google's palette, not ours. A token here would invite exactly the recolouring the guidelines forbid — hence the narrow `allowRawHex` entry for this one folder in `package.json`. |
+| 37 | Their drawn button: white ground, `#747775` border, `#1f1f1f` label, Roboto Medium | Our `Button variant="secondary-outlined" size="large"` — our border, our Inter label, and the label is `--blue-500` | A second button system on one screen, drawn to another brand's spec, would sit beside "Continue with email" looking like a different product. **The blue label is the visible divergence** and is the part to confirm with design when the auth screen is designed. |
+| 38 | The G mark is never recoloured or redrawn | Unchanged, inline SVG, its four brand colours as literals | They are Google's palette, not ours. A token here would invite exactly the recolouring the guidelines forbid — hence the narrow `allowRawHex` entry for this one folder in `package.json`. |
 
 **Ours, not from any design:** the "or" divider, and the wording of the two
 Google failure notices (cancelled / didn't work). Both PROVISIONAL, for design.

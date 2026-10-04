@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { addDays } from '@/lib/utils/slots';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
-import type { BookingStatus } from '@/types/booking';
+import type { BookingStatus, PickableReason } from '@/types/booking';
 import { AccountMenu } from './AccountMenu/AccountMenu';
 import { AnswerItem } from './AnswerItem/AnswerItem';
 import { AnswerPreview } from './AnswerPreview/AnswerPreview';
+import { ReasonField } from './ReasonField/ReasonField';
 import { BookingDayBadge } from './BookingDayBadge/BookingDayBadge';
 import { BookingStatusTag } from './BookingStatusTag/BookingStatusTag';
 import { DeadlinePill } from './DeadlinePill/DeadlinePill';
@@ -36,6 +37,7 @@ import { SearchField } from './SearchField/SearchField';
 import { ShareMenu } from './ShareMenu/ShareMenu';
 import { SocialLink } from './SocialLink/SocialLink';
 import { StatTile } from './StatTile/StatTile';
+import { SuggestionCountdown } from './SuggestionCountdown/SuggestionCountdown';
 import { TimezonePicker } from './TimezonePicker/TimezonePicker';
 import { TopicFilter } from './TopicFilter/TopicFilter';
 
@@ -832,6 +834,72 @@ export const BookingAnswerPreview: Story = {
         controls="booking-details"
         linkOnly
       />
+    </div>
+  ),
+};
+
+/**
+ * The reason on a decline, cancel or withdrawal. Optional on purpose — the
+ * contract's own words: "a required one turns a clear-cut decision into a form
+ * to argue with". So no asterisk, and nothing blocks the confirm.
+ *
+ * The four codes are filtered by side: a mentor is never offered "I no longer
+ * need it", a mentee never "I'm no longer free".
+ */
+export const Reason: Story = {
+  render: function Render() {
+    const [mentorCode, setMentorCode] = useState<PickableReason | null>(null);
+    const [mentorText, setMentorText] = useState('');
+    const [menteeCode, setMenteeCode] = useState<PickableReason | null>('mentee_no_longer_needed');
+    const [menteeText, setMenteeText] = useState(
+      'I found the answer in the webinar, so I no longer need the session. Sorry for the late notice.',
+    );
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)', maxWidth: 520 }}>
+        <ReasonField
+          side="mentor"
+          reasonCode={mentorCode}
+          onReasonCode={setMentorCode}
+          text={mentorText}
+          onText={setMentorText}
+          readerFirstName="Amara"
+        />
+        <ReasonField
+          side="mentee"
+          reasonCode={menteeCode}
+          onReasonCode={setMenteeCode}
+          text={menteeText}
+          onText={setMenteeText}
+          readerFirstName="Natasha"
+        />
+      </div>
+    );
+  },
+};
+
+const HOLD_NOW = new Date('2026-10-05T12:00:00Z');
+const heldIn = (minutes: number) => new Date(HOLD_NOW.getTime() + minutes * 60_000).toISOString();
+
+/**
+ * Ours: how long an offered time stays held for the mentee. The design has no
+ * mentee-side view of a suggested time, so the pill is drawn to DeadlinePill's
+ * spec — two countdowns on one screen should not read as two controls.
+ *
+ * Hours and minutes above the hour, minutes alone below it, words in the last
+ * minute, and the hold's end rather than "0m". Warm under ten minutes.
+ */
+export const HoldCountdown: Story = {
+  render: () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+      <SuggestionCountdown heldUntil={heldIn(120)} now={HOLD_NOW} />
+      <SuggestionCountdown heldUntil={heldIn(118)} now={HOLD_NOW} />
+      <SuggestionCountdown heldUntil={heldIn(58)} now={HOLD_NOW} />
+      <SuggestionCountdown heldUntil={heldIn(4)} now={HOLD_NOW} />
+      <SuggestionCountdown heldUntil={heldIn(0.5)} now={HOLD_NOW} />
+      <SuggestionCountdown heldUntil={heldIn(0)} now={HOLD_NOW} />
+      <SuggestionCountdown heldUntil={heldIn(-90)} now={HOLD_NOW} />
+      {/* No clock handed in: this one counts itself down. */}
+      <SuggestionCountdown heldUntil={new Date(Date.now() + 4.4 * 60_000).toISOString()} />
     </div>
   ),
 };

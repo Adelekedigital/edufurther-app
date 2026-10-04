@@ -128,3 +128,84 @@
     height: 60vh;
   }
 }
+
+/* ── The confirm dialogs (ours: the design draws none) ───── */
+.confirmBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.confirmLead {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--ink-900);
+}
+
+/* What happens to the credit, stated before the button rather than after. */
+.confirmCredit {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--ink-50);
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--ink-900);
+}
+
+/* The credit is not coming back. Carrying that on wording alone, in a box that
+   reads as boilerplate, is how someone finds out afterwards. */
+.confirmCreditLost {
+  background: var(--red-50, var(--ink-50));
+  color: var(--text-danger);
+  font-weight: var(--weight-semibold);
+}
+
+.confirmError {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--text-danger);
+}
+
+.confirmFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.slotChoice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.slotLabel {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+
+.slotHint {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+
+@media (max-width: 767px) {
+  .confirmFooter {
+    /* The dialog fills the screen on a phone (ModalShell's own treatment, shared
+       by every modal here), so the footer is pushed to the bottom rather than
+       left floating under short content. */
+    margin-top: auto;
+    /* `column`, not `column-reverse`: reversing painted the destructive button
+       above the dismiss while the tab order ran the other way, so focus jumped
+       up the screen. */
+    flex-direction: column;
+  }
+  .confirmFooter > * {
+    width: 100%;
+  }
+}

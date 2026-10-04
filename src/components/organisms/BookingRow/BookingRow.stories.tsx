@@ -22,6 +22,7 @@ export const party = (name = 'Amara Okafor', over: Partial<BookingParty> = {}): 
   timeZone: 'Africa/Lagos',
   cover: 'sand',
   joinedAt: null,
+  attendance: 'pending' as const,
   ...over,
 });
 
@@ -30,12 +31,15 @@ export const sampleBooking = (over: Partial<Booking> = {}): Booking => ({
   status: 'confirmed',
   side: 'mentor',
   other: party(),
+  myAttendance: 'pending' as const,
   startsAt: at(26),
   endsAt: at(27),
   durationMin: 60,
   title: 'School shortlist',
   note: 'I have nine programs and need to cut it to five. Funding matters most.',
   answersPreview: null,
+  suggestion: null,
+  sessionTypeId: 'st1',
   createdAt: at(-240),
   respondBy: null,
   joinOpensAt: null,

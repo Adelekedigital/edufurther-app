@@ -1,5 +1,12 @@
 import type { Booking, BookingParty, BookingStatus } from '@/types/booking';
 import {
+  canAccept,
+  overlapping,
+  canCancel,
+  canDecline,
+  canWithdraw,
+  refundOnCancel,
+  showedUp,
   bookingHeading,
   formatRespondIn,
   fullDate,
@@ -30,6 +37,7 @@ const party = (over: Partial<BookingParty> = {}): BookingParty => ({
   timeZone: 'Africa/Lagos',
   cover: 'sand',
   joinedAt: null,
+  attendance: 'pending',
   ...over,
 });
 
@@ -38,12 +46,15 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
   status: 'confirmed',
   side: 'mentor',
   other: party(),
+  myAttendance: 'pending' as const,
   startsAt: at(24),
   endsAt: at(25),
   durationMin: 60,
   title: 'School shortlist',
   note: null,
   answersPreview: null,
+  suggestion: null,
+  sessionTypeId: 'st1',
   createdAt: at(-240),
   respondBy: null,
   joinOpensAt: null,
@@ -133,7 +144,7 @@ describe('statusTag', () => {
     expect(statusTag('cancelled')).toEqual({ label: 'Canceled', tone: 'warning' });
     expect(statusTag('noShow')).toEqual({ label: 'Missed', tone: 'danger' });
     expect(statusTag('declined')).toEqual({ label: 'Declined', tone: 'danger' });
-    expect(statusTag('expired')).toEqual({ label: 'Unconfirmed', tone: 'warning' });
+    expect(statusTag('expired')).toEqual({ label: 'Expired', tone: 'warning' });
     expect(statusTag('withdrawn')).toEqual({ label: 'Withdrawn', tone: 'warning' });
   });
   it('draws nothing for a session that is not over', () => {
@@ -305,5 +316,105 @@ describe('waitingPill', () => {
   it('nothing for anything that is not pending', () => {
     expect(waitingPill(booking({ status: 'confirmed' }), NOW)).toBeNull();
     expect(waitingPill(booking({ status: 'completed' }), NOW)).toBeNull();
+  });
+});
+
+describe('who may do what (PR 3a)', () => {
+  const pending = (over = {}) =>
+    booking({ status: 'pending', respondBy: at(5), startsAt: at(48), endsAt: at(49), ...over });
+  const confirmed = (hours: number, over = {}) =>
+    booking({ status: 'confirmed', startsAt: at(hours), endsAt: at(hours + 1), ...over });
+
+  it('only the mentor answers a request, and only while it is still waiting', () => {
+    expect(canAccept(pending({ side: 'mentor' }), NOW)).toBe(true);
+    expect(canDecline(pending({ side: 'mentor' }), NOW)).toBe(true);
+    expect(canAccept(pending({ side: 'mentee' }), NOW)).toBe(false);
+    // Lapsed: the deadline passed, so it is the backend's to expire, not ours.
+    expect(canAccept(pending({ side: 'mentor', respondBy: at(-1) }), NOW)).toBe(false);
+    expect(canAccept(confirmed(48, { side: 'mentor' }), NOW)).toBe(false);
+  });
+
+  it('only the mentee withdraws, and only before it is answered', () => {
+    expect(canWithdraw(pending({ side: 'mentee' }), NOW)).toBe(true);
+    expect(canWithdraw(pending({ side: 'mentor' }), NOW)).toBe(false);
+    expect(canWithdraw(confirmed(48, { side: 'mentee' }), NOW)).toBe(false);
+  });
+
+  it('nobody cancels inside ten minutes of the start — the word reaches no one in time', () => {
+    for (const side of ['mentor', 'mentee'] as const) {
+      expect(canCancel(confirmed(1, { side }), NOW)).toBe(true);
+      expect(canCancel(confirmed(0.25, { side }), NOW)).toBe(true); // 15 min
+      expect(canCancel(confirmed(0.1, { side }), NOW)).toBe(false); // 6 min
+      expect(canCancel(confirmed(-1, { side }), NOW)).toBe(false);
+    }
+  });
+
+  it('a mentor’s cancellation always refunds; a mentee’s needs twelve hours', () => {
+    expect(refundOnCancel(confirmed(1, { side: 'mentor' }), NOW)).toBe(true);
+    expect(refundOnCancel(confirmed(0.3, { side: 'mentor' }), NOW)).toBe(true);
+    expect(refundOnCancel(confirmed(13, { side: 'mentee' }), NOW)).toBe(true);
+    expect(refundOnCancel(confirmed(12, { side: 'mentee' }), NOW)).toBe(true);
+    expect(refundOnCancel(confirmed(11.9, { side: 'mentee' }), NOW)).toBe(false);
+  });
+
+  it('only a confirmed session can be cancelled at all', () => {
+    expect(canCancel(pending({ side: 'mentee' }), NOW)).toBe(false);
+    expect(canCancel(booking({ status: 'completed' }), NOW)).toBe(false);
+  });
+});
+
+describe('did anybody turn up', () => {
+  const withAttendance = (mine: string, theirs: string) =>
+    booking({
+      status: 'noShow',
+      myAttendance: mine as 'pending',
+      other: party({ attendance: theirs as 'pending' }),
+    });
+
+  it('one of them there is enough', () => {
+    expect(showedUp(withAttendance('attended', 'noShow'))).toBe(true);
+    expect(showedUp(withAttendance('noShow', 'attended'))).toBe(true);
+    // Leaving early still means they came.
+    expect(showedUp(withAttendance('leftEarly', 'noShow'))).toBe(true);
+  });
+
+  it('both absent is nobody', () => {
+    expect(showedUp(withAttendance('noShow', 'noShow'))).toBe(false);
+  });
+
+  it('pending is unknown, never absence', () => {
+    // Two migrated bookings have no participant record at all. Reading that as
+    // "nobody came" would accuse people of missing a session they attended.
+    expect(showedUp(withAttendance('pending', 'pending'))).toBe(null);
+    expect(showedUp(withAttendance('pending', 'noShow'))).toBe(null);
+  });
+});
+
+describe('a request that would run into a confirmed session', () => {
+  const req = booking({ id: 'r', status: 'pending', startsAt: at(10), endsAt: at(11) });
+  const conf = (id: string, from: number, to: number) =>
+    booking({ id, status: 'confirmed', startsAt: at(from), endsAt: at(to) });
+
+  it('finds one that straddles the start', () => {
+    expect(overlapping(req, [conf('c', 9.5, 10.5)])?.id).toBe('c');
+  });
+
+  it('finds one wholly inside it, and one that swallows it', () => {
+    expect(overlapping(req, [conf('c', 10.2, 10.8)])?.id).toBe('c');
+    expect(overlapping(req, [conf('c', 9, 12)])?.id).toBe('c');
+  });
+
+  it('back to back is not a clash — mentors do that on purpose', () => {
+    expect(overlapping(req, [conf('c', 9, 10)])).toBe(null);
+    expect(overlapping(req, [conf('c', 11, 12)])).toBe(null);
+  });
+
+  it('ignores anything not confirmed, and itself', () => {
+    expect(overlapping(req, [booking({ id: 'x', status: 'pending', startsAt: at(10), endsAt: at(11) })])).toBe(null);
+    expect(overlapping(req, [req])).toBe(null);
+  });
+
+  it('nothing in the way is null, not undefined', () => {
+    expect(overlapping(req, [])).toBe(null);
   });
 });
