@@ -24,9 +24,16 @@ export function sendSignInCode(email: string, next: string) {
   return sendEmailCode(email, callbackUrl(next));
 }
 
-/** Where Supabase sends the browser back to. Local paths only (safeReturnTo). */
-function callbackUrl(next: string) {
-  return `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeReturnTo(next))}`;
+/**
+ * Where Supabase sends the browser back to. Local paths only (safeReturnTo).
+ * `from` tells the callback which way in this was: it cannot tell from the
+ * error codes, which overlap between a cancelled Google sign-in and a dead
+ * email link.
+ */
+function callbackUrl(next: string, from?: 'google') {
+  const origin = window.location.origin;
+  const path = `/auth/callback?next=${encodeURIComponent(safeReturnTo(next))}`;
+  return `${origin}${path}${from ? `&from=${from}` : ''}`;
 }
 
 export const verifySignInCode = verifyEmailCode;
@@ -36,7 +43,7 @@ export const verifySignInCode = verifyEmailCode;
  * round trip through Google and Supabase.
  */
 export function startGoogleSignIn(next: string) {
-  return signInWithGoogle(callbackUrl(next));
+  return signInWithGoogle(callbackUrl(next, 'google'));
 }
 
 /**

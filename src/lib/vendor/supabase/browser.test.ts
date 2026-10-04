@@ -84,7 +84,7 @@ describe('signOut (Logout ends this device’s session)', () => {
 });
 
 describe('signInWithGoogle', () => {
-  const BACK = 'http://localhost:3000/auth/callback?next=%2Fexplore';
+  const BACK = 'http://localhost:3000/auth/callback?next=%2Fexplore&from=google';
 
   it('asks Supabase for Google and carries the landing URL, so `next` survives', async () => {
     oauthCall.mockResolvedValue({ error: null });
@@ -95,13 +95,11 @@ describe('signInWithGoogle', () => {
     });
   });
 
-  it('maps a refusal to a reason the screen can word (provider off → unknown)', async () => {
-    oauthCall.mockResolvedValue({ error: { status: 400, message: 'provider is not enabled' } });
+  // The SDK builds the URL and navigates; it reports no error of its own, so
+  // the only failure that can reach the caller is a throw before it leaves.
+  // Unhandled, it would leave the button busy for ever.
+  it('reports a failure to start instead of rejecting', async () => {
+    oauthCall.mockRejectedValue(new Error('cookies are blocked'));
     expect(await signInWithGoogle(BACK)).toEqual({ ok: false, reason: 'unknown' });
-  });
-
-  it('is rate limiting, not a generic failure, on a 429', async () => {
-    oauthCall.mockResolvedValue({ error: { status: 429 } });
-    expect(await signInWithGoogle(BACK)).toEqual({ ok: false, reason: 'rateLimited' });
   });
 });

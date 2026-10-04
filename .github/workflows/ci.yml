@@ -82,7 +82,11 @@ jobs:
       - name: Grep the bundle for secrets
         run: |
           set -euo pipefail
-          PATTERNS='sk_live_|sk_test_|-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{20,}'
+          # sb_secret_ and service_role: a Supabase secret key put in a
+          # NEXT_PUBLIC_ variable ships to every browser, and no pattern here
+          # used to match one. It is an easy mix-up — the keys sit side by side
+          # in the dashboard, and one is correct server-side.
+          PATTERNS='sk_live_|sk_test_|sb_secret_|service_role|-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{20,}'
           DIRS=$(ls -d .next/static dist build out 2>/dev/null || true)
           if [ -z "$DIRS" ]; then echo "no build output found to scan"; exit 0; fi
           if grep -rIEl "$PATTERNS" $DIRS; then

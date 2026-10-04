@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { failureReason } from '@/app/_auth/failureReason';
 import { safeReturnTo } from '@/lib/utils/safeReturnTo';
 import { exchangeCodeForSession } from '@/lib/vendor/supabase/server';
 
@@ -18,15 +19,4 @@ export async function GET(request: NextRequest) {
   const ok = code ? await exchangeCodeForSession(code) : false;
   const to = ok ? next : `/login?error=${failureReason(params)}&next=${encodeURIComponent(next)}`;
   return NextResponse.redirect(new URL(to, request.nextUrl.origin));
-}
-
-/**
- * `access_denied` is the person pressing Cancel at Google — expected, and not
- * something to alarm them about. Any other `error` is Google or Supabase
- * refusing. With no `error` at all we came from a link that didn't work.
- */
-function failureReason(params: URLSearchParams) {
-  const error = params.get('error');
-  if (!error) return 'link';
-  return error === 'access_denied' ? 'google_cancelled' : 'google_failed';
 }

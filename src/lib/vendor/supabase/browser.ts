@@ -67,18 +67,27 @@ export async function sendEmailCode(
  * Hand the browser to Google's consent screen. Supabase sends it back to
  * `redirectTo` with a one-time `code` (PKCE; the verifier is in a cookie, so
  * /auth/callback can swap it server-side, exactly as the magic link does).
- * On success this call navigates away, so the caller stays busy until it does.
+ *
+ * The SDK builds the URL itself and calls location.assign, so it reports no
+ * error of its own — a refusal by Google or Supabase can only arrive on the
+ * way back, at the callback. What it can do is throw before leaving (writing
+ * the PKCE verifier cookie fails, say), and an unhandled rejection there would
+ * leave the button busy for ever. Hence the catch.
  */
 export async function signInWithGoogle(
   redirectTo: string,
 ): Promise<{ ok: true } | { ok: false; reason: AuthFailure }> {
   const sb = supabase();
   if (!sb) return { ok: false, reason: 'unavailable' };
-  const { error } = await sb.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo },
-  });
-  return error ? { ok: false, reason: failure(error) } : { ok: true };
+  try {
+    const { error } = await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo },
+    });
+    return error ? { ok: false, reason: failure(error) } : { ok: true };
+  } catch (e) {
+    return { ok: false, reason: failure(e as { message?: string }) };
+  }
 }
 
 export async function verifyEmailCode(
@@ -119,11 +128,16 @@ export async function signOut(): Promise<void> {
   }
 }
 
-/** The SDK's session cookies (`sb-<project>-auth-token`, chunked as `.0`, `.1`…). */
+/**
+ * The SDK's session cookies (`sb-<project>-auth-token`, chunked as `.0`, `.1`…)
+ * and the PKCE verifier beside them. The SDK deletes the verifier only when an
+ * exchange succeeds, so a sign-in someone abandoned leaves one behind for 400
+ * days — on a shared machine, past the logout that was meant to clear it.
+ */
 function clearAuthCookies() {
   for (const part of document.cookie.split(';')) {
     const name = part.split('=')[0]?.trim();
-    if (name && /^sb-.+-auth-token(\.\d+)?$/.test(name)) {
+    if (name && /^sb-.+-auth-token(\.\d+|-code-verifier)?$/.test(name)) {
       document.cookie = `${name}=; Max-Age=0; path=/`;
     }
   }
