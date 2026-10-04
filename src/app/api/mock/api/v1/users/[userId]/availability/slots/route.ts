@@ -17,7 +17,11 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ userId: str
   const { userId } = await ctx.params;
   const sp = req.nextUrl.searchParams;
   const typeId = sp.get('session_type_id');
-  if (!mockMentorExists(userId) || !MOCK_SESSION_TYPES.some((t) => t.id === typeId))
+  // The signed-in mock viewer is a mentor too — they own this screen's
+  // Pending tab and can offer another time when declining. `mockMentorExists`
+  // only knows the browsable directory, which they are not in.
+  const known = userId === 'mock-viewer' || mockMentorExists(userId);
+  if (!known || !MOCK_SESSION_TYPES.some((t) => t.id === typeId))
     return new NextResponse(null, { status: 404 });
   const now = Date.now();
   const startParam = sp.get('start');

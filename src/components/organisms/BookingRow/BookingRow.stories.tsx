@@ -38,6 +38,8 @@ export const sampleBooking = (over: Partial<Booking> = {}): Booking => ({
   title: 'School shortlist',
   note: 'I have nine programs and need to cut it to five. Funding matters most.',
   answersPreview: null,
+  suggestion: null,
+  sessionTypeId: 'st1',
   createdAt: at(-240),
   respondBy: null,
   joinOpensAt: null,

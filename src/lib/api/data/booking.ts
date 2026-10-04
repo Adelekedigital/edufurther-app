@@ -299,6 +299,10 @@ export function useRequestBooking() {
       attempt.current = null;
       // The mentee's Bookings badge counts requests awaiting the mentor (/me).
       void queryClient.invalidateQueries({ queryKey: keys.viewer.all });
+      // A new booking changes the lists, and if it took a suggested time it also
+      // settles that offer — the notice would otherwise keep counting down a
+      // hold on a time already booked.
+      void queryClient.invalidateQueries({ queryKey: keys.bookings.all });
     },
     onSettled: (_data, error, req) => {
       // The questions changed under the modal (a required one we didn't show, or

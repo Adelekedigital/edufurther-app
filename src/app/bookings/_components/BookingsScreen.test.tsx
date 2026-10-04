@@ -9,9 +9,10 @@ import { BookingsScreen } from './BookingsScreen';
 let tab = 'upcoming';
 let selectedBooking: string | null = null;
 const replace = vi.fn();
+const push = vi.fn();
 vi.mock('next/navigation', () => ({
   usePathname: () => '/bookings',
-  useRouter: () => ({ replace, push: vi.fn() }),
+  useRouter: () => ({ replace, push }),
   useSearchParams: () => {
     const q = new URLSearchParams(tab === 'upcoming' ? '' : `tab=${tab}`);
     if (selectedBooking) q.set('booking', selectedBooking);
@@ -63,6 +64,14 @@ function stubAction() {
 }
 vi.mock('@/lib/api/data/bookingActions', () => ({
   useBookingAction: (a: string) => (actions[a] ??= stubAction()),
+}));
+let reviewable: { data: { id: string }[] | null; isLoading: boolean; error: unknown; retry: () => void };
+vi.mock('@/lib/api/data/reviewableSessions', () => ({
+  useMyReviewableSessions: () => reviewable,
+}));
+vi.mock('@/lib/api/data/booking', async (orig) => ({
+  ...(await orig<Record<string, unknown>>()),
+  useSlots: () => ({ data: [], isLoading: false, error: null, retry: vi.fn() }),
 }));
 vi.mock('@/lib/api/data/intakeFiles', () => ({
   useIntakeFile: () => ({ url: 'blob:stub', isLoading: false, error: null, retry: vi.fn() }),
@@ -117,6 +126,8 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
   title: 'School shortlist',
   note: null,
   answersPreview: null,
+  suggestion: null,
+  sessionTypeId: 'st1',
   createdAt: at(-240),
   respondBy: null,
   joinOpensAt: null,
@@ -163,6 +174,7 @@ beforeEach(() => {
   pending = remote<Booking[]>([]);
   history = hist();
   answers = { data: [], isLoading: false, error: null, retry: vi.fn() };
+  reviewable = { data: [], isLoading: false, error: null, retry: vi.fn() };
   for (const a of ['accept', 'decline', 'withdraw', 'cancel']) actions[a] = stubAction();
   join.mockReset();
   replace.mockReset();
@@ -915,5 +927,88 @@ describe('accepting a request that runs into another session', () => {
     tab = 'pending';
     render(<BookingsScreen />);
     expect(screen.queryByText(/This overlaps your session with/)).not.toBeInTheDocument();
+  });
+});
+
+describe('the review entry on History', () => {
+  beforeEach(() => {
+    // Book again and Leave a review are both gated on being able to book.
+    viewer = { ...MEMBER, isMentor: false, isApprovedMentor: false, isMentee: true };
+  });
+
+  const completed = (over = {}) =>
+    booking({ id: 'h1', title: 'SOP review', status: 'completed', side: 'mentee', startsAt: at(-48), endsAt: at(-47), ...over });
+
+  it('offers a review only for a session the list says is still reviewable', async () => {
+    history = hist({ bookings: [completed()] });
+    reviewable = { data: [{ id: 'h1' }], isLoading: false, error: null, retry: vi.fn() };
+    tab = 'history';
+    render(<BookingsScreen />);
+    const link = screen.getByRole('link', { name: 'Leave a review' });
+    // The flow lives on the profile; one implementation, not two.
+    expect(link).toHaveAttribute('href', '/mentors/p1?tab=reviews');
+  });
+
+  it('a session already reviewed falls back to Book again', () => {
+    // The list drops a session once a review is written, so nothing here has to
+    // re-derive eligibility — and nothing offers a second review.
+    history = hist({ bookings: [completed()] });
+    reviewable = { data: [], isLoading: false, error: null, retry: vi.fn() };
+    tab = 'history';
+    render(<BookingsScreen />);
+    expect(screen.queryByRole('link', { name: 'Leave a review' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Book again' })).toBeVisible();
+  });
+
+  it('a mentor is never offered one — only mentees review', () => {
+    history = hist({ bookings: [completed({ side: 'mentor' })] });
+    reviewable = { data: [{ id: 'h1' }], isLoading: false, error: null, retry: vi.fn() };
+    tab = 'history';
+    render(<BookingsScreen />);
+    expect(screen.queryByRole('link', { name: 'Leave a review' })).not.toBeInTheDocument();
+  });
+});
+
+describe('booking an offered time actually opens the flow', () => {
+  const declined = () =>
+    booking({
+      id: 'd1',
+      status: 'declined',
+      side: 'mentee',
+      startsAt: at(-48),
+      endsAt: at(-47),
+      sessionTypeId: 'st-general',
+      suggestion: {
+        id: 's1',
+        startsAt: at(72),
+        endsAt: at(73),
+        durationMin: 60,
+        heldUntil: at(1),
+        status: 'active',
+        bookedSessionId: null,
+      },
+    });
+
+  it('names the offering as well as the time — `at` alone opens nothing', async () => {
+    // The profile understands `?book=`; `?at=` on its own left the mentee on
+    // the page with the flow closed and the held time unfound.
+    push.mockReset();
+    history = hist({ bookings: [declined()] });
+    selectedBooking = 'd1';
+    tab = 'history';
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: /^Book / }));
+    expect(push).toHaveBeenCalledWith(
+      expect.stringContaining('book=st-general'),
+    );
+    expect(push.mock.calls[0]![0]).toContain('at=');
+  });
+
+  it('offers nothing to press when the booking has no offering recorded', () => {
+    history = hist({ bookings: [{ ...declined(), sessionTypeId: null }] });
+    selectedBooking = 'd1';
+    tab = 'history';
+    render(<BookingsScreen />);
+    expect(screen.queryByRole('button', { name: /^Book / })).not.toBeInTheDocument();
   });
 });

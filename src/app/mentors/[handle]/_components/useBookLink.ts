@@ -20,7 +20,7 @@ type Options = {
    * Book already says why; review of #81).
    */
   allowed: boolean;
-  open: (sessionTypeId: string) => void;
+  open: (sessionTypeId: string, at?: string) => void;
 };
 
 /**
@@ -29,12 +29,18 @@ type Options = {
  * visible types, and only when the viewer may book; otherwise the page just
  * opens. Either way the parameter is then dropped (other parameters stay), so
  * closing, reloading or Back doesn't bring the modal back.
+ *
+ * `?at={instant}` goes with it, and opens the flow **on that time** — the link
+ * Bookings uses to send a mentee to a time their mentor offered and is holding
+ * for them. It is dropped with `book`; a stray `at` left in the URL would ride
+ * along into anything they shared.
  */
 export function useBookLink({ profile, gone, ready, allowed, open }: Options) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const asked = params.get('book');
+  const at = params.get('at') ?? undefined;
   const handled = useRef<string | null>(null);
 
   useEffect(() => {
@@ -46,10 +52,11 @@ export function useBookLink({ profile, gone, ready, allowed, open }: Options) {
     if (handled.current === asked) return;
     if (!gone && (!ready || !profile)) return;
     handled.current = asked;
-    if (!gone && allowed && profile?.sessionTypes.some((t) => t.id === asked)) open(asked);
+    if (!gone && allowed && profile?.sessionTypes.some((t) => t.id === asked)) open(asked, at);
     const next = new URLSearchParams(params.toString());
     next.delete('book');
+    next.delete('at');
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }, [asked, gone, ready, profile, allowed, open, params, pathname, router]);
+  }, [asked, at, gone, ready, profile, allowed, open, params, pathname, router]);
 }

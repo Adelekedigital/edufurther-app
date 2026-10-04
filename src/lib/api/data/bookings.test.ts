@@ -132,3 +132,51 @@ describe('the other party’s zone', () => {
     expect(b.other.timeZone).toBeNull();
   });
 });
+
+describe('the suggestion a mentor offered (backend #339)', () => {
+  const withSuggestion = (over: Record<string, unknown> = {}) =>
+    toBooking(
+      row({
+        suggestion: {
+          id: 'sg1',
+          starts_at: '2026-10-08T14:00:00Z',
+          duration_minutes: 90,
+          held_until: '2026-10-04T12:00:00Z',
+          status: 'active',
+          booked_session_id: null,
+          ...over,
+        },
+      } as Partial<SessionRead>),
+      'me',
+    );
+
+  it('derives the end from the length, as the session itself does', () => {
+    expect(withSuggestion().suggestion?.endsAt).toBe('2026-10-08T15:30:00.000Z');
+  });
+
+  it('carries the hold and the status as given', () => {
+    const s = withSuggestion().suggestion!;
+    expect(s.heldUntil).toBe('2026-10-04T12:00:00Z');
+    expect(s.status).toBe('active');
+  });
+
+  it('a booked offer names the session it became', () => {
+    expect(withSuggestion({ status: 'booked', booked_session_id: 'u-9' }).suggestion).toMatchObject({
+      status: 'booked',
+      bookedSessionId: 'u-9',
+    });
+  });
+
+  it('no offer is null, not undefined', () => {
+    expect(toBooking(row(), 'me').suggestion).toBe(null);
+  });
+
+  it('the offering comes through, so the suggest picker has something to ask for', () => {
+    expect(toBooking(row({ session_type_id: 'st-cv' }), 'me').sessionTypeId).toBe('st-cv');
+    expect(toBooking(row({ session_type_id: null, session_type: { id: 'st-x', name: 'X' } } as Partial<SessionRead>), 'me').sessionTypeId).toBe('st-x');
+    expect(
+      toBooking(row({ session_type_id: null, session_type: null } as Partial<SessionRead>), 'me')
+        .sessionTypeId,
+    ).toBe(null);
+  });
+});
