@@ -13,6 +13,7 @@ export function sampleParty(over: Partial<BookingParty> = {}): BookingParty {
     timeZone: 'Africa/Lagos',
     cover: 'sand',
     joinedAt: null,
+    attendance: 'pending',
     ...over,
   };
 }
@@ -23,6 +24,7 @@ export function sampleBookingFor(over: Partial<Booking> = {}): Booking {
     status: 'confirmed',
     side: 'mentor',
     other: sampleParty(),
+    myAttendance: 'pending',
     startsAt: '2026-10-04T16:00:00Z',
     endsAt: '2026-10-04T17:00:00Z',
     durationMin: 60,

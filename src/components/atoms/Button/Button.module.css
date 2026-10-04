@@ -117,6 +117,30 @@
   text-decoration: underline;
 }
 
+/* DS Button `text-destructive`: a low-emphasis destructive action, where a
+   filled one would shout. Used for Decline on a pending row.
+   DIVERGENCE, the same one the filled `destructive` already carries: the DS
+   hover is --red-300, which is 3.15:1 on white and fails WCAG 1.4.3. Ours
+   darkens to --red-700 (8.4:1); the rest state --red-500 is 5.13:1. */
+.text-destructive {
+  background: transparent;
+  color: var(--red-500);
+  padding: 0;
+  height: auto;
+  min-height: 0;
+}
+.text-destructive:hover {
+  color: var(--red-700);
+  text-decoration: underline;
+}
+.text-destructive:active {
+  color: var(--red-700);
+}
+.text-destructive:disabled {
+  color: var(--ink-600);
+  background: transparent;
+}
+
 .dark {
   background: var(--ink-900);
   color: var(--text-on-action);

@@ -13,7 +13,7 @@ import type {
   Remote,
   SessionType,
 } from '@/types/mentor';
-import { ApiError, apiError, normaliseError } from './errors';
+import { ApiError, apiError, normaliseError, retryAfterMinutes } from './errors';
 import { api } from './http';
 import { keys } from './keys';
 
@@ -378,6 +378,17 @@ export function uploadError(e: unknown): AppError {
       message: 'You have too many files waiting to be used in a booking. Try again tomorrow.',
     };
   if (s === 401) return { ...n, message: 'Log in to upload a file.' };
+  // Ten an hour (backend #358). The generic copy ends "Try again", which here
+  // is advice that cannot succeed for up to an hour — so say when.
+  if (s === 429) {
+    const mins = retryAfterMinutes(e instanceof ApiError ? e.retryAfter : undefined);
+    return {
+      ...n,
+      message: mins
+        ? `You’ve uploaded a lot of files in the last hour. Try again in ${mins} ${mins === 1 ? 'minute' : 'minutes'}.`
+        : 'You’ve uploaded a lot of files in the last hour. Try again a little later.',
+    };
+  }
   if (s !== undefined && s >= 500)
     return { ...n, message: 'File uploads aren’t available right now. Try again later.' };
   return { ...n, message: `We couldn’t upload it. ${n.message} Try again.` };
@@ -408,7 +419,7 @@ export function useUploadIntakeFile() {
         throw uploadError(e);
       }
       const { data, error, response } = result;
-      if (!data) throw uploadError(apiError(response.status, error));
+      if (!data) throw uploadError(apiError(response.status, error, response));
       return { id: data.file_id, name: data.filename, size: data.size };
     },
   });

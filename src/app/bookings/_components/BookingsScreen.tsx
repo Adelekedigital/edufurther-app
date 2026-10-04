@@ -25,12 +25,24 @@ import { deviceTimeZone } from '@/lib/utils/format';
 import { useHydrated } from '@/lib/utils/useHydrated';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
-import type { AnswerFile, BookingStatus } from '@/types/booking';
+import type { AnswerFile, Booking, BookingStatus } from '@/types/booking';
 import { canBookFor } from '../../_shell/bookBlocked';
 import { BOOKINGS_GATE, memberGate } from '../../_shell/MentorGate';
 import { cx } from '@/lib/utils/cx';
 import { useAppShell } from '../../_shell/useAppShell';
+import { Button } from '@/components/atoms/Button/Button';
+import type { RowMenuItem } from '@/components/molecules/RowMenu/RowMenu';
+import { ConfirmActionDialog } from './ConfirmActionDialog';
 import { IntakeFileViewer } from './IntakeFileViewer';
+import {
+  canAccept,
+  canCancel,
+  canWithdraw,
+  fullDate,
+  HISTORY_FILTERS,
+  overlapping,
+} from '@/lib/utils/bookings';
+import { useBookingAction } from '@/lib/api/data/bookingActions';
 import { BookingsPanel } from './BookingsPanel';
 import { useBookingsTab } from './useBookingsTab';
 import { useRevealed } from './useRevealed';
@@ -39,17 +51,6 @@ import styles from './BookingsScreen.module.css';
 
 /** The details panel's element id, as BookingDetailsPanel renders it. */
 const PANEL_ID = 'booking-details';
-
-/**
- * The History filter chips. The design drew three; the API has six past
- * outcomes, so `declined`, `expired` and `withdrawn` are reachable only with no
- * filter on. Raised in docs/handoff/bookings-design-request.md.
- */
-const FILTERS: { label: string; status: BookingStatus }[] = [
-  { label: 'Canceled', status: 'cancelled' },
-  { label: 'Missed', status: 'noShow' },
-  { label: 'Completed', status: 'completed' },
-];
 
 /**
  * The browser swallowed the new tab. Said wherever the Join was pressed, with
@@ -187,17 +188,94 @@ export function BookingsScreen() {
         ? 'Requests you sent that your mentor hasn’t confirmed yet.'
         : undefined;
 
-  const detailsMenu = (id: string) => [
-    {
-      key: 'details',
-      icon: 'info' as const,
-      label: selected === id ? 'Hide details' : 'See details',
-      onSelect: () => toggle(id),
-    },
-  ];
+  // The write actions (backend: accept/decline/withdraw/cancel). One hook per
+  // action so each knows its own pending and error, and the dialog can show
+  // them without the screen holding four parallel flags.
+  const accept = useBookingAction('accept');
+  const decline = useBookingAction('decline');
+  const withdraw = useBookingAction('withdraw');
+  const cancel = useBookingAction('cancel');
+  const [confirming, setConfirming] = useState<{
+    action: 'decline' | 'withdraw' | 'cancel';
+    booking: Booking;
+  } | null>(null);
+  const pendingAction = confirming
+    ? { decline, withdraw, cancel }[confirming.action]
+    : null;
 
-  const toggleFilter = (s: BookingStatus) =>
-    setFilters((on) => (on.includes(s) ? on.filter((x) => x !== s) : [...on, s]));
+  const rowMenu = (b: Booking) => {
+    const items: RowMenuItem[] = [
+      {
+        key: 'details',
+        icon: 'info',
+        label: selected === b.id ? 'Hide details' : 'See details',
+        onSelect: () => toggle(b.id),
+      },
+    ];
+    // Only what this person can actually do to this booking, now. A control
+    // that would be refused is worse than no control.
+    if (canWithdraw(b, now))
+      items.push({
+        key: 'withdraw',
+        icon: 'block',
+        label: 'Withdraw request',
+        onSelect: () => setConfirming({ action: 'withdraw', booking: b }),
+        danger: true,
+      });
+    if (canCancel(b, now))
+      items.push({
+        key: 'cancel',
+        icon: 'block',
+        label: 'Cancel session',
+        onSelect: () => setConfirming({ action: 'cancel', booking: b }),
+        danger: true,
+      });
+    return items;
+  };
+
+  /** The mentor's two answers to a pending request, on the row itself. */
+  const rowActions = (b: Booking) => {
+    if (!canAccept(b, now)) return null;
+    // The design warns rather than blocks: accepting both may be exactly what
+    // they mean. Saying so first is the point.
+    const clash = overlapping(b, upcoming.data ?? []);
+    return (
+      <>
+        {clash && (
+          <Notice tone="info" icon="error">
+            This overlaps your session with <strong>{clash.other.firstName}</strong> on{' '}
+            <strong>{fullDate(clash.startsAt, timeZone)}</strong>. Accepting books both.
+          </Notice>
+        )}
+        {/* The design's own variants: an outlined Accept and a destructive
+            *text* Decline, so the row does not carry two competing fills. */}
+        <Button
+          variant="secondary-outlined"
+          size="small"
+          busy={accept.isPending && accept.variables?.bookingId === b.id}
+          onClick={() => accept.mutate({ bookingId: b.id })}
+        >
+          Accept
+        </Button>
+        <Button
+          variant="text-destructive"
+          size="small"
+          onClick={() => setConfirming({ action: 'decline', booking: b })}
+        >
+          Decline
+        </Button>
+      </>
+    );
+  };
+
+  // A chip is several statuses now: turning it off must clear all of them, or
+  // the chip reads as off while still filtering.
+  const toggleFilter = (group: BookingStatus[]) =>
+    setFilters((on) =>
+      group.every((s) => on.includes(s))
+        ? on.filter((s) => !group.includes(s))
+        : [...on, ...group.filter((s) => !on.includes(s))],
+    );
 
   const onJoin = useCallback(
     (sessionId: string, from: 'hero' | 'panel') => {
@@ -267,7 +345,7 @@ export function BookingsScreen() {
               heading={later.length ? 'Later' : undefined}
               now={now}
               total={later.length}
-              menuFor={detailsMenu}
+              menuFor={rowMenu}
               onOpenAnswers={openAnswers}
               answersControls={showPanel ? PANEL_ID : undefined}
               selectedId={selected}
@@ -282,7 +360,7 @@ export function BookingsScreen() {
                   timeZone={timeZone}
                   onJoin={() => onJoin(next.id, 'hero')}
                   joining={join.isPending}
-                  menu={detailsMenu(next.id)}
+                  menu={rowMenu(next)}
                   now={now}
                 />
               )}
@@ -301,7 +379,8 @@ export function BookingsScreen() {
               intro={pendingIntro}
               total={pending.data?.length}
               now={now}
-              menuFor={detailsMenu}
+              menuFor={rowMenu}
+              actionsFor={rowActions}
               onOpenAnswers={openAnswers}
               answersControls={showPanel ? PANEL_ID : undefined}
               selectedId={selected}
@@ -312,11 +391,13 @@ export function BookingsScreen() {
 
           <TabPanel id="bookings-history" active={tab === 'history'}>
             <div className={styles.filters}>
-              {FILTERS.map((f) => (
+              {HISTORY_FILTERS.map((f) => (
                 <Chip
-                  key={f.status}
-                  pressed={filters.includes(f.status)}
-                  onClick={() => toggleFilter(f.status)}
+                  key={f.key}
+                  // A chip covers several outcomes now, so it reads as on only
+                  // when all of them are.
+                  pressed={f.statuses.every((st) => filters.includes(st))}
+                  onClick={() => toggleFilter(f.statuses)}
                 >
                   {f.label}
                 </Chip>
@@ -331,7 +412,7 @@ export function BookingsScreen() {
               timeZone={timeZone}
               isMentor={isMentor}
               filtered={filters.length > 0}
-              menuFor={detailsMenu}
+              menuFor={rowMenu}
               selectedId={selected}
               shown={reveal.history.shown}
               showMore={() => {
@@ -399,6 +480,27 @@ export function BookingsScreen() {
             )}
           </div>
           {viewing && <IntakeFileViewer file={viewing} onClose={() => setViewing(null)} />}
+          {confirming && pendingAction && (
+            <ConfirmActionDialog
+              action={confirming.action}
+              booking={confirming.booking}
+              now={now}
+              pending={pendingAction.isPending}
+              error={pendingAction.error}
+              onClose={() => {
+                pendingAction.reset();
+                setConfirming(null);
+              }}
+              onConfirm={(input) =>
+                pendingAction.mutate(
+                  { bookingId: confirming.booking.id, ...input },
+                  // Closed only on success: a refusal stays on screen with the
+                  // reason still typed, so it can be sent again.
+                  { onSuccess: () => setConfirming(null) },
+                )
+              }
+            />
+          )}
         </div>
       )}
     </AppShell>

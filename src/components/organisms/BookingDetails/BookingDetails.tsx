@@ -66,6 +66,30 @@ type BookingDetailsProps = {
  * answered in time". A sweep has no name, so its sentence is passive rather
  * than blaming the session for acting on itself.
  */
+/**
+ * What happened, in a line (design's table, 2026-10-03). The mentee's lines
+ * carry the credit; a mentor's never do, because it is not their credit.
+ */
+function outcomeLine(o: BookingOutcome, b: Booking): string {
+  const first = b.other.firstName;
+  const mentee = b.side === 'mentee';
+  const credit = mentee ? ' Your credit is back.' : '';
+  switch (o.status) {
+    case 'declined':
+      return mentee ? `${first} couldn’t take this request.${credit}` : 'You declined this request.';
+    case 'expired':
+      return mentee
+        ? `${first} didn’t respond in time, so this request expired.${credit}`
+        : 'This request expired before you responded.';
+    case 'withdrawn':
+      return mentee
+        ? `You withdrew this request.${credit}`
+        : `${first} withdrew this request.`;
+    default:
+      return '';
+  }
+}
+
 function outcomeHeading(o: BookingOutcome, b: Booking): string {
   if (o.status === 'expired') return 'Nobody answered in time';
   if (o.status === 'noShow') return 'This session was missed';
@@ -231,7 +255,22 @@ export function BookingDetails({
         {outcome && (
           <div className={styles.notes}>
             <span className={styles.label}>{outcomeHeading(outcome, b)}</span>
-            {outcome.reason && <p className={styles.reason}>“{outcome.reason}”</p>}
+            {/* Design's own line for what happened, where there is one. */}
+            {outcomeLine(outcome, b) && (
+              <p className={styles.outcomeLine}>{outcomeLine(outcome, b)}</p>
+            )}
+            {/* "Reason from X", not "X's note": the booking note sits in this
+                same panel under "Note from X", and the two would blur. The
+                block is left out entirely when no reason was given — never
+                "No reason given". */}
+            {outcome.reason && (
+              <>
+                <span className={styles.label}>
+                  {outcome.by === 'you' ? 'Your reason' : `Reason from ${b.other.firstName}`}
+                </span>
+                <p className={styles.reason}>“{outcome.reason}”</p>
+              </>
+            )}
           </div>
         )}
         {!outcome && outcomeLoading && (

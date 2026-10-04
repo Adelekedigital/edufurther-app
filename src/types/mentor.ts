@@ -82,6 +82,8 @@ export type AppErrorKind =
   | 'bookingOverlap'
   | 'bookingWithMentorExists'
   | 'bookingLimitReached'
+  /** 429: the server is asking for a pause, and says how long (backend #358). */
+  | 'rateLimited'
   | 'server'
   | 'unknown';
 

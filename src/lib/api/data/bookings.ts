@@ -64,6 +64,14 @@ function toParty(p: PartyRead): BookingParty {
     timeZone: p.deleted ? null : (p.timezone ?? null),
     cover: coverFor(p.id),
     joinedAt: p.joined_at ?? null,
+    attendance:
+      p.attendance_status === 'attended'
+        ? 'attended'
+        : p.attendance_status === 'no_show'
+          ? 'noShow'
+          : p.attendance_status === 'left_early'
+            ? 'leftEarly'
+            : 'pending',
   };
 }
 
@@ -86,6 +94,7 @@ export function toBooking(s: SessionRead, viewerId: string): Booking {
     // The mentee's own words first; the offering's name is the fallback.
     title: s.topic?.trim() || s.session_type?.name?.trim() || null,
     // Carried on every list row, so a page of twenty costs no extra requests.
+    myAttendance: toParty(side === 'mentor' ? s.mentor : s.mentee).attendance,
     answersPreview: s.answers_preview
       ? {
           count: s.answers_preview.count,

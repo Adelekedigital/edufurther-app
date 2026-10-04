@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { sampleBookingFor, sampleParty } from '@/lib/utils/bookingTestFixtures';
+import type { BookingStatus } from '@/types/booking';
 import { BookingDetails } from './BookingDetails';
 
 const NOW = new Date('2026-10-03T12:00:00Z');
@@ -308,5 +309,54 @@ describe('the booking form answers', () => {
     expect(screen.getByRole('heading', { name: 'Answers from Amara' })).toBeVisible();
     expect(screen.getByText('Note from Amara')).toBeVisible();
     expect(screen.getByText('Nine programs.')).toBeVisible();
+  });
+});
+
+describe('what happened, and why (design’s table, 2026-10-03)', () => {
+  const AT = '2026-10-02T09:00:00Z';
+  const ended = (status: BookingStatus, side: 'mentor' | 'mentee', reason?: string) => ({
+    booking: sampleBookingFor({ status, side }),
+    outcome: {
+      status,
+      by: side === 'mentee' ? ('them' as const) : ('you' as const),
+      reason: reason ?? null,
+      at: AT,
+    },
+  });
+
+  it('a mentee is told what happened and that the credit is back', () => {
+    panel(ended('declined', 'mentee'));
+    expect(screen.getByText('Amara couldn’t take this request. Your credit is back.')).toBeVisible();
+  });
+
+  it('a mentor is told plainly, and never about credit', () => {
+    panel({ ...ended('declined', 'mentor'), outcome: { status: 'declined', by: 'you', reason: null, at: AT } });
+    expect(screen.getByText('You declined this request.')).toBeVisible();
+    expect(screen.queryByText(/credit/i)).not.toBeInTheDocument();
+  });
+
+  it('an expired request says it expired — the owner’s word over "closed"', () => {
+    panel(ended('expired', 'mentee'));
+    expect(screen.getByText(/didn’t respond in time, so this request expired/)).toBeVisible();
+  });
+
+  it('a withdrawal reads from whichever side is looking', () => {
+    panel({ ...ended('withdrawn', 'mentee'), outcome: { status: 'withdrawn', by: 'you', reason: null, at: AT } });
+    expect(screen.getByText('You withdrew this request. Your credit is back.')).toBeVisible();
+    panel({ ...ended('withdrawn', 'mentor'), outcome: { status: 'withdrawn', by: 'them', reason: null, at: AT } });
+    expect(screen.getByText('Amara withdrew this request.')).toBeVisible();
+  });
+
+  it('a reason is headed so it cannot be mistaken for the booking note', () => {
+    panel({ ...ended('cancelled', 'mentee', 'Something came up.'), 
+      outcome: { status: 'cancelled', by: 'them', reason: 'Something came up.', at: AT } });
+    expect(screen.getByText('Reason from Amara')).toBeVisible();
+    expect(screen.getByText('“Something came up.”')).toBeVisible();
+  });
+
+  it('no reason given means no block at all — never "No reason given"', () => {
+    panel({ ...ended('cancelled', 'mentee'), outcome: { status: 'cancelled', by: 'them', reason: null, at: AT } });
+    expect(screen.queryByText(/Reason from/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/No reason/i)).not.toBeInTheDocument();
   });
 });

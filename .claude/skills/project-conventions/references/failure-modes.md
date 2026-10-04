@@ -165,3 +165,24 @@ putting it back inside the expression did not help either. `aria-label` with the
 whole string is the reliable form.
 
 **Check:** assert the computed accessible name in a test, not the markup.
+
+### #52 — A design variant the atom silently did not have
+
+I built Accept as a filled primary and Decline as an outlined button. The design
+says `secondary-outlined` and `text-destructive`. The second did not exist on our
+Button atom at all — it is in the DS bundle, but was never ported — so there was
+nothing to fail, and a plausible-looking pair of buttons shipped straight past a
+reading of the markup.
+
+**Check:** when the design names a DS variant, confirm the atom actually has
+that variant before using "the closest one". A missing variant is not a type
+error.
+
+### #53 — Two live regions, one query
+
+`getByRole('status')` matched both the page's own `sr-only` live region and the
+new Notice, and the test failed on ambiguity rather than on the behaviour. The
+fix is to assert the words, not the role.
+
+**Check:** on a screen that already has a live region, query new status content
+by its text.

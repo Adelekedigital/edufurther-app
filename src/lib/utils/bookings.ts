@@ -10,6 +10,27 @@ const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 
 /** The six statuses that belong in History: everything that is over. */
+/**
+ * The History filters: three chips over six outcomes (owner, 2026-10-03).
+ *
+ * "Didn't happen" rather than "Canceled", because a request that was declined,
+ * expired or withdrawn was never cancelled by anyone — filing it under that
+ * word misdescribes it. Each row still tags its exact outcome, so nothing is
+ * hidden by the grouping.
+ *
+ * Missed keeps its own chip for a reason the data supports: a session where at
+ * least one person turned up is not the same as one nobody came to.
+ */
+export const HISTORY_FILTERS: { key: string; label: string; statuses: BookingStatus[] }[] = [
+  { key: 'completed', label: 'Completed', statuses: ['completed'] },
+  {
+    key: 'didnt-happen',
+    label: 'Didn’t happen',
+    statuses: ['cancelled', 'declined', 'expired', 'withdrawn'],
+  },
+  { key: 'missed', label: 'Missed', statuses: ['noShow'] },
+];
+
 export const HISTORY_STATUSES: BookingStatus[] = [
   'completed',
   'cancelled',
@@ -177,9 +198,9 @@ export type StatusTone = 'success' | 'warning' | 'danger';
 /**
  * What a past booking is called on screen, and in which tone.
  *
- * The design drew three outcomes; the API has six. `declined`, `expired` and
- * `withdrawn` are ours until design answers (docs/handoff/bookings-design-request.md) —
- * `expired` reads "Unconfirmed", which is the backend's own word for it.
+ * Design's table, 2026-10-03, with the owner's call on "Expired" over "Closed":
+ * it matches the API's own status and says *why* nothing happened, where
+ * "closed" would equally describe a cancellation or a withdrawal.
  */
 export function statusTag(status: BookingStatus): { label: string; tone: StatusTone } | null {
   switch (status) {
@@ -192,7 +213,7 @@ export function statusTag(status: BookingStatus): { label: string; tone: StatusT
     case 'declined':
       return { label: 'Declined', tone: 'danger' };
     case 'expired':
-      return { label: 'Unconfirmed', tone: 'warning' };
+      return { label: 'Expired', tone: 'warning' };
     case 'withdrawn':
       return { label: 'Withdrawn', tone: 'warning' };
     default:
@@ -317,4 +338,84 @@ export function fullDate(isoInstant: string, timeZone: string): string {
     year: 'numeric',
     timeZone,
   }).format(new Date(isoInstant));
+}
+
+/** Nobody may cancel once the session is this close (product, 2026-10-02). */
+const CANCEL_LOCK_MIN = 10;
+/** A mentee's cancellation refunds from here out. A mentor's always does. */
+const MENTEE_REFUND_HOURS = 12;
+
+function minutesUntil(b: Booking, now: Date): number {
+  return (new Date(b.startsAt).getTime() - now.getTime()) / 60_000;
+}
+
+/** The mentor may take a request that is still waiting. */
+export function canAccept(b: Booking, now = new Date()): boolean {
+  return b.side === 'mentor' && b.status === 'pending' && !isLapsed(b, now);
+}
+
+/** The mentor may refuse a request that is still waiting. */
+export function canDecline(b: Booking, now = new Date()): boolean {
+  return b.side === 'mentor' && b.status === 'pending' && !isLapsed(b, now);
+}
+
+/** The mentee may take back a request the mentor has not answered. */
+export function canWithdraw(b: Booking, now = new Date()): boolean {
+  return b.side === 'mentee' && b.status === 'pending' && !isLapsed(b, now);
+}
+
+/**
+ * Either side may call off a confirmed session, until it is nearly here.
+ * The lock is the same for both: a cancellation ten minutes out reaches nobody
+ * in time, so it is worse than turning up.
+ */
+export function canCancel(b: Booking, now = new Date()): boolean {
+  return b.status === 'confirmed' && minutesUntil(b, now) > CANCEL_LOCK_MIN;
+}
+
+/**
+ * Whether cancelling now returns the mentee's credit.
+ *
+ * A mentor's cancellation always does — the mentee did nothing wrong. A
+ * mentee's does only with twelve hours' notice, which is the window the mentor
+ * needs to fill the hour.
+ */
+export function refundOnCancel(b: Booking, now = new Date()): boolean {
+  if (b.side === 'mentor') return true;
+  return minutesUntil(b, now) >= MENTEE_REFUND_HOURS * 60;
+}
+
+/**
+ * Did anybody turn up? Only meaningful once a session has settled as `noShow`.
+ *
+ * `pending` on a settled session is **not** absence: two migrated bookings have
+ * no participant record at all. Those read as unknown, never as "nobody came".
+ */
+export function showedUp(b: Booking): boolean | null {
+  const both = [b.other.attendance, b.myAttendance];
+  if (both.some((a) => a === 'attended' || a === 'leftEarly')) return true;
+  if (both.every((a) => a === 'noShow')) return false;
+  return null;
+}
+
+/**
+ * A confirmed session this request would run into, if accepted.
+ *
+ * The backend refuses an overlapping *booking* (`/problems/booking-overlap`),
+ * but a mentor accepting a request is a different path: the design warns rather
+ * than blocks, because accepting both may be exactly what they mean to do.
+ * Saying so beforehand is the whole point — "Accepting books both".
+ *
+ * Touching edges do not overlap: a session ending at 3pm and one starting at
+ * 3pm are back to back, which mentors do on purpose.
+ */
+export function overlapping(request: Booking, confirmed: Booking[]): Booking | null {
+  const from = new Date(request.startsAt).getTime();
+  const to = new Date(request.endsAt).getTime();
+  return (
+    confirmed.find((c) => {
+      if (c.id === request.id || c.status !== 'confirmed') return false;
+      return new Date(c.startsAt).getTime() < to && new Date(c.endsAt).getTime() > from;
+    }) ?? null
+  );
 }

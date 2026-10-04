@@ -7,18 +7,35 @@ export class ApiError extends Error {
     readonly title?: string,
     /** Problem Details `type` — e.g. `/problems/insufficient-credit` on a 409. */
     readonly type?: string,
+    /** `Retry-After` in seconds, when the server sent one (a 429). */
+    readonly retryAfter?: number,
   ) {
     super(title ?? `HTTP ${status}`);
   }
 }
 
-/** Reads `title`/`type` from a Problem Details body openapi-fetch parsed as `error`. */
-export function apiError(status: number, body: unknown): ApiError {
+/**
+ * How long to wait, in whole minutes and at least one. A 429 that says "try
+ * again" without saying when is advice the reader cannot act on.
+ */
+export function retryAfterMinutes(seconds: number | undefined): number | null {
+  if (seconds === undefined || !Number.isFinite(seconds) || seconds <= 0) return null;
+  return Math.max(1, Math.ceil(seconds / 60));
+}
+
+/**
+ * Reads `title`/`type` from a Problem Details body openapi-fetch parsed as
+ * `error`, and `Retry-After` from the response when one is given.
+ */
+export function apiError(status: number, body: unknown, response?: Response): ApiError {
   const p = (body && typeof body === 'object' ? body : {}) as { title?: unknown; type?: unknown };
+  const after = response?.headers?.get?.('Retry-After');
+  const seconds = after === null || after === undefined ? NaN : Number(after);
   return new ApiError(
     status,
     typeof p.title === 'string' ? p.title : undefined,
     typeof p.type === 'string' ? p.type : undefined,
+    Number.isFinite(seconds) ? seconds : undefined,
   );
 }
 
@@ -74,6 +91,8 @@ export function normaliseError(error: unknown): AppError {
     }
     if (s === 409)
       return { kind: 'conflict', message: 'That changed while you were looking.', status: s };
+    if (s === 429)
+      return { kind: 'rateLimited', message: 'You’ve done that too often. Try again shortly.', status: s };
     if (s === 422) return { kind: 'validation', message: 'That request wasn’t valid.', status: s };
     if (s >= 500)
       return { kind: 'server', message: 'Something went wrong on our side.', status: s };
