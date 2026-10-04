@@ -238,3 +238,23 @@ second branch kept the first's conclusion.
 
 **Check:** a failure may describe itself. It may not draw the conclusion the
 success path would have drawn.
+
+### #58 — A dedupe key built from a CSS-module class name
+
+**2026-10-03, /login.** The report said "focus order 3 stop(s)" and stopped at
+"Continue with email" — the Google button and the switch link below it were
+never traced, at any width. The page was fine: tabbing by hand reaches both,
+each with the blue ring.
+
+The tracer ends the walk when a stop's key repeats, taking that as the tab order
+having wrapped. The key is
+`tagName:id:className.slice(0, 40)` — and two `Button` atoms have no id and CSS
+module class strings whose **first 40 characters are identical**
+(`Button-module__<hash>__button Button-modu…`). The second button looks like the
+first coming round again.
+
+**Check:** a dedupe key built from a class name is a key built from whatever the
+bundler happened to emit. Anything that identifies a focus stop must include
+what makes it that stop — here, its accessible name. Until this is fixed, a
+3-stop report on a page you know has more is the tracer, not the page: confirm
+by hand before believing it.

@@ -70,4 +70,19 @@ describe('EmailCodeForm', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Use a different email' }));
     expect(screen.getByLabelText('Email address')).toHaveValue('ada@example.com');
   });
+
+  // Leaving for another method once a code is on its way throws away the typed
+  // code and the 60s resend timer, so the way out is only offered before that.
+  it('offers other sign-in methods on the email step, and withdraws them after', async () => {
+    setup({ alternatives: <button>Continue with Google</button>, footer: <span>New here?</span> });
+    expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeInTheDocument();
+    expect(screen.getByText('New here?')).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText('Email address'), 'ada@example.com');
+    await userEvent.click(screen.getByRole('button', { name: 'Continue with email' }));
+
+    expect(await screen.findByLabelText('6-digit code')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Continue with Google' })).not.toBeInTheDocument();
+    expect(screen.queryByText('New here?')).not.toBeInTheDocument();
+  });
 });

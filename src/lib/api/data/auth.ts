@@ -4,7 +4,12 @@ import { useCallback } from 'react';
 import { hardNavigate } from '@/lib/utils/hardNavigate';
 import { releaseLeaveGuards } from '@/lib/utils/leaveGuard';
 import { safeReturnTo } from '@/lib/utils/safeReturnTo';
-import { sendEmailCode, signOut, verifyEmailCode } from '@/lib/vendor/supabase/browser';
+import {
+  sendEmailCode,
+  signInWithGoogle,
+  signOut,
+  verifyEmailCode,
+} from '@/lib/vendor/supabase/browser';
 import { authConfigured } from '@/lib/vendor/supabase/config';
 import { beginSignOut } from './session';
 
@@ -16,11 +21,32 @@ export type { AuthFailure } from '@/lib/vendor/supabase/browser';
  * /auth/callback and then `next` (a local path only).
  */
 export function sendSignInCode(email: string, next: string) {
-  const back = `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeReturnTo(next))}`;
-  return sendEmailCode(email, back);
+  return sendEmailCode(email, callbackUrl(next));
+}
+
+/**
+ * Where Supabase sends the browser back to. Local paths only (safeReturnTo).
+ * `from` tells the callback which way in this was: it cannot tell from the
+ * error codes, which overlap between a cancelled Google sign-in and a dead
+ * email link. `mode` sends a failed sign-up back to /signup, so someone who
+ * was creating an account isn't answered with "New here?" on the log-in page.
+ */
+function callbackUrl(next: string, from?: 'google', mode?: 'login' | 'signup') {
+  const origin = window.location.origin;
+  const path = `/auth/callback?next=${encodeURIComponent(safeReturnTo(next))}`;
+  // Only signup is worth carrying: login is where a failure lands by default.
+  return `${origin}${path}${from ? `&from=${from}` : ''}${mode === 'signup' ? '&mode=signup' : ''}`;
 }
 
 export const verifySignInCode = verifyEmailCode;
+
+/**
+ * Start Google sign-in. Same landing as the email link, so `next` survives the
+ * round trip through Google and Supabase.
+ */
+export function startGoogleSignIn(next: string, mode: 'login' | 'signup' = 'login') {
+  return signInWithGoogle(callbackUrl(next, 'google', mode));
+}
 
 /**
  * Logout (product, 2026-09-30): end the session, then a full load of /login.
