@@ -288,3 +288,6 @@ The design has always had it as a separate corner element (`moreIn: 'corner'`,
 the declared default) with `flex: none; align-self: flex-start` and a `-space-2`
 pull into the corner. It is now built that way, and `.content` takes a zero flex
 basis below 1100px so it shrinks rather than pushing the ⋯ onto its own line.
+
+| 23 | The hero link carries the design's `-space-2` pull at every width | On phones it takes a 44px target and no negative pull | At 390 the link sat 32px tall with 8px to "Join session", which posts attendance and opens the meeting. A low thumb hit the wrong action, and an invisible tap overlay would have reached into Join itself. The room has to come from somewhere. |
+| 24 | The hero's "See all N answers" | "See the answer" when there is one | "See all 1 answers" is not a sentence, and on the hero "all" has no referent because no answer is shown there. |

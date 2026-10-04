@@ -91,7 +91,9 @@ export function toBooking(s: SessionRead, viewerId: string): Booking {
           count: s.answers_preview.count,
           first: {
             question: s.answers_preview.first.question_text,
-            text: s.answers_preview.first.text,
+            // Trimmed like `toAnswer` does, so the row and the panel cannot
+            // word the same answer differently.
+            text: s.answers_preview.first.text.trim(),
           },
         }
       : null,

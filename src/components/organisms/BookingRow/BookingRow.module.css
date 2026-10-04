@@ -25,7 +25,11 @@
 }
 
 .content {
-  flex: 1 1 240px;
+  /* A zero basis, not 240px: the content takes whatever is left after the
+     badge, the actions and the ⋯, rather than demanding a width that pushes
+     one of them onto a line of its own. It is the only grower on the line, so
+     the basis never changed its used width — only whether the row wrapped. */
+  flex: 1 1 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -72,12 +76,11 @@
 .actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: var(--space-2);
   box-sizing: border-box;
   flex: 0 0 auto;
   margin-left: auto;
-  order: 1;
 }
 
 /* The ⋯ is a corner, not an action (Bookings.dc.html `moreIn: 'corner'`, the
@@ -88,7 +91,6 @@
    take their own full-width line on a phone, and the menu must not go with
    them — that is what put it under the card. */
 .menuCorner {
-  order: 2;
   flex: none;
   align-self: flex-start;
   margin: calc(var(--space-2) * -1) calc(var(--space-2) * -1) 0 0;
@@ -97,19 +99,22 @@
 /* The design's own reflow point for this row: below it the actions take their
    own line, indented past the day badge (48px + the row's gap) so they read as
    belonging to the booking above them. */
+/* Wide enough for one line: the actions sit left of the ⋯, which is only a
+   horizontal swap, so DOM order and reading order still agree. */
+@media (min-width: 1100px) {
+  .actions {
+    order: 1;
+  }
+  .menuCorner {
+    order: 2;
+  }
+}
+
 @media (max-width: 1099px) {
   .actions {
     flex: 1 1 100%;
     margin-left: 0;
     padding-left: calc(48px + var(--space-4));
-    /* After the ⋯, which keeps the first line's corner. */
-    order: 3;
-  }
-  /* A zero basis rather than 240px: the content takes whatever is left after
-     the badge and the ⋯, instead of demanding a width that pushes the ⋯ onto
-     a line of its own. That is what dropped it under the card on a phone. */
-  .content {
-    flex: 1 1 0;
   }
 }
 

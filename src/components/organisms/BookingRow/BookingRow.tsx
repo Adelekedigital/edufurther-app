@@ -94,15 +94,19 @@ export function BookingRow({
         )}
         {/* What the mentee answered, in brief. Rides along on the list
             response, so a page of rows makes no extra requests. */}
-        {b.answersPreview && onOpenAnswers && (
+        {b.answersPreview?.first.text && onOpenAnswers && (
           <AnswerPreview
             preview={b.answersPreview}
             onOpenAll={onOpenAnswers}
             controls={answersControls}
+            forBooking={bookingHeading(b)}
           />
         )}
       </div>
-      {!!actions && <div className={styles.actions}>{actions}</div>}
+      {/* Before the actions in the DOM because below 1100px the actions take
+          their own line underneath, and the ⋯ keeps the corner above them —
+          tabbing down and then back up to it is the bug this order avoids. On
+          wider screens `order` swaps them back, horizontally, within one line. */}
       {!!menu?.length && (
         <div className={styles.menuCorner}>
           <RowMenu
@@ -112,6 +116,7 @@ export function BookingRow({
           />
         </div>
       )}
+      {!!actions && <div className={styles.actions}>{actions}</div>}
     </div>
   );
 }

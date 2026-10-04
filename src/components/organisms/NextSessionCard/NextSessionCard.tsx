@@ -136,6 +136,7 @@ export function NextSessionCard({
           preview={b.answersPreview}
           onOpenAll={onOpenAnswers}
           controls={answersControls}
+          forBooking={bookingHeading(b)}
           linkOnly
         />
       )}

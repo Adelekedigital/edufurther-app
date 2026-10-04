@@ -51,10 +51,47 @@ describe('AnswerPreview', () => {
     expect(screen.queryByText('What do you want to cover?')).not.toBeInTheDocument();
   });
 
-  it('on the hero with one answer there is nothing to link to', () => {
-    const { container } = render(
-      <AnswerPreview preview={preview(1)} onOpenAll={vi.fn()} controls="p" linkOnly />,
+  it('on the hero a single answer still gets a way in — the hero shows none', () => {
+    render(<AnswerPreview preview={preview(1)} onOpenAll={vi.fn()} controls="p" linkOnly />);
+    // The row shows the first answer, so with only one there is nothing more
+    // to open. The hero shows nothing, so hiding the link hid the whole form.
+    expect(screen.getByRole('button', { name: 'See the answer' })).toBeVisible();
+  });
+
+  it('a single answer is never "all 1 answers"', () => {
+    render(<AnswerPreview preview={preview(1)} onOpenAll={vi.fn()} controls="p" linkOnly />);
+    expect(screen.getByRole('button').textContent).toBe('See the answer');
+  });
+});
+
+describe('telling one row\u2019s button from another\u2019s', () => {
+  it('names the booking, so a screen reader can tell them apart', () => {
+    render(
+      <AnswerPreview
+        preview={preview(4)}
+        onOpenAll={vi.fn()}
+        controls="p"
+        forBooking="Visa practice session with Amara Okafor"
+      />,
     );
-    expect(container).toBeEmptyDOMElement();
+    // Without this every row offers an identical "See all 4 answers"; the ⋯
+    // beside it already names the booking for the same reason.
+    expect(
+      screen.getByRole('button', {
+        name: 'See all 4 answers for Visa practice session with Amara Okafor',
+      }),
+    ).toBeVisible();
+  });
+
+  it('the booking name is for screen readers, not the visible label', () => {
+    render(
+      <AnswerPreview preview={preview(4)} onOpenAll={vi.fn()} controls="p" forBooking="Visa practice" />,
+    );
+    expect(screen.getByRole('button').textContent).toBe('See all 4 answers');
+  });
+
+  it('with no booking given it falls back to the visible label', () => {
+    render(<AnswerPreview preview={preview(4)} onOpenAll={vi.fn()} controls="p" />);
+    expect(screen.getByRole('button', { name: 'See all 4 answers' })).toBeVisible();
   });
 });

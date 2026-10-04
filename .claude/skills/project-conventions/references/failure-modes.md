@@ -143,3 +143,25 @@ to decide whether to render the preview box at all — so the box disappeared
 whenever the panel was closed, which is almost always. One test caught it.
 
 **Check:** when a prop becomes optional, look at every condition that reads it.
+
+### #50 — A gate copied from the wrong sibling
+
+The row offers "See all N answers" only when `count > 1`, because the row
+already shows the first one. I gave the hero the same gate — but the hero shows
+*no* answers, so a mentee who answered exactly one question had their whole form
+hidden on the most prominent booking on the screen. The design had it right and
+I did not read it closely enough: its hero link is gated on answers being on at
+all, not on a count.
+
+**Check:** when two consumers share a component, check each gate against what
+that consumer actually displays, not against the other consumer.
+
+### #51 — An accessible name that trims itself apart
+
+Adding the booking to a button's name as `<span class="sr-only"> for {name}</span>`
+produced "See all 4 answersfor Visa practice": JSX drops a leading space in a
+text node, and accessible-name computation trims each node before joining, so
+putting it back inside the expression did not help either. `aria-label` with the
+whole string is the reliable form.
+
+**Check:** assert the computed accessible name in a test, not the markup.

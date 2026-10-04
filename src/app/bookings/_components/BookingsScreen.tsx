@@ -386,7 +386,12 @@ export function BookingsScreen() {
                 isLoading={fetched.isLoading}
                 error={fetched.error}
                 retry={fetched.retry}
-                onClose={() => select(null)}
+                onClose={() => {
+                  // Forget the expansion too: reopening through "See details"
+                  // should show what it says, not what the last visit left.
+                  setExpandedFor(null);
+                  select(null);
+                }}
                 onJoin={open ? () => onJoin(open.id, 'panel') : undefined}
                 joining={join.isPending}
                 now={now}

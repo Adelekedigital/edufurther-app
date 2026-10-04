@@ -21,6 +21,9 @@
   line-height: var(--lh-p);
   color: var(--ink-900);
   text-wrap: pretty;
+  /* A pasted token or an id has no break opportunity, and the clamp is
+     vertical — without this it runs off the edge and is cut with no ellipsis. */
+  overflow-wrap: anywhere;
   /* Two lines, then cut. The design's own clamp. */
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -42,8 +45,10 @@
   color: var(--blue-700);
   text-align: left;
 }
+/* Underline rather than lighten: --blue-500 on the hero's --blue-50 ground
+   is 4.28:1 at 12px, under AA. --blue-700 is 7.05:1 there. */
 .more:hover {
-  color: var(--blue-500);
+  text-decoration: underline;
 }
 .more:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
@@ -61,14 +66,30 @@
   margin-bottom: calc(var(--space-2) * -1);
 }
 
-/* A phone keeps the 32px look with a reachable target (CTA hierarchy). */
+/* On a phone the hero link sits just above "Join session", which posts
+   attendance and opens the meeting. A 32px target with 8px of clearance is one
+   low thumb away from the wrong action, and an invisible overlay would reach
+   into Join itself — so here the control takes a real target and gives up the
+   design's negative pull to make the room. Divergence recorded. */
 @media (max-width: 767px) {
-  .more::after {
+  .bare {
+    min-height: var(--touch-target-min);
+    margin-bottom: 0;
+  }
+}
+
+/* A phone keeps the 32px look with a reachable target (CTA hierarchy). */
+/* A phone keeps the 32px look with a reachable target (CTA hierarchy). Inside
+   the box only: on the hero this button's negative bottom margin leaves ~8px
+   to "Join session", and an overlay reaching below it would swallow taps meant
+   for the primary action. */
+@media (max-width: 767px) {
+  .box .more {
+    position: relative;
+  }
+  .box .more::after {
     content: '';
     position: absolute;
     inset: -6px 0;
-  }
-  .more {
-    position: relative;
   }
 }
