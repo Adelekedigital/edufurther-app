@@ -84,6 +84,7 @@
     "rate_review",
     "record_voice_over",
     "refresh",
+    "replay",
     "route",
     "schedule",
     "school",
@@ -113,5 +114,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "336868fcfb3b953ef91e6cc3fb53f7e3ad7953dc0a428c5a36a5d39026152343"
+  "sha256": "4512571a9fa2d3c0eef5235b2e5bfd54a7bc1d2414085787eaff0f10c644fefe"
 }

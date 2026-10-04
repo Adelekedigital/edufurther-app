@@ -1,14 +1,14 @@
 import {
-  bonusLine,
   creditsAria,
-  creditsLead,
-  creditsPoints,
+  creditRows,
+  creditSegments,
   creditsTitle,
   creditsView,
   isLow,
   isOut,
   lastDay,
   resetDay,
+  SPEND_ORDER,
   type CreditsView,
 } from './credits';
 
@@ -45,7 +45,6 @@ describe('creditsView (backend #344: monthly and bonus)', () => {
       monthlyTotal: 3,
       bonus: [{ count: 1, expires: false, expiresOn: null }],
       showMonthly: true,
-      monthlyLapses: true,
       resetsOn: 'Nov 1',
     });
     expect(creditsView(null)).toBeNull();
@@ -53,11 +52,6 @@ describe('creditsView (backend #344: monthly and bonus)', () => {
 
   it('a late refund above the ceiling never reads "4 of 3"', () => {
     expect(creditsView(api({ monthly: 4 }))).toMatchObject({ monthlyLeft: 4, monthlyTotal: 4 });
-  });
-
-  it('null monthly expiry: lapses when none are held; held non-expiring (migrated) ones do not', () => {
-    expect(creditsView(api({ monthly: 0, monthlyExpires: null }))?.monthlyLapses).toBe(true);
-    expect(creditsView(api({ monthly: 2, monthlyExpires: null }))?.monthlyLapses).toBe(false);
   });
 
   it('bonus expiry reads as the last day the credits work (the day before, in UTC)', () => {
@@ -94,7 +88,8 @@ describe('creditsView (backend #344: monthly and bonus)', () => {
       { count: 1, expires: true, expiresOn: null },
       { count: 1, expires: false, expiresOn: null },
     ]);
-    expect(bonusLine(v!.bonus[0]!)).toBe('+1 bonus credit');
+    // Its row says nothing about when, never "Never expires".
+    expect(creditRows(v!).find((r) => r.kind === 'bonus')?.sub).toBe('');
   });
 
   it('not unlocked and none held: no monthly part, no reset date', () => {
@@ -131,73 +126,56 @@ describe('dates', () => {
   });
 });
 
-describe('copy', () => {
+describe('copy (design creditSplit on)', () => {
   const v = (left: number, bonus: CreditsView['bonus'] = []): CreditsView => ({
     left,
     monthlyLeft: left - bonus.reduce((n, g) => n + g.count, 0),
     monthlyTotal: 3,
     bonus,
     showMonthly: true,
-    monthlyLapses: true,
     resetsOn: 'Nov 1',
   });
+  const starter: CreditsView['bonus'] = [{ count: 1, expires: false, expiresOn: null }];
 
-  it('title counts monthly credits; the pill name starts with the total (WCAG 2.5.3)', () => {
-    const four = v(4, [{ count: 1, expires: false, expiresOn: null }]);
-    expect(creditsTitle(four)).toBe('3 of 3 left this month');
-    expect(creditsAria(four)).toBe('4 credits left: 3 monthly, 1 bonus, monthly resets Nov 1');
+  it('title is the total; the pill name starts with it (WCAG 2.5.3)', () => {
+    const three = v(3, starter);
+    expect(creditsTitle(three)).toBe('3 credits left');
+    expect(creditsTitle(v(1))).toBe('1 credit left');
+    expect(creditsTitle(v(0))).toBe('No credits left');
+    expect(creditsAria(three)).toBe('3 credits left: 2 monthly, 1 bonus, monthly resets Nov 1');
     expect(creditsAria(v(3))).toBe('3 credits left, monthly resets Nov 1');
-    expect(creditsAria(v(1))).toBe('1 credit left, monthly resets Nov 1');
     expect(creditsAria(v(0))).toBe('No credits left, monthly resets Nov 1');
-    // Not unlocked: the total, no monthly parts.
-    expect(
-      creditsTitle({
-        ...v(1, [{ count: 1, expires: false, expiresOn: null }]),
-        showMonthly: false,
-      }),
-    ).toBe('1 credit left');
   });
 
-  it('bonus lines: singular and plural, dated or never', () => {
-    expect(bonusLine({ count: 1, expires: false, expiresOn: null })).toBe(
-      '+1 bonus credit · never expires',
-    );
-    expect(bonusLine({ count: 2, expires: true, expiresOn: 'Oct 31' })).toBe(
-      '+2 bonus credits · expire Oct 31',
-    );
+  it('bar: bonus first, then monthly left, then monthly spent', () => {
+    expect(creditSegments(v(3, starter))).toEqual(['bonus', 'monthly', 'monthly', 'empty']);
+    expect(creditSegments(v(0))).toEqual(['empty', 'empty', 'empty']);
+    // No monthly grant: only the bonus credits; nothing at all still draws one.
+    expect(creditSegments({ ...v(1, starter), showMonthly: false })).toEqual(['bonus']);
+    expect(creditSegments({ ...v(0), showMonthly: false })).toEqual(['empty']);
+  });
+
+  it('rows: Monthly with its reset, one Bonus row per expiry day', () => {
+    expect(
+      creditRows(v(4, [...starter, { count: 1, expires: true, expiresOn: 'Dec 31' }])),
+    ).toEqual([
+      { kind: 'monthly', label: 'Monthly', sub: 'Resets Nov 1', value: '2 of 3' },
+      { kind: 'bonus', label: 'Bonus', sub: 'Never expires', value: '1' },
+      { kind: 'bonus', label: 'Bonus', sub: 'Expires Dec 31', value: '1' },
+    ]);
+    // No monthly grant: no Monthly row. No bonus: no Bonus row.
+    expect(creditRows({ ...v(1, starter), showMonthly: false }).map((r) => r.kind)).toEqual([
+      'bonus',
+    ]);
+    expect(creditRows(v(3)).map((r) => r.kind)).toEqual(['monthly']);
+    expect(SPEND_ORDER).toBe('Expiring credits are used first.');
   });
 
   it('low and out follow the total, not the monthly count', () => {
     expect(isLow(v(2))).toBe(false);
     expect(isLow(v(1))).toBe(true);
     // 0 monthly but a bonus credit to spend: low, not out.
-    expect(isOut(v(1, [{ count: 1, expires: false, expiresOn: null }]))).toBe(false);
+    expect(isOut(v(1, starter))).toBe(false);
     expect(isOut(v(0))).toBe(true);
-    expect(creditsTitle(v(0))).toBe('No credits left');
-    expect(creditsLead(v(0))).toBe('You’ve used this month’s credits.');
-    expect(creditsLead(v(3))).toBeNull();
-    expect(creditsLead({ ...v(0), showMonthly: false })).toBe('You’ve used your credits.');
-  });
-
-  it('points: no "3 every month" promise; "don\'t carry over" only when the monthly ones lapse', () => {
-    expect(creditsPoints(v(4, [{ count: 1, expires: false, expiresOn: null }]))).toEqual([
-      'Each session you request uses 1 credit.',
-      'Monthly credits reset on Nov 1.',
-      'Unused monthly credits don’t carry over.',
-      'Bonus credits come from your starter credit or support. Some never expire.',
-      'Expiring credits are used first.',
-    ]);
-    // No bonus held: no bonus point. No monthly part: no reset point.
-    expect(creditsPoints(v(3))).not.toContainEqual(expect.stringMatching(/Bonus/));
-    expect(creditsPoints({ ...v(3), showMonthly: false })).toEqual([
-      'Each session you request uses 1 credit.',
-      'Expiring credits are used first.',
-    ]);
-    // Held monthly credits that never lapse: the reset, no "don't carry over".
-    expect(creditsPoints({ ...v(3), monthlyLapses: false })).toEqual([
-      'Each session you request uses 1 credit.',
-      'Monthly credits reset on Nov 1.',
-      'Expiring credits are used first.',
-    ]);
   });
 });

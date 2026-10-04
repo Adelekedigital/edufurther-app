@@ -11,7 +11,6 @@ const pill = (left: number, onClick = vi.fn()) => {
         monthlyTotal: 3,
         bonus: [],
         showMonthly: true,
-        monthlyLapses: true,
         resetsOn: 'Nov 1',
       }}
       expanded={false}
