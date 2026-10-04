@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { safeReturnTo } from '@/lib/utils/safeReturnTo';
+import { parseFailureReason } from '../_auth/failureReason';
 import { AuthScreen } from '../_auth/AuthScreen';
 
 export const metadata: Metadata = {
@@ -14,5 +15,5 @@ export default async function SignupPage({
 }) {
   const sp = await searchParams;
   const next = safeReturnTo(typeof sp.next === 'string' ? sp.next : null);
-  return <AuthScreen mode="signup" next={next} linkFailed={false} />;
+  return <AuthScreen mode="signup" next={next} failure={parseFailureReason(sp.error)} />;
 }

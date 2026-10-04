@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { NextRequest, NextResponse } from 'next/server';
-import { SUPABASE_ANON_KEY, SUPABASE_URL, authConfigured } from './config';
+import { COOKIE_OPTIONS, SUPABASE_ANON_KEY, SUPABASE_URL, authConfigured } from './config';
 
 /**
  * Server-side Supabase clients (vendor seam). Two shapes, because Next gives
@@ -14,6 +14,7 @@ export async function exchangeCodeForSession(code: string): Promise<boolean> {
   if (!authConfigured) return false;
   const jar = await cookies();
   const sb = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    cookieOptions: COOKIE_OPTIONS,
     cookies: {
       getAll: () => jar.getAll(),
       setAll: (list) => list.forEach(({ name, value, options }) => jar.set(name, value, options)),
@@ -60,6 +61,7 @@ export async function refreshSessionCookies(
   if (!authConfigured) return respond({ userId: null, accessToken: null });
   const refreshed: { name: string; value: string; options: CookieOptions }[] = [];
   const sb = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    cookieOptions: COOKIE_OPTIONS,
     cookies: {
       getAll: () => request.cookies.getAll(),
       setAll: (list) => {

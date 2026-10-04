@@ -28,6 +28,12 @@ type EmailCodeFormProps = {
   intro?: ReactNode;
   /** The switch line: "Have an account? Log in" (BookingModal.dc.html). */
   footer?: ReactNode;
+  /**
+   * Other ways to sign in, e.g. "or · Continue with Google". Shown on the
+   * email step only: once a code is on its way, leaving for another method
+   * would throw away the typed code and the resend timer.
+   */
+  alternatives?: ReactNode;
   onSendCode: (email: string) => Promise<Result>;
   onVerifyCode: (email: string, code: string) => Promise<Result>;
 };
@@ -42,6 +48,7 @@ export function EmailCodeForm({
   title,
   intro,
   footer,
+  alternatives,
   onSendCode,
   onVerifyCode,
 }: EmailCodeFormProps) {
@@ -182,7 +189,10 @@ export function EmailCodeForm({
           </button>
         </div>
       ) : (
-        footer && <p className={styles.footer}>{footer}</p>
+        <>
+          {alternatives}
+          {footer && <p className={styles.footer}>{footer}</p>}
+        </>
       )}
     </form>
   );

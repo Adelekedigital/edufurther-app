@@ -21,6 +21,7 @@ vi.mock('@/lib/vendor/supabase/config', () => ({
   SUPABASE_URL: 'https://x.supabase.co',
   SUPABASE_ANON_KEY: 'k',
   authConfigured: true,
+  COOKIE_OPTIONS: { secure: false },
 }));
 
 const { proxy } = await import('./proxy');

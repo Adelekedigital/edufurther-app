@@ -292,3 +292,17 @@ basis below 1100px so it shrinks rather than pushing the ⋯ onto its own line.
 
 | 23 | The hero link carries the design's `-space-2` pull at every width | On phones it takes a 44px target and no negative pull | At 390 the link sat 32px tall with 8px to "Join session", which posts attendance and opens the meeting. A low thumb hit the wrong action, and an invisible tap overlay would have reached into Join itself. The room has to come from somewhere. |
 | 24 | The hero's "See all N answers" | "See the answer" when there is one | "See all 1 answers" is not a sentence, and on the hero "all" has no referent because no answer is shown there. |
+
+### Auth — "Continue with Google", 2026-10-03
+
+The design has no standalone auth screen (design request, auth #1), so there is
+nothing to diverge *from* here. The spec followed instead is Google's own:
+[Sign in with Google branding guidelines](https://developers.google.com/identity/branding-guidelines).
+
+| # | Google's guidelines | Built | Why |
+|---|---|---|---|
+| 25 | Their drawn button: white ground, `#747775` border, `#1f1f1f` label, Roboto Medium | Our `Button variant="secondary-outlined" size="large"` — our border, our Inter label, and the label is `--blue-500` | A second button system on one screen, drawn to another brand's spec, would sit beside "Continue with email" looking like a different product. **The blue label is the visible divergence** and is the part to confirm with design when the auth screen is designed. |
+| 26 | The G mark is never recoloured or redrawn | Unchanged, inline SVG, its four brand colours as literals | They are Google's palette, not ours. A token here would invite exactly the recolouring the guidelines forbid — hence the narrow `allowRawHex` entry for this one folder in `package.json`. |
+
+**Ours, not from any design:** the "or" divider, and the wording of the two
+Google failure notices (cancelled / didn't work). Both PROVISIONAL, for design.

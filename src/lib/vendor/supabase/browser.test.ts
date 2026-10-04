@@ -1,19 +1,25 @@
 export {};
 
 const signOutCall = vi.fn();
+const oauthCall = vi.fn();
 const stopAutoRefresh = vi.fn(async () => {});
 vi.mock('@supabase/ssr', () => ({
   createBrowserClient: () => ({
-    auth: { signOut: (o: unknown) => signOutCall(o), stopAutoRefresh: () => stopAutoRefresh() },
+    auth: {
+      signOut: (o: unknown) => signOutCall(o),
+      stopAutoRefresh: () => stopAutoRefresh(),
+      signInWithOAuth: (o: unknown) => oauthCall(o),
+    },
   }),
 }));
 vi.mock('./config', () => ({
   SUPABASE_URL: 'https://x.supabase.co',
   SUPABASE_ANON_KEY: 'k',
   authConfigured: true,
+  COOKIE_OPTIONS: { secure: false },
 }));
 
-const { signOut, SIGN_OUT_TIMEOUT_MS } = await import('./browser');
+const { signOut, signInWithGoogle, SIGN_OUT_TIMEOUT_MS } = await import('./browser');
 
 const setCookies = () => {
   document.cookie = 'sb-proj-auth-token.0=a; path=/';
@@ -75,5 +81,26 @@ describe('signOut (Logout ends this device’s session)', () => {
     document.cookie = 'sb-proj-auth-token=refreshed; path=/';
     window.dispatchEvent(new Event('pagehide'));
     expect(document.cookie).not.toContain('sb-proj-auth-token');
+  });
+});
+
+describe('signInWithGoogle', () => {
+  const BACK = 'http://localhost:3000/auth/callback?next=%2Fexplore&from=google';
+
+  it('asks Supabase for Google and carries the landing URL, so `next` survives', async () => {
+    oauthCall.mockResolvedValue({ error: null });
+    expect(await signInWithGoogle(BACK)).toEqual({ ok: true });
+    expect(oauthCall).toHaveBeenCalledWith({
+      provider: 'google',
+      options: { redirectTo: BACK },
+    });
+  });
+
+  // The SDK builds the URL and navigates; it reports no error of its own, so
+  // the only failure that can reach the caller is a throw before it leaves.
+  // Unhandled, it would leave the button busy for ever.
+  it('reports a failure to start instead of rejecting', async () => {
+    oauthCall.mockRejectedValue(new Error('cookies are blocked'));
+    expect(await signInWithGoogle(BACK)).toEqual({ ok: false, reason: 'unknown' });
   });
 });

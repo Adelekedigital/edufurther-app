@@ -34,3 +34,32 @@
     box-shadow: none;
   }
 }
+
+/* "or" between the email form and Google. The rules are drawn with pseudo
+   elements so the word sits in a gap rather than on top of a line. */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+/* "New here? Create a free account" — the same words EmailCodeForm's footer
+   used to carry, moved out so Google sits above them. */
+.switch {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+.switch a {
+  font-weight: var(--weight-semibold);
+}
