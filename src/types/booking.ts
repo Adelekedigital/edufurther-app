@@ -7,6 +7,16 @@
  */
 import type { CoverKey } from '@/lib/utils/cover';
 
+/**
+ * The coded reasons a person can actually pick on a decline, cancel or
+ * withdrawal. The contract's enum has nine; the other five are system-set.
+ */
+export type PickableReason =
+  | 'mentor_unavailable'
+  | 'mentee_no_longer_needed'
+  | 'scheduling_conflict'
+  | 'technical_issue';
+
 /** Which side of the session the viewer is on. One account can be both, on different rows. */
 export type BookingSide = 'mentor' | 'mentee';
 
@@ -42,6 +52,12 @@ export type BookingParty = {
   cover: CoverKey;
   /** When they marked themselves present; null means they never pressed Join. */
   joinedAt: string | null;
+  /**
+   * Whether they turned up. `pending` means **we do not know yet** — it is the
+   * state of every party until the join window shuts, and of two migrated
+   * bookings that have no participant record at all. Never read it as absence.
+   */
+  attendance: 'pending' | 'attended' | 'noShow' | 'leftEarly';
 };
 
 export type Booking = {
@@ -49,6 +65,12 @@ export type Booking = {
   status: BookingStatus;
   side: BookingSide;
   other: BookingParty;
+  /**
+   * Whether the viewer themselves turned up. Only the other party is modelled
+   * in full; this is the one field of our own side that the UI needs, to tell
+   * "nobody came" from "they didn't".
+   */
+  myAttendance: BookingParty['attendance'];
   /** UTC instant. Rendered in the viewer's zone, never the stored one. */
   startsAt: string;
   /** UTC instant, derived from `startsAt` + the duration. */

@@ -13,12 +13,14 @@ type NoticeProps = {
   title?: string;
   children: ReactNode;
   onDismiss?: () => void;
+  /** So a control the notice is about can point at it with aria-describedby. */
+  id?: string;
 };
 
 /** Inline status notice inside a page region. Announced politely. */
-export function Notice({ tone, icon, title, children, onDismiss }: NoticeProps) {
+export function Notice({ tone, icon, title, children, onDismiss, id }: NoticeProps) {
   return (
-    <div role="status" className={cx(styles.notice, styles[tone])}>
+    <div id={id} role="status" className={cx(styles.notice, styles[tone])}>
       {icon && <Icon name={icon} size={20} className={styles.icon} />}
       <p className={styles.text}>
         {title && <strong>{title}</strong>} {children}

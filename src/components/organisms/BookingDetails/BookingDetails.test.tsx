@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { sampleBookingFor, sampleParty } from '@/lib/utils/bookingTestFixtures';
+import type { BookingStatus } from '@/types/booking';
 import { BookingDetails } from './BookingDetails';
 
 const NOW = new Date('2026-10-03T12:00:00Z');
@@ -67,7 +68,7 @@ describe('what the panel says', () => {
 
   it('a lapsed request says so instead of counting down', () => {
     panel({ booking: sampleBookingFor({ status: 'pending', respondBy: at(-1) }) });
-    expect(screen.getByText('Unconfirmed')).toBeVisible();
+    expect(screen.getByText('Expired')).toBeVisible();
     expect(screen.queryByText(/Respond within/)).not.toBeInTheDocument();
   });
 });
@@ -308,5 +309,107 @@ describe('the booking form answers', () => {
     expect(screen.getByRole('heading', { name: 'Answers from Amara' })).toBeVisible();
     expect(screen.getByText('Note from Amara')).toBeVisible();
     expect(screen.getByText('Nine programs.')).toBeVisible();
+  });
+});
+
+describe('what happened, and why (design’s table, 2026-10-03)', () => {
+  const AT = '2026-10-02T09:00:00Z';
+  const ended = (status: BookingStatus, side: 'mentor' | 'mentee', reason?: string) => ({
+    booking: sampleBookingFor({ status, side }),
+    outcome: {
+      status,
+      by: side === 'mentee' ? ('them' as const) : ('you' as const),
+      reason: reason ?? null,
+      at: AT,
+    },
+  });
+
+  it('a mentee is told where the credit went', () => {
+    panel(ended('declined', 'mentee'));
+    expect(screen.getByText(/declined this request/i)).toBeVisible();
+    expect(screen.getByText('Your credit is back.')).toBeVisible();
+  });
+
+  it('a mentor is never told about credit — it is not theirs', () => {
+    panel({ ...ended('declined', 'mentor'), outcome: { status: 'declined', by: 'you', reason: null, at: AT } });
+    expect(screen.queryByText(/credit/i)).not.toBeInTheDocument();
+  });
+
+  it('a system sweep never says "you" did it', () => {
+    // The heading owns who did what, and it reads `o.by`. Keying a second
+    // sentence off the viewer's side told a mentor "You declined this request"
+    // when the hourly sweep had.
+    panel({ ...ended('declined', 'mentor'), outcome: { status: 'declined', by: 'system', reason: null, at: AT } });
+    expect(screen.queryByText(/^You declined/)).not.toBeInTheDocument();
+  });
+
+  it('what happened is said once, not twice', () => {
+    panel({ ...ended('withdrawn', 'mentee'), outcome: { status: 'withdrawn', by: 'you', reason: null, at: AT } });
+    expect(screen.getAllByText(/withdrew this request/i)).toHaveLength(1);
+  });
+
+  it('a late cancellation records where the credit went, since the dialog is long gone', () => {
+    panel({
+      booking: sampleBookingFor({ side: 'mentee', status: 'cancelled', startsAt: at(9), endsAt: at(10) }),
+      outcome: { status: 'cancelled', by: 'you', reason: null, at: AT },
+    });
+    expect(screen.getByText(/less than 12 hours before the session, so the credit was not returned/)).toBeVisible();
+  });
+
+  it('a cancellation in good time says the credit came back', () => {
+    panel({
+      booking: sampleBookingFor({ side: 'mentee', status: 'cancelled', startsAt: at(48), endsAt: at(49) }),
+      outcome: { status: 'cancelled', by: 'you', reason: null, at: AT },
+    });
+    expect(screen.getByText('Your credit is back.')).toBeVisible();
+  });
+
+  it('a reason is headed so it cannot be mistaken for the booking note', () => {
+    panel({ ...ended('cancelled', 'mentee', 'Something came up.'), 
+      outcome: { status: 'cancelled', by: 'them', reason: 'Something came up.', at: AT } });
+    expect(screen.getByText('Reason from Amara')).toBeVisible();
+    expect(screen.getByText('“Something came up.”')).toBeVisible();
+  });
+
+  it('no reason given means no block at all — never "No reason given"', () => {
+    panel({ ...ended('cancelled', 'mentee'), outcome: { status: 'cancelled', by: 'them', reason: null, at: AT } });
+    expect(screen.queryByText(/Reason from/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/No reason/i)).not.toBeInTheDocument();
+  });
+});
+
+const AT2 = '2026-10-02T09:00:00Z';
+
+describe('a missed session says who was there', () => {
+  const missed = (mine: string, theirs: string) => ({
+    booking: sampleBookingFor({
+      status: 'noShow',
+      side: 'mentee',
+      myAttendance: mine as 'pending',
+      other: sampleParty({ attendance: theirs as 'pending' }),
+    }),
+    outcome: { status: 'noShow' as const, by: 'system' as const, reason: null, at: AT2 },
+  });
+
+  it('neither of them', () => {
+    panel(missed('noShow', 'noShow'));
+    expect(screen.getByText('Neither of you joined this session')).toBeVisible();
+  });
+
+  it('they were there, you were not', () => {
+    panel(missed('noShow', 'attended'));
+    expect(screen.getByText('You didn’t join this session')).toBeVisible();
+  });
+
+  it('you were there, they were not — leaving early still counts as being there', () => {
+    panel(missed('leftEarly', 'noShow'));
+    expect(screen.getByText('Amara didn’t join this session')).toBeVisible();
+  });
+
+  it('a migrated booking with no record says the plain thing, not "neither of you"', () => {
+    // `pending` is unknown, never absence. Claiming nobody came would accuse
+    // people of missing a session they attended.
+    panel(missed('pending', 'pending'));
+    expect(screen.getByText('This session was missed')).toBeVisible();
   });
 });

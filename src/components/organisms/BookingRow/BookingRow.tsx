@@ -23,6 +23,12 @@ type BookingRowProps = {
   timeZone: string;
   /** The row's controls. Nothing renders where a tab has no action yet. */
   actions?: ReactNode;
+  /**
+   * A full-width block under the row's detail — a clash warning, or why an
+   * action just failed. Separate from `actions`, which is a button rail sized
+   * for nowrap controls: a block in there collapses the content column.
+   */
+  notice?: ReactNode;
   /** The ⋯ menu's items. Nothing renders when there are none. */
   menu?: RowMenuItem[];
   /** Its details are the ones on show: the design's --blue-50 ground. */
@@ -49,6 +55,7 @@ export function BookingRow({
   booking: b,
   timeZone,
   actions,
+  notice,
   menu,
   selected,
   onOpenAnswers,
@@ -94,6 +101,7 @@ export function BookingRow({
         )}
         {/* What the mentee answered, in brief. Rides along on the list
             response, so a page of rows makes no extra requests. */}
+        {notice}
         {b.answersPreview?.first.text && onOpenAnswers && (
           <AnswerPreview
             preview={b.answersPreview}

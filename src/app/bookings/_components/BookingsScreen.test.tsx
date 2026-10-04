@@ -55,6 +55,15 @@ vi.mock('@/lib/api/data/sessionAnswers', () => ({
 }));
 // The viewer fetches bytes; this screen's tests are about the wiring that opens
 // it, so the fetch is stubbed at the data boundary like every other read here.
+// The four write actions. Stubbed at the data boundary like every other read
+// here; what each one sends is covered in bookingActions.test.tsx.
+const actions: Record<string, ReturnType<typeof stubAction>> = {};
+function stubAction() {
+  return { mutate: vi.fn(), reset: vi.fn(), isPending: false, error: null, variables: undefined };
+}
+vi.mock('@/lib/api/data/bookingActions', () => ({
+  useBookingAction: (a: string) => (actions[a] ??= stubAction()),
+}));
 vi.mock('@/lib/api/data/intakeFiles', () => ({
   useIntakeFile: () => ({ url: 'blob:stub', isLoading: false, error: null, retry: vi.fn() }),
   canPreview: () => true,
@@ -93,6 +102,7 @@ const party = (name = 'Amara Okafor'): BookingParty => ({
   timeZone: 'Africa/Lagos',
   cover: 'sand',
   joinedAt: null,
+  attendance: 'pending' as const,
 });
 
 const booking = (over: Partial<Booking> = {}): Booking => ({
@@ -100,6 +110,7 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
   status: 'confirmed',
   side: 'mentor',
   other: party(),
+  myAttendance: 'pending' as const,
   startsAt: at(24),
   endsAt: at(25),
   durationMin: 60,
@@ -152,6 +163,7 @@ beforeEach(() => {
   pending = remote<Booking[]>([]);
   history = hist();
   answers = { data: [], isLoading: false, error: null, retry: vi.fn() };
+  for (const a of ['accept', 'decline', 'withdraw', 'cancel']) actions[a] = stubAction();
   join.mockReset();
   replace.mockReset();
 });
@@ -318,7 +330,7 @@ describe('Pending', () => {
   it('a lapsed request stays in the list, labelled, with nothing left to do', () => {
     pending = remote([booking({ status: 'pending', respondBy: at(-1) })]);
     render(<BookingsScreen />);
-    expect(screen.getByText('Unconfirmed')).toBeVisible();
+    expect(screen.getByText('Expired')).toBeVisible();
     expect(screen.queryByText(/Respond within/)).not.toBeInTheDocument();
   });
 
@@ -356,7 +368,7 @@ describe('History', () => {
     render(<BookingsScreen />);
     // Scoped to the list: 'Completed' is also a filter chip above it.
     const list = screen.getByRole('region', { name: 'Bookings' });
-    for (const label of ['Completed', 'Canceled', 'Missed', 'Declined', 'Unconfirmed'])
+    for (const label of ['Completed', 'Canceled', 'Missed', 'Declined', 'Expired'])
       expect(within(list).getByText(label)).toBeVisible();
   });
 
@@ -784,5 +796,124 @@ describe('the desktop panel is not a keyboard dead end', () => {
     screen.getByRole('tab', { name: /Upcoming/ }).focus();
     await userEvent.keyboard('{Escape}');
     expect(replace).not.toHaveBeenCalled();
+  });
+});
+
+describe('the actions appear only where they can succeed', () => {
+  const pendingRow = (over = {}) =>
+    booking({ id: 'p1', title: 'SOP review', status: 'pending', respondBy: at(5), startsAt: at(48), endsAt: at(49), ...over });
+
+  it('a mentor answers a request on the row itself', async () => {
+    viewer = { ...MEMBER, isMentor: true };
+    pending = remote([pendingRow({ side: 'mentor' })]);
+    tab = 'pending';
+    render(<BookingsScreen />);
+    expect(screen.getByRole('button', { name: 'Accept' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Decline' })).toBeVisible();
+  });
+
+  it('accepting goes straight through — there is nothing to warn about', async () => {
+    viewer = { ...MEMBER, isMentor: true };
+    pending = remote([pendingRow({ side: 'mentor' })]);
+    tab = 'pending';
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Accept' }));
+    expect(actions.accept!.mutate).toHaveBeenCalledWith(
+      { bookingId: 'p1' },
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('declining asks first, because it cannot be undone', async () => {
+    viewer = { ...MEMBER, isMentor: true };
+    pending = remote([pendingRow({ side: 'mentor' })]);
+    tab = 'pending';
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Decline' }));
+    expect(screen.getByRole('dialog', { name: 'Decline this request' })).toBeVisible();
+    expect(actions.decline!.mutate).not.toHaveBeenCalled();
+  });
+
+  it('a mentee gets Withdraw in the menu, and no Accept anywhere', async () => {
+    pending = remote([pendingRow({ side: 'mentee' })]);
+    tab = 'pending';
+    render(<BookingsScreen />);
+    expect(screen.queryByRole('button', { name: 'Accept' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /More options for SOP review/ }));
+    expect(screen.getByRole('menuitem', { name: 'Withdraw request' })).toBeVisible();
+  });
+
+  it('a lapsed request offers nothing — it is the backend’s to expire', async () => {
+    viewer = { ...MEMBER, isMentor: true };
+    pending = remote([pendingRow({ side: 'mentor', respondBy: at(-1) })]);
+    tab = 'pending';
+    render(<BookingsScreen />);
+    expect(screen.queryByRole('button', { name: 'Accept' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Decline' })).not.toBeInTheDocument();
+  });
+
+  it('a session inside ten minutes offers no Cancel', async () => {
+    upcoming = remote([
+      booking({ id: 'a', title: 'Statement of Purpose' }),
+      booking({ id: 'soon', title: 'Nearly now', startsAt: at(0.1), endsAt: at(1) }),
+    ]);
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: /More options for Nearly now/ }));
+    expect(screen.queryByRole('menuitem', { name: 'Cancel session' })).not.toBeInTheDocument();
+  });
+
+  it('a session further out does', async () => {
+    upcoming = remote([
+      booking({ id: 'a', title: 'Statement of Purpose' }),
+      booking({ id: 'later', title: 'Later one', startsAt: at(48), endsAt: at(49) }),
+    ]);
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: /More options for Later one/ }));
+    expect(screen.getByRole('menuitem', { name: 'Cancel session' })).toBeVisible();
+  });
+});
+
+describe('accepting a request that runs into another session', () => {
+  it('warns before accepting, and says which session and when', () => {
+    viewer = { ...MEMBER, isMentor: true };
+    upcoming = remote([
+      booking({ id: 'u1', title: 'Already booked', startsAt: at(10), endsAt: at(11) }),
+    ]);
+    pending = remote([
+      booking({ id: 'p1', title: 'Clashing request', status: 'pending', side: 'mentor', respondBy: at(5), startsAt: at(10.5), endsAt: at(11.5) }),
+    ]);
+    tab = 'pending';
+    render(<BookingsScreen />);
+    expect(screen.getByText(/This overlaps your session with/)).toBeVisible();
+    expect(screen.getByText(/Accepting books both/)).toBeVisible();
+  });
+
+  it('does not block it — accepting both may be the intention', async () => {
+    viewer = { ...MEMBER, isMentor: true };
+    upcoming = remote([booking({ id: 'u1', startsAt: at(10), endsAt: at(11) })]);
+    pending = remote([
+      booking({ id: 'p1', status: 'pending', side: 'mentor', respondBy: at(5), startsAt: at(10.5), endsAt: at(11.5) }),
+    ]);
+    tab = 'pending';
+    render(<BookingsScreen />);
+    const accept = screen.getByRole('button', { name: 'Accept' });
+    expect(accept).not.toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(accept);
+    expect(actions.accept!.mutate).toHaveBeenCalledWith(
+      { bookingId: 'p1' },
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
+  });
+
+  it('back-to-back sessions carry no warning', () => {
+    viewer = { ...MEMBER, isMentor: true };
+    upcoming = remote([booking({ id: 'u1', startsAt: at(9), endsAt: at(10) })]);
+    pending = remote([
+      booking({ id: 'p1', status: 'pending', side: 'mentor', respondBy: at(5), startsAt: at(10), endsAt: at(11) }),
+    ]);
+    tab = 'pending';
+    render(<BookingsScreen />);
+    expect(screen.queryByText(/This overlaps your session with/)).not.toBeInTheDocument();
   });
 });

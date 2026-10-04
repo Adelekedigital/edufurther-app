@@ -292,3 +292,31 @@ basis below 1100px so it shrinks rather than pushing the ⋯ onto its own line.
 
 | 23 | The hero link carries the design's `-space-2` pull at every width | On phones it takes a 44px target and no negative pull | At 390 the link sat 32px tall with 8px to "Join session", which posts attendance and opens the meeting. A low thumb hit the wrong action, and an invisible tap overlay would have reached into Join itself. The room has to come from somewhere. |
 | 24 | The hero's "See all N answers" | "See the answer" when there is one | "See all 1 answers" is not a sentence, and on the hero "all" has no referent because no answer is shown there. |
+
+### Bookings — the actions (PR 3a), 2026-10-03
+
+| # | Design | Built | Why |
+|---|---|---|---|
+| 25 | No dialog is drawn for decline, cancel or withdraw | A ModalShell confirm, ours | They cannot be undone and they move someone else's credit. The one rule it enforces is that the credit outcome is stated **before** the confirm button. Listed for design. |
+| 26 | `reason_code` is a nine-value enum | Four offered | The other five (`mentor_no_show`, `mentee_no_show`, `expired_no_response`, `rescheduled`, `admin_action`) are system-set; a person picking "admin action" means nothing. |
+| 27 | Button `text-destructive` is in the DS but was missing from our atom | Added, with the hover darkened | The DS hover `--red-300` is 3.15:1 on white, under AA. Ours darkens to `--red-700` (8.4:1); rest `--red-500` is 5.13:1. The same divergence the filled `destructive` already carried. |
+| 28 | The mentor's cancel has no slot question | A switch, defaulting to "I'm still free at this time" | `release_slot` exists on the contract and defaults true. The backend's reasoning is worth keeping: an hour offered while you are busy arrives as a booking you can decline; an hour withheld while you are free arrives as nothing at all. |
+
+**Copy decisions taken by the owner, 2026-10-03** (design's draft
+`Copy - Booking outcomes (provisional).md`, which left three calls open):
+
+1. **"Expired", not "Closed"** — it matches the API's own status and says why
+   nothing happened, where "closed" would equally describe a cancellation. The
+   draft's details line said "closed"; it now says "expired" to agree with the tag.
+2. **Three chips, with "Canceled" renamed "Didn't happen"** — a declined or
+   expired request was never cancelled by anyone. Missed keeps its own chip
+   because the data supports the distinction the owner cares about: a session at
+   least one person attended is not one nobody came to.
+3. **"Reason from {first}", not "{first}'s note"** — the same panel already
+   carries "Note from {first}" for the booking message, and the two would blur.
+
+### Bookings — ours, not the design's (PR 3a)
+
+**The overlap warning is built as drawn** ("This overlaps your session with X on
+Y. Accepting books both") and it **warns rather than blocks**, because accepting
+both may be exactly what a mentor means. Back-to-back sessions are not a clash.
