@@ -24,6 +24,8 @@ type ConfirmActionDialogProps = {
   timeZone: string;
   /** The viewer's own id: a mentor offers their own open times. */
   viewerId: string;
+  /** The account zone, for the slots window (never the display override). */
+  accountZone: string;
   /** Injected in tests and stories; the clock otherwise. */
   now?: Date;
 };
@@ -59,6 +61,7 @@ export function ConfirmActionDialog({
   error,
   timeZone,
   viewerId,
+  accountZone,
   now = new Date(),
 }: ConfirmActionDialogProps) {
   const [reasonCode, setReasonCode] = useState<PickableReason | null>(null);
@@ -175,6 +178,7 @@ export function ConfirmActionDialog({
           <SuggestTimeStep
             booking={b}
             mentorId={viewerId}
+            accountZone={accountZone}
             timeZone={timeZone}
             value={suggested}
             onChange={setSuggested}

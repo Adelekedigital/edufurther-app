@@ -8,9 +8,10 @@ import {
   isHoldLapsed,
 } from '@/components/molecules/SuggestionCountdown/SuggestionCountdown';
 import { fullDate } from '@/lib/utils/bookings';
+import { useEffect, useRef } from 'react';
 import { cx } from '@/lib/utils/cx';
 import { formatTime } from '@/lib/utils/format';
-import type { BookingSuggestion } from '@/types/suggestion';
+import type { BookingSuggestion } from '@/types/booking';
 import styles from './SuggestionNotice.module.css';
 
 type SuggestionNoticeProps = {
@@ -20,7 +21,12 @@ type SuggestionNoticeProps = {
   /** The viewer's zone. The offered time is read in it, never the stored one. */
   timeZone: string;
   /** Opens the booking flow on the offered time. Only the live state uses it. */
-  onBook: () => void;
+  /**
+   * Opens the booking flow on the offered time. Absent — a migrated booking
+   * with no offering recorded — the offer still shows; there is simply nothing
+   * to press. Hiding it would mean a mentee never learning a time was offered.
+   */
+  onBook?: () => void;
   /**
    * The screen's clock, as `BookingRow` and `NextSessionCard` take it. Pass the
    * ticking one: it is what flips the whole notice to lapsed, not just the
@@ -75,8 +81,31 @@ export function SuggestionNotice({
     timeZone,
   )}`;
 
+  // A hold lapsing removes the button under the user's finger — or their
+  // focus. Catching it on the card keeps them where they were, beside the
+  // sentence that explains it.
+  const cardRef = useRef<HTMLElement>(null);
+  const was = useRef(state);
+  useEffect(() => {
+    const card = cardRef.current;
+    if (was.current === state) return;
+    const leftActive = was.current === 'active';
+    was.current = state;
+    if (leftActive && card?.contains(document.activeElement)) card.focus();
+  }, [state]);
+
   return (
-    <section aria-label="Suggested time" className={cx(styles.card, styles[state])}>
+    <section ref={cardRef} tabIndex={-1} aria-label={EYEBROW[state]} className={cx(styles.card, styles[state])}>
+      {/* Outside the active branch on purpose: the pill's own region goes with
+          the pill, so a hold lapsing was announced to nobody — the heading and
+          the button changed in silence. This one survives the change. */}
+      <p role="status" className="sr-only">
+        {state === 'active'
+          ? ''
+          : state === 'booked'
+            ? `You booked the time ${firstName} offered.`
+            : `The hold on the time ${firstName} offered has lapsed.`}
+      </p>
       <span className={styles.eyebrow}>
         <Icon name={ICON[state]} size={14} />
         {EYEBROW[state]}
@@ -111,9 +140,11 @@ export function SuggestionNotice({
           <SuggestionCountdown heldUntil={s.heldUntil} now={now} />
           {/* The whole name in `aria-label`: "Book this time" alone says
               nothing when the page holds more than one offer (failure log #51). */}
-          <Button variant="primary" size="medium" onClick={onBook} aria-label={`Book ${when}`}>
-            Book this time
-          </Button>
+          {onBook && (
+            <Button variant="primary" size="medium" onClick={onBook} aria-label={`Book ${when}`}>
+              Book this time
+            </Button>
+          )}
         </div>
       )}
     </section>

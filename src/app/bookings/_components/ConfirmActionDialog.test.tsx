@@ -11,9 +11,13 @@ const at = (h: number) => new Date(NOW.getTime() + h * 3_600_000).toISOString();
 // The suggest step reads the mentor's real open slots; stubbed at the data
 // boundary like every other read in these tests.
 let slots: { data: string[] | null; isLoading: boolean; error: unknown; retry: () => void };
+let slotsArgs: unknown[] = [];
 vi.mock('@/lib/api/data/booking', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
-  useSlots: () => slots,
+  useSlots: (...a: unknown[]) => {
+    slotsArgs = a;
+    return slots;
+  },
 }));
 
 beforeEach(() => {
@@ -42,6 +46,7 @@ const dialog = (props: Partial<Parameters<typeof ConfirmActionDialog>[0]> = {}) 
       now={NOW}
       timeZone="America/New_York"
       viewerId="me"
+      accountZone="America/New_York"
       {...props}
     />,
   );
@@ -172,14 +177,16 @@ describe('offering another time (SuggestTime.dc.html)', () => {
     dialog({ action: 'decline', booking: mentorPending() });
     expect(screen.getByText('Suggested time')).toBeVisible();
     // Two chips, then "Pick another day" — the design's own count.
-    expect(screen.getAllByRole('button', { name: /Oct \d+, 2026 ·/ })).toHaveLength(2);
-    expect(screen.getByRole('button', { name: 'Pick another day' })).toBeVisible();
+    expect(screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ })).toHaveLength(2);
+    // Eight more at a time: revealing a month of open hours at once pushed the
+    // dialog's own buttons about 900px below the fold on a phone.
+    expect(screen.getByRole('button', { name: 'Show more times' })).toBeVisible();
   });
 
   it('the picked time is what gets sent, and only from the picker', async () => {
     const onConfirm = vi.fn();
     dialog({ action: 'decline', booking: mentorPending(), onConfirm });
-    const [first] = screen.getAllByRole('button', { name: /Oct \d+, 2026 ·/ });
+    const [first] = screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ });
     await userEvent.click(first!);
     await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
     // Every option comes from /slots, which is what makes a 422 unreachable.
@@ -200,7 +207,7 @@ describe('offering another time (SuggestTime.dc.html)', () => {
   it('picking the same chip again takes the offer back', async () => {
     const onConfirm = vi.fn();
     dialog({ action: 'decline', booking: mentorPending(), onConfirm });
-    const [first] = screen.getAllByRole('button', { name: /Oct \d+, 2026 ·/ });
+    const [first] = screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ });
     await userEvent.click(first!);
     await userEvent.click(first!);
     await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
@@ -212,7 +219,7 @@ describe('offering another time (SuggestTime.dc.html)', () => {
   it('the hold is explained only once a time is actually offered', async () => {
     dialog({ action: 'decline', booking: mentorPending() });
     expect(screen.queryByText(/then it opens to others again/)).not.toBeInTheDocument();
-    const [first] = screen.getAllByRole('button', { name: /Oct \d+, 2026 ·/ });
+    const [first] = screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ });
     await userEvent.click(first!);
     expect(screen.getByText(/Held for Amara for two hours/)).toBeVisible();
   });
@@ -263,5 +270,64 @@ describe('what the suggest step says when it cannot ask', () => {
     expect(screen.getByText('Suggested time')).toBeVisible();
     expect(screen.queryByText(/no open times/)).not.toBeInTheDocument();
     expect(screen.queryByText(/can’t show/)).not.toBeInTheDocument();
+  });
+});
+
+describe('whose calendar the picker reads', () => {
+  it('asks for the viewer’s own slots, in the account zone', () => {
+    dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }) });
+    // The single most dangerous bug this component could have: on this dialog
+    // the viewer IS the mentor, so `booking.other` is the mentee. Asking for
+    // their slots would show a mentor somebody else's availability.
+    expect(slotsArgs).toEqual(['me', 'st1', 'America/New_York']);
+  });
+});
+
+describe('the picker does not bury the dialog', () => {
+  const many = (n: number) =>
+    Array.from({ length: n }, (_, i) => new Date(Date.UTC(2026, 9, 8, 14 + i)).toISOString());
+
+  it('reveals more a handful at a time, not a month at once', async () => {
+    slots = { data: many(48), isLoading: false, error: null, retry: vi.fn() };
+    dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }) });
+    expect(screen.getAllByRole('radio')).toHaveLength(2);
+    await userEvent.click(screen.getByRole('button', { name: 'Show more times' }));
+    expect(screen.getAllByRole('radio')).toHaveLength(10);
+    await userEvent.click(screen.getByRole('button', { name: 'Show more times' }));
+    expect(screen.getAllByRole('radio')).toHaveLength(18);
+  });
+
+  it('stops offering more once everything is shown', async () => {
+    slots = { data: many(3), isLoading: false, error: null, retry: vi.fn() };
+    dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }) });
+    await userEvent.click(screen.getByRole('button', { name: 'Show more times' }));
+    expect(screen.getAllByRole('radio')).toHaveLength(3);
+    expect(screen.queryByRole('button', { name: 'Show more times' })).not.toBeInTheDocument();
+  });
+
+  it('a slot we cannot read is dropped, not thrown', () => {
+    // An unparseable instant threw out of the date formatter and took the whole
+    // Bookings screen with it.
+    slots = { data: ['not-a-date', ...many(1)], isLoading: false, error: null, retry: vi.fn() };
+    dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }) });
+    expect(screen.getAllByRole('radio')).toHaveLength(1);
+  });
+
+  it('a failure offers a way to try again, and claims nothing about the calendar', async () => {
+    const retry = vi.fn();
+    slots = { data: null, isLoading: false, error: { kind: 'server', message: 'x' }, retry };
+    dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }) });
+    expect(screen.getByText(/couldn’t load your open times just now/)).toBeVisible();
+    // It cannot see the times, so it cannot know whether there are any.
+    expect(screen.queryByText(/nothing to offer/)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(retry).toHaveBeenCalled();
+  });
+
+  it('only an actual empty list concludes there is nothing to offer', () => {
+    slots = { data: [], isLoading: false, error: null, retry: vi.fn() };
+    dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }) });
+    expect(screen.getByText(/You have no open times for this session/)).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
   });
 });

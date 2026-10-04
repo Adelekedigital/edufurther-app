@@ -101,6 +101,8 @@ export const keys = {
     one: (id: string, who: string) => ['bookings', 'one', id, who] as const,
     /** Why a past booking ended as it did (GET /sessions/{id}/events). */
     events: (id: string, who: string) => ['bookings', 'events', id, who] as const,
+    /** Every reviewable-sessions entry, for invalidating after a review. */
+    reviewableAll: ['bookings', 'reviewable'] as const,
     /** What the mentee wrote when booking (GET /sessions/{id}/answers). */
     answers: (id: string, who: string) => ['bookings', 'answers', id, who] as const,
     /**

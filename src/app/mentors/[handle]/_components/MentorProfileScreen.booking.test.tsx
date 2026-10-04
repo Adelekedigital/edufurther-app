@@ -235,3 +235,27 @@ describe('MentorProfileScreen — not taking bookings (design reply #58, live de
     expect(screen.getByRole('complementary')).toHaveAccessibleName(/^Availability/);
   });
 });
+
+describe('MentorProfileScreen — ?at= rides with ?book=', () => {
+  beforeEach(() => {
+    h.sessionTypesRemote = remote(sessionTypes);
+  });
+
+  it('opens on the offered time, and takes both parameters back out of the URL', () => {
+    // Bookings sends a mentee here to take a time their mentor is holding.
+    // `book` opens the flow; `at` lands it on the time. A stray `at` left
+    // behind would ride along into anything they then shared.
+    withLink(`book=${second.id}&at=2026-10-08T14%3A00%3A00Z&utm_source=x`);
+    h.profile = state({ data: profile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('dialog')).toHaveTextContent(`Book ${second.name}`);
+    expect(replace).toHaveBeenCalledWith('/mentors/gbenga?utm_source=x', { scroll: false });
+  });
+
+  it('an `at` with no `book` opens nothing — there is no offering to book', () => {
+    withLink('at=2026-10-08T14%3A00%3A00Z');
+    h.profile = state({ data: profile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});

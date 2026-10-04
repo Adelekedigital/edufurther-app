@@ -16,7 +16,7 @@ const meta = {
   title: 'Bookings/ConfirmActionDialog',
   component: ConfirmActionDialog,
   parameters: { layout: 'fullscreen' },
-  args: { onConfirm: fn(), onClose: fn(), now: NOW, timeZone: 'America/New_York', viewerId: 'me' },
+  args: { onConfirm: fn(), onClose: fn(), now: NOW, timeZone: 'America/New_York', accountZone: 'America/New_York', viewerId: 'me' },
 } satisfies Meta<typeof ConfirmActionDialog>;
 export default meta;
 type Story = StoryObj<typeof meta>;

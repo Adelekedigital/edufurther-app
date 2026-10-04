@@ -198,3 +198,43 @@ had to be corrected, and the invented half had a specification all along.
 **Check:** before recording that something is undrawn, list the design project
 itself rather than the mirror. The mirror is a cache, and nothing about a
 missing file says whether it was never drawn or merely never pulled.
+
+### #55 — A link I never followed
+
+"Book this time" pushed `/mentors/{id}?at={instant}`. **Nothing reads `at`.** The
+profile understands `?book={sessionTypeId}` and `?tab=`, and nothing else — so
+the one action the whole mentee-side feature exists for landed them on a profile
+with the flow closed, the held time unfound, and a stray parameter left in the
+URL to be shared along with it. "Leave a review" had the same shape: it linked
+to `?tab=reviews`, and that tab did not exist for a mentor with no reviews yet —
+precisely the mentor the mentee was being sent to review.
+
+Both were written as if the destination already understood the link. Neither was
+followed.
+
+**Check:** after writing a link, open it. A URL parameter is a contract with the
+page at the other end, and nothing fails loudly when that page ignores it.
+
+### #56 — "Show everything" is not a design for real data
+
+"Pick another day" revealed every remaining slot. With a month of open hours
+that is forty-eight chips, 1240px of them, pushing the dialog's own buttons
+roughly 900px below the fold on a phone. The fixture had three.
+
+The label was wrong too: it did not pick a day, it expanded a list — the name
+was inherited from the design's month-picker modal, which was the thing that
+would have prevented the pile-up.
+
+**Check:** size a list against the data the product will really have, not the
+fixture. And when a design's affordance is skipped, do not keep its label.
+
+### #57 — Copy that concludes from a failed read
+
+When the slots read failed, the step said "…so there's nothing to offer here."
+It could not see the mentor's times, so it had no basis for saying whether there
+were any — a mentor with a full calendar was told there was nothing. The earlier
+round had already split "no open times" from "could not load", and still the
+second branch kept the first's conclusion.
+
+**Check:** a failure may describe itself. It may not draw the conclusion the
+success path would have drawn.

@@ -216,6 +216,11 @@ export function BookingsScreen() {
   const reviewable = useMyReviewableSessions(tab === 'history');
   const canReview = (b: Booking) =>
     b.side === 'mentee' && (reviewable.data ?? []).some((r) => r.id === b.id);
+  // While we do not know, offer neither. "Book again" standing in for a moment
+  // and then turning into "Leave a review" is two destinations in one place,
+  // one of which spends a credit. A failed read is the same: it would read as
+  // "you have reviewed everything", which is the error-before-empty rule.
+  const reviewUnknown = reviewable.isLoading || !!reviewable.error;
 
   const rowMenu = (b: Booking) => {
     const items: RowMenuItem[] = [
@@ -481,7 +486,9 @@ export function BookingsScreen() {
               actionsFor={(b) =>
                 // Only a session this viewer booked can be booked again, and a
                 // mentor never books at all.
-                canReview(b) ? (
+                reviewUnknown && b.side === 'mentee' && b.status === 'completed' ? null : canReview(
+                  b,
+                ) ? (
                   <ButtonLink
                     // The review flow lives on the profile; linking there keeps
                     // one implementation rather than mounting it twice.
@@ -522,13 +529,19 @@ export function BookingsScreen() {
                 answersFailed={!!answers.error}
                 retryAnswers={answers.retry}
                 onBookSuggestion={
-                  open?.suggestion && open.side === 'mentee'
+                  // No offering recorded means no flow to open, so the notice
+                  // shows what was offered with nothing to press — the link
+                  // would otherwise land them on a profile with nothing selected.
+                  open?.suggestion && open.side === 'mentee' && open.sessionTypeId
                     ? () =>
-                        // The held slot is listed for this mentee alone, so the
-                        // ordinary flow at that time is all it takes — no
-                        // special path, and the booking limits still apply.
+                        // `book` is what opens the flow at all; `at` lands it on
+                        // the offered time. The held slot is listed for this
+                        // mentee alone, so the ordinary flow is all it takes —
+                        // no special path, and the booking limits still apply.
                         router.push(
-                          `/mentors/${open.other.id}?at=${encodeURIComponent(open.suggestion!.startsAt)}`,
+                          `/mentors/${open.other.id}?book=${encodeURIComponent(
+                            open.sessionTypeId ?? '',
+                          )}&at=${encodeURIComponent(open.suggestion!.startsAt)}`,
                         )
                     : undefined
                 }
@@ -559,6 +572,7 @@ export function BookingsScreen() {
               booking={confirming.booking}
               timeZone={timeZone}
               viewerId={userId ?? ''}
+              accountZone={accountZone}
               now={now}
               pending={pendingAction.isPending}
               error={pendingAction.error}

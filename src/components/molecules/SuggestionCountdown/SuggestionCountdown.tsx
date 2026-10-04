@@ -91,8 +91,14 @@ export function holdLeftLabel(ms: number): string {
 }
 
 /** The coarse reading, for the live region. */
+const MINUTE_MS = 60_000;
+
 function spokenBand(ms: number): string {
   if (ms <= 0) return 'The hold on this time has lapsed.';
+  // The last minute gets its own band. Without it the region still read "less
+  // than 10 minutes" at the moment it was about to run out — least urgent
+  // exactly when it mattered most.
+  if (ms < MINUTE_MS) return 'Less than a minute left to book this time.';
   if (ms < URGENT_MS) return 'Less than 10 minutes left to book this time.';
   if (ms < HOUR_MS) return 'Less than an hour left to book this time.';
   return 'More than an hour left to book this time.';

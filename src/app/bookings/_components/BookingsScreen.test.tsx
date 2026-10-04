@@ -9,9 +9,10 @@ import { BookingsScreen } from './BookingsScreen';
 let tab = 'upcoming';
 let selectedBooking: string | null = null;
 const replace = vi.fn();
+const push = vi.fn();
 vi.mock('next/navigation', () => ({
   usePathname: () => '/bookings',
-  useRouter: () => ({ replace, push: vi.fn() }),
+  useRouter: () => ({ replace, push }),
   useSearchParams: () => {
     const q = new URLSearchParams(tab === 'upcoming' ? '' : `tab=${tab}`);
     if (selectedBooking) q.set('booking', selectedBooking);
@@ -965,5 +966,49 @@ describe('the review entry on History', () => {
     tab = 'history';
     render(<BookingsScreen />);
     expect(screen.queryByRole('link', { name: 'Leave a review' })).not.toBeInTheDocument();
+  });
+});
+
+describe('booking an offered time actually opens the flow', () => {
+  const declined = () =>
+    booking({
+      id: 'd1',
+      status: 'declined',
+      side: 'mentee',
+      startsAt: at(-48),
+      endsAt: at(-47),
+      sessionTypeId: 'st-general',
+      suggestion: {
+        id: 's1',
+        startsAt: at(72),
+        endsAt: at(73),
+        durationMin: 60,
+        heldUntil: at(1),
+        status: 'active',
+        bookedSessionId: null,
+      },
+    });
+
+  it('names the offering as well as the time — `at` alone opens nothing', async () => {
+    // The profile understands `?book=`; `?at=` on its own left the mentee on
+    // the page with the flow closed and the held time unfound.
+    push.mockReset();
+    history = hist({ bookings: [declined()] });
+    selectedBooking = 'd1';
+    tab = 'history';
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: /^Book / }));
+    expect(push).toHaveBeenCalledWith(
+      expect.stringContaining('book=st-general'),
+    );
+    expect(push.mock.calls[0]![0]).toContain('at=');
+  });
+
+  it('offers nothing to press when the booking has no offering recorded', () => {
+    history = hist({ bookings: [{ ...declined(), sessionTypeId: null }] });
+    selectedBooking = 'd1';
+    tab = 'history';
+    render(<BookingsScreen />);
+    expect(screen.queryByRole('button', { name: /^Book / })).not.toBeInTheDocument();
   });
 });

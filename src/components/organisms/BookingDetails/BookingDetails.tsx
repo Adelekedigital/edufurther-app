@@ -57,7 +57,10 @@ type BookingDetailsProps = {
   answersLoading?: boolean;
   answersFailed?: boolean;
   retryAnswers?: () => void;
-  /** Opens the booking flow on an offered time. Absent, the notice is read-only. */
+  /**
+   * Opens the booking flow on an offered time. Absent, the notice still shows
+   * what was offered — it simply has nothing to press.
+   */
   onBookSuggestion?: () => void;
   /** All of them, rather than the first two. */
   answersExpanded?: boolean;
@@ -210,11 +213,13 @@ export function BookingDetails({
         {/* An offer of another time is the one thing on a booking that ended
             that the mentee can still act on, so it comes before the record of
             how it ended. Mentors do not see it: they made it. */}
-        {b.suggestion && b.side === 'mentee' && onBookSuggestion && (
+        {b.suggestion && b.side === 'mentee' && (
           <SuggestionNotice
             suggestion={b.suggestion}
             firstName={b.other.firstName}
             timeZone={timeZone}
+            // A migrated booking records no offering, so there is nothing to
+            // open — but the offer itself still happened and still says when.
             onBook={onBookSuggestion}
             now={now}
           />

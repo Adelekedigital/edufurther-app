@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Chip } from '@/components/atoms/Chip/Chip';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
@@ -10,8 +10,10 @@ import { formatTime } from '@/lib/utils/format';
 import type { Booking } from '@/types/booking';
 import styles from './SuggestTimeStep.module.css';
 
-/** The design's own count: the two earliest, then "Pick another day". */
+/** The design's own count: the two earliest, then a way to more. */
 const CHIPS = 2;
+/** How many more each press reveals. A month of hourly slots is hundreds. */
+const MORE = 8;
 
 type SuggestTimeStepProps = {
   booking: Booking;
@@ -21,7 +23,13 @@ type SuggestTimeStepProps = {
    * mentor. `booking.other` is the mentee, whose slots are nobody's business.
    */
   mentorId: string;
-  /** The viewer's zone. Every time here is read in it. */
+  /**
+   * The account zone, for the slots window. `slotWindow` turns it into day
+   * strings and the contract reads those as days in the mentor's own zone, so
+   * the display override would lose or gain a day at the edge.
+   */
+  accountZone: string;
+  /** The display zone. Every time here is *read* in it. */
   timeZone: string;
   /** The chosen instant, or null for "no, just decline". */
   value: string | null;
@@ -43,16 +51,25 @@ type SuggestTimeStepProps = {
 export function SuggestTimeStep({
   booking: b,
   mentorId,
+  accountZone,
   timeZone,
   value,
   onChange,
 }: SuggestTimeStepProps) {
-  const [showAll, setShowAll] = useState(false);
-  const slots = useSlots(mentorId, b.sessionTypeId, timeZone);
+  const [limit, setLimit] = useState(CHIPS);
+  // Not a literal: a second instance would be a duplicate-id violation.
+  const labelId = useId();
+  const slots = useSlots(mentorId, b.sessionTypeId, accountZone);
 
-  const all = slots.data ?? [];
-  const shown = showAll ? all : all.slice(0, CHIPS);
-  const label = (iso: string) => `${fullDate(iso, timeZone)} · ${formatTime(iso, timeZone)}`;
+  // A slot we cannot read is not a slot we can offer: an unparseable instant
+  // threw out of `fullDate` and took the whole Bookings screen with it.
+  const all = (slots.data ?? []).filter((iso) => !Number.isNaN(new Date(iso).getTime()));
+  const shown = all.slice(0, limit);
+  const label = (iso: string) =>
+    `${fullDate(iso, timeZone)} · ${formatTime(iso, timeZone)} to ${formatTime(
+      new Date(new Date(iso).getTime() + b.durationMin * 60_000).toISOString(),
+      timeZone,
+    )}`;
 
   if (slots.isLoading) {
     return (
@@ -73,25 +90,35 @@ export function SuggestTimeStep({
       <div className={styles.step}>
         <span className={styles.label}>Suggested time</span>
         <p className={styles.empty}>
+          {/* Only the last of these can conclude anything. If we cannot read the
+              times we cannot know whether there are any, and telling a mentor
+              with a full calendar that there is "nothing to offer" is a claim
+              about their own availability we have no basis for. */}
           {slots.error
-            ? 'We couldn’t load your open times, so there’s nothing to offer here.'
+            ? 'We couldn’t load your open times just now.'
             : unknown
-              ? 'We can’t show your open times for this session, so there’s nothing to offer here.'
+              ? 'We can’t show your open times for this session right now.'
               : 'You have no open times for this session, so there’s nothing to offer.'}
         </p>
+        {(slots.error || unknown) && (
+          <button type="button" className={styles.more} onClick={slots.retry}>
+            Try again
+          </button>
+        )}
       </div>
     );
   }
 
   return (
     <div className={styles.step}>
-      <span className={styles.label} id="suggest-label">
-        Suggested time <span className={styles.hold}>Optional</span>
+      <span className={styles.label} id={labelId}>
+        Suggested time <span className={styles.optional}>Optional</span>
       </span>
-      <div className={styles.chips} role="group" aria-labelledby="suggest-label">
+      <div className={styles.chips} role="radiogroup" aria-labelledby={labelId}>
         {shown.map((iso) => (
           <Chip
             key={iso}
+            role="radio"
             pressed={value === iso}
             // Picking the chosen one again clears it: offering a time is
             // optional, and there must be a way back to offering none.
@@ -100,9 +127,17 @@ export function SuggestTimeStep({
             {label(iso)}
           </Chip>
         ))}
-        {!showAll && all.length > CHIPS && (
-          <button type="button" className={styles.more} onClick={() => setShowAll(true)}>
-            Pick another day
+        {/* Eight at a time, not everything: a month of open hours is hundreds
+            of chips, and one press used to push the dialog's own buttons about
+            900px below the fold on a phone. The label says what it does — it
+            reveals more times, it does not pick a day. */}
+        {all.length > limit && (
+          <button
+            type="button"
+            className={styles.more}
+            onClick={() => setLimit((n) => n + MORE)}
+          >
+            Show more times
           </button>
         )}
       </div>

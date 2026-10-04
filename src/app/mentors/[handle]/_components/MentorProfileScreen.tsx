@@ -139,7 +139,12 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // (review of PR 102).
   const notTakingTab = asMentee && notTaking;
   // The owner, editing, always has the tab: "New session type" is there.
-  const { tab, setTab } = useProfileTab(hasSessions || notTakingTab || editing, hasReviews);
+  // The Reviews tab opens for any signed-in non-owner, not only once reviews
+  // exist. Bookings links a mentee here to write the first one, and gating the
+  // tab on `count > 0` dead-ended exactly that person on Overview with no way
+  // to reach the form — silently. The tab's own empty state covers the rest.
+  const reviewsTab = hasReviews || (viewer.kind !== 'guest' && viewer.kind !== 'loading' && !isOwner);
+  const { tab, setTab } = useProfileTab(hasSessions || notTakingTab || editing, reviewsTab);
   // Cards only render after a client fetch, so reading the device zone here is safe.
   const [timeZone] = useState(deviceTimeZone);
   // The profile only exists after a client fetch, so `window` is there by then.
@@ -493,11 +498,13 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                         },
                       ]
                     : []),
-                  ...(hasReviews
+                  ...(reviewsTab
                     ? [
                         {
                           value: 'reviews',
-                          label: `Reviews (${p.reviews.count})`,
+                          // No count until there is one to give: "Reviews (0)"
+                          // reads as a number we are asserting.
+                          label: hasReviews ? `Reviews (${p.reviews.count})` : 'Reviews',
                           panelId: 'panel-reviews',
                         },
                       ]

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
-import type { BookingSuggestion } from '@/types/suggestion';
+import type { BookingSuggestion } from '@/types/booking';
 import { SuggestionNotice } from './SuggestionNotice';
 
 const NOW = new Date('2026-10-05T12:00:00Z');

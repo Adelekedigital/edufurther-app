@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { BookingSuggestion } from '@/types/suggestion';
+import type { BookingSuggestion } from '@/types/booking';
 import { SuggestionNotice } from './SuggestionNotice';
 
 const NOW = new Date('2026-10-05T12:00:00Z');
@@ -118,5 +118,56 @@ describe('the viewer\u2019s zone', () => {
   it('the zone is the only thing that moves the reading, in every state', () => {
     notice({ status: 'expired' }, 'Africa/Lagos');
     expect(screen.getByText('Oct 6, 2026 · 12:30 am to 1:30 am')).toBeInTheDocument();
+  });
+});
+
+describe('what happens when a hold runs out under you', () => {
+  const held = (heldUntil: string) => ({
+    id: 's1',
+    startsAt: '2026-10-08T14:00:00Z',
+    endsAt: '2026-10-08T15:00:00Z',
+    durationMin: 60,
+    heldUntil,
+    status: 'active' as const,
+    bookedSessionId: null,
+  });
+
+  it('says so out loud — the pill’s own region goes with the pill', () => {
+    const { rerender } = render(
+      <SuggestionNotice
+        suggestion={held('2026-10-04T13:00:00Z')}
+        firstName="Wanjiru"
+        timeZone="America/New_York"
+        onBook={vi.fn()}
+        now={new Date('2026-10-04T12:00:00Z')}
+      />,
+    );
+    rerender(
+      <SuggestionNotice
+        suggestion={held('2026-10-04T13:00:00Z')}
+        firstName="Wanjiru"
+        timeZone="America/New_York"
+        onBook={vi.fn()}
+        now={new Date('2026-10-04T13:30:00Z')}
+      />,
+    );
+    expect(
+      screen.getByText('The hold on the time Wanjiru offered has lapsed.'),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the offer with nothing to press when there is no flow to open', () => {
+    render(
+      <SuggestionNotice
+        suggestion={held('2026-10-04T13:00:00Z')}
+        firstName="Wanjiru"
+        timeZone="America/New_York"
+        now={new Date('2026-10-04T12:00:00Z')}
+      />,
+    );
+    // A migrated booking records no offering. Hiding the whole notice would
+    // mean a mentee never learning a time was offered at all.
+    expect(screen.getByText(/Wanjiru offered another time/)).toBeVisible();
+    expect(screen.queryByRole('button', { name: /^Book / })).not.toBeInTheDocument();
   });
 });
