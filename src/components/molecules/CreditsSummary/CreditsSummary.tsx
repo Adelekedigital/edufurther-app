@@ -3,28 +3,15 @@
 import { useId } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { cx } from '@/lib/utils/cx';
-import { bonusLine, creditsTitle, isLow, type CreditsView } from '@/lib/utils/credits';
+import { creditSegments, creditsTitle, isLow, type CreditsView } from '@/lib/utils/credits';
 import styles from './CreditsSummary.module.css';
 
-/** One segment per monthly credit: filled for those left (yellow when low). */
+/** One segment per credit: bonus blue, monthly green, spent grey (yellow when low). */
 export function CreditsBar({ credits }: { credits: CreditsView }) {
   return (
     <span className={cx(styles.bar, isLow(credits) && styles.low)} aria-hidden>
-      {Array.from({ length: credits.monthlyTotal }, (_, i) => (
-        <span key={i} className={cx(styles.seg, i < credits.monthlyLeft && styles.filled)} />
-      ))}
-    </span>
-  );
-}
-
-/** "+1 bonus credit · never expires": one line per expiry group (#158). */
-export function BonusLines({ credits, id }: { credits: CreditsView; id?: string }) {
-  if (credits.bonus.length === 0) return null;
-  return (
-    <span id={id} className={styles.bonus}>
-      {credits.bonus.map((g) => (
-        // Merged by day in creditsView, so one line per (expires, day).
-        <span key={`${g.expires}-${g.expiresOn}`}>{bonusLine(g)}</span>
+      {creditSegments(credits).map((k, i) => (
+        <span key={i} className={cx(styles.seg, styles[k])} />
       ))}
     </span>
   );
@@ -32,8 +19,8 @@ export function BonusLines({ credits, id }: { credits: CreditsView; id?: string 
 
 /**
  * The credits block at the top of the account menu and the More sheet
- * (AppShell.dc.html creditMenu): "3 of 4 credits left", the bar, "Resets
- * Nov 1" and "How credits work", which opens "Your credits".
+ * (AppShell.dc.html creditMenu, creditSplit on): "3 credits left", the bar,
+ * "Resets Nov 1" and "How credits work", which opens "Your credits".
  */
 export function CreditsSummary({
   credits,
@@ -62,8 +49,7 @@ export function CreditsSummary({
           {creditsTitle(credits)}
         </span>
       </div>
-      {credits.showMonthly && <CreditsBar credits={credits} />}
-      <BonusLines credits={credits} id={`${id}-b`} />
+      <CreditsBar credits={credits} />
       <div className={styles.foot}>
         {credits.resetsOn ? (
           <span id={`${id}-r`} className={styles.sub}>
@@ -80,11 +66,7 @@ export function CreditsSummary({
             ref: asMenuItem.ref,
             role: 'menuitem',
             tabIndex: -1,
-            'aria-describedby': [
-              `${id}-t`,
-              credits.bonus.length > 0 && `${id}-b`,
-              credits.resetsOn && `${id}-r`,
-            ]
+            'aria-describedby': [`${id}-t`, credits.resetsOn && `${id}-r`]
               .filter(Boolean)
               .join(' '),
           })}

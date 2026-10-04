@@ -124,7 +124,6 @@ describe('credits in the shell: mentees only', () => {
       monthlyTotal: 3,
       bonus: [{ count: 1, expires: false, expiresOn: null }],
       showMonthly: true,
-      monthlyLapses: true,
       resetsOn: 'Nov 1',
     });
     const mentor = member({ credits: c });

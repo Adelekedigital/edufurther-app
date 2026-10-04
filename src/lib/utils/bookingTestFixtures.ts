@@ -28,6 +28,7 @@ export function sampleBookingFor(over: Partial<Booking> = {}): Booking {
     durationMin: 60,
     title: 'School shortlist',
     note: null,
+    answersPreview: null,
     createdAt: '2026-09-20T09:00:00Z',
     respondBy: null,
     joinOpensAt: null,

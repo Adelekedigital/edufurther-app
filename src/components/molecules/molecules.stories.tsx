@@ -5,6 +5,7 @@ import { fn } from 'storybook/test';
 import type { BookingStatus } from '@/types/booking';
 import { AccountMenu } from './AccountMenu/AccountMenu';
 import { AnswerItem } from './AnswerItem/AnswerItem';
+import { AnswerPreview } from './AnswerPreview/AnswerPreview';
 import { BookingDayBadge } from './BookingDayBadge/BookingDayBadge';
 import { BookingStatusTag } from './BookingStatusTag/BookingStatusTag';
 import { DeadlinePill } from './DeadlinePill/DeadlinePill';
@@ -784,4 +785,53 @@ export const BookingAnswers: Story = {
       </div>
     );
   },
+};
+
+/**
+ * Bookings.dc.html: the booking form in brief, on a row. The question is the
+ * one actually asked rather than a fixed label — a mentor whose form opens with
+ * "Where are you in your application?" would otherwise have the answer
+ * misattributed.
+ */
+export const BookingAnswerPreview: Story = {
+  render: () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', maxWidth: 560 }}>
+      <AnswerPreview
+        preview={{
+          count: 6,
+          first: {
+            question: 'What do you want to cover?',
+            text: 'I have nine programs and need to cut it to five. Funding matters most.',
+          },
+        }}
+        onOpenAll={fn()}
+        controls="booking-details"
+      />
+      {/* Long enough to prove the two-line clamp. */}
+      <AnswerPreview
+        preview={{
+          count: 4,
+          first: {
+            question: 'Anything else I should know?',
+            text: 'I recently started my postgraduate scholarship application. I have attended several webinars and gathered useful information about the programs I am interested in, and I would like to talk about which of the nine on my list are realistic given my funding situation and the December deadline.',
+          },
+        }}
+        onOpenAll={fn()}
+        controls="booking-details"
+      />
+      {/* One answer: shown, with nothing more to open. */}
+      <AnswerPreview
+        preview={{ count: 1, first: { question: 'Attach your CV', text: 'CV-2026.docx' } }}
+        onOpenAll={fn()}
+        controls="booking-details"
+      />
+      {/* The hero's treatment: the link alone, since that card has no box. */}
+      <AnswerPreview
+        preview={{ count: 4, first: { question: 'What do you want to cover?', text: 'unused' } }}
+        onOpenAll={fn()}
+        controls="booking-details"
+        linkOnly
+      />
+    </div>
+  ),
 };

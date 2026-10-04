@@ -181,6 +181,12 @@ export function BookingDetails({
             )}
           </div>
         )}
+        {/* The row promised a count from `answers_preview`; if the list comes
+            back empty the panel must say so rather than show an unexplained
+            absence, which reads as data loss. */}
+        {!answersLoading && !answersFailed && answers?.length === 0 && !!b.answersPreview && (
+          <p className={styles.note}>These answers are no longer available.</p>
+        )}
         {!answersLoading && !answersFailed && !!answers?.length && (
           /* A div, not a <section aria-label>: inside a dialog a labelled
              section reads as a duplicate page landmark (the same decision

@@ -49,7 +49,11 @@ export function BookingDetailsPanel({
 
   if (!asSheet) {
     return (
-      <Aside titleId={titleId} bookingId={details.booking?.id ?? null}>
+      <Aside
+        titleId={titleId}
+        bookingId={details.booking?.id ?? null}
+        onClose={details.onClose}
+      >
         {body}
       </Aside>
     );
@@ -115,21 +119,47 @@ function Fallback({
 function Aside({
   titleId,
   bookingId,
+  onClose,
   children,
 }: {
   titleId: string;
   bookingId: string | null;
+  onClose: () => void;
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLElement>(null);
   const opener = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     const panel = ref.current;
     opener.current = document.activeElement as HTMLElement | null;
     panel?.focus();
+
+    // Escape closes it, as it does for the phone's sheet. Only while focus is
+    // inside: this panel sits beside the page rather than over it, so it must
+    // not swallow Escape from a menu or a dialog elsewhere. Without this the
+    // panel was a dead end for the keyboard on desktop — and the row's "See
+    // all N answers" made that the common way in.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (!ref.current?.contains(document.activeElement)) return;
+      e.preventDefault();
+      onCloseRef.current();
+    };
+    document.addEventListener('keydown', onKey);
+
     return () => {
+      document.removeEventListener('keydown', onKey);
       // Only if focus is still inside: the person may have clicked elsewhere.
-      if (panel?.contains(document.activeElement)) opener.current?.focus?.();
+      // `isConnected` because the opener's row may have re-rendered while the
+      // panel was open, and focusing a detached node drops focus to the body.
+      if (panel?.contains(document.activeElement) && opener.current?.isConnected) {
+        opener.current.focus?.();
+      }
     };
     // On open and whenever it swaps to another booking, not on every render.
   }, [bookingId]);

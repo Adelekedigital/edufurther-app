@@ -40,6 +40,13 @@ type BookingsPanelProps = {
   actionsFor?: (b: Booking) => ReactNode;
   /** The ⋯ menu for one row. */
   menuFor?: (id: string) => RowMenuItem[];
+  /**
+   * Opens the details panel on a booking with every answer shown. Left out on
+   * History, where the design shows no preview.
+   */
+  onOpenAnswers?: (id: string) => void;
+  /** The panel a row's "See all N answers" reveals. */
+  answersControls?: string;
   /** Whose details are on show. */
   selectedId?: string | null;
   /** Rendered above the list (the Upcoming tab's hero). */
@@ -71,6 +78,8 @@ export function BookingsPanel({
   intro,
   actionsFor,
   menuFor,
+  onOpenAnswers,
+  answersControls,
   selectedId,
   children,
   now,
@@ -164,6 +173,8 @@ export function BookingsPanel({
               actions={actionsFor?.(b)}
               menu={menuFor?.(b.id)}
               selected={selectedId === b.id}
+              onOpenAnswers={onOpenAnswers ? () => onOpenAnswers(b.id) : undefined}
+              answersControls={answersControls}
               now={now}
             />
           ))}

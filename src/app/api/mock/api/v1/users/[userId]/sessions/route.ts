@@ -35,6 +35,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     respondBy?: string | null;
     asMentee?: boolean;
     rate?: number | null;
+    answers?: { count: number; first: { question_text: string; text: string } } | null;
     /** The other party's zone, so the "what time is it for them" line has something to say. */
     zone?: string;
   };
@@ -67,6 +68,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       join_closes_at: status === 'confirmed' ? minutesFrom(starts, 15) : null,
       created_at: at(-10, 9),
       mentee_attendance_rate: o.rate === undefined ? null : o.rate,
+      // The form in brief, so a page of rows needs no extra call. `count`
+      // matches what /sessions/{id}/answers returns for the same id.
+      answers_preview: o.answers ?? null,
     };
   };
 
@@ -74,17 +78,33 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     // Upcoming — the first is the hero.
     session('u-1', at(0, 23), 'confirmed', ['Taofeeq', 'Animasahun'], {
       topic: 'Statement of Purpose review',
+      answers: {
+        count: 4,
+        first: {
+          question_text: 'What do you want to cover?',
+          text: 'My statement of purpose for the Chevening application. I have a second draft and I am not sure the opening paragraph says anything.',
+        },
+      },
       message:
         'I recently started my postgraduate scholarship application. I have attended several webinars and gathered useful information, and I need help reviewing my essays before the December deadline.',
       rate: 100,
     }),
     session('u-2', at(2, 9), 'confirmed', ['Amara', 'Okafor'], {
       topic: 'School shortlist',
+      answers: {
+        count: 2,
+        first: {
+          question_text: 'What do you want to cover?',
+          text: 'I have nine programs and need to cut it to five. Funding matters most.',
+        },
+      },
       message: 'I have 9 programs and need to cut it to 5. Funding matters most.',
       rate: 92,
     }),
     session('u-3', at(5, 17), 'confirmed', ['Kwame', 'Asante'], {
       topic: 'Visa interview practice',
+      // One answer: named, but with nothing more to see.
+      answers: { count: 1, first: { question_text: 'Attach your CV', text: 'CV-2026.docx' } },
       zone: 'Africa/Accra',
     }),
     session('u-4', at(9, 14), 'confirmed', ['Ngozi', 'Ibe'], { topic: 'MPH personal statement' }),

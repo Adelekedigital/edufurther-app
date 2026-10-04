@@ -3,10 +3,10 @@
  * (mentee)", creditStyle=green, with backend #344's monthly/bonus split).
  * Pure: no data fetching here.
  *
- * The pill and the low/out states read the total (`left`): it's what can be
- * spent. The bar and title read the monthly credits only, so a full month is
- * "3 of 3" rather than "3 of 4" with the starter credit counted in. Bonus
- * credits (starter, invites, support grants) are their own lines.
+ * The pill, titles and low/out states read the total (`left`): it's what can
+ * be spent. The bar has one segment per credit: bonus, then monthly left,
+ * then monthly spent. "Your credits" breaks the total into a Monthly row
+ * (of the monthly ceiling) and Bonus rows (starter, invites, support grants).
  */
 export type CreditsView = {
   left: number;
@@ -19,17 +19,11 @@ export type CreditsView = {
    */
   bonus: BonusGroup[];
   /**
-   * Whether the monthly part shows (title, bar, reset). Not for a mentee who
-   * doesn't get the monthly grant yet and holds none: "0 of 3 monthly" would
-   * describe credits they don't receive.
+   * Whether the monthly part shows (the Monthly row, the green and grey
+   * segments, the reset). Not for a mentee who doesn't get the monthly grant
+   * yet and holds none: "0 of 3" would describe credits they don't receive.
    */
   showMonthly: boolean;
-  /**
-   * Whether the monthly credits held lapse at month end. False only when some
-   * are held and none expire (migrated balances can be non-expiring); null
-   * `expires_at` with none held still lapses, so test the balance first.
-   */
-  monthlyLapses: boolean;
   /** When the monthly credits reset ("Nov 1"); null with no date or no monthly part. */
   resetsOn: string | null;
 };
@@ -67,7 +61,6 @@ export function creditsView(
     monthlyTotal: Math.max(1, c.monthly.ceiling, monthlyLeft),
     bonus,
     showMonthly,
-    monthlyLapses: monthlyLeft === 0 || c.monthly.expiresAt !== null,
     resetsOn: showMonthly && c.nextResetAt ? resetDay(c.nextResetAt) : null,
   };
 }
@@ -108,20 +101,68 @@ export const isLow = (v: CreditsView) => v.left <= 1;
 export const isOut = (v: CreditsView) => v.left === 0;
 
 export function creditsTitle(v: CreditsView): string {
-  if (isOut(v)) return 'No credits left';
-  if (!v.showMonthly) return `${v.left} ${v.left === 1 ? 'credit' : 'credits'} left`;
-  // Short enough for one line in the account menu (product, 2026-10-03).
-  return `${v.monthlyLeft} of ${v.monthlyTotal} left this month`;
+  // Design (creditSplit on): the total leads; Monthly/Bonus rows break it down.
+  return isOut(v) ? 'No credits left' : `${v.left} ${v.left === 1 ? 'credit' : 'credits'} left`;
 }
 
-/** "+1 bonus credit · never expires", "+2 bonus credits · expire Oct 31". */
-export function bonusLine(g: BonusGroup): string {
-  const one = g.count === 1;
-  const head = `+${g.count} bonus ${one ? 'credit' : 'credits'}`;
-  if (!g.expires) return `${head} · ${one ? 'never expires' : 'never expire'}`;
-  // An unreadable date: say nothing about when, never "never".
-  return g.expiresOn ? `${head} · ${one ? 'expires' : 'expire'} ${g.expiresOn}` : head;
+/**
+ * The bar, one segment per credit (design creditSegs): bonus first (blue),
+ * then monthly left (green), then monthly spent (grey). Low: all filled ones
+ * yellow (CSS). No monthly part for a mentee without the grant.
+ */
+export type CreditSegment = 'bonus' | 'monthly' | 'empty';
+export function creditSegments(v: CreditsView): CreditSegment[] {
+  const bonus = v.bonus.reduce((n, g) => n + g.count, 0);
+  const segs: CreditSegment[] = [
+    ...Array<CreditSegment>(bonus).fill('bonus'),
+    ...(v.showMonthly
+      ? [
+          ...Array<CreditSegment>(v.monthlyLeft).fill('monthly'),
+          ...Array<CreditSegment>(Math.max(0, v.monthlyTotal - v.monthlyLeft)).fill('empty'),
+        ]
+      : []),
+  ];
+  return segs.length ? segs : ['empty'];
 }
+
+/**
+ * The explainer's rows (design creditLines): "Monthly · Resets Nov 1 · 2 of
+ * 3", then one "Bonus" row per expiry day ("Expires Dec 31", "Never
+ * expires"; no date when it couldn't be read).
+ */
+export type CreditRow = {
+  kind: 'monthly' | 'bonus';
+  label: string;
+  sub: string;
+  value: string;
+  /** Read after the value, not shown: "1" alone says nothing to a screen reader. */
+  unit: string;
+};
+export function creditRows(v: CreditsView): CreditRow[] {
+  return [
+    ...(v.showMonthly
+      ? [
+          {
+            kind: 'monthly' as const,
+            label: 'Monthly',
+            sub: v.resetsOn ? `Resets ${v.resetsOn}` : '',
+            value: `${v.monthlyLeft} of ${v.monthlyTotal}`,
+            unit: 'credits',
+          },
+        ]
+      : []),
+    ...v.bonus.map((g) => ({
+      kind: 'bonus' as const,
+      label: 'Bonus',
+      sub: !g.expires ? 'Never expires' : g.expiresOn ? `Expires ${g.expiresOn}` : '',
+      value: String(g.count),
+      unit: g.count === 1 ? 'credit' : 'credits',
+    })),
+  ];
+}
+
+/** Design, under the rows. True to the backend: soonest-expiring first. */
+export const SPEND_ORDER = 'Expiring credits are used first.';
 
 /**
  * The pill's name. It starts with the words the pill shows ("4 credits"), so a
@@ -138,37 +179,10 @@ export function creditsAria(v: CreditsView): string {
 }
 
 /**
- * "Your credits": the design's explainer with the product's existing "How does
- * it work?" copy folded in (product, 2026-10-03), kept to what the backend
- * does today. No "3 every month" promise: the monthly grant needs an invite
- * first, and the app has no invite feature yet (#158). Refunds (backend decision 229): a request withdrawn, declined
- * or unanswered; a mentor cancelling; a mentor no-show only when the mentee
- * joined (attendance is whoever pressed Join); a mentee cancelling with at
- * least 12 hours to go (the boundary included).
+ * Behind the explainer's "Refund policy" toggle, closed by default. Ours, not
+ * the design's paragraph: backend decision 229 refunds a mentor no-show only
+ * when the mentee joined, and declines and withdrawals refund too.
  */
-export function creditsLead(v: CreditsView): string | null {
-  if (!isOut(v)) return null;
-  return v.showMonthly ? 'You’ve used this month’s credits.' : 'You’ve used your credits.';
-}
-
-export function creditsPoints(v: CreditsView): string[] {
-  const reset = v.resetsOn
-    ? `Monthly credits reset on ${v.resetsOn}.`
-    : 'Monthly credits reset at the start of each month.';
-  return [
-    'Each session you request uses 1 credit.',
-    ...(v.showMonthly ? [reset] : []),
-    // Held monthly credits that never expire (a data anomaly): no claim.
-    ...(v.showMonthly && v.monthlyLapses ? ['Unused monthly credits don’t carry over.'] : []),
-    // No "invites": there's no invite feature to point at yet.
-    ...(v.bonus.length > 0
-      ? ['Bonus credits come from your starter credit or support. Some never expire.']
-      : []),
-    'Expiring credits are used first.',
-  ];
-}
-
-/** Behind the explainer's "Refund policy" toggle, closed by default. */
 export const REFUND_POLICY = {
   lead: 'You get the credit back if',
   items: [
@@ -179,6 +193,3 @@ export const REFUND_POLICY = {
     'you cancel 12+ hours before',
   ],
 };
-
-export const CREDITS_PURPOSE =
-  'Credits help you book the sessions that move you forward, and give mentors the time to support you well.';

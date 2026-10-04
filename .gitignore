@@ -20,3 +20,4 @@ docs/handoff/
 
 # Local one-off scripts (screen-test recorders, probes): never committed.
 scripts/.tmp-*
+*.stackdump

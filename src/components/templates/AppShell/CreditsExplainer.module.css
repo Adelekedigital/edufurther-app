@@ -49,45 +49,80 @@
   font-weight: var(--weight-semibold);
   color: var(--text-primary);
 }
-.body {
-  font-family: var(--font-ui);
-  font-size: var(--text-p-xs);
-  line-height: var(--lh-p);
-  color: var(--text-secondary);
-}
-.points {
-  margin: 0;
-  padding-left: var(--space-4);
+/* Monthly / Bonus rows (design creditLines). */
+.rows {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
+}
+.rowList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
   font-family: var(--font-ui);
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
-  color: var(--text-secondary);
 }
-/* The closing line (product copy): quieter, like the design's secondary text. */
-.purpose {
+.dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  align-self: center;
+  border-radius: var(--radius-full);
+}
+.dot.monthly {
+  background: var(--green-600);
+}
+.dot.bonus {
+  background: var(--blue-500);
+}
+/* Ours (product): the legend follows the bar, which turns yellow when low. */
+.low .dot.monthly,
+.low .dot.bonus {
+  background: var(--warning-text);
+}
+.rowLabel,
+.rowValue {
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+.rowSub {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink-600);
+}
+.spend {
   font-family: var(--font-ui);
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
   color: var(--ink-600);
 }
-/* "Refund policy": a quiet toggle so the card leads with the balance. */
+/* "Refund policy" (design): a divider above, a quiet toggle. */
 .policy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
   border-top: var(--border-hairline) solid var(--ink-100);
-  border-bottom: var(--border-hairline) solid var(--ink-100);
 }
 .policyToggle {
   display: flex;
-  width: 100%;
-  min-height: 44px;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 32px;
+  padding: 0;
   border: none;
   background: none;
-  padding: 0;
   cursor: pointer;
+  text-align: left;
   font-family: var(--font-ui);
   font-size: var(--text-p-xs);
   font-weight: var(--weight-semibold);
@@ -98,15 +133,30 @@
   outline-offset: var(--focus-ring-offset);
   border-radius: var(--radius-xs);
 }
+.policyIcon {
+  color: var(--ink-600);
+}
+.policyLabel {
+  flex: 1;
+}
+.policyChevron {
+  color: var(--ink-500);
+}
 .policyBody {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  padding-bottom: var(--space-3);
   font-family: var(--font-ui);
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
-  color: var(--text-secondary);
+  color: var(--ink-700);
+}
+.points {
+  margin: 0;
+  padding-left: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 .link {
   align-self: flex-start;
@@ -144,6 +194,10 @@
     border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
     padding: var(--space-3) var(--space-5) var(--space-6);
     padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
+  }
+  /* A 44px tap target around the 32px toggle (project rule). */
+  .policyToggle {
+    min-height: 44px;
   }
   .handle {
     display: block;

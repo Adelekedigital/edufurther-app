@@ -3,15 +3,14 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import Link from 'next/link';
 import { Icon } from '@/components/atoms/Icon/Icon';
-import { BonusLines, CreditsBar } from '@/components/molecules/CreditsSummary/CreditsSummary';
+import { CreditsBar } from '@/components/molecules/CreditsSummary/CreditsSummary';
 import { cx } from '@/lib/utils/cx';
 import {
-  CREDITS_PURPOSE,
-  creditsLead,
-  creditsPoints,
+  creditRows,
   creditsTitle,
   isLow,
   REFUND_POLICY,
+  SPEND_ORDER,
   type CreditsView,
 } from '@/lib/utils/credits';
 import styles from './CreditsExplainer.module.css';
@@ -21,10 +20,8 @@ import styles from './CreditsExplainer.module.css';
  * desktop, a bottom sheet with "Got it" on phones. Takes focus, keeps Tab
  * inside, closes on Escape or outside; the caller returns focus.
  *
- * The copy (lib/utils/credits) folds the product's "How does it work?" into
- * the design's explainer. The design's note ("Cancel more than 1 hour before…
- * the credit comes back") is replaced by the backend's rule (decision 229):
- * the notice is 12 hours, not 1.
+ * Design creditSplit on: the total, a bar, Monthly/Bonus rows, the spend
+ * order, then "Refund policy". The refund text is ours (see REFUND_POLICY).
  */
 export function CreditsExplainer({
   id,
@@ -37,6 +34,7 @@ export function CreditsExplainer({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [policyOpen, setPolicyOpen] = useState(false);
+  const rows = creditRows(credits);
   const policyId = useId();
 
   useEffect(() => {
@@ -88,14 +86,26 @@ export function CreditsExplainer({
           <Icon name="toll" size={20} className={styles.icon} />
           <span className={styles.title}>{creditsTitle(credits)}</span>
         </div>
-        {credits.showMonthly && <CreditsBar credits={credits} />}
-        <BonusLines credits={credits} />
-        {creditsLead(credits) && <span className={styles.body}>{creditsLead(credits)}</span>}
-        <ul className={styles.points}>
-          {creditsPoints(credits).map((t) => (
-            <li key={t}>{t}</li>
-          ))}
-        </ul>
+        <CreditsBar credits={credits} />
+        {rows.length > 0 && (
+          <div className={styles.rows}>
+            <ul className={styles.rowList} aria-label="Credits by type">
+              {rows.map((r, i) => (
+                <li key={i} className={styles.row}>
+                  <span aria-hidden className={cx(styles.dot, styles[r.kind])} />
+                  <span className={styles.rowLabel}>{r.label}</span>
+                  <span className={styles.rowSub}>{r.sub}</span>
+                  <span className={styles.rowValue}>
+                    {r.value}
+                    <span className="sr-only"> {r.unit}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {/* Nothing held, nothing to order. */}
+            <span className={styles.spend}>{SPEND_ORDER}</span>
+          </div>
+        )}
         <div className={styles.policy}>
           <button
             type="button"
@@ -105,8 +115,13 @@ export function CreditsExplainer({
             aria-controls={policyOpen ? policyId : undefined}
             onClick={() => setPolicyOpen((o) => !o)}
           >
-            Refund policy
-            <Icon name={policyOpen ? 'expand_less' : 'expand_more'} size={18} />
+            <Icon name="replay" size={16} className={styles.policyIcon} />
+            <span className={styles.policyLabel}>Refund policy</span>
+            <Icon
+              name={policyOpen ? 'expand_less' : 'expand_more'}
+              size={18}
+              className={styles.policyChevron}
+            />
           </button>
           {policyOpen && (
             <div id={policyId} className={styles.policyBody}>
@@ -119,7 +134,6 @@ export function CreditsExplainer({
             </div>
           )}
         </div>
-        <span className={styles.purpose}>{CREDITS_PURPOSE}</span>
         <Link href="/bookings" className={styles.link} onClick={onClose}>
           See my bookings
         </Link>
