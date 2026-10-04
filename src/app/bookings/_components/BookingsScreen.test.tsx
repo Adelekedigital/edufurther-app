@@ -64,6 +64,10 @@ function stubAction() {
 vi.mock('@/lib/api/data/bookingActions', () => ({
   useBookingAction: (a: string) => (actions[a] ??= stubAction()),
 }));
+vi.mock('@/lib/api/data/booking', async (orig) => ({
+  ...(await orig<Record<string, unknown>>()),
+  useSlots: () => ({ data: [], isLoading: false, error: null, retry: vi.fn() }),
+}));
 vi.mock('@/lib/api/data/intakeFiles', () => ({
   useIntakeFile: () => ({ url: 'blob:stub', isLoading: false, error: null, retry: vi.fn() }),
   canPreview: () => true,
@@ -118,6 +122,7 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
   note: null,
   answersPreview: null,
   suggestion: null,
+  sessionTypeId: 'st1',
   createdAt: at(-240),
   respondBy: null,
   joinOpensAt: null,

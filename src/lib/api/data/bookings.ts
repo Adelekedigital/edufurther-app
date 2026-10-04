@@ -93,6 +93,7 @@ export function toBooking(s: SessionRead, viewerId: string): Booking {
     durationMin: s.duration_minutes,
     // The mentee's own words first; the offering's name is the fallback.
     title: s.topic?.trim() || s.session_type?.name?.trim() || null,
+    sessionTypeId: s.session_type_id ?? s.session_type?.id ?? null,
     // Carried on every list row, so a page of twenty costs no extra requests.
     myAttendance: toParty(side === 'mentor' ? s.mentor : s.mentee).attendance,
     // The offer rides on the session, so a row carries it without a second call.

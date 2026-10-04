@@ -538,6 +538,8 @@ export function BookingsScreen() {
             <ConfirmActionDialog
               action={confirming.action}
               booking={confirming.booking}
+              timeZone={timeZone}
+              viewerId={userId ?? ''}
               now={now}
               pending={pendingAction.isPending}
               error={pendingAction.error}

@@ -54,6 +54,7 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
   note: null,
   answersPreview: null,
   suggestion: null,
+  sessionTypeId: 'st1',
   createdAt: at(-240),
   respondBy: null,
   joinOpensAt: null,

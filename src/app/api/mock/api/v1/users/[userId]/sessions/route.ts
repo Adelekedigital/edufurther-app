@@ -37,6 +37,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     rate?: number | null;
     answers?: { count: number; first: { question_text: string; text: string } } | null;
     suggestion?: 'active' | 'booked' | 'expired';
+    typeId?: string;
     /** The other party's zone, so the "what time is it for them" line has something to say. */
     zone?: string;
   };
@@ -56,7 +57,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       mentee_id: o.asMentee ? userId : other.id,
       mentor: o.asMentee ? other : me,
       mentee: o.asMentee ? me : other,
-      session_type_id: null,
+      // A real offering, so the mentor's suggest picker can ask for its slots.
+      session_type_id: o.typeId ?? 'st-general',
       status,
       starts_at: starts,
       duration_minutes: 60,

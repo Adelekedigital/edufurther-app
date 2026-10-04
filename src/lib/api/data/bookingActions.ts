@@ -20,6 +20,12 @@ export type ActionInput = {
    * `false` records an availability exception instead.
    */
   releaseSlot?: boolean;
+  /**
+   * Mentors only, on a decline or cancel: another time to offer instead. Must
+   * be an instant `/slots` currently lists for this offering, exactly — which
+   * is why the picker only ever offers those.
+   */
+  suggestedStartsAt?: string;
 };
 
 const PATHS = {
@@ -87,12 +93,14 @@ export function actionError(e: AppError, action: BookingAction): AppError {
 export function useBookingAction(action: BookingAction) {
   const qc = useQueryClient();
   return useMutation<void, AppError, ActionInput>({
-    mutationFn: async ({ bookingId, reasonCode, reasonText, releaseSlot }) => {
+    mutationFn: async ({ bookingId, reasonCode, reasonText, releaseSlot, suggestedStartsAt }) => {
       const body: Record<string, unknown> = {};
       if (reasonCode) body.reason_code = reasonCode;
       const text = reasonText?.trim();
       if (text) body.reason_text = text;
       if (action === 'cancel' && releaseSlot !== undefined) body.release_slot = releaseSlot;
+      if (suggestedStartsAt && action !== 'withdraw' && action !== 'accept')
+        body.suggested_starts_at = suggestedStartsAt;
 
       let result;
       try {

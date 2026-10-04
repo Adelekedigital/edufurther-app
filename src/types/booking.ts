@@ -83,6 +83,12 @@ export type Booking = {
    */
   title: string | null;
   /**
+   * The offering this was booked against. Needed to ask for the mentor's open
+   * slots when they offer another time — a suggested instant must be one
+   * `/slots` currently lists, exactly, or the write is a 422.
+   */
+  sessionTypeId: string | null;
+  /**
    * What the mentee wrote when booking — a free note to the mentor, separate
    * from the form (backend, 2026-10-03). A migrated booking has only this.
    */

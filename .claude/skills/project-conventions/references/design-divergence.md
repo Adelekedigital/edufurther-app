@@ -350,3 +350,20 @@ is ours, listed here rather than in a design request because the contract
 | 30  | —                                                     | Lapsed copy: "It is open to anyone again, so it may still be free or someone else may have taken it." No action, no "two hours" in prose                                                                   | An expired hold does **not** mean the time is gone, only that it is no longer kept (backend: re-read `/slots`), so promising either way would be a guess. The two-hour hold is not a field, and a number repeated in prose goes stale the day it changes (row 219).                                                 |
 | 31  | —                                                     | `booked`: `--green-50` / `--green-100`, "You booked the time {First} offered", "It is in your bookings now.", no countdown. A booked offer past its hold is still booked, never lapsed                      | Settled, not urgent. The hold running out says nothing about a time the mentee already took.                                                                                                                                                                                                                       |
 | 32  | —                                                     | The Book control's accessible name is the whole time ("Book Oct 8, 2026 · 4:00 pm to 5:00 pm"), in `aria-label`                                                                                            | "Book this time" says nothing when a page holds more than one offer, and a name assembled from fragments trims itself apart (failure log #51).                                                                                                                                                                     |
+
+### Bookings — the mentor offers another time (PR 3b), 2026-10-04
+
+Built from `SuggestTime.dc.html` (which exists — see the correction above).
+
+| # | Design | Built | Why |
+|---|---|---|---|
+| 33 | "Pick another day" opens a modal with a MonthPicker and that day's times | The link reveals the rest of the open slots as chips | The month picker needs a second source of availability — which days are open — that the slots call does not give us. Two sources for one fact drift. The chips carry every real slot, so nothing is unreachable; the modal is the better affordance once a day-level availability read exists. |
+| 34 | A 500-character "Message to {first}", pre-filled with a drafted message naming the time and the hold | The shared `ReasonField` note, no pre-fill | One note per action, not two: the contract has a single `reason_text`, and a second box would either send nothing or silently overwrite. A pre-filled draft also sends words the mentor did not write unless they notice. **Worth design's view** — the draft is a real kindness and we may be wrong to drop it. |
+| 35 | A collapsible "What {first} gets" preview of the message and the offer card | Not built | It previews a message we do not send separately (see 34) and an email we do not control. It would be a drawing of something else's behaviour. |
+| 36 | The hold line reads "Held for {first} for {N} hours" | Same, with "two" spelled out | `hold_hours` is not a field on the contract; two hours is the backend's fixed policy. Spelled rather than numeric so it reads as prose, and listed here because the number will go stale if the policy changes. |
+
+**Ours, not the design's:** the step distinguishes *three* states, where the
+design draws one list — "you have no open times", "we could not load them", and
+"we cannot show them for this session". Telling a mentor they have no open times
+when the read simply failed is a claim about their own calendar that we cannot
+make.

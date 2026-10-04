@@ -5,6 +5,7 @@ import { Button } from '@/components/atoms/Button/Button';
 import { cx } from '@/lib/utils/cx';
 import { Switch } from '@/components/atoms/Switch/Switch';
 import { ReasonField } from '@/components/molecules/ReasonField/ReasonField';
+import { SuggestTimeStep } from './SuggestTimeStep';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import type { ActionInput, BookingAction } from '@/lib/api/data/bookingActions';
 import { canCancel, refundOnCancel } from '@/lib/utils/bookings';
@@ -19,6 +20,10 @@ type ConfirmActionDialogProps = {
   onClose: () => void;
   pending?: boolean;
   error?: AppError | null;
+  /** The viewer's zone, for the offered times. */
+  timeZone: string;
+  /** The viewer's own id: a mentor offers their own open times. */
+  viewerId: string;
   /** Injected in tests and stories; the clock otherwise. */
   now?: Date;
 };
@@ -52,6 +57,8 @@ export function ConfirmActionDialog({
   onClose,
   pending,
   error,
+  timeZone,
+  viewerId,
   now = new Date(),
 }: ConfirmActionDialogProps) {
   const [reasonCode, setReasonCode] = useState<PickableReason | null>(null);
@@ -60,6 +67,7 @@ export function ConfirmActionDialog({
   // not equally visible: an hour offered while you are busy arrives as a booking
   // you can decline; an hour withheld while you are free arrives as nothing.
   const [stillFree, setStillFree] = useState(true);
+  const [suggested, setSuggested] = useState<string | null>(null);
   const fieldId = useId();
 
   const first = b.other.firstName;
@@ -69,6 +77,7 @@ export function ConfirmActionDialog({
   // boundary — opened at eleven minutes out, confirmed at nine — and the row's
   // menu item has been behind a modal the whole time.
   const tooLate = action === 'cancel' && !canCancel(b, now);
+  const canSuggest = isMentor && action !== 'withdraw';
 
   // Mentors never see credit copy — it is not their credit (design's rule).
   const creditLine = isMentor
@@ -117,6 +126,7 @@ export function ConfirmActionDialog({
                 reasonCode,
                 reasonText: text,
                 ...(action === 'cancel' && isMentor ? { releaseSlot: stillFree } : {}),
+                ...(canSuggest && suggested ? { suggestedStartsAt: suggested } : {}),
               })
             }
             // `busy` rather than the aria attributes: the atom owns both, and
@@ -156,6 +166,19 @@ export function ConfirmActionDialog({
               </p>
             </div>
           </div>
+        )}
+
+        {/* Mentors only, and only when refusing or calling off — a mentee
+            withdrawing has nothing to offer. The contract refuses a mentee's
+            `suggested_starts_at` outright. */}
+        {canSuggest && (
+          <SuggestTimeStep
+            booking={b}
+            mentorId={viewerId}
+            timeZone={timeZone}
+            value={suggested}
+            onChange={setSuggested}
+          />
         )}
 
         <ReasonField
