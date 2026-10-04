@@ -186,3 +186,15 @@ fix is to assert the words, not the role.
 
 **Check:** on a screen that already has a live region, query new status content
 by its text.
+
+### #54 — A stale mirror reads exactly like a design that does not exist
+
+A parallel build was told to read `SuggestTime.dc.html`, found it absent from
+the local design mirror, and correctly reported "the design draws nothing here"
+— then invented the component and recorded the divergence. The file exists in
+the design project; only the mirror was out of date. The record was false and
+had to be corrected, and the invented half had a specification all along.
+
+**Check:** before recording that something is undrawn, list the design project
+itself rather than the mirror. The mirror is a cache, and nothing about a
+missing file says whether it was never drawn or merely never pulled.

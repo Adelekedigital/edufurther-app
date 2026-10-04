@@ -324,8 +324,18 @@ both may be exactly what a mentor means. Back-to-back sessions are not a clash.
 
 The design's `SuggestTime` component is the **mentor's** panel for offering
 another time while declining or cancelling (`Bookings.next.dc.html` lines
-364–390, `hold-hours="{{ 2 }}"`). There is no drawing anywhere of what the
-**mentee** then sees, and `SuggestTime.dc.html` is not in the mirror at all. So
+364–390, `hold-hours="{{ 2 }}"`).
+
+> **Corrected 2026-10-03.** This section first said `SuggestTime.dc.html` does
+> not exist. **It does** — the local mirror was stale, and a missing file reads
+> identically to a design that was never drawn. The file specifies the mentor's
+> side in full: a chips picker of the earliest open slots, a "Pick another day"
+> modal with a MonthPicker, a `lock_clock` hold line naming the hours, a
+> 500-character message pre-filled with a draft, and a collapsible "What
+> {first} gets" preview. Pull the mirror fresh before concluding anything is
+> undrawn.
+
+There is still no drawing of what the **mentee** then sees, so
 the whole of `organisms/SuggestionNotice` and `molecules/SuggestionCountdown`
 is ours, listed here rather than in a design request because the contract
 (`SessionRead.suggestion`, backend #339) shipped first.
