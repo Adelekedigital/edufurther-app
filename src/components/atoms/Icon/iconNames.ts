@@ -90,6 +90,7 @@ export const ICON_NAMES = [
   'rate_review',
   'record_voice_over',
   'refresh',
+  'replay',
   'route',
   'schedule',
   'school',
