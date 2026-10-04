@@ -274,3 +274,21 @@ Defined in `src/styles/tokens/ours.css`. A redesign must not silently drop them:
 **Not built here:** the row preview box and `hero.ansLink`. They need
 `SessionRead.answers_preview`, which went live mid-build (backend #352) and
 follows in its own PR, as planned.
+
+### Bookings — the answers preview on rows (`answersInRows=on`), 2026-10-03
+
+| # | Design | Built | Why |
+|---|---|---|---|
+| 21 | The box is labelled `'What ' + first + ' wants to cover'`, a fixed string | The question that was actually asked (`answers_preview.first.question_text`) | The design's fixture opens with "What do you want to cover?", so the label happens to fit. The first question is whatever the mentor put first: a form opening with "Attach your CV" would read "What Kwame wants to cover → CV-2026.docx", misattributing the answer. Same two lines, same shape, and it cannot be wrong. |
+| 22 | `aria-controls="booking-details"` on the row and hero buttons, always | Only while the panel is in the DOM | The panel does not exist until a booking is selected, and `aria-controls` naming a missing id is invalid ARIA — axe flags it critical. |
+
+**Also corrected here, not a divergence:** the row's ⋯ was inside `.actions`,
+which takes its own full-width line below 1100px so Accept/Decline can sit
+together. With only a menu in it, that dropped the ⋯ under the card on a phone.
+The design has always had it as a separate corner element (`moreIn: 'corner'`,
+the declared default) with `flex: none; align-self: flex-start` and a `-space-2`
+pull into the corner. It is now built that way, and `.content` takes a zero flex
+basis below 1100px so it shrinks rather than pushing the ⋯ onto its own line.
+
+| 23 | The hero link carries the design's `-space-2` pull at every width | On phones it takes a 44px target and no negative pull | At 390 the link sat 32px tall with 8px to "Join session", which posts attendance and opens the meeting. A low thumb hit the wrong action, and an invisible tap overlay would have reached into Join itself. The room has to come from somewhere. |
+| 24 | The hero's "See all N answers" | "See the answer" when there is one | "See all 1 answers" is not a sentence, and on the hero "all" has no referent because no answer is shown there. |

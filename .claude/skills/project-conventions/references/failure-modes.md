@@ -120,3 +120,48 @@ render ever observes and no cleanup can reach. Only tracking every URL minted
 **Check:** when a resource needs explicit release, the thing that creates it and
 the thing that frees it must be reachable from each other. "Create it somewhere
 that runs less often" is not the same as pairing them.
+
+### #48 — A wrapping flex row puts the corner control wherever it likes
+
+The ⋯ was grouped with the row's actions, which deliberately take their own
+full-width line on a phone. With no actions in the row, the menu went with them
+and landed under the card — reported from a real phone-width view, not by any
+check. `review-page` was clean at 390px throughout: nothing it measures objects
+to a control being in the wrong place.
+
+The fix also needed `.content` to take a zero flex basis, because a 240px basis
+made the first line too wide and wrapped the ⋯ even after it was separated.
+
+**Check:** a control the design pins to a corner does not belong in a flex group
+that is allowed to wrap. And a screenshot at phone width is not optional because
+the automated page review passed.
+
+### #49 — Gating a whole element on an attribute that is now conditional
+
+Making `aria-controls` conditional on the panel existing, I used the same value
+to decide whether to render the preview box at all — so the box disappeared
+whenever the panel was closed, which is almost always. One test caught it.
+
+**Check:** when a prop becomes optional, look at every condition that reads it.
+
+### #50 — A gate copied from the wrong sibling
+
+The row offers "See all N answers" only when `count > 1`, because the row
+already shows the first one. I gave the hero the same gate — but the hero shows
+*no* answers, so a mentee who answered exactly one question had their whole form
+hidden on the most prominent booking on the screen. The design had it right and
+I did not read it closely enough: its hero link is gated on answers being on at
+all, not on a count.
+
+**Check:** when two consumers share a component, check each gate against what
+that consumer actually displays, not against the other consumer.
+
+### #51 — An accessible name that trims itself apart
+
+Adding the booking to a button's name as `<span class="sr-only"> for {name}</span>`
+produced "See all 4 answersfor Visa practice": JSX drops a leading space in a
+text node, and accessible-name computation trims each node before joining, so
+putting it back inside the expression did not help either. `aria-label` with the
+whole string is the reliable form.
+
+**Check:** assert the computed accessible name in a test, not the markup.

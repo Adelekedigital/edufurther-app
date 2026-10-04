@@ -37,6 +37,9 @@ import { useRevealed } from './useRevealed';
 import { useSelectedBooking } from './useSelectedBooking';
 import styles from './BookingsScreen.module.css';
 
+/** The details panel's element id, as BookingDetailsPanel renders it. */
+const PANEL_ID = 'booking-details';
+
 /**
  * The History filter chips. The design drew three; the API has six past
  * outcomes, so `declined`, `expired` and `withdrawn` are reachable only with no
@@ -122,6 +125,12 @@ export function BookingsScreen() {
   const showPanel = ready && (!!open || !!selected);
   const openId = open?.id ?? null;
   const answersExpanded = !!openId && expandedFor === openId;
+  const openAnswers = (id: string) => {
+    select(id);
+    // Set against the id rather than a boolean: the panel may still be on the
+    // previous booking this tick, and the expansion belongs to this one.
+    setExpandedFor(id);
+  };
 
   const join = useJoinSession();
   // A repeated failure must be heard again, so each message carries a new id.
@@ -259,6 +268,8 @@ export function BookingsScreen() {
               now={now}
               total={later.length}
               menuFor={detailsMenu}
+              onOpenAnswers={openAnswers}
+              answersControls={showPanel ? PANEL_ID : undefined}
               selectedId={selected}
               shown={reveal.upcoming.shown}
               showMore={reveal.upcoming.showMore}
@@ -266,6 +277,8 @@ export function BookingsScreen() {
               {next && (
                 <NextSessionCard
                   booking={next}
+                  onOpenAnswers={() => openAnswers(next.id)}
+                  answersControls={showPanel ? PANEL_ID : undefined}
                   timeZone={timeZone}
                   onJoin={() => onJoin(next.id, 'hero')}
                   joining={join.isPending}
@@ -289,6 +302,8 @@ export function BookingsScreen() {
               total={pending.data?.length}
               now={now}
               menuFor={detailsMenu}
+              onOpenAnswers={openAnswers}
+              answersControls={showPanel ? PANEL_ID : undefined}
               selectedId={selected}
               shown={reveal.pending.shown}
               showMore={reveal.pending.showMore}
@@ -371,7 +386,12 @@ export function BookingsScreen() {
                 isLoading={fetched.isLoading}
                 error={fetched.error}
                 retry={fetched.retry}
-                onClose={() => select(null)}
+                onClose={() => {
+                  // Forget the expansion too: reopening through "See details"
+                  // should show what it says, not what the last visit left.
+                  setExpandedFor(null);
+                  select(null);
+                }}
                 onJoin={open ? () => onJoin(open.id, 'panel') : undefined}
                 joining={join.isPending}
                 now={now}

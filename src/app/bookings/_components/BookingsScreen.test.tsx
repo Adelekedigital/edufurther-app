@@ -105,6 +105,7 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
   durationMin: 60,
   title: 'School shortlist',
   note: null,
+  answersPreview: null,
   createdAt: at(-240),
   respondBy: null,
   joinOpensAt: null,
@@ -649,5 +650,139 @@ describe('the booking form answers, wired up', () => {
     // replacement, and Escape must close only the top one.
     expect(screen.getByRole('dialog')).toBeVisible();
     expect(screen.getByRole('complementary', { name: 'Booking details' })).toBeVisible();
+  });
+});
+
+describe('the answers preview on the rows', () => {
+  const withPreview = (over = {}) =>
+    booking({
+      id: 'b',
+      title: 'Visa practice',
+      startsAt: at(48),
+      endsAt: at(49),
+      answersPreview: {
+        count: 4,
+        first: { question: 'What do you want to cover?', text: 'Nine programs.' },
+      },
+      ...over,
+    });
+
+  it('shows the first answer on the row, under the question that was asked', () => {
+    // Two, because the first upcoming booking is the hero — and the hero gets
+    // the link alone, not the box.
+    upcoming = remote([booking({ id: 'a', title: 'Statement of Purpose' }), withPreview()]);
+    render(<BookingsScreen />);
+    expect(screen.getByText('What do you want to cover?')).toBeVisible();
+    expect(screen.getByText('Nine programs.')).toBeVisible();
+  });
+
+  it('opens the panel with every answer already shown, in one step', async () => {
+    upcoming = remote([booking({ id: 'a', title: 'Statement of Purpose' }), withPreview()]);
+    // The panel is already on this booking, so the expansion is observable;
+    // `select` only rewrites the URL in this harness.
+    selectedBooking = 'b';
+    answers = {
+      data: [1, 2, 3, 4].map((i) => ({
+        questionId: `q${i}`,
+        question: `Q${i}?`,
+        kind: 'free_text' as const,
+        retired: false,
+        text: `A${i}.`,
+        file: null,
+      })),
+      isLoading: false,
+      error: null,
+      retry: vi.fn(),
+    };
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: /See all 4 answers for Visa practice/ }));
+    expect(replace).toHaveBeenCalledWith('/bookings?booking=b', { scroll: false });
+    // Expanded on arrival, rather than opening collapsed and then jumping.
+    expect(screen.getByRole('button', { name: 'Show less' })).toBeVisible();
+    expect(screen.getByText('A4.')).toBeVisible();
+  });
+
+  it('a booking whose form was never answered shows no box', () => {
+    upcoming = remote([
+      booking({ id: 'a', title: 'Statement of Purpose' }),
+      withPreview({ answersPreview: null }),
+    ]);
+    render(<BookingsScreen />);
+    expect(screen.queryByText(/See all \d+ answers/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Nine programs.')).not.toBeInTheDocument();
+  });
+
+  it('the hero offers the link, not the box — that card has its own note', async () => {
+    upcoming = remote([
+      withPreview({ id: 'a', title: 'Statement of Purpose', startsAt: at(2), endsAt: at(3) }),
+    ]);
+    render(<BookingsScreen />);
+    // The link names its booking like every other one.
+    expect(
+      screen.getByRole('button', { name: /See all 4 answers for Statement of Purpose/ }),
+    ).toBeVisible();
+    // ...and the hero shows no preview box, only the link.
+    expect(screen.queryByText('What do you want to cover?')).not.toBeInTheDocument();
+  });
+
+  it('the hero link opens the panel expanded, like the rows', async () => {
+    upcoming = remote([
+      withPreview({ id: 'a', title: 'Statement of Purpose', startsAt: at(2), endsAt: at(3) }),
+    ]);
+    selectedBooking = 'a';
+    answers = {
+      data: [1, 2, 3, 4].map((i) => ({
+        questionId: `q${i}`,
+        question: `Q${i}?`,
+        kind: 'free_text' as const,
+        retired: false,
+        text: `A${i}.`,
+        file: null,
+      })),
+      isLoading: false,
+      error: null,
+      retry: vi.fn(),
+    };
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: /See all 4 answers/ }));
+    expect(screen.getByRole('button', { name: 'Show less' })).toBeVisible();
+    expect(screen.getByText('A4.')).toBeVisible();
+  });
+
+  it('History rows never carry it — the design shows no preview there', async () => {
+    history = hist({
+      bookings: [withPreview({ status: 'completed', startsAt: at(-48), endsAt: at(-47) })],
+    });
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('tab', { name: /History/ }));
+    expect(screen.queryByText('What do you want to cover?')).not.toBeInTheDocument();
+  });
+});
+
+describe('the desktop panel is not a keyboard dead end', () => {
+  beforeEach(() => {
+    upcoming = remote([
+      booking({ id: 'a', title: 'Statement of Purpose' }),
+      booking({ id: 'b', title: 'Visa practice', startsAt: at(48), endsAt: at(49) }),
+    ]);
+  });
+
+  it('Escape closes it when focus is inside', async () => {
+    selectedBooking = 'b';
+    render(<BookingsScreen />);
+    const panel = screen.getByRole('complementary', { name: 'Booking details' });
+    expect(panel).toBeVisible();
+    await userEvent.keyboard('{Escape}');
+    expect(replace).toHaveBeenCalledWith('/bookings', { scroll: false });
+  });
+
+  it('Escape elsewhere on the page is left alone', async () => {
+    selectedBooking = 'b';
+    render(<BookingsScreen />);
+    // The aside sits beside the page rather than over it, so it must not
+    // swallow Escape from a menu or dialog that is not inside it.
+    screen.getByRole('tab', { name: /Upcoming/ }).focus();
+    await userEvent.keyboard('{Escape}');
+    expect(replace).not.toHaveBeenCalled();
   });
 });

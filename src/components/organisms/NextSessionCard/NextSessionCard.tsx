@@ -13,11 +13,16 @@ import {
   timeRange,
 } from '@/lib/utils/bookings';
 import type { Booking } from '@/types/booking';
+import { AnswerPreview } from '@/components/molecules/AnswerPreview/AnswerPreview';
 import styles from './NextSessionCard.module.css';
 
 type NextSessionCardProps = {
   booking: Booking;
   timeZone: string;
+  /** Opens the details panel with every answer shown. */
+  onOpenAnswers?: () => void;
+  /** The panel that link reveals. */
+  answersControls?: string;
   /** Records attendance and hands back where to go. */
   onJoin: () => void;
   joining?: boolean;
@@ -48,6 +53,8 @@ export function NextSessionCard({
   onJoin,
   joining,
   menu,
+  onOpenAnswers,
+  answersControls,
   now = new Date(),
 }: NextSessionCardProps) {
   const when = nextSessionWhen(b, now);
@@ -120,6 +127,18 @@ export function NextSessionCard({
           <span className={styles.noteLabel}>{coverLabel}</span>
           <p className={styles.noteBody}>{b.note}</p>
         </div>
+      )}
+
+      {/* The hero gets the link, not the box: it is already a card, and the
+          design hangs "See all N answers" under the note. */}
+      {b.answersPreview && onOpenAnswers && (
+        <AnswerPreview
+          preview={b.answersPreview}
+          onOpenAll={onOpenAnswers}
+          controls={answersControls}
+          forBooking={bookingHeading(b)}
+          linkOnly
+        />
       )}
 
       {/* A shut window means the session is over bar the backend's bookkeeping;

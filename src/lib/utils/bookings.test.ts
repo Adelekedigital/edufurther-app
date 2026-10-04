@@ -43,6 +43,7 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
   durationMin: 60,
   title: 'School shortlist',
   note: null,
+  answersPreview: null,
   createdAt: at(-240),
   respondBy: null,
   joinOpensAt: null,

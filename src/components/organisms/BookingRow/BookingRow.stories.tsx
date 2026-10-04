@@ -35,6 +35,7 @@ export const sampleBooking = (over: Partial<Booking> = {}): Booking => ({
   durationMin: 60,
   title: 'School shortlist',
   note: 'I have nine programs and need to cut it to five. Funding matters most.',
+  answersPreview: null,
   createdAt: at(-240),
   respondBy: null,
   joinOpensAt: null,
@@ -159,5 +160,53 @@ export const Phone: Story = {
         Book again
       </Button>
     ),
+  },
+};
+
+/**
+ * The configuration that broke: a row whose only control is the ⋯. It used to
+ * sit in the actions group, which takes its own full-width line on a phone, so
+ * the ⋯ went with it and landed under the card. It belongs in the corner.
+ */
+export const PhoneMenuOnly: Story = {
+  globals: { viewport: { value: 'mobile2', isRotated: false } },
+  args: {
+    menu: [
+      { key: 'details', icon: 'info' as const, label: 'See details', onSelect: () => {} },
+      { key: 'cancel', icon: 'block' as const, label: 'Cancel session', onSelect: () => {}, danger: true },
+    ],
+  },
+};
+
+/** Both: the actions take the second line, the ⋯ keeps the corner above them. */
+export const PhoneMenuAndActions: Story = {
+  globals: { viewport: { value: 'mobile2', isRotated: false } },
+  args: {
+    actions: (
+      <Button variant="secondary-outlined" size="small">
+        Book again
+      </Button>
+    ),
+    menu: [{ key: 'details', icon: 'info' as const, label: 'See details', onSelect: () => {} }],
+  },
+};
+
+/** With the answers preview, which makes the row tall enough to show that the
+    ⋯ is pinned to the top rather than floating to the middle. */
+export const PhoneWithAnswers: Story = {
+  globals: { viewport: { value: 'mobile2', isRotated: false } },
+  args: {
+    booking: sampleBooking({
+      answersPreview: {
+        count: 4,
+        first: {
+          question: 'What do you want to cover?',
+          text: 'I have nine programs and need to cut it to five. Funding matters most, and I would like a view on which are realistic.',
+        },
+      },
+    }),
+    menu: [{ key: 'details', icon: 'info' as const, label: 'See details', onSelect: () => {} }],
+    onOpenAnswers: () => {},
+    answersControls: 'booking-details',
   },
 };
