@@ -103,6 +103,12 @@ export const keys = {
     events: (id: string, who: string) => ['bookings', 'events', id, who] as const,
     /** What the mentee wrote when booking (GET /sessions/{id}/answers). */
     answers: (id: string, who: string) => ['bookings', 'answers', id, who] as const,
+    /**
+     * Every session the viewer may review (GET /me/reviewable-sessions), whole.
+     * `keys.mentors.reviewable` is the same endpoint narrowed to one mentor for
+     * a profile tab; this screen asks across all of them.
+     */
+    reviewable: (who: string) => ['bookings', 'reviewable', who] as const,
   },
   /** One intake file's bytes, held only while its viewer is open (gcTime 0). */
   intakeFile: (id: string, who: string) => ['intakeFile', id, who] as const,
