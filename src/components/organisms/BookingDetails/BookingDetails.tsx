@@ -4,6 +4,7 @@ import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { AnswerItem } from '@/components/molecules/AnswerItem/AnswerItem';
+import { SuggestionNotice } from '@/components/organisms/SuggestionNotice/SuggestionNotice';
 import { DetailFacts, type Fact } from '@/components/molecules/DetailFacts/DetailFacts';
 import { cx } from '@/lib/utils/cx';
 import {
@@ -56,6 +57,11 @@ type BookingDetailsProps = {
   answersLoading?: boolean;
   answersFailed?: boolean;
   retryAnswers?: () => void;
+  /**
+   * Opens the booking flow on an offered time. Absent, the notice still shows
+   * what was offered — it simply has nothing to press.
+   */
+  onBookSuggestion?: () => void;
   /** All of them, rather than the first two. */
   answersExpanded?: boolean;
   onToggleAnswers?: () => void;
@@ -144,6 +150,7 @@ export function BookingDetails({
   answersFailed,
   retryAnswers,
   answersExpanded,
+  onBookSuggestion,
   onToggleAnswers,
   onOpenFile,
   onJoin,
@@ -201,6 +208,21 @@ export function BookingDetails({
             <span className={styles.label}>Session</span>
             <span className={styles.value}>{b.title}</span>
           </div>
+        )}
+
+        {/* An offer of another time is the one thing on a booking that ended
+            that the mentee can still act on, so it comes before the record of
+            how it ended. Mentors do not see it: they made it. */}
+        {b.suggestion && b.side === 'mentee' && (
+          <SuggestionNotice
+            suggestion={b.suggestion}
+            firstName={b.other.firstName}
+            timeZone={timeZone}
+            // A migrated booking records no offering, so there is nothing to
+            // open — but the offer itself still happened and still says when.
+            onBook={onBookSuggestion}
+            now={now}
+          />
         )}
 
         {/* What the mentee wrote on the booking form. Replaces the single

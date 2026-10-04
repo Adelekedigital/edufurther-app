@@ -37,6 +37,7 @@ import { SearchField } from './SearchField/SearchField';
 import { ShareMenu } from './ShareMenu/ShareMenu';
 import { SocialLink } from './SocialLink/SocialLink';
 import { StatTile } from './StatTile/StatTile';
+import { SuggestionCountdown } from './SuggestionCountdown/SuggestionCountdown';
 import { TimezonePicker } from './TimezonePicker/TimezonePicker';
 import { TopicFilter } from './TopicFilter/TopicFilter';
 
@@ -874,4 +875,31 @@ export const Reason: Story = {
       </div>
     );
   },
+};
+
+const HOLD_NOW = new Date('2026-10-05T12:00:00Z');
+const heldIn = (minutes: number) => new Date(HOLD_NOW.getTime() + minutes * 60_000).toISOString();
+
+/**
+ * Ours: how long an offered time stays held for the mentee. The design has no
+ * mentee-side view of a suggested time, so the pill is drawn to DeadlinePill's
+ * spec — two countdowns on one screen should not read as two controls.
+ *
+ * Hours and minutes above the hour, minutes alone below it, words in the last
+ * minute, and the hold's end rather than "0m". Warm under ten minutes.
+ */
+export const HoldCountdown: Story = {
+  render: () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+      <SuggestionCountdown heldUntil={heldIn(120)} now={HOLD_NOW} />
+      <SuggestionCountdown heldUntil={heldIn(118)} now={HOLD_NOW} />
+      <SuggestionCountdown heldUntil={heldIn(58)} now={HOLD_NOW} />
+      <SuggestionCountdown heldUntil={heldIn(4)} now={HOLD_NOW} />
+      <SuggestionCountdown heldUntil={heldIn(0.5)} now={HOLD_NOW} />
+      <SuggestionCountdown heldUntil={heldIn(0)} now={HOLD_NOW} />
+      <SuggestionCountdown heldUntil={heldIn(-90)} now={HOLD_NOW} />
+      {/* No clock handed in: this one counts itself down. */}
+      <SuggestionCountdown heldUntil={new Date(Date.now() + 4.4 * 60_000).toISOString()} />
+    </div>
+  ),
 };

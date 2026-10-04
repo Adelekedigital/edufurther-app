@@ -44,9 +44,11 @@ import {
   overlapping,
 } from '@/lib/utils/bookings';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
+import { useMyReviewableSessions } from '@/lib/api/data/reviewableSessions';
 import { BookingsPanel } from './BookingsPanel';
 import { useBookingsTab } from './useBookingsTab';
 import { useRevealed } from './useRevealed';
+import { useRouter } from 'next/navigation';
 import { useSelectedBooking } from './useSelectedBooking';
 import styles from './BookingsScreen.module.css';
 
@@ -107,6 +109,7 @@ export function BookingsScreen() {
   const history = useBookingHistory(userId, filters, tab === 'history');
 
   const { selected, select, toggle } = useSelectedBooking();
+  const router = useRouter();
   // The design's own breakpoint for this screen: below it the aside has no
   // room beside the 920px column, so the panel takes the whole screen.
   const asSheet = useMediaQuery('(max-width: 1099px)');
@@ -206,6 +209,18 @@ export function BookingsScreen() {
   const pendingAction = confirming
     ? { decline, withdraw, cancel }[confirming.action]
     : null;
+
+  // Which completed sessions this mentee can still review. The list is the
+  // authority — it already applies "completed only", "not already reviewed" and
+  // the 30-day interval per offering — so nothing here re-derives eligibility.
+  const reviewable = useMyReviewableSessions(tab === 'history');
+  const canReview = (b: Booking) =>
+    b.side === 'mentee' && (reviewable.data ?? []).some((r) => r.id === b.id);
+  // While we do not know, offer neither. "Book again" standing in for a moment
+  // and then turning into "Leave a review" is two destinations in one place,
+  // one of which spends a credit. A failed read is the same: it would read as
+  // "you have reviewed everything", which is the error-before-empty rule.
+  const reviewUnknown = reviewable.isLoading || !!reviewable.error;
 
   const rowMenu = (b: Booking) => {
     const items: RowMenuItem[] = [
@@ -471,7 +486,20 @@ export function BookingsScreen() {
               actionsFor={(b) =>
                 // Only a session this viewer booked can be booked again, and a
                 // mentor never books at all.
-                canBook && b.side === 'mentee' && b.status === 'completed' ? (
+                reviewUnknown && b.side === 'mentee' && b.status === 'completed' ? null : canReview(
+                  b,
+                ) ? (
+                  <ButtonLink
+                    // The review flow lives on the profile; linking there keeps
+                    // one implementation rather than mounting it twice.
+                    href={`/mentors/${b.other.id}?tab=reviews`}
+                    prefetch={false}
+                    variant="secondary-outlined"
+                    size="small"
+                  >
+                    Leave a review
+                  </ButtonLink>
+                ) : canBook && b.side === 'mentee' && b.status === 'completed' ? (
                   <ButtonLink
                     href={`/mentors/${b.other.id}`}
                     prefetch={false}
@@ -500,6 +528,23 @@ export function BookingsScreen() {
                 answersLoading={answers.isLoading}
                 answersFailed={!!answers.error}
                 retryAnswers={answers.retry}
+                onBookSuggestion={
+                  // No offering recorded means no flow to open, so the notice
+                  // shows what was offered with nothing to press — the link
+                  // would otherwise land them on a profile with nothing selected.
+                  open?.suggestion && open.side === 'mentee' && open.sessionTypeId
+                    ? () =>
+                        // `book` is what opens the flow at all; `at` lands it on
+                        // the offered time. The held slot is listed for this
+                        // mentee alone, so the ordinary flow is all it takes —
+                        // no special path, and the booking limits still apply.
+                        router.push(
+                          `/mentors/${open.other.id}?book=${encodeURIComponent(
+                            open.sessionTypeId ?? '',
+                          )}&at=${encodeURIComponent(open.suggestion!.startsAt)}`,
+                        )
+                    : undefined
+                }
                 answersExpanded={answersExpanded}
                 onToggleAnswers={() => setExpandedFor(answersExpanded ? null : openId)}
                 onOpenFile={setViewing}
@@ -525,6 +570,9 @@ export function BookingsScreen() {
             <ConfirmActionDialog
               action={confirming.action}
               booking={confirming.booking}
+              timeZone={timeZone}
+              viewerId={userId ?? ''}
+              accountZone={accountZone}
               now={now}
               pending={pendingAction.isPending}
               error={pendingAction.error}

@@ -61,7 +61,20 @@ describe('MentorProfileScreen — Reviews tab', () => {
     );
   });
 
-  it('has no Reviews tab without reviews, and ?tab=reviews falls back to Overview', () => {
+  it('a signed-in member can open Reviews with none yet — somebody writes the first', () => {
+    // Bookings links a mentee straight here to review a session. Gating the tab
+    // on `count > 0` dead-ended exactly that person on Overview, silently, with
+    // no way to reach the form.
+    h.search = new URLSearchParams('tab=reviews');
+    h.profile = state({
+      data: { ...fullProfile, reviews: { ...fullProfile.reviews, count: 0 } },
+    });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('tab', { name: /Reviews/ })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('a guest gets no Reviews tab when there are none, and falls back to Overview', () => {
+    h.isGuest = true;
     h.search = new URLSearchParams('tab=reviews');
     h.profile = state({
       data: { ...fullProfile, reviews: { ...fullProfile.reviews, count: 0 } },

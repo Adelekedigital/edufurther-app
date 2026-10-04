@@ -1,0 +1,32 @@
+/* Ours: the design has no mentee-side view of an offered time. Drawn to the
+   same spec as DeadlinePill, the screen's other "how long is left" pill, so
+   two countdowns on one page do not read as two different controls. */
+.pill {
+  /* The .sr-only band is absolutely placed; without a positioned ancestor it
+     escapes an overflow container and widens the page (failure log #29). */
+  position: relative;
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--ink-100);
+  color: var(--ink-700);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+/* Under ten minutes. Warm, and the words say it as well — never colour alone. */
+.urgent {
+  background: var(--warning-subtle);
+  color: var(--warning-text);
+}
+
+/* Over. Quieter than the live pill: there is nothing left to act on. */
+.lapsed {
+  background: var(--surface-muted);
+  color: var(--ink-600);
+}

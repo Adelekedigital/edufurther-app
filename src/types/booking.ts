@@ -83,12 +83,20 @@ export type Booking = {
    */
   title: string | null;
   /**
+   * The offering this was booked against. Needed to ask for the mentor's open
+   * slots when they offer another time — a suggested instant must be one
+   * `/slots` currently lists, exactly, or the write is a 422.
+   */
+  sessionTypeId: string | null;
+  /**
    * What the mentee wrote when booking — a free note to the mentor, separate
    * from the form (backend, 2026-10-03). A migrated booking has only this.
    */
   note: string | null;
   /** The booking form in brief; null when nothing was answered. */
   answersPreview: AnswersPreview | null;
+  /** Another time the mentor offered instead; null when none was. */
+  suggestion: BookingSuggestion | null;
   /** When it was booked. */
   createdAt: string;
   /**
@@ -128,6 +136,36 @@ export type AnswersPreview = {
     /** Plain text: what was written, the options joined, or a file's name. */
     text: string;
   };
+};
+
+/**
+ * Another time a mentor offered when they declined or cancelled a booking
+ * (`SessionRead.suggestion`, backend #339), as this screen reads it.
+ */
+/**
+ * `active` while the time is held for this mentee alone; `booked` once they
+ * took it; `expired` once the hold lapsed unbooked.
+ *
+ * The backend computes this on every read — `active` means `held_until` was
+ * still ahead **when the row was fetched**. A row already in hand therefore
+ * keeps saying `active` after its hold runs out, which is expected rather than
+ * a bug: the clock is the truth for what to show, a re-read is the truth for
+ * what it is.
+ */
+export type SuggestionStatus = 'active' | 'booked' | 'expired';
+
+export type BookingSuggestion = {
+  id: string;
+  /** UTC instant. Rendered in the viewer's zone, never the stored one. */
+  startsAt: string;
+  /** UTC instant, derived from `starts_at` + `duration_minutes`, as `Booking.endsAt` is. */
+  endsAt: string;
+  durationMin: number;
+  /** UTC instant the exclusive hold ends — two hours from the offer. */
+  heldUntil: string;
+  status: SuggestionStatus;
+  /** The session it became, once `booked`. */
+  bookedSessionId: string | null;
 };
 
 /** A file a mentee answered with. The bucket is private: it is fetched, never linked. */
