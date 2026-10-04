@@ -8,7 +8,10 @@ import { apiError, normaliseError } from './errors';
 const post = vi.fn();
 vi.mock('./http', () => ({ api: { POST: (...a: unknown[]) => post(...a) } }));
 
-beforeEach(() => post.mockReset());
+beforeEach(() => {
+  post.mockReset();
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+});
 
 const ok = () => ({ error: undefined, response: { ok: true, status: 200 } as Response });
 const fail = (status: number, body: unknown = {}) => ({
@@ -16,8 +19,11 @@ const fail = (status: number, body: unknown = {}) => ({
   response: { ok: false, status, headers: new Headers() } as unknown as Response,
 });
 
+// One client per test, made in beforeEach — building it inside `wrapper`
+// makes a fresh one on every render, which remounts the hook and fires the
+// mutation again.
+let client: QueryClient;
 function wrapper({ children }: { children: ReactNode }) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
 
@@ -100,9 +106,51 @@ describe('refusals say what happened, in our words', () => {
 
   it('a failure still refetches, because the row has already moved', async () => {
     post.mockResolvedValue(fail(409));
-    const result = await run('accept');
+    const { result } = renderHook(() => useBookingAction('accept'), { wrapper });
+    const spy = vi.spyOn(client, 'invalidateQueries');
+    result.current.mutate({ bookingId: 'b1' });
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error?.message).toMatch(/answered or withdrawn/);
+    // The point of onSettled over onSuccess: a 409 means the row already moved.
+    expect(spy.mock.calls.map((c) => JSON.stringify(c[0]?.queryKey))).toContain('["bookings"]');
+  });
+
+  it('refreshes what else these writes change, not just the bookings tree', async () => {
+    post.mockResolvedValue(ok());
+    const { result } = renderHook(() => useBookingAction('cancel'), { wrapper });
+    const spy = vi.spyOn(client, 'invalidateQueries');
+    result.current.mutate({ bookingId: 'b1' });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const keys = spy.mock.calls.map((c) => JSON.stringify(c[0]?.queryKey));
+    // /me carries the tab counts, the nav badge and the credit balance; a
+    // mentor's cancel can write an availability exception; and a freed hour
+    // shows on the booking grid and the mentor cards.
+    for (const k of ['["bookings"]', '["viewer"]', '["calendar"]', '["mentors"]', '["booking","slots"]'])
+      expect(keys).toContain(k);
+  });
+
+  it('a dropped connection is said in our words, not the browser’s', async () => {
+    // fetch() rejects with a TypeError when the network is unreachable. Before
+    // the wrap, that travelled down a channel typed as AppError and the
+    // browser's own "Failed to fetch" was read out in a role="alert".
+    post.mockImplementation(() => Promise.reject(new TypeError('Failed to fetch')));
+    const { result } = renderHook(() => useBookingAction('cancel'), { wrapper });
+    const thrown = await result.current.mutateAsync({ bookingId: 'b1' }).catch((e) => e);
+    expect(thrown.message).not.toMatch(/Failed to fetch/);
+    expect(thrown.kind).toBe('offline');
+  });
+
+  it('a typed 409 is not blamed on us — least of all the overlap we warned about', () => {
+    const e = actionError(
+      normaliseError(apiError(409, { type: '/problems/booking-overlap' })),
+      'accept',
+    );
+    expect(e.message).toMatch(/runs into another session/);
+    expect(e.message).not.toMatch(/on our side/);
+  });
+
+  it('an expired session says to log in again, not that we broke', () => {
+    expect(actionError(normaliseError(apiError(401, {})), 'cancel').message).toMatch(/Log in again/i);
   });
 
   it('does not retry: a 4xx here is the answer', async () => {

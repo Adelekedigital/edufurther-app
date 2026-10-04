@@ -7,6 +7,16 @@
  */
 import type { CoverKey } from '@/lib/utils/cover';
 
+/**
+ * The coded reasons a person can actually pick on a decline, cancel or
+ * withdrawal. The contract's enum has nine; the other five are system-set.
+ */
+export type PickableReason =
+  | 'mentor_unavailable'
+  | 'mentee_no_longer_needed'
+  | 'scheduling_conflict'
+  | 'technical_issue';
+
 /** Which side of the session the viewer is on. One account can be both, on different rows. */
 export type BookingSide = 'mentor' | 'mentee';
 

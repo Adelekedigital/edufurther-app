@@ -35,6 +35,7 @@ import type { RowMenuItem } from '@/components/molecules/RowMenu/RowMenu';
 import { ConfirmActionDialog } from './ConfirmActionDialog';
 import { IntakeFileViewer } from './IntakeFileViewer';
 import {
+  bookingHeading,
   canAccept,
   canCancel,
   canWithdraw,
@@ -98,7 +99,10 @@ export function BookingsScreen() {
   const accountZone = member?.timeZone ?? deviceZone;
 
   const [filters, setFilters] = useState<BookingStatus[]>([]);
-  const upcoming = useUpcomingBookings(userId, accountZone, tab === 'upcoming');
+  // Fetched on Pending too: the clash check reads it, and Pending is where the
+  // nav badge sends a mentor, so gating it on the Upcoming tab meant the one
+  // warning that matters never appeared on the path that matters.
+  const upcoming = useUpcomingBookings(userId, accountZone, tab === 'upcoming' || tab === 'pending');
   const pending = usePendingBookings(userId, tab === 'pending');
   const history = useBookingHistory(userId, filters, tab === 'history');
 
@@ -233,29 +237,65 @@ export function BookingsScreen() {
     return items;
   };
 
-  /** The mentor's two answers to a pending request, on the row itself. */
-  const rowActions = (b: Booking) => {
+  const clashId = (id: string) => `clash-${id}`;
+
+  /**
+   * Full width under the row's detail, never in the button rail: a block in
+   * there collapses the content column to nothing from 1100px up.
+   */
+  const rowNotice = (b: Booking) => {
     if (!canAccept(b, now)) return null;
-    // The design warns rather than blocks: accepting both may be exactly what
-    // they mean. Saying so first is the point.
     const clash = overlapping(b, upcoming.data ?? []);
+    const failed = accept.isError && accept.variables?.bookingId === b.id ? accept.error : null;
+    if (!clash && !failed) return null;
     return (
       <>
+        {/* The design warns rather than blocks: accepting both may be exactly
+            what they mean. Saying so first is the point. */}
         {clash && (
-          <Notice tone="info" icon="error">
+          <Notice tone="info" icon="error" id={clashId(b.id)}>
             This overlaps your session with <strong>{clash.other.firstName}</strong> on{' '}
             <strong>{fullDate(clash.startsAt, timeZone)}</strong>. Accepting books both.
           </Notice>
         )}
+        {/* Accept has no dialog to carry its refusal, and the live region is
+            screen-reader only — so a sighted mentor saw nothing at all. */}
+        {failed && (
+          <Notice tone="neutral" icon="error">
+            {failed.message}
+          </Notice>
+        )}
+      </>
+    );
+  };
+
+  /** The mentor's two answers to a pending request, on the row itself. */
+  const rowActions = (b: Booking) => {
+    if (!canAccept(b, now)) return null;
+    const clash = overlapping(b, upcoming.data ?? []);
+    return (
+      <>
         {/* The design's own variants: an outlined Accept and a destructive
             *text* Decline, so the row does not carry two competing fills. */}
         <Button
           variant="secondary-outlined"
           size="small"
           busy={accept.isPending && accept.variables?.bookingId === b.id}
-          onClick={() => accept.mutate({ bookingId: b.id })}
+          aria-describedby={clash ? clashId(b.id) : undefined}
+          onClick={() =>
+            accept.mutate(
+              { bookingId: b.id },
+              {
+                // Accept has no dialog to carry its refusal, so it goes to the
+                // live region. Silence after a click reads as the app ignoring
+                // it, which is the one thing a write must never do.
+                onError: (e) => say(e.message),
+                onSuccess: () => say(`Accepted. ${bookingHeading(b)} is confirmed.`),
+              },
+            )
+          }
         >
-          Accept
+          {accept.isPending && accept.variables?.bookingId === b.id ? 'Accepting…' : 'Accept'}
         </Button>
         <Button
           variant="text-destructive"
@@ -381,6 +421,7 @@ export function BookingsScreen() {
               now={now}
               menuFor={rowMenu}
               actionsFor={rowActions}
+              noticeFor={rowNotice}
               onOpenAnswers={openAnswers}
               answersControls={showPanel ? PANEL_ID : undefined}
               selectedId={selected}
@@ -488,6 +529,9 @@ export function BookingsScreen() {
               pending={pendingAction.isPending}
               error={pendingAction.error}
               onClose={() => {
+                // Escape and the ✕ go through here too, so the in-flight guard
+                // has to live at this level rather than only on "Keep it".
+                if (pendingAction.isPending) return;
                 pendingAction.reset();
                 setConfirming(null);
               }}

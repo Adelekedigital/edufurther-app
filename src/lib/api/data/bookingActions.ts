@@ -2,19 +2,10 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AppError } from '@/types/mentor';
-import { ApiError, apiError, normaliseError } from './errors';
+import type { PickableReason } from '@/types/booking';
+import { ApiError, apiError, normaliseError, retryAfterMinutes } from './errors';
 import { api } from './http';
 import { keys } from './keys';
-
-/** The four coded reasons a person would actually pick. */
-export const PICKABLE_REASONS = [
-  'mentor_unavailable',
-  'mentee_no_longer_needed',
-  'scheduling_conflict',
-  'technical_issue',
-] as const;
-
-export type PickableReason = (typeof PICKABLE_REASONS)[number];
 
 export type BookingAction = 'accept' | 'decline' | 'withdraw' | 'cancel';
 
@@ -43,6 +34,28 @@ const PATHS = {
  * server's own text is for logs, not for the person who clicked.
  */
 export function actionError(e: AppError, action: BookingAction): AppError {
+  // A 409 carrying a problem type is peeled off by `normaliseError` before the
+  // generic branch, so these never arrive as `conflict`. Blaming ourselves for
+  // an overlap we had just warned about is the worst of it.
+  if (e.kind === 'bookingOverlap')
+    return {
+      ...e,
+      message: 'This runs into another session on your calendar, so it can’t be accepted.',
+    };
+  if (e.kind === 'bookingWithMentorExists' || e.kind === 'bookingLimitReached') return e;
+  if (e.kind === 'noCredit')
+    return { ...e, message: 'There aren’t enough credits for this any more.' };
+  if (e.kind === 'unauthorized')
+    return { ...e, message: 'Your session timed out. Log in again and try once more.' };
+  if (e.kind === 'rateLimited') {
+    const mins = retryAfterMinutes(e.retryAfter);
+    return {
+      ...e,
+      message: mins
+        ? `You’ve done that a few times just now. Try again in ${mins} ${mins === 1 ? 'minute' : 'minutes'}.`
+        : 'You’ve done that a few times just now. Try again shortly.',
+    };
+  }
   if (e.kind === 'conflict')
     return {
       ...e,
@@ -81,12 +94,22 @@ export function useBookingAction(action: BookingAction) {
       if (text) body.reason_text = text;
       if (action === 'cancel' && releaseSlot !== undefined) body.release_slot = releaseSlot;
 
-      const { error, response } = await api.POST(PATHS[action], {
-        params: { path: { session_id: bookingId } },
-        // The payload is optional in the contract; an empty object is still a
-        // body the server accepts, and keeps one code path.
-        body,
-      });
+      let result;
+      try {
+        result = await api.POST(PATHS[action], {
+          params: { path: { session_id: bookingId } },
+          // The payload is optional in the contract; an empty object is still a
+          // body the server accepts, and keeps one code path.
+          body,
+        });
+      } catch (e) {
+        // A fetch rejection — offline mid-click, DNS, a dropped connection —
+        // is a TypeError, not a response. Unwrapped it travels down a channel
+        // typed as AppError and the browser's own "Failed to fetch" is read
+        // out in a role="alert".
+        throw actionError(normaliseError(e), action);
+      }
+      const { error, response } = result;
       if (!response.ok) {
         throw actionError(normaliseError(apiError(response.status, error, response)), action);
       }
@@ -96,6 +119,18 @@ export function useBookingAction(action: BookingAction) {
       // On failure too: a 409 means the row has already moved, and the only way
       // to show what it moved to is to ask.
       void qc.invalidateQueries({ queryKey: keys.bookings.all });
+      // And everything outside that tree these writes also change. The booking
+      // writer two files away invalidates the same set for the same reasons.
+      //  - `/me` carries the tab counts and the nav badge that sent the mentor
+      //    here, and the mentee's credit balance, which a refund moves.
+      //  - a mentor's cancel with `release_slot: false` writes an availability
+      //    exception, and an accept adds a dot to the month.
+      //  - a decline or cancel frees an hour the booking grid and the mentor
+      //    cards both advertise.
+      void qc.invalidateQueries({ queryKey: keys.viewer.all });
+      void qc.invalidateQueries({ queryKey: keys.calendar.all });
+      void qc.invalidateQueries({ queryKey: keys.mentors.all });
+      void qc.invalidateQueries({ queryKey: ['booking', 'slots'] });
     },
   });
 }

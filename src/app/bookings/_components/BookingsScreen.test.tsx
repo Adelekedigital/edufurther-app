@@ -818,7 +818,10 @@ describe('the actions appear only where they can succeed', () => {
     tab = 'pending';
     render(<BookingsScreen />);
     await userEvent.click(screen.getByRole('button', { name: 'Accept' }));
-    expect(actions.accept!.mutate).toHaveBeenCalledWith({ bookingId: 'p1' });
+    expect(actions.accept!.mutate).toHaveBeenCalledWith(
+      { bookingId: 'p1' },
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
@@ -897,7 +900,10 @@ describe('accepting a request that runs into another session', () => {
     const accept = screen.getByRole('button', { name: 'Accept' });
     expect(accept).not.toHaveAttribute('aria-disabled', 'true');
     await userEvent.click(accept);
-    expect(actions.accept!.mutate).toHaveBeenCalledWith({ bookingId: 'p1' });
+    expect(actions.accept!.mutate).toHaveBeenCalledWith(
+      { bookingId: 'p1' },
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
   });
 
   it('back-to-back sessions carry no warning', () => {

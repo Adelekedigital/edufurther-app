@@ -136,9 +136,21 @@
 .text-destructive:active {
   color: var(--red-700);
 }
+/* A reachable target at every width, not only on a phone: this sits in a row
+   beside a 32px button, and 768px is a tablet in portrait. */
+.text-destructive {
+  position: relative;
+}
+.text-destructive::after {
+  content: '';
+  position: absolute;
+  inset: -14px -8px;
+}
 .text-destructive:disabled {
-  color: var(--ink-600);
+  color: var(--ink-500);
   background: transparent;
+  /* Or it keeps the hover underline, as `.text:disabled` already guards. */
+  text-decoration: none;
 }
 
 .dark {

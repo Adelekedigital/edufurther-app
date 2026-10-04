@@ -92,7 +92,12 @@ export function normaliseError(error: unknown): AppError {
     if (s === 409)
       return { kind: 'conflict', message: 'That changed while you were looking.', status: s };
     if (s === 429)
-      return { kind: 'rateLimited', message: 'You’ve done that too often. Try again shortly.', status: s };
+      return {
+        kind: 'rateLimited',
+        message: 'You’ve done that too often. Try again shortly.',
+        status: s,
+        retryAfter: error.retryAfter,
+      };
     if (s === 422) return { kind: 'validation', message: 'That request wasn’t valid.', status: s };
     if (s >= 500)
       return { kind: 'server', message: 'Something went wrong on our side.', status: s };

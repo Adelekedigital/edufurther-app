@@ -182,11 +182,13 @@ export function panelStatus(
   now = new Date(),
 ): { label: string; tone: StatusTone | 'info' } {
   if (b.status === 'pending') {
-    if (isLapsed(b, now)) return { label: 'Unconfirmed', tone: 'warning' };
+    // "Expired", like `statusTag`: the sweep has not run yet, but it is the
+    // same state, and otherwise the user meets both words within an hour.
+    if (isLapsed(b, now)) return { label: 'Expired', tone: 'warning' };
     // The same words as the row it was opened from, so the panel never tells a
     // mentee to "respond" to a request only their mentor can answer.
     const pill = waitingPill(b, now);
-    return pill ? { label: pill.text, tone: pill.urgent ? 'warning' : 'info' } : { label: 'Unconfirmed', tone: 'warning' };
+    return pill ? { label: pill.text, tone: pill.urgent ? 'warning' : 'info' } : { label: 'Expired', tone: 'warning' };
   }
   if (b.status === 'confirmed') return { label: 'Upcoming', tone: 'info' };
   const tag = statusTag(b.status);

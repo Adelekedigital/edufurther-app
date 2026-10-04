@@ -2,13 +2,14 @@
 
 import { useId, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
+import { cx } from '@/lib/utils/cx';
 import { Switch } from '@/components/atoms/Switch/Switch';
 import { ReasonField } from '@/components/molecules/ReasonField/ReasonField';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
-import type { ActionInput, BookingAction, PickableReason } from '@/lib/api/data/bookingActions';
-import { refundOnCancel } from '@/lib/utils/bookings';
+import type { ActionInput, BookingAction } from '@/lib/api/data/bookingActions';
+import { canCancel, refundOnCancel } from '@/lib/utils/bookings';
 import type { AppError } from '@/types/mentor';
-import type { Booking } from '@/types/booking';
+import type { Booking, PickableReason } from '@/types/booking';
 import styles from './BookingsScreen.module.css';
 
 type ConfirmActionDialogProps = {
@@ -64,6 +65,10 @@ export function ConfirmActionDialog({
   const first = b.other.firstName;
   const isMentor = b.side === 'mentor';
   const refunds = action !== 'cancel' || refundOnCancel(b, now);
+  // Re-checked here, not just on the row: this dialog can sit open across the
+  // boundary — opened at eleven minutes out, confirmed at nine — and the row's
+  // menu item has been behind a modal the whole time.
+  const tooLate = action === 'cancel' && !canCancel(b, now);
 
   // Mentors never see credit copy — it is not their credit (design's rule).
   const creditLine = isMentor
@@ -89,13 +94,25 @@ export function ConfirmActionDialog({
       onClose={onClose}
       footer={
         <div className={styles.confirmFooter}>
-          <Button variant="secondary-outlined" size="large" onClick={onClose}>
+          {/* Closed only when nothing is in flight: `reset()` detaches the
+              observer but the POST keeps going, so closing mid-flight made the
+              dialog vanish — which reads as "done" — while it might fail. */}
+          <Button
+            variant="secondary-outlined"
+            size="large"
+            aria-disabled={pending || undefined}
+            onClick={pending ? undefined : onClose}
+          >
             Keep it
           </Button>
           <Button
             variant="destructive"
             size="large"
+            aria-disabled={tooLate || undefined}
             onClick={() =>
+              tooLate
+                ? undefined
+                :
               onConfirm({
                 reasonCode,
                 reasonText: text,
@@ -114,7 +131,11 @@ export function ConfirmActionDialog({
       <div className={styles.confirmBody}>
         <p className={styles.confirmLead}>{whatHappens}</p>
         {/* Before the button, never after. */}
-        {creditLine && <p className={styles.confirmCredit}>{creditLine}</p>}
+        {creditLine && (
+          <p className={cx(styles.confirmCredit, !refunds && styles.confirmCreditLost)}>
+            {creditLine}
+          </p>
+        )}
 
         {/* Mentors only — a mentee's cancellation always frees the hour. */}
         {action === 'cancel' && isMentor && (
@@ -145,6 +166,13 @@ export function ConfirmActionDialog({
           onText={setText}
           readerFirstName={first}
         />
+
+        {tooLate && (
+          <p role="alert" className={styles.confirmError}>
+            This session starts in less than ten minutes, so it can’t be called off now — nobody
+            would get the message in time.
+          </p>
+        )}
 
         {error && (
           <p role="alert" className={styles.confirmError}>

@@ -14,6 +14,8 @@ import {
   otherTimeLine,
   panelStatus,
   timeRange,
+  refundOnCancel,
+  showedUp,
 } from '@/lib/utils/bookings';
 import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import type { BookingOutcome } from '@/lib/api/data/sessionEvents';
@@ -67,24 +69,28 @@ type BookingDetailsProps = {
  * than blaming the session for acting on itself.
  */
 /**
- * What happened, in a line (design's table, 2026-10-03). The mentee's lines
- * carry the credit; a mentor's never do, because it is not their credit.
+ * What happened to the credit, and nothing else (design's table, 2026-10-03).
+ *
+ * Only the mentee's side: it is their credit, and a mentor seeing credit copy
+ * is the rule design set. The *who did it* half of the design's line is already
+ * the heading above, so repeating it here printed the same sentence twice —
+ * and keying it off `b.side` while the heading keys off `o.by` meant a
+ * system-swept decline told a mentor "You declined this request" when they had
+ * not.
  */
-function outcomeLine(o: BookingOutcome, b: Booking): string {
-  const first = b.other.firstName;
-  const mentee = b.side === 'mentee';
-  const credit = mentee ? ' Your credit is back.' : '';
+function creditLine(o: BookingOutcome, b: Booking, now: Date): string {
+  if (b.side !== 'mentee') return '';
   switch (o.status) {
     case 'declined':
-      return mentee ? `${first} couldn’t take this request.${credit}` : 'You declined this request.';
     case 'expired':
-      return mentee
-        ? `${first} didn’t respond in time, so this request expired.${credit}`
-        : 'This request expired before you responded.';
     case 'withdrawn':
-      return mentee
-        ? `You withdrew this request.${credit}`
-        : `${first} withdrew this request.`;
+      return 'Your credit is back.';
+    case 'cancelled':
+      // The dialog says this before the action; the panel is where they come
+      // back to find out where the credit went.
+      return refundOnCancel(b, now)
+        ? 'Your credit is back.'
+        : 'This was cancelled less than 12 hours before the session, so the credit was not returned.';
     default:
       return '';
   }
@@ -92,7 +98,18 @@ function outcomeLine(o: BookingOutcome, b: Booking): string {
 
 function outcomeHeading(o: BookingOutcome, b: Booking): string {
   if (o.status === 'expired') return 'Nobody answered in time';
-  if (o.status === 'noShow') return 'This session was missed';
+  if (o.status === 'noShow') {
+    // Who was there is the whole difference between these, and the rows carry
+    // it. `null` is genuinely unknown — two migrated bookings have no
+    // attendance record — so it says the plain thing rather than guess.
+    const came = showedUp(b);
+    if (came === false) return 'Neither of you joined this session';
+    if (came === true)
+      return b.myAttendance === 'noShow'
+        ? 'You didn’t join this session'
+        : `${b.other.firstName} didn’t join this session`;
+    return 'This session was missed';
+  }
   const WORDS: Partial<Record<BookingOutcome['status'], { did: string; done: string }>> = {
     cancelled: { did: 'cancelled this session', done: 'This session was cancelled' },
     declined: { did: 'declined this request', done: 'This request was declined' },
@@ -141,6 +158,7 @@ export function BookingDetails({
   const opensIn = joinOpensInMinutes(b);
   const showJoin = !!onJoin && (join === 'open' || join === 'before');
   const answersTitle = b.side === 'mentee' ? 'Your answers' : `Answers from ${b.other.firstName}`;
+  const credit = outcome ? creditLine(outcome, b, now) : '';
   const shownAnswers = answersExpanded ? (answers ?? []) : (answers ?? []).slice(0, ANSWER_PREVIEW);
 
   const facts: Fact[] = [
@@ -255,10 +273,9 @@ export function BookingDetails({
         {outcome && (
           <div className={styles.notes}>
             <span className={styles.label}>{outcomeHeading(outcome, b)}</span>
-            {/* Design's own line for what happened, where there is one. */}
-            {outcomeLine(outcome, b) && (
-              <p className={styles.outcomeLine}>{outcomeLine(outcome, b)}</p>
-            )}
+            {/* Where the credit went. The heading above already says who did
+                what, so this adds the half the heading cannot carry. */}
+            {credit && <p className={styles.outcomeLine}>{credit}</p>}
             {/* "Reason from X", not "X's note": the booking note sits in this
                 same panel under "Note from X", and the two would blur. The
                 block is left out entirely when no reason was given — never

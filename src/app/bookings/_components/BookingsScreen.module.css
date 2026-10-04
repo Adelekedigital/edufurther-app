@@ -154,6 +154,14 @@
   color: var(--ink-900);
 }
 
+/* The credit is not coming back. Carrying that on wording alone, in a box that
+   reads as boilerplate, is how someone finds out afterwards. */
+.confirmCreditLost {
+  background: var(--red-50, var(--ink-50));
+  color: var(--text-danger);
+  font-weight: var(--weight-semibold);
+}
+
 .confirmError {
   margin: 0;
   font-size: var(--text-p-sm);
@@ -192,7 +200,10 @@
        by every modal here), so the footer is pushed to the bottom rather than
        left floating under short content. */
     margin-top: auto;
-    flex-direction: column-reverse;
+    /* `column`, not `column-reverse`: reversing painted the destructive button
+       above the dismiss while the tab order ran the other way, so focus jumped
+       up the screen. */
+    flex-direction: column;
   }
   .confirmFooter > * {
     width: 100%;

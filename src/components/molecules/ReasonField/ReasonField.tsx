@@ -2,7 +2,7 @@ import { useId } from 'react';
 import { Textarea } from '@/components/atoms/Input/Input';
 import { ChoiceChips } from '@/components/molecules/ChoiceChips/ChoiceChips';
 import { cx } from '@/lib/utils/cx';
-import type { PickableReason } from '@/lib/api/data/bookingActions';
+import type { PickableReason } from '@/types/booking';
 import styles from './ReasonField.module.css';
 
 /** The 2000 the contract allows. */
@@ -51,24 +51,33 @@ export function ReasonField({
 
   return (
     <div className={styles.field}>
+      {/* A visible label: `ChoiceChips` only puts it on `aria-label`, which
+          leaves three unexplained chips for everyone who can see them. */}
+      <span id={`${id}-reason`} className={styles.label}>
+        Why? <span className={styles.optional}>Optional</span>
+      </span>
       <ChoiceChips
         label="Reason"
         options={options}
         selected={reasonCode ? [reasonCode] : []}
-        // One at a time: picking another replaces it, picking the same clears it.
+        // Picking another replaces it; picking the same one clears it. No
+        // `max`: at a limit of one it disables the unpicked chips and drops
+        // them out of the tab order, so a wrong pick cannot be corrected.
         onToggle={(v) => onReasonCode(v === reasonCode ? null : (v as PickableReason))}
-        max={1}
-        describedBy={`${id}-hint`}
+        describedBy={`${id}-reason`}
       />
+      <label htmlFor={`${id}-note`} className={styles.label}>
+        Add a note <span className={styles.optional}>Optional</span>
+      </label>
       <p id={`${id}-hint`} className={styles.hint}>
-        Optional. Anything you write here, {readerFirstName} will read.
+        {readerFirstName} will read this.
       </p>
       <Textarea
+        id={`${id}-note`}
         value={text}
         onChange={(e) => onText(e.target.value)}
         maxLength={REASON_MAX}
         rows={4}
-        aria-label="Add a note"
         aria-describedby={`${id}-hint`}
         className={styles.text}
       />

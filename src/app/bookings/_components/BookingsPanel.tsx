@@ -38,6 +38,8 @@ type BookingsPanelProps = {
   intro?: ReactNode;
   /** The controls for one row, decided by the tab. */
   actionsFor?: (b: Booking) => ReactNode;
+  /** A full-width block under the row's detail. */
+  noticeFor?: (b: Booking) => ReactNode;
   /** The ⋯ menu for one row. */
   menuFor?: (b: Booking) => RowMenuItem[];
   /**
@@ -77,6 +79,7 @@ export function BookingsPanel({
   heading,
   intro,
   actionsFor,
+  noticeFor,
   menuFor,
   onOpenAnswers,
   answersControls,
@@ -171,6 +174,7 @@ export function BookingsPanel({
               booking={b}
               timeZone={timeZone}
               actions={actionsFor?.(b)}
+              notice={noticeFor?.(b)}
               menu={menuFor?.(b)}
               selected={selectedId === b.id}
               onOpenAnswers={onOpenAnswers ? () => onOpenAnswers(b.id) : undefined}
