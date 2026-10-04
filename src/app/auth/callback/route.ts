@@ -17,6 +17,11 @@ export async function GET(request: NextRequest) {
   const code = params.get('code');
   const next = safeReturnTo(params.get('next'));
   const ok = code ? await exchangeCodeForSession(code) : false;
-  const to = ok ? next : `/login?error=${failureReason(params)}&next=${encodeURIComponent(next)}`;
+  // Back to the screen they started on, so a failed sign-up isn't answered on
+  // the log-in page with "New here? Create a free account".
+  const back = params.get('mode') === 'signup' ? '/signup' : '/login';
+  const to = ok
+    ? next
+    : `${back}?error=${failureReason(params)}&next=${encodeURIComponent(next)}`;
   return NextResponse.redirect(new URL(to, request.nextUrl.origin));
 }

@@ -28,12 +28,14 @@ export function sendSignInCode(email: string, next: string) {
  * Where Supabase sends the browser back to. Local paths only (safeReturnTo).
  * `from` tells the callback which way in this was: it cannot tell from the
  * error codes, which overlap between a cancelled Google sign-in and a dead
- * email link.
+ * email link. `mode` sends a failed sign-up back to /signup, so someone who
+ * was creating an account isn't answered with "New here?" on the log-in page.
  */
-function callbackUrl(next: string, from?: 'google') {
+function callbackUrl(next: string, from?: 'google', mode?: 'login' | 'signup') {
   const origin = window.location.origin;
   const path = `/auth/callback?next=${encodeURIComponent(safeReturnTo(next))}`;
-  return `${origin}${path}${from ? `&from=${from}` : ''}`;
+  // Only signup is worth carrying: login is where a failure lands by default.
+  return `${origin}${path}${from ? `&from=${from}` : ''}${mode === 'signup' ? '&mode=signup' : ''}`;
 }
 
 export const verifySignInCode = verifyEmailCode;
@@ -42,8 +44,8 @@ export const verifySignInCode = verifyEmailCode;
  * Start Google sign-in. Same landing as the email link, so `next` survives the
  * round trip through Google and Supabase.
  */
-export function startGoogleSignIn(next: string) {
-  return signInWithGoogle(callbackUrl(next, 'google'));
+export function startGoogleSignIn(next: string, mode: 'login' | 'signup' = 'login') {
+  return signInWithGoogle(callbackUrl(next, 'google', mode));
 }
 
 /**

@@ -1,6 +1,6 @@
 import { createBrowserClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { SUPABASE_ANON_KEY, SUPABASE_URL, authConfigured } from './config';
+import { COOKIE_OPTIONS, SUPABASE_ANON_KEY, SUPABASE_URL, authConfigured } from './config';
 
 /**
  * The only browser-side Supabase client (vendor seam: nothing else imports
@@ -12,7 +12,9 @@ let client: SupabaseClient | null = null;
 
 function supabase(): SupabaseClient | null {
   if (!authConfigured || typeof window === 'undefined') return null;
-  client ??= createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  client ??= createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    cookieOptions: COOKIE_OPTIONS,
+  });
   return client;
 }
 

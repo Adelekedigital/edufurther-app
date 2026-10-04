@@ -16,6 +16,7 @@ vi.mock('./config', () => ({
   SUPABASE_URL: 'https://x.supabase.co',
   SUPABASE_ANON_KEY: 'k',
   authConfigured: true,
+  COOKIE_OPTIONS: { secure: false },
 }));
 
 const { signOut, signInWithGoogle, SIGN_OUT_TIMEOUT_MS } = await import('./browser');

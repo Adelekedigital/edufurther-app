@@ -1,4 +1,5 @@
-import { Button } from '@/components/atoms/Button/Button';
+import { Button, type ButtonProps } from '@/components/atoms/Button/Button';
+import { forwardRef } from 'react';
 import styles from './GoogleButton.module.css';
 
 /**
@@ -30,24 +31,35 @@ function GoogleMark() {
   );
 }
 
-type GoogleButtonProps = {
-  onClick: () => void;
-  /** Held from the click until the browser leaves for Google. */
-  busy?: boolean;
-};
+/**
+ * The shell's own props pass through — a caller needs `disabled` while another
+ * form is submitting, `aria-describedby` to point at a failure notice, and a
+ * ref once this sits in a modal that manages focus. What it does not get is
+ * the look: variant, size and the label are this component.
+ */
+type GoogleButtonProps = Omit<ButtonProps, 'children' | 'variant' | 'size' | 'icon' | 'iconPosition'>;
 
 /**
  * "Continue with Google" (an approved label in Google's branding guidelines).
  * Our outlined shell, not Google's drawn button: one filled button per view is
  * the CTA hierarchy, and on this screen that one is "Continue with email".
  */
-export function GoogleButton({ onClick, busy }: GoogleButtonProps) {
-  return (
-    <Button variant="secondary-outlined" size="large" fullWidth busy={busy} onClick={onClick}>
-      <span className={styles.inner}>
-        <GoogleMark />
-        {busy ? 'Taking you to Google…' : 'Continue with Google'}
-      </span>
-    </Button>
-  );
-}
+export const GoogleButton = forwardRef<HTMLButtonElement, GoogleButtonProps>(
+  function GoogleButton({ busy, fullWidth = true, ...rest }, ref) {
+    return (
+      <Button
+        ref={ref}
+        variant="secondary-outlined"
+        size="large"
+        fullWidth={fullWidth}
+        busy={busy}
+        {...rest}
+      >
+        <span className={styles.inner}>
+          <GoogleMark />
+          {busy ? 'Taking you to Google…' : 'Continue with Google'}
+        </span>
+      </Button>
+    );
+  },
+);

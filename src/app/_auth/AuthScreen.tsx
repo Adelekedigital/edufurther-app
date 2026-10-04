@@ -88,6 +88,16 @@ export function AuthScreen({ mode, next, failure }: AuthScreenProps) {
     if (session.status === 'present') router.replace(next);
   }, [session.status, next, router]);
 
+  // A read notice should not come back on reload: drop ?error= once it is on
+  // screen. replaceState keeps the entry, so Back still goes where it did.
+  useEffect(() => {
+    if (!failure) return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('error')) return;
+    url.searchParams.delete('error');
+    window.history.replaceState(window.history.state, '', url);
+  }, [failure]);
+
   // Back from Google restores this page from the back-forward cache with its
   // React state intact (Safari and Firefox), so the button would still read
   // "Taking you to Google…" and refuse every press. `pageshow` fires on that
@@ -101,7 +111,7 @@ export function AuthScreen({ mode, next, failure }: AuthScreenProps) {
   const google = async () => {
     setGoogleBusy(true);
     setGoogleFailed(false);
-    const r = await startGoogleSignIn(next);
+    const r = await startGoogleSignIn(next, mode);
     // Success means the browser is already on its way to Google: stay busy, so
     // the button can't be pressed again while that navigation starts.
     if (!r.ok) {
@@ -122,20 +132,24 @@ export function AuthScreen({ mode, next, failure }: AuthScreenProps) {
           </Notice>
         )}
         {authConfigured ? (
-          <>
-            <EmailCodeForm
-              title={c.title}
-              intro={c.intro}
-              onSendCode={(email) => sendSignInCode(email, next)}
-              onVerifyCode={verifySignInCode}
-            />
-            <p className={styles.divider}>or</p>
-            <GoogleButton onClick={() => void google()} busy={googleBusy} />
-            <p className={styles.switch}>
-              {c.switchText}{' '}
-              <Link href={`${c.switchTo}?next=${encodeURIComponent(next)}`}>{c.switchLabel}</Link>
-            </p>
-          </>
+          <EmailCodeForm
+            title={c.title}
+            intro={c.intro}
+            onSendCode={(email) => sendSignInCode(email, next)}
+            onVerifyCode={verifySignInCode}
+            alternatives={
+              <>
+                <p className={styles.divider}>or</p>
+                <GoogleButton onClick={() => void google()} busy={googleBusy} />
+              </>
+            }
+            footer={
+              <>
+                {c.switchText}{' '}
+                <Link href={`${c.switchTo}?next=${encodeURIComponent(next)}`}>{c.switchLabel}</Link>
+              </>
+            }
+          />
         ) : (
           <Notice tone="neutral" icon="error" title="Sign-in isn’t available right now.">
             You can still browse mentors. <Link href="/explore">Go to Explore</Link>
