@@ -36,6 +36,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     asMentee?: boolean;
     rate?: number | null;
     answers?: { count: number; first: { question_text: string; text: string } } | null;
+    suggestion?: 'active' | 'booked' | 'expired';
     /** The other party's zone, so the "what time is it for them" line has something to say. */
     zone?: string;
   };
@@ -71,6 +72,21 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       // The form in brief, so a page of rows needs no extra call. `count`
       // matches what /sessions/{id}/answers returns for the same id.
       answers_preview: o.answers ?? null,
+      // Another time the mentor offered. `held_until` is ahead for `active` and
+      // behind for `expired`, so the countdown has something real to read.
+      suggestion: o.suggestion
+        ? {
+            id: `sg-${id}`,
+            starts_at: minutesFrom(starts, 24 * 60),
+            duration_minutes: 60,
+            held_until: minutesFrom(
+              new Date().toISOString(),
+              o.suggestion === 'active' ? 97 : -30,
+            ),
+            status: o.suggestion,
+            booked_session_id: o.suggestion === 'booked' ? 'u-1' : null,
+          }
+        : null,
     };
   };
 
@@ -150,11 +166,18 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       topic: 'Program selection',
       asMentee: true,
     }),
-    session('h-3', at(-14, 12), 'cancelled', ['Aladi', 'Peter'], { topic: 'Visa questions' }),
+    // Cancelled with an offer whose hold has since lapsed.
+    session('h-3', at(-14, 12), 'cancelled', ['Aladi', 'Peter'], {
+      topic: 'Visa questions',
+      asMentee: true,
+      suggestion: 'expired',
+    }),
     session('h-4', at(-21, 9), 'no_show', ['Oluwasayo', 'Ajewole'], { topic: 'Funding plan' }),
     session('h-5', at(-30, 15), 'declined', ['Wanjiru', 'Kamau'], {
       topic: 'Essay feedback',
       asMentee: true,
+      // Declined, but another time offered and still held.
+      suggestion: 'active',
     }),
     session('h-6', at(-45, 9), 'expired', ['Tunde', 'Bakare'], { topic: 'CV review' }),
     session('h-7', at(-60, 11), 'withdrawn', ['Efua', 'Owusu'], {

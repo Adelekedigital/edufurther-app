@@ -47,6 +47,7 @@ import { useBookingAction } from '@/lib/api/data/bookingActions';
 import { BookingsPanel } from './BookingsPanel';
 import { useBookingsTab } from './useBookingsTab';
 import { useRevealed } from './useRevealed';
+import { useRouter } from 'next/navigation';
 import { useSelectedBooking } from './useSelectedBooking';
 import styles from './BookingsScreen.module.css';
 
@@ -107,6 +108,7 @@ export function BookingsScreen() {
   const history = useBookingHistory(userId, filters, tab === 'history');
 
   const { selected, select, toggle } = useSelectedBooking();
+  const router = useRouter();
   // The design's own breakpoint for this screen: below it the aside has no
   // room beside the 920px column, so the panel takes the whole screen.
   const asSheet = useMediaQuery('(max-width: 1099px)');
@@ -500,6 +502,17 @@ export function BookingsScreen() {
                 answersLoading={answers.isLoading}
                 answersFailed={!!answers.error}
                 retryAnswers={answers.retry}
+                onBookSuggestion={
+                  open?.suggestion && open.side === 'mentee'
+                    ? () =>
+                        // The held slot is listed for this mentee alone, so the
+                        // ordinary flow at that time is all it takes — no
+                        // special path, and the booking limits still apply.
+                        router.push(
+                          `/mentors/${open.other.id}?at=${encodeURIComponent(open.suggestion!.startsAt)}`,
+                        )
+                    : undefined
+                }
                 answersExpanded={answersExpanded}
                 onToggleAnswers={() => setExpandedFor(answersExpanded ? null : openId)}
                 onOpenFile={setViewing}
