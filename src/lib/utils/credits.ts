@@ -3,10 +3,10 @@
  * (mentee)", creditStyle=green, with backend #344's monthly/bonus split).
  * Pure: no data fetching here.
  *
- * The pill and the low/out states read the total (`left`): it's what can be
- * spent. The bar and title read the monthly credits only, so a full month is
- * "3 of 3" rather than "3 of 4" with the starter credit counted in. Bonus
- * credits (starter, invites, support grants) are their own lines.
+ * The pill, titles and low/out states read the total (`left`): it's what can
+ * be spent. The bar has one segment per credit: bonus, then monthly left,
+ * then monthly spent. "Your credits" breaks the total into a Monthly row
+ * (of the monthly ceiling) and Bonus rows (starter, invites, support grants).
  */
 export type CreditsView = {
   left: number;
@@ -19,9 +19,9 @@ export type CreditsView = {
    */
   bonus: BonusGroup[];
   /**
-   * Whether the monthly part shows (title, bar, reset). Not for a mentee who
-   * doesn't get the monthly grant yet and holds none: "0 of 3 monthly" would
-   * describe credits they don't receive.
+   * Whether the monthly part shows (the Monthly row, the green and grey
+   * segments, the reset). Not for a mentee who doesn't get the monthly grant
+   * yet and holds none: "0 of 3" would describe credits they don't receive.
    */
   showMonthly: boolean;
   /** When the monthly credits reset ("Nov 1"); null with no date or no monthly part. */
@@ -130,7 +130,14 @@ export function creditSegments(v: CreditsView): CreditSegment[] {
  * 3", then one "Bonus" row per expiry day ("Expires Dec 31", "Never
  * expires"; no date when it couldn't be read).
  */
-export type CreditRow = { kind: 'monthly' | 'bonus'; label: string; sub: string; value: string };
+export type CreditRow = {
+  kind: 'monthly' | 'bonus';
+  label: string;
+  sub: string;
+  value: string;
+  /** Read after the value, not shown: "1" alone says nothing to a screen reader. */
+  unit: string;
+};
 export function creditRows(v: CreditsView): CreditRow[] {
   return [
     ...(v.showMonthly
@@ -140,6 +147,7 @@ export function creditRows(v: CreditsView): CreditRow[] {
             label: 'Monthly',
             sub: v.resetsOn ? `Resets ${v.resetsOn}` : '',
             value: `${v.monthlyLeft} of ${v.monthlyTotal}`,
+            unit: 'credits',
           },
         ]
       : []),
@@ -148,6 +156,7 @@ export function creditRows(v: CreditsView): CreditRow[] {
       label: 'Bonus',
       sub: !g.expires ? 'Never expires' : g.expiresOn ? `Expires ${g.expiresOn}` : '',
       value: String(g.count),
+      unit: g.count === 1 ? 'credit' : 'credits',
     })),
   ];
 }

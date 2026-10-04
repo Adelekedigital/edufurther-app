@@ -55,6 +55,14 @@
   flex-direction: column;
   gap: var(--space-2);
 }
+.rowList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
 .row {
   display: flex;
   align-items: baseline;
@@ -75,6 +83,11 @@
 }
 .dot.bonus {
   background: var(--blue-500);
+}
+/* Ours (product): the legend follows the bar, which turns yellow when low. */
+.low .dot.monthly,
+.low .dot.bonus {
+  background: var(--warning-text);
 }
 .rowLabel,
 .rowValue {

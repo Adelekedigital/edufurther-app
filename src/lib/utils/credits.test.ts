@@ -155,13 +155,31 @@ describe('copy (design creditSplit on)', () => {
     expect(creditSegments({ ...v(0), showMonthly: false })).toEqual(['empty']);
   });
 
+  it('a late refund above the ceiling: "4 of 4", never "4 of 3"; four green segments', () => {
+    const v = creditsView(api({ monthly: 4 }))!;
+    expect(creditRows(v)[0]?.value).toBe('4 of 4');
+    expect(creditSegments(v)).toEqual(['monthly', 'monthly', 'monthly', 'monthly']);
+  });
+
+  it('the filled segments always add up to the total in the title', () => {
+    for (const o of [
+      { groups: [{ count: 1, expiresAt: null }] },
+      { monthly: 0, groups: [{ count: 2, expiresAt: '2026-11-15T00:00:00Z' }] },
+      { monthly: 4 },
+      { monthly: 0, unlocked: false, groups: [{ count: 1, expiresAt: null }] },
+    ]) {
+      const v = creditsView(api(o))!;
+      expect(creditSegments(v).filter((k) => k !== 'empty')).toHaveLength(v.left);
+    }
+  });
+
   it('rows: Monthly with its reset, one Bonus row per expiry day', () => {
     expect(
       creditRows(v(4, [...starter, { count: 1, expires: true, expiresOn: 'Dec 31' }])),
     ).toEqual([
-      { kind: 'monthly', label: 'Monthly', sub: 'Resets Nov 1', value: '2 of 3' },
-      { kind: 'bonus', label: 'Bonus', sub: 'Never expires', value: '1' },
-      { kind: 'bonus', label: 'Bonus', sub: 'Expires Dec 31', value: '1' },
+      { kind: 'monthly', label: 'Monthly', sub: 'Resets Nov 1', value: '2 of 3', unit: 'credits' },
+      { kind: 'bonus', label: 'Bonus', sub: 'Never expires', value: '1', unit: 'credit' },
+      { kind: 'bonus', label: 'Bonus', sub: 'Expires Dec 31', value: '1', unit: 'credit' },
     ]);
     // No monthly grant: no Monthly row. No bonus: no Bonus row.
     expect(creditRows({ ...v(1, starter), showMonthly: false }).map((r) => r.kind)).toEqual([

@@ -26,6 +26,14 @@ const three: CreditsView = {
   resetsOn: 'Nov 1',
 };
 // Two pills render (the desktop bar's and the phone header's); CSS shows one.
+// One "Credits by type" row: its label, sub-line and value, part by part.
+const expectRow = (dialog: HTMLElement, i: number, label: string, sub: string, value: string) => {
+  const list = within(dialog).getByRole('list', { name: 'Credits by type' });
+  const row = within(list).getAllByRole('listitem')[i]!;
+  expect(within(row).getByText(label)).toBeInTheDocument();
+  expect(within(row).getByText(sub)).toBeInTheDocument();
+  expect(row.querySelector('[class*="rowValue"]')).toHaveTextContent(value);
+};
 const firstPill = () => screen.getAllByRole('button', { name: /credits? left/ })[0]!;
 
 describe('AppShell: a mentee’s credits', () => {
@@ -42,8 +50,8 @@ describe('AppShell: a mentee’s credits', () => {
     const dialog = screen.getByRole('dialog', { name: 'Your credits' });
     // Design creditSplit: the total, then Monthly / Bonus rows.
     expect(dialog).toHaveTextContent('4 credits left');
-    expect(dialog).toHaveTextContent('MonthlyResets Nov 13 of 3');
-    expect(dialog).toHaveTextContent('BonusNever expires1');
+    expectRow(dialog, 0, 'Monthly', 'Resets Nov 1', '3 of 3 credits');
+    expectRow(dialog, 1, 'Bonus', 'Never expires', '1 credit');
     expect(dialog).toHaveTextContent('Expiring credits are used first.');
     // No promise of 3 every month: the grant needs an invite first.
     expect(dialog).not.toHaveTextContent(/3 credits (on|every)/);
@@ -120,7 +128,7 @@ describe('AppShell: a mentee’s credits', () => {
     await userEvent.click(screen.getAllByRole('button', { name: /No credits left/ })[0]!);
     const dialog = screen.getByRole('dialog', { name: 'Your credits' });
     expect(dialog).toHaveTextContent('No credits left');
-    expect(dialog).toHaveTextContent('MonthlyResets Nov 10 of 3');
+    expectRow(dialog, 0, 'Monthly', 'Resets Nov 1', '0 of 3 credits');
   });
 
   it('closing after the layout switched (desktop ↔ phone) focuses the pill that is showing now', async () => {
@@ -156,7 +164,7 @@ describe('AppShell: a mentee’s credits', () => {
     const dialog = screen.getByRole('dialog', { name: 'Your credits' });
     expect(dialog).toHaveTextContent('1 credit left');
     expect(dialog).not.toHaveTextContent(/monthly/i);
-    expect(dialog).toHaveTextContent('BonusNever expires1');
+    expectRow(dialog, 0, 'Bonus', 'Never expires', '1 credit');
     await user.keyboard('{Escape}');
     cleanup();
     shell({ ...starter, left: 0, bonus: [] });
@@ -164,5 +172,8 @@ describe('AppShell: a mentee’s credits', () => {
     const out = screen.getByRole('dialog', { name: 'Your credits' });
     expect(out).toHaveTextContent('No credits left');
     expect(out).not.toHaveTextContent(/monthly/i);
+    // Nothing held: no rows, and no spend order to explain.
+    expect(within(out).queryByRole('list', { name: 'Credits by type' })).toBeNull();
+    expect(out).not.toHaveTextContent('Expiring credits are used first.');
   });
 });

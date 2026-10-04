@@ -34,6 +34,7 @@ export function CreditsExplainer({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [policyOpen, setPolicyOpen] = useState(false);
+  const rows = creditRows(credits);
   const policyId = useId();
 
   useEffect(() => {
@@ -86,17 +87,25 @@ export function CreditsExplainer({
           <span className={styles.title}>{creditsTitle(credits)}</span>
         </div>
         <CreditsBar credits={credits} />
-        <div className={styles.rows}>
-          {creditRows(credits).map((r, i) => (
-            <div key={i} className={styles.row}>
-              <span aria-hidden className={cx(styles.dot, styles[r.kind])} />
-              <span className={styles.rowLabel}>{r.label}</span>
-              <span className={styles.rowSub}>{r.sub}</span>
-              <span className={styles.rowValue}>{r.value}</span>
-            </div>
-          ))}
-          <span className={styles.spend}>{SPEND_ORDER}</span>
-        </div>
+        {rows.length > 0 && (
+          <div className={styles.rows}>
+            <ul className={styles.rowList} aria-label="Credits by type">
+              {rows.map((r, i) => (
+                <li key={i} className={styles.row}>
+                  <span aria-hidden className={cx(styles.dot, styles[r.kind])} />
+                  <span className={styles.rowLabel}>{r.label}</span>
+                  <span className={styles.rowSub}>{r.sub}</span>
+                  <span className={styles.rowValue}>
+                    {r.value}
+                    <span className="sr-only"> {r.unit}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {/* Nothing held, nothing to order. */}
+            <span className={styles.spend}>{SPEND_ORDER}</span>
+          </div>
+        )}
         <div className={styles.policy}>
           <button
             type="button"
