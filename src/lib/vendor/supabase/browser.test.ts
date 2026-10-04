@@ -1,10 +1,15 @@
 export {};
 
 const signOutCall = vi.fn();
+const oauthCall = vi.fn();
 const stopAutoRefresh = vi.fn(async () => {});
 vi.mock('@supabase/ssr', () => ({
   createBrowserClient: () => ({
-    auth: { signOut: (o: unknown) => signOutCall(o), stopAutoRefresh: () => stopAutoRefresh() },
+    auth: {
+      signOut: (o: unknown) => signOutCall(o),
+      stopAutoRefresh: () => stopAutoRefresh(),
+      signInWithOAuth: (o: unknown) => oauthCall(o),
+    },
   }),
 }));
 vi.mock('./config', () => ({
@@ -13,7 +18,7 @@ vi.mock('./config', () => ({
   authConfigured: true,
 }));
 
-const { signOut, SIGN_OUT_TIMEOUT_MS } = await import('./browser');
+const { signOut, signInWithGoogle, SIGN_OUT_TIMEOUT_MS } = await import('./browser');
 
 const setCookies = () => {
   document.cookie = 'sb-proj-auth-token.0=a; path=/';
@@ -75,5 +80,28 @@ describe('signOut (Logout ends this device’s session)', () => {
     document.cookie = 'sb-proj-auth-token=refreshed; path=/';
     window.dispatchEvent(new Event('pagehide'));
     expect(document.cookie).not.toContain('sb-proj-auth-token');
+  });
+});
+
+describe('signInWithGoogle', () => {
+  const BACK = 'http://localhost:3000/auth/callback?next=%2Fexplore';
+
+  it('asks Supabase for Google and carries the landing URL, so `next` survives', async () => {
+    oauthCall.mockResolvedValue({ error: null });
+    expect(await signInWithGoogle(BACK)).toEqual({ ok: true });
+    expect(oauthCall).toHaveBeenCalledWith({
+      provider: 'google',
+      options: { redirectTo: BACK },
+    });
+  });
+
+  it('maps a refusal to a reason the screen can word (provider off → unknown)', async () => {
+    oauthCall.mockResolvedValue({ error: { status: 400, message: 'provider is not enabled' } });
+    expect(await signInWithGoogle(BACK)).toEqual({ ok: false, reason: 'unknown' });
+  });
+
+  it('is rate limiting, not a generic failure, on a 429', async () => {
+    oauthCall.mockResolvedValue({ error: { status: 429 } });
+    expect(await signInWithGoogle(BACK)).toEqual({ ok: false, reason: 'rateLimited' });
   });
 });

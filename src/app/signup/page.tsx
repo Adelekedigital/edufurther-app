@@ -14,5 +14,5 @@ export default async function SignupPage({
 }) {
   const sp = await searchParams;
   const next = safeReturnTo(typeof sp.next === 'string' ? sp.next : null);
-  return <AuthScreen mode="signup" next={next} linkFailed={false} />;
+  return <AuthScreen mode="signup" next={next} />;
 }

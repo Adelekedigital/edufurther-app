@@ -1,21 +1,30 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { GoogleButton } from '@/components/molecules/GoogleButton/GoogleButton';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { EmailCodeForm } from '@/components/organisms/EmailCodeForm/EmailCodeForm';
-import { authConfigured, sendSignInCode, verifySignInCode } from '@/lib/api/data/auth';
+import {
+  authConfigured,
+  sendSignInCode,
+  startGoogleSignIn,
+  verifySignInCode,
+} from '@/lib/api/data/auth';
 import { useSession } from '@/lib/api/data/session';
 import styles from './AuthScreen.module.css';
+
+/** Why a sign-in sent the visitor back here. /auth/callback picks which. */
+export type AuthFailureReason = 'link' | 'google_cancelled' | 'google_failed';
 
 type AuthScreenProps = {
   mode: 'login' | 'signup';
   /** Where to go once signed in (already checked by safeReturnTo). */
   next: string;
-  /** The magic link failed (opened in another browser, or expired). */
-  linkFailed: boolean;
+  /** Set when they arrived from a sign-in that didn't finish. */
+  failure?: AuthFailureReason;
 };
 
 const COPY = {
@@ -35,20 +44,59 @@ const COPY = {
   },
 } as const;
 
+/** PROVISIONAL copy, like the rest of this screen (design request, auth #1). */
+const FAILURE = {
+  link: {
+    tone: 'info',
+    icon: 'mail',
+    title: 'That sign-in link didn’t work here.',
+    body: 'Links only work in the browser you asked from, and only once. Enter the 6-digit code from the email instead, or send a new one.',
+  },
+  google_cancelled: {
+    tone: 'info',
+    icon: 'info',
+    title: 'Google sign-in was cancelled.',
+    body: 'Nothing changed on your account. Try Google again, or use your email.',
+  },
+  google_failed: {
+    tone: 'neutral',
+    icon: 'error',
+    title: 'Google sign-in didn’t work.',
+    body: 'Try again, or use your email instead.',
+  },
+} as const;
+
 /**
  * Log in / Sign up. PROVISIONAL layout: the design has no standalone auth screen
  * (design request, auth #1); the form is the booking modal's sign-up step.
  * Passwordless, so both modes run the same flow and differ only in copy.
  */
-export function AuthScreen({ mode, next, linkFailed }: AuthScreenProps) {
+export function AuthScreen({ mode, next, failure }: AuthScreenProps) {
   const router = useRouter();
   const session = useSession();
   const c = COPY[mode];
+  // Google refusing before the browser leaves (provider off, offline): there is
+  // no round trip to carry a reason, so it is said here instead.
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const [googleFailed, setGoogleFailed] = useState(false);
+  const notice = googleFailed ? FAILURE.google_failed : failure && FAILURE[failure];
 
   // Signed in (just now, or already): go where they were headed.
   useEffect(() => {
     if (session.status === 'present') router.replace(next);
   }, [session.status, next, router]);
+
+  const google = async () => {
+    setGoogleBusy(true);
+    setGoogleFailed(false);
+    const r = await startGoogleSignIn(next);
+    // Success means the browser is already on its way to Google: stay busy, so
+    // the button can't be pressed again while that navigation starts.
+    if (!r.ok) {
+      setGoogleBusy(false);
+      setGoogleFailed(true);
+    }
+  };
 
   return (
     <main className={styles.page}>
@@ -56,25 +104,26 @@ export function AuthScreen({ mode, next, linkFailed }: AuthScreenProps) {
         <Link href="/explore" className={styles.logo} aria-label="EduFurther home">
           <Image src="/brand/edufurther-logo-full.png" alt="" width={180} height={24} priority />
         </Link>
-        {linkFailed && (
-          <Notice tone="info" icon="mail" title="That sign-in link didn’t work here.">
-            Links only work in the browser you asked from, and only once. Enter the 6-digit code
-            from the email instead, or send a new one.
+        {notice && (
+          <Notice tone={notice.tone} icon={notice.icon} title={notice.title}>
+            {notice.body}
           </Notice>
         )}
         {authConfigured ? (
-          <EmailCodeForm
-            title={c.title}
-            intro={c.intro}
-            onSendCode={(email) => sendSignInCode(email, next)}
-            onVerifyCode={verifySignInCode}
-            footer={
-              <>
-                {c.switchText}{' '}
-                <Link href={`${c.switchTo}?next=${encodeURIComponent(next)}`}>{c.switchLabel}</Link>
-              </>
-            }
-          />
+          <>
+            <EmailCodeForm
+              title={c.title}
+              intro={c.intro}
+              onSendCode={(email) => sendSignInCode(email, next)}
+              onVerifyCode={verifySignInCode}
+            />
+            <p className={styles.divider}>or</p>
+            <GoogleButton onClick={() => void google()} busy={googleBusy} />
+            <p className={styles.switch}>
+              {c.switchText}{' '}
+              <Link href={`${c.switchTo}?next=${encodeURIComponent(next)}`}>{c.switchLabel}</Link>
+            </p>
+          </>
         ) : (
           <Notice tone="neutral" icon="error" title="Sign-in isn’t available right now.">
             You can still browse mentors. <Link href="/explore">Go to Explore</Link>

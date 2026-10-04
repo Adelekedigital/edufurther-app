@@ -63,6 +63,24 @@ export async function sendEmailCode(
   return error ? { ok: false, reason: failure(error) } : { ok: true };
 }
 
+/**
+ * Hand the browser to Google's consent screen. Supabase sends it back to
+ * `redirectTo` with a one-time `code` (PKCE; the verifier is in a cookie, so
+ * /auth/callback can swap it server-side, exactly as the magic link does).
+ * On success this call navigates away, so the caller stays busy until it does.
+ */
+export async function signInWithGoogle(
+  redirectTo: string,
+): Promise<{ ok: true } | { ok: false; reason: AuthFailure }> {
+  const sb = supabase();
+  if (!sb) return { ok: false, reason: 'unavailable' };
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo },
+  });
+  return error ? { ok: false, reason: failure(error) } : { ok: true };
+}
+
 export async function verifyEmailCode(
   email: string,
   code: string,

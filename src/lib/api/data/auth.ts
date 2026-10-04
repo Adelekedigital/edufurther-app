@@ -4,7 +4,12 @@ import { useCallback } from 'react';
 import { hardNavigate } from '@/lib/utils/hardNavigate';
 import { releaseLeaveGuards } from '@/lib/utils/leaveGuard';
 import { safeReturnTo } from '@/lib/utils/safeReturnTo';
-import { sendEmailCode, signOut, verifyEmailCode } from '@/lib/vendor/supabase/browser';
+import {
+  sendEmailCode,
+  signInWithGoogle,
+  signOut,
+  verifyEmailCode,
+} from '@/lib/vendor/supabase/browser';
 import { authConfigured } from '@/lib/vendor/supabase/config';
 import { beginSignOut } from './session';
 
@@ -16,11 +21,23 @@ export type { AuthFailure } from '@/lib/vendor/supabase/browser';
  * /auth/callback and then `next` (a local path only).
  */
 export function sendSignInCode(email: string, next: string) {
-  const back = `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeReturnTo(next))}`;
-  return sendEmailCode(email, back);
+  return sendEmailCode(email, callbackUrl(next));
+}
+
+/** Where Supabase sends the browser back to. Local paths only (safeReturnTo). */
+function callbackUrl(next: string) {
+  return `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeReturnTo(next))}`;
 }
 
 export const verifySignInCode = verifyEmailCode;
+
+/**
+ * Start Google sign-in. Same landing as the email link, so `next` survives the
+ * round trip through Google and Supabase.
+ */
+export function startGoogleSignIn(next: string) {
+  return signInWithGoogle(callbackUrl(next));
+}
 
 /**
  * Logout (product, 2026-09-30): end the session, then a full load of /login.

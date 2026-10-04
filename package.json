@@ -20,6 +20,9 @@
   },
   "checkBoundaries": {
     "root": "src",
+    "allowRawHex": [
+      "components/molecules/GoogleButton"
+    ],
     "clientModules": [
       "lib/api/generated"
     ],

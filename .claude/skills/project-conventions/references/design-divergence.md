@@ -273,3 +273,17 @@ Defined in `src/styles/tokens/ours.css`. A redesign must not silently drop them:
 **Not built here:** the row preview box and `hero.ansLink`. They need
 `SessionRead.answers_preview`, which went live mid-build (backend #352) and
 follows in its own PR, as planned.
+
+### Auth — "Continue with Google", 2026-10-03
+
+The design has no standalone auth screen (design request, auth #1), so there is
+nothing to diverge *from* here. The spec followed instead is Google's own:
+[Sign in with Google branding guidelines](https://developers.google.com/identity/branding-guidelines).
+
+| # | Google's guidelines | Built | Why |
+|---|---|---|---|
+| 21 | Their drawn button: white ground, `#747775` border, `#1f1f1f` label, Roboto Medium | Our `Button variant="secondary-outlined" size="large"` — our border, our Inter label, and the label is `--blue-500` | A second button system on one screen, drawn to another brand's spec, would sit beside "Continue with email" looking like a different product. **The blue label is the visible divergence** and is the part to confirm with design when the auth screen is designed. |
+| 22 | The G mark is never recoloured or redrawn | Unchanged, inline SVG, its four brand colours as literals | They are Google's palette, not ours. A token here would invite exactly the recolouring the guidelines forbid — hence the narrow `allowRawHex` entry for this one folder in `package.json`. |
+
+**Ours, not from any design:** the "or" divider, and the wording of the two
+Google failure notices (cancelled / didn't work). Both PROVISIONAL, for design.

@@ -1,0 +1,16 @@
+/* The Button atom puts its children in a label span, so the mark and the words
+   are laid out here rather than by the atom's own gap. */
+.inner {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* 18px: the Button atom's icon size, so this sits like any other leading icon.
+   Google's guidelines set a 20% clear space around the mark; the button's
+   padding covers it many times over. */
+.mark {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
