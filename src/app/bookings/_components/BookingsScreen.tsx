@@ -44,6 +44,7 @@ import {
   overlapping,
 } from '@/lib/utils/bookings';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
+import { useMyReviewableSessions } from '@/lib/api/data/reviewableSessions';
 import { BookingsPanel } from './BookingsPanel';
 import { useBookingsTab } from './useBookingsTab';
 import { useRevealed } from './useRevealed';
@@ -208,6 +209,13 @@ export function BookingsScreen() {
   const pendingAction = confirming
     ? { decline, withdraw, cancel }[confirming.action]
     : null;
+
+  // Which completed sessions this mentee can still review. The list is the
+  // authority — it already applies "completed only", "not already reviewed" and
+  // the 30-day interval per offering — so nothing here re-derives eligibility.
+  const reviewable = useMyReviewableSessions(tab === 'history');
+  const canReview = (b: Booking) =>
+    b.side === 'mentee' && (reviewable.data ?? []).some((r) => r.id === b.id);
 
   const rowMenu = (b: Booking) => {
     const items: RowMenuItem[] = [
@@ -473,7 +481,18 @@ export function BookingsScreen() {
               actionsFor={(b) =>
                 // Only a session this viewer booked can be booked again, and a
                 // mentor never books at all.
-                canBook && b.side === 'mentee' && b.status === 'completed' ? (
+                canReview(b) ? (
+                  <ButtonLink
+                    // The review flow lives on the profile; linking there keeps
+                    // one implementation rather than mounting it twice.
+                    href={`/mentors/${b.other.id}?tab=reviews`}
+                    prefetch={false}
+                    variant="secondary-outlined"
+                    size="small"
+                  >
+                    Leave a review
+                  </ButtonLink>
+                ) : canBook && b.side === 'mentee' && b.status === 'completed' ? (
                   <ButtonLink
                     href={`/mentors/${b.other.id}`}
                     prefetch={false}

@@ -11,6 +11,13 @@ import { sessionKey, useSession } from './session';
 
 type ReviewableSessionRead = components['schemas']['ReviewableSessionRead'];
 
+/**
+ * Named apart from `reviewWrite.ts`'s `useReviewableSessions`, which asks the
+ * same endpoint for **one mentor** (`?mentor_id=`) to drive a profile's Reviews
+ * tab. This one takes the whole list. Two exports with one name, differing only
+ * in arity, is a trap for whoever imports next.
+ */
+
 /** One row as the screen reads it. The same shape the profile's tab uses. */
 export function toReviewableSession(s: ReviewableSessionRead): ReviewableSession {
   return {
@@ -40,7 +47,7 @@ export function toReviewableSession(s: ReviewableSessionRead): ReviewableSession
  * Not to be confused with `useReviewableSessions` in `reviewWrite.ts`, which
  * asks the same endpoint with `?mentor_id=` for one profile's Reviews tab.
  */
-export function useReviewableSessions(active: boolean): Remote<ReviewableSession[]> {
+export function useMyReviewableSessions(active: boolean): Remote<ReviewableSession[]> {
   const session = useSession();
   const enabled = active && session.status !== 'unknown';
   const query = useQuery({

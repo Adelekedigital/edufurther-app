@@ -265,6 +265,9 @@ export function useSendReview() {
       void qc.invalidateQueries({ queryKey: keys.mentors.profilesAll });
       void qc.invalidateQueries({ queryKey: keys.mentors.relationshipFor(a.mentorId) });
       void qc.invalidateQueries({ queryKey: keys.mentors.reviewableFor(a.mentorId) });
+      // The same session sits in the Bookings review entry's list too, and a
+      // written review drops it from both.
+      void qc.invalidateQueries({ queryKey: ['bookings', 'reviewable'] });
       void qc.invalidateQueries({ queryKey: keys.mentors.myReviewFor(a.mentorId) });
       void qc.invalidateQueries({ queryKey: keys.reviews.authoredAll });
     },

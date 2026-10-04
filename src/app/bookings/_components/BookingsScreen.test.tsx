@@ -64,6 +64,10 @@ function stubAction() {
 vi.mock('@/lib/api/data/bookingActions', () => ({
   useBookingAction: (a: string) => (actions[a] ??= stubAction()),
 }));
+let reviewable: { data: { id: string }[] | null; isLoading: boolean; error: unknown; retry: () => void };
+vi.mock('@/lib/api/data/reviewableSessions', () => ({
+  useMyReviewableSessions: () => reviewable,
+}));
 vi.mock('@/lib/api/data/booking', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
   useSlots: () => ({ data: [], isLoading: false, error: null, retry: vi.fn() }),
@@ -169,6 +173,7 @@ beforeEach(() => {
   pending = remote<Booking[]>([]);
   history = hist();
   answers = { data: [], isLoading: false, error: null, retry: vi.fn() };
+  reviewable = { data: [], isLoading: false, error: null, retry: vi.fn() };
   for (const a of ['accept', 'decline', 'withdraw', 'cancel']) actions[a] = stubAction();
   join.mockReset();
   replace.mockReset();
@@ -921,5 +926,44 @@ describe('accepting a request that runs into another session', () => {
     tab = 'pending';
     render(<BookingsScreen />);
     expect(screen.queryByText(/This overlaps your session with/)).not.toBeInTheDocument();
+  });
+});
+
+describe('the review entry on History', () => {
+  beforeEach(() => {
+    // Book again and Leave a review are both gated on being able to book.
+    viewer = { ...MEMBER, isMentor: false, isApprovedMentor: false, isMentee: true };
+  });
+
+  const completed = (over = {}) =>
+    booking({ id: 'h1', title: 'SOP review', status: 'completed', side: 'mentee', startsAt: at(-48), endsAt: at(-47), ...over });
+
+  it('offers a review only for a session the list says is still reviewable', async () => {
+    history = hist({ bookings: [completed()] });
+    reviewable = { data: [{ id: 'h1' }], isLoading: false, error: null, retry: vi.fn() };
+    tab = 'history';
+    render(<BookingsScreen />);
+    const link = screen.getByRole('link', { name: 'Leave a review' });
+    // The flow lives on the profile; one implementation, not two.
+    expect(link).toHaveAttribute('href', '/mentors/p1?tab=reviews');
+  });
+
+  it('a session already reviewed falls back to Book again', () => {
+    // The list drops a session once a review is written, so nothing here has to
+    // re-derive eligibility — and nothing offers a second review.
+    history = hist({ bookings: [completed()] });
+    reviewable = { data: [], isLoading: false, error: null, retry: vi.fn() };
+    tab = 'history';
+    render(<BookingsScreen />);
+    expect(screen.queryByRole('link', { name: 'Leave a review' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Book again' })).toBeVisible();
+  });
+
+  it('a mentor is never offered one — only mentees review', () => {
+    history = hist({ bookings: [completed({ side: 'mentor' })] });
+    reviewable = { data: [{ id: 'h1' }], isLoading: false, error: null, retry: vi.fn() };
+    tab = 'history';
+    render(<BookingsScreen />);
+    expect(screen.queryByRole('link', { name: 'Leave a review' })).not.toBeInTheDocument();
   });
 });

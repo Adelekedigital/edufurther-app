@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
-import { toReviewableSession, useReviewableSessions } from './reviewableSessions';
+import { toReviewableSession, useMyReviewableSessions } from './reviewableSessions';
 
 const GET = vi.fn();
 vi.mock('./http', () => ({ api: { GET: (...args: unknown[]) => GET(...args) } }));
@@ -46,12 +46,12 @@ describe('toReviewableSession', () => {
   });
 });
 
-describe('useReviewableSessions', () => {
+describe('useMyReviewableSessions', () => {
   it('asks for the whole list, newest first', async () => {
     GET.mockResolvedValue(
       page([row('old', '2026-08-01T15:00:00Z'), row('new', '2026-09-19T15:00:00Z')]),
     );
-    const { result } = renderHook(() => useReviewableSessions(true), { wrapper });
+    const { result } = renderHook(() => useMyReviewableSessions(true), { wrapper });
     await waitFor(() => expect(result.current.data).toHaveLength(2));
     // No mentor_id: this screen asks across every mentor, unlike the profile tab.
     expect(GET.mock.calls[0]![0]).toBe('/api/v1/me/reviewable-sessions');
@@ -61,14 +61,14 @@ describe('useReviewableSessions', () => {
 
   it('nothing to review is an empty list, not an error', async () => {
     GET.mockResolvedValue(page([]));
-    const { result } = renderHook(() => useReviewableSessions(true), { wrapper });
+    const { result } = renderHook(() => useMyReviewableSessions(true), { wrapper });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.data).toEqual([]);
     expect(result.current.error).toBeNull();
   });
 
   it('fetches nothing until the tab that needs it is on show', () => {
-    const { result } = renderHook(() => useReviewableSessions(false), { wrapper });
+    const { result } = renderHook(() => useMyReviewableSessions(false), { wrapper });
     // Loading, not empty: an inactive read must never read as "nothing here".
     expect(result.current.isLoading).toBe(true);
     expect(GET).not.toHaveBeenCalled();
@@ -86,7 +86,7 @@ describe('useReviewableSessions', () => {
       },
       response: new Response(null, { status: 500 }),
     });
-    const { result } = renderHook(() => useReviewableSessions(true), { wrapper });
+    const { result } = renderHook(() => useMyReviewableSessions(true), { wrapper });
     await waitFor(() => expect(result.current.error).not.toBeNull());
     expect(result.current.error!.kind).toBe('server');
     // RFC 9457 `detail` is not safe to show; the copy is ours, chosen by status.
