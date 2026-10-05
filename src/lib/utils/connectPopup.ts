@@ -12,7 +12,7 @@
  * without one, a mentor who presses Deny waits for ever.
  */
 
-export type ConnectOutcome = 'connected' | 'cancelled' | 'timeout' | 'blocked';
+export type ConnectOutcome = 'connected' | 'cancelled' | 'timeout' | 'blocked' | 'refused';
 
 export type ConnectPopupOptions = {
   /** Resolves true once the server shows the connection. Must not throw. */
@@ -26,7 +26,12 @@ export type ConnectPopupOptions = {
   openWindow?: (url: string, target: string, features: string) => Window | null;
 };
 
-const FEATURES = 'popup=yes,width=520,height=680,noopener=no,noreferrer=no';
+/**
+ * No `noopener`: it makes `window.open` return null, and we need the handle to
+ * navigate the window and close it again. The opener it leaves reachable is
+ * the reason `url` is checked before we go anywhere near it.
+ */
+const FEATURES = 'popup=yes,width=520,height=680';
 
 /**
  * Opens the popup immediately — a window opened after an `await` is blocked,
@@ -54,7 +59,26 @@ export async function waitForConsent(
   }: ConnectPopupOptions,
 ): Promise<ConnectOutcome> {
   if (!popup) return 'blocked';
-  popup.location.replace(url);
+
+  // The popup still holds the about:blank document we opened, which inherits
+  // THIS origin — so a `javascript:` url here would run as us, with
+  // `window.opener` handing it the live app. The url comes from our own API
+  // and carries nothing the caller supplied, so this is defence in depth
+  // against a compromised backend rather than a reachable hole; it is also
+  // what `safeMeetingUrl` already does for the other backend-supplied url we
+  // open.
+  let target;
+  try {
+    target = new URL(url, window.location.origin);
+  } catch {
+    close(popup);
+    return 'refused';
+  }
+  if (target.protocol !== 'https:' && target.protocol !== 'http:') {
+    close(popup);
+    return 'refused';
+  }
+  popup.location.replace(target.href);
 
   const started = now();
   let closedAt: number | null = null;

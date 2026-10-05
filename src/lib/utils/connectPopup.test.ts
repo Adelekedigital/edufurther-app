@@ -97,3 +97,40 @@ describe('waitForConsent', () => {
     expect(outcome).toBe('connected');
   });
 });
+
+/**
+ * The popup still holds the about:blank document we opened, so it inherits our
+ * origin: a `javascript:` url would run as us, not in a sandbox.
+ */
+describe('waitForConsent url check', () => {
+  it.each(['javascript:alert(1)', 'data:text/html,<script>1</script>', 'file:///etc/passwd'])(
+    'refuses to send the popup to %s',
+    async (bad) => {
+      const p = popup();
+      const outcome = await waitForConsent(p as unknown as Window, bad, {
+        isDone: async () => true,
+        pollMs: 1,
+      });
+      expect(outcome).toBe('refused');
+      expect(p.location.replace).not.toHaveBeenCalled();
+      expect(p.close).toHaveBeenCalled();
+    },
+  );
+
+  it('allows the https url the API actually returns', async () => {
+    const p = popup();
+    await waitForConsent(p as unknown as Window, URL_, { isDone: async () => true, pollMs: 1 });
+    expect(p.location.replace).toHaveBeenCalledWith(URL_);
+  });
+
+  /** The dev mock answers a relative path; it must resolve, not be refused. */
+  it('allows a relative url by resolving it against our origin', async () => {
+    const p = popup();
+    const outcome = await waitForConsent(p as unknown as Window, '/api/mock/granted', {
+      isDone: async () => true,
+      pollMs: 1,
+    });
+    expect(outcome).toBe('connected');
+    expect(p.location.replace).toHaveBeenCalledWith(expect.stringContaining('/api/mock/granted'));
+  });
+});

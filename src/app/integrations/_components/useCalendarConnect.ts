@@ -77,8 +77,16 @@ export function useCalendarConnect(
         return;
       }
       // Denying consent writes nothing, so there is no failure to report —
-      // the connection simply does not exist (backend reply #4).
-      setState({ kind: outcome === 'blocked' ? 'blocked' : 'nothingConnected' });
+      // the connection simply does not exist (backend reply #4). A refused url
+      // is our own doing and belongs with the other "could not start" cases.
+      setState({
+        kind:
+          outcome === 'blocked'
+            ? 'blocked'
+            : outcome === 'refused'
+              ? 'failed'
+              : 'nothingConnected',
+      });
     } catch {
       popup?.close();
       setState({ kind: 'failed' });
