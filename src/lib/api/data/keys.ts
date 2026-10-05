@@ -70,6 +70,8 @@ export const keys = {
     status: (userId: string) => ['calendar', 'status', userId] as const,
     /** Where sessions run (GET /me/conferencing). */
     video: (userId: string) => ['calendar', 'video', userId] as const,
+    /** Whether Google Calendar is connected (GET /me/calendar). */
+    connection: (userId: string) => ['calendar', 'connection', userId] as const,
   },
   /** A review as its author reads it (GET /reviews/{id}), to pre-fill Edit. */
   reviews: {

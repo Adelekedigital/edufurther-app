@@ -49,3 +49,24 @@
 .blockCard {
   height: 208px;
 }
+
+/* Disconnect confirm (Integrations.dc.html `discOpen`): two equal buttons. */
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.confirmActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.confirmError {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-danger);
+}

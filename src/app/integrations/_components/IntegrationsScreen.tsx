@@ -2,16 +2,27 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
+import { Icon } from '@/components/atoms/Icon/Icon';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
+import { IntegrationRow } from '@/components/molecules/IntegrationRow/IntegrationRow';
+import { Notice } from '@/components/molecules/Notice/Notice';
+import { IntegrationGroup } from '@/components/organisms/IntegrationGroup/IntegrationGroup';
 import { VideoSection, type Provider } from '@/components/organisms/VideoSection/VideoSection';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
+import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
+import {
+  useCalendarConnection,
+  useDisconnectCalendar,
+  type ConnectionFault,
+} from '@/lib/api/data/calendarConnection';
 import { useConferencing, useSaveConferencing } from '@/lib/api/data/conferencing';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { useOnline } from '@/lib/utils/useOnline';
 import { mentorGate, type GateCopy } from '../../_shell/MentorGate';
 import { useAppShell } from '../../_shell/useAppShell';
 import { IntegrationsSkeleton } from './IntegrationsSkeleton';
+import { useCalendarConnect } from './useCalendarConnect';
 import styles from './IntegrationsScreen.module.css';
 
 /** PROVISIONAL — Integrations.dc.html draws no gate (docs/handoff/integrations-design-request.md). */
@@ -22,6 +33,17 @@ const INTEGRATIONS_GATE: GateCopy = {
   nonMentorTitle: 'Integrations are for mentors',
   nonMentorDescription:
     'Once you’re a mentor, this is where you choose where your sessions happen.',
+};
+
+/**
+ * Why a grant stopped working. The backend writes one of two of its own
+ * constants (reply #3); an unexpected third degrades to the generic line
+ * rather than rendering nothing.
+ */
+const FAULTS: Record<ConnectionFault, string> = {
+  revoked: 'Google Calendar needs reconnecting — access was removed or has expired.',
+  unreadable: 'Google Calendar needs reconnecting.',
+  unknown: 'Google Calendar needs reconnecting.',
 };
 
 const NAMES: Record<Provider, string> = {
@@ -39,6 +61,10 @@ export function IntegrationsScreen() {
 
   const video = useConferencing(mentorId);
   const saveVideo = useSaveConferencing(mentorId);
+  const calendar = useCalendarConnection(mentorId);
+  const disconnect = useDisconnectCalendar(mentorId);
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
+  const disconnectButton = useRef<HTMLButtonElement>(null);
 
   // The choice shown while the server catches up. A radio that doesn't move when
   // you click it reads as broken, so the pick lands first and a failure puts it
@@ -64,6 +90,12 @@ export function IntegrationsScreen() {
   const announce = useCallback(
     (text: string) => setAnnouncement((a) => ({ text, id: (a?.id ?? 0) + 1 })),
     [],
+  );
+
+  const { state: connectState, connect, dismiss } = useCalendarConnect(
+    mentorId,
+    calendar.data,
+    announce,
   );
 
   const { save: saveFn, reset: resetSave } = saveVideo;
@@ -116,8 +148,94 @@ export function IntegrationsScreen() {
 
   const errorText = saveVideo.error?.message ?? null;
 
+  const connected = calendar.data;
+  const connectNotice: { title: string; body: string } | null =
+    connectState.kind === 'unavailable'
+      ? {
+          title: 'Connecting a calendar isn’t available yet.',
+          body: 'We’re still setting this up. You’ll be able to connect Google Calendar here soon.',
+        }
+      : connectState.kind === 'blocked'
+        ? {
+            title: 'Your browser blocked the pop-up.',
+            body: 'Allow pop-ups for EduFurther, then try connecting again.',
+          }
+        : connectState.kind === 'nothingConnected'
+          ? {
+              title: 'Nothing was connected.',
+              body: 'The Google window closed before access was granted. You can try again.',
+            }
+          : connectState.kind === 'failed'
+            ? {
+                title: 'We couldn’t start connecting.',
+                body: 'Something went wrong on our side. Try again in a moment.',
+              }
+            : null;
+
+  const calendarRow = (
+    <IntegrationRow
+      icon="calendar_month"
+      tone="blue"
+      label="Google Calendar"
+      description="We check when you’re busy and hide those times from your booking page. We never edit your calendar."
+      status={
+        calendar.error
+          ? { tone: 'warn', text: 'We couldn’t check whether your calendar is connected.' }
+          : connected
+            ? connected.status === 'error'
+              ? { tone: 'warn', text: FAULTS[connected.fault ?? 'unknown'] }
+              : // No account name: the API has no field for one, deliberately —
+                // the ask is calendar.freebusy alone, and Google names an
+                // account only when `openid` is in the scopes.
+                { tone: 'good', text: 'Connected' }
+            : undefined
+      }
+      actions={
+        calendar.error ? (
+          <Button variant="secondary-outlined" busy={calendar.retrying} onClick={calendar.retry}>
+            Try again
+          </Button>
+        ) : (
+          <>
+            {(!connected || connected.status === 'error') && (
+              <Button
+                busy={connectState.kind === 'busy'}
+                // A deployment with no Google client can never succeed, so the
+                // control stops offering (backend reply #1).
+                disabled={connectState.kind === 'unavailable'}
+                onClick={() => void connect()}
+              >
+                {connected ? 'Reconnect' : 'Connect'}
+              </Button>
+            )}
+            {connected && (
+              <Button
+                ref={disconnectButton}
+                variant="text-destructive"
+                onClick={() => {
+                  disconnect.reset();
+                  setConfirmDisconnect(true);
+                }}
+              >
+                Disconnect
+              </Button>
+            )}
+          </>
+        )
+      }
+      footer={
+        connectNotice && (
+          <Notice tone="neutral" icon="info" title={connectNotice.title} onDismiss={dismiss}>
+            {connectNotice.body}
+          </Notice>
+        )
+      }
+    />
+  );
+
   let content: ReactNode;
-  if (viewer.kind === 'loading' || video.isLoading) content = <IntegrationsSkeleton />;
+  if (viewer.kind === 'loading' || video.isLoading || calendar.isLoading)
+    content = <IntegrationsSkeleton />;
   // Error before content: a failed load never reads as "nothing connected".
   else if (video.error || !video.data)
     content = (
@@ -139,32 +257,40 @@ export function IntegrationsScreen() {
     );
   else
     content = (
-      <VideoSection
-        provider={pending ?? video.data.provider}
-        onPick={pick}
-        saving={saveVideo.isPending && pending !== 'custom'}
-        error={failedAction === 'pick' ? errorText : null}
-        link={link}
-        savedLink={savedLink}
-        onLinkChange={(v) => {
-          setDraft(v);
-          // A failure about the request before this one must not stay attached
-          // to the field while they type the fix.
-          if (failedAction === 'link') {
-            setFailedAction(null);
-            saveVideo.reset();
-          }
-        }}
-        savingLink={saveVideo.isPending && pending === 'custom'}
-        linkError={failedAction === 'link' ? errorText : null}
-        onUseLink={(url) => void save('custom', url, 'link')}
-        onKeepAutomatic={() => {
-          setDraft(null);
-          // The mentor pressed this inside the panel, so a failure belongs
-          // there rather than under the provider cards.
-          if (video.data?.provider === 'custom') void save('daily', null, 'link');
-        }}
-      />
+      <>
+        <VideoSection
+          provider={pending ?? video.data.provider}
+          onPick={pick}
+          saving={saveVideo.isPending && pending !== 'custom'}
+          error={failedAction === 'pick' ? errorText : null}
+          link={link}
+          savedLink={savedLink}
+          onLinkChange={(v) => {
+            setDraft(v);
+            // A failure about the request before this one must not stay
+            // attached to the field while they type the fix.
+            if (failedAction === 'link') {
+              setFailedAction(null);
+              saveVideo.reset();
+            }
+          }}
+          savingLink={saveVideo.isPending && pending === 'custom'}
+          linkError={failedAction === 'link' ? errorText : null}
+          onUseLink={(url) => void save('custom', url, 'link')}
+          onKeepAutomatic={() => {
+            setDraft(null);
+            // The mentor pressed this inside the panel, so a failure belongs
+            // there rather than under the provider cards.
+            if (video.data?.provider === 'custom') void save('daily', null, 'link');
+          }}
+        />
+        <IntegrationGroup
+          title="Calendars"
+          description="Stop double-bookings and see sessions next to the rest of your week."
+        >
+          {calendarRow}
+        </IntegrationGroup>
+      </>
     );
 
   const body: ReactNode = mentorGate(viewer, isMentor, '/integrations', INTEGRATIONS_GATE) ?? (
@@ -183,6 +309,61 @@ export function IntegrationsScreen() {
   return (
     <AppShell active="Integration" nav={nav} chrome={chrome} account={account} offline={!online}>
       {body}
+      {confirmDisconnect && (
+        <ModalShell
+          title="Disconnect Google Calendar?"
+          // The design adds "New bookings move to EduFurther video if you use
+          // Google Meet." That is not true here: Meet is never gated on this
+          // connection, so disconnecting changes nothing about it.
+          subtitle="We’ll stop checking when you’re busy, so those times can be booked again."
+          icon="link_off"
+          tone="danger"
+          size="sm"
+          onClose={() => {
+            if (!disconnect.isPending) setConfirmDisconnect(false);
+          }}
+        >
+          <div className={styles.confirm}>
+            {disconnect.error && (
+              <p className={styles.confirmError}>
+                <Icon name="error" size={16} />
+                {disconnect.error.message}
+              </p>
+            )}
+            <div className={styles.confirmActions}>
+              <Button
+                size="large"
+                variant="secondary-outlined"
+                fullWidth
+                disabled={disconnect.isPending}
+                onClick={() => setConfirmDisconnect(false)}
+              >
+                Stay connected
+              </Button>
+              <Button
+                size="large"
+                variant="destructive"
+                fullWidth
+                busy={disconnect.isPending}
+                onClick={() => {
+                  void disconnect.disconnect().then(
+                    () => {
+                      setConfirmDisconnect(false);
+                      announce('Google Calendar disconnected.');
+                    },
+                    () => {
+                      // Stays open: the error belongs beside the button that
+                      // caused it, not on a page the modal is covering.
+                    },
+                  );
+                }}
+              >
+                Disconnect
+              </Button>
+            </div>
+          </div>
+        </ModalShell>
+      )}
       <LiveRegion message={announcement} />
     </AppShell>
   );
