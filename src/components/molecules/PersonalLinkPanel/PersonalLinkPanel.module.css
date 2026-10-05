@@ -1,0 +1,78 @@
+/* Integrations.dc.html `ownOpen` panel. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-subtle);
+}
+/* Design: the border firms up once the link is the mentor's actual choice. */
+.inUse {
+  border-color: var(--border-default);
+}
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.title {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.field {
+  display: flex;
+  max-width: 520px;
+}
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-danger);
+}
+.points {
+  margin: 0;
+  padding-left: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.keep {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+}
+.keep:hover {
+  color: var(--blue-700);
+}
+.keep:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-xs);
+}
+@media (max-width: 767px) {
+  /* Keeps the drawn text size with a 44px target around it (house phone rule). */
+  .keep {
+    min-height: var(--touch-target-min);
+  }
+}

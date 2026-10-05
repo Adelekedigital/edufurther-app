@@ -1,0 +1,81 @@
+/* Integrations.dc.html "Video for sessions". */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.title {
+  margin: 0;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+.subtitle {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-500);
+}
+.grid {
+  display: grid;
+  /* min() so a 260px card never overflows a 390px phone. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: var(--space-3);
+}
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-danger);
+}
+.saving {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+.spin {
+  animation: spin 900ms linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
+.disclosure {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+  text-decoration: underline;
+}
+.disclosure:hover {
+  color: var(--ink-700);
+}
+.disclosure:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-xs);
+}
+@media (max-width: 767px) {
+  /* Keeps the drawn text size with a 44px target around it (house phone rule). */
+  .disclosure {
+    min-height: var(--touch-target-min);
+  }
+}

@@ -11,7 +11,9 @@ export type Illustration =
   /** Bookings: past sessions that are over and kept. */
   | 'project-tasks'
   /** The design's `tone="grey"` calendar: a state, not an invitation (not taking bookings). */
-  | 'calendar-grey';
+  | 'calendar-grey'
+  /** Integrations: connected tools. */
+  | 'subscriptions';
 
 type EmptyStateProps = {
   illustration: Illustration;
