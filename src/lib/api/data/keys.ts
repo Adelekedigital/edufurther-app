@@ -73,6 +73,11 @@ export const keys = {
     /** Whether Google Calendar is connected (GET /me/calendar). */
     connection: (userId: string) => ['calendar', 'connection', userId] as const,
   },
+  /**
+   * "Tell me when this ships", per account. Not per feature: one small list
+   * answers for every coming-soon button on the page.
+   */
+  interest: { all: ['interest'] as const },
   /** A review as its author reads it (GET /reviews/{id}), to pre-fill Edit. */
   reviews: {
     authoredAll: ['reviews', 'authored'] as const,

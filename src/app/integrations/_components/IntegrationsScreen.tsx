@@ -17,6 +17,7 @@ import {
   type ConnectionFault,
 } from '@/lib/api/data/calendarConnection';
 import { useConferencing, useSaveConferencing } from '@/lib/api/data/conferencing';
+import { useInterest, useRegisterInterest } from '@/lib/api/data/interest';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { useOnline } from '@/lib/utils/useOnline';
 import { mentorGate, type GateCopy } from '../../_shell/MentorGate';
@@ -62,6 +63,19 @@ export function IntegrationsScreen() {
   const video = useConferencing(mentorId);
   const saveVideo = useSaveConferencing(mentorId);
   const calendar = useCalendarConnection(mentorId);
+  /**
+   * PENDING BACKEND (#365). The hook probes for the endpoint and withholds the
+   * button when it 404s — but the probe itself logs that 404 to every mentor's
+   * console on every page load, and our page-review gate counts a console error
+   * as a failure. Suppressing it would mean adding our own noise to a list that
+   * exists for other people's, and that gate has already caught real bugs here.
+   *
+   * So the probe is off until the endpoint lands, which the backend has in
+   * progress. **Turning it on is this one word: `false` → `isMentor`.** The
+   * hook, its mock and its tests are already written and exercised.
+   */
+  const interest = useInterest(false);
+  const register = useRegisterInterest();
   const disconnect = useDisconnectCalendar(mentorId);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const disconnectButton = useRef<HTMLButtonElement>(null);
@@ -207,6 +221,47 @@ export function IntegrationsScreen() {
     if (key && key !== lastAnnounced.current) announce(`${connectNotice!.title} ${connectNotice!.body}`);
     lastAnnounced.current = key;
   }, [connectNotice, announce]);
+
+  const askedForPayments = interest.data?.features.includes('payments') ?? false;
+  const paymentsRow = (
+    <IntegrationRow
+      icon="payments"
+      tone="green"
+      label="Get paid for sessions"
+      badge="Coming soon"
+      description="Your experience is worth paying for. Start charging for your sessions."
+      actions={
+        // Only once the endpoint exists. Until then there is nothing to press.
+        interest.data?.available ? (
+          <Button
+            variant="secondary-outlined"
+            disabled={askedForPayments}
+            busy={register.isPending}
+            onClick={() => {
+              register.reset();
+              void register.register('payments').then(
+                // Never a date: a slug removes a backend release in front of
+                // the button, not in front of the notification.
+                () => announce('We’ll let you know when paid sessions are ready.'),
+                (e: { message?: string }) =>
+                  announce(e?.message ?? 'We couldn’t sign you up just now. Try again.'),
+              );
+            }}
+          >
+            {askedForPayments ? 'We’ll let you know' : 'Notify me'}
+          </Button>
+        ) : undefined
+      }
+      footer={
+        register.error ? (
+          <p role="alert" className={styles.sectionErrorBody}>
+            <Icon name="error" size={16} />
+            {register.error.message}
+          </p>
+        ) : undefined
+      }
+    />
+  );
 
   const calendarRow = (
     <IntegrationRow
@@ -372,6 +427,12 @@ export function IntegrationsScreen() {
           description="Stop double-bookings and see sessions next to the rest of your week."
         >
           {calendarRow}
+        </IntegrationGroup>
+        <IntegrationGroup
+          title="Payments"
+          description="Charge for sessions and get paid straight to your account."
+        >
+          {paymentsRow}
         </IntegrationGroup>
       </>
     );
