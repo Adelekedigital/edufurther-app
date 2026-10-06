@@ -7,10 +7,12 @@ import { api } from './http';
 import { keys } from './keys';
 
 /**
- * Why a grant stopped working. The backend writes one of exactly two strings,
- * both of its own (backend reply #3) — not Google's words, despite what the
- * schema docstring says. A third value is still handled: an unknown reason
- * degrades to the generic line rather than rendering nothing.
+ * Why a grant stopped working. `last_error` is one of a fixed set of the
+ * backend's own sentences, never a provider message, and the spec now says so
+ * and tells clients to do exactly this: copy per value, and a generic line for
+ * one we do not recognise, so a reason added later degrades rather than
+ * showing nothing. The set is generated from the domain layer, so a third
+ * value cannot appear without appearing in the spec we download.
  */
 export type ConnectionFault = 'revoked' | 'unreadable' | 'unknown';
 
