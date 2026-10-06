@@ -17,6 +17,7 @@ import {
   type ConnectionFault,
 } from '@/lib/api/data/calendarConnection';
 import { useConferencing, useSaveConferencing } from '@/lib/api/data/conferencing';
+import { useInterest, useRegisterInterest } from '@/lib/api/data/interest';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { useOnline } from '@/lib/utils/useOnline';
 import { mentorGate, type GateCopy } from '../../_shell/MentorGate';
@@ -62,6 +63,9 @@ export function IntegrationsScreen() {
   const video = useConferencing(mentorId);
   const saveVideo = useSaveConferencing(mentorId);
   const calendar = useCalendarConnection(mentorId);
+  // Backend #365 merged 2026-10-06, so the endpoint exists and the probe is on.
+  const interest = useInterest(mentorId);
+  const register = useRegisterInterest(mentorId);
   const disconnect = useDisconnectCalendar(mentorId);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const disconnectButton = useRef<HTMLButtonElement>(null);
@@ -208,6 +212,63 @@ export function IntegrationsScreen() {
     lastAnnounced.current = key;
   }, [connectNotice, announce]);
 
+  const askedForPayments = interest.data?.features.includes('payments') ?? false;
+  const paymentsRow = (
+    <IntegrationRow
+      icon="payments"
+      tone="green"
+      label="Get paid for sessions"
+      badge="Coming soon"
+      description="Your experience is worth paying for. Start charging for your sessions."
+      // Once they have asked, the confirmation is a status line, not a disabled
+      // button: a disabled button leaves the tab order, so the one state it
+      // reports is the one a keyboard or screen-reader user cannot reach. The
+      // Calendars row above says "Connected" the same way.
+      status={
+        askedForPayments ? { tone: 'good', text: 'We’ll let you know' } : undefined
+      }
+      actions={
+        // Only once the endpoint exists, and only until they have asked.
+        interest.data?.available && !askedForPayments ? (
+          <Button
+            variant="secondary-outlined"
+            busy={register.isPending}
+            onClick={() => {
+              register.reset();
+              void register.register('payments').then(
+                // Never a date: a slug removes a backend release in front of
+                // the button, not in front of the notification.
+                () => announce('We’ll let you know when paid sessions are ready.'),
+                (e: { message?: string }) =>
+                  announce(e?.message ?? 'We couldn’t sign you up just now. Try again.'),
+              );
+            }}
+          >
+            Notify me
+          </Button>
+        ) : undefined
+      }
+      footer={
+        register.isPending ? (
+          // `busy` on a Button is cursor-only (divergence row 375), and the
+          // pending span covers the POST plus its refetch.
+          <span className={styles.waiting}>
+            <Icon name="progress_activity" size={16} className={styles.spin} />
+            Signing you up…
+          </span>
+        ) : register.error ? (
+          // Plain, not role="alert": the rejection handler already announces
+          // this sentence, and two live regions getting the same text in one
+          // commit is read out twice.
+          <p className={styles.sectionErrorBody}>
+            <Icon name="error" size={16} />
+            {register.error.message}
+          </p>
+        ) : undefined
+      }
+    />
+  );
+
   const calendarRow = (
     <IntegrationRow
       icon="calendar_month"
@@ -302,7 +363,7 @@ export function IntegrationsScreen() {
   );
 
   let content: ReactNode;
-  if (viewer.kind === 'loading' || video.isLoading || calendar.isLoading)
+  if (viewer.kind === 'loading' || video.isLoading || calendar.isLoading || interest.isLoading)
     content = <IntegrationsSkeleton />;
   // Error before content: a failed load never reads as "nothing connected".
   // Only when NOTHING loaded, though — this page has two independent resources
@@ -372,6 +433,12 @@ export function IntegrationsScreen() {
           description="Stop double-bookings and see sessions next to the rest of your week."
         >
           {calendarRow}
+        </IntegrationGroup>
+        <IntegrationGroup
+          title="Payments"
+          description="Charge for sessions and get paid straight to your account."
+        >
+          {paymentsRow}
         </IntegrationGroup>
       </>
     );

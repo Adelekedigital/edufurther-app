@@ -73,6 +73,17 @@ export const keys = {
     /** Whether Google Calendar is connected (GET /me/calendar). */
     connection: (userId: string) => ['calendar', 'connection', userId] as const,
   },
+  /**
+   * "Tell me when this ships". One small list per account answers for every
+   * coming-soon button on the page — but it is **scoped by account**, like
+   * every other key here that holds somebody's own data. The cache does not
+   * actually survive a user switch (every sign-out is a full document load),
+   * so this is not load-bearing; it is here so nobody has to re-derive that
+   * to know the key is safe.
+   */
+  interest: {
+    forUser: (userId: string) => ['interest', userId] as const,
+  },
   /** A review as its author reads it (GET /reviews/{id}), to pre-fill Edit. */
   reviews: {
     authoredAll: ['reviews', 'authored'] as const,

@@ -61,6 +61,27 @@ vi.mock('./useCalendarConnect', () => ({
   }),
 }));
 
+let interest: { data: { available: boolean; features: string[] } | null };
+const registerFn = vi.fn();
+let registerPending = false;
+let registerError: AppError | null = null;
+vi.mock('@/lib/api/data/interest', () => ({
+  // Honours the user argument: the screen passes null until #365 lands, and a
+  // mock that ignored it would assert a button the page cannot render.
+  useInterest: (userId: string | null) => ({
+    data: userId ? interest.data : null,
+    isLoading: false,
+    error: null,
+    retry: vi.fn(),
+  }),
+  useRegisterInterest: () => ({
+    register: registerFn,
+    isPending: registerPending,
+    error: registerError,
+    reset: vi.fn(),
+  }),
+}));
+
 const connection = (over: Partial<CalendarConnection> = {}): CalendarConnection => ({
   connectedAt: '2026-10-01T09:00:00Z',
   status: 'active',
@@ -100,6 +121,10 @@ beforeEach(() => {
   connectFn.mockReset();
   connectState = { kind: 'idle' };
   connectUnavailable = false;
+  interest = { data: { available: true, features: [] } };
+  registerFn.mockReset().mockResolvedValue(undefined);
+  registerPending = false;
+  registerError = null;
 });
 
 describe('IntegrationsScreen', () => {
@@ -325,6 +350,61 @@ describe('IntegrationsScreen', () => {
     render(<IntegrationsScreen />);
     expect(screen.getByText('Integrations are for mentors')).toBeInTheDocument();
     expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
+  });
+
+  describe('Payments', () => {
+    it('shows the coming-soon badge', () => {
+      render(<IntegrationsScreen />);
+      expect(screen.getByText('Coming soon')).toBeInTheDocument();
+    });
+
+    it('registers interest and says so, without promising a date', async () => {
+      render(<IntegrationsScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Notify me' }));
+      expect(registerFn).toHaveBeenCalledWith('payments');
+      await waitFor(() =>
+        expect(screen.getByRole('status')).toHaveTextContent(
+          'We’ll let you know when paid sessions are ready.',
+        ),
+      );
+      expect(screen.getByRole('status').textContent).not.toMatch(/\d{4}|week|month|soon as/i);
+    });
+
+    /**
+     * A disabled button leaves the tab order, so the one state it reports is
+     * the one a keyboard or screen-reader user cannot reach. The confirmation
+     * is a status line, like the Calendars row's "Connected as ...".
+     */
+    it('confirms with a status line, not a disabled button', () => {
+      interest = { data: { available: true, features: ['payments'] } };
+      render(<IntegrationsScreen />);
+      expect(screen.getByText('We’ll let you know')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Notify me|let you know/ })).not.toBeInTheDocument();
+    });
+
+    it('offers nothing to press if the endpoint goes away', () => {
+      interest = { data: { available: false, features: [] } };
+      render(<IntegrationsScreen />);
+      expect(screen.getByText('Get paid for sessions')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Notify me' })).not.toBeInTheDocument();
+    });
+
+    it('shows the pending line while a sign-up is in flight', () => {
+      registerPending = true;
+      render(<IntegrationsScreen />);
+      expect(screen.getByText('Signing you up…')).toBeInTheDocument();
+    });
+
+    it('announces a failure rather than only drawing it', async () => {
+      registerFn.mockRejectedValue({ message: 'We couldn’t sign you up just now. Try again.' });
+      render(<IntegrationsScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Notify me' }));
+      await waitFor(() =>
+        expect(screen.getByRole('status')).toHaveTextContent(
+          'We couldn’t sign you up just now. Try again.',
+        ),
+      );
+    });
   });
 
   describe('Google Calendar', () => {
