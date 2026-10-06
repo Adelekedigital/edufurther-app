@@ -90,6 +90,19 @@
   background: radial-gradient(circle, var(--action-primary) 4.5px, var(--white) 5px);
   box-shadow: inset 0 0 0 1.5px var(--action-primary);
 }
+.managed {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-500);
+}
+.managed a {
+  color: var(--blue-500);
+  font-weight: var(--weight-medium);
+}
+.managed a:hover {
+  color: var(--blue-700);
+}
 .error {
   display: flex;
   align-items: flex-start;

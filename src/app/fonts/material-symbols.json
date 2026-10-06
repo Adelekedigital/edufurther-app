@@ -81,6 +81,7 @@
     "public",
     "quiz",
     "radio_button_checked",
+    "radio_button_unchecked",
     "rate_review",
     "record_voice_over",
     "refresh",
@@ -114,5 +115,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "4512571a9fa2d3c0eef5235b2e5bfd54a7bc1d2414085787eaff0f10c644fefe"
+  "sha256": "25b1925aa999b43f28b91e705ad9b3a7ce3712dccdf1127d502a7cd51b4ae890"
 }

@@ -130,6 +130,13 @@ export function VideoProviderForm({
           );
         })}
       </div>
+      {/* The design's line, restored now that the page it points at exists.
+          Deliberately NOT a link: this dialog holds an unsaved pick with no
+          leave guard, and a link inside a focus trap is the last place anyone
+          expects to lose it. The nav rail is two keystrokes away. */}
+      <p className={styles.managed}>
+        Connections and personal links are managed in Integrations.
+      </p>
       {error && (
         <p className={styles.error}>
           <Icon name="error" size={16} />

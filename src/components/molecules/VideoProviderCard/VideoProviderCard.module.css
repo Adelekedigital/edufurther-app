@@ -1,0 +1,112 @@
+/* Integrations.dc.html `video` card. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  cursor: pointer;
+}
+.card:hover:not(.on) {
+  border-color: var(--border-default);
+}
+.on {
+  border-color: var(--blue-500);
+  background: var(--blue-50);
+}
+/* The radio carries focus; ring the card so it reads as the control. */
+.card:has(:focus-visible) {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.card:has(:focus-visible) input {
+  outline: none;
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.tile {
+  width: var(--space-10);
+  height: var(--space-10);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  /* Inset rather than a border, so the glyph box stays 40px. */
+  box-shadow: inset 0 0 0 var(--border-hairline) var(--border-subtle);
+}
+.blue {
+  color: var(--blue-500);
+}
+.green {
+  color: var(--green-600);
+}
+.heading {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.label {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.by {
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+/* --ink-500 on the selected card's blue-50 is 4.28:1 at 12px (design-divergence.md). */
+.on .by {
+  color: var(--ink-600);
+}
+.description {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+.line {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+/* The glyph sits on the first line of wrapped text, not centred against it. */
+.benefitIcon,
+.noteIcon {
+  flex: none;
+  line-height: 18px;
+}
+.benefitIcon {
+  color: var(--green-700);
+}
+.noteIcon {
+  color: var(--yellow-900);
+}
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  /* Pins the status to the bottom so cards of different heights line up. */
+  margin-top: auto;
+}
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-medium);
+  color: var(--ink-500);
+}
+.statusOn {
+  color: var(--green-700);
+}

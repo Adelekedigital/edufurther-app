@@ -87,6 +87,7 @@ export const ICON_NAMES = [
   'public',
   'quiz',
   'radio_button_checked',
+  'radio_button_unchecked',
   'rate_review',
   'record_voice_over',
   'refresh',

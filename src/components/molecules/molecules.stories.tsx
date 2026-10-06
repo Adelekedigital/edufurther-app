@@ -18,6 +18,8 @@ import { CopyLinkButton } from './CopyLinkButton/CopyLinkButton';
 import { DayHoursRow } from './DayHoursRow/DayHoursRow';
 import { RowMenu } from './RowMenu/RowMenu';
 import { FileField } from './FileField/FileField';
+import { PersonalLinkPanel } from './PersonalLinkPanel/PersonalLinkPanel';
+import { VideoProviderCard } from './VideoProviderCard/VideoProviderCard';
 import { IconPicker } from './IconPicker/IconPicker';
 import { QuestionRow } from './QuestionRow/QuestionRow';
 import { SessionTypeOwnerFooter } from './SessionTypeOwnerFooter/SessionTypeOwnerFooter';
@@ -900,6 +902,79 @@ export const HoldCountdown: Story = {
       <SuggestionCountdown heldUntil={heldIn(-90)} now={HOLD_NOW} />
       {/* No clock handed in: this one counts itself down. */}
       <SuggestionCountdown heldUntil={new Date(Date.now() + 4.4 * 60_000).toISOString()} />
+    </div>
+  ),
+};
+
+/** Integrations video cards: chosen, unchosen, and each kind of supporting line. */
+export const VideoProviderCards: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 12, maxWidth: 560 }}>
+      <VideoProviderCard
+        name="story"
+        value="daily"
+        checked
+        onChange={fn()}
+        icon="video_chat"
+        tone="blue"
+        label="EduFurther video"
+        by="Built in · powered by Daily"
+        description="A private room for each session. Mentees join from the browser with no account or download."
+        benefit="Attendance is tracked, so every session counts in your session analytics."
+        idleStatus="Ready to use"
+        recommended
+      />
+      <VideoProviderCard
+        name="story"
+        value="google_meet"
+        checked={false}
+        onChange={fn()}
+        icon="videocam"
+        tone="green"
+        label="Google Meet"
+        by="Uses your Google account"
+        description="A new Meet link for each booking, added to your invite and your mentee’s."
+        note="Attendance isn’t tracked, so these sessions won’t count in your session analytics."
+        idleStatus="Ready to use"
+      />
+    </div>
+  ),
+};
+
+/** Personal meeting link: empty, in use, and a link that is not https. */
+export const PersonalLinkPanels: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 24, maxWidth: 560 }}>
+      <PersonalLinkPanel
+        value=""
+        savedValue=""
+        onChange={fn()}
+        usingOwn={false}
+        saving={false}
+        error={null}
+        onUse={fn()}
+        onKeepAutomatic={fn()}
+      />
+      <PersonalLinkPanel
+        value="https://meet.example.com/a-very-long-personal-room-name-that-wraps"
+        savedValue="https://meet.example.com/a-very-long-personal-room-name-that-wraps"
+        onChange={fn()}
+        usingOwn
+        saving={false}
+        error={null}
+        onUse={fn()}
+        onKeepAutomatic={fn()}
+      />
+      <PersonalLinkPanel
+        value="http://meet.example.com/room"
+        savedValue=""
+        onChange={fn()}
+        usingOwn={false}
+        saving={false}
+        error={null}
+        onUse={fn()}
+        onKeepAutomatic={fn()}
+      />
     </div>
   ),
 };

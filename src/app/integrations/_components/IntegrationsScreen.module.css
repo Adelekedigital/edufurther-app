@@ -1,0 +1,51 @@
+/* Integrations.dc.html page frame. */
+.page {
+  max-width: 880px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  color: var(--ink-900);
+}
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 520px;
+}
+.title {
+  margin: 0;
+  font-size: var(--text-h6);
+  line-height: var(--lh-h6);
+  letter-spacing: var(--ls-h6);
+  font-weight: var(--weight-semibold);
+}
+.subtitle {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+
+/* Loading: the shapes the content lands in, so nothing jumps. */
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.block {
+  border-radius: var(--radius-xl);
+  background: var(--skeleton-fill);
+}
+.blockHeading {
+  height: var(--space-10);
+  max-width: 320px;
+  border-radius: var(--radius-md);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: var(--space-3);
+}
+.blockCard {
+  height: 208px;
+}
