@@ -73,6 +73,27 @@ Accepted because:
   (scoped, not scheduled — backend reply #4). At that point the full-page flow is strictly
   better on phones and this should be revisited rather than kept out of habit. The popup
   code is one util and one hook, so replacing it is small.
-- The honest caveat on all of it: **this has never run against a real Google consent screen**,
-  because no environment has a client configured (backend #366). It is proven against a mock
-  that mimics the contract, and the one path proven for real is the unavailable state.
+- **Proven end to end, 2026-10-06.** The caveat this record carried on the day it was written
+  — that no environment had a Google client, so the flow had only ever run against a mock —
+  is no longer true. A mentor connected a real Google account through this UI on dev, then
+  disconnected and reconnected 41 seconds later, which exercised rather more than a happy
+  path. Verified by the backend from the database, not from a success screen:
+
+  - The revoked row kept **no token and no address**, so undoing a wrong authorisation
+    leaves nothing behind.
+  - A reconnect leaves **two rows, one visible**. The read takes `one_or_none()` over
+    `active`/`error`, so a second visible row would raise — this page would have 500'd on
+    load. A partial unique index is what makes that safe, and a reconnect is exactly the
+    case that would have found it.
+  - **The health sweep later confirmed the grant against Google.** A real free/busy call
+    succeeded with the stored credential, so this is not only "a credential can be stored"
+    but "the stored credential works afterwards" — the part neither side could show alone.
+
+  It does **not** retire the bad consequences above. The popup is still the weak option on
+  phones, polling is still a guess, and denied-versus-closed is still indistinguishable. It
+  means the happy path is observed rather than assumed.
+
+- **Observed, and worth keeping:** between the consent and the sweep that confirms it,
+  `last_synced_at` is `null` for up to 12 hours. A mentor who connects and looks immediately
+  sees no confirmation timestamp, and that is correct rather than broken — which is why this
+  page renders `status` and never promises freshness.
