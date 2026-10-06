@@ -70,8 +70,10 @@ export function useCalendarConnection(
  * answer with what we already knew, which is exactly what we are waiting to
  * stop being true.
  */
-export async function readCalendarConnection(): Promise<CalendarConnection | null> {
-  const { data, response } = await api.GET('/api/v1/me/calendar');
+export async function readCalendarConnection(
+  signal?: AbortSignal,
+): Promise<CalendarConnection | null> {
+  const { data, response } = await api.GET('/api/v1/me/calendar', { signal });
   if (!response.ok || !data) return null;
   return {
     connectedAt: data.connected_at,
@@ -91,7 +93,7 @@ export async function readCalendarConnection(): Promise<CalendarConnection | nul
  */
 export type StartConnectResult =
   | { ok: true; consentUrl: string }
-  | { ok: false; reason: 'unconfigured' | 'failed' };
+  | { ok: false; reason: 'unconfigured' | 'offline' | 'failed' };
 
 export function useStartCalendarConnect() {
   const mutation = useMutation<StartConnectResult, AppError, void>({
@@ -99,8 +101,10 @@ export function useStartCalendarConnect() {
       let r;
       try {
         r = await api.GET('/api/v1/me/calendar/connect');
-      } catch {
-        return { ok: false, reason: 'failed' };
+      } catch (e) {
+        // Being offline is not our fault, and saying it is sends a mentor
+        // looking for a problem on our side that isn't there.
+        return { ok: false, reason: normaliseError(e).kind === 'offline' ? 'offline' : 'failed' };
       }
       if (r.response.status === 500) return { ok: false, reason: 'unconfigured' };
       const url = (r.data as { consent_url?: string } | undefined)?.consent_url;
@@ -159,11 +163,15 @@ export function useDisconnectCalendar(userId: string | null) {
   };
 }
 
-/** After a successful connect: the same two queries a disconnect refreshes. */
+/**
+ * After a successful connect: the same two queries a disconnect refreshes.
+ * Returns the refetch so the caller can hold its busy state until the row is
+ * true — otherwise it reads "Connect" for a moment after announcing success.
+ */
 export function useRefreshAfterConnect(userId: string | null) {
   const qc = useQueryClient();
-  return () => {
+  return async () => {
     if (userId) void qc.invalidateQueries({ queryKey: keys.booking.slotsFor(userId) });
-    void qc.invalidateQueries({ queryKey: keys.calendar.connection(userId ?? 'none') });
+    await qc.invalidateQueries({ queryKey: keys.calendar.connection(userId ?? 'none') });
   };
 }

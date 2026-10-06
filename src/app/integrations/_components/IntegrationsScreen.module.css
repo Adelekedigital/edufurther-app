@@ -70,3 +70,53 @@
   line-height: var(--lh-p);
   color: var(--text-danger);
 }
+
+/* One section failed while the rest of the page loaded (ours; not drawn). */
+.sectionError {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}
+.sectionErrorTitle {
+  margin: 0;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+.sectionErrorBody {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+/* Waiting on a consent window: `busy` on a Button is cursor-only. */
+.waiting {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+.spin {
+  animation: spin 900ms linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
+.blockRow {
+  height: 92px;
+}

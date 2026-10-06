@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
@@ -92,11 +92,21 @@ export function IntegrationsScreen() {
     [],
   );
 
-  const { state: connectState, connect, dismiss } = useCalendarConnect(
-    mentorId,
-    calendar.data,
-    announce,
-  );
+  const {
+    state: connectState,
+    connect,
+    unavailable,
+    dismiss,
+  } = useCalendarConnect(mentorId, calendar.data, announce);
+  // Disconnect removes itself, so focus has to be put where it went.
+  const connectButton = useRef<HTMLButtonElement>(null);
+  const takeFocusBack = useRef(false);
+  useEffect(() => {
+    if (takeFocusBack.current && !calendar.data) {
+      connectButton.current?.focus();
+      takeFocusBack.current = false;
+    }
+  }, [calendar.data]);
 
   const { save: saveFn, reset: resetSave } = saveVideo;
   const save = useCallback(
@@ -149,8 +159,18 @@ export function IntegrationsScreen() {
   const errorText = saveVideo.error?.message ?? null;
 
   const connected = calendar.data;
-  const connectNotice: { title: string; body: string } | null =
-    connectState.kind === 'unavailable'
+  const waiting = connectState.kind === 'busy';
+  const connectNotice: { title: string; body: string } | null = useMemo(() =>
+    // A connection arriving makes any of these untrue, so never show one
+    // 8px above a row that says "Connected".
+    connected
+      ? null
+      : connectState.kind === 'offline'
+        ? {
+            title: 'You’re offline.',
+            body: 'Connect to the internet, then try connecting Google Calendar again.',
+          }
+        : connectState.kind === 'unavailable'
       ? {
           title: 'Connecting a calendar isn’t available yet.',
           body: 'We’re still setting this up. You’ll be able to connect Google Calendar here soon.',
@@ -170,7 +190,17 @@ export function IntegrationsScreen() {
                 title: 'We couldn’t start connecting.',
                 body: 'Something went wrong on our side. Try again in a moment.',
               }
-            : null;
+            : null,
+  [connectState.kind, connected]);
+
+  // Our own Notice is role="status" inserted with its text already in it,
+  // which screen readers skip — the same trap the house LiveRegion exists for.
+  const lastAnnounced = useRef<string | null>(null);
+  useEffect(() => {
+    const key = connectNotice ? connectNotice.title + connectNotice.body : null;
+    if (key && key !== lastAnnounced.current) announce(`${connectNotice!.title} ${connectNotice!.body}`);
+    lastAnnounced.current = key;
+  }, [connectNotice, announce]);
 
   const calendarRow = (
     <IntegrationRow
@@ -179,19 +209,22 @@ export function IntegrationsScreen() {
       label="Google Calendar"
       description="We check when you’re busy and hide those times from your booking page. We never edit your calendar."
       status={
-        calendar.error
-          ? { tone: 'warn', text: 'We couldn’t check whether your calendar is connected.' }
-          : connected
-            ? connected.status === 'error'
-              ? { tone: 'warn', text: FAULTS[connected.fault ?? 'unknown'] }
-              : // No account name: the API has no field for one, deliberately —
-                // the ask is calendar.freebusy alone, and Google names an
-                // account only when `openid` is in the scopes.
-                { tone: 'good', text: 'Connected' }
+        connected
+          ? connected.status === 'error'
+            ? { tone: 'warn', text: FAULTS[connected.fault ?? 'unknown'] }
+            : // No account name: the API has no field for one, deliberately —
+              // the ask is calendar.freebusy alone, and Google names an
+              // account only when `openid` is in the scopes.
+              { tone: 'good', text: 'Connected' }
+          : // Only when there is nothing to show instead: React Query keeps
+            // `data` through a failed refetch, and a blip must not take the
+            // Disconnect control away from a working connection.
+            calendar.error
+            ? { tone: 'warn', text: 'We couldn’t check whether your calendar is connected.' }
             : undefined
       }
       actions={
-        calendar.error ? (
+        !connected && calendar.error ? (
           <Button variant="secondary-outlined" busy={calendar.retrying} onClick={calendar.retry}>
             Try again
           </Button>
@@ -199,10 +232,11 @@ export function IntegrationsScreen() {
           <>
             {(!connected || connected.status === 'error') && (
               <Button
-                busy={connectState.kind === 'busy'}
+                ref={connectButton}
+                busy={waiting}
                 // A deployment with no Google client can never succeed, so the
                 // control stops offering (backend reply #1).
-                disabled={connectState.kind === 'unavailable'}
+                disabled={unavailable}
                 onClick={() => void connect()}
               >
                 {connected ? 'Reconnect' : 'Connect'}
@@ -224,10 +258,19 @@ export function IntegrationsScreen() {
         )
       }
       footer={
-        connectNotice && (
-          <Notice tone="neutral" icon="info" title={connectNotice.title} onDismiss={dismiss}>
-            {connectNotice.body}
-          </Notice>
+        waiting ? (
+          // `busy` on the Button is cursor-only, so without this the mentor
+          // sees an unchanged button that swallows every press for 3 minutes.
+          <span className={styles.waiting}>
+            <Icon name="progress_activity" size={16} className={styles.spin} />
+            Waiting for Google… finish in the window that opened, or close it to stop.
+          </span>
+        ) : (
+          connectNotice && (
+            <Notice tone="neutral" icon="info" title={connectNotice.title} onDismiss={dismiss}>
+              {connectNotice.body}
+            </Notice>
+          )
         )
       }
     />
@@ -237,7 +280,9 @@ export function IntegrationsScreen() {
   if (viewer.kind === 'loading' || video.isLoading || calendar.isLoading)
     content = <IntegrationsSkeleton />;
   // Error before content: a failed load never reads as "nothing connected".
-  else if (video.error || !video.data)
+  // Only when NOTHING loaded, though — this page has two independent resources
+  // now, and one failing must not hide the other's working controls.
+  else if (!video.data && (!calendar.data || calendar.error))
     content = (
       <EmptyState
         illustration="subscriptions"
@@ -258,32 +303,45 @@ export function IntegrationsScreen() {
   else
     content = (
       <>
-        <VideoSection
-          provider={pending ?? video.data.provider}
-          onPick={pick}
-          saving={saveVideo.isPending && pending !== 'custom'}
-          error={failedAction === 'pick' ? errorText : null}
-          link={link}
-          savedLink={savedLink}
-          onLinkChange={(v) => {
-            setDraft(v);
-            // A failure about the request before this one must not stay
-            // attached to the field while they type the fix.
-            if (failedAction === 'link') {
-              setFailedAction(null);
-              saveVideo.reset();
-            }
-          }}
-          savingLink={saveVideo.isPending && pending === 'custom'}
-          linkError={failedAction === 'link' ? errorText : null}
-          onUseLink={(url) => void save('custom', url, 'link')}
-          onKeepAutomatic={() => {
-            setDraft(null);
-            // The mentor pressed this inside the panel, so a failure belongs
-            // there rather than under the provider cards.
-            if (video.data?.provider === 'custom') void save('daily', null, 'link');
-          }}
-        />
+        {video.data ? (
+          <VideoSection
+            provider={pending ?? video.data.provider}
+            onPick={pick}
+            saving={saveVideo.isPending && pending !== 'custom'}
+            error={failedAction === 'pick' ? errorText : null}
+            link={link}
+            savedLink={savedLink}
+            onLinkChange={(v) => {
+              setDraft(v);
+              // A failure about the request before this one must not stay
+              // attached to the field while they type the fix.
+              if (failedAction === 'link') {
+                setFailedAction(null);
+                saveVideo.reset();
+              }
+            }}
+            savingLink={saveVideo.isPending && pending === 'custom'}
+            linkError={failedAction === 'link' ? errorText : null}
+            onUseLink={(url) => void save('custom', url, 'link')}
+            onKeepAutomatic={() => {
+              setDraft(null);
+              // The mentor pressed this inside the panel, so a failure belongs
+              // there rather than under the provider cards.
+              if (video.data?.provider === 'custom') void save('daily', null, 'link');
+            }}
+          />
+        ) : (
+          <section className={styles.sectionError}>
+            <h2 className={styles.sectionErrorTitle}>Video for sessions</h2>
+            <p className={styles.sectionErrorBody}>
+              <Icon name="error" size={16} />
+              We couldn’t load where your sessions run.
+            </p>
+            <Button variant="secondary-outlined" busy={video.retrying} onClick={video.retry}>
+              Try again
+            </Button>
+          </section>
+        )}
         <IntegrationGroup
           title="Calendars"
           description="Stop double-bookings and see sessions next to the rest of your week."
@@ -325,7 +383,7 @@ export function IntegrationsScreen() {
         >
           <div className={styles.confirm}>
             {disconnect.error && (
-              <p className={styles.confirmError}>
+              <p role="alert" className={styles.confirmError}>
                 <Icon name="error" size={16} />
                 {disconnect.error.message}
               </p>
@@ -346,14 +404,22 @@ export function IntegrationsScreen() {
                 fullWidth
                 busy={disconnect.isPending}
                 onClick={() => {
+                  // The control that opened this modal is removed by the same
+                  // commit that closes it, so the focus trap would hand focus
+                  // back to a node that is gone (failure log #32).
+                  takeFocusBack.current = true;
                   void disconnect.disconnect().then(
                     () => {
                       setConfirmDisconnect(false);
                       announce('Google Calendar disconnected.');
                     },
-                    () => {
+                    (e: { message?: string }) => {
                       // Stays open: the error belongs beside the button that
-                      // caused it, not on a page the modal is covering.
+                      // caused it, not on a page the modal is covering. Said
+                      // out loud too — focus is on a button that merely stops
+                      // being busy, which sounds like nothing happened.
+                      takeFocusBack.current = false;
+                      announce(e?.message ?? 'We couldn’t disconnect Google Calendar. Try again.');
                     },
                   );
                 }}

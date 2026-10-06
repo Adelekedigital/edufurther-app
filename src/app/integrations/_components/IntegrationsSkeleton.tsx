@@ -12,6 +12,9 @@ export function IntegrationsSkeleton() {
         <div className={cx(styles.block, styles.blockCard)} />
         <div className={cx(styles.block, styles.blockCard)} />
       </div>
+      {/* The Calendars group lands below, so the skeleton has to reach there too. */}
+      <div className={cx(styles.block, styles.blockHeading)} />
+      <div className={cx(styles.block, styles.blockRow)} />
     </div>
   );
 }

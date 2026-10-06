@@ -51,8 +51,14 @@ vi.mock('@/lib/api/data/calendarConnection', () => ({
     reset: vi.fn(),
   }),
 }));
+let connectUnavailable = false;
 vi.mock('./useCalendarConnect', () => ({
-  useCalendarConnect: () => ({ state: connectState, connect: connectFn, dismiss: vi.fn() }),
+  useCalendarConnect: () => ({
+    state: connectState,
+    connect: connectFn,
+    unavailable: connectUnavailable,
+    dismiss: vi.fn(),
+  }),
 }));
 
 const connection = (over: Partial<CalendarConnection> = {}): CalendarConnection => ({
@@ -92,6 +98,7 @@ beforeEach(() => {
   disconnectError = null;
   connectFn.mockReset();
   connectState = { kind: 'idle' };
+  connectUnavailable = false;
 });
 
 describe('IntegrationsScreen', () => {
@@ -356,9 +363,10 @@ describe('IntegrationsScreen', () => {
     /** Connect 500s on every environment today (backend #1): say so, never retry. */
     it('stops offering Connect where no calendar client is configured', () => {
       connectState = { kind: 'unavailable' };
+      connectUnavailable = true;
       render(<IntegrationsScreen />);
       expect(screen.getByRole('button', { name: 'Connect' })).toBeDisabled();
-      expect(screen.getByText(/available yet/)).toBeInTheDocument();
+      expect(screen.getAllByText(/available yet/).length).toBeGreaterThan(0);
       expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
     });
 
@@ -371,7 +379,7 @@ describe('IntegrationsScreen', () => {
     it('tells the mentor when the browser blocked the popup', () => {
       connectState = { kind: 'blocked' };
       render(<IntegrationsScreen />);
-      expect(screen.getByText(/blocked the pop-up/)).toBeInTheDocument();
+      expect(screen.getAllByText(/blocked the pop-up/).length).toBeGreaterThan(0);
     });
 
     it('confirms before disconnecting, and drops the design line about Meet', async () => {
@@ -414,6 +422,93 @@ describe('IntegrationsScreen', () => {
         ).toBeInTheDocument(),
       );
       expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    /** Review of #179: React Query keeps `data` through a failed refetch. */
+    it('keeps Connected and Disconnect when a refetch blips', () => {
+      calendar = remote<CalendarConnection | null>(connection(), {
+        error: { kind: 'offline', message: 'x' } as AppError,
+      });
+      render(<IntegrationsScreen />);
+      expect(screen.getByText('Connected')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Disconnect' })).toBeInTheDocument();
+      expect(
+        screen.queryByText(/couldn’t check whether your calendar is connected/),
+      ).not.toBeInTheDocument();
+    });
+
+    /** `busy` on a Button is cursor-only, so a 3-minute wait looked like nothing. */
+    it('says it is waiting on Google while the consent is open', () => {
+      connectState = { kind: 'busy' };
+      render(<IntegrationsScreen />);
+      expect(screen.getByText(/Waiting for Google/)).toBeInTheDocument();
+    });
+
+    it('announces a connect outcome rather than only drawing it', async () => {
+      connectState = { kind: 'nothingConnected' };
+      render(<IntegrationsScreen />);
+      // The Notice is its own role="status"; the assertion is that the
+      // page-level live region carries it too, since a region inserted with
+      // its text already in it is the one screen readers skip.
+      await waitFor(() =>
+        expect(
+          screen
+            .getAllByRole('status')
+            .map((n) => n.textContent ?? '')
+            .join(' '),
+        ).toContain('The Google window closed before access was granted'),
+      );
+    });
+
+    it('does not contradict a connection that arrived after the poll gave up', () => {
+      connectState = { kind: 'nothingConnected' };
+      calendar = remote<CalendarConnection | null>(connection());
+      render(<IntegrationsScreen />);
+      expect(screen.getByText('Connected')).toBeInTheDocument();
+      expect(screen.queryByText('Nothing was connected.')).not.toBeInTheDocument();
+    });
+
+    it('announces a failed disconnect and keeps the dialog', async () => {
+      calendar = remote<CalendarConnection | null>(connection());
+      disconnectFn.mockRejectedValue({
+        kind: 'server',
+        message: 'We couldn’t disconnect Google Calendar. Try again.',
+      });
+      render(<IntegrationsScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+      const dialog = screen.getByRole('dialog');
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Disconnect' }));
+      await waitFor(() =>
+        expect(screen.getByRole('status')).toHaveTextContent(
+          'We couldn’t disconnect Google Calendar. Try again.',
+        ),
+      );
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    /** The Disconnect button is removed by the commit that closes the modal. */
+    it('moves focus to Connect after a successful disconnect', async () => {
+      calendar = remote<CalendarConnection | null>(connection());
+      const { rerender } = render(<IntegrationsScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+      const dialog = screen.getByRole('dialog');
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Disconnect' }));
+      await waitFor(() => expect(disconnectFn).toHaveBeenCalled());
+      calendar = remote<CalendarConnection | null>(null);
+      rerender(<IntegrationsScreen />);
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Connect' })).toHaveFocus(),
+      );
+    });
+
+    /** One section failing must not hide the other's working controls. */
+    it('keeps the calendar row when the video setting fails to load', () => {
+      video = remote<Conferencing>(null, { error: { kind: 'server', message: 'x' } as AppError });
+      calendar = remote<CalendarConnection | null>(connection());
+      render(<IntegrationsScreen />);
+      expect(screen.getByRole('button', { name: 'Disconnect' })).toBeInTheDocument();
+      expect(screen.getByText(/couldn’t load where your sessions run/)).toBeInTheDocument();
+      expect(screen.queryByText('We couldn’t load your integrations')).not.toBeInTheDocument();
     });
 
     it('lets the mentor retry when the connection itself failed to load', async () => {

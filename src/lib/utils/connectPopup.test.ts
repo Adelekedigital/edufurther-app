@@ -64,11 +64,14 @@ describe('waitForConsent', () => {
     expect(outcome).toBe('timeout');
   });
 
-  it('reports a closed popup as nothing connected', async () => {
+  /** A real popup is open when we navigate it and shuts partway through. */
+  it('reports a popup closed mid-consent as nothing connected', async () => {
     let clock = 0;
-    const outcome = await waitForConsent(popup({ closed: true }) as unknown as Window, URL_, {
+    const p = popup();
+    const outcome = await waitForConsent(p as unknown as Window, URL_, {
       isDone: async () => {
         clock += 10;
+        p.closed = true;
         return false;
       },
       pollMs: 1,
@@ -78,16 +81,27 @@ describe('waitForConsent', () => {
     expect(outcome).toBe('cancelled');
   });
 
+  /** A blocker can hand back a window that is already shut; "allow pop-ups"
+   *  is the only message that helps, and "you closed it" is not that. */
+  it('reports an already-closed window as blocked, not cancelled', async () => {
+    const outcome = await waitForConsent(popup({ closed: true }) as unknown as Window, URL_, {
+      isDone: async () => false,
+      pollMs: 1,
+    });
+    expect(outcome).toBe('blocked');
+  });
+
   /** The grant may land just before the window closes; giving up there would
    *  report a success as a cancellation. */
   it('checks once more after the popup closes', async () => {
     let clock = 0;
     let calls = 0;
-    const p = popup({ closed: true });
+    const p = popup();
     const outcome = await waitForConsent(p as unknown as Window, URL_, {
       isDone: async () => {
         clock += 10;
         calls += 1;
+        p.closed = true;
         return calls > 1;
       },
       pollMs: 1,
@@ -132,5 +146,40 @@ describe('waitForConsent url check', () => {
     });
     expect(outcome).toBe('connected');
     expect(p.location.replace).toHaveBeenCalledWith(expect.stringContaining('/api/mock/granted'));
+  });
+});
+
+describe('waitForConsent cancellation', () => {
+  /** Leaving the page must stop the poll, not let it run for three minutes. */
+  it('abandons when the caller aborts', async () => {
+    const c = new AbortController();
+    const p = popup();
+    const outcome = await waitForConsent(p as unknown as Window, URL_, {
+      isDone: async () => {
+        c.abort();
+        return false;
+      },
+      pollMs: 1,
+      now: () => 0,
+      signal: c.signal,
+    });
+    expect(outcome).toBe('abandoned');
+  });
+
+  /** Signing in to Google and clearing 2FA can take longer than the timeout. */
+  it('leaves the window open on timeout rather than destroying the consent', async () => {
+    let clock = 0;
+    const p = popup();
+    const outcome = await waitForConsent(p as unknown as Window, URL_, {
+      isDone: async () => {
+        clock += 500_000;
+        return false;
+      },
+      pollMs: 1,
+      timeoutMs: 1000,
+      now: () => clock,
+    });
+    expect(outcome).toBe('timeout');
+    expect(p.close).not.toHaveBeenCalled();
   });
 });

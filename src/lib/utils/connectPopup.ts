@@ -12,7 +12,13 @@
  * without one, a mentor who presses Deny waits for ever.
  */
 
-export type ConnectOutcome = 'connected' | 'cancelled' | 'timeout' | 'blocked' | 'refused';
+export type ConnectOutcome =
+  | 'connected'
+  | 'cancelled'
+  | 'timeout'
+  | 'blocked'
+  | 'refused'
+  | 'abandoned';
 
 export type ConnectPopupOptions = {
   /** Resolves true once the server shows the connection. Must not throw. */
@@ -23,6 +29,8 @@ export type ConnectPopupOptions = {
   timeoutMs?: number;
   /** Swappable for tests. */
   now?: () => number;
+  /** Abort when the caller goes away, so nothing polls into an unmounted tree. */
+  signal?: AbortSignal;
   openWindow?: (url: string, target: string, features: string) => Window | null;
 };
 
@@ -56,9 +64,13 @@ export async function waitForConsent(
     pollMs = 1500,
     timeoutMs = 180_000,
     now = () => Date.now(),
+    signal,
   }: ConnectPopupOptions,
 ): Promise<ConnectOutcome> {
-  if (!popup) return 'blocked';
+  // A blocker can also hand back a window that is already shut, which would
+  // otherwise read as "they closed it" — and "allow pop-ups" is the one message
+  // that would actually help.
+  if (!popup || popup.closed) return 'blocked';
 
   // The popup still holds the about:blank document we opened, which inherits
   // THIS origin — so a `javascript:` url here would run as us, with
@@ -83,7 +95,6 @@ export async function waitForConsent(
   const started = now();
   let closedAt: number | null = null;
 
-  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
   // A tab regaining focus is the usual sign somebody came back, so ask then
   // too rather than waiting out the rest of the interval.
   let woken: (() => void) | null = null;
@@ -97,8 +108,12 @@ export async function waitForConsent(
         close(popup);
         return 'connected';
       }
+      if (signal?.aborted) return 'abandoned';
       if (now() - started > timeoutMs) {
-        close(popup);
+        // Deliberately NOT closed: signing in to Google and clearing 2FA can
+        // take longer than this, and shutting the window mid-code-entry would
+        // destroy a consent that was about to succeed. We stop watching; they
+        // can finish, and the next focus re-reads.
         return 'timeout';
       }
       // One more check after it closes: the grant may have been written just
@@ -107,13 +122,25 @@ export async function waitForConsent(
         if (closedAt === null) closedAt = now();
         else if (now() - closedAt > pollMs) return 'cancelled';
       }
-      await Promise.race([sleep(pollMs), new Promise<void>((r) => (woken = r))]);
+      // The losing timer must be cleared, or every wake leaves one dangling
+      // for the rest of the session.
+      let tick: ReturnType<typeof setTimeout> | undefined;
+      await Promise.race([
+        new Promise<void>((r) => (tick = setTimeout(r, pollMs))),
+        new Promise<void>((r) => (woken = r)),
+        signal ? abortPromise(signal) : new Promise<void>(() => {}),
+      ]);
+      clearTimeout(tick);
       woken = null;
     }
   } finally {
     window.removeEventListener('focus', wake);
     document.removeEventListener('visibilitychange', wake);
   }
+}
+
+function abortPromise(signal: AbortSignal): Promise<void> {
+  return new Promise((r) => signal.addEventListener('abort', () => r(), { once: true }));
 }
 
 /** A popup we opened, so closing it is allowed even cross-origin. */
