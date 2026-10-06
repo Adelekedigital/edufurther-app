@@ -60,6 +60,7 @@
     "label",
     "lightbulb",
     "link",
+    "link_off",
     "location_on",
     "lock",
     "lock_clock",
@@ -115,5 +116,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "25b1925aa999b43f28b91e705ad9b3a7ce3712dccdf1127d502a7cd51b4ae890"
+  "sha256": "175d3dd191c9cfd7947d7e482905d457cd217f5fd85b33d05f8b3cd7e7eb80ef"
 }

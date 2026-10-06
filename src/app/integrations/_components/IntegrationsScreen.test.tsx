@@ -1,5 +1,6 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { CalendarConnection } from '@/lib/api/data/calendarConnection';
 import type { Conferencing } from '@/lib/api/data/conferencing';
 import { hasUnsavedChanges } from '@/lib/utils/leaveGuard';
 import type { AppError, Remote, Viewer } from '@/types/mentor';
@@ -35,6 +36,40 @@ vi.mock('@/lib/api/data/conferencing', () => ({
   }),
 }));
 
+let calendar: Remote<CalendarConnection | null> & { retrying?: boolean };
+const disconnectFn = vi.fn();
+let disconnectPending = false;
+let disconnectError: AppError | null = null;
+const connectFn = vi.fn();
+let connectState: { kind: string } = { kind: 'idle' };
+vi.mock('@/lib/api/data/calendarConnection', () => ({
+  useCalendarConnection: () => calendar,
+  useDisconnectCalendar: () => ({
+    disconnect: disconnectFn,
+    isPending: disconnectPending,
+    error: disconnectError,
+    reset: vi.fn(),
+  }),
+}));
+let connectUnavailable = false;
+vi.mock('./useCalendarConnect', () => ({
+  useCalendarConnect: () => ({
+    state: connectState,
+    connect: connectFn,
+    unavailable: connectUnavailable,
+    dismiss: vi.fn(),
+  }),
+}));
+
+const connection = (over: Partial<CalendarConnection> = {}): CalendarConnection => ({
+  connectedAt: '2026-10-01T09:00:00Z',
+  status: 'active',
+  lastSyncedAt: null,
+  fault: null,
+  accountEmail: 'team@edufurther.com',
+  ...over,
+});
+
 const remote = <T,>(data: T | null, over: Partial<Remote<T>> = {}): Remote<T> => ({
   data,
   isLoading: false,
@@ -58,6 +93,13 @@ beforeEach(() => {
   saveVideo.mockReset().mockResolvedValue(undefined);
   savePending = false;
   saveError = null;
+  calendar = remote<CalendarConnection | null>(null);
+  disconnectFn.mockReset().mockResolvedValue(undefined);
+  disconnectPending = false;
+  disconnectError = null;
+  connectFn.mockReset();
+  connectState = { kind: 'idle' };
+  connectUnavailable = false;
 });
 
 describe('IntegrationsScreen', () => {
@@ -283,5 +325,243 @@ describe('IntegrationsScreen', () => {
     render(<IntegrationsScreen />);
     expect(screen.getByText('Integrations are for mentors')).toBeInTheDocument();
     expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
+  });
+
+  describe('Google Calendar', () => {
+    it('offers Connect when nothing is connected', async () => {
+      render(<IntegrationsScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Connect' }));
+      expect(connectFn).toHaveBeenCalled();
+      expect(screen.queryByRole('button', { name: 'Disconnect' })).not.toBeInTheDocument();
+    });
+
+    it('names the connected Google account', () => {
+      calendar = remote<CalendarConnection | null>(connection());
+      render(<IntegrationsScreen />);
+      expect(screen.getByText('Connected as team@edufurther.com')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Disconnect' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Connect' })).not.toBeInTheDocument();
+    });
+
+    /** `error` means reconnect; a transient failure never sets it (backend #5). */
+    it('asks for a reconnect when the grant broke, and says why', () => {
+      calendar = remote<CalendarConnection | null>(
+        connection({ status: 'error', fault: 'revoked' }),
+      );
+      render(<IntegrationsScreen />);
+      expect(screen.getByText(/access was removed or has expired/)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Reconnect' })).toBeInTheDocument();
+    });
+
+    it('falls back to the generic line for a fault it does not know', () => {
+      calendar = remote<CalendarConnection | null>(
+        connection({ status: 'error', fault: 'unknown' }),
+      );
+      render(<IntegrationsScreen />);
+      expect(screen.getByText('Google Calendar needs reconnecting.')).toBeInTheDocument();
+    });
+
+    /** Connect 500s on every environment today (backend #1): say so, never retry. */
+    it('stops offering Connect where no calendar client is configured', () => {
+      connectState = { kind: 'unavailable' };
+      connectUnavailable = true;
+      render(<IntegrationsScreen />);
+      expect(screen.getByRole('button', { name: 'Connect' })).toBeDisabled();
+      expect(screen.getAllByText(/available yet/).length).toBeGreaterThan(0);
+      expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
+    });
+
+    it('treats a closed consent window as nothing connected, not a failure', () => {
+      connectState = { kind: 'nothingConnected' };
+      render(<IntegrationsScreen />);
+      expect(screen.getByText('Nothing was connected.')).toBeInTheDocument();
+      // Google's calendar permission is a separate checkbox; skipping it looks
+      // identical to closing the window, so the copy covers both.
+      expect(screen.getAllByText(/separate step/).length).toBeGreaterThan(0);
+    });
+
+    it('tells the mentor when the browser blocked the popup', () => {
+      connectState = { kind: 'blocked' };
+      render(<IntegrationsScreen />);
+      expect(screen.getAllByText(/blocked the pop-up/).length).toBeGreaterThan(0);
+    });
+
+    it('confirms before disconnecting, and drops the design line about Meet', async () => {
+      calendar = remote<CalendarConnection | null>(connection());
+      render(<IntegrationsScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+      expect(screen.getByText('Disconnect Google Calendar?')).toBeInTheDocument();
+      // Meet is never gated on this connection here, so the design's sentence
+      // about bookings moving to EduFurther video would be untrue.
+      expect(screen.queryByText(/move to EduFurther video/)).not.toBeInTheDocument();
+      expect(disconnectFn).not.toHaveBeenCalled();
+    });
+
+    it('disconnects on confirm and says so', async () => {
+      calendar = remote<CalendarConnection | null>(connection());
+      render(<IntegrationsScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+      const dialog = screen.getByRole('dialog');
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Disconnect' }));
+      expect(disconnectFn).toHaveBeenCalled();
+      await waitFor(() =>
+        expect(screen.getByRole('status')).toHaveTextContent('Google Calendar disconnected.'),
+      );
+    });
+
+    it('keeps the confirm open when the disconnect fails', async () => {
+      calendar = remote<CalendarConnection | null>(connection());
+      disconnectFn.mockRejectedValue({ kind: 'server', message: 'no' });
+      disconnectError = {
+        kind: 'server',
+        message: 'We couldn’t disconnect Google Calendar. Try again.',
+      };
+      render(<IntegrationsScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+      const dialog = screen.getByRole('dialog');
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Disconnect' }));
+      await waitFor(() =>
+        expect(
+          screen.getByText('We couldn’t disconnect Google Calendar. Try again.'),
+        ).toBeInTheDocument(),
+      );
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    /** Null is "not known" — a grant older than the widened consent. */
+    it('falls back to "Connected" when the account cannot be known', () => {
+      calendar = remote<CalendarConnection | null>(connection({ accountEmail: null }));
+      render(<IntegrationsScreen />);
+      expect(screen.getByText('Connected')).toBeInTheDocument();
+      expect(screen.queryByText(/Connected as/)).not.toBeInTheDocument();
+    });
+
+    /** Connecting again replaces the grant — the backend's own words. */
+    it('offers a working connection a way to switch account', async () => {
+      calendar = remote<CalendarConnection | null>(connection());
+      render(<IntegrationsScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Use a different account' }));
+      expect(connectFn).toHaveBeenCalled();
+    });
+
+    it('does not offer it where no calendar client is configured', () => {
+      calendar = remote<CalendarConnection | null>(connection());
+      connectUnavailable = true;
+      render(<IntegrationsScreen />);
+      expect(screen.getByRole('button', { name: 'Use a different account' })).toBeDisabled();
+    });
+
+    /** A broken grant already has Reconnect, which picks the account anyway. */
+    it('does not duplicate Reconnect when the grant is broken', () => {
+      calendar = remote<CalendarConnection | null>(
+        connection({ status: 'error', fault: 'revoked' }),
+      );
+      render(<IntegrationsScreen />);
+      expect(screen.getByRole('button', { name: 'Reconnect' })).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Use a different account' }),
+      ).not.toBeInTheDocument();
+    });
+
+    /** Review of #179: React Query keeps `data` through a failed refetch. */
+    it('keeps Connected and Disconnect when a refetch blips', () => {
+      calendar = remote<CalendarConnection | null>(connection(), {
+        error: { kind: 'offline', message: 'x' } as AppError,
+      });
+      render(<IntegrationsScreen />);
+      expect(screen.getByText(/^Connected as /)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Disconnect' })).toBeInTheDocument();
+      expect(
+        screen.queryByText(/couldn’t check whether your calendar is connected/),
+      ).not.toBeInTheDocument();
+    });
+
+    /** `busy` on a Button is cursor-only, so a 3-minute wait looked like nothing. */
+    it('says it is waiting on Google while the consent is open', () => {
+      connectState = { kind: 'busy' };
+      render(<IntegrationsScreen />);
+      expect(screen.getByText(/Waiting for Google/)).toBeInTheDocument();
+    });
+
+    it('announces a connect outcome rather than only drawing it', async () => {
+      connectState = { kind: 'nothingConnected' };
+      render(<IntegrationsScreen />);
+      // The Notice is its own role="status"; the assertion is that the
+      // page-level live region carries it too, since a region inserted with
+      // its text already in it is the one screen readers skip.
+      await waitFor(() =>
+        expect(
+          screen
+            .getAllByRole('status')
+            .map((n) => n.textContent ?? '')
+            .join(' '),
+        ).toContain('the calendar permission wasn’t ticked'),
+      );
+    });
+
+    it('does not contradict a connection that arrived after the poll gave up', () => {
+      connectState = { kind: 'nothingConnected' };
+      calendar = remote<CalendarConnection | null>(connection());
+      render(<IntegrationsScreen />);
+      expect(screen.getByText(/^Connected as /)).toBeInTheDocument();
+      expect(screen.queryByText('Nothing was connected.')).not.toBeInTheDocument();
+    });
+
+    it('announces a failed disconnect and keeps the dialog', async () => {
+      calendar = remote<CalendarConnection | null>(connection());
+      disconnectFn.mockRejectedValue({
+        kind: 'server',
+        message: 'We couldn’t disconnect Google Calendar. Try again.',
+      });
+      render(<IntegrationsScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+      const dialog = screen.getByRole('dialog');
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Disconnect' }));
+      await waitFor(() =>
+        expect(screen.getByRole('status')).toHaveTextContent(
+          'We couldn’t disconnect Google Calendar. Try again.',
+        ),
+      );
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    /** The Disconnect button is removed by the commit that closes the modal. */
+    it('moves focus to Connect after a successful disconnect', async () => {
+      calendar = remote<CalendarConnection | null>(connection());
+      const { rerender } = render(<IntegrationsScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
+      const dialog = screen.getByRole('dialog');
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Disconnect' }));
+      await waitFor(() => expect(disconnectFn).toHaveBeenCalled());
+      calendar = remote<CalendarConnection | null>(null);
+      rerender(<IntegrationsScreen />);
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Connect' })).toHaveFocus(),
+      );
+    });
+
+    /** One section failing must not hide the other's working controls. */
+    it('keeps the calendar row when the video setting fails to load', () => {
+      video = remote<Conferencing>(null, { error: { kind: 'server', message: 'x' } as AppError });
+      calendar = remote<CalendarConnection | null>(connection());
+      render(<IntegrationsScreen />);
+      expect(screen.getByRole('button', { name: 'Disconnect' })).toBeInTheDocument();
+      expect(screen.getByText(/couldn’t load where your sessions run/)).toBeInTheDocument();
+      expect(screen.queryByText('We couldn’t load your integrations')).not.toBeInTheDocument();
+    });
+
+    it('lets the mentor retry when the connection itself failed to load', async () => {
+      const retry = vi.fn();
+      calendar = remote<CalendarConnection | null>(null, {
+        error: { kind: 'server', message: 'x' } as AppError,
+        retry,
+      });
+      render(<IntegrationsScreen />);
+      expect(
+        screen.getByText(/couldn’t check whether your calendar is connected/),
+      ).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+      expect(retry).toHaveBeenCalled();
+    });
   });
 });

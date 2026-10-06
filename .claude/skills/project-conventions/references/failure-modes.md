@@ -258,3 +258,22 @@ bundler happened to emit. Anything that identifies a focus stop must include
 what makes it that stop — here, its accessible name. Until this is fixed, a
 3-stop report on a page you know has more is the tracer, not the page: confirm
 by hand before believing it.
+
+### #59 — A cause named where the code cannot tell causes apart
+
+The consent copy said "The Google window closed before access was granted." The
+mentor may instead have clicked past Google's calendar checkbox, which sits a
+step after the account screen — and from here the two are indistinguishable:
+both leave the grant absent and our poll waiting. The backend's own docstring
+had the same shape the same day, claiming `last_error` carried "Google's words"
+when the two values it can hold are the backend's own constants. Neither was a
+guess about something checkable; both were plausible stories told in the voice
+of an observation, and the specificity is what made them convincing.
+
+Related to #57, and narrower: that one drew a success-path conclusion from a
+failed read. This one picks one cause out of a set the code cannot separate.
+
+**Check:** when copy or a comment states a cause, ask whether the code could
+distinguish it from its neighbours. If it cannot, name the set. "The window
+closed, or the calendar permission wasn't ticked" is uglier than either single
+sentence and is the only one that is true.

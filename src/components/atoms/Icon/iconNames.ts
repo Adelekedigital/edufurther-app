@@ -66,6 +66,7 @@ export const ICON_NAMES = [
   'label',
   'lightbulb',
   'link',
+  'link_off',
   'location_on',
   'lock',
   'lock_clock',
