@@ -12,6 +12,7 @@ const base = {
   saving: false,
   error: null,
   link: '',
+  savedLink: '',
   onLinkChange: fn(),
   savingLink: false,
   linkError: null,
@@ -43,6 +44,7 @@ export const PersonalLinkInUse: Story = {
         {...base}
         provider="custom"
         link="https://meet.example.com/a-very-long-personal-room-name-that-wraps-on-a-phone"
+        savedLink="https://meet.example.com/a-very-long-personal-room-name-that-wraps-on-a-phone"
       />
     </div>
   ),

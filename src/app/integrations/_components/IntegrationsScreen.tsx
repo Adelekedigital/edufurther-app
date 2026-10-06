@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
@@ -48,9 +48,16 @@ export function IntegrationsScreen() {
 
   // null until edited, so the field follows the server without an effect.
   const [draft, setDraft] = useState<string | null>(null);
+  // Switching provider makes the backend drop custom_url. Keeping the old link
+  // in the field turns that from data loss into one click to put it back — and
+  // it is deliberately NOT the draft, so it never makes the page look dirty.
+  const [recovered, setRecovered] = useState<string | null>(null);
   const savedLink = video.data?.customUrl ?? '';
-  const link = draft ?? savedLink;
-  useLeaveGuard(draft !== null && draft.trim() !== savedLink, 'your personal meeting link');
+  const link = draft ?? (savedLink || recovered) ?? '';
+  useLeaveGuard(
+    draft !== null && draft.trim() !== savedLink.trim(),
+    'your personal meeting link',
+  );
 
   const [failedAction, setFailedAction] = useState<'pick' | 'link' | null>(null);
   const [announcement, setAnnouncement] = useState<{ text: string; id: number } | null>(null);
@@ -59,25 +66,52 @@ export function IntegrationsScreen() {
     [],
   );
 
+  const { save: saveFn, reset: resetSave } = saveVideo;
   const save = useCallback(
     async (next: Provider, customUrl: string | null, action: 'pick' | 'link') => {
       setFailedAction(null);
-      saveVideo.reset();
+      resetSave();
       setPending(next);
+      const wasLink = savedLink;
       try {
         // Resolves after the mutation has invalidated and refetched, so the
         // server's value is already on screen when the pick is cleared.
-        await saveVideo.save({ provider: next, customUrl });
-        if (next === 'custom') setDraft(null);
+        await saveFn({ provider: next, customUrl });
+        // Always: a draft left behind would keep the leave guard dirty for a
+        // field that is no longer on screen.
+        setDraft(null);
+        setRecovered(next === 'custom' ? null : wasLink || null);
         announce(`Saved. Sessions now run on ${NAMES[next]}.`);
-      } catch {
+      } catch (e) {
         // The error itself is on saveVideo; this says which control owns it.
         setFailedAction(action);
+        // A visual-only failure is neither seen nor heard by a screen reader
+        // while focus sits in the radio group (project-conventions).
+        const message = (e as { message?: string })?.message;
+        announce(message ?? 'We couldn’t save your video setting. Try again.');
       } finally {
         setPending(null);
       }
     },
-    [announce, saveVideo],
+    [announce, saveFn, resetSave, savedLink],
+  );
+
+  /**
+   * Native radios select on arrow-key focus, so traversing the group would fire
+   * one PATCH per keystroke — and from a personal link, the first press would
+   * delete it. The pick lands at once; the write waits for the mentor to settle.
+   */
+  const pickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => void (pickTimer.current && clearTimeout(pickTimer.current)), []);
+  const pick = useCallback(
+    (next: Provider) => {
+      setPending(next);
+      setFailedAction(null);
+      resetSave();
+      if (pickTimer.current) clearTimeout(pickTimer.current);
+      pickTimer.current = setTimeout(() => void save(next, null, 'pick'), 350);
+    },
+    [resetSave, save],
   );
 
   const errorText = saveVideo.error?.message ?? null;
@@ -107,17 +141,28 @@ export function IntegrationsScreen() {
     content = (
       <VideoSection
         provider={pending ?? video.data.provider}
-        onPick={(p) => void save(p, null, 'pick')}
-        saving={saveVideo.isPending && failedAction !== 'link'}
+        onPick={pick}
+        saving={saveVideo.isPending && pending !== 'custom'}
         error={failedAction === 'pick' ? errorText : null}
         link={link}
-        onLinkChange={setDraft}
+        savedLink={savedLink}
+        onLinkChange={(v) => {
+          setDraft(v);
+          // A failure about the request before this one must not stay attached
+          // to the field while they type the fix.
+          if (failedAction === 'link') {
+            setFailedAction(null);
+            saveVideo.reset();
+          }
+        }}
         savingLink={saveVideo.isPending && pending === 'custom'}
         linkError={failedAction === 'link' ? errorText : null}
         onUseLink={(url) => void save('custom', url, 'link')}
         onKeepAutomatic={() => {
           setDraft(null);
-          if (video.data?.provider === 'custom') void save('daily', null, 'pick');
+          // The mentor pressed this inside the panel, so a failure belongs
+          // there rather than under the provider cards.
+          if (video.data?.provider === 'custom') void save('daily', null, 'link');
         }}
       />
     );

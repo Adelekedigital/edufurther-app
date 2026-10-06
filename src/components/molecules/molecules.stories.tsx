@@ -947,6 +947,7 @@ export const PersonalLinkPanels: Story = {
     <div style={{ display: 'grid', gap: 24, maxWidth: 560 }}>
       <PersonalLinkPanel
         value=""
+        savedValue=""
         onChange={fn()}
         usingOwn={false}
         saving={false}
@@ -956,6 +957,7 @@ export const PersonalLinkPanels: Story = {
       />
       <PersonalLinkPanel
         value="https://meet.example.com/a-very-long-personal-room-name-that-wraps"
+        savedValue="https://meet.example.com/a-very-long-personal-room-name-that-wraps"
         onChange={fn()}
         usingOwn
         saving={false}
@@ -965,6 +967,7 @@ export const PersonalLinkPanels: Story = {
       />
       <PersonalLinkPanel
         value="http://meet.example.com/room"
+        savedValue=""
         onChange={fn()}
         usingOwn={false}
         saving={false}

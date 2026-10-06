@@ -95,7 +95,11 @@ describe('IntegrationsScreen', () => {
   it('saves the pick and says so', async () => {
     render(<IntegrationsScreen />);
     await userEvent.click(screen.getByRole('radio', { name: /Google Meet/ }));
-    expect(saveVideo).toHaveBeenCalledWith({ provider: 'google_meet', customUrl: null });
+    // The write is debounced, so arrowing across the group is one PATCH.
+    await waitFor(
+      () => expect(saveVideo).toHaveBeenCalledWith({ provider: 'google_meet', customUrl: null }),
+      { timeout: 3000 },
+    );
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent(
         'Saved. Sessions now run on Google Meet.',
@@ -169,6 +173,102 @@ describe('IntegrationsScreen', () => {
       'https://meet.example.com/room',
     );
     expect(hasUnsavedChanges()).toBe(true);
+  });
+
+  /** Review of PR 174: the saved link could be seen but never corrected. */
+  it('lets a mentor change a personal link they already use', async () => {
+    video = remote(
+      conferencing({ provider: 'custom', customUrl: 'https://old.example.com/room', isDefault: false }),
+    );
+    render(<IntegrationsScreen />);
+    const field = screen.getByRole('textbox', { name: 'Personal meeting link' });
+    expect(screen.getByRole('button', { name: 'Use this link' })).toBeDisabled();
+    await userEvent.clear(field);
+    await userEvent.type(field, 'https://new.example.com/room');
+    const use = screen.getByRole('button', { name: 'Use this link' });
+    expect(use).toBeEnabled();
+    await userEvent.click(use);
+    expect(saveVideo).toHaveBeenCalledWith({
+      provider: 'custom',
+      customUrl: 'https://new.example.com/room',
+    });
+  });
+
+  it('clicking the caption focuses the field', async () => {
+    render(<IntegrationsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Use a personal meeting link instead' }));
+    await userEvent.click(screen.getByText('Personal meeting link'));
+    expect(screen.getByRole('textbox', { name: 'Personal meeting link' })).toHaveFocus();
+  });
+
+  it('moves focus into the field when the panel opens, not to the body', async () => {
+    render(<IntegrationsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Use a personal meeting link instead' }));
+    await waitFor(() =>
+      expect(screen.getByRole('textbox', { name: 'Personal meeting link' })).toHaveFocus(),
+    );
+  });
+
+  /** Arrow keys select as they move, so the write waits for the mentor to settle. */
+  it('writes once when the mentor arrows across the group', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      render(<IntegrationsScreen />);
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      await user.click(screen.getByRole('radio', { name: /Google Meet/ }));
+      await user.click(screen.getByRole('radio', { name: /EduFurther video/ }));
+      await user.click(screen.getByRole('radio', { name: /Google Meet/ }));
+      expect(saveVideo).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(400);
+      expect(saveVideo).toHaveBeenCalledTimes(1);
+      expect(saveVideo).toHaveBeenCalledWith({ provider: 'google_meet', customUrl: null });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('announces a failed save, not just a red line', async () => {
+    saveVideo.mockRejectedValue({ kind: 'server', message: 'We couldn’t save your video setting. Try again.' });
+    saveError = { kind: 'server', message: 'We couldn’t save your video setting. Try again.' };
+    render(<IntegrationsScreen />);
+    await userEvent.click(screen.getByRole('radio', { name: /Google Meet/ }));
+    await waitFor(
+      () =>
+        expect(screen.getByRole('status')).toHaveTextContent(
+          'We couldn’t save your video setting. Try again.',
+        ),
+      { timeout: 3000 },
+    );
+  });
+
+  it('keeps the old link in the field after switching away, so it can be put back', async () => {
+    video = remote(
+      conferencing({ provider: 'custom', customUrl: 'https://old.example.com/room', isDefault: false }),
+    );
+    const { rerender } = render(<IntegrationsScreen />);
+    await userEvent.click(screen.getByRole('radio', { name: /EduFurther video/ }));
+    await waitFor(() => expect(saveVideo).toHaveBeenCalled(), { timeout: 3000 });
+    // The server has dropped custom_url, as it does for any other provider.
+    video = remote(conferencing({ provider: 'daily', customUrl: null, isDefault: false }));
+    rerender(<IntegrationsScreen />);
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Use a personal meeting link instead' }),
+    );
+    expect(screen.getByRole('textbox', { name: 'Personal meeting link' })).toHaveValue(
+      'https://old.example.com/room',
+    );
+  });
+
+  it('does not leave the page dirty after a pick clears the draft', async () => {
+    render(<IntegrationsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Use a personal meeting link instead' }));
+    await userEvent.type(
+      screen.getByRole('textbox', { name: 'Personal meeting link' }),
+      'https://typed.example.com/room',
+    );
+    expect(hasUnsavedChanges()).toBe(true);
+    await userEvent.click(screen.getByRole('radio', { name: /Google Meet/ }));
+    await waitFor(() => expect(hasUnsavedChanges()).toBe(false), { timeout: 3000 });
   });
 
   it('turns a guest away', () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { PersonalLinkPanel } from '@/components/molecules/PersonalLinkPanel/PersonalLinkPanel';
 import { VideoProviderCard } from '@/components/molecules/VideoProviderCard/VideoProviderCard';
@@ -16,6 +16,8 @@ type VideoSectionProps = {
   /** Our copy for a failed card save; shown under the group. */
   error: string | null;
   link: string;
+  /** What the server holds, so the panel knows a re-save is a no-op. */
+  savedLink: string;
   onLinkChange: (value: string) => void;
   savingLink: boolean;
   /** Our copy for a failed "Use this link". */
@@ -39,6 +41,7 @@ export function VideoSection({
   saving,
   error,
   link,
+  savedLink,
   onLinkChange,
   savingLink,
   linkError,
@@ -48,6 +51,16 @@ export function VideoSection({
   const group = useId();
   const errorId = useId();
   const [panelOpen, setPanelOpen] = useState(false);
+  const field = useRef<HTMLInputElement>(null);
+  const disclosure = useRef<HTMLButtonElement>(null);
+  // Both controls remove themselves when pressed, which drops focus to <body>.
+  // Put it where the mentor was going instead.
+  const moveFocus = useRef<'intoPanel' | 'toDisclosure' | null>(null);
+  useEffect(() => {
+    if (moveFocus.current === 'intoPanel') field.current?.focus();
+    if (moveFocus.current === 'toDisclosure') disclosure.current?.focus();
+    moveFocus.current = null;
+  });
   const usingOwn = provider === 'custom';
   const showPanel = panelOpen || usingOwn;
   return (
@@ -106,22 +119,33 @@ export function VideoSection({
         </span>
       )}
       {!showPanel && (
-        <button type="button" className={styles.disclosure} onClick={() => setPanelOpen(true)}>
+        <button
+          ref={disclosure}
+          type="button"
+          className={styles.disclosure}
+          onClick={() => {
+            moveFocus.current = 'intoPanel';
+            setPanelOpen(true);
+          }}
+        >
           Use a personal meeting link instead
         </button>
       )}
       {showPanel && (
         <PersonalLinkPanel
           value={link}
+          savedValue={savedLink}
           onChange={onLinkChange}
           usingOwn={usingOwn}
           saving={savingLink}
           error={linkError}
           onUse={onUseLink}
           onKeepAutomatic={() => {
+            moveFocus.current = 'toDisclosure';
             setPanelOpen(false);
             onKeepAutomatic();
           }}
+          fieldRef={field}
         />
       )}
     </section>
