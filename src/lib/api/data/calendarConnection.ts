@@ -23,6 +23,12 @@ export type CalendarConnection = {
   /** When the sweep last confirmed it works. Null until the sweep has run. */
   lastSyncedAt: string | null;
   fault: ConnectionFault | null;
+  /**
+   * Which Google account this grant belongs to. **Null is "not known", never
+   * "none"**: a grant made before the consent asked for it carries no address
+   * and cannot be backfilled, so it only appears if they reconnect.
+   */
+  accountEmail: string | null;
 };
 
 function faultFrom(lastError: string | null | undefined): ConnectionFault | null {
@@ -52,6 +58,7 @@ export function useCalendarConnection(
         status: data.status === 'error' ? 'error' : 'active',
         lastSyncedAt: data.last_synced_at ?? null,
         fault: faultFrom(data.last_error),
+        accountEmail: data.account_email ?? null,
       };
     },
   });
@@ -80,6 +87,7 @@ export async function readCalendarConnection(
     status: data.status === 'error' ? 'error' : 'active',
     lastSyncedAt: data.last_synced_at ?? null,
     fault: faultFrom(data.last_error),
+    accountEmail: data.account_email ?? null,
   };
 }
 

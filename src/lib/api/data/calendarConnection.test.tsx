@@ -30,6 +30,7 @@ describe('useCalendarConnection', () => {
         status: 'active',
         last_synced_at: null,
         last_error: null,
+        account_email: 'team@edufurther.com',
       }),
     );
     const { result } = renderHook(() => useCalendarConnection('m1'), { wrapper });
@@ -39,7 +40,18 @@ describe('useCalendarConnection', () => {
       status: 'active',
       lastSyncedAt: null,
       fault: null,
+      accountEmail: 'team@edufurther.com',
     });
+  });
+
+  /** Null is "not known", never "none" — it cannot be backfilled. */
+  it('carries a missing account email as null rather than dropping the grant', async () => {
+    get.mockResolvedValue(
+      ok({ connected_at: 'x', status: 'active', last_synced_at: null, last_error: null }),
+    );
+    const { result } = renderHook(() => useCalendarConnection('m1'), { wrapper });
+    await waitFor(() => expect(result.current.data).not.toBeNull());
+    expect(result.current.data?.accountEmail).toBeNull();
   });
 
   /** `null` is an answer — never connected — not "still loading". */

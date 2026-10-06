@@ -6,6 +6,7 @@ const conn = (over: Partial<CalendarConnection> = {}): CalendarConnection => ({
   status: 'active',
   lastSyncedAt: null,
   fault: null,
+  accountEmail: 'team@edufurther.com',
   ...over,
 });
 

@@ -183,7 +183,13 @@ export function IntegrationsScreen() {
         : connectState.kind === 'nothingConnected'
           ? {
               title: 'Nothing was connected.',
-              body: 'The Google window closed before access was granted. You can try again.',
+              // Google puts calendar access behind its own checkbox a step
+              // after choosing an account, so clicking straight through grants
+              // sign-in only and the backend refuses it. We cannot tell that
+              // apart from a closed window, so the copy covers both.
+              body:
+                'The window closed, or the calendar permission wasn’t ticked — Google asks for ' +
+                'that on a separate step. You can try again.',
             }
           : connectState.kind === 'failed'
             ? {
@@ -212,10 +218,15 @@ export function IntegrationsScreen() {
         connected
           ? connected.status === 'error'
             ? { tone: 'warn', text: FAULTS[connected.fault ?? 'unknown'] }
-            : // No account name: the API has no field for one, deliberately —
-              // the ask is calendar.freebusy alone, and Google names an
-              // account only when `openid` is in the scopes.
-              { tone: 'good', text: 'Connected' }
+            : // Null is "not known", not "no account": a grant made before the
+              // consent asked for the address cannot be backfilled, so an older
+              // connection degrades to the design's Outlook wording.
+              {
+                tone: 'good',
+                text: connected.accountEmail
+                  ? `Connected as ${connected.accountEmail}`
+                  : 'Connected',
+              }
           : // Only when there is nothing to show instead: React Query keeps
             // `data` through a failed refetch, and a blip must not take the
             // Disconnect control away from a working connection.

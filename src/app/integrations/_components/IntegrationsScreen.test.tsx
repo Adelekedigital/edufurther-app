@@ -66,6 +66,7 @@ const connection = (over: Partial<CalendarConnection> = {}): CalendarConnection 
   status: 'active',
   lastSyncedAt: null,
   fault: null,
+  accountEmail: 'team@edufurther.com',
   ...over,
 });
 
@@ -334,10 +335,10 @@ describe('IntegrationsScreen', () => {
       expect(screen.queryByRole('button', { name: 'Disconnect' })).not.toBeInTheDocument();
     });
 
-    it('says it is connected, without naming an account the API never sends', () => {
+    it('names the connected Google account', () => {
       calendar = remote<CalendarConnection | null>(connection());
       render(<IntegrationsScreen />);
-      expect(screen.getByText('Connected')).toBeInTheDocument();
+      expect(screen.getByText('Connected as team@edufurther.com')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Disconnect' })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Connect' })).not.toBeInTheDocument();
     });
@@ -374,6 +375,9 @@ describe('IntegrationsScreen', () => {
       connectState = { kind: 'nothingConnected' };
       render(<IntegrationsScreen />);
       expect(screen.getByText('Nothing was connected.')).toBeInTheDocument();
+      // Google's calendar permission is a separate checkbox; skipping it looks
+      // identical to closing the window, so the copy covers both.
+      expect(screen.getAllByText(/separate step/).length).toBeGreaterThan(0);
     });
 
     it('tells the mentor when the browser blocked the popup', () => {
@@ -424,6 +428,14 @@ describe('IntegrationsScreen', () => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 
+    /** Null is "not known" — a grant older than the widened consent. */
+    it('falls back to "Connected" when the account cannot be known', () => {
+      calendar = remote<CalendarConnection | null>(connection({ accountEmail: null }));
+      render(<IntegrationsScreen />);
+      expect(screen.getByText('Connected')).toBeInTheDocument();
+      expect(screen.queryByText(/Connected as/)).not.toBeInTheDocument();
+    });
+
     /** Connecting again replaces the grant — the backend's own words. */
     it('offers a working connection a way to switch account', async () => {
       calendar = remote<CalendarConnection | null>(connection());
@@ -457,7 +469,7 @@ describe('IntegrationsScreen', () => {
         error: { kind: 'offline', message: 'x' } as AppError,
       });
       render(<IntegrationsScreen />);
-      expect(screen.getByText('Connected')).toBeInTheDocument();
+      expect(screen.getByText(/^Connected as /)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Disconnect' })).toBeInTheDocument();
       expect(
         screen.queryByText(/couldn’t check whether your calendar is connected/),
@@ -483,7 +495,7 @@ describe('IntegrationsScreen', () => {
             .getAllByRole('status')
             .map((n) => n.textContent ?? '')
             .join(' '),
-        ).toContain('The Google window closed before access was granted'),
+        ).toContain('the calendar permission wasn’t ticked'),
       );
     });
 
@@ -491,7 +503,7 @@ describe('IntegrationsScreen', () => {
       connectState = { kind: 'nothingConnected' };
       calendar = remote<CalendarConnection | null>(connection());
       render(<IntegrationsScreen />);
-      expect(screen.getByText('Connected')).toBeInTheDocument();
+      expect(screen.getByText(/^Connected as /)).toBeInTheDocument();
       expect(screen.queryByText('Nothing was connected.')).not.toBeInTheDocument();
     });
 
