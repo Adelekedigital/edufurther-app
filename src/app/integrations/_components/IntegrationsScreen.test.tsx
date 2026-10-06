@@ -424,6 +424,33 @@ describe('IntegrationsScreen', () => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
 
+    /** Connecting again replaces the grant — the backend's own words. */
+    it('offers a working connection a way to switch account', async () => {
+      calendar = remote<CalendarConnection | null>(connection());
+      render(<IntegrationsScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Use a different account' }));
+      expect(connectFn).toHaveBeenCalled();
+    });
+
+    it('does not offer it where no calendar client is configured', () => {
+      calendar = remote<CalendarConnection | null>(connection());
+      connectUnavailable = true;
+      render(<IntegrationsScreen />);
+      expect(screen.getByRole('button', { name: 'Use a different account' })).toBeDisabled();
+    });
+
+    /** A broken grant already has Reconnect, which picks the account anyway. */
+    it('does not duplicate Reconnect when the grant is broken', () => {
+      calendar = remote<CalendarConnection | null>(
+        connection({ status: 'error', fault: 'revoked' }),
+      );
+      render(<IntegrationsScreen />);
+      expect(screen.getByRole('button', { name: 'Reconnect' })).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Use a different account' }),
+      ).not.toBeInTheDocument();
+    });
+
     /** Review of #179: React Query keeps `data` through a failed refetch. */
     it('keeps Connected and Disconnect when a refetch blips', () => {
       calendar = remote<CalendarConnection | null>(connection(), {

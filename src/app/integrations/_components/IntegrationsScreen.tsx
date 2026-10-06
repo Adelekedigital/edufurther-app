@@ -242,6 +242,20 @@ export function IntegrationsScreen() {
                 {connected ? 'Reconnect' : 'Connect'}
               </Button>
             )}
+            {connected && connected.status === 'active' && (
+              // Connecting again replaces the grant, which is how a mentor
+              // switches account. Without this the only route is disconnect
+              // then reconnect, and nothing suggests that is what to do —
+              // made worse because we cannot name the account (#177, #180).
+              <Button
+                variant="text"
+                busy={waiting}
+                disabled={unavailable}
+                onClick={() => void connect()}
+              >
+                Use a different account
+              </Button>
+            )}
             {connected && (
               <Button
                 ref={disconnectButton}
