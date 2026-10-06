@@ -63,19 +63,9 @@ export function IntegrationsScreen() {
   const video = useConferencing(mentorId);
   const saveVideo = useSaveConferencing(mentorId);
   const calendar = useCalendarConnection(mentorId);
-  /**
-   * PENDING BACKEND (#365). The hook probes for the endpoint and withholds the
-   * button when it 404s — but the probe itself logs that 404 to every mentor's
-   * console on every page load, and our page-review gate counts a console error
-   * as a failure. Suppressing it would mean adding our own noise to a list that
-   * exists for other people's, and that gate has already caught real bugs here.
-   *
-   * So the probe is off until the endpoint lands, which the backend has in
-   * progress. **Turning it on is this one word: `false` → `isMentor`.** The
-   * hook, its mock and its tests are already written and exercised.
-   */
-  const interest = useInterest(false);
-  const register = useRegisterInterest();
+  // Backend #365 merged 2026-10-06, so the endpoint exists and the probe is on.
+  const interest = useInterest(mentorId);
+  const register = useRegisterInterest(mentorId);
   const disconnect = useDisconnectCalendar(mentorId);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const disconnectButton = useRef<HTMLButtonElement>(null);
@@ -230,12 +220,18 @@ export function IntegrationsScreen() {
       label="Get paid for sessions"
       badge="Coming soon"
       description="Your experience is worth paying for. Start charging for your sessions."
+      // Once they have asked, the confirmation is a status line, not a disabled
+      // button: a disabled button leaves the tab order, so the one state it
+      // reports is the one a keyboard or screen-reader user cannot reach. The
+      // Calendars row above says "Connected" the same way.
+      status={
+        askedForPayments ? { tone: 'good', text: 'We’ll let you know' } : undefined
+      }
       actions={
-        // Only once the endpoint exists. Until then there is nothing to press.
-        interest.data?.available ? (
+        // Only once the endpoint exists, and only until they have asked.
+        interest.data?.available && !askedForPayments ? (
           <Button
             variant="secondary-outlined"
-            disabled={askedForPayments}
             busy={register.isPending}
             onClick={() => {
               register.reset();
@@ -248,13 +244,23 @@ export function IntegrationsScreen() {
               );
             }}
           >
-            {askedForPayments ? 'We’ll let you know' : 'Notify me'}
+            Notify me
           </Button>
         ) : undefined
       }
       footer={
-        register.error ? (
-          <p role="alert" className={styles.sectionErrorBody}>
+        register.isPending ? (
+          // `busy` on a Button is cursor-only (divergence row 375), and the
+          // pending span covers the POST plus its refetch.
+          <span className={styles.waiting}>
+            <Icon name="progress_activity" size={16} className={styles.spin} />
+            Signing you up…
+          </span>
+        ) : register.error ? (
+          // Plain, not role="alert": the rejection handler already announces
+          // this sentence, and two live regions getting the same text in one
+          // commit is read out twice.
+          <p className={styles.sectionErrorBody}>
             <Icon name="error" size={16} />
             {register.error.message}
           </p>
@@ -357,7 +363,7 @@ export function IntegrationsScreen() {
   );
 
   let content: ReactNode;
-  if (viewer.kind === 'loading' || video.isLoading || calendar.isLoading)
+  if (viewer.kind === 'loading' || video.isLoading || calendar.isLoading || interest.isLoading)
     content = <IntegrationsSkeleton />;
   // Error before content: a failed load never reads as "nothing connected".
   // Only when NOTHING loaded, though — this page has two independent resources
