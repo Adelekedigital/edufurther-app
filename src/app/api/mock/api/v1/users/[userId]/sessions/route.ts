@@ -40,6 +40,11 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     typeId?: string;
     /** The other party's zone, so the "what time is it for them" line has something to say. */
     zone?: string;
+    /** The offering's name, for the join page's title. */
+    typeName?: string;
+    duration?: number;
+    /** When the other party pressed Join (the join page's "Here now"). */
+    otherJoinedAt?: string;
   };
   const session = (
     id: string,
@@ -48,7 +53,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     mentee: [string, string],
     o: Opts = {},
   ) => {
-    const other = party(`mock-${id}`, mentee[0], mentee[1], o.zone ?? 'Africa/Lagos');
+    const other = {
+      ...party(`mock-${id}`, mentee[0], mentee[1], o.zone ?? 'Africa/Lagos'),
+      joined_at: o.otherJoinedAt ?? null,
+    };
     const me = party(userId, 'Gbenga', 'Adeyemi', 'America/New_York');
     return {
       id,
@@ -59,9 +67,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       mentee: o.asMentee ? me : other,
       // A real offering, so the mentor's suggest picker can ask for its slots.
       session_type_id: o.typeId ?? 'st-general',
+      session_type: o.typeName ? { id: o.typeId ?? 'st-general', name: o.typeName } : null,
       status,
       starts_at: starts,
-      duration_minutes: 60,
+      duration_minutes: o.duration ?? 60,
       topic: o.topic === undefined ? null : o.topic,
       booking_message: o.message ?? null,
       meeting_provider: 'daily',
@@ -92,7 +101,29 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     };
   };
 
+  // Two sessions on the clock, for the join page (/sessions/j-1, /sessions/j-2):
+  // one inside its join window, one under way with the other side in.
+  const nowMin = new Date();
+  nowMin.setUTCSeconds(0, 0);
+  const fromNow = (m: number) => minutesFrom(nowMin.toISOString(), m);
   const all = [
+    session('j-1', fromNow(3), 'confirmed', ['Amara', 'Okafor'], {
+      typeName: '1:1 call',
+      duration: 30,
+      answers: {
+        count: 1,
+        first: {
+          question_text: 'What would you like to talk about?',
+          text: 'Choosing between a funded and an unfunded PhD offer.',
+        },
+      },
+    }),
+    session('j-2', fromNow(-10), 'confirmed', ['Gbenga', 'Ogundipe'], {
+      typeName: '1:1 call',
+      duration: 30,
+      asMentee: true,
+      otherJoinedAt: fromNow(-9),
+    }),
     // Upcoming — the first is the hero.
     session('u-1', at(0, 23), 'confirmed', ['Taofeeq', 'Animasahun'], {
       topic: 'Statement of Purpose review',

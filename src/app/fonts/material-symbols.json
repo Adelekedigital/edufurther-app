@@ -21,6 +21,7 @@
     "check_box",
     "check_box_outline_blank",
     "check_circle",
+    "checklist",
     "chevron_left",
     "chevron_right",
     "close",
@@ -48,6 +49,7 @@
     "flight_takeoff",
     "folder_open",
     "format_list_numbered",
+    "forum",
     "groups",
     "handshake",
     "hide_image",
@@ -113,8 +115,9 @@
     "videocam",
     "visibility",
     "visibility_off",
+    "wifi",
     "work",
     "workspace_premium"
   ],
-  "sha256": "175d3dd191c9cfd7947d7e482905d457cd217f5fd85b33d05f8b3cd7e7eb80ef"
+  "sha256": "9109c52b9f511fdc742e2d6c4b20b341401fd3fc6ebacc4a196e2cd05ddfd8c8"
 }

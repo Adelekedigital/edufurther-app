@@ -4,6 +4,7 @@ import { fn } from 'storybook/test';
 import { Button } from '@/components/atoms/Button/Button';
 import { StepBars } from '@/components/atoms/StepBars/StepBars';
 import { AppShell } from './AppShell/AppShell';
+import { FocusPage } from './FocusPage/FocusPage';
 import { ModalShell } from './ModalShell/ModalShell';
 
 const meta: Meta = { title: 'Templates', parameters: { layout: 'fullscreen' } };
@@ -163,5 +164,22 @@ export const ModalDanger: Story = {
     >
       <p>Buttons come with the confirm organism (PR 2).</p>
     </ModalShell>
+  ),
+};
+
+/** Session Join.dc.html frame: slim header, one way back, no nav rail. */
+export const FocusPageFrame: Story = {
+  render: () => (
+    <FocusPage back={{ href: '/bookings', label: 'Go to Bookings' }}>
+      <p>The session card goes here.</p>
+    </FocusPage>
+  ),
+};
+
+export const FocusPageOffline: Story = {
+  render: () => (
+    <FocusPage back={{ href: '/bookings', label: 'Go to Bookings' }} offline>
+      <p>The session card goes here.</p>
+    </FocusPage>
   ),
 };

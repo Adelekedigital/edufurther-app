@@ -27,6 +27,13 @@ export const BOOKINGS_GATE: MemberGateCopy = {
   guestDescription: 'Your bookings are the sessions you’ve booked or been booked for.',
 };
 
+/** Session Join's copy (PROVISIONAL, undesigned; docs/handoff/session-join-design-request.md). */
+export const SESSION_GATE: MemberGateCopy = {
+  illustration: 'calendar',
+  guestTitle: 'Log in to join your session',
+  guestDescription: 'Your session page has the countdown and the link to the call.',
+};
+
 /** Session Types' copy (confirmed by design, reply 2026-09-29, #3). */
 export const SESSION_TYPES_GATE: GateCopy = {
   illustration: 'task-templates',

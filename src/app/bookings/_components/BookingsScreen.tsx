@@ -14,7 +14,6 @@ import { AppShell } from '@/components/templates/AppShell/AppShell';
 import {
   useBooking,
   useBookingHistory,
-  useJoinSession,
   usePendingBookings,
   useUpcomingBookings,
 } from '@/lib/api/data/bookings';
@@ -32,8 +31,8 @@ import { cx } from '@/lib/utils/cx';
 import { useAppShell } from '../../_shell/useAppShell';
 import { Button } from '@/components/atoms/Button/Button';
 import type { RowMenuItem } from '@/components/molecules/RowMenu/RowMenu';
-import { ConfirmActionDialog } from './ConfirmActionDialog';
-import { IntakeFileViewer } from './IntakeFileViewer';
+import { ConfirmActionDialog } from '@/app/_sessions/ConfirmActionDialog';
+import { IntakeFileViewer } from '@/app/_sessions/IntakeFileViewer';
 import {
   bookingHeading,
   canAccept,
@@ -54,23 +53,6 @@ import styles from './BookingsScreen.module.css';
 
 /** The details panel's element id, as BookingDetailsPanel renders it. */
 const PANEL_ID = 'booking-details';
-
-/**
- * The browser swallowed the new tab. Said wherever the Join was pressed, with
- * the link, because the attendance is already recorded and this is the only
- * route left to the meeting.
- */
-function BlockedNotice({ url }: { url: string }) {
-  return (
-    <Notice tone="info">
-      Your browser blocked the meeting window.{' '}
-      <a href={url} target="_blank" rel="noopener noreferrer">
-        Open the session
-      </a>
-      . You’re already marked as here.
-    </Notice>
-  );
-}
 
 /** `/bookings` — the sessions a person has booked or been booked for (Bookings.dc.html). */
 export function BookingsScreen() {
@@ -104,7 +86,11 @@ export function BookingsScreen() {
   // Fetched on Pending too: the clash check reads it, and Pending is where the
   // nav badge sends a mentor, so gating it on the Upcoming tab meant the one
   // warning that matters never appeared on the path that matters.
-  const upcoming = useUpcomingBookings(userId, accountZone, tab === 'upcoming' || tab === 'pending');
+  const upcoming = useUpcomingBookings(
+    userId,
+    accountZone,
+    tab === 'upcoming' || tab === 'pending',
+  );
   const pending = usePendingBookings(userId, tab === 'pending');
   const history = useBookingHistory(userId, filters, tab === 'history');
 
@@ -140,17 +126,9 @@ export function BookingsScreen() {
     setExpandedFor(id);
   };
 
-  const join = useJoinSession();
-  // A repeated failure must be heard again, so each message carries a new id.
-  const [joinProblem, setJoinProblem] = useState<{ text: string; id: number } | null>(null);
-  const say = useCallback((text: string) => setJoinProblem({ text, id: Date.now() }), []);
-  // The browser blocked the new tab: offer the link rather than leaving the
-  // click looking broken.
-  const [blockedUrl, setBlockedUrl] = useState<string | null>(null);
-  // Which Join was pressed. On a phone the panel is a full-screen sheet over
-  // everything, so a message left on the page behind it cannot be seen or
-  // clicked — and the blocked-popup link is the only way to the meeting.
-  const [joinFrom, setJoinFrom] = useState<'hero' | 'panel' | null>(null);
+  // A repeated message must be heard again, so each carries a new id.
+  const [announcement, setAnnouncement] = useState<{ text: string; id: number } | null>(null);
+  const say = useCallback((text: string) => setAnnouncement({ text, id: Date.now() }), []);
 
   const reveal = {
     upcoming: useRevealed(),
@@ -206,9 +184,7 @@ export function BookingsScreen() {
     action: 'decline' | 'withdraw' | 'cancel';
     booking: Booking;
   } | null>(null);
-  const pendingAction = confirming
-    ? { decline, withdraw, cancel }[confirming.action]
-    : null;
+  const pendingAction = confirming ? { decline, withdraw, cancel }[confirming.action] : null;
 
   // Which completed sessions this mentee can still review. The list is the
   // authority — it already applies "completed only", "not already reviewed" and
@@ -291,7 +267,7 @@ export function BookingsScreen() {
     return (
       <>
         {/* The design's own variants: an outlined Accept and a destructive
-            *text* Decline, so the row does not carry two competing fills. */}
+         *text* Decline, so the row does not carry two competing fills. */}
         <Button
           variant="secondary-outlined"
           size="small"
@@ -332,36 +308,11 @@ export function BookingsScreen() {
         : [...on, ...group.filter((s) => !on.includes(s))],
     );
 
+  // Join opens the session's own page (Session Join.dc.html), where the
+  // countdown, who is here and the join call itself live.
   const onJoin = useCallback(
-    (sessionId: string, from: 'hero' | 'panel') => {
-      setJoinProblem(null);
-      setBlockedUrl(null);
-      setJoinFrom(from);
-      join.mutate(sessionId, {
-        onSuccess: ({ meetingUrl }) => {
-          // Attendance is recorded either way — the rest is only about getting
-          // there. The POST is awaited, so this open is outside the click's
-          // gesture and a popup blocker can swallow it; `open` returns null
-          // when it does, and silence would read as a dead button.
-          if (!meetingUrl) {
-            say('You’re marked as here, but this session has no meeting link yet.');
-            return;
-          }
-          const opened = window.open(meetingUrl, '_blank', 'noopener,noreferrer');
-          if (!opened) setBlockedUrl(meetingUrl);
-        },
-        onError: (e) => {
-          setBlockedUrl(null);
-          const err = normaliseError(e);
-          say(
-            err.status === 409
-              ? 'This session isn’t open to join right now.'
-              : 'We couldn’t join you. Try again in a moment.',
-          );
-        },
-      });
-    },
-    [join, say],
+    (sessionId: string) => router.push(`/sessions/${encodeURIComponent(sessionId)}`),
+    [router],
   );
 
   const gate = memberGate(viewer, '/bookings', BOOKINGS_GATE);
@@ -382,146 +333,139 @@ export function BookingsScreen() {
 
           <div className={styles.columns}>
             <div className={styles.column}>
-
-          {/* One live region for the whole page: sr-only, so it is heard even
+              {/* One live region for the whole page: sr-only, so it is heard even
               while the sheet covers everything. */}
-          <LiveRegion message={joinProblem} />
-          {blockedUrl && joinFrom !== 'panel' && <BlockedNotice url={blockedUrl} />}
+              <LiveRegion message={announcement} />
 
-          <TabPanel id="bookings-upcoming" active={tab === 'upcoming'}>
-            <BookingsPanel
-              tab="upcoming"
-              bookings={later}
-              isLoading={upcoming.isLoading}
-              error={upcoming.error}
-              retry={upcoming.retry}
-              timeZone={timeZone}
-              isMentor={isMentor}
-              heading={later.length ? 'Later' : undefined}
-              now={now}
-              total={later.length}
-              menuFor={rowMenu}
-              onOpenAnswers={openAnswers}
-              answersControls={showPanel ? PANEL_ID : undefined}
-              selectedId={selected}
-              shown={reveal.upcoming.shown}
-              showMore={reveal.upcoming.showMore}
-            >
-              {next && (
-                <NextSessionCard
-                  booking={next}
-                  onOpenAnswers={() => openAnswers(next.id)}
-                  answersControls={showPanel ? PANEL_ID : undefined}
+              <TabPanel id="bookings-upcoming" active={tab === 'upcoming'}>
+                <BookingsPanel
+                  tab="upcoming"
+                  bookings={later}
+                  isLoading={upcoming.isLoading}
+                  error={upcoming.error}
+                  retry={upcoming.retry}
                   timeZone={timeZone}
-                  onJoin={() => onJoin(next.id, 'hero')}
-                  joining={join.isPending}
-                  menu={rowMenu(next)}
+                  isMentor={isMentor}
+                  heading={later.length ? 'Later' : undefined}
                   now={now}
-                />
-              )}
-            </BookingsPanel>
-          </TabPanel>
-
-          <TabPanel id="bookings-pending" active={tab === 'pending'}>
-            <BookingsPanel
-              tab="pending"
-              bookings={pending.data ?? []}
-              isLoading={pending.isLoading}
-              error={pending.error}
-              retry={pending.retry}
-              timeZone={timeZone}
-              isMentor={isMentor}
-              intro={pendingIntro}
-              total={pending.data?.length}
-              now={now}
-              menuFor={rowMenu}
-              actionsFor={rowActions}
-              noticeFor={rowNotice}
-              onOpenAnswers={openAnswers}
-              answersControls={showPanel ? PANEL_ID : undefined}
-              selectedId={selected}
-              shown={reveal.pending.shown}
-              showMore={reveal.pending.showMore}
-            />
-          </TabPanel>
-
-          <TabPanel id="bookings-history" active={tab === 'history'}>
-            <div className={styles.filters}>
-              {HISTORY_FILTERS.map((f) => (
-                <Chip
-                  key={f.key}
-                  // A chip covers several outcomes now, so it reads as on only
-                  // when all of them are.
-                  pressed={f.statuses.every((st) => filters.includes(st))}
-                  onClick={() => toggleFilter(f.statuses)}
+                  total={later.length}
+                  menuFor={rowMenu}
+                  onOpenAnswers={openAnswers}
+                  answersControls={showPanel ? PANEL_ID : undefined}
+                  selectedId={selected}
+                  shown={reveal.upcoming.shown}
+                  showMore={reveal.upcoming.showMore}
                 >
-                  {f.label}
-                </Chip>
-              ))}
-            </div>
-            <BookingsPanel
-              tab="history"
-              bookings={history.bookings}
-              isLoading={history.isLoading}
-              error={history.error}
-              retry={history.retry}
-              timeZone={timeZone}
-              isMentor={isMentor}
-              filtered={filters.length > 0}
-              menuFor={rowMenu}
-              selectedId={selected}
-              shown={reveal.history.shown}
-              showMore={() => {
-                reveal.history.showMore();
-                // Reveal runs ahead of what is loaded: fetch the next page too.
-                if (history.bookings.length <= reveal.history.shown && history.hasMore)
-                  history.loadMore();
-              }}
-              // Once the last page is in, the loaded count IS the total; while
-              // more is coming the API sends none, so the caption says less.
-              total={history.hasMore ? undefined : history.bookings.length}
-              hasMore={history.hasMore}
-              loadMoreError={history.loadMoreError}
-              isLoadingMore={history.isLoadingMore}
-              actionsFor={(b) =>
-                // Only a session this viewer booked can be booked again, and a
-                // mentor never books at all.
-                reviewUnknown && b.side === 'mentee' && b.status === 'completed' ? null : canReview(
-                  b,
-                ) ? (
-                  <ButtonLink
-                    // The review flow lives on the profile; linking there keeps
-                    // one implementation rather than mounting it twice.
-                    href={`/mentors/${b.other.id}?tab=reviews`}
-                    prefetch={false}
-                    variant="secondary-outlined"
-                    size="small"
-                  >
-                    Leave a review
-                  </ButtonLink>
-                ) : canBook && b.side === 'mentee' && b.status === 'completed' ? (
-                  <ButtonLink
-                    href={`/mentors/${b.other.id}`}
-                    prefetch={false}
-                    variant="secondary-outlined"
-                    size="small"
-                  >
-                    Book again
-                  </ButtonLink>
-                ) : null
-              }
-            />
-          </TabPanel>
+                  {next && (
+                    <NextSessionCard
+                      booking={next}
+                      onOpenAnswers={() => openAnswers(next.id)}
+                      answersControls={showPanel ? PANEL_ID : undefined}
+                      timeZone={timeZone}
+                      onJoin={() => onJoin(next.id)}
+                      menu={rowMenu(next)}
+                      now={now}
+                    />
+                  )}
+                </BookingsPanel>
+              </TabPanel>
+
+              <TabPanel id="bookings-pending" active={tab === 'pending'}>
+                <BookingsPanel
+                  tab="pending"
+                  bookings={pending.data ?? []}
+                  isLoading={pending.isLoading}
+                  error={pending.error}
+                  retry={pending.retry}
+                  timeZone={timeZone}
+                  isMentor={isMentor}
+                  intro={pendingIntro}
+                  total={pending.data?.length}
+                  now={now}
+                  menuFor={rowMenu}
+                  actionsFor={rowActions}
+                  noticeFor={rowNotice}
+                  onOpenAnswers={openAnswers}
+                  answersControls={showPanel ? PANEL_ID : undefined}
+                  selectedId={selected}
+                  shown={reveal.pending.shown}
+                  showMore={reveal.pending.showMore}
+                />
+              </TabPanel>
+
+              <TabPanel id="bookings-history" active={tab === 'history'}>
+                <div className={styles.filters}>
+                  {HISTORY_FILTERS.map((f) => (
+                    <Chip
+                      key={f.key}
+                      // A chip covers several outcomes now, so it reads as on only
+                      // when all of them are.
+                      pressed={f.statuses.every((st) => filters.includes(st))}
+                      onClick={() => toggleFilter(f.statuses)}
+                    >
+                      {f.label}
+                    </Chip>
+                  ))}
+                </div>
+                <BookingsPanel
+                  tab="history"
+                  bookings={history.bookings}
+                  isLoading={history.isLoading}
+                  error={history.error}
+                  retry={history.retry}
+                  timeZone={timeZone}
+                  isMentor={isMentor}
+                  filtered={filters.length > 0}
+                  menuFor={rowMenu}
+                  selectedId={selected}
+                  shown={reveal.history.shown}
+                  showMore={() => {
+                    reveal.history.showMore();
+                    // Reveal runs ahead of what is loaded: fetch the next page too.
+                    if (history.bookings.length <= reveal.history.shown && history.hasMore)
+                      history.loadMore();
+                  }}
+                  // Once the last page is in, the loaded count IS the total; while
+                  // more is coming the API sends none, so the caption says less.
+                  total={history.hasMore ? undefined : history.bookings.length}
+                  hasMore={history.hasMore}
+                  loadMoreError={history.loadMoreError}
+                  isLoadingMore={history.isLoadingMore}
+                  actionsFor={(b) =>
+                    // Only a session this viewer booked can be booked again, and a
+                    // mentor never books at all.
+                    reviewUnknown &&
+                    b.side === 'mentee' &&
+                    b.status === 'completed' ? null : canReview(b) ? (
+                      <ButtonLink
+                        // The review flow lives on the profile; linking there keeps
+                        // one implementation rather than mounting it twice.
+                        href={`/mentors/${b.other.id}?tab=reviews`}
+                        prefetch={false}
+                        variant="secondary-outlined"
+                        size="small"
+                      >
+                        Leave a review
+                      </ButtonLink>
+                    ) : canBook && b.side === 'mentee' && b.status === 'completed' ? (
+                      <ButtonLink
+                        href={`/mentors/${b.other.id}`}
+                        prefetch={false}
+                        variant="secondary-outlined"
+                        size="small"
+                      >
+                        Book again
+                      </ButtonLink>
+                    ) : null
+                  }
+                />
+              </TabPanel>
             </div>
             {showPanel && (
               <BookingDetailsPanel
                 asSheet={asSheet}
                 booking={open ?? null}
                 timeZone={timeZone}
-                joinNotice={
-                  joinFrom === 'panel' && blockedUrl ? <BlockedNotice url={blockedUrl} /> : null
-                }
-                joinProblem={joinFrom === 'panel' ? (joinProblem?.text ?? null) : null}
                 outcome={outcome.data}
                 outcomeLoading={outcome.isLoading}
                 answers={answers.data}
@@ -559,8 +503,7 @@ export function BookingsScreen() {
                   setExpandedFor(null);
                   select(null);
                 }}
-                onJoin={open ? () => onJoin(open.id, 'panel') : undefined}
-                joining={join.isPending}
+                onJoin={open ? () => onJoin(open.id) : undefined}
                 now={now}
               />
             )}

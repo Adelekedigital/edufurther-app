@@ -7,8 +7,8 @@ import { Icon } from '../Icon/Icon';
 import styles from './Avatar.module.css';
 
 type AvatarProps = {
-  /** DS sizes: sm 32 / md 40 / lg 48 / xl 56; nav 36 is ours (the sidebar account button, AppShell.dc.html). */
-  size?: 'sm' | 'nav' | 'md' | 'lg' | 'xl';
+  /** DS sizes: sm 32 / md 40 / lg 48 / xl 56 / 2xl 64; nav 36 is ours (the sidebar account button, AppShell.dc.html). */
+  size?: 'sm' | 'nav' | 'md' | 'lg' | 'xl' | '2xl';
   /** Empty with `tone="plain"`: the DS icon avatar (a person glyph), e.g. a deleted user. */
   initials: string;
   /**
@@ -54,7 +54,7 @@ export function Avatar({
     <span
       className={cx(
         styles.avatar,
-        styles[size],
+        styles[size === '2xl' ? 'xxl' : size],
         plain && styles.plain,
         blank && styles.blank,
         className,
@@ -77,4 +77,4 @@ export function Avatar({
 }
 
 /** DS Avatar `type="icon"`: the glyph is 55% of the circle (lg/xl: the nearest Icon size). */
-const AVATAR_ICON = { sm: 18, nav: 20, md: 22, lg: 28, xl: 28 } as const;
+const AVATAR_ICON = { sm: 18, nav: 20, md: 22, lg: 28, xl: 28, '2xl': 28 } as const;

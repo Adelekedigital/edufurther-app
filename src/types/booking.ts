@@ -12,10 +12,7 @@ import type { CoverKey } from '@/lib/utils/cover';
  * withdrawal. The contract's enum has nine; the other five are system-set.
  */
 export type PickableReason =
-  | 'mentor_unavailable'
-  | 'mentee_no_longer_needed'
-  | 'scheduling_conflict'
-  | 'technical_issue';
+  'mentor_unavailable' | 'mentee_no_longer_needed' | 'scheduling_conflict' | 'technical_issue';
 
 /** Which side of the session the viewer is on. One account can be both, on different rows. */
 export type BookingSide = 'mentor' | 'mentee';
@@ -121,8 +118,7 @@ export type JoinResult = {
 };
 
 /** The one Word type the upload accepts; spelled out because it is unreadable inline. */
-type IntakeDocType =
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+type IntakeDocType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
 /**
  * The booking form in brief, carried on every list row so the rows cost no
@@ -193,4 +189,21 @@ export type BookingAnswer = {
   /** The answer in words: free text as written, choices joined, a file named. */
   text: string;
   file: AnswerFile | null;
+};
+
+/** Where a session happens, as the API names it (`MeetingProvider`). `daily` is EduFurther video. */
+export type MeetingProvider = 'daily' | 'google_meet' | 'zoom' | 'custom';
+
+/**
+ * One session as the join page reads it (Session Join.dc.html). The page shows
+ * both people side by side, so the viewer's own party is modelled in full
+ * here, which `Booking` deliberately does not do.
+ */
+export type SessionRoom = {
+  booking: Booking;
+  me: BookingParty;
+  /** The offering's name ("1:1 call"); null on an older row with no type. */
+  typeName: string | null;
+  /** Null on an older row with no venue recorded. */
+  provider: MeetingProvider | null;
 };

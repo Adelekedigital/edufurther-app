@@ -1,0 +1,82 @@
+/* Session Join.dc.html lobby person. */
+.person {
+  width: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ring {
+  position: relative;
+  display: flex;
+  border-radius: var(--radius-full);
+  box-shadow:
+    0 0 0 3px var(--white),
+    0 0 0 5px var(--ink-200);
+}
+.here .ring {
+  box-shadow:
+    0 0 0 3px var(--white),
+    0 0 0 5px var(--green-700);
+}
+
+.pulse {
+  position: absolute;
+  inset: -5px;
+  border-radius: var(--radius-full);
+  pointer-events: none;
+}
+.here .pulse {
+  animation: ring 1.8s infinite;
+}
+/* The design's efPulseRing, its rgba green as a token mix. */
+@keyframes ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--green-600) 40%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 10px color-mix(in srgb, var(--green-600) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--green-600) 0%, transparent);
+  }
+}
+
+.name {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  /* Ours: a long first name wraps inside the 140px column rather than
+     pushing its neighbour. */
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.presence {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-600);
+}
+.here .presence {
+  color: var(--green-700);
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: var(--radius-full);
+  background: var(--ink-300);
+}
+.here .dot {
+  background: var(--green-700);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .here .pulse {
+    animation: none;
+  }
+}
