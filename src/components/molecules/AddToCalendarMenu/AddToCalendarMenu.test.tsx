@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { CalendarEvent } from '@/lib/utils/calendarLinks';
 import { AddToCalendarMenu } from './AddToCalendarMenu';
@@ -62,7 +62,10 @@ describe('AddToCalendarMenu', () => {
     const button = screen.getByRole('button', { name: 'Add to calendar' });
     button.focus();
     await userEvent.keyboard('{Enter}');
-    expect(await screen.findByRole('menuitem', { name: /Google Calendar/ })).toHaveFocus();
+    // RowMenu focuses the first item on the next animation frame, after the
+    // menu exists: wait for the focus, not just the element.
+    const google = await screen.findByRole('menuitem', { name: /Google Calendar/ });
+    await waitFor(() => expect(google).toHaveFocus());
     await userEvent.keyboard('{ArrowDown}');
     expect(screen.getByRole('menuitem', { name: /Outlook/ })).toHaveFocus();
     await userEvent.keyboard('{Escape}');
