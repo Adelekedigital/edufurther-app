@@ -11,7 +11,7 @@ import type { ActionInput, BookingAction } from '@/lib/api/data/bookingActions';
 import { canCancel, refundOnCancel } from '@/lib/utils/bookings';
 import type { AppError } from '@/types/mentor';
 import type { Booking, PickableReason } from '@/types/booking';
-import styles from './BookingsScreen.module.css';
+import styles from './sessionDialogs.module.css';
 
 type ConfirmActionDialogProps = {
   action: Exclude<BookingAction, 'accept'>;

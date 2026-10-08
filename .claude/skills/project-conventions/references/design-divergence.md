@@ -398,3 +398,33 @@ nothing to diverge *from* here. The spec followed instead is Google's own:
 
 **Ours, not from any design:** the "or" divider, and the wording of the two
 Google failure notices (cancelled / didn't work). Both PROVISIONAL, for design.
+
+### Session Join — `layout=lobby` (PR 1: before and during the call), 2026-10-07
+
+Source: `Session Join.dc.html`, defaults `layout=lobby`, `provider=edufurther`; `viewer` and `state` come from the session, not the tweak.
+
+| Design says | We do | Why | Revisit |
+|---|---|---|---|
+| A focused page: slim header (logo + one link back), no nav rail | Built as drawn (`templates/FocusPage`), an exception to "every app screen renders inside AppShell" | Product 2026-10-07: a page opened to do one thing now | never |
+| Mentor's header link "Go to Home" | "Go to Bookings" for both sides; the logo goes there too | There is no mentor home yet (`/dashboard` 404s) | #189 |
+| Lobby people: DS Avatar `type=initials` (dark initials on blue-50) | The person's own colour (`cover`), as Bookings' rows show them | One person looks the same on every screen | design confirms |
+| "Join opens 10 minutes before" / the button "turns on 10 minutes before" | Read from `join_opens_at` (5 today) | Backend reply §2; the window is 5 before to 15 after | backend changes the window |
+| "Rejoin session" for every mentor while in progress | "Rejoin session" only for someone who has pressed Join; otherwise "Join now" | Rejoin says you were in | — |
+| Clock `aria-live="polite"` | Not a live region; a separate LiveRegion says "Join is open.", "The session has started.", "{name} is here." once each | A per-second clock would be read every second | never |
+| Meta line without a zone | "… · Lagos (WAT) · EduFurther video" | Product rule: times name whose clock they are | — |
+| Join links: Add to calendar, Message {name}, Reschedule, Cancel | Cancel only, and only while the backend allows it (more than 10 minutes out) | No endpoint for the others (house rule: omit, don't disable) | #184, #168, #185 |
+| "Having a problem? Report an issue" footer | Omitted | No support channel or endpoint | #187, #108 |
+| Guide: "Reschedule or message {name} at least 12 hours before" | "Cancel at least 12 hours before, so the time can go to someone else." | Neither action exists | #185, #168 |
+| Guide: "Sessions are 30 minutes" | "This session is {n} minutes" | The length is the session's own | — |
+| Guide (mentor): "…have one next step ready for her" | "…for them"; without answers, "Have one next step ready for {name}." | No gendered pronouns; no answers to point at | — |
+| Answers disclosure preview "{area} · {text}" | Every answer's text joined by " · "; the row is hidden when nothing was answered | The form is the mentor's own, not a fixed pair | — |
+| Edit answers (mentee, until the start) | Omitted | No endpoint | #186 |
+| (no state) running, but past `join_closes_at` | **Ours, provisional:** no Join; "Joining closed at 6:15 pm, 15 minutes after the start." | Nothing can issue a way in after the window (backend #379) | #188, design request |
+| (no state) over, attendance not settled | **Ours, provisional:** pill "Ended", no clock, "Joined at 6:01 pm" / "No arrival recorded", "We're confirming who joined, which can take up to an hour." | The sweep runs hourly; the backend asks us never to infer "missed" from the clock | design request |
+| (no states) loading, error, not found, guest | **Ours, provisional:** the lobby's shape as a skeleton; "We couldn't load this session" + Try again; "This session isn't available" + Go to Bookings; the shared member gate ("Log in to join your session") | Undesigned | design request |
+| Pending, cancelled, declined, expired, withdrawn | Redirect (replace) to `/bookings?booking={id}` | Product 2026-10-07: Bookings already shows them | — |
+| Completed and missed | Redirect to Bookings, **until PR 2** draws them here | PR split (product 2026-10-07) | PR 2 |
+| Pulse keyframes in `rgba(4,128,46,…)` | `color-mix(in srgb, var(--green-600) …, transparent)` | No raw colours in components | — |
+| Phones: Join button padding 16/24 | 16/16 (the Button atom's phone rule) | CTA hierarchy | — |
+| Phones: Join links 32px tall | 44px tap area | Touch target | — |
+| Bookings: Join opens the meeting | Join opens `/sessions/{id}`; the join call happens there | The design's Bookings Join links to Session Join | — |

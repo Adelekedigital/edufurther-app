@@ -7,6 +7,27 @@ import { NextResponse } from 'next/server';
  * ENABLE_MOCK_API=1 only.
  */
 const FORMS: Record<string, unknown[]> = {
+  // The join page's on-the-clock session (users/[userId]/sessions `j-1`).
+  'j-1': [
+    {
+      question_id: 'q1',
+      question_text: 'What would you like to talk about?',
+      question_type: 'free_text',
+      retired: false,
+      text: 'I’m applying to PhD programs in public health for Fall 2027 and don’t know how to pick between funded and unfunded offers.',
+      options: [],
+      file: null,
+    },
+    {
+      question_id: 'q2',
+      question_text: 'Which area do you want help with?',
+      question_type: 'multi_choice',
+      retired: false,
+      text: null,
+      options: [{ id: 'o1', text: 'School selection' }],
+      file: null,
+    },
+  ],
   'u-1': [
     {
       question_id: 'q1',

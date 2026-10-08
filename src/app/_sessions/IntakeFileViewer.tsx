@@ -7,7 +7,7 @@ import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { canPreview, useIntakeFile } from '@/lib/api/data/intakeFiles';
 import { fileSize } from '@/lib/utils/format';
 import type { AnswerFile } from '@/types/booking';
-import styles from './BookingsScreen.module.css';
+import styles from './sessionDialogs.module.css';
 
 type IntakeFileViewerProps = {
   file: AnswerFile;

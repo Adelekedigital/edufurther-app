@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
-import { Button } from '@/components/atoms/Button/Button';
+import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { RowMenu, type RowMenuItem } from '@/components/molecules/RowMenu/RowMenu';
 import { cx } from '@/lib/utils/cx';
@@ -23,9 +23,8 @@ type NextSessionCardProps = {
   onOpenAnswers?: () => void;
   /** The panel that link reveals. */
   answersControls?: string;
-  /** Records attendance and hands back where to go. */
-  onJoin: () => void;
-  joining?: boolean;
+  /** The session's own page, where joining happens (Session Join.dc.html). */
+  joinHref: string;
   /** The ⋯ menu — "See details", as the design's hero has. */
   menu?: RowMenuItem[];
   now?: Date;
@@ -50,8 +49,7 @@ function dateLine(isoInstant: string, timeZone: string): string {
 export function NextSessionCard({
   booking: b,
   timeZone,
-  onJoin,
-  joining,
+  joinHref,
   menu,
   onOpenAnswers,
   answersControls,
@@ -145,16 +143,16 @@ export function NextSessionCard({
           a Join that can only fail is worse than none. */}
       {(state === 'open' || state === 'before') && (
         <div className={styles.actions}>
-          <Button
-            variant="primary"
-            size="medium"
-            onClick={onJoin}
-            busy={joining}
-            disabled={state === 'before'}
-            aria-describedby={state === 'before' ? lockId : undefined}
-          >
-            Join session
-          </Button>
+          {/* It navigates once open, so it is a link; before that, a locked button. */}
+          {state === 'open' ? (
+            <ButtonLink href={joinHref} prefetch={false} variant="primary" size="medium">
+              Join session
+            </ButtonLink>
+          ) : (
+            <Button variant="primary" size="medium" disabled aria-describedby={lockId}>
+              Join session
+            </Button>
+          )}
           {state === 'before' && opensIn != null && (
             <span id={lockId} className={styles.lock}>
               Join opens {opensIn} minutes before

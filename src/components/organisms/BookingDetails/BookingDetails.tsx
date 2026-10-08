@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
-import { Button } from '@/components/atoms/Button/Button';
+import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { AnswerItem } from '@/components/molecules/AnswerItem/AnswerItem';
@@ -44,12 +44,8 @@ type BookingDetailsProps = {
    */
   outcomeFailed?: boolean;
   retryOutcome?: () => void;
-  onJoin?: () => void;
-  joining?: boolean;
-  /** Said under Join, because on a phone this panel covers the page entirely. */
-  joinNotice?: ReactNode;
-  /** The same message in words, for the panel's own alert. */
-  joinProblem?: string | null;
+  /** The session's own page, where joining happens. Absent: no Join here at all. */
+  joinHref?: string;
   /** The reason is still being fetched: the block has a shape, not a gap. */
   outcomeLoading?: boolean;
   /** What the mentee wrote on the booking form (GET /sessions/{id}/answers). */
@@ -153,17 +149,14 @@ export function BookingDetails({
   onBookSuggestion,
   onToggleAnswers,
   onOpenFile,
-  onJoin,
-  joining,
-  joinNotice,
-  joinProblem,
+  joinHref,
   now = new Date(),
 }: BookingDetailsProps) {
   const status = panelStatus(b, now);
   const other = otherTimeLine(b, timeZone);
   const join = joinState(b, now);
   const opensIn = joinOpensInMinutes(b);
-  const showJoin = !!onJoin && (join === 'open' || join === 'before');
+  const showJoin = !!joinHref && (join === 'open' || join === 'before');
   const answersTitle = b.side === 'mentee' ? 'Your answers' : `Answers from ${b.other.firstName}`;
   const credit = outcome ? creditLine(outcome, b, now) : '';
   const shownAnswers = answersExpanded ? (answers ?? []) : (answers ?? []).slice(0, ANSWER_PREVIEW);
@@ -343,25 +336,19 @@ export function BookingDetails({
 
       {showJoin && (
         <div className={styles.footer}>
-          <Button
-            variant="primary"
-            size="large"
-            fullWidth
-            onClick={onJoin}
-            busy={joining}
-            disabled={join === 'before'}
-          >
-            Join session
-          </Button>
+          {/* It navigates once open, so it is a link; before that, a locked button. */}
+          {join === 'open' ? (
+            <ButtonLink href={joinHref!} prefetch={false} variant="primary" size="large" fullWidth>
+              Join session
+            </ButtonLink>
+          ) : (
+            <Button variant="primary" size="large" fullWidth disabled>
+              Join session
+            </Button>
+          )}
           {join === 'before' && opensIn != null && (
             <span className={styles.lock}>Join opens {opensIn} minutes before</span>
           )}
-          {joinProblem && (
-            <p role="alert" className={styles.joinProblem}>
-              {joinProblem}
-            </p>
-          )}
-          {joinNotice}
         </div>
       )}
     </>

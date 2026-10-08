@@ -27,6 +27,7 @@ export const ICON_NAMES = [
   'check_box',
   'check_box_outline_blank',
   'check_circle',
+  'checklist',
   'chevron_left',
   'chevron_right',
   'close',
@@ -54,6 +55,7 @@ export const ICON_NAMES = [
   'flight_takeoff',
   'folder_open',
   'format_list_numbered',
+  'forum',
   'groups',
   'handshake',
   'hide_image',
@@ -119,6 +121,7 @@ export const ICON_NAMES = [
   'videocam',
   'visibility',
   'visibility_off',
+  'wifi',
   'work',
   'workspace_premium',
 ] as const;

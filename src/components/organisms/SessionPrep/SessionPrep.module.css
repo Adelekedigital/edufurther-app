@@ -1,0 +1,49 @@
+/* Session Join.dc.html disclosure block under the lobby. */
+.prep {
+  display: flex;
+  flex-direction: column;
+  border-top: var(--border-hairline) solid var(--ink-100);
+}
+
+.tip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tipTitle {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.tipBody {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+
+.retry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.muted {
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+
+/* The answers row's shape while it loads: DisclosureRow's height and insets. */
+.placeholder {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  box-sizing: border-box;
+}
+.placeholderText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

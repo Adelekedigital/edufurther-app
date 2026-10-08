@@ -42,6 +42,12 @@
   height: 56px;
   font-size: var(--text-p-md);
 }
+/* DS 2xl (Session Join's lobby people). `xxl`: a class can't start with a digit. */
+.xxl {
+  width: 64px;
+  height: 64px;
+  font-size: var(--text-p-lg);
+}
 
 /* DS Avatar default (type="initials"): dark brand-font initials on blue-50,
    font size by size (sm 12 / md 16 / lg 18 / xl 20). */
@@ -65,6 +71,9 @@
 }
 .plain.xl {
   font-size: 20px;
+}
+.plain.xxl {
+  font-size: 24px;
 }
 /* DS Avatar type="icon": a grey person glyph on ink-100. */
 .blank {

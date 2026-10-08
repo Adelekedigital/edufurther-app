@@ -1,0 +1,27 @@
+/* Session Join.dc.html lobby clock. */
+.clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+.label {
+  font-size: var(--text-caption-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-caption-xs);
+  text-transform: uppercase;
+  color: var(--ink-600);
+}
+.value {
+  font-family: var(--font-brand);
+  font-size: var(--text-display-sm);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-900);
+}
+.sub {
+  font-size: var(--text-p-xs);
+  color: var(--ink-700);
+}

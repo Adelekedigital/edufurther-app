@@ -45,7 +45,7 @@ export function toApiStatuses(statuses: readonly BookingStatus[]): ApiStatus[] {
   return statuses.map((s) => API_STATUS[s]);
 }
 
-function toParty(p: PartyRead): BookingParty {
+export function toParty(p: PartyRead): BookingParty {
   const first = (!p.deleted && p.first_name?.trim()) || '';
   const last = (!p.deleted && p.last_name?.trim()) || '';
   const name = [first, last].filter(Boolean).join(' ');
@@ -149,7 +149,6 @@ async function fetchPage(
   if (!data) throw apiError(response.status, error);
   return { rows: data.data.map((s) => toBooking(s, userId)), next: data.next_cursor ?? undefined };
 }
-
 
 export function remote<T>(
   q: { data: T | undefined; isPending: boolean; isError: boolean; error: unknown },

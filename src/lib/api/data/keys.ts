@@ -112,6 +112,8 @@ export const keys = {
       ['bookings', 'history', who, [...statuses].sort()] as const,
     /** One booking, for a ?booking= link opened cold (GET /sessions/{id}). */
     one: (id: string, who: string) => ['bookings', 'one', id, who] as const,
+    /** One session as the join page reads it: both parties and the venue (GET /sessions/{id}). */
+    room: (id: string, who: string) => ['bookings', 'room', id, who] as const,
     /** Why a past booking ended as it did (GET /sessions/{id}/events). */
     events: (id: string, who: string) => ['bookings', 'events', id, who] as const,
     /** Every reviewable-sessions entry, for invalidating after a review. */

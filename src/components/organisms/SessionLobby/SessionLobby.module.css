@@ -1,0 +1,121 @@
+/* Session Join.dc.html `layout=lobby` hero. */
+.lobby {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-6);
+  padding: var(--space-10) var(--space-6) var(--space-8);
+}
+.white {
+  background: var(--white);
+}
+.blue {
+  background: var(--blue-50);
+}
+.green {
+  background: var(--green-50);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+.title {
+  margin: 0;
+  font-family: var(--font-brand);
+  font-size: var(--text-h5);
+  line-height: var(--lh-h5);
+  letter-spacing: var(--ls-h5);
+  font-weight: var(--weight-semibold);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.meta {
+  font-size: var(--text-p-sm);
+  color: var(--ink-700);
+}
+
+.people {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-4);
+  /* Ours: two 140px columns stack rather than overflow on the narrowest phones. */
+  flex-wrap: wrap;
+}
+
+.join {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.hint,
+.note {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+  text-align: center;
+}
+.note {
+  margin: 0;
+  max-width: 360px;
+}
+/* Focus lands here only when Join vanished under it. */
+.note:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+.notice {
+  width: 100%;
+  max-width: 360px;
+  text-align: left;
+}
+
+.links {
+  display: flex;
+  gap: var(--space-2) var(--space-5);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 32px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+}
+.link:hover {
+  color: var(--blue-700);
+}
+.danger {
+  color: var(--red-700);
+}
+.danger:hover {
+  color: var(--red-700);
+  text-decoration: underline;
+}
+.link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+@media (max-width: 767px) {
+  /* Ours: 44px tap area on phones. */
+  .link {
+    min-height: var(--touch-target-min);
+  }
+}

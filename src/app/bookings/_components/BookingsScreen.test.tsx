@@ -34,14 +34,12 @@ vi.mock('@/app/_shell/useAppShell', () => ({
 let upcoming: Remote<Booking[]>;
 let pending: Remote<Booking[]>;
 let history: BookingHistoryResult;
-const join = vi.fn();
 // What `useBooking` was asked to do: the panel must not refetch a loaded row.
 let bookingActive = false;
 vi.mock('@/lib/api/data/bookings', () => ({
   useUpcomingBookings: () => upcoming,
   usePendingBookings: () => pending,
   useBookingHistory: () => history,
-  useJoinSession: () => ({ mutate: join, isPending: false }),
   useBooking: (_id: string | null, _userId: string | null, active: boolean) => {
     bookingActive = active;
     return { data: null, isLoading: false, error: null, retry: vi.fn() };
@@ -65,7 +63,12 @@ function stubAction() {
 vi.mock('@/lib/api/data/bookingActions', () => ({
   useBookingAction: (a: string) => (actions[a] ??= stubAction()),
 }));
-let reviewable: { data: { id: string }[] | null; isLoading: boolean; error: unknown; retry: () => void };
+let reviewable: {
+  data: { id: string }[] | null;
+  isLoading: boolean;
+  error: unknown;
+  retry: () => void;
+};
 vi.mock('@/lib/api/data/reviewableSessions', () => ({
   useMyReviewableSessions: () => reviewable,
 }));
@@ -176,7 +179,7 @@ beforeEach(() => {
   answers = { data: [], isLoading: false, error: null, retry: vi.fn() };
   reviewable = { data: [], isLoading: false, error: null, retry: vi.fn() };
   for (const a of ['accept', 'decline', 'withdraw', 'cancel']) actions[a] = stubAction();
-  join.mockReset();
+  push.mockReset();
   replace.mockReset();
 });
 afterEach(() => vi.useRealTimers());
@@ -212,7 +215,10 @@ describe('Upcoming', () => {
 
   it('a failed load says so and offers a retry — it never reads as empty', async () => {
     const retry = vi.fn();
-    upcoming = remote<Booking[]>(null, { error: { kind: 'server', message: 'x' } as AppError, retry });
+    upcoming = remote<Booking[]>(null, {
+      error: { kind: 'server', message: 'x' } as AppError,
+      retry,
+    });
     render(<BookingsScreen />);
     expect(screen.getByRole('heading', { name: 'We couldn’t load your bookings' })).toBeVisible();
     expect(screen.queryByText('No upcoming sessions yet')).not.toBeInTheDocument();
@@ -263,35 +269,22 @@ describe('Upcoming', () => {
     expect(screen.getByText('Join opens 5 minutes before')).toBeVisible();
   });
 
-  it('inside the window Join works and goes through the API', async () => {
+  it('inside the window Join opens the session’s own page, where joining happens', () => {
     upcoming = remote([
       booking({ id: 'live', startsAt: at(-0.05), joinOpensAt: at(-0.2), joinClosesAt: at(0.2) }),
     ]);
     render(<BookingsScreen />);
-    const button = screen.getByRole('button', { name: 'Join session' });
-    expect(button).toBeEnabled();
-    await userEvent.click(button);
-    expect(join).toHaveBeenCalledWith('live', expect.anything());
+    expect(screen.getByRole('link', { name: 'Join session' })).toHaveAttribute(
+      'href',
+      '/sessions/live',
+    );
   });
 
   it('a session whose window has shut offers no Join at all', () => {
     upcoming = remote([booking({ startsAt: at(-2), joinOpensAt: at(-2), joinClosesAt: at(-1) })]);
     render(<BookingsScreen />);
     expect(screen.queryByRole('button', { name: 'Join session' })).not.toBeInTheDocument();
-  });
-
-  it('attendance recorded with no venue is said out loud, not treated as a failure', async () => {
-    upcoming = remote([
-      booking({ id: 'live', startsAt: at(-0.05), joinOpensAt: at(-0.2), joinClosesAt: at(0.2) }),
-    ]);
-    join.mockImplementation((_id, { onSuccess }) => onSuccess({ meetingUrl: null }));
-    render(<BookingsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'Join session' }));
-    await waitFor(() =>
-      expect(
-        screen.getByText('You’re marked as here, but this session has no meeting link yet.'),
-      ).toBeInTheDocument(),
-    );
+    expect(screen.queryByRole('link', { name: 'Join session' })).not.toBeInTheDocument();
   });
 
   it('reveals five at a time', async () => {
@@ -386,7 +379,9 @@ describe('History', () => {
 
   it('a past row carries its full date — the day badge alone loses the year', () => {
     history = hist({
-      bookings: [booking({ status: 'completed', startsAt: at(-24 * 90), endsAt: at(-24 * 90 + 1) })],
+      bookings: [
+        booking({ status: 'completed', startsAt: at(-24 * 90), endsAt: at(-24 * 90 + 1) }),
+      ],
     });
     render(<BookingsScreen />);
     expect(screen.getByText(/Jul 5, 2026/)).toBeVisible();
@@ -468,39 +463,6 @@ describe('what time it is for the other person', () => {
     });
     render(<BookingsScreen />);
     expect(screen.queryByText(/for Kwame in Accra/)).not.toBeInTheDocument();
-  });
-});
-
-describe('Join, when the browser gets in the way', () => {
-  const live = () =>
-    booking({ id: 'live', startsAt: at(-0.05), joinOpensAt: at(-0.2), joinClosesAt: at(0.2) });
-
-  it('a blocked popup offers the link instead of looking like a dead button', async () => {
-    upcoming = remote([live()]);
-    join.mockImplementation((_id, { onSuccess }) =>
-      onSuccess({ meetingUrl: 'https://meet.test/abc' }),
-    );
-    const open = vi.spyOn(window, 'open').mockReturnValue(null);
-    render(<BookingsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'Join session' }));
-    await waitFor(() =>
-      expect(screen.getByRole('link', { name: 'Open the session' })).toHaveAttribute(
-        'href',
-        'https://meet.test/abc',
-      ),
-    );
-    expect(screen.getByText(/already marked as here/)).toBeVisible();
-    open.mockRestore();
-  });
-
-  it('a 409 says the window is shut, not that something broke', async () => {
-    upcoming = remote([live()]);
-    join.mockImplementation((_id, { onError }) => onError(new ApiError(409)));
-    render(<BookingsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'Join session' }));
-    await waitFor(() =>
-      expect(screen.getByText('This session isn’t open to join right now.')).toBeInTheDocument(),
-    );
   });
 });
 
@@ -644,9 +606,30 @@ describe('the booking form answers, wired up', () => {
     available: true,
   };
   const some = [
-    { questionId: 'q1', question: 'Q1?', kind: 'free_text' as const, retired: false, text: 'A1.', file: null },
-    { questionId: 'q2', question: 'Q2?', kind: 'free_text' as const, retired: false, text: 'A2.', file: null },
-    { questionId: 'q3', question: 'Q3?', kind: 'free_text' as const, retired: false, text: 'A3.', file: null },
+    {
+      questionId: 'q1',
+      question: 'Q1?',
+      kind: 'free_text' as const,
+      retired: false,
+      text: 'A1.',
+      file: null,
+    },
+    {
+      questionId: 'q2',
+      question: 'Q2?',
+      kind: 'free_text' as const,
+      retired: false,
+      text: 'A2.',
+      file: null,
+    },
+    {
+      questionId: 'q3',
+      question: 'Q3?',
+      kind: 'free_text' as const,
+      retired: false,
+      text: 'A3.',
+      file: null,
+    },
   ];
 
   it('the panel shows them, and the disclosure reveals the rest', async () => {
@@ -719,7 +702,9 @@ describe('the answers preview on the rows', () => {
       retry: vi.fn(),
     };
     render(<BookingsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: /See all 4 answers for Visa practice/ }));
+    await userEvent.click(
+      screen.getByRole('button', { name: /See all 4 answers for Visa practice/ }),
+    );
     expect(replace).toHaveBeenCalledWith('/bookings?booking=b', { scroll: false });
     // Expanded on arrival, rather than opening collapsed and then jumping.
     expect(screen.getByRole('button', { name: 'Show less' })).toBeVisible();
@@ -813,7 +798,15 @@ describe('the desktop panel is not a keyboard dead end', () => {
 
 describe('the actions appear only where they can succeed', () => {
   const pendingRow = (over = {}) =>
-    booking({ id: 'p1', title: 'SOP review', status: 'pending', respondBy: at(5), startsAt: at(48), endsAt: at(49), ...over });
+    booking({
+      id: 'p1',
+      title: 'SOP review',
+      status: 'pending',
+      respondBy: at(5),
+      startsAt: at(48),
+      endsAt: at(49),
+      ...over,
+    });
 
   it('a mentor answers a request on the row itself', async () => {
     viewer = { ...MEMBER, isMentor: true };
@@ -893,7 +886,15 @@ describe('accepting a request that runs into another session', () => {
       booking({ id: 'u1', title: 'Already booked', startsAt: at(10), endsAt: at(11) }),
     ]);
     pending = remote([
-      booking({ id: 'p1', title: 'Clashing request', status: 'pending', side: 'mentor', respondBy: at(5), startsAt: at(10.5), endsAt: at(11.5) }),
+      booking({
+        id: 'p1',
+        title: 'Clashing request',
+        status: 'pending',
+        side: 'mentor',
+        respondBy: at(5),
+        startsAt: at(10.5),
+        endsAt: at(11.5),
+      }),
     ]);
     tab = 'pending';
     render(<BookingsScreen />);
@@ -905,7 +906,14 @@ describe('accepting a request that runs into another session', () => {
     viewer = { ...MEMBER, isMentor: true };
     upcoming = remote([booking({ id: 'u1', startsAt: at(10), endsAt: at(11) })]);
     pending = remote([
-      booking({ id: 'p1', status: 'pending', side: 'mentor', respondBy: at(5), startsAt: at(10.5), endsAt: at(11.5) }),
+      booking({
+        id: 'p1',
+        status: 'pending',
+        side: 'mentor',
+        respondBy: at(5),
+        startsAt: at(10.5),
+        endsAt: at(11.5),
+      }),
     ]);
     tab = 'pending';
     render(<BookingsScreen />);
@@ -922,7 +930,14 @@ describe('accepting a request that runs into another session', () => {
     viewer = { ...MEMBER, isMentor: true };
     upcoming = remote([booking({ id: 'u1', startsAt: at(9), endsAt: at(10) })]);
     pending = remote([
-      booking({ id: 'p1', status: 'pending', side: 'mentor', respondBy: at(5), startsAt: at(10), endsAt: at(11) }),
+      booking({
+        id: 'p1',
+        status: 'pending',
+        side: 'mentor',
+        respondBy: at(5),
+        startsAt: at(10),
+        endsAt: at(11),
+      }),
     ]);
     tab = 'pending';
     render(<BookingsScreen />);
@@ -937,7 +952,15 @@ describe('the review entry on History', () => {
   });
 
   const completed = (over = {}) =>
-    booking({ id: 'h1', title: 'SOP review', status: 'completed', side: 'mentee', startsAt: at(-48), endsAt: at(-47), ...over });
+    booking({
+      id: 'h1',
+      title: 'SOP review',
+      status: 'completed',
+      side: 'mentee',
+      startsAt: at(-48),
+      endsAt: at(-47),
+      ...over,
+    });
 
   it('offers a review only for a session the list says is still reviewable', async () => {
     history = hist({ bookings: [completed()] });
@@ -998,9 +1021,7 @@ describe('booking an offered time actually opens the flow', () => {
     tab = 'history';
     render(<BookingsScreen />);
     await userEvent.click(screen.getByRole('button', { name: /^Book / }));
-    expect(push).toHaveBeenCalledWith(
-      expect.stringContaining('book=st-general'),
-    );
+    expect(push).toHaveBeenCalledWith(expect.stringContaining('book=st-general'));
     expect(push.mock.calls[0]![0]).toContain('at=');
   });
 

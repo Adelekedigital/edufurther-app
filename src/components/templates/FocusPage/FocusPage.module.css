@@ -1,0 +1,73 @@
+/* Session Join.dc.html page frame. */
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-ui);
+  color: var(--ink-900);
+  background: var(--ink-50);
+}
+
+.header {
+  height: var(--navbar-h-mobile);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 0 var(--space-6);
+  background: var(--white);
+  border-bottom: var(--border-hairline) solid var(--ink-100);
+}
+
+.logo {
+  display: flex;
+  border-radius: var(--radius-xs);
+}
+/* 24px tall (the design's --space-6) from the image's own size attributes. */
+.logo img {
+  display: block;
+}
+
+.back {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+  text-decoration: none;
+}
+.back:hover {
+  color: var(--blue-700);
+}
+.logo:focus-visible,
+.back:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-5) var(--space-12);
+  box-sizing: border-box;
+  display: flex;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+@media (max-width: 767px) {
+  .logo {
+    /* Ours: 44px tap area on phones, as the back link has. */
+    min-height: var(--touch-target-min);
+    align-items: center;
+  }
+  .back {
+    /* Ours: 44px tap area on phones; the header keeps its drawn height. */
+    min-height: var(--touch-target-min);
+  }
+}
