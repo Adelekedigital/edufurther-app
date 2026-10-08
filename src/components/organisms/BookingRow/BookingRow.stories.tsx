@@ -32,6 +32,7 @@ export const sampleBooking = (over: Partial<Booking> = {}): Booking => ({
   side: 'mentor',
   other: party(),
   myAttendance: 'pending' as const,
+  myJoinedAt: null,
   startsAt: at(26),
   endsAt: at(27),
   durationMin: 60,

@@ -103,17 +103,21 @@ export function waitingPill(
  * `none` is a session with no window at all: never agreed to, called off, or
  * an older row the backend never stamped.
  *
- * Open from `join_opens_at` until the room closes (`door_closes_at`, the
- * session's end), not only until `join_closes_at`: someone who dropped out
- * still needs the way back to the page, which offers Rejoin (backend #380). A
- * session settled while still running keeps its door too, so the status
- * alone does not close it.
+ * Open from `join_opens_at` until `join_closes_at` for someone who hasn't
+ * joined (no late first arrivals, product 2026-10-08). For someone who has,
+ * until the room closes (`door_closes_at`): they need the way back to the
+ * page, which offers Rejoin (backend #380). A session settled while still
+ * running keeps that door, so the status alone does not close it.
  */
 export type JoinState = 'none' | 'before' | 'open' | 'closed';
 
 export function joinState(b: Booking, now = new Date()): JoinState {
   const live = b.status === 'confirmed' || b.status === 'completed' || b.status === 'noShow';
-  const closes = b.doorClosesAt ?? (b.status === 'confirmed' ? b.joinClosesAt : null);
+  const closes = b.myJoinedAt
+    ? (b.doorClosesAt ?? b.joinClosesAt)
+    : b.status === 'confirmed'
+      ? b.joinClosesAt
+      : null;
   if (!live || !b.joinOpensAt || !closes) return 'none';
   const t = now.getTime();
   if (t < new Date(b.joinOpensAt).getTime()) return 'before';

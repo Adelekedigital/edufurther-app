@@ -47,6 +47,7 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
   side: 'mentor',
   other: party(),
   myAttendance: 'pending' as const,
+  myJoinedAt: null,
   startsAt: at(24),
   endsAt: at(25),
   durationMin: 60,
@@ -116,13 +117,27 @@ describe('joinState', () => {
     expect(joinState(window(-1, 1), NOW)).toBe('open');
     expect(joinState(window(-2, -1), NOW)).toBe('closed');
   });
-  it('stays open until the room closes, so someone who dropped out can get back', () => {
-    const b = booking({ joinOpensAt: at(-1), joinClosesAt: at(-0.5), doorClosesAt: at(0.5) });
+  it('stays open until the room closes for someone who has joined, so they can get back', () => {
+    const b = booking({
+      joinOpensAt: at(-1),
+      joinClosesAt: at(-0.5),
+      doorClosesAt: at(0.5),
+      myJoinedAt: at(-0.9),
+    });
     expect(joinState(b, NOW)).toBe('open');
     expect(joinState({ ...b, doorClosesAt: at(-0.1) }, NOW)).toBe('closed');
   });
-  it('keeps a session settled mid-call open until its room closes', () => {
+  it('closes with the arrival window for someone who never joined', () => {
     const b = booking({ joinOpensAt: at(-1), joinClosesAt: at(-0.5), doorClosesAt: at(0.5) });
+    expect(joinState(b, NOW)).toBe('closed');
+  });
+  it('keeps a session settled mid-call open until its room closes, for someone who joined', () => {
+    const b = booking({
+      joinOpensAt: at(-1),
+      joinClosesAt: at(-0.5),
+      doorClosesAt: at(0.5),
+      myJoinedAt: at(-0.9),
+    });
     expect(joinState({ ...b, status: 'completed' }, NOW)).toBe('open');
     expect(joinState({ ...b, status: 'noShow' }, NOW)).toBe('open');
     expect(joinState({ ...b, status: 'cancelled' }, NOW)).toBe('none');

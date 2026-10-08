@@ -114,6 +114,8 @@ export const keys = {
     one: (id: string, who: string) => ['bookings', 'one', id, who] as const,
     /** One session as the join page reads it: both parties and the venue (GET /sessions/{id}). */
     room: (id: string, who: string) => ['bookings', 'room', id, who] as const,
+    /** One session's room for whoever is signed in, for a write that knows only the id. */
+    roomAll: (id: string) => ['bookings', 'room', id] as const,
     /** Why a past booking ended as it did (GET /sessions/{id}/events). */
     events: (id: string, who: string) => ['bookings', 'events', id, who] as const,
     /** Every reviewable-sessions entry, for invalidating after a review. */

@@ -3,10 +3,16 @@
 import { useCallback } from 'react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
-import { HISTORY_STATUSES, respondDeadline, safeMeetingUrl } from '@/lib/utils/bookings';
+import { HISTORY_STATUSES, joinState, respondDeadline, safeMeetingUrl } from '@/lib/utils/bookings';
 import { coverFor } from '@/lib/utils/cover';
 import { dayKey } from '@/lib/utils/slots';
-import type { Booking, BookingParty, BookingStatus, JoinResult } from '@/types/booking';
+import type {
+  Booking,
+  BookingParty,
+  BookingStatus,
+  JoinResult,
+  SessionRoom,
+} from '@/types/booking';
 import type { AppError, Remote } from '@/types/mentor';
 import { ApiError, apiError, normaliseError, retryOnce } from './errors';
 import { api } from './http';
@@ -96,6 +102,7 @@ export function toBooking(s: SessionRead, viewerId: string): Booking {
     sessionTypeId: s.session_type_id ?? s.session_type?.id ?? null,
     // Carried on every list row, so a page of twenty costs no extra requests.
     myAttendance: toParty(side === 'mentor' ? s.mentor : s.mentee).attendance,
+    myJoinedAt: (side === 'mentor' ? s.mentor : s.mentee).joined_at ?? null,
     // The offer rides on the session, so a row carries it without a second call.
     suggestion: s.suggestion
       ? {
@@ -189,12 +196,17 @@ export function useUpcomingBookings(
     queryKey: keys.bookings.upcoming(sessionKey(session), from),
     enabled,
     queryFn: async ({ signal }) => {
+      // Settled sessions too: the backend can rule a session completed or a
+      // no-show while people are still in the call, and someone who drops out
+      // then needs this row's Join to get back (backend #380). Only those
+      // whose door is still open for the viewer stay; the rest are History's.
       const { rows } = await fetchPage(
         userId!,
-        { status: ['confirmed'], limit: PAGE, order: 'asc', from },
+        { status: ['confirmed', 'completed', 'no_show'], limit: PAGE, order: 'asc', from },
         signal,
       );
-      return rows;
+      const now = new Date();
+      return rows.filter((r) => r.status === 'confirmed' || joinState(r, now) === 'open');
     },
     staleTime: 30_000,
     networkMode: 'always',
@@ -346,8 +358,22 @@ export function useJoinSession() {
       // what it is.
       return { meetingUrl: safeMeetingUrl(data.meeting_url) };
     },
-    // Joining sets our own joined_at, so the row is now stale.
-    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.bookings.all }),
+    onSuccess: (_result, sessionId) => {
+      // The arrival is recorded now: say so in the open page at once, so a
+      // second press before the re-read goes through the door rather than
+      // /join again. The re-read below then brings the server's own time.
+      const arrivedAt = new Date().toISOString();
+      qc.setQueriesData<SessionRoom>({ queryKey: keys.bookings.roomAll(sessionId) }, (r) =>
+        r && !r.me.joinedAt
+          ? {
+              ...r,
+              me: { ...r.me, joinedAt: arrivedAt },
+              booking: { ...r.booking, myJoinedAt: arrivedAt },
+            }
+          : r,
+      );
+      void qc.invalidateQueries({ queryKey: keys.bookings.all });
+    },
   });
 }
 
