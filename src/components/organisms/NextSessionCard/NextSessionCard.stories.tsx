@@ -15,7 +15,7 @@ const meta: Meta<typeof NextSessionCard> = {
   args: {
     booking: sampleBooking({ title: 'Statement of Purpose review' }),
     timeZone: 'Africa/Lagos',
-    onJoin: fn(),
+    joinHref: '/sessions/b1',
     now: NOW,
   },
 };
@@ -62,8 +62,6 @@ export const InProgress: Story = {
     }),
   },
 };
-
-export const Joining: Story = { args: { ...Joinable.args, joining: true } };
 
 /** No booking message: the cover box is absent rather than empty. */
 export const NoNote: Story = {

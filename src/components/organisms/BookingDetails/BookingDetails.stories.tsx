@@ -59,7 +59,7 @@ export const Joinable: Story = {
       joinClosesAt: at(0.3),
       note: 'Ready when you are.',
     }),
-    onJoin: fn(),
+    joinHref: '/sessions/b1',
   },
 };
 
@@ -71,7 +71,7 @@ export const BeforeTheJoinWindow: Story = {
       joinOpensAt: at(0.4),
       joinClosesAt: at(0.75),
     }),
-    onJoin: fn(),
+    joinHref: '/sessions/b1',
   },
 };
 

@@ -3,6 +3,7 @@ import { sampleBookingFor } from './bookingTestFixtures';
 import {
   canJoinNow,
   formatClock,
+  formatWait,
   isFinal,
   joinOpensLabel,
   lobbyClock,
@@ -87,6 +88,18 @@ describe('clock', () => {
     expect(formatClock(8 * 60_000)).toBe('08:00');
     expect(formatClock(6300_000)).toBe('1:45:00');
     expect(formatClock(-5000)).toBe('00:00');
+  });
+
+  it('says whole days once the wait passes a day, never a 73-hour clock', () => {
+    expect(formatWait(23 * 3_600_000 + 59 * 60_000)).toBe('23:59:00');
+    expect(formatWait(24 * 3_600_000)).toBe('1 day');
+    expect(formatWait(73 * 3_600_000)).toBe('3 days');
+    expect(lobbyClock(b, 'upcoming', new Date('2026-10-01T17:00:00Z'))).toEqual({
+      label: 'Starts in',
+      value: '3 days',
+      sub: 'Join opens 5 minutes before the start',
+    });
+    expect(joinOpensLabel(b, new Date('2026-10-01T17:00:00Z'))).toBe('Join session');
   });
 
   it('counts down to the start, with when Join opens', () => {

@@ -119,7 +119,7 @@ describe('the phone sheet', () => {
     render(
       <>
         <button type="button">Outside</button>
-        <BookingDetailsPanel {...props({ asSheet: true, onJoin: vi.fn() })} />
+        <BookingDetailsPanel {...props({ asSheet: true, joinHref: '/sessions/b1' })} />
       </>,
     );
     const dialog = await screen.findByRole('dialog');

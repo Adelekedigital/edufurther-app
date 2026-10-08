@@ -77,8 +77,12 @@ export function SessionJoinScreen({ id }: { id: string }) {
   const join = useJoinSession();
   const [blockedUrl, setBlockedUrl] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  // Every message gets a new id, so the same words said twice are heard twice.
   const [said, setSaid] = useState<{ text: string; id: number } | null>(null);
-  const say = useCallback((text: string) => setSaid({ text, id: Date.now() }), []);
+  const say = useCallback(
+    (text: string) => setSaid((last) => ({ text, id: (last?.id ?? 0) + 1 })),
+    [],
+  );
 
   const onJoin = useCallback(() => {
     setProblem(null);
@@ -117,16 +121,18 @@ export function SessionJoinScreen({ id }: { id: string }) {
   const [seen, setSeen] = useState({ live, otherJoined });
   if (seen.live !== live || seen.otherJoined !== otherJoined) {
     setSeen({ live, otherJoined });
-    const phaseText =
-      live && seen.live && live !== seen.live ? PHASE_ANNOUNCEMENT[live] : undefined;
-    const arrived = otherJoined && !seen.otherJoined && data;
+    // The first reading is the baseline: what was already true when the page
+    // opened is on screen, not news.
+    const changed = !!seen.live;
+    const phaseText = changed && live && live !== seen.live ? PHASE_ANNOUNCEMENT[live] : undefined;
+    const arrived = changed && otherJoined && !seen.otherJoined && data;
     const text = [phaseText, arrived ? `${data.booking.other.firstName} is here.` : null]
       .filter(Boolean)
       .join(' ');
     if (text) setSaid((last) => ({ text, id: (last?.id ?? 0) + 1 }));
   }
 
-  const gate = memberGate(viewer, `/sessions/${id}`, SESSION_GATE);
+  const gate = memberGate(viewer, `/sessions/${encodeURIComponent(id)}`, SESSION_GATE);
 
   let body: ReactNode;
   if (gate) {
@@ -201,7 +207,9 @@ export function SessionJoinScreen({ id }: { id: string }) {
         . You’re already marked as here.
       </Notice>
     ) : problem ? (
-      <Notice tone="neutral">{problem}</Notice>
+      // Plain text: the live region above already says it, and a second
+      // status region would read it out twice.
+      <p className={styles.problem}>{problem}</p>
     ) : null;
 
     body = (

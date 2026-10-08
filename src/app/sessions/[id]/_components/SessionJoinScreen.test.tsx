@@ -131,6 +131,19 @@ describe('the frame', () => {
   });
 });
 
+describe('the login return path', () => {
+  it('keeps an id with slashes and dots inside its own path segment', () => {
+    viewer = { kind: 'guest' };
+    room = remote<SessionRoom>(null);
+    vi.setSystemTime(at('15:15:00'));
+    render(<SessionJoinScreen id="x/../admin" />);
+    expect(screen.getByRole('link', { name: 'Log in' })).toHaveAttribute(
+      'href',
+      `/login?next=${encodeURIComponent('/sessions/x%2F..%2Fadmin')}`,
+    );
+  });
+});
+
 describe('the four states', () => {
   it('loading is the lobby’s shape, busy, and says nothing has failed', () => {
     room = remote<SessionRoom>(null, { isLoading: true });
@@ -353,6 +366,36 @@ describe('getting ready', () => {
 });
 
 describe('what a screen reader hears', () => {
+  const srStatus = () => screen.getAllByRole('status').find((el) => el.className === 'sr-only')!;
+
+  it('says a join problem once: the visible line is not a second live region', async () => {
+    join.mockImplementation((_id, { onError }) => onError(new ApiError(409)));
+    renderAt('16:56:00');
+    await userEvent.click(screen.getByRole('button', { name: 'Join session' }));
+    const regions = screen
+      .getAllByRole('status')
+      .filter((el) => el.textContent?.includes('isn’t open to join'));
+    expect(regions).toHaveLength(1);
+    expect(screen.getByText('This session isn’t open to join right now.', { selector: 'p:not(.sr-only)' })).toBeVisible();
+  });
+
+  it('does not announce someone who was already here when the page opened', () => {
+    room = remote(
+      sessionRoom({ other: sampleParty({ firstName: 'Amara', joinedAt: '2026-10-04T16:56:00Z' }) }),
+    );
+    renderAt('16:58:00');
+    expect(srStatus()).toBeEmptyDOMElement();
+  });
+
+  it('announces someone arriving while the page is open', () => {
+    const view = renderAt('16:58:00');
+    room = remote(
+      sessionRoom({ other: sampleParty({ firstName: 'Amara', joinedAt: '2026-10-04T16:58:10Z' }) }),
+    );
+    view.rerender(<SessionJoinScreen id="b1" />);
+    expect(srStatus()).toHaveTextContent('Amara is here.');
+  });
+
   it('never the ticking clock, but the door opening, once', () => {
     renderAt('16:54:58');
     const status = screen.getAllByRole('status').find((el) => el.className === 'sr-only')!;

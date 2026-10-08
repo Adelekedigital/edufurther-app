@@ -31,3 +31,13 @@
   display: flex;
   gap: var(--space-16);
 }
+
+/* A Join that didn't go through, under the button. Ours: the design draws no
+   failure for Join. Not a live region; the page's LiveRegion says it. */
+.problem {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--red-700);
+  text-align: center;
+}

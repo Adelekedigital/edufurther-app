@@ -310,10 +310,7 @@ export function BookingsScreen() {
 
   // Join opens the session's own page (Session Join.dc.html), where the
   // countdown, who is here and the join call itself live.
-  const onJoin = useCallback(
-    (sessionId: string) => router.push(`/sessions/${encodeURIComponent(sessionId)}`),
-    [router],
-  );
+  const joinHref = (sessionId: string) => `/sessions/${encodeURIComponent(sessionId)}`;
 
   const gate = memberGate(viewer, '/bookings', BOOKINGS_GATE);
   // Upcoming's first row is the hero; the list holds the rest.
@@ -362,7 +359,7 @@ export function BookingsScreen() {
                       onOpenAnswers={() => openAnswers(next.id)}
                       answersControls={showPanel ? PANEL_ID : undefined}
                       timeZone={timeZone}
-                      onJoin={() => onJoin(next.id)}
+                      joinHref={joinHref(next.id)}
                       menu={rowMenu(next)}
                       now={now}
                     />
@@ -503,7 +500,7 @@ export function BookingsScreen() {
                   setExpandedFor(null);
                   select(null);
                 }}
-                onJoin={open ? () => onJoin(open.id) : undefined}
+                joinHref={open ? joinHref(open.id) : undefined}
                 now={now}
               />
             )}

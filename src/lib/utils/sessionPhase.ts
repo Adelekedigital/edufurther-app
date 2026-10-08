@@ -67,6 +67,19 @@ export function formatClock(ms: number): string {
   return h ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
 }
 
+const DAY_MS = 24 * 3_600_000;
+
+/**
+ * How long until something: the clock under a day, whole days beyond it.
+ * Ours: the design only draws waits under two hours, and "73:59:59" reads as
+ * a malfunction rather than three days.
+ */
+export function formatWait(ms: number): string {
+  if (ms < DAY_MS) return formatClock(ms);
+  const days = Math.floor(ms / DAY_MS);
+  return `${days} ${days === 1 ? 'day' : 'days'}`;
+}
+
 /** How many minutes before the start the door opens, read from the row (5 today). */
 export function opensBeforeMin(b: Booking): number {
   const w = windowOf(b);
@@ -89,8 +102,14 @@ export function lobbyClock(b: Booking, phase: SessionPhase, now: Date): LobbyClo
     const opensIn = w.opens - t;
     return {
       label: 'Starts in',
-      value: formatClock(w.starts - t),
-      sub: opensIn > 0 ? `Join opens in ${formatClock(opensIn)}` : 'Join is open',
+      value: formatWait(w.starts - t),
+      sub:
+        opensIn <= 0
+          ? 'Join is open'
+          : opensIn < DAY_MS
+            ? `Join opens in ${formatClock(opensIn)}`
+            : // Days out, a second countdown says nothing the first doesn't.
+              `Join opens ${opensBeforeMin(b)} minutes before the start`,
     };
   }
   if (phase === 'ongoing' || phase === 'closed') {
@@ -100,9 +119,10 @@ export function lobbyClock(b: Booking, phase: SessionPhase, now: Date): LobbyClo
   return null;
 }
 
-/** The Join button's label when it cannot be pressed yet: "Join opens in 04:12". */
+/** The locked Join button's label: "Join opens in 04:12"; plain "Join session" when days away. */
 export function joinOpensLabel(b: Booking, now: Date): string {
-  return `Join opens in ${formatClock(windowOf(b).opens - now.getTime())}`;
+  const ms = windowOf(b).opens - now.getTime();
+  return ms < DAY_MS ? `Join opens in ${formatClock(ms)}` : 'Join session';
 }
 
 /** "Mon, Sep 28". */

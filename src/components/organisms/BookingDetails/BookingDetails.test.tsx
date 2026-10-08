@@ -111,8 +111,7 @@ describe('why it ended', () => {
 });
 
 describe('the footer', () => {
-  it('offers Join inside the window, and says when it opens before that', async () => {
-    const onJoin = vi.fn();
+  it('says when Join opens before the window, with Join locked', () => {
     panel({
       booking: sampleBookingFor({
         startsAt: at(0.5),
@@ -120,7 +119,7 @@ describe('the footer', () => {
         joinOpensAt: at(0.4),
         joinClosesAt: at(0.75),
       }),
-      onJoin,
+      joinHref: '/sessions/b1',
     });
     expect(screen.getByRole('button', { name: 'Join session' })).toBeDisabled();
     expect(screen.getByText(/Join opens \d+ minutes before/)).toBeVisible();
@@ -134,9 +133,26 @@ describe('the footer', () => {
   it('never offers a Join that can only fail', () => {
     panel({
       booking: sampleBookingFor({ joinOpensAt: at(-3), joinClosesAt: at(-2) }),
-      onJoin: vi.fn(),
+      joinHref: '/sessions/b1',
     });
     expect(screen.queryByRole('button', { name: 'Join session' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Join session' })).not.toBeInTheDocument();
+  });
+
+  it('inside the window Join is a link to the session’s own page', () => {
+    panel({
+      booking: sampleBookingFor({
+        startsAt: at(-0.05),
+        endsAt: at(1),
+        joinOpensAt: at(-0.2),
+        joinClosesAt: at(0.3),
+      }),
+      joinHref: '/sessions/b1',
+    });
+    expect(screen.getByRole('link', { name: 'Join session' })).toHaveAttribute(
+      'href',
+      '/sessions/b1',
+    );
   });
 });
 
@@ -200,29 +216,6 @@ describe('a sweep has no name', () => {
       outcome: { status, reason: null, by: 'system', at: at(-320) },
     });
     expect(screen.getByText(heading)).toBeVisible();
-  });
-});
-
-describe('join feedback lives in the panel', () => {
-  const live = sampleBookingFor({
-    startsAt: at(-0.05),
-    endsAt: at(1),
-    joinOpensAt: at(-0.2),
-    joinClosesAt: at(0.3),
-  });
-
-  it('a failure is said here, not left on a page the sheet covers', () => {
-    panel({ booking: live, onJoin: vi.fn(), joinProblem: 'This session isn’t open to join right now.' });
-    expect(screen.getByRole('alert')).toHaveTextContent('isn’t open to join right now');
-  });
-
-  it('a blocked popup’s link is reachable from inside the panel', () => {
-    panel({
-      booking: live,
-      onJoin: vi.fn(),
-      joinNotice: <a href="https://meet.test/x">Open the session</a>,
-    });
-    expect(screen.getByRole('link', { name: 'Open the session' })).toBeVisible();
   });
 });
 

@@ -269,21 +269,22 @@ describe('Upcoming', () => {
     expect(screen.getByText('Join opens 5 minutes before')).toBeVisible();
   });
 
-  it('inside the window Join opens the session’s own page, where joining happens', async () => {
+  it('inside the window Join opens the session’s own page, where joining happens', () => {
     upcoming = remote([
       booking({ id: 'live', startsAt: at(-0.05), joinOpensAt: at(-0.2), joinClosesAt: at(0.2) }),
     ]);
     render(<BookingsScreen />);
-    const button = screen.getByRole('button', { name: 'Join session' });
-    expect(button).toBeEnabled();
-    await userEvent.click(button);
-    expect(push).toHaveBeenCalledWith('/sessions/live');
+    expect(screen.getByRole('link', { name: 'Join session' })).toHaveAttribute(
+      'href',
+      '/sessions/live',
+    );
   });
 
   it('a session whose window has shut offers no Join at all', () => {
     upcoming = remote([booking({ startsAt: at(-2), joinOpensAt: at(-2), joinClosesAt: at(-1) })]);
     render(<BookingsScreen />);
     expect(screen.queryByRole('button', { name: 'Join session' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Join session' })).not.toBeInTheDocument();
   });
 
   it('reveals five at a time', async () => {
