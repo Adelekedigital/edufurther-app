@@ -408,7 +408,7 @@ Source: `Session Join.dc.html`, defaults `layout=lobby`, `provider=edufurther`; 
 | A focused page: slim header (logo + one link back), no nav rail | Built as drawn (`templates/FocusPage`), an exception to "every app screen renders inside AppShell" | Product 2026-10-07: a page opened to do one thing now | never |
 | Mentor's header link "Go to Home" | "Go to Bookings" for both sides; the logo goes there too | There is no mentor home yet (`/dashboard` 404s) | #189 |
 | Lobby people: DS Avatar `type=initials` (dark initials on blue-50) | The person's own colour (`cover`), as Bookings' rows show them | One person looks the same on every screen | design confirms |
-| "Join opens 10 minutes before" / the button "turns on 10 minutes before" | Read from `join_opens_at` (5 today) | Backend reply §2; the window is 5 before to 15 after | backend changes the window |
+| "Join opens 10 minutes before" / the button "turns on 10 minutes before" | Read from `join_opens_at` (5 today) | Backend reply §2. **Product, 2026-10-08: 10 minutes, as a backend setting** (requested); the page follows `join_opens_at` with no change | backend ships the setting |
 | "Rejoin session" for every mentor while in progress | "Rejoin session" only for someone who has pressed Join; otherwise "Join now" | Rejoin says you were in | — |
 | Clock `aria-live="polite"` | Not a live region; a separate LiveRegion says "Join is open.", "The session has started.", "{name} is here." once each | A per-second clock would be read every second | never |
 | Meta line without a zone | "… · Lagos (WAT) · EduFurther video" | Product rule: times name whose clock they are | — |
@@ -423,7 +423,7 @@ Source: `Session Join.dc.html`, defaults `layout=lobby`, `provider=edufurther`; 
 | (no state) over, attendance not settled | **Ours, provisional:** pill "Ended", no clock, "Joined at 6:01 pm" / "No arrival recorded", "We're confirming who joined, which can take up to an hour." | The sweep runs hourly; the backend asks us never to infer "missed" from the clock | design request |
 | (no states) loading, error, not found, guest | **Ours, provisional:** the lobby's shape as a skeleton; "We couldn't load this session" + Try again; "This session isn't available" + Go to Bookings; the shared member gate ("Log in to join your session") | Undesigned | design request |
 | Pending, cancelled, declined, expired, withdrawn | Redirect (replace) to `/bookings?booking={id}` | Product 2026-10-07: Bookings already shows them | — |
-| Completed and missed | Redirect to Bookings, **until PR 2** draws them here | PR split (product 2026-10-07) | PR 2 |
+| Completed and missed | Drawn here since PR 3 (below); only the statuses the page never draws redirect | PR split (product 2026-10-07) | — |
 | Pulse keyframes in `rgba(4,128,46,…)` | `color-mix(in srgb, var(--green-600) …, transparent)` | No raw colours in components | — |
 | Phones: Join button padding 16/24 | 16/16 (the Button atom's phone rule) | CTA hierarchy | — |
 | Phones: Join links 32px tall | 44px tap area | Touch target | — |
@@ -440,4 +440,20 @@ Source: `Session Join.dc.html`, defaults `layout=lobby`, `provider=edufurther`; 
 | (no rule) | The Google and Outlook.com links carry the session title, which names the other person, to Google or Microsoft | Product chose the web-calendar options knowing this (2026-10-08). The .ics sends nothing anywhere. No event ever contains the call link: it carries a personal access token | — |
 | Join links in `--blue-500` on every ground | `--blue-700` on the tinted grounds (blue while starting soon, green in progress) | `--blue-500` on `--blue-50` is under 4.5:1 at 12px (axe) | design adopts |
 | "Starts in 1:45:00" (the design only draws waits under two hours) | Under a day the clock; under two days "45 hours"; beyond, "3 days", with "Join opens 5 minutes before the start" and a plain locked "Join session" | "73:59:59" reads as a fault, and "1 day" for 47 hours understates | — |
+
+### Session Join — completed and missed (PR 3), 2026-10-08
+
+| Design says | We do | Why | Revisit |
+|---|---|---|---|
+| Completed: "You talked for 29 min" clock | Not shown | We only know when each person pressed Join, not how long the call ran; and product removed the in-call timer (2026-10-08) | attendance from the provider (backend #382) |
+| Leave a review opens ReviewModal in place | The same: the shared `ReviewDialog` (`app/_reviews`), which the profile now uses too. Offered only while `/me/reviewable-sessions` lists this session and the viewer can book (mentors never review); while that list loads or fails, neither Leave a review nor Book again shows | Product, 2026-10-08: review from the session page, not the profile. One implementation for both pages | — |
+| Completed, already reviewed (no state) | **Ours, provisional:** "Your session with {name} is complete." + Book again | A reload after reviewing, or past the review interval | design request |
+| Mentor completed: "Send follow-up notes" + "Go to Home" | "Go to Bookings" only | No endpoint for notes; no mentor home | #195, #189 |
+| Mentor completed body: "{name} will be asked for a review. You can send her a follow-up…" | "{name} can leave a review on your profile." | No follow-up feature; no gendered pronoun; we don't send the ask ourselves | — |
+| Missed copy: "joined and waited 15 minutes", "we've let {name} know", "counts as a completed session for you", "repeated no-shows affect your ranking" | Each trimmed | None of these is something we know or do | backend tells us otherwise |
+| Neither joined: "…we'll sort out your credit. We'll email you once it's settled." | **Provisional:** mentee "This session isn't refunded, but you can book another time."; mentor "{name} can book again." | The backend refunds nothing when neither joins and reviews nothing (backend reply #5); **product confirmed this as policy (2026-10-08): no refund when neither joins** | — |
+| Missed: "What happened?" reason chips and note | Omitted | No endpoint | #194 |
+| Missed: "Message {name}", "Offer a new time" | Omitted; the mentor's side offers "Go to Bookings" | No endpoints (a no-show can't carry a suggested time) | #168 |
+| Attendance unknown (no state) | **Ours:** "This session was missed" / "We don't have a record of who joined." with no credit claim; people read "No record" | Two migrated bookings have no attendance record | — |
+| "Having a problem? Report an issue" | Still omitted | No support channel | #187, #108 |
 

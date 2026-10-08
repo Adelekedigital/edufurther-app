@@ -227,3 +227,23 @@ export const PrepAnswersFailed: Story = {
     />
   ),
 };
+
+/** Over and ruled on: who joined, in the design's completed rings. */
+export const Completed: Story = {
+  args: {
+    ground: 'green',
+    status: { tone: 'neutral', label: 'Completed' },
+    clock: null,
+    people: [you('Joined', 'joined'), her('Joined', 'joined')],
+  },
+};
+
+/** Missed by the other person: their ring is red. */
+export const Missed: Story = {
+  args: {
+    ground: 'green',
+    status: { tone: 'red', label: 'Missed' },
+    clock: null,
+    people: [you('Joined', 'joined'), her('Didn’t join', 'absent')],
+  },
+};

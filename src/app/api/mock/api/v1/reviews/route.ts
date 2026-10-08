@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
-import { MOCK_EDIT_WINDOW_MS, mockReviewable, reviewRead, store } from '@/lib/api/mock/reviewStore';
+import {
+  MOCK_EDIT_WINDOW_MS,
+  mockReviewable,
+  mockReviewableIds,
+  reviewRead,
+  store,
+} from '@/lib/api/mock/reviewStore';
 
 const SCALE = ['poor', 'okay', 'great'];
 
@@ -13,13 +19,15 @@ export async function POST(req: Request) {
   const b = (await req.json()) as Record<string, unknown>;
   await new Promise((r) => setTimeout(r, 400));
   const sessionId = String(b.session_id ?? '');
-  const mentorId = sessionId.replace(/-s\d+$/, '');
+  // The join page's mock session j-5 belongs to its mock mentor, mock-j-5.
+  const joinPage = mockReviewableIds(['j-5']).includes(sessionId);
+  const mentorId = joinPage ? 'mock-j-5' : sessionId.replace(/-s\d+$/, '');
   if ([...store.reviews.values()].some((r) => r.session_id === sessionId))
     return NextResponse.json(
       { type: 'https://edufurther.com/problems/review-already-exists', title: 'Already reviewed' },
       { status: 409 },
     );
-  if (!mockReviewable(mentorId).some((s) => s.session_id === sessionId))
+  if (!joinPage && !mockReviewable(mentorId).some((s) => s.session_id === sessionId))
     return new NextResponse(null, { status: 404 });
   const ints = (k: string, lo: number, hi: number) =>
     Number.isInteger(b[k]) && (b[k] as number) >= lo && (b[k] as number) <= hi;

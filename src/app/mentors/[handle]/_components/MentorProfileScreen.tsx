@@ -17,7 +17,7 @@ import { ProfileStrengthCard } from '@/components/organisms/ProfileStrengthCard/
 import { BookingFlow } from '@/components/organisms/BookingFlow/BookingFlow';
 import { ProfileHeader } from '@/components/organisms/ProfileHeader/ProfileHeader';
 import { ProfileOverview } from '@/components/organisms/ProfileOverview/ProfileOverview';
-import { ReviewFlow } from '@/components/organisms/ReviewFlow/ReviewFlow';
+import { ReviewDialog } from '@/app/_reviews/ReviewDialog';
 import { SessionTypeList } from '@/components/organisms/SessionTypeList/SessionTypeList';
 import { SimilarMentorsCard } from '@/components/organisms/SimilarMentorsCard/SimilarMentorsCard';
 import { TrackRecordCard } from '@/components/organisms/TrackRecordCard/TrackRecordCard';
@@ -143,7 +143,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // exist. Bookings links a mentee here to write the first one, and gating the
   // tab on `count > 0` dead-ended exactly that person on Overview with no way
   // to reach the form — silently. The tab's own empty state covers the rest.
-  const reviewsTab = hasReviews || (viewer.kind !== 'guest' && viewer.kind !== 'loading' && !isOwner);
+  const reviewsTab =
+    hasReviews || (viewer.kind !== 'guest' && viewer.kind !== 'loading' && !isOwner);
   const { tab, setTab } = useProfileTab(hasSessions || notTakingTab || editing, reviewsTab);
   // Cards only render after a client fetch, so reading the device zone here is safe.
   const [timeZone] = useState(deviceTimeZone);
@@ -742,7 +743,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
       )}
 
       {reviews.reviewing && p && member && (
-        <ReviewFlow
+        <ReviewDialog
           // Remount when the edit snapshot arrives, so the form starts from it.
           key={
             reviews.reviewing === 'edit'
@@ -791,18 +792,6 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 }
               : undefined
           }
-          renderShell={(shell, body) => (
-            <ModalShell
-              title={shell.title}
-              subtitle={shell.subtitle}
-              icon={shell.icon}
-              tone={shell.tone}
-              size="md"
-              onClose={reviews.close}
-            >
-              {body}
-            </ModalShell>
-          )}
         />
       )}
     </AppShell>

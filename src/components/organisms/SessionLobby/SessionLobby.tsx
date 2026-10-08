@@ -18,7 +18,7 @@ export type LobbyPerson = {
   person: BookingParty;
   name: string;
   presence: string;
-  tone: 'here' | 'joined' | 'away';
+  tone: 'here' | 'joined' | 'absent' | 'away';
 };
 
 export type LobbyLink = {
@@ -30,8 +30,11 @@ export type LobbyLink = {
 };
 
 type SessionLobbyProps = {
-  /** The hero's ground: white before the door opens, blue once it has, green while running. */
-  ground: 'white' | 'blue' | 'green';
+  /**
+   * The hero's ground: white before the door opens, blue once it has, green
+   * while running and once completed; for a missed session, the outcome's own.
+   */
+  ground: 'white' | 'blue' | 'green' | 'red' | 'grey';
   status: { tone: SessionStatusTone; label: string; live?: boolean };
   /** "1:1 call with Gbenga Ogundipe". */
   title: string;
@@ -71,16 +74,18 @@ export function SessionLobby({
   calendar,
   notice,
 }: SessionLobbyProps) {
-  // Join can vanish under someone's focus (the window shuts on a clock tick).
-  // Removing a focused element sends focus to <body>, so it moves to the note
-  // that replaces Join instead.
+  // Join can vanish under someone's focus (the window shuts, or the session
+  // ends and settles, on a clock tick). Removing a focused element sends focus
+  // to <body>, so it moves to the note that replaces Join, or to the title
+  // when nothing replaces it (a settled session shows its outcome instead).
   const joinHadFocus = useRef(false);
   const noteRef = useRef<HTMLParagraphElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const hasJoin = !!join;
   useEffect(() => {
     if (!hasJoin && joinHadFocus.current) {
       joinHadFocus.current = false;
-      noteRef.current?.focus();
+      (noteRef.current ?? titleRef.current)?.focus();
     }
   }, [hasJoin]);
 
@@ -88,7 +93,9 @@ export function SessionLobby({
     <div className={cx(styles.lobby, styles[ground])}>
       <div className={styles.head}>
         <SessionStatusPill {...status} />
-        <h1 className={styles.title}>{title}</h1>
+        <h1 ref={titleRef} tabIndex={-1} className={styles.title}>
+          {title}
+        </h1>
         <span className={styles.meta}>{meta}</span>
       </div>
 

@@ -58,6 +58,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     otherJoinedAt?: string;
     /** When the viewer pressed Join (the join page's Rejoin). */
     meJoinedAt?: string;
+    /** Settled attendance, for the join page's completed and missed outcomes. */
+    meAttendance?: 'attended' | 'no_show';
+    otherAttendance?: 'attended' | 'no_show';
   };
   const session = (
     id: string,
@@ -69,10 +72,12 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     const other = {
       ...party(`mock-${id}`, mentee[0], mentee[1], o.zone ?? 'Africa/Lagos'),
       joined_at: o.otherJoinedAt ?? null,
+      attendance_status: o.otherAttendance ?? 'pending',
     };
     const me = {
       ...party(userId, 'Gbenga', 'Adeyemi', 'America/New_York'),
       joined_at: o.meJoinedAt ?? null,
+      attendance_status: o.meAttendance ?? 'pending',
     };
     return {
       id,
@@ -140,6 +145,25 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       duration: 45,
       meJoinedAt: fromNow(-19),
       otherJoinedAt: fromNow(-18),
+    }),
+    // Settled, for the join page's outcomes (/sessions/j-5, j-6): completed and
+    // reviewable, and missed by the mentor.
+    session('j-5', fromNow(-120), 'completed', ['Gbenga', 'Ogundipe'], {
+      typeName: '1:1 call',
+      duration: 30,
+      asMentee: true,
+      meJoinedAt: fromNow(-119),
+      otherJoinedAt: fromNow(-119),
+      meAttendance: 'attended',
+      otherAttendance: 'attended',
+    }),
+    session('j-6', fromNow(-24 * 60), 'no_show', ['Kemi', 'Adebayo'], {
+      typeName: '1:1 call',
+      duration: 30,
+      asMentee: true,
+      meJoinedAt: fromNow(-24 * 60 + 1),
+      meAttendance: 'attended',
+      otherAttendance: 'no_show',
     }),
     session('j-2', fromNow(-10), 'confirmed', ['Gbenga', 'Ogundipe'], {
       typeName: '1:1 call',

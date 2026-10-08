@@ -61,6 +61,12 @@ export function mockReviewable(mentorId: string) {
   }).filter((s) => ![...store.reviews.values()].some((r) => r.session_id === s.session_id));
 }
 
+/** Which of these session ids have no review yet (the join page's mock sessions). */
+export function mockReviewableIds(ids: string[]): string[] {
+  const reviewed = new Set([...store.reviews.values()].map((r) => r.session_id));
+  return ids.filter((id) => !reviewed.has(id));
+}
+
 function editableUntil(r: MockReview): string | null {
   return Date.parse(r.editable_until) > Date.now() ? r.editable_until : null;
 }
