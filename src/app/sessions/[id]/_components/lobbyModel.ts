@@ -76,12 +76,12 @@ function people(room: SessionRoom, phase: LivePhase, timeZone: string): LobbyPro
     const line = (p: BookingParty) =>
       p.joinedAt ? `Joined at ${formatTime(p.joinedAt, timeZone)}` : 'No arrival recorded';
     return [
-      { person: me, name: 'You', presence: line(me), tone: me.joinedAt ? 'here' : 'away' },
+      { person: me, name: 'You', presence: line(me), tone: me.joinedAt ? 'joined' : 'away' },
       {
         person: other,
         name: other.firstName,
         presence: line(other),
-        tone: other.joinedAt ? 'here' : 'away',
+        tone: other.joinedAt ? 'joined' : 'away',
       },
     ];
   }

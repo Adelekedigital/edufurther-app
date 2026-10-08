@@ -9,14 +9,17 @@ type PresencePersonProps = {
   name: string;
   /** "Here now", "Not here yet", "Ready when you are". */
   presence: string;
-  /** `here`: green ring, pulse and dot. `away`: grey. */
-  tone: 'here' | 'away';
+  /**
+   * `here`: in the call now (green ring, pulse and dot). `joined`: was in it and
+   * the call is over (green, no pulse: the design's completed state). `away`: grey.
+   */
+  tone: 'here' | 'joined' | 'away';
 };
 
 /** Session Join.dc.html: one person in the lobby, with whether they're in the call. */
 export function PresencePerson({ person, name, presence, tone }: PresencePersonProps) {
   return (
-    <div className={cx(styles.person, styles[tone])}>
+    <div className={cx(styles.person, styles[tone], tone !== 'away' && styles.green)}>
       <span className={styles.ring}>
         <span aria-hidden className={styles.pulse} />
         <Avatar

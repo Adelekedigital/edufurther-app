@@ -31,3 +31,19 @@
   font-size: var(--text-p-xs);
   color: var(--ink-600);
 }
+
+/* The answers row's shape while it loads: DisclosureRow's height and insets. */
+.placeholder {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  box-sizing: border-box;
+}
+.placeholderText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

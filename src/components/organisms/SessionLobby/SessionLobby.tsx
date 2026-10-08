@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
@@ -16,7 +16,7 @@ export type LobbyPerson = {
   person: BookingParty;
   name: string;
   presence: string;
-  tone: 'here' | 'away';
+  tone: 'here' | 'joined' | 'away';
 };
 
 export type LobbyLink = {
@@ -65,6 +65,19 @@ export function SessionLobby({
   links,
   notice,
 }: SessionLobbyProps) {
+  // Join can vanish under someone's focus (the window shuts on a clock tick).
+  // Removing a focused element sends focus to <body>, so it moves to the note
+  // that replaces Join instead.
+  const joinHadFocus = useRef(false);
+  const noteRef = useRef<HTMLParagraphElement>(null);
+  const hasJoin = !!join;
+  useEffect(() => {
+    if (!hasJoin && joinHadFocus.current) {
+      joinHadFocus.current = false;
+      noteRef.current?.focus();
+    }
+  }, [hasJoin]);
+
   return (
     <div className={cx(styles.lobby, styles[ground])}>
       <div className={styles.head}>
@@ -82,7 +95,11 @@ export function SessionLobby({
       </div>
 
       {join && (
-        <div className={styles.join}>
+        <div
+          className={styles.join}
+          onFocus={() => (joinHadFocus.current = true)}
+          onBlur={() => (joinHadFocus.current = false)}
+        >
           <Button
             size="large"
             fullWidth
@@ -95,7 +112,11 @@ export function SessionLobby({
           <span className={styles.hint}>{join.hint}</span>
         </div>
       )}
-      {note && <p className={styles.note}>{note}</p>}
+      {note && (
+        <p ref={noteRef} tabIndex={-1} className={styles.note}>
+          {note}
+        </p>
+      )}
       {notice && <div className={styles.notice}>{notice}</div>}
 
       {!!links?.length && (

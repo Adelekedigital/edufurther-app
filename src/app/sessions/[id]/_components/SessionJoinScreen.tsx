@@ -30,6 +30,10 @@ import styles from './SessionJoinScreen.module.css';
 /** The design's back link names Home for mentors, but there is no mentor home yet. */
 const BACK = { href: '/bookings', label: 'Go to Bookings' };
 
+/** What a screen reader hears when the browser swallows the meeting tab. */
+const BLOCKED =
+  'Your browser blocked the meeting window. Use the Open the session link. You’re already marked as here.';
+
 /** Statuses where the session is not this page's to show: an id we may not see, or a bad one. */
 const NOT_FOUND = new Set([403, 404, 422]);
 
@@ -98,7 +102,10 @@ export function SessionJoinScreen({ id }: { id: string }) {
         // Opened after the POST, so outside the click: a popup blocker may
         // swallow it, and silence would read as a dead button.
         const opened = window.open(meetingUrl, '_blank', 'noopener,noreferrer');
-        if (!opened) setBlockedUrl(meetingUrl);
+        if (!opened) {
+          setBlockedUrl(meetingUrl);
+          say(BLOCKED);
+        }
       },
       onError: (e) => {
         const text =
@@ -199,7 +206,8 @@ export function SessionJoinScreen({ id }: { id: string }) {
     });
     const hasAnswers = (answers.data?.length ?? 0) > 0;
     const notice = blockedUrl ? (
-      <Notice tone="info">
+      // Said through the LiveRegion above; this is the link to act on.
+      <Notice tone="info" live={false}>
         Your browser blocked the meeting window.{' '}
         <a href={blockedUrl} target="_blank" rel="noopener noreferrer">
           Open the session
@@ -223,6 +231,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
                 : `What ${b.other.firstName} wants to talk about`
             }
             answers={answers.data}
+            answersLoading={answers.isLoading}
             answersFailed={!!answers.error}
             onRetryAnswers={answers.retry}
             onOpenFile={setViewing}

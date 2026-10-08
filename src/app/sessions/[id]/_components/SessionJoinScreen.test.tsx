@@ -327,9 +327,25 @@ describe('after the call, before attendance is settled', () => {
     expect(screen.queryByText(/didn’t join/i)).not.toBeInTheDocument();
     expect(screen.queryByText('Quick guide for a rewarding session')).not.toBeInTheDocument();
   });
+
+  it('shows a past arrival in green without the live pulse', () => {
+    room = remote(sessionRoom({}, { joinedAt: '2026-10-04T17:01:00Z' }));
+    renderAt('17:40:00');
+    const you = screen.getByText('Joined at 6:01 pm').closest('.person')!;
+    expect(you).toHaveClass('joined', 'green');
+    expect(you).not.toHaveClass('here');
+  });
 });
 
 describe('getting ready', () => {
+  it('holds the answers row’s place while they load, rather than popping it in', () => {
+    answers = remote<BookingAnswer[]>(null, { isLoading: true });
+    const { container } = renderAt('15:15:00');
+    expect(container.querySelector('.prep')).toHaveAttribute('aria-busy', 'true');
+    expect(container.querySelector('.placeholder')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /wants to talk about/ })).not.toBeInTheDocument();
+  });
+
   it('hides the answers row when nothing was answered', () => {
     renderAt('15:15:00');
     expect(screen.queryByRole('button', { name: /wants to talk about/ })).not.toBeInTheDocument();
@@ -376,7 +392,24 @@ describe('what a screen reader hears', () => {
       .getAllByRole('status')
       .filter((el) => el.textContent?.includes('isn’t open to join'));
     expect(regions).toHaveLength(1);
-    expect(screen.getByText('This session isn’t open to join right now.', { selector: 'p:not(.sr-only)' })).toBeVisible();
+    expect(
+      screen.getByText('This session isn’t open to join right now.', {
+        selector: 'p:not(.sr-only)',
+      }),
+    ).toBeVisible();
+  });
+
+  it('says a blocked meeting window through the page’s region; the notice is only the link', async () => {
+    join.mockImplementation((_id, { onSuccess }) =>
+      onSuccess({ meetingUrl: 'https://room.test/x' }),
+    );
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    renderAt('16:56:00');
+    await userEvent.click(screen.getByRole('button', { name: 'Join session' }));
+    expect(srStatus()).toHaveTextContent('Your browser blocked the meeting window.');
+    const link = screen.getByRole('link', { name: 'Open the session' });
+    expect(link.closest('[role="status"]')).toBeNull();
+    open.mockRestore();
   });
 
   it('does not announce someone who was already here when the page opened', () => {

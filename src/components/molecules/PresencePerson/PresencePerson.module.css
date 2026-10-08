@@ -15,7 +15,7 @@
     0 0 0 3px var(--white),
     0 0 0 5px var(--ink-200);
 }
-.here .ring {
+.green .ring {
   box-shadow:
     0 0 0 3px var(--white),
     0 0 0 5px var(--green-700);
@@ -61,7 +61,7 @@
   font-weight: var(--weight-semibold);
   color: var(--ink-600);
 }
-.here .presence {
+.green .presence {
   color: var(--green-700);
 }
 .dot {
@@ -71,7 +71,7 @@
   border-radius: var(--radius-full);
   background: var(--ink-300);
 }
-.here .dot {
+.green .dot {
   background: var(--green-700);
 }
 

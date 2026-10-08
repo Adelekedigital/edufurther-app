@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
+import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { AnswerItem } from '@/components/molecules/AnswerItem/AnswerItem';
 import { DisclosureRow } from '@/components/molecules/DisclosureRow/DisclosureRow';
 import type { AnswerFile, BookingAnswer } from '@/types/booking';
@@ -14,6 +15,8 @@ type SessionPrepProps = {
   answersTitle: string;
   /** Null while loading. An empty list hides the row: there is nothing to read. */
   answers: BookingAnswer[] | null;
+  /** Still coming: a placeholder holds the row's place rather than it popping in. */
+  answersLoading?: boolean;
   answersFailed?: boolean;
   onRetryAnswers?: () => void;
   onOpenFile?: (file: AnswerFile) => void;
@@ -27,6 +30,7 @@ type SessionPrepProps = {
 export function SessionPrep({
   answersTitle,
   answers,
+  answersLoading,
   answersFailed,
   onRetryAnswers,
   onOpenFile,
@@ -43,9 +47,20 @@ export function SessionPrep({
     ? 'Couldn’t load the answers.'
     : (answers ?? []).map((a) => a.text).join(' · ');
 
+  const loading = !!answersLoading && !answersFailed;
   return (
-    <div className={styles.prep}>
-      {showTalk && (
+    <div className={styles.prep} aria-busy={loading || undefined}>
+      {loading && (
+        // Ours: the row's shape while the answers load (the design draws none).
+        <div className={styles.placeholder} aria-hidden>
+          <Skeleton width="32px" height="32px" radius="lg" />
+          <span className={styles.placeholderText}>
+            <Skeleton width="45%" height="14px" />
+            <Skeleton width="80%" height="12px" />
+          </span>
+        </div>
+      )}
+      {showTalk && !loading && (
         <DisclosureRow
           icon="forum"
           title={answersTitle}
@@ -73,7 +88,7 @@ export function SessionPrep({
         preview={`${guide.length} tips · 1 min read`}
         open={open.guide}
         onToggle={() => toggle('guide')}
-        divided={showTalk}
+        divided={showTalk || loading}
       >
         {guide.map((g) => (
           <div key={g.title} className={styles.tip}>

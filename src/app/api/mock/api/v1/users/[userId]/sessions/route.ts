@@ -1,6 +1,16 @@
 import { NextResponse } from 'next/server';
 
 const DAY = 24 * 60 * 60 * 1000;
+/**
+ * The instant j-1 and j-2 are timed from: fixed when the server starts, so
+ * polls see one session moving through its phases rather than a start that
+ * moves away on every read. Restart the dev server to reset them.
+ */
+const CLOCK_ANCHOR = (() => {
+  const d = new Date();
+  d.setUTCSeconds(0, 0);
+  return d.toISOString();
+})();
 const party = (id: string, first: string, last: string | null = null, zone = 'Africa/Lagos') => ({
   id,
   deleted: false,
@@ -27,7 +37,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     d.setUTCHours(hourUtc, minutes, 0, 0);
     return d.toISOString();
   };
-  const minutesFrom = (iso: string, m: number) => new Date(Date.parse(iso) + m * 60_000).toISOString();
+  const minutesFrom = (iso: string, m: number) =>
+    new Date(Date.parse(iso) + m * 60_000).toISOString();
 
   type Opts = {
     topic?: string | null;
@@ -90,10 +101,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
             id: `sg-${id}`,
             starts_at: minutesFrom(starts, 24 * 60),
             duration_minutes: 60,
-            held_until: minutesFrom(
-              new Date().toISOString(),
-              o.suggestion === 'active' ? 97 : -30,
-            ),
+            held_until: minutesFrom(new Date().toISOString(), o.suggestion === 'active' ? 97 : -30),
             status: o.suggestion,
             booked_session_id: o.suggestion === 'booked' ? 'u-1' : null,
           }
@@ -103,18 +111,17 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
 
   // Two sessions on the clock, for the join page (/sessions/j-1, /sessions/j-2):
   // one inside its join window, one under way with the other side in.
-  const nowMin = new Date();
-  nowMin.setUTCSeconds(0, 0);
-  const fromNow = (m: number) => minutesFrom(nowMin.toISOString(), m);
+  const fromNow = (m: number) => minutesFrom(CLOCK_ANCHOR, m);
   const all = [
     session('j-1', fromNow(3), 'confirmed', ['Amara', 'Okafor'], {
       typeName: '1:1 call',
       duration: 30,
+      // Matches the two entries sessions/[sessionId]/answers returns for j-1.
       answers: {
-        count: 1,
+        count: 2,
         first: {
           question_text: 'What would you like to talk about?',
-          text: 'Choosing between a funded and an unfunded PhD offer.',
+          text: 'I’m applying to PhD programs in public health for Fall 2027 and don’t know how to pick between funded and unfunded offers.',
         },
       },
     }),

@@ -61,6 +61,11 @@
 }
 
 @media (max-width: 767px) {
+  .logo {
+    /* Ours: 44px tap area on phones, as the back link has. */
+    min-height: var(--touch-target-min);
+    align-items: center;
+  }
   .back {
     /* Ours: 44px tap area on phones; the header keeps its drawn height. */
     min-height: var(--touch-target-min);

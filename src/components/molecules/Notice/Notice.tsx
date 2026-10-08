@@ -15,12 +15,18 @@ type NoticeProps = {
   onDismiss?: () => void;
   /** So a control the notice is about can point at it with aria-describedby. */
   id?: string;
+  /**
+   * False when the page says it through its own always-present LiveRegion: a
+   * region inserted with its text already in it is often skipped, and two
+   * regions saying one thing read it twice.
+   */
+  live?: boolean;
 };
 
 /** Inline status notice inside a page region. Announced politely. */
-export function Notice({ tone, icon, title, children, onDismiss, id }: NoticeProps) {
+export function Notice({ tone, icon, title, children, onDismiss, id, live = true }: NoticeProps) {
   return (
-    <div id={id} role="status" className={cx(styles.notice, styles[tone])}>
+    <div id={id} role={live ? 'status' : undefined} className={cx(styles.notice, styles[tone])}>
       {icon && <Icon name={icon} size={20} className={styles.icon} />}
       <p className={styles.text}>
         {title && <strong>{title}</strong>} {children}
