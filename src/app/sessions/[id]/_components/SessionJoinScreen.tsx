@@ -326,12 +326,9 @@ export function SessionJoinScreen({ id }: { id: string }) {
           author={{ name: member.firstName, initials: member.initial, institution: null }}
           timeZone={timeZone}
           onSend={(answers, sessionId) =>
-            sendReview.send({
-              mode: 'new',
-              mentorId: data.booking.other.id,
-              sessionId: sessionId ?? id,
-              answers,
-            })
+            // As the profile does: a new review is always about a chosen session.
+            sessionId &&
+            sendReview.send({ mode: 'new', mentorId: data.booking.other.id, sessionId, answers })
           }
           pending={sendReview.isPending}
           error={sendReview.error?.message ?? null}
