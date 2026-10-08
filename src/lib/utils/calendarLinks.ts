@@ -34,13 +34,29 @@ function description(e: CalendarEvent): string {
   return `Open your EduFurther session page to join: ${e.pageUrl}`;
 }
 
-/** RFC 5545 §3.3.11: backslash, semicolon, comma and newlines are escaped in text. */
+/**
+ * Control characters other than tab are not allowed in a value (RFC 5545
+ * §3.3.11). A lone CR matters most: some lenient readers take it as a line
+ * end, so a name containing one could add fields to the event.
+ */
+const CONTROL = /[\u0000-\u0008\u000B-\u001F\u007F]/g;
+
+/** A value with every control character removed: for the UID and URL, which aren't text. */
+function clean(value: string): string {
+  return value.replace(/\r\n|\r|\n/g, '').replace(CONTROL, '');
+}
+
+/**
+ * RFC 5545 §3.3.11: backslash, semicolon and comma are escaped; every kind of
+ * line break (CRLF, CR, LF) becomes \n; any other control character goes.
+ */
 function escapeText(text: string): string {
   return text
     .replace(/\\/g, '\\\\')
     .replace(/;/g, '\\;')
     .replace(/,/g, '\\,')
-    .replace(/\r?\n/g, '\\n');
+    .replace(/\r\n|\r|\n/g, '\\n')
+    .replace(CONTROL, '');
 }
 
 /**
@@ -76,14 +92,14 @@ export function icsFile(e: CalendarEvent, now = new Date()): string {
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
-    `UID:${e.id}@edufurther`,
+    `UID:${clean(e.id)}@edufurther`,
     `DTSTAMP:${compactUtc(now.toISOString())}`,
     `DTSTART:${compactUtc(e.startsAt)}`,
     `DTEND:${compactUtc(e.endsAt)}`,
     `SUMMARY:${escapeText(e.title)}`,
     `DESCRIPTION:${escapeText(description(e))}`,
     ...(e.venue ? [`LOCATION:${escapeText(e.venue)}`] : []),
-    `URL:${e.pageUrl}`,
+    `URL:${clean(e.pageUrl)}`,
     // A reminder 15 minutes before: the join window opens 5 minutes before.
     'BEGIN:VALARM',
     'ACTION:DISPLAY',

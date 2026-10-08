@@ -339,13 +339,12 @@ export function useJoinSession() {
         params: { path: { session_id: sessionId } },
       });
       if (!data) throw apiError(response.status, error);
-      const url = (data as { meeting_url?: unknown }).meeting_url;
       // Checked here, not at the call site, so an unsafe value can never reach
       // the view model. A `custom` venue is a mentor's own typed link — someone
       // else's text on our page — and gets the same treatment as a profile URL
       // (lib/utils/socialUrl). A rejected link reads as "no venue", which is
       // what it is.
-      return { meetingUrl: safeMeetingUrl(typeof url === 'string' ? url : null) };
+      return { meetingUrl: safeMeetingUrl(data.meeting_url) };
     },
     // Joining sets our own joined_at, so the row is now stale.
     onSuccess: () => void qc.invalidateQueries({ queryKey: keys.bookings.all }),

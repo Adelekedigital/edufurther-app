@@ -41,6 +41,36 @@ describe('icsFile', () => {
     expect(tricky).toContain('SUMMARY:Visa\\; essays\\, and\\\\more\\nnotes\r\n');
   });
 
+  it('turns every kind of line break into \\n, so a name cannot add fields', () => {
+    const forged = icsFile(
+      { ...event, title: 'Amara\rURL:https://evil.test\rLOCATION:x\r\nATTACH:y\nZ' },
+      NOW,
+    );
+    expect(forged).toContain(
+      'SUMMARY:Amara\\nURL:https://evil.test\\nLOCATION:x\\nATTACH:y\\nZ\r\n',
+    );
+    // The only CRs left are the format's own line ends.
+    expect(forged.replace(/\r\n/g, '')).not.toMatch(/[\r\n]/);
+    expect(forged.split('\r\n').filter((l) => l.startsWith('URL:'))).toEqual([
+      'URL:https://app.test/sessions/s1',
+    ]);
+  });
+
+  it('drops other control characters, everywhere in the file', () => {
+    const noisy = icsFile(
+      {
+        ...event,
+        id: 's\u00001',
+        title: 'A\u0007mara\tOkafor',
+        pageUrl: 'https://app.test/\u001bx',
+      },
+      NOW,
+    );
+    expect(noisy).toContain('SUMMARY:Amara\tOkafor\r\n');
+    expect(noisy).toContain('UID:s1@edufurther\r\n');
+    expect(noisy).toContain('URL:https://app.test/x\r\n');
+  });
+
   it('folds long lines at 75 octets without splitting a character', () => {
     const long = icsFile({ ...event, title: `Call with ${'Ọlá '.repeat(40)}` }, NOW);
     for (const line of long.split('\r\n')) {
