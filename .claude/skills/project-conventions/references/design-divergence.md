@@ -408,7 +408,7 @@ Source: `Session Join.dc.html`, defaults `layout=lobby`, `provider=edufurther`; 
 | A focused page: slim header (logo + one link back), no nav rail | Built as drawn (`templates/FocusPage`), an exception to "every app screen renders inside AppShell" | Product 2026-10-07: a page opened to do one thing now | never |
 | Mentor's header link "Go to Home" | "Go to Bookings" for both sides; the logo goes there too | There is no mentor home yet (`/dashboard` 404s) | #189 |
 | Lobby people: DS Avatar `type=initials` (dark initials on blue-50) | The person's own colour (`cover`), as Bookings' rows show them | One person looks the same on every screen | design confirms |
-| "Join opens 10 minutes before" / the button "turns on 10 minutes before" | Read from `join_opens_at` (5 today) | Backend reply §2; the window is 5 before to 15 after | backend changes the window |
+| "Join opens 10 minutes before" / the button "turns on 10 minutes before" | Read from `join_opens_at` (5 today) | Backend reply §2. **Product, 2026-10-08: 10 minutes, as a backend setting** (requested); the page follows `join_opens_at` with no change | backend ships the setting |
 | "Rejoin session" for every mentor while in progress | "Rejoin session" only for someone who has pressed Join; otherwise "Join now" | Rejoin says you were in | — |
 | Clock `aria-live="polite"` | Not a live region; a separate LiveRegion says "Join is open.", "The session has started.", "{name} is here." once each | A per-second clock would be read every second | never |
 | Meta line without a zone | "… · Lagos (WAT) · EduFurther video" | Product rule: times name whose clock they are | — |
@@ -451,7 +451,7 @@ Source: `Session Join.dc.html`, defaults `layout=lobby`, `provider=edufurther`; 
 | Mentor completed: "Send follow-up notes" + "Go to Home" | "Go to Bookings" only | No endpoint for notes; no mentor home | #195, #189 |
 | Mentor completed body: "{name} will be asked for a review. You can send her a follow-up…" | "{name} can leave a review on your profile." | No follow-up feature; no gendered pronoun; we don't send the ask ourselves | — |
 | Missed copy: "joined and waited 15 minutes", "we've let {name} know", "counts as a completed session for you", "repeated no-shows affect your ranking" | Each trimmed | None of these is something we know or do | backend tells us otherwise |
-| Neither joined: "…we'll sort out your credit. We'll email you once it's settled." | **Provisional:** mentee "This session isn't refunded, but you can book another time."; mentor "{name} can book again." | The backend refunds nothing when neither joins and reviews nothing (backend reply #5) | product decides the refund rule |
+| Neither joined: "…we'll sort out your credit. We'll email you once it's settled." | **Provisional:** mentee "This session isn't refunded, but you can book another time."; mentor "{name} can book again." | The backend refunds nothing when neither joins and reviews nothing (backend reply #5); **product confirmed this as policy (2026-10-08): no refund when neither joins** | — |
 | Missed: "What happened?" reason chips and note | Omitted | No endpoint | #194 |
 | Missed: "Message {name}", "Offer a new time" | Omitted; the mentor's side offers "Go to Bookings" | No endpoints (a no-show can't carry a suggested time) | #168 |
 | Attendance unknown (no state) | **Ours:** "This session was missed" / "We don't have a record of who joined." with no credit claim; people read "No record" | Two migrated bookings have no attendance record | — |
