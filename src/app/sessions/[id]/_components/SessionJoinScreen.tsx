@@ -8,23 +8,29 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { SessionLobby } from '@/components/organisms/SessionLobby/SessionLobby';
+import { SessionOutcome } from '@/components/organisms/SessionOutcome/SessionOutcome';
 import { SessionPrep } from '@/components/organisms/SessionPrep/SessionPrep';
 import { FocusPage } from '@/components/templates/FocusPage/FocusPage';
+import { ReviewDialog } from '@/app/_reviews/ReviewDialog';
 import { ConfirmActionDialog } from '@/app/_sessions/ConfirmActionDialog';
 import { IntakeFileViewer } from '@/app/_sessions/IntakeFileViewer';
+import { canBookFor } from '@/app/_shell/bookBlocked';
 import { memberGate, SESSION_GATE } from '@/app/_shell/MentorGate';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
 import { useJoinSession, useSessionDoor } from '@/lib/api/data/bookings';
 import { normaliseError } from '@/lib/api/data/errors';
+import { useMyReviewableSessions } from '@/lib/api/data/reviewableSessions';
+import { useSendReview } from '@/lib/api/data/reviewWrite';
 import { useBookingAnswers } from '@/lib/api/data/sessionAnswers';
 import { useSessionRoom } from '@/lib/api/data/sessionRoom';
 import { useViewer } from '@/lib/api/data/viewer';
 import { canCancel } from '@/lib/utils/bookings';
 import { deviceTimeZone } from '@/lib/utils/format';
+import { outcomeView } from '@/lib/utils/sessionOutcome';
 import { isFinal, sessionPhase } from '@/lib/utils/sessionPhase';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { AnswerFile } from '@/types/booking';
-import { guideTips, isLivePhase, lobbyModel, PHASE_ANNOUNCEMENT } from './lobbyModel';
+import { guideTips, isDrawnPhase, isSettled, lobbyModel, PHASE_ANNOUNCEMENT } from './lobbyModel';
 import styles from './SessionJoinScreen.module.css';
 
 /** The design's back link names Home for mentors, but there is no mentor home yet. */
@@ -61,19 +67,48 @@ export function SessionJoinScreen({ id }: { id: string }) {
 
   const room = useSessionRoom(id, userId);
   const data = room.data;
-  const now = useNow(!!data);
+  // The clock stops once the outcome is final: nothing on a completed or
+  // missed page changes with time. Known from the last render, adjusted while
+  // rendering (React: adjusting state when a prop changes).
+  const [final, setFinal] = useState(false);
+  const now = useNow(!!data && !final);
   const phase = data ? sessionPhase(data.booking, now) : null;
-  const live = phase && isLivePhase(phase) ? phase : null;
+  const isNowFinal = !!phase && isFinal(phase);
+  if (isNowFinal !== final) setFinal(isNowFinal);
+  const live = phase && isDrawnPhase(phase) ? phase : null;
 
   // Everything this page does not draw belongs to Bookings, which already
   // shows it (pending, cancelled, …). Replace, so Back does not bounce here.
-  // Session Join PR 3 draws completed and missed here.
-  const leaving = !!phase && isFinal(phase);
+  const leaving = phase === 'elsewhere';
   useEffect(() => {
     if (leaving) router.replace(`/bookings?booking=${encodeURIComponent(id)}`);
   }, [leaving, router, id]);
 
-  const answers = useBookingAnswers(data ? id : null, userId ?? '', !!live);
+  // The answers and the guide are for getting ready: not once it's over.
+  const preparing = !!live && live !== 'settling' && !isSettled(live);
+  const answers = useBookingAnswers(data ? id : null, userId ?? '', preparing);
+
+  // A completed session's review, written here in the shared review modal
+  // (product, 2026-10-08). As on Bookings: whether it can still be reviewed is
+  // the list's to say (it applies "not reviewed yet" and the interval), and
+  // reviewing goes with booking, so a viewer with a mentor profile gets
+  // neither ("one role per account").
+  const canBook = canBookFor(viewer);
+  const reviewAsked = live === 'completed' && data?.booking.side === 'mentee' && canBook;
+  const reviewables = useMyReviewableSessions(reviewAsked);
+  const reviewSession = reviewables.data?.find((r) => r.id === id) ?? null;
+  const sendReview = useSendReview();
+  // The session being reviewed, held from the moment the modal opens: sending
+  // refreshes the list, which then no longer has it, and the modal must stay
+  // for its thanks step.
+  const [reviewing, setReviewing] = useState<typeof reviewSession>(null);
+  const [reviewedHere, setReviewedHere] = useState(false);
+  const closeReview = () => {
+    // Sent: the page says thanks from now on, whatever the list says next.
+    if (sendReview.result) setReviewedHere(true);
+    sendReview.reset();
+    setReviewing(null);
+  };
   const [viewing, setViewing] = useState<AnswerFile | null>(null);
 
   // The first arrival goes through /join (the attendance record); every way
@@ -238,7 +273,27 @@ export function SessionJoinScreen({ id }: { id: string }) {
     body = (
       <section className={styles.card}>
         <SessionLobby {...lobby} notice={notice} />
-        {live !== 'settling' && (
+        {isSettled(live) && (
+          <SessionOutcome
+            view={outcomeView({
+              booking: b,
+              canBook,
+              reviewable: !reviewAsked
+                ? false
+                : reviewables.isLoading || reviewables.error
+                  ? null
+                  : !!reviewSession,
+              reviewed: reviewedHere,
+            })}
+            onAction={(key) => {
+              if (key === 'review' && reviewSession) {
+                sendReview.reset();
+                setReviewing(reviewSession);
+              }
+            }}
+          />
+        )}
+        {preparing && (
           <SessionPrep
             answersTitle={
               b.side === 'mentee'
@@ -262,6 +317,36 @@ export function SessionJoinScreen({ id }: { id: string }) {
       <LiveRegion message={said} />
       {body}
       {viewing && <IntakeFileViewer file={viewing} onClose={() => setViewing(null)} />}
+      {reviewing && data && member && (
+        <ReviewDialog
+          mode="new"
+          mentorFirstName={data.booking.other.firstName}
+          sessions={[reviewing]}
+          editableUntil={sendReview.result?.editableUntil ?? null}
+          author={{ name: member.firstName, initials: member.initial, institution: null }}
+          timeZone={timeZone}
+          onSend={(answers, sessionId) =>
+            sendReview.send({
+              mode: 'new',
+              mentorId: data.booking.other.id,
+              sessionId: sessionId ?? id,
+              answers,
+            })
+          }
+          pending={sendReview.isPending}
+          error={sendReview.error?.message ?? null}
+          done={!!sendReview.result}
+          onClose={closeReview}
+          onBookAgain={
+            canBook
+              ? () => {
+                  closeReview();
+                  router.push(`/mentors/${encodeURIComponent(data.booking.other.id)}`);
+                }
+              : undefined
+          }
+        />
+      )}
       {cancelling && data && (
         <ConfirmActionDialog
           action="cancel"

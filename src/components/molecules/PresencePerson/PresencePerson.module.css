@@ -75,6 +75,19 @@
   background: var(--green-700);
 }
 
+/* Recorded as not joining (Session Join.dc.html's completed and missed rings). */
+.absent .ring {
+  box-shadow:
+    0 0 0 3px var(--white),
+    0 0 0 5px var(--red-500);
+}
+.absent .presence {
+  color: var(--red-700);
+}
+.absent .dot {
+  background: var(--red-500);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .here .pulse {
     animation: none;

@@ -18,7 +18,7 @@ export type LobbyPerson = {
   person: BookingParty;
   name: string;
   presence: string;
-  tone: 'here' | 'joined' | 'away';
+  tone: 'here' | 'joined' | 'absent' | 'away';
 };
 
 export type LobbyLink = {
@@ -30,8 +30,11 @@ export type LobbyLink = {
 };
 
 type SessionLobbyProps = {
-  /** The hero's ground: white before the door opens, blue once it has, green while running. */
-  ground: 'white' | 'blue' | 'green';
+  /**
+   * The hero's ground: white before the door opens, blue once it has, green
+   * while running and once completed; for a missed session, the outcome's own.
+   */
+  ground: 'white' | 'blue' | 'green' | 'red' | 'grey';
   status: { tone: SessionStatusTone; label: string; live?: boolean };
   /** "1:1 call with Gbenga Ogundipe". */
   title: string;

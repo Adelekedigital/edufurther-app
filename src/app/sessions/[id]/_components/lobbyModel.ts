@@ -14,35 +14,41 @@ import {
   providerName,
   type SessionPhase,
 } from '@/lib/utils/sessionPhase';
+import { missedTone } from '@/lib/utils/sessionOutcome';
 import type { BookingParty, SessionRoom } from '@/types/booking';
 
 type LobbyProps = ComponentProps<typeof SessionLobby>;
 
-/** The phases this page draws so far. Completed and missed follow (Session Join PR 3). */
-export type LivePhase = Extract<
-  SessionPhase,
-  'upcoming' | 'soon' | 'ongoing' | 'closed' | 'settling'
->;
+/** Every phase this page draws; anything else is Bookings' to show. */
+export type DrawnPhase = Exclude<SessionPhase, 'elsewhere'>;
 
-export function isLivePhase(p: SessionPhase): p is LivePhase {
-  return p === 'upcoming' || p === 'soon' || p === 'ongoing' || p === 'closed' || p === 'settling';
+export function isDrawnPhase(p: SessionPhase): p is DrawnPhase {
+  return p !== 'elsewhere';
 }
 
-const STATUS: Record<LivePhase, LobbyProps['status']> = {
+/** Over and ruled on: the outcome block shows under the lobby. */
+export function isSettled(p: DrawnPhase): p is 'completed' | 'missed' {
+  return p === 'completed' || p === 'missed';
+}
+
+const STATUS: Record<DrawnPhase, LobbyProps['status']> = {
   upcoming: { tone: 'blue', label: 'Upcoming' },
   soon: { tone: 'blue', label: 'Starting soon' },
   ongoing: { tone: 'green', label: 'In progress', live: true },
   closed: { tone: 'green', label: 'In progress', live: true },
   // PROVISIONAL: the design has no state between the end and the attendance sweep.
   settling: { tone: 'neutral', label: 'Ended' },
+  completed: { tone: 'neutral', label: 'Completed' },
+  missed: { tone: 'red', label: 'Missed' },
 };
 
-const GROUND: Record<LivePhase, LobbyProps['ground']> = {
+const GROUND: Record<Exclude<DrawnPhase, 'missed'>, LobbyProps['ground']> = {
   upcoming: 'white',
   soon: 'blue',
   ongoing: 'green',
   closed: 'green',
   settling: 'white',
+  completed: 'green',
 };
 
 /** "1:1 call with Gbenga Ogundipe"; "Session with …" on an older row with no type. */
@@ -64,18 +70,33 @@ export function lobbyMeta(room: SessionRoom, timeZone: string): string {
 }
 
 /** In the call, by their own Join press (`joined_at`, the first arrival). */
-function isHere(p: BookingParty, phase: LivePhase): boolean {
+function isHere(p: BookingParty, phase: DrawnPhase): boolean {
   return phase !== 'upcoming' && !!p.joinedAt;
 }
 
 function people(
   room: SessionRoom,
-  phase: LivePhase,
+  phase: DrawnPhase,
   timeZone: string,
   canEnter: boolean,
 ): LobbyProps['people'] {
   const { me, booking } = room;
   const other = booking.other;
+  if (isSettled(phase)) {
+    // Ruled on: what each person's record says (the design's completed and
+    // missed rings). `pending` here is no record at all, never "didn't join".
+    const settled = (p: BookingParty, name: string): LobbyProps['people'][number] =>
+      p.attendance === 'attended' || p.attendance === 'leftEarly'
+        ? { person: p, name, presence: 'Joined', tone: 'joined' }
+        : p.attendance === 'noShow'
+          ? { person: p, name, presence: 'Didn’t join', tone: 'absent' }
+          : { person: p, name, presence: 'No record', tone: 'away' };
+    // The viewer's own record is `myAttendance` (the room's `me` is the same party).
+    return [
+      settled({ ...me, attendance: booking.myAttendance }, 'You'),
+      settled(other, other.firstName),
+    ];
+  }
   if (phase === 'settling') {
     // Over, but not ruled on: say what we recorded, never "didn't join".
     const line = (p: BookingParty) =>
@@ -111,7 +132,7 @@ function people(
 
 export type LobbyInput = {
   room: SessionRoom;
-  phase: LivePhase;
+  phase: DrawnPhase;
   now: Date;
   timeZone: string;
   joining: boolean;
@@ -168,14 +189,14 @@ export function lobbyModel({
     note = `Joining closed at ${formatTime(b.joinClosesAt, timeZone)}, ${after} minutes after the start.`;
   } else if (phase === 'closed') {
     note = 'Joining has closed for this session.';
-  } else {
+  } else if (phase === 'settling') {
     // PROVISIONAL: undesigned. The sweep rules within the hour (backend reply §3).
     note = 'This session has ended. We’re confirming who joined, which can take up to an hour.';
   }
 
   const pre = phase === 'upcoming' || phase === 'soon';
   return {
-    ground: GROUND[phase],
+    ground: phase === 'missed' ? missedTone(b) : GROUND[phase],
     status: STATUS[phase],
     title: lobbyTitle(room),
     meta: lobbyMeta(room, timeZone),
@@ -230,7 +251,9 @@ export function guideTips(room: SessionRoom, hasAnswers: boolean): GuideTip[] {
 }
 
 /** What a screen reader hears when the phase moves on. The clock itself is never announced. */
-export const PHASE_ANNOUNCEMENT: Partial<Record<LivePhase, string>> = {
+export const PHASE_ANNOUNCEMENT: Partial<Record<DrawnPhase, string>> = {
+  completed: 'The session is complete.',
+  missed: 'This session was missed.',
   soon: 'Join is open.',
   ongoing: 'The session has started.',
   closed: 'Joining has closed.',

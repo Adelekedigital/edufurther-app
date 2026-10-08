@@ -37,6 +37,51 @@ vi.mock('@/lib/api/data/booking', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
   useSlots: () => ({ data: [], isLoading: false, error: null, retry: vi.fn() }),
 }));
+// Whether this session can still be reviewed (the list Bookings reads too).
+let reviewables: Remote<{ id: string; startsAt: string; typeName: string | null }[]>;
+vi.mock('@/lib/api/data/reviewableSessions', () => ({
+  useMyReviewableSessions: () => reviewables,
+}));
+// The send hook keeps real state, so "sent" re-renders as the real one does.
+const sent: unknown[] = [];
+vi.mock('@/lib/api/data/reviewWrite', async () => {
+  const { useState } = await import('react');
+  return {
+    useSendReview: () => {
+      const [result, setResult] = useState<{ editableUntil: string | null } | null>(null);
+      return {
+        send: (input: unknown) => {
+          sent.push(input);
+          setResult({ editableUntil: null });
+        },
+        isPending: false,
+        result,
+        error: null,
+        reset: () => setResult(null),
+      };
+    },
+  };
+});
+// The review modal is ReviewFlow's (tested on its own); here, only its wiring.
+vi.mock('@/app/_reviews/ReviewDialog', () => ({
+  ReviewDialog: (p: {
+    mentorFirstName: string;
+    sessions: { id: string }[];
+    done: boolean;
+    onSend: (a: unknown, id: string | null) => void;
+    onClose: () => void;
+  }) => (
+    <div role="dialog" aria-label={`Review ${p.mentorFirstName}`}>
+      <span>{p.done ? 'Sent' : `About ${p.sessions.map((x) => x.id).join(',')}`}</span>
+      <button type="button" onClick={() => p.onSend({ overall: 5 }, p.sessions[0]!.id)}>
+        Send review
+      </button>
+      <button type="button" onClick={p.onClose}>
+        Close review
+      </button>
+    </div>
+  ),
+}));
 vi.mock('@/lib/api/data/intakeFiles', () => ({
   useIntakeFile: () => ({ url: 'blob:stub', isLoading: false, error: null, retry: vi.fn() }),
   canPreview: () => true,
@@ -54,6 +99,13 @@ const MEMBER: Extract<Viewer, { kind: 'member' }> = {
   credits: null,
   timeZone: 'Africa/Lagos',
   bookingCounts: { pending: 0, upcoming: 1 },
+};
+
+const MENTEE: Extract<Viewer, { kind: 'member' }> = {
+  ...MEMBER,
+  isMentee: true,
+  isApprovedMentor: false,
+  isMentor: false,
 };
 
 // A 30-minute call at 6:00 pm Lagos (17:00 UTC); the window is 16:55–17:15.
@@ -107,6 +159,8 @@ beforeEach(() => {
   room = remote(sessionRoom());
   answers = remote<BookingAnswer[]>([]);
   join.mockReset();
+  sent.length = 0;
+  reviewables = remote([{ id: 'b1', startsAt: START, typeName: '1:1 call' }]);
   door.mockReset();
   replace.mockReset();
   cancel.mutate.mockReset();
@@ -187,13 +241,138 @@ describe('the four states', () => {
   );
 
   it.each(['completed', 'noShow'] as const)(
-    'a %s session is handed to Bookings once it has ended (PR 3 draws it here)',
+    'a %s session stays here once it has ended',
     (status) => {
       room = remote(sessionRoom({ status }));
       renderAt('17:31:00');
-      expect(replace).toHaveBeenCalledWith('/bookings?booking=b1');
+      expect(replace).not.toHaveBeenCalled();
     },
   );
+});
+
+describe('completed', () => {
+  const completed = (side: 'mentee' | 'mentor') =>
+    remote({
+      ...sessionRoom({
+        status: 'completed',
+        side,
+        myAttendance: 'attended',
+        other: sampleParty({ id: 'amara', firstName: 'Amara', attendance: 'attended' }),
+      }),
+    });
+
+  it('stops the page clock once the outcome is final', () => {
+    viewer = MENTEE;
+    room = completed('mentee');
+    const every = vi.spyOn(window, 'setInterval');
+    renderAt('17:40:00');
+    expect(every.mock.calls.some(([, ms]) => ms === 1000)).toBe(false);
+    every.mockRestore();
+  });
+
+  it('keeps the clock while a session is still ahead', () => {
+    const every = vi.spyOn(window, 'setInterval');
+    renderAt('15:15:00');
+    expect(every.mock.calls.some(([, ms]) => ms === 1000)).toBe(true);
+    every.mockRestore();
+  });
+
+  it('shows both people as joined, with no clock and no Join', () => {
+    viewer = MENTEE;
+    room = completed('mentee');
+    renderAt('17:40:00');
+    expect(screen.getByText('Completed')).toBeVisible();
+    expect(screen.getAllByText('Joined')).toHaveLength(2);
+    expect(screen.queryByRole('button', { name: /join/i })).not.toBeInTheDocument();
+    expect(screen.queryByText('Quick guide for a rewarding session')).not.toBeInTheDocument();
+  });
+
+  it('a mentee reviews here, in the review modal, and is thanked on the page', async () => {
+    viewer = MENTEE;
+    room = completed('mentee');
+    renderAt('17:40:00');
+    expect(screen.getByText('How was your session with Amara?')).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Book again' })).toHaveAttribute(
+      'href',
+      '/mentors/amara',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Leave a review' }));
+    const dialog = screen.getByRole('dialog', { name: 'Review Amara' });
+    expect(within(dialog).getByText('About b1')).toBeVisible();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Send review' }));
+    expect(sent).toEqual([
+      { mode: 'new', mentorId: 'amara', sessionId: 'b1', answers: { overall: 5 } },
+    ]);
+    // The list refreshes without this session; the modal stays for its thanks step.
+    reviewables = remote([]);
+    expect(within(dialog).getByText('Sent')).toBeVisible();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Close review' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText('Thanks, your review is on Amara’s profile.')).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Leave a review' })).not.toBeInTheDocument();
+  });
+
+  it('offers neither review nor Book again while it is unknown whether it can be reviewed', () => {
+    viewer = MENTEE;
+    room = completed('mentee');
+    reviewables = remote<{ id: string; startsAt: string; typeName: string | null }[]>(null, {
+      isLoading: true,
+    });
+    renderAt('17:40:00');
+    expect(screen.getByText('How was your session with Amara?')).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Leave a review' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Book again' })).not.toBeInTheDocument();
+  });
+
+  it('a mentor gets no review prompt and no booking', () => {
+    room = completed('mentor');
+    renderAt('17:40:00');
+    expect(screen.getByText('Nice work. Session complete.')).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Leave a review' })).not.toBeInTheDocument();
+    // The header's way back, and the outcome's own action.
+    expect(screen.getAllByRole('link', { name: 'Go to Bookings' })).toHaveLength(2);
+  });
+});
+
+describe('missed', () => {
+  const missedRoom = (
+    side: 'mentee' | 'mentor',
+    mine: 'attended' | 'noShow',
+    theirs: 'attended' | 'noShow',
+  ) =>
+    remote(
+      sessionRoom({
+        status: 'noShow',
+        side,
+        myAttendance: mine,
+        other: sampleParty({ id: 'amara', firstName: 'Amara', attendance: theirs }),
+      }),
+    );
+
+  it('the mentor missed a mentee’s session: their credit is back, with ways to rebook', () => {
+    viewer = MENTEE;
+    room = missedRoom('mentee', 'attended', 'noShow');
+    renderAt('17:40:00');
+    expect(screen.getByText('Missed')).toBeVisible();
+    expect(screen.getByText('Didn’t join')).toBeVisible();
+    expect(screen.getByText('Amara didn’t join. Your credit is back.')).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Rebook with Amara' })).toHaveAttribute(
+      'href',
+      '/mentors/amara',
+    );
+    expect(screen.getByRole('link', { name: 'Find another mentor' })).toHaveAttribute(
+      'href',
+      '/explore',
+    );
+  });
+
+  it('the viewer missed it: said plainly, never claiming how long anyone waited', () => {
+    viewer = MENTEE;
+    room = missedRoom('mentee', 'noShow', 'attended');
+    renderAt('17:40:00');
+    expect(screen.getByText('You missed this session')).toBeVisible();
+    expect(screen.queryByText(/waited/)).not.toBeInTheDocument();
+  });
 });
 
 describe('before the window', () => {

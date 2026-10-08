@@ -16,6 +16,12 @@
 .green {
   background: var(--green-50);
 }
+.red {
+  background: var(--red-50);
+}
+.grey {
+  background: var(--ink-100);
+}
 
 .head {
   display: flex;

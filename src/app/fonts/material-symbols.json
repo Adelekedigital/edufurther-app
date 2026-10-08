@@ -52,6 +52,7 @@
     "forum",
     "groups",
     "handshake",
+    "help",
     "hide_image",
     "home",
     "home_pin",
@@ -77,6 +78,7 @@
     "palette",
     "payments",
     "person",
+    "person_off",
     "photo_camera",
     "power",
     "progress_activity",
@@ -119,5 +121,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "9109c52b9f511fdc742e2d6c4b20b341401fd3fc6ebacc4a196e2cd05ddfd8c8"
+  "sha256": "55bcfd5696989b3cda37aadc4cb7699222614643f1a29a965a00df580940c717"
 }
