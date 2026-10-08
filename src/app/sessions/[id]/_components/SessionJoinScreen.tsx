@@ -272,7 +272,8 @@ export function SessionJoinScreen({ id }: { id: string }) {
 
     body = (
       <section className={styles.card}>
-        <SessionLobby {...lobby} notice={notice} />
+        {/* A Join problem belongs to joining: gone once the session is over. */}
+        <SessionLobby {...lobby} notice={preparing ? notice : null} />
         {isSettled(live) && (
           <SessionOutcome
             view={outcomeView({
@@ -280,9 +281,11 @@ export function SessionJoinScreen({ id }: { id: string }) {
               canBook,
               reviewable: !reviewAsked
                 ? false
-                : reviewables.isLoading || reviewables.error
-                  ? null
-                  : !!reviewSession,
+                : reviewables.error
+                  ? 'error'
+                  : reviewables.isLoading
+                    ? 'loading'
+                    : !!reviewSession,
               reviewed: reviewedHere,
             })}
             onAction={(key) => {
@@ -290,6 +293,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
                 sendReview.reset();
                 setReviewing(reviewSession);
               }
+              if (key === 'retryReview') reviewables.retry();
             }}
           />
         )}

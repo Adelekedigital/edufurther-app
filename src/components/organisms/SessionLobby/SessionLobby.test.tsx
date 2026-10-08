@@ -33,6 +33,23 @@ describe('when Join goes away under the keyboard', () => {
     expect(screen.getByText(/Joining closed at 6:15 pm/)).toHaveFocus();
   });
 
+  it('moves focus to the title when nothing replaces Join (the session settled)', () => {
+    const { rerender } = render(
+      <SessionLobby
+        {...base}
+        join={{
+          label: 'Rejoin session',
+          enabled: true,
+          onJoin: vi.fn(),
+          hint: 'Opens in your browser.',
+        }}
+      />,
+    );
+    screen.getByRole('button', { name: 'Rejoin session' }).focus();
+    rerender(<SessionLobby {...base} />);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
+  });
+
   it('leaves focus alone when it was somewhere else', () => {
     const { rerender } = render(
       <>

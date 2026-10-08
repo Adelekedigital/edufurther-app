@@ -64,10 +64,11 @@ export type OutcomeInput = {
   canBook: boolean;
   /**
    * Whether this session can still be reviewed (`/me/reviewable-sessions`).
-   * Null while that is unknown, loading or failed: then neither Leave a
-   * review nor Book again is offered, as on Bookings.
+   * `loading`: neither Leave a review nor Book again yet, as on Bookings (one
+   * would stand in for the other a moment later). `error`: the check failed,
+   * so a retry, and Book again, which doesn't depend on it.
    */
-  reviewable: boolean | null;
+  reviewable: boolean | 'loading' | 'error';
   /** A review was sent from this page in this visit. */
   reviewed: boolean;
 };
@@ -129,7 +130,17 @@ export function outcomeView({
       body: 'Your review helps other mentees choose, and takes about a minute.',
       thanks: null,
     };
-    if (reviewable === null) return { kind: 'completed', ...ask, actions: [] };
+    if (reviewable === 'loading') return { kind: 'completed', ...ask, actions: [] };
+    if (reviewable === 'error')
+      return {
+        kind: 'completed',
+        ...ask,
+        body: 'We couldn’t check whether you can review this session.',
+        actions: [
+          { key: 'retryReview', label: 'Try again', href: null, variant: 'secondary' },
+          ...(canBook ? [book] : []),
+        ],
+      };
     if (reviewable)
       return {
         kind: 'completed',

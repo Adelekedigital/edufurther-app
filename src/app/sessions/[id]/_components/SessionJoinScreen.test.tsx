@@ -309,6 +309,10 @@ describe('completed', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Close review' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByText('Thanks, your review is on Amara’s profile.')).toBeVisible();
+    // Leave a review is gone; focus is on the thanks line, not <body>.
+    expect(
+      screen.getByText('Thanks, your review is on Amara’s profile.').parentElement,
+    ).toHaveFocus();
     expect(screen.queryByRole('button', { name: 'Leave a review' })).not.toBeInTheDocument();
   });
 
@@ -324,6 +328,23 @@ describe('completed', () => {
     expect(screen.queryByRole('link', { name: 'Book again' })).not.toBeInTheDocument();
   });
 
+  it('a failed reviewability check says so, retries, and keeps Book again', async () => {
+    viewer = MENTEE;
+    room = completed('mentee');
+    const retry = vi.fn();
+    reviewables = remote<{ id: string; startsAt: string; typeName: string | null }[]>(null, {
+      error: { status: 500 } as AppError,
+      retry,
+    });
+    renderAt('17:40:00');
+    expect(
+      screen.getByText('We couldn’t check whether you can review this session.'),
+    ).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Book again' })).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(retry).toHaveBeenCalled();
+  });
+
   it('a mentor gets no review prompt and no booking', () => {
     room = completed('mentor');
     renderAt('17:40:00');
@@ -331,6 +352,30 @@ describe('completed', () => {
     expect(screen.queryByRole('button', { name: 'Leave a review' })).not.toBeInTheDocument();
     // The header's way back, and the outcome's own action.
     expect(screen.getAllByRole('link', { name: 'Go to Bookings' })).toHaveLength(2);
+  });
+});
+
+describe('a Join notice belongs to joining', () => {
+  it('is gone once the session has settled', async () => {
+    room = remote(sessionRoom({}, {}));
+    join.mockImplementation((_id, { onError }) => onError(new ApiError(409)));
+    const view = renderAt('17:10:00');
+    await userEvent.click(screen.getByRole('button', { name: 'Join now' }));
+    expect(
+      screen.getByText('This session isn’t open to join right now.', {
+        selector: 'p:not(.sr-only)',
+      }),
+    ).toBeVisible();
+    room = remote(sessionRoom({ status: 'completed' }));
+    vi.setSystemTime(at('17:40:00'));
+    view.rerender(<SessionJoinScreen id="b1" />);
+    // The page's own clock moves on its next tick.
+    act(() => void vi.advanceTimersByTime(1000));
+    expect(
+      screen.queryByText('This session isn’t open to join right now.', {
+        selector: 'p:not(.sr-only)',
+      }),
+    ).not.toBeInTheDocument();
   });
 });
 

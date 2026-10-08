@@ -39,6 +39,11 @@
   text-wrap: balance;
   overflow-wrap: anywhere;
 }
+.title:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
 .meta {
   font-size: var(--text-p-sm);
   color: var(--ink-700);

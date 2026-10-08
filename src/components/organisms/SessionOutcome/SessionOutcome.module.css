@@ -34,6 +34,10 @@
   border-radius: var(--radius-lg);
   background: var(--green-50);
 }
+.thanks:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
 .thanksIcon {
   color: var(--green-700);
 }

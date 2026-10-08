@@ -124,8 +124,17 @@ describe('outcomeView, completed', () => {
     ]);
   });
 
-  it('offers nothing while it is unknown whether the session can be reviewed', () => {
-    expect(view(done('mentee'), { reviewable: null }).actions).toEqual([]);
+  it('offers nothing while it is still being checked whether the session can be reviewed', () => {
+    expect(view(done('mentee'), { reviewable: 'loading' }).actions).toEqual([]);
+  });
+
+  it('a failed check says so, with a retry, and keeps Book again', () => {
+    const v = view(done('mentee'), { reviewable: 'error' });
+    expect(v.body).toBe('We couldn’t check whether you can review this session.');
+    expect(v.actions.map((a) => [a.key, a.label])).toEqual([
+      ['retryReview', 'Try again'],
+      ['book', 'Book again'],
+    ]);
   });
 
   it('after a review sent here: thanks, and Book again', () => {

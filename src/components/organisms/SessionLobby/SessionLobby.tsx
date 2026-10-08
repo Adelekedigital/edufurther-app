@@ -74,16 +74,18 @@ export function SessionLobby({
   calendar,
   notice,
 }: SessionLobbyProps) {
-  // Join can vanish under someone's focus (the window shuts on a clock tick).
-  // Removing a focused element sends focus to <body>, so it moves to the note
-  // that replaces Join instead.
+  // Join can vanish under someone's focus (the window shuts, or the session
+  // ends and settles, on a clock tick). Removing a focused element sends focus
+  // to <body>, so it moves to the note that replaces Join, or to the title
+  // when nothing replaces it (a settled session shows its outcome instead).
   const joinHadFocus = useRef(false);
   const noteRef = useRef<HTMLParagraphElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const hasJoin = !!join;
   useEffect(() => {
     if (!hasJoin && joinHadFocus.current) {
       joinHadFocus.current = false;
-      noteRef.current?.focus();
+      (noteRef.current ?? titleRef.current)?.focus();
     }
   }, [hasJoin]);
 
@@ -91,7 +93,9 @@ export function SessionLobby({
     <div className={cx(styles.lobby, styles[ground])}>
       <div className={styles.head}>
         <SessionStatusPill {...status} />
-        <h1 className={styles.title}>{title}</h1>
+        <h1 ref={titleRef} tabIndex={-1} className={styles.title}>
+          {title}
+        </h1>
         <span className={styles.meta}>{meta}</span>
       </div>
 

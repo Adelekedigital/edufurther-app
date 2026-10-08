@@ -40,7 +40,10 @@ type Story = StoryObj<typeof SessionOutcome>;
 
 export const CompletedAskReview: Story = { args: { view: of(completed('mentee')) } };
 export const CompletedReviewUnknown: Story = {
-  args: { view: of(completed('mentee'), { reviewable: null }) },
+  args: { view: of(completed('mentee'), { reviewable: 'loading' }) },
+};
+export const CompletedReviewCheckFailed: Story = {
+  args: { view: of(completed('mentee'), { reviewable: 'error' }) },
 };
 export const CompletedThanks: Story = {
   args: { view: of(completed('mentee'), { reviewed: true }) },

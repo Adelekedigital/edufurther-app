@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useRef } from 'react';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { cx } from '@/lib/utils/cx';
@@ -38,6 +41,14 @@ function Actions({
 
 /** Session Join.dc.html's outcome under the lobby: `isCompleted` and `isMissed`. */
 export function SessionOutcome({ view, onAction }: SessionOutcomeProps) {
+  // The thanks line replaces Leave a review, which had focus when the review
+  // modal opened from it: focus comes here, not to a button that is gone.
+  const thanksRef = useRef<HTMLDivElement>(null);
+  const thanks = view.kind === 'completed' ? view.thanks : null;
+  useEffect(() => {
+    if (thanks) thanksRef.current?.focus();
+  }, [thanks]);
+
   if (view.kind === 'completed')
     return (
       <div className={styles.completed}>
@@ -48,7 +59,7 @@ export function SessionOutcome({ view, onAction }: SessionOutcomeProps) {
           </div>
         )}
         {view.thanks && (
-          <div className={styles.thanks}>
+          <div ref={thanksRef} tabIndex={-1} className={styles.thanks}>
             <Icon name="check_circle" size={20} className={styles.thanksIcon} />
             <span className={styles.thanksText}>{view.thanks}</span>
           </div>
