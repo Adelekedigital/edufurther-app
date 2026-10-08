@@ -127,6 +127,7 @@ export function toBooking(s: SessionRead, viewerId: string): Booking {
     respondBy: s.respond_by ?? null,
     joinOpensAt: s.join_opens_at ?? null,
     joinClosesAt: s.join_closes_at ?? null,
+    doorClosesAt: s.door_closes_at ?? null,
     menteeAttendanceRate: s.mentee_attendance_rate ?? null,
   };
 }
@@ -348,5 +349,26 @@ export function useJoinSession() {
     },
     // Joining sets our own joined_at, so the row is now stale.
     onSuccess: () => void qc.invalidateQueries({ queryKey: keys.bookings.all }),
+  });
+}
+
+/**
+ * POST /sessions/{id}/door: a way back into a running session's call for
+ * someone who has already joined (backend #380). It records **no** attendance:
+ * the first arrival goes through `useJoinSession`, every reconnect through
+ * here, so the record keeps the first press. Open from `join_opens_at` until
+ * `door_closes_at`; outside that, a 409. A `null` link on a 200 means there is
+ * no way in right now, which the page says rather than treating as an error.
+ */
+export function useSessionDoor() {
+  return useMutation<JoinResult, ApiError, string>({
+    mutationFn: async (sessionId) => {
+      const { data, error, response } = await api.POST('/api/v1/sessions/{session_id}/door', {
+        params: { path: { session_id: sessionId } },
+      });
+      if (!data) throw apiError(response.status, error);
+      // The same check as Join: an unsafe link reads as "no way in".
+      return { meetingUrl: safeMeetingUrl(data.meeting_url) };
+    },
   });
 }

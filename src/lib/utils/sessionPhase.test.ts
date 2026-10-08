@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { sampleBookingFor } from './bookingTestFixtures';
 import {
-  canJoinNow,
+  entryFor,
   formatClock,
   formatWait,
   isFinal,
@@ -22,6 +22,7 @@ const b = sampleBookingFor({
   durationMin: 30,
   joinOpensAt: '2026-10-04T16:55:00Z',
   joinClosesAt: '2026-10-04T17:15:00Z',
+  doorClosesAt: '2026-10-04T17:30:00Z',
 });
 const at = (hhmmss: string) => new Date(`2026-10-04T${hhmmss}Z`);
 
@@ -46,9 +47,14 @@ describe('sessionPhase', () => {
     expect(sessionPhase(b, at('19:00:00'))).toBe('settling');
   });
 
-  it('reads the settled outcome from the status, whatever the clock says', () => {
-    expect(sessionPhase({ ...b, status: 'completed' }, at('16:00:00'))).toBe('completed');
-    expect(sessionPhase({ ...b, status: 'noShow' }, at('16:00:00'))).toBe('missed');
+  it('reads the settled outcome from the status once the session is over', () => {
+    expect(sessionPhase({ ...b, status: 'completed' }, at('17:30:00'))).toBe('completed');
+    expect(sessionPhase({ ...b, status: 'noShow' }, at('17:30:00'))).toBe('missed');
+  });
+
+  it('keeps a session settled mid-call on the clock until it ends (backend #380)', () => {
+    expect(sessionPhase({ ...b, status: 'completed' }, at('17:16:00'))).toBe('closed');
+    expect(sessionPhase({ ...b, status: 'noShow' }, at('17:10:00'))).toBe('ongoing');
   });
 
   it.each(['pending', 'cancelled', 'declined', 'expired', 'withdrawn'] as const)(
@@ -70,12 +76,44 @@ describe('sessionPhase', () => {
   });
 });
 
-describe('phase predicates', () => {
-  it('lets people join only while the window is open', () => {
-    expect(
-      ['upcoming', 'soon', 'ongoing', 'closed', 'settling'].filter((p) => canJoinNow(p as never)),
-    ).toEqual(['soon', 'ongoing']);
+describe('entryFor', () => {
+  const joined = '2026-10-04T16:57:00Z';
+  const entry = (time: string, me: string | null, booking = b) =>
+    entryFor(booking, me, sessionPhase(booking, at(time)), at(time));
+
+  it('is a first arrival through /join while the window is open', () => {
+    expect(entry('16:54:59', null)).toBeNull();
+    expect(entry('16:55:00', null)).toBe('join');
+    expect(entry('17:15:00', null)).toBe('join');
   });
+
+  it('lets no first-timer in after the window (product, 2026-10-08)', () => {
+    expect(entry('17:15:01', null)).toBeNull();
+  });
+
+  it('is the door for anyone who has joined, until the door closes', () => {
+    expect(entry('16:58:00', joined)).toBe('door');
+    expect(entry('17:20:00', joined)).toBe('door');
+    expect(entry('17:29:59', joined)).toBe('door');
+    expect(entry('17:30:00', joined)).toBeNull();
+  });
+
+  it('a 10-minute session: arrivals and the room both close at its end (backend #388)', () => {
+    const short = {
+      ...b,
+      endsAt: '2026-10-04T17:10:00Z',
+      durationMin: 10,
+      joinClosesAt: '2026-10-04T17:10:00Z',
+      doorClosesAt: '2026-10-04T17:10:00Z',
+    };
+    expect(entry('17:09:59', joined, short)).toBe('door');
+    expect(entry('17:09:59', null, short)).toBe('join');
+    expect(entry('17:10:00', joined, short)).toBeNull();
+    expect(entry('17:10:00', null, short)).toBeNull();
+  });
+});
+
+describe('phase predicates', () => {
   it('treats only settled or foreign states as final', () => {
     expect(isFinal('settling')).toBe(false);
     expect(isFinal('completed')).toBe(true);
@@ -92,7 +130,9 @@ describe('clock', () => {
 
   it('says whole days once the wait passes a day, never a 73-hour clock', () => {
     expect(formatWait(23 * 3_600_000 + 59 * 60_000)).toBe('23:59:00');
-    expect(formatWait(24 * 3_600_000)).toBe('1 day');
+    expect(formatWait(24 * 3_600_000)).toBe('24 hours');
+    expect(formatWait(47 * 3_600_000 + 59 * 60_000)).toBe('47 hours');
+    expect(formatWait(48 * 3_600_000)).toBe('2 days');
     expect(formatWait(73 * 3_600_000)).toBe('3 days');
     expect(lobbyClock(b, 'upcoming', new Date('2026-10-01T17:00:00Z'))).toEqual({
       label: 'Starts in',
@@ -112,13 +152,9 @@ describe('clock', () => {
     expect(lobbyClock(b, 'soon', at('16:56:00'))!.sub).toBe('Join is open');
   });
 
-  it('counts up once running, with whole minutes left', () => {
-    expect(lobbyClock(b, 'ongoing', at('17:12:00'))).toEqual({
-      label: 'In session',
-      value: '12:00',
-      sub: '18 min left',
-    });
-    expect(lobbyClock(b, 'closed', at('17:29:30'))!.sub).toBe('1 min left');
+  it('has no clock once started: the call may run on another platform (product, 2026-10-08)', () => {
+    expect(lobbyClock(b, 'ongoing', at('17:12:00'))).toBeNull();
+    expect(lobbyClock(b, 'closed', at('17:29:30'))).toBeNull();
   });
 
   it('has no clock once over', () => {

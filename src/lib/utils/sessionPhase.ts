@@ -10,8 +10,9 @@ const CLOSES_AFTER_MIN = 15;
  * Where a session stands, for the join page (Session Join.dc.html).
  *
  * The design's five states plus three it does not draw:
- * - `closed`: still running, but past `join_closes_at`, so nobody can get in
- *   (backend #379). Provisional.
+ * - `closed`: still running, but past `join_closes_at`: no first arrivals any
+ *   more. Someone who has joined can still get back in until `door_closes_at`
+ *   (see `entryFor`).
  * - `settling`: over, but the attendance sweep (hourly) has not ruled yet. The
  *   backend's rule is never to infer "missed" from the clock, so this says it
  *   is being confirmed. Provisional.
@@ -21,7 +22,7 @@ const CLOSES_AFTER_MIN = 15;
 export type SessionPhase =
   'upcoming' | 'soon' | 'ongoing' | 'closed' | 'settling' | 'completed' | 'missed' | 'elsewhere';
 
-type Window = { opens: number; starts: number; closes: number; ends: number };
+type Window = { opens: number; starts: number; closes: number; ends: number; door: number };
 
 function windowOf(b: Booking): Window {
   const starts = new Date(b.startsAt).getTime();
@@ -32,24 +33,52 @@ function windowOf(b: Booking): Window {
       ? new Date(b.joinClosesAt).getTime()
       : starts + CLOSES_AFTER_MIN * MINUTE,
     ends: new Date(b.endsAt).getTime(),
+    // The room closes with the session; the backend publishes the instant.
+    door: new Date(b.doorClosesAt ?? b.endsAt).getTime(),
   };
 }
 
+/**
+ * The clock decides while the session runs, whatever the status: the backend
+ * can settle it as `completed` or `no_show` while people are still in the
+ * call (backend #380), and the page must not send them away mid-session.
+ */
 export function sessionPhase(b: Booking, now: Date): SessionPhase {
-  if (b.status === 'completed') return 'completed';
-  if (b.status === 'noShow') return 'missed';
-  if (b.status !== 'confirmed') return 'elsewhere';
+  if (b.status !== 'confirmed' && b.status !== 'completed' && b.status !== 'noShow')
+    return 'elsewhere';
   const w = windowOf(b);
   const t = now.getTime();
+  if (t >= w.ends)
+    return b.status === 'completed' ? 'completed' : b.status === 'noShow' ? 'missed' : 'settling';
   if (t < w.opens) return 'upcoming';
   if (t < w.starts) return 'soon';
-  if (t < w.ends) return t <= w.closes ? 'ongoing' : 'closed';
-  return 'settling';
+  return t <= w.closes ? 'ongoing' : 'closed';
 }
 
-/** Join is pressable: the window is open and the session is confirmed. */
-export function canJoinNow(phase: SessionPhase): boolean {
-  return phase === 'soon' || phase === 'ongoing';
+/**
+ * How this person gets into the call now:
+ * - `join`: their first arrival (`POST /join`, the attendance record), while
+ *   the join window is open;
+ * - `door`: back in after they have joined (`POST /door`, records nothing),
+ *   until `door_closes_at`;
+ * - null: no way in. Before the window, or a first arrival after it closed
+ *   (product, 2026-10-08: late first-timers are not let in).
+ *
+ * `join_closes_at` and `door_closes_at` are compared as instants, never by an
+ * assumed order: the backend publishes both, and their relation has changed
+ * once already (backend #388).
+ */
+export function entryFor(
+  b: Booking,
+  meJoinedAt: string | null,
+  phase: SessionPhase,
+  now: Date,
+): 'join' | 'door' | null {
+  if (phase !== 'soon' && phase !== 'ongoing' && phase !== 'closed') return null;
+  const w = windowOf(b);
+  const t = now.getTime();
+  if (meJoinedAt) return t < w.door ? 'door' : null;
+  return phase === 'closed' ? null : 'join';
 }
 
 /** The phase will not change again on its own: no clock, no polling. */
@@ -70,14 +99,15 @@ export function formatClock(ms: number): string {
 const DAY_MS = 24 * 3_600_000;
 
 /**
- * How long until something: the clock under a day, whole days beyond it.
+ * How long until something: the clock under a day, hours under two, whole days beyond.
  * Ours: the design only draws waits under two hours, and "73:59:59" reads as
  * a malfunction rather than three days.
  */
 export function formatWait(ms: number): string {
   if (ms < DAY_MS) return formatClock(ms);
-  const days = Math.floor(ms / DAY_MS);
-  return `${days} ${days === 1 ? 'day' : 'days'}`;
+  // Whole days round down, so under two days "1 day" could mean 47 hours.
+  if (ms < 2 * DAY_MS) return `${Math.floor(ms / 3_600_000)} hours`;
+  return `${Math.floor(ms / DAY_MS)} days`;
 }
 
 /** How many minutes before the start the door opens, read from the row (5 today). */
@@ -112,10 +142,8 @@ export function lobbyClock(b: Booking, phase: SessionPhase, now: Date): LobbyClo
               `Join opens ${opensBeforeMin(b)} minutes before the start`,
     };
   }
-  if (phase === 'ongoing' || phase === 'closed') {
-    const left = Math.max(0, Math.ceil((w.ends - t) / MINUTE));
-    return { label: 'In session', value: formatClock(t - w.starts), sub: `${left} min left` };
-  }
+  // No clock once it has started (product, 2026-10-08): the call may run on
+  // another platform, and a timer here would disagree with it.
   return null;
 }
 

@@ -99,16 +99,25 @@ export function waitingPill(
 }
 
 /**
- * Where the join window sits. `none` is a session that has no window at all —
- * anything not confirmed, and older rows the backend never stamped.
+ * Where Join stands on Bookings, whose Join only opens the session's own page.
+ * `none` is a session with no window at all: never agreed to, called off, or
+ * an older row the backend never stamped.
+ *
+ * Open from `join_opens_at` until the room closes (`door_closes_at`, the
+ * session's end), not only until `join_closes_at`: someone who dropped out
+ * still needs the way back to the page, which offers Rejoin (backend #380). A
+ * session settled while still running keeps its door too, so the status
+ * alone does not close it.
  */
 export type JoinState = 'none' | 'before' | 'open' | 'closed';
 
 export function joinState(b: Booking, now = new Date()): JoinState {
-  if (b.status !== 'confirmed' || !b.joinOpensAt || !b.joinClosesAt) return 'none';
+  const live = b.status === 'confirmed' || b.status === 'completed' || b.status === 'noShow';
+  const closes = b.doorClosesAt ?? (b.status === 'confirmed' ? b.joinClosesAt : null);
+  if (!live || !b.joinOpensAt || !closes) return 'none';
   const t = now.getTime();
   if (t < new Date(b.joinOpensAt).getTime()) return 'before';
-  if (t > new Date(b.joinClosesAt).getTime()) return 'closed';
+  if (t >= new Date(closes).getTime()) return 'closed';
   return 'open';
 }
 
@@ -150,7 +159,11 @@ export function nextSessionWhen(
   // on Saturday afternoon, a Monday session is "In 2 days", never "Tomorrow".
   const days = daysBetween(now, new Date(b.startsAt), timeZone);
   if (days === 0)
-    return { label: `Starts in ${Math.max(1, Math.round(ms / HOUR))} h`, icon: 'schedule', live: false };
+    return {
+      label: `Starts in ${Math.max(1, Math.round(ms / HOUR))} h`,
+      icon: 'schedule',
+      live: false,
+    };
   if (days === 1) return { label: 'Tomorrow', icon: 'event', live: false };
   return { label: `In ${days} days`, icon: 'event', live: false };
 }
@@ -188,7 +201,9 @@ export function panelStatus(
     // The same words as the row it was opened from, so the panel never tells a
     // mentee to "respond" to a request only their mentor can answer.
     const pill = waitingPill(b, now);
-    return pill ? { label: pill.text, tone: pill.urgent ? 'warning' : 'info' } : { label: 'Expired', tone: 'warning' };
+    return pill
+      ? { label: pill.text, tone: pill.urgent ? 'warning' : 'info' }
+      : { label: 'Expired', tone: 'warning' };
   }
   if (b.status === 'confirmed') return { label: 'Upcoming', tone: 'info' };
   const tag = statusTag(b.status);

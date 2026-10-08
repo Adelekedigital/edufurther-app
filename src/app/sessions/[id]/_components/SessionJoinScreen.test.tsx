@@ -24,9 +24,11 @@ let answers: Remote<BookingAnswer[]>;
 vi.mock('@/lib/api/data/sessionAnswers', () => ({ useBookingAnswers: () => answers }));
 
 const join = vi.fn();
+const door = vi.fn();
 vi.mock('@/lib/api/data/bookings', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
   useJoinSession: () => ({ mutate: join, isPending: false }),
+  useSessionDoor: () => ({ mutate: door, isPending: false }),
 }));
 
 const cancel = { mutate: vi.fn(), reset: vi.fn(), isPending: false, error: null };
@@ -68,6 +70,7 @@ function sessionRoom(over: Partial<SessionRoom['booking']> = {}, me = {}): Sessi
       durationMin: 30,
       joinOpensAt: '2026-10-04T16:55:00Z',
       joinClosesAt: '2026-10-04T17:15:00Z',
+      doorClosesAt: '2026-10-04T17:30:00Z',
       ...over,
     }),
     me: sampleParty({ id: 'me', name: 'Gbenga Ogundipe', firstName: 'Gbenga', ...me }),
@@ -104,6 +107,7 @@ beforeEach(() => {
   room = remote(sessionRoom());
   answers = remote<BookingAnswer[]>([]);
   join.mockReset();
+  door.mockReset();
   replace.mockReset();
   cancel.mutate.mockReset();
 });
@@ -173,11 +177,20 @@ describe('the four states', () => {
     expect(screen.getByRole('heading', { name: '1:1 call with Amara Okafor' })).toBeVisible();
   });
 
-  it.each(['cancelled', 'pending', 'completed', 'noShow'] as const)(
+  it.each(['cancelled', 'pending'] as const)(
     'a %s session is handed to Bookings, replacing this entry',
     (status) => {
       room = remote(sessionRoom({ status }));
       renderAt('15:15:00');
+      expect(replace).toHaveBeenCalledWith('/bookings?booking=b1');
+    },
+  );
+
+  it.each(['completed', 'noShow'] as const)(
+    'a %s session is handed to Bookings once it has ended (PR 3 draws it here)',
+    (status) => {
+      room = remote(sessionRoom({ status }));
+      renderAt('17:31:00');
       expect(replace).toHaveBeenCalledWith('/bookings?booking=b1');
     },
   );
@@ -221,6 +234,17 @@ describe('before the window', () => {
       expect.objectContaining({ bookingId: 'b1' }),
       expect.anything(),
     );
+  });
+
+  it('offers Add to calendar for the session’s own page, never the call link', async () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    renderAt('15:15:00');
+    await userEvent.click(screen.getByRole('button', { name: 'Add to calendar' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: /Google Calendar/ }));
+    const url = new URL(String(open.mock.calls[0]![0]));
+    expect(url.searchParams.get('text')).toBe('1:1 call with Amara Okafor');
+    expect(url.searchParams.get('details')).toContain('/sessions/b1');
+    open.mockRestore();
   });
 
   it('no Cancel within ten minutes of the start: the backend refuses it', () => {
@@ -294,21 +318,66 @@ describe('the window is open', () => {
 });
 
 describe('during the call', () => {
-  it('counts up, says time left, and asks a newcomer to join now', () => {
+  it('shows no timer, since the call may run elsewhere, and asks a newcomer to join now', () => {
     renderAt('17:12:00');
     expect(screen.getByText('In progress')).toBeVisible();
-    expect(screen.getByText('12:00')).toBeVisible();
-    expect(screen.getByText('18 min left')).toBeVisible();
+    expect(screen.queryByText('In session')).not.toBeInTheDocument();
+    expect(screen.queryByText(/min left/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Join now' })).toBeEnabled();
   });
 
-  it('says Rejoin only to someone who has been in', () => {
+  it('no Add to calendar once it has started', () => {
+    renderAt('17:12:00');
+    expect(screen.queryByRole('button', { name: 'Add to calendar' })).not.toBeInTheDocument();
+  });
+
+  it('a first arrival goes through /join, the attendance record', async () => {
+    renderAt('17:12:00');
+    await userEvent.click(screen.getByRole('button', { name: 'Join now' }));
+    expect(join).toHaveBeenCalledWith('b1', expect.anything());
+    expect(door).not.toHaveBeenCalled();
+  });
+
+  it('someone who has been in rejoins through /door, which records nothing', async () => {
     room = remote(sessionRoom({}, { joinedAt: '2026-10-04T17:01:00Z' }));
     renderAt('17:12:00');
+    await userEvent.click(screen.getByRole('button', { name: 'Rejoin session' }));
+    expect(door).toHaveBeenCalledWith('b1', expect.anything());
+    expect(join).not.toHaveBeenCalled();
+  });
+
+  it('after the window, someone who has been in can still rejoin until the end (#379)', async () => {
+    room = remote(sessionRoom({}, { joinedAt: '2026-10-04T17:01:00Z' }));
+    door.mockImplementation((_id, { onSuccess }) =>
+      onSuccess({ meetingUrl: 'https://room.test/x' }),
+    );
+    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window);
+    renderAt('17:25:00');
+    await userEvent.click(screen.getByRole('button', { name: 'Rejoin session' }));
+    expect(open).toHaveBeenCalledWith('https://room.test/x', '_blank', 'noopener,noreferrer');
+    open.mockRestore();
+  });
+
+  it('says plainly when the door has no way in, without calling it an error', async () => {
+    room = remote(sessionRoom({}, { joinedAt: '2026-10-04T17:01:00Z' }));
+    door.mockImplementation((_id, { onSuccess }) => onSuccess({ meetingUrl: null }));
+    renderAt('17:25:00');
+    await userEvent.click(screen.getByRole('button', { name: 'Rejoin session' }));
+    expect(
+      screen.getByText('There’s no way into this call right now. Try again in a moment.', {
+        selector: 'p:not(.sr-only)',
+      }),
+    ).toBeVisible();
+  });
+
+  it('keeps the call on screen when the session is settled while still running', () => {
+    room = remote(sessionRoom({ status: 'completed' }, { joinedAt: '2026-10-04T17:01:00Z' }));
+    renderAt('17:20:00');
+    expect(replace).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Rejoin session' })).toBeEnabled();
   });
 
-  it('once the window shuts, there is no Join that would only be refused (#379)', () => {
+  it('after the window, a first-timer is not let in (product, 2026-10-08)', () => {
     renderAt('17:20:00');
     expect(screen.queryByRole('button', { name: /join/i })).not.toBeInTheDocument();
     expect(
@@ -410,6 +479,19 @@ describe('what a screen reader hears', () => {
     const link = screen.getByRole('link', { name: 'Open the session' });
     expect(link.closest('[role="status"]')).toBeNull();
     open.mockRestore();
+  });
+
+  it('does not say joining has closed to someone who can still rejoin', () => {
+    room = remote(sessionRoom({}, { joinedAt: '2026-10-04T17:01:00Z' }));
+    renderAt('17:14:58');
+    act(() => void vi.advanceTimersByTime(3000));
+    expect(srStatus()).not.toHaveTextContent('Joining has closed.');
+  });
+
+  it('says joining has closed to someone who never joined', () => {
+    renderAt('17:14:58');
+    act(() => void vi.advanceTimersByTime(3000));
+    expect(srStatus()).toHaveTextContent('Joining has closed.');
   });
 
   it('does not announce someone who was already here when the page opened', () => {

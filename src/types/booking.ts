@@ -104,6 +104,12 @@ export type Booking = {
   /** The join window: 5 minutes before the start to 15 minutes after it. */
   joinOpensAt: string | null;
   joinClosesAt: string | null;
+  /**
+   * Until when someone who has joined can get back into the call
+   * (`POST /sessions/{id}/door`): the session's end. Read it rather than
+   * assume its order against `joinClosesAt`. Null: no door.
+   */
+  doorClosesAt: string | null;
   /** How often this mentee has turned up, whole percent. Null = no data, show nothing. */
   menteeAttendanceRate: number | null;
 };

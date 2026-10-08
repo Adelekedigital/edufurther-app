@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useState } from 'react';
 import { sampleParty } from '@/lib/utils/bookingTestFixtures';
+import { AddToCalendarMenu } from './AddToCalendarMenu/AddToCalendarMenu';
 import { DisclosureRow } from './DisclosureRow/DisclosureRow';
 import { PresencePerson } from './PresencePerson/PresencePerson';
 import { SessionClock } from './SessionClock/SessionClock';
@@ -78,3 +79,21 @@ function Disclosure({ startOpen }: { startOpen: boolean }) {
 
 export const DisclosureClosed: Story = { render: () => <Disclosure startOpen={false} /> };
 export const DisclosureOpen: Story = { render: () => <Disclosure startOpen /> };
+
+/** The design's "Add to calendar" link, opening Google, Outlook.com or a .ics file. */
+export const AddToCalendar: Story = {
+  render: () => (
+    <div style={{ padding: 16, minHeight: 200 }}>
+      <AddToCalendarMenu
+        event={{
+          id: 's1',
+          title: '1:1 call with Amara Okafor',
+          startsAt: '2026-10-04T17:00:00Z',
+          endsAt: '2026-10-04T17:30:00Z',
+          pageUrl: 'https://app.test/sessions/s1',
+          venue: 'EduFurther video',
+        }}
+      />
+    </div>
+  ),
+};

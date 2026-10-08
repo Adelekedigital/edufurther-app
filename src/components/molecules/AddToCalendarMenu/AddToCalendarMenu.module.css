@@ -1,0 +1,42 @@
+/* Session Join.dc.html join link ("Add to calendar"): the same values as the
+   lobby's other links. */
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 32px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+}
+.trigger:hover,
+.trigger[aria-expanded='true'] {
+  color: var(--blue-700);
+}
+.trigger:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* Ours: the design's --blue-500 on the blue-50 ground is under 4.5:1 at 12px. */
+.onTint {
+  color: var(--blue-700);
+}
+.onTint:hover,
+.onTint[aria-expanded='true'] {
+  color: var(--blue-700);
+  text-decoration: underline;
+}
+
+@media (max-width: 767px) {
+  /* Ours: 44px tap area on phones. */
+  .trigger {
+    min-height: var(--touch-target-min);
+  }
+}

@@ -59,6 +59,7 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
   respondBy: null,
   joinOpensAt: null,
   joinClosesAt: null,
+  doorClosesAt: null,
   menteeAttendanceRate: null,
   ...over,
 });
@@ -114,6 +115,17 @@ describe('joinState', () => {
     expect(joinState(window(1, 2), NOW)).toBe('before');
     expect(joinState(window(-1, 1), NOW)).toBe('open');
     expect(joinState(window(-2, -1), NOW)).toBe('closed');
+  });
+  it('stays open until the room closes, so someone who dropped out can get back', () => {
+    const b = booking({ joinOpensAt: at(-1), joinClosesAt: at(-0.5), doorClosesAt: at(0.5) });
+    expect(joinState(b, NOW)).toBe('open');
+    expect(joinState({ ...b, doorClosesAt: at(-0.1) }, NOW)).toBe('closed');
+  });
+  it('keeps a session settled mid-call open until its room closes', () => {
+    const b = booking({ joinOpensAt: at(-1), joinClosesAt: at(-0.5), doorClosesAt: at(0.5) });
+    expect(joinState({ ...b, status: 'completed' }, NOW)).toBe('open');
+    expect(joinState({ ...b, status: 'noShow' }, NOW)).toBe('open');
+    expect(joinState({ ...b, status: 'cancelled' }, NOW)).toBe('none');
   });
   it('reads the opening offset from the session rather than assuming it', () => {
     const b = booking({ startsAt: at(1), joinOpensAt: at(1 - 5 / 60), joinClosesAt: at(1.25) });
@@ -175,7 +187,9 @@ describe('otherTimeLine', () => {
   });
 
   it('says what time it is for them, and where they are', () => {
-    expect(otherTimeLine(b, 'America/New_York')?.text).toBe('5:00 pm to 6:00 pm for Amara in Lagos');
+    expect(otherTimeLine(b, 'America/New_York')?.text).toBe(
+      '5:00 pm to 6:00 pm for Amara in Lagos',
+    );
   });
 
   it('is silent when their zone is the viewer’s — it would only repeat the row', () => {
@@ -183,7 +197,9 @@ describe('otherTimeLine', () => {
   });
 
   it('is silent when their zone is unknown', () => {
-    expect(otherTimeLine({ ...b, other: party({ timeZone: null }) }, 'America/New_York')).toBeNull();
+    expect(
+      otherTimeLine({ ...b, other: party({ timeZone: null }) }, 'America/New_York'),
+    ).toBeNull();
   });
 
   it('flags an hour nobody wants, and says which end of the day it is', () => {
@@ -410,7 +426,9 @@ describe('a request that would run into a confirmed session', () => {
   });
 
   it('ignores anything not confirmed, and itself', () => {
-    expect(overlapping(req, [booking({ id: 'x', status: 'pending', startsAt: at(10), endsAt: at(11) })])).toBe(null);
+    expect(
+      overlapping(req, [booking({ id: 'x', status: 'pending', startsAt: at(10), endsAt: at(11) })]),
+    ).toBe(null);
     expect(overlapping(req, [req])).toBe(null);
   });
 

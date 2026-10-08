@@ -2,12 +2,14 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
+import { AddToCalendarMenu } from '@/components/molecules/AddToCalendarMenu/AddToCalendarMenu';
 import { PresencePerson } from '@/components/molecules/PresencePerson/PresencePerson';
 import { SessionClock } from '@/components/molecules/SessionClock/SessionClock';
 import {
   SessionStatusPill,
   type SessionStatusTone,
 } from '@/components/molecules/SessionStatusPill/SessionStatusPill';
+import type { CalendarEvent } from '@/lib/utils/calendarLinks';
 import { cx } from '@/lib/utils/cx';
 import type { BookingParty } from '@/types/booking';
 import styles from './SessionLobby.module.css';
@@ -42,12 +44,15 @@ type SessionLobbyProps = {
     label: string;
     enabled: boolean;
     busy?: boolean;
-    onJoin: () => void;
+    /** Absent while locked: there is nothing to do yet. */
+    onJoin?: () => void;
     hint: string;
   };
   /** In place of Join when the session has moved past it (window closed, ended). */
   note?: string;
   links?: LobbyLink[];
+  /** "Add to calendar", first in the links row (before the call only). */
+  calendar?: CalendarEvent;
   /** A problem with the last Join press, under the button. */
   notice?: ReactNode;
 };
@@ -63,6 +68,7 @@ export function SessionLobby({
   join,
   note,
   links,
+  calendar,
   notice,
 }: SessionLobbyProps) {
   // Join can vanish under someone's focus (the window shuts on a clock tick).
@@ -119,9 +125,10 @@ export function SessionLobby({
       )}
       {notice && <div className={styles.notice}>{notice}</div>}
 
-      {!!links?.length && (
+      {(!!links?.length || calendar) && (
         <div className={styles.links}>
-          {links.map((l) => (
+          {calendar && <AddToCalendarMenu event={calendar} onTint={ground !== 'white'} />}
+          {links?.map((l) => (
             <button
               key={l.key}
               type="button"
