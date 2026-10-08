@@ -25,6 +25,7 @@ export function sampleBookingFor(over: Partial<Booking> = {}): Booking {
     side: 'mentor',
     other: sampleParty(),
     myAttendance: 'pending',
+    myJoinedAt: null,
     startsAt: '2026-10-04T16:00:00Z',
     endsAt: '2026-10-04T17:00:00Z',
     durationMin: 60,
@@ -37,6 +38,7 @@ export function sampleBookingFor(over: Partial<Booking> = {}): Booking {
     respondBy: null,
     joinOpensAt: null,
     joinClosesAt: null,
+    doorClosesAt: null,
     menteeAttendanceRate: null,
     ...over,
   };

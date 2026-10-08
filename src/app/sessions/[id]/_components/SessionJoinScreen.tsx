@@ -14,7 +14,7 @@ import { ConfirmActionDialog } from '@/app/_sessions/ConfirmActionDialog';
 import { IntakeFileViewer } from '@/app/_sessions/IntakeFileViewer';
 import { memberGate, SESSION_GATE } from '@/app/_shell/MentorGate';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
-import { useJoinSession } from '@/lib/api/data/bookings';
+import { useJoinSession, useSessionDoor } from '@/lib/api/data/bookings';
 import { normaliseError } from '@/lib/api/data/errors';
 import { useBookingAnswers } from '@/lib/api/data/sessionAnswers';
 import { useSessionRoom } from '@/lib/api/data/sessionRoom';
@@ -67,7 +67,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
 
   // Everything this page does not draw belongs to Bookings, which already
   // shows it (pending, cancelled, …). Replace, so Back does not bounce here.
-  // PR 2 draws completed and missed here.
+  // Session Join PR 3 draws completed and missed here.
   const leaving = !!phase && isFinal(phase);
   useEffect(() => {
     if (leaving) router.replace(`/bookings?booking=${encodeURIComponent(id)}`);
@@ -76,9 +76,11 @@ export function SessionJoinScreen({ id }: { id: string }) {
   const answers = useBookingAnswers(data ? id : null, userId ?? '', !!live);
   const [viewing, setViewing] = useState<AnswerFile | null>(null);
 
-  // Join, as Bookings does it: the POST is the attendance record and returns
-  // the link minted for this caller.
+  // The first arrival goes through /join (the attendance record); every way
+  // back in after it through /door, which records nothing. Both return a link
+  // minted for this caller.
   const join = useJoinSession();
+  const door = useSessionDoor();
   const [blockedUrl, setBlockedUrl] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   // Every message gets a new id, so the same words said twice are heard twice.
@@ -88,35 +90,42 @@ export function SessionJoinScreen({ id }: { id: string }) {
     [],
   );
 
-  const onJoin = useCallback(() => {
-    setProblem(null);
-    setBlockedUrl(null);
-    join.mutate(id, {
-      onSuccess: ({ meetingUrl }) => {
-        if (!meetingUrl) {
-          const text = 'You’re marked as here, but this session has no meeting link yet.';
+  const onEnter = useCallback(
+    (entry: 'join' | 'door') => {
+      setProblem(null);
+      setBlockedUrl(null);
+      (entry === 'join' ? join : door).mutate(id, {
+        onSuccess: ({ meetingUrl }) => {
+          if (!meetingUrl) {
+            // A 200 with no link: there is no way in right now. Not an error.
+            const text =
+              entry === 'join'
+                ? 'You’re marked as here, but this session has no meeting link yet.'
+                : 'There’s no way into this call right now. Try again in a moment.';
+            setProblem(text);
+            say(text);
+            return;
+          }
+          // Opened after the POST, so outside the click: a popup blocker may
+          // swallow it, and silence would read as a dead button.
+          const opened = window.open(meetingUrl, '_blank', 'noopener,noreferrer');
+          if (!opened) {
+            setBlockedUrl(meetingUrl);
+            say(BLOCKED);
+          }
+        },
+        onError: (e) => {
+          const text =
+            normaliseError(e).status === 409
+              ? 'This session isn’t open to join right now.'
+              : 'We couldn’t join you. Try again in a moment.';
           setProblem(text);
           say(text);
-          return;
-        }
-        // Opened after the POST, so outside the click: a popup blocker may
-        // swallow it, and silence would read as a dead button.
-        const opened = window.open(meetingUrl, '_blank', 'noopener,noreferrer');
-        if (!opened) {
-          setBlockedUrl(meetingUrl);
-          say(BLOCKED);
-        }
-      },
-      onError: (e) => {
-        const text =
-          normaliseError(e).status === 409
-            ? 'This session isn’t open to join right now.'
-            : 'We couldn’t join you. Try again in a moment.';
-        setProblem(text);
-        say(text);
-      },
-    });
-  }, [join, id, say]);
+        },
+      });
+    },
+    [join, door, id, say],
+  );
 
   const cancel = useBookingAction('cancel');
   const [cancelling, setCancelling] = useState(false);
@@ -131,7 +140,11 @@ export function SessionJoinScreen({ id }: { id: string }) {
     // The first reading is the baseline: what was already true when the page
     // opened is on screen, not news.
     const changed = !!seen.live;
-    const phaseText = changed && live && live !== seen.live ? PHASE_ANNOUNCEMENT[live] : undefined;
+    // "Joining has closed." is only true for someone who never joined: anyone
+    // who did can still rejoin through the door.
+    const closedForMe = live !== 'closed' || !data?.me.joinedAt;
+    const phaseText =
+      changed && live && live !== seen.live && closedForMe ? PHASE_ANNOUNCEMENT[live] : undefined;
     const arrived = changed && otherJoined && !seen.otherJoined && data;
     const text = [phaseText, arrived ? `${data.booking.other.firstName} is here.` : null]
       .filter(Boolean)
@@ -200,8 +213,10 @@ export function SessionJoinScreen({ id }: { id: string }) {
       phase: live,
       now,
       timeZone,
-      joining: join.isPending,
-      onJoin,
+      joining: join.isPending || door.isPending,
+      onEnter,
+      // Only rendered once the session has loaded, which is in the browser.
+      pageUrl: new URL(`/sessions/${encodeURIComponent(id)}`, window.location.origin).toString(),
       onCancel: canCancel(b, now) ? () => setCancelling(true) : undefined,
     });
     const hasAnswers = (answers.data?.length ?? 0) > 0;

@@ -56,6 +56,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     duration?: number;
     /** When the other party pressed Join (the join page's "Here now"). */
     otherJoinedAt?: string;
+    /** When the viewer pressed Join (the join page's Rejoin). */
+    meJoinedAt?: string;
   };
   const session = (
     id: string,
@@ -68,7 +70,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       ...party(`mock-${id}`, mentee[0], mentee[1], o.zone ?? 'Africa/Lagos'),
       joined_at: o.otherJoinedAt ?? null,
     };
-    const me = party(userId, 'Gbenga', 'Adeyemi', 'America/New_York');
+    const me = {
+      ...party(userId, 'Gbenga', 'Adeyemi', 'America/New_York'),
+      joined_at: o.meJoinedAt ?? null,
+    };
     return {
       id,
       // `asMentee`: the viewer booked this one, so they are the mentee on it.
@@ -89,6 +94,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       respond_by: o.respondBy === undefined ? null : o.respondBy,
       join_opens_at: status === 'confirmed' ? minutesFrom(starts, -5) : null,
       join_closes_at: status === 'confirmed' ? minutesFrom(starts, 15) : null,
+      // The room closes with the session (backend #380).
+      door_closes_at: ['confirmed', 'completed', 'no_show'].includes(status)
+        ? minutesFrom(starts, o.duration ?? 60)
+        : null,
       created_at: at(-10, 9),
       mentee_attendance_rate: o.rate === undefined ? null : o.rate,
       // The form in brief, so a page of rows needs no extra call. `count`
@@ -109,8 +118,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     };
   };
 
-  // Two sessions on the clock, for the join page (/sessions/j-1, /sessions/j-2):
-  // one inside its join window, one under way with the other side in.
+  // Sessions on the clock, for the join page (/sessions/j-1, j-2, j-3): one
+  // inside its join window, one under way with the other side in, and one past
+  // its join window that the viewer joined (Rejoin through the door).
   const fromNow = (m: number) => minutesFrom(CLOCK_ANCHOR, m);
   const all = [
     session('j-1', fromNow(3), 'confirmed', ['Amara', 'Okafor'], {
@@ -124,6 +134,12 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
           text: 'I’m applying to PhD programs in public health for Fall 2027 and don’t know how to pick between funded and unfunded offers.',
         },
       },
+    }),
+    session('j-3', fromNow(-20), 'confirmed', ['Kemi', 'Adebayo'], {
+      typeName: 'SOP review',
+      duration: 45,
+      meJoinedAt: fromNow(-19),
+      otherJoinedAt: fromNow(-18),
     }),
     session('j-2', fromNow(-10), 'confirmed', ['Gbenga', 'Ogundipe'], {
       typeName: '1:1 call',

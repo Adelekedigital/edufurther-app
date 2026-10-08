@@ -412,14 +412,14 @@ Source: `Session Join.dc.html`, defaults `layout=lobby`, `provider=edufurther`; 
 | "Rejoin session" for every mentor while in progress | "Rejoin session" only for someone who has pressed Join; otherwise "Join now" | Rejoin says you were in | — |
 | Clock `aria-live="polite"` | Not a live region; a separate LiveRegion says "Join is open.", "The session has started.", "{name} is here." once each | A per-second clock would be read every second | never |
 | Meta line without a zone | "… · Lagos (WAT) · EduFurther video" | Product rule: times name whose clock they are | — |
-| Join links: Add to calendar, Message {name}, Reschedule, Cancel | Cancel only, and only while the backend allows it (more than 10 minutes out) | No endpoint for the others (house rule: omit, don't disable) | #184, #168, #185 |
+| Join links: Add to calendar, Message {name}, Reschedule, Cancel | Add to calendar and Cancel (Cancel while the backend allows it, more than 10 minutes out). Message and Reschedule omitted | No endpoint for those two (house rule: omit, don’t disable). Add to calendar: PR 2, below | #168, #185 |
 | "Having a problem? Report an issue" footer | Omitted | No support channel or endpoint | #187, #108 |
 | Guide: "Reschedule or message {name} at least 12 hours before" | "Cancel at least 12 hours before, so the time can go to someone else." | Neither action exists | #185, #168 |
 | Guide: "Sessions are 30 minutes" | "This session is {n} minutes" | The length is the session's own | — |
 | Guide (mentor): "…have one next step ready for her" | "…for them"; without answers, "Have one next step ready for {name}." | No gendered pronouns; no answers to point at | — |
 | Answers disclosure preview "{area} · {text}" | Every answer's text joined by " · "; the row is hidden when nothing was answered | The form is the mentor's own, not a fixed pair | — |
 | Edit answers (mentee, until the start) | Omitted | No endpoint | #186 |
-| (no state) running, but past `join_closes_at` | **Ours, provisional:** no Join; "Joining closed at 6:15 pm, 15 minutes after the start." | Nothing can issue a way in after the window (backend #379) | #188, design request |
+| (no state) running, but past `join_closes_at` | Someone who joined: **Rejoin session** through `POST /door` until `door_closes_at` (PR 2). Someone who never joined: **ours, provisional:** no Join; "Joining closed at 6:15 pm, 15 minutes after the start." | Backend #380 (the door) closed #379. Late first-timers aren’t let in: they couldn’t count as attending (product, 2026-10-08) | design request |
 | (no state) over, attendance not settled | **Ours, provisional:** pill "Ended", no clock, "Joined at 6:01 pm" / "No arrival recorded", "We're confirming who joined, which can take up to an hour." | The sweep runs hourly; the backend asks us never to infer "missed" from the clock | design request |
 | (no states) loading, error, not found, guest | **Ours, provisional:** the lobby's shape as a skeleton; "We couldn't load this session" + Try again; "This session isn't available" + Go to Bookings; the shared member gate ("Log in to join your session") | Undesigned | design request |
 | Pending, cancelled, declined, expired, withdrawn | Redirect (replace) to `/bookings?booking={id}` | Product 2026-10-07: Bookings already shows them | — |
@@ -428,3 +428,16 @@ Source: `Session Join.dc.html`, defaults `layout=lobby`, `provider=edufurther`; 
 | Phones: Join button padding 16/24 | 16/16 (the Button atom's phone rule) | CTA hierarchy | — |
 | Phones: Join links 32px tall | 44px tap area | Touch target | — |
 | Bookings: Join opens the meeting | Join opens `/sessions/{id}`; the join call happens there | The design's Bookings Join links to Session Join | — |
+
+### Session Join — Rejoin and Add to calendar (PR 2), 2026-10-08
+
+| Design says | We do | Why | Revisit |
+|---|---|---|---|
+| In progress: "In session 12:00 · 18 min left" clock | No clock once the session has started; the countdown before it stays | Product, 2026-10-08: the meeting may run on another platform, and a timer here would disagree with it | product |
+| "Rejoin session" through the same Join | First arrival through `POST /join` (the attendance record), every way back in through `POST /door` (records nothing), until `door_closes_at` | Backend #380. `join_closes_at` and `door_closes_at` read and compared as instants, never by an assumed order (#388 changed it once) | — |
+| Settled sessions (completed, missed) show their outcome | While the session is still running, the page follows the clock whatever the status; the outcome shows only once it has ended | The backend can settle a session while people are still in the call (#380); sending them away mid-call was a bug in PR 1 | — |
+| "Add to calendar": a single link | A menu from that link (ours): Google Calendar, Outlook.com, and "Download for other calendars (.ics)". The file is made in the browser | Product, 2026-10-08: any calendar, not only Google | design draws the menu |
+| (no rule) | The Google and Outlook.com links carry the session title, which names the other person, to Google or Microsoft | Product chose the web-calendar options knowing this (2026-10-08). The .ics sends nothing anywhere. No event ever contains the call link: it carries a personal access token | — |
+| Join links in `--blue-500` on every ground | `--blue-700` on the tinted grounds (blue while starting soon, green in progress) | `--blue-500` on `--blue-50` is under 4.5:1 at 12px (axe) | design adopts |
+| "Starts in 1:45:00" (the design only draws waits under two hours) | Under a day the clock; under two days "45 hours"; beyond, "3 days", with "Join opens 5 minutes before the start" and a plain locked "Join session" | "73:59:59" reads as a fault, and "1 day" for 47 hours understates | — |
+

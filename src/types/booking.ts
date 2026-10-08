@@ -68,6 +68,12 @@ export type Booking = {
    * "nobody came" from "they didn't".
    */
   myAttendance: BookingParty['attendance'];
+  /**
+   * When the viewer first pressed Join; null if they haven't. Decides whether
+   * Join stays open after the arrival window: only someone who has been in
+   * can get back in (the door).
+   */
+  myJoinedAt: string | null;
   /** UTC instant. Rendered in the viewer's zone, never the stored one. */
   startsAt: string;
   /** UTC instant, derived from `startsAt` + the duration. */
@@ -104,6 +110,12 @@ export type Booking = {
   /** The join window: 5 minutes before the start to 15 minutes after it. */
   joinOpensAt: string | null;
   joinClosesAt: string | null;
+  /**
+   * Until when someone who has joined can get back into the call
+   * (`POST /sessions/{id}/door`): the session's end. Read it rather than
+   * assume its order against `joinClosesAt`. Null: no door.
+   */
+  doorClosesAt: string | null;
   /** How often this mentee has turned up, whole percent. Null = no data, show nothing. */
   menteeAttendanceRate: number | null;
 };

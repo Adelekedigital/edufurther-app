@@ -41,6 +41,11 @@ type RowMenuProps = {
     /** Which edge the menu lines up with: the button's end (default) or start. */
     align?: 'start' | 'end';
     /**
+     * Visible words after the icon (Session Join's "Add to calendar"). Keep
+     * `label` the same words, so the name matches what is seen.
+     */
+    text?: string;
+    /**
      * Shown but inert (the photo badge while a photo uploads or goes): it keeps
      * focus, unlike a swapped-out control, and doesn't open (review of PR 125).
      */
@@ -166,6 +171,7 @@ export function RowMenu({ label, items, triggerRef, trigger, menu: drawn }: RowM
         onKeyDown={onButtonKey}
       >
         <Icon name={trigger?.icon ?? 'more_horiz'} size={trigger?.size ?? 20} />
+        {trigger?.text}
       </button>
       {open && (
         <div

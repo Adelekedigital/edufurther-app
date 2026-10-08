@@ -26,6 +26,14 @@ const her = (presence: string, tone: LobbyPerson['tone'] = 'away'): LobbyPerson 
   presence,
   tone,
 });
+const calendar = {
+  id: 's1',
+  title: '1:1 call with Amara Okafor',
+  startsAt: '2026-10-04T17:00:00Z',
+  endsAt: '2026-10-04T17:30:00Z',
+  pageUrl: 'https://app.test/sessions/s1',
+  venue: 'EduFurther video',
+};
 const cancel = [
   { key: 'cancel', icon: 'event_busy' as const, label: 'Cancel', onClick: fn(), danger: true },
 ];
@@ -93,6 +101,7 @@ export const Upcoming: Story = {
       hint: 'The button turns on 5 minutes before the start.',
     },
     links: cancel,
+    calendar,
   },
 };
 
@@ -109,6 +118,7 @@ export const StartingSoon: Story = {
       hint: 'Opens in your browser. No download needed.',
     },
     links: cancel,
+    calendar,
   },
 };
 
@@ -116,7 +126,8 @@ export const InProgress: Story = {
   args: {
     ground: 'green',
     status: { tone: 'green', label: 'In progress', live: true },
-    clock: { label: 'In session', value: '12:00', sub: '18 min left' },
+    // No timer once started: the call may run on another platform.
+    clock: null,
     people: [you('Ready when you are'), her('Here now', 'here')],
     join: {
       label: 'Join now',
@@ -140,13 +151,29 @@ export const PopupBlocked: Story = {
   },
 };
 
-/** Ours, provisional: running, but past the join window (backend #379). */
+/** Past the join window, for someone who has been in: back in through the door (#380). */
+export const Rejoin: Story = {
+  args: {
+    ground: 'green',
+    status: { tone: 'green', label: 'In progress', live: true },
+    clock: null,
+    people: [you('Here now', 'here'), her('Here now', 'here')],
+    join: {
+      label: 'Rejoin session',
+      enabled: true,
+      onJoin: fn(),
+      hint: 'Amara is in the call. Opens in your browser. No download needed.',
+    },
+  },
+};
+
+/** Ours, provisional: past the join window for someone who never joined (product, 2026-10-08). */
 export const WindowClosed: Story = {
   args: {
     ground: 'green',
     status: { tone: 'green', label: 'In progress', live: true },
-    clock: { label: 'In session', value: '20:00', sub: '10 min left' },
-    people: [you('Here now', 'here'), her('Here now', 'here')],
+    clock: null,
+    people: [you('Not in the call'), her('Here now', 'here')],
     note: 'Joining closed at 6:15 pm, 15 minutes after the start.',
   },
 };
@@ -157,7 +184,7 @@ export const Settling: Story = {
     ground: 'white',
     status: { tone: 'neutral', label: 'Ended' },
     clock: null,
-    people: [you('Joined at 6:01 pm', 'here'), her('No arrival recorded')],
+    people: [you('Joined at 6:01 pm', 'joined'), her('No arrival recorded')],
     note: 'This session has ended. We’re confirming who joined, which can take up to an hour.',
   },
 };

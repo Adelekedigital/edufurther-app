@@ -32,6 +32,7 @@ export const sampleBooking = (over: Partial<Booking> = {}): Booking => ({
   side: 'mentor',
   other: party(),
   myAttendance: 'pending' as const,
+  myJoinedAt: null,
   startsAt: at(26),
   endsAt: at(27),
   durationMin: 60,
@@ -44,6 +45,7 @@ export const sampleBooking = (over: Partial<Booking> = {}): Booking => ({
   respondBy: null,
   joinOpensAt: null,
   joinClosesAt: null,
+  doorClosesAt: null,
   menteeAttendanceRate: 92,
   ...over,
 });
@@ -102,7 +104,11 @@ export const Lapsed: Story = {
 /** Past rows carry the full date: a day badge alone loses the year. */
 export const Completed: Story = {
   args: {
-    booking: sampleBooking({ status: 'completed', startsAt: at(-24 * 90), endsAt: at(-24 * 90 + 1) }),
+    booking: sampleBooking({
+      status: 'completed',
+      startsAt: at(-24 * 90),
+      endsAt: at(-24 * 90 + 1),
+    }),
     actions: (
       <Button variant="secondary-outlined" size="small">
         Book again
@@ -177,7 +183,13 @@ export const PhoneMenuOnly: Story = {
   args: {
     menu: [
       { key: 'details', icon: 'info' as const, label: 'See details', onSelect: () => {} },
-      { key: 'cancel', icon: 'block' as const, label: 'Cancel session', onSelect: () => {}, danger: true },
+      {
+        key: 'cancel',
+        icon: 'block' as const,
+        label: 'Cancel session',
+        onSelect: () => {},
+        danger: true,
+      },
     ],
   },
 };

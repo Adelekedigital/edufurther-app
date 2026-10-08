@@ -4,7 +4,7 @@ import type { GuideTip } from '@/components/organisms/SessionPrep/SessionPrep';
 import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import { formatTime } from '@/lib/utils/format';
 import {
-  canJoinNow,
+  entryFor,
   joinOpensLabel,
   lobbyClock,
   lobbyDate,
@@ -18,7 +18,7 @@ import type { BookingParty, SessionRoom } from '@/types/booking';
 
 type LobbyProps = ComponentProps<typeof SessionLobby>;
 
-/** The phases this page draws in PR 1. Completed and missed follow in PR 2. */
+/** The phases this page draws so far. Completed and missed follow (Session Join PR 3). */
 export type LivePhase = Extract<
   SessionPhase,
   'upcoming' | 'soon' | 'ongoing' | 'closed' | 'settling'
@@ -68,7 +68,12 @@ function isHere(p: BookingParty, phase: LivePhase): boolean {
   return phase !== 'upcoming' && !!p.joinedAt;
 }
 
-function people(room: SessionRoom, phase: LivePhase, timeZone: string): LobbyProps['people'] {
+function people(
+  room: SessionRoom,
+  phase: LivePhase,
+  timeZone: string,
+  canEnter: boolean,
+): LobbyProps['people'] {
   const { me, booking } = room;
   const other = booking.other;
   if (phase === 'settling') {
@@ -91,7 +96,7 @@ function people(room: SessionRoom, phase: LivePhase, timeZone: string): LobbyPro
     {
       person: me,
       name: 'You',
-      presence: meHere ? 'Here now' : canJoinNow(phase) ? 'Ready when you are' : 'Not in the call',
+      presence: meHere ? 'Here now' : canEnter ? 'Ready when you are' : 'Not in the call',
       tone: meHere ? 'here' : 'away',
     },
     {
@@ -110,9 +115,12 @@ export type LobbyInput = {
   now: Date;
   timeZone: string;
   joining: boolean;
-  onJoin: () => void;
+  /** `join` records the first arrival; `door` is every way back in after it. */
+  onEnter: (entry: 'join' | 'door') => void;
   /** Present only while the session may still be called off. */
   onCancel?: () => void;
+  /** Absolute URL of this page, for the calendar event (never the call link). */
+  pageUrl: string;
 };
 
 /** Everything the lobby shows, from the session, the phase and the clock. */
@@ -122,13 +130,15 @@ export function lobbyModel({
   now,
   timeZone,
   joining,
-  onJoin,
+  onEnter,
   onCancel,
+  pageUrl,
 }: LobbyInput): LobbyProps {
   const b = room.booking;
   const pv = providerJoin(room.provider);
   const other = b.other;
   const otherHere = isHere(other, phase);
+  const entry = entryFor(b, room.me.joinedAt, phase, now);
 
   let join: LobbyProps['join'];
   let note: string | undefined;
@@ -136,25 +146,22 @@ export function lobbyModel({
     join = {
       label: joinOpensLabel(b, now),
       enabled: false,
-      onJoin,
       hint: `The button turns on ${opensBeforeMin(b)} minutes before the start.`,
     };
-  } else if (phase === 'soon' || phase === 'ongoing') {
+  } else if (entry) {
     join = {
-      // "Rejoin" only for someone who has been in: the design says it to every
-      // mentor, including one who hasn't arrived yet.
-      label: phase === 'soon' ? pv.join : room.me.joinedAt ? 'Rejoin session' : 'Join now',
+      // "Rejoin" only for someone who has been in (the design says it to every
+      // mentor, including one who hasn't arrived yet).
+      label: entry === 'door' ? 'Rejoin session' : phase === 'soon' ? pv.join : 'Join now',
       enabled: true,
       busy: joining,
-      onJoin,
+      onJoin: () => onEnter(entry),
       hint:
-        otherHere && phase === 'ongoing'
-          ? `${other.firstName} is in the call. ${pv.hint}`
-          : pv.hint,
+        otherHere && phase !== 'soon' ? `${other.firstName} is in the call. ${pv.hint}` : pv.hint,
     };
-  } else if (phase === 'closed' && b.joinClosesAt) {
-    // PROVISIONAL: undesigned. Nothing can issue a way in after the window
-    // (backend #379), so no button that would only be refused.
+  } else if (phase === 'closed' && b.joinClosesAt && !room.me.joinedAt) {
+    // PROVISIONAL: undesigned. A first arrival after the window isn't let in
+    // (product, 2026-10-08): it couldn't count as attending.
     const after = Math.round(
       (new Date(b.joinClosesAt).getTime() - new Date(b.startsAt).getTime()) / 60_000,
     );
@@ -173,13 +180,23 @@ export function lobbyModel({
     title: lobbyTitle(room),
     meta: lobbyMeta(room, timeZone),
     clock: lobbyClock(b, phase, now),
-    people: people(room, phase, timeZone),
+    people: people(room, phase, timeZone, !!entry),
     join,
     note,
     links:
       pre && onCancel
         ? [{ key: 'cancel', icon: 'event_busy', label: 'Cancel', onClick: onCancel, danger: true }]
         : [],
+    calendar: pre
+      ? {
+          id: b.id,
+          title: lobbyTitle(room),
+          startsAt: b.startsAt,
+          endsAt: b.endsAt,
+          pageUrl,
+          venue: providerName(room.provider),
+        }
+      : undefined,
   };
 }
 
