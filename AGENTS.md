@@ -18,6 +18,20 @@ Report a bug by what the user sees go wrong: the inputs or state, then the wrong
 output. Cite `file:line` and propose one fix. If you are unsure, say so. Don't
 make it sound more certain than it is.
 
+### Severity
+
+The one definition, used by every reviewer of this repository (owner, 2026-10-09).
+
+- **P0, critical: must fix.** Leaks data across users, forges or corrupts money,
+  credits, refunds or attendance, bypasses authentication or authorization, or
+  loses committed data.
+- **P1, major: must fix.** Breaks a user flow or a published contract, corrupts
+  a row, or fails under a value the configuration or API permits.
+- **P2, minor: fix if cheap.** A real defect with a narrow trigger, or a published
+  description that contradicts the code. Not required to merge.
+
+The lists below say what each level looks like in this frontend.
+
 ### How to write the review
 
 Spend the review on findings that matter. Every sentence should help someone
@@ -30,7 +44,7 @@ fix a bug.
 - One finding per comment. A one-line title, then at most three sentences: the
   failing scenario, why it happens, the fix. Add a short code suggestion only
   when it is clearer than prose.
-- Report only P1 and P2 findings from the lists below. Leave out anything you
+- Report only P0, P1 and P2 findings, as defined above and in the lists below. Leave out anything you
   can't tie to a concrete failure.
 - Don't repeat a finding on the same lines that an earlier review raised and
   that the author answered, unless the new commit brings the problem back.
@@ -125,6 +139,12 @@ fix a bug.
 - A PR title that isn't a Conventional Commit (the release tooling parses them).
 
 ### Do not flag
+
+- Anything CI decides. It runs typecheck, ESLint (including the 1000-line file
+  limit), the layer boundary check, the full test suite with coverage, a
+  production build, a bundle secret scan, the private-path and icon-font checks,
+  and a page review on every push. Never suggest lowering a threshold, adding an
+  ignore, or raising a limit to make a check pass.
 
 - Differences from the design recorded in
   `.claude/skills/project-conventions/references/design-divergence.md`.
