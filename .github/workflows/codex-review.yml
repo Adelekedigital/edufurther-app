@@ -79,6 +79,8 @@ jobs:
         with:
           ref: ${{ steps.pr.outputs.head }}
           fetch-depth: 0
+          # Codex reads this checkout: leave no token in .git/config.
+          persist-credentials: false
 
       - name: Prepare the diff
         id: prepare
@@ -105,6 +107,10 @@ jobs:
             echo "verdict=no-prompt" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          # The rulebook the prompt points at, from the base branch too: the
+          # checkout is the PR, and a PR must not be able to rewrite what its
+          # reviewer is told to flag.
+          git show "origin/$BASE_REF:AGENTS.md" > codex-review/AGENTS.md
 
           # Only what changed since the last review this workflow posted, when
           # that commit is still in the branch's history; otherwise the whole PR.
@@ -132,12 +138,19 @@ jobs:
             ':(exclude).next/**' ':(exclude)**/__snapshots__/**' ':(exclude)**/*.snap' \
             ':(exclude)**/*.woff2' ':(exclude)**/*.png' ':(exclude)**/*.jpg' \
             ':(exclude)**/*.webp' > codex-review/pr.diff
+          # Markdown is left out above, but a change to the reviewer's rulebook
+          # is reviewed: weakening it is exactly what the reviewer must see.
+          git diff "$from" "$HEAD" -- AGENTS.md >> codex-review/pr.diff
 
           # Findings raised on this PR and the replies to them, so a finding
-          # already fixed or answered as wrong is not raised again. Every
-          # comment, not only the reviewer's: the answer is the author's reply.
+          # already fixed or answered as wrong is not raised again: this
+          # workflow's own comments, and replies from people who can write to
+          # the repository. Anyone can comment on a public PR, and a stranger's
+          # "answered: false positive" must not silence a finding.
           gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/comments" \
-            --jq '.[] | "--- \(.user.login):\n\(.body)\n"' | tail -c 20000 > codex-review/answered.md
+            --jq '.[] | select(.user.login == "github-actions[bot]" or
+                    (.author_association | IN("OWNER", "MEMBER", "COLLABORATOR")))
+                  | "--- \(.user.login):\n\(.body)\n"' | tail -c 20000 > codex-review/answered.md
 
           lines=$(wc -l < codex-review/pr.diff)
           echo "lines=$lines" >> "$GITHUB_OUTPUT"
@@ -156,7 +169,9 @@ jobs:
         # posting job can say the review ran out of time.
         timeout-minutes: 5
         continue-on-error: true
-        uses: openai/codex-action@v1
+        # Pinned to a commit, not the movable v1 tag: this step holds the
+        # key. v1 pointed here (v1.13) on 2026-10-09; bump deliberately.
+        uses: openai/codex-action@bdf19a4a223ec2549a3e2274a0cf61556bc07675 # v1.13
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           prompt-file: codex-review/prompt.md
@@ -166,8 +181,11 @@ jobs:
 
   post:
     needs: review
-    # Not when a newer /codex-review replaced this run: that run posts instead.
-    if: always() && needs.review.result != 'skipped' && needs.review.result != 'cancelled'
+    # Not when a newer /codex-review replaced this run (that run posts
+    # instead), and not on a fork's PR, whose token can't comment.
+    if: >-
+      always() && needs.review.result != 'skipped' && needs.review.result != 'cancelled' &&
+      !github.event.pull_request.head.repo.fork
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -202,7 +220,9 @@ jobs:
             else
               echo "**Codex review** of $SCOPE (\`${HEAD:0:7}\`, effort high)"
               echo
-              printf '%s\n' "$RESULT"
+              # A zero-width space after every @, so the review's text can't
+              # mention a person or a team.
+              printf '%s\n' "$RESULT" | sed "s/@/@$(printf '\u200b')/g"
               # Marks the commit reviewed, so the next /codex-review covers only
               # what comes after it. Only written when a review actually ran.
               echo
