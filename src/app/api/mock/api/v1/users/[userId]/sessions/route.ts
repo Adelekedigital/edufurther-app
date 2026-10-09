@@ -54,8 +54,13 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     /** The offering's name, for the join page's title. */
     typeName?: string;
     duration?: number;
-    /** When the other party pressed Join (the join page's "Here now"). */
+    /** When the other party pressed Join. */
     otherJoinedAt?: string;
+    /** When Daily first saw them in the room (the join page's "Joined" on EduFurther video). */
+    otherInRoomAt?: string;
+    meInRoomAt?: string;
+    /** The venue; EduFurther video (Daily) unless said. */
+    provider?: 'daily' | 'google_meet';
     /** When the viewer pressed Join (the join page's Rejoin). */
     meJoinedAt?: string;
     /** Settled attendance, for the join page's completed and missed outcomes. */
@@ -72,11 +77,13 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     const other = {
       ...party(`mock-${id}`, mentee[0], mentee[1], o.zone ?? 'Africa/Lagos'),
       joined_at: o.otherJoinedAt ?? null,
+      in_room_at: o.otherInRoomAt ?? null,
       attendance_status: o.otherAttendance ?? 'pending',
     };
     const me = {
       ...party(userId, 'Gbenga', 'Adeyemi', 'America/New_York'),
       joined_at: o.meJoinedAt ?? null,
+      in_room_at: o.meInRoomAt ?? null,
       attendance_status: o.meAttendance ?? 'pending',
     };
     return {
@@ -94,7 +101,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       duration_minutes: o.duration ?? 60,
       topic: o.topic === undefined ? null : o.topic,
       booking_message: o.message ?? null,
-      meeting_provider: 'daily',
+      meeting_provider: o.provider ?? 'daily',
       meeting_url: null,
       respond_by: o.respondBy === undefined ? null : o.respondBy,
       join_opens_at: status === 'confirmed' ? minutesFrom(starts, -10) : null,
@@ -123,9 +130,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     };
   };
 
-  // Sessions on the clock, for the join page (/sessions/j-1, j-2, j-3): one
-  // inside its join window, one under way with the other side in, and one past
-  // its join window that the viewer joined (Rejoin through the door).
+  // Sessions on the clock, for the join page: j-1 inside its join window; j-2
+  // under way, the other side pressed Join but Daily hasn't seen them
+  // (Joining…); j-3 past its window, both seen in the room (Joined, Rejoin
+  // through the door); j-7 on Google Meet (Joined from the Join press).
   const fromNow = (m: number) => minutesFrom(CLOCK_ANCHOR, m);
   const all = [
     session('j-1', fromNow(3), 'confirmed', ['Amara', 'Okafor'], {
@@ -144,7 +152,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       typeName: 'SOP review',
       duration: 45,
       meJoinedAt: fromNow(-19),
+      meInRoomAt: fromNow(-19),
       otherJoinedAt: fromNow(-18),
+      otherInRoomAt: fromNow(-18),
     }),
     // Settled, for the join page's outcomes (/sessions/j-5, j-6): completed and
     // reviewable, and missed by the mentor.
@@ -164,6 +174,13 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       meJoinedAt: fromNow(-24 * 60 + 1),
       meAttendance: 'attended',
       otherAttendance: 'no_show',
+    }),
+    // On Google Meet, which reports no presence: "Joined" is the Join press.
+    session('j-7', fromNow(-5), 'confirmed', ['Tolu', 'Bello'], {
+      typeName: '1:1 call',
+      duration: 30,
+      provider: 'google_meet',
+      otherJoinedAt: fromNow(-4),
     }),
     session('j-2', fromNow(-10), 'confirmed', ['Gbenga', 'Ogundipe'], {
       typeName: '1:1 call',

@@ -114,6 +114,7 @@ const party = (name = 'Amara Okafor'): BookingParty => ({
   timeZone: 'Africa/Lagos',
   cover: 'sand',
   joinedAt: null,
+  inRoomAt: null,
   attendance: 'pending' as const,
 });
 

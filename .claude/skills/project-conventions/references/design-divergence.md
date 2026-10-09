@@ -464,3 +464,14 @@ Source: `Session Join.dc.html`, defaults `layout=lobby`, `provider=edufurther`; 
 | (no state) the server refuses a first arrival after the window | `POST /door` 409 `/problems/join-window-closed` reads "Joining closed at 6:15 pm, 15 minutes after the start.", the same sentence the page shows where Join is gone | Product, 2026-10-08: enforced on the server too (backend #382). One rule, one sentence | design request |
 | "Join opens 10 minutes before" | Now true: the backend opens at 10 (#391), and the page reads it from `join_opens_at`; the fallback for an unstamped row is 10 | — | — |
 
+### Session Join — presence from where people have been (PR 4b), 2026-10-09
+
+| Design says | We do | Why | Revisit |
+|---|---|---|---|
+| "Here now" (green ring, pulse) for whoever is in the call | **"Joined"** (green ring, no pulse) for whoever has been in it; no live "Here now" and no pulse anywhere | Nothing we hold says who is in the call right now: Daily's `in_room_at` is the first time it saw them, and leaving doesn't clear it (backend #382). Product, 2026-10-09 | live presence (backend #394) or the embedded call (#191) |
+| EduFurther video: the Join press is the arrival | Joined once Daily has seen them in the room; pressed Join but not seen yet reads **"Joining…"** (ours, provisional) | Daily now reports real presence; a press whose call never connected isn't an arrival | design request |
+| Google Meet / a mentor's own link: same as EduFurther video | "Joined" on the Join press | Meet reports no presence (its records need a Google scope the owner has parked, backend #383). Product, 2026-10-09 | #383 |
+| Ended, unsettled: "Joined at 6:01 pm" | The room time for Daily, the press time for Meet; a Daily press never seen in the room reads **"Pressed Join at 6:01 pm"** (ours, provisional) | Settlement may still fill in the room time; a press alone isn't a join | design request |
+| Hint "{name} is in the call." | "{name} has joined." | Same reason: not "in the call now" | #394 |
+| Rejoin and Bookings' Join | Unchanged: gated on the Join press (`joined_at`), not on the room sighting | A press whose call didn't connect must still get back in (agreed with backend, 2026-10-08) | — |
+

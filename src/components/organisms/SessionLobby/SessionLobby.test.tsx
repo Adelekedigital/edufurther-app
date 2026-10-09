@@ -5,7 +5,7 @@ import { SessionLobby, type LobbyPerson } from './SessionLobby';
 const person = (id: string, tone: LobbyPerson['tone']): LobbyPerson => ({
   person: sampleParty({ id }),
   name: id,
-  presence: 'Here now',
+  presence: 'Joined',
   tone,
 });
 
@@ -15,7 +15,7 @@ const base = {
   title: '1:1 call with Amara Okafor',
   meta: 'Sun, Oct 4 · 6:00 – 6:30 pm · Lagos (WAT) · EduFurther video',
   clock: { label: 'In session', value: '14:59', sub: '16 min left' },
-  people: [person('me', 'away'), person('them', 'here')] as [LobbyPerson, LobbyPerson],
+  people: [person('me', 'away'), person('them', 'joined')] as [LobbyPerson, LobbyPerson],
 };
 
 describe('when Join goes away under the keyboard', () => {

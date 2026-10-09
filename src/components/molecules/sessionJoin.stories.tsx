@@ -33,7 +33,7 @@ export const ClockRunning: Story = {
   render: () => <SessionClock label="In session" value="12:00" sub="18 min left" />,
 };
 
-/** Here (green ring, pulse) beside away (grey), a long name, and a deleted account. */
+/** Joined (green ring) beside away (grey: Joining…, Not here yet), a long name, and a deleted account. */
 export const Presence: Story = {
   render: () => (
     <div style={{ display: 'flex', gap: 16 }}>
@@ -43,7 +43,7 @@ export const Presence: Story = {
         presence="Ready when you are"
         tone="away"
       />
-      <PresencePerson person={sampleParty()} name="Amara" presence="Here now" tone="here" />
+      <PresencePerson person={sampleParty()} name="Amara" presence="Joined" tone="joined" />
       <PresencePerson
         person={sampleParty({ id: 'long', initials: 'OA' })}
         name="Oluwadamilareoluwa"

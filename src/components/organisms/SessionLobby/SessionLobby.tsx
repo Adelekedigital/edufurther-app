@@ -18,7 +18,7 @@ export type LobbyPerson = {
   person: BookingParty;
   name: string;
   presence: string;
-  tone: 'here' | 'joined' | 'absent' | 'away';
+  tone: 'joined' | 'absent' | 'away';
 };
 
 export type LobbyLink = {

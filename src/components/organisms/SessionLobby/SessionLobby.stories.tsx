@@ -110,7 +110,7 @@ export const StartingSoon: Story = {
     ground: 'blue',
     status: { tone: 'blue', label: 'Starting soon' },
     clock: { label: 'Starts in', value: '03:12', sub: 'Join is open' },
-    people: [you('Ready when you are'), her('Here now', 'here')],
+    people: [you('Ready when you are'), her('Joined', 'joined')],
     join: {
       label: 'Join session',
       enabled: true,
@@ -128,12 +128,12 @@ export const InProgress: Story = {
     status: { tone: 'green', label: 'In progress', live: true },
     // No timer once started: the call may run on another platform.
     clock: null,
-    people: [you('Ready when you are'), her('Here now', 'here')],
+    people: [you('Ready when you are'), her('Joined', 'joined')],
     join: {
       label: 'Join now',
       enabled: true,
       onJoin: fn(),
-      hint: 'Amara is in the call. Opens in your browser. No download needed.',
+      hint: 'Amara has joined. Opens in your browser. No download needed.',
     },
   },
 };
@@ -157,12 +157,12 @@ export const Rejoin: Story = {
     ground: 'green',
     status: { tone: 'green', label: 'In progress', live: true },
     clock: null,
-    people: [you('Here now', 'here'), her('Here now', 'here')],
+    people: [you('Joined', 'joined'), her('Joined', 'joined')],
     join: {
       label: 'Rejoin session',
       enabled: true,
       onJoin: fn(),
-      hint: 'Amara is in the call. Opens in your browser. No download needed.',
+      hint: 'Amara has joined. Opens in your browser. No download needed.',
     },
   },
 };
@@ -173,7 +173,7 @@ export const WindowClosed: Story = {
     ground: 'green',
     status: { tone: 'green', label: 'In progress', live: true },
     clock: null,
-    people: [you('Not in the call'), her('Here now', 'here')],
+    people: [you('Not in the call'), her('Joined', 'joined')],
     note: 'Joining closed at 6:15 pm, 15 minutes after the start.',
   },
 };
@@ -245,5 +245,19 @@ export const Missed: Story = {
     status: { tone: 'red', label: 'Missed' },
     clock: null,
     people: [you('Joined', 'joined'), her('Didn’t join', 'absent')],
+  },
+};
+
+/** EduFurther video: Amara pressed Join but Daily hasn't seen her in the room yet. */
+export const JoiningOnDaily: Story = {
+  args: {
+    ...InProgress.args,
+    people: [you('Ready when you are'), her('Joining…')],
+    join: {
+      label: 'Join now',
+      enabled: true,
+      onJoin: fn(),
+      hint: 'Opens in your browser. No download needed.',
+    },
   },
 };

@@ -112,7 +112,11 @@ const MENTEE: Extract<Viewer, { kind: 'member' }> = {
 const START = '2026-10-04T17:00:00Z';
 const at = (hhmmss: string) => new Date(`2026-10-04T${hhmmss}Z`);
 
-function sessionRoom(over: Partial<SessionRoom['booking']> = {}, me = {}): SessionRoom {
+function sessionRoom(
+  over: Partial<SessionRoom['booking']> = {},
+  me = {},
+  provider: SessionRoom['provider'] = 'daily',
+): SessionRoom {
   return {
     booking: sampleBookingFor({
       side: 'mentor',
@@ -127,7 +131,7 @@ function sessionRoom(over: Partial<SessionRoom['booking']> = {}, me = {}): Sessi
     }),
     me: sampleParty({ id: 'me', name: 'Gbenga Ogundipe', firstName: 'Gbenga', ...me }),
     typeName: '1:1 call',
-    provider: 'daily',
+    provider,
   };
 }
 
@@ -486,12 +490,47 @@ describe('the window is open', () => {
     expect(screen.getByText('Ready when you are')).toBeVisible();
   });
 
-  it('the other person shows as here once they have pressed Join', () => {
+  it('EduFurther video: Joined once Daily has seen them in the room, never "Here now"', () => {
+    room = remote(
+      sessionRoom({
+        other: sampleParty({
+          firstName: 'Amara',
+          joinedAt: '2026-10-04T16:57:00Z',
+          inRoomAt: '2026-10-04T16:57:20Z',
+        }),
+      }),
+    );
+    renderAt('16:58:00');
+    expect(screen.getByText('Joined')).toBeVisible();
+    expect(screen.queryByText('Here now')).not.toBeInTheDocument();
+  });
+
+  it('EduFurther video: pressed Join but not seen in the room reads Joining…', () => {
     room = remote(
       sessionRoom({ other: sampleParty({ firstName: 'Amara', joinedAt: '2026-10-04T16:57:00Z' }) }),
     );
     renderAt('16:58:00');
-    expect(screen.getByText('Here now')).toBeVisible();
+    expect(screen.getByText('Joining…')).toBeVisible();
+    expect(screen.queryByText('Joined')).not.toBeInTheDocument();
+  });
+
+  it('Google Meet reports no presence: Joined on the Join press', () => {
+    room = remote(
+      sessionRoom(
+        { other: sampleParty({ firstName: 'Amara', joinedAt: '2026-10-04T16:57:00Z' }) },
+        {},
+        'google_meet',
+      ),
+    );
+    renderAt('16:58:00');
+    expect(screen.getByText('Joined')).toBeVisible();
+  });
+
+  it('Rejoin still follows the Join press, even before Daily has seen you', () => {
+    room = remote(sessionRoom({}, { joinedAt: '2026-10-04T17:01:00Z' }));
+    renderAt('17:20:00');
+    expect(screen.getByRole('button', { name: 'Rejoin session' })).toBeEnabled();
+    expect(screen.getByText('Joining…')).toBeVisible();
   });
 
   it('Join opens the link the API minted for this caller', async () => {
@@ -629,7 +668,9 @@ describe('during the call', () => {
 
 describe('after the call, before attendance is settled', () => {
   it('says it is being confirmed, and never guesses who missed it', () => {
-    room = remote(sessionRoom({}, { joinedAt: '2026-10-04T17:01:00Z' }));
+    room = remote(
+      sessionRoom({}, { joinedAt: '2026-10-04T17:00:40Z', inRoomAt: '2026-10-04T17:01:00Z' }),
+    );
     renderAt('17:40:00');
     expect(screen.getByText('Ended')).toBeVisible();
     expect(screen.getByText('Joined at 6:01 pm')).toBeVisible();
@@ -638,12 +679,26 @@ describe('after the call, before attendance is settled', () => {
     expect(screen.queryByText('Quick guide for a rewarding session')).not.toBeInTheDocument();
   });
 
-  it('shows a past arrival in green without the live pulse', () => {
-    room = remote(sessionRoom({}, { joinedAt: '2026-10-04T17:01:00Z' }));
+  it('shows a past arrival in green', () => {
+    room = remote(
+      sessionRoom({}, { joinedAt: '2026-10-04T17:00:40Z', inRoomAt: '2026-10-04T17:01:00Z' }),
+    );
     renderAt('17:40:00');
     const you = screen.getByText('Joined at 6:01 pm').closest('.person')!;
     expect(you).toHaveClass('joined', 'green');
-    expect(you).not.toHaveClass('here');
+  });
+
+  it('a Daily press never seen in the room says what was recorded, not that they joined', () => {
+    room = remote(sessionRoom({}, { joinedAt: '2026-10-04T17:01:00Z' }));
+    renderAt('17:40:00');
+    expect(screen.getByText('Pressed Join at 6:01 pm')).toBeVisible();
+    expect(screen.queryByText('Joined at 6:01 pm')).not.toBeInTheDocument();
+  });
+
+  it('Google Meet: the Join press is the arrival', () => {
+    room = remote(sessionRoom({}, { joinedAt: '2026-10-04T17:01:00Z' }, 'google_meet'));
+    renderAt('17:40:00');
+    expect(screen.getByText('Joined at 6:01 pm')).toBeVisible();
   });
 });
 
@@ -735,21 +790,39 @@ describe('what a screen reader hears', () => {
     expect(srStatus()).toHaveTextContent('Joining has closed.');
   });
 
-  it('does not announce someone who was already here when the page opened', () => {
+  it('does not announce someone who had already joined when the page opened', () => {
     room = remote(
-      sessionRoom({ other: sampleParty({ firstName: 'Amara', joinedAt: '2026-10-04T16:56:00Z' }) }),
+      sessionRoom({
+        other: sampleParty({
+          firstName: 'Amara',
+          joinedAt: '2026-10-04T16:56:00Z',
+          inRoomAt: '2026-10-04T16:56:10Z',
+        }),
+      }),
     );
     renderAt('16:58:00');
     expect(srStatus()).toBeEmptyDOMElement();
   });
 
-  it('announces someone arriving while the page is open', () => {
-    const view = renderAt('16:58:00');
+  it('announces someone joining while the page is open, when Daily sees them in the room', () => {
     room = remote(
-      sessionRoom({ other: sampleParty({ firstName: 'Amara', joinedAt: '2026-10-04T16:58:10Z' }) }),
+      sessionRoom({ other: sampleParty({ firstName: 'Amara', joinedAt: '2026-10-04T16:58:05Z' }) }),
+    );
+    const view = renderAt('16:58:00');
+    // A press alone is not a join on EduFurther video: nothing said yet.
+    expect(srStatus()).toBeEmptyDOMElement();
+    room = remote(
+      sessionRoom({
+        other: sampleParty({
+          firstName: 'Amara',
+          joinedAt: '2026-10-04T16:58:05Z',
+          inRoomAt: '2026-10-04T16:58:10Z',
+        }),
+      }),
     );
     view.rerender(<SessionJoinScreen id="b1" />);
-    expect(srStatus()).toHaveTextContent('Amara is here.');
+    expect(srStatus()).toHaveTextContent('Amara joined.');
+    expect(srStatus()).not.toHaveTextContent('is here');
   });
 
   it('never the ticking clock, but the door opening, once', () => {
