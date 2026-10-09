@@ -187,6 +187,30 @@ Prototype files (`support.js`, `image-slot.js`, `dc-import`, `sc-if`) are the pr
 
 ---
 
+**Codex review loop — every PR (owner, 2026-10-09; backend #399).** Re-reviews are
+comment-triggered, never automatic on push.
+
+1. Open the PR. The review runs once, automatically (also on reopen and on draft →
+   ready). Drafts, forks and Dependabot are skipped.
+2. Verify each finding against the code, and against the platform's own docs when it
+   cites them. A finding is a claim to check, not an instruction: Codex has been wrong
+   (backend #393, Daily's payload shape).
+3. Fix what's real: P0 and P1 always, P2 if cheap. Each fix gets a failing-first test.
+4. Answer every finding in ONE reply comment on the PR: "fixed in <sha> + the test",
+   "not changed + why", or "deferred to #issue". The next review reads the bot's
+   comments and replies from people with write access, and won't re-raise an answered
+   finding.
+5. Comment `/codex-review` to re-review the commits since the last review. From Git
+   Bash, `MSYS_NO_PATHCONV=1`, or the leading `/` becomes a Windows path.
+6. Repeat 2–5 until a review says NO FINDINGS, or only P2s the owner accepts.
+7. Merge when that's true AND CI is green on the PR's exact head commit, on the
+   owner's word.
+
+A reply alone never starts a review; only a comment starting `/codex-review` does. To
+test a change to the workflow itself, close and reopen the PR: a comment runs the
+workflow from `main`, not from the PR. The model and effort are repository secrets
+(`CODEX_REVIEW_MODEL`, `CODEX_REVIEW_EFFORT`), never in the file or the comment.
+
 ## Guardrails
 
 | Never                                                                | Because                                                                                                                                                                                                                                                                                                                                                  |
