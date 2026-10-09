@@ -22,6 +22,7 @@ export const party = (name = 'Amara Okafor', over: Partial<BookingParty> = {}): 
   timeZone: 'Africa/Lagos',
   cover: 'sand',
   joinedAt: null,
+  inRoomAt: null,
   attendance: 'pending' as const,
   ...over,
 });

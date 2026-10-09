@@ -70,6 +70,7 @@ export function toParty(p: PartyRead): BookingParty {
     timeZone: p.deleted ? null : (p.timezone ?? null),
     cover: coverFor(p.id),
     joinedAt: p.joined_at ?? null,
+    inRoomAt: p.in_room_at ?? null,
     attendance:
       p.attendance_status === 'attended'
         ? 'attended'

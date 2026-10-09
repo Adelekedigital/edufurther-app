@@ -13,6 +13,7 @@ export function sampleParty(over: Partial<BookingParty> = {}): BookingParty {
     timeZone: 'Africa/Lagos',
     cover: 'sand',
     joinedAt: null,
+    inRoomAt: null,
     attendance: 'pending',
     ...over,
   };

@@ -14,6 +14,7 @@ import {
   providerName,
   type SessionPhase,
 } from '@/lib/utils/sessionPhase';
+import { joinedTime, presenceOf } from '@/lib/utils/presence';
 import { missedTone } from '@/lib/utils/sessionOutcome';
 import type { BookingParty, SessionRoom } from '@/types/booking';
 
@@ -69,9 +70,9 @@ export function lobbyMeta(room: SessionRoom, timeZone: string): string {
     .join(' · ');
 }
 
-/** In the call, by their own Join press (`joined_at`, the first arrival). */
-function isHere(p: BookingParty, phase: DrawnPhase): boolean {
-  return phase !== 'upcoming' && !!p.joinedAt;
+/** Joined, by the venue's rule (`presenceOf`): never before the window opens. */
+function hasJoined(room: SessionRoom, p: BookingParty, phase: DrawnPhase): boolean {
+  return phase !== 'upcoming' && presenceOf(p, room.provider) === 'joined';
 }
 
 function people(
@@ -98,35 +99,44 @@ function people(
     ];
   }
   if (phase === 'settling') {
-    // Over, but not ruled on: say what we recorded, never "didn't join".
-    const line = (p: BookingParty) =>
-      p.joinedAt ? `Joined at ${formatTime(p.joinedAt, timeZone)}` : 'No arrival recorded';
-    return [
-      { person: me, name: 'You', presence: line(me), tone: me.joinedAt ? 'joined' : 'away' },
-      {
-        person: other,
-        name: other.firstName,
-        presence: line(other),
-        tone: other.joinedAt ? 'joined' : 'away',
-      },
-    ];
+    // Over, but not ruled on: say what we recorded, never "didn't join". A
+    // Daily press with no room sighting may still be filled in by settlement.
+    const line = (p: BookingParty): LobbyProps['people'][number] => {
+      const name = p === me ? 'You' : p.firstName;
+      const at = joinedTime(p, room.provider);
+      if (at)
+        return {
+          person: p,
+          name,
+          presence: `Joined at ${formatTime(at, timeZone)}`,
+          tone: 'joined',
+        };
+      if (p.joinedAt)
+        // PROVISIONAL: ours, until design answers.
+        return {
+          person: p,
+          name,
+          presence: `Pressed Join at ${formatTime(p.joinedAt, timeZone)}`,
+          tone: 'away',
+        };
+      return { person: p, name, presence: 'No arrival recorded', tone: 'away' };
+    };
+    return [line(me), line(other)];
   }
-  const meHere = isHere(me, phase);
-  const otherHere = isHere(other, phase);
+  // Joined / Joining…, never "Here now": nothing we hold says who is in the
+  // call right now (product, 2026-10-09; live presence is backend #394).
+  const live = (p: BookingParty, waiting: string): LobbyProps['people'][number] => {
+    const name = p === me ? 'You' : p.firstName;
+    const presence = phase === 'upcoming' ? 'none' : presenceOf(p, room.provider);
+    if (presence === 'joined') return { person: p, name, presence: 'Joined', tone: 'joined' };
+    // PROVISIONAL: ours, until design answers.
+    if (presence === 'joining') return { person: p, name, presence: 'Joining…', tone: 'away' };
+    return { person: p, name, presence: waiting, tone: 'away' };
+  };
   return [
-    {
-      person: me,
-      name: 'You',
-      presence: meHere ? 'Here now' : canEnter ? 'Ready when you are' : 'Not in the call',
-      tone: meHere ? 'here' : 'away',
-    },
-    {
-      person: other,
-      name: other.firstName,
-      // "Not here yet", never "Not here": `pending` means not known yet (backend reply §1).
-      presence: otherHere ? 'Here now' : 'Not here yet',
-      tone: otherHere ? 'here' : 'away',
-    },
+    live(me, canEnter ? 'Ready when you are' : 'Not in the call'),
+    // "Not here yet", never "Not here": `pending` means not known yet (backend reply §1).
+    live(other, 'Not here yet'),
   ];
 }
 
@@ -172,7 +182,7 @@ export function lobbyModel({
   const b = room.booking;
   const pv = providerJoin(room.provider);
   const other = b.other;
-  const otherHere = isHere(other, phase);
+  const otherJoined = hasJoined(room, other, phase);
   const entry = entryFor(b, room.me.joinedAt, phase, now);
 
   let join: LobbyProps['join'];
@@ -191,8 +201,7 @@ export function lobbyModel({
       enabled: true,
       busy: joining,
       onJoin: () => onEnter(entry),
-      hint:
-        otherHere && phase !== 'soon' ? `${other.firstName} is in the call. ${pv.hint}` : pv.hint,
+      hint: otherJoined && phase !== 'soon' ? `${other.firstName} has joined. ${pv.hint}` : pv.hint,
     };
   } else if (phase === 'closed' && b.joinClosesAt && !room.me.joinedAt) {
     // PROVISIONAL: undesigned. A first arrival after the window isn't let in

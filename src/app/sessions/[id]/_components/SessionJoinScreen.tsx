@@ -26,6 +26,7 @@ import { useSessionRoom } from '@/lib/api/data/sessionRoom';
 import { useViewer } from '@/lib/api/data/viewer';
 import { canCancel } from '@/lib/utils/bookings';
 import { deviceTimeZone } from '@/lib/utils/format';
+import { presenceOf } from '@/lib/utils/presence';
 import { outcomeView } from '@/lib/utils/sessionOutcome';
 import { isFinal, sessionPhase } from '@/lib/utils/sessionPhase';
 import { useOnline } from '@/lib/utils/useOnline';
@@ -181,7 +182,12 @@ export function SessionJoinScreen({ id }: { id: string }) {
   // Say the moments that matter, once each. The clock itself is never read
   // out. Worked out while rendering, from what was seen last time, rather than
   // in an effect (React: adjusting state when a prop changes).
-  const otherJoined = !!(live && live !== 'upcoming' && data?.booking.other.joinedAt);
+  const otherJoined = !!(
+    live &&
+    live !== 'upcoming' &&
+    data &&
+    presenceOf(data.booking.other, data.provider) === 'joined'
+  );
   const [seen, setSeen] = useState({ live, otherJoined });
   if (seen.live !== live || seen.otherJoined !== otherJoined) {
     setSeen({ live, otherJoined });
@@ -194,7 +200,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
     const phaseText =
       changed && live && live !== seen.live && closedForMe ? PHASE_ANNOUNCEMENT[live] : undefined;
     const arrived = changed && otherJoined && !seen.otherJoined && data;
-    const text = [phaseText, arrived ? `${data.booking.other.firstName} is here.` : null]
+    const text = [phaseText, arrived ? `${data.booking.other.firstName} joined.` : null]
       .filter(Boolean)
       .join(' ');
     if (text) setSaid((last) => ({ text, id: (last?.id ?? 0) + 1 }));

@@ -21,28 +21,6 @@
     0 0 0 5px var(--green-700);
 }
 
-.pulse {
-  position: absolute;
-  inset: -5px;
-  border-radius: var(--radius-full);
-  pointer-events: none;
-}
-.here .pulse {
-  animation: ring 1.8s infinite;
-}
-/* The design's efPulseRing, its rgba green as a token mix. */
-@keyframes ring {
-  0% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--green-600) 40%, transparent);
-  }
-  70% {
-    box-shadow: 0 0 0 10px color-mix(in srgb, var(--green-600) 0%, transparent);
-  }
-  100% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--green-600) 0%, transparent);
-  }
-}
-
 .name {
   font-size: var(--text-p-sm);
   font-weight: var(--weight-semibold);
@@ -86,10 +64,4 @@
 }
 .absent .dot {
   background: var(--red-500);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .here .pulse {
-    animation: none;
-  }
 }

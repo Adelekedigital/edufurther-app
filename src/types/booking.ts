@@ -50,6 +50,12 @@ export type BookingParty = {
   /** When they marked themselves present; null means they never pressed Join. */
   joinedAt: string | null;
   /**
+   * EduFurther video (Daily) only: the first time Daily saw them in the room
+   * (backend #382). "Has been in the room", not "is in it now": leaving
+   * doesn't clear it. Always null for Google Meet and a mentor's own link.
+   */
+  inRoomAt: string | null;
+  /**
    * Whether they turned up. `pending` means **we do not know yet** — it is the
    * state of every party until the join window shuts, and of two migrated
    * bookings that have no participant record at all. Never read it as absence.
