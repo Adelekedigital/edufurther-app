@@ -97,7 +97,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       meeting_provider: 'daily',
       meeting_url: null,
       respond_by: o.respondBy === undefined ? null : o.respondBy,
-      join_opens_at: status === 'confirmed' ? minutesFrom(starts, -5) : null,
+      join_opens_at: status === 'confirmed' ? minutesFrom(starts, -10) : null,
       join_closes_at: status === 'confirmed' ? minutesFrom(starts, 15) : null,
       // The room closes with the session (backend #380).
       door_closes_at: ['confirmed', 'completed', 'no_show'].includes(status)

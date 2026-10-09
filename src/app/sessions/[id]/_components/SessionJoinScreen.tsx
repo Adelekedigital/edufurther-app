@@ -18,7 +18,7 @@ import { canBookFor } from '@/app/_shell/bookBlocked';
 import { memberGate, SESSION_GATE } from '@/app/_shell/MentorGate';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
 import { useJoinSession, useSessionDoor } from '@/lib/api/data/bookings';
-import { normaliseError } from '@/lib/api/data/errors';
+import { ApiError, normaliseError } from '@/lib/api/data/errors';
 import { useMyReviewableSessions } from '@/lib/api/data/reviewableSessions';
 import { useSendReview } from '@/lib/api/data/reviewWrite';
 import { useBookingAnswers } from '@/lib/api/data/sessionAnswers';
@@ -30,7 +30,14 @@ import { outcomeView } from '@/lib/utils/sessionOutcome';
 import { isFinal, sessionPhase } from '@/lib/utils/sessionPhase';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { AnswerFile } from '@/types/booking';
-import { guideTips, isDrawnPhase, isSettled, lobbyModel, PHASE_ANNOUNCEMENT } from './lobbyModel';
+import {
+  guideTips,
+  joiningClosedNote,
+  isDrawnPhase,
+  isSettled,
+  lobbyModel,
+  PHASE_ANNOUNCEMENT,
+} from './lobbyModel';
 import styles from './SessionJoinScreen.module.css';
 
 /** The design's back link names Home for mentors, but there is no mentor home yet. */
@@ -150,16 +157,22 @@ export function SessionJoinScreen({ id }: { id: string }) {
           }
         },
         onError: (e) => {
+          // The server refuses a first arrival after the window (backend
+          // #382): say the rule, as the page says it, not a generic refusal.
+          const lateFirstTimer =
+            e instanceof ApiError && !!e.type?.endsWith('/problems/join-window-closed');
+          const closed = lateFirstTimer && data ? joiningClosedNote(data.booking, timeZone) : null;
           const text =
-            normaliseError(e).status === 409
+            closed ??
+            (normaliseError(e).status === 409
               ? 'This session isn’t open to join right now.'
-              : 'We couldn’t join you. Try again in a moment.';
+              : 'We couldn’t join you. Try again in a moment.');
           setProblem(text);
           say(text);
         },
       });
     },
-    [join, door, id, say],
+    [join, door, id, say, data, timeZone],
   );
 
   const cancel = useBookingAction('cancel');

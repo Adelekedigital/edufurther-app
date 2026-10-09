@@ -3,7 +3,7 @@ import { formatTime } from './format';
 
 const MINUTE = 60_000;
 /** The backend's window, used only for an older row it never stamped. */
-const OPENS_BEFORE_MIN = 5;
+const OPENS_BEFORE_MIN = 10;
 const CLOSES_AFTER_MIN = 15;
 
 /**
@@ -110,7 +110,7 @@ export function formatWait(ms: number): string {
   return `${Math.floor(ms / DAY_MS)} days`;
 }
 
-/** How many minutes before the start the door opens, read from the row (5 today). */
+/** How many minutes before the start the door opens, read from the row (10 today, a backend setting). */
 export function opensBeforeMin(b: Booking): number {
   const w = windowOf(b);
   return Math.round((w.starts - w.opens) / MINUTE);

@@ -62,10 +62,10 @@ describe('sessionPhase', () => {
     (status) => expect(sessionPhase({ ...b, status }, at('16:00:00'))).toBe('elsewhere'),
   );
 
-  it('falls back to the backend window on an older row it never stamped', () => {
+  it('falls back to the backend window on an older row it never stamped (10 min, #391)', () => {
     const old = { ...b, joinOpensAt: null, joinClosesAt: null };
-    expect(sessionPhase(old, at('16:54:59'))).toBe('upcoming');
-    expect(sessionPhase(old, at('16:55:00'))).toBe('soon');
+    expect(sessionPhase(old, at('16:49:59'))).toBe('upcoming');
+    expect(sessionPhase(old, at('16:50:00'))).toBe('soon');
     expect(sessionPhase(old, at('17:15:01'))).toBe('closed');
   });
 

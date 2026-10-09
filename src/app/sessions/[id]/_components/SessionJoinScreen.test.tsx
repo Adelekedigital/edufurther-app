@@ -531,6 +531,23 @@ describe('the window is open', () => {
     open.mockRestore();
   });
 
+  it('the server refusing a late first arrival says the rule, as the page does', async () => {
+    room = remote(sessionRoom({}, { joinedAt: '2026-10-04T17:01:00Z' }));
+    door.mockImplementation((_id, { onError }) =>
+      onError(new ApiError(409, 'Join window closed', '/problems/join-window-closed')),
+    );
+    renderAt('17:25:00');
+    await userEvent.click(screen.getByRole('button', { name: 'Rejoin session' }));
+    expect(
+      screen.getByText('Joining closed at 6:15 pm, 15 minutes after the start.', {
+        selector: 'p:not(.sr-only)',
+      }),
+    ).toBeVisible();
+    expect(
+      screen.queryByText('This session isn’t open to join right now.'),
+    ).not.toBeInTheDocument();
+  });
+
   it('a 409 says the window is shut, not that something broke', async () => {
     join.mockImplementation((_id, { onError }) => onError(new ApiError(409)));
     renderAt('16:56:00');

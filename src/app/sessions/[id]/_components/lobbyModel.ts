@@ -144,6 +144,20 @@ export type LobbyInput = {
   pageUrl: string;
 };
 
+/**
+ * "Joining closed at 6:15 pm, 15 minutes after the start." Said where Join is
+ * gone for someone who never joined, and when the server refuses them
+ * (`/problems/join-window-closed`): one sentence for one rule. Null on an
+ * older row with no window.
+ */
+export function joiningClosedNote(b: SessionRoom['booking'], timeZone: string): string | null {
+  if (!b.joinClosesAt) return null;
+  const after = Math.round(
+    (new Date(b.joinClosesAt).getTime() - new Date(b.startsAt).getTime()) / 60_000,
+  );
+  return `Joining closed at ${formatTime(b.joinClosesAt, timeZone)}, ${after} minutes after the start.`;
+}
+
 /** Everything the lobby shows, from the session, the phase and the clock. */
 export function lobbyModel({
   room,
@@ -183,10 +197,7 @@ export function lobbyModel({
   } else if (phase === 'closed' && b.joinClosesAt && !room.me.joinedAt) {
     // PROVISIONAL: undesigned. A first arrival after the window isn't let in
     // (product, 2026-10-08): it couldn't count as attending.
-    const after = Math.round(
-      (new Date(b.joinClosesAt).getTime() - new Date(b.startsAt).getTime()) / 60_000,
-    );
-    note = `Joining closed at ${formatTime(b.joinClosesAt, timeZone)}, ${after} minutes after the start.`;
+    note = joiningClosedNote(b, timeZone) ?? undefined;
   } else if (phase === 'closed') {
     note = 'Joining has closed for this session.';
   } else if (phase === 'settling') {
