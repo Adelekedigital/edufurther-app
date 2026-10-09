@@ -386,6 +386,7 @@ export function useJoinSession() {
  * no way in right now, which the page says rather than treating as an error.
  */
 export function useSessionDoor() {
+  const qc = useQueryClient();
   return useMutation<JoinResult, ApiError, string>({
     mutationFn: async (sessionId) => {
       const { data, error, response } = await api.POST('/api/v1/sessions/{session_id}/door', {
@@ -394,6 +395,13 @@ export function useSessionDoor() {
       if (!data) throw apiError(response.status, error);
       // The same check as Join: an unsafe link reads as "no way in".
       return { meetingUrl: safeMeetingUrl(data.meeting_url) };
+    },
+    onError: (e) => {
+      // Refused as a late first arrival (backend #382): the server has no
+      // Join press for this person, whatever our copy says, so re-read the
+      // session; the page then shows the closed note, not Rejoin.
+      if (e.type?.endsWith('/problems/join-window-closed'))
+        void qc.invalidateQueries({ queryKey: keys.bookings.all });
     },
   });
 }

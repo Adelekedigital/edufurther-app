@@ -100,6 +100,36 @@ describe('useSessionDoor', () => {
     await waitFor(() => expect(result.current.data).toEqual({ meetingUrl: null }));
   });
 
+  it('a late-first-arrival refusal re-reads the session: the server has no Join press', async () => {
+    get.mockResolvedValueOnce(ok(row({}, '2026-10-04T17:01:00Z'))).mockResolvedValueOnce(ok(row()));
+    post.mockResolvedValueOnce({
+      data: undefined,
+      error: { type: '/problems/join-window-closed', title: 'Join window closed' },
+      response: { ok: false, status: 409, headers: new Headers() },
+    });
+    const { result } = renderHook(
+      () => ({ room: useSessionRoom('s1', 'me'), door: useSessionDoor() }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.room.data?.me.joinedAt).not.toBeNull());
+    act(() => result.current.door.mutate('s1'));
+    await waitFor(() => expect(result.current.room.data?.me.joinedAt).toBeNull());
+    expect(get).toHaveBeenCalledTimes(2);
+  });
+
+  it('other refusals leave the session as it is', async () => {
+    get.mockResolvedValue(ok(row({}, '2026-10-04T17:01:00Z')));
+    post.mockResolvedValueOnce(fail(409));
+    const { result } = renderHook(
+      () => ({ room: useSessionRoom('s1', 'me'), door: useSessionDoor() }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.room.data).not.toBeNull());
+    act(() => result.current.door.mutate('s1'));
+    await waitFor(() => expect(result.current.door.error?.status).toBe(409));
+    expect(get).toHaveBeenCalledTimes(1);
+  });
+
   it('surfaces a refusal with its status', async () => {
     post.mockResolvedValueOnce(fail(409));
     const { result } = renderHook(() => useSessionDoor(), { wrapper });
