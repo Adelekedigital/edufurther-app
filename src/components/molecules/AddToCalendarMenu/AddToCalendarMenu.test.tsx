@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { CalendarEvent } from '@/lib/utils/calendarLinks';
-import { AddToCalendarMenu } from './AddToCalendarMenu';
+import { AddToCalendarChoices, AddToCalendarMenu } from './AddToCalendarMenu';
 
 const download = vi.fn();
 vi.mock('@/lib/utils/calendarLinks', async (orig) => ({
@@ -18,7 +18,22 @@ const event: CalendarEvent = {
   venue: 'EduFurther video',
 };
 
-beforeEach(() => download.mockReset());
+// jsdom has no matchMedia; the menu reads it to choose menu vs phone sheet.
+let phone = false;
+beforeEach(() => {
+  download.mockReset();
+  phone = false;
+  window.matchMedia = vi.fn().mockImplementation((q: string) => ({
+    matches: phone,
+    media: q,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
+});
 
 describe('AddToCalendarMenu', () => {
   it('is a menu button named by its visible words', () => {
@@ -71,5 +86,44 @@ describe('AddToCalendarMenu', () => {
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     expect(button).toHaveFocus();
+  });
+
+  it('on phones, given a sheet, is a plain button that asks for it', async () => {
+    phone = true;
+    const onOpenSheet = vi.fn();
+    render(<AddToCalendarMenu event={event} onOpenSheet={onOpenSheet} />);
+    const button = screen.getByRole('button', { name: 'Add to calendar' });
+    expect(button).toHaveAttribute('aria-haspopup', 'dialog');
+    await userEvent.click(button);
+    expect(onOpenSheet).toHaveBeenCalled();
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  it('on phones without a sheet, stays a menu', () => {
+    phone = true;
+    render(<AddToCalendarMenu event={event} />);
+    expect(screen.getByRole('button', { name: 'Add to calendar' })).toHaveAttribute(
+      'aria-haspopup',
+      'menu',
+    );
+  });
+});
+
+describe('AddToCalendarChoices', () => {
+  it('lists the same three choices as full-width buttons', () => {
+    render(<AddToCalendarChoices event={event} onDone={vi.fn()} />);
+    expect(screen.getAllByRole('button').map((el) => el.textContent)).toEqual([
+      'open_in_newGoogle Calendar',
+      'open_in_newOutlook.com',
+      'downloadDownload for other calendars (.ics)',
+    ]);
+  });
+
+  it('runs the choice, then says it is done so the sheet can close', async () => {
+    const onDone = vi.fn();
+    render(<AddToCalendarChoices event={event} onDone={onDone} />);
+    await userEvent.click(screen.getByRole('button', { name: /other calendars/ }));
+    expect(download).toHaveBeenCalledWith(event);
+    expect(onDone).toHaveBeenCalled();
   });
 });

@@ -157,8 +157,23 @@ function renderAt(time: string) {
   return render(<SessionJoinScreen id="b1" />);
 }
 
+// jsdom has no matchMedia; Add to calendar reads it to choose menu vs phone
+// sheet. Desktop unless a test says otherwise. Follows BookingsScreen.test.tsx.
+let phone = false;
+
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
+  phone = false;
+  window.matchMedia = vi.fn().mockImplementation((q: string) => ({
+    matches: phone,
+    media: q,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
   viewer = MEMBER;
   room = remote(sessionRoom());
   answers = remote<BookingAnswer[]>([]);
@@ -708,49 +723,128 @@ describe('after the call, before attendance is settled', () => {
 });
 
 describe('getting ready', () => {
-  it('holds the answers row’s place while they load, rather than popping it in', () => {
+  // Session Join.dc.html `layout=lobbySplit`: beside the lobby on wider
+  // screens (an aside, always open), and two buttons that open sheets on
+  // phones. jsdom applies no media queries, so both are in the DOM here.
+  const aside = () => screen.getByRole('complementary', { name: 'Getting ready' });
+
+  it('holds the answers card’s place while they load, rather than popping it in', () => {
     answers = remote<BookingAnswer[]>(null, { isLoading: true });
     const { container } = renderAt('15:15:00');
-    expect(container.querySelector('.prep')).toHaveAttribute('aria-busy', 'true');
-    expect(container.querySelector('.placeholder')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /wants to talk about/ })).not.toBeInTheDocument();
+    expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument();
+    expect(
+      within(aside()).queryByRole('heading', { name: /wants to talk about/ }),
+    ).not.toBeInTheDocument();
   });
 
-  it('hides the answers row when nothing was answered', () => {
+  it('hides the answers when nothing was answered; the guide still shows', () => {
     renderAt('15:15:00');
-    expect(screen.queryByRole('button', { name: /wants to talk about/ })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Quick guide/ })).toHaveAttribute(
-      'aria-expanded',
-      'false',
-    );
+    expect(screen.queryByText(/wants to talk about/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Amara’s answers/ })).not.toBeInTheDocument();
+    expect(
+      within(aside()).getByRole('heading', { name: 'Quick guide for a rewarding session' }),
+    ).toBeVisible();
   });
 
-  it('opens the mentee’s answers in place', async () => {
+  it('shows the mentee’s answers beside the lobby, open, without a toggle', () => {
     answers = remote([answer('Funded vs unfunded offers')]);
     renderAt('15:15:00');
-    const row = screen.getByRole('button', { name: /What Amara wants to talk about/ });
-    await userEvent.click(row);
-    expect(row).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getAllByText('Funded vs unfunded offers').length).toBeGreaterThan(0);
+    const side = aside();
+    expect(
+      within(side).getByRole('heading', { name: 'What Amara wants to talk about' }),
+    ).toBeVisible();
+    // Never "her": nothing tells us Amara's pronouns.
+    expect(within(side).getByText('From Amara’s booking answers.')).toBeVisible();
+    expect(within(side).getByText('Funded vs unfunded offers')).toBeVisible();
+    expect(within(side).queryByRole('button', { expanded: false })).not.toBeInTheDocument();
   });
 
-  it('addresses the mentee’s own answers to them', () => {
+  it('addresses the mentee’s own answers to them, and claims nothing about who read them', () => {
     room = remote(sessionRoom({ side: 'mentee' }));
     answers = remote([answer('Funded vs unfunded offers')]);
     renderAt('15:15:00');
-    expect(screen.getByRole('button', { name: /What you’ll talk about/ })).toBeVisible();
+    expect(within(aside()).getByRole('heading', { name: 'What you’ll talk about' })).toBeVisible();
+    expect(within(aside()).getByText('Your answers from booking.')).toBeVisible();
+    expect(screen.queryByText(/has read/)).not.toBeInTheDocument();
   });
 
-  it('never promises rescheduling or messaging, which do not exist', async () => {
+  it('a failed read keeps the card, with a retry', async () => {
+    const retry = vi.fn();
+    answers = remote<BookingAnswer[]>(null, { error: { status: 500 } as AppError, retry });
     renderAt('15:15:00');
-    await userEvent.click(screen.getByRole('button', { name: /Quick guide/ }));
+    expect(within(aside()).getByText('We couldn’t load the answers.')).toBeVisible();
+    await userEvent.click(within(aside()).getByRole('button', { name: 'Try again' }));
+    expect(retry).toHaveBeenCalled();
+  });
+
+  it('lists the guide open, and never promises rescheduling or messaging', () => {
+    answers = remote([answer('Funded vs unfunded offers')]);
+    renderAt('15:15:00');
     // No deadline on this fixture, so the tip names no number at all rather
     // than guessing one it cannot know.
     expect(
-      screen.getByText('Cancel in good time, so the time can go to someone else.'),
+      within(aside()).getByText('Cancel in good time, so the time can go to someone else.'),
     ).toBeVisible();
-    expect(screen.queryByText(/\d+ hours before/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/reschedule|message/i)).not.toBeInTheDocument();
+    expect(within(aside()).queryByText(/\d+ hours before/)).not.toBeInTheDocument();
+    expect(within(aside()).queryByText(/reschedule|message/i)).not.toBeInTheDocument();
+    // The tip no longer points "above": the answers are beside it, or behind a button.
+    expect(
+      within(aside()).getByText('Read Amara’s answers and have one next step ready for them.'),
+    ).toBeVisible();
+  });
+
+  it('on phones, a button opens the answers in a sheet and gives focus back on close', async () => {
+    answers = remote([answer('Funded vs unfunded offers')]);
+    renderAt('15:15:00');
+    const open = screen.getByRole('button', { name: 'Amara’s answers' });
+    expect(open).toHaveAttribute('aria-haspopup', 'dialog');
+    await userEvent.click(open);
+    const sheet = screen.getByRole('dialog', { name: 'What Amara wants to talk about' });
+    expect(within(sheet).getByText('Funded vs unfunded offers')).toBeVisible();
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(open).toHaveFocus();
+  });
+
+  it('on phones, the quick guide opens in its own sheet', async () => {
+    room = remote(sessionRoom({ side: 'mentee' }));
+    answers = remote([answer('Funded vs unfunded offers')]);
+    renderAt('15:15:00');
+    expect(screen.getByRole('button', { name: 'Your answers' })).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Quick guide' }));
+    const sheet = screen.getByRole('dialog', { name: 'Quick guide' });
+    expect(within(sheet).getByText('Check your setup')).toBeVisible();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('on phones, Add to calendar opens its choices in a sheet', async () => {
+    phone = true;
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    renderAt('15:15:00');
+    await userEvent.click(screen.getByRole('button', { name: 'Add to calendar' }));
+    const sheet = screen.getByRole('dialog', { name: 'Add to calendar' });
+    await userEvent.click(within(sheet).getByRole('button', { name: /Google Calendar/ }));
+    expect(open).toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    open.mockRestore();
+  });
+
+  it('widens the page only while there is something to get ready for', () => {
+    // Loading starts wide: most visits are before a session, so nothing jumps sideways.
+    room = remote<SessionRoom>(null, { isLoading: true });
+    const loading = renderAt('15:15:00');
+    expect(loading.container.querySelector('main')).toHaveClass('wide');
+    loading.unmount();
+    room = remote(sessionRoom());
+    const { container, unmount } = renderAt('15:15:00');
+    expect(container.querySelector('main')).toHaveClass('wide');
+    unmount();
+    room = remote(sessionRoom({ status: 'completed' }));
+    const done = renderAt('17:40:00');
+    expect(done.container.querySelector('main')).not.toHaveClass('wide');
+    expect(screen.queryByRole('complementary', { name: 'Getting ready' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Quick guide' })).not.toBeInTheDocument();
   });
 
   it('names the deployment’s window, not a remembered twelve', async () => {
@@ -762,8 +856,7 @@ describe('getting ready', () => {
       booking: { ...r.booking, refundUntil: '2026-10-04T07:00:00Z' },
     });
     renderAt('15:15:00');
-    await userEvent.click(screen.getByRole('button', { name: /Quick guide/ }));
-    expect(screen.getByText(/Cancel at least 10 hours before/)).toBeVisible();
+    expect(within(aside()).getByText(/Cancel at least 10 hours before/)).toBeVisible();
     expect(screen.queryByText(/12 hours/)).not.toBeInTheDocument();
   });
 });

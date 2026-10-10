@@ -125,6 +125,11 @@
 }
 
 @media (max-width: 767px) {
+  /* The design's phone frame (`device=mobile`): a tighter hero. */
+  .lobby {
+    gap: var(--space-4);
+    padding: var(--space-6) var(--space-4) var(--space-5);
+  }
   /* Ours: 44px tap area on phones. */
   .link {
     min-height: var(--touch-target-min);

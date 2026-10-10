@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { cx } from '@/lib/utils/cx';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { OfflineBanner } from '@/components/molecules/OfflineBanner/OfflineBanner';
 import styles from './FocusPage.module.css';
@@ -9,6 +10,8 @@ type FocusPageProps = {
   /** Where the header's link goes, and what it says ("Go to Bookings"). */
   back: { href: string; label: string };
   offline?: boolean;
+  /** 1080px instead of 720px: the lobby with its aside beside it (`lobbySplit`). */
+  wide?: boolean;
   children: ReactNode;
 };
 
@@ -18,7 +21,7 @@ type FocusPageProps = {
  * right now, so nothing else competes with it. A deliberate exception to
  * "every app screen renders inside AppShell" (design-divergence.md).
  */
-export function FocusPage({ back, offline, children }: FocusPageProps) {
+export function FocusPage({ back, offline, wide, children }: FocusPageProps) {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -36,7 +39,7 @@ export function FocusPage({ back, offline, children }: FocusPageProps) {
         </Link>
       </header>
       {offline && <OfflineBanner />}
-      <main className={styles.main}>{children}</main>
+      <main className={cx(styles.main, wide && styles.wide)}>{children}</main>
     </div>
   );
 }

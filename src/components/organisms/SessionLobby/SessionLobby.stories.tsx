@@ -3,7 +3,7 @@ import { fn } from 'storybook/test';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { sampleParty } from '@/lib/utils/bookingTestFixtures';
 import type { BookingAnswer } from '@/types/booking';
-import { SessionPrep, type GuideTip } from '../SessionPrep/SessionPrep';
+import { SessionPrepAside, SessionPrepButtons, type GuideTip } from '../SessionPrep/SessionPrep';
 import { SessionLobby, type LobbyPerson } from './SessionLobby';
 
 const me = sampleParty({
@@ -49,14 +49,17 @@ const ANSWERS: BookingAnswer[] = [
 ];
 const GUIDE: GuideTip[] = [
   {
+    icon: 'checklist',
     title: 'Come with one clear goal',
-    body: 'Read Amara’s answers above and have one next step ready for them.',
+    body: 'Read Amara’s answers and have one next step ready for them.',
   },
   {
+    icon: 'wifi',
     title: 'Check your setup',
     body: 'A quiet spot, headphones and a steady connection make the call easier for both of you.',
   },
   {
+    icon: 'event_repeat',
     title: 'If plans change',
     body: 'Cancel at least 12 hours before, so the time can go to someone else.',
   },
@@ -197,34 +200,63 @@ export const LongNames: Story = {
   },
 };
 
-/** The lobby with the two rows under it, as the page composes them. */
+const SUB = 'From Amara’s booking answers.';
+
+/** `lobbySplit`: the lobby with the answers and the guide beside it, as the page composes them. */
 export const WithPrep: Story = {
   args: Upcoming.args,
   render: (args) => (
-    <>
-      <SessionLobby {...args} />
-      <SessionPrep answersTitle="What Amara wants to talk about" answers={ANSWERS} guide={GUIDE} />
-    </>
+    <div
+      style={{ display: 'flex', gap: 'var(--space-6)', flexWrap: 'wrap', alignItems: 'flex-start' }}
+    >
+      <div style={{ flex: '1.4 1 400px', minWidth: 0 }}>
+        <SessionLobby {...args} />
+      </div>
+      <SessionPrepAside
+        answersTitle="What Amara wants to talk about"
+        answersSub={SUB}
+        answers={ANSWERS}
+        guide={GUIDE}
+      />
+    </div>
   ),
 };
 
-/** Nothing was answered: only the guide row. */
+/** Nothing was answered: only the guide card. */
 export const PrepWithoutAnswers: Story = {
   render: () => (
-    <SessionPrep answersTitle="What Amara wants to talk about" answers={[]} guide={GUIDE} />
+    <SessionPrepAside
+      answersTitle="What Amara wants to talk about"
+      answersSub={SUB}
+      answers={[]}
+      guide={GUIDE}
+    />
   ),
 };
 
-/** The answers failed to load: the row stays, with a retry. */
+/** The answers failed to load: the card stays, with a retry. */
 export const PrepAnswersFailed: Story = {
   render: () => (
-    <SessionPrep
+    <SessionPrepAside
       answersTitle="What Amara wants to talk about"
+      answersSub={SUB}
       answers={null}
       answersFailed
       onRetryAnswers={fn()}
       guide={GUIDE}
     />
+  ),
+};
+
+/** Phones: the two buttons at the foot of the lobby card, each opening a sheet. */
+export const PrepOnPhones: Story = {
+  args: Upcoming.args,
+  globals: { viewport: { value: 'mobile1' } },
+  render: (args) => (
+    <>
+      <SessionLobby {...args} />
+      <SessionPrepButtons answersLabel="Amara’s answers" showAnswers onOpen={fn()} />
+    </>
   ),
 };
 

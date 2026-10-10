@@ -106,6 +106,7 @@
     "star",
     "task_alt",
     "timer",
+    "tips_and_updates",
     "toll",
     "translate",
     "tune",
@@ -121,5 +122,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "55bcfd5696989b3cda37aadc4cb7699222614643f1a29a965a00df580940c717"
+  "sha256": "dc7660784e30f451a4cbf8dbcb1852656ce1300e447136f3c74c30ed0f9dcdde"
 }

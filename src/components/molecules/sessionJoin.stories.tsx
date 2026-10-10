@@ -1,8 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { useState } from 'react';
 import { sampleParty } from '@/lib/utils/bookingTestFixtures';
 import { AddToCalendarMenu } from './AddToCalendarMenu/AddToCalendarMenu';
-import { DisclosureRow } from './DisclosureRow/DisclosureRow';
 import { PresencePerson } from './PresencePerson/PresencePerson';
 import { SessionClock } from './SessionClock/SessionClock';
 import { SessionStatusPill } from './SessionStatusPill/SessionStatusPill';
@@ -59,26 +57,6 @@ export const Presence: Story = {
     </div>
   ),
 };
-
-function Disclosure({ startOpen }: { startOpen: boolean }) {
-  const [open, setOpen] = useState(startOpen);
-  return (
-    <div style={{ maxWidth: 640, border: '1px solid var(--ink-200)' }}>
-      <DisclosureRow
-        icon="checklist"
-        title="Quick guide for a rewarding session"
-        preview="3 tips · 1 min read"
-        open={open}
-        onToggle={() => setOpen((o) => !o)}
-      >
-        <span>Come with one clear goal.</span>
-      </DisclosureRow>
-    </div>
-  );
-}
-
-export const DisclosureClosed: Story = { render: () => <Disclosure startOpen={false} /> };
-export const DisclosureOpen: Story = { render: () => <Disclosure startOpen /> };
 
 /** The design's "Add to calendar" link, opening Google, Outlook.com or a .ics file. */
 export const AddToCalendar: Story = {

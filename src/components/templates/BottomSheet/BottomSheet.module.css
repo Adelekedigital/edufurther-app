@@ -1,0 +1,86 @@
+/* Session Join.dc.html `jsSheet`: the phone sheet for reading. */
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+}
+
+/* The design draws rgba(16,25,40,.5); the scrim token is the same ink at .48. */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--overlay-scrim);
+  animation: fade var(--duration-base) var(--ease-standard);
+}
+
+.sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 80%;
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+  animation: rise var(--duration-slow) var(--ease-standard);
+}
+.sheet:focus {
+  outline: none;
+}
+
+.handle {
+  align-self: center;
+  width: 36px;
+  height: 4px;
+  margin-top: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--ink-300);
+}
+
+.head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-5);
+  border-bottom: var(--border-hairline) solid var(--ink-100);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  /* Ours: the home indicator's inset on phones that have one. */
+  padding: var(--space-5) var(--space-5) max(var(--space-8), env(safe-area-inset-bottom));
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes rise {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .sheet {
+    animation: none;
+  }
+}

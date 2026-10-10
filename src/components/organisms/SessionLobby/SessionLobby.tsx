@@ -56,6 +56,8 @@ type SessionLobbyProps = {
   links?: LobbyLink[];
   /** "Add to calendar", first in the links row (before the call only). */
   calendar?: CalendarEvent;
+  /** Phones: the page shows the calendar choices in its sheet (see AddToCalendarMenu). */
+  onCalendarSheet?: () => void;
   /** A problem with the last Join press, under the button. */
   notice?: ReactNode;
 };
@@ -72,6 +74,7 @@ export function SessionLobby({
   note,
   links,
   calendar,
+  onCalendarSheet,
   notice,
 }: SessionLobbyProps) {
   // Join can vanish under someone's focus (the window shuts, or the session
@@ -134,7 +137,13 @@ export function SessionLobby({
 
       {(!!links?.length || calendar) && (
         <div className={styles.links}>
-          {calendar && <AddToCalendarMenu event={calendar} onTint={ground !== 'white'} />}
+          {calendar && (
+            <AddToCalendarMenu
+              event={calendar}
+              onTint={ground !== 'white'}
+              onOpenSheet={onCalendarSheet}
+            />
+          )}
           {links?.map((l) => (
             <button
               key={l.key}
