@@ -183,3 +183,35 @@ describe('the suggestion a mentor offered (backend #339)', () => {
     ).toBe(null);
   });
 });
+
+describe('a deleted account keeps nothing identifying (backend #409)', () => {
+  it('drops the education along with the name and the avatar', () => {
+    const b = toBooking(
+      row({
+        mentee: {
+          ...party('them', 'Amara', 'Okafor'),
+          deleted: true,
+          degree: 'BSc',
+          institution: 'FUTA',
+        },
+      } as Partial<SessionRead>),
+      'me',
+    );
+    // The contract says these arrive null for a deleted account. This function
+    // does not trust that for the name or the avatar, and should not here.
+    expect(b.other.degree).toBe(null);
+    expect(b.other.institution).toBe(null);
+    expect(b.other.name).toBe('Deleted user');
+  });
+
+  it('a live account keeps them', () => {
+    const b = toBooking(
+      row({
+        mentee: { ...party('them', 'Amara', 'Okafor'), degree: 'BSc', institution: 'FUTA' },
+      } as Partial<SessionRead>),
+      'me',
+    );
+    expect(b.other.degree).toBe('BSc');
+    expect(b.other.institution).toBe('FUTA');
+  });
+});

@@ -69,8 +69,11 @@ export function toParty(p: PartyRead): BookingParty {
     deleted: p.deleted ?? false,
     timeZone: p.deleted ? null : (p.timezone ?? null),
     cover: coverFor(p.id),
-    degree: p.degree ?? null,
-    institution: p.institution ?? null,
+    // Redacted here like the name and the avatar, not merely expected to
+    // arrive null: every other identifying field on a deleted account is
+    // dropped locally rather than trusted to the server.
+    degree: p.deleted ? null : (p.degree ?? null),
+    institution: p.deleted ? null : (p.institution ?? null),
     joinedAt: p.joined_at ?? null,
     inRoomAt: p.in_room_at ?? null,
     attendance:
