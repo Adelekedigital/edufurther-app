@@ -112,6 +112,7 @@ export const ICON_NAMES = [
   'star',
   'task_alt',
   'timer',
+  'tips_and_updates',
   'toll',
   'translate',
   'tune',

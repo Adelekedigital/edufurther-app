@@ -1,102 +1,187 @@
 'use client';
 
-import { useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
+import { Icon } from '@/components/atoms/Icon/Icon';
+import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { AnswerItem } from '@/components/molecules/AnswerItem/AnswerItem';
-import { DisclosureRow } from '@/components/molecules/DisclosureRow/DisclosureRow';
 import type { AnswerFile, BookingAnswer } from '@/types/booking';
 import styles from './SessionPrep.module.css';
 
-export type GuideTip = { title: string; body: string };
+export type GuideTip = { icon: IconName; title: string; body: string };
 
-type SessionPrepProps = {
-  /** "What you’ll talk about" / "What Amara wants to talk about". */
-  answersTitle: string;
-  /** Null while loading. An empty list hides the row: there is nothing to read. */
+type AnswersProps = {
+  /** "Your answers from booking." / "From Amara’s booking answers." */
+  answersSub: string;
+  /** Null while loading. */
   answers: BookingAnswer[] | null;
-  /** Still coming: a placeholder holds the row's place rather than it popping in. */
   answersLoading?: boolean;
   answersFailed?: boolean;
   onRetryAnswers?: () => void;
   onOpenFile?: (file: AnswerFile) => void;
+};
+
+/** Whether there is anything to put in the answers card or sheet. */
+export function hasAnswersToShow(
+  p: Pick<AnswersProps, 'answers' | 'answersLoading' | 'answersFailed'>,
+): boolean {
+  return !!p.answersFailed || !!p.answersLoading || (p.answers?.length ?? 0) > 0;
+}
+
+/** The answers themselves: in the aside's card and in the phone sheet. */
+export function PrepAnswers({
+  answersSub,
+  answers,
+  answersFailed,
+  onRetryAnswers,
+  onOpenFile,
+}: AnswersProps) {
+  if (answersFailed) {
+    return (
+      <div className={styles.retry}>
+        <span className={styles.muted}>We couldn’t load the answers.</span>
+        <Button variant="secondary-outlined" size="small" onClick={onRetryAnswers}>
+          Try again
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <>
+      <span className={styles.sub}>{answersSub}</span>
+      {(answers ?? []).map((a) => (
+        <AnswerItem key={a.questionId} answer={a} onOpenFile={onOpenFile} />
+      ))}
+    </>
+  );
+}
+
+/** The quick guide's tips, each with its glyph. */
+export function PrepGuide({ guide }: { guide: GuideTip[] }) {
+  return guide.map((g) => (
+    <div key={g.title} className={styles.tip}>
+      <span className={styles.disc} aria-hidden>
+        <Icon name={g.icon} size={18} />
+      </span>
+      <span className={styles.tipText}>
+        <span className={styles.tipTitle}>{g.title}</span>
+        <span className={styles.tipBody}>{g.body}</span>
+      </span>
+    </div>
+  ));
+}
+
+type AsideProps = AnswersProps & {
+  /** "What you’ll talk about" / "What Amara wants to talk about". */
+  answersTitle: string;
   guide: GuideTip[];
 };
 
 /**
- * Session Join.dc.html's two rows under the lobby: the mentee's booking
- * answers, and the quick guide. Both start closed (the design's default).
+ * Session Join.dc.html `layout=lobbySplit`, beside the lobby: the booking
+ * answers and the quick guide, each in its own card and always open. Hidden
+ * on phones, where `SessionPrepButtons` takes its place.
  */
-export function SessionPrep({
-  answersTitle,
-  answers,
-  answersLoading,
-  answersFailed,
-  onRetryAnswers,
-  onOpenFile,
-  guide,
-}: SessionPrepProps) {
-  const [open, setOpen] = useState<{ talk: boolean; guide: boolean }>({
-    talk: false,
-    guide: false,
-  });
-  const toggle = (k: 'talk' | 'guide') => setOpen((o) => ({ ...o, [k]: !o[k] }));
-  // A failed read still gets its row, so the answers do not just vanish.
-  const showTalk = answersFailed || (answers?.length ?? 0) > 0;
-  const preview = answersFailed
-    ? 'Couldn’t load the answers.'
-    : (answers ?? []).map((a) => a.text).join(' · ');
-
-  const loading = !!answersLoading && !answersFailed;
+export function SessionPrepAside({ answersTitle, guide, ...answers }: AsideProps) {
+  const loading = !!answers.answersLoading && !answers.answersFailed;
   return (
-    <div className={styles.prep} aria-busy={loading || undefined}>
-      {loading && (
-        // Ours: the row's shape while the answers load (the design draws none).
-        <div className={styles.placeholder} aria-hidden>
-          <Skeleton width="32px" height="32px" radius="lg" />
-          <span className={styles.placeholderText}>
-            <Skeleton width="45%" height="14px" />
-            <Skeleton width="80%" height="12px" />
-          </span>
-        </div>
+    // "Getting ready" is ours: the design's aside has no name, and a landmark needs one.
+    <aside className={styles.aside} aria-label="Getting ready">
+      {loading ? (
+        // Ours: the card's shape while the answers load (the design draws none).
+        <section className={styles.card} aria-busy="true">
+          <Skeleton width="55%" height="18px" />
+          <Skeleton width="80%" height="12px" />
+          <Skeleton width="100%" height="40px" />
+        </section>
+      ) : (
+        hasAnswersToShow(answers) && (
+          <section className={styles.card}>
+            <h2 className={styles.heading}>{answersTitle}</h2>
+            <PrepAnswers {...answers} />
+          </section>
+        )
       )}
-      {showTalk && !loading && (
-        <DisclosureRow
-          icon="forum"
-          title={answersTitle}
-          preview={preview}
-          open={open.talk}
-          onToggle={() => toggle('talk')}
-        >
-          {answersFailed ? (
-            <div className={styles.retry}>
-              <span className={styles.muted}>We couldn’t load the answers.</span>
-              <Button variant="secondary-outlined" size="small" onClick={onRetryAnswers}>
-                Try again
-              </Button>
-            </div>
-          ) : (
-            (answers ?? []).map((a) => (
-              <AnswerItem key={a.questionId} answer={a} onOpenFile={onOpenFile} />
-            ))
-          )}
-        </DisclosureRow>
-      )}
-      <DisclosureRow
-        icon="checklist"
-        title="Quick guide for a rewarding session"
-        preview={`${guide.length} tips · 1 min read`}
-        open={open.guide}
-        onToggle={() => toggle('guide')}
-        divided={showTalk || loading}
-      >
-        {guide.map((g) => (
-          <div key={g.title} className={styles.tip}>
-            <span className={styles.tipTitle}>{g.title}</span>
-            <span className={styles.tipBody}>{g.body}</span>
+      <section className={styles.card}>
+        <h2 className={styles.heading}>Quick guide for a rewarding session</h2>
+        <PrepGuide guide={guide} />
+      </section>
+    </aside>
+  );
+}
+
+/**
+ * The aside's shape while the session itself loads (ours). Most people open
+ * this page before a session, so the page starts in the wide layout and does
+ * not jump sideways when the lobby arrives.
+ */
+export function SessionPrepAsideSkeleton() {
+  return (
+    <div className={styles.aside} aria-hidden>
+      <div className={styles.card}>
+        <Skeleton width="70%" height="20px" />
+        {[0, 1, 2].map((i) => (
+          <div key={i} className={styles.tip}>
+            <Skeleton width="32px" height="32px" radius="lg" />
+            <span className={styles.tipText}>
+              <Skeleton width="50%" height="16px" />
+              <Skeleton width="90%" height="28px" />
+            </span>
           </div>
         ))}
-      </DisclosureRow>
+      </div>
+    </div>
+  );
+}
+
+export type PrepSheet = 'talk' | 'guide';
+
+type ButtonsProps = {
+  /** "Your answers" / "Amara’s answers". */
+  answersLabel: string;
+  /** Whether the answers button shows: there is something to read, or a retry. */
+  showAnswers: boolean;
+  answersLoading?: boolean;
+  onOpen: (sheet: PrepSheet) => void;
+};
+
+/**
+ * Session Join.dc.html `mobPrepRows`: on phones, the foot of the lobby card
+ * holds two buttons, each opening its content in a sheet. Hidden from 768px,
+ * where the aside shows instead.
+ */
+export function SessionPrepButtons({
+  answersLabel,
+  showAnswers,
+  answersLoading,
+  onOpen,
+}: ButtonsProps) {
+  const rows: { key: PrepSheet; icon: IconName; title: string }[] = [
+    ...(showAnswers ? [{ key: 'talk' as const, icon: 'forum' as const, title: answersLabel }] : []),
+    { key: 'guide', icon: 'tips_and_updates', title: 'Quick guide' },
+  ];
+  return (
+    <div className={styles.buttons} aria-busy={answersLoading || undefined}>
+      {answersLoading && (
+        // Ours: the answers button's place while they load.
+        <span className={styles.buttonPlaceholder} aria-hidden>
+          <Skeleton width="100%" height="56px" radius="lg" />
+        </span>
+      )}
+      {rows.map((r) => (
+        <button
+          key={r.key}
+          type="button"
+          aria-haspopup="dialog"
+          className={styles.button}
+          onClick={() => onOpen(r.key)}
+        >
+          <span className={styles.disc} aria-hidden>
+            <Icon name={r.icon} size={18} />
+          </span>
+          <span className={styles.buttonTitle}>{r.title}</span>
+        </button>
+      ))}
     </div>
   );
 }

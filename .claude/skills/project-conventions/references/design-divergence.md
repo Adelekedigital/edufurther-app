@@ -497,3 +497,20 @@ Neither line is drawn anywhere; the contract says so outright for the degree
 question relabels old answers. Backend #350 closed when #360 merged — the
 wording is stored with the answer and returned as asked. The claims were the
 opposite of the truth and `types/booking.ts` is imported by seven components.
+
+### Session Join — `layout=lobbySplit` (2026-10-10)
+
+| Design says | We do | Why |
+|---|---|---|
+| Answers card subtitle (mentee): "Your answers from booking. Gbenga has read these." | "Your answers from booking." | Nothing tells us whether the mentor has read them. |
+| Answers card subtitle (mentor): "From her booking answers." | "From {first}’s booking answers." | Nothing tells us the mentee's pronouns. |
+| Guide tip: "Read Amara’s answers **above**…" | "Read Amara’s answers…" | The answers sit beside the lobby, or behind a button on phones. |
+| The answers card's Edit (mentee) | Not shown | No endpoint to change answers yet (#186). |
+| Aside has no name | `aria-label="Getting ready"` | A landmark needs a name (ours). |
+| No loading state drawn | The answers card's placeholder; the page loads in the wide layout with a placeholder column | Without it the lobby jumped sideways when the session arrived (CLS 0.10 at 1440). Completed and missed sessions narrow to 720px after loading, the rarer case. |
+| Phone buttons always two | A lone "Quick guide" spans the row when there are no answers | Half a row with empty space beside it reads as broken. |
+| Phone sheet scrim rgba(16,25,40,.5) | `--overlay-scrim` (.48) | The token for the same ink. |
+| "Add to calendar" is a link with no menu drawn | Desktop: our menu (Google, Outlook.com, .ics). **Phones: the same three as full-width rows in a bottom sheet** | A menu anchored to a 12px link is hard to hit on a phone, and every other choice on this page opens as a sheet there (user, 2026-10-10). |
+| Cancel opens as a bottom sheet on phones (`CancelModal sheet contained`) | Still the shared dialog's full-screen treatment | The Bookings session owns `ConfirmActionDialog`; queued in its cancel-modal fidelity pass. |
+| Title (h5 24px) and clock (display-sm 48px) | Same at every width | The design system has no phone type scale. A system-wide question for design (asked by the user, 2026-10-10), not changed per screen. |
+

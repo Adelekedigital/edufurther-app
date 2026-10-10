@@ -9,7 +9,20 @@ import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { SessionLobby } from '@/components/organisms/SessionLobby/SessionLobby';
 import { SessionOutcome } from '@/components/organisms/SessionOutcome/SessionOutcome';
-import { SessionPrep } from '@/components/organisms/SessionPrep/SessionPrep';
+import {
+  hasAnswersToShow,
+  PrepAnswers,
+  PrepGuide,
+  SessionPrepAside,
+  SessionPrepAsideSkeleton,
+  SessionPrepButtons,
+  type PrepSheet,
+} from '@/components/organisms/SessionPrep/SessionPrep';
+import { BottomSheet } from '@/components/templates/BottomSheet/BottomSheet';
+import {
+  ADD_TO_CALENDAR,
+  AddToCalendarChoices,
+} from '@/components/molecules/AddToCalendarMenu/AddToCalendarMenu';
 import { FocusPage } from '@/components/templates/FocusPage/FocusPage';
 import { ReviewDialog } from '@/app/_reviews/ReviewDialog';
 import { ConfirmActionDialog } from '@/app/_sessions/ConfirmActionDialog';
@@ -30,6 +43,7 @@ import { presenceOf } from '@/lib/utils/presence';
 import { outcomeView } from '@/lib/utils/sessionOutcome';
 import { isFinal, sessionPhase } from '@/lib/utils/sessionPhase';
 import { useOnline } from '@/lib/utils/useOnline';
+import type { CalendarEvent } from '@/lib/utils/calendarLinks';
 import type { AnswerFile } from '@/types/booking';
 import {
   guideTips,
@@ -118,6 +132,8 @@ export function SessionJoinScreen({ id }: { id: string }) {
     setReviewing(null);
   };
   const [viewing, setViewing] = useState<AnswerFile | null>(null);
+  // The phone's sheets (below 768px): the answers, the guide, or the calendar choices.
+  const [sheet, setSheet] = useState<PrepSheet | 'calendar' | null>(null);
 
   // The first arrival goes through /join (the attendance record); every way
   // back in after it through /door, which records nothing. Both return a link
@@ -210,6 +226,17 @@ export function SessionJoinScreen({ id }: { id: string }) {
   const gate = memberGate(viewer, `/sessions/${encodeURIComponent(id)}`, SESSION_GATE);
 
   let body: ReactNode;
+  // What getting ready shows (aside, phone buttons and sheets), while there is
+  // something to get ready for.
+  let prep: {
+    answersTitle: string;
+    prepAnswers: Parameters<typeof PrepAnswers>[0];
+    guide: ReturnType<typeof guideTips>;
+  } | null = null;
+  // The lobby's calendar event, for the phone's calendar sheet.
+  let calendar: CalendarEvent | undefined;
+  // Wide while loading too: see SessionPrepAsideSkeleton.
+  let wide = false;
   if (gate) {
     body = <section className={styles.card}>{gate}</section>;
   } else if (room.error && !data) {
@@ -246,20 +273,24 @@ export function SessionJoinScreen({ id }: { id: string }) {
     );
   } else if (!data || !live) {
     // Loading, and the instant before a redirect away.
+    wide = true;
     body = (
-      <section className={styles.card} aria-busy="true" aria-label="Loading your session">
-        <div className={styles.skeleton}>
-          <Skeleton width="96px" height="24px" radius="lg" />
-          <Skeleton width="70%" height="28px" />
-          <Skeleton width="55%" height="16px" />
-          <Skeleton width="160px" height="48px" />
-          <div className={styles.skeletonPeople}>
-            <Skeleton width="64px" height="64px" radius="lg" />
-            <Skeleton width="64px" height="64px" radius="lg" />
+      <>
+        <section className={styles.card} aria-busy="true" aria-label="Loading your session">
+          <div className={styles.skeleton}>
+            <Skeleton width="96px" height="24px" radius="lg" />
+            <Skeleton width="70%" height="28px" />
+            <Skeleton width="55%" height="16px" />
+            <Skeleton width="160px" height="48px" />
+            <div className={styles.skeletonPeople}>
+              <Skeleton width="64px" height="64px" radius="lg" />
+              <Skeleton width="64px" height="64px" radius="lg" />
+            </div>
+            <Skeleton width="100%" height="48px" radius="md" />
           </div>
-          <Skeleton width="100%" height="48px" radius="md" />
-        </div>
-      </section>
+        </section>
+        <SessionPrepAsideSkeleton />
+      </>
     );
   } else {
     const b = data.booking;
@@ -274,7 +305,28 @@ export function SessionJoinScreen({ id }: { id: string }) {
       pageUrl: new URL(`/sessions/${encodeURIComponent(id)}`, window.location.origin).toString(),
       onCancel: canCancel(b, now) ? () => setCancelling(true) : undefined,
     });
+    calendar = lobby.calendar;
     const hasAnswers = (answers.data?.length ?? 0) > 0;
+    const first = b.other.firstName;
+    const mentee = b.side === 'mentee';
+    const prepAnswers = {
+      // Not "Gbenga has read these": nothing tells us whether they have. And
+      // not "her": nothing tells us the mentee's pronouns (design-divergence.md).
+      answersSub: mentee ? 'Your answers from booking.' : `From ${first}’s booking answers.`,
+      answers: answers.data,
+      answersLoading: answers.isLoading,
+      answersFailed: !!answers.error,
+      onRetryAnswers: answers.retry,
+      onOpenFile: setViewing,
+    };
+    const guide = guideTips(data, hasAnswers);
+    prep = preparing
+      ? {
+          answersTitle: mentee ? 'What you’ll talk about' : `What ${first} wants to talk about`,
+          prepAnswers,
+          guide,
+        }
+      : null;
     const notice = blockedUrl ? (
       // Said through the LiveRegion above; this is the link to act on.
       <Notice tone="info" live={false}>
@@ -291,55 +343,100 @@ export function SessionJoinScreen({ id }: { id: string }) {
     ) : null;
 
     body = (
-      <section className={styles.card}>
-        {/* A Join problem belongs to joining: gone once the session is over. */}
-        <SessionLobby {...lobby} notice={preparing ? notice : null} />
-        {isSettled(live) && (
-          <SessionOutcome
-            view={outcomeView({
-              booking: b,
-              canBook,
-              reviewable: !reviewAsked
-                ? false
-                : reviewables.error
-                  ? 'error'
-                  : reviewables.isLoading
-                    ? 'loading'
-                    : !!reviewSession,
-              reviewed: reviewedHere,
-            })}
-            onAction={(key) => {
-              if (key === 'review' && reviewSession) {
-                sendReview.reset();
-                setReviewing(reviewSession);
-              }
-              if (key === 'retryReview') reviewables.retry();
-            }}
+      <>
+        <section className={styles.card}>
+          {/* A Join problem belongs to joining: gone once the session is over. */}
+          <SessionLobby
+            {...lobby}
+            notice={preparing ? notice : null}
+            onCalendarSheet={() => setSheet('calendar')}
           />
-        )}
+          {isSettled(live) && (
+            <SessionOutcome
+              view={outcomeView({
+                booking: b,
+                canBook,
+                reviewable: !reviewAsked
+                  ? false
+                  : reviewables.error
+                    ? 'error'
+                    : reviewables.isLoading
+                      ? 'loading'
+                      : !!reviewSession,
+                reviewed: reviewedHere,
+              })}
+              onAction={(key) => {
+                if (key === 'review' && reviewSession) {
+                  sendReview.reset();
+                  setReviewing(reviewSession);
+                }
+                if (key === 'retryReview') reviewables.retry();
+              }}
+            />
+          )}
+          {preparing && (
+            <SessionPrepButtons
+              answersLabel={mentee ? 'Your answers' : `${first}’s answers`}
+              showAnswers={hasAnswersToShow(prepAnswers) && !prepAnswers.answersLoading}
+              answersLoading={prepAnswers.answersLoading && !prepAnswers.answersFailed}
+              onOpen={setSheet}
+            />
+          )}
+        </section>
         {preparing && (
-          <SessionPrep
-            answersTitle={
-              b.side === 'mentee'
-                ? 'What you’ll talk about'
-                : `What ${b.other.firstName} wants to talk about`
-            }
-            answers={answers.data}
-            answersLoading={answers.isLoading}
-            answersFailed={!!answers.error}
-            onRetryAnswers={answers.retry}
-            onOpenFile={setViewing}
-            guide={guideTips(data, hasAnswers)}
+          <SessionPrepAside
+            answersTitle={mentee ? 'What you’ll talk about' : `What ${first} wants to talk about`}
+            guide={guide}
+            {...prepAnswers}
           />
         )}
-      </section>
+      </>
     );
   }
 
+  // A sheet whose content goes away (Add to calendar once the session starts,
+  // the answers and guide once it's over) unmounts together with the button
+  // that opened it, so the focus trap has nowhere to give focus back and it
+  // falls to <body>. Drop it, and put focus on the lobby's title, as the lobby
+  // does when Join vanishes (Codex on #206).
+  const orphaned =
+    (sheet === 'calendar' && !calendar) || ((sheet === 'talk' || sheet === 'guide') && !prep);
+  // Counted, so every orphaned sheet moves focus, not only the first.
+  const [orphanedSheets, setOrphanedSheets] = useState(0);
+  if (orphaned) {
+    // React's "adjust state while rendering": the next render has no sheet,
+    // so this runs once per orphaned sheet.
+    setSheet(null);
+    setOrphanedSheets((n) => n + 1);
+  }
+  useEffect(() => {
+    if (!orphanedSheets) return;
+    if (document.activeElement === document.body || !document.activeElement?.isConnected) {
+      document.querySelector<HTMLElement>('main h1')?.focus();
+    }
+  }, [orphanedSheets]);
+
   return (
-    <FocusPage back={BACK} offline={!online}>
+    <FocusPage back={BACK} offline={!online} wide={wide || !!prep}>
       <LiveRegion message={said} />
       {body}
+      {sheet === 'calendar' && calendar && (
+        <BottomSheet title={ADD_TO_CALENDAR} onClose={() => setSheet(null)}>
+          <AddToCalendarChoices event={calendar} onDone={() => setSheet(null)} />
+        </BottomSheet>
+      )}
+      {prep && (sheet === 'talk' || sheet === 'guide') && (
+        <BottomSheet
+          title={sheet === 'guide' ? 'Quick guide' : prep.answersTitle}
+          onClose={() => setSheet(null)}
+        >
+          {sheet === 'guide' ? (
+            <PrepGuide guide={prep.guide} />
+          ) : (
+            <PrepAnswers {...prep.prepAnswers} />
+          )}
+        </BottomSheet>
+      )}
       {viewing && <IntakeFileViewer file={viewing} onClose={() => setViewing(null)} />}
       {reviewing && data && member && (
         <ReviewDialog
