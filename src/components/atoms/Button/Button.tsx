@@ -19,7 +19,7 @@ export type ButtonVariant =
   | 'destructive';
 /**
  * Sizes follow placement, variants follow importance (CTA Hierarchy.dc.html,
- * replacing the one-size #28 rule). Labels are Inter semibold.
+ * replacing the one-size #28 rule). Labels are DM Sans semibold (ADR 0002).
  * large  — 48px, padding 16px 24px (phones 16px), 14px label. The one action
  *          that moves a page, flow or modal footer forward; empty/error states.
  * medium — 40px, padding 12px 20px, 14px label. A card's or section's action.

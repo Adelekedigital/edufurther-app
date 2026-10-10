@@ -1,18 +1,15 @@
 <!-- next/font only runs in the app's root layout. Storybook declares the same
      self-hosted files (src/app/fonts, served at /fonts by main.ts) and maps them
-     onto the --ff-* variables that styles/tokens/fonts.css expects. No Google Fonts. -->
+     onto the --ff-* variables that styles/tokens/fonts.css expects. No Google Fonts.
+     Keep in step with src/app/fonts.ts (ADR 0002): DM Sans for every role, and
+     Inter's gap file for the characters DM Sans lacks, with the same unicode-range. -->
 <style>
-  @font-face { font-family: 'Hanken Grotesk'; src: url('/fonts/hanken-grotesk-var.woff2') format('woff2'); font-weight: 400 700; font-display: swap; }
-  @font-face { font-family: 'Inter'; src: url('/fonts/inter-var.woff2') format('woff2'); font-weight: 400 700; font-display: swap; }
-  @font-face { font-family: 'Poppins'; src: url('/fonts/poppins-600.woff2') format('woff2'); font-weight: 600; font-display: swap; }
-  @font-face { font-family: 'Poppins'; src: url('/fonts/poppins-700.woff2') format('woff2'); font-weight: 700; font-display: swap; }
-  @font-face { font-family: 'Nunito Sans'; src: url('/fonts/nunito-sans-var.woff2') format('woff2'); font-weight: 400 700; font-display: swap; }
+  @font-face { font-family: 'DM Sans'; src: url('/fonts/dm-sans-var.woff2') format('woff2'); font-weight: 400 700; font-display: swap; }
+  @font-face { font-family: 'Inter Gaps'; src: url('/fonts/inter-gaps.woff2') format('woff2'); font-weight: 400 700; font-display: swap; unicode-range: U+0108-0109, U+011C-011D, U+0124-0125, U+0134-0135, U+0138, U+015C-015D, U+0166-0167, U+017F, U+0186, U+0189-018A, U+0190, U+0198-0199, U+01B3-01B4, U+0253-0254, U+0256-0257, U+025B, U+0263, U+0272, U+0309, U+030F, U+0313, U+0315, U+031B, U+0323, U+032C, U+0337-0338, U+0342-0343, U+0346-036F, U+1E44-1E45, U+1E62-1E63, U+1EB8-1EB9, U+1ECA-1ECD, U+1EE4-1EE5, U+2000-200B, U+2010-2012, U+2015-2017, U+201B, U+201F, U+2023-2025, U+2027, U+202F, U+2031-2038, U+203B-2043, U+2045-2055, U+2057, U+205F, U+20A0-20A7, U+20A9-20AB, U+20AD-20AF, U+20B1-20B5, U+20B8, U+20BC, U+20BE-20BF, U+FEFF; }
   @font-face { font-family: 'Material Symbols Outlined'; src: url('/fonts/material-symbols.woff2') format('woff2'); font-weight: 400; font-display: block; }
   :root {
-    --ff-hanken: 'Hanken Grotesk';
-    --ff-inter: 'Inter';
-    --ff-poppins: 'Poppins';
-    --ff-nunito: 'Nunito Sans';
+    --ff-dmsans: 'DM Sans';
+    --ff-inter-gaps: 'Inter Gaps';
     --ff-icons: 'Material Symbols Outlined';
   }
 </style>
