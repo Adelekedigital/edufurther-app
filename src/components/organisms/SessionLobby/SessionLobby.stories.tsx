@@ -144,8 +144,8 @@ export const PopupBlocked: Story = {
     ...InProgress.args,
     notice: (
       <Notice tone="info">
-        Your browser blocked the meeting window. <a href="#">Open the session</a>. You’re already
-        marked as here.
+        Your browser blocked the meeting window. <a href="#">Open the session</a>. Your arrival is
+        recorded.
       </Notice>
     ),
   },

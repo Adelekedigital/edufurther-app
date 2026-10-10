@@ -549,11 +549,15 @@ describe('the window is open', () => {
     join.mockImplementation((_id, { onSuccess }) => onSuccess({ meetingUrl: null }));
     renderAt('16:56:00');
     await userEvent.click(screen.getByRole('button', { name: 'Join session' }));
+    // The next press tries again (backend: null is a venue that didn't answer).
     await waitFor(() =>
       expect(
-        screen.getAllByText('You’re marked as here, but this session has no meeting link yet.')[0],
+        screen.getAllByText(
+          'Your arrival is recorded, but the call link isn’t ready. Try again in a moment.',
+        )[0],
       ).toBeInTheDocument(),
     );
+    expect(screen.queryByText(/marked as here/)).not.toBeInTheDocument();
   });
 
   it('a blocked popup offers the link instead of looking like a dead button', async () => {
@@ -563,9 +567,10 @@ describe('the window is open', () => {
     const open = vi.spyOn(window, 'open').mockReturnValue(null);
     renderAt('16:56:00');
     await userEvent.click(screen.getByRole('button', { name: 'Join session' }));
-    expect(screen.getByRole('link', { name: 'Open the session' })).toHaveAttribute(
-      'href',
-      'https://room.test/x',
+    const link = screen.getByRole('link', { name: 'Open the session' });
+    expect(link).toHaveAttribute('href', 'https://room.test/x');
+    expect(link.parentElement).toHaveTextContent(
+      'Your browser blocked the meeting window. Open the session. Your arrival is recorded.',
     );
     open.mockRestore();
   });
@@ -771,7 +776,9 @@ describe('what a screen reader hears', () => {
     const open = vi.spyOn(window, 'open').mockReturnValue(null);
     renderAt('16:56:00');
     await userEvent.click(screen.getByRole('button', { name: 'Join session' }));
-    expect(srStatus()).toHaveTextContent('Your browser blocked the meeting window.');
+    expect(srStatus()).toHaveTextContent(
+      'Your browser blocked the meeting window. Use the Open the session link. Your arrival is recorded.',
+    );
     const link = screen.getByRole('link', { name: 'Open the session' });
     expect(link.closest('[role="status"]')).toBeNull();
     open.mockRestore();
