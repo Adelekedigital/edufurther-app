@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { SECURITY_HEADERS } from './src/lib/securityHeaders';
 
 /**
  * Same-origin API proxy (product, 2026-09-27). The browser calls `/api/v1/…` on
@@ -40,6 +41,9 @@ const nextConfig: NextConfig = {
     // Mentor avatars come from Supabase Storage (backend ADR 0019). Narrow this
     // to the project host once the backend confirms it.
     remotePatterns: [{ protocol: 'https', hostname: '**.supabase.co' }],
+  },
+  async headers() {
+    return SECURITY_HEADERS;
   },
   async rewrites() {
     return backend ? [{ source: '/api/v1/:path*', destination: `${backend}/api/v1/:path*` }] : [];
