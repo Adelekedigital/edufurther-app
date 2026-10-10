@@ -34,6 +34,11 @@ export function toAnswer(a: SessionAnswerRead): BookingAnswer {
     question: a.question_text,
     kind: a.question_type,
     retired: a.retired,
+    // Asked and left blank. The words "No answer" are not written in here:
+    // the copy belongs to the component, and a flag stays answerable by a
+    // count or a filter in a way a magic string does not.
+    answered: a.answered,
+    required: a.required ?? null,
     text: text.trim(),
     file: file
       ? {

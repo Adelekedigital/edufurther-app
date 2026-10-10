@@ -237,6 +237,8 @@ describe('the booking form answers', () => {
     question: `Question ${i}?`,
     kind: 'free_text' as const,
     retired: false,
+    answered: true,
+    required: null,
     text: `Answer ${i}.`,
     file: null,
   });
@@ -247,7 +249,7 @@ describe('the booking form answers', () => {
     expect(screen.getByText('Answer 1.')).toBeVisible();
     expect(screen.getByText('Answer 2.')).toBeVisible();
     expect(screen.queryByText('Answer 3.')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Show all 6 answers' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Show all 6 questions' })).toBeVisible();
   });
 
   it('two or fewer need no disclosure at all', () => {
@@ -257,7 +259,7 @@ describe('the booking form answers', () => {
 
   it('the disclosure says what it does and what it controls', () => {
     panel({ answers: six, onToggleAnswers: vi.fn() });
-    const button = screen.getByRole('button', { name: 'Show all 6 answers' });
+    const button = screen.getByRole('button', { name: 'Show all 6 questions' });
     expect(button).toHaveAttribute('aria-expanded', 'false');
     expect(button).toHaveAttribute('aria-controls', 'booking-answers');
   });
@@ -473,5 +475,71 @@ describe('a past cancellation is judged by when it happened', () => {
       outcome: { status: 'cancelled', by: 'you', reason: null, at: 'not-a-date' },
     });
     expect(screen.getByText('Your credit is back.')).toBeVisible();
+  });
+});
+
+// Blank answers: backend #412.
+describe('questions the mentee left blank', () => {
+  const q = (i: number, over = {}) => ({
+    questionId: `q${i}`,
+    question: `Question ${i}?`,
+    kind: 'free_text' as const,
+    retired: false,
+    answered: true,
+    required: null,
+    text: `Answer ${i}.`,
+    file: null,
+    ...over,
+  });
+  const blank = (i: number) => q(i, { answered: false, text: '' });
+
+  it('the toggle counts questions, never promising answers that do not exist', () => {
+    // Seven asked, three answered. "Show all 7 answers" was a claim the panel
+    // could not keep: expanding showed three answers and four blanks.
+    const mixed = [q(1), q(2), q(3), blank(4), blank(5), blank(6), blank(7)];
+    panel({ answers: mixed, onToggleAnswers: vi.fn() });
+    expect(screen.getByRole('button', { name: 'Show all 7 questions' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: /7 answers/ })).not.toBeInTheDocument();
+  });
+
+  it('the collapsed preview shows answers, not the blanks that came first', () => {
+    // The mentee skipped the opening two questions and wrote at length on the
+    // third. In form order the preview was two "No answer" rows, reading as
+    // "they told us nothing" with the content hidden behind the toggle.
+    panel({ answers: [blank(1), blank(2), q(3), q(4)], onToggleAnswers: vi.fn() });
+    expect(screen.getByText('Answer 3.')).toBeVisible();
+    expect(screen.getByText('Answer 4.')).toBeVisible();
+    expect(screen.queryByText('No answer')).not.toBeInTheDocument();
+  });
+
+  it('expanded, it is the record: every question in form order, blanks included', () => {
+    panel({ answers: [blank(1), blank(2), q(3), q(4)], answersExpanded: true, onToggleAnswers: vi.fn() });
+    expect(screen.getAllByText('No answer')).toHaveLength(2);
+    expect(screen.getByText('Question 1?')).toBeVisible();
+    expect(screen.getByText('Answer 3.')).toBeVisible();
+  });
+
+  it('a form answered by nobody says so instead of showing an empty block', () => {
+    panel({ answers: [blank(1), blank(2), blank(3)], onToggleAnswers: vi.fn() });
+    expect(screen.getByText(/didn’t answer any of the questions/)).toBeVisible();
+    // And the questions asked are still reachable.
+    expect(screen.getByRole('button', { name: 'Show all 3 questions' })).toBeVisible();
+  });
+
+  it('a mentee reading their own blank form is addressed directly', () => {
+    panel({
+      booking: sampleBookingFor({ side: 'mentee', startsAt: at(26), endsAt: at(27) }),
+      answers: [blank(1)],
+      onToggleAnswers: vi.fn(),
+    });
+    expect(screen.getByText('You didn’t answer the questions on this form.')).toBeVisible();
+  });
+
+  it('a booking from before the form was kept is unchanged', () => {
+    // Those list only their answers, every one `answered: true`.
+    panel({ answers: [q(1), q(2), q(3)], onToggleAnswers: vi.fn() });
+    expect(screen.getByText('Answer 1.')).toBeVisible();
+    expect(screen.queryByText('No answer')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show all 3 questions' })).toBeVisible();
   });
 });

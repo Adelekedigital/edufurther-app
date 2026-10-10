@@ -166,7 +166,23 @@ export function BookingDetails({
   const showJoin = !!joinHref && (join === 'open' || join === 'before');
   const answersTitle = b.side === 'mentee' ? 'Your answers' : `Answers from ${b.other.firstName}`;
   const credit = outcome ? creditLine(outcome, b, now) : '';
-  const shownAnswers = answersExpanded ? (answers ?? []) : (answers ?? []).slice(0, ANSWER_PREVIEW);
+  // Collapsed, the preview shows the first two **answered** questions, not
+  // the first two in form order. A mentee who skipped the opening questions
+  // would otherwise be previewed as two "No answer" rows — reading as "they
+  // told us nothing" while three paragraphs sat behind the toggle. This is
+  // also what the row advertises: `answers_preview.first` is the first
+  // answered question, "skipping any blank before it".
+  //
+  // Expanded shows every question in form order, blanks included, because
+  // that is the record of what was asked.
+  const allAnswers = answers ?? [];
+  const answeredOnly = allAnswers.filter((a) => a.answered);
+  const collapsed = answeredOnly.slice(0, ANSWER_PREVIEW);
+  const shownAnswers = answersExpanded ? allAnswers : collapsed;
+  // Whether collapsing would hide anything — not whether anything is hidden
+  // *now*. Comparing against the current view made the toggle disappear once
+  // expanded, stranding the panel open with no way back.
+  const hasMore = allAnswers.length > collapsed.length;
 
   const facts: Fact[] = [
     { icon: 'calendar_today', text: fullDate(b.startsAt, timeZone) },
@@ -264,10 +280,21 @@ export function BookingDetails({
             <h3 className={styles.answersTitle} id={ANSWERS_ID}>
               {answersTitle}
             </h3>
+            {/* Every question left blank. Collapsed, the preview would be a
+                heading with nothing under it, which reads as a failed load
+                rather than as a form nobody filled in. The toggle below still
+                opens the questions that were asked. */}
+            {shownAnswers.length === 0 && (
+              <p className={styles.note}>
+                {b.side === 'mentee'
+                  ? 'You didn’t answer the questions on this form.'
+                  : `${b.other.firstName} didn’t answer any of the questions.`}
+              </p>
+            )}
             {shownAnswers.map((a) => (
               <AnswerItem key={a.questionId} answer={a} onOpenFile={onOpenFile} />
             ))}
-            {answers.length > ANSWER_PREVIEW && onToggleAnswers && (
+            {hasMore && onToggleAnswers && (
               <button
                 type="button"
                 onClick={onToggleAnswers}
@@ -275,7 +302,11 @@ export function BookingDetails({
                 aria-expanded={!!answersExpanded}
                 aria-controls={ANSWERS_ID}
               >
-                {answersExpanded ? 'Show less' : `Show all ${answers.length} answers`}
+                {/* "questions", not "answers": the list counts every
+                    question asked, and some carry no answer. Offering to
+                    "show all 7 answers" and then showing three answers and
+                    four blanks is a claim the panel cannot keep. */}
+                {answersExpanded ? 'Show less' : `Show all ${allAnswers.length} questions`}
               </button>
             )}
           </div>

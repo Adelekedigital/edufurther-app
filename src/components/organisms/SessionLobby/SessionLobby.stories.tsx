@@ -43,6 +43,8 @@ const ANSWERS: BookingAnswer[] = [
     question: 'What would you like to talk about?',
     kind: 'free_text',
     retired: false,
+    answered: true,
+    required: null,
     text: 'I’m applying to PhD programs in public health for Fall 2027.',
     file: null,
   },

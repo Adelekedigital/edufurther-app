@@ -312,3 +312,38 @@ literal is correct by coincidence in dev and wrong in production.
 then, not when it changes. And the first instinct on scope — "that other one is
 somebody else's area" — draws the line around the screen rather than around the
 change; the owner caught that here.
+
+### #60 — A stub typed `unknown` hid a new required field
+
+`BookingsScreen.test.tsx` mocks the answers hook as
+`{ data: unknown; ... }`. When `answered` was added to `BookingAnswer`, the
+compiler checked every other construction site and missed this one, because
+`unknown` accepts anything. The fixtures kept compiling with the field absent,
+`!a.answered` read `undefined` as falsy, and **every answer in that suite
+rendered as "No answer"** — the exact inversion of the feature.
+
+Three tests failed, which is how it was caught. Had they asserted less
+precisely, a green suite would have described a screen that showed no answers
+at all.
+
+**Check:** a mock's payload type is part of the contract. `unknown` or `any` on
+a stub buys nothing and removes the one mechanism that finds every site when a
+field is added. Type the stub with the real domain type.
+
+### #61 — Reading a gate's tail instead of its exit code
+
+`check-boundaries.mjs` ends every run, pass or fail, with the same closing
+line: "The one worth keeping strict from day one is client-import." Piping it
+to `tail -1` therefore prints that line whether it found three violations or
+none. It was reported as clean twice, and the failure reached CI.
+
+The violations were ticket references: `#412` inside a `describe()` title under
+`src/components/` is a valid three-digit hex. The checker strips **comments**
+before the hex scan, which is why `#409` in a comment has always been fine and
+the same text in a string literal is not. The fix was to move the reference
+into a comment, where the rest of the codebase already keeps them — not to add
+the files to `allowRawHex`, which would have blinded the check to real colours.
+
+**Check:** judge a gate by its exit code, never by its last line of output.
+`cmd; echo "EXIT=$?"` or `cmd && echo ok`. A tail is not a verdict, and a
+summary line that is printed unconditionally is not a result.

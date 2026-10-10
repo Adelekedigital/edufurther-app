@@ -19,6 +19,22 @@
   color: var(--ink-900);
 }
 
+/* Asked, and left blank (backend #412). Muted because it is the absence of
+   an answer rather than a quiet one — it must not read as something the
+   mentee wrote. Italic as well as grey, so it still reads as different where
+   colour alone does not carry (forced-colours, greyscale, low vision).
+
+   `--ink-500` is what the Bookings design uses for this row per the Session
+   Join session; the design mirror has no copy of the file here, so it is the
+   semantic alias of that value rather than a measured match. */
+.blank {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
 /* A question the mentor has since dropped. Its answer still stands, but the
    question is no longer asked — ours: the design has no such state. */
 .retired {

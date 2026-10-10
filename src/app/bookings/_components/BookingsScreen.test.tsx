@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { BookingHistoryResult } from '@/lib/api/data/bookings';
 import { ApiError } from '@/lib/api/data/errors';
-import type { Booking, BookingParty } from '@/types/booking';
+import type { Booking, BookingAnswer, BookingParty } from '@/types/booking';
 import type { AppError, Remote, Viewer } from '@/types/mentor';
 import { BookingsScreen } from './BookingsScreen';
 
@@ -48,7 +48,15 @@ vi.mock('@/lib/api/data/bookings', () => ({
 vi.mock('@/lib/api/data/sessionEvents', () => ({
   useBookingOutcome: () => ({ data: null, isLoading: false, error: null, retry: vi.fn() }),
 }));
-let answers: { data: unknown; isLoading: boolean; error: unknown; retry: () => void };
+// Typed, not `unknown`: an untyped stub let a new required field (`answered`,
+// backend #412) go missing here while typecheck stayed green, and every answer
+// then rendered as "No answer".
+let answers: {
+  data: BookingAnswer[] | undefined;
+  isLoading: boolean;
+  error: unknown;
+  retry: () => void;
+};
 vi.mock('@/lib/api/data/sessionAnswers', () => ({
   useBookingAnswers: () => answers,
 }));
@@ -618,6 +626,8 @@ describe('the booking form answers, wired up', () => {
       question: 'Q1?',
       kind: 'free_text' as const,
       retired: false,
+      answered: true,
+      required: null,
       text: 'A1.',
       file: null,
     },
@@ -626,6 +636,8 @@ describe('the booking form answers, wired up', () => {
       question: 'Q2?',
       kind: 'free_text' as const,
       retired: false,
+      answered: true,
+      required: null,
       text: 'A2.',
       file: null,
     },
@@ -634,6 +646,8 @@ describe('the booking form answers, wired up', () => {
       question: 'Q3?',
       kind: 'free_text' as const,
       retired: false,
+      answered: true,
+      required: null,
       text: 'A3.',
       file: null,
     },
@@ -644,7 +658,7 @@ describe('the booking form answers, wired up', () => {
     answers = { data: some, isLoading: false, error: null, retry: vi.fn() };
     render(<BookingsScreen />);
     expect(screen.queryByText('A3.')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Show all 3 answers' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Show all 3 questions' }));
     expect(screen.getByText('A3.')).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: 'Show less' }));
     expect(screen.queryByText('A3.')).not.toBeInTheDocument();
@@ -701,6 +715,8 @@ describe('the answers preview on the rows', () => {
         question: `Q${i}?`,
         kind: 'free_text' as const,
         retired: false,
+        answered: true,
+        required: null,
         text: `A${i}.`,
         file: null,
       })),
@@ -752,6 +768,8 @@ describe('the answers preview on the rows', () => {
         question: `Q${i}?`,
         kind: 'free_text' as const,
         retired: false,
+        answered: true,
+        required: null,
         text: `A${i}.`,
         file: null,
       })),

@@ -148,6 +148,8 @@ const answer = (text: string): BookingAnswer => ({
   question: 'What would you like to talk about?',
   kind: 'free_text',
   retired: false,
+  answered: true,
+  required: null,
   text,
   file: null,
 });

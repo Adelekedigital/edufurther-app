@@ -352,7 +352,10 @@ export function SessionJoinScreen({ id }: { id: string }) {
       onCancel: canCancel(b, now) ? () => setCancelling(true) : undefined,
     });
     calendar = lobby.calendar;
-    const hasAnswers = (answers.data?.length ?? 0) > 0;
+    // What was **answered**, not how many questions were asked (backend
+    // #412). By row count, a form left entirely blank told a mentor to "read
+    // {name}'s answers" over a card of nothing but "No answer".
+    const hasAnswers = answers.data?.some((a) => a.answered) ?? false;
     const first = b.other.firstName;
     const mentee = b.side === 'mentee';
     const prepAnswers = {
