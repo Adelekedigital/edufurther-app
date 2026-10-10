@@ -77,6 +77,14 @@ function useNow(ticking: boolean): Date {
 }
 
 /** `/sessions/{id}` — Session Join.dc.html, `layout=lobby`. */
+/**
+ * The tab a Join click opened while the server mints the link. Module scope,
+ * not a ref: the click handler goes into `lobbyModel` during render, and only
+ * one session page is ever mounted. Written in the click and its answer, read
+ * when the page goes away.
+ */
+let waitingTab: Window | null = null;
+
 export function SessionJoinScreen({ id }: { id: string }) {
   const viewer = useViewer();
   const online = useOnline();
@@ -149,13 +157,48 @@ export function SessionJoinScreen({ id }: { id: string }) {
     [],
   );
 
+  // Leaving the page mid-request must not strand the blank tab: the
+  // mutation's own callbacks don't run once the page has gone.
+  useEffect(
+    () => () => {
+      waitingTab?.close();
+      waitingTab = null;
+    },
+    [],
+  );
+
   const onEnter = useCallback(
     (entry: 'join' | 'door') => {
       setProblem(null);
       setBlockedUrl(null);
+      // The link only exists after the POST, and a tab opened after it is
+      // outside the click, where popup blockers (Safari's every time) refuse
+      // it. So open a blank tab now, inside the click, and send it on when the
+      // answer comes (#207 records the plain-link alternative). Not `noopener`
+      // in the features: with it, open() returns null even when the tab
+      // opened, and every Join would read as blocked. The opener is cut by hand.
+      const tab = window.open('', '_blank');
+      if (tab) {
+        tab.opener = null;
+        try {
+          tab.document.title = 'Opening your session…';
+          tab.document.body.textContent = 'Opening your session…';
+        } catch {
+          // Some browsers don't let the blank page be written to; it stays blank.
+        }
+      }
+      waitingTab = tab;
+      const done = () => {
+        waitingTab = null;
+      };
+      const drop = () => {
+        tab?.close();
+        done();
+      };
       (entry === 'join' ? join : door).mutate(id, {
         onSuccess: ({ meetingUrl }) => {
           if (!meetingUrl) {
+            drop();
             // A 200 with no link: the venue didn't answer this time, and the
             // next press asks again (backend #402). Not an error.
             const text =
@@ -166,15 +209,18 @@ export function SessionJoinScreen({ id }: { id: string }) {
             say(text);
             return;
           }
-          // Opened after the POST, so outside the click: a popup blocker may
-          // swallow it, and silence would read as a dead button.
-          const opened = window.open(meetingUrl, '_blank', 'noopener,noreferrer');
-          if (!opened) {
-            setBlockedUrl(meetingUrl);
-            say(BLOCKED);
+          done();
+          if (tab && !tab.closed) {
+            tab.location.replace(meetingUrl);
+            return;
           }
+          // No tab: the browser refused even one opened in the click, or the
+          // person closed it while waiting. Silence would read as a dead button.
+          setBlockedUrl(meetingUrl);
+          say(BLOCKED);
         },
         onError: (e) => {
+          drop();
           // The server refuses a first arrival after the window (backend
           // #382): say the rule, as the page says it, not a generic refusal.
           const lateFirstTimer =
