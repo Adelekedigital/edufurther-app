@@ -535,3 +535,27 @@ blank before it".
 |---|---|---|
 | Hanken Grotesk (brand/headings), Inter (UI), Poppins (buttons), Nunito Sans (forms) | **DM Sans for every role**, with an Inter file for the characters DM Sans lacks (₦, ẹ ọ ṣ ị ụ ṅ, ɛ ɔ ɓ ɗ ƙ) | Product, 2026-10-10: code first, the DS to follow. Every screen's font differs from its .dc.html until design updates the DS; not a fidelity miss. |
 
+### Sessions — the cancellation reason is required, 2026-10-10
+
+`CancelModal.dc.html` is **not in the mirror**, so none of this is measured
+against markup. The behaviour is the owner's decision; the labels are the ones
+already shipped plus one. A fidelity pass follows when the file arrives.
+
+| # | Previously / design | Built | Why |
+|---|---|---|---|
+| 41 | The reason is optional — and the contract says why: "a required one turns a clear-cut decision into a form to argue with" | **Required**, on cancel, decline **and** withdraw | Owner, 2026-10-10: it is a data point, and the other party reading nothing is worse than the friction. The contract's advice was considered and overridden, not missed. |
+| 42 | Four reasons | Three per side **plus "Something else"** (`other`, backend #414/#415) | Owner: three is enough, with an escape hatch. The list is filtered by **side, not action** — a mentee cancelling and withdrawing see the same three, which is also what the server enforces. |
+| 43 | Nothing | "Something else" makes the note **required** | Owner: the code alone records that none of the options fit and nothing about what did. No length floor — a floor invites "asdf" and punishes "visa refused". |
+
+**Two gaps this exposed, neither fixed here:**
+
+The **coded reason is never shown to the other party.** `sessionEvents.ts` maps
+`reason_text` and drops `reason_code`, which `SessionEventRead` does carry. So
+a required chip is collected and never read by the person it describes. The
+owner chose "the mentor's reason shows to the mentee, as today" against a
+preview that showed the label — which was wrong of me. Needs a decision.
+
+The mentor's first two reasons **overlap**: "A clash in my calendar" and "I'm
+no longer free" are close enough that the pick is near-random, which weakens
+the data point the requirement exists to produce. Kept deliberately to avoid
+rewriting copy twice before the design file lands.

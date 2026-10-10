@@ -11,8 +11,25 @@ import type { CoverKey } from '@/lib/utils/cover';
  * The coded reasons a person can actually pick on a decline, cancel or
  * withdrawal. The contract's enum has nine; the other five are system-set.
  */
+/**
+ * The reasons a person may pick, as opposed to the rest of the enum, which the
+ * system sets.
+ *
+ * Which ones are offered depends on the **side**, not the action: a mentee
+ * cancelling and a mentee withdrawing see the same list, and the server agrees
+ * (backend: "withdraw shares the mentee's list"). Four of them are
+ * role-specific and a 422 enforces it — a mentee may not send
+ * `mentor_unavailable`, a mentor may not send `mentee_no_longer_needed`.
+ *
+ * `other` is the only one both roles may send (backend #414, #415). It carries
+ * no meaning on its own, which is why the note is required alongside it.
+ */
 export type PickableReason =
-  'mentor_unavailable' | 'mentee_no_longer_needed' | 'scheduling_conflict' | 'technical_issue';
+  | 'mentor_unavailable'
+  | 'mentee_no_longer_needed'
+  | 'scheduling_conflict'
+  | 'technical_issue'
+  | 'other';
 
 /** Which side of the session the viewer is on. One account can be both, on different rows. */
 export type BookingSide = 'mentor' | 'mentee';

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { sampleBookingFor } from '@/lib/utils/bookingTestFixtures';
@@ -107,18 +107,22 @@ describe('the mentor’s slot choice', () => {
       onConfirm,
     });
     await userEvent.click(screen.getByRole('switch'));
+    await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
     await userEvent.click(screen.getByRole('button', { name: 'Cancel session' }));
     expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ releaseSlot: false }));
   });
 });
 
-describe('the reason is optional, and means it', () => {
-  it('confirms with nothing filled in', async () => {
+// The reason became required by the owner's decision, 2026-10-10. These used
+// to assert that an empty one went through.
+describe('the reason is required, and means it', () => {
+  it('a coded reason with no note goes through — only "Something else" needs one', async () => {
     const onConfirm = vi.fn();
     dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }), onConfirm });
+    await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
     await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
     expect(onConfirm).toHaveBeenCalledWith(
-      expect.objectContaining({ reasonCode: null, reasonText: '' }),
+      expect.objectContaining({ reasonCode: 'technical_issue', reasonText: '' }),
     );
   });
 
@@ -198,6 +202,7 @@ describe('offering another time (SuggestTime.dc.html)', () => {
   it('offering nothing is still a decline', async () => {
     const onConfirm = vi.fn();
     dialog({ action: 'decline', booking: mentorPending(), onConfirm });
+    await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
     await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
     expect(onConfirm).toHaveBeenCalledWith(
       expect.not.objectContaining({ suggestedStartsAt: expect.anything() }),
@@ -210,6 +215,8 @@ describe('offering another time (SuggestTime.dc.html)', () => {
     const [first] = screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ });
     await userEvent.click(first!);
     await userEvent.click(first!);
+    // Taking the offer back removes the exemption, so a reason is needed again.
+    await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
     await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
     expect(onConfirm).toHaveBeenCalledWith(
       expect.not.objectContaining({ suggestedStartsAt: expect.anything() }),
@@ -239,6 +246,8 @@ describe('offering another time (SuggestTime.dc.html)', () => {
     const onConfirm = vi.fn();
     dialog({ action: 'decline', booking: mentorPending(), onConfirm });
     expect(screen.getByText(/no open times for this session/)).toBeVisible();
+    // No time to offer means no exemption, so the reason is still required.
+    await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
     await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
     expect(onConfirm).toHaveBeenCalled();
   });
@@ -248,6 +257,8 @@ describe('offering another time (SuggestTime.dc.html)', () => {
     const onConfirm = vi.fn();
     dialog({ action: 'decline', booking: mentorPending(), onConfirm });
     expect(screen.getByText(/couldn’t load your open times/)).toBeVisible();
+    // A failed slots read gives nothing to offer, so the reason is required.
+    await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
     await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
     expect(onConfirm).toHaveBeenCalled();
   });
@@ -360,5 +371,79 @@ describe('the refund deadline is the server’s, not a number we remember', () =
       }),
     });
     expect(screen.getByText('Your credit goes back to you.')).toBeVisible();
+  });
+});
+
+// Required reason, owner's decision 2026-10-10.
+describe('a submit with no reason is blocked, not merely scolded', () => {
+  const mentee = () =>
+    sampleBookingFor({ side: 'mentee', status: 'confirmed', startsAt: at(48), endsAt: at(49) });
+
+  it('sends nothing at all when no reason is picked', async () => {
+    // The real risk: a guard that shows an error and fires anyway, so the
+    // session is cancelled *and* the person is told off.
+    const onConfirm = vi.fn();
+    dialog({ booking: mentee(), onConfirm });
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel session' }));
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(screen.getByText('Pick a reason before you go on.')).toBeVisible();
+  });
+
+  it('puts focus on the chips, not just an announcement', async () => {
+    dialog({ booking: mentee() });
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel session' }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'A clash in my calendar' })).toHaveFocus(),
+    );
+  });
+
+  it('"Something else" with an empty box sends nothing either', async () => {
+    const onConfirm = vi.fn();
+    dialog({ booking: mentee(), onConfirm });
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel session' }));
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(screen.getByText('Say briefly what happened.')).toBeVisible();
+  });
+
+  it('and focus lands in the box that needs filling', async () => {
+    dialog({ booking: mentee() });
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel session' }));
+    await waitFor(() => expect(screen.getByLabelText('What happened?')).toHaveFocus());
+  });
+
+  it('"Something else" with text goes through, carrying both', async () => {
+    const onConfirm = vi.fn();
+    dialog({ booking: mentee(), onConfirm });
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    await userEvent.type(screen.getByLabelText('What happened?'), 'visa refused');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel session' }));
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ reasonCode: 'other', reasonText: 'visa refused' }),
+    );
+  });
+
+  it('the error clears as soon as they fix it', async () => {
+    dialog({ booking: mentee() });
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel session' }));
+    expect(screen.getByText('Pick a reason before you go on.')).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
+    // A message about the thing they just fixed reads as broken.
+    expect(screen.queryByText('Pick a reason before you go on.')).not.toBeInTheDocument();
+  });
+
+  it('a withdrawal needs one too, from the mentee list', async () => {
+    // Same list as cancelling: the action does not change it, the side does.
+    const onConfirm = vi.fn();
+    dialog({ action: 'withdraw', booking: sampleBookingFor({ side: 'mentee', status: 'pending' }), onConfirm });
+    await userEvent.click(screen.getByRole('button', { name: 'Withdraw request' }));
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'I’m no longer free' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'I no longer need it' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Withdraw request' }));
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ reasonCode: 'mentee_no_longer_needed' }),
+    );
   });
 });

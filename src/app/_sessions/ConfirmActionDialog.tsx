@@ -1,10 +1,10 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { cx } from '@/lib/utils/cx';
 import { Switch } from '@/components/atoms/Switch/Switch';
-import { ReasonField } from '@/components/molecules/ReasonField/ReasonField';
+import { ReasonField, reasonError } from '@/components/molecules/ReasonField/ReasonField';
 import { SuggestTimeStep } from './SuggestTimeStep';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import type { ActionInput, BookingAction } from '@/lib/api/data/bookingActions';
@@ -71,6 +71,11 @@ export function ConfirmActionDialog({
   // you can decline; an hour withheld while you are free arrives as nothing.
   const [stillFree, setStillFree] = useState(true);
   const [suggested, setSuggested] = useState<string | null>(null);
+  // Set only by a blocked submit, so the dialog does not scold someone who has
+  // not tried to send anything yet.
+  const [reasonBad, setReasonBad] = useState<ReturnType<typeof reasonError>>(null);
+  const firstChipRef = useRef<HTMLButtonElement>(null);
+  const noteRef = useRef<HTMLTextAreaElement>(null);
   const fieldId = useId();
 
   const first = b.other.firstName;
@@ -121,17 +126,34 @@ export function ConfirmActionDialog({
             variant="destructive"
             size="large"
             aria-disabled={tooLate || undefined}
-            onClick={() =>
-              tooLate
-                ? undefined
-                :
+            onClick={() => {
+              if (tooLate) return;
+              // A reason is required (owner, 2026-10-10), except for a mentor
+              // offering another time instead — that *is* the explanation.
+              const bad = reasonError({
+                reasonCode,
+                text,
+                required: true,
+                suggesting: !!(canSuggest && suggested),
+              });
+              setReasonBad(bad);
+              if (bad) {
+                // Announced by the field, and focus goes to what is wrong:
+                // an error that is only read out leaves a keyboard user
+                // hunting for the control.
+                requestAnimationFrame(() => {
+                  const el = bad.field === 'note' ? noteRef.current : firstChipRef.current;
+                  el?.focus();
+                });
+                return;
+              }
               onConfirm({
                 reasonCode,
                 reasonText: text,
                 ...(action === 'cancel' && isMentor ? { releaseSlot: stillFree } : {}),
                 ...(canSuggest && suggested ? { suggestedStartsAt: suggested } : {}),
-              })
-            }
+              });
+            }}
             // `busy` rather than the aria attributes: the atom owns both, and
             // it also swallows the second click.
             busy={pending}
@@ -188,10 +210,22 @@ export function ConfirmActionDialog({
         <ReasonField
           side={b.side}
           reasonCode={reasonCode}
-          onReasonCode={setReasonCode}
+          onReasonCode={(v) => {
+            setReasonCode(v);
+            // Clear on change rather than re-validate: a message about the
+            // thing they just fixed, still sitting there, reads as broken.
+            setReasonBad(null);
+          }}
           text={text}
-          onText={setText}
+          onText={(v) => {
+            setText(v);
+            if (reasonBad?.field === 'note') setReasonBad(null);
+          }}
           readerFirstName={first}
+          required
+          error={reasonBad}
+          groupRef={firstChipRef}
+          noteRef={noteRef}
         />
 
         {tooLate && (

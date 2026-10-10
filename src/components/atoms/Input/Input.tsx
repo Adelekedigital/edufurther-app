@@ -34,6 +34,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   );
 });
 
+/**
+ * `invalid` is the way to mark this field wrong. It is applied **after** the
+ * spread, so an `aria-invalid` passed by a caller is overwritten and has no
+ * effect — use `invalid`.
+ */
 type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & { invalid?: boolean };
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
