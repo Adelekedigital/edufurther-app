@@ -120,3 +120,55 @@ describe('fileSize', () => {
     expect(fileSize(5_242_880)).toBe('5.0 MB');
   });
 });
+
+describe('a question left blank (backend #412)', () => {
+  it('keeps the question and carries the flag, without inventing copy', () => {
+    const a = toAnswer({
+      question_id: 'q1',
+      question_text: 'Anything else?',
+      question_type: 'free_text',
+      retired: false,
+      answered: false,
+      required: false,
+      text: null,
+      options: null,
+      file: null,
+    } as never);
+    expect(a.question).toBe('Anything else?');
+    expect(a.answered).toBe(false);
+    // Not the words "No answer": that copy belongs to the component, and a
+    // flag stays countable in a way a magic string does not.
+    expect(a.text).toBe('');
+  });
+
+  it('reads `required` as null when the booking predates the form snapshot', () => {
+    // Null means "we cannot know", never "optional".
+    const a = toAnswer({
+      question_id: 'q1',
+      question_text: 'Q',
+      question_type: 'free_text',
+      retired: false,
+      answered: true,
+      text: 'Yes',
+      options: null,
+      file: null,
+    } as never);
+    expect(a.required).toBe(null);
+  });
+
+  it('a blank file question carries no file', () => {
+    const a = toAnswer({
+      question_id: 'q1',
+      question_text: 'Your CV',
+      question_type: 'file_upload',
+      retired: false,
+      answered: false,
+      required: true,
+      text: null,
+      options: null,
+      file: null,
+    } as never);
+    expect(a.file).toBe(null);
+    expect(a.text).toBe('');
+  });
+});

@@ -514,3 +514,17 @@ opposite of the truth and `types/booking.ts` is imported by seven components.
 | Cancel opens as a bottom sheet on phones (`CancelModal sheet contained`) | Still the shared dialog's full-screen treatment | The Bookings session owns `ConfirmActionDialog`; queued in its cancel-modal fidelity pass. |
 | Title (h5 24px) and clock (display-sm 48px) | Same at every width | The design system has no phone type scale. A system-wide question for design (asked by the user, 2026-10-10), not changed per screen. |
 
+
+### Bookings — the answers disclosure counts questions (backend #412), 2026-10-10
+
+| # | Design | Built | Why |
+|---|---|---|---|
+| 39 | "Show all N answers" | "Show all N **questions**" | Since #412 the list carries every question the form asked, answered or not. With 7 asked and 3 answered, "Show all 7 answers" is a claim the panel cannot keep — it expands to 3 answers and 4 blanks. The row still says "See all 3 answers", which is right: `answers_preview.count` counts answered ones only. |
+| 40 | Nothing | "You didn't answer the questions on this form." / "{Name} didn't answer any of the questions." | A form left entirely blank collapses to a heading with nothing under it, which reads as a failed load. The design draws no state for it. |
+
+**Also, not a divergence:** the collapsed preview shows the first two
+**answered** questions rather than the first two in form order. A mentee who
+skipped the opening questions was previewed as two "No answer" rows while
+their real content sat behind the toggle. This matches what the row already
+does — `answers_preview.first` is the first answered question, "skipping any
+blank before it".

@@ -24,7 +24,9 @@ export function AnswerItem({ answer: a, onOpenFile }: AnswerItemProps) {
         {/* PROVISIONAL copy — the design has no state for a dropped question. */}
         {a.retired && ' (no longer asked)'}
       </span>
-      {a.file ? (
+      {!a.answered ? (
+        <p className={styles.blank}>No answer</p>
+      ) : a.file ? (
         // Three different facts, not two: it is gone, or it is here but nothing
         // can open it, or it opens. Folding the middle case into the first told
         // a mentee their upload had been deleted because a caller forgot a prop.

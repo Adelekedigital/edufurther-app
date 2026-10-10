@@ -9,6 +9,8 @@ const base: BookingAnswer = {
   question: 'What do you want to cover?',
   kind: 'free_text',
   retired: false,
+  answered: true,
+  required: null,
   text: 'My statement of purpose.',
   file: null,
 };
@@ -67,5 +69,44 @@ describe('AnswerItem', () => {
   it('the filename is isolated, so a bidi override cannot reorder the words beside it', () => {
     render(<AnswerItem answer={{ ...base, kind: 'file_upload', file: PDF }} />);
     expect(screen.getByText('SOP-draft-v2.pdf')).toHaveAttribute('dir', 'ltr');
+  });
+});
+
+describe('a question that was asked and left blank (backend #412)', () => {
+  const blank = (over = {}) => ({ ...base, answered: false, text: '', ...over });
+
+  it('says No answer rather than showing an empty line', () => {
+    render(<AnswerItem answer={blank({ question: 'Anything else?' })} />);
+    expect(screen.getByText('Anything else?')).toBeVisible();
+    expect(screen.getByText('No answer')).toBeVisible();
+  });
+
+  it('never claims a file was removed when none was uploaded', () => {
+    // A blank file question has no file. Routed down the file branch it would
+    // read "— no longer available", telling a mentee their upload was deleted
+    // when they never made one.
+    render(
+      <AnswerItem
+        answer={blank({ question: 'Your CV', kind: 'file_upload' })}
+        onOpenFile={() => {}}
+      />,
+    );
+    expect(screen.getByText('No answer')).toBeVisible();
+    expect(screen.queryByText(/no longer available/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('still marks a dropped question as no longer asked', () => {
+    render(<AnswerItem answer={blank({ question: 'Old one', retired: true })} />);
+    expect(screen.getByText(/Old one \(no longer asked\)/)).toBeVisible();
+    expect(screen.getByText('No answer')).toBeVisible();
+  });
+
+  it('is told apart by more than colour', () => {
+    // Grey alone disappears in forced-colours and greyscale, so the blank row
+    // carries a second signal.
+    const { container } = render(<AnswerItem answer={blank()} />);
+    const el = container.querySelector('p')!;
+    expect(el.className).toContain('blank');
   });
 });

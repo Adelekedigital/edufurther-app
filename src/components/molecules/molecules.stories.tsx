@@ -731,7 +731,15 @@ export const BookingDay: Story = {
  */
 export const BookingAnswers: Story = {
   render: () => {
-    const base = { questionId: 'q', question: '', kind: 'free_text' as const, retired: false, file: null };
+    const base = {
+      questionId: 'q',
+      question: '',
+      kind: 'free_text' as const,
+      retired: false,
+      answered: true,
+      required: null,
+      file: null,
+    };
     const pdf = {
       id: 'f1',
       filename: 'SOP-draft-v2.pdf',
@@ -741,6 +749,22 @@ export const BookingAnswers: Story = {
     };
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', maxWidth: 380 }}>
+        {/* Asked and left blank (backend #412). Here so the next change to
+            AnswerItem can see the state — in the app it only appears behind
+            particular mock bookings. */}
+        <AnswerItem
+          answer={{ ...base, question: 'What is your target intake?', answered: false, text: '' }}
+        />
+        <AnswerItem
+          answer={{
+            ...base,
+            question: 'Upload your transcript',
+            kind: 'file_upload',
+            answered: false,
+            required: true,
+            text: '',
+          }}
+        />
         <AnswerItem
           answer={{
             ...base,
@@ -783,6 +807,8 @@ export const BookingAnswers: Story = {
             ...base,
             question: 'Which funding are you applying for?',
             retired: true,
+            answered: true,
+            required: null,
             text: 'Chevening, and the departmental scholarship if it reopens.',
           }}
         />

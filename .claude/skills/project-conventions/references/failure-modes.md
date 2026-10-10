@@ -312,3 +312,20 @@ literal is correct by coincidence in dev and wrong in production.
 then, not when it changes. And the first instinct on scope — "that other one is
 somebody else's area" — draws the line around the screen rather than around the
 change; the owner caught that here.
+
+### #60 — A stub typed `unknown` hid a new required field
+
+`BookingsScreen.test.tsx` mocks the answers hook as
+`{ data: unknown; ... }`. When `answered` was added to `BookingAnswer`, the
+compiler checked every other construction site and missed this one, because
+`unknown` accepts anything. The fixtures kept compiling with the field absent,
+`!a.answered` read `undefined` as falsy, and **every answer in that suite
+rendered as "No answer"** — the exact inversion of the feature.
+
+Three tests failed, which is how it was caught. Had they asserted less
+precisely, a green suite would have described a screen that showed no answers
+at all.
+
+**Check:** a mock's payload type is part of the contract. `unknown` or `any` on
+a stub buys nothing and removes the one mechanism that finds every site when a
+field is added. Type the stub with the real domain type.

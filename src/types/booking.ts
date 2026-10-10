@@ -232,6 +232,22 @@ export type BookingAnswer = {
   kind: 'free_text' | 'file_upload' | 'multi_choice';
   /** The question has since been dropped from the form; the answer survives. */
   retired: boolean;
+  /**
+   * The mentee answered it. `false` means the question **was asked and left
+   * blank** — which is not the same as missing data, and is shown as
+   * "No answer" (backend #412).
+   *
+   * A booking's form is kept as it stood when it was made, so every question
+   * asked is listed, in that order. Bookings made before the form was kept
+   * list only their answers, every one `true`.
+   */
+  answered: boolean;
+  /**
+   * Whether the question was required when the booking was made. Null for a
+   * booking made before the form was kept — so null means "we cannot know",
+   * never "optional".
+   */
+  required: boolean | null;
   /** The answer in words: free text as written, choices joined, a file named. */
   text: string;
   file: AnswerFile | null;
