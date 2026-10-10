@@ -113,6 +113,8 @@ const party = (name = 'Amara Okafor'): BookingParty => ({
   deleted: false,
   timeZone: 'Africa/Lagos',
   cover: 'sand',
+  degree: null,
+  institution: null,
   joinedAt: null,
   inRoomAt: null,
   attendance: 'pending' as const,
@@ -139,6 +141,7 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
   joinClosesAt: null,
   doorClosesAt: null,
   menteeAttendanceRate: null,
+  menteeAttendanceSessions: 0,
   ...over,
 });
 

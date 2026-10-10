@@ -27,9 +27,10 @@ export function toAnswer(a: SessionAnswerRead): BookingAnswer {
         : (a.text ?? '');
   return {
     questionId: a.question_id,
-    // The question's wording **now**, not a copy kept at booking time
-    // (backend #350). A reworded question relabels an old answer; nothing the
-    // client can do about it, and design knows.
+    // The wording **as asked**, kept with the answer since backend #360 (which
+    // closed #350). A mentor rewording a question no longer relabels answers
+    // given after that; only answers from before it fall back to the live
+    // wording, because nothing was stored for them.
     question: a.question_text,
     kind: a.question_type,
     retired: a.retired,

@@ -13,6 +13,8 @@ const party = (id: string, first: string | null, last: string | null, deleted = 
   avatar_focus: { x: 0.5, y: 0.25 },
   joined_at: null,
   attendance_status: 'pending' as const,
+  degree: null,
+  institution: null,
 });
 
 // A hand-built API row: only the fields this mapping reads.
@@ -20,6 +22,7 @@ const row = (over: Partial<SessionRead> = {}): SessionRead => ({
   id: 's1',
   mentor_id: 'me',
   mentee_id: 'them',
+  mentee_attendance_sessions: 0,
   mentor: party('me', 'Gbenga', 'Adeyemi'),
   mentee: party('them', 'Amara', 'Okafor'),
   session_type_id: null,
@@ -178,5 +181,37 @@ describe('the suggestion a mentor offered (backend #339)', () => {
       toBooking(row({ session_type_id: null, session_type: null } as Partial<SessionRead>), 'me')
         .sessionTypeId,
     ).toBe(null);
+  });
+});
+
+describe('a deleted account keeps nothing identifying (backend #409)', () => {
+  it('drops the education along with the name and the avatar', () => {
+    const b = toBooking(
+      row({
+        mentee: {
+          ...party('them', 'Amara', 'Okafor'),
+          deleted: true,
+          degree: 'BSc',
+          institution: 'FUTA',
+        },
+      } as Partial<SessionRead>),
+      'me',
+    );
+    // The contract says these arrive null for a deleted account. This function
+    // does not trust that for the name or the avatar, and should not here.
+    expect(b.other.degree).toBe(null);
+    expect(b.other.institution).toBe(null);
+    expect(b.other.name).toBe('Deleted user');
+  });
+
+  it('a live account keeps them', () => {
+    const b = toBooking(
+      row({
+        mentee: { ...party('them', 'Amara', 'Okafor'), degree: 'BSc', institution: 'FUTA' },
+      } as Partial<SessionRead>),
+      'me',
+    );
+    expect(b.other.degree).toBe('BSc');
+    expect(b.other.institution).toBe('FUTA');
   });
 });

@@ -69,6 +69,11 @@ export function toParty(p: PartyRead): BookingParty {
     deleted: p.deleted ?? false,
     timeZone: p.deleted ? null : (p.timezone ?? null),
     cover: coverFor(p.id),
+    // Redacted here like the name and the avatar, not merely expected to
+    // arrive null: every other identifying field on a deleted account is
+    // dropped locally rather than trusted to the server.
+    degree: p.deleted ? null : (p.degree ?? null),
+    institution: p.deleted ? null : (p.institution ?? null),
     joinedAt: p.joined_at ?? null,
     inRoomAt: p.in_room_at ?? null,
     attendance:
@@ -137,6 +142,8 @@ export function toBooking(s: SessionRead, viewerId: string): Booking {
     joinClosesAt: s.join_closes_at ?? null,
     doorClosesAt: s.door_closes_at ?? null,
     menteeAttendanceRate: s.mentee_attendance_rate ?? null,
+    // Optional in the spec and defaulted, as the backend asked (#409).
+    menteeAttendanceSessions: s.mentee_attendance_sessions ?? 0,
   };
 }
 

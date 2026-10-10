@@ -12,7 +12,9 @@ export function sampleParty(over: Partial<BookingParty> = {}): BookingParty {
     deleted: false,
     timeZone: 'Africa/Lagos',
     cover: 'sand',
-    joinedAt: null,
+    degree: null,
+  institution: null,
+  joinedAt: null,
     inRoomAt: null,
     attendance: 'pending',
     ...over,
@@ -41,6 +43,7 @@ export function sampleBookingFor(over: Partial<Booking> = {}): Booking {
     joinClosesAt: null,
     doorClosesAt: null,
     menteeAttendanceRate: null,
+  menteeAttendanceSessions: 0,
     ...over,
   };
 }

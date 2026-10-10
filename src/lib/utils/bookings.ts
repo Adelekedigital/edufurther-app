@@ -4,7 +4,7 @@
  * the same rule can be tested directly and used in a row, a hero or a panel.
  */
 import { formatTime } from '@/lib/utils/format';
-import type { Booking, BookingStatus } from '@/types/booking';
+import type { Booking, BookingStatus, BookingParty } from '@/types/booking';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -186,7 +186,28 @@ function daysBetween(a: Date, b: Date, zone: string): number {
  */
 export function attendanceLine(b: Booking): string {
   if (b.side !== 'mentor') return 'Mentor';
-  return b.menteeAttendanceRate == null ? 'Mentee' : `Attendance rate: ${b.menteeAttendanceRate}%`;
+  if (b.menteeAttendanceRate == null) return 'Mentee';
+  // The denominator, because a percentage without one says very little: 100%
+  // of two sessions and 100% of forty are not the same claim (backend #409).
+  // Guarded rather than assumed — a rate with no count is still a rate.
+  const over = b.menteeAttendanceSessions;
+  const count = over > 0 ? ` (${over} ${over === 1 ? 'session' : 'sessions'})` : '';
+  return `Attendance rate: ${b.menteeAttendanceRate}%${count}`;
+}
+
+/**
+ * "BSc Student at FUTA" — who this person is, in one line (backend #409).
+ *
+ * Both halves can be missing: there may be no education entry, or the account
+ * may be deleted. Either alone still says something, so the line degrades
+ * rather than disappearing, and an empty one renders nothing at all.
+ *
+ * **Our wording** — the design draws no such line. The contract spells that out
+ * ("the wording is the client's"), so it is recorded as a divergence.
+ */
+export function partyLine(p: BookingParty): string {
+  if (p.degree && p.institution) return `${p.degree} at ${p.institution}`;
+  return p.degree ?? p.institution ?? '';
 }
 
 /**

@@ -29,12 +29,15 @@ const party = (id: string, joinedAt: string | null = null) => ({
   timezone: 'Africa/Lagos',
   joined_at: joinedAt,
   attendance_status: 'pending' as const,
+  degree: null,
+  institution: null,
 });
 // A 30-minute call at 17:00; arrivals close 17:15, the room 17:30.
 const row = (over: Partial<SessionRead> = {}, myJoin: string | null = null): SessionRead => ({
   id: 's1',
   mentor_id: 'me',
   mentee_id: 'them',
+  mentee_attendance_sessions: 0,
   mentor: party('me', myJoin),
   mentee: party('them'),
   session_type_id: 'st1',

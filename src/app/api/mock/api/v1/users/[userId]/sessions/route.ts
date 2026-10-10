@@ -11,7 +11,14 @@ const CLOCK_ANCHOR = (() => {
   d.setUTCSeconds(0, 0);
   return d.toISOString();
 })();
-const party = (id: string, first: string, last: string | null = null, zone = 'Africa/Lagos') => ({
+const party = (
+  id: string,
+  first: string,
+  last: string | null = null,
+  zone = 'Africa/Lagos',
+  // Both, one, or neither — all three render differently (backend #409).
+  edu: { degree?: string | null; institution?: string | null } = {},
+) => ({
   id,
   deleted: false,
   first_name: first,
@@ -21,6 +28,8 @@ const party = (id: string, first: string, last: string | null = null, zone = 'Af
   timezone: zone,
   joined_at: null,
   attendance_status: 'pending',
+  degree: edu.degree ?? null,
+  institution: edu.institution ?? null,
 });
 
 /**
@@ -46,6 +55,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     respondBy?: string | null;
     asMentee?: boolean;
     rate?: number | null;
+    rateOver?: number;
+    edu?: { degree?: string | null; institution?: string | null };
     answers?: { count: number; first: { question_text: string; text: string } } | null;
     suggestion?: 'active' | 'booked' | 'expired';
     typeId?: string;
@@ -75,7 +86,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     o: Opts = {},
   ) => {
     const other = {
-      ...party(`mock-${id}`, mentee[0], mentee[1], o.zone ?? 'Africa/Lagos'),
+      ...party(`mock-${id}`, mentee[0], mentee[1], o.zone ?? 'Africa/Lagos', o.edu ?? {}),
       joined_at: o.otherJoinedAt ?? null,
       in_room_at: o.otherInRoomAt ?? null,
       attendance_status: o.otherAttendance ?? 'pending',
@@ -112,6 +123,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
         : null,
       created_at: at(-10, 9),
       mentee_attendance_rate: o.rate === undefined ? null : o.rate,
+      // The rate's denominator. 0 with a null rate is a new mentee, and the
+      // line must not then read "0 sessions".
+      mentee_attendance_sessions: o.rateOver ?? (o.rate === undefined ? 0 : 12),
       // The form in brief, so a page of rows needs no extra call. `count`
       // matches what /sessions/{id}/answers returns for the same id.
       answers_preview: o.answers ?? null,
@@ -191,6 +205,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     // Upcoming — the first is the hero.
     session('u-1', at(0, 23), 'confirmed', ['Taofeeq', 'Animasahun'], {
       topic: 'Statement of Purpose review',
+      edu: { degree: 'BSc', institution: 'Federal University of Technology, Akure' },
       answers: {
         count: 4,
         first: {
@@ -203,7 +218,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       rate: 100,
     }),
     session('u-2', at(2, 9), 'confirmed', ['Amara', 'Okafor'], {
+      // Only a degree: the line degrades rather than disappearing.
       topic: 'School shortlist',
+      edu: { degree: 'MSc' },
       answers: {
         count: 2,
         first: {
@@ -213,6 +230,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       },
       message: 'I have 9 programs and need to cut it to 5. Funding matters most.',
       rate: 92,
+      rateOver: 25,
     }),
     session('u-3', at(5, 17), 'confirmed', ['Kwame', 'Asante'], {
       topic: 'Visa interview practice',
