@@ -830,6 +830,34 @@ describe('getting ready', () => {
     open.mockRestore();
   });
 
+  it('a sheet whose content goes away closes, and focus lands on the title, not <body>', async () => {
+    // Codex on #206: Add to calendar disappears once the session starts.
+    phone = true;
+    renderAt('16:59:58');
+    await userEvent.click(screen.getByRole('button', { name: 'Add to calendar' }));
+    expect(screen.getByRole('dialog', { name: 'Add to calendar' })).toBeInTheDocument();
+    await act(async () => {
+      vi.setSystemTime(at('17:00:03'));
+      vi.advanceTimersByTime(1000);
+    });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
+  });
+
+  it('the guide sheet closes the same way when the session is over', async () => {
+    const view = renderAt('15:15:00');
+    await userEvent.click(screen.getByRole('button', { name: 'Quick guide' }));
+    expect(screen.getByRole('dialog', { name: 'Quick guide' })).toBeInTheDocument();
+    room = remote(sessionRoom({ status: 'completed' }));
+    await act(async () => {
+      vi.setSystemTime(at('17:40:00'));
+      view.rerender(<SessionJoinScreen id="b1" />);
+      vi.advanceTimersByTime(1000);
+    });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
+  });
+
   it('widens the page only while there is something to get ready for', () => {
     // Loading starts wide: most visits are before a session, so nothing jumps sideways.
     room = remote<SessionRoom>(null, { isLoading: true });

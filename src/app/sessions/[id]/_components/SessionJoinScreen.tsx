@@ -394,6 +394,28 @@ export function SessionJoinScreen({ id }: { id: string }) {
     );
   }
 
+  // A sheet whose content goes away (Add to calendar once the session starts,
+  // the answers and guide once it's over) unmounts together with the button
+  // that opened it, so the focus trap has nowhere to give focus back and it
+  // falls to <body>. Drop it, and put focus on the lobby's title, as the lobby
+  // does when Join vanishes (Codex on #206).
+  const orphaned =
+    (sheet === 'calendar' && !calendar) || ((sheet === 'talk' || sheet === 'guide') && !prep);
+  // Counted, so every orphaned sheet moves focus, not only the first.
+  const [orphanedSheets, setOrphanedSheets] = useState(0);
+  if (orphaned) {
+    // React's "adjust state while rendering": the next render has no sheet,
+    // so this runs once per orphaned sheet.
+    setSheet(null);
+    setOrphanedSheets((n) => n + 1);
+  }
+  useEffect(() => {
+    if (!orphanedSheets) return;
+    if (document.activeElement === document.body || !document.activeElement?.isConnected) {
+      document.querySelector<HTMLElement>('main h1')?.focus();
+    }
+  }, [orphanedSheets]);
+
   return (
     <FocusPage back={BACK} offline={!online} wide={wide || !!prep}>
       <LiveRegion message={said} />
