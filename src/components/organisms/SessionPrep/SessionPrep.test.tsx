@@ -14,7 +14,8 @@ const q = (i: number, over: Partial<BookingAnswer> = {}): BookingAnswer => ({
   ...over,
 });
 
-describe('hasAnswersToShow counts answers, not questions (backend #412)', () => {
+// Blank answers: backend #412.
+describe('hasAnswersToShow counts answers, not questions', () => {
   it('a form where every question was left blank has nothing to show', () => {
     // The list carries every question asked since #412, so a row count said
     // "there are answers" and the card opened on two "No answer" lines.

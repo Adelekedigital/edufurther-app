@@ -72,7 +72,8 @@ describe('AnswerItem', () => {
   });
 });
 
-describe('a question that was asked and left blank (backend #412)', () => {
+// Blank answers: backend #412.
+describe('a question that was asked and left blank', () => {
   const blank = (over = {}) => ({ ...base, answered: false, text: '', ...over });
 
   it('says No answer rather than showing an empty line', () => {

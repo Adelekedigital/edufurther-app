@@ -478,7 +478,8 @@ describe('a past cancellation is judged by when it happened', () => {
   });
 });
 
-describe('questions the mentee left blank (backend #412)', () => {
+// Blank answers: backend #412.
+describe('questions the mentee left blank', () => {
   const q = (i: number, over = {}) => ({
     questionId: `q${i}`,
     question: `Question ${i}?`,
