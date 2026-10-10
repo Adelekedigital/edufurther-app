@@ -46,7 +46,7 @@ const BACK = { href: '/bookings', label: 'Go to Bookings' };
 
 /** What a screen reader hears when the browser swallows the meeting tab. */
 const BLOCKED =
-  'Your browser blocked the meeting window. Use the Open the session link. You’re already marked as here.';
+  'Your browser blocked the meeting window. Use the Open the session link. Your arrival is recorded.';
 
 /** Statuses where the session is not this page's to show: an id we may not see, or a bad one. */
 const NOT_FOUND = new Set([403, 404, 422]);
@@ -140,10 +140,11 @@ export function SessionJoinScreen({ id }: { id: string }) {
       (entry === 'join' ? join : door).mutate(id, {
         onSuccess: ({ meetingUrl }) => {
           if (!meetingUrl) {
-            // A 200 with no link: there is no way in right now. Not an error.
+            // A 200 with no link: the venue didn't answer this time, and the
+            // next press asks again (backend #402). Not an error.
             const text =
               entry === 'join'
-                ? 'You’re marked as here, but this session has no meeting link yet.'
+                ? 'Your arrival is recorded, but the call link isn’t ready. Try again in a moment.'
                 : 'There’s no way into this call right now. Try again in a moment.';
             setProblem(text);
             say(text);
@@ -281,7 +282,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
         <a href={blockedUrl} target="_blank" rel="noopener noreferrer">
           Open the session
         </a>
-        . You’re already marked as here.
+        . Your arrival is recorded.
       </Notice>
     ) : problem ? (
       // Plain text: the live region above already says it, and a second

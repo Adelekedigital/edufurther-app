@@ -475,3 +475,10 @@ Source: `Session Join.dc.html`, defaults `layout=lobby`, `provider=edufurther`; 
 | Hint "{name} is in the call." | "{name} has joined." | Same reason: not "in the call now" | #394 |
 | Rejoin and Bookings' Join | Unchanged: gated on the Join press (`joined_at`), not on the room sighting | A press whose call didn't connect must still get back in (agreed with backend, 2026-10-08) | — |
 
+### Session Join — the no-link and popup-blocked notices, 2026-10-09
+
+| Was | Now | Why |
+|---|---|---|
+| "You’re marked as here, but this session has no meeting link yet." | "Your arrival is recorded, but the call link isn’t ready. Try again in a moment." | No link now means the venue didn't answer, and pressing Join again asks again (backend #402). "Here" is gone everywhere else (PR 4b). Small copy fix, ours. |
+| Popup blocked: "…You’re already marked as here." | "…Your arrival is recorded." | Same. Not "You've joined": on EduFurther video that's Daily's call, and a blocked tab never reached the room. |
+
