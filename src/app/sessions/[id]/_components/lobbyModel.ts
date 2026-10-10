@@ -14,6 +14,7 @@ import {
   providerName,
   type SessionPhase,
 } from '@/lib/utils/sessionPhase';
+import { refundWindowFor } from '@/lib/utils/bookings';
 import { joinedTime, presenceOf } from '@/lib/utils/presence';
 import { missedTone } from '@/lib/utils/sessionOutcome';
 import type { BookingParty, SessionRoom } from '@/types/booking';
@@ -265,7 +266,16 @@ export function guideTips(room: SessionRoom, hasAnswers: boolean): GuideTip[] {
     },
     {
       title: 'If plans change',
-      body: 'Cancel at least 12 hours before, so the time can go to someone else.',
+      // The window is deployment configuration (backend #413), so the number
+      // comes from this session's own deadline. Left at 12 it contradicted the
+      // cancel dialog on the same screen.
+      //
+      // With no deadline the sentence drops the number rather than guessing
+      // one. Nothing here depends on it — unlike the cancel dialog, which is
+      // explaining a decision the fallback window already made.
+      body: b.refundUntil
+        ? `Cancel at least ${refundWindowFor(b)} hours before, so the time can go to someone else.`
+        : 'Cancel in good time, so the time can go to someone else.',
     },
   ];
 }

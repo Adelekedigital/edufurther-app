@@ -744,10 +744,27 @@ describe('getting ready', () => {
   it('never promises rescheduling or messaging, which do not exist', async () => {
     renderAt('15:15:00');
     await userEvent.click(screen.getByRole('button', { name: /Quick guide/ }));
+    // No deadline on this fixture, so the tip names no number at all rather
+    // than guessing one it cannot know.
     expect(
-      screen.getByText('Cancel at least 12 hours before, so the time can go to someone else.'),
+      screen.getByText('Cancel in good time, so the time can go to someone else.'),
     ).toBeVisible();
+    expect(screen.queryByText(/\d+ hours before/)).not.toBeInTheDocument();
     expect(screen.queryByText(/reschedule|message/i)).not.toBeInTheDocument();
+  });
+
+  it('names the deployment’s window, not a remembered twelve', async () => {
+    // A 10-hour window. Left hard-coded, this tip contradicted the cancel
+    // dialog on the same screen — both describe the same deadline.
+    const r = sessionRoom({ side: 'mentee' });
+    room = remote({
+      ...r,
+      booking: { ...r.booking, refundUntil: '2026-10-04T07:00:00Z' },
+    });
+    renderAt('15:15:00');
+    await userEvent.click(screen.getByRole('button', { name: /Quick guide/ }));
+    expect(screen.getByText(/Cancel at least 10 hours before/)).toBeVisible();
+    expect(screen.queryByText(/12 hours/)).not.toBeInTheDocument();
   });
 });
 
