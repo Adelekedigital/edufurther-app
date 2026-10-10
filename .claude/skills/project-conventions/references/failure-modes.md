@@ -289,3 +289,19 @@ components import.
 
 **Check:** when a backend ticket you cited closes, grep for its number. A
 comment naming an issue is a claim with an expiry date.
+
+### #59 — A policy number written into a sentence
+
+"12 hours" was in `refundOnCancel`, in the cancel dialog's copy, in the details
+panel's record of a past cancellation, and in the credits explainer. It was
+correct every time it was written and became configuration on the day backend
+#413 merged — at which point four sentences would have stated an old window
+with nothing failing.
+
+The fix is not to pass the number around but to **read the deadline the server
+sends** and derive the sentence from it, so the copy cannot disagree with the
+rule it describes. The mock now runs a **10**-hour window precisely so a baked
+number is visible in dev rather than correct by coincidence.
+
+**Check:** a number in copy that names a policy is configuration in disguise.
+Ask what happens the day it changes, before writing it down.

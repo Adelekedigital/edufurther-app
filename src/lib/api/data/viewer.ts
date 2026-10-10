@@ -59,6 +59,7 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     awaitingResponse: me.mentor_profile
       ? (me.booking_counts?.as_mentor?.awaiting_your_response ?? null)
       : (me.booking_counts?.as_mentee?.awaiting_mentor ?? null),
+    menteeCancelRefundHours: me.mentee_cancel_refund_hours ?? null,
     bookingCounts: {
       pending: sumSides(
         me.booking_counts?.as_mentor?.awaiting_your_response,
@@ -106,6 +107,8 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     coverKey: null,
     awaitingResponse: 1,
     bookingCounts: { pending: 3, upcoming: 6 },
+    // Not 12, so a number baked into copy would be visible in dev.
+    menteeCancelRefundHours: 10,
   },
   mentor: {
     kind: 'member',
@@ -124,6 +127,8 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     coverKey: null,
     awaitingResponse: 12,
     bookingCounts: { pending: 3, upcoming: 6 },
+    // Not 12, so a number baked into copy would be visible in dev.
+    menteeCancelRefundHours: 10,
   },
 };
 

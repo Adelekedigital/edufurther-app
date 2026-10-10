@@ -16,6 +16,7 @@ import {
   panelStatus,
   timeRange,
   refundOnCancel,
+  refundWindowFor,
   showedUp,
   partyLine,
 } from '@/lib/utils/bookings';
@@ -93,7 +94,7 @@ function creditLine(o: BookingOutcome, b: Booking, now: Date): string {
       // back to find out where the credit went.
       return refundOnCancel(b, now)
         ? 'Your credit is back.'
-        : 'This was cancelled less than 12 hours before the session, so the credit was not returned.';
+        : `This was cancelled less than ${refundWindowFor(b)} hours before the session, so the credit was not returned.`;
     default:
       return '';
   }

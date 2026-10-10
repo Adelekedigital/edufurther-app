@@ -331,3 +331,34 @@ describe('the picker does not bury the dialog', () => {
     expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
   });
 });
+
+describe('the refund deadline is the server’s, not a number we remember', () => {
+  it('names the real window when it is not twelve hours', () => {
+    // A 10-hour window, cancelled 9 hours out: too late, and the sentence
+    // must say 10 rather than the old hard-coded 12.
+    dialog({
+      booking: sampleBookingFor({
+        side: 'mentee',
+        status: 'confirmed',
+        startsAt: at(9),
+        endsAt: at(10),
+        refundUntil: at(-1),
+      }),
+    });
+    expect(screen.getByText(/less than 10 hours before the session/)).toBeVisible();
+    expect(screen.queryByText(/12 hours/)).not.toBeInTheDocument();
+  });
+
+  it('still refunds right up to the deadline', () => {
+    dialog({
+      booking: sampleBookingFor({
+        side: 'mentee',
+        status: 'confirmed',
+        startsAt: at(48),
+        endsAt: at(49),
+        refundUntil: at(1),
+      }),
+    });
+    expect(screen.getByText('Your credit goes back to you.')).toBeVisible();
+  });
+});

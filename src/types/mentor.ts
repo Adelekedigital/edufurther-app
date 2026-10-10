@@ -234,6 +234,12 @@ export type Viewer =
        * the nav badge follows the viewer's role.
        */
       bookingCounts?: { pending: number | null; upcoming: number | null };
+      /**
+       * How many hours before the start a mentee may cancel and still get the
+       * credit back — the deployment's window. For copy that explains the rule
+       * with no session to hand; a session's own deadline is its `refundUntil`.
+       */
+      menteeCancelRefundHours?: number | null;
     };
 
 export type CreditState = 'on_track' | 'moderate' | 'low' | 'exhausted';

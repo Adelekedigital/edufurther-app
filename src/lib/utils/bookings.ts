@@ -384,8 +384,15 @@ export function fullDate(isoInstant: string, timeZone: string): string {
 
 /** Nobody may cancel once the session is this close (product, 2026-10-02). */
 const CANCEL_LOCK_MIN = 10;
-/** A mentee's cancellation refunds from here out. A mentor's always does. */
-const MENTEE_REFUND_HOURS = 12;
+/**
+ * The fallback refund window, in hours.
+ *
+ * Only used when a confirmed session arrives without `refundUntil` — an older
+ * row, or a deploy where the field is absent. The real deadline is the
+ * server's, because the window is deployment configuration and a number baked
+ * in here would go stale the day somebody changes it.
+ */
+const FALLBACK_REFUND_HOURS = 12;
 
 function minutesUntil(b: Booking, now: Date): number {
   return (new Date(b.startsAt).getTime() - now.getTime()) / 60_000;
@@ -423,8 +430,23 @@ export function canCancel(b: Booking, now = new Date()): boolean {
  * needs to fill the hour.
  */
 export function refundOnCancel(b: Booking, now = new Date()): boolean {
+  // A mentor's cancellation always refunds the mentee: they did nothing wrong.
   if (b.side === 'mentor') return true;
-  return minutesUntil(b, now) >= MENTEE_REFUND_HOURS * 60;
+  // The server's deadline, when it sent one. At exactly the deadline the
+  // credit still comes back, so this is `<=`, not `<`.
+  if (b.refundUntil) return now.getTime() <= new Date(b.refundUntil).getTime();
+  return minutesUntil(b, now) >= FALLBACK_REFUND_HOURS * 60;
+}
+
+/**
+ * How many hours before the start this session's refund deadline sits, for the
+ * copy that has to name it. Derived from the server's own deadline rather than
+ * assumed, so a changed window changes the sentence with it.
+ */
+export function refundWindowFor(b: Booking): number {
+  if (!b.refundUntil) return FALLBACK_REFUND_HOURS;
+  const hours = (new Date(b.startsAt).getTime() - new Date(b.refundUntil).getTime()) / HOUR;
+  return Number.isFinite(hours) && hours > 0 ? Math.round(hours) : FALLBACK_REFUND_HOURS;
 }
 
 /**

@@ -8,7 +8,7 @@ import { ReasonField } from '@/components/molecules/ReasonField/ReasonField';
 import { SuggestTimeStep } from './SuggestTimeStep';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import type { ActionInput, BookingAction } from '@/lib/api/data/bookingActions';
-import { canCancel, refundOnCancel } from '@/lib/utils/bookings';
+import { canCancel, refundOnCancel, refundWindowFor } from '@/lib/utils/bookings';
 import type { AppError } from '@/types/mentor';
 import type { Booking, PickableReason } from '@/types/booking';
 import styles from './sessionDialogs.module.css';
@@ -88,7 +88,7 @@ export function ConfirmActionDialog({
     : action === 'cancel'
       ? refunds
         ? 'Your credit goes back to you.'
-        : 'This is less than 12 hours before the session, so the credit is not returned.'
+        : `This is less than ${refundWindowFor(b)} hours before the session, so the credit is not returned.`
       : 'Your credit goes back to you.';
 
   const whatHappens =
