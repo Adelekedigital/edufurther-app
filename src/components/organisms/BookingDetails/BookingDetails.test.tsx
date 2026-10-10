@@ -344,7 +344,11 @@ describe('what happened, and why (design’s table, 2026-10-03)', () => {
   it('a late cancellation records where the credit went, since the dialog is long gone', () => {
     panel({
       booking: sampleBookingFor({ side: 'mentee', status: 'cancelled', startsAt: at(9), endsAt: at(10) }),
-      outcome: { status: 'cancelled', by: 'you', reason: null, at: AT },
+      // Cancelled an hour ago, for a session nine hours away: inside the
+      // window. The fixture used to record the cancellation eight days before
+      // the session and still expect "too late" — it only passed because the
+      // old code judged it against the clock rather than the event.
+      outcome: { status: 'cancelled', by: 'you', reason: null, at: at(-1) },
     });
     expect(screen.getByText(/less than 12 hours before the session, so the credit was not returned/)).toBeVisible();
   });
@@ -435,5 +439,39 @@ describe('who the other person is, in the panel', () => {
       }),
     });
     expect(screen.getByText('Attendance rate: 92% (25 sessions)')).toBeVisible();
+  });
+});
+
+describe('a past cancellation is judged by when it happened', () => {
+  const cancelled = (startsAt: string, cancelledAt: string) => ({
+    booking: sampleBookingFor({
+      side: 'mentee',
+      status: 'cancelled',
+      startsAt,
+      endsAt: startsAt,
+      refundUntil: null,
+    }),
+    outcome: { status: 'cancelled' as const, by: 'you' as const, reason: null, at: cancelledAt },
+  });
+
+  it('a mentee who cancelled in good time is told the credit came back', () => {
+    // The session was last week; they cancelled three days before it. Judged
+    // against today's clock this always reads as "too late", which told every
+    // mentee with an old row that their credit had not come back.
+    panel(cancelled(at(-168), at(-240)));
+    expect(screen.getByText('Your credit is back.')).toBeVisible();
+  });
+
+  it('a mentee who cancelled too late is still told so', () => {
+    panel(cancelled(at(-168), at(-169)));
+    expect(screen.getByText(/so the credit was not returned/)).toBeVisible();
+  });
+
+  it('an unparseable outcome time falls back rather than throwing', () => {
+    panel({
+      booking: sampleBookingFor({ side: 'mentee', status: 'cancelled', startsAt: at(48), endsAt: at(49) }),
+      outcome: { status: 'cancelled', by: 'you', reason: null, at: 'not-a-date' },
+    });
+    expect(screen.getByText('Your credit is back.')).toBeVisible();
   });
 });
