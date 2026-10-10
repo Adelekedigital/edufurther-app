@@ -290,18 +290,25 @@ components import.
 **Check:** when a backend ticket you cited closes, grep for its number. A
 comment naming an issue is a claim with an expiry date.
 
-### #59 — A policy number written into a sentence
+### #59 — One rule, five copies of its number
 
-"12 hours" was in `refundOnCancel`, in the cancel dialog's copy, in the details
-panel's record of a past cancellation, and in the credits explainer. It was
-correct every time it was written and became configuration on the day backend
-#413 merged — at which point four sentences would have stated an old window
-with nothing failing.
+"12 hours" existed in `refundOnCancel`, the cancel dialog's copy, the details
+panel's record of a past cancellation, the Session Join prep tip, and the
+credits refund policy. Five independent literals, nothing linking them. When
+backend #413 made the window deployment configuration, every one of them was
+wrong with nothing failing.
 
-The fix is not to pass the number around but to **read the deadline the server
-sends** and derive the sentence from it, so the copy cannot disagree with the
-rule it describes. The mock now runs a **10**-hour window precisely so a baked
-number is visible in dev rather than correct by coincidence.
+**Writing the number was not the mistake.** Twelve was a fixed product rule and
+spelling it out is clearer than "well in advance". The mistake was five copies:
+with one source the four readers would have been right while it was fixed, and
+one line would have changed when it stopped being.
 
-**Check:** a number in copy that names a policy is configuration in disguise.
-Ask what happens the day it changes, before writing it down.
+A second, smaller thing: the fix is to read the server's `refund_until` and
+derive the sentence from it, so the copy cannot disagree with the rule it
+describes. The mock runs a **10**-hour window on purpose — at twelve a hard
+literal is correct by coincidence in dev and wrong in production.
+
+**Check:** when the same fact appears in a second place, give it one source
+then, not when it changes. And the first instinct on scope — "that other one is
+somebody else's area" — draws the line around the screen rather than around the
+change; the owner caught that here.
