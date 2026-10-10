@@ -157,12 +157,27 @@ function renderAt(time: string) {
   return render(<SessionJoinScreen id="b1" />);
 }
 
+/** A tab as `window.open('', '_blank')` returns it: blank, ours to send on or close. */
+function fakeTab() {
+  return {
+    opener: window as Window | null,
+    closed: false,
+    close: vi.fn(),
+    location: { replace: vi.fn() },
+    document: { title: '', body: { textContent: '' } },
+  };
+}
+let tab: ReturnType<typeof fakeTab>;
+
 // jsdom has no matchMedia; Add to calendar reads it to choose menu vs phone
 // sheet. Desktop unless a test says otherwise. Follows BookingsScreen.test.tsx.
 let phone = false;
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
+  // jsdom has no window.open: every Join opens this tab unless a test says otherwise.
+  tab = fakeTab();
+  vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
   phone = false;
   window.matchMedia = vi.fn().mockImplementation((q: string) => ({
     matches: phone,
@@ -184,7 +199,10 @@ beforeEach(() => {
   replace.mockReset();
   cancel.mutate.mockReset();
 });
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
 
 describe('the frame', () => {
   it('has no nav rail, and its one way back goes to Bookings', () => {
@@ -548,22 +566,62 @@ describe('the window is open', () => {
     expect(screen.getByText('Joining…')).toBeVisible();
   });
 
-  it('Join opens the link the API minted for this caller', async () => {
-    join.mockImplementation((_id, { onSuccess }) =>
-      onSuccess({ meetingUrl: 'https://room.test/x' }),
-    );
-    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window);
+  it('Join opens a tab in the click, then sends it to the link the API minted', async () => {
+    // The link only exists after the POST, so the tab is opened during the
+    // click (no popup blocker refuses that) and sent on when the answer comes.
+    let answer: ((v: { meetingUrl: string | null }) => void) | undefined;
+    join.mockImplementation((_id, { onSuccess }) => (answer = onSuccess));
     renderAt('16:56:00');
     await userEvent.click(screen.getByRole('button', { name: 'Join session' }));
+    expect(window.open).toHaveBeenCalledWith('', '_blank');
+    expect(tab.opener).toBeNull();
+    expect(tab.location.replace).not.toHaveBeenCalled();
+    act(() => answer!({ meetingUrl: 'https://room.test/x' }));
     expect(join).toHaveBeenCalledWith('b1', expect.anything());
-    expect(open).toHaveBeenCalledWith('https://room.test/x', '_blank', 'noopener,noreferrer');
-    open.mockRestore();
+    expect(tab.location.replace).toHaveBeenCalledWith('https://room.test/x');
+    expect(screen.queryByText(/blocked the meeting window/)).not.toBeInTheDocument();
+  });
+
+  it('a refused Join closes the waiting tab and says why on the page', async () => {
+    join.mockImplementation((_id, { onError }) => onError(new ApiError(409)));
+    renderAt('16:56:00');
+    await userEvent.click(screen.getByRole('button', { name: 'Join session' }));
+    expect(tab.close).toHaveBeenCalled();
+    expect(
+      screen.getByText('This session isn’t open to join right now.', {
+        selector: 'p:not(.sr-only)',
+      }),
+    ).toBeVisible();
+  });
+
+  it('closing the waiting tab before the link arrives offers the link instead', async () => {
+    let answer: ((v: { meetingUrl: string | null }) => void) | undefined;
+    join.mockImplementation((_id, { onSuccess }) => (answer = onSuccess));
+    renderAt('16:56:00');
+    await userEvent.click(screen.getByRole('button', { name: 'Join session' }));
+    tab.closed = true;
+    act(() => answer!({ meetingUrl: 'https://room.test/x' }));
+    expect(tab.location.replace).not.toHaveBeenCalled();
+    expect(screen.getByRole('link', { name: 'Open the session' })).toHaveAttribute(
+      'href',
+      'https://room.test/x',
+    );
+  });
+
+  it('leaving the page while Join is on its way closes the blank tab', async () => {
+    join.mockImplementation(() => {});
+    const view = renderAt('16:56:00');
+    await userEvent.click(screen.getByRole('button', { name: 'Join session' }));
+    view.unmount();
+    expect(tab.close).toHaveBeenCalled();
   });
 
   it('attendance recorded with no link is said, not treated as a failure', async () => {
     join.mockImplementation((_id, { onSuccess }) => onSuccess({ meetingUrl: null }));
     renderAt('16:56:00');
     await userEvent.click(screen.getByRole('button', { name: 'Join session' }));
+    // No link, so the tab opened for it closes rather than sitting blank.
+    expect(tab.close).toHaveBeenCalled();
     // The next press tries again (backend: null is a venue that didn't answer).
     await waitFor(() =>
       expect(
@@ -575,7 +633,7 @@ describe('the window is open', () => {
     expect(screen.queryByText(/marked as here/)).not.toBeInTheDocument();
   });
 
-  it('a blocked popup offers the link instead of looking like a dead button', async () => {
+  it('a browser that blocks even a tab opened in the click gets the link to press', async () => {
     join.mockImplementation((_id, { onSuccess }) =>
       onSuccess({ meetingUrl: 'https://room.test/x' }),
     );
@@ -651,11 +709,10 @@ describe('during the call', () => {
     door.mockImplementation((_id, { onSuccess }) =>
       onSuccess({ meetingUrl: 'https://room.test/x' }),
     );
-    const open = vi.spyOn(window, 'open').mockReturnValue({} as Window);
     renderAt('17:25:00');
     await userEvent.click(screen.getByRole('button', { name: 'Rejoin session' }));
-    expect(open).toHaveBeenCalledWith('https://room.test/x', '_blank', 'noopener,noreferrer');
-    open.mockRestore();
+    expect(window.open).toHaveBeenCalledWith('', '_blank');
+    expect(tab.location.replace).toHaveBeenCalledWith('https://room.test/x');
   });
 
   it('says plainly when the door has no way in, without calling it an error', async () => {
