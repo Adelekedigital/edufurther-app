@@ -608,6 +608,17 @@ describe('the window is open', () => {
     );
   });
 
+  it('leaving the page after the call opened leaves the call alone', async () => {
+    join.mockImplementation((_id, { onSuccess }) =>
+      onSuccess({ meetingUrl: 'https://room.test/x' }),
+    );
+    const view = renderAt('16:56:00');
+    await userEvent.click(screen.getByRole('button', { name: 'Join session' }));
+    expect(tab.location.replace).toHaveBeenCalledWith('https://room.test/x');
+    view.unmount();
+    expect(tab.close).not.toHaveBeenCalled();
+  });
+
   it('leaving the page while Join is on its way closes the blank tab', async () => {
     join.mockImplementation(() => {});
     const view = renderAt('16:56:00');
