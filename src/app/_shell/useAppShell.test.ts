@@ -120,6 +120,7 @@ describe('credits in the shell: mentees only', () => {
     const mentee = member({ isMentor: false, isApprovedMentor: false, isMentee: true, credits: c });
     expect(isMenteeSide(mentee) ? creditsView(mentee.credits) : null).toEqual({
       left: 4,
+      refundHours: null,
       monthlyLeft: 3,
       monthlyTotal: 3,
       bonus: [{ count: 1, expires: false, expiresOn: null }],

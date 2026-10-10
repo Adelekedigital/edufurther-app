@@ -1,6 +1,7 @@
 import {
   creditsAria,
   creditRows,
+  refundPolicy,
   creditSegments,
   creditsTitle,
   creditsView,
@@ -40,7 +41,8 @@ const api = (o: {
 describe('creditsView (backend #344: monthly and bonus)', () => {
   it('splits the total: the bar is monthly of the ceiling; bonus groups are their own lines', () => {
     expect(creditsView(api({ groups: [{ count: 1, expiresAt: null }] }))).toEqual({
-      left: 4,
+      refundHours: null,
+  left: 4,
       monthlyLeft: 3,
       monthlyTotal: 3,
       bonus: [{ count: 1, expires: false, expiresOn: null }],
@@ -128,6 +130,7 @@ describe('dates', () => {
 
 describe('copy (design creditSplit on)', () => {
   const v = (left: number, bonus: CreditsView['bonus'] = []): CreditsView => ({
+    refundHours: null,
     left,
     monthlyLeft: left - bonus.reduce((n, g) => n + g.count, 0),
     monthlyTotal: 3,
@@ -195,5 +198,24 @@ describe('copy (design creditSplit on)', () => {
     // 0 monthly but a bonus credit to spend: low, not out.
     expect(isOut(v(1, starter))).toBe(false);
     expect(isOut(v(0))).toBe(true);
+  });
+});
+
+describe('the refund policy names the deployment’s window (backend #413)', () => {
+  it('uses the hours /me gave', () => {
+    expect(refundPolicy(10).items).toContain('you cancel 10+ hours before');
+  });
+
+  it('falls back to twelve when /me said nothing', () => {
+    // Not a silent zero, and not a wrong promise: the same twelve the booking
+    // rules fall back to.
+    expect(refundPolicy(null).items).toContain('you cancel 12+ hours before');
+    expect(refundPolicy(undefined).items).toContain('you cancel 12+ hours before');
+    expect(refundPolicy(0).items).toContain('you cancel 12+ hours before');
+  });
+
+  it('says nothing else about timing, so only this line can go stale', () => {
+    const others = refundPolicy(10).items.filter((i) => !i.includes('hours before'));
+    expect(others.some((i) => /\d/.test(i))).toBe(false);
   });
 });

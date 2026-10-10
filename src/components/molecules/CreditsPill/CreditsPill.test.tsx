@@ -6,6 +6,7 @@ const pill = (left: number, onClick = vi.fn()) => {
   render(
     <CreditsPill
       credits={{
+        refundHours: null,
         left,
         monthlyLeft: left,
         monthlyTotal: 3,
