@@ -21,11 +21,20 @@ type AnswersProps = {
   onOpenFile?: (file: AnswerFile) => void;
 };
 
-/** Whether there is anything to put in the answers card or sheet. */
+/**
+ * Whether there is anything to put in the answers card or sheet.
+ *
+ * Counted by what was **answered**, not by rows. Since backend #412 the list
+ * carries every question the form asked, blanks included, so a row count says
+ * "there are answers" for a form nobody filled in — and the card would open on
+ * nothing but "No answer".
+ */
 export function hasAnswersToShow(
   p: Pick<AnswersProps, 'answers' | 'answersLoading' | 'answersFailed'>,
 ): boolean {
-  return !!p.answersFailed || !!p.answersLoading || (p.answers?.length ?? 0) > 0;
+  return (
+    !!p.answersFailed || !!p.answersLoading || !!p.answers?.some((a) => a.answered)
+  );
 }
 
 /** The answers themselves: in the aside's card and in the phone sheet. */
