@@ -129,6 +129,19 @@ export type Booking = {
    * assume its order against `joinClosesAt`. Null: no door.
    */
   doorClosesAt: string | null;
+  /**
+   * Until when **the mentee** cancelling gets their credit back: the start
+   * minus the deployment's refund window. Cancelling at exactly this instant
+   * still refunds.
+   *
+   * Set on a **confirmed** session only. `null` elsewhere does **not** mean
+   * "no refund" — a pending request withdrawn or declined always refunds, and
+   * a finished one has nothing left to refund.
+   *
+   * Read rather than recomputed: the window is deployment configuration, so a
+   * number in our copy would go stale the day it changes.
+   */
+  refundUntil: string | null;
   /** How often this mentee has turned up, whole percent. Null = no data, show nothing. */
   menteeAttendanceRate: number | null;
   /**

@@ -10,6 +10,12 @@
  */
 export type CreditsView = {
   left: number;
+  /**
+   * The deployment's mentee refund window in hours, for the policy line.
+   * A session's own deadline is its `refundUntil`; this is for copy that has
+   * no session to hand.
+   */
+  refundHours: number | null;
   monthlyLeft: number;
   monthlyTotal: number;
   /**
@@ -41,6 +47,7 @@ type Credits = {
 export function creditsView(
   c: Credits | null | undefined,
   now: Date = new Date(),
+  refundHours: number | null = null,
 ): CreditsView | null {
   if (!c) return null;
   const monthlyLeft = Math.max(0, c.monthly.balance);
@@ -55,6 +62,7 @@ export function creditsView(
   }
   return {
     left: Math.max(0, c.balance),
+    refundHours,
     monthlyLeft,
     // Clamped: a late refund can briefly lift the balance past the ceiling,
     // and the bar never reads "4 of 3".
@@ -182,14 +190,25 @@ export function creditsAria(v: CreditsView): string {
  * Behind the explainer's "Refund policy" toggle, closed by default. Ours, not
  * the design's paragraph: backend decision 229 refunds a mentor no-show only
  * when the mentee joined, and declines and withdrawals refund too.
+ *
+ * A function, not a constant, because the last line names the refund window —
+ * deployment configuration since backend #413 (`MENTEE_CANCEL_REFUND_HOURS`).
+ * Written as a literal it was right until somebody changed the setting, and
+ * then wrong with nothing failing.
  */
-export const REFUND_POLICY = {
-  lead: 'You get the credit back if',
-  items: [
-    'your mentor declines or doesn’t reply',
-    'your mentor cancels',
-    'your mentor misses a session you joined',
-    'you withdraw a request',
-    'you cancel 12+ hours before',
-  ],
-};
+export function refundPolicy(hours: number | null | undefined) {
+  const window = hours && hours > 0 ? hours : FALLBACK_REFUND_HOURS;
+  return {
+    lead: 'You get the credit back if',
+    items: [
+      'your mentor declines or doesn’t reply',
+      'your mentor cancels',
+      'your mentor misses a session you joined',
+      'you withdraw a request',
+      `you cancel ${window}+ hours before`,
+    ],
+  };
+}
+
+/** Only when `/me` did not say; the same twelve the booking rules fall back to. */
+const FALLBACK_REFUND_HOURS = 12;

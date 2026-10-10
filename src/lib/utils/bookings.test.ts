@@ -4,6 +4,7 @@ import {
   canAccept,
   overlapping,
   partyLine,
+  refundWindowFor,
   canCancel,
   canDecline,
   canWithdraw,
@@ -66,6 +67,7 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
   joinOpensAt: null,
   joinClosesAt: null,
   doorClosesAt: null,
+  refundUntil: null,
   menteeAttendanceRate: null,
   menteeAttendanceSessions: 0,
   ...over,
@@ -504,5 +506,52 @@ describe('the party line', () => {
 
   it('is empty with no education entry, so nothing renders', () => {
     expect(partyLine(party({ degree: null, institution: null }))).toBe('');
+  });
+});
+
+describe('the refund deadline comes from the server (backend #413)', () => {
+  const confirmed = (over = {}) =>
+    booking({ side: 'mentee', status: 'confirmed', startsAt: at(48), endsAt: at(49), ...over });
+
+  it('refunds right up to the deadline, and at it', () => {
+    // "Cancelling at exactly this instant still refunds" — so `<=`, not `<`.
+    const deadline = at(10);
+    expect(refundOnCancel(confirmed({ refundUntil: deadline }), new Date(at(9)))).toBe(true);
+    expect(refundOnCancel(confirmed({ refundUntil: deadline }), new Date(deadline))).toBe(true);
+  });
+
+  it('does not refund a moment past it', () => {
+    const deadline = at(10);
+    expect(
+      refundOnCancel(confirmed({ refundUntil: deadline }), new Date(Date.parse(deadline) + 1000)),
+    ).toBe(false);
+  });
+
+  it('follows a window that is not twelve hours', () => {
+    // The whole point: the window is deployment configuration. A 10-hour one
+    // must refund at 10.5 hours out, where a baked-in 12 would refuse.
+    const tenHoursOut = at(38); // the session is at +48
+    expect(refundOnCancel(confirmed({ refundUntil: tenHoursOut }), new Date(at(37)))).toBe(true);
+    expect(refundOnCancel(confirmed({ refundUntil: tenHoursOut }), new Date(at(39)))).toBe(false);
+  });
+
+  it('a mentor always refunds the mentee, deadline or not', () => {
+    expect(
+      refundOnCancel(confirmed({ side: 'mentor', refundUntil: at(10) }), new Date(at(47))),
+    ).toBe(true);
+  });
+
+  it('falls back to twelve hours when the server sent no deadline', () => {
+    // An older row or a deploy without the field must not silently stop
+    // refunding.
+    expect(refundOnCancel(confirmed({ refundUntil: null }), new Date(at(13)))).toBe(true);
+    expect(refundOnCancel(confirmed({ refundUntil: null }), new Date(at(40)))).toBe(false);
+  });
+
+  it('reads the window back out of the deadline for the copy', () => {
+    expect(refundWindowFor(confirmed({ refundUntil: at(38) }))).toBe(10);
+    // No deadline, no derivation — the fallback, never a wrong number.
+    expect(refundWindowFor(confirmed({ refundUntil: null }))).toBe(12);
+    expect(refundWindowFor(confirmed({ refundUntil: 'not-a-date' }))).toBe(12);
   });
 });

@@ -122,6 +122,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
         ? minutesFrom(starts, o.duration ?? 60)
         : null,
       created_at: at(-10, 9),
+      // The mentee's refund deadline, on confirmed sessions only. Null on a
+      // pending one does not mean "no refund" — a withdrawal always refunds.
+      // 10 rather than 12, so a wrong hard-coded number would be visible.
+      refund_until: status === 'confirmed' ? minutesFrom(starts, -10 * 60) : null,
       mentee_attendance_rate: o.rate === undefined ? null : o.rate,
       // The rate's denominator. 0 with a null rate is a new mentee, and the
       // line must not then read "0 sessions".
@@ -243,6 +247,19 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     session('u-6', at(16, 15), 'confirmed', ['Zainab', 'Musa'], {
       topic: 'Funding plan',
       zone: 'Pacific/Auckland',
+    }),
+    // The viewer as the MENTEE on a confirmed session. Without one, the whole
+    // mentee cancel experience — the credit line, the past-the-deadline
+    // warning — could not be reached in dev at all, only in tests.
+    session('u-7', at(20, 10), 'confirmed', ['Natasha', 'Oyelaran'], {
+      topic: 'Personal statement review',
+      asMentee: true,
+    }),
+    // The same, inside the refund deadline, so the "credit is not returned"
+    // warning is reachable too.
+    session('u-8', fromNow(5 * 60), 'confirmed', ['Natasha', 'Oyelaran'], {
+      topic: 'Last-minute questions',
+      asMentee: true,
     }),
 
     // Pending — one of them has already lapsed (respond_by in the past).

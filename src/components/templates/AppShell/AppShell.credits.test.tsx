@@ -18,6 +18,7 @@ const shell = (credits?: CreditsView) =>
   );
 // 3 of 3 monthly plus the starter credit: 4 to spend.
 const three: CreditsView = {
+  refundHours: null,
   left: 4,
   monthlyLeft: 3,
   monthlyTotal: 3,

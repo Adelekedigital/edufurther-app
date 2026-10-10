@@ -42,7 +42,8 @@ export function sampleBookingFor(over: Partial<Booking> = {}): Booking {
     joinOpensAt: null,
     joinClosesAt: null,
     doorClosesAt: null,
-    menteeAttendanceRate: null,
+    refundUntil: null,
+  menteeAttendanceRate: null,
   menteeAttendanceSessions: 0,
     ...over,
   };

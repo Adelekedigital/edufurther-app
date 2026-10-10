@@ -141,6 +141,7 @@ export function toBooking(s: SessionRead, viewerId: string): Booking {
     joinOpensAt: s.join_opens_at ?? null,
     joinClosesAt: s.join_closes_at ?? null,
     doorClosesAt: s.door_closes_at ?? null,
+    refundUntil: s.refund_until ?? null,
     menteeAttendanceRate: s.mentee_attendance_rate ?? null,
     // Optional in the spec and defaulted, as the backend asked (#409).
     menteeAttendanceSessions: s.mentee_attendance_sessions ?? 0,

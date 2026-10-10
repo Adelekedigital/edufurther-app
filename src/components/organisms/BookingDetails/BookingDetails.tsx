@@ -16,6 +16,7 @@ import {
   panelStatus,
   timeRange,
   refundOnCancel,
+  refundWindowFor,
   showedUp,
   partyLine,
 } from '@/lib/utils/bookings';
@@ -88,12 +89,17 @@ function creditLine(o: BookingOutcome, b: Booking, now: Date): string {
     case 'expired':
     case 'withdrawn':
       return 'Your credit is back.';
-    case 'cancelled':
-      // The dialog says this before the action; the panel is where they come
-      // back to find out where the credit went.
-      return refundOnCancel(b, now)
+    case 'cancelled': {
+      // Against **when they cancelled**, not now. A past cancellation judged
+      // by today's clock is always "less than the window before the start",
+      // so every mentee who cancelled in good time was told their credit had
+      // not come back — a false statement about money, on every old row.
+      const at = Date.parse(o.at);
+      const when = Number.isNaN(at) ? now : new Date(at);
+      return refundOnCancel(b, when)
         ? 'Your credit is back.'
-        : 'This was cancelled less than 12 hours before the session, so the credit was not returned.';
+        : `This was cancelled less than ${refundWindowFor(b)} hours before the session, so the credit was not returned.`;
+    }
     default:
       return '';
   }

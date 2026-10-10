@@ -9,7 +9,7 @@ import {
   creditRows,
   creditsTitle,
   isLow,
-  REFUND_POLICY,
+  refundPolicy,
   SPEND_ORDER,
   type CreditsView,
 } from '@/lib/utils/credits';
@@ -34,6 +34,8 @@ export function CreditsExplainer({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [policyOpen, setPolicyOpen] = useState(false);
+  // The window is deployment configuration, so the line is built, not written.
+  const policy = refundPolicy(credits.refundHours);
   const rows = creditRows(credits);
   const policyId = useId();
 
@@ -125,9 +127,9 @@ export function CreditsExplainer({
           </button>
           {policyOpen && (
             <div id={policyId} className={styles.policyBody}>
-              {REFUND_POLICY.lead}
+              {policy.lead}
               <ul className={styles.points}>
-                {REFUND_POLICY.items.map((t) => (
+                {policy.items.map((t: string) => (
                   <li key={t}>{t}</li>
                 ))}
               </ul>

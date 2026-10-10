@@ -11,6 +11,8 @@ const read = (over: Partial<Read>): Read => ({
   question_text: 'What do you want to cover?',
   question_type: 'free_text',
   retired: false,
+  // Defaulted in the spec (backend #412), so always sent on a response.
+  answered: true,
   text: null,
   options: [],
   file: null,
