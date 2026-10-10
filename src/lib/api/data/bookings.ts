@@ -69,6 +69,8 @@ export function toParty(p: PartyRead): BookingParty {
     deleted: p.deleted ?? false,
     timeZone: p.deleted ? null : (p.timezone ?? null),
     cover: coverFor(p.id),
+    degree: p.degree ?? null,
+    institution: p.institution ?? null,
     joinedAt: p.joined_at ?? null,
     inRoomAt: p.in_room_at ?? null,
     attendance:
@@ -137,6 +139,8 @@ export function toBooking(s: SessionRead, viewerId: string): Booking {
     joinClosesAt: s.join_closes_at ?? null,
     doorClosesAt: s.door_closes_at ?? null,
     menteeAttendanceRate: s.mentee_attendance_rate ?? null,
+    // Optional in the spec and defaulted, as the backend asked (#409).
+    menteeAttendanceSessions: s.mentee_attendance_sessions ?? 0,
   };
 }
 

@@ -482,3 +482,18 @@ Source: `Session Join.dc.html`, defaults `layout=lobby`, `provider=edufurther`; 
 | "You’re marked as here, but this session has no meeting link yet." | "Your arrival is recorded, but the call link isn’t ready. Try again in a moment." | No link now means the venue didn't answer, and pressing Join again asks again (backend #402). "Here" is gone everywhere else (PR 4b). Small copy fix, ours. |
 | Popup blocked: "…You’re already marked as here." | "…Your arrival is recorded." | Same. Not "You've joined": on EduFurther video that's Daily's call, and a blocked tab never reached the room. |
 
+### Bookings — who the other person is (backend #409), 2026-10-10
+
+Neither line is drawn anywhere; the contract says so outright for the degree
+("the wording is the client's"). Both are ours and easy to change.
+
+| # | Design | Built | Why |
+|---|---|---|---|
+| 37 | Nothing | "BSc at Federal University of Technology, Akure", above the role line | Who someone is, in the words the discovery card already uses. It degrades rather than disappearing: with only a degree it reads "MSc", with only an institution it reads the institution, and with neither it renders nothing rather than an empty row. |
+| 38 | Nothing | "Attendance rate: 92% **(25 sessions)**" | A percentage with no denominator says very little — 100% of two sessions and 100% of forty are not the same claim. Guarded three ways: a null rate still reads "Mentee", `0` sessions with a null rate is a **new** mentee rather than "0 sessions", and a count of 0 beside a real rate prints no count at all rather than contradicting itself. |
+
+**Also corrected here, not a divergence:** four comments asserted that
+`question_text` is the wording *as it reads now* and that a mentor rewording a
+question relabels old answers. Backend #350 closed when #360 merged — the
+wording is stored with the answer and returned as asked. The claims were the
+opposite of the truth and `types/booking.ts` is imported by seven components.

@@ -1,7 +1,9 @@
 import type { Booking, BookingParty, BookingStatus } from '@/types/booking';
 import {
+  attendanceLine,
   canAccept,
   overlapping,
+  partyLine,
   canCancel,
   canDecline,
   canWithdraw,
@@ -36,6 +38,8 @@ const party = (over: Partial<BookingParty> = {}): BookingParty => ({
   deleted: false,
   timeZone: 'Africa/Lagos',
   cover: 'sand',
+  degree: null,
+  institution: null,
   joinedAt: null,
   inRoomAt: null,
   attendance: 'pending',
@@ -63,6 +67,7 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
   joinClosesAt: null,
   doorClosesAt: null,
   menteeAttendanceRate: null,
+  menteeAttendanceSessions: 0,
   ...over,
 });
 
@@ -450,5 +455,54 @@ describe('a request that would run into a confirmed session', () => {
 
   it('nothing in the way is null, not undefined', () => {
     expect(overlapping(req, [])).toBe(null);
+  });
+});
+
+describe('who the other person is, and how reliable (backend #409)', () => {
+  const mentorView = (over = {}) =>
+    booking({ side: 'mentor', menteeAttendanceRate: 100, menteeAttendanceSessions: 12, ...over });
+
+  it('a rate carries the sessions it is measured over', () => {
+    expect(attendanceLine(mentorView())).toBe('Attendance rate: 100% (12 sessions)');
+  });
+
+  it('one session is a session, not sessions', () => {
+    expect(attendanceLine(mentorView({ menteeAttendanceSessions: 1 }))).toBe(
+      'Attendance rate: 100% (1 session)',
+    );
+  });
+
+  it('a new mentee is not a bad one — no rate, no count, no claim', () => {
+    // 0 with a null rate is a new mentee. "0 sessions" would read as a record.
+    expect(attendanceLine(mentorView({ menteeAttendanceRate: null, menteeAttendanceSessions: 0 }))).toBe(
+      'Mentee',
+    );
+  });
+
+  it('a rate with no count is still a rate', () => {
+    // The field is defaulted, so a 0 can arrive beside a real rate. Printing
+    // "(0 sessions)" next to "90%" would contradict itself.
+    expect(attendanceLine(mentorView({ menteeAttendanceRate: 90, menteeAttendanceSessions: 0 }))).toBe(
+      'Attendance rate: 90%',
+    );
+  });
+
+  it('a mentee sees the other side as a mentor, with no record at all', () => {
+    expect(attendanceLine(booking({ side: 'mentee' }))).toBe('Mentor');
+  });
+});
+
+describe('the party line', () => {
+  it('reads as a person when both halves are there', () => {
+    expect(partyLine(party({ degree: 'BSc', institution: 'FUTA' }))).toBe('BSc at FUTA');
+  });
+
+  it('degrades rather than disappearing when only one is', () => {
+    expect(partyLine(party({ degree: 'MSc', institution: null }))).toBe('MSc');
+    expect(partyLine(party({ degree: null, institution: 'FUTA' }))).toBe('FUTA');
+  });
+
+  it('is empty with no education entry, so nothing renders', () => {
+    expect(partyLine(party({ degree: null, institution: null }))).toBe('');
   });
 });

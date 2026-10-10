@@ -107,6 +107,8 @@ describe('toSessionType', () => {
       questions: [],
       is_featured: false,
       booking_window_days: 56,
+      // Defaulted in the spec, so the server always sends it (backend #409).
+      requires_booking_confirmation: true,
     };
     const t = toSessionType({
       id: 'st',
@@ -150,6 +152,7 @@ describe('intake questions (backend #268, #12, #282)', () => {
       name: 'CV review',
       booking_window_days: 56,
       is_featured: false,
+      requires_booking_confirmation: true,
       description: 'x',
       duration_minutes: 45,
       min_notice_minutes: 1440,

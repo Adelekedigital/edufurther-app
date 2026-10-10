@@ -278,3 +278,14 @@ failed read. This one picks one cause out of a set the code cannot separate.
 distinguish it from its neighbours. If it cannot, name the set. "The window
 closed, or the calendar permission wasn't ticked" is uglier than either single
 sentence and is the only one that is true.
+
+### #58 — A comment that outlived the thing it described
+
+Four places said the question wording was "as it reads now (backend #350)" and
+that a mentor rewording a question silently relabels old answers. That stopped
+being true when #360 merged. Nothing failed: a stale comment compiles, passes,
+and is believed — and three of these were in `types/booking.ts`, which seven
+components import.
+
+**Check:** when a backend ticket you cited closes, grep for its number. A
+comment naming an issue is a claim with an expiry date.

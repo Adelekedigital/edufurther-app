@@ -13,6 +13,8 @@ const party = (id: string, first: string | null, last: string | null, deleted = 
   avatar_focus: { x: 0.5, y: 0.25 },
   joined_at: null,
   attendance_status: 'pending' as const,
+  degree: null,
+  institution: null,
 });
 
 // A hand-built API row: only the fields this mapping reads.
@@ -20,6 +22,7 @@ const row = (over: Partial<SessionRead> = {}): SessionRead => ({
   id: 's1',
   mentor_id: 'me',
   mentee_id: 'them',
+  mentee_attendance_sessions: 0,
   mentor: party('me', 'Gbenga', 'Adeyemi'),
   mentee: party('them', 'Amara', 'Okafor'),
   session_type_id: null,

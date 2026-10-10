@@ -21,6 +21,8 @@ export const party = (name = 'Amara Okafor', over: Partial<BookingParty> = {}): 
   deleted: false,
   timeZone: 'Africa/Lagos',
   cover: 'sand',
+  degree: null,
+  institution: null,
   joinedAt: null,
   inRoomAt: null,
   attendance: 'pending' as const,
@@ -48,6 +50,7 @@ export const sampleBooking = (over: Partial<Booking> = {}): Booking => ({
   joinClosesAt: null,
   doorClosesAt: null,
   menteeAttendanceRate: 92,
+  menteeAttendanceSessions: 12,
   ...over,
 });
 

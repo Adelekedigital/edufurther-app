@@ -17,6 +17,7 @@ import {
   timeRange,
   refundOnCancel,
   showedUp,
+  partyLine,
 } from '@/lib/utils/bookings';
 import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import type { BookingOutcome } from '@/lib/api/data/sessionEvents';
@@ -190,6 +191,11 @@ export function BookingDetails({
           />
           <span className={styles.whoText}>
             <span className={styles.name}>{b.other.name}</span>
+            {/* Who they are, where there is anything to say (backend #409).
+                Above the role line because it is the more human fact. */}
+            {partyLine(b.other) && (
+              <span className={styles.label}>{partyLine(b.other)}</span>
+            )}
             <span className={styles.label}>{attendanceLine(b)}</span>
           </span>
         </div>

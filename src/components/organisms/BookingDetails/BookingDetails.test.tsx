@@ -406,3 +406,34 @@ describe('a missed session says who was there', () => {
     expect(screen.getByText('This session was missed')).toBeVisible();
   });
 });
+
+describe('who the other person is, in the panel', () => {
+  it('shows the degree line above the role', () => {
+    panel({
+      booking: sampleBookingFor({
+        side: 'mentor',
+        other: sampleParty({ degree: 'BSc', institution: 'Federal University of Technology, Akure' }),
+      }),
+    });
+    expect(screen.getByText('BSc at Federal University of Technology, Akure')).toBeVisible();
+  });
+
+  it('renders no empty line when there is no education entry', () => {
+    const { container } = panel({
+      booking: sampleBookingFor({ side: 'mentor', other: sampleParty({ degree: null, institution: null }) }),
+    });
+    // An empty label would still take a row and read as something missing.
+    expect([...container.querySelectorAll('span')].some((s) => s.textContent === '')).toBe(false);
+  });
+
+  it('the attendance line carries its denominator', () => {
+    panel({
+      booking: sampleBookingFor({
+        side: 'mentor',
+        menteeAttendanceRate: 92,
+        menteeAttendanceSessions: 25,
+      }),
+    });
+    expect(screen.getByText('Attendance rate: 92% (25 sessions)')).toBeVisible();
+  });
+});

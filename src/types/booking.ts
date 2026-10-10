@@ -47,6 +47,13 @@ export type BookingParty = {
   timeZone: string | null;
   /** Their colour, for the initials avatar — the same one their profile uses. */
   cover: CoverKey;
+  /**
+   * The degree that best describes them — highest, then most recent — and where
+   * it is from, as the discovery card reads a person (backend #409). Either is
+   * null with no education entry, or once they have deleted their account.
+   */
+  degree: string | null;
+  institution: string | null;
   /** When they marked themselves present; null means they never pressed Join. */
   joinedAt: string | null;
   /**
@@ -124,6 +131,11 @@ export type Booking = {
   doorClosesAt: string | null;
   /** How often this mentee has turned up, whole percent. Null = no data, show nothing. */
   menteeAttendanceRate: number | null;
+  /**
+   * How many finished sessions the rate is measured over — its own denominator
+   * (backend #409). `0` with a null rate is a new mentee, not a bad one.
+   */
+  menteeAttendanceSessions: number;
 };
 
 /** Which tab a booking belongs to. */
@@ -145,7 +157,7 @@ type IntakeDocType = 'application/vnd.openxmlformats-officedocument.wordprocessi
 export type AnswersPreview = {
   count: number;
   first: {
-    /** The question as it reads **now** (backend #350), not at booking time. */
+    /** The wording **as asked**, stored with the answer (backend #360). */
     question: string;
     /** Plain text: what was written, the options joined, or a file's name. */
     text: string;
@@ -199,7 +211,10 @@ export type AnswerFile = {
 /** One of the mentee's answers to the mentor's booking form. */
 export type BookingAnswer = {
   questionId: string;
-  /** The question's wording **as it stands now** (backend #350). */
+  /**
+   * The wording **as asked**, kept with the answer since backend #360.
+   * Answers from before it fall back to the question's current wording.
+   */
   question: string;
   kind: 'free_text' | 'file_upload' | 'multi_choice';
   /** The question has since been dropped from the form; the answer survives. */

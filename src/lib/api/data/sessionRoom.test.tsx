@@ -51,6 +51,7 @@ const row = (myJoin: string | null = null): SessionRead => ({
   join_closes_at: '2026-10-04T17:15:00Z',
   created_at: '2026-09-20T09:00:00Z',
   mentee_attendance_rate: null,
+  mentee_attendance_sessions: 0,
 });
 
 const ok = (data: unknown) => ({ data, error: undefined, response: { ok: true, status: 200 } });
