@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { components } from '@/lib/api/generated/schema';
 import type { AppError } from '@/types/mentor';
 import type { PickableReason } from '@/types/booking';
 import { ApiError, apiError, normaliseError, retryAfterMinutes } from './errors';
@@ -8,6 +9,26 @@ import { api } from './http';
 import { keys } from './keys';
 
 export type BookingAction = 'accept' | 'decline' | 'withdraw' | 'cancel';
+
+/**
+ * The contract's own enum, so `PickableReason` cannot drift from it: a code we
+ * offer that the server does not have is a **compile** error here rather than
+ * a 422 in someone's face. CI pulls the spec on every run (`pnpm spec:pull`),
+ * so this is checked against the published contract, not a local copy.
+ */
+type ContractReason = components['schemas']['SessionReasonCode'];
+
+/**
+ * What these four endpoints accept. Typed rather than `Record<string, unknown>`
+ * — that was the seam where a misspelt field name or a reason code the server
+ * has never heard of went out unchecked.
+ */
+type ActionBody = {
+  reason_code?: ContractReason;
+  reason_text?: string;
+  release_slot?: boolean;
+  suggested_starts_at?: string;
+};
 
 export type ActionInput = {
   bookingId: string;
@@ -99,11 +120,7 @@ export function useBookingAction(action: BookingAction) {
   const qc = useQueryClient();
   return useMutation<void, AppError, ActionInput>({
     mutationFn: async ({ bookingId, reasonCode, reasonText, releaseSlot, suggestedStartsAt }) => {
-      // `Record<string, unknown>`, so nothing here checks the codes against the
-      // contract — and our `openapi.json` predates `other` (backend #414), so
-      // it could not anyway. This is the seam where a typo in a code would
-      // otherwise be caught. Re-syncing the spec gives it back.
-      const body: Record<string, unknown> = {};
+      const body: ActionBody = {};
       if (reasonCode) body.reason_code = reasonCode;
       const text = reasonText?.trim();
       if (text) body.reason_text = text;

@@ -30,6 +30,21 @@ describe('the reasons offered depend on the side, not the action', () => {
     expect(vals).toContain('mentor_unavailable');
   });
 
+  it('the two lists are exactly the codes the server accepts from that side', () => {
+    // The backend's `_MENTOR_REASONS` / `_MENTEE_REASONS` (confirmed
+    // 2026-10-10). Anything else from that side is a 422 reading "<code> is
+    // not a reason you may give for <action>", so this is the list that must
+    // not drift. Sorted: the order on screen is the field's business, not the
+    // server's. Membership in the contract's enum is checked at compile time
+    // where the request body is built.
+    expect(reasonsFor('mentor').map((r) => r.value).sort()).toEqual(
+      ['mentor_unavailable', 'other', 'scheduling_conflict', 'technical_issue'],
+    );
+    expect(reasonsFor('mentee').map((r) => r.value).sort()).toEqual(
+      ['mentee_no_longer_needed', 'other', 'scheduling_conflict', 'technical_issue'],
+    );
+  });
+
   it('three plus Other for each, with Other last', () => {
     // The backend asked for Other last; three real reasons is the owner's call.
     for (const side of ['mentee', 'mentor'] as const) {
