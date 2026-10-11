@@ -104,6 +104,7 @@ export const CancelledWithAReason: Story = {
     outcome: {
       status: 'cancelled',
       reason: 'Sorry — my visa interview was moved to the same hour.',
+      reasonFromCode: null,
       by: 'them',
       at: at(-320),
     },
@@ -114,7 +115,14 @@ export const CancelledWithAReason: Story = {
 export const CancelledWithoutAReason: Story = {
   args: {
     booking: sampleBookingFor({ status: 'cancelled', ...past(300) }),
-    outcome: { status: 'cancelled', reason: null, by: 'them', at: at(-320) },
+    // Nobody wrote anything: the coded reason is what reaches them.
+    outcome: {
+      status: 'cancelled',
+      reason: null,
+      reasonFromCode: 'A calendar clash.',
+      by: 'them',
+      at: at(-320),
+    },
   },
 };
 
@@ -124,6 +132,7 @@ export const DeclinedByThem: Story = {
     outcome: {
       status: 'declined',
       reason: 'I’m away that week. Try the 14th and I’ll confirm.',
+      reasonFromCode: null,
       by: 'them',
       at: at(-620),
     },
@@ -133,7 +142,13 @@ export const DeclinedByThem: Story = {
 export const WithdrawnByYou: Story = {
   args: {
     booking: sampleBookingFor({ status: 'withdrawn', side: 'mentee', ...past(900) }),
-    outcome: { status: 'withdrawn', reason: null, by: 'you', at: at(-920) },
+    outcome: {
+      status: 'withdrawn',
+      reason: null,
+      reasonFromCode: 'The session was no longer needed.',
+      by: 'you',
+      at: at(-920),
+    },
   },
 };
 
@@ -141,14 +156,14 @@ export const WithdrawnByYou: Story = {
 export const Expired: Story = {
   args: {
     booking: sampleBookingFor({ status: 'expired', ...past(1200) }),
-    outcome: { status: 'expired', reason: null, by: 'system', at: at(-1210) },
+    outcome: { status: 'expired', reason: null, reasonFromCode: null, by: 'system', at: at(-1210) },
   },
 };
 
 export const Missed: Story = {
   args: {
     booking: sampleBookingFor({ status: 'noShow', ...past(1500) }),
-    outcome: { status: 'noShow', reason: null, by: 'system', at: at(-1510) },
+    outcome: { status: 'noShow', reason: null, reasonFromCode: null, by: 'system', at: at(-1510) },
   },
 };
 

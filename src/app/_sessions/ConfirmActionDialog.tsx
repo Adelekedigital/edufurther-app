@@ -4,7 +4,8 @@ import { useId, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { cx } from '@/lib/utils/cx';
 import { Switch } from '@/components/atoms/Switch/Switch';
-import { ReasonField, reasonError } from '@/components/molecules/ReasonField/ReasonField';
+import { ReasonField } from '@/components/molecules/ReasonField/ReasonField';
+import { reasonError } from '@/lib/utils/reasons';
 import { SuggestTimeStep } from './SuggestTimeStep';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import type { ActionInput, BookingAction } from '@/lib/api/data/bookingActions';
@@ -216,6 +217,11 @@ export function ConfirmActionDialog({
           reasonCode={reasonCode}
           onReasonCode={(v) => {
             setReasonCode(v);
+            // The box only exists for "Something else", so anything typed there
+            // and then abandoned would travel invisibly: a `reason_text` the
+            // person can no longer see on screen, landing in the other party's
+            // notification.
+            if (v !== 'other') setText('');
             // Clear on change rather than re-validate: a message about the
             // thing they just fixed, still sitting there, reads as broken.
             setReasonBad(null);
