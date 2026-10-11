@@ -24,3 +24,6 @@ scripts/.tmp-*
 
 # Agent isolation worktrees — never part of the repo
 .claude/worktrees/
+
+# Python bytecode from scripts/
+__pycache__/

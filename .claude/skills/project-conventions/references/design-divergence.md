@@ -528,3 +528,10 @@ skipped the opening questions was previewed as two "No answer" rows while
 their real content sat behind the toggle. This matches what the row already
 does — `answers_preview.first` is the first answered question, "skipping any
 blank before it".
+
+### Typography — one typeface, DM Sans (2026-10-10, ADR 0002)
+
+| Design system says | We do | Why |
+|---|---|---|
+| Hanken Grotesk (brand/headings), Inter (UI), Poppins (buttons), Nunito Sans (forms) | **DM Sans for every role**, with an Inter file for the characters DM Sans lacks (₦, ẹ ọ ṣ ị ụ ṅ, ɛ ɔ ɓ ɗ ƙ) | Product, 2026-10-10: code first, the DS to follow. Every screen's font differs from its .dc.html until design updates the DS; not a fidelity miss. |
+

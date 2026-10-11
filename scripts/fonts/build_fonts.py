@@ -7,7 +7,7 @@ so next/font/local can preload it and size a matching fallback (no layout shift)
 Requested coverage, beyond Google's own latin + latin-ext split (a family can only
 include what its source font has; the build prints each family's gaps):
   - precomposed Yoruba / Igbo letters: ọ ẹ ṣ ị ụ ṅ (not the whole Latin Extended
-    Additional block, which is mostly Vietnamese: 24 KB on Inter alone)
+    Additional block, which is mostly Vietnamese)
   - West African letters: ɛ ɔ ɓ ɗ ƙ ŋ ə ɣ ɲ (Akan, Ewe, Hausa, Fula…)
   - combining marks (0300-036F): tone marks on any vowel
   - currency incl. ₦ (20A6)
@@ -44,16 +44,16 @@ UNICODES = ",".join(
 
 # (source file under ofl/, output name, axis limits: pin to a value or keep a range)
 SOURCES = [
-    ("inter/Inter[opsz,wght].ttf", "inter-var.woff2", {"opsz": None, "wght": (400, 700)}),
-    ("hankengrotesk/HankenGrotesk[wght].ttf", "hanken-grotesk-var.woff2", {"wght": (400, 700)}),
-    (
-        "nunitosans/NunitoSans[YTLC,opsz,wdth,wght].ttf",
-        "nunito-sans-var.woff2",
-        {"YTLC": None, "opsz": None, "wdth": None, "wght": (400, 700)},
-    ),
-    ("poppins/Poppins-SemiBold.ttf", "poppins-600.woff2", None),
-    ("poppins/Poppins-Bold.ttf", "poppins-700.woff2", None),
+    # One typeface for every role (product, 2026-10-10: ADR 0002). Optical size
+    # pinned to its default, as Inter's was; weights 400-700 cover every token.
+    ("dmsans/DMSans[opsz,wght].ttf", "dm-sans-var.woff2", {"opsz": None, "wght": (400, 700)}),
 ]
+
+# DM Sans has no ₦, Yoruba/Igbo dot-below letters or West African letters. Inter
+# does, so a second file carries ONLY what DM Sans lacks; fonts.ts declares it
+# with the unicode-range printed below, so browsers fetch it only on a page
+# that shows one of those characters.
+GAPS = ("inter/Inter[opsz,wght].ttf", "inter-gaps.woff2", {"opsz": None, "wght": (400, 700)})
 
 # Characters we care about most; the build reports any a family lacks.
 KEY_CHARS = "₦ ẹ ọ ṣ ị ụ ṅ Ẹ Ọ Ṣ ɛ ɔ Ɛ Ɔ ɓ ɗ ƙ ŋ".split()
@@ -61,35 +61,67 @@ KEY_CHARS = "₦ ẹ ọ ṣ ị ụ ṅ Ẹ Ọ Ṣ ɛ ɔ Ɛ Ɔ ɓ ɗ ƙ ŋ".sp
 OUT = Path(__file__).resolve().parents[2] / "src" / "app" / "fonts"
 
 
+def requested() -> set[int]:
+    return set(subset.parse_unicodes(UNICODES))
+
+
+def as_ranges(points: set[int]) -> str:
+    """U+XXXX[-YYYY], comma-separated: a CSS unicode-range."""
+    out, run = [], []
+    for p in sorted(points):
+        if run and p == run[-1] + 1:
+            run.append(p)
+            continue
+        if run:
+            out.append(run)
+        run = [p]
+    if run:
+        out.append(run)
+    return ", ".join(
+        f"U+{r[0]:04X}" if len(r) == 1 else f"U+{r[0]:04X}-{r[-1]:04X}" for r in out
+    )
+
+
 def build(src_dir: Path) -> None:
     OUT.mkdir(parents=True, exist_ok=True)
+    covered: set[int] = set()
     for rel, out_name, axes in SOURCES:
-        font = TTFont(src_dir / rel, lazy=False)
-        if axes:
-            # None pins an axis to its default; a tuple keeps that range only.
-            font = instancer.instantiateVariableFont(font, axes)
-            # Round-trip so the subsetter sees fully built tables.
-            buf = io.BytesIO()
-            font.save(buf)
-            buf.seek(0)
-            font = TTFont(buf, lazy=False)
-        opts = subset.Options()
-        opts.flavor = "woff2"
-        opts.layout_features = ["*"]
-        opts.name_IDs = ["*"]
-        opts.notdef_outline = True
-        opts.drop_tables += ["DSIG"]
-        sub = subset.Subsetter(opts)
-        sub.populate(unicodes=subset.parse_unicodes(UNICODES))
-        sub.subset(font)
-        font.flavor = "woff2"
-        font.save(OUT / out_name)
-        # Report the key characters this family can't draw: the browser falls
-        # back to a system font for those, mid-word. Nothing fails; it's a record.
-        have = set(font.getBestCmap())
-        missing = [c for c in KEY_CHARS if ord(c) not in have]
-        note = f"  lacks: {' '.join(missing)}" if missing else "  all key characters"
-        print(f"{out_name}: {(OUT / out_name).stat().st_size // 1024} KB{note}")
+        covered |= write(src_dir, rel, out_name, axes, requested())
+    gaps = requested() - covered
+    rel, out_name, axes = GAPS
+    filled = write(src_dir, rel, out_name, axes, gaps) & gaps
+    print(f"{out_name} unicode-range: {as_ranges(filled)}")
+
+
+def write(src_dir: Path, rel: str, out_name: str, axes, unicodes: set[int]) -> set[int]:
+    """Subset one family to `unicodes`; returns the code points it now has."""
+    font = TTFont(src_dir / rel, lazy=False)
+    if axes:
+        # None pins an axis to its default; a tuple keeps that range only.
+        font = instancer.instantiateVariableFont(font, axes)
+        # Round-trip so the subsetter sees fully built tables.
+        buf = io.BytesIO()
+        font.save(buf)
+        buf.seek(0)
+        font = TTFont(buf, lazy=False)
+    opts = subset.Options()
+    opts.flavor = "woff2"
+    opts.layout_features = ["*"]
+    opts.name_IDs = ["*"]
+    opts.notdef_outline = True
+    opts.drop_tables += ["DSIG"]
+    sub = subset.Subsetter(opts)
+    sub.populate(unicodes=sorted(unicodes))
+    sub.subset(font)
+    font.flavor = "woff2"
+    font.save(OUT / out_name)
+    # Report the key characters this family can't draw: the browser falls
+    # back to a system font for those, mid-word. Nothing fails; it's a record.
+    have = set(font.getBestCmap())
+    missing = [c for c in KEY_CHARS if ord(c) not in have]
+    note = f"  lacks: {' '.join(missing)}" if missing else "  all key characters"
+    print(f"{out_name}: {(OUT / out_name).stat().st_size // 1024} KB{note}")
+    return have
 
 
 if __name__ == "__main__":
