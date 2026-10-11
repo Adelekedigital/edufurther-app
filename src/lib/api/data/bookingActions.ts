@@ -100,9 +100,9 @@ export function useBookingAction(action: BookingAction) {
   return useMutation<void, AppError, ActionInput>({
     mutationFn: async ({ bookingId, reasonCode, reasonText, releaseSlot, suggestedStartsAt }) => {
       // `Record<string, unknown>`, so nothing here checks the codes against the
-      // contract. `other` (backend #414) is **not in `openapi/openapi.json`**
-      // yet, and this is the seam where a typo would otherwise have been
-      // caught. Refresh the spec and this loses its sharp edge.
+      // contract — and our `openapi.json` predates `other` (backend #414), so
+      // it could not anyway. This is the seam where a typo in a code would
+      // otherwise be caught. Re-syncing the spec gives it back.
       const body: Record<string, unknown> = {};
       if (reasonCode) body.reason_code = reasonCode;
       const text = reasonText?.trim();

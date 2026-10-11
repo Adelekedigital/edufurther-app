@@ -20,10 +20,11 @@ import type { CoverKey } from '@/lib/utils/cover';
  * may not send `mentee_no_longer_needed`. The other three are shared.
  *
  * `other` is the newest (backend #414, #415) and carries no meaning on its
- * own, which is why the note is required alongside it. NOTE: it is **missing
- * from `openapi/openapi.json`**, which still lists the original nine. It works
- * — the request body is untyped at the call site — but nothing checks it.
- * Refresh the spec when the backend publishes it.
+ * own, which is why the note is required alongside it. NOTE: **our
+ * `openapi/openapi.json` is stale** and still lists nine. The backend's
+ * `openapi-latest` has ten; re-syncing it is its own change, because the last
+ * refresh (#409) moved five fixtures. Until then the request body is untyped
+ * at the call site, so nothing checks a code.
  */
 export type PickableReason =
   | 'mentor_unavailable'
