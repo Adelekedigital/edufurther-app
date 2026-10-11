@@ -132,9 +132,12 @@ export function useBookingAction(action: BookingAction) {
       try {
         result = await api.POST(PATHS[action], {
           params: { path: { session_id: bookingId } },
-          // The payload is optional in the contract; an empty object is still a
-          // body the server accepts, and keeps one code path.
-          body,
+          // Accept takes no request body at all, and the spec is about to say so
+          // (backend #417), at which point passing one stops compiling. The
+          // other three take the body above; accept never has anything to put
+          // in it, since `ConfirmActionDialog` excludes it and no caller gives
+          // it a reason.
+          ...(action === 'accept' ? {} : { body }),
         });
       } catch (e) {
         // A fetch rejection — offline mid-click, DNS, a dropped connection —
