@@ -347,3 +347,21 @@ the files to `allowRawHex`, which would have blinded the check to real colours.
 **Check:** judge a gate by its exit code, never by its last line of output.
 `cmd; echo "EXIT=$?"` or `cmd && echo ok`. A tail is not a verdict, and a
 summary line that is printed unconditionally is not a result.
+
+### #62 — An exemption added to the rule but not to the label
+
+Making the cancellation reason required came with one exemption: a mentor who
+offers another time instead has already explained themselves. The exemption
+went into the submit guard — and `required` was still passed to the field
+unconditionally. So that mentor saw "Why?" with no "Optional" beside it,
+picking "Something else" relabelled the note "What happened?" and put a native
+`required` on the textarea, and the confirm went through empty regardless.
+
+Nothing failed. Every test passed, because each one tested one side: the guard
+waives it, the field marks it. The contradiction only exists between them.
+
+**Check:** when a required-ness has an exemption, derive the label and the
+guard from **one** value, in one place. Two reads of the same condition drift
+the moment one of them gains a case. And a field marked required that submits
+empty is worse than one never marked: it teaches people the marking is noise,
+on every other form in the product too.
