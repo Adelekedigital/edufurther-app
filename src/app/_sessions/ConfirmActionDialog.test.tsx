@@ -142,6 +142,20 @@ describe('the reason is required, and means it', () => {
     expect(screen.queryByRole('button', { name: 'I’m no longer free' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'I no longer need it' })).toBeVisible();
   });
+
+  it('a mentor offering a time instead is told the reason is optional', async () => {
+    // The note carries its own "Optional" tag, so this reads the reason's
+    // label rather than counting the word on the screen.
+    const whyLabel = () =>
+      screen.getByText((t) => t.startsWith('Why?'), { selector: 'span' }).textContent?.trim();
+    dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }) });
+    expect(whyLabel()).toBe('Why?');
+    const [first] = screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ });
+    await userEvent.click(first!);
+    // The label has to agree with the rule: a dialog that marks the reason
+    // required and then accepts it empty trains someone to ignore the marking.
+    expect(whyLabel()).toBe('Why? Optional');
+  });
 });
 
 describe('the unhappy paths', () => {

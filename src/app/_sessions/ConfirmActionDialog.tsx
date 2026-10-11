@@ -86,6 +86,10 @@ export function ConfirmActionDialog({
   // menu item has been behind a modal the whole time.
   const tooLate = action === 'cancel' && !canCancel(b, now);
   const canSuggest = isMentor && action !== 'withdraw';
+  // A mentor offering another time has already explained themselves. One value
+  // for both the rule and the label, so the dialog cannot require a reason it
+  // then accepts without.
+  const suggesting = !!(canSuggest && suggested);
 
   // Mentors never see credit copy — it is not their credit (design's rule).
   const creditLine = isMentor
@@ -134,7 +138,7 @@ export function ConfirmActionDialog({
                 reasonCode,
                 text,
                 required: true,
-                suggesting: !!(canSuggest && suggested),
+                suggesting,
               });
               setReasonBad(bad);
               if (bad) {
@@ -151,7 +155,7 @@ export function ConfirmActionDialog({
                 reasonCode,
                 reasonText: text,
                 ...(action === 'cancel' && isMentor ? { releaseSlot: stillFree } : {}),
-                ...(canSuggest && suggested ? { suggestedStartsAt: suggested } : {}),
+                ...(suggesting ? { suggestedStartsAt: suggested } : {}),
               });
             }}
             // `busy` rather than the aria attributes: the atom owns both, and
@@ -222,7 +226,7 @@ export function ConfirmActionDialog({
             if (reasonBad?.field === 'note') setReasonBad(null);
           }}
           readerFirstName={first}
-          required
+          required={!suggesting}
           error={reasonBad}
           groupRef={firstChipRef}
           noteRef={noteRef}

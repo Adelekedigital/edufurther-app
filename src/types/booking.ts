@@ -9,20 +9,21 @@ import type { CoverKey } from '@/lib/utils/cover';
 
 /**
  * The coded reasons a person can actually pick on a decline, cancel or
- * withdrawal. The contract's enum has nine; the other five are system-set.
- */
-/**
- * The reasons a person may pick, as opposed to the rest of the enum, which the
- * system sets.
+ * withdrawal. `SessionReasonCode` has nine members; the other five
+ * (`mentor_no_show`, `mentee_no_show`, `expired_no_response`, `rescheduled`,
+ * `admin_action`) are system-set, and `other` is not in the spec yet.
  *
  * Which ones are offered depends on the **side**, not the action: a mentee
  * cancelling and a mentee withdrawing see the same list, and the server agrees
- * (backend: "withdraw shares the mentee's list"). Four of them are
- * role-specific and a 422 enforces it — a mentee may not send
- * `mentor_unavailable`, a mentor may not send `mentee_no_longer_needed`.
+ * (backend: "withdraw shares the mentee's list"). **Two** are role-specific,
+ * enforced with a 422 — a mentee may not send `mentor_unavailable`, a mentor
+ * may not send `mentee_no_longer_needed`. The other three are shared.
  *
- * `other` is the only one both roles may send (backend #414, #415). It carries
- * no meaning on its own, which is why the note is required alongside it.
+ * `other` is the newest (backend #414, #415) and carries no meaning on its
+ * own, which is why the note is required alongside it. NOTE: it is **missing
+ * from `openapi/openapi.json`**, which still lists the original nine. It works
+ * — the request body is untyped at the call site — but nothing checks it.
+ * Refresh the spec when the backend publishes it.
  */
 export type PickableReason =
   | 'mentor_unavailable'

@@ -867,12 +867,16 @@ export const BookingAnswerPreview: Story = {
 };
 
 /**
- * The reason on a decline, cancel or withdrawal. Optional on purpose — the
- * contract's own words: "a required one turns a clear-cut decision into a form
- * to argue with". So no asterisk, and nothing blocks the confirm.
+ * The reason on a decline, cancel or withdrawal. **Required** since
+ * 2026-10-10, by the owner's decision, which overrode the contract's advice
+ * that "a required one turns a clear-cut decision into a form to argue with".
+ * One exemption, shown third: a mentor offering another time instead, where
+ * the reason reverts to optional and says so.
  *
- * The four codes are filtered by side: a mentor is never offered "I no longer
- * need it", a mentee never "I'm no longer free".
+ * The codes are filtered by **side**, not action: a mentor is never offered
+ * "I no longer need it", a mentee never "I'm no longer free". "Something else"
+ * is the only one both may send, and it makes the note required — the second
+ * field below, in its blocked state.
  */
 export const Reason: Story = {
   render: function Render() {
@@ -891,6 +895,20 @@ export const Reason: Story = {
           text={mentorText}
           onText={setMentorText}
           readerFirstName="Amara"
+          required
+        />
+        {/* "Something else" with nothing written: the one case where the note
+            blocks the confirm too. The error only ever appears after a submit
+            has been refused, so it is set here rather than derived. */}
+        <ReasonField
+          side="mentee"
+          reasonCode="other"
+          onReasonCode={fn()}
+          text=""
+          onText={fn()}
+          readerFirstName="Natasha"
+          required
+          error={{ field: 'note', message: 'Say briefly what happened.' }}
         />
         <ReasonField
           side="mentee"
