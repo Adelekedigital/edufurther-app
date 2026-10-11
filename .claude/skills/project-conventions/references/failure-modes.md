@@ -365,3 +365,26 @@ guard from **one** value, in one place. Two reads of the same condition drift
 the moment one of them gains a case. And a field marked required that submits
 empty is worse than one never marked: it teaches people the marking is noise,
 on every other form in the product too.
+
+### #63 — Searched one place, reported that the thing does not exist
+
+Asked to build the cancel modal's phone sheet, I looked for its spec, found no
+`CancelModal.dc.html` in `C:\pythonwork\edufurther-design-mirror`, grepped the
+whole mirror for "sheet contained", found nothing, and wrote **SOURCE NOT
+FOUND** into a divergence row and a PR body. Another session read the file
+through DesignSync minutes later: it is in the live design project, with
+exactly the `sheet` and `contained` props the row cited, and Session
+Join.dc.html sets both on its phone frame.
+
+The searching was not sloppy — it was thorough, in one location, and the
+mirror's newest file was three days old, which I had already noticed and said
+out loud. What was wrong was the conclusion: "not in the copy I hold" became
+"does not exist", and a colleague's correct citation became the thing I
+doubted.
+
+**Check:** a negative result is only as wide as what you searched. Name the
+place in the claim — "not in the local mirror, which is stale" — and before
+writing one into a PR or contradicting a source, query the live source. For
+designs that is `DesignSync` `list_files` on the project, never the mirror
+directory. And the cost is asymmetric: a missing file wastes a question, while
+a wrongly-denied source gets the real spec deleted from the record.
