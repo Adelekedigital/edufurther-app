@@ -79,19 +79,19 @@ describe('why it ended', () => {
   it('names who did it and quotes what they wrote', () => {
     panel({
       booking: cancelled,
-      outcome: { status: 'cancelled', reason: 'Conference clash.', by: 'them', at: at(-320) },
+      outcome: { status: 'cancelled', reason: 'Conference clash.', reasonFromCode: null, by: 'them', at: at(-320) },
     });
     expect(screen.getByText('Amara cancelled this session')).toBeVisible();
     expect(screen.getByText('“Conference clash.”')).toBeVisible();
   });
 
   it('addresses the viewer when it was them', () => {
-    panel({ booking: cancelled, outcome: { status: 'cancelled', reason: null, by: 'you', at: at(-320) } });
+    panel({ booking: cancelled, outcome: { status: 'cancelled', reason: null, reasonFromCode: null, by: 'you', at: at(-320) } });
     expect(screen.getByText('You cancelled this session')).toBeVisible();
   });
 
   it('with no reason written, the heading stands alone — no empty quote', () => {
-    panel({ booking: cancelled, outcome: { status: 'cancelled', reason: null, by: 'them', at: at(-320) } });
+    panel({ booking: cancelled, outcome: { status: 'cancelled', reason: null, reasonFromCode: null, by: 'them', at: at(-320) } });
     expect(screen.getByText('Amara cancelled this session')).toBeVisible();
     expect(screen.queryByText('“”')).not.toBeInTheDocument();
   });
@@ -99,7 +99,7 @@ describe('why it ended', () => {
   it('a sweep is nobody, so nobody is blamed', () => {
     panel({
       booking: sampleBookingFor({ status: 'expired', startsAt: at(-300), endsAt: at(-299) }),
-      outcome: { status: 'expired', reason: null, by: 'system', at: at(-320) },
+      outcome: { status: 'expired', reason: null, reasonFromCode: null, by: 'system', at: at(-320) },
     });
     expect(screen.getByText('Nobody answered in time')).toBeVisible();
   });
@@ -199,7 +199,7 @@ describe('when the reason cannot be loaded', () => {
     panel({
       booking: cancelled,
       outcomeFailed: true,
-      outcome: { status: 'cancelled', reason: 'Clash.', by: 'them', at: at(-320) },
+      outcome: { status: 'cancelled', reason: 'Clash.', reasonFromCode: null, by: 'them', at: at(-320) },
     });
     expect(screen.queryByText('We couldn’t load why this ended.')).not.toBeInTheDocument();
   });
@@ -213,7 +213,7 @@ describe('a sweep has no name', () => {
   ] as const)('%s reads passively, not "this session cancelled this session"', (status, heading) => {
     panel({
       booking: sampleBookingFor({ status, startsAt: at(-300), endsAt: at(-299) }),
-      outcome: { status, reason: null, by: 'system', at: at(-320) },
+      outcome: { status, reason: null, reasonFromCode: null, by: 'system', at: at(-320) },
     });
     expect(screen.getByText(heading)).toBeVisible();
   });
@@ -314,7 +314,7 @@ describe('what happened, and why (design’s table, 2026-10-03)', () => {
     outcome: {
       status,
       by: side === 'mentee' ? ('them' as const) : ('you' as const),
-      reason: reason ?? null,
+      reason: reason ?? null, reasonFromCode: null,
       at: AT,
     },
   });
@@ -326,7 +326,7 @@ describe('what happened, and why (design’s table, 2026-10-03)', () => {
   });
 
   it('a mentor is never told about credit — it is not theirs', () => {
-    panel({ ...ended('declined', 'mentor'), outcome: { status: 'declined', by: 'you', reason: null, at: AT } });
+    panel({ ...ended('declined', 'mentor'), outcome: { status: 'declined', by: 'you', reason: null, reasonFromCode: null, at: AT } });
     expect(screen.queryByText(/credit/i)).not.toBeInTheDocument();
   });
 
@@ -334,12 +334,12 @@ describe('what happened, and why (design’s table, 2026-10-03)', () => {
     // The heading owns who did what, and it reads `o.by`. Keying a second
     // sentence off the viewer's side told a mentor "You declined this request"
     // when the hourly sweep had.
-    panel({ ...ended('declined', 'mentor'), outcome: { status: 'declined', by: 'system', reason: null, at: AT } });
+    panel({ ...ended('declined', 'mentor'), outcome: { status: 'declined', by: 'system', reason: null, reasonFromCode: null, at: AT } });
     expect(screen.queryByText(/^You declined/)).not.toBeInTheDocument();
   });
 
   it('what happened is said once, not twice', () => {
-    panel({ ...ended('withdrawn', 'mentee'), outcome: { status: 'withdrawn', by: 'you', reason: null, at: AT } });
+    panel({ ...ended('withdrawn', 'mentee'), outcome: { status: 'withdrawn', by: 'you', reason: null, reasonFromCode: null, at: AT } });
     expect(screen.getAllByText(/withdrew this request/i)).toHaveLength(1);
   });
 
@@ -350,7 +350,7 @@ describe('what happened, and why (design’s table, 2026-10-03)', () => {
       // window. The fixture used to record the cancellation eight days before
       // the session and still expect "too late" — it only passed because the
       // old code judged it against the clock rather than the event.
-      outcome: { status: 'cancelled', by: 'you', reason: null, at: at(-1) },
+      outcome: { status: 'cancelled', by: 'you', reason: null, reasonFromCode: null, at: at(-1) },
     });
     expect(screen.getByText(/less than 12 hours before the session, so the credit was not returned/)).toBeVisible();
   });
@@ -358,20 +358,20 @@ describe('what happened, and why (design’s table, 2026-10-03)', () => {
   it('a cancellation in good time says the credit came back', () => {
     panel({
       booking: sampleBookingFor({ side: 'mentee', status: 'cancelled', startsAt: at(48), endsAt: at(49) }),
-      outcome: { status: 'cancelled', by: 'you', reason: null, at: AT },
+      outcome: { status: 'cancelled', by: 'you', reason: null, reasonFromCode: null, at: AT },
     });
     expect(screen.getByText('Your credit is back.')).toBeVisible();
   });
 
   it('a reason is headed so it cannot be mistaken for the booking note', () => {
     panel({ ...ended('cancelled', 'mentee', 'Something came up.'), 
-      outcome: { status: 'cancelled', by: 'them', reason: 'Something came up.', at: AT } });
+      outcome: { status: 'cancelled', by: 'them', reason: 'Something came up.', reasonFromCode: null, at: AT } });
     expect(screen.getByText('Reason from Amara')).toBeVisible();
     expect(screen.getByText('“Something came up.”')).toBeVisible();
   });
 
   it('no reason given means no block at all — never "No reason given"', () => {
-    panel({ ...ended('cancelled', 'mentee'), outcome: { status: 'cancelled', by: 'them', reason: null, at: AT } });
+    panel({ ...ended('cancelled', 'mentee'), outcome: { status: 'cancelled', by: 'them', reason: null, reasonFromCode: null, at: AT } });
     expect(screen.queryByText(/Reason from/)).not.toBeInTheDocument();
     expect(screen.queryByText(/No reason/i)).not.toBeInTheDocument();
   });
@@ -387,7 +387,7 @@ describe('a missed session says who was there', () => {
       myAttendance: mine as 'pending',
       other: sampleParty({ attendance: theirs as 'pending' }),
     }),
-    outcome: { status: 'noShow' as const, by: 'system' as const, reason: null, at: AT2 },
+    outcome: { status: 'noShow' as const, by: 'system' as const, reason: null, reasonFromCode: null, at: AT2 },
   });
 
   it('neither of them', () => {
@@ -453,7 +453,7 @@ describe('a past cancellation is judged by when it happened', () => {
       endsAt: startsAt,
       refundUntil: null,
     }),
-    outcome: { status: 'cancelled' as const, by: 'you' as const, reason: null, at: cancelledAt },
+    outcome: { status: 'cancelled' as const, by: 'you' as const, reason: null, reasonFromCode: null, at: cancelledAt },
   });
 
   it('a mentee who cancelled in good time is told the credit came back', () => {
@@ -472,7 +472,7 @@ describe('a past cancellation is judged by when it happened', () => {
   it('an unparseable outcome time falls back rather than throwing', () => {
     panel({
       booking: sampleBookingFor({ side: 'mentee', status: 'cancelled', startsAt: at(48), endsAt: at(49) }),
-      outcome: { status: 'cancelled', by: 'you', reason: null, at: 'not-a-date' },
+      outcome: { status: 'cancelled', by: 'you', reason: null, reasonFromCode: null, at: 'not-a-date' },
     });
     expect(screen.getByText('Your credit is back.')).toBeVisible();
   });
@@ -541,5 +541,48 @@ describe('questions the mentee left blank', () => {
     expect(screen.getByText('Answer 1.')).toBeVisible();
     expect(screen.queryByText('No answer')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Show all 3 questions' })).toBeVisible();
+  });
+});
+
+describe('a reason nobody wrote is not put in quotes', () => {
+  const ENDED_AT = '2026-09-13T09:00:00.000Z';
+  it('shows our sentence for the code when there is no note', () => {
+    panel({
+      booking: sampleBookingFor({ side: 'mentee', status: 'cancelled' }),
+      outcome: {
+        status: 'cancelled',
+        reason: null,
+        reasonFromCode: 'A calendar clash.',
+        by: 'them',
+        at: ENDED_AT,
+      },
+    });
+    expect(screen.getByText('Reason from Amara')).toBeVisible();
+    // No quotation marks: Amara picked a chip, she did not write this.
+    expect(screen.getByText('A calendar clash.')).toBeVisible();
+    expect(screen.queryByText(/“A calendar clash/)).not.toBeInTheDocument();
+  });
+
+  it('a written note is still quoted, and wins', () => {
+    panel({
+      booking: sampleBookingFor({ side: 'mentee', status: 'cancelled' }),
+      outcome: {
+        status: 'cancelled',
+        reason: 'Visa interview moved.',
+        reasonFromCode: null,
+        by: 'them',
+        at: ENDED_AT,
+      },
+    });
+    expect(screen.getByText('“Visa interview moved.”')).toBeVisible();
+  });
+
+  it('no reason block at all when there is neither', () => {
+    // Never "No reason given" — silence reads better than an accusation.
+    panel({
+      booking: sampleBookingFor({ side: 'mentee', status: 'cancelled' }),
+      outcome: { status: 'cancelled', reason: null, reasonFromCode: null, by: 'them', at: ENDED_AT },
+    });
+    expect(screen.queryByText('Reason from Amara')).not.toBeInTheDocument();
   });
 });

@@ -323,8 +323,15 @@ both may be exactly what a mentor means. Back-to-back sessions are not a clash.
 ### Bookings — the mentee's view of a suggested time (`suggestTime=on`), 2026-10-03
 
 The design's `SuggestTime` component is the **mentor's** panel for offering
-another time while declining or cancelling (`Bookings.next.dc.html` lines
-364–390, `hold-hours="{{ 2 }}"`).
+another time while declining or cancelling (`hold-hours="{{ 2 }}"`).
+
+> **Citation corrected 2026-10-10.** This pointed at `Bookings.next.dc.html`
+> lines 364–390. That file exists **only in the local mirror** (Oct 3, 127 KB,
+> an hour newer than `Bookings.dc.html`) and is not in the live design project,
+> which has `Bookings.dc.html` alone. Design confirmed they have no such file.
+> The live sources for this feature are `SuggestTime.dc.html` and the
+> suggest-time toggle row in `CancelModal.dc.html`. Nothing else in the build
+> cites `.next`: `/bookings` was built from `Bookings.dc.html` throughout.
 
 > **Corrected 2026-10-03.** This section first said `SuggestTime.dc.html` does
 > not exist. **It does** — the local mirror was stale, and a missing file reads
@@ -552,6 +559,8 @@ Source: `CancelModal.dc.html`, props `mode` (cancel|decline), `viewer`
 | 41 | ~~Reason optional~~ **Required on cancel.** `needsReason = !dec && !panel`, and the confirm goes soft red (`--red-50` on `--red-500`) with `aria-disabled` until `reason.trim()` is non-empty. Optional on decline, and waived while the suggest panel is open | **Required**, on cancel, decline **and** withdraw | **Not the divergence it was recorded as.** The design and the owner agree on cancel; the contract's "a required one turns a decision into a form to argue with" is the outlier. Ours goes further by requiring it on decline and withdraw too (owner, 2026-10-10). The suggest-panel waiver we built matches the design exactly. |
 | 41b | Blocked by a **disabled-looking confirm** from the start | Confirm stays live; a blocked click shows "Pick a reason before you go on." and moves focus | Ours, deliberate. `aria-disabled` with no explanation leaves someone pressing a soft-red button with nothing telling them why. A named failure mode in `ux-patterns` ("destructive confirm dialog — trained-away"). **Revisit in the fidelity pass**: the design's soft-red state plus our message is probably the right answer, not one or the other. |
 | 42 | **No coded reason at all** — one free-text `<textarea>`, 132px, label "Reason for canceling", placeholder "Let the mentee know why you are canceling this call…" (mentee: "Let your mentor know why you are canceling…") | Three chips per side **plus "Something else"** (`other`, backend #414/#415), and a note beside them | **Ours entirely, and the biggest divergence here.** The chips exist for `reason_code`, which the contract describes as "a value you can `GROUP BY`" — the design had no reason to draw them. Consequence: the design's required field is the thing the other party reads, ours is the thing reporting counts, and they are not the same field. That is the root of the visibility gap below, not a bug in either. |
+| 42b | The box is **always visible** | **Hidden unless "Something else" is picked** | Owner, 2026-10-10: the chip completes the field — nothing to type. An optional box beside four chips invited typing that only repeated the chip, and made four buttons look like a form. Consequence, built in the same change: the code is turned into a sentence for the other party (`lib/utils/reasons.ts`, `reads`), because with the box hidden a chip and no note would otherwise reach them as nothing. |
+| 42c | n/a | The chip's label and the sentence the other party reads are **different strings**, in one table | Ours. `label` is first person for the person picking ("I'm no longer free"); `reads` is neither person's voice, unquoted, with no pronoun and no verb for the ending — the panel heading already says "Amara cancelled this session". Kept in one row per code so rewording one puts the other in front of you. |
 | 43 | Nothing | "Something else" makes the note **required** | Owner: the code alone records that none of the options fit and nothing about what did. No length floor — a floor invites "asdf" and punishes "visa refused". |
 | 44 | Title "Cancel this booking?" / "Decline this request?"; body "Are you sure you want to cancel this session with **{name}** on **{date}** at **{start}**? They'll be notified immediately, and this action cannot be undone."; confirm "Yes, cancel session"; left "Keep session" / "Go back" | Our own title and copy | Not yet compared line by line — **the fidelity pass**. "They'll be notified immediately, and this action cannot be undone" is a claim we should check we can make before copying it. |
 | 45 | Credit line in a `Notice tone="info"`, no icon | Our own credit line | Fidelity pass. |
