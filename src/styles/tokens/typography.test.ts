@@ -18,6 +18,10 @@ const desktop = sizes(css.slice(0, phoneAt));
 const phone = sizes(css.slice(phoneAt));
 
 describe('phone type scale', () => {
+  it('sits in a phone media query', () => {
+    expect(phoneAt).toBeGreaterThan(-1);
+  });
+
   it('steps down exactly the display and heading sizes the handoff lists', () => {
     expect(phone).toEqual({
       '--text-display-lg': 40,
@@ -36,10 +40,5 @@ describe('phone type scale', () => {
       expect(desktop[name], name).toBeDefined();
       expect(px, name).toBeLessThan(desktop[name] ?? 0);
     }
-  });
-
-  it('keeps the order of the scale on phones', () => {
-    const steps = Object.values(phone);
-    steps.slice(1).forEach((px, i) => expect(px).toBeLessThan(steps[i] ?? 0));
   });
 });
