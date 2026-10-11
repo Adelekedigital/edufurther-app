@@ -492,11 +492,24 @@ describe('before the window', () => {
     renderAt('15:15:00');
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     const dialog = screen.getByRole('dialog', { name: 'Cancel this session' });
+    // The reason is required since 2026-10-10, here as on Bookings: the dialog
+    // is one component and this screen gets the rule whether it asked or not.
+    await userEvent.click(within(dialog).getByRole('button', { name: 'A clash in my calendar' }));
     await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel session' }));
     expect(cancel.mutate).toHaveBeenCalledWith(
-      expect.objectContaining({ bookingId: 'b1' }),
+      expect.objectContaining({ bookingId: 'b1', reasonCode: 'scheduling_conflict' }),
       expect.anything(),
     );
+  });
+
+  it('will not call it off with no reason given', async () => {
+    renderAt('15:15:00');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    const dialog = screen.getByRole('dialog', { name: 'Cancel this session' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel session' }));
+    expect(within(dialog).getByText('Pick a reason before you go on.')).toBeVisible();
+    // Blocked, not merely scolded: nothing was sent.
+    expect(cancel.mutate).not.toHaveBeenCalled();
   });
 
   it('offers Add to calendar for the session’s own page, never the call link', async () => {
