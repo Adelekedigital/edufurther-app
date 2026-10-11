@@ -47,3 +47,22 @@
   --weight-bold: 700;
   --weight-extrabold: 800;
 }
+
+/* Phone scale, from the DS tokens/typography.css (handoff typography-2026-10-10):
+   only display and heading sizes step down below 768px; body, captions, line
+   heights, tracking and weights keep one size. Components that already pick a
+   smaller token on phones (PageHero, ReviewsSummary) get the phone value of it,
+   as the design's own phone mockups do. The design's data-ef-mobile selector
+   exists for its mockups only; the app needs just the media query. */
+@media (max-width: 767px) {
+  :root {
+    --text-display-lg: 40px;
+    --text-display-sm: 36px;
+    --text-h1: 32px;
+    --text-h2: 30px;
+    --text-h3: 28px;
+    --text-h4: 24px;
+    --text-h5: 20px;
+    --text-h6: 18px;
+  }
+}
