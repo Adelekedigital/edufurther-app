@@ -9,10 +9,29 @@ import type { CoverKey } from '@/lib/utils/cover';
 
 /**
  * The coded reasons a person can actually pick on a decline, cancel or
- * withdrawal. The contract's enum has nine; the other five are system-set.
+ * withdrawal. `SessionReasonCode` has nine members; the other five
+ * (`mentor_no_show`, `mentee_no_show`, `expired_no_response`, `rescheduled`,
+ * `admin_action`) are system-set, and `other` is not in the spec yet.
+ *
+ * Which ones are offered depends on the **side**, not the action: a mentee
+ * cancelling and a mentee withdrawing see the same list, and the server agrees
+ * (backend: "withdraw shares the mentee's list"). **Two** are role-specific,
+ * enforced with a 422 — a mentee may not send `mentor_unavailable`, a mentor
+ * may not send `mentee_no_longer_needed`. The other three are shared.
+ *
+ * `other` is the newest (backend #414, #415) and carries no meaning on its
+ * own, which is why the note is required alongside it. NOTE: **our
+ * `openapi/openapi.json` is stale** and still lists nine. The backend's
+ * `openapi-latest` has ten; re-syncing it is its own change, because the last
+ * refresh (#409) moved five fixtures. Until then the request body is untyped
+ * at the call site, so nothing checks a code.
  */
 export type PickableReason =
-  'mentor_unavailable' | 'mentee_no_longer_needed' | 'scheduling_conflict' | 'technical_issue';
+  | 'mentor_unavailable'
+  | 'mentee_no_longer_needed'
+  | 'scheduling_conflict'
+  | 'technical_issue'
+  | 'other';
 
 /** Which side of the session the viewer is on. One account can be both, on different rows. */
 export type BookingSide = 'mentor' | 'mentee';

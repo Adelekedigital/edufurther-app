@@ -11,7 +11,12 @@ export type BookingAction = 'accept' | 'decline' | 'withdraw' | 'cancel';
 
 export type ActionInput = {
   bookingId: string;
-  /** Optional on purpose: a required reason turns a decision into an argument. */
+  /**
+   * Optional in the contract, and still optional here: a mentor who offers
+   * another time instead sends none. The dialog requires one everywhere else
+   * (owner, 2026-10-10) — that rule lives in `ReasonField.reasonError`, not
+   * in this type, because the server accepts a request without it.
+   */
   reasonCode?: PickableReason | null;
   /** What the other party reads. Up to 2000 characters. */
   reasonText?: string | null;
@@ -94,6 +99,10 @@ export function useBookingAction(action: BookingAction) {
   const qc = useQueryClient();
   return useMutation<void, AppError, ActionInput>({
     mutationFn: async ({ bookingId, reasonCode, reasonText, releaseSlot, suggestedStartsAt }) => {
+      // `Record<string, unknown>`, so nothing here checks the codes against the
+      // contract — and our `openapi.json` predates `other` (backend #414), so
+      // it could not anyway. This is the seam where a typo in a code would
+      // otherwise be caught. Re-syncing the spec gives it back.
       const body: Record<string, unknown> = {};
       if (reasonCode) body.reason_code = reasonCode;
       const text = reasonText?.trim();
