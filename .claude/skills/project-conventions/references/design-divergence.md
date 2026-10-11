@@ -511,7 +511,7 @@ opposite of the truth and `types/booking.ts` is imported by seven components.
 | Phone buttons always two | A lone "Quick guide" spans the row when there are no answers | Half a row with empty space beside it reads as broken. |
 | Phone sheet scrim rgba(16,25,40,.5) | `--overlay-scrim` (.48) | The token for the same ink. |
 | "Add to calendar" is a link with no menu drawn | Desktop: our menu (Google, Outlook.com, .ics). **Phones: the same three as full-width rows in a bottom sheet** | A menu anchored to a 12px link is hard to hit on a phone, and every other choice on this page opens as a sheet there (user, 2026-10-10). |
-| Cancel opens as a bottom sheet on phones (`CancelModal sheet contained`) | Still the shared dialog's full-screen treatment | The Bookings session owns `ConfirmActionDialog`; queued in its cancel-modal fidelity pass. |
+| Cancel opens as a bottom sheet on phones (`CancelModal sheet contained`) | Still the shared dialog's full-screen treatment | Source confirmed in the live design project, 2026-10-10: `CancelModal.dc.html` has `sheet` and `contained` props (both default false), and with `sheet` on the two buttons become one column (`btnCols: '1fr'`). Session Join.dc.html:309 sets both true on the phone frame; the desktop frame at :531 sets neither. **Queued in the cancel-modal fidelity pass**, and `ModalShell`'s `sheet` is the base — not `BottomSheet`, which closes on a backdrop click and would discard a typed reason. |
 | Title (h5 24px) and clock (display-sm 48px) | Same at every width | The design system has no phone type scale. A system-wide question for design (asked by the user, 2026-10-10), not changed per screen. |
 
 
@@ -537,15 +537,25 @@ blank before it".
 
 ### Sessions — the cancellation reason is required, 2026-10-10
 
-`CancelModal.dc.html` is **not in the mirror**, so none of this is measured
-against markup. The behaviour is the owner's decision; the labels are the ones
-already shipped plus one. A fidelity pass follows when the file arrives.
+**Correction, same day.** This section first said `CancelModal.dc.html` was not
+in the mirror and that none of it could be measured. The local mirror is stale
+(newest file Oct 7); the file is in the **live** design project and was read
+through DesignSync. Read the live project, not `C:\pythonwork\edufurther-design-mirror`.
+Measured against the real markup, the picture changes: **the design already
+required the reason on cancel**, and our chips are not in the design at all.
 
-| # | Previously / design | Built | Why |
+Source: `CancelModal.dc.html`, props `mode` (cancel|decline), `viewer`
+(mentor|mentee), `sheet`, `contained`.
+
+| # | Design says | Built | Why |
 |---|---|---|---|
-| 41 | The reason is optional — and the contract says why: "a required one turns a clear-cut decision into a form to argue with" | **Required**, on cancel, decline **and** withdraw | Owner, 2026-10-10: it is a data point, and the other party reading nothing is worse than the friction. The contract's advice was considered and overridden, not missed. |
-| 42 | Four reasons | Three per side **plus "Something else"** (`other`, backend #414/#415) | Owner: three is enough, with an escape hatch. The list is filtered by **side, not action** — a mentee cancelling and withdrawing see the same three, which is also what the server enforces. |
+| 41 | ~~Reason optional~~ **Required on cancel.** `needsReason = !dec && !panel`, and the confirm goes soft red (`--red-50` on `--red-500`) with `aria-disabled` until `reason.trim()` is non-empty. Optional on decline, and waived while the suggest panel is open | **Required**, on cancel, decline **and** withdraw | **Not the divergence it was recorded as.** The design and the owner agree on cancel; the contract's "a required one turns a decision into a form to argue with" is the outlier. Ours goes further by requiring it on decline and withdraw too (owner, 2026-10-10). The suggest-panel waiver we built matches the design exactly. |
+| 41b | Blocked by a **disabled-looking confirm** from the start | Confirm stays live; a blocked click shows "Pick a reason before you go on." and moves focus | Ours, deliberate. `aria-disabled` with no explanation leaves someone pressing a soft-red button with nothing telling them why. A named failure mode in `ux-patterns` ("destructive confirm dialog — trained-away"). **Revisit in the fidelity pass**: the design's soft-red state plus our message is probably the right answer, not one or the other. |
+| 42 | **No coded reason at all** — one free-text `<textarea>`, 132px, label "Reason for canceling", placeholder "Let the mentee know why you are canceling this call…" (mentee: "Let your mentor know why you are canceling…") | Three chips per side **plus "Something else"** (`other`, backend #414/#415), and a note beside them | **Ours entirely, and the biggest divergence here.** The chips exist for `reason_code`, which the contract describes as "a value you can `GROUP BY`" — the design had no reason to draw them. Consequence: the design's required field is the thing the other party reads, ours is the thing reporting counts, and they are not the same field. That is the root of the visibility gap below, not a bug in either. |
 | 43 | Nothing | "Something else" makes the note **required** | Owner: the code alone records that none of the options fit and nothing about what did. No length floor — a floor invites "asdf" and punishes "visa refused". |
+| 44 | Title "Cancel this booking?" / "Decline this request?"; body "Are you sure you want to cancel this session with **{name}** on **{date}** at **{start}**? They'll be notified immediately, and this action cannot be undone."; confirm "Yes, cancel session"; left "Keep session" / "Go back" | Our own title and copy | Not yet compared line by line — **the fidelity pass**. "They'll be notified immediately, and this action cannot be undone" is a claim we should check we can make before copying it. |
+| 45 | Credit line in a `Notice tone="info"`, no icon | Our own credit line | Fidelity pass. |
+| 46 | Suggest-a-time entry is a **toggle row**: "Suggest a new time to {first}" / "They get one tap to book it", default `suggestEntry: 'toggle'` | A link into a picker step | Fidelity pass. Three entry variants exist in the design (`toggle`, `link`, `buttons`); per house rule we build the **chosen default**, which is `toggle`. |
 
 **Two gaps this exposed, neither fixed here:**
 
@@ -554,6 +564,11 @@ The **coded reason is never shown to the other party.** `sessionEvents.ts` maps
 a required chip is collected and never read by the person it describes. The
 owner chose "the mentor's reason shows to the mentee, as today" against a
 preview that showed the label — which was wrong of me. Needs a decision.
+
+Reading the design settles where this came from: the design's required field
+**is** the message to the other party (a free-text "Reason for canceling"),
+while ours is a code for reporting with an optional note beside it. Nobody
+dropped anything — we required a different field from the one that travels.
 
 The mentor's first two reasons **overlap**: "A clash in my calendar" and "I'm
 no longer free" are close enough that the pick is near-random, which weakens
