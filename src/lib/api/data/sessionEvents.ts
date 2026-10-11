@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import type { Booking, BookingStatus } from '@/types/booking';
 import type { Remote } from '@/types/mentor';
+import { reasonReads } from '@/lib/utils/reasons';
 import { apiError, normaliseError, retryOnce } from './errors';
 import { api } from './http';
 import { keys } from './keys';
@@ -22,8 +23,19 @@ type SessionEventRead = components['schemas']['SessionEventRead'];
  */
 export type BookingOutcome = {
   status: BookingStatus;
-  /** What they wrote. Null when nobody wrote anything. */
+  /** What they wrote, in their words. Shown in quotes. */
   reason: string | null;
+  /**
+   * The coded reason, in ours — set only when nobody wrote anything, so a note
+   * always wins over a template. Never quoted: nobody said it.
+   *
+   * This is why the chip is worth requiring. The API has always returned
+   * `reason_code` and this mapping dropped it, so a mentee whose mentor picked
+   * a reason and typed nothing was shown an ending with no explanation at all.
+   * Null for `other` (its note is required instead) and for the five system-set
+   * codes, where inventing a phrase would be worse than silence.
+   */
+  reasonFromCode: string | null;
   /**
    * Who did it, from the viewer's side: `them` is the other party, `you` the
    * viewer, `system` an expiry or no-show sweep with no person behind it.
@@ -69,9 +81,11 @@ export function outcomeOf(
       : event.actor_id === viewerId
         ? 'you'
         : 'them';
+  const reason = event.reason_text?.trim() || null;
   return {
     status: booking.status,
-    reason: event.reason_text?.trim() || null,
+    reason,
+    reasonFromCode: reason ? null : reasonReads(event.reason_code),
     by,
     at: event.created_at,
   };

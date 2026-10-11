@@ -338,12 +338,19 @@ export function BookingDetails({
                 same panel under "Note from X", and the two would blur. The
                 block is left out entirely when no reason was given — never
                 "No reason given". */}
-            {outcome.reason && (
+            {(outcome.reason || outcome.reasonFromCode) && (
               <>
                 <span className={styles.label}>
                   {outcome.by === 'you' ? 'Your reason' : `Reason from ${b.other.firstName}`}
                 </span>
-                <p className={styles.reason}>“{outcome.reason}”</p>
+                {/* Quoted only when somebody wrote it. The other line is our
+                    phrasing of the code they picked, and quoting words nobody
+                    typed would put them in their mouth. */}
+                {outcome.reason ? (
+                  <p className={styles.reason}>“{outcome.reason}”</p>
+                ) : (
+                  <p className={styles.outcomeLine}>{outcome.reasonFromCode}</p>
+                )}
               </>
             )}
           </div>

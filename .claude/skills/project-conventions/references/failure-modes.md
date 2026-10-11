@@ -382,9 +382,22 @@ out loud. What was wrong was the conclusion: "not in the copy I hold" became
 "does not exist", and a colleague's correct citation became the thing I
 doubted.
 
+**This is the second time.** On 2026-10-03 the same mistake was made about
+`SuggestTime.dc.html` — declared undrawn, then found in the live project — and
+the correction already said, in this repository, "pull the mirror fresh before
+concluding anything is undrawn." A note in a divergence doc did not stop it
+recurring a week later, because the doc is read when writing about a divergence,
+not when deciding whether one exists.
+
 **Check:** a negative result is only as wide as what you searched. Name the
 place in the claim — "not in the local mirror, which is stale" — and before
 writing one into a PR or contradicting a source, query the live source. For
 designs that is `DesignSync` `list_files` on the project, never the mirror
 directory. And the cost is asymmetric: a missing file wastes a question, while
-a wrongly-denied source gets the real spec deleted from the record.
+a wrongly-denied source gets the real spec deleted from the record — which is
+what nearly happened here, in a PR body.
+
+**Also true in reverse:** the mirror holds files the live project does not.
+`Bookings.next.dc.html` is local-only, and a divergence row had been citing its
+line numbers since 2026-10-03. A citation nobody else can open is not a
+citation.

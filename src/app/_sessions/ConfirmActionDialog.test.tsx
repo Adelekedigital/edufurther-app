@@ -126,9 +126,13 @@ describe('the reason is required, and means it', () => {
     );
   });
 
-  it('says who will read the note', () => {
+  it('says what the other person will be told, and changes it for Other', async () => {
     dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }) });
-    expect(screen.getByText(/Amara will read/)).toBeVisible();
+    // A picked chip reaches Amara as our sentence, not as the chip's own
+    // first-person label, so the hint promises being told rather than read.
+    expect(screen.getByText('Amara will be told why.')).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    expect(screen.getByText('Amara will read what you write.')).toBeVisible();
   });
 
   it('a mentor is not offered "I no longer need it"', () => {
@@ -155,6 +159,43 @@ describe('the reason is required, and means it', () => {
     // The label has to agree with the rule: a dialog that marks the reason
     // required and then accepts it empty trains someone to ignore the marking.
     expect(whyLabel()).toBe('Why? Optional');
+  });
+});
+
+describe('the box belongs to Other, and what was typed there does not outlive it', () => {
+  const mentorPending = () => sampleBookingFor({ side: 'mentor', status: 'pending' });
+
+  it('no box until Other is picked', async () => {
+    dialog({ action: 'decline', booking: mentorPending() });
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    expect(screen.getByRole('textbox')).toBeVisible();
+  });
+
+  it('switching away from Other sends nothing of what was typed', async () => {
+    const onConfirm = vi.fn();
+    dialog({ action: 'decline', booking: mentorPending(), onConfirm });
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    await userEvent.type(screen.getByRole('textbox'), 'changed my mind about this');
+    await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
+    // The box is gone from the screen, so its contents must be gone from the
+    // payload too: an invisible reason_text lands in the other party's
+    // notification with nobody having chosen to send it.
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ reasonCode: 'technical_issue', reasonText: '' }),
+    );
+  });
+
+  it('coming back to Other starts empty rather than restoring the abandoned text', async () => {
+    dialog({ action: 'decline', booking: mentorPending() });
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    await userEvent.type(screen.getByRole('textbox'), 'first thoughts');
+    await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    expect(screen.getByRole('textbox')).toHaveValue('');
   });
 });
 
