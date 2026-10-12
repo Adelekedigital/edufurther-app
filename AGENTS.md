@@ -1,6 +1,7 @@
 # AGENTS.md
 
-Instructions for Codex and other agents working in this repository.
+Instructions for the GitHub code reviewer (Claude, Kimi or Codex) and other agents
+working in this repository.
 
 The rules live in `CLAUDE.md` (non-negotiables and layout) and
 `.claude/skills/project-conventions/SKILL.md` (product rules, vocabulary, the API
