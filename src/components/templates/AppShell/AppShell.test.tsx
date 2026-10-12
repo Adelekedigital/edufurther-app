@@ -270,7 +270,7 @@ describe('AppShell navigation', () => {
         <p>Page</p>
       </AppShell>,
     );
-    const dialog = screen.getByRole('dialog', { name: 'Discard your changes?' });
+    const dialog = screen.getByRole('alertdialog', { name: 'Discard your changes?' });
     const buttons = within(dialog)
       .getAllByRole('button')
       .map((b) => b.textContent)

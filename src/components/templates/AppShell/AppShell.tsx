@@ -175,7 +175,7 @@ export function AppShell({
     const onKey = (e: KeyboardEvent) => {
       // A dialog over the sheet (e.g. "Discard your changes?") takes Escape
       // itself: the sheet stays, as it does after "Keep editing".
-      if (e.key === 'Escape' && !document.querySelector('[role="dialog"][aria-modal="true"]')) {
+      if (e.key === 'Escape' && !document.querySelector('[aria-modal="true"]')) {
         setMoreOpen(false);
         moreRef.current?.focus();
       }
