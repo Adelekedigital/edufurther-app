@@ -187,11 +187,15 @@ Prototype files (`support.js`, `image-slot.js`, `dc-import`, `sc-if`) are the pr
 
 ---
 
-**GitHub review loop — on request only (owner, 2026-10-12; backend #418).** The
-reviewer (`.github/workflows/code-reviewer.yml`) never runs when a PR opens or a
-branch is pushed; it runs only on a `/code-reviewer` comment, which the owner posts
-when a PR is worth the spend. The local `/code-review low` and `/security-review`
-remain the merge gate.
+**Two reviews on every code PR (owner, 2026-10-12, the backend's rule too).**
+1. **Local, before pushing:** `/code-review` at medium effort (low for a mechanical
+   change), plus `/security-review` when auth, input or personal data is touched.
+2. **GitHub, after pushing:** the builder comments `/code-reviewer` and runs the loop
+   below until NO FINDINGS. Docs-only and CI-only PRs skip it.
+
+Merge only when both are resolved and CI is green on the PR's exact head commit.
+The reviewer (`.github/workflows/code-reviewer.yml`) never runs by itself when a PR
+opens or a branch is pushed; only a `/code-reviewer` comment starts it.
 
 **Which reviewer:** Claude, paid from the Max plan's monthly API credit, and **Kimi
 when the Claude run fails for any reason**, a spent credit included; the comment
@@ -220,8 +224,7 @@ own reviewer.
 5. Comment `/code-reviewer` to re-review the commits since the last review. From Git
    Bash, `MSYS_NO_PATHCONV=1`, or the leading `/` becomes a Windows path.
 6. Repeat 2–5 until a review says NO FINDINGS, or only P2s the owner accepts.
-7. Merge when that's true AND CI is green on the PR's exact head commit, on the
-   owner's word.
+7. Merge when that's true AND CI is green on the PR's exact head commit.
 
 A reply alone never starts a review; only a comment starting `/code-reviewer` does.
 **A comment runs the workflow from `main`, not from the PR**, so a change to the
@@ -237,7 +240,7 @@ workflow itself is tested only after it merges.
 | Port the prototype's global mobile `<style>` block                   | handoff §7.3; it overrides by attribute-substring selectors                                                                                                                                                                                                                                                                                              |
 | Fetch below the page                                                 | `check-boundaries.mjs` rule 1                                                                                                                                                                                                                                                                                                                            |
 | Track `openapi/`, `src/lib/api/generated/` or `docs/handoff/` in git | this repo is public and they map the backend API. Product (2026-09-27): repo stays public; these are git-ignored and `pnpm check:private` fails CI if one is tracked. `.claude/` stays tracked by decision — process docs whose contract notes cover only what the public client already calls. Old versions remain in history (no rewrite, by decision) |
-| Push straight to `main`                                              | every change goes through a PR with green CI and `/security-review` (2026-09-26). **Code review is local `/code-review low` plus `/security-review`; the GitHub reviewer runs only on a `/code-reviewer` comment (owner, 2026-10-12; see *GitHub review loop*).** It posts one comment with P0/P1/P2 findings (`AGENTS.md` → Severity); answer each finding in a PR comment. Before every push the diff ships with no known bug and nothing that becomes tech debt: dead props, leftover code, a workaround where the right shape is cheap                                                                                                                                                                                                                                                         |
+| Push straight to `main`                                              | every change goes through a PR with green CI and `/security-review` (2026-09-26). **Every code PR gets two reviews: local `/code-review` (medium; low if mechanical) plus `/security-review` where it applies, then the GitHub `/code-reviewer` loop until NO FINDINGS (owner, 2026-10-12; see *Two reviews on every code PR*).** It posts one comment with P0/P1/P2 findings (`AGENTS.md` → Severity); answer each finding in a PR comment. Before every push the diff ships with no known bug and nothing that becomes tech debt: dead props, leftover code, a workaround where the right shape is cheap                                                                                                                                                                                                                                                         |
 
 ---
 
