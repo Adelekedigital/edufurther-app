@@ -93,9 +93,6 @@
   align-items: center;
   gap: var(--space-3);
 }
-@media (max-width: 767px) {
-  /* Design phone rule: --space-5 card padding becomes --space-4. */
-}
 /* Progress or success under the row (Duplicate): no error red. */
 .messageInfo {
   color: var(--ink-700);

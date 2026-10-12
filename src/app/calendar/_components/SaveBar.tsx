@@ -1,5 +1,6 @@
 import type { Ref } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
+import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { cx } from '@/lib/utils/cx';
 import styles from './CalendarScreen.module.css';
@@ -25,7 +26,11 @@ export function SaveBar({
   saveRef?: Ref<HTMLButtonElement>;
 }) {
   return (
-    <div className={styles.saveBar} role="region" aria-label="Unsaved changes">
+    <div
+      className={cardClass({ padding: 'none', className: styles.saveBar })}
+      role="region"
+      aria-label="Unsaved changes"
+    >
       <span role="status" className={cx(styles.saveMsg, p.problem && styles.saveMsgError)}>
         <Icon name={p.problem ? 'error' : 'edit_calendar'} size={20} />
         {p.problem?.message ?? 'You have unsaved changes to your hours.'}
