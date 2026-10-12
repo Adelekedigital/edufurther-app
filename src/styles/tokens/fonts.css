@@ -1,6 +1,6 @@
 /* PROVENANCE — DS bundle tokens/fonts.css, imported 2026-09-26; the role names
-   are the DS's. Since 2026-10-10 every role is DM Sans (ADR 0002, ahead of the
-   DS, which still says Inter / Hanken Grotesk / Poppins / Nunito Sans).
+   are the DS's. Since 2026-10-10 every role is DM Sans (ADR 0002), and the DS
+   says the same (stacks checked against the live project on 2026-10-12).
    Inter's gap file comes FIRST: it holds only ₦ and the Yoruba/Igbo/West
    African letters DM Sans lacks (its unicode-range), and DM Sans's own
    metric-matched fallback is Arial, which would otherwise draw them. Fonts are
