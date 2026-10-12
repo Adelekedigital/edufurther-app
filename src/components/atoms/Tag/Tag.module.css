@@ -80,15 +80,23 @@
   }
 }
 
-/* Bookings.dc.html: a past session's outcome, as a full-radius pill. Same
-   colours as `free`/`mine` for success, but a different radius and padding —
-   so a separate class, not a reuse. */
+/* Bookings.dc.html status pills: a past session's outcome, and how long a
+   request has left (`r.wBg`). Same colours as `free`/`mine` for success, but a
+   different radius and padding — so a separate class, not a reuse. The
+   markup sets no line-height. */
 .success,
 .warning,
-.danger {
+.danger,
+.pending {
+  gap: var(--space-1);
   padding: 2px var(--space-2);
   border-radius: var(--radius-full);
   font-weight: var(--weight-semibold);
+  line-height: normal;
+}
+.pending {
+  background: var(--ink-100);
+  color: var(--ink-700);
 }
 .success {
   background: var(--green-50);
@@ -101,4 +109,17 @@
 .danger {
   background: var(--red-50);
   color: var(--red-600);
+}
+
+/* Session Types.dc.html: a session type's facts (length, notice, topics), 24px.
+   A long topic list wraps inside it rather than spilling out. */
+.fact {
+  white-space: normal;
+  gap: var(--space-1);
+  min-height: 24px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--ink-50);
+  color: var(--ink-700);
+  line-height: normal;
 }

@@ -12,9 +12,11 @@ type TagProps = {
    * praise   — 28px round blue tag with an icon, "Most praised for" on reviews.
    * mine     — small green tag, "Your review" on the viewer's own review.
    * badge    — plain chip beside a name (compact MentorCard's "Top-rated").
-   * success / warning / danger — a full-radius outcome pill (Bookings: how a
-   *            past session ended). Not the same spec as `free`, which is a
-   *            rounded-rect in the same green.
+   * success / warning / danger / pending — a full-radius status pill
+   *            (Bookings.dc.html: how a past session ended, and how long a
+   *            request has left). Not the same spec as `free`, which is a
+   *            rounded-rect in the same green. Takes a 14px icon before the text.
+   * fact     — 24px grey chip: a session type's length, notice, topics.
    */
   tone:
     | 'on-photo'
@@ -27,12 +29,16 @@ type TagProps = {
     | 'badge'
     | 'success'
     | 'warning'
-    | 'danger';
+    | 'danger'
+    | 'pending'
+    | 'fact';
+  /** li when the tag is an item of a list. */
+  as?: 'span' | 'li';
   children: ReactNode;
   className?: string;
 };
 
 /** A non-interactive label. */
-export function Tag({ tone, children, className }: TagProps) {
-  return <span className={cx(styles.tag, styles[tone], className)}>{children}</span>;
+export function Tag({ tone, as: El = 'span', children, className }: TagProps) {
+  return <El className={cx(styles.tag, styles[tone], className)}>{children}</El>;
 }

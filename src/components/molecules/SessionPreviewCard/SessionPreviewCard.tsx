@@ -1,4 +1,5 @@
 import styles from './SessionPreviewCard.module.css';
+import { Tag } from '@/components/atoms/Tag/Tag';
 
 type SessionPreviewCardProps = {
   name: string;
@@ -22,9 +23,9 @@ export function SessionPreviewCard({ name, description, facts }: SessionPreviewC
         {description && <span className={styles.description}>{description}</span>}
         <div className={styles.facts}>
           {facts.map((f) => (
-            <span key={f} className={styles.fact}>
+            <Tag key={f} tone="fact">
               {f}
-            </span>
+            </Tag>
           ))}
         </div>
         <span className={styles.book} aria-hidden>

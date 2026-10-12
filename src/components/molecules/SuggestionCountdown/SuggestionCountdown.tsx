@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { Tag } from '@/components/atoms/Tag/Tag';
 import { cx } from '@/lib/utils/cx';
 import styles from './SuggestionCountdown.module.css';
 
@@ -53,7 +54,10 @@ export function SuggestionCountdown({ heldUntil, now, className }: SuggestionCou
   const urgent = !lapsed && left < URGENT_MS;
 
   return (
-    <span className={cx(styles.pill, urgent && styles.urgent, lapsed && styles.lapsed, className)}>
+    <Tag
+      tone={urgent ? 'warning' : 'pending'}
+      className={cx(styles.pill, lapsed && styles.lapsed, className)}
+    >
       <Icon name={lapsed ? 'event_busy' : 'lock_clock'} size={14} />
       <span aria-hidden="true">{lapsed ? 'Hold lapsed' : `${holdLeftLabel(left)} left`}</span>
       {/*
@@ -68,7 +72,7 @@ export function SuggestionCountdown({ heldUntil, now, className }: SuggestionCou
       <span role="status" className="sr-only">
         {spokenBand(left)}
       </span>
-    </span>
+    </Tag>
   );
 }
 
