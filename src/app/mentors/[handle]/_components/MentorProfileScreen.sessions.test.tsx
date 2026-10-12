@@ -100,7 +100,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('switch', { name: 'Visible to mentees: SOP draft review' }));
     expect(setLive).not.toHaveBeenCalled();
-    const confirm = screen.getByRole('dialog', { name: 'Hide “SOP draft review” from mentees?' });
+    const confirm = screen.getByRole('alertdialog', { name: 'Hide “SOP draft review” from mentees?' });
     expect(confirm).toHaveTextContent(`It leaves your profile and Explore`);
     expect(confirm).toHaveTextContent(SHOW_AGAIN);
     await user.click(within(confirm).getByRole('button', { name: 'Hide it' }));
@@ -119,7 +119,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     await user.click(screen.getByRole('switch', { name: 'Visible to mentees: CV review' }));
     await user.click(screen.getByRole('button', { name: 'Keep visible' }));
     expect(setLive).not.toHaveBeenCalled();
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
   });
 
   it('the last active type says what hiding it means', async () => {
@@ -127,7 +127,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('switch', { name: 'Visible to mentees: SOP draft review' }));
-    const confirm = screen.getByRole('dialog', { name: 'Hide your last session type?' });
+    const confirm = screen.getByRole('alertdialog', { name: 'Hide your last session type?' });
     expect(confirm).toHaveTextContent('Your profile will show “Not taking bookings”');
     expect(confirm).toHaveTextContent(SHOW_AGAIN);
   });
@@ -172,7 +172,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     await user.click(within(dialog).getByRole('switch', { name: 'Visible to mentees' }));
     await user.click(within(dialog).getByRole('button', { name: 'Save changes' }));
     expect(quickEdit).not.toHaveBeenCalled();
-    const confirm = screen.getByRole('dialog', { name: 'Hide “SOP draft review” from mentees?' });
+    const confirm = screen.getByRole('alertdialog', { name: 'Hide “SOP draft review” from mentees?' });
     await user.click(within(confirm).getByRole('button', { name: 'Hide it' }));
     expect(quickEdit).toHaveBeenCalledWith({ id: 'st1', durationMin: undefined, live: false });
     expect(
@@ -284,7 +284,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
-    const confirm = screen.getByRole('dialog', { name: 'Delete this session type?' });
+    const confirm = screen.getByRole('alertdialog', { name: 'Delete this session type?' });
     await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
     expect(removeType).toHaveBeenCalledWith('st1');
     expect(await screen.findByText('“SOP draft review” was deleted.')).toBeInTheDocument();
@@ -297,13 +297,13 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
-    const confirm = screen.getByRole('dialog', { name: 'Delete this session type?' });
+    const confirm = screen.getByRole('alertdialog', { name: 'Delete this session type?' });
     await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
     expect(removeType).toHaveBeenCalledWith('st1');
     expect(
       await screen.findByText('We couldn’t confirm the delete. The list has been refreshed.'),
     ).toBeInTheDocument();
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
   });
 
   it('Delete with sessions booked schedules it, says when, and where to manage it', async () => {
@@ -316,7 +316,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
-    const confirm = screen.getByRole('dialog', { name: 'Schedule deletion for Oct 14?' });
+    const confirm = screen.getByRole('alertdialog', { name: 'Schedule deletion for Oct 14?' });
     await user.click(within(confirm).getByRole('button', { name: 'Schedule deletion' }));
     expect(
       await screen.findByText(
@@ -371,7 +371,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     };
     const startDelete = async (user: ReturnType<typeof userEvent.setup>) => {
       await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
-      const confirm = screen.getByRole('dialog', { name: 'Delete this session type?' });
+      const confirm = screen.getByRole('alertdialog', { name: 'Delete this session type?' });
       await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
       return confirm;
     };
@@ -385,7 +385,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
       const confirm = await startDelete(user);
       expect(within(confirm).getByRole('button', { name: 'Keep it' })).toBeDisabled();
       await user.click(within(confirm).getByRole('button', { name: 'Close' }));
-      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(screen.queryByRole('alertdialog')).toBeNull();
       await act(async () => d.ok({ kind: 'deleted' }));
       expect(screen.getByText('“SOP draft review” was deleted.')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Edit CV review' })).toHaveFocus();
@@ -399,7 +399,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
       render(<MentorProfileScreen handle="gbenga" />);
       await startDelete(user);
       await user.keyboard('{Escape}'); // as the ×: dismissed, the delete carries on
-      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(screen.queryByRole('alertdialog')).toBeNull();
       await act(async () =>
         d.fail({
           kind: 'server',
@@ -436,7 +436,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     const user = userEvent.setup();
     const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
-    const confirm = screen.getByRole('dialog', { name: 'Delete this session type?' });
+    const confirm = screen.getByRole('alertdialog', { name: 'Delete this session type?' });
     await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
     await screen.findByText('We couldn’t confirm the delete. The list has been refreshed.');
     // The refetch: it was deleted after all.
@@ -453,7 +453,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     };
     const dismissDelete = async (user: ReturnType<typeof userEvent.setup>) => {
       await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
-      const confirm = screen.getByRole('dialog', { name: 'Delete this session type?' });
+      const confirm = screen.getByRole('alertdialog', { name: 'Delete this session type?' });
       await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
       await user.click(within(confirm).getByRole('button', { name: 'Close' }));
     };
@@ -468,9 +468,9 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
       await user.click(
         screen.getByRole('switch', { name: 'Visible to mentees: SOP draft review' }),
       );
-      expect(screen.getByRole('dialog', { name: /Hide “SOP draft review”/ })).toBeInTheDocument();
+      expect(screen.getByRole('alertdialog', { name: /Hide “SOP draft review”/ })).toBeInTheDocument();
       await act(async () => d.ok({ kind: 'deleted' }));
-      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(screen.queryByRole('alertdialog')).toBeNull();
       expect(setLive).not.toHaveBeenCalled();
       expect(screen.getByRole('button', { name: 'Edit CV review' })).toHaveFocus();
     });
@@ -489,7 +489,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
       rerender(<MentorProfileScreen handle="gbenga" />);
       await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
       expect(
-        within(screen.getByRole('dialog', { name: 'Delete this session type?' })).queryByRole(
+        within(screen.getByRole('alertdialog', { name: 'Delete this session type?' })).queryByRole(
           'alert',
         ),
       ).toBeNull();
@@ -501,7 +501,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
       const user = userEvent.setup();
       const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
       await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
-      const confirm = screen.getByRole('dialog', { name: 'Delete this session type?' });
+      const confirm = screen.getByRole('alertdialog', { name: 'Delete this session type?' });
       await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
       await screen.findByText('We couldn’t confirm the delete. The list has been refreshed.');
       await user.click(screen.getByRole('button', { name: 'Edit CV review' }));
@@ -521,7 +521,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     };
     const dismissDelete = async (user: ReturnType<typeof userEvent.setup>) => {
       await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
-      const confirm = screen.getByRole('dialog', { name: 'Delete this session type?' });
+      const confirm = screen.getByRole('alertdialog', { name: 'Delete this session type?' });
       await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
       await user.click(within(confirm).getByRole('button', { name: 'Close' }));
     };

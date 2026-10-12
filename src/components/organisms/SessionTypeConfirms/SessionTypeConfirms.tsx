@@ -1,9 +1,8 @@
 import type { ReactNode } from 'react';
-import { Button } from '@/components/atoms/Button/Button';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
+import { ConfirmActions, confirmClose } from '@/components/molecules/ConfirmActions/ConfirmActions';
 import { formatShortDate } from '@/lib/utils/format';
 import type { DeleteError, OwnSessionType } from '@/types/sessionType';
-import styles from './SessionTypeConfirms.module.css';
 
 // The confirms a session type's actions open (Session Types.dc.html). Shared by
 // the Session Types list and the profile's session-type management.
@@ -15,6 +14,10 @@ export type ConfirmShell = {
   icon: IconName;
   tone?: 'danger';
   onClose: () => void;
+  /** Always set: a confirm is an alertdialog. */
+  alert: true;
+  /** The × is off while a request runs and closing can't dismiss it. */
+  closeDisabled: boolean;
 };
 type Framed = { renderShell: (shell: ConfirmShell, body: ReactNode) => ReactNode };
 
@@ -50,7 +53,6 @@ export function DeleteConfirm(
         p.type.isFeatured ? ' It also stops being featured.' : ''
       }`
     : `“${p.type.name}” is removed from your profile and Session types. This can’t be undone.`;
-  const close = p.busy ? (p.onDismiss ?? (() => {})) : p.onKeep;
   return (
     <>
       {p.renderShell(
@@ -59,29 +61,17 @@ export function DeleteConfirm(
           subtitle,
           icon: 'delete',
           tone: 'danger',
-          onClose: close,
+          alert: true,
+          ...confirmClose(p.busy, p.onKeep, p.onDismiss),
         },
-        <>
-          {p.error && (
-            <p role="alert" className={styles.error}>
-              {p.error.message}
-            </p>
-          )}
-          <div className={styles.buttons}>
-            <Button
-              size="large"
-              variant="secondary-outlined"
-              fullWidth
-              onClick={p.onKeep}
-              disabled={p.busy}
-            >
-              Keep it
-            </Button>
-            <Button size="large" variant="destructive" fullWidth onClick={p.onDelete} busy={p.busy}>
-              {scheduled ? 'Schedule deletion' : 'Delete'}
-            </Button>
-          </div>
-        </>,
+        <ConfirmActions
+          keepLabel="Keep it"
+          confirmLabel={scheduled ? 'Schedule deletion' : 'Delete'}
+          pending={p.busy}
+          error={p.error?.message}
+          onKeep={p.onKeep}
+          onConfirm={p.onDelete}
+        />,
       )}
     </>
   );
@@ -107,18 +97,16 @@ export function FeatureConfirm(
           title: `Feature “${p.type.name}” instead?`,
           subtitle: `It moves to the top of your profile. “${p.current.name}” will no longer be featured. You can feature one session type at a time.`,
           icon: 'star',
-          onClose: p.onCancel,
+          alert: true,
+          ...confirmClose(false, p.onCancel),
         },
-        <>
-          <div className={styles.buttons}>
-            <Button size="large" variant="secondary-outlined" fullWidth onClick={p.onCancel}>
-              Cancel
-            </Button>
-            <Button size="large" fullWidth onClick={p.onConfirm}>
-              Feature this instead
-            </Button>
-          </div>
-        </>,
+        <ConfirmActions
+          tone="default"
+          keepLabel="Cancel"
+          confirmLabel="Feature this instead"
+          onKeep={p.onCancel}
+          onConfirm={p.onConfirm}
+        />,
       )}
     </>
   );
@@ -155,17 +143,20 @@ export function VisibilityConfirm(
   return (
     <>
       {p.renderShell(
-        { title, subtitle, icon: p.show ? 'visibility' : 'visibility_off', onClose: p.onCancel },
-        <>
-          <div className={styles.buttons}>
-            <Button size="large" variant="secondary-outlined" fullWidth onClick={p.onCancel}>
-              {p.show ? 'Cancel' : 'Keep visible'}
-            </Button>
-            <Button size="large" fullWidth onClick={p.onConfirm}>
-              {p.show ? 'Show it' : 'Hide it'}
-            </Button>
-          </div>
-        </>,
+        {
+          title,
+          subtitle,
+          icon: p.show ? 'visibility' : 'visibility_off',
+          alert: true,
+          ...confirmClose(false, p.onCancel),
+        },
+        <ConfirmActions
+          tone="default"
+          keepLabel={p.show ? 'Cancel' : 'Keep visible'}
+          confirmLabel={p.show ? 'Show it' : 'Hide it'}
+          onKeep={p.onCancel}
+          onConfirm={p.onConfirm}
+        />,
       )}
     </>
   );
