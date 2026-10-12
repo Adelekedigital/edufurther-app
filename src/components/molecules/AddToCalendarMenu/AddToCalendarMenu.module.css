@@ -4,7 +4,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  min-height: 32px;
+  min-height: var(--button-h-small);
   padding: 0;
   border: none;
   background: none;

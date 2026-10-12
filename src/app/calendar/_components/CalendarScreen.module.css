@@ -144,7 +144,7 @@
   margin: 0;
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
-  color: var(--red-600);
+  color: var(--text-danger);
 }
 /* "Availability updated" (Calendar v2 `doneOpen`). */
 .done {
@@ -185,7 +185,7 @@
   color: var(--ink-900);
 }
 .saveMsgError {
-  color: var(--red-600);
+  color: var(--text-danger);
 }
 .saveActions {
   flex: 0 0 auto;

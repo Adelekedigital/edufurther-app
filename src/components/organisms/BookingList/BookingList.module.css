@@ -45,5 +45,5 @@
 /* A "Show more" that failed. Ours: the design never drew the case. */
 .error {
   font-size: var(--text-p-xs);
-  color: var(--red-600);
+  color: var(--text-danger);
 }

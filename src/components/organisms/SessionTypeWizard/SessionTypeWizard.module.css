@@ -360,7 +360,7 @@
 /* Design btnEditDefaults / btnEditHours: the DS text button at 32px, 8px 12px. */
 .inlineAction {
   position: relative;
-  height: 32px;
+  height: var(--button-h-small);
   padding: var(--space-2) var(--space-3);
   border: none;
   border-radius: var(--radius-md);

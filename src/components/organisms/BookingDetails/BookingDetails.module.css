@@ -138,7 +138,7 @@
   align-items: center;
   justify-content: center;
   width: 40px;
-  height: 40px;
+  height: var(--button-h-medium);
   margin: calc(var(--space-2) * -1) calc(var(--space-2) * -1) 0 0;
   border: none;
   border-radius: var(--radius-full);
@@ -216,7 +216,7 @@
    design declares text-p-xs here, where .retry is a 14px body control. */
 .ansMore {
   align-self: flex-start;
-  min-height: 32px;
+  min-height: var(--button-h-small);
   padding: 0;
   border: none;
   background: none;

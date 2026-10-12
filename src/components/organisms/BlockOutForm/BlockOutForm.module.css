@@ -11,7 +11,7 @@
   gap: var(--space-2);
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
-  color: var(--red-600);
+  color: var(--text-danger);
 }
 .errorIcon {
   line-height: 18px;

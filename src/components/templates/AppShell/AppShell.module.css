@@ -336,7 +336,7 @@
     padding: 0;
   }
   .sheetItem {
-    min-height: 48px;
+    min-height: var(--button-h-large);
     display: flex;
     align-items: center;
     gap: var(--space-3);

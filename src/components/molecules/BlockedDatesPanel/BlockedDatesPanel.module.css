@@ -88,7 +88,7 @@
   margin: 0;
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
-  color: var(--red-600);
+  color: var(--text-danger);
 }
 .remove[aria-disabled='true'] {
   cursor: progress;

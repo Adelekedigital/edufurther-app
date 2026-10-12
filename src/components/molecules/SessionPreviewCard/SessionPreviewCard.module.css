@@ -41,7 +41,7 @@
 }
 .book {
   margin-top: var(--space-2);
-  height: 32px;
+  height: var(--button-h-small);
   display: flex;
   align-items: center;
   justify-content: center;
