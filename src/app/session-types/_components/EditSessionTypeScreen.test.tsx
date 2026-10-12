@@ -186,7 +186,7 @@ describe('EditSessionTypeScreen', () => {
     render(<EditSessionTypeScreen id="st1" />);
     await user.type(screen.getByRole('textbox', { name: 'Session name' }), '!');
     await user.click(screen.getByRole('button', { name: 'Back to session types' }));
-    expect(screen.getByRole('dialog', { name: 'Discard your changes?' })).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog', { name: 'Discard your changes?' })).toBeInTheDocument();
     expect(push).not.toHaveBeenCalled();
   });
 
