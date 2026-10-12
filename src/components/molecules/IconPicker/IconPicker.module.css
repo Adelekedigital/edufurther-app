@@ -5,7 +5,7 @@
 }
 .tile {
   position: relative;
-  width: 48px;
+  width: var(--button-h-large);
   height: var(--button-h-large);
   display: flex;
   align-items: center;

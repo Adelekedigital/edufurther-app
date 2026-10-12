@@ -144,7 +144,8 @@
   margin: 0;
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
-  color: var(--text-danger);
+  /* Calendar v2.dc.html draws its errors in --red-600, not --text-danger (red-500). */
+  color: var(--red-600);
 }
 /* "Availability updated" (Calendar v2 `doneOpen`). */
 .done {
@@ -185,7 +186,8 @@
   color: var(--ink-900);
 }
 .saveMsgError {
-  color: var(--text-danger);
+  /* Calendar v2.dc.html draws its errors in --red-600, not --text-danger (red-500). */
+  color: var(--red-600);
 }
 .saveActions {
   flex: 0 0 auto;

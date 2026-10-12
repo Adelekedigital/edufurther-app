@@ -76,7 +76,7 @@
   background: var(--ink-100);
 }
 .mini {
-  width: 48px;
+  width: var(--button-h-large);
   height: var(--button-h-large);
   border: none;
   border-radius: var(--radius-full);

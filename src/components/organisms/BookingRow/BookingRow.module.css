@@ -129,7 +129,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
+  width: var(--button-h-medium);
   height: var(--button-h-medium);
   border: none;
   border-radius: var(--radius-full);

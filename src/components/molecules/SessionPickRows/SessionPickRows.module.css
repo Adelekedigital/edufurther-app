@@ -15,7 +15,7 @@
   font-weight: var(--weight-medium);
 }
 .row {
-  min-height: var(--button-h-large);
+  min-height: 48px;
   display: flex;
   align-items: center;
   gap: var(--space-3);
