@@ -133,7 +133,7 @@ jobs:
         id: pr
         run: |
           gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" \
-            --jq '"head=\(.head.sha)\nbase=\(.base.sha)\nbase_ref=\(.base.ref)"' >> "$GITHUB_OUTPUT"
+            --jq '"head=\(.head.sha)\nbase=\(.base.sha)\nbase_ref=\(.base.ref)\nskip=\(.draft or .head.repo.fork or .user.login == "dependabot[bot]")"' >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
         with:
@@ -148,11 +148,20 @@ jobs:
         id: prepare
         env:
           CHAIN: ${{ steps.choose.outputs.chain }}
+          SKIP: ${{ steps.pr.outputs.skip }}
           HEAD: ${{ steps.pr.outputs.head }}
           BASE: ${{ steps.pr.outputs.base }}
           BASE_REF: ${{ steps.pr.outputs.base_ref }}
         run: |
           mkdir -p code-review
+
+          # A comment is checked like the dormant pull_request trigger: no
+          # review of a draft, a fork or Dependabot's PR, since the job holds
+          # keys and a fork's head is code from outside the repository.
+          if [ "$SKIP" = "true" ]; then
+            echo "verdict=not-reviewable" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           # No configured reviewer, no review: decided first, so an unconfigured
           # repo spends nothing and still says why. Never the CLI's own default
@@ -194,7 +203,7 @@ jobs:
 
           git diff "$from" "$HEAD" -- . \
             ':(exclude)pnpm-lock.yaml' ':(exclude)package-lock.json' \
-            ':(exclude)docs/**' ':(exclude)**/*.md' ':(exclude).claude/**' \
+            ':(exclude)docs/**' ':(exclude)*.md' ':(exclude)**/*.md' ':(exclude).claude/**' \
             ':(exclude).github/**' ':(exclude)src/lib/api/generated/**' \
             ':(exclude)openapi/**' ':(exclude)dist/**' ':(exclude)build/**' \
             ':(exclude).next/**' ':(exclude)**/__snapshots__/**' ':(exclude)**/*.snap' \
@@ -348,6 +357,8 @@ jobs:
               echo "**Code review did not complete** ($OUTCOME). [Run log]($RUN_URL)"
             elif [ "$VERDICT" = "no-prompt" ]; then
               echo "**Code review skipped:** the review prompt is not on the base branch yet. It runs from the next PR after this one merges."
+            elif [ "$VERDICT" = "not-reviewable" ]; then
+              echo "**Code review skipped:** drafts, forks and Dependabot's PRs are not reviewed. Mark the PR ready for review, or open it from a branch of this repository."
             elif [ "$VERDICT" = "no-reviewer" ]; then
               echo "**Code review skipped:** \`$MISSING\` is not configured (its API key secret or model variable is not set), and no fallback is."
             elif [ "$VERDICT" = "empty" ]; then
