@@ -66,9 +66,10 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>, onClose: () => 
     const opener = document.activeElement as HTMLElement | null;
     const dialog = ref.current;
     // A confirm opens on its safe choice (WAI-ARIA alertdialog): the caller
-    // marks it `data-autofocus`. Otherwise the first focusable.
+    // marks it `data-autofocus`. Off (its request is running) or absent: the
+    // first focusable, else the dialog itself.
     const first =
-      dialog?.querySelector<HTMLElement>('[data-autofocus]') ??
+      dialog?.querySelector<HTMLElement>('[data-autofocus]:not([disabled])') ??
       dialog?.querySelector<HTMLElement>(FOCUSABLE);
     (first ?? dialog)?.focus();
 

@@ -77,7 +77,7 @@ export function ModalShell({
         <div className={styles.overlay} aria-hidden />
         <div
           ref={dialogRef}
-          role="dialog"
+          role={alert ? 'alertdialog' : 'dialog'}
           aria-modal="true"
           aria-labelledby={titleId}
           aria-describedby={sheet.caption ? subId : undefined}

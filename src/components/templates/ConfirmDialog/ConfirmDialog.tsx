@@ -18,8 +18,10 @@ type ConfirmDialogProps = ConfirmActionsProps & {
 };
 
 /**
- * Every "Are you sure?" in the app (Modal.dc.html, size sm): title, what
- * happens, Keep · Confirm. An alertdialog that opens on the safe choice.
+ * The app's "Are you sure?" (Modal.dc.html, size sm): title, what happens,
+ * Keep · Confirm. An alertdialog that opens on the safe choice. Sessions'
+ * ConfirmActionDialog (decline, withdraw, cancel, with a reason) moves onto it
+ * in a follow-up PR.
  * While the request runs it can't be closed or kept (product 2026-10-12): the
  * request can't be called back, and the answer belongs in this dialog.
  */

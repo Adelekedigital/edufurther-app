@@ -156,6 +156,6 @@ describe('MentorProfileScreen — the owner’s photo', () => {
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(removePhoto).toHaveBeenCalled();
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
   });
 });

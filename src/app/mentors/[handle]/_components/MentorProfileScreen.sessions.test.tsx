@@ -159,7 +159,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     await user.selectOptions(within(dialog).getByRole('combobox', { name: 'Length' }), '45');
     await user.click(within(dialog).getByRole('button', { name: 'Save changes' }));
     expect(quickEdit).toHaveBeenCalledWith({ id: 'st1', durationMin: 45, live: undefined });
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.querySelector('[aria-modal="true"]')).toBeNull();
     expect(screen.getByText('“SOP draft review” saved.')).toBeInTheDocument();
   });
 
@@ -244,7 +244,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     await user.click(screen.getByRole('button', { name: 'Edit SOP draft review' }));
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     expect(quickEdit).not.toHaveBeenCalled();
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(document.querySelector('[aria-modal="true"]')).toBeNull();
   });
 
   it('a failed save keeps the modal open and says why', async () => {

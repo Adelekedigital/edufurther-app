@@ -67,6 +67,11 @@ describe('ConfirmDialog', () => {
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
   });
 
+  it('opened while its request already runs, focus still lands inside it', () => {
+    render(<ConfirmDialog {...base} pending onKeep={vi.fn()} onConfirm={vi.fn()} />);
+    expect(screen.getByRole('alertdialog')).toContainElement(document.activeElement as HTMLElement);
+  });
+
   it('with onDismissWhilePending, closing while it runs dismisses instead of keeping', async () => {
     const onKeep = vi.fn();
     const onDismiss = vi.fn();
