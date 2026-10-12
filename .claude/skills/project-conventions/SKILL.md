@@ -188,6 +188,16 @@ always and P2 if cheap with a failing-first test, and answer every finding in ON
 reply comment. Which reviewer, its keys and variables, and the seven-step loop:
 `references/code-review-loop.md`.
 
+**Parallel delivery (owner, 2026-10-12).**
+- Independent work runs at once: each PR in its own worktree; long mechanical work
+  (route typing, docs, inventories) goes to a background agent while the next thing is built.
+- A finished slice ships as its own PR straight away, not held for a slower sibling.
+- Scope the next PR (read-only) while the current one is in review.
+- Local review agents run alongside the GitHub `/code-reviewer`, not as a serial step.
+- Several checklists may be approved together.
+- No long verification crawls: diff review, targeted checks, then CI.
+- The merge gates don't change: two reviews, CI green on the exact head commit, Definition of Done.
+
 ## Guardrails
 
 | Never | Because |
