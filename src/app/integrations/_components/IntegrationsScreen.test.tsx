@@ -481,7 +481,7 @@ describe('IntegrationsScreen', () => {
       calendar = remote<CalendarConnection | null>(connection());
       render(<IntegrationsScreen />);
       await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
-      const dialog = screen.getByRole('dialog');
+      const dialog = screen.getByRole('alertdialog');
       await userEvent.click(within(dialog).getByRole('button', { name: 'Disconnect' }));
       expect(disconnectFn).toHaveBeenCalled();
       await waitFor(() =>
@@ -498,14 +498,14 @@ describe('IntegrationsScreen', () => {
       };
       render(<IntegrationsScreen />);
       await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
-      const dialog = screen.getByRole('dialog');
+      const dialog = screen.getByRole('alertdialog');
       await userEvent.click(within(dialog).getByRole('button', { name: 'Disconnect' }));
       await waitFor(() =>
         expect(
           screen.getByText('We couldn’t disconnect Google Calendar. Try again.'),
         ).toBeInTheDocument(),
       );
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     });
 
     /** Null is "not known" — a grant older than the widened consent. */
@@ -595,14 +595,14 @@ describe('IntegrationsScreen', () => {
       });
       render(<IntegrationsScreen />);
       await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
-      const dialog = screen.getByRole('dialog');
+      const dialog = screen.getByRole('alertdialog');
       await userEvent.click(within(dialog).getByRole('button', { name: 'Disconnect' }));
       await waitFor(() =>
         expect(screen.getByRole('status')).toHaveTextContent(
           'We couldn’t disconnect Google Calendar. Try again.',
         ),
       );
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     });
 
     /** The Disconnect button is removed by the commit that closes the modal. */
@@ -610,7 +610,7 @@ describe('IntegrationsScreen', () => {
       calendar = remote<CalendarConnection | null>(connection());
       const { rerender } = render(<IntegrationsScreen />);
       await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
-      const dialog = screen.getByRole('dialog');
+      const dialog = screen.getByRole('alertdialog');
       await userEvent.click(within(dialog).getByRole('button', { name: 'Disconnect' }));
       await waitFor(() => expect(disconnectFn).toHaveBeenCalled());
       calendar = remote<CalendarConnection | null>(null);

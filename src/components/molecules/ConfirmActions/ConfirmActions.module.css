@@ -1,0 +1,25 @@
+/* Modal.dc.html confirm: the error sits right above two equal buttons. */
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+/* An icon as well as colour, so the error doesn't rest on red alone (WCAG 1.4.1). */
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-medium);
+  line-height: var(--lh-p);
+  color: var(--text-danger);
+}
+.error > :first-child {
+  flex: none;
+}

@@ -28,6 +28,10 @@ type ModalShellProps = {
    */
   sheet?: SheetChrome;
   footer?: ReactNode;
+  /** A confirm: `alertdialog`, so it is announced as needing an answer. */
+  alert?: boolean;
+  /** The × is off (a confirm whose request is running). Centred modal only. */
+  closeDisabled?: boolean;
 };
 
 /**
@@ -46,6 +50,8 @@ export function ModalShell({
   children,
   sheet,
   footer,
+  alert = false,
+  closeDisabled = false,
 }: ModalShellProps) {
   const titleId = useId();
   const subId = useId();
@@ -71,7 +77,7 @@ export function ModalShell({
         <div className={styles.overlay} aria-hidden />
         <div
           ref={dialogRef}
-          role="dialog"
+          role={alert ? 'alertdialog' : 'dialog'}
           aria-modal="true"
           aria-labelledby={titleId}
           aria-describedby={sheet.caption ? subId : undefined}
@@ -117,14 +123,20 @@ export function ModalShell({
       <div className={styles.overlay} aria-hidden />
       <div
         ref={dialogRef}
-        role="dialog"
+        role={alert ? 'alertdialog' : 'dialog'}
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={subtitle ? subId : undefined}
         tabIndex={-1}
         className={cx(styles.dialog, styles[size])}
       >
-        <IconButton icon="close" aria-label="Close" className={styles.close} onClick={onClose} />
+        <IconButton
+          icon="close"
+          aria-label="Close"
+          className={styles.close}
+          onClick={onClose}
+          disabled={closeDisabled}
+        />
         <div className={cx(styles.header, icon && styles.withIcon)}>
           {icon && (
             <span className={cx(styles.icon, styles[`icon-${tone}`])}>

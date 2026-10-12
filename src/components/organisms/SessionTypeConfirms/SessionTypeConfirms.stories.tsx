@@ -39,7 +39,7 @@ const T = (over: Partial<OwnSessionType> = {}): OwnSessionType => ({
 // renders it in ModalShell.
 const renderShell = (s: ConfirmShell, body: ReactNode) => (
   <div
-    role="dialog"
+    role="alertdialog"
     aria-label={s.title}
     style={{
       maxWidth: 400,

@@ -78,16 +78,16 @@ describe('MentorProfileScreen — the owner’s photo', () => {
     const badge = screen.getByRole('button', { name: 'Photo options' });
     await user.click(badge);
     await user.click(screen.getByRole('menuitem', { name: /Remove photo/ }));
-    let dialog = screen.getByRole('dialog', { name: 'Remove your photo?' });
+    let dialog = screen.getByRole('alertdialog', { name: 'Remove your photo?' });
     expect(dialog).toHaveTextContent('Your initials show instead until you add a new one.');
     await user.click(screen.getByRole('button', { name: 'Keep it' }));
     expect(removePhoto).not.toHaveBeenCalled();
     await user.click(badge);
     await user.click(screen.getByRole('menuitem', { name: /Remove photo/ }));
-    dialog = screen.getByRole('dialog', { name: 'Remove your photo?' });
+    dialog = screen.getByRole('alertdialog', { name: 'Remove your photo?' });
     await user.click(screen.getByRole('button', { name: 'Remove photo' }));
     expect(removePhoto).toHaveBeenCalled();
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
   });
 
   it('not in "View as mentee": no photo control at all', async () => {
@@ -156,6 +156,6 @@ describe('MentorProfileScreen — the owner’s photo', () => {
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(removePhoto).toHaveBeenCalled();
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
   });
 });

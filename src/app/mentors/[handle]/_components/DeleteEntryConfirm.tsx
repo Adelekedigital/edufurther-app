@@ -1,9 +1,7 @@
 'use client';
 
-import { Button } from '@/components/atoms/Button/Button';
-import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
+import { ConfirmDialog } from '@/components/templates/ConfirmDialog/ConfirmDialog';
 import { useAwardEdit, useEducationEdit } from '@/lib/api/data/profileEntries';
-import styles from './MentorProfileScreen.module.css';
 
 type Props = {
   kind: 'award' | 'education';
@@ -24,32 +22,21 @@ export function DeleteEntryConfirm({ kind, id, userId, onClose, onDeleted }: Pro
   const awards = useAwardEdit(userId);
   const education = useEducationEdit(userId);
   const edit = kind === 'award' ? awards : education;
-  const busy = edit.removing;
   const noun = kind === 'award' ? 'award' : 'education';
   const del = () =>
     kind === 'award' ? awards.removeAward(id, onDeleted) : education.removeEducation(id, onDeleted);
   return (
-    <ModalShell
+    <ConfirmDialog
       title={`Delete this ${noun}?`}
       subtitle="This can’t be undone."
       icon="delete"
-      tone="danger"
-      size="sm"
-      onClose={onClose}
-    >
-      {edit.error && (
-        <p role="alert" className={styles.confirmError}>
-          {edit.error}
-        </p>
-      )}
-      <div className={styles.confirmButtons}>
-        <Button size="large" variant="secondary-outlined" fullWidth onClick={onClose}>
-          Keep it
-        </Button>
-        <Button size="large" variant="destructive" fullWidth onClick={del} busy={busy}>
-          {busy ? 'Deleting…' : `Delete ${noun}`}
-        </Button>
-      </div>
-    </ModalShell>
+      keepLabel="Keep it"
+      confirmLabel={`Delete ${noun}`}
+      pendingLabel="Deleting…"
+      pending={edit.removing}
+      error={edit.error}
+      onKeep={onClose}
+      onConfirm={del}
+    />
   );
 }

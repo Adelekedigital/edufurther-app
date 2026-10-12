@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { SessionTypeWizard } from '@/components/organisms/SessionTypeWizard/SessionTypeWizard';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
+import { ConfirmDialog } from '@/components/templates/ConfirmDialog/ConfirmDialog';
 import { useTopics } from '@/lib/api/data/mentors';
 import {
   autoIcon,
@@ -29,7 +30,6 @@ import { useOnline } from '@/lib/utils/useOnline';
 import { useAppShell } from '../../_shell/useAppShell';
 import { mentorGate, SESSION_TYPES_GATE } from '../../_shell/MentorGate';
 import {
-  DangerConfirm,
   DefaultsModal,
   PublishedModal,
   SavedModal,
@@ -203,25 +203,27 @@ export function SessionTypeFormScreen({
 
       {modal?.kind === 'discard' && (
         // Copy confirmed by design (reply 2026-09-29, #5).
-        <DangerConfirm
+        <ConfirmDialog
           title={edit ? 'Discard your changes?' : 'Discard this session type?'}
           subtitle={
             edit
               ? 'Your changes to this session type won’t be saved.'
               : 'What you’ve entered so far won’t be saved.'
           }
-          keep="Keep editing"
-          confirm="Discard"
+          icon="delete"
+          keepLabel="Keep editing"
+          confirmLabel="Discard"
           onKeep={close}
           onConfirm={toList}
         />
       )}
       {modal?.kind === 'deleteQuestion' && (
-        <DangerConfirm
+        <ConfirmDialog
           title="Delete this question?"
           subtitle={`“${d.draft.questions[modal.index]?.text ?? ''}” will be removed from this session type.`}
-          keep="Keep it"
-          confirm="Delete"
+          icon="delete"
+          keepLabel="Keep it"
+          confirmLabel="Delete"
           onKeep={close}
           onConfirm={() => {
             update({ questions: d.draft.questions.filter((_, i) => i !== modal.index) });

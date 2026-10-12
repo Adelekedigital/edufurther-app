@@ -41,7 +41,7 @@ function Page({ dirty }: { dirty: boolean }) {
     </AppShell>
   );
 }
-const dialog = () => screen.queryByRole('dialog', { name: 'Discard your changes?' });
+const dialog = () => screen.queryByRole('alertdialog', { name: 'Discard your changes?' });
 const goOn = () => screen.getByRole('link', { name: 'Go on' });
 
 describe('in-app links while a form has unsaved changes', () => {

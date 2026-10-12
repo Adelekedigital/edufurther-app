@@ -123,7 +123,7 @@ describe('MentorProfileScreen — the owner edits their profile', () => {
       await user.click(screen.getByRole('button', { name: 'Edit About' }));
       await user.type(screen.getByRole('textbox', { name: 'About' }), ' More.');
       await user.click(screen.getByRole('tab', { name: /Reviews/ }));
-      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(screen.queryByRole('alertdialog')).toBeNull();
       expect(replace).toHaveBeenCalledWith(
         expect.stringContaining('tab=reviews'),
         expect.anything(),
@@ -147,7 +147,7 @@ describe('MentorProfileScreen — the owner edits their profile', () => {
       h.search = new URLSearchParams('tab=reviews');
       rerender(<MentorProfileScreen handle="gbenga" />);
       await user.click(screen.getAllByRole('link', { name: /Bookings/ })[0]!);
-      expect(screen.getByRole('dialog', { name: 'Discard your changes?' })).toHaveTextContent(
+      expect(screen.getByRole('alertdialog', { name: 'Discard your changes?' })).toHaveTextContent(
         'your About section',
       );
     });

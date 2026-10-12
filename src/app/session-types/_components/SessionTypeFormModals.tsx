@@ -9,31 +9,6 @@ import type { useWeeklyHours } from '@/lib/api/data/weeklyHours';
 import type { DayHours } from '@/lib/utils/sessionTypeDraft';
 import styles from './SessionTypesScreen.module.css';
 
-type Buttons = { keep: string; confirm: string; onKeep: () => void; onConfirm: () => void };
-
-/** A destructive confirm (project rule: a danger modal). */
-export function DangerConfirm(p: { title: string; subtitle: string } & Buttons) {
-  return (
-    <ModalShell
-      title={p.title}
-      subtitle={p.subtitle}
-      icon="delete"
-      tone="danger"
-      size="sm"
-      onClose={p.onKeep}
-    >
-      <div className={styles.buttons}>
-        <Button size="large" variant="secondary-outlined" fullWidth onClick={p.onKeep}>
-          {p.keep}
-        </Button>
-        <Button size="large" variant="destructive" fullWidth onClick={p.onConfirm}>
-          {p.confirm}
-        </Button>
-      </div>
-    </ModalShell>
-  );
-}
-
 export function DefaultsModal(p: {
   defaults: MentorDefaults;
   saving: boolean;

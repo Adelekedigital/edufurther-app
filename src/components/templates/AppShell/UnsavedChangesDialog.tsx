@@ -1,8 +1,6 @@
 'use client';
 
-import { Button } from '@/components/atoms/Button/Button';
-import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
-import styles from './AppShell.module.css';
+import { ConfirmDialog } from '@/components/templates/ConfirmDialog/ConfirmDialog';
 
 /**
  * Leaving a form with unsaved changes, by an in-app link or Logout. The
@@ -24,22 +22,14 @@ export function UnsavedChangesDialog({
   onDiscard: () => void;
 }) {
   return (
-    <ModalShell
+    <ConfirmDialog
       title="Discard your changes?"
       subtitle={`Your changes to ${what} won’t be saved.`}
       icon="delete"
-      tone="danger"
-      size="sm"
-      onClose={onKeep}
-    >
-      <div className={styles.confirmButtons}>
-        <Button size="large" variant="secondary-outlined" fullWidth onClick={onKeep}>
-          Keep editing
-        </Button>
-        <Button size="large" variant="destructive" fullWidth onClick={onDiscard}>
-          {logout ? 'Discard and log out' : 'Discard'}
-        </Button>
-      </div>
-    </ModalShell>
+      keepLabel="Keep editing"
+      confirmLabel={logout ? 'Discard and log out' : 'Discard'}
+      onKeep={onKeep}
+      onConfirm={onDiscard}
+    />
   );
 }

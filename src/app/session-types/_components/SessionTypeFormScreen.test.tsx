@@ -151,9 +151,9 @@ describe('SessionTypeFormScreen', () => {
     await user.type(screen.getByRole('textbox', { name: 'Session name' }), 'Mock');
     await user.click(screen.getByRole('button', { name: 'Back to session types' }));
     expect(push).not.toHaveBeenCalled();
-    const dialog = screen.getByRole('dialog', { name: 'Discard this session type?' });
+    const dialog = screen.getByRole('alertdialog', { name: 'Discard this session type?' });
     await user.click(within(dialog).getByRole('button', { name: 'Keep editing' }));
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
   });
 
   it('publishing sends the questions with the type, once, and opens the published modal', async () => {
@@ -198,7 +198,7 @@ describe('SessionTypeFormScreen', () => {
     render(<SessionTypeFormScreen template="sop-review" />);
     await user.click(next(/Continue to intake questions/));
     await user.click(screen.getByRole('button', { name: 'Delete question 1' }));
-    const dialog = screen.getByRole('dialog', { name: 'Delete this question?' });
+    const dialog = screen.getByRole('alertdialog', { name: 'Delete this question?' });
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
     expect(
       screen
@@ -213,7 +213,7 @@ describe('SessionTypeFormScreen', () => {
     await user.click(next(/Continue to intake questions/));
     await user.click(screen.getByRole('button', { name: 'Edit question 2' }));
     await user.click(screen.getByRole('button', { name: 'Delete question 1' }));
-    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }));
+    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }));
     const text = screen.getByRole('textbox', { name: 'Question' });
     await user.clear(text);
     await user.type(text, 'Upload your latest draft');
@@ -518,7 +518,7 @@ describe('SessionTypeFormScreen — review of #60', () => {
     await user.click(screen.getByRole('button', { name: 'Back to session types' }));
     // Still an unsaved change: it asks before leaving.
     expect(push).not.toHaveBeenCalled();
-    expect(screen.getByRole('dialog', { name: 'Discard this session type?' })).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog', { name: 'Discard this session type?' })).toBeInTheDocument();
   });
 
   it('new hours overlapping hours kept in another zone can’t be saved, and it says which zone', async () => {

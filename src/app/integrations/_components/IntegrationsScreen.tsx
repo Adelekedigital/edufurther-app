@@ -10,7 +10,7 @@ import { Notice } from '@/components/molecules/Notice/Notice';
 import { IntegrationGroup } from '@/components/organisms/IntegrationGroup/IntegrationGroup';
 import { VideoSection, type Provider } from '@/components/organisms/VideoSection/VideoSection';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
-import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
+import { ConfirmDialog } from '@/components/templates/ConfirmDialog/ConfirmDialog';
 import {
   useCalendarConnection,
   useDisconnectCalendar,
@@ -460,67 +460,39 @@ export function IntegrationsScreen() {
     <AppShell active="Integration" nav={nav} chrome={chrome} account={account} offline={!online}>
       {body}
       {confirmDisconnect && (
-        <ModalShell
+        <ConfirmDialog
           title="Disconnect Google Calendar?"
           // The design adds "New bookings move to EduFurther video if you use
           // Google Meet." That is not true here: Meet is never gated on this
           // connection, so disconnecting changes nothing about it.
           subtitle="We’ll stop checking when you’re busy, so those times can be booked again."
           icon="link_off"
-          tone="danger"
-          size="sm"
-          onClose={() => {
-            if (!disconnect.isPending) setConfirmDisconnect(false);
+          keepLabel="Stay connected"
+          confirmLabel="Disconnect"
+          pending={disconnect.isPending}
+          error={disconnect.error?.message}
+          onKeep={() => setConfirmDisconnect(false)}
+          onConfirm={() => {
+            // The control that opened this modal is removed by the same
+            // commit that closes it, so the focus trap would hand focus
+            // back to a node that is gone (failure log #32).
+            takeFocusBack.current = true;
+            void disconnect.disconnect().then(
+              () => {
+                setConfirmDisconnect(false);
+                announce('Google Calendar disconnected.');
+              },
+              (e: { message?: string }) => {
+                // Stays open: the error belongs beside the button that
+                // caused it, not on a page the modal is covering. Said
+                // out loud too — focus is on a button that merely stops
+                // being busy, which sounds like nothing happened.
+                takeFocusBack.current = false;
+                announce(e?.message ?? 'We couldn’t disconnect Google Calendar. Try again.');
+              },
+            );
           }}
-        >
-          <div className={styles.confirm}>
-            {disconnect.error && (
-              <p role="alert" className={styles.confirmError}>
-                <Icon name="error" size={16} />
-                {disconnect.error.message}
-              </p>
-            )}
-            <div className={styles.confirmActions}>
-              <Button
-                size="large"
-                variant="secondary-outlined"
-                fullWidth
-                disabled={disconnect.isPending}
-                onClick={() => setConfirmDisconnect(false)}
-              >
-                Stay connected
-              </Button>
-              <Button
-                size="large"
-                variant="destructive"
-                fullWidth
-                busy={disconnect.isPending}
-                onClick={() => {
-                  // The control that opened this modal is removed by the same
-                  // commit that closes it, so the focus trap would hand focus
-                  // back to a node that is gone (failure log #32).
-                  takeFocusBack.current = true;
-                  void disconnect.disconnect().then(
-                    () => {
-                      setConfirmDisconnect(false);
-                      announce('Google Calendar disconnected.');
-                    },
-                    (e: { message?: string }) => {
-                      // Stays open: the error belongs beside the button that
-                      // caused it, not on a page the modal is covering. Said
-                      // out loud too — focus is on a button that merely stops
-                      // being busy, which sounds like nothing happened.
-                      takeFocusBack.current = false;
-                      announce(e?.message ?? 'We couldn’t disconnect Google Calendar. Try again.');
-                    },
-                  );
-                }}
-              >
-                Disconnect
-              </Button>
-            </div>
-          </div>
-        </ModalShell>
+        />
       )}
       <LiveRegion message={announcement} />
     </AppShell>
