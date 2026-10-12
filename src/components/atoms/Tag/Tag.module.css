@@ -83,7 +83,7 @@
 /* Bookings.dc.html status pills: a past session's outcome, and how long a
    request has left (`r.wBg`). Same colours as `free`/`mine` for success, but a
    different radius and padding — so a separate class, not a reuse. The
-   markup sets no line-height. */
+   markup sets no line-height, so it inherits the line's. */
 .success,
 .warning,
 .danger,
@@ -92,7 +92,7 @@
   padding: 2px var(--space-2);
   border-radius: var(--radius-full);
   font-weight: var(--weight-semibold);
-  line-height: normal;
+  line-height: inherit;
 }
 .pending {
   background: var(--ink-100);
@@ -121,5 +121,5 @@
   border-radius: var(--radius-md);
   background: var(--ink-50);
   color: var(--ink-700);
-  line-height: normal;
+  line-height: inherit;
 }
