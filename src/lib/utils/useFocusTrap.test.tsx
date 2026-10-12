@@ -80,3 +80,28 @@ describe('stacked dialogs', () => {
     expect(document.activeElement).toBe(inner);
   });
 });
+
+describe('first focus', () => {
+  it('goes to the control marked data-autofocus, and back to the opener on close', () => {
+    function Host({ open }: { open: boolean }) {
+      return (
+        <>
+          <button type="button">opener</button>
+          {open && (
+            <Dialog name="confirm" onClose={vi.fn()}>
+              <button type="button" data-autofocus>
+                Keep it
+              </button>
+            </Dialog>
+          )}
+        </>
+      );
+    }
+    const { rerender } = render(<Host open={false} />);
+    screen.getByRole('button', { name: 'opener' }).focus();
+    rerender(<Host open />);
+    expect(screen.getByRole('button', { name: 'Keep it' })).toHaveFocus();
+    rerender(<Host open={false} />);
+    expect(screen.getByRole('button', { name: 'opener' })).toHaveFocus();
+  });
+});

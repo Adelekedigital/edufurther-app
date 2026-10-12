@@ -23,6 +23,14 @@
   background: var(--red-50);
   color: var(--red-500);
 }
+/* Off: a confirm's × while its request runs, a sheet's Back mid-submit. Not
+   drawn by the DS; dimmed like the Button atom's disabled text, no hover. */
+.button:disabled,
+.button:disabled:hover {
+  background: transparent;
+  color: var(--text-disabled);
+  cursor: not-allowed;
+}
 .button:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
