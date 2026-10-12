@@ -16,7 +16,12 @@ type CardStyle = { tone?: CardTone; padding?: CardPadding; className?: string };
  * next/link, a <label> wrapping a radio). Layout stays the caller's.
  */
 export function cardClass({ tone = 'default', padding = 'lg', className }: CardStyle = {}) {
-  return cx(styles.card, tone !== 'default' && styles[tone], padding !== 'none' && styles[padding], className);
+  return cx(
+    styles.card,
+    tone !== 'default' && styles[tone],
+    padding !== 'none' && styles[padding],
+    className,
+  );
 }
 
 type CardProps = CardStyle &

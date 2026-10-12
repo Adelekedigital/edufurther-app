@@ -4,12 +4,8 @@
   flex-wrap: wrap;
   align-items: flex-start;
   gap: var(--space-4);
-  padding: var(--space-5);
-  border: var(--border-hairline) solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  background: var(--surface-card);
 }
-.hidden {
+.row.hidden {
   background: var(--ink-50);
 }
 .tile {
@@ -108,9 +104,6 @@
 }
 @media (max-width: 767px) {
   /* Design phone rule: --space-5 card padding becomes --space-4. */
-  .row {
-    padding: var(--space-4);
-  }
 }
 /* Progress or success under the row (Duplicate): no error red. */
 .messageInfo {

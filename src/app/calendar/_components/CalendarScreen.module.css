@@ -39,9 +39,6 @@
   flex-direction: column;
   gap: var(--space-5);
   padding: var(--space-4) var(--space-5);
-  border: var(--border-hairline) solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  background: var(--surface-card);
 }
 .settings > * + * {
   padding-top: var(--space-4);
@@ -63,10 +60,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-5);
-  border: var(--border-hairline) solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  background: var(--surface-card);
   box-sizing: border-box;
 }
 .cardTitle {
@@ -180,9 +173,6 @@
   align-items: center;
   gap: var(--space-4);
   padding: var(--space-4) var(--space-5);
-  border: var(--border-hairline) solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  background: var(--surface-card);
   box-shadow: var(--shadow-menu);
 }
 .saveMsg {
@@ -234,7 +224,6 @@
   }
   .monthCard {
     max-width: none;
-    padding: var(--space-4);
   }
   .panel,
   .busy {

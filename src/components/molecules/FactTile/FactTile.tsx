@@ -2,6 +2,7 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { cx } from '@/lib/utils/cx';
 import styles from './FactTile.module.css';
+import { Card } from '@/components/atoms/Card/Card';
 
 type FactTileProps = {
   icon: IconName;
@@ -14,7 +15,7 @@ type FactTileProps = {
 /** A short fact with a round icon (Mentor Profile.dc.html: Background). */
 export function FactTile({ icon, tone, label, value }: FactTileProps) {
   return (
-    <div className={styles.tile}>
+    <Card padding="md" className={styles.tile}>
       <span className={cx(styles.disc, styles[tone])}>
         <Icon name={icon} size={20} />
       </span>
@@ -22,6 +23,6 @@ export function FactTile({ icon, tone, label, value }: FactTileProps) {
         <span className={styles.label}>{label}</span>
         <span className={styles.value}>{value}</span>
       </span>
-    </div>
+    </Card>
   );
 }

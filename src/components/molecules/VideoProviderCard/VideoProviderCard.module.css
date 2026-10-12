@@ -3,16 +3,12 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-4);
-  border: var(--border-hairline) solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  background: var(--surface-card);
   cursor: pointer;
 }
 .card:hover:not(.on) {
   border-color: var(--border-default);
 }
-.on {
+.card.on {
   border-color: var(--blue-500);
   background: var(--blue-50);
 }

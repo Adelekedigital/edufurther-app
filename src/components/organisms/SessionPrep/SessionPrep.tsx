@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/atoms/Button/Button';
+import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
@@ -20,6 +21,9 @@ type AnswersProps = {
   onRetryAnswers?: () => void;
   onOpenFile?: (file: AnswerFile) => void;
 };
+
+// Its padding stays 20px on phones (Session Join.dc.html), so it pads itself.
+const prepCard = cardClass({ padding: 'none', className: styles.card });
 
 /**
  * Whether there is anything to put in the answers card or sheet.
@@ -98,20 +102,20 @@ export function SessionPrepAside({ answersTitle, guide, ...answers }: AsideProps
     <aside className={styles.aside} aria-label="Getting ready">
       {loading ? (
         // Ours: the card's shape while the answers load (the design draws none).
-        <section className={styles.card} aria-busy="true">
+        <section className={prepCard} aria-busy="true">
           <Skeleton width="55%" height="18px" />
           <Skeleton width="80%" height="12px" />
           <Skeleton width="100%" height="40px" />
         </section>
       ) : (
         hasAnswersToShow(answers) && (
-          <section className={styles.card}>
+          <section className={prepCard}>
             <h2 className={styles.heading}>{answersTitle}</h2>
             <PrepAnswers {...answers} />
           </section>
         )
       )}
-      <section className={styles.card}>
+      <section className={prepCard}>
         <h2 className={styles.heading}>Quick guide for a rewarding session</h2>
         <PrepGuide guide={guide} />
       </section>
@@ -127,7 +131,7 @@ export function SessionPrepAside({ answersTitle, guide, ...answers }: AsideProps
 export function SessionPrepAsideSkeleton() {
   return (
     <div className={styles.aside} aria-hidden>
-      <div className={styles.card}>
+      <div className={prepCard}>
         <Skeleton width="70%" height="20px" />
         {[0, 1, 2].map((i) => (
           <div key={i} className={styles.tip}>

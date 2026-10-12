@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
+import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { BlockedDatesPanel } from '@/components/molecules/BlockedDatesPanel/BlockedDatesPanel';
@@ -390,7 +391,10 @@ export function CalendarScreen() {
 
         {!busy && (
           <>
-            <section aria-label="Session settings" className={styles.settings}>
+            <section
+              aria-label="Session settings"
+              className={cardClass({ padding: 'none', className: styles.settings })}
+            >
               <SettingSummaryRow
                 icon="date_range"
                 title="Scheduling window"
@@ -457,7 +461,10 @@ export function CalendarScreen() {
                   )
                 }
               />
-              <section aria-labelledby={monthTitleId} className={styles.monthCard}>
+              <section
+                aria-labelledby={monthTitleId}
+                className={cardClass({ className: styles.monthCard })}
+              >
                 <div className={styles.monthHead}>
                   <h2 id={monthTitleId} className={styles.cardTitle}>
                     Month at a glance

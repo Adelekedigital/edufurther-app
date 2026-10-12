@@ -2,6 +2,7 @@ import { useEffect, useId, useRef } from 'react';
 import { cx } from '@/lib/utils/cx';
 import { formatShortDate } from '@/lib/utils/format';
 import { Badge } from '@/components/atoms/Badge/Badge';
+import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Switch } from '@/components/atoms/Switch/Switch';
 import type { OwnSessionType } from '@/types/sessionType';
@@ -102,7 +103,10 @@ export function SessionTypeRow({
     { icon: 'sell' as const, ...topics },
   ];
   return (
-    <article className={cx(styles.row, !t.isLive && styles.hidden)} aria-labelledby={nameId}>
+    <article
+      className={cardClass({ className: cx(styles.row, !t.isLive && styles.hidden) })}
+      aria-labelledby={nameId}
+    >
       <span className={styles.tile}>
         <Icon name={t.icon} size={20} />
       </span>

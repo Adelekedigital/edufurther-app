@@ -5,10 +5,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-5);
-  border: var(--border-hairline) solid var(--blue-100);
-  border-radius: var(--radius-xl);
-  background: var(--blue-50);
 }
 
 .eyebrow {
@@ -65,7 +61,7 @@
 }
 
 /* Over: nothing to act on, so it stops competing with the rows around it. */
-.expired {
+.card.expired {
   border-color: var(--ink-200);
   background: var(--surface-muted);
 }
@@ -74,8 +70,3 @@
 }
 
 /* Handoff §7.3 phone rules: the hero's `--space-5` becomes `--space-4`. */
-@media (max-width: 767px) {
-  .card {
-    padding: var(--space-4);
-  }
-}

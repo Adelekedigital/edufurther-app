@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
+import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
@@ -417,7 +418,7 @@ export function IntegrationsScreen() {
             }}
           />
         ) : (
-          <section className={styles.sectionError}>
+          <section className={cardClass({ padding: 'md', className: styles.sectionError })}>
             <h2 className={styles.sectionErrorTitle}>Video for sessions</h2>
             <p className={styles.sectionErrorBody}>
               <Icon name="error" size={16} />

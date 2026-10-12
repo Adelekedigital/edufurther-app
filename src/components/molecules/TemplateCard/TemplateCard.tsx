@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import styles from './TemplateCard.module.css';
+import { cardClass } from '@/components/atoms/Card/Card';
 
 type TemplateCardProps = {
   href: string;
@@ -17,7 +18,11 @@ type TemplateCardProps = {
  */
 export function TemplateCard({ href, icon, name, hint }: TemplateCardProps) {
   return (
-    <Link href={href} prefetch={false} className={styles.card}>
+    <Link
+      href={href}
+      prefetch={false}
+      className={cardClass({ padding: 'md', className: styles.card })}
+    >
       <Icon name={icon} size={22} className={styles.icon} />
       <span className={styles.name}>{name}</span>
       <span className={styles.hint}>{hint}</span>

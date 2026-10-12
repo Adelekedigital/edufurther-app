@@ -8,9 +8,6 @@
 }
 
 .card {
-  background: var(--white);
-  border: var(--border-hairline) solid var(--ink-200);
-  border-radius: var(--radius-xl);
   padding: var(--space-5);
   display: flex;
   flex-direction: column;

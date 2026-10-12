@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/atoms/Button/Button';
+import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import {
@@ -95,7 +96,12 @@ export function SuggestionNotice({
   }, [state]);
 
   return (
-    <section ref={cardRef} tabIndex={-1} aria-label={EYEBROW[state]} className={cx(styles.card, styles[state])}>
+    <section
+      ref={cardRef}
+      tabIndex={-1}
+      aria-label={EYEBROW[state]}
+      className={cardClass({ tone: 'info', className: cx(styles.card, styles[state]) })}
+    >
       {/* Outside the active branch on purpose: the pill's own region goes with
           the pill, so a hold lapsing was announced to nobody — the heading and
           the button changed in silence. This one survives the change. */}

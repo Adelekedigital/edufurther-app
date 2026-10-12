@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
+import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { formatDay, formatTime } from '@/lib/utils/format';
@@ -80,7 +81,11 @@ export function FirstMenteesCard(p: FirstMenteesCardProps) {
     : 'Mentees see you as a new mentor';
 
   return (
-    <section className={styles.card} aria-labelledby={headingId} data-first-mentees>
+    <section
+      className={cardClass({ tone: 'success', className: styles.card })}
+      aria-labelledby={headingId}
+      data-first-mentees
+    >
       <div className={styles.row}>
         <span className={styles.icon} aria-hidden>
           <Icon name={mentee ? 'handshake' : 'campaign'} size={22} />

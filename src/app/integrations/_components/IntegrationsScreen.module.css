@@ -56,10 +56,6 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-3);
-  padding: var(--space-4);
-  border: var(--border-hairline) solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  background: var(--surface-card);
 }
 .sectionErrorTitle {
   margin: 0;

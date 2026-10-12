@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
+import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { RowMenu, type RowMenuItem } from '@/components/molecules/RowMenu/RowMenu';
 import { cx } from '@/lib/utils/cx';
@@ -67,7 +68,10 @@ export function NextSessionCard({
     b.side === 'mentee' ? 'Your note' : `Note from ${b.other.firstName}`;
 
   return (
-    <section aria-label="Next session" className={styles.card}>
+    <section
+      aria-label="Next session"
+      className={cardClass({ tone: 'info', className: styles.card })}
+    >
       <div className={styles.top}>
         <span className={styles.eyebrow}>Next session</span>
         <span className={cx(styles.when, when.live && styles.live)}>
