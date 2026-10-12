@@ -2,8 +2,10 @@ import { useEffect, useId, useRef } from 'react';
 import { cx } from '@/lib/utils/cx';
 import { formatShortDate } from '@/lib/utils/format';
 import { Badge } from '@/components/atoms/Badge/Badge';
+import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Switch } from '@/components/atoms/Switch/Switch';
+import { Tag } from '@/components/atoms/Tag/Tag';
 import type { OwnSessionType } from '@/types/sessionType';
 import { CopyLinkButton } from '../CopyLinkButton/CopyLinkButton';
 import { RowMenu } from '../RowMenu/RowMenu';
@@ -102,7 +104,10 @@ export function SessionTypeRow({
     { icon: 'sell' as const, ...topics },
   ];
   return (
-    <article className={cx(styles.row, !t.isLive && styles.hidden)} aria-labelledby={nameId}>
+    <article
+      className={cardClass({ className: cx(styles.row, !t.isLive && styles.hidden) })}
+      aria-labelledby={nameId}
+    >
       <span className={styles.tile}>
         <Icon name={t.icon} size={20} />
       </span>
@@ -144,7 +149,12 @@ export function SessionTypeRow({
         )}
         <ul className={styles.facts}>
           {facts.map((f) => (
-            <li key={f.icon} className={cx(styles.fact, f.icon === 'sell' && styles.factTopics)}>
+            <Tag
+              key={f.icon}
+              as="li"
+              tone="fact"
+              className={cx(styles.fact, f.icon === 'sell' && styles.factTopics)}
+            >
               <Icon name={f.icon} size={14} className={styles.factIcon} />
               {/* The hover title sits on the visible text: on the li it would become
                   the item's name and the list could be read twice. */}
@@ -156,7 +166,7 @@ export function SessionTypeRow({
                 {f.label}
               </span>
               {f.full && <span className="sr-only">{f.full}</span>}
-            </li>
+            </Tag>
           ))}
         </ul>
         {message && (

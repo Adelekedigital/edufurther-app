@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { useId } from 'react';
+import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import styles from './ProfileStrengthCard.module.css';
 
@@ -25,7 +26,11 @@ export function ProfileStrengthCard({ id: cardId, percent, tips }: ProfileStreng
   const id = useId();
   const value = Math.max(0, Math.min(100, Math.round(percent)));
   return (
-    <section id={cardId} className={styles.card} aria-labelledby={`${id}-h`}>
+    <section
+      id={cardId}
+      className={cardClass({ className: styles.card })}
+      aria-labelledby={`${id}-h`}
+    >
       <div className={styles.head}>
         <h2 id={`${id}-h`} className={styles.title}>
           Profile strength

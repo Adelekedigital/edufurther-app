@@ -92,6 +92,19 @@ export const TagsAndIcons: Story = {
         <Icon name="bolt" />
         <IconButton icon="close" aria-label="Clear search" />
       </div>
+      <div style={row}>
+        <Tag tone="success">Completed</Tag>
+        <Tag tone="danger">Cancelled</Tag>
+        <Tag tone="pending">
+          <Icon name="schedule" size={14} />
+          Respond within 6h
+        </Tag>
+        <Tag tone="warning">
+          <Icon name="schedule" size={14} />
+          Respond within 3h
+        </Tag>
+        <Tag tone="fact">60 min</Tag>
+      </div>
     </div>
   ),
 };

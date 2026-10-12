@@ -1,0 +1,28 @@
+/* The drawn card surface (Mentor Profile, Calendar v2, Session Types,
+   Integrations .dc.html): 1px --ink-200, --radius-xl, white. */
+.card {
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}
+/* Callout cards: NextSessionCard, SuggestionNotice (blue); FirstMenteesCard (green). */
+.info {
+  border-color: var(--blue-100);
+  background: var(--blue-50);
+}
+.success {
+  border-color: var(--green-100);
+  background: var(--green-50);
+}
+.md {
+  padding: var(--space-4);
+}
+.lg {
+  padding: var(--space-5);
+}
+/* AppShell.dc.html phone rule: a card's --space-5 padding becomes --space-4. */
+@media (max-width: 767px) {
+  .lg {
+    padding: var(--space-4);
+  }
+}

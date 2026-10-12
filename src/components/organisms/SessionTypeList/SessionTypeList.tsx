@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/atoms/Button/Button';
+import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Tag } from '@/components/atoms/Tag/Tag';
 import { SessionTypeOwnerFooter } from '@/components/molecules/SessionTypeOwnerFooter/SessionTypeOwnerFooter';
@@ -43,7 +44,11 @@ export function SessionTypeList(p: SessionTypeListProps) {
   return (
     <ul className={styles.grid}>
       {cards.map((s) => (
-        <li key={s.id} className={styles.card} data-session-type-id={s.id}>
+        <li
+          key={s.id}
+          className={cardClass({ padding: 'none', className: styles.card })}
+          data-session-type-id={s.id}
+        >
           <div className={styles.top}>
             {s.category ? <Tag tone="info">{s.category}</Tag> : <span />}
             <span className={styles.price}>Free</span>

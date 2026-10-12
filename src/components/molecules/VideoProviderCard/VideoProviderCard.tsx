@@ -4,6 +4,7 @@ import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { Radio } from '@/components/atoms/Radio/Radio';
 import { cx } from '@/lib/utils/cx';
 import styles from './VideoProviderCard.module.css';
+import { cardClass } from '@/components/atoms/Card/Card';
 
 type VideoProviderCardProps = {
   /** Shared across the group, so the browser gives arrow keys and one tab stop. */
@@ -52,7 +53,9 @@ export function VideoProviderCard({
   recommended,
 }: VideoProviderCardProps) {
   return (
-    <label className={cx(styles.card, checked && styles.on)}>
+    <label
+      className={cardClass({ padding: 'md', className: cx(styles.card, checked && styles.on) })}
+    >
       <span className={styles.head}>
         <span aria-hidden className={cx(styles.tile, styles[tone])}>
           <Icon name={icon} size={22} />

@@ -1,4 +1,5 @@
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { Tag } from '@/components/atoms/Tag/Tag';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { cx } from '@/lib/utils/cx';
 import styles from './DeadlinePill.module.css';
@@ -23,9 +24,9 @@ type DeadlinePillProps = {
  */
 export function DeadlinePill({ icon, children, urgent, className }: DeadlinePillProps) {
   return (
-    <span className={cx(styles.badge, urgent && styles.urgent, className)}>
+    <Tag tone={urgent ? 'warning' : 'pending'} className={cx(styles.pill, className)}>
       <Icon name={icon} size={14} />
       {children}
-    </span>
+    </Tag>
   );
 }
