@@ -7,7 +7,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
+    "lint": "eslint . && node scripts/check-css.mjs",
+    "lint:css": "node scripts/check-css.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "gen:api": "openapi-typescript openapi/openapi.json -o src/lib/api/generated/schema.ts",
@@ -84,6 +85,7 @@
     "playwright": "^1.63.0",
     "prettier": "^3.9.9",
     "storybook": "^10.6.0",
+    "stylelint": "17.15.0",
     "typescript": "^5.9.3",
     "vite": "^8.3.1",
     "vitest": "^5.0.2"

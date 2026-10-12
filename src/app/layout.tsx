@@ -6,6 +6,7 @@ import type { SessionState } from '@/lib/vendor/supabase/browser';
 import { fontVariables } from './fonts';
 import { Providers } from './providers';
 import '@/styles/globals.css';
+import { BRAND_BLUE } from '@/styles/brand';
 
 export const metadata: Metadata = {
   title: { default: 'EduFurther', template: '%s · EduFurther' },
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0064ff',
+  themeColor: BRAND_BLUE,
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',

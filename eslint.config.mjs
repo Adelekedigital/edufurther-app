@@ -9,6 +9,21 @@ const config = [
     files: ['src/**/*.{ts,tsx,js,jsx,mjs}', 'scripts/**/*.{js,mjs}'],
     rules: { 'max-lines': ['error', { max: 1000, skipComments: true, skipBlankLines: true }] },
   },
+  // No raw hex in pages either (audit item 3): check-boundaries covers
+  // components; a colour is defined only under src/styles.
+  {
+    files: ['src/app/**/*.{ts,tsx}'],
+    ignores: ['src/app/api/mock/**', '**/*.test.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Literal[value=/^#[0-9a-fA-F]{3,8}$/]',
+          message: 'Raw hex colour: use a token, or src/styles/brand.ts where CSS variables cannot reach.',
+        },
+      ],
+    },
+  },
 ];
 
 export default config;
