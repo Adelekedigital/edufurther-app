@@ -98,21 +98,21 @@ describe('MentorProfileScreen — scholarships and awards', () => {
     await user.click(
       screen.getByRole('button', { name: new RegExp(`^Delete ${assistantship.title}`) }),
     );
-    const confirm = screen.getByRole('dialog', { name: 'Delete this award?' });
+    const confirm = screen.getByRole('alertdialog', { name: 'Delete this award?' });
     expect(confirm).toHaveAccessibleDescription('This can’t be undone.');
     await user.click(within(confirm).getByRole('button', { name: 'Keep it' }));
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
     expect(removeAward).not.toHaveBeenCalled();
     await user.click(
       screen.getByRole('button', { name: new RegExp(`^Delete ${assistantship.title}`) }),
     );
     await user.click(
-      within(screen.getByRole('dialog', { name: 'Delete this award?' })).getByRole('button', {
+      within(screen.getByRole('alertdialog', { name: 'Delete this award?' })).getByRole('button', {
         name: 'Delete award',
       }),
     );
     expect(removeAward).toHaveBeenCalledWith('a1');
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
     expect(screen.getByText('Award deleted.')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Add award' })[0]).toHaveFocus();
   });

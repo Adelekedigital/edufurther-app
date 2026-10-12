@@ -557,7 +557,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
       await dismissDelete(user);
       await user.click(screen.getByRole('button', { name: 'Photo options' }));
       await user.click(screen.getByRole('menuitem', { name: /Remove photo/ }));
-      const photoDialog = screen.getByRole('dialog', { name: 'Remove your photo?' });
+      const photoDialog = screen.getByRole('alertdialog', { name: 'Remove your photo?' });
       const focused = document.activeElement;
       expect(photoDialog).toContainElement(focused as HTMLElement);
       await act(async () => d.ok({ kind: 'deleted' }));

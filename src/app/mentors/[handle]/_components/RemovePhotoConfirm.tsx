@@ -1,8 +1,6 @@
 'use client';
 
-import { Button } from '@/components/atoms/Button/Button';
-import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
-import styles from './MentorProfileScreen.module.css';
+import { ConfirmDialog } from '@/components/templates/ConfirmDialog/ConfirmDialog';
 
 /**
  * "Remove photo" (ProfilePhoto.dc.html `confirmOpen`): a danger confirm, "Keep
@@ -17,22 +15,14 @@ export function RemovePhotoConfirm({
   onRemove: () => void;
 }) {
   return (
-    <ModalShell
+    <ConfirmDialog
       title="Remove your photo?"
       subtitle="Your initials show instead until you add a new one."
       icon="no_photography"
-      tone="danger"
-      size="sm"
-      onClose={onKeep}
-    >
-      <div className={styles.confirmButtons}>
-        <Button size="large" variant="secondary-outlined" fullWidth onClick={onKeep}>
-          Keep it
-        </Button>
-        <Button size="large" variant="destructive" fullWidth onClick={onRemove}>
-          Remove photo
-        </Button>
-      </div>
-    </ModalShell>
+      keepLabel="Keep it"
+      confirmLabel="Remove photo"
+      onKeep={onKeep}
+      onConfirm={onRemove}
+    />
   );
 }

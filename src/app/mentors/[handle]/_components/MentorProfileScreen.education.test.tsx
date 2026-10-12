@@ -115,19 +115,19 @@ describe('MentorProfileScreen — education', () => {
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('button', { name: /^Delete MSc, Sociology/ }));
-    const confirm = screen.getByRole('dialog', { name: 'Delete this education?' });
+    const confirm = screen.getByRole('alertdialog', { name: 'Delete this education?' });
     expect(confirm).toHaveAccessibleDescription('This can’t be undone.');
     await user.click(within(confirm).getByRole('button', { name: 'Keep it' }));
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
     expect(removeEducation).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: /^Delete MSc, Sociology/ }));
     await user.click(
-      within(screen.getByRole('dialog', { name: 'Delete this education?' })).getByRole('button', {
+      within(screen.getByRole('alertdialog', { name: 'Delete this education?' })).getByRole('button', {
         name: 'Delete education',
       }),
     );
     expect(removeEducation).toHaveBeenCalledWith('e2');
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
     expect(screen.getByText('Education deleted.')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Add education' })[0]).toHaveFocus();
   });
