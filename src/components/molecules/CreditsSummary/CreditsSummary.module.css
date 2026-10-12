@@ -57,7 +57,7 @@
   color: var(--ink-600);
 }
 .link {
-  min-height: 32px;
+  min-height: var(--button-h-small);
   border: none;
   background: none;
   padding: 0;

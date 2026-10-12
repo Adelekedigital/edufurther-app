@@ -38,6 +38,6 @@
   margin: 0;
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
-  color: var(--red-700);
+  color: var(--text-danger);
   text-align: center;
 }

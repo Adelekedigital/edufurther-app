@@ -52,5 +52,5 @@
   margin: 0;
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
-  color: var(--red-500);
+  color: var(--text-danger);
 }

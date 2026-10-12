@@ -1,6 +1,6 @@
 /* Values from AppShell.dc.html (creditStyle=green, pillish). */
 .hit {
-  height: 44px;
+  height: var(--touch-target-min);
   display: flex;
   align-items: center;
   padding: 0;
@@ -15,7 +15,7 @@
   outline-offset: var(--focus-ring-offset);
 }
 .pill {
-  height: 32px;
+  height: var(--button-h-small);
   box-sizing: border-box;
   display: flex;
   align-items: center;

@@ -103,6 +103,6 @@ p.field {
   }
   /* A 44px tap area for the 12px link. */
   .infoLink {
-    min-height: 44px;
+    min-height: var(--touch-target-min);
   }
 }

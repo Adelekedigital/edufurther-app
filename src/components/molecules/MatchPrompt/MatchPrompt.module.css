@@ -42,7 +42,7 @@
      at 32px): height 32 including the 1px border, padding 0 16px. */
   position: relative;
   box-sizing: border-box;
-  height: 32px;
+  height: var(--button-h-small);
   padding: 0 var(--space-4);
   line-height: 16px;
   border: var(--border-hairline) solid var(--green-700);

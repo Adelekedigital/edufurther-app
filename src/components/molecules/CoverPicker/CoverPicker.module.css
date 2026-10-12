@@ -182,10 +182,10 @@
    var(--space-3)` becomes `0 var(--space-2)`. The 32px swatches are exempt. */
 @media (max-width: 767px) {
   .trigger {
-    min-height: 44px;
+    min-height: var(--touch-target-min);
     padding: 0 var(--space-2);
   }
   .upload {
-    min-height: 44px;
+    min-height: var(--touch-target-min);
   }
 }

@@ -36,6 +36,7 @@
   margin: 0;
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
+  /* Calendar v2.dc.html draws its errors in --red-600, not --text-danger (red-500). */
   color: var(--red-600);
 }
 .footer {
