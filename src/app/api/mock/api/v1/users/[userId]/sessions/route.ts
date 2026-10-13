@@ -345,7 +345,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
   const cursor = q.get('cursor');
   let offset = 0;
   if (cursor) {
-    const parsed = /^o(d+)(a|d)$/.exec(cursor);
+    const parsed = /^o(\d+)(a|d)$/.exec(cursor);
     // A cursor from the other ordering is a 422: restart from page 1.
     if (!parsed || parsed[2] !== (asc ? 'a' : 'd'))
       return problem(422, {

@@ -26,11 +26,14 @@ export async function GET(req: Request, ctx: { params: Promise<{ sessionId: stri
   // viewer decides which side of each row is "theirs", and it can be switched
   // per-page with ?mockViewer=, which only the Referer carries here.
   const url = new URL(req.url);
-  // The list mock answers through ok(), so its body is the contract's page.
-  const list: SuccessBody<'/api/v1/users/{user_id}/sessions', 'get'> = await fetch(
+  const res = await fetch(
     `${url.origin}/api/mock/api/v1/users/${mockViewerId(req)}/sessions?limit=50`,
     { headers: { cookie: req.headers.get('cookie') ?? '' } },
-  ).then((r) => r.json());
+  );
+  if (!res.ok) return new NextResponse(null, { status: 404 });
+  // Read as the list's contract page: json() itself is untyped, but the list
+  // mock builds that body through ok(), so the shape is checked there.
+  const list: SuccessBody<'/api/v1/users/{user_id}/sessions', 'get'> = await res.json();
   const row = list.data.find((s) => s.id === sessionId);
   return row
     ? ok('/api/v1/sessions/{session_id}', 'get', row)

@@ -38,7 +38,14 @@ const config = [
       'no-restricted-syntax': [
         'error',
         {
-          selector: "CallExpression[callee.object.name='NextResponse'][callee.property.name='json']",
+          selector:
+            "CallExpression[callee.object.name=/^(Next)?Response$/][callee.property.name='json']",
+          message:
+            'Mock routes answer with ok(path, method, body) or problem(status, body) from @/lib/api/mock/respond.',
+        },
+        {
+          selector:
+            "CallExpression[callee.object.name=/^(Next)?Response$/][callee.computed=true][callee.property.value='json']",
           message:
             'Mock routes answer with ok(path, method, body) or problem(status, body) from @/lib/api/mock/respond.',
         },
