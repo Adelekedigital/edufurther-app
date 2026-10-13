@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { DetailsButton } from '@/components/molecules/DetailsButton/DetailsButton';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { BookingDayBadge } from '@/components/molecules/BookingDayBadge/BookingDayBadge';
 import { BookingStatusTag } from '@/components/molecules/BookingStatusTag/BookingStatusTag';
@@ -142,18 +143,12 @@ export function BookingRow({
           tabbing down and then back up to it is the bug this order avoids. On
           wider screens `order` swaps them back, horizontally, within one line. */}
       {onOpenDetails && (
-        <button
-          type="button"
+        <DetailsButton
+          name={bookingHeading(b)}
+          controls={answersControls}
+          expanded={selected}
           onClick={onOpenDetails}
-          // Named per booking: a list of rows all reading "Details" tells a
-          // screen-reader user which control they are on and nothing else.
-          aria-label={`Details for ${bookingHeading(b)}`}
-          aria-controls={answersControls}
-          className={styles.details}
-        >
-          Details
-          <Icon name="chevron_right" size={18} />
-        </button>
+        />
       )}
       {!!actions && <div className={styles.actions}>{actions}</div>}
     </div>

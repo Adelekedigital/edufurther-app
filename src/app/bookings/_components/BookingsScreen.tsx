@@ -30,18 +30,9 @@ import { BOOKINGS_GATE, memberGate } from '../../_shell/MentorGate';
 import { cx } from '@/lib/utils/cx';
 import { useAppShell } from '../../_shell/useAppShell';
 import { Button } from '@/components/atoms/Button/Button';
-import type { RowMenuItem } from '@/components/molecules/RowMenu/RowMenu';
 import { ConfirmActionDialog } from '@/app/_sessions/ConfirmActionDialog';
 import { IntakeFileViewer } from '@/app/_sessions/IntakeFileViewer';
-import {
-  bookingHeading,
-  canAccept,
-  canCancel,
-  canWithdraw,
-  fullDate,
-  HISTORY_FILTERS,
-  overlapping,
-} from '@/lib/utils/bookings';
+import { bookingHeading, canAccept, fullDate, HISTORY_FILTERS, overlapping } from '@/lib/utils/bookings';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
 import { useMyReviewableSessions } from '@/lib/api/data/reviewableSessions';
 import { BookingsPanel } from './BookingsPanel';
@@ -343,6 +334,7 @@ export function BookingsScreen() {
                       timeZone={timeZone}
                       joinHref={joinHref(next.id)}
                       onOpenDetails={() => toggle(next.id)}
+                      detailsOpen={selected === next.id}
                       now={now}
                     />
                   )}

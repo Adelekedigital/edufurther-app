@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { DetailsButton } from '@/components/molecules/DetailsButton/DetailsButton';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { cardClass } from '@/components/atoms/Card/Card';
@@ -30,6 +31,12 @@ type NextSessionCardProps = {
    * a labelled control, not a ⋯ hiding one item. Omit it and nothing is drawn.
    */
   onOpenDetails?: () => void;
+  /**
+   * Whether this booking's panel is the one open. The rows derive it from
+   * `selected`; the hero has no such prop, and without it the control would
+   * claim to be closed while the panel it opened is on screen.
+   */
+  detailsOpen?: boolean;
   now?: Date;
 };
 
@@ -54,6 +61,7 @@ export function NextSessionCard({
   timeZone,
   joinHref,
   onOpenDetails,
+  detailsOpen,
   onOpenAnswers,
   answersControls,
   now = new Date(),
@@ -81,18 +89,12 @@ export function NextSessionCard({
           {when.label}
         </span>
         {onOpenDetails && (
-          <button
-            type="button"
+          <DetailsButton
+            name={bookingHeading(b)}
+            controls={answersControls}
+            expanded={detailsOpen}
             onClick={onOpenDetails}
-            // Named per booking, like the rows: "Details" on its own tells a
-            // screen-reader user which control they are on and nothing else.
-            aria-label={`Details for ${bookingHeading(b)}`}
-            aria-controls={answersControls}
-            className={styles.details}
-          >
-            Details
-            <Icon name="chevron_right" size={18} />
-          </button>
+          />
         )}
       </div>
 

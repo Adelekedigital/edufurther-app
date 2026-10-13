@@ -141,22 +141,13 @@ describe('the corner is operable without a mouse', () => {
     expect(onOpenDetails).toHaveBeenCalledTimes(2);
   });
 
-  /* jsdom applies no stylesheet, so the ring and the tap target are pinned in
-     the CSS itself — the same way CoverPicker pins its popover offset. */
-  it('shows a focus ring, rather than relying on the browser default a reset removed', () => {
-    expect(rule('.details:focus-visible')).toMatch(
-      /outline:\s*var\(--focus-ring-width\)\s+solid\s+var\(--focus-ring-color\)/,
-    );
-  });
-
-  it('is a 44px target, which is what made the ⋯ worth replacing', () => {
-    expect(rule('.details')).toMatch(/min-height:\s*var\(--touch-target-min\)/);
-    // Negative top and bottom margins, so the target does not make the row
-    // taller than the design draws it (`detailsAccess=corner`).
-    expect(rule('.details')).toMatch(
-      /margin:\s*calc\(var\(--space-3\) \* -1\) calc\(var\(--space-2\) \* -1\) calc\(var\(--space-3\) \* -1\) auto/,
-    );
-  });
+  /* The ring, the 44px target and `align-self` moved with the control into
+     `molecules/DetailsButton`, and its own test pins them there. Asserting them
+     again here would pass against a file that no longer styles the button. The
+     margin shorthand is not pinned anywhere any more, deliberately: it asserted
+     a declaration rather than a behaviour, so `margin-inline` with an identical
+     rendered result broke it, and it passed whether or not the rule reached the
+     element (structural review, PR 233). */
 
   it('keeps no styles for the menu it replaced', () => {
     expect(css()).not.toMatch(/\.menuCorner\b/);

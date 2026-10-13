@@ -614,6 +614,18 @@ describe('the review round on the panel', () => {
     expect(replace).toHaveBeenCalledWith('/bookings?booking=a', { scroll: false });
   });
 
+  it('pressing it again closes the panel, and says so while open', async () => {
+    // The direction the ⋯ used to state in its label. The button cannot say
+    // it, so `aria-expanded` is the only thing carrying it — and the URL is
+    // the only thing proving the second press closes rather than reopens.
+    selectedBooking = 'b';
+    render(<BookingsScreen />);
+    const open = screen.getByRole('button', { name: /^Details for .*Visa practice/ });
+    expect(open).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.click(open);
+    expect(replace).toHaveBeenCalledWith('/bookings', { scroll: false });
+  });
+
   it('switching tab closes the panel: its row is no longer on screen', async () => {
     selectedBooking = 'b';
     render(<BookingsScreen />);
@@ -898,6 +910,28 @@ describe('the actions appear only where they can succeed', () => {
     render(<BookingsScreen />);
     expect(screen.queryByRole('button', { name: 'Accept' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Withdraw request' })).toBeVisible();
+  });
+
+  it('calling a session off from the panel asks first, like declining does', async () => {
+    // The guarantee the move itself rests on. Wiring `onCallOff` straight to
+    // the mutation would leave every other test in this file green, so this is
+    // the one that holds it — the Decline equivalent is above.
+    upcoming = remote([booking({ id: 'later', title: 'Later one', startsAt: at(48), endsAt: at(49) })]);
+    selectedBooking = 'later';
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel session' }));
+    expect(screen.getByRole('dialog', { name: 'Cancel this booking?' })).toBeVisible();
+    expect(actions.cancel!.mutate).not.toHaveBeenCalled();
+  });
+
+  it('and withdrawing from the panel asks too', async () => {
+    pending = remote([pendingRow({ side: 'mentee' })]);
+    tab = 'pending';
+    selectedBooking = 'p1';
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Withdraw request' }));
+    expect(screen.getByRole('dialog')).toBeVisible();
+    expect(actions.withdraw!.mutate).not.toHaveBeenCalled();
   });
 
   it('a lapsed request offers nothing — it is the backend’s to expire', async () => {
