@@ -1,12 +1,9 @@
 import { NextResponse } from 'next/server';
 import { awardProblem, mockAwards, setAwards } from '@/lib/api/mock/entries';
-import { ok } from '@/lib/api/mock/respond';
+import { ok, problem } from '@/lib/api/mock/respond';
 
 const invalid = (pointer: string) =>
-  NextResponse.json(
-    { title: 'Validation failed', status: 422, errors: [{ pointer }] },
-    { status: 422 },
-  );
+  problem(422, { title: 'Validation failed', errors: [{ pointer }] });
 
 /** MOCK of POST /api/v1/users/{id}/awards: adds one, newest first. ENABLE_MOCK_API=1 only. */
 export async function POST(req: Request, ctx: { params: Promise<{ userId: string }> }) {

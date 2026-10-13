@@ -1,13 +1,8 @@
 import { NextResponse } from 'next/server';
 import { mockDeleteSessionType, mockEditSessionType } from '@/lib/api/mock/sessionTypes';
-import { ok } from '@/lib/api/mock/respond';
+import { ok, problem } from '@/lib/api/mock/respond';
 
 type Ctx = { params: Promise<{ session_type_id: string }> };
-const problem = (status: number, extra: Record<string, unknown> = {}) =>
-  NextResponse.json(
-    { type: 'about:blank', title: 'Error', status, ...extra },
-    { status, headers: { 'content-type': 'application/problem+json' } },
-  );
 
 /**
  * MOCK of PATCH /api/v1/me/session-types/{id} → {updated: true}; 422 errors[]

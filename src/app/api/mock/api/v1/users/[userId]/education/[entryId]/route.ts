@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { educationProblem, mockEducation, setEducation } from '@/lib/api/mock/entries';
-import { ok } from '@/lib/api/mock/respond';
+import { ok, problem } from '@/lib/api/mock/respond';
 
 type Ctx = { params: Promise<{ userId: string; entryId: string }> };
 
@@ -14,16 +14,10 @@ export async function PATCH(req: Request, ctx: Ctx) {
   const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
   const bad = body && typeof body === 'object' ? educationProblem(body, true) : '';
   if (bad !== null)
-    return NextResponse.json(
-      { title: 'Validation failed', status: 422, errors: [{ pointer: bad }] },
-      { status: 422 },
-    );
+    return problem(422, { title: 'Validation failed', errors: [{ pointer: bad }] });
   const next = { ...found, ...body! } as typeof found;
   if (next.date_start && next.date_end && next.date_end < next.date_start)
-    return NextResponse.json(
-      { title: 'Validation failed', status: 422, errors: [{ pointer: '/date_end' }] },
-      { status: 422 },
-    );
+    return problem(422, { title: 'Validation failed', errors: [{ pointer: '/date_end' }] });
   await new Promise((r) => setTimeout(r, 300));
   setEducation(
     userId,

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { MOCK_LANGUAGES, setMockItems } from '@/lib/api/mock/catalog';
+import { problem } from '@/lib/api/mock/respond';
 
 /**
  * MOCK of PUT /api/v1/users/{id}/languages: replaces the whole list. An
@@ -16,10 +17,7 @@ export async function PUT(req: Request, ctx: { params: Promise<{ userId: string 
     new Set(ids).size !== ids.length ||
     !ids.every((id) => MOCK_LANGUAGES.some((l) => l.id === id))
   )
-    return NextResponse.json(
-      { title: 'Validation failed', status: 422, errors: [{ pointer: '/languages' }] },
-      { status: 422 },
-    );
+    return problem(422, { title: 'Validation failed', errors: [{ pointer: '/languages' }] });
   await new Promise((r) => setTimeout(r, 300));
   setMockItems(userId, { language_ids: ids as string[] });
   return new NextResponse(null, { status: 204 });

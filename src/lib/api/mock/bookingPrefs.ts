@@ -6,8 +6,10 @@
  * Mon, Tue, Thu, Fri 5–8 pm and Sat 9 am–1 pm.
  */
 import type { components } from '@/lib/api/generated/schema';
+import type { MockResult, SuccessBody } from './respond';
 
 type AvailabilityRuleRead = components['schemas']['AvailabilityRuleRead'];
+type RuleCreated = SuccessBody<'/api/v1/users/{user_id}/availability/rules', 'post'>;
 
 const ZONE = 'Africa/Lagos';
 
@@ -60,7 +62,7 @@ const mins = (t: string) => {
 };
 
 /** POST: 422 on a bad body or an end before the start; 409 on an overlap (as the backend). */
-export function addRule(body: Record<string, unknown>): { status: number; json: unknown } {
+export function addRule(body: Record<string, unknown>): MockResult<RuleCreated> {
   const day = body.day_of_week;
   const start = body.start_time;
   const end = body.end_time;
@@ -71,29 +73,25 @@ export function addRule(body: Record<string, unknown>): { status: number; json: 
     typeof start !== 'string' ||
     typeof end !== 'string'
   )
-    return { status: 422, json: problem(422, 'Validation failed') };
+    return { ok: false, status: 422, problem: { title: 'Validation failed' } };
   const a = mins(start);
   // As the backend: 00:00 can't end a day (end <= start is refused); 23:59:59 does.
   const b = mins(end);
-  if (b <= a) return { status: 422, json: problem(422, 'Validation failed') };
+  if (b <= a) return { ok: false, status: 422, problem: { title: 'Validation failed' } };
   const overlap = rules.some(
     (r) => r.is_active && r.day_of_week === day && a < mins(r.end_time) && mins(r.start_time) < b,
   );
-  if (overlap) return { status: 409, json: problem(409, 'Overlapping availability') };
+  if (overlap) return { ok: false, status: 409, problem: { title: 'Overlapping availability' } };
   const created = rule(day, start.slice(0, 5), end.slice(0, 5));
   created.end_time = end.length === 5 ? `${end}:00` : end;
   if (typeof body.timezone === 'string') created.timezone = body.timezone;
   rules.push(created);
-  return { status: 201, json: { id: created.id } };
+  return { ok: true, status: 201, body: { id: created.id } };
 }
 
-export function removeRule(id: string): number {
+export function removeRule(id: string): 200 | 404 {
   const i = rules.findIndex((r) => r.id === id);
   if (i < 0) return 404;
   rules.splice(i, 1);
   return 200;
-}
-
-export function problem(status: number, title: string) {
-  return { type: 'about:blank', title, status };
 }

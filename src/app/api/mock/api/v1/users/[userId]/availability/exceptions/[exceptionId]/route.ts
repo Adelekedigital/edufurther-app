@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { removeException } from '@/lib/api/mock/exceptionStore';
+import { problem } from '@/lib/api/mock/respond';
 
 /** MOCK of DELETE /api/v1/users/{id}/availability/exceptions/{exception_id}. ENABLE_MOCK_API=1 only. */
 export async function DELETE(_req: Request, ctx: { params: Promise<{ exceptionId: string }> }) {
@@ -9,8 +10,5 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ exceptionId
   const status = removeException(exceptionId);
   return status === 204
     ? new NextResponse(null, { status })
-    : NextResponse.json(
-        { type: 'about:blank', title: 'Not found', status },
-        { status, headers: { 'content-type': 'application/problem+json' } },
-      );
+    : problem(status, { title: 'Not found' });
 }

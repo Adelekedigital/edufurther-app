@@ -25,7 +25,7 @@ export function listInterest(): Row[] {
 }
 
 /** 204 on success, 422 on a malformed slug — case is folded, whitespace is not. */
-export function addInterest(body: unknown): number {
+export function addInterest(body: unknown): 204 | 422 {
   const raw = (body as { feature?: unknown } | null)?.feature;
   // {0,39}: one leading letter plus up to 39 more. {1,39} would refuse a
   // single-character slug the real endpoint accepts.

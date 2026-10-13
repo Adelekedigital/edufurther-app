@@ -1,7 +1,9 @@
 import type { components } from '@/lib/api/generated/schema';
 import { addDays } from '@/lib/utils/slots';
+import type { MockResult, SuccessBody } from './respond';
 
 type ExceptionRead = components['schemas']['AvailabilityExceptionRead'];
+type ExceptionCreated = SuccessBody<'/api/v1/users/{user_id}/availability/exceptions', 'post'>;
 
 /** In-memory availability exceptions for the mock (ENABLE_MOCK_API=1): one block of three days. */
 const start = addDays(new Date().toISOString().slice(0, 10), 10);
@@ -21,8 +23,8 @@ export const exceptions: ExceptionRead[] = [
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** POST: dates as YYYY-MM-DD, end after start (exclusive), times both or neither. */
-export function addException(body: Record<string, unknown>): { status: number; json: unknown } {
+/** POST: dates as YYYY-MM-DD, end after start (exclusive), times both or neither. 201 {id}, as the contract. */
+export function addException(body: Record<string, unknown>): MockResult<ExceptionCreated> {
   const { type, start_date, end_date, start_time = null, end_time = null, timezone } = body;
   const bad =
     (type !== 'block' && type !== 'override') ||
@@ -34,10 +36,7 @@ export function addException(body: Record<string, unknown>): { status: number; j
     (start_time === null) !== (end_time === null) ||
     typeof timezone !== 'string';
   if (bad)
-    return {
-      status: 422,
-      json: { type: 'about:blank', title: 'Unprocessable Content', status: 422 },
-    };
+    return { ok: false, status: 422, problem: { title: 'Unprocessable Content' } };
   const row: ExceptionRead = {
     id: `ex-${seq++}`,
     type,
@@ -49,10 +48,10 @@ export function addException(body: Record<string, unknown>): { status: number; j
     reason: (body.reason as string | null) ?? null,
   };
   exceptions.push(row);
-  return { status: 201, json: row };
+  return { ok: true, status: 201, body: { id: row.id } };
 }
 
-export function removeException(id: string): number {
+export function removeException(id: string): 204 | 404 {
   const i = exceptions.findIndex((e) => e.id === id);
   if (i < 0) return 404;
   exceptions.splice(i, 1);

@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
 import { addInterest, endpointExists, listInterest } from '@/lib/api/mock/interestStore';
-import { ok } from '@/lib/api/mock/respond';
+import { ok, problem } from '@/lib/api/mock/respond';
 
-/** An unbuilt path on the real API: plain JSON, not the problem+json envelope. */
+/**
+ * An unbuilt path on the real API answers FastAPI's own plain 404, not a
+ * problem+json: so does the mock (the reader goes by the status alone).
+ */
 const notFound = () =>
-  NextResponse.json({ detail: 'Not Found' }, { status: 404 });
+  new NextResponse(JSON.stringify({ detail: 'Not Found' }), {
+    status: 404,
+    headers: { 'content-type': 'application/json' },
+  });
 
 /** MOCK of GET /api/v1/me/interest. 200 with an empty list, never 404. */
 export async function GET() {
@@ -23,8 +29,5 @@ export async function POST(req: Request) {
   const status = addInterest(body);
   return status === 204
     ? new NextResponse(null, { status: 204 })
-    : NextResponse.json(
-        { type: 'about:blank', title: 'Unprocessable Content', status },
-        { status, headers: { 'content-type': 'application/problem+json' } },
-      );
+    : problem(status, { title: 'Unprocessable Content' });
 }

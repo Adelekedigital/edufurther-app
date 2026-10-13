@@ -7,7 +7,7 @@ import {
   reviewRead,
   store,
 } from '@/lib/api/mock/reviewStore';
-import { ok } from '@/lib/api/mock/respond';
+import { ok, problem } from '@/lib/api/mock/respond';
 
 /**
  * MOCK of POST /api/v1/reviews (the agreed review bundle). 409 with the
@@ -23,10 +23,10 @@ export async function POST(req: Request) {
   const joinPage = mockReviewableIds(['j-5']).includes(sessionId);
   const mentorId = joinPage ? 'mock-j-5' : sessionId.replace(/-s\d+$/, '');
   if ([...store.reviews.values()].some((r) => r.session_id === sessionId))
-    return NextResponse.json(
-      { type: 'https://edufurther.com/problems/review-already-exists', title: 'Already reviewed' },
-      { status: 409 },
-    );
+    return problem(409, {
+      type: 'https://edufurther.com/problems/review-already-exists',
+      title: 'Already reviewed',
+    });
   if (!joinPage && !mockReviewable(mentorId).some((s) => s.session_id === sessionId))
     return new NextResponse(null, { status: 404 });
   const ints = (k: string, lo: number, hi: number) =>

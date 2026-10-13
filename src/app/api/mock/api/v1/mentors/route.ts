@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { mockAvailabilityState, mockNextAvailableAt } from '@/lib/api/mock/availability';
 import { MENTORS, OFFERINGS, mockCountries } from '@/lib/api/mock/fixtures';
-import { ok } from '@/lib/api/mock/respond';
+import { ok, problem } from '@/lib/api/mock/respond';
 
 /**
  * PHASE A MOCK of GET /api/v1/mentors, following the backend's stated contract
@@ -18,19 +18,15 @@ export async function GET(req: NextRequest) {
   const limit = Number(sp.get('limit') ?? 10);
   const cursor = sp.get('cursor');
 
-  const problem = (detail: string) =>
-    NextResponse.json(
-      { type: 'about:blank', title: 'Unprocessable Content', status: 422, detail },
-      { status: 422, headers: { 'content-type': 'application/problem+json' } },
-    );
+  const invalid = (detail: string) => problem(422, { title: 'Unprocessable Content', detail });
 
-  if (offerings.length > 10) return problem('At most 10 offerings.');
+  if (offerings.length > 10) return invalid('At most 10 offerings.');
   if (offerings.some((o) => !OFFERINGS.some((x) => x.code === o)))
-    return problem('Unknown offering.');
-  if (!Number.isInteger(limit) || limit < 1 || limit > 50) return problem('limit must be 1..50.');
+    return invalid('Unknown offering.');
+  if (!Number.isInteger(limit) || limit < 1 || limit > 50) return invalid('limit must be 1..50.');
   const start = cursor === null ? 0 : Number(cursor.replace(/^c/, ''));
   if (cursor !== null && (!/^c\d+$/.test(cursor) || Number.isNaN(start)))
-    return problem('Bad cursor.');
+    return invalid('Bad cursor.');
 
   const rows = MENTORS.filter((m) => {
     const hay = [m.first_name, m.last_name, m.institution, m.study_course, m.degree]
