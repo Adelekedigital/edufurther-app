@@ -106,37 +106,59 @@ describe('what happens to the credit is said before the button', () => {
   });
 });
 
-describe('the mentor’s slot choice', () => {
-  it('defaults to still free, so an hour is not quietly withheld', () => {
-    dialog({ booking: sampleBookingFor({ side: 'mentor', status: 'confirmed', startsAt: at(48), endsAt: at(49) }) });
-    expect(screen.getByRole('switch', { name: 'I’m still free at this time' })).toBeChecked();
+describe('what happens to the hour, said as a line', () => {
+  const mentorCancel = () =>
+    sampleBookingFor({ side: 'mentor', status: 'confirmed', startsAt: at(48), endsAt: at(49) });
+
+  it('the hour stays blocked unless the mentor reopens it', () => {
+    // The default flipped on 2026-10-13 (`freeStyle="line"`). It used to free
+    // the hour unless told otherwise.
+    dialog({ booking: mentorCancel() });
+    expect(screen.getByText(/slot stays blocked on your calendar/)).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Reopen it' })).toBeVisible();
   });
 
-  it('is a mentor-only field', () => {
+  it('names the one slot, with its date, never a bare hour', () => {
+    // "6:00 pm" alone reads as every 6 pm rather than this one.
+    dialog({ booking: mentorCancel() });
+    expect(screen.getByText(/^\w{3}, Oct \d+, \d+:\d\d [ap]m slot stays blocked/)).toBeVisible();
+  });
+
+  it('the link flips the line, and says how to undo itself', async () => {
+    dialog({ booking: mentorCancel() });
+    await userEvent.click(screen.getByRole('button', { name: 'Reopen it' }));
+    expect(screen.getByText(/slot stays open on your calendar/)).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Keep it blocked' })).toBeVisible();
+  });
+
+  it('is a mentor-only line', () => {
     dialog({ booking: sampleBookingFor({ side: 'mentee', status: 'confirmed', startsAt: at(48), endsAt: at(49) }) });
-    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    expect(screen.queryByText(/on your calendar/)).not.toBeInTheDocument();
   });
 
   it('is not offered on a decline, which frees nothing', () => {
     dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }) });
-    // Named, because the suggest switch is on this dialog too.
-    expect(
-      screen.queryByRole('switch', { name: 'I’m still free at this time' }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/on your calendar/)).not.toBeInTheDocument();
   });
 
-  it('turning it off is what gets sent', async () => {
+  it('sends releaseSlot false by default — the hour is not quietly given away', async () => {
     const onConfirm = vi.fn();
-    dialog({
-      booking: sampleBookingFor({ side: 'mentor', status: 'confirmed', startsAt: at(48), endsAt: at(49) }),
-      onConfirm,
-    });
-    await userEvent.click(screen.getByRole('switch', { name: 'I’m still free at this time' }));
+    dialog({ booking: mentorCancel(), onConfirm });
     // The chips sit behind the offer, which a mentor's dialog opens with on.
     await offerOff();
     await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
     await userEvent.click(screen.getByRole('button', { name: 'Yes, cancel session' }));
     expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ releaseSlot: false }));
+  });
+
+  it('and true once reopened', async () => {
+    const onConfirm = vi.fn();
+    dialog({ booking: mentorCancel(), onConfirm });
+    await userEvent.click(screen.getByRole('button', { name: 'Reopen it' }));
+    await offerOff();
+    await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Yes, cancel session' }));
+    expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ releaseSlot: true }));
   });
 });
 
@@ -354,27 +376,34 @@ describe('turning the offer off takes the offered time with it', () => {
 });
 
 describe('the offered time only implies the mentor was busy when it is true', () => {
-  it('a mentor cancelling who stays free sends no reason code at all', async () => {
-    // "I'm still free at this time" says the hour is fine. Sending
-    // `mentor_unavailable` beside it would reach the mentee as "No longer free
-    // at that time" directly under the opposite claim.
-    const onConfirm = vi.fn();
-    dialog({ booking: sampleBookingFor({ side: 'mentor', status: 'confirmed' }), onConfirm });
-    const [slot] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
-    await userEvent.click(slot!);
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel and send' }));
-    expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ reasonCode: null }));
-  });
+  const mentorCancel = () =>
+    sampleBookingFor({ side: 'mentor', status: 'confirmed', startsAt: at(48), endsAt: at(49) });
 
-  it('but one who gives the hour up does say so', async () => {
+  it('a mentor cancelling leaves the hour blocked, so the code is true', async () => {
+    // The hour stays blocked by default now, so offering another time and
+    // saying "not free then" agree with each other.
     const onConfirm = vi.fn();
-    dialog({ booking: sampleBookingFor({ side: 'mentor', status: 'confirmed' }), onConfirm });
-    await userEvent.click(screen.getByRole('switch', { name: 'I’m still free at this time' }));
+    dialog({ booking: mentorCancel(), onConfirm });
     const [slot] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
     await userEvent.click(slot!);
     await userEvent.click(screen.getByRole('button', { name: 'Cancel and send' }));
     expect(onConfirm).toHaveBeenCalledWith(
       expect.objectContaining({ reasonCode: 'mentor_unavailable', releaseSlot: false }),
+    );
+  });
+
+  it('but one who reopens the hour sends no reason code at all', async () => {
+    // "Reopen it" says the hour is fine. Sending `mentor_unavailable` beside it
+    // would reach the mentee as "No longer free at that time" under the
+    // opposite claim, so that path leans on the server's exemption instead.
+    const onConfirm = vi.fn();
+    dialog({ booking: mentorCancel(), onConfirm });
+    await userEvent.click(screen.getByRole('button', { name: 'Reopen it' }));
+    const [slot] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
+    await userEvent.click(slot!);
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel and send' }));
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ reasonCode: null, releaseSlot: true }),
     );
   });
 });

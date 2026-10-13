@@ -584,3 +584,23 @@ The mentor's first two reasons **overlap**: "A clash in my calendar" and "I'm
 no longer free" are close enough that the pick is near-random, which weakens
 the data point the requirement exists to produce. Kept deliberately to avoid
 rewriting copy twice before the design file lands.
+
+### Sessions — what happens to the mentor's hour, 2026-10-13
+
+`CancelModal.dc.html` `freeStyle="line"`. Two entries, one a fix and one a gap.
+
+| # | Design | Built | Why |
+|---|---|---|---|
+| 47 | "{slot} slot stays **opened** on your calendar." | "… stays **open** …" | Grammar. Fixed here under the small-fixes rule rather than sent to design: "stays opened" is not English, and the sentence is read by a mentor mid-cancellation. |
+| 48b | Link hit area `inset: -12px -8px` | Horizontal the same; height asked for directly as `--touch-target-min`, centred | The design's vertical inset comes to **41px** on a 17px line — three short of the 44px touch minimum this project holds to — and a fixed vertical inset can only ever be right for one line-height. Measured after: 44px, and a tap 21px either side of centre reaches the link. |
+| 48 | Nothing | Nothing | **A gap, recorded rather than invented.** The line describes what *will* happen to the slot — read while deciding. Neither `CancelModal.dc.html` nor `Session Join.dc.html` draws anything for the moment **after** the cancellation goes through, when it has actually happened. The dialog closes and nothing says the hour is now blocked or open. Left as it is; copy for that moment is design's to write. |
+
+**Also recorded, not a divergence:** the default flipped. The hour now stays
+**blocked** unless the mentor presses "Reopen it"; it used to be freed unless
+they said otherwise. The old default had a reason in the code — "an hour
+offered while you are busy arrives as a booking you can decline; an hour
+withheld while you are free arrives as nothing" — and the owner took the other
+side of that trade knowingly on 2026-10-13. Not logged as a divergence because
+the design and the build agree; logged because a reversed default is the kind
+of change that otherwise looks like a styling PR that happened to flip a
+boolean.
