@@ -25,7 +25,7 @@ than swapping it after load (failure log #37). The vendor SDK must stay replacea
 - **The proxy checks the session on every page.** `src/proxy.ts` (Next 16's middleware)
   calls `refreshSessionCookies`, which verifies the JWT with `getClaims()`, refreshes an
   expiring one, and writes new cookies to both the request and the response. Its matcher
-  skips `api/`, `_next/` and static files.
+  skips `api/`, `_next/`, `brand/`, `pwa-icon/` and static files.
 - **The render gets a hint, not authority.** The proxy sets `x-ef-session` to the verified
   user id or `none`, always replacing a client's value, and removes it when the check
   failed. The root layout seeds `useSession` with it. It decides which chrome to draw; data

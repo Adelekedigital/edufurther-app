@@ -121,7 +121,7 @@ cutover list: `references/environments.md`.
 | Explore filters | `?offering=<slug>` repeatable, **ANY-of**, narrowed by `q`; slugs are the catalog `code` from `/api/v1/catalog/service-offerings`. Unknown slug → 422 |
 | Local dev | Phase A: `.env.development` points at the in-app mock (`/api/mock`, `ENABLE_MOCK_API=1`). Real backend: `NEXT_PUBLIC_API_BASE_URL=` (empty) + `BACKEND_URL=http://localhost:8000` |
 | Deployed API calls | Product (2026-09-27): same-origin proxy. The browser calls `/api/v1/…` on the app; `next.config.ts` rewrites to server-only `BACKEND_URL` (Vercel prod → prod backend, previews → `edufurtherbe-dev`, never prod). No CORS entry per preview URL. Vercel env table in README |
-| Auth | Supabase, passwordless email code (+ magic link) — backend auth reply 2026-09-27 — and **Google** (user, 2026-10-03), landing on the same `/auth/callback` (one PKCE exchange). `lib/vendor/supabase/` is the only importer of `@supabase/*` (vendorSeams). Session in cookies via `@supabase/ssr`, refreshed in `src/proxy.ts`; never localStorage. The proxy passes the verified user id to the render (`x-ef-session`, always overwritten; a chrome hint, never authorization) and the root layout seeds `useSession` with it (failure log #37); every page then renders per request (accepted, product 2026-09-30). `http.ts` middleware sends `Bearer`, refreshes once on 401, else signs out. Viewer from `GET /api/v1/me`: 401/none → guest, **404 → `unlinked`**, **409 `/problems/account-exists` → `accountExists`**, goal → mentee, approved `mentor_profile` → mentor; never `primary_role`. Query keys carry the session identity. Post-sign-in destinations go through `safeReturnTo` (local paths only). The callback is told the way in by `from=google` (never inferred from the error code); other ways in sit in `EmailCodeForm`'s `alternatives` slot, email step only. Password: backend WIP, not offered. Full entry, including the Google failure mapping: `references/auth.md`; ADR 0004 |
+| Auth | Supabase, passwordless email code (+ magic link) — backend auth reply 2026-09-27 — and **Google** (user, 2026-10-03), landing on the same `/auth/callback` (one PKCE exchange). `lib/vendor/supabase/` is the only importer of `@supabase/*` (vendorSeams). Session in cookies via `@supabase/ssr`, refreshed in `src/proxy.ts`; never localStorage. The proxy passes the verified user id to the render (`x-ef-session`, always overwritten; a chrome hint, never authorization) and the root layout seeds `useSession` with it (failure log #37); every page then renders per request (accepted, product 2026-09-30). `http.ts` middleware sends `Bearer`, refreshes once on 401, else signs out. Viewer from `GET /api/v1/me`: 401/none → guest, **404 → `unlinked`**, **409 `/problems/account-exists` → `accountExists`**, goal → mentee, approved `mentor_profile` → mentor; never `primary_role`. Query keys carry the session identity. Post-sign-in destinations go through `safeReturnTo` (local paths only). The callback is told the way in by `from=google` (never inferred from the error code); other ways in sit in `EmailCodeForm`'s `alternatives` slot, email step only. Password: backend WIP, not offered. Full entry, including the Google failure mapping: `references/auth.md` (rules: read it before touching auth); ADR 0004 |
 | Idempotency | Booking is idempotent and scoped to the caller (backend ADR 0024) — key format to confirm before BookingModal is wired |
 
 ---
@@ -136,7 +136,7 @@ cutover list: `references/environments.md`.
 | Where do tokens come from? | The **screens project's** `_ds/edufurther-design-system-…/tokens/*.css` (live, via `DesignSync`) → `src/styles/tokens/`; checked identical on 2026-10-12. The standalone DS project `c4e21801…` lags it (no phone scale), so never import from that one |
 | Where is divergence recorded? | `references/design-divergence.md` |
 | What is deliberately not from the design? | Focus rings, disabled/busy, skeleton colour, reduced-motion, a text-on-photo scrim token — listed as _ours_ in `design-divergence.md` |
-| Session Join (`/sessions/[id]`) | Built (4 PRs, `layout=lobby`); screen complete, follow-ups are issues. What each PR built: `references/ported-screens.md` |
+| Session Join (`/sessions/[id]`) | Built (4 PRs, `layout=lobby`); screen complete, follow-ups are issues. **Rules:** never infer "missed" from the clock (only each party's recorded attendance); credit copy only within the backend's rule (refund only when the mentor alone was absent); Rejoin (`POST /door`, until `door_closes_at`) stays gated on `joined_at`, no late first-timers; never a live "Here now" until backend #394. What each PR built: `references/ported-screens.md` |
 
 Prototype files (`support.js`, `image-slot.js`, `dc-import`, `sc-if`) are the prototype runtime. **Never port them.**
 
@@ -155,8 +155,7 @@ Prototype files (`support.js`, `image-slot.js`, `dc-import`, `sc-if`) are the pr
    every new or changed element, and list the table in the PR. A mismatch is a bug,
    unless it is a recorded divergence in `references/design-divergence.md`.
 
-- **File size (product, 2026-09-29):** at most 1000 lines of code per file (comments and blank lines not counted), enforced by ESLint `max-lines`. Start splitting a file once it passes 900: a component into sub-components or hooks, a test file by concern with a shared harness. Never raise the limit to pass.
-- **Split a file past 900 lines of code when you next touch it** (ESLint `max-lines` blocks 1000; tech-debt audit item 5, 2026-10-12). Known candidates: `MentorProfileScreen`, `lib/api/data/sessionTypes.ts`, `lib/utils/sessionTypeDraft.ts`, `MentorResults` props.
+- **File size (product, 2026-09-29):** at most 1000 lines of code per file (comments and blank lines not counted), enforced by ESLint `max-lines`. Start splitting a file once it passes 900, at the latest when you next touch it (audit item 5, 2026-10-12; known candidates: `MentorProfileScreen`, `lib/api/data/sessionTypes.ts`, `lib/utils/sessionTypeDraft.ts`, `MentorResults` props): a component into sub-components or hooks, a test file by concern with a shared harness. Never raise the limit to pass.
 - **Comments are short:** say why, not what; don't restate the code; no history ("changed in #NN") unless it guards a regression.
 - Route folders kebab-case; components PascalCase.
 - Route-local components live in `src/app/<route>/_components/` until a second route needs them. Page logic shared by routes lives in `src/app/_shell/` (`useAppShell` — chrome and account menu — and `bookBlockedFor`); the session dialogs Bookings and Session Join share (the decline / withdraw / cancel confirm, the time suggestion, the intake-file viewer) live in `src/app/_sessions/`.
@@ -186,7 +185,7 @@ The reviewer is Claude, with Kimi as the fallback when the Claude run fails. Ver
 every finding before acting on it (the reviewer has been wrong), fix P0 and P1
 always and P2 if cheap with a failing-first test, and answer every finding in ONE
 reply comment. Which reviewer, its keys and variables, and the seven-step loop:
-`references/code-review-loop.md`.
+`references/code-review-loop.md` (the loop's steps: read it before posting a review).
 
 **Parallel delivery (owner, 2026-10-12).**
 - Independent work runs at once: each PR in its own worktree; long mechanical work
@@ -194,9 +193,9 @@ reply comment. Which reviewer, its keys and variables, and the seven-step loop:
 - A finished slice ships as its own PR straight away, not held for a slower sibling.
 - Scope the next PR (read-only) while the current one is in review.
 - Local review agents run alongside the GitHub `/code-reviewer`, not as a serial step.
-- Several checklists may be approved together.
-- No long verification crawls: diff review, targeted checks, then CI.
-- The merge gates don't change: two reviews, CI green on the exact head commit, Definition of Done.
+- Several PRs' checklists may be presented and approved together (owner, 2026-10-12); each is still approved before its build starts (non-negotiable 4).
+- No long verification crawls: diff review, targeted checks, then CI. Driving the page (`review-page.mjs`, non-negotiable 9) and the page-review gate still apply.
+- The merge gates don't change: two reviews, CI green on the exact head commit, Definition of Done. Speed comes from parallelism, never from skipping a gate or a best practice (owner, 2026-10-12).
 
 ## Guardrails
 
