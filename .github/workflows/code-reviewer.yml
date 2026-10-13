@@ -219,6 +219,20 @@ jobs:
           git show "origin/$BASE_REF:AGENTS.md" > code-review/AGENTS.md
           cp code-review/AGENTS.md AGENTS.md
 
+          # The project's settled decisions, from the base branch for the same
+          # reason (owner, 2026-10-12; backend #433): a reviewer that never saw a
+          # house rule can't flag a change that breaks it. SKILL.md plus its
+          # references (auth, the review loop, design divergences), which hold
+          # rules too. The prompt has the reviewer search them, not read them
+          # whole. Absent on an old base: an empty file.
+          conv=".claude/skills/project-conventions"
+          : > code-review/conventions.md
+          for f in "$conv/SKILL.md" $(git ls-tree --name-only "origin/$BASE_REF" "$conv/references/" 2>/dev/null); do
+            if git cat-file -e "origin/$BASE_REF:$f" 2>/dev/null; then
+              { echo; echo "<!-- file: $f -->"; git show "origin/$BASE_REF:$f"; } >> code-review/conventions.md
+            fi
+          done
+
           # Findings raised on this PR and the replies to them, so a finding
           # already fixed or answered as wrong is not raised again. Only the
           # reviewer's comments and replies from people who can write: the
