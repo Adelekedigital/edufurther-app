@@ -861,7 +861,7 @@ describe('the actions appear only where they can succeed', () => {
     tab = 'pending';
     render(<BookingsScreen />);
     await userEvent.click(screen.getByRole('button', { name: 'Decline' }));
-    expect(screen.getByRole('dialog', { name: 'Decline this request' })).toBeVisible();
+    expect(screen.getByRole('dialog', { name: 'Decline this request?' })).toBeVisible();
     expect(actions.decline!.mutate).not.toHaveBeenCalled();
   });
 

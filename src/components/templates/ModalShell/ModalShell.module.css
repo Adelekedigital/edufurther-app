@@ -208,3 +208,63 @@
   border-top: var(--border-hairline) solid var(--border-muted);
   background: var(--surface-card);
 }
+
+/* Contained sheet — `sheet` + `contained` (CancelModal.dc.html, drawn in Session
+   Join.dc.html's `cancelMob`): a true bottom sheet rather than the whole screen.
+   Chrome and tokens are the phone sheet CreditsExplainer already draws. */
+.sheetRoot.containedRoot {
+  align-items: flex-end;
+}
+/* Lighter than the full-screen scrim: the page behind is meant to stay readable. */
+.overlaySheet {
+  background: var(--overlay-scrim-sheet);
+}
+.sheet.contained {
+  /* As tall as its content, capped — NOT `height: 100%`. That is what keeps the
+     footer directly under the content instead of a screen-height below it, so
+     with the keyboard open it rides up with the field being typed in. */
+  height: auto;
+  max-height: 80vh;
+  max-height: 80dvh;
+  max-width: 390px;
+  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+  animation:
+    fade var(--duration-base) var(--ease-standard),
+    rise var(--duration-slow) var(--ease-standard);
+}
+/* Content-sized: it may shrink and scroll at the cap, but never pads itself out
+   to fill a height the sheet does not have. */
+.sheet.contained .sheetBody {
+  flex: 0 1 auto;
+}
+/* No notch to clear — this top edge is mid-screen, not under the status bar. */
+.sheet.contained .sheetHeader {
+  padding: var(--space-1);
+}
+/* The home indicator sits under the buttons here, so add its inset rather than
+   max() it: the sheet's own bottom edge is the screen's. */
+.sheet.contained .sheetFooter {
+  padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
+}
+/* The grab handle that says "this came up from the bottom" (CreditsExplainer). */
+.grabber {
+  flex: none;
+  align-self: center;
+  width: 36px;
+  height: 4px;
+  margin-top: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--ink-200);
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(100%);
+  }
+}
+/* Scoped to the contained sheet: the centred modal's motion is not ours to change. */
+@media (prefers-reduced-motion: reduce) {
+  .sheet.contained {
+    animation: none;
+  }
+}

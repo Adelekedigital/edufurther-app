@@ -148,3 +148,17 @@
     width: 100%;
   }
 }
+
+/* The confirm's "not yet" state (CancelModal.dc.html): soft red while the
+   reason — or the offered time — is still incomplete. It stays pressable on
+   purpose; pressing it says what is missing. A disabled-looking button with
+   nothing explaining it is the confirm people learn to click past.
+
+   Doubled selector because the atom's own `.button.destructive` is two classes
+   and would otherwise win. This overrides a variant rather than theming one,
+   so it has to out-specify it. */
+.confirmNotYet.confirmNotYet {
+  background: var(--red-50);
+  color: var(--red-500);
+  cursor: not-allowed;
+}

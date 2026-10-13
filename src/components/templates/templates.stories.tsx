@@ -101,6 +101,73 @@ export const Modal: Story = {
   },
 };
 
+/**
+ * Phones, the other sheet: `CancelModal.dc.html` `sheet contained`. It stops at
+ * its content rather than taking the screen, so the page stays visible behind
+ * it — which is what a short confirm wants, and what keeps its footer near the
+ * field instead of a screen away behind the keyboard.
+ *
+ * The second one is capped: past 80% of the height the body scrolls and the
+ * header, handle and footer hold still.
+ */
+export const ModalSheetContained: Story = {
+  globals: { viewport: { value: 'mobile2', isRotated: false } },
+  render: function Render() {
+    return (
+      <>
+        <ModalShell
+          title="Cancel this booking?"
+          onClose={fn()}
+          sheet={{
+            heading: 'Cancel this booking?',
+            leading: { icon: 'close', label: 'Close', onClick: fn() },
+            showClose: false,
+          }}
+          contained
+          footer={
+            <>
+              <Button variant="secondary-outlined" fullWidth>
+                Keep session
+              </Button>
+              <Button variant="destructive" fullWidth>
+                Yes, cancel session
+              </Button>
+            </>
+          }
+        >
+          <p>Short content, so the sheet is short. No dead space under the buttons.</p>
+        </ModalShell>
+      </>
+    );
+  },
+};
+
+/** The cap: content past 80% of the height scrolls, the chrome does not. */
+export const ModalSheetContainedTall: Story = {
+  globals: { viewport: { value: 'mobile2', isRotated: false } },
+  render: function Render() {
+    return (
+      <ModalShell
+        title="Cancel this booking?"
+        onClose={fn()}
+        sheet={{
+          heading: 'Cancel this booking?',
+          leading: { icon: 'close', label: 'Close', onClick: fn() },
+          showClose: false,
+        }}
+        contained
+        footer={
+          <Button variant="destructive" fullWidth>
+            Yes, cancel session
+          </Button>
+        }
+      >
+        <Filler />
+      </ModalShell>
+    );
+  },
+};
+
 /** Phones: BookingModal.dc.html `mobileView=sheet` chrome around a content slot. */
 export const ModalSheet: Story = {
   globals: { viewport: { value: 'mobile2', isRotated: false } },

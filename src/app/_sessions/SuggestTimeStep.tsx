@@ -111,8 +111,12 @@ export function SuggestTimeStep({
 
   return (
     <div className={styles.step}>
+      {/* No "Optional" tag: while the offer is switched on the confirm waits
+          for a time, so marking it optional and then insisting on it is the
+          contradiction failure mode #62 names — on the time this round rather
+          than on the reason. Opting out is the switch above, not this label. */}
       <span className={styles.label} id={labelId}>
-        Suggested time <span className={styles.optional}>Optional</span>
+        Suggested time
       </span>
       <div className={styles.chips} role="radiogroup" aria-labelledby={labelId}>
         {shown.map((iso) => (
