@@ -3,7 +3,7 @@ import {
   MOCK_EDIT_WINDOW_MS,
   mockReviewable,
   mockReviewableIds,
-  ratingOf,
+  ratingsOf,
   reviewRead,
   store,
 } from '@/lib/api/mock/reviewStore';
@@ -35,12 +35,10 @@ export async function POST(req: Request) {
     ints('overall_rating', 1, 5) &&
     ints('valuable_rating', 1, 5) &&
     ints('nps_recommend_score', 1, 10) &&
-    ['communication_rating', 'knowledge_rating', 'support_rating', 'practicality_rating'].every(
-      (k) => ratingOf(b[k]) !== null,
-    ) &&
     typeof b.public_review === 'string' &&
     b.public_review.trim().length > 0;
-  if (!valid) return new NextResponse(null, { status: 422 });
+  const ratings = ratingsOf(b);
+  if (!valid || !ratings) return new NextResponse(null, { status: 422 });
   const now = Date.now();
   const r = {
     id: `mine-${now}`,
@@ -50,10 +48,7 @@ export async function POST(req: Request) {
     editable_until: new Date(now + MOCK_EDIT_WINDOW_MS).toISOString(),
     overall_rating: b.overall_rating as number,
     public_review: (b.public_review as string).trim(),
-    communication_rating: ratingOf(b.communication_rating)!,
-    knowledge_rating: ratingOf(b.knowledge_rating)!,
-    support_rating: ratingOf(b.support_rating)!,
-    practicality_rating: ratingOf(b.practicality_rating)!,
+    ...ratings,
     valuable_rating: b.valuable_rating as number,
     nps_recommend_score: b.nps_recommend_score as number,
     private_review: typeof b.private_review === 'string' ? b.private_review : null,

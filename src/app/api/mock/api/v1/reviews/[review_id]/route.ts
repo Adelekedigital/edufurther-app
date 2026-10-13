@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { authoredRead, ratingOf, reviewRead, store } from '@/lib/api/mock/reviewStore';
+import { authoredRead, ratingsOf, reviewRead, store } from '@/lib/api/mock/reviewStore';
 import { ok } from '@/lib/api/mock/respond';
 
 /**
@@ -15,12 +15,6 @@ export async function GET(_req: Request, ctx: { params: Promise<{ review_id: str
     : new NextResponse(null, { status: 404 });
 }
 
-const RATINGS = [
-  'communication_rating',
-  'knowledge_rating',
-  'support_rating',
-  'practicality_rating',
-] as const;
 const int = (v: unknown, lo: number, hi: number) =>
   Number.isInteger(v) && (v as number) >= lo && (v as number) <= hi;
 
@@ -42,19 +36,18 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ review_id: st
     (b.overall_rating === undefined || int(b.overall_rating, 1, 5)) &&
     (b.valuable_rating === undefined || int(b.valuable_rating, 1, 5)) &&
     (b.nps_recommend_score === undefined || int(b.nps_recommend_score, 1, 10)) &&
-    RATINGS.every((k) => b[k] === undefined || ratingOf(b[k]) !== null) &&
     (b.public_review === undefined ||
       (typeof b.public_review === 'string' && b.public_review.trim().length > 0)) &&
     (b.private_review === undefined ||
       b.private_review === null ||
       typeof b.private_review === 'string');
-  if (!valid) return new NextResponse(null, { status: 422 });
-  const next = { ...r };
+  const ratings = ratingsOf(b, true);
+  if (!valid || !ratings) return new NextResponse(null, { status: 422 });
+  const next = { ...r, ...ratings };
   if (b.overall_rating !== undefined) next.overall_rating = b.overall_rating as number;
   if (b.valuable_rating !== undefined) next.valuable_rating = b.valuable_rating as number;
   if (b.nps_recommend_score !== undefined)
     next.nps_recommend_score = b.nps_recommend_score as number;
-  for (const k of RATINGS) if (b[k] !== undefined) next[k] = ratingOf(b[k])!;
   if (b.public_review !== undefined) next.public_review = (b.public_review as string).trim();
   if (b.private_review !== undefined) next.private_review = b.private_review as string | null;
   store.reviews.set(r.id, next);
