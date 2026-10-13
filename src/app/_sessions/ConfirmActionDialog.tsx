@@ -154,7 +154,11 @@ export function ConfirmActionDialog({
               }
               onConfirm({
                 reasonCode,
-                reasonText: text,
+                // Only "Something else" has words to send. The box is hidden
+                // for every other reason, so anything still held in state is
+                // something the person cannot see — it must not reach the
+                // other party's notification.
+                reasonText: reasonCode === 'other' ? text : '',
                 ...(action === 'cancel' && isMentor ? { releaseSlot: stillFree } : {}),
                 ...(suggesting ? { suggestedStartsAt: suggested } : {}),
               });
@@ -217,11 +221,12 @@ export function ConfirmActionDialog({
           reasonCode={reasonCode}
           onReasonCode={(v) => {
             setReasonCode(v);
-            // The box only exists for "Something else", so anything typed there
-            // and then abandoned would travel invisibly: a `reason_text` the
-            // person can no longer see on screen, landing in the other party's
-            // notification.
-            if (v !== 'other') setText('');
+            // The text is never cleared by a tap (owner, 2026-10-12). Tapping
+            // chips is how someone explores the options, and losing what they
+            // wrote to an exploratory tap — with no undo — is the worse
+            // failure. It survives unpicking, re-picking and switching away,
+            // and comes back untouched. What stops it travelling invisibly is
+            // the payload below, not the field.
             // Clear on change rather than re-validate: a message about the
             // thing they just fixed, still sitting there, reads as broken.
             setReasonBad(null);

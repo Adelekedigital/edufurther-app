@@ -56,11 +56,25 @@ describe('what the other party reads is not the chip they picked', () => {
     }
   });
 
-  it('never repeats the chip label, which is written in the first person', () => {
+  it('is never written in the first person, which the labels that name a person are', () => {
     // "I'm no longer free" in a line headed "Reason from Amara" would read as
-    // Amara talking about herself in someone else's panel.
+    // Amara talking about herself in someone else's panel. Checking only that
+    // the two strings differ would pass on a one-character change, so this
+    // checks the property that actually matters.
+    const FIRST_PERSON = ['i', 'i’m', "i'm", 'my', 'me', 'mine'];
+    const isFirstPerson = (t: string) =>
+      t
+        .toLowerCase()
+        .split(/[^a-z’']+/)
+        .filter(Boolean)
+        .some((w) => FIRST_PERSON.includes(w));
+    // "Something technical" and "Something else" name nobody, so only these
+    // three carry a voice to check.
+    const voiced = ['scheduling_conflict', 'mentor_unavailable', 'mentee_no_longer_needed'];
     for (const side of ['mentee', 'mentor'] as const) {
       for (const r of reasonsFor(side)) {
+        if (voiced.includes(r.value)) expect(isFirstPerson(r.label)).toBe(true);
+        expect(isFirstPerson(r.reads ?? '')).toBe(false);
         expect(r.reads).not.toBe(r.label);
       }
     }

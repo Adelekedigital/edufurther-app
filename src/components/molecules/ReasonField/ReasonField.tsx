@@ -98,7 +98,9 @@ export function ReasonField({
         // means nothing to a screen reader. The error is associated by
         // `aria-describedby`, sits before the chips in the DOM, and the dialog
         // moves focus to the first chip when it blocks a submit.
-        describedBy={reasonBad ? `${id}-reason ${id}-reason-err` : `${id}-reason`}
+        describedBy={
+          reasonBad ? `${id}-reason ${id}-reason-err ${id}-hint` : `${id}-reason ${id}-hint`
+        }
         firstRef={groupRef}
       />
       {/* One hint, always in the same place, so nothing shifts when the box

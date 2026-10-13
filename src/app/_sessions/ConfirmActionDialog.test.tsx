@@ -189,13 +189,42 @@ describe('the box belongs to Other, and what was typed there does not outlive it
     );
   });
 
-  it('coming back to Other starts empty rather than restoring the abandoned text', async () => {
+  it('typed words survive every tap of the chip — a deselect is not a delete', async () => {
+    // Tapping chips is how someone explores the options. Losing what they
+    // wrote to an exploratory tap, with no undo, is the worse failure, so the
+    // text lives in state and no tap clears it (owner, 2026-10-12).
+    dialog({ action: 'decline', booking: mentorPending() });
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    await userEvent.type(screen.getByRole('textbox'), 'a long explanation I do not want to lose');
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    expect(screen.getByRole('textbox')).toHaveValue('a long explanation I do not want to lose');
+  });
+
+  it('switching to another chip and back shows the same words again', async () => {
     dialog({ action: 'decline', booking: mentorPending() });
     await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
     await userEvent.type(screen.getByRole('textbox'), 'first thoughts');
     await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
-    expect(screen.getByRole('textbox')).toHaveValue('');
+    expect(screen.getByRole('textbox')).toHaveValue('first thoughts');
+  });
+
+  it('but a reason that is not Other sends no words at all', async () => {
+    const onConfirm = vi.fn();
+    dialog({ action: 'decline', booking: mentorPending(), onConfirm });
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    await userEvent.type(screen.getByRole('textbox'), 'changed my mind about this');
+    await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
+    // Held in state so it can come back, but never sent: the box is off screen,
+    // so these are words the person cannot see, and they must not land in the
+    // other party's notification.
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ reasonCode: 'technical_issue', reasonText: '' }),
+    );
   });
 });
 

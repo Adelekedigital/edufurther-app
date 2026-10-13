@@ -45,7 +45,7 @@ describe('the box belongs to Other, and nowhere else', () => {
     expect(screen.getByLabelText(/What happened\?/)).not.toBeRequired();
   });
 
-  it('counts characters only once there is something to count', async () => {
+  it('counts characters only once there is something to count', () => {
     field({ required: true, reasonCode: 'other', text: 'visa refused' });
     expect(screen.getByText('12 / 2000')).toBeVisible();
   });
