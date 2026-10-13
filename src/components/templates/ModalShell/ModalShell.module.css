@@ -262,6 +262,10 @@
 .sheet.contained .sheetTitle {
   /* Room for the close, so a long title does not run under it. */
   padding-right: var(--space-8);
+  /* `align-items`, not just `text-align`: this is a flex column, so the h2
+     shrink-wraps and `align-items: center` keeps it centred however the text is
+     aligned inside it. Overriding only `text-align` changed nothing visible. */
+  align-items: flex-start;
   text-align: left;
 }
 .sheet.contained .sheetHeading {

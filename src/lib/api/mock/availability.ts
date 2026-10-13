@@ -18,6 +18,9 @@ const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 
 /** Null for the design's fully booked mentor and every seventh one ("refreshing"). */
+/** The mock viewer when the page is read as a mentor (viewer.ts MOCK_VIEWERS). */
+const MOCK_MENTOR_VIEWER = 'mock-mentor';
+
 export function mockAvailabilityState(mentorId: string): 'open' | 'none' | 'refreshing' {
   if (mentorId === 'm-jesuah') return 'none';
   const i = MENTORS.findIndex((m) => m.id === mentorId);
@@ -44,7 +47,13 @@ const EPOCH = (() => {
 function gridOrigin(mentorId: string): number | null {
   if (mockAvailabilityState(mentorId) === 'none') return null;
   const i = MENTORS.findIndex((m) => m.id === mentorId);
-  const offsetHours = mentorId === FEATURED.id ? 30 : i >= 0 ? 2 + ((i * 11) % 70) : null;
+  // The mock viewer-as-mentor gets a grid too. Resolving them in
+  // `mockMentorExists` was only half of it: without an origin here they exist
+  // with no open times, so the cancel dialog's picker renders "You have no open
+  // times" and the one state worth reviewing — times to choose from — is still
+  // unreachable in the mock and in CI.
+  const offsetHours =
+    mentorId === MOCK_MENTOR_VIEWER ? 6 : mentorId === FEATURED.id ? 30 : i >= 0 ? 2 + ((i * 11) % 70) : null;
   return offsetHours === null ? null : EPOCH + offsetHours * HOUR;
 }
 
@@ -143,7 +152,6 @@ export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
  * open slots. Without it that panel never leaves its skeleton, so the picker
  * could not be reviewed in the mock or by CI's page review.
  */
-const MOCK_MENTOR_VIEWER = 'mock-mentor';
 
 export function mockMentorExists(mentorId: string): boolean {
   return (
