@@ -83,16 +83,6 @@
 }
 
 /* What happens to the credit, stated before the button rather than after. */
-.confirmCredit {
-  margin: 0;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--ink-50);
-  font-size: var(--text-p-sm);
-  line-height: var(--lh-p);
-  color: var(--ink-900);
-}
-
 /* The credit is not coming back. Carrying that on wording alone, in a box that
    reads as boilerplate, is how someone finds out afterwards. */
 .confirmCreditLost {
@@ -108,20 +98,36 @@
   color: var(--text-danger);
 }
 
+/* `CancelModal.dc.html`: `grid-template-columns: 1fr 1fr` with both buttons
+   full width — two equal columns filling the dialog, not a pair of auto-width
+   buttons pushed to the right. On a sheet the design collapses the same grid to
+   a single `1fr` column, which is what the phone block below does. */
 .confirmFooter {
-  display: flex;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
 }
 
+.confirmFooter > * {
+  width: 100%;
+}
+
+/* CancelModal.dc.html draws the suggest-a-time control inside its own bordered
+   box, which is what separates a decision from the body text around it. The
+   "I'm still free" switch takes the same treatment: it is the same kind of
+   control, it sits directly beside this one on a mentor's cancel, and one of
+   the two in a box would read as an accident rather than a distinction. */
 .slotChoice {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-lg);
 }
 
 .slotLabel {
-  font-size: var(--text-p-sm);
+  font-size: var(--text-p-xs);
   font-weight: var(--weight-semibold);
   color: var(--ink-900);
 }
@@ -135,16 +141,32 @@
 
 @media (max-width: 767px) {
   .confirmFooter {
-    /* The dialog fills the screen on a phone (ModalShell's own treatment, shared
-       by every modal here), so the footer is pushed to the bottom rather than
-       left floating under short content. */
+    /* `btnCols: sheet ? '1fr' : '1fr 1fr'` — the design collapses the same grid
+       to one column on a sheet, so the two stack full width.
+
+       This has to be `grid-template-columns`, not `flex-direction`. The footer
+       became a grid to match the desktop spec, which silently made the old
+       `flex-direction: column` here do nothing — and the buttons went back to
+       sitting side by side on a phone, each half the width. Measuring the
+       built page caught it; the tests could not. */
+    grid-template-columns: 1fr;
+    /* Pushed to the bottom rather than floating under short content. Inert in
+       the contained sheet, which is content-height, and still right for any
+       caller ModalShell renders full-screen. */
     margin-top: auto;
-    /* `column`, not `column-reverse`: reversing painted the destructive button
-       above the dismiss while the tab order ran the other way, so focus jumped
-       up the screen. */
-    flex-direction: column;
   }
-  .confirmFooter > * {
-    width: 100%;
-  }
+}
+
+/* The confirm's "not yet" state (CancelModal.dc.html): soft red while the
+   reason — or the offered time — is still incomplete. It stays pressable on
+   purpose; pressing it says what is missing. A disabled-looking button with
+   nothing explaining it is the confirm people learn to click past.
+
+   Doubled selector because the atom's own `.button.destructive` is two classes
+   and would otherwise win. This overrides a variant rather than theming one,
+   so it has to out-specify it. */
+.confirmNotYet.confirmNotYet {
+  background: var(--red-50);
+  color: var(--red-500);
+  cursor: not-allowed;
 }

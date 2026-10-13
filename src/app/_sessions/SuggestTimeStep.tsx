@@ -5,10 +5,24 @@ import { Chip } from '@/components/atoms/Chip/Chip';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { useSlots } from '@/lib/api/data/booking';
-import { fullDate } from '@/lib/utils/bookings';
-import { formatTime } from '@/lib/utils/format';
+import { dayLabel, formatTime } from '@/lib/utils/format';
 import type { Booking } from '@/types/booking';
 import styles from './SuggestTimeStep.module.css';
+
+/**
+ * How long an offered time is kept for the mentee alone, said out loud.
+ *
+ * **Not on the contract.** `SuggestionRead.held_until` carries the instant once
+ * a suggestion exists, but nothing gives the duration *before* one is made, so
+ * this number is ours and will go stale the day the backend's policy changes.
+ * That is the whole reason it is a named constant rather than a word inside a
+ * sentence: it greps, and it is one place to change. Divergence row 36 spelled
+ * it "two" for the same worry, which never helped — the number was just as
+ * hardcoded and harder to find. Superseded 2026-10-13.
+ *
+ * If a `hold_hours` ever appears on the contract, read it and delete this.
+ */
+const HOLD_HOURS = 2;
 
 /** The design's own count: the two earliest, then a way to more. */
 const CHIPS = 2;
@@ -62,14 +76,15 @@ export function SuggestTimeStep({
   const slots = useSlots(mentorId, b.sessionTypeId, accountZone);
 
   // A slot we cannot read is not a slot we can offer: an unparseable instant
-  // threw out of `fullDate` and took the whole Bookings screen with it.
+  // threw out of the formatter and took the whole Bookings screen with it.
   const all = (slots.data ?? []).filter((iso) => !Number.isNaN(new Date(iso).getTime()));
   const shown = all.slice(0, limit);
-  const label = (iso: string) =>
-    `${fullDate(iso, timeZone)} · ${formatTime(iso, timeZone)} to ${formatTime(
-      new Date(new Date(iso).getTime() + b.durationMin * 60_000).toISOString(),
-      timeZone,
-    )}`;
+  // `SuggestTime.dc.html`: "Mon, Sep 28 · 10:00 am". Weekday, no year, and the
+  // start only. The year is noise inside a booking window weeks long, and the
+  // end time is the duration they already agreed — printing the range made the
+  // chip twice as wide for nothing, which is what forced the "show more"
+  // problem below in the first place.
+  const label = (iso: string) => `${dayLabel(iso, timeZone)} · ${formatTime(iso, timeZone)}`;
 
   if (slots.isLoading) {
     return (
@@ -111,8 +126,12 @@ export function SuggestTimeStep({
 
   return (
     <div className={styles.step}>
+      {/* No "Optional" tag: while the offer is switched on the confirm waits
+          for a time, so marking it optional and then insisting on it is the
+          contradiction failure mode #62 names — on the time this round rather
+          than on the reason. Opting out is the switch above, not this label. */}
       <span className={styles.label} id={labelId}>
-        Suggested time <span className={styles.optional}>Optional</span>
+        Suggested time
       </span>
       <div className={styles.chips} role="radiogroup" aria-labelledby={labelId}>
         {shown.map((iso) => (
@@ -144,7 +163,8 @@ export function SuggestTimeStep({
       {value && (
         <span className={styles.hold}>
           <Icon name="lock_clock" size={14} />
-          Held for {b.other.firstName} for two hours, then it opens to others again.
+          Held for {b.other.firstName} for {HOLD_HOURS} hours, then it opens to others
+          again.
         </span>
       )}
     </div>

@@ -491,11 +491,17 @@ describe('before the window', () => {
   it('offers Cancel, and confirms it before calling the session off', async () => {
     renderAt('15:15:00');
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    const dialog = screen.getByRole('dialog', { name: 'Cancel this session' });
+    const dialog = screen.getByRole('dialog', { name: 'Cancel this booking?' });
+    // This fixture is the mentor's side, so the dialog opens offering Amara
+    // another time instead — the design's default. Offering and giving a
+    // reason are alternatives, so the chips only exist once the offer is off.
+    await userEvent.click(
+      within(dialog).getByRole('switch', { name: 'Suggest a new time to Amara' }),
+    );
     // The reason is required since 2026-10-10, here as on Bookings: the dialog
     // is one component and this screen gets the rule whether it asked or not.
     await userEvent.click(within(dialog).getByRole('button', { name: 'A clash in my calendar' }));
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel session' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Yes, cancel session' }));
     expect(cancel.mutate).toHaveBeenCalledWith(
       expect.objectContaining({ bookingId: 'b1', reasonCode: 'scheduling_conflict' }),
       expect.anything(),
@@ -505,10 +511,28 @@ describe('before the window', () => {
   it('will not call it off with no reason given', async () => {
     renderAt('15:15:00');
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    const dialog = screen.getByRole('dialog', { name: 'Cancel this session' });
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel session' }));
+    const dialog = screen.getByRole('dialog', { name: 'Cancel this booking?' });
+    await userEvent.click(
+      within(dialog).getByRole('switch', { name: 'Suggest a new time to Amara' }),
+    );
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Yes, cancel session' }));
     expect(within(dialog).getByText('Pick a reason before you go on.')).toBeVisible();
     // Blocked, not merely scolded: nothing was sent.
+    expect(cancel.mutate).not.toHaveBeenCalled();
+  });
+
+  it('will not call it off with the offer on and no time picked either', async () => {
+    // The other half of the same rule, and the one that used to be a silent
+    // no-op: a mentor whose calendar has nothing open opens on this path with
+    // nothing to pick, so the confirm has to say what to do rather than
+    // swallow the press.
+    renderAt('15:15:00');
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    const dialog = screen.getByRole('dialog', { name: 'Cancel this booking?' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel and send' }));
+    expect(
+      within(dialog).getByText('Pick a time, or switch this off to give a reason instead.'),
+    ).toBeVisible();
     expect(cancel.mutate).not.toHaveBeenCalled();
   });
 

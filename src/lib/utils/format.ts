@@ -29,6 +29,23 @@ export function formatDay(isoDate: string) {
   return { weekday: fmt({ weekday: 'short' }), date: fmt({ month: 'short', day: 'numeric' }) };
 }
 
+/**
+ * An instant as "Mon, Sep 28" in the given zone — the weekday matters in a
+ * confirm dialog, where "Sep 28" alone makes someone open a calendar to check
+ * which day they are giving up.
+ *
+ * Unlike `formatDay`, this takes an instant, so it reads it in the zone rather
+ * than in UTC.
+ */
+export function dayLabel(isoInstant: string, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    timeZone,
+  }).format(new Date(isoInstant));
+}
+
 export function formatTime(isoInstant: string, timeZone: string): string {
   return new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone })
     .format(new Date(isoInstant))

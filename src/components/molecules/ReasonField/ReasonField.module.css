@@ -1,29 +1,21 @@
-/* The optional reason on a decline, cancel or withdrawal. */
+/* The reason on a decline, cancel or withdrawal. `CancelModal.dc.html`. */
 .field {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
 }
 
+/* `CancelModal.dc.html` draws both labels this field renders — "Reason for
+   canceling" and "What happened?" — at 12px medium, not 14px semibold. */
 .label {
   display: flex;
   align-items: baseline;
   gap: var(--space-2);
-  font-size: var(--text-p-sm);
-  font-weight: var(--weight-semibold);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-medium);
   color: var(--ink-900);
 }
 
-/* Said in the label rather than only in prose: it is the thing people want to
-   know before they start reading a form field. */
-.optional {
-  font-size: var(--text-p-xs);
-  font-weight: var(--weight-regular);
-  color: var(--ink-600);
-}
-
-/* "Optional" said plainly, because the backend made it optional on purpose:
-   a required reason turns a clear-cut decision into a form to argue with. */
 .hint {
   margin: 0;
   font-size: var(--text-p-xs);
@@ -31,8 +23,31 @@
   color: var(--ink-600);
 }
 
+/* The design's box (`CancelModal.dc.html`): only the three values the Input
+   atom does not already give us. Its border, padding, font-family, line-height,
+   colour, focus outline and `resize: vertical` already resolve to exactly what
+   the design asks for, through the same tokens.
+
+   A fixed height rather than `rows`, because the design states one — and the
+   atom's phone rule still raises the text to 16px there, which is the one place
+   we keep over the design's 12px: smaller than that and iOS zooms the whole
+   dialog on focus. */
 .text {
   width: 100%;
+  height: 132px;
+  border-radius: var(--radius-xs);
+}
+
+/* Desktop only, and that is the point. The atom raises inputs to 16px under
+   768px so iOS does not zoom the page on focus; this rule and that one are both
+   a single class, and this stylesheet is emitted second, so an unscoped
+   `font-size` here would quietly win the tie and bring the zoom back — the
+   exact failure the comment above claimed to avoid. The design's 12px applies
+   where there is no soft keyboard to trigger it. */
+@media (min-width: 768px) {
+  .text {
+    font-size: var(--text-p-xs);
+  }
 }
 
 .count {

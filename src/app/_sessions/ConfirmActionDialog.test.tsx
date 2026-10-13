@@ -51,6 +51,26 @@ const dialog = (props: Partial<Parameters<typeof ConfirmActionDialog>[0]> = {}) 
     />,
   );
 
+/**
+ * A mentor's dialog opens with "Suggest a new time" on, which is the design's
+ * default and hides the reason chips — offering a time and giving a reason are
+ * alternatives. Tests that are about the reason turn the offer off first.
+ */
+const offerOff = async (first = 'Amara') =>
+  userEvent.click(screen.getByRole('switch', { name: `Suggest a new time to ${first}` }));
+
+describe('the dialog says which session it is about', () => {
+  it('asks the question, and names the person, the day and the start time', () => {
+    dialog();
+    expect(screen.getByRole('heading', { name: 'Cancel this booking?' })).toBeVisible();
+    // The design's own sentence, read from `startsAt` in the viewer's zone.
+    // Naming the wrong hour here is how someone calls off the wrong session.
+    expect(screen.getByText(/Are you sure you want to cancel this session/)).toHaveTextContent(
+      'with Amara Okafor on Mon, Oct 5 at 8:00 am?',
+    );
+  });
+});
+
 describe('what happens to the credit is said before the button', () => {
   it('a mentee cancelling with notice is told the credit comes back', () => {
     dialog({
@@ -67,7 +87,9 @@ describe('what happens to the credit is said before the button', () => {
     expect(warning).toBeVisible();
     // Before: finding this out afterwards is the complaint this prevents.
     expect(
-      warning.compareDocumentPosition(screen.getByRole('button', { name: 'Cancel session' })),
+      warning.compareDocumentPosition(
+        screen.getByRole('button', { name: 'Yes, cancel session' }),
+      ),
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
@@ -97,7 +119,10 @@ describe('the mentor’s slot choice', () => {
 
   it('is not offered on a decline, which frees nothing', () => {
     dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }) });
-    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    // Named, because the suggest switch is on this dialog too.
+    expect(
+      screen.queryByRole('switch', { name: 'I’m still free at this time' }),
+    ).not.toBeInTheDocument();
   });
 
   it('turning it off is what gets sent', async () => {
@@ -106,9 +131,11 @@ describe('the mentor’s slot choice', () => {
       booking: sampleBookingFor({ side: 'mentor', status: 'confirmed', startsAt: at(48), endsAt: at(49) }),
       onConfirm,
     });
-    await userEvent.click(screen.getByRole('switch'));
+    await userEvent.click(screen.getByRole('switch', { name: 'I’m still free at this time' }));
+    // The chips sit behind the offer, which a mentor's dialog opens with on.
+    await offerOff();
     await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel session' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Yes, cancel session' }));
     expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ releaseSlot: false }));
   });
 });
@@ -119,6 +146,7 @@ describe('the reason is required, and means it', () => {
   it('a coded reason with no note goes through — only "Something else" needs one', async () => {
     const onConfirm = vi.fn();
     dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }), onConfirm });
+    await offerOff();
     await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
     await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
     expect(onConfirm).toHaveBeenCalledWith(
@@ -128,6 +156,7 @@ describe('the reason is required, and means it', () => {
 
   it('says what the other person will be told, and changes it for Other', async () => {
     dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }) });
+    await offerOff();
     // A picked chip reaches Amara as our sentence, not as the chip's own
     // first-person label, so the hint promises being told rather than read.
     expect(screen.getByText('Amara sees the reason you pick.')).toBeVisible();
@@ -135,8 +164,9 @@ describe('the reason is required, and means it', () => {
     expect(screen.getByText('Amara reads what you write.')).toBeVisible();
   });
 
-  it('a mentor is not offered "I no longer need it"', () => {
+  it('a mentor is not offered "I no longer need it"', async () => {
     dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }) });
+    await offerOff();
     expect(screen.queryByRole('button', { name: 'I no longer need it' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'I’m no longer free' })).toBeVisible();
   });
@@ -147,18 +177,20 @@ describe('the reason is required, and means it', () => {
     expect(screen.getByRole('button', { name: 'I no longer need it' })).toBeVisible();
   });
 
-  it('a mentor offering a time instead is told the reason is optional', async () => {
-    // The note carries its own "Optional" tag, so this reads the reason's
-    // label rather than counting the word on the screen.
-    const whyLabel = () =>
-      screen.getByText((t) => t.startsWith('Why?'), { selector: 'span' }).textContent?.trim();
+  it('a mentor offering a time is not asked for a reason as well', async () => {
+    // One question at a time. The old version of this test read an "Optional"
+    // tag on the reason label; there is no label to read now, because offering
+    // a time replaces the field rather than relaxing it — a required field
+    // that quietly accepts nothing is what trains someone to ignore the
+    // marking, and the way out is to not ask twice.
     dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }) });
-    expect(whyLabel()).toBe('Why?');
-    const [first] = screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ });
-    await userEvent.click(first!);
-    // The label has to agree with the rule: a dialog that marks the reason
-    // required and then accepts it empty trains someone to ignore the marking.
-    expect(whyLabel()).toBe('Why? Optional');
+    expect(screen.queryByRole('group', { name: 'Reason for declining' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Something technical' })).not.toBeInTheDocument();
+    await offerOff();
+    // And the question comes back the moment the offer is off, rather than
+    // leaving a dialog with nothing to say.
+    expect(screen.getByRole('group', { name: 'Reason for declining' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Something technical' })).toBeVisible();
   });
 });
 
@@ -167,6 +199,7 @@ describe('the box belongs to Other, and what was typed there does not outlive it
 
   it('no box until Other is picked', async () => {
     dialog({ action: 'decline', booking: mentorPending() });
+    await offerOff();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
@@ -177,6 +210,7 @@ describe('the box belongs to Other, and what was typed there does not outlive it
   it('switching away from Other sends nothing of what was typed', async () => {
     const onConfirm = vi.fn();
     dialog({ action: 'decline', booking: mentorPending(), onConfirm });
+    await offerOff();
     await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
     await userEvent.type(screen.getByRole('textbox'), 'changed my mind about this');
     await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
@@ -194,6 +228,7 @@ describe('the box belongs to Other, and what was typed there does not outlive it
     // wrote to an exploratory tap, with no undo, is the worse failure, so the
     // text lives in state and no tap clears it (owner, 2026-10-12).
     dialog({ action: 'decline', booking: mentorPending() });
+    await offerOff();
     await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
     await userEvent.type(screen.getByRole('textbox'), 'a long explanation I do not want to lose');
     await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
@@ -209,6 +244,7 @@ describe('the box belongs to Other, and what was typed there does not outlive it
     // nothing explaining it.
     const onConfirm = vi.fn();
     dialog({ action: 'decline', booking: mentorPending(), onConfirm });
+    await offerOff();
     await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
     await userEvent.type(screen.getByRole('textbox'), 'I typed this and then unpicked');
     await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
@@ -222,8 +258,29 @@ describe('the box belongs to Other, and what was typed there does not outlive it
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
+  it('words typed, then hidden by the offer going back on, are not sent either', async () => {
+    // The one ordering that hides the box by unmounting the whole field rather
+    // than by changing the chip. Both are caught by the same guard, and this is
+    // the sequence that would notice if someone ever split it in two.
+    const onConfirm = vi.fn();
+    dialog({ action: 'decline', booking: mentorPending(), onConfirm });
+    await offerOff();
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    await userEvent.type(screen.getByRole('textbox'), 'written while the offer was off');
+    // Back on: the reason field goes entirely, text and all.
+    await userEvent.click(screen.getByRole('switch', { name: 'Suggest a new time to Amara' }));
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    const [slot] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
+    await userEvent.click(slot!);
+    await userEvent.click(screen.getByRole('button', { name: 'Decline and send' }));
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ reasonCode: 'mentor_unavailable', reasonText: '' }),
+    );
+  });
+
   it('switching to another chip and back shows the same words again', async () => {
     dialog({ action: 'decline', booking: mentorPending() });
+    await offerOff();
     await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
     await userEvent.type(screen.getByRole('textbox'), 'first thoughts');
     await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
@@ -235,6 +292,7 @@ describe('the box belongs to Other, and what was typed there does not outlive it
   it('but a reason that is not Other sends no words at all', async () => {
     const onConfirm = vi.fn();
     dialog({ action: 'decline', booking: mentorPending(), onConfirm });
+    await offerOff();
     await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
     await userEvent.type(screen.getByRole('textbox'), 'changed my mind about this');
     await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
@@ -248,11 +306,85 @@ describe('the box belongs to Other, and what was typed there does not outlive it
   });
 });
 
+describe('what offering a time promises depends on what was approved', () => {
+  it('a decline says the mentee skips the approval wait', () => {
+    // True since backend #435: a declined request was never approved, so the
+    // offered time is pre-approved and the booking confirms at once.
+    dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }) });
+    expect(
+      screen.getByText('They book it in one tap, with no wait for your approval'),
+    ).toBeVisible();
+  });
+
+  it('a cancel promises nothing of the sort, because there is nothing to skip', () => {
+    dialog({ booking: sampleBookingFor({ side: 'mentor', status: 'confirmed' }) });
+    expect(screen.getByText('They get one tap to book it')).toBeVisible();
+  });
+});
+
+describe('turning the offer off takes the offered time with it', () => {
+  const mentorPending = () => sampleBookingFor({ side: 'mentor', status: 'pending' });
+
+  it('a time picked, then hidden by switching the offer off, is not sent', async () => {
+    // It used to survive. The picker remounts showing only its first two
+    // chips with none pressed, so a mentor could send a fifth-slot instant
+    // that was nowhere on screen.
+    const onConfirm = vi.fn();
+    dialog({ action: 'decline', booking: mentorPending(), onConfirm });
+    const [slot] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
+    await userEvent.click(slot!);
+    await userEvent.click(screen.getByRole('switch', { name: 'Suggest a new time to Amara' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.not.objectContaining({ suggestedStartsAt: expect.anything() }),
+    );
+  });
+
+  it('a blocked submit does not leave an error waiting to reappear', async () => {
+    dialog({ action: 'decline', booking: mentorPending() });
+    await userEvent.click(screen.getByRole('switch', { name: 'Suggest a new time to Amara' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
+    expect(screen.getByText('Pick a reason before you go on.')).toBeVisible();
+    // Away and back is not another attempt to send.
+    await userEvent.click(screen.getByRole('switch', { name: 'Suggest a new time to Amara' }));
+    await userEvent.click(screen.getByRole('switch', { name: 'Suggest a new time to Amara' }));
+    expect(screen.queryByText('Pick a reason before you go on.')).not.toBeInTheDocument();
+  });
+});
+
+describe('the offered time only implies the mentor was busy when it is true', () => {
+  it('a mentor cancelling who stays free sends no reason code at all', async () => {
+    // "I'm still free at this time" says the hour is fine. Sending
+    // `mentor_unavailable` beside it would reach the mentee as "No longer free
+    // at that time" directly under the opposite claim.
+    const onConfirm = vi.fn();
+    dialog({ booking: sampleBookingFor({ side: 'mentor', status: 'confirmed' }), onConfirm });
+    const [slot] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
+    await userEvent.click(slot!);
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel and send' }));
+    expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ reasonCode: null }));
+  });
+
+  it('but one who gives the hour up does say so', async () => {
+    const onConfirm = vi.fn();
+    dialog({ booking: sampleBookingFor({ side: 'mentor', status: 'confirmed' }), onConfirm });
+    await userEvent.click(screen.getByRole('switch', { name: 'I’m still free at this time' }));
+    const [slot] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
+    await userEvent.click(slot!);
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel and send' }));
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ reasonCode: 'mentor_unavailable', releaseSlot: false }),
+    );
+  });
+});
+
 describe('the unhappy paths', () => {
   it('a refusal is shown in our words, and the dialog stays open to retry', () => {
     dialog({ error: { kind: 'conflict', message: 'This booking changed while you were looking.' } });
     expect(screen.getByRole('alert')).toHaveTextContent('This booking changed while you were looking.');
-    expect(screen.getByRole('button', { name: 'Cancel session' })).toBeVisible();
+    // A mentor's dialog opens offering a time, so the confirm reads "and send".
+    expect(screen.getByRole('button', { name: 'Cancel and send' })).toBeVisible();
   });
 
   it('while working, the button says so and is not clickable twice', () => {
@@ -268,11 +400,11 @@ describe('the unhappy paths', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
-  it('"Keep it" closes without doing anything', async () => {
+  it('"Keep session" closes without doing anything', async () => {
     const onClose = vi.fn();
     const onConfirm = vi.fn();
     dialog({ onClose, onConfirm });
-    await userEvent.click(screen.getByRole('button', { name: 'Keep it' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Keep session' }));
     expect(onClose).toHaveBeenCalled();
     expect(onConfirm).not.toHaveBeenCalled();
   });
@@ -285,7 +417,7 @@ describe('offering another time (SuggestTime.dc.html)', () => {
     dialog({ action: 'decline', booking: mentorPending() });
     expect(screen.getByText('Suggested time')).toBeVisible();
     // Two chips, then "Pick another day" — the design's own count.
-    expect(screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ })).toHaveLength(2);
+    expect(screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ })).toHaveLength(2);
     // Eight more at a time: revealing a month of open hours at once pushed the
     // dialog's own buttons about 900px below the fold on a phone.
     expect(screen.getByRole('button', { name: 'Show more times' })).toBeVisible();
@@ -294,18 +426,28 @@ describe('offering another time (SuggestTime.dc.html)', () => {
   it('the picked time is what gets sent, and only from the picker', async () => {
     const onConfirm = vi.fn();
     dialog({ action: 'decline', booking: mentorPending(), onConfirm });
-    const [first] = screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ });
+    const [first] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
     await userEvent.click(first!);
-    await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Decline and send' }));
     // Every option comes from /slots, which is what makes a 422 unreachable.
+    // The offer carries its own code: a mentor offering another hour still
+    // wants the session, just not that one, and that is a true reason to
+    // record (owner, 2026-10-13). No words go with it — the box is not there.
     expect(onConfirm).toHaveBeenCalledWith(
-      expect.objectContaining({ suggestedStartsAt: '2026-10-08T14:00:00Z' }),
+      expect.objectContaining({
+        reasonCode: 'mentor_unavailable',
+        reasonText: '',
+        suggestedStartsAt: '2026-10-08T14:00:00Z',
+      }),
     );
   });
 
   it('offering nothing is still a decline', async () => {
     const onConfirm = vi.fn();
     dialog({ action: 'decline', booking: mentorPending(), onConfirm });
+    // Turning the offer off is how you decline without one, and that is the
+    // path that has to send no time at all.
+    await offerOff();
     await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
     await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
     expect(onConfirm).toHaveBeenCalledWith(
@@ -316,10 +458,15 @@ describe('offering another time (SuggestTime.dc.html)', () => {
   it('picking the same chip again takes the offer back', async () => {
     const onConfirm = vi.fn();
     dialog({ action: 'decline', booking: mentorPending(), onConfirm });
-    const [first] = screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ });
+    const [first] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
     await userEvent.click(first!);
     await userEvent.click(first!);
-    // Taking the offer back removes the exemption, so a reason is needed again.
+    // Nothing offered on the offering path means nothing to send: the confirm
+    // explains itself rather than declining with an empty offer.
+    await userEvent.click(screen.getByRole('button', { name: 'Decline and send' }));
+    expect(onConfirm).not.toHaveBeenCalled();
+    // And the time that was taken back does not travel with the reason either.
+    await offerOff();
     await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
     await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
     expect(onConfirm).toHaveBeenCalledWith(
@@ -330,9 +477,9 @@ describe('offering another time (SuggestTime.dc.html)', () => {
   it('the hold is explained only once a time is actually offered', async () => {
     dialog({ action: 'decline', booking: mentorPending() });
     expect(screen.queryByText(/then it opens to others again/)).not.toBeInTheDocument();
-    const [first] = screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ });
+    const [first] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
     await userEvent.click(first!);
-    expect(screen.getByText(/Held for Amara for two hours/)).toBeVisible();
+    expect(screen.getByText(/Held for Amara for 2 hours/)).toBeVisible();
   });
 
   it('a mentee withdrawing is offered nothing — the contract refuses it', () => {
@@ -350,7 +497,9 @@ describe('offering another time (SuggestTime.dc.html)', () => {
     const onConfirm = vi.fn();
     dialog({ action: 'decline', booking: mentorPending(), onConfirm });
     expect(screen.getByText(/no open times for this session/)).toBeVisible();
-    // No time to offer means no exemption, so the reason is still required.
+    // Nothing to offer, so the way through is the reason — which means turning
+    // the offer off first. The decline is still reachable.
+    await offerOff();
     await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
     await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
     expect(onConfirm).toHaveBeenCalled();
@@ -361,7 +510,9 @@ describe('offering another time (SuggestTime.dc.html)', () => {
     const onConfirm = vi.fn();
     dialog({ action: 'decline', booking: mentorPending(), onConfirm });
     expect(screen.getByText(/couldn’t load your open times/)).toBeVisible();
-    // A failed slots read gives nothing to offer, so the reason is required.
+    // A failed slots read gives nothing to offer, so the reason is the way
+    // through — behind the offer switch, and still reachable.
+    await offerOff();
     await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
     await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
     expect(onConfirm).toHaveBeenCalled();
@@ -488,14 +639,14 @@ describe('a submit with no reason is blocked, not merely scolded', () => {
     // session is cancelled *and* the person is told off.
     const onConfirm = vi.fn();
     dialog({ booking: mentee(), onConfirm });
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel session' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Yes, cancel session' }));
     expect(onConfirm).not.toHaveBeenCalled();
     expect(screen.getByText('Pick a reason before you go on.')).toBeVisible();
   });
 
   it('puts focus on the chips, not just an announcement', async () => {
     dialog({ booking: mentee() });
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel session' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Yes, cancel session' }));
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'A clash in my calendar' })).toHaveFocus(),
     );
@@ -505,7 +656,7 @@ describe('a submit with no reason is blocked, not merely scolded', () => {
     const onConfirm = vi.fn();
     dialog({ booking: mentee(), onConfirm });
     await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel session' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Yes, cancel session' }));
     expect(onConfirm).not.toHaveBeenCalled();
     expect(screen.getByText('Say briefly what happened.')).toBeVisible();
   });
@@ -513,7 +664,7 @@ describe('a submit with no reason is blocked, not merely scolded', () => {
   it('and focus lands in the box that needs filling', async () => {
     dialog({ booking: mentee() });
     await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel session' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Yes, cancel session' }));
     await waitFor(() => expect(screen.getByLabelText('What happened?')).toHaveFocus());
   });
 
@@ -522,7 +673,7 @@ describe('a submit with no reason is blocked, not merely scolded', () => {
     dialog({ booking: mentee(), onConfirm });
     await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
     await userEvent.type(screen.getByLabelText('What happened?'), 'visa refused');
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel session' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Yes, cancel session' }));
     expect(onConfirm).toHaveBeenCalledWith(
       expect.objectContaining({ reasonCode: 'other', reasonText: 'visa refused' }),
     );
@@ -530,7 +681,7 @@ describe('a submit with no reason is blocked, not merely scolded', () => {
 
   it('the error clears as soon as they fix it', async () => {
     dialog({ booking: mentee() });
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel session' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Yes, cancel session' }));
     expect(screen.getByText('Pick a reason before you go on.')).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
     // A message about the thing they just fixed reads as broken.

@@ -27,6 +27,13 @@ type ModalShellProps = {
    * decides (it knows the viewport and owns the step state).
    */
   sheet?: SheetChrome;
+  /**
+   * With `sheet`: a bottom sheet rather than the whole screen — anchored to the
+   * bottom edge, only as tall as its content (capped), the dimmed page still
+   * visible behind it (CancelModal.dc.html `sheet contained`). Without `sheet`
+   * it means nothing, so the full-screen flows keep the default.
+   */
+  contained?: boolean;
   footer?: ReactNode;
   /** A confirm: `alertdialog`, so it is announced as needing an answer. */
   alert?: boolean;
@@ -38,7 +45,8 @@ type ModalShellProps = {
  * Dialog frame: overlay, title, close. The dialog behaviour itself — focus in,
  * Tab kept inside, Escape, scroll lock, focus back — is `useFocusTrap`, shared
  * with the Bookings detail sheet. Full-screen under 768px.
- * The backdrop does NOT close it: a booking in progress holds typed answers.
+ * The backdrop does NOT close it: a booking in progress holds typed answers, and
+ * so does a cancellation's reason — a stray tap must not discard either.
  */
 export function ModalShell({
   title,
@@ -49,6 +57,7 @@ export function ModalShell({
   onClose,
   children,
   sheet,
+  contained = false,
   footer,
   alert = false,
   closeDisabled = false,
@@ -73,8 +82,8 @@ export function ModalShell({
 
   if (sheet) {
     return createPortal(
-      <div className={cx(styles.root, styles.sheetRoot)}>
-        <div className={styles.overlay} aria-hidden />
+      <div className={cx(styles.root, styles.sheetRoot, contained && styles.containedRoot)}>
+        <div className={cx(styles.overlay, contained && styles.overlaySheet)} aria-hidden />
         <div
           ref={dialogRef}
           role={alert ? 'alertdialog' : 'dialog'}
@@ -82,8 +91,10 @@ export function ModalShell({
           aria-labelledby={titleId}
           aria-describedby={sheet.caption ? subId : undefined}
           tabIndex={-1}
-          className={styles.sheet}
+          className={cx(styles.sheet, contained && styles.contained)}
         >
+          {/* Decorative: the sheet is dismissed by the leading button, not by dragging. */}
+          {contained && <span className={styles.grabber} aria-hidden />}
           {/* div, not <header>/<footer>: inside a dialog those read as duplicate page landmarks (axe). */}
           <div className={styles.sheetHeader}>
             <IconButton

@@ -12,14 +12,20 @@ export const REASON_MAX = 2000;
 type ReasonFieldProps = {
   /** Which to offer: a mentee never says "I'm no longer free". */
   side: 'mentor' | 'mentee';
+  /**
+   * Names the group, visibly and to assistive tech both — "Reason for
+   * canceling", "Reason for declining", "Reason for withdrawing". The caller
+   * owns it because only the dialog knows which word it is doing.
+   */
+  label: string;
+  /** The box's placeholder, from the dialog that owns `label`. */
+  placeholder: string;
   reasonCode: PickableReason | null;
   onReasonCode: (value: PickableReason | null) => void;
   text: string;
   onText: (value: string) => void;
   /** Who will be told, e.g. "Amara". */
   readerFirstName: string;
-  /** The reason must be given (owner, 2026-10-10). Mentors offering a time are exempt. */
-  required?: boolean;
   /** Shown after a blocked submit; from `reasonError`, never composed here. */
   error?: { field: 'reason' | 'note'; message: string } | null;
   /**
@@ -49,15 +55,20 @@ type ReasonFieldProps = {
  * given). The contract's advice that "a required one turns a clear-cut
  * decision into a form to argue with" is the outlier. Recorded as divergence
  * 42, since the coded chips themselves are ours.
+ *
+ * There is no optional state left to render: the caller mounts this field only
+ * where the reason is genuinely required (a mentor offering another time
+ * instead shows no reason field at all), so nothing here says "Optional".
  */
 export function ReasonField({
   side,
+  label,
+  placeholder,
   reasonCode,
   onReasonCode,
   text,
   onText,
   readerFirstName,
-  required,
   error,
   groupRef,
   noteRef,
@@ -65,19 +76,20 @@ export function ReasonField({
   const id = useId();
   const options = reasonsFor(side);
   const near = text.length > REASON_MAX - 100;
-  // The box exists only for "Something else" — and is required there whenever
-  // the reason itself is.
+  // The box exists only for "Something else" — and is required wherever it
+  // exists, because that code reaches the other party saying nothing at all.
   const wantsNote = reasonCode === 'other';
-  const noteRequired = !!required && wantsNote;
   const reasonBad = error?.field === 'reason';
   const noteBad = error?.field === 'note';
 
   return (
     <div className={styles.field}>
       {/* A visible label: `ChoiceChips` only puts it on `aria-label`, which
-          leaves four unexplained chips for everyone who can see them. */}
+          leaves four unexplained chips for everyone who can see them. The one
+          `label` string serves both, so nobody is read a name the rest of us
+          cannot see. */}
       <span id={`${id}-reason`} className={styles.label}>
-        Why? {!required && <span className={styles.optional}>Optional</span>}
+        {label}
       </span>
       {/* Before the chips, so a screen reader meets the problem on the way in
           rather than after choosing. */}
@@ -87,7 +99,7 @@ export function ReasonField({
         </p>
       )}
       <ChoiceChips
-        label="Reason"
+        label={label}
         options={options}
         selected={reasonCode ? [reasonCode] : []}
         // Picking another replaces it; picking the same one clears it. No
@@ -120,7 +132,7 @@ export function ReasonField({
       {wantsNote && (
         <>
           <label htmlFor={`${id}-note`} className={styles.label}>
-            What happened? {!noteRequired && <span className={styles.optional}>Optional</span>}
+            What happened?
           </label>
           {noteBad && (
             <p id={`${id}-note-err`} className={styles.error}>
@@ -131,9 +143,9 @@ export function ReasonField({
             id={`${id}-note`}
             value={text}
             onChange={(e) => onText(e.target.value)}
+            placeholder={placeholder}
             maxLength={REASON_MAX}
-            rows={4}
-            required={noteRequired || undefined}
+            required
             // The atom's own prop, not a raw `aria-invalid`: it applies that
             // after spreading the rest, so an attribute passed here would be
             // dropped.

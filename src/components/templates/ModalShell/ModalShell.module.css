@@ -208,3 +208,100 @@
   border-top: var(--border-hairline) solid var(--border-muted);
   background: var(--surface-card);
 }
+
+/* Contained sheet — `sheet` + `contained` (CancelModal.dc.html, drawn in Session
+   Join.dc.html's `cancelMob`): a true bottom sheet rather than the whole screen.
+   Chrome and tokens are the phone sheet CreditsExplainer already draws. */
+.sheetRoot.containedRoot {
+  align-items: flex-end;
+}
+/* Lighter than the full-screen scrim: the page behind is meant to stay readable. */
+.overlaySheet {
+  background: var(--overlay-scrim-sheet);
+}
+.sheet.contained {
+  /* As tall as its content, capped — NOT `height: 100%`. That is what keeps the
+     footer directly under the content instead of a screen-height below it, so
+     with the keyboard open it rides up with the field being typed in. */
+  height: auto;
+  /* `Modal.dc.html`: a sheet is `width: 100%` and `maxH: 92%`. It had been
+     capped at 390px and centred, copied from CreditsExplainer rather than read
+     off the design — which left it floating with gutters either side anywhere
+     between a large phone and 767px, reading as a card that had come loose
+     rather than a sheet on the bottom edge. */
+  max-height: 92vh;
+  max-height: 92dvh;
+  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+  animation:
+    fade var(--duration-base) var(--ease-standard),
+    rise var(--duration-slow) var(--ease-standard);
+}
+/* Content-sized: it may shrink and scroll at the cap, but never pads itself out
+   to fill a height the sheet does not have. */
+.sheet.contained .sheetBody {
+  flex: 0 1 auto;
+}
+/* No notch to clear — this top edge is mid-screen, not under the status bar. */
+/* `Modal.dc.html` draws a sheet's header the same way as a centred modal's: the
+   title left in the flow, and a 44px close pinned top-right. The full-screen
+   sheet's chrome — leading control, centred small title — belongs to the
+   multi-step booking flow it was built for, and reads as a different component
+   on a one-question confirm. Reordered rather than rebuilt: the leading control
+   here is already a close button, so it just moves to the right. */
+.sheet.contained .sheetHeader {
+  position: relative;
+  padding: var(--space-3) var(--space-5) 0;
+}
+.sheet.contained .sheetHeader > :first-child {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+}
+.sheet.contained .sheetTitle {
+  /* Room for the close, so a long title does not run under it. */
+  padding-right: var(--space-8);
+  /* `align-items`, not just `text-align`: this is a flex column, so the h2
+     shrink-wraps and `align-items: center` keeps it centred however the text is
+     aligned inside it. Overriding only `text-align` changed nothing visible. */
+  align-items: flex-start;
+  text-align: left;
+}
+.sheet.contained .sheetHeading {
+  font-family: var(--font-brand);
+  font-size: var(--text-p-lg);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+/* The spacer only exists to balance a centred title. */
+.sheet.contained .sheetSpacer {
+  display: none;
+}
+/* The home indicator sits under the buttons here, so add its inset rather than
+   max() it: the sheet's own bottom edge is the screen's. */
+.sheet.contained .sheetFooter {
+  padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
+}
+/* The grab handle that says "this came up from the bottom" (CreditsExplainer). */
+.grabber {
+  flex: none;
+  align-self: center;
+  width: 36px;
+  height: 4px;
+  margin-top: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--ink-300);
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(100%);
+  }
+}
+/* Scoped to the contained sheet: the centred modal's motion is not ours to change. */
+@media (prefers-reduced-motion: reduce) {
+  .sheet.contained {
+    animation: none;
+  }
+}
