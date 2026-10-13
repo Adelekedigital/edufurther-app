@@ -8,10 +8,34 @@ import { dirname, join } from 'node:path';
 // skipped (exit 0). A wrong skip leaves production on stale code, so each rule
 // is checked against a real git history.
 const SCRIPT = join(process.cwd(), 'scripts', 'vercel-ignore.mjs');
+// Every assertion below runs four real processes — three `git`, then the gate
+// script under its own node — so one `it` with three assertions starts twelve.
+// That is the point of the test: the rules are checked against real git output
+// rather than a stub. It is therefore spawn-bound, and on Windows it was
+// exceeding the 15s default and failing intermittently. A timed-out test also
+// starves the fork pool and cascades into unrelated files, which is how this
+// surfaced — as "flaky tests elsewhere".
+//
+// Scoped to this file, so nothing else gets a longer leash. If it ever needs
+// raising again, cut the spawn count instead: the budget is already generous
+// for twelve processes.
+vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
+
 let repo: string;
 let base: string;
+// Identity through the environment rather than three `git config` runs, and an
+// empty template so init copies no global hooks or sample files. Every call here
+// spawns a real process, and the setup was spending more of them than its work
+// needed.
+const GIT_ENV = {
+  ...process.env,
+  GIT_AUTHOR_NAME: 'test',
+  GIT_AUTHOR_EMAIL: 'test@example.com',
+  GIT_COMMITTER_NAME: 'test',
+  GIT_COMMITTER_EMAIL: 'test@example.com',
+};
 const git = (...args: string[]) =>
-  execFileSync('git', args, { cwd: repo, encoding: 'utf8' }).trim();
+  execFileSync('git', args, { cwd: repo, encoding: 'utf8', env: GIT_ENV }).trim();
 const write = (path: string, text: string) => {
   mkdirSync(dirname(join(repo, path)), { recursive: true });
   writeFileSync(join(repo, path), text);
@@ -32,9 +56,7 @@ const after = (change: () => void) => {
 
 beforeAll(() => {
   repo = mkdtempSync(join(tmpdir(), 'vercel-ignore-'));
-  git('init', '-q');
-  git('config', 'user.email', 'test@example.com');
-  git('config', 'user.name', 'test');
+  git('-c', 'init.defaultBranch=main', 'init', '-q', '--template=');
   write('src/a.ts', 'export const a = 1;\n');
   write('docs/x.md', '# x\n');
   write('public/notes.md', '# public\n');
