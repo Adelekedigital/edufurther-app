@@ -73,7 +73,7 @@ jobs:
 
       - name: Test
         # Not `pnpm test -- --coverage`: after `--` it reached vitest as a file
-        # filter, so coverage was never measured and no threshold could fail.
+        # filter, so coverage was never measured. Thresholds: vitest.config.ts.
         run: pnpm test:coverage
 
       - name: Build

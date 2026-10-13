@@ -14,9 +14,9 @@ export default {
     'color-no-hex': true,
     'declaration-property-value-disallowed-list': {
       // Spacing that equals a --space-* step.
-      '/^(padding|margin|gap|row-gap|column-gap|inset)(-.+)?$/': [`/(^|[\\s(,])${SPACE_PX}(?![\\w-])/`],
+      '/^(padding|margin|gap|row-gap|column-gap|inset)(-.+)?$/': [`/(^|[\\s(,-])${SPACE_PX}(?![\\w-])/`],
       // Radii that equal a --radius-* step.
-      '/^border(-.+)?-radius$/': ['/(^|\\s)(?:4|5|6|8|10|16)px(?![\\w-])/'],
+      '/^border(-.+)?-radius$/': ['/(^|[\\s(,])(?:4|5|6|8|10|16)px(?![\\w-])/'],
       // Control heights that equal --button-h-* or --touch-target-min.
       '/^(min-|max-)?(height|block-size)$/': ['/^(?:32|40|44|48)px$/'],
       // Type sizes only through the --text-* scale.

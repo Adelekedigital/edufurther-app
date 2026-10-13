@@ -11,17 +11,21 @@
  * starts at zero.
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { relative } from 'node:path';
 import stylelint from 'stylelint';
 
 const BASELINE = 'stylelint-baseline.json';
 const update = process.argv.includes('--update');
 
 const { results } = await stylelint.lint({ files: 'src/**/*.css' });
+// Scanning nothing (run from the wrong directory) would read as clean.
+if (results.length === 0) throw new Error('check-css: no CSS files found under src/. Run it from the repo root.');
 const now = {};
 for (const r of results) {
-  const file = r.source.replace(/\\/g, '/').replace(/^.*?\/src\//, 'src/');
+  // A typo in the config must fail even where no file has a warning.
+  if (r.invalidOptionWarnings?.length) throw new Error(`stylelint config: ${r.invalidOptionWarnings[0].text}`);
+  const file = relative(process.cwd(), r.source).replace(/\\/g, '/');
   for (const w of r.warnings) {
-    if (r.invalidOptionWarnings?.length) throw new Error(`stylelint config: ${r.invalidOptionWarnings[0].text}`);
     const rule = w.rule;
     ((now[file] ??= {})[rule] ??= []).push(`${file}:${w.line}  ${w.text}`);
   }
