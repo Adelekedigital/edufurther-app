@@ -827,6 +827,33 @@ describe('the message that goes with an offered time (SuggestTime.dc.html)', () 
     );
   });
 
+  it('leaves a time the mentor typed themselves alone', async () => {
+    dialog({ action: 'decline', booking: mentorPending() });
+    const slots2 = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
+    await userEvent.click(slots2[0]!);
+    // Their own sentence happens to name the hour the draft is offering. A
+    // global replace rewrote this too, so picking another slot silently changed
+    // what they had said about a different call (GitHub review, PR 234).
+    await userEvent.type(box(), ' I was also free around Thu, Oct 8 · 10:00 am for a backup call.');
+    await userEvent.click(slots2[1]!);
+    // Ours follows the new hour…
+    expect(written()).toContain('Could we do Fri, Oct 9 · 2:00 pm instead?');
+    // …and theirs still says exactly what they wrote.
+    expect(written()).toContain('I was also free around Thu, Oct 8 · 10:00 am for a backup call.');
+  });
+
+  it('a rewritten sentence of ours is not touched again', async () => {
+    dialog({ action: 'decline', booking: mentorPending() });
+    const slots2 = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
+    await userEvent.click(slots2[0]!);
+    await userEvent.clear(box());
+    await userEvent.type(box(), 'Can you do Thu, Oct 8 · 10:00 am? I rewrote this myself.');
+    await userEvent.click(slots2[1]!);
+    // Once they have taken the wording over, editing their prose is the worse
+    // of the two wrongs — the chip above still shows the hour on offer.
+    expect(box()).toHaveValue('Can you do Thu, Oct 8 · 10:00 am? I rewrote this myself.');
+  });
+
   it('an untouched draft simply follows the time that is picked', async () => {
     dialog({ action: 'decline', booking: mentorPending() });
     const slots2 = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });

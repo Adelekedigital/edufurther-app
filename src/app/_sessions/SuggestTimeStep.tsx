@@ -81,9 +81,18 @@ export function suggestDraft({
       ? `I’m sorry, I have to cancel our session on ${origDay}.`
       : 'I can’t make the time you asked for.';
   return (
-    `Hi ${first}, ${lead} Could we do ${slot} instead? I’ve held it for you for ` +
+    `Hi ${first}, ${lead} ${offerSentence(slot)} I’ve held it for you for ` +
     `${HOLD_HOURS} hours. If it doesn’t suit you, pick any other open time on my profile.`
   );
+}
+
+/**
+ * The one sentence in the draft that names the offered time, built here so the
+ * draft and the swap below cannot drift apart. Changing the wording in
+ * `suggestDraft` without changing it here would stop the swap finding it.
+ */
+export function offerSentence(slot: string): string {
+  return `Could we do ${slot} instead?`;
 }
 
 type SuggestTimeStepProps = {

@@ -8,7 +8,7 @@ import { Switch } from '@/components/atoms/Switch/Switch';
 import { ReasonField } from '@/components/molecules/ReasonField/ReasonField';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { reasonError } from '@/lib/utils/reasons';
-import { SuggestTimeStep, slotLabel, suggestDraft } from './SuggestTimeStep';
+import { SuggestTimeStep, offerSentence, slotLabel, suggestDraft } from './SuggestTimeStep';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type { ActionInput, BookingAction } from '@/lib/api/data/bookingActions';
@@ -444,11 +444,23 @@ export function ConfirmActionDialog({
               // Untouched (`null`), it simply redraws from the new slot. Taken
               // back altogether, it starts again rather than keeping a sentence
               // about an hour that is no longer on offer.
-              setMessage((m) =>
-                m === null || !suggested || !v
-                  ? null
-                  : m.split(slotLabel(suggested, timeZone)).join(slotLabel(v, timeZone)),
-              );
+              setMessage((m) => {
+                if (m === null || !suggested || !v) return null;
+                // Only the sentence we drafted, and only the first of it. A
+                // global replace rewrote every match in the whole box, so a
+                // mentor who typed "I was also free around <that time>" had
+                // their own words silently changed to name a different hour
+                // (GitHub review, PR 234).
+                //
+                // If they rewrote our sentence themselves it is not found, and
+                // their text is then left exactly as written — the chip above
+                // still shows which time is actually on offer, and quietly
+                // editing someone's prose is the worse of the two.
+                const was = offerSentence(slotLabel(suggested, timeZone));
+                const at = m.indexOf(was);
+                if (at === -1) return m;
+                return m.slice(0, at) + offerSentence(slotLabel(v, timeZone)) + m.slice(at + was.length);
+              });
               setSuggested(v);
               setOfferBad(false);
             }}
