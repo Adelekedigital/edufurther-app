@@ -118,7 +118,6 @@ export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
     min_notice_minutes: 120,
     // Its own two weeks (booking modal: two pages).
     booking_window_days: Math.min(14, MAX_WINDOW_DAYS),
-    service_offering: null,
     requires_booking_confirmation: true,
     ...NO_TOPICS,
     application_stage: null,
@@ -133,7 +132,6 @@ export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
     min_notice_minutes: 1440,
     // The platform's window (booking modal: up to eight pages).
     booking_window_days: DEFAULT_WINDOW_DAYS,
-    service_offering: null,
     requires_booking_confirmation: true,
     ...NO_TOPICS,
     // Every question kind the booking step renders (backend #268, #12, #282).

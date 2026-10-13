@@ -35,7 +35,6 @@ const read = (over: Partial<SavedSessionType['read']> = {}): SavedSessionType['r
   is_active: true,
   uses_own_windows: false,
   question_count: 0,
-  service_offering: DOCS,
   service_offerings: [DOCS],
   application_stage: 'drafting_stage',
   application_stages: ['drafting_stage'],
