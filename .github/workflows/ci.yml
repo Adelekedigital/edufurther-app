@@ -72,7 +72,9 @@ jobs:
         run: node scripts/check-boundaries.mjs
 
       - name: Test
-        run: pnpm test -- --coverage
+        # Not `pnpm test -- --coverage`: after `--` it reached vitest as a file
+        # filter, so coverage was never measured. Thresholds: vitest.config.ts.
+        run: pnpm test:coverage
 
       - name: Build
         run: pnpm build
