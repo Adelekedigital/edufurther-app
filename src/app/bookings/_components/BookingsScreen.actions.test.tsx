@@ -1,0 +1,365 @@
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { ApiError } from '@/lib/api/data/errors';
+import type { Booking } from '@/types/booking';
+import type { AppError, Remote, Viewer } from '@/types/mentor';
+import { BookingsScreen } from './BookingsScreen';
+import {
+  actions,
+  at,
+  booking,
+  h,
+  hist,
+  MEMBER,
+  NOW,
+  party,
+  push,
+  remote,
+  replace,
+  resetHarness,
+} from './bookingsScreen.harness';
+
+// The data hooks, mocked. Hoisted above the imports, so each factory
+// reaches the harness through a dynamic import rather than a binding
+// that is not initialised yet — the shape profileScreen.harness uses.
+vi.mock('next/navigation', async () =>
+  (await import('./bookingsScreen.harness')).mocks.navigation(),
+);
+vi.mock('@/app/_shell/useAppShell', async () =>
+  (await import('./bookingsScreen.harness')).mocks.appShell(),
+);
+vi.mock('@/lib/api/data/bookings', async () =>
+  (await import('./bookingsScreen.harness')).mocks.bookings(),
+);
+vi.mock('@/lib/api/data/sessionEvents', async () =>
+  (await import('./bookingsScreen.harness')).mocks.sessionEvents(),
+);
+vi.mock('@/lib/api/data/sessionAnswers', async () =>
+  (await import('./bookingsScreen.harness')).mocks.sessionAnswers(),
+);
+vi.mock('@/lib/api/data/bookingActions', async () =>
+  (await import('./bookingsScreen.harness')).mocks.bookingActions(),
+);
+vi.mock('@/lib/api/data/reviewableSessions', async () =>
+  (await import('./bookingsScreen.harness')).mocks.reviewableSessions(),
+);
+vi.mock('@/lib/api/data/booking', async (orig) => ({
+  ...(await orig<Record<string, unknown>>()),
+  useSlots: () => ({ data: [], isLoading: false, error: null, retry: vi.fn() }),
+}));
+vi.mock('@/lib/api/data/intakeFiles', async () =>
+  (await import('./bookingsScreen.harness')).mocks.intakeFiles(),
+);
+
+beforeEach(resetHarness);
+afterEach(() => vi.useRealTimers());
+
+describe('the actions appear only where they can succeed', () => {
+  const pendingRow = (over = {}) =>
+    booking({
+      id: 'p1',
+      title: 'SOP review',
+      status: 'pending',
+      respondBy: at(5),
+      startsAt: at(48),
+      endsAt: at(49),
+      ...over,
+    });
+
+  it('a mentor answers a request on the row itself', async () => {
+    h.viewer = { ...MEMBER, isMentor: true };
+    h.pending = remote([pendingRow({ side: 'mentor' })]);
+    h.tab = 'pending';
+    render(<BookingsScreen />);
+    expect(screen.getByRole('button', { name: 'Accept' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Decline' })).toBeVisible();
+  });
+
+  it('accepting goes straight through — there is nothing to warn about', async () => {
+    h.viewer = { ...MEMBER, isMentor: true };
+    h.pending = remote([pendingRow({ side: 'mentor' })]);
+    h.tab = 'pending';
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Accept' }));
+    expect(actions.accept!.mutate).toHaveBeenCalledWith(
+      { bookingId: 'p1' },
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('declining asks first, because it cannot be undone', async () => {
+    h.viewer = { ...MEMBER, isMentor: true };
+    h.pending = remote([pendingRow({ side: 'mentor' })]);
+    h.tab = 'pending';
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Decline' }));
+    expect(screen.getByRole('dialog', { name: 'Decline this request?' })).toBeVisible();
+    expect(actions.decline!.mutate).not.toHaveBeenCalled();
+  });
+
+  it('a mentee gets Withdraw in the panel, and no Accept anywhere', () => {
+    h.pending = remote([pendingRow({ side: 'mentee' })]);
+    h.tab = 'pending';
+    // Opened, because the call-off lives in the panel now: the row carries
+    // only what answering a request needs, and a mentee answers nothing.
+    h.selectedBooking = 'p1';
+    render(<BookingsScreen />);
+    expect(screen.queryByRole('button', { name: 'Accept' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Withdraw request' })).toBeVisible();
+  });
+
+  it('a request awaiting an answer can be answered from the panel', async () => {
+    // It said "Respond within 2 days" and offered nothing to respond with, and
+    // on a phone the sheet covered the row's own buttons (UI review, PR 233).
+    h.viewer = { ...MEMBER, isMentor: true };
+    h.pending = remote([pendingRow({ side: 'mentor' })]);
+    h.tab = 'pending';
+    h.selectedBooking = 'p1';
+    render(<BookingsScreen />);
+    const panel = document.getElementById('booking-details')!;
+    expect(within(panel).getByRole('button', { name: 'Accept' })).toBeVisible();
+    expect(within(panel).getByRole('button', { name: 'Decline' })).toBeVisible();
+    // And the row keeps its own pair: the owner's decision was both, not a
+    // move. One builder fills them, so they cannot disagree.
+    expect(screen.getAllByRole('button', { name: 'Accept' })).toHaveLength(2);
+  });
+
+  it('declining from the panel still asks first', async () => {
+    h.viewer = { ...MEMBER, isMentor: true };
+    h.pending = remote([pendingRow({ side: 'mentor' })]);
+    h.tab = 'pending';
+    h.selectedBooking = 'p1';
+    render(<BookingsScreen />);
+    const panel = document.getElementById('booking-details')!;
+    await userEvent.click(within(panel).getByRole('button', { name: 'Decline' }));
+    expect(screen.getByRole('dialog', { name: 'Decline this request?' })).toBeVisible();
+    expect(actions.decline!.mutate).not.toHaveBeenCalled();
+  });
+
+  it('and the panel offers nothing to answer once the deadline has passed', () => {
+    // `canAccept` is the single opinion — the panel does not form its own.
+    h.viewer = { ...MEMBER, isMentor: true };
+    h.pending = remote([pendingRow({ side: 'mentor', respondBy: at(-1) })]);
+    h.tab = 'pending';
+    h.selectedBooking = 'p1';
+    render(<BookingsScreen />);
+    expect(screen.queryByRole('button', { name: 'Accept' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Decline' })).not.toBeInTheDocument();
+  });
+
+  it('calling a session off from the panel asks first, like declining does', async () => {
+    // The guarantee the move itself rests on. Wiring `onCallOff` straight to
+    // the mutation would leave every other test in this file green, so this is
+    // the one that holds it — the Decline equivalent is above.
+    h.upcoming = remote([booking({ id: 'later', title: 'Later one', startsAt: at(48), endsAt: at(49) })]);
+    h.selectedBooking = 'later';
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel session' }));
+    expect(screen.getByRole('dialog', { name: 'Cancel this booking?' })).toBeVisible();
+    expect(actions.cancel!.mutate).not.toHaveBeenCalled();
+  });
+
+  it('and withdrawing from the panel asks too', async () => {
+    h.pending = remote([pendingRow({ side: 'mentee' })]);
+    h.tab = 'pending';
+    h.selectedBooking = 'p1';
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Withdraw request' }));
+    expect(screen.getByRole('dialog')).toBeVisible();
+    expect(actions.withdraw!.mutate).not.toHaveBeenCalled();
+  });
+
+  it('a lapsed request offers nothing — it is the backend’s to expire', async () => {
+    h.viewer = { ...MEMBER, isMentor: true };
+    h.pending = remote([pendingRow({ side: 'mentor', respondBy: at(-1) })]);
+    h.tab = 'pending';
+    render(<BookingsScreen />);
+    expect(screen.queryByRole('button', { name: 'Accept' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Decline' })).not.toBeInTheDocument();
+  });
+
+  it('a session inside ten minutes offers no Cancel', () => {
+    h.upcoming = remote([
+      booking({ id: 'a', title: 'Statement of Purpose' }),
+      booking({ id: 'soon', title: 'Nearly now', startsAt: at(0.1), endsAt: at(1) }),
+    ]);
+    h.selectedBooking = 'soon';
+    render(<BookingsScreen />);
+    expect(screen.queryByRole('button', { name: 'Cancel session' })).not.toBeInTheDocument();
+  });
+
+  it('a session further out does', () => {
+    h.upcoming = remote([
+      booking({ id: 'a', title: 'Statement of Purpose' }),
+      booking({ id: 'later', title: 'Later one', startsAt: at(48), endsAt: at(49) }),
+    ]);
+    h.selectedBooking = 'later';
+    render(<BookingsScreen />);
+    expect(screen.getByRole('button', { name: 'Cancel session' })).toBeVisible();
+  });
+
+  it('and never from the row itself, one tap from a scrolling list', () => {
+    h.upcoming = remote([
+      booking({ id: 'later', title: 'Later one', startsAt: at(48), endsAt: at(49) }),
+    ]);
+    render(<BookingsScreen />);
+    expect(screen.getByRole('button', { name: /^Details for .*Later one/ })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Cancel session' })).not.toBeInTheDocument();
+  });
+});
+
+describe('accepting a request that runs into another session', () => {
+  it('warns before accepting, and says which session and when', () => {
+    h.viewer = { ...MEMBER, isMentor: true };
+    h.upcoming = remote([
+      booking({ id: 'u1', title: 'Already booked', startsAt: at(10), endsAt: at(11) }),
+    ]);
+    h.pending = remote([
+      booking({
+        id: 'p1',
+        title: 'Clashing request',
+        status: 'pending',
+        side: 'mentor',
+        respondBy: at(5),
+        startsAt: at(10.5),
+        endsAt: at(11.5),
+      }),
+    ]);
+    h.tab = 'pending';
+    render(<BookingsScreen />);
+    expect(screen.getByText(/This overlaps your session with/)).toBeVisible();
+    expect(screen.getByText(/Accepting books both/)).toBeVisible();
+  });
+
+  it('does not block it — accepting both may be the intention', async () => {
+    h.viewer = { ...MEMBER, isMentor: true };
+    h.upcoming = remote([booking({ id: 'u1', startsAt: at(10), endsAt: at(11) })]);
+    h.pending = remote([
+      booking({
+        id: 'p1',
+        status: 'pending',
+        side: 'mentor',
+        respondBy: at(5),
+        startsAt: at(10.5),
+        endsAt: at(11.5),
+      }),
+    ]);
+    h.tab = 'pending';
+    render(<BookingsScreen />);
+    const accept = screen.getByRole('button', { name: 'Accept' });
+    expect(accept).not.toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(accept);
+    expect(actions.accept!.mutate).toHaveBeenCalledWith(
+      { bookingId: 'p1' },
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
+  });
+
+  it('back-to-back sessions carry no warning', () => {
+    h.viewer = { ...MEMBER, isMentor: true };
+    h.upcoming = remote([booking({ id: 'u1', startsAt: at(9), endsAt: at(10) })]);
+    h.pending = remote([
+      booking({
+        id: 'p1',
+        status: 'pending',
+        side: 'mentor',
+        respondBy: at(5),
+        startsAt: at(10),
+        endsAt: at(11),
+      }),
+    ]);
+    h.tab = 'pending';
+    render(<BookingsScreen />);
+    expect(screen.queryByText(/This overlaps your session with/)).not.toBeInTheDocument();
+  });
+});
+
+describe('the review entry on History', () => {
+  beforeEach(() => {
+    // Book again and Leave a review are both gated on being able to book.
+    h.viewer = { ...MEMBER, isMentor: false, isApprovedMentor: false, isMentee: true };
+  });
+
+  const completed = (over = {}) =>
+    booking({
+      id: 'h1',
+      title: 'SOP review',
+      status: 'completed',
+      side: 'mentee',
+      startsAt: at(-48),
+      endsAt: at(-47),
+      ...over,
+    });
+
+  it('offers a review only for a session the list says is still reviewable', async () => {
+    h.history = hist({ bookings: [completed()] });
+    h.reviewable = { data: [{ id: 'h1' }], isLoading: false, error: null, retry: vi.fn() };
+    h.tab = 'history';
+    render(<BookingsScreen />);
+    const link = screen.getByRole('link', { name: 'Leave a review' });
+    // The flow lives on the profile; one implementation, not two.
+    expect(link).toHaveAttribute('href', '/mentors/p1?tab=reviews');
+  });
+
+  it('a session already reviewed falls back to Book again', () => {
+    // The list drops a session once a review is written, so nothing here has to
+    // re-derive eligibility — and nothing offers a second review.
+    h.history = hist({ bookings: [completed()] });
+    h.reviewable = { data: [], isLoading: false, error: null, retry: vi.fn() };
+    h.tab = 'history';
+    render(<BookingsScreen />);
+    expect(screen.queryByRole('link', { name: 'Leave a review' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Book again' })).toBeVisible();
+  });
+
+  it('a mentor is never offered one — only mentees review', () => {
+    h.history = hist({ bookings: [completed({ side: 'mentor' })] });
+    h.reviewable = { data: [{ id: 'h1' }], isLoading: false, error: null, retry: vi.fn() };
+    h.tab = 'history';
+    render(<BookingsScreen />);
+    expect(screen.queryByRole('link', { name: 'Leave a review' })).not.toBeInTheDocument();
+  });
+});
+
+describe('booking an offered time actually opens the flow', () => {
+  const declined = () =>
+    booking({
+      id: 'd1',
+      status: 'declined',
+      side: 'mentee',
+      startsAt: at(-48),
+      endsAt: at(-47),
+      sessionTypeId: 'st-general',
+      suggestion: {
+        id: 's1',
+        startsAt: at(72),
+        endsAt: at(73),
+        durationMin: 60,
+        heldUntil: at(1),
+        status: 'active',
+        bookedSessionId: null,
+      },
+    });
+
+  it('names the offering as well as the time — `at` alone opens nothing', async () => {
+    // The profile understands `?book=`; `?at=` on its own left the mentee on
+    // the page with the flow closed and the held time unfound.
+    push.mockReset();
+    h.history = hist({ bookings: [declined()] });
+    h.selectedBooking = 'd1';
+    h.tab = 'history';
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: /^Book / }));
+    expect(push).toHaveBeenCalledWith(expect.stringContaining('book=st-general'));
+    expect(push.mock.calls[0]![0]).toContain('at=');
+  });
+
+  it('offers nothing to press when the booking has no offering recorded', () => {
+    h.history = hist({ bookings: [{ ...declined(), sessionTypeId: null }] });
+    h.selectedBooking = 'd1';
+    h.tab = 'history';
+    render(<BookingsScreen />);
+    expect(screen.queryByRole('button', { name: /^Book / })).not.toBeInTheDocument();
+  });
+});

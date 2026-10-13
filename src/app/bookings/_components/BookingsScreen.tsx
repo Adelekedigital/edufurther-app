@@ -234,7 +234,14 @@ export function BookingsScreen() {
   };
 
   /** The mentor's two answers to a pending request, on the row itself. */
-  const rowActions = (b: Booking) => {
+  /**
+   * Accept and Decline, for the row and for the details panel both. One
+   * builder, so there is one set of mutations, one busy state and one opinion
+   * about whether accepting would clash — the panel places them, it does not
+   * own them. Size by placement, per the CTA hierarchy: `small` in a row,
+   * `large` in a modal footer.
+   */
+  const rowActions = (b: Booking, size: 'small' | 'large' = 'small') => {
     if (!canAccept(b, now)) return null;
     const clash = overlapping(b, upcoming.data ?? []);
     return (
@@ -243,7 +250,7 @@ export function BookingsScreen() {
          *text* Decline, so the row does not carry two competing fills. */}
         <Button
           variant="secondary-outlined"
-          size="small"
+          size={size}
           busy={accept.isPending && accept.variables?.bookingId === b.id}
           aria-describedby={clash ? clashId(b.id) : undefined}
           onClick={() =>
@@ -263,7 +270,7 @@ export function BookingsScreen() {
         </Button>
         <Button
           variant="text-destructive"
-          size="small"
+          size={size}
           onClick={() => setConfirming({ action: 'decline', booking: b })}
         >
           Decline
@@ -437,6 +444,12 @@ export function BookingsScreen() {
                 asSheet={asSheet}
                 booking={open ?? null}
                 onCallOff={(action) => open && setConfirming({ action, booking: open })}
+                // Pressing Details on a request awaiting an answer used to open
+                // a panel saying "Respond within 2 days" with nothing to
+                // respond with, and on a phone the sheet covered the row's own
+                // buttons (UI review, PR 233; owner chose both over a pointer
+                // back to the row).
+                answer={open ? rowActions(open, 'large') : null}
                 timeZone={timeZone}
                 outcome={outcome.data}
                 outcomeLoading={outcome.isLoading}

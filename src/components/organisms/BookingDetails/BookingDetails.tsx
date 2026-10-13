@@ -73,6 +73,13 @@ type BookingDetailsProps = {
    * disagree about what the button it is confirming actually said.
    */
   onCallOff?: (action: 'cancel' | 'withdraw') => void;
+  /**
+   * Accept and Decline for a request this viewer must answer, built by the page
+   * — the same builder the row uses, so there is one set of mutations, one
+   * busy state and one opinion about whether accepting would clash. The panel
+   * places them; it does not own them.
+   */
+  answer?: ReactNode;
   now?: Date;
 };
 
@@ -167,6 +174,7 @@ export function BookingDetails({
   onToggleAnswers,
   onOpenFile,
   onCallOff,
+  answer,
   joinHref,
   now = new Date(),
 }: BookingDetailsProps) {
@@ -178,9 +186,14 @@ export function BookingDetails({
   // The one destructive thing this viewer can still do to this booking, in the
   // panel rather than a tap away in a scrolling list. The two are mutually
   // exclusive — one wants `pending`, the other `confirmed` — so the order only
-  // decides which reads first, not which wins. Decline is deliberately absent
-  // even where `canDecline` holds: it sits on the pending row beside Accept,
-  // and a footer offering the refusal without the acceptance is a trap.
+  // decides which reads first, not which wins.
+  //
+  // Answering a request arrives as `answer` instead, from the page. This footer
+  // once offered neither Accept nor Decline, on the reasoning that the refusal
+  // without the acceptance is a trap — true, but the conclusion left the panel
+  // mute: it said "Respond within 2 days" and gave nothing to respond with, and
+  // on a phone the sheet covered the row's own buttons (UI review, PR 233).
+  // Both, or nothing.
   const callOff = canWithdraw(b, now)
     ? { action: 'withdraw' as const, label: 'Withdraw request' }
     : canCancel(b, now)
@@ -407,8 +420,11 @@ export function BookingDetails({
         </div>
       </div>
 
-      {(showJoin || showCallOff) && (
+      {(showJoin || showCallOff || !!answer) && (
         <div className={styles.footer}>
+          {/* First: for a request awaiting an answer this is the whole reason
+              the panel was opened. */}
+          {!!answer && <div className={styles.answer}>{answer}</div>}
           {showJoin &&
             /* It navigates once open, so it is a link; before that, a locked button. */
             (join === 'open' ? (

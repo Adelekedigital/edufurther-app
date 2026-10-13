@@ -124,6 +124,24 @@
   border-top: var(--border-hairline) solid var(--ink-100);
 }
 
+/* Accept and Decline side by side, each taking half — the design's pairing for
+   a modal footer, and the same shape the cancel dialog's footer uses. They
+   stack on a phone, where two 48px buttons on one line leave neither room to
+   read. */
+.answer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.answer > * {
+  width: 100%;
+}
+@media (max-width: 767px) {
+  .answer {
+    grid-template-columns: 1fr;
+  }
+}
+
 .lock {
   font-size: var(--text-p-xs);
   color: var(--ink-600);

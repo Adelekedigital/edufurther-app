@@ -129,15 +129,16 @@ function Aside({
 }) {
   const ref = useRef<HTMLElement>(null);
   const opener = useRef<HTMLElement | null>(null);
+  /** Whether focus was inside the panel, sampled while it was still mounted. */
+  const inside = useRef(false);
   const onCloseRef = useRef(onClose);
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
 
   useEffect(() => {
-    const panel = ref.current;
     opener.current = document.activeElement as HTMLElement | null;
-    panel?.focus();
+    ref.current?.focus();
 
     // Escape closes it, as it does for the phone's sheet. Only while focus is
     // inside: this panel sits beside the page rather than over it, so it must
@@ -152,12 +153,25 @@ function Aside({
     };
     document.addEventListener('keydown', onKey);
 
+    // Where focus *was*, recorded while the panel still exists. The cleanup
+    // below is a passive effect, so it runs after React has already removed the
+    // aside: by then `document.activeElement` is the body and asking the panel
+    // whether it contains it always answered no, so the restore never fired and
+    // a keyboard user was dropped at the top of the document. Every row has a
+    // Details button now, so this is the main way in rather than a rare one.
+    const onFocusIn = () => {
+      inside.current = !!ref.current?.contains(document.activeElement);
+    };
+    document.addEventListener('focusin', onFocusIn);
+    onFocusIn();
+
     return () => {
       document.removeEventListener('keydown', onKey);
-      // Only if focus is still inside: the person may have clicked elsewhere.
+      document.removeEventListener('focusin', onFocusIn);
+      // Only if focus was still inside: the person may have clicked elsewhere.
       // `isConnected` because the opener's row may have re-rendered while the
       // panel was open, and focusing a detached node drops focus to the body.
-      if (panel?.contains(document.activeElement) && opener.current?.isConnected) {
+      if (inside.current && opener.current?.isConnected) {
         opener.current.focus?.();
       }
     };

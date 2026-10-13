@@ -1,207 +1,61 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { BookingHistoryResult } from '@/lib/api/data/bookings';
 import { ApiError } from '@/lib/api/data/errors';
-import type { Booking, BookingAnswer, BookingParty } from '@/types/booking';
+import type { Booking } from '@/types/booking';
 import type { AppError, Remote, Viewer } from '@/types/mentor';
 import { BookingsScreen } from './BookingsScreen';
+import {
+  actions,
+  at,
+  booking,
+  h,
+  hist,
+  MEMBER,
+  NOW,
+  party,
+  push,
+  remote,
+  replace,
+  resetHarness,
+} from './bookingsScreen.harness';
 
-let tab = 'upcoming';
-let selectedBooking: string | null = null;
-const replace = vi.fn();
-const push = vi.fn();
-vi.mock('next/navigation', () => ({
-  usePathname: () => '/bookings',
-  useRouter: () => ({ replace, push }),
-  useSearchParams: () => {
-    const q = new URLSearchParams(tab === 'upcoming' ? '' : `tab=${tab}`);
-    if (selectedBooking) q.set('booking', selectedBooking);
-    return q;
-  },
-}));
-
-let viewer: Viewer;
-vi.mock('@/app/_shell/useAppShell', () => ({
-  useAppShell: () => ({
-    viewer,
-    member: viewer.kind === 'member' ? viewer : null,
-    chrome: viewer.kind === 'guest' ? 'guest' : 'member',
-    account: undefined,
-    nav: viewer.kind === 'member' && viewer.isMentor ? 'mentor' : 'mentee',
-  }),
-}));
-
-let upcoming: Remote<Booking[]>;
-let pending: Remote<Booking[]>;
-let history: BookingHistoryResult;
-// What `useBooking` was asked to do: the panel must not refetch a loaded row.
-let bookingActive = false;
-vi.mock('@/lib/api/data/bookings', () => ({
-  useUpcomingBookings: () => upcoming,
-  usePendingBookings: () => pending,
-  useBookingHistory: () => history,
-  useBooking: (_id: string | null, _userId: string | null, active: boolean) => {
-    bookingActive = active;
-    return { data: null, isLoading: false, error: null, retry: vi.fn() };
-  },
-}));
-vi.mock('@/lib/api/data/sessionEvents', () => ({
-  useBookingOutcome: () => ({ data: null, isLoading: false, error: null, retry: vi.fn() }),
-}));
-// Typed, not `unknown`: an untyped stub let a new required field (`answered`,
-// backend #412) go missing here while typecheck stayed green, and every answer
-// then rendered as "No answer".
-let answers: {
-  data: BookingAnswer[] | undefined;
-  isLoading: boolean;
-  error: unknown;
-  retry: () => void;
-};
-vi.mock('@/lib/api/data/sessionAnswers', () => ({
-  useBookingAnswers: () => answers,
-}));
-// The viewer fetches bytes; this screen's tests are about the wiring that opens
-// it, so the fetch is stubbed at the data boundary like every other read here.
-// The four write actions. Stubbed at the data boundary like every other read
-// here; what each one sends is covered in bookingActions.test.tsx.
-const actions: Record<string, ReturnType<typeof stubAction>> = {};
-function stubAction() {
-  return { mutate: vi.fn(), reset: vi.fn(), isPending: false, error: null, variables: undefined };
-}
-vi.mock('@/lib/api/data/bookingActions', () => ({
-  useBookingAction: (a: string) => (actions[a] ??= stubAction()),
-}));
-let reviewable: {
-  data: { id: string }[] | null;
-  isLoading: boolean;
-  error: unknown;
-  retry: () => void;
-};
-vi.mock('@/lib/api/data/reviewableSessions', () => ({
-  useMyReviewableSessions: () => reviewable,
-}));
+// The data hooks, mocked. Hoisted above the imports, so each factory
+// reaches the harness through a dynamic import rather than a binding
+// that is not initialised yet — the shape profileScreen.harness uses.
+vi.mock('next/navigation', async () =>
+  (await import('./bookingsScreen.harness')).mocks.navigation(),
+);
+vi.mock('@/app/_shell/useAppShell', async () =>
+  (await import('./bookingsScreen.harness')).mocks.appShell(),
+);
+vi.mock('@/lib/api/data/bookings', async () =>
+  (await import('./bookingsScreen.harness')).mocks.bookings(),
+);
+vi.mock('@/lib/api/data/sessionEvents', async () =>
+  (await import('./bookingsScreen.harness')).mocks.sessionEvents(),
+);
+vi.mock('@/lib/api/data/sessionAnswers', async () =>
+  (await import('./bookingsScreen.harness')).mocks.sessionAnswers(),
+);
+vi.mock('@/lib/api/data/bookingActions', async () =>
+  (await import('./bookingsScreen.harness')).mocks.bookingActions(),
+);
+vi.mock('@/lib/api/data/reviewableSessions', async () =>
+  (await import('./bookingsScreen.harness')).mocks.reviewableSessions(),
+);
 vi.mock('@/lib/api/data/booking', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
   useSlots: () => ({ data: [], isLoading: false, error: null, retry: vi.fn() }),
 }));
-vi.mock('@/lib/api/data/intakeFiles', () => ({
-  useIntakeFile: () => ({ url: 'blob:stub', isLoading: false, error: null, retry: vi.fn() }),
-  canPreview: () => true,
-}));
+vi.mock('@/lib/api/data/intakeFiles', async () =>
+  (await import('./bookingsScreen.harness')).mocks.intakeFiles(),
+);
 
-const remote = <T,>(data: T | null, over: Partial<Remote<T>> = {}): Remote<T> => ({
-  data,
-  isLoading: false,
-  error: null,
-  retry: vi.fn(),
-  ...over,
-});
-
-const hist = (over: Partial<BookingHistoryResult> = {}): BookingHistoryResult => ({
-  bookings: [],
-  isLoading: false,
-  error: null,
-  retry: vi.fn(),
-  hasMore: false,
-  isLoadingMore: false,
-  loadMoreError: null,
-  loadMore: vi.fn(),
-  ...over,
-});
-
-const NOW = new Date('2026-10-03T12:00:00Z');
-const at = (h: number) => new Date(NOW.getTime() + h * 3_600_000).toISOString();
-const party = (name = 'Amara Okafor'): BookingParty => ({
-  id: 'p1',
-  name,
-  firstName: name.split(' ')[0]!,
-  initials: 'AO',
-  avatarUrl: null,
-  avatarFocus: null,
-  deleted: false,
-  timeZone: 'Africa/Lagos',
-  cover: 'sand',
-  degree: null,
-  institution: null,
-  joinedAt: null,
-  inRoomAt: null,
-  attendance: 'pending' as const,
-});
-
-const booking = (over: Partial<Booking> = {}): Booking => ({
-  id: 'b1',
-  status: 'confirmed',
-  side: 'mentor',
-  other: party(),
-  myAttendance: 'pending' as const,
-  myJoinedAt: null,
-  startsAt: at(24),
-  endsAt: at(25),
-  durationMin: 60,
-  title: 'School shortlist',
-  note: null,
-  answersPreview: null,
-  suggestion: null,
-  sessionTypeId: 'st1',
-  createdAt: at(-240),
-  respondBy: null,
-  joinOpensAt: null,
-  joinClosesAt: null,
-  doorClosesAt: null,
-  refundUntil: null,
-  menteeAttendanceRate: null,
-  menteeAttendanceSessions: 0,
-  ...over,
-});
-
-const MEMBER: Extract<Viewer, { kind: 'member' }> = {
-  kind: 'member',
-  id: 'me',
-  firstName: 'Gbenga',
-  initial: 'G',
-  isMentee: false,
-  isApprovedMentor: true,
-  isMentor: true,
-  completedSessions: 0,
-  credits: null,
-  timeZone: 'Africa/Lagos',
-  bookingCounts: { pending: 2, upcoming: 3 },
-};
-
-// jsdom has no matchMedia; the screen reads it to choose aside vs sheet.
-// Follows the stub ExploreScreen.test.tsx already uses.
-let narrow = false;
-beforeEach(() => {
-  vi.setSystemTime(NOW);
-  narrow = false;
-  window.matchMedia = vi.fn().mockImplementation((q: string) => ({
-    matches: narrow,
-    media: q,
-    onchange: null,
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  }));
-  tab = 'upcoming';
-  selectedBooking = null;
-  bookingActive = false;
-  viewer = MEMBER;
-  upcoming = remote<Booking[]>([]);
-  pending = remote<Booking[]>([]);
-  history = hist();
-  answers = { data: [], isLoading: false, error: null, retry: vi.fn() };
-  reviewable = { data: [], isLoading: false, error: null, retry: vi.fn() };
-  for (const a of ['accept', 'decline', 'withdraw', 'cancel']) actions[a] = stubAction();
-  push.mockReset();
-  replace.mockReset();
-});
+beforeEach(resetHarness);
 afterEach(() => vi.useRealTimers());
-
 describe('the shell', () => {
   it('a guest is asked to log in, with no tabs behind it', () => {
-    viewer = { kind: 'guest' };
+    h.viewer = { kind: 'guest' };
     render(<BookingsScreen />);
     expect(screen.getByRole('heading', { name: 'Log in to see your bookings' })).toBeVisible();
     expect(screen.queryByRole('tab')).not.toBeInTheDocument();
@@ -243,14 +97,14 @@ describe('the shell', () => {
 
 describe('Upcoming', () => {
   it('loading shows no empty state', () => {
-    upcoming = remote<Booking[]>(null, { isLoading: true });
+    h.upcoming = remote<Booking[]>(null, { isLoading: true });
     render(<BookingsScreen />);
     expect(screen.queryByText('No upcoming sessions yet')).not.toBeInTheDocument();
   });
 
   it('a failed load says so and offers a retry — it never reads as empty', async () => {
     const retry = vi.fn();
-    upcoming = remote<Booking[]>(null, {
+    h.upcoming = remote<Booking[]>(null, {
       error: { kind: 'server', message: 'x' } as AppError,
       retry,
     });
@@ -262,7 +116,7 @@ describe('Upcoming', () => {
   });
 
   it('offline says to come back, not that something broke', () => {
-    upcoming = remote<Booking[]>(null, { error: { kind: 'offline', message: 'x' } as AppError });
+    h.upcoming = remote<Booking[]>(null, { error: { kind: 'offline', message: 'x' } as AppError });
     render(<BookingsScreen />);
     expect(screen.getByText('You’re offline. Try again when you reconnect.')).toBeVisible();
   });
@@ -277,13 +131,13 @@ describe('Upcoming', () => {
   });
 
   it('empty sends a mentee to Explore instead', () => {
-    viewer = { ...MEMBER, isMentor: false, isApprovedMentor: false, isMentee: true };
+    h.viewer = { ...MEMBER, isMentor: false, isApprovedMentor: false, isMentee: true };
     render(<BookingsScreen />);
     expect(screen.getByRole('link', { name: 'Find a mentor' })).toHaveAttribute('href', '/explore');
   });
 
   it('the first session is the hero and the rest are a Later list', () => {
-    upcoming = remote([
+    h.upcoming = remote([
       booking({ id: 'a', title: 'Statement of Purpose' }),
       booking({ id: 'b', title: 'Visa practice', startsAt: at(48), endsAt: at(49) }),
     ]);
@@ -296,7 +150,7 @@ describe('Upcoming', () => {
   });
 
   it('Join waits for the window, and says when it opens', () => {
-    upcoming = remote([
+    h.upcoming = remote([
       booking({ startsAt: at(1), joinOpensAt: at(1 - 5 / 60), joinClosesAt: at(1.25) }),
     ]);
     render(<BookingsScreen />);
@@ -305,7 +159,7 @@ describe('Upcoming', () => {
   });
 
   it('inside the window Join opens the session’s own page, where joining happens', () => {
-    upcoming = remote([
+    h.upcoming = remote([
       booking({ id: 'live', startsAt: at(-0.05), joinOpensAt: at(-0.2), joinClosesAt: at(0.2) }),
     ]);
     render(<BookingsScreen />);
@@ -316,14 +170,14 @@ describe('Upcoming', () => {
   });
 
   it('a session whose window has shut offers no Join at all', () => {
-    upcoming = remote([booking({ startsAt: at(-2), joinOpensAt: at(-2), joinClosesAt: at(-1) })]);
+    h.upcoming = remote([booking({ startsAt: at(-2), joinOpensAt: at(-2), joinClosesAt: at(-1) })]);
     render(<BookingsScreen />);
     expect(screen.queryByRole('button', { name: 'Join session' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Join session' })).not.toBeInTheDocument();
   });
 
   it('reveals five at a time', async () => {
-    upcoming = remote([
+    h.upcoming = remote([
       booking({ id: 'hero' }),
       ...Array.from({ length: 8 }, (_, i) =>
         booking({ id: `r${i}`, title: `Session ${i}`, startsAt: at(48 + i), endsAt: at(49 + i) }),
@@ -342,18 +196,18 @@ describe('Upcoming', () => {
 
 describe('Pending', () => {
   beforeEach(() => {
-    tab = 'pending';
+    h.tab = 'pending';
   });
 
   it('a mentor is told these are theirs to answer', () => {
-    pending = remote([booking({ status: 'pending', respondBy: at(5) })]);
+    h.pending = remote([booking({ status: 'pending', respondBy: at(5) })]);
     render(<BookingsScreen />);
     expect(screen.getByText('These mentees asked for a time.')).toBeVisible();
     expect(screen.getByText('Respond within 5h')).toBeVisible();
   });
 
   it('a mentee’s own request says who it is waiting on, and never "respond"', () => {
-    pending = remote([booking({ status: 'pending', side: 'mentee', respondBy: at(40) })]);
+    h.pending = remote([booking({ status: 'pending', side: 'mentee', respondBy: at(40) })]);
     render(<BookingsScreen />);
     expect(screen.getByText(/Requests you sent/)).toBeVisible();
     expect(screen.getByText('Waiting for Amara to confirm')).toBeVisible();
@@ -361,21 +215,21 @@ describe('Pending', () => {
   });
 
   it('close to the deadline, the mentee is told how long the mentor has left', () => {
-    pending = remote([booking({ status: 'pending', side: 'mentee', respondBy: at(18) })]);
+    h.pending = remote([booking({ status: 'pending', side: 'mentee', respondBy: at(18) })]);
     render(<BookingsScreen />);
     expect(screen.getByText('Amara has 18h left to confirm')).toBeVisible();
     expect(screen.queryByText(/Waiting for/)).not.toBeInTheDocument();
   });
 
   it('a lapsed request stays in the list, labelled, with nothing left to do', () => {
-    pending = remote([booking({ status: 'pending', respondBy: at(-1) })]);
+    h.pending = remote([booking({ status: 'pending', respondBy: at(-1) })]);
     render(<BookingsScreen />);
     expect(screen.getByText('Expired')).toBeVisible();
     expect(screen.queryByText(/Respond within/)).not.toBeInTheDocument();
   });
 
   it('a mixed list is addressed to neither side — either line would be wrong', () => {
-    pending = remote([
+    h.pending = remote([
       booking({ id: 'in', status: 'pending', side: 'mentor', respondBy: at(5) }),
       booking({ id: 'out', status: 'pending', side: 'mentee', respondBy: at(5) }),
     ]);
@@ -392,11 +246,11 @@ describe('Pending', () => {
 
 describe('History', () => {
   beforeEach(() => {
-    tab = 'history';
+    h.tab = 'history';
   });
 
   it('names every outcome the API can send', () => {
-    history = hist({
+    h.history = hist({
       bookings: [
         booking({ id: '1', status: 'completed' }),
         booking({ id: '2', status: 'cancelled' }),
@@ -413,7 +267,7 @@ describe('History', () => {
   });
 
   it('a past row carries its full date — the day badge alone loses the year', () => {
-    history = hist({
+    h.history = hist({
       bookings: [
         booking({ status: 'completed', startsAt: at(-24 * 90), endsAt: at(-24 * 90 + 1) }),
       ],
@@ -430,13 +284,13 @@ describe('History', () => {
   });
 
   it('only a session the viewer booked can be booked again', () => {
-    history = hist({
+    h.history = hist({
       bookings: [
         booking({ id: 'mine', status: 'completed', side: 'mentee' }),
         booking({ id: 'hosted', status: 'completed', side: 'mentor' }),
       ],
     });
-    viewer = { ...MEMBER, isMentor: false, isApprovedMentor: false, isMentee: true };
+    h.viewer = { ...MEMBER, isMentor: false, isApprovedMentor: false, isMentee: true };
     render(<BookingsScreen />);
     const links = screen.getAllByRole('link', { name: 'Book again' });
     expect(links).toHaveLength(1);
@@ -444,20 +298,20 @@ describe('History', () => {
   });
 
   it('a mentor is never offered Book again — mentors cannot book', () => {
-    history = hist({
+    h.history = hist({
       bookings: [
         booking({ id: 'mine', status: 'completed', side: 'mentee' }),
         booking({ id: 'hosted', status: 'completed', side: 'mentor' }),
       ],
     });
-    viewer = MEMBER;
+    h.viewer = MEMBER;
     render(<BookingsScreen />);
     expect(screen.queryByRole('link', { name: 'Book again' })).not.toBeInTheDocument();
   });
 
   it('asks the server for another page when the reveal runs past what is loaded', async () => {
     const loadMore = vi.fn();
-    history = hist({
+    h.history = hist({
       bookings: Array.from({ length: 5 }, (_, i) => booking({ id: `h${i}`, status: 'completed' })),
       hasMore: true,
       loadMore,
@@ -470,7 +324,7 @@ describe('History', () => {
 
 describe('what time it is for the other person', () => {
   it('is on the hero and on an upcoming row, with the city', () => {
-    upcoming = remote([
+    h.upcoming = remote([
       booking({ id: 'a', other: { ...party(), timeZone: 'Africa/Lagos' } }),
       booking({
         id: 'b',
@@ -487,8 +341,8 @@ describe('what time it is for the other person', () => {
   });
 
   it('is left off a past session — nobody can act on it', () => {
-    tab = 'history';
-    history = hist({
+    h.tab = 'history';
+    h.history = hist({
       bookings: [
         booking({
           status: 'completed',
@@ -503,8 +357,8 @@ describe('what time it is for the other person', () => {
 
 describe('a list already on screen survives a failed refetch', () => {
   it('keeps the rows rather than replacing them with an error', () => {
-    tab = 'history';
-    history = hist({
+    h.tab = 'history';
+    h.history = hist({
       bookings: [booking({ status: 'completed' })],
       error: { kind: 'server', message: 'x' } as AppError,
     });
@@ -516,8 +370,8 @@ describe('a list already on screen survives a failed refetch', () => {
   });
 
   it('a failed "Show more" is said under the button', () => {
-    tab = 'history';
-    history = hist({
+    h.tab = 'history';
+    h.history = hist({
       bookings: Array.from({ length: 6 }, (_, i) => booking({ id: `h${i}`, status: 'completed' })),
       loadMoreError: { kind: 'server', message: 'x' } as AppError,
     });
@@ -528,7 +382,7 @@ describe('a list already on screen survives a failed refetch', () => {
 
 describe('the details panel', () => {
   beforeEach(() => {
-    upcoming = remote([
+    h.upcoming = remote([
       booking({ id: 'a', title: 'Statement of Purpose' }),
       booking({ id: 'b', title: 'Visa practice', startsAt: at(48), endsAt: at(49) }),
     ]);
@@ -551,36 +405,36 @@ describe('the details panel', () => {
   });
 
   it('a ?booking= link opens it, with the row marked', () => {
-    selectedBooking = 'b';
+    h.selectedBooking = 'b';
     render(<BookingsScreen />);
     expect(screen.getByRole('complementary', { name: 'Booking details' })).toBeVisible();
   });
 
   it('closing it takes the booking back out of the URL', async () => {
-    selectedBooking = 'b';
+    h.selectedBooking = 'b';
     render(<BookingsScreen />);
     await userEvent.click(screen.getByRole('button', { name: 'Close details' }));
     expect(replace).toHaveBeenCalledWith('/bookings', { scroll: false });
   });
 
   it('a booking already in the list is not fetched again', () => {
-    selectedBooking = 'b';
+    h.selectedBooking = 'b';
     render(<BookingsScreen />);
     // useBooking is called with active=false when the row is already loaded.
-    expect(bookingActive).toBe(false);
+    expect(h.bookingActive).toBe(false);
   });
 
   it('a booking the list does not hold is fetched', () => {
-    selectedBooking = 'not-in-any-list';
+    h.selectedBooking = 'not-in-any-list';
     render(<BookingsScreen />);
-    expect(bookingActive).toBe(true);
+    expect(h.bookingActive).toBe(true);
   });
 });
 
 describe('the panel changes shape, not content', () => {
   beforeEach(() => {
-    upcoming = remote([booking({ id: 'b', title: 'Visa practice' })]);
-    selectedBooking = 'b';
+    h.upcoming = remote([booking({ id: 'b', title: 'Visa practice' })]);
+    h.selectedBooking = 'b';
   });
 
   it('is an aside beside the list on a wide screen', () => {
@@ -590,7 +444,7 @@ describe('the panel changes shape, not content', () => {
   });
 
   it('takes the whole screen on a phone, as a dialog', async () => {
-    narrow = true;
+    h.narrow = true;
     render(<BookingsScreen />);
     expect(await screen.findByRole('dialog', { name: 'Booking details' })).toBeVisible();
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
@@ -599,7 +453,7 @@ describe('the panel changes shape, not content', () => {
 
 describe('the review round on the panel', () => {
   beforeEach(() => {
-    upcoming = remote([
+    h.upcoming = remote([
       booking({ id: 'a', title: 'Statement of Purpose' }),
       booking({ id: 'b', title: 'Visa practice', startsAt: at(48), endsAt: at(49) }),
     ]);
@@ -618,7 +472,7 @@ describe('the review round on the panel', () => {
     // The direction the ⋯ used to state in its label. The button cannot say
     // it, so `aria-expanded` is the only thing carrying it — and the URL is
     // the only thing proving the second press closes rather than reopens.
-    selectedBooking = 'b';
+    h.selectedBooking = 'b';
     render(<BookingsScreen />);
     const open = screen.getByRole('button', { name: /^Details for .*Visa practice/ });
     expect(open).toHaveAttribute('aria-expanded', 'true');
@@ -627,14 +481,14 @@ describe('the review round on the panel', () => {
   });
 
   it('switching tab closes the panel: its row is no longer on screen', async () => {
-    selectedBooking = 'b';
+    h.selectedBooking = 'b';
     render(<BookingsScreen />);
     await userEvent.click(screen.getByRole('tab', { name: /History/ }));
     expect(replace).toHaveBeenCalledWith('/bookings?tab=history', { scroll: false });
   });
 
   it('the aside takes focus when it opens, so the action is not silent', async () => {
-    selectedBooking = 'b';
+    h.selectedBooking = 'b';
     render(<BookingsScreen />);
     const aside = await screen.findByRole('complementary', { name: 'Booking details' });
     await waitFor(() => expect(aside).toHaveFocus());
@@ -643,7 +497,7 @@ describe('the review round on the panel', () => {
 
 describe('the booking form answers, wired up', () => {
   beforeEach(() => {
-    upcoming = remote([
+    h.upcoming = remote([
       booking({ id: 'a', title: 'Statement of Purpose' }),
       booking({ id: 'b', title: 'Visa practice', startsAt: at(48), endsAt: at(49) }),
     ]);
@@ -690,8 +544,8 @@ describe('the booking form answers, wired up', () => {
   ];
 
   it('the panel shows them, and the disclosure reveals the rest', async () => {
-    selectedBooking = 'b';
-    answers = { data: some, isLoading: false, error: null, retry: vi.fn() };
+    h.selectedBooking = 'b';
+    h.answers = { data: some, isLoading: false, error: null, retry: vi.fn() };
     render(<BookingsScreen />);
     expect(screen.queryByText('A3.')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Show all 3 questions' }));
@@ -701,8 +555,8 @@ describe('the booking form answers, wired up', () => {
   });
 
   it('a file answer opens the viewer over the panel', async () => {
-    selectedBooking = 'b';
-    answers = {
+    h.selectedBooking = 'b';
+    h.answers = {
       data: [{ ...some[0]!, kind: 'file_upload' as const, text: PDF.filename, file: PDF }],
       isLoading: false,
       error: null,
@@ -734,18 +588,18 @@ describe('the answers preview on the rows', () => {
   it('shows the first answer on the row, under the question that was asked', () => {
     // Two, because the first upcoming booking is the hero — and the hero gets
     // the link alone, not the box.
-    upcoming = remote([booking({ id: 'a', title: 'Statement of Purpose' }), withPreview()]);
+    h.upcoming = remote([booking({ id: 'a', title: 'Statement of Purpose' }), withPreview()]);
     render(<BookingsScreen />);
     expect(screen.getByText('What do you want to cover?')).toBeVisible();
     expect(screen.getByText('Nine programs.')).toBeVisible();
   });
 
   it('opens the panel with every answer already shown, in one step', async () => {
-    upcoming = remote([booking({ id: 'a', title: 'Statement of Purpose' }), withPreview()]);
+    h.upcoming = remote([booking({ id: 'a', title: 'Statement of Purpose' }), withPreview()]);
     // The panel is already on this booking, so the expansion is observable;
     // `select` only rewrites the URL in this harness.
-    selectedBooking = 'b';
-    answers = {
+    h.selectedBooking = 'b';
+    h.answers = {
       data: [1, 2, 3, 4].map((i) => ({
         questionId: `q${i}`,
         question: `Q${i}?`,
@@ -771,7 +625,7 @@ describe('the answers preview on the rows', () => {
   });
 
   it('a booking whose form was never answered shows no box', () => {
-    upcoming = remote([
+    h.upcoming = remote([
       booking({ id: 'a', title: 'Statement of Purpose' }),
       withPreview({ answersPreview: null }),
     ]);
@@ -781,7 +635,7 @@ describe('the answers preview on the rows', () => {
   });
 
   it('the hero offers the link, not the box — that card has its own note', async () => {
-    upcoming = remote([
+    h.upcoming = remote([
       withPreview({ id: 'a', title: 'Statement of Purpose', startsAt: at(2), endsAt: at(3) }),
     ]);
     render(<BookingsScreen />);
@@ -794,11 +648,11 @@ describe('the answers preview on the rows', () => {
   });
 
   it('the hero link opens the panel expanded, like the rows', async () => {
-    upcoming = remote([
+    h.upcoming = remote([
       withPreview({ id: 'a', title: 'Statement of Purpose', startsAt: at(2), endsAt: at(3) }),
     ]);
-    selectedBooking = 'a';
-    answers = {
+    h.selectedBooking = 'a';
+    h.answers = {
       data: [1, 2, 3, 4].map((i) => ({
         questionId: `q${i}`,
         question: `Q${i}?`,
@@ -820,7 +674,7 @@ describe('the answers preview on the rows', () => {
   });
 
   it('History rows never carry it — the design shows no preview there', async () => {
-    history = hist({
+    h.history = hist({
       bookings: [withPreview({ status: 'completed', startsAt: at(-48), endsAt: at(-47) })],
     });
     render(<BookingsScreen />);
@@ -831,14 +685,14 @@ describe('the answers preview on the rows', () => {
 
 describe('the desktop panel is not a keyboard dead end', () => {
   beforeEach(() => {
-    upcoming = remote([
+    h.upcoming = remote([
       booking({ id: 'a', title: 'Statement of Purpose' }),
       booking({ id: 'b', title: 'Visa practice', startsAt: at(48), endsAt: at(49) }),
     ]);
   });
 
   it('Escape closes it when focus is inside', async () => {
-    selectedBooking = 'b';
+    h.selectedBooking = 'b';
     render(<BookingsScreen />);
     const panel = screen.getByRole('complementary', { name: 'Booking details' });
     expect(panel).toBeVisible();
@@ -847,283 +701,12 @@ describe('the desktop panel is not a keyboard dead end', () => {
   });
 
   it('Escape elsewhere on the page is left alone', async () => {
-    selectedBooking = 'b';
+    h.selectedBooking = 'b';
     render(<BookingsScreen />);
     // The aside sits beside the page rather than over it, so it must not
     // swallow Escape from a menu or dialog that is not inside it.
     screen.getByRole('tab', { name: /Upcoming/ }).focus();
     await userEvent.keyboard('{Escape}');
     expect(replace).not.toHaveBeenCalled();
-  });
-});
-
-describe('the actions appear only where they can succeed', () => {
-  const pendingRow = (over = {}) =>
-    booking({
-      id: 'p1',
-      title: 'SOP review',
-      status: 'pending',
-      respondBy: at(5),
-      startsAt: at(48),
-      endsAt: at(49),
-      ...over,
-    });
-
-  it('a mentor answers a request on the row itself', async () => {
-    viewer = { ...MEMBER, isMentor: true };
-    pending = remote([pendingRow({ side: 'mentor' })]);
-    tab = 'pending';
-    render(<BookingsScreen />);
-    expect(screen.getByRole('button', { name: 'Accept' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Decline' })).toBeVisible();
-  });
-
-  it('accepting goes straight through — there is nothing to warn about', async () => {
-    viewer = { ...MEMBER, isMentor: true };
-    pending = remote([pendingRow({ side: 'mentor' })]);
-    tab = 'pending';
-    render(<BookingsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'Accept' }));
-    expect(actions.accept!.mutate).toHaveBeenCalledWith(
-      { bookingId: 'p1' },
-      expect.objectContaining({ onError: expect.any(Function) }),
-    );
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  });
-
-  it('declining asks first, because it cannot be undone', async () => {
-    viewer = { ...MEMBER, isMentor: true };
-    pending = remote([pendingRow({ side: 'mentor' })]);
-    tab = 'pending';
-    render(<BookingsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'Decline' }));
-    expect(screen.getByRole('dialog', { name: 'Decline this request?' })).toBeVisible();
-    expect(actions.decline!.mutate).not.toHaveBeenCalled();
-  });
-
-  it('a mentee gets Withdraw in the panel, and no Accept anywhere', () => {
-    pending = remote([pendingRow({ side: 'mentee' })]);
-    tab = 'pending';
-    // Opened, because the call-off lives in the panel now: the row carries
-    // only what answering a request needs, and a mentee answers nothing.
-    selectedBooking = 'p1';
-    render(<BookingsScreen />);
-    expect(screen.queryByRole('button', { name: 'Accept' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Withdraw request' })).toBeVisible();
-  });
-
-  it('calling a session off from the panel asks first, like declining does', async () => {
-    // The guarantee the move itself rests on. Wiring `onCallOff` straight to
-    // the mutation would leave every other test in this file green, so this is
-    // the one that holds it — the Decline equivalent is above.
-    upcoming = remote([booking({ id: 'later', title: 'Later one', startsAt: at(48), endsAt: at(49) })]);
-    selectedBooking = 'later';
-    render(<BookingsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'Cancel session' }));
-    expect(screen.getByRole('dialog', { name: 'Cancel this booking?' })).toBeVisible();
-    expect(actions.cancel!.mutate).not.toHaveBeenCalled();
-  });
-
-  it('and withdrawing from the panel asks too', async () => {
-    pending = remote([pendingRow({ side: 'mentee' })]);
-    tab = 'pending';
-    selectedBooking = 'p1';
-    render(<BookingsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'Withdraw request' }));
-    expect(screen.getByRole('dialog')).toBeVisible();
-    expect(actions.withdraw!.mutate).not.toHaveBeenCalled();
-  });
-
-  it('a lapsed request offers nothing — it is the backend’s to expire', async () => {
-    viewer = { ...MEMBER, isMentor: true };
-    pending = remote([pendingRow({ side: 'mentor', respondBy: at(-1) })]);
-    tab = 'pending';
-    render(<BookingsScreen />);
-    expect(screen.queryByRole('button', { name: 'Accept' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Decline' })).not.toBeInTheDocument();
-  });
-
-  it('a session inside ten minutes offers no Cancel', () => {
-    upcoming = remote([
-      booking({ id: 'a', title: 'Statement of Purpose' }),
-      booking({ id: 'soon', title: 'Nearly now', startsAt: at(0.1), endsAt: at(1) }),
-    ]);
-    selectedBooking = 'soon';
-    render(<BookingsScreen />);
-    expect(screen.queryByRole('button', { name: 'Cancel session' })).not.toBeInTheDocument();
-  });
-
-  it('a session further out does', () => {
-    upcoming = remote([
-      booking({ id: 'a', title: 'Statement of Purpose' }),
-      booking({ id: 'later', title: 'Later one', startsAt: at(48), endsAt: at(49) }),
-    ]);
-    selectedBooking = 'later';
-    render(<BookingsScreen />);
-    expect(screen.getByRole('button', { name: 'Cancel session' })).toBeVisible();
-  });
-
-  it('and never from the row itself, one tap from a scrolling list', () => {
-    upcoming = remote([
-      booking({ id: 'later', title: 'Later one', startsAt: at(48), endsAt: at(49) }),
-    ]);
-    render(<BookingsScreen />);
-    expect(screen.getByRole('button', { name: /^Details for .*Later one/ })).toBeVisible();
-    expect(screen.queryByRole('button', { name: 'Cancel session' })).not.toBeInTheDocument();
-  });
-});
-
-describe('accepting a request that runs into another session', () => {
-  it('warns before accepting, and says which session and when', () => {
-    viewer = { ...MEMBER, isMentor: true };
-    upcoming = remote([
-      booking({ id: 'u1', title: 'Already booked', startsAt: at(10), endsAt: at(11) }),
-    ]);
-    pending = remote([
-      booking({
-        id: 'p1',
-        title: 'Clashing request',
-        status: 'pending',
-        side: 'mentor',
-        respondBy: at(5),
-        startsAt: at(10.5),
-        endsAt: at(11.5),
-      }),
-    ]);
-    tab = 'pending';
-    render(<BookingsScreen />);
-    expect(screen.getByText(/This overlaps your session with/)).toBeVisible();
-    expect(screen.getByText(/Accepting books both/)).toBeVisible();
-  });
-
-  it('does not block it — accepting both may be the intention', async () => {
-    viewer = { ...MEMBER, isMentor: true };
-    upcoming = remote([booking({ id: 'u1', startsAt: at(10), endsAt: at(11) })]);
-    pending = remote([
-      booking({
-        id: 'p1',
-        status: 'pending',
-        side: 'mentor',
-        respondBy: at(5),
-        startsAt: at(10.5),
-        endsAt: at(11.5),
-      }),
-    ]);
-    tab = 'pending';
-    render(<BookingsScreen />);
-    const accept = screen.getByRole('button', { name: 'Accept' });
-    expect(accept).not.toHaveAttribute('aria-disabled', 'true');
-    await userEvent.click(accept);
-    expect(actions.accept!.mutate).toHaveBeenCalledWith(
-      { bookingId: 'p1' },
-      expect.objectContaining({ onError: expect.any(Function) }),
-    );
-  });
-
-  it('back-to-back sessions carry no warning', () => {
-    viewer = { ...MEMBER, isMentor: true };
-    upcoming = remote([booking({ id: 'u1', startsAt: at(9), endsAt: at(10) })]);
-    pending = remote([
-      booking({
-        id: 'p1',
-        status: 'pending',
-        side: 'mentor',
-        respondBy: at(5),
-        startsAt: at(10),
-        endsAt: at(11),
-      }),
-    ]);
-    tab = 'pending';
-    render(<BookingsScreen />);
-    expect(screen.queryByText(/This overlaps your session with/)).not.toBeInTheDocument();
-  });
-});
-
-describe('the review entry on History', () => {
-  beforeEach(() => {
-    // Book again and Leave a review are both gated on being able to book.
-    viewer = { ...MEMBER, isMentor: false, isApprovedMentor: false, isMentee: true };
-  });
-
-  const completed = (over = {}) =>
-    booking({
-      id: 'h1',
-      title: 'SOP review',
-      status: 'completed',
-      side: 'mentee',
-      startsAt: at(-48),
-      endsAt: at(-47),
-      ...over,
-    });
-
-  it('offers a review only for a session the list says is still reviewable', async () => {
-    history = hist({ bookings: [completed()] });
-    reviewable = { data: [{ id: 'h1' }], isLoading: false, error: null, retry: vi.fn() };
-    tab = 'history';
-    render(<BookingsScreen />);
-    const link = screen.getByRole('link', { name: 'Leave a review' });
-    // The flow lives on the profile; one implementation, not two.
-    expect(link).toHaveAttribute('href', '/mentors/p1?tab=reviews');
-  });
-
-  it('a session already reviewed falls back to Book again', () => {
-    // The list drops a session once a review is written, so nothing here has to
-    // re-derive eligibility — and nothing offers a second review.
-    history = hist({ bookings: [completed()] });
-    reviewable = { data: [], isLoading: false, error: null, retry: vi.fn() };
-    tab = 'history';
-    render(<BookingsScreen />);
-    expect(screen.queryByRole('link', { name: 'Leave a review' })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Book again' })).toBeVisible();
-  });
-
-  it('a mentor is never offered one — only mentees review', () => {
-    history = hist({ bookings: [completed({ side: 'mentor' })] });
-    reviewable = { data: [{ id: 'h1' }], isLoading: false, error: null, retry: vi.fn() };
-    tab = 'history';
-    render(<BookingsScreen />);
-    expect(screen.queryByRole('link', { name: 'Leave a review' })).not.toBeInTheDocument();
-  });
-});
-
-describe('booking an offered time actually opens the flow', () => {
-  const declined = () =>
-    booking({
-      id: 'd1',
-      status: 'declined',
-      side: 'mentee',
-      startsAt: at(-48),
-      endsAt: at(-47),
-      sessionTypeId: 'st-general',
-      suggestion: {
-        id: 's1',
-        startsAt: at(72),
-        endsAt: at(73),
-        durationMin: 60,
-        heldUntil: at(1),
-        status: 'active',
-        bookedSessionId: null,
-      },
-    });
-
-  it('names the offering as well as the time — `at` alone opens nothing', async () => {
-    // The profile understands `?book=`; `?at=` on its own left the mentee on
-    // the page with the flow closed and the held time unfound.
-    push.mockReset();
-    history = hist({ bookings: [declined()] });
-    selectedBooking = 'd1';
-    tab = 'history';
-    render(<BookingsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: /^Book / }));
-    expect(push).toHaveBeenCalledWith(expect.stringContaining('book=st-general'));
-    expect(push.mock.calls[0]![0]).toContain('at=');
-  });
-
-  it('offers nothing to press when the booking has no offering recorded', () => {
-    history = hist({ bookings: [{ ...declined(), sessionTypeId: null }] });
-    selectedBooking = 'd1';
-    tab = 'history';
-    render(<BookingsScreen />);
-    expect(screen.queryByRole('button', { name: /^Book / })).not.toBeInTheDocument();
   });
 });

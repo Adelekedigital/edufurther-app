@@ -148,6 +148,10 @@ export function BookingRow({
           controls={answersControls}
           expanded={selected}
           onClick={onOpenDetails}
+          // The row owns only where it sits: above 1100px `order` puts it after
+          // the actions, horizontally, while the DOM keeps it first so a phone
+          // tabs down and stops. Without this class that rule matches nothing.
+          className={styles.details}
         />
       )}
       {!!actions && <div className={styles.actions}>{actions}</div>}
