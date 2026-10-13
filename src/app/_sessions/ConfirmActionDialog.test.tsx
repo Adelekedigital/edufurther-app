@@ -126,9 +126,13 @@ describe('the reason is required, and means it', () => {
     );
   });
 
-  it('says who will read the note', () => {
+  it('says what the other person will be told, and changes it for Other', async () => {
     dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }) });
-    expect(screen.getByText(/Amara will read/)).toBeVisible();
+    // A picked chip reaches Amara as our sentence, not as the chip's own
+    // first-person label, so the hint promises being told rather than read.
+    expect(screen.getByText('Amara sees the reason you pick.')).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    expect(screen.getByText('Amara reads what you write.')).toBeVisible();
   });
 
   it('a mentor is not offered "I no longer need it"', () => {
@@ -155,6 +159,92 @@ describe('the reason is required, and means it', () => {
     // The label has to agree with the rule: a dialog that marks the reason
     // required and then accepts it empty trains someone to ignore the marking.
     expect(whyLabel()).toBe('Why? Optional');
+  });
+});
+
+describe('the box belongs to Other, and what was typed there does not outlive it', () => {
+  const mentorPending = () => sampleBookingFor({ side: 'mentor', status: 'pending' });
+
+  it('no box until Other is picked', async () => {
+    dialog({ action: 'decline', booking: mentorPending() });
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    expect(screen.getByRole('textbox')).toBeVisible();
+  });
+
+  it('switching away from Other sends nothing of what was typed', async () => {
+    const onConfirm = vi.fn();
+    dialog({ action: 'decline', booking: mentorPending(), onConfirm });
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    await userEvent.type(screen.getByRole('textbox'), 'changed my mind about this');
+    await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
+    // The box is gone from the screen, so its contents must be gone from the
+    // payload too: an invisible reason_text lands in the other party's
+    // notification with nobody having chosen to send it.
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ reasonCode: 'technical_issue', reasonText: '' }),
+    );
+  });
+
+  it('typed words survive every tap of the chip — a deselect is not a delete', async () => {
+    // Tapping chips is how someone explores the options. Losing what they
+    // wrote to an exploratory tap, with no undo, is the worse failure, so the
+    // text lives in state and no tap clears it (owner, 2026-10-12).
+    dialog({ action: 'decline', booking: mentorPending() });
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    await userEvent.type(screen.getByRole('textbox'), 'a long explanation I do not want to lose');
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    expect(screen.getByRole('textbox')).toHaveValue('a long explanation I do not want to lose');
+  });
+
+  it('unpicking leaves no reason, so the confirm is blocked even with words typed', async () => {
+    // The path the keep-the-text rule opens up: words held in state, no code.
+    // Text alone is not a reason — the server wants the code (backend #417) —
+    // and sending the note under no code would reach them as a quote with
+    // nothing explaining it.
+    const onConfirm = vi.fn();
+    dialog({ action: 'decline', booking: mentorPending(), onConfirm });
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    await userEvent.type(screen.getByRole('textbox'), 'I typed this and then unpicked');
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
+    expect(screen.getByText('Pick a reason before you go on.')).toBeVisible();
+    // The dialog moves focus in a requestAnimationFrame, so the chip has it a
+    // frame later rather than on the click.
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'A clash in my calendar' })).toHaveFocus(),
+    );
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it('switching to another chip and back shows the same words again', async () => {
+    dialog({ action: 'decline', booking: mentorPending() });
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    await userEvent.type(screen.getByRole('textbox'), 'first thoughts');
+    await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    expect(screen.getByRole('textbox')).toHaveValue('first thoughts');
+  });
+
+  it('but a reason that is not Other sends no words at all', async () => {
+    const onConfirm = vi.fn();
+    dialog({ action: 'decline', booking: mentorPending(), onConfirm });
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    await userEvent.type(screen.getByRole('textbox'), 'changed my mind about this');
+    await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
+    // Held in state so it can come back, but never sent: the box is off screen,
+    // so these are words the person cannot see, and they must not land in the
+    // other party's notification.
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ reasonCode: 'technical_issue', reasonText: '' }),
+    );
   });
 });
 

@@ -14,15 +14,28 @@ type Outcome = {
   to: components['schemas']['SessionStatus'];
   actor: 'them' | 'you' | 'system';
   text: string | null;
+  /** What they picked. The panel reads this when nothing was written. */
+  code?: components['schemas']['SessionReasonCode'] | null;
 };
 const OUTCOME: Record<string, Outcome> =
   {
-    'h-3': { to: 'cancelled', actor: 'them', text: 'Sorry — my visa interview was moved to the same hour.' },
+    // Written *and* coded, which is the ordinary case now the chip is required:
+    // the note wins and the code stays for reporting.
+    'h-3': {
+      to: 'cancelled',
+      actor: 'them',
+      code: 'scheduling_conflict',
+      text: 'Sorry — my visa interview was moved to the same hour.',
+    },
+    // No code on purpose: nobody picked one. A no-show is the sweep noticing
+    // an empty room, so the panel has only its heading to show.
     'h-4': { to: 'no_show', actor: 'system', text: null },
-    'h-5': { to: 'declined', actor: 'them', text: 'I’m away that week. Try the 14th and I’ll confirm.' },
-    'h-6': { to: 'expired', actor: 'system', text: null },
-    // Withdrawn with nothing written: the panel shows the heading and no quote.
-    'h-7': { to: 'withdrawn', actor: 'you', text: null },
+    'h-5': { to: 'declined', actor: 'them', code: 'mentor_unavailable', text: 'I’m away that week. Try the 14th and I’ll confirm.' },
+    'h-6': { to: 'expired', actor: 'system', code: 'expired_no_response', text: null },
+    // A chip and nothing typed — the common shape, since the box only appears
+    // for "Something else". Without one of these in the mock, the sentence the
+    // panel builds from the code cannot be seen in a drive or a page review.
+    'h-7': { to: 'withdrawn', actor: 'you', code: 'mentee_no_longer_needed', text: null },
   };
 
 export async function GET(req: Request, ctx: { params: Promise<{ sessionId: string }> }) {
@@ -51,7 +64,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ sessionId: stri
       actor_id:
         end.actor === 'system' ? null : end.actor === 'you' ? mockViewerId(req) : `mock-${sessionId}`,
       actor_type: end.actor === 'system' ? 'system' : 'user',
-      reason_code: null,
+      reason_code: end.code ?? null,
       reason_text: end.text,
       created_at: at(-20),
     });
