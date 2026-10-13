@@ -85,7 +85,12 @@ function toProfileSessionType(r: SessionTypeRead): ProfileSessionType {
   const stage = stageLine(r);
   return {
     ...toSessionType(r),
-    category: r.service_offering?.display_name ?? null,
+    // The first of `service_offerings`, not the single `service_offering` the
+    // backend is removing (their #274). This one mattered: unlike the fallbacks
+    // elsewhere, there was nothing behind it, so the day the field went the
+    // category line would have stopped rendering with nothing thrown, nothing
+    // logged and CI green.
+    category: r.service_offerings?.[0]?.display_name ?? null,
     stage,
     venue: VENUE[r.meeting_venue] ?? 'Video call',
   };
