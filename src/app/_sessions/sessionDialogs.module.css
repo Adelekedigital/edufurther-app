@@ -104,14 +104,22 @@
   gap: var(--space-3);
 }
 
+/* CancelModal.dc.html draws the suggest-a-time control inside its own bordered
+   box, which is what separates a decision from the body text around it. The
+   "I'm still free" switch takes the same treatment: it is the same kind of
+   control, it sits directly beside this one on a mentor's cancel, and one of
+   the two in a box would read as an accident rather than a distinction. */
 .slotChoice {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-lg);
 }
 
 .slotLabel {
-  font-size: var(--text-p-sm);
+  font-size: var(--text-p-xs);
   font-weight: var(--weight-semibold);
   color: var(--ink-900);
 }

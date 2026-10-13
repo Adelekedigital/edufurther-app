@@ -224,9 +224,13 @@
      footer directly under the content instead of a screen-height below it, so
      with the keyboard open it rides up with the field being typed in. */
   height: auto;
-  max-height: 80vh;
-  max-height: 80dvh;
-  max-width: 390px;
+  /* `Modal.dc.html`: a sheet is `width: 100%` and `maxH: 92%`. It had been
+     capped at 390px and centred, copied from CreditsExplainer rather than read
+     off the design — which left it floating with gutters either side anywhere
+     between a large phone and 767px, reading as a card that had come loose
+     rather than a sheet on the bottom edge. */
+  max-height: 92vh;
+  max-height: 92dvh;
   border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
   animation:
     fade var(--duration-base) var(--ease-standard),
@@ -254,7 +258,7 @@
   height: 4px;
   margin-top: var(--space-2);
   border-radius: var(--radius-full);
-  background: var(--ink-200);
+  background: var(--ink-300);
 }
 
 @keyframes rise {
