@@ -136,30 +136,32 @@
 
 /* The hero's "⋯" (Bookings.dc.html `ha.acMore`), pushed to the end of the
    eyebrow row. Same 40/44 as the rows'. */
-.more {
+/* The same control the rows below use, so the hero does not read as a
+   different component. `--touch-target-min` rather than a drawn height: the
+   negative margins pull it into the corner without the label taking that much
+   room. */
+.details {
+  flex: none;
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-left: auto;
-  width: var(--button-h-medium);
-  height: var(--button-h-medium);
+  gap: 2px;
+  min-height: var(--touch-target-min);
+  margin: calc(var(--space-3) * -1) calc(var(--space-2) * -1) calc(var(--space-3) * -1) auto;
+  padding: 0 var(--space-2);
   border: none;
-  border-radius: var(--radius-full);
   background: none;
-  color: var(--ink-700);
   cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-700);
 }
-.more:hover {
-  background: var(--ink-100);
+.details:hover {
   color: var(--ink-900);
 }
-.more:focus-visible {
+.details:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: 2px;
 }
 @media (max-width: 767px) {
-  .more {
-    width: var(--touch-target-min);
-    height: var(--touch-target-min);
-  }
 }

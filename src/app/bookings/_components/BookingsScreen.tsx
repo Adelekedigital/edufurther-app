@@ -210,36 +210,6 @@ export function BookingsScreen() {
   // "you have reviewed everything", which is the error-before-empty rule.
   const reviewUnknown = reviewable.isLoading || !!reviewable.error;
 
-  const rowMenu = (b: Booking) => {
-    const items: RowMenuItem[] = [
-      {
-        key: 'details',
-        icon: 'info',
-        label: selected === b.id ? 'Hide details' : 'See details',
-        onSelect: () => toggle(b.id),
-      },
-    ];
-    // Only what this person can actually do to this booking, now. A control
-    // that would be refused is worse than no control.
-    if (canWithdraw(b, now))
-      items.push({
-        key: 'withdraw',
-        icon: 'block',
-        label: 'Withdraw request',
-        onSelect: () => setConfirming({ action: 'withdraw', booking: b }),
-        danger: true,
-      });
-    if (canCancel(b, now))
-      items.push({
-        key: 'cancel',
-        icon: 'block',
-        label: 'Cancel session',
-        onSelect: () => setConfirming({ action: 'cancel', booking: b }),
-        danger: true,
-      });
-    return items;
-  };
-
   const clashId = (id: string) => `clash-${id}`;
 
   /**
@@ -358,7 +328,7 @@ export function BookingsScreen() {
                   heading={later.length ? 'Later' : undefined}
                   now={now}
                   total={later.length}
-                  menuFor={rowMenu}
+                  onOpenDetails={toggle}
                   onOpenAnswers={openAnswers}
                   answersControls={showPanel ? PANEL_ID : undefined}
                   selectedId={selected}
@@ -372,7 +342,7 @@ export function BookingsScreen() {
                       answersControls={showPanel ? PANEL_ID : undefined}
                       timeZone={timeZone}
                       joinHref={joinHref(next.id)}
-                      menu={rowMenu(next)}
+                      onOpenDetails={() => toggle(next.id)}
                       now={now}
                     />
                   )}
@@ -391,7 +361,7 @@ export function BookingsScreen() {
                   intro={pendingIntro}
                   total={pending.data?.length}
                   now={now}
-                  menuFor={rowMenu}
+                  onOpenDetails={toggle}
                   actionsFor={rowActions}
                   noticeFor={rowNotice}
                   onOpenAnswers={openAnswers}
@@ -425,7 +395,7 @@ export function BookingsScreen() {
                   timeZone={timeZone}
                   isMentor={isMentor}
                   filtered={filters.length > 0}
-                  menuFor={rowMenu}
+                  onOpenDetails={toggle}
                   selectedId={selected}
                   shown={reveal.history.shown}
                   showMore={() => {
@@ -474,6 +444,7 @@ export function BookingsScreen() {
               <BookingDetailsPanel
                 asSheet={asSheet}
                 booking={open ?? null}
+                onCallOff={(action) => open && setConfirming({ action, booking: open })}
                 timeZone={timeZone}
                 outcome={outcome.data}
                 outcomeLoading={outcome.isLoading}

@@ -605,11 +605,12 @@ describe('the review round on the panel', () => {
     ]);
   });
 
-  it('the next session can be opened too — it had no way in', async () => {
+  it('the next session opens the same way the rows do', async () => {
+    // It used to be two presses behind a ⋯; it is the same labelled button as
+    // every row below it now, so the hero does not read as another component.
     render(<BookingsScreen />);
     const hero = screen.getByRole('region', { name: 'Next session' });
-    await userEvent.click(within(hero).getByRole('button', { name: /More options/ }));
-    await userEvent.click(screen.getByRole('menuitem', { name: 'See details' }));
+    await userEvent.click(within(hero).getByRole('button', { name: /^Details for / }));
     expect(replace).toHaveBeenCalledWith('/bookings?booking=a', { scroll: false });
   });
 

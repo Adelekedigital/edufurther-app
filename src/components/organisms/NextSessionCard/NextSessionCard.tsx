@@ -3,7 +3,6 @@ import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
-import { RowMenu, type RowMenuItem } from '@/components/molecules/RowMenu/RowMenu';
 import { cx } from '@/lib/utils/cx';
 import {
   bookingHeading,
@@ -26,8 +25,11 @@ type NextSessionCardProps = {
   answersControls?: string;
   /** The session's own page, where joining happens (Session Join.dc.html). */
   joinHref: string;
-  /** The ⋯ menu — "See details", as the design's hero has. */
-  menu?: RowMenuItem[];
+  /**
+   * Opens the details panel. The hero reads the same way as the rows below it:
+   * a labelled control, not a ⋯ hiding one item. Omit it and nothing is drawn.
+   */
+  onOpenDetails?: () => void;
   now?: Date;
 };
 
@@ -51,7 +53,7 @@ export function NextSessionCard({
   booking: b,
   timeZone,
   joinHref,
-  menu,
+  onOpenDetails,
   onOpenAnswers,
   answersControls,
   now = new Date(),
@@ -78,12 +80,19 @@ export function NextSessionCard({
           <Icon name={when.icon} size={14} />
           {when.label}
         </span>
-        {!!menu?.length && (
-          <RowMenu
-            label={`More options for ${bookingHeading(b)}`}
-            items={menu}
-            trigger={{ icon: 'more_horiz', size: 20, className: styles.more }}
-          />
+        {onOpenDetails && (
+          <button
+            type="button"
+            onClick={onOpenDetails}
+            // Named per booking, like the rows: "Details" on its own tells a
+            // screen-reader user which control they are on and nothing else.
+            aria-label={`Details for ${bookingHeading(b)}`}
+            aria-controls={answersControls}
+            className={styles.details}
+          >
+            Details
+            <Icon name="chevron_right" size={18} />
+          </button>
         )}
       </div>
 
