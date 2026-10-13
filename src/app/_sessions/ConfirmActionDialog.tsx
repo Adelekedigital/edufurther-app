@@ -61,6 +61,26 @@ const CONFIRMS_OFFERING = {
 /** The design's phone frame: `CancelModal sheet contained`. */
 const PHONE = '(max-width: 767px)';
 
+/**
+ * The design writes one placeholder, in the cancel voice. Said under "Decline
+ * this request?" it asks a mentor why they are "canceling this call", which is
+ * the wrong word for the thing they are doing — the same care `TITLES` takes.
+ */
+const PLACEHOLDERS = {
+  cancel: {
+    mentor: 'Let the mentee know why you are canceling this call…',
+    mentee: 'Let your mentor know why you are canceling…',
+  },
+  decline: {
+    mentor: 'Let the mentee know why you are declining…',
+    mentee: 'Let your mentor know why you are declining…',
+  },
+  withdraw: {
+    mentor: 'Let the mentee know why you are withdrawing…',
+    mentee: 'Let your mentor know why you are withdrawing…',
+  },
+} as const;
+
 const REASON_LABELS = {
   decline: 'Reason for declining',
   withdraw: 'Reason for withdrawing',
@@ -128,6 +148,9 @@ export function ConfirmActionDialog({
   // is open, so this one value decides which question is being asked.
   const offering = canSuggest && suggestOn;
   const when = { day: dayLabel(b.startsAt, timeZone), start: formatTime(b.startsAt, timeZone) };
+  // Offering a time says "not that hour" — unless the mentor has also said the
+  // hour is still free, which only a cancel can say.
+  const impliesUnavailable = !(action === 'cancel' && isMentor && stillFree);
   // What the confirm is waiting for, which is also what the server will refuse
   // without: a time, or a reason (backend #417).
   const incomplete = offering
@@ -205,7 +228,14 @@ export function ConfirmActionDialog({
             // saying why is the confirm people learn to click past. Pressing it
             // explains and moves focus.
             className={cx(incomplete && !tooLate && styles.confirmNotYet)}
-            aria-disabled={tooLate || incomplete || undefined}
+            // Points at the credit line, so the confirm is not pressed without
+            // hearing what happens to it — which is why that line is above the
+            // button in the first place.
+            aria-describedby={creditLine ? `${fieldId}-credit` : undefined}
+            // `tooLate` only. The incomplete state is soft red and says so when
+            // pressed — marking it disabled would tell assistive tech the one
+            // control that explains what is missing is unavailable.
+            aria-disabled={tooLate || undefined}
             onClick={() => {
               if (tooLate) return;
               if (offering) {
@@ -239,9 +269,16 @@ export function ConfirmActionDialog({
                 // the server's exemption keeps the data point the requirement
                 // exists for — otherwise most mentor endings would carry no
                 // code at all, and reporting would see only the mentee side.
-                // It also reads correctly at the other end: `reasonReads` turns
-                // it into "No longer free at that time", beside the new time.
-                reasonCode: offering ? 'mentor_unavailable' : reasonCode,
+                //
+                // Except where it would be a lie. A mentor cancelling who has
+                // left "I'm still free at this time" on has just said the hour
+                // is fine and put it back on their calendar; sending
+                // `mentor_unavailable` would reach the mentee as "No longer
+                // free at that time" directly under it. There the time is not
+                // the reason, we do not know what is, and the server's
+                // `suggested_starts_at` exemption is exactly for a request
+                // that honestly has none.
+                reasonCode: offering ? (impliesUnavailable ? 'mentor_unavailable' : null) : reasonCode,
                 // Only "Something else" has words to send. The box is hidden
                 // for every other reason, so anything still held in state is
                 // something the person cannot see — it must not reach the
@@ -271,7 +308,12 @@ export function ConfirmActionDialog({
             design's hard-coded twelve hours. */}
         {creditLine && (
           <Notice tone="info" id={`${fieldId}-credit`}>
-            {creditLine}
+            {/* The design draws one Notice for both outcomes. "Your credit goes
+                back" and "the credit is not returned" are the one distinction
+                this dialog exists to make, so the losing case keeps its
+                emphasis inside the design's frame rather than reading the same
+                as the reassuring one. */}
+            <span className={!refunds ? styles.confirmCreditLost : undefined}>{creditLine}</span>
           </Notice>
         )}
 
@@ -307,23 +349,39 @@ export function ConfirmActionDialog({
               onChange={(v) => {
                 setSuggestOn(v);
                 setOfferBad(false);
+                // The reason error goes too: switching away and back is not an
+                // attempt to submit, and an error waiting to reappear scolds
+                // someone who has not tried anything since.
+                setReasonBad(null);
+                // And the picked time goes with the offer. Keeping it meant a
+                // mentor could pick the fifth slot, switch off to read the
+                // chips, switch back — and the picker, remounted, shows only
+                // the first two with none pressed while the confirm quietly
+                // still carried the fifth. A time nowhere on screen must never
+                // be the one that gets sent.
+                if (!v) setSuggested(null);
               }}
               aria-labelledby={`${fieldId}-sg`}
-              aria-describedby={`${fieldId}-sg-hint`}
+              aria-describedby={
+                offerBad ? `${fieldId}-sg-hint ${fieldId}-sg-err` : `${fieldId}-sg-hint`
+              }
             />
             <div>
               <span id={`${fieldId}-sg`} className={styles.slotLabel}>
                 Suggest a new time to {first}
               </span>
-              {/* The design promises the booking skips your approval queue. We
-                  cannot say that yet — booking a suggestion still lands in it
-                  (issue #228) — so this keeps the older, true wording until the
-                  backend can keep the promise. */}
+              {/* Only a decline can promise this, and only since backend #435
+                  (2026-10-13). A declined request was never approved, so the
+                  offered time skips the wait the mentee would otherwise sit
+                  through a second time. A cancel had its approval already —
+                  there is nothing to skip, so it promises nothing. */}
               <p id={`${fieldId}-sg-hint`} className={styles.slotHint}>
-                They get one tap to book it
+                {action === 'decline'
+                  ? 'They book it in one tap, with no wait for your approval'
+                  : 'They get one tap to book it'}
               </p>
               {offerBad && (
-                <p className={styles.confirmError}>
+                <p id={`${fieldId}-sg-err`} role="alert" className={styles.confirmError}>
                   Pick a time, or switch this off to give a reason instead.
                 </p>
               )}
@@ -350,11 +408,7 @@ export function ConfirmActionDialog({
         <ReasonField
           side={b.side}
           label={REASON_LABELS[action]}
-          placeholder={
-            isMentor
-              ? 'Let the mentee know why you are canceling this call…'
-              : 'Let your mentor know why you are canceling…'
-          }
+          placeholder={PLACEHOLDERS[action][isMentor ? 'mentor' : 'mentee']}
           reasonCode={reasonCode}
           onReasonCode={(v) => {
             setReasonCode(v);

@@ -83,16 +83,6 @@
 }
 
 /* What happens to the credit, stated before the button rather than after. */
-.confirmCredit {
-  margin: 0;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--ink-50);
-  font-size: var(--text-p-sm);
-  line-height: var(--lh-p);
-  color: var(--ink-900);
-}
-
 /* The credit is not coming back. Carrying that on wording alone, in a box that
    reads as boilerplate, is how someone finds out afterwards. */
 .confirmCreditLost {

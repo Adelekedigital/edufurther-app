@@ -306,6 +306,79 @@ describe('the box belongs to Other, and what was typed there does not outlive it
   });
 });
 
+describe('what offering a time promises depends on what was approved', () => {
+  it('a decline says the mentee skips the approval wait', () => {
+    // True since backend #435: a declined request was never approved, so the
+    // offered time is pre-approved and the booking confirms at once.
+    dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }) });
+    expect(
+      screen.getByText('They book it in one tap, with no wait for your approval'),
+    ).toBeVisible();
+  });
+
+  it('a cancel promises nothing of the sort, because there is nothing to skip', () => {
+    dialog({ booking: sampleBookingFor({ side: 'mentor', status: 'confirmed' }) });
+    expect(screen.getByText('They get one tap to book it')).toBeVisible();
+  });
+});
+
+describe('turning the offer off takes the offered time with it', () => {
+  const mentorPending = () => sampleBookingFor({ side: 'mentor', status: 'pending' });
+
+  it('a time picked, then hidden by switching the offer off, is not sent', async () => {
+    // It used to survive. The picker remounts showing only its first two
+    // chips with none pressed, so a mentor could send a fifth-slot instant
+    // that was nowhere on screen.
+    const onConfirm = vi.fn();
+    dialog({ action: 'decline', booking: mentorPending(), onConfirm });
+    const [slot] = screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ });
+    await userEvent.click(slot!);
+    await userEvent.click(screen.getByRole('switch', { name: 'Suggest a new time to Amara' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.not.objectContaining({ suggestedStartsAt: expect.anything() }),
+    );
+  });
+
+  it('a blocked submit does not leave an error waiting to reappear', async () => {
+    dialog({ action: 'decline', booking: mentorPending() });
+    await userEvent.click(screen.getByRole('switch', { name: 'Suggest a new time to Amara' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
+    expect(screen.getByText('Pick a reason before you go on.')).toBeVisible();
+    // Away and back is not another attempt to send.
+    await userEvent.click(screen.getByRole('switch', { name: 'Suggest a new time to Amara' }));
+    await userEvent.click(screen.getByRole('switch', { name: 'Suggest a new time to Amara' }));
+    expect(screen.queryByText('Pick a reason before you go on.')).not.toBeInTheDocument();
+  });
+});
+
+describe('the offered time only implies the mentor was busy when it is true', () => {
+  it('a mentor cancelling who stays free sends no reason code at all', async () => {
+    // "I'm still free at this time" says the hour is fine. Sending
+    // `mentor_unavailable` beside it would reach the mentee as "No longer free
+    // at that time" directly under the opposite claim.
+    const onConfirm = vi.fn();
+    dialog({ booking: sampleBookingFor({ side: 'mentor', status: 'confirmed' }), onConfirm });
+    const [slot] = screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ });
+    await userEvent.click(slot!);
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel and send' }));
+    expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ reasonCode: null }));
+  });
+
+  it('but one who gives the hour up does say so', async () => {
+    const onConfirm = vi.fn();
+    dialog({ booking: sampleBookingFor({ side: 'mentor', status: 'confirmed' }), onConfirm });
+    await userEvent.click(screen.getByRole('switch', { name: 'I’m still free at this time' }));
+    const [slot] = screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ });
+    await userEvent.click(slot!);
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel and send' }));
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ reasonCode: 'mentor_unavailable', releaseSlot: false }),
+    );
+  });
+});
+
 describe('the unhappy paths', () => {
   it('a refusal is shown in our words, and the dialog stays open to retry', () => {
     dialog({ error: { kind: 'conflict', message: 'This booking changed while you were looking.' } });
