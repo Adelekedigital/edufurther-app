@@ -54,17 +54,17 @@ describe('the box belongs to Other, and nowhere else', () => {
 describe('what the field says about who reads it', () => {
   it('a picked chip reaches them as a sentence, not as the chip', () => {
     field({ required: true, reasonCode: 'technical_issue' });
-    expect(screen.getByText('Amara will be told why.')).toBeVisible();
+    expect(screen.getByText('Amara sees the reason you pick.')).toBeVisible();
   });
 
   it('Other reaches them as their own words, and says so', () => {
     field({ required: true, reasonCode: 'other' });
-    expect(screen.getByText('Amara will read what you write.')).toBeVisible();
+    expect(screen.getByText('Amara reads what you write.')).toBeVisible();
   });
 
   it('the hint sits in one place, so nothing shifts when the box appears', () => {
     const { rerender } = field({ required: true });
-    expect(screen.getAllByText(/Amara will/)).toHaveLength(1);
+    expect(screen.getAllByText(/Amara (sees|reads)/)).toHaveLength(1);
     rerender(
       <ReasonField
         side="mentee"
@@ -77,7 +77,7 @@ describe('what the field says about who reads it', () => {
       />,
     );
     // Still exactly one: the box adds a label and a field, never a second hint.
-    expect(screen.getAllByText(/Amara will/)).toHaveLength(1);
+    expect(screen.getAllByText(/Amara (sees|reads)/)).toHaveLength(1);
     expect(screen.getByRole('textbox')).toBeVisible();
   });
 });

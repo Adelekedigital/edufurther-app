@@ -130,9 +130,9 @@ describe('the reason is required, and means it', () => {
     dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }) });
     // A picked chip reaches Amara as our sentence, not as the chip's own
     // first-person label, so the hint promises being told rather than read.
-    expect(screen.getByText('Amara will be told why.')).toBeVisible();
+    expect(screen.getByText('Amara sees the reason you pick.')).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
-    expect(screen.getByText('Amara will read what you write.')).toBeVisible();
+    expect(screen.getByText('Amara reads what you write.')).toBeVisible();
   });
 
   it('a mentor is not offered "I no longer need it"', () => {

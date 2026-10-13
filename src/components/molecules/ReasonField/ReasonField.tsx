@@ -104,11 +104,16 @@ export function ReasonField({
       {/* One hint, always in the same place, so nothing shifts when the box
           appears. It has to say the truth of whichever path they are on: a
           picked chip reaches them as our sentence, and "Something else"
-          reaches them as their own words. */}
+          reaches them as their own words.
+
+          Not "{first} will be told why": the dialog's own subtitle already
+          says they will be told, and the two lines sat one above the other
+          saying nearly the same thing. This one's job is only to say *what*
+          they get. */}
       <p id={`${id}-hint`} className={styles.hint}>
         {wantsNote
-          ? `${readerFirstName} will read what you write.`
-          : `${readerFirstName} will be told why.`}
+          ? `${readerFirstName} reads what you write.`
+          : `${readerFirstName} sees the reason you pick.`}
       </p>
       {wantsNote && (
         <>
