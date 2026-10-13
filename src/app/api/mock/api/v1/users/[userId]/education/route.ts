@@ -6,6 +6,7 @@ import {
   setEducation,
   type MockEducation,
 } from '@/lib/api/mock/entries';
+import { ok } from '@/lib/api/mock/respond';
 
 const invalid = (pointer: string) =>
   NextResponse.json(
@@ -23,7 +24,7 @@ export async function GET(_req: Request, ctx: Ctx) {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
   const { userId } = await ctx.params;
   await new Promise((r) => setTimeout(r, 200));
-  return NextResponse.json({
+  return ok('/api/v1/users/{user_id}/education', 'get', {
     data: (mockEducation(userId) ?? []).map(educationRead),
     next_cursor: null,
   });
@@ -55,5 +56,10 @@ export async function POST(req: Request, ctx: Ctx) {
     [entry, ...(mockEducation(userId) ?? [])],
     entry.is_most_recent ? entry.id : undefined,
   );
-  return NextResponse.json(educationRead(entry), { status: 201 });
+  return ok(
+    '/api/v1/users/{user_id}/education',
+    'post',
+    { id: entry.id, institution_created: false },
+    { status: 201 },
+  );
 }

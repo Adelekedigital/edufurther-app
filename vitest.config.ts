@@ -16,5 +16,12 @@ export default defineConfig({
     // a hung test reaches (agreed with the profile session, 2026-09-29).
     testTimeout: 15_000,
     maxWorkers: '50%',
+    // A floor, not a goal (audit item 4): today's numbers from main's first real
+    // coverage run (2026-10-12: 87.39 / 83.44 / 85.17 / 89.1), rounded down.
+    // Raise them as coverage grows; never lower one to go green.
+    coverage: {
+      provider: 'v8',
+      thresholds: { statements: 87, branches: 83, functions: 85, lines: 89 },
+    },
   },
 });

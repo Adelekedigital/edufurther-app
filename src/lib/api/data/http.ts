@@ -4,7 +4,8 @@ import { getAccessToken, refreshAccessToken, signOut } from '@/lib/vendor/supaba
 import { createAuthMiddleware } from './authMiddleware';
 
 /**
- * The only place the generated client is instantiated.
+ * The browser's generated client. The one server-side call, /me for the `/`
+ * redirect, builds its own in home.ts (ADR 0005).
  *
  * NEXT_PUBLIC_API_BASE_URL:
  *   - unset (deployed): same origin, `/api/v1/…`, proxied to BACKEND_URL by the

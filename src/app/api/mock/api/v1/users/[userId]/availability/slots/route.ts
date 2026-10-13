@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { MOCK_SESSION_TYPES, mockMentorExists, mockSlots } from '@/lib/api/mock/availability';
 import { MAX_WINDOW_DAYS } from '@/lib/api/mock/bookingPrefs';
+import { ok } from '@/lib/api/mock/respond';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -35,5 +36,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ userId: str
       { status: 422, headers: { 'content-type': 'application/problem+json' } },
     );
   await new Promise((r) => setTimeout(r, 300));
-  return NextResponse.json({ data: mockSlots(userId, typeId!, end, now), next_cursor: null });
+  return ok('/api/v1/users/{user_id}/availability/slots', 'get', {
+    data: mockSlots(userId, typeId!, end, now),
+    next_cursor: null,
+  });
 }

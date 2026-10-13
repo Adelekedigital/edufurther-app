@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { mockAvailabilityState, mockNextAvailableAt } from '@/lib/api/mock/availability';
 import { MENTORS, OFFERINGS, mockCountries } from '@/lib/api/mock/fixtures';
+import { ok } from '@/lib/api/mock/respond';
 
 /**
  * PHASE A MOCK of GET /api/v1/mentors, following the backend's stated contract
@@ -56,7 +57,7 @@ export async function GET(req: NextRequest) {
   // Enough latency to see skeletons and the refresh bar in dev.
   await new Promise((r) => setTimeout(r, 450));
   // `total` as the backend ships it (PR #230): integer on the first page, null after.
-  return NextResponse.json({
+  return ok('/api/v1/mentors', 'get', {
     data: page,
     next_cursor: next,
     total: cursor === null ? rows.length : null,

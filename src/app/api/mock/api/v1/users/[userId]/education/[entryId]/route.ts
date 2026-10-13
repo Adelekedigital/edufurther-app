@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server';
-import {
-  educationProblem,
-  educationRead,
-  mockEducation,
-  setEducation,
-} from '@/lib/api/mock/entries';
+import { educationProblem, mockEducation, setEducation } from '@/lib/api/mock/entries';
+import { ok } from '@/lib/api/mock/respond';
 
 type Ctx = { params: Promise<{ userId: string; entryId: string }> };
 
@@ -34,7 +30,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
     list.map((e) => (e.id === entryId ? next : e)),
     body!.is_most_recent === true ? entryId : undefined,
   );
-  return NextResponse.json(educationRead(next));
+  return ok('/api/v1/users/{user_id}/education/{entry_id}', 'patch', { updated: true });
 }
 
 /** MOCK of DELETE /api/v1/users/{id}/education/{entry_id}. */

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { MOCK_LANGUAGES } from '@/lib/api/mock/catalog';
+import { ok } from '@/lib/api/mock/respond';
 
 /**
  * MOCK of GET /api/v1/catalog/languages: `q` filters by name, `common=true`
@@ -14,5 +15,5 @@ export async function GET(req: Request) {
   const data = MOCK_LANGUAGES.filter(
     (l) => (!common || l.common) && (!q || l.display_name.toLowerCase().includes(q)),
   ).map(({ common: _c, ...l }) => l);
-  return NextResponse.json({ data, next_cursor: null });
+  return ok('/api/v1/catalog/{catalogue}', 'get', { data, next_cursor: null });
 }

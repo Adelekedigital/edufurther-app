@@ -52,10 +52,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ userId: strin
   }
   await new Promise((r) => setTimeout(r, 300));
   setMockText(userId, text);
-  const saved = setMockCover(userId, next);
-  return NextResponse.json({
-    user_id: userId,
-    cover_color: saved.cover_color,
-    cover_art: saved.cover_art,
-  });
+  setMockCover(userId, next);
+  // The contract answers 204 with no body.
+  return new NextResponse(null, { status: 204 });
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { mockBannerUrl, mockCover, setMockCover } from '@/lib/api/mock/coverStore';
+import { ok } from '@/lib/api/mock/respond';
 
 const TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -23,7 +24,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ userId: string
   await new Promise((r) => setTimeout(r, 600));
   const version = (mockCover(userId).banner?.version ?? 0) + 1;
   setMockCover(userId, { banner: { bytes: await file.arrayBuffer(), type: file.type, version } });
-  return NextResponse.json({ banner_url: mockBannerUrl(userId) });
+  const url = mockBannerUrl(userId);
+  // Never null straight after setMockCover; the guard is for the type.
+  if (!url) return new NextResponse(null, { status: 500 });
+  return ok('/api/v1/users/{user_id}/banner', 'post', { banner_url: url });
 }
 
 /**

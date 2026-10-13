@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import type { components } from '@/lib/api/generated/schema';
 import { mockViewerId } from '../route';
+import { ok } from '@/lib/api/mock/respond';
 
 /**
  * MOCK of GET /api/v1/sessions/{id}/events — the lifecycle, whose last event
@@ -8,7 +10,12 @@ import { mockViewerId } from '../route';
  */
 // `actor` is relative to the viewer, so the panel's "you / them / nobody"
 // reads correctly whichever side of the session the viewer is on.
-const OUTCOME: Record<string, { to: string; actor: 'them' | 'you' | 'system'; text: string | null }> =
+type Outcome = {
+  to: components['schemas']['SessionStatus'];
+  actor: 'them' | 'you' | 'system';
+  text: string | null;
+};
+const OUTCOME: Record<string, Outcome> =
   {
     'h-3': { to: 'cancelled', actor: 'them', text: 'Sorry — my visa interview was moved to the same hour.' },
     'h-4': { to: 'no_show', actor: 'system', text: null },
@@ -23,7 +30,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ sessionId: stri
   const { sessionId } = await ctx.params;
   await new Promise((r) => setTimeout(r, 120));
   const at = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString();
-  const events: unknown[] = [
+  const events: components['schemas']['SessionEventRead'][] = [
     {
       id: `${sessionId}-1`,
       from_status: null,
@@ -48,5 +55,5 @@ export async function GET(req: Request, ctx: { params: Promise<{ sessionId: stri
       reason_text: end.text,
       created_at: at(-20),
     });
-  return NextResponse.json({ data: events, next_cursor: null });
+  return ok('/api/v1/sessions/{session_id}/events', 'get', { data: events, next_cursor: null });
 }
