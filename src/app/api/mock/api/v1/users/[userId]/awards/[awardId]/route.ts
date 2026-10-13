@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { awardProblem, mockAwards, setAwards } from '@/lib/api/mock/entries';
-import { ok } from '@/lib/api/mock/respond';
+import { ok, problem } from '@/lib/api/mock/respond';
 
 type Ctx = { params: Promise<{ userId: string; awardId: string }> };
 
@@ -14,10 +14,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
   const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
   const bad = body && typeof body === 'object' ? awardProblem(body, true) : '';
   if (bad !== null)
-    return NextResponse.json(
-      { title: 'Validation failed', status: 422, errors: [{ pointer: bad }] },
-      { status: 422 },
-    );
+    return problem(422, { title: 'Validation failed', errors: [{ pointer: bad }] });
   await new Promise((r) => setTimeout(r, 300));
   const next = {
     ...found,

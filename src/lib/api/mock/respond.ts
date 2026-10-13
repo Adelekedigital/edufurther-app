@@ -41,3 +41,34 @@ export function ok<P extends keyof paths, M extends MethodOf<P>>(
 ): NextResponse {
   return NextResponse.json(body, init);
 }
+
+/** The error statuses the mocks answer with. */
+export type ErrorStatus = 404 | 409 | 413 | 422 | 500;
+
+/** An RFC 9457 problem body; `status` is always the response's own. */
+export type ProblemBody = {
+  type?: string;
+  title?: string;
+  detail?: string;
+  errors?: unknown[];
+  [k: string]: unknown;
+};
+
+/** An RFC 9457 error, as the backend answers: application/problem+json, status in the body and on the line. */
+export function problem(
+  status: ErrorStatus,
+  body: ProblemBody = {},
+  init?: { headers?: HeadersInit },
+): NextResponse {
+  const headers = new Headers(init?.headers);
+  headers.set('content-type', 'application/problem+json');
+  return NextResponse.json(
+    { type: 'about:blank', title: 'Error', ...body, status },
+    { status, headers },
+  );
+}
+
+/** A mock helper's answer before it becomes a response: the contract's success, or a problem. */
+export type MockResult<B, S extends number = 201> =
+  | { ok: true; status: S; body: B }
+  | { ok: false; status: ErrorStatus; problem: ProblemBody };

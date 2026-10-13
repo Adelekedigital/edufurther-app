@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { conferencing, setConferencing } from '@/lib/api/mock/mentorStatusStore';
-import { ok } from '@/lib/api/mock/respond';
+import { ok, problem } from '@/lib/api/mock/respond';
 
 /** MOCK of GET /api/v1/me/conferencing. ENABLE_MOCK_API=1 only. */
 export async function GET() {
@@ -17,8 +17,5 @@ export async function PATCH(req: Request) {
   const status = setConferencing(body);
   return status === 200
     ? ok('/api/v1/me/conferencing', 'patch', conferencing)
-    : NextResponse.json(
-        { type: 'about:blank', title: 'Unprocessable Content', status },
-        { status, headers: { 'content-type': 'application/problem+json' } },
-      );
+    : problem(status, { title: 'Unprocessable Content' });
 }

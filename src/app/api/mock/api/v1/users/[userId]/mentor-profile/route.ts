@@ -3,13 +3,12 @@ import {
   DEFAULT_WINDOW_DAYS,
   MAX_WINDOW_DAYS,
   prefs,
-  problem,
   windowOk,
 } from '@/lib/api/mock/bookingPrefs';
 import { MOCK_COUNTRIES, setMockItems } from '@/lib/api/mock/catalog';
 import { mentorStatus } from '@/lib/api/mock/mentorStatusStore';
 import { OFFERINGS } from '@/lib/api/mock/fixtures';
-import { ok } from '@/lib/api/mock/respond';
+import { ok, problem } from '@/lib/api/mock/respond';
 
 /**
  * MOCK of GET /api/v1/users/{id}/mentor-profile — only what Session Types reads:
@@ -68,13 +67,10 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ userId: strin
   for (const [k, v] of Object.entries(body)) {
     const ok = ALLOWED[k] ?? ITEMS[k];
     if (ok && !ok(v))
-      return NextResponse.json(
-        {
-          ...problem(422, 'Validation failed'),
-          errors: [{ pointer: `/${k}`, message: 'Invalid' }],
-        },
-        { status: 422, headers: { 'content-type': 'application/problem+json' } },
-      );
+      return problem(422, {
+        title: 'Validation failed',
+        errors: [{ pointer: `/${k}`, message: 'Invalid' }],
+      });
   }
   for (const k of Object.keys(ALLOWED)) if (k in body) Object.assign(prefs, { [k]: body[k] });
   for (const k of Object.keys(ITEMS)) if (k in body) setMockItems(userId, { [k]: body[k] });

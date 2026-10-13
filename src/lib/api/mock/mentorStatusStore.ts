@@ -9,7 +9,7 @@ export const mentorStatus = {
   return_on: null as string | null,
 };
 
-export function pause(body: { return_on?: unknown } | null): number {
+export function pause(body: { return_on?: unknown } | null): 200 | 422 {
   const r = body?.return_on ?? null;
   const today = new Date().toISOString().slice(0, 10);
   if (r !== null && (typeof r !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(r) || r <= today))
@@ -20,7 +20,7 @@ export function pause(body: { return_on?: unknown } | null): number {
   return 200;
 }
 
-export function resume(): number {
+export function resume(): 200 | 404 {
   if (!mentorStatus.paused_by_mentor) return 404;
   mentorStatus.listing_status = 'listed';
   mentorStatus.paused_by_mentor = false;
@@ -34,7 +34,7 @@ export const conferencing = {
   is_default_choice: true,
 };
 
-export function setConferencing(body: { provider?: unknown; custom_url?: unknown }): number {
+export function setConferencing(body: { provider?: unknown; custom_url?: unknown }): 200 | 422 {
   const { provider, custom_url = null } = body;
   if (provider !== 'daily' && provider !== 'google_meet' && provider !== 'custom') return 422;
   if (

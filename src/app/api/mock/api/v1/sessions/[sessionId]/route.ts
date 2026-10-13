@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { ok, type SuccessBody } from '@/lib/api/mock/respond';
 
 /**
  * MOCK of GET /api/v1/sessions/{id}: the same row the list returns, which is
@@ -25,10 +26,13 @@ export async function GET(req: Request, ctx: { params: Promise<{ sessionId: stri
   // viewer decides which side of each row is "theirs", and it can be switched
   // per-page with ?mockViewer=, which only the Referer carries here.
   const url = new URL(req.url);
-  const list = await fetch(
+  // The list mock answers through ok(), so its body is the contract's page.
+  const list: SuccessBody<'/api/v1/users/{user_id}/sessions', 'get'> = await fetch(
     `${url.origin}/api/mock/api/v1/users/${mockViewerId(req)}/sessions?limit=50`,
     { headers: { cookie: req.headers.get('cookie') ?? '' } },
-  ).then((r) => r.json() as Promise<{ data: { id: string }[] }>);
+  ).then((r) => r.json());
   const row = list.data.find((s) => s.id === sessionId);
-  return row ? NextResponse.json(row) : new NextResponse(null, { status: 404 });
+  return row
+    ? ok('/api/v1/sessions/{session_id}', 'get', row)
+    : new NextResponse(null, { status: 404 });
 }

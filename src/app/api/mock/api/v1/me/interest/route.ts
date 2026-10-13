@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
 import { addInterest, endpointExists, listInterest } from '@/lib/api/mock/interestStore';
-import { ok } from '@/lib/api/mock/respond';
+import { ok, problem } from '@/lib/api/mock/respond';
 
-/** An unbuilt path on the real API: plain JSON, not the problem+json envelope. */
-const notFound = () =>
-  NextResponse.json({ detail: 'Not Found' }, { status: 404 });
+/** An unbuilt path on the real API; the reader goes by the 404 alone. */
+const notFound = () => problem(404, { title: 'Not Found', detail: 'Not Found' });
 
 /** MOCK of GET /api/v1/me/interest. 200 with an empty list, never 404. */
 export async function GET() {
@@ -23,8 +22,5 @@ export async function POST(req: Request) {
   const status = addInterest(body);
   return status === 204
     ? new NextResponse(null, { status: 204 })
-    : NextResponse.json(
-        { type: 'about:blank', title: 'Unprocessable Content', status },
-        { status, headers: { 'content-type': 'application/problem+json' } },
-      );
+    : problem(status, { title: 'Unprocessable Content' });
 }

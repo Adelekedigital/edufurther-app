@@ -3,12 +3,10 @@ import { MOCK_ARTS, setMockCover, type MockCover } from '@/lib/api/mock/coverSto
 import { MOCK_COUNTRIES, setMockItems } from '@/lib/api/mock/catalog';
 import { setMockText, type MockText } from '@/lib/api/mock/profileTextStore';
 import { COVER_KEYS } from '@/lib/utils/cover';
+import { problem } from '@/lib/api/mock/respond';
 
 const invalid = (pointer: string) =>
-  NextResponse.json(
-    { title: 'Validation failed', status: 422, errors: [{ pointer, detail: 'Invalid value' }] },
-    { status: 422 },
-  );
+  problem(422, { title: 'Validation failed', errors: [{ pointer, detail: 'Invalid value' }] });
 
 /**
  * MOCK of PATCH /api/v1/users/{user_id}/profile: cover, names, About and

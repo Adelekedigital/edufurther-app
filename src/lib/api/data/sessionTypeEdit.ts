@@ -276,7 +276,7 @@ export function useSaveSessionType() {
             body: a.body as components['schemas']['QuestionWrite'],
           })
           .catch(() => null);
-        const newId = r?.data && (r.data as Record<string, string>).id;
+        const newId = r?.data?.id;
         if (newId) {
           newIds[a.key] = newId;
           const dq = v.draft.questions.find((q) => q.key === a.key)!;
@@ -349,7 +349,7 @@ export function useSaveSessionType() {
             body,
           })
           .catch(() => null);
-        const wid = r?.data && (r.data as Record<string, string>).id;
+        const wid = r?.data?.id;
         if (r?.response.ok && wid) windows.push({ id: wid, ...body });
         else hoursOk = false;
       }

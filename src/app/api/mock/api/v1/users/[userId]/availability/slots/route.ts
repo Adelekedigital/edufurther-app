@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { MOCK_SESSION_TYPES, mockMentorExists, mockSlots } from '@/lib/api/mock/availability';
 import { MAX_WINDOW_DAYS } from '@/lib/api/mock/bookingPrefs';
-import { ok } from '@/lib/api/mock/respond';
+import { ok, problem } from '@/lib/api/mock/respond';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -31,10 +31,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ userId: str
   const end = endParam ? Date.parse(`${endParam}T00:00:00Z`) : now + 7 * DAY;
   // The contract's rule: end after start, and at most the maximum window + 5 days.
   if (Number.isNaN(start) || Number.isNaN(end) || end <= start || end - start > (MAX_WINDOW_DAYS + 5) * DAY)
-    return NextResponse.json(
-      { type: 'about:blank', title: 'Unprocessable Content', status: 422 },
-      { status: 422, headers: { 'content-type': 'application/problem+json' } },
-    );
+    return problem(422, { title: 'Unprocessable Content' });
   await new Promise((r) => setTimeout(r, 300));
   return ok('/api/v1/users/{user_id}/availability/slots', 'get', {
     data: mockSlots(userId, typeId!, end, now),

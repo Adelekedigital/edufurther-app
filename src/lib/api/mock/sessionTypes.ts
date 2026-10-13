@@ -7,9 +7,11 @@
 import { DEFAULT_WINDOW_DAYS, MAX_WINDOW_DAYS, prefs, windowOk } from './bookingPrefs';
 import type { components } from '@/lib/api/generated/schema';
 import { OFFERINGS } from './fixtures';
+import type { MockResult } from './respond';
 
 type OwnSessionTypeRead = components['schemas']['OwnSessionTypeRead'];
 type QuestionRead = components['schemas']['QuestionRead'];
+type SessionTypeCreated = components['schemas']['SessionTypeCreated'];
 
 /**
  * Stored as sent: a null length or notice follows the mentor's default (backend
@@ -212,7 +214,7 @@ type CreateBody = {
   questions?: unknown;
   [k: string]: unknown;
 };
-const replays = new Map<string, { body: string; result: unknown }>();
+const replays = new Map<string, { body: string; result: SessionTypeCreated }>();
 type WindowRead = components['schemas']['AvailabilityRuleRead'];
 const windows: Record<string, WindowRead[]> = {};
 let windowSeq = 0;
@@ -221,22 +223,13 @@ let windowSeq = 0;
 export function mockCreateSessionType(
   body: CreateBody,
   key: string | null,
-):
-  | { status: 201; json: { id: string; question_ids: string[] }; replayed: boolean }
-  | { status: 409 | 422; json: Record<string, unknown> } {
+): MockResult<SessionTypeCreated> & { replayed?: boolean } {
   const raw = JSON.stringify(body);
   if (key && replays.has(key)) {
     const r = replays.get(key)!;
     if (r.body !== raw)
-      return {
-        status: 422,
-        json: { type: 'about:blank', title: 'Idempotency key reused', status: 422, errors: [] },
-      };
-    return {
-      status: 201,
-      json: r.result as { id: string; question_ids: string[] },
-      replayed: true,
-    };
+      return { ok: false, status: 422, problem: { title: 'Idempotency key reused', errors: [] } };
+    return { ok: true, status: 201, body: r.result, replayed: true };
   }
   const errors: { pointer: string; message: string }[] = [];
   const name = typeof body.name === 'string' ? body.name.trim() : '';
@@ -263,17 +256,12 @@ export function mockCreateSessionType(
     errors.push({ pointer: '/booking_window_days', message: 'out of range' });
   if (errors.length)
     return {
+      ok: false,
       status: 422,
-      json: {
-        type: 'about:blank',
-        title: 'Unprocessable Content',
-        status: 422,
-        detail: 'x',
-        errors,
-      },
+      problem: { title: 'Unprocessable Content', detail: 'x', errors },
     };
   if (store.some((t) => t.name.toLowerCase() === name.toLowerCase()))
-    return { status: 409, json: { type: 'about:blank', title: 'Conflict', status: 409 } };
+    return { ok: false, status: 409, problem: { title: 'Conflict' } };
 
   const id = `mst-${Date.now().toString(36)}`;
   const offerings = ids.flatMap((oid) => {
@@ -328,9 +316,9 @@ export function mockCreateSessionType(
     bookedCount: 0,
     // The body is untyped JSON; the cast covers its loose fields, not these.
   } as Stored);
-  const result = { id, question_ids: questions.map((q) => q.id) };
+  const result: SessionTypeCreated = { id, question_ids: questions.map((q) => q.id) };
   if (key) replays.set(key, { body: raw, result });
-  return { status: 201, json: result, replayed: false };
+  return { ok: true, status: 201, body: result, replayed: false };
 }
 
 export function mockAddWindow(id: string, w: unknown): { id: string } | null {

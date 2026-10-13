@@ -6,13 +6,10 @@ import {
   setEducation,
   type MockEducation,
 } from '@/lib/api/mock/entries';
-import { ok } from '@/lib/api/mock/respond';
+import { ok, problem } from '@/lib/api/mock/respond';
 
 const invalid = (pointer: string) =>
-  NextResponse.json(
-    { title: 'Validation failed', status: 422, errors: [{ pointer }] },
-    { status: 422 },
-  );
+  problem(422, { title: 'Validation failed', errors: [{ pointer }] });
 
 type Ctx = { params: Promise<{ userId: string }> };
 

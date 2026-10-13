@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { ok } from '@/lib/api/mock/respond';
+import { ok, problem } from '@/lib/api/mock/respond';
 
 /**
  * MOCK of POST /api/v1/sessions/{id}/accept. ENABLE_MOCK_API=1 only.
@@ -11,9 +11,6 @@ export async function POST(_req: Request, ctx: { params: Promise<{ sessionId: st
   const { sessionId } = await ctx.params;
   await new Promise((r) => setTimeout(r, 400));
   if (sessionId === 'b-conflict')
-    return NextResponse.json(
-      { type: '/problems/conflict', title: 'Already settled' },
-      { status: 409, headers: { 'content-type': 'application/problem+json' } },
-    );
+    return problem(409, { type: '/problems/conflict', title: 'Already settled' });
   return ok('/api/v1/sessions/{session_id}/accept', 'post', { accepted: true });
 }

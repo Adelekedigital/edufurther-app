@@ -28,6 +28,23 @@ const config = [
       ],
     },
   },
+  // Mock routes answer through respond.ts (#225): ok() types a success body
+  // against the contract, problem() is the backend's error shape. A bare
+  // NextResponse.json is a body nothing checks, so mock drift comes back.
+  {
+    files: ['src/app/api/mock/**/*.ts'],
+    ignores: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "CallExpression[callee.object.name='NextResponse'][callee.property.name='json']",
+          message:
+            'Mock routes answer with ok(path, method, body) or problem(status, body) from @/lib/api/mock/respond.',
+        },
+      ],
+    },
+  },
 ];
 
 export default config;

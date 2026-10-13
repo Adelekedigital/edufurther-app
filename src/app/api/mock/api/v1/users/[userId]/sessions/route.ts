@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { components } from '@/lib/api/generated/schema';
-import { ok } from '@/lib/api/mock/respond';
+import { ok, problem } from '@/lib/api/mock/respond';
 
 type S = components['schemas'];
 
@@ -348,10 +348,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     const parsed = /^o(d+)(a|d)$/.exec(cursor);
     // A cursor from the other ordering is a 422: restart from page 1.
     if (!parsed || parsed[2] !== (asc ? 'a' : 'd'))
-      return NextResponse.json(
-        { type: '/problems/bad-cursor', title: 'That cursor is no longer valid.', status: 422 },
-        { status: 422, headers: { 'content-type': 'application/problem+json' } },
-      );
+      return problem(422, {
+        type: '/problems/bad-cursor',
+        title: 'That cursor is no longer valid.',
+      });
     offset = Number(parsed[1]);
   }
   const page = rows.slice(offset, offset + limit);

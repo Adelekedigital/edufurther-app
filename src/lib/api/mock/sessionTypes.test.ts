@@ -19,7 +19,7 @@ describe('effectiveWindow (mock of the backend rule)', () => {
 describe('mockCreateSessionType: the window, as the backend checks it', () => {
   const windowErrors = (days: number) => {
     const r = mockCreateSessionType({ name: `Window ${days}`, booking_window_days: days }, null);
-    const errors = (r.json as { errors?: { pointer: string }[] }).errors ?? [];
+    const errors = (r.ok ? [] : (r.problem.errors ?? [])) as { pointer: string }[];
     return errors.filter((e) => e.pointer === '/booking_window_days').length;
   };
   it('refuses a window above the platform cap or under 4 days; accepts one within', () => {
