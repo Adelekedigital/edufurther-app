@@ -5,6 +5,7 @@ import {
   removeMockPhoto,
   setMockPhoto,
 } from '@/lib/api/mock/photoStore';
+import { ok } from '@/lib/api/mock/respond';
 
 const TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -27,7 +28,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ userId: string
     return new NextResponse(null, { status: 422 });
   await new Promise((r) => setTimeout(r, 700));
   setMockPhoto(userId, await file.arrayBuffer(), file.type);
-  return NextResponse.json({ avatar_url: mockPhotoUrl(userId), avatar_focus: MOCK_PHOTO_FOCUS });
+  const url = mockPhotoUrl(userId);
+  // Never null straight after setMockPhoto; the guard is for the type.
+  if (!url) return new NextResponse(null, { status: 500 });
+  return ok('/api/v1/users/{user_id}/avatar', 'post', {
+    avatar_url: url,
+    avatar_focus: MOCK_PHOTO_FOCUS,
+  });
 }
 
 /** MOCK of DELETE /api/v1/users/{user_id}/avatar (backend #319): 204, idempotent. */

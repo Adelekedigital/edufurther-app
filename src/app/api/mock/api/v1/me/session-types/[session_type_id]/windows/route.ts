@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { mockAddWindow, mockWindows } from '@/lib/api/mock/sessionTypes';
+import { ok } from '@/lib/api/mock/respond';
 
 type Ctx = { params: Promise<{ session_type_id: string }> };
 
@@ -9,7 +10,10 @@ export async function GET(_req: Request, ctx: Ctx) {
   const { session_type_id } = await ctx.params;
   const list = mockWindows(session_type_id);
   return list
-    ? NextResponse.json({ data: list, next_cursor: null })
+    ? ok('/api/v1/me/session-types/{session_type_id}/windows', 'get', {
+        data: list,
+        next_cursor: null,
+      })
     : new NextResponse(null, { status: 404 });
 }
 
@@ -20,5 +24,7 @@ export async function POST(req: Request, ctx: Ctx) {
   const body = await req.json().catch(() => null);
   await new Promise((r) => setTimeout(r, 200));
   const w = mockAddWindow(session_type_id, body);
-  return w ? NextResponse.json(w, { status: 201 }) : new NextResponse(null, { status: 404 });
+  return w
+    ? ok('/api/v1/me/session-types/{session_type_id}/windows', 'post', w, { status: 201 })
+    : new NextResponse(null, { status: 404 });
 }

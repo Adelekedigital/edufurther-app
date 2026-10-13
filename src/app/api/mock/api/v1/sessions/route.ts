@@ -1,7 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import type { components } from '@/lib/api/generated/schema';
 import { MENTORS } from '@/lib/api/mock/fixtures';
 import { MOCK_SESSION_TYPES, mockSlots } from '@/lib/api/mock/availability';
 import { uploads } from '@/lib/api/mock/intakeFiles';
+import { ok } from '@/lib/api/mock/respond';
 
 const DAY = 24 * 60 * 60 * 1000;
 const problem = (status: number, title: string, type = 'about:blank') =>
@@ -27,7 +29,7 @@ export async function POST(req: NextRequest) {
   const type = MOCK_SESSION_TYPES.find((t) => t.id === body?.session_type_id);
   if (!type || !body?.starts_at) return problem(422, 'Unprocessable Content');
   const now = Date.now();
-  const offered = MENTORS.some((m) =>
+  const offered = MENTORS.find((m) =>
     mockSlots(m.id, type.id, now + 56 * DAY, now).some(
       (s) => Date.parse(s.start) === Date.parse(body.starts_at!),
     ),
@@ -72,13 +74,27 @@ export async function POST(req: NextRequest) {
   for (const a of answers)
     if (a.file_id && uploads.has(a.file_id)) uploads.get(a.file_id)!.used = true;
   await new Promise((r) => setTimeout(r, 600));
-  return NextResponse.json(
+  // A SessionRead, as the contract answers; the mentee is the mock viewer.
+  const party = (id: string): components['schemas']['PartyRead'] => ({
+    id,
+    deleted: false,
+    attendance_status: 'pending',
+  });
+  return ok(
+    '/api/v1/sessions',
+    'post',
     {
       id: `bk-${now}`,
+      mentor_id: offered.id,
+      mentee_id: 'mock-viewer',
+      mentor: party(offered.id),
+      mentee: party('mock-viewer'),
       session_type_id: type.id,
-      status: 'pending',
+      status: 'pending_mentor_approval',
       starts_at: body.starts_at,
       duration_minutes: type.duration_minutes,
+      created_at: new Date(now).toISOString(),
+      mentee_attendance_sessions: 0,
     },
     { status: 201 },
   );

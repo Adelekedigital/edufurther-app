@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { mentorStatus, pause } from '@/lib/api/mock/mentorStatusStore';
+import { pause } from '@/lib/api/mock/mentorStatusStore';
+import { ok } from '@/lib/api/mock/respond';
 
 /** MOCK of POST /api/v1/users/{id}/mentor-profile/pause (optional return_on). ENABLE_MOCK_API=1 only. */
 export async function POST(req: Request) {
@@ -8,7 +9,7 @@ export async function POST(req: Request) {
   await new Promise((r) => setTimeout(r, 200));
   const status = pause(body);
   return status === 200
-    ? NextResponse.json(mentorStatus)
+    ? ok('/api/v1/users/{user_id}/mentor-profile/pause', 'post', { paused: true })
     : NextResponse.json(
         { type: 'about:blank', title: 'Unprocessable Content', status },
         { status, headers: { 'content-type': 'application/problem+json' } },

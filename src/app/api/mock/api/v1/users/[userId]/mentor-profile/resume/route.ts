@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { mentorStatus, resume } from '@/lib/api/mock/mentorStatusStore';
+import { resume } from '@/lib/api/mock/mentorStatusStore';
+import { ok } from '@/lib/api/mock/respond';
 
 /** MOCK of POST /api/v1/users/{id}/mentor-profile/resume. ENABLE_MOCK_API=1 only. */
 export async function POST() {
@@ -7,7 +8,7 @@ export async function POST() {
   await new Promise((r) => setTimeout(r, 200));
   const status = resume();
   return status === 200
-    ? NextResponse.json(mentorStatus)
+    ? ok('/api/v1/users/{user_id}/mentor-profile/resume', 'post', { resumed: true })
     : NextResponse.json(
         { type: 'about:blank', title: 'Not Found', status },
         { status, headers: { 'content-type': 'application/problem+json' } },

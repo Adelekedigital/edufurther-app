@@ -177,11 +177,12 @@ export function mockDeleteSessionType(
   id: string,
 ):
   | { result: 'gone' | 'deleted' }
-  | { result: 'scheduled'; deletes_after: string | null; booked_count: number } {
+  | { result: 'scheduled'; deletes_after: string; booked_count: number } {
   const t = store.find((x) => x.id === id);
   if (!t) return { result: 'gone' };
   if (t.bookedCount > 0) {
-    const deletes_after = lastBookedEndsAt(t.bookedCount);
+    // Booked, so there is an end to wait for: the 202 always names it.
+    const deletes_after = LAST_BOOKED_ENDS_AT;
     Object.assign(t, {
       is_active: false,
       is_featured: false,

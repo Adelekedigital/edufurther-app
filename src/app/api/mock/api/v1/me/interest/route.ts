@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { addInterest, endpointExists, listInterest } from '@/lib/api/mock/interestStore';
+import { ok } from '@/lib/api/mock/respond';
 
 /** An unbuilt path on the real API: plain JSON, not the problem+json envelope. */
 const notFound = () =>
@@ -10,7 +11,7 @@ export async function GET() {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
   if (!endpointExists()) return notFound();
   await new Promise((r) => setTimeout(r, 80));
-  return NextResponse.json({ data: listInterest(), next_cursor: null });
+  return ok('/api/v1/me/interest', 'get', { data: listInterest(), next_cursor: null });
 }
 
 /** MOCK of POST /api/v1/me/interest. */

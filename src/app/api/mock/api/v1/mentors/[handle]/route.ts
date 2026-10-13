@@ -25,6 +25,7 @@ import { MOCK_PHOTO_FOCUS, mockPhotoRemoved, mockPhotoUrl } from '@/lib/api/mock
 import { mockText } from '@/lib/api/mock/profileTextStore';
 import { mockOwnSessionTypes } from '@/lib/api/mock/sessionTypes';
 import { mockReviewSummary } from '@/lib/api/mock/reviews';
+import { ok } from '@/lib/api/mock/respond';
 
 type MentorPublicRead = components['schemas']['MentorPublicRead'];
 
@@ -251,5 +252,5 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
       missing,
     };
   }
-  return NextResponse.json(body);
+  return ok('/api/v1/mentors/{handle}', 'get', body);
 }

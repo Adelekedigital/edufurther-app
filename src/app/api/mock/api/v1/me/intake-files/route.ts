@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { MAX_BYTES, sniff, uploads } from '@/lib/api/mock/intakeFiles';
+import { ok } from '@/lib/api/mock/respond';
 
 const problem = (status: number, title: string) =>
   NextResponse.json(
@@ -26,7 +27,9 @@ export async function POST(req: Request) {
   const id = crypto.randomUUID();
   const filename = file.name.replace(/^.*[\/]/, '');
   uploads.set(id, { filename, size: file.size, used: false });
-  return NextResponse.json(
+  return ok(
+    '/api/v1/me/intake-files',
+    'post',
     { file_id: id, filename, size: file.size, content_type: type },
     { status: 201 },
   );

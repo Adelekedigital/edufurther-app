@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { awardProblem, mockAwards, setAwards } from '@/lib/api/mock/entries';
+import { ok } from '@/lib/api/mock/respond';
 
 type Ctx = { params: Promise<{ userId: string; awardId: string }> };
 
@@ -29,7 +30,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
     userId,
     list.map((a) => (a.id === awardId ? next : a)),
   );
-  return NextResponse.json({ ...next, verification_status: 'unverified' });
+  return ok('/api/v1/users/{user_id}/awards/{award_id}', 'patch', { updated: true });
 }
 
 /** MOCK of DELETE /api/v1/users/{id}/awards/{award_id}. */

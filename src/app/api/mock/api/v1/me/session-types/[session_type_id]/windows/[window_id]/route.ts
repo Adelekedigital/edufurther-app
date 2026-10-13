@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { mockRemoveWindow } from '@/lib/api/mock/sessionTypes';
+import { ok } from '@/lib/api/mock/respond';
 
 /** MOCK of DELETE …/windows/{id} → {deleted: true}. ENABLE_MOCK_API=1 only. */
 export async function DELETE(
@@ -10,6 +11,8 @@ export async function DELETE(
   const { session_type_id, window_id } = await ctx.params;
   await new Promise((r) => setTimeout(r, 150));
   return mockRemoveWindow(session_type_id, window_id)
-    ? NextResponse.json({ deleted: true })
+    ? ok('/api/v1/me/session-types/{session_type_id}/windows/{window_id}', 'delete', {
+        deleted: true,
+      })
     : new NextResponse(null, { status: 404 });
 }

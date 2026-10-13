@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { components } from '@/lib/api/generated/schema';
 import { mockAvailabilityState, mockNextAvailableAt } from '@/lib/api/mock/availability';
 import { FEATURED, MENTORS, mockProfileIndex } from '@/lib/api/mock/fixtures';
+import { ok } from '@/lib/api/mock/respond';
 
 type Page = components['schemas']['Page_SimilarMentorRead_'];
 
@@ -22,11 +23,19 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
   const { handle } = await ctx.params;
   const all = [FEATURED, ...MENTORS];
   const me = handle === HIDDEN ? all[1] : all.find((m) => m.id === handle || m.slug === handle);
-  if (!me) return NextResponse.json({ data: [], next_cursor: null } satisfies Page);
+  if (!me)
+    return ok('/api/v1/mentors/{handle}/similar', 'get', {
+      data: [],
+      next_cursor: null,
+    } satisfies Page);
   await new Promise((r) => setTimeout(r, 300));
 
   const { i } = mockProfileIndex(me.id);
-  if (i % 7 === 6) return NextResponse.json({ data: [], next_cursor: null } satisfies Page);
+  if (i % 7 === 6)
+    return ok('/api/v1/mentors/{handle}/similar', 'get', {
+      data: [],
+      next_cursor: null,
+    } satisfies Page);
   const mine = new Set((me.offerings ?? []).map((o) => o.slug));
   const others = all.filter((m) => m.id !== me.id);
   // Rotate by index so neighbouring profiles suggest different people.
@@ -44,5 +53,5 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
       next_available_state: m.taking_bookings === false ? 'none' : mockAvailabilityState(m.id),
       shared_offering: shared,
     }));
-  return NextResponse.json({ data, next_cursor: null } satisfies Page);
+  return ok('/api/v1/mentors/{handle}/similar', 'get', { data, next_cursor: null } satisfies Page);
 }

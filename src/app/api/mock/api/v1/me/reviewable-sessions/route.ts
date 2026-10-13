@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { mockReviewable, mockReviewableIds } from '@/lib/api/mock/reviewStore';
+import { ok } from '@/lib/api/mock/respond';
 
 /** MOCK of GET /api/v1/me/reviewable-sessions?mentor_id=. ENABLE_MOCK_API=1 only. */
 export async function GET(req: Request) {
@@ -8,7 +9,7 @@ export async function GET(req: Request) {
   // Unfiltered (the join page and Bookings): the join page's completed mock
   // session `j-5` is reviewable until a review for it is sent.
   if (!mentorId)
-    return NextResponse.json({
+    return ok('/api/v1/me/reviewable-sessions', 'get', {
       data: mockReviewable('').concat(
         mockReviewableIds(['j-5']).map((id) => ({
           session_id: id,
@@ -20,5 +21,8 @@ export async function GET(req: Request) {
       ),
       next_cursor: null,
     });
-  return NextResponse.json({ data: mockReviewable(mentorId), next_cursor: null });
+  return ok('/api/v1/me/reviewable-sessions', 'get', {
+    data: mockReviewable(mentorId),
+    next_cursor: null,
+  });
 }

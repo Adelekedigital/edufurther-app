@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { awardProblem, mockAwards, setAwards } from '@/lib/api/mock/entries';
+import { ok } from '@/lib/api/mock/respond';
 
 const invalid = (pointer: string) =>
   NextResponse.json(
@@ -24,5 +25,5 @@ export async function POST(req: Request, ctx: { params: Promise<{ userId: string
     funding: (body.funding as 'full' | 'partial' | null | undefined) ?? null,
   };
   setAwards(userId, [award, ...(mockAwards(userId) ?? [])]);
-  return NextResponse.json({ ...award, verification_status: 'unverified' }, { status: 201 });
+  return ok('/api/v1/users/{user_id}/awards', 'post', { id: award.id }, { status: 201 });
 }

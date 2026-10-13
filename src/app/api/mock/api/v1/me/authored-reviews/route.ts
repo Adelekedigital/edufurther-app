@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { authoredRow, store } from '@/lib/api/mock/reviewStore';
+import { ok } from '@/lib/api/mock/respond';
 
 /**
  * MOCK of GET /api/v1/me/authored-reviews?mentor_id= (backend #285): reviews
@@ -12,5 +13,5 @@ export async function GET(req: Request) {
     .filter((r) => !mentorId || r.reviewed_for === mentorId)
     .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
     .map(authoredRow);
-  return NextResponse.json({ data, next_cursor: null });
+  return ok('/api/v1/me/authored-reviews', 'get', { data, next_cursor: null });
 }

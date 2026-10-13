@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { ok } from '@/lib/api/mock/respond';
 
 /**
  * MOCK of POST /api/v1/sessions/{id}/join: records attendance and hands back a
@@ -9,7 +10,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ sessionId: st
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
   const { sessionId } = await ctx.params;
   await new Promise((r) => setTimeout(r, 200));
-  return NextResponse.json({
+  return ok('/api/v1/sessions/{session_id}/join', 'post', {
     joined: true,
     meeting_url: sessionId === 'u-2' ? null : `https://example.invalid/room/${sessionId}`,
   });

@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import type { components } from '@/lib/api/generated/schema';
+import { ok } from '@/lib/api/mock/respond';
 
 /**
  * MOCK of GET /api/v1/sessions/{id}/answers: one entry per question the form
@@ -7,7 +9,7 @@ import { NextResponse } from 'next/server';
  * retired question, blanks, an all-blank form, and the empty case.
  * ENABLE_MOCK_API=1 only.
  */
-const FORMS: Record<string, unknown[]> = {
+const FORMS: Record<string, components['schemas']['SessionAnswerRead'][]> = {
   // The join page's on-the-clock session (users/[userId]/sessions `j-1`).
   'j-1': [
     {
@@ -228,5 +230,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ sessionId: str
   const { sessionId } = await ctx.params;
   await new Promise((r) => setTimeout(r, 180));
   // Anything else booked without a form: an empty list, not an error.
-  return NextResponse.json({ data: FORMS[sessionId] ?? [], next_cursor: null });
+  return ok('/api/v1/sessions/{session_id}/answers', 'get', {
+    data: FORMS[sessionId] ?? [],
+    next_cursor: null,
+  });
 }

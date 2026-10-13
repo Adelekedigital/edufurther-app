@@ -1,4 +1,8 @@
 import { NextResponse } from 'next/server';
+import type { components } from '@/lib/api/generated/schema';
+import { ok } from '@/lib/api/mock/respond';
+
+type S = components['schemas'];
 
 const DAY = 24 * 60 * 60 * 1000;
 /**
@@ -18,7 +22,7 @@ const party = (
   zone = 'Africa/Lagos',
   // Both, one, or neither — all three render differently (backend #409).
   edu: { degree?: string | null; institution?: string | null } = {},
-) => ({
+): S['PartyRead'] => ({
   id,
   deleted: false,
   first_name: first,
@@ -81,17 +85,17 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
   const session = (
     id: string,
     starts: string,
-    status: string,
+    status: S['SessionStatus'],
     mentee: [string, string],
     o: Opts = {},
-  ) => {
-    const other = {
+  ): S['SessionRead'] => {
+    const other: S['PartyRead'] = {
       ...party(`mock-${id}`, mentee[0], mentee[1], o.zone ?? 'Africa/Lagos', o.edu ?? {}),
       joined_at: o.otherJoinedAt ?? null,
       in_room_at: o.otherInRoomAt ?? null,
       attendance_status: o.otherAttendance ?? 'pending',
     };
-    const me = {
+    const me: S['PartyRead'] = {
       ...party(userId, 'Gbenga', 'Adeyemi', 'America/New_York'),
       joined_at: o.meJoinedAt ?? null,
       in_room_at: o.meInRoomAt ?? null,
@@ -352,5 +356,5 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
   }
   const page = rows.slice(offset, offset + limit);
   const next = offset + limit < rows.length ? `o${offset + limit}${asc ? 'a' : 'd'}` : null;
-  return NextResponse.json({ data: page, next_cursor: next });
+  return ok('/api/v1/users/{user_id}/sessions', 'get', { data: page, next_cursor: next });
 }

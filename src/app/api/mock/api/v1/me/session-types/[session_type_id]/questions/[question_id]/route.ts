@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { mockEditQuestion, mockRemoveQuestion } from '@/lib/api/mock/sessionTypes';
+import { ok } from '@/lib/api/mock/respond';
 
 type Ctx = { params: Promise<{ session_type_id: string; question_id: string }> };
 
@@ -10,7 +11,9 @@ export async function PATCH(req: Request, ctx: Ctx) {
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   await new Promise((r) => setTimeout(r, 150));
   return mockEditQuestion(session_type_id, question_id, body)
-    ? NextResponse.json({ updated: true })
+    ? ok('/api/v1/me/session-types/{session_type_id}/questions/{question_id}', 'patch', {
+        updated: true,
+      })
     : new NextResponse(null, { status: 404 });
 }
 

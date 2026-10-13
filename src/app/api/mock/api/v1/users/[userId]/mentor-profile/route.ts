@@ -9,6 +9,7 @@ import {
 import { MOCK_COUNTRIES, setMockItems } from '@/lib/api/mock/catalog';
 import { mentorStatus } from '@/lib/api/mock/mentorStatusStore';
 import { OFFERINGS } from '@/lib/api/mock/fixtures';
+import { ok } from '@/lib/api/mock/respond';
 
 /**
  * MOCK of GET /api/v1/users/{id}/mentor-profile — only what Session Types reads:
@@ -18,7 +19,7 @@ import { OFFERINGS } from '@/lib/api/mock/fixtures';
 export async function GET() {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
   await new Promise((r) => setTimeout(r, 150));
-  return NextResponse.json({
+  return ok('/api/v1/users/{user_id}/mentor-profile', 'get', {
     id: '00000000-0000-4000-8000-000000000001',
     headline: null,
     years_of_experience: null,
@@ -77,5 +78,5 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ userId: strin
   }
   for (const k of Object.keys(ALLOWED)) if (k in body) Object.assign(prefs, { [k]: body[k] });
   for (const k of Object.keys(ITEMS)) if (k in body) setMockItems(userId, { [k]: body[k] });
-  return NextResponse.json({ updated: true });
+  return ok('/api/v1/users/{user_id}/mentor-profile', 'patch', { updated: true });
 }

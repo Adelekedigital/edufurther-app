@@ -6,8 +6,14 @@
  * Shapes are the agreed review bundle (overall_rating, editable_until, the
  * poor | okay | great scale), ahead of the spec.
  */
+import type { components } from '@/lib/api/generated/schema';
 import { MOCK_SESSION_TYPES } from './availability';
 import { mockProfileIndex } from './fixtures';
+
+type MentorRating = components['schemas']['MentorRating'];
+const SCALE: readonly MentorRating[] = ['poor', 'okay', 'great'];
+/** The rating `v` names, or null when it is off the scale. */
+export const ratingOf = (v: unknown): MentorRating | null => SCALE.find((s) => s === v) ?? null;
 
 export const MOCK_EDIT_WINDOW_MS = 10 * 60 * 1000;
 
@@ -19,10 +25,10 @@ export type MockReview = {
   editable_until: string;
   overall_rating: number;
   public_review: string;
-  communication_rating: string;
-  knowledge_rating: string;
-  support_rating: string;
-  practicality_rating: string;
+  communication_rating: MentorRating;
+  knowledge_rating: MentorRating;
+  support_rating: MentorRating;
+  practicality_rating: MentorRating;
   valuable_rating: number;
   nps_recommend_score: number;
   private_review: string | null;

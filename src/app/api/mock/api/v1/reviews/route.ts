@@ -3,11 +3,11 @@ import {
   MOCK_EDIT_WINDOW_MS,
   mockReviewable,
   mockReviewableIds,
+  ratingOf,
   reviewRead,
   store,
 } from '@/lib/api/mock/reviewStore';
-
-const SCALE = ['poor', 'okay', 'great'];
+import { ok } from '@/lib/api/mock/respond';
 
 /**
  * MOCK of POST /api/v1/reviews (the agreed review bundle). 409 with the
@@ -31,16 +31,16 @@ export async function POST(req: Request) {
     return new NextResponse(null, { status: 404 });
   const ints = (k: string, lo: number, hi: number) =>
     Number.isInteger(b[k]) && (b[k] as number) >= lo && (b[k] as number) <= hi;
-  const ok =
+  const valid =
     ints('overall_rating', 1, 5) &&
     ints('valuable_rating', 1, 5) &&
     ints('nps_recommend_score', 1, 10) &&
     ['communication_rating', 'knowledge_rating', 'support_rating', 'practicality_rating'].every(
-      (k) => SCALE.includes(String(b[k])),
+      (k) => ratingOf(b[k]) !== null,
     ) &&
     typeof b.public_review === 'string' &&
     b.public_review.trim().length > 0;
-  if (!ok) return new NextResponse(null, { status: 422 });
+  if (!valid) return new NextResponse(null, { status: 422 });
   const now = Date.now();
   const r = {
     id: `mine-${now}`,
@@ -50,14 +50,14 @@ export async function POST(req: Request) {
     editable_until: new Date(now + MOCK_EDIT_WINDOW_MS).toISOString(),
     overall_rating: b.overall_rating as number,
     public_review: (b.public_review as string).trim(),
-    communication_rating: String(b.communication_rating),
-    knowledge_rating: String(b.knowledge_rating),
-    support_rating: String(b.support_rating),
-    practicality_rating: String(b.practicality_rating),
+    communication_rating: ratingOf(b.communication_rating)!,
+    knowledge_rating: ratingOf(b.knowledge_rating)!,
+    support_rating: ratingOf(b.support_rating)!,
+    practicality_rating: ratingOf(b.practicality_rating)!,
     valuable_rating: b.valuable_rating as number,
     nps_recommend_score: b.nps_recommend_score as number,
     private_review: typeof b.private_review === 'string' ? b.private_review : null,
   };
   store.reviews.set(r.id, r);
-  return NextResponse.json(reviewRead(r), { status: 201 });
+  return ok('/api/v1/reviews', 'post', reviewRead(r), { status: 201 });
 }

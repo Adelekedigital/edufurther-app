@@ -4,6 +4,7 @@ import { FEATURED, MENTORS } from '@/lib/api/mock/fixtures';
 import { MOCK_SESSION_TYPES } from '@/lib/api/mock/availability';
 import { mockReviews } from '@/lib/api/mock/reviews';
 import { mineFor } from '@/lib/api/mock/reviewStore';
+import { ok } from '@/lib/api/mock/respond';
 
 type Page = components['schemas']['Page_MentorReviewRead_'];
 
@@ -49,5 +50,5 @@ export async function GET(req: Request, ctx: { params: Promise<{ handle: string 
     data: all.slice(from, from + limit),
     next_cursor: from + limit < all.length ? String(from + limit) : null,
   };
-  return NextResponse.json(body);
+  return ok('/api/v1/mentors/{handle}/reviews', 'get', body);
 }
