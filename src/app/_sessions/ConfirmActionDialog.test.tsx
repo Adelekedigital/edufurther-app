@@ -258,6 +258,26 @@ describe('the box belongs to Other, and what was typed there does not outlive it
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
+  it('words typed, then hidden by the offer going back on, are not sent either', async () => {
+    // The one ordering that hides the box by unmounting the whole field rather
+    // than by changing the chip. Both are caught by the same guard, and this is
+    // the sequence that would notice if someone ever split it in two.
+    const onConfirm = vi.fn();
+    dialog({ action: 'decline', booking: mentorPending(), onConfirm });
+    await offerOff();
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    await userEvent.type(screen.getByRole('textbox'), 'written while the offer was off');
+    // Back on: the reason field goes entirely, text and all.
+    await userEvent.click(screen.getByRole('switch', { name: 'Suggest a new time to Amara' }));
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    const [slot] = screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ });
+    await userEvent.click(slot!);
+    await userEvent.click(screen.getByRole('button', { name: 'Decline and send' }));
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ reasonCode: 'mentor_unavailable', reasonText: '' }),
+    );
+  });
+
   it('switching to another chip and back shows the same words again', async () => {
     dialog({ action: 'decline', booking: mentorPending() });
     await offerOff();
