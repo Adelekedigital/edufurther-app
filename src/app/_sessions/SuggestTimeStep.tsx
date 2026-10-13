@@ -5,10 +5,18 @@ import { Chip } from '@/components/atoms/Chip/Chip';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { useSlots } from '@/lib/api/data/booking';
-import { fullDate } from '@/lib/utils/bookings';
-import { formatTime } from '@/lib/utils/format';
+import { dayLabel, formatTime } from '@/lib/utils/format';
 import type { Booking } from '@/types/booking';
 import styles from './SuggestTimeStep.module.css';
+
+/**
+ * How long an offered time is kept for the mentee alone. The server's own hold
+ * (`SuggestionRead.held_until`) is two hours from the offer; this is the same
+ * number said out loud, as `SuggestTime.dc.html` says it — as a numeral, since
+ * "two hours" and a countdown elsewhere reading "1h 58m" are the same fact in
+ * two voices.
+ */
+const HOLD_HOURS = 2;
 
 /** The design's own count: the two earliest, then a way to more. */
 const CHIPS = 2;
@@ -62,14 +70,15 @@ export function SuggestTimeStep({
   const slots = useSlots(mentorId, b.sessionTypeId, accountZone);
 
   // A slot we cannot read is not a slot we can offer: an unparseable instant
-  // threw out of `fullDate` and took the whole Bookings screen with it.
+  // threw out of the formatter and took the whole Bookings screen with it.
   const all = (slots.data ?? []).filter((iso) => !Number.isNaN(new Date(iso).getTime()));
   const shown = all.slice(0, limit);
-  const label = (iso: string) =>
-    `${fullDate(iso, timeZone)} · ${formatTime(iso, timeZone)} to ${formatTime(
-      new Date(new Date(iso).getTime() + b.durationMin * 60_000).toISOString(),
-      timeZone,
-    )}`;
+  // `SuggestTime.dc.html`: "Mon, Sep 28 · 10:00 am". Weekday, no year, and the
+  // start only. The year is noise inside a booking window weeks long, and the
+  // end time is the duration they already agreed — printing the range made the
+  // chip twice as wide for nothing, which is what forced the "show more"
+  // problem below in the first place.
+  const label = (iso: string) => `${dayLabel(iso, timeZone)} · ${formatTime(iso, timeZone)}`;
 
   if (slots.isLoading) {
     return (
@@ -148,7 +157,8 @@ export function SuggestTimeStep({
       {value && (
         <span className={styles.hold}>
           <Icon name="lock_clock" size={14} />
-          Held for {b.other.firstName} for two hours, then it opens to others again.
+          Held for {b.other.firstName} for {HOLD_HOURS} hours, then it opens to others
+          again.
         </span>
       )}
     </div>

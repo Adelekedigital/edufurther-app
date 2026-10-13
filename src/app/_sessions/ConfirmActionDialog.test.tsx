@@ -270,7 +270,7 @@ describe('the box belongs to Other, and what was typed there does not outlive it
     // Back on: the reason field goes entirely, text and all.
     await userEvent.click(screen.getByRole('switch', { name: 'Suggest a new time to Amara' }));
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-    const [slot] = screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ });
+    const [slot] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
     await userEvent.click(slot!);
     await userEvent.click(screen.getByRole('button', { name: 'Decline and send' }));
     expect(onConfirm).toHaveBeenCalledWith(
@@ -331,7 +331,7 @@ describe('turning the offer off takes the offered time with it', () => {
     // that was nowhere on screen.
     const onConfirm = vi.fn();
     dialog({ action: 'decline', booking: mentorPending(), onConfirm });
-    const [slot] = screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ });
+    const [slot] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
     await userEvent.click(slot!);
     await userEvent.click(screen.getByRole('switch', { name: 'Suggest a new time to Amara' }));
     await userEvent.click(screen.getByRole('button', { name: 'Something technical' }));
@@ -360,7 +360,7 @@ describe('the offered time only implies the mentor was busy when it is true', ()
     // at that time" directly under the opposite claim.
     const onConfirm = vi.fn();
     dialog({ booking: sampleBookingFor({ side: 'mentor', status: 'confirmed' }), onConfirm });
-    const [slot] = screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ });
+    const [slot] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
     await userEvent.click(slot!);
     await userEvent.click(screen.getByRole('button', { name: 'Cancel and send' }));
     expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ reasonCode: null }));
@@ -370,7 +370,7 @@ describe('the offered time only implies the mentor was busy when it is true', ()
     const onConfirm = vi.fn();
     dialog({ booking: sampleBookingFor({ side: 'mentor', status: 'confirmed' }), onConfirm });
     await userEvent.click(screen.getByRole('switch', { name: 'I’m still free at this time' }));
-    const [slot] = screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ });
+    const [slot] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
     await userEvent.click(slot!);
     await userEvent.click(screen.getByRole('button', { name: 'Cancel and send' }));
     expect(onConfirm).toHaveBeenCalledWith(
@@ -417,7 +417,7 @@ describe('offering another time (SuggestTime.dc.html)', () => {
     dialog({ action: 'decline', booking: mentorPending() });
     expect(screen.getByText('Suggested time')).toBeVisible();
     // Two chips, then "Pick another day" — the design's own count.
-    expect(screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ })).toHaveLength(2);
+    expect(screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ })).toHaveLength(2);
     // Eight more at a time: revealing a month of open hours at once pushed the
     // dialog's own buttons about 900px below the fold on a phone.
     expect(screen.getByRole('button', { name: 'Show more times' })).toBeVisible();
@@ -426,7 +426,7 @@ describe('offering another time (SuggestTime.dc.html)', () => {
   it('the picked time is what gets sent, and only from the picker', async () => {
     const onConfirm = vi.fn();
     dialog({ action: 'decline', booking: mentorPending(), onConfirm });
-    const [first] = screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ });
+    const [first] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
     await userEvent.click(first!);
     await userEvent.click(screen.getByRole('button', { name: 'Decline and send' }));
     // Every option comes from /slots, which is what makes a 422 unreachable.
@@ -458,7 +458,7 @@ describe('offering another time (SuggestTime.dc.html)', () => {
   it('picking the same chip again takes the offer back', async () => {
     const onConfirm = vi.fn();
     dialog({ action: 'decline', booking: mentorPending(), onConfirm });
-    const [first] = screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ });
+    const [first] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
     await userEvent.click(first!);
     await userEvent.click(first!);
     // Nothing offered on the offering path means nothing to send: the confirm
@@ -477,9 +477,9 @@ describe('offering another time (SuggestTime.dc.html)', () => {
   it('the hold is explained only once a time is actually offered', async () => {
     dialog({ action: 'decline', booking: mentorPending() });
     expect(screen.queryByText(/then it opens to others again/)).not.toBeInTheDocument();
-    const [first] = screen.getAllByRole('radio', { name: /Oct \d+, 2026 ·/ });
+    const [first] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
     await userEvent.click(first!);
-    expect(screen.getByText(/Held for Amara for two hours/)).toBeVisible();
+    expect(screen.getByText(/Held for Amara for 2 hours/)).toBeVisible();
   });
 
   it('a mentee withdrawing is offered nothing — the contract refuses it', () => {
