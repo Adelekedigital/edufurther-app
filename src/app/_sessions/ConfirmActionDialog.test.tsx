@@ -59,6 +59,15 @@ const dialog = (props: Partial<Parameters<typeof ConfirmActionDialog>[0]> = {}) 
 const offerOff = async (first = 'Amara') =>
   userEvent.click(screen.getByRole('switch', { name: `Suggest a new time to ${first}` }));
 
+/**
+ * The message `SuggestTime.dc.html` drafts for the first open slot, written out
+ * rather than built from the same helper the component uses — a draft composed
+ * by the code under test would pass whatever it said.
+ */
+const DRAFT_DECLINE =
+  'Hi Amara, I can’t make the time you asked for. Could we do Thu, Oct 8 · 10:00 am instead? ' +
+  'I’ve held it for you for 2 hours. If it doesn’t suit you, pick any other open time on my profile.';
+
 describe('the dialog says which session it is about', () => {
   it('asks the question, and names the person, the day and the start time', () => {
     dialog();
@@ -296,7 +305,12 @@ describe('the box belongs to Other, and what was typed there does not outlive it
     await userEvent.click(slot!);
     await userEvent.click(screen.getByRole('button', { name: 'Decline and send' }));
     expect(onConfirm).toHaveBeenCalledWith(
-      expect.objectContaining({ reasonCode: 'mentor_unavailable', reasonText: '' }),
+      expect.objectContaining({
+        reasonCode: 'mentor_unavailable',
+        // The offer's own drafted message — and not one word of what was typed
+        // into the reason box while the offer was off.
+        reasonText: DRAFT_DECLINE,
+      }),
     );
   });
 
@@ -461,11 +475,12 @@ describe('offering another time (SuggestTime.dc.html)', () => {
     // Every option comes from /slots, which is what makes a 422 unreachable.
     // The offer carries its own code: a mentor offering another hour still
     // wants the session, just not that one, and that is a true reason to
-    // record (owner, 2026-10-13). No words go with it — the box is not there.
+    // record (owner, 2026-10-13). And words go with it now: this path used to
+    // send `''`, so the mentee got an hour with nothing said about it.
     expect(onConfirm).toHaveBeenCalledWith(
       expect.objectContaining({
         reasonCode: 'mentor_unavailable',
-        reasonText: '',
+        reasonText: DRAFT_DECLINE,
         suggestedStartsAt: '2026-10-08T14:00:00Z',
       }),
     );
@@ -729,5 +744,132 @@ describe('a submit with no reason is blocked, not merely scolded', () => {
     expect(onConfirm).toHaveBeenCalledWith(
       expect.objectContaining({ reasonCode: 'mentee_no_longer_needed' }),
     );
+  });
+});
+
+describe('the message that goes with an offered time (SuggestTime.dc.html)', () => {
+  const mentorPending = () => sampleBookingFor({ side: 'mentor', status: 'pending' });
+  const box = () => screen.getByLabelText('Message to Amara');
+  const written = () => (box() as HTMLTextAreaElement).value;
+
+  it('nothing to write in until there is a time to write about', async () => {
+    dialog({ action: 'decline', booking: mentorPending() });
+    expect(screen.queryByLabelText('Message to Amara')).not.toBeInTheDocument();
+    const [slot] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
+    await userEvent.click(slot!);
+    expect(box()).toBeVisible();
+  });
+
+  it('comes pre-filled, naming the offered time and the hold', async () => {
+    dialog({ action: 'decline', booking: mentorPending() });
+    const [slot] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
+    await userEvent.click(slot!);
+    // The design's draft, word for word — and the one thing an offered hour
+    // cannot say by itself is in it: why the agreed one is going away.
+    expect(box()).toHaveValue(DRAFT_DECLINE);
+    // The cap is the design's 500, not the contract's 2000.
+    expect(box()).toHaveAttribute('maxlength', '500');
+  });
+
+  it('a cancel apologises for the session it is calling off; a decline has none to name', async () => {
+    dialog({ booking: sampleBookingFor({ side: 'mentor', status: 'confirmed' }) });
+    const [slot] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
+    await userEvent.click(slot!);
+    // A cancel breaks something already agreed, so it names that day. A decline
+    // never agreed to anything — saying sorry for cancelling a session that was
+    // only ever asked for would be the wrong sentence.
+    expect(box()).toHaveValue(
+      'Hi Amara, I’m sorry, I have to cancel our session on Sun, Oct 4. Could we do ' +
+        'Thu, Oct 8 · 10:00 am instead? I’ve held it for you for 2 hours. If it doesn’t suit ' +
+        'you, pick any other open time on my profile.',
+    );
+    expect(box()).not.toHaveValue(DRAFT_DECLINE);
+  });
+
+  it('what is in the box is what gets sent', async () => {
+    const onConfirm = vi.fn();
+    dialog({ action: 'decline', booking: mentorPending(), onConfirm });
+    const [slot] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
+    await userEvent.click(slot!);
+    await userEvent.clear(box());
+    await userEvent.type(box(), 'Family thing, sorry. Tuesday works much better for me.');
+    await userEvent.click(screen.getByRole('button', { name: 'Decline and send' }));
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reasonText: 'Family thing, sorry. Tuesday works much better for me.',
+        suggestedStartsAt: '2026-10-08T14:00:00Z',
+      }),
+    );
+  });
+
+  it('an edit survives picking a different time, and the time inside it is swapped', async () => {
+    const onConfirm = vi.fn();
+    dialog({ action: 'decline', booking: mentorPending(), onConfirm });
+    const slots2 = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
+    await userEvent.click(slots2[0]!);
+    await userEvent.type(box(), ' Hope that’s all right.');
+    // Changing their mind about the hour must not cost them the sentence they
+    // wrote about it — there is no undo in this dialog.
+    await userEvent.click(slots2[1]!);
+    expect(written()).toContain(' Hope that’s all right.');
+    // And the hour named inside it is the one now on offer, not the old one.
+    expect(written()).toContain('Fri, Oct 9 · 2:00 pm');
+    expect(written()).not.toContain('Thu, Oct 8 · 10:00 am');
+    await userEvent.click(screen.getByRole('button', { name: 'Decline and send' }));
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reasonText: `${DRAFT_DECLINE} Hope that’s all right.`.replace(
+          'Thu, Oct 8 · 10:00 am',
+          'Fri, Oct 9 · 2:00 pm',
+        ),
+        suggestedStartsAt: '2026-10-09T18:00:00Z',
+      }),
+    );
+  });
+
+  it('an untouched draft simply follows the time that is picked', async () => {
+    dialog({ action: 'decline', booking: mentorPending() });
+    const slots2 = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
+    await userEvent.click(slots2[0]!);
+    await userEvent.click(slots2[1]!);
+    expect(box()).toHaveValue(DRAFT_DECLINE.replace('Thu, Oct 8 · 10:00 am', 'Fri, Oct 9 · 2:00 pm'));
+  });
+
+  it('an emptied box sends nothing, and the offer still goes', async () => {
+    const onConfirm = vi.fn();
+    dialog({ action: 'decline', booking: mentorPending(), onConfirm });
+    const [slot] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
+    await userEvent.click(slot!);
+    await userEvent.clear(box());
+    // The draft is a convenience, not a requirement: a mentor who wants to say
+    // nothing says nothing, and the offered time still carries the meaning
+    // (owner, 2026-10-13). An emptied box must not quietly refill itself.
+    expect(box()).toHaveValue('');
+    await userEvent.click(screen.getByRole('button', { name: 'Decline and send' }));
+    expect(onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({ reasonText: '', suggestedStartsAt: '2026-10-08T14:00:00Z' }),
+    );
+  });
+
+  it('taking the offer back and starting again drafts afresh, never about the old hour', async () => {
+    dialog({ action: 'decline', booking: mentorPending() });
+    const slots2 = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
+    await userEvent.click(slots2[0]!);
+    await userEvent.type(box(), ' Thanks!');
+    // Un-picking is how a mentor takes the offer back; the message was about
+    // that hour, so it goes with it rather than coming back describing a time
+    // nobody is being offered.
+    await userEvent.click(slots2[0]!);
+    expect(screen.queryByLabelText('Message to Amara')).not.toBeInTheDocument();
+    await userEvent.click(slots2[1]!);
+    expect(box()).toHaveValue(DRAFT_DECLINE.replace('Thu, Oct 8 · 10:00 am', 'Fri, Oct 9 · 2:00 pm'));
+  });
+
+  it('a mentor who switches the offer off is never asked for a message', async () => {
+    dialog({ action: 'decline', booking: mentorPending() });
+    const [slot] = screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ });
+    await userEvent.click(slot!);
+    await offerOff();
+    expect(screen.queryByLabelText('Message to Amara')).not.toBeInTheDocument();
   });
 });

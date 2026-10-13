@@ -73,3 +73,37 @@
   line-height: var(--lh-p);
   color: var(--ink-600);
 }
+
+/* The message, last in the step. `SuggestTime.dc.html` draws the <label> as the
+   column that holds the box, so the gap here is the one between the label text
+   and the field. */
+.message {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+
+/* Only the two values the Input atom does not already give us. Its 1px
+   `--border-default` border is `--ink-300`, its `--text-primary` is `--ink-900`
+   and its padding, font-family, line-height and `resize: vertical` are the
+   design's too — all through the same tokens. The height is the design's own
+   number, stated rather than left to `rows`. */
+.messageBox {
+  height: 132px;
+  border-radius: var(--radius-xs);
+}
+
+/* Desktop only, and that is the point — the same trap ReasonField.module.css
+   fell into and documents. The atom raises inputs to 16px under 768px so iOS
+   does not zoom the page on focus; that rule and this one are both a single
+   class, and this stylesheet is emitted second, so an unscoped `font-size`
+   here would quietly win the tie and bring the zoom back. The design's 12px
+   applies where there is no soft keyboard to trigger it. */
+@media (min-width: 768px) {
+  .messageBox {
+    font-size: var(--text-p-xs);
+  }
+}

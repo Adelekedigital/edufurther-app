@@ -8,7 +8,7 @@ import { Switch } from '@/components/atoms/Switch/Switch';
 import { ReasonField } from '@/components/molecules/ReasonField/ReasonField';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { reasonError } from '@/lib/utils/reasons';
-import { SuggestTimeStep } from './SuggestTimeStep';
+import { SuggestTimeStep, slotLabel, suggestDraft } from './SuggestTimeStep';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type { ActionInput, BookingAction } from '@/lib/api/data/bookingActions';
@@ -126,6 +126,10 @@ export function ConfirmActionDialog({
   // owner has taken the other side of that trade knowingly.
   const [free, setFree] = useState(false);
   const [suggested, setSuggested] = useState<string | null>(null);
+  // `null` while the drafted message is still ours, which is what lets it
+  // follow the picked slot. Anything else is the mentor's own — including `''`,
+  // a box they deliberately emptied.
+  const [message, setMessage] = useState<string | null>(null);
   // On by default, as the design has it: a mentor who is calling an hour off
   // usually has another to give, and making them find a link first buries the
   // better outcome under the worse one.
@@ -155,6 +159,18 @@ export function ConfirmActionDialog({
   // is open, so this one value decides which question is being asked.
   const offering = canSuggest && suggestOn;
   const when = { day: dayLabel(b.startsAt, timeZone), start: formatTime(b.startsAt, timeZone) };
+  // Rebuilt from whichever slot is picked, so an untouched box always names the
+  // time actually on offer. Nothing drafted until there is a time to draft
+  // about — the box is not on screen before then either.
+  const draft = suggested
+    ? suggestDraft({
+        first,
+        mode: action === 'cancel' ? 'cancel' : 'decline',
+        origDay: when.day,
+        slot: slotLabel(suggested, timeZone),
+      })
+    : '';
+  const messageText = message ?? draft;
   // Offering a time says "not that hour" — unless the mentor has also said the
   // hour is still free, which only a cancel can say.
   const impliesUnavailable = !(action === 'cancel' && isMentor && free);
@@ -288,11 +304,20 @@ export function ConfirmActionDialog({
                 // `suggested_starts_at` exemption is exactly for a request
                 // that honestly has none.
                 reasonCode: offering ? (impliesUnavailable ? 'mentor_unavailable' : null) : reasonCode,
-                // Only "Something else" has words to send. The box is hidden
-                // for every other reason, so anything still held in state is
-                // something the person cannot see — it must not reach the
-                // other party's notification.
-                reasonText: !offering && reasonCode === 'other' ? text : '',
+                // Offering a time now sends words too — the drafted message,
+                // or whatever the mentor made of it. Before 2026-10-13 this
+                // path sent `''` and the mentee received a suggested hour with
+                // nothing said about why the agreed one was going away. One
+                // field carries both (`reason_text`, 2000 chars), because the
+                // two questions are alternatives: a reason or an offer, never
+                // both. An emptied box sends `''` and the offer speaks for
+                // itself (owner, 2026-10-13).
+                //
+                // Off the offering path, only "Something else" has words to
+                // send. The box is hidden for every other reason, so anything
+                // still held in state is something the person cannot see — it
+                // must not reach the other party's notification.
+                reasonText: offering ? messageText : reasonCode === 'other' ? text : '',
                 ...(action === 'cancel' && isMentor ? { releaseSlot: free } : {}),
                 ...(offering && suggested ? { suggestedStartsAt: suggested } : {}),
               });
@@ -366,7 +391,14 @@ export function ConfirmActionDialog({
                 // the first two with none pressed while the confirm quietly
                 // still carried the fifth. A time nowhere on screen must never
                 // be the one that gets sent.
-                if (!v) setSuggested(null);
+                //
+                // The message goes with it, for that reason and one more: it
+                // names that time in a sentence, so keeping it would come back
+                // offering one hour while describing another.
+                if (!v) {
+                  setSuggested(null);
+                  setMessage(null);
+                }
               }}
               aria-labelledby={`${fieldId}-sg`}
               aria-describedby={
@@ -403,9 +435,25 @@ export function ConfirmActionDialog({
             timeZone={timeZone}
             value={suggested}
             onChange={(v) => {
+              // A typed message survives a change of mind about the hour: only
+              // the slot text inside it is swapped, which is what the design
+              // does (`draft.split(oldLabel).join(newLabel)`). Losing words
+              // someone wrote because they picked a different time is the
+              // failure worth this much care — there is no undo in a dialog.
+              //
+              // Untouched (`null`), it simply redraws from the new slot. Taken
+              // back altogether, it starts again rather than keeping a sentence
+              // about an hour that is no longer on offer.
+              setMessage((m) =>
+                m === null || !suggested || !v
+                  ? null
+                  : m.split(slotLabel(suggested, timeZone)).join(slotLabel(v, timeZone)),
+              );
               setSuggested(v);
               setOfferBad(false);
             }}
+            message={messageText}
+            onMessage={setMessage}
           />
         )}
 

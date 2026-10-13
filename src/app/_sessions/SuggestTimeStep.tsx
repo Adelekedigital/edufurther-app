@@ -3,6 +3,7 @@
 import { useId, useState } from 'react';
 import { Chip } from '@/components/atoms/Chip/Chip';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { Textarea } from '@/components/atoms/Input/Input';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { useSlots } from '@/lib/api/data/booking';
 import { dayLabel, formatTime } from '@/lib/utils/format';
@@ -29,6 +30,62 @@ const CHIPS = 2;
 /** How many more each press reveals. A month of hourly slots is hundreds. */
 const MORE = 8;
 
+/**
+ * `SuggestTime.dc.html`'s cap on the message. The contract's `reason_text`
+ * allows 2000, so this is the design's limit and not the server's — a note
+ * going with an offered time is a sentence or two, and the draft below leaves
+ * most of the room free to rewrite.
+ */
+const MESSAGE_MAX = 500;
+
+/**
+ * A slot as the chips print it — `SuggestTime.dc.html`: "Mon, Sep 28 · 10:00
+ * am". Weekday, no year, and the start only. The year is noise inside a booking
+ * window weeks long, and the end time is the duration they already agreed —
+ * printing the range made the chip twice as wide for nothing, which is what
+ * forced the "show more" problem into the picker in the first place.
+ *
+ * Exported because the drafted message names the same instant, and the two have
+ * to be the same string: a message edited by hand keeps the edit through a
+ * change of slot by swapping the old label for the new one inside it, which
+ * only works while the chip and the sentence agree character for character.
+ */
+export function slotLabel(iso: string, timeZone: string): string {
+  return `${dayLabel(iso, timeZone)} · ${formatTime(iso, timeZone)}`;
+}
+
+/**
+ * The message that goes with the offer, drafted as `SuggestTime.dc.html` drafts
+ * it: the mentor's words to send or write over, never ours to send silently.
+ *
+ * It carries the one thing the offered time cannot say by itself — *why* the
+ * agreed hour is going away. Until 2026-10-13 a mentee received a suggested
+ * time with no message whatsoever: open question 2 of
+ * `docs/handoff/bookings-design-request.md` asked design and the owner whether
+ * to pre-fill the single `reason_text` the contract has, and the answer was yes.
+ */
+export function suggestDraft({
+  first,
+  mode,
+  origDay,
+  slot,
+}: {
+  first: string;
+  /** A cancel names the day it is calling off; a decline has no agreed day. */
+  mode: 'cancel' | 'decline';
+  origDay: string;
+  slot: string;
+}): string {
+  const lead =
+    mode === 'cancel'
+      ? `I’m sorry, I have to cancel our session on ${origDay}.`
+      : 'I can’t make the time you asked for.';
+  return (
+    `Hi ${first}, ${lead} Could we do ${slot} instead? I’ve held it for you for ` +
+    `${HOLD_HOURS} hours. If it doesn’t suit you, pick any other open time on my profile.`
+  );
+}
+
 type SuggestTimeStepProps = {
   booking: Booking;
   /**
@@ -48,6 +105,13 @@ type SuggestTimeStepProps = {
   /** The chosen instant, or null for "no, just decline". */
   value: string | null;
   onChange: (startsAt: string | null) => void;
+  /**
+   * The message going with the offer. Controlled like `value`, and for the same
+   * reason: the dialog builds the payload, so it has to be the one deciding
+   * what survives a change of slot and what is sent. This step renders the box.
+   */
+  message: string;
+  onMessage: (value: string) => void;
 };
 
 /**
@@ -69,6 +133,8 @@ export function SuggestTimeStep({
   timeZone,
   value,
   onChange,
+  message,
+  onMessage,
 }: SuggestTimeStepProps) {
   const [limit, setLimit] = useState(CHIPS);
   // Not a literal: a second instance would be a duplicate-id violation.
@@ -79,12 +145,7 @@ export function SuggestTimeStep({
   // threw out of the formatter and took the whole Bookings screen with it.
   const all = (slots.data ?? []).filter((iso) => !Number.isNaN(new Date(iso).getTime()));
   const shown = all.slice(0, limit);
-  // `SuggestTime.dc.html`: "Mon, Sep 28 · 10:00 am". Weekday, no year, and the
-  // start only. The year is noise inside a booking window weeks long, and the
-  // end time is the duration they already agreed — printing the range made the
-  // chip twice as wide for nothing, which is what forced the "show more"
-  // problem below in the first place.
-  const label = (iso: string) => `${dayLabel(iso, timeZone)} · ${formatTime(iso, timeZone)}`;
+  const label = (iso: string) => slotLabel(iso, timeZone);
 
   if (slots.isLoading) {
     return (
@@ -161,11 +222,32 @@ export function SuggestTimeStep({
         )}
       </div>
       {value && (
-        <span className={styles.hold}>
-          <Icon name="lock_clock" size={14} />
-          Held for {b.other.firstName} for {HOLD_HOURS} hours, then it opens to others
-          again.
-        </span>
+        <>
+          <span className={styles.hold}>
+            <Icon name="lock_clock" size={14} />
+            Held for {b.other.firstName} for {HOLD_HOURS} hours, then it opens to others
+            again.
+          </span>
+          {/* Last in the step, where the design puts it — and behind the same
+              condition as the hold line above it. A message whose whole point
+              is "could we do this instead?" has no instead to name until a time
+              is picked, and the confirm is blocked without one anyway.
+
+              The label wraps the box, as the design's markup has it, so the
+              name comes from the text beside it and there is no id to keep in
+              step. No "Optional" tag and nothing `required`: a cleared box
+              sends nothing and the offered time still carries the meaning
+              (owner, 2026-10-13). */}
+          <label className={styles.message}>
+            Message to {b.other.firstName}
+            <Textarea
+              value={message}
+              onChange={(e) => onMessage(e.target.value)}
+              maxLength={MESSAGE_MAX}
+              className={styles.messageBox}
+            />
+          </label>
+        </>
       )}
     </div>
   );
