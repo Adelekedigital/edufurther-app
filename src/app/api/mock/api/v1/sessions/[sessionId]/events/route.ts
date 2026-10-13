@@ -27,6 +27,8 @@ const OUTCOME: Record<string, Outcome> =
       code: 'scheduling_conflict',
       text: 'Sorry — my visa interview was moved to the same hour.',
     },
+    // No code on purpose: nobody picked one. A no-show is the sweep noticing
+    // an empty room, so the panel has only its heading to show.
     'h-4': { to: 'no_show', actor: 'system', text: null },
     'h-5': { to: 'declined', actor: 'them', code: 'mentor_unavailable', text: 'I’m away that week. Try the 14th and I’ll confirm.' },
     'h-6': { to: 'expired', actor: 'system', code: 'expired_no_response', text: null },

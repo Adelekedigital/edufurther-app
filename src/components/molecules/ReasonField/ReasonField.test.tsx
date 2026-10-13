@@ -105,6 +105,34 @@ describe('what the field shows', () => {
     expect(screen.getByText('Say briefly what happened.')).toBeVisible();
   });
 
+  it('the chip group points at the hint, error or no error', () => {
+    // Without this, dropping `${id}-hint` from describedBy fails nothing: the
+    // person reading by ear would choose a chip without being told what the
+    // other party gets from it.
+    const { rerender } = field({ required: true });
+    const hintId = screen.getByText('Amara sees the reason you pick.').id;
+    expect(hintId).toBeTruthy();
+    expect(screen.getByRole('group', { name: 'Reason' }).getAttribute('aria-describedby')).toContain(
+      hintId,
+    );
+    rerender(
+      <ReasonField
+        side="mentee"
+        reasonCode={null}
+        onReasonCode={vi.fn()}
+        text=""
+        onText={vi.fn()}
+        readerFirstName="Amara"
+        required
+        error={{ field: 'reason', message: 'Pick a reason before you go on.' }}
+      />,
+    );
+    // The error is added to the hint, never swapped in for it.
+    const described = screen.getByRole('group', { name: 'Reason' }).getAttribute('aria-describedby');
+    expect(described).toContain(hintId);
+    expect(described).toContain('reason-err');
+  });
+
   it('a reason error describes the chip group, which carries no aria-invalid', () => {
     // The chips are buttons in a role="group"; aria-invalid means nothing there.
     field({

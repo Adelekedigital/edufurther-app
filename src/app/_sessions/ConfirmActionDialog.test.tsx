@@ -202,6 +202,26 @@ describe('the box belongs to Other, and what was typed there does not outlive it
     expect(screen.getByRole('textbox')).toHaveValue('a long explanation I do not want to lose');
   });
 
+  it('unpicking leaves no reason, so the confirm is blocked even with words typed', async () => {
+    // The path the keep-the-text rule opens up: words held in state, no code.
+    // Text alone is not a reason — the server wants the code (backend #417) —
+    // and sending the note under no code would reach them as a quote with
+    // nothing explaining it.
+    const onConfirm = vi.fn();
+    dialog({ action: 'decline', booking: mentorPending(), onConfirm });
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    await userEvent.type(screen.getByRole('textbox'), 'I typed this and then unpicked');
+    await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Decline request' }));
+    expect(screen.getByText('Pick a reason before you go on.')).toBeVisible();
+    // The dialog moves focus in a requestAnimationFrame, so the chip has it a
+    // frame later rather than on the click.
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'A clash in my calendar' })).toHaveFocus(),
+    );
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
   it('switching to another chip and back shows the same words again', async () => {
     dialog({ action: 'decline', booking: mentorPending() });
     await userEvent.click(screen.getByRole('button', { name: 'Something else' }));
