@@ -170,3 +170,60 @@
   color: var(--red-500);
   cursor: not-allowed;
 }
+
+/* `CancelModal.dc.html` `freeStyle="line"`: what happens to the hour, said as a
+   sentence with a way to change it — not a switch to come and set. */
+.freeLine {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+
+.freeLine > [aria-hidden] {
+  color: var(--ink-500);
+}
+
+.freeLink {
+  position: relative;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-700);
+}
+
+.freeLink:hover {
+  color: var(--blue-500);
+}
+
+.freeLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* The design's trick for a link inside running text: the hit area grows past
+   the link without the link taking that much room, so the sentence still reads
+   as a sentence.
+
+   The design writes `inset: -12px -8px`, which on a 17px line comes to 41px
+   high — three short of the 44px touch minimum this project holds to. A fixed
+   vertical inset can only be right for one line-height, so the height is asked
+   for directly and centred instead. The horizontal ±`--space-2` is the
+   design's own. Measured: 44. */
+.freeLink::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--space-2) * -1);
+  right: calc(var(--space-2) * -1);
+  top: 50%;
+  height: var(--touch-target-min);
+  translate: 0 -50%;
+}

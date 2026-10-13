@@ -3,6 +3,7 @@
 import { useId, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { cx } from '@/lib/utils/cx';
+import { Icon } from '@/components/atoms/Icon/Icon';
 import { Switch } from '@/components/atoms/Switch/Switch';
 import { ReasonField } from '@/components/molecules/ReasonField/ReasonField';
 import { Notice } from '@/components/molecules/Notice/Notice';
@@ -117,7 +118,13 @@ export function ConfirmActionDialog({
   // Mentors only. The default is `true` because the two ways of being wrong are
   // not equally visible: an hour offered while you are busy arrives as a booking
   // you can decline; an hour withheld while you are free arrives as nothing.
-  const [stillFree, setStillFree] = useState(true);
+  // Whether the hour goes back on the mentor's public calendar. **Blocked by
+  // default** (owner, 2026-10-13, `freeStyle="line"`), freed only by pressing
+  // "Reopen it". This reverses the old default, which was `true` on the
+  // argument that "an hour offered while you are busy arrives as a booking you
+  // can decline; an hour withheld while you are free arrives as nothing". The
+  // owner has taken the other side of that trade knowingly.
+  const [free, setFree] = useState(false);
   const [suggested, setSuggested] = useState<string | null>(null);
   // On by default, as the design has it: a mentor who is calling an hour off
   // usually has another to give, and making them find a link first buries the
@@ -150,7 +157,7 @@ export function ConfirmActionDialog({
   const when = { day: dayLabel(b.startsAt, timeZone), start: formatTime(b.startsAt, timeZone) };
   // Offering a time says "not that hour" — unless the mentor has also said the
   // hour is still free, which only a cancel can say.
-  const impliesUnavailable = !(action === 'cancel' && isMentor && stillFree);
+  const impliesUnavailable = !(action === 'cancel' && isMentor && free);
   // What the confirm is waiting for, which is also what the server will refuse
   // without: a time, or a reason (backend #417).
   const incomplete = offering
@@ -286,7 +293,7 @@ export function ConfirmActionDialog({
                 // something the person cannot see — it must not reach the
                 // other party's notification.
                 reasonText: !offering && reasonCode === 'other' ? text : '',
-                ...(action === 'cancel' && isMentor ? { releaseSlot: stillFree } : {}),
+                ...(action === 'cancel' && isMentor ? { releaseSlot: free } : {}),
                 ...(offering && suggested ? { suggestedStartsAt: suggested } : {}),
               });
             }}
@@ -319,25 +326,23 @@ export function ConfirmActionDialog({
           </Notice>
         )}
 
-        {/* Mentors only — a mentee's cancellation always frees the hour. */}
+        {/* Mentors only — a mentee's cancellation always frees the hour, and a
+            request never held one.
+
+            A line rather than a switch (`freeStyle="line"`): this is a
+            consequence being reported, with a way to change it, not a setting
+            to come and configure. It names the slot by **date and time**,
+            because a bare hour reads as every 6 pm rather than this one. */}
         {action === 'cancel' && isMentor && (
-          <div className={styles.slotChoice}>
-            <Switch
-              checked={stillFree}
-              onChange={setStillFree}
-              aria-labelledby={`${fieldId}-slot`}
-              aria-describedby={`${fieldId}-slot-hint`}
-            />
-            <div>
-              <span id={`${fieldId}-slot`} className={styles.slotLabel}>
-                I’m still free at this time
-              </span>
-              <p id={`${fieldId}-slot-hint`} className={styles.slotHint}>
-                On, the hour goes back on your calendar. Off, we mark you unavailable then —
-                an ordinary exception you can remove later.
-              </p>
-            </div>
-          </div>
+          <p className={styles.freeLine}>
+            <Icon name={free ? 'event_available' : 'event_busy'} size={18} aria-hidden />
+            <span>
+              {when.day}, {when.start} slot stays {free ? 'open' : 'blocked'} on your calendar.
+            </span>
+            <button type="button" className={styles.freeLink} onClick={() => setFree((v) => !v)}>
+              {free ? 'Keep it blocked' : 'Reopen it'}
+            </button>
+          </p>
         )}
 
         {/* Mentors only, and only when refusing or calling off — a mentee

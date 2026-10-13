@@ -301,7 +301,7 @@ basis below 1100px so it shrinks rather than pushing the ⋯ onto its own line.
 | 25 | No dialog is drawn for decline, cancel or withdraw | A ModalShell confirm, ours | They cannot be undone and they move someone else's credit. The one rule it enforces is that the credit outcome is stated **before** the confirm button. Listed for design. |
 | 26 | `reason_code` is a nine-value enum | Four offered | The other five (`mentor_no_show`, `mentee_no_show`, `expired_no_response`, `rescheduled`, `admin_action`) are system-set; a person picking "admin action" means nothing. |
 | 27 | Button `text-destructive` is in the DS but was missing from our atom | Added, with the hover darkened | The DS hover `--red-300` is 3.15:1 on white, under AA. Ours darkens to `--red-700` (8.4:1); rest `--red-500` is 5.13:1. The same divergence the filled `destructive` already carried. |
-| 28 | The mentor's cancel has no slot question | A switch, defaulting to "I'm still free at this time" | `release_slot` exists on the contract and defaults true. The backend's reasoning is worth keeping: an hour offered while you are busy arrives as a booking you can decline; an hour withheld while you are free arrives as nothing at all. |
+| 28 | ~~The mentor's cancel has no slot question~~ | ~~A switch, defaulting to "I'm still free at this time"~~ **SUPERSEDED 2026-10-13 — see rows 47–48 below** | The design now draws this (`CancelModal.dc.html` `freeStyle="line"`), so it is no longer a divergence, and **the default is reversed**: the hour stays blocked unless the mentor presses "Reopen it". Approved by the product owner, 2026-10-13, through the Session Join session, against the reasoning this row recorded — *"an hour offered while you are busy arrives as a booking you can decline; an hour withheld while you are free arrives as nothing at all"* — which was the backend's, and which the owner has knowingly traded away. `release_slot` still defaults `true` on the contract; we now always send it explicitly on a mentor cancel, so the contract default is never the one that applies. |
 
 **Copy decisions taken by the owner, 2026-10-03** (design's draft
 `Copy - Booking outcomes (provisional).md`, which left three calls open):
@@ -584,3 +584,23 @@ The mentor's first two reasons **overlap**: "A clash in my calendar" and "I'm
 no longer free" are close enough that the pick is near-random, which weakens
 the data point the requirement exists to produce. Kept deliberately to avoid
 rewriting copy twice before the design file lands.
+
+### Sessions — what happens to the mentor's hour, 2026-10-13
+
+`CancelModal.dc.html` `freeStyle="line"`. Two entries, one a fix and one a gap.
+
+| # | Design | Built | Why |
+|---|---|---|---|
+| 47 | "{slot} slot stays **opened** on your calendar." | "… stays **open** …" | Grammar. Fixed here under the small-fixes rule rather than sent to design: "stays opened" is not English, and the sentence is read by a mentor mid-cancellation. |
+| 48b | Link hit area `inset: -12px -8px` | Horizontal the same; height asked for directly as `--touch-target-min`, centred | The design's vertical inset comes to **41px** on a 17px line — three short of the 44px touch minimum this project holds to — and a fixed vertical inset can only ever be right for one line-height. Measured after: 44px, and a tap 21px either side of centre reaches the link. |
+| 48 | Nothing | Nothing | **A gap, recorded rather than invented.** The line describes what *will* happen to the slot — read while deciding. Neither `CancelModal.dc.html` nor `Session Join.dc.html` draws anything for the moment **after** the cancellation goes through, when it has actually happened. The dialog closes and nothing says the hour is now blocked or open. Left as it is; copy for that moment is design's to write. |
+
+**Also recorded, not a divergence:** the default flipped. The hour now stays
+**blocked** unless the mentor presses "Reopen it"; it used to be freed unless
+they said otherwise. The old default had a reason in the code — "an hour
+offered while you are busy arrives as a booking you can decline; an hour
+withheld while you are free arrives as nothing" — and the owner took the other
+side of that trade knowingly on 2026-10-13. Not logged as a divergence because
+the design and the build agree; logged because a reversed default is the kind
+of change that otherwise looks like a styling PR that happened to flip a
+boolean.
