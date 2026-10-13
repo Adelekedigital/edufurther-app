@@ -14,7 +14,6 @@ const own = (over: Partial<Own> = {}): Own =>
     is_active: true,
     // Both, as the server sends today. The list is what we read; the single
     // field is on its way out (backend #274).
-    service_offering: { code: 'document-preparation', display_name: 'Document preparation' },
     service_offerings: [{ code: 'document-preparation', display_name: 'Document preparation' }],
     application_stage: null,
     custom_stage_label: null,

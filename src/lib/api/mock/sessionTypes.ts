@@ -79,13 +79,9 @@ const offering = (code: string) => {
   const o = OFFERINGS.find((x) => x.code === code)!;
   return { id: o.id, code, display_name: o.display_name };
 };
-// Backend #9 (merging): `service_offerings[]`, whose first is `service_offering`.
-// Spread from a variable so it compiles against the spec before and after.
-const topics = (code: string) => {
-  const one = offering(code);
-  const extra = { service_offerings: [one] };
-  return { service_offering: one, ...extra };
-};
+// Backend #9: `service_offerings[]`. The single `service_offering` it replaced
+// was removed by their #439, so the mock no longer sends it either.
+const topics = (code: string) => ({ service_offerings: [offering(code)] });
 // `allows_multiple` / `options` are backend #12 (merging): carried already, and
 // asserted so the mock compiles against the spec before and after it ships.
 const q = (id: string, text: string, type: QuestionRead['question_type'], required: boolean) =>
@@ -300,7 +296,6 @@ export function mockCreateSessionType(
     min_notice_minutes: body.min_notice_minutes == null ? null : Number(body.min_notice_minutes),
     meeting_venue: 'daily',
     is_active: true,
-    service_offering: offerings[0] ?? null,
     application_stages: (Array.isArray(stages)
       ? stages
       : []) as OwnSessionTypeRead['application_stages'],
@@ -430,7 +425,6 @@ export function mockEditSessionType(
       return o?.code ? [{ id: o.id, code: o.code, display_name: o.display_name }] : [];
     });
     patch.service_offerings = offerings;
-    patch.service_offering = offerings[0] ?? null;
   }
   Object.assign(t, patch);
   return { status: 200 };
