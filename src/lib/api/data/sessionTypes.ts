@@ -72,12 +72,9 @@ export function stagesOf(r: {
 }
 
 export function toOwnSessionType(r: OwnSessionTypeRead): OwnSessionType {
-  // `service_offerings` (backend #9); the single field is its first, kept for one release.
-  const list = r.service_offerings?.length
-    ? r.service_offerings
-    : r.service_offering
-      ? [r.service_offering]
-      : [];
+  // `service_offerings` (backend #9). The single `service_offering` it replaced
+  // is being removed (their #274); its fallback is gone with it.
+  const list = r.service_offerings ?? [];
   const topics = list.map((o) => ({ code: o.code, label: o.display_name }));
   return {
     id: r.id,

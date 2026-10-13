@@ -412,7 +412,6 @@ export function fieldForPointer(pointer: string): FieldKey | null {
     case 'description':
       return 'description';
     case 'service_offering_ids':
-    case 'service_offering_id':
       return 'topics';
     case 'application_stage':
     case 'application_stages':

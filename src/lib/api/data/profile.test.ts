@@ -90,10 +90,9 @@ describe('toMentorProfile', () => {
             min_notice_minutes: 60,
             meeting_venue: 'google_meet',
             application_stage: 'drafting_stage',
-            service_offering: {
-              code: 'application-documents',
-              display_name: 'Application documents',
-            },
+            service_offerings: [
+              { code: 'application-documents', display_name: 'Application documents' },
+            ],
           },
           {
             id: 's2',

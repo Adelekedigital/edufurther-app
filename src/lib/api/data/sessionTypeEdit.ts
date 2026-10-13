@@ -64,11 +64,7 @@ export function toDraft(s: SavedSessionType, defaults: BookingDefaults | null): 
     r.booking_window_days == null &&
     r.break_after_minutes == null &&
     r.requires_booking_confirmation == null;
-  const offerings = r.service_offerings?.length
-    ? r.service_offerings
-    : r.service_offering
-      ? [r.service_offering]
-      : [];
+  const offerings = r.service_offerings ?? [];
   const hours = toWeeklyHours(s.windows, deviceTimeZone());
   return {
     name: r.name,
@@ -398,11 +394,7 @@ export function toDuplicateBody(
   offeringIds: Record<string, string>,
 ): { body: ReturnType<typeof toCreateBody>; missingTopics: number } {
   const r = s.read;
-  const offerings = r.service_offerings?.length
-    ? r.service_offerings
-    : r.service_offering
-      ? [r.service_offering]
-      : [];
+  const offerings = r.service_offerings ?? [];
   const stages = stagesOf(r);
   const questions: DraftQuestion[] = s.questions.map((q) => ({
     key: q.id,

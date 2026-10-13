@@ -12,7 +12,10 @@ const own = (over: Partial<Own> = {}): Own =>
     min_notice_minutes: 1440,
     meeting_venue: 'daily',
     is_active: true,
+    // Both, as the server sends today. The list is what we read; the single
+    // field is on its way out (backend #274).
     service_offering: { code: 'document-preparation', display_name: 'Document preparation' },
+    service_offerings: [{ code: 'document-preparation', display_name: 'Document preparation' }],
     application_stage: null,
     custom_stage_label: null,
     icon: null,
@@ -85,7 +88,7 @@ describe('toOwnSessionType', () => {
   it('a chosen icon wins; no choice follows the topic; no topic is the video call', () => {
     expect(toOwnSessionType(own({ icon: 'lightbulb' })).icon).toBe('lightbulb');
     expect(toOwnSessionType(own({ icon: 'lightbulb' })).iconChoice).toBe('lightbulb');
-    expect(toOwnSessionType(own({ service_offering: null })).icon).toBe('video_call');
+    expect(toOwnSessionType(own({ service_offerings: [] })).icon).toBe('video_call');
     expect(autoIcon(['interview-preparation'])).toBe('record_voice_over');
     expect(autoIcon(['something-new'])).toBe('video_call');
     expect(autoIcon([])).toBe('video_call');
