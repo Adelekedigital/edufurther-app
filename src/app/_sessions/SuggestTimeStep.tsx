@@ -10,11 +10,17 @@ import type { Booking } from '@/types/booking';
 import styles from './SuggestTimeStep.module.css';
 
 /**
- * How long an offered time is kept for the mentee alone. The server's own hold
- * (`SuggestionRead.held_until`) is two hours from the offer; this is the same
- * number said out loud, as `SuggestTime.dc.html` says it — as a numeral, since
- * "two hours" and a countdown elsewhere reading "1h 58m" are the same fact in
- * two voices.
+ * How long an offered time is kept for the mentee alone, said out loud.
+ *
+ * **Not on the contract.** `SuggestionRead.held_until` carries the instant once
+ * a suggestion exists, but nothing gives the duration *before* one is made, so
+ * this number is ours and will go stale the day the backend's policy changes.
+ * That is the whole reason it is a named constant rather than a word inside a
+ * sentence: it greps, and it is one place to change. Divergence row 36 spelled
+ * it "two" for the same worry, which never helped — the number was just as
+ * hardcoded and harder to find. Superseded 2026-10-13.
+ *
+ * If a `hold_hours` ever appears on the contract, read it and delete this.
  */
 const HOLD_HOURS = 2;
 
