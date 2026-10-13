@@ -113,8 +113,8 @@ function Fallback({
 /**
  * The desktop aside. Not a dialog — the list beside it stays usable — so it
  * does not trap focus. It does move focus in when it opens and give it back
- * when it closes: without that, "See details" from a row menu leaves a screen
- * reader where it was, with no sign anything happened.
+ * when it closes: without that, a row's "Details" leaves a screen reader where
+ * it was, with no sign anything happened.
  */
 function Aside({
   titleId,

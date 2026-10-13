@@ -75,14 +75,47 @@ export const BeforeTheJoinWindow: Story = {
   },
 };
 
-/** A request the viewer must answer: the deadline is the status. */
-export const PendingForMentor: Story = {
-  args: { booking: sampleBookingFor({ status: 'pending', respondBy: at(5) }) },
+/**
+ * The call-off, where the row's ⋯ used to reach it. Low emphasis under Join:
+ * both can be on offer at once, and only one of them is what they came for.
+ */
+export const CancellableAndJoinable: Story = {
+  args: {
+    // Half an hour out, door already open: far enough ahead that calling it
+    // off still reaches the other side (`canCancel`'s ten-minute lock).
+    booking: sampleBookingFor({
+      startsAt: at(0.5),
+      endsAt: at(1.5),
+      joinOpensAt: at(-0.1),
+      joinClosesAt: at(1.75),
+    }),
+    joinHref: '/sessions/b1',
+    onCallOff: fn(),
+  },
 };
 
-/** The same request from the other side: waiting, not acting. */
+/** Too near the start to call off (`canCancel`): no footer rather than a
+    control that would be refused. */
+export const TooLateToCancel: Story = {
+  args: {
+    booking: sampleBookingFor({ startsAt: at(0.1), endsAt: at(1.1) }),
+    onCallOff: fn(),
+  },
+};
+
+/** A request the viewer must answer: the deadline is the status. Accept and
+    Decline stay on the row, so the panel offers neither. */
+export const PendingForMentor: Story = {
+  args: { booking: sampleBookingFor({ status: 'pending', respondBy: at(5) }), onCallOff: fn() },
+};
+
+/** The same request from the other side: waiting, not acting — and theirs to
+    take back, so the panel carries "Withdraw request". */
 export const PendingForMentee: Story = {
-  args: { booking: sampleBookingFor({ status: 'pending', side: 'mentee', respondBy: at(5) }) },
+  args: {
+    booking: sampleBookingFor({ status: 'pending', side: 'mentee', respondBy: at(5) }),
+    onCallOff: fn(),
+  },
 };
 
 export const Lapsed: Story = {

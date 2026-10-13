@@ -156,6 +156,82 @@ describe('the footer', () => {
   });
 });
 
+/**
+ * The destructive action the row's ⋯ used to carry. It is in the panel because
+ * a cancel one tap from a scrolling list is a cancel somebody did not mean.
+ */
+describe('calling the session off', () => {
+  it('a confirmed session is cancellable from the panel', async () => {
+    const onCallOff = vi.fn();
+    panel({ onCallOff });
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel session' }));
+    expect(onCallOff).toHaveBeenCalledWith('cancel');
+  });
+
+  it('a mentee’s unanswered request is theirs to take back, in its own words', async () => {
+    const onCallOff = vi.fn();
+    panel({
+      booking: sampleBookingFor({ status: 'pending', side: 'mentee', respondBy: at(5) }),
+      onCallOff,
+    });
+    // Not "Cancel session": there is no session yet, only a request.
+    expect(screen.queryByRole('button', { name: 'Cancel session' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Withdraw request' }));
+    expect(onCallOff).toHaveBeenCalledWith('withdraw');
+  });
+
+  it('offers nothing it would refuse: inside the lock there is no control', () => {
+    // Six minutes out, against `canCancel`'s ten-minute lock. A cancellation
+    // this late reaches nobody, so the panel does not offer one.
+    panel({ booking: sampleBookingFor({ startsAt: at(0.1), endsAt: at(1.1) }), onCallOff: vi.fn() });
+    expect(screen.queryByRole('button', { name: /Cancel|Withdraw/ })).not.toBeInTheDocument();
+  });
+
+  it('and nothing at all on a session that is already over', () => {
+    panel({ booking: sampleBookingFor({ status: 'completed' }), onCallOff: vi.fn() });
+    expect(screen.queryByRole('button', { name: /Cancel|Withdraw/ })).not.toBeInTheDocument();
+  });
+
+  it('draws no control the screen has not wired, rather than a dead button', () => {
+    panel();
+    expect(screen.queryByRole('button', { name: 'Cancel session' })).not.toBeInTheDocument();
+  });
+
+  it('a mentor’s pending panel offers no Decline — that stays on the row beside Accept', () => {
+    // `canDecline` holds here. A refusal without the acceptance beside it is a
+    // trap, so the panel carries neither and the row carries both.
+    panel({
+      booking: sampleBookingFor({ status: 'pending', respondBy: at(5) }),
+      onCallOff: vi.fn(),
+    });
+    expect(screen.queryByRole('button', { name: /Decline/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Accept/ })).not.toBeInTheDocument();
+  });
+
+  it('sits under Join where both are on offer — only one of them is what they came for', () => {
+    const { container } = panel({
+      booking: sampleBookingFor({
+        startsAt: at(0.5),
+        endsAt: at(1.5),
+        joinOpensAt: at(-0.1),
+        joinClosesAt: at(1.75),
+      }),
+      joinHref: '/sessions/b1',
+      onCallOff: vi.fn(),
+    });
+    const controls = [...container.querySelectorAll('a, button')].map((el) => el.textContent);
+    expect(controls).toContain('Join session');
+    expect(controls.indexOf('Join session')).toBeLessThan(controls.indexOf('Cancel session'));
+  });
+
+  it('the footer appears for the call-off alone, with no Join to carry it', () => {
+    // Nothing to join 26 hours out, and the footer used to exist only for Join.
+    panel({ onCallOff: vi.fn() });
+    expect(screen.queryByRole('button', { name: 'Join session' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancel session' })).toBeVisible();
+  });
+});
+
 describe('closing', () => {
   it('the close button is named, and calls back', async () => {
     const onClose = vi.fn();

@@ -9,6 +9,8 @@ import { DetailFacts, type Fact } from '@/components/molecules/DetailFacts/Detai
 import { cx } from '@/lib/utils/cx';
 import {
   attendanceLine,
+  canCancel,
+  canWithdraw,
   fullDate,
   joinOpensInMinutes,
   joinState,
@@ -64,6 +66,13 @@ type BookingDetailsProps = {
   answersExpanded?: boolean;
   onToggleAnswers?: () => void;
   onOpenFile?: (file: AnswerFile) => void;
+  /**
+   * Calls the booking off — the destructive action the row's ⋯ menu used to
+   * carry. The panel decides which verb this booking takes and sends it back,
+   * so the screen never derives the same thing twice and the two cannot
+   * disagree about what the button it is confirming actually said.
+   */
+  onCallOff?: (action: 'cancel' | 'withdraw') => void;
   now?: Date;
 };
 
@@ -135,8 +144,9 @@ function outcomeHeading(o: BookingOutcome, b: Booking): string {
  * and the phone sheet — the two differ in their frame, never in what they say.
  *
  * The design pairs Join with "Send a message", and Cancel, Accept and Decline
- * sit in this footer too. Only Join is here: the message control has no
- * endpoint, and the write actions are PR 3. A footer with nothing in it does
+ * sit in this footer too. Join and the call-off are here; the message control
+ * has no endpoint, and Accept/Decline stay on the pending row, where the one
+ * who answers a request is already looking. A footer with nothing in it does
  * not render at all.
  */
 export function BookingDetails({
@@ -156,6 +166,7 @@ export function BookingDetails({
   onBookSuggestion,
   onToggleAnswers,
   onOpenFile,
+  onCallOff,
   joinHref,
   now = new Date(),
 }: BookingDetailsProps) {
@@ -164,6 +175,18 @@ export function BookingDetails({
   const join = joinState(b, now);
   const opensIn = joinOpensInMinutes(b);
   const showJoin = !!joinHref && (join === 'open' || join === 'before');
+  // The one destructive thing this viewer can still do to this booking, in the
+  // panel rather than a tap away in a scrolling list. The two are mutually
+  // exclusive — one wants `pending`, the other `confirmed` — so the order only
+  // decides which reads first, not which wins. Decline is deliberately absent
+  // even where `canDecline` holds: it sits on the pending row beside Accept,
+  // and a footer offering the refusal without the acceptance is a trap.
+  const callOff = canWithdraw(b, now)
+    ? { action: 'withdraw' as const, label: 'Withdraw request' }
+    : canCancel(b, now)
+      ? { action: 'cancel' as const, label: 'Cancel session' }
+      : null;
+  const showCallOff = !!onCallOff && !!callOff;
   const answersTitle = b.side === 'mentee' ? 'Your answers' : `Answers from ${b.other.firstName}`;
   const credit = outcome ? creditLine(outcome, b, now) : '';
   // Collapsed, the preview shows the first two **answered** questions, not
@@ -384,20 +407,33 @@ export function BookingDetails({
         </div>
       </div>
 
-      {showJoin && (
+      {(showJoin || showCallOff) && (
         <div className={styles.footer}>
-          {/* It navigates once open, so it is a link; before that, a locked button. */}
-          {join === 'open' ? (
-            <ButtonLink href={joinHref!} prefetch={false} variant="primary" size="large" fullWidth>
-              Join session
-            </ButtonLink>
-          ) : (
-            <Button variant="primary" size="large" fullWidth disabled>
-              Join session
-            </Button>
-          )}
-          {join === 'before' && opensIn != null && (
+          {showJoin &&
+            /* It navigates once open, so it is a link; before that, a locked button. */
+            (join === 'open' ? (
+              <ButtonLink href={joinHref!} prefetch={false} variant="primary" size="large" fullWidth>
+                Join session
+              </ButtonLink>
+            ) : (
+              <Button variant="primary" size="large" fullWidth disabled>
+                Join session
+              </Button>
+            ))}
+          {showJoin && join === 'before' && opensIn != null && (
             <span className={styles.lock}>Join opens {opensIn} minutes before</span>
+          )}
+          {/* Low emphasis, under Join: calling the session off is the rarer
+              choice, and the same `text-destructive` the row's Decline uses. */}
+          {showCallOff && (
+            <Button
+              variant="text-destructive"
+              size="large"
+              fullWidth
+              onClick={() => onCallOff!(callOff!.action)}
+            >
+              {callOff!.label}
+            </Button>
           )}
         </div>
       )}

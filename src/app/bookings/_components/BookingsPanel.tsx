@@ -6,7 +6,6 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { BookingList } from '@/components/organisms/BookingList/BookingList';
 import { BookingRow } from '@/components/organisms/BookingRow/BookingRow';
-import type { RowMenuItem } from '@/components/molecules/RowMenu/RowMenu';
 import type { AppError } from '@/types/mentor';
 import type { Booking, BookingTab } from '@/types/booking';
 import { emptyFor } from './empties';
@@ -40,8 +39,8 @@ type BookingsPanelProps = {
   actionsFor?: (b: Booking) => ReactNode;
   /** A full-width block under the row's detail. */
   noticeFor?: (b: Booking) => ReactNode;
-  /** The ⋯ menu for one row. */
-  menuFor?: (b: Booking) => RowMenuItem[];
+  /** Opens one row's details panel, from the labelled button in its corner. */
+  onOpenDetails?: (id: string) => void;
   /**
    * Opens the details panel on a booking with every answer shown. Left out on
    * History, where the design shows no preview.
@@ -80,7 +79,7 @@ export function BookingsPanel({
   intro,
   actionsFor,
   noticeFor,
-  menuFor,
+  onOpenDetails,
   onOpenAnswers,
   answersControls,
   selectedId,
@@ -176,7 +175,7 @@ export function BookingsPanel({
               timeZone={timeZone}
               actions={actionsFor?.(b)}
               notice={noticeFor?.(b)}
-              menu={menuFor?.(b)}
+              onOpenDetails={onOpenDetails ? () => onOpenDetails(b.id) : undefined}
               selected={selectedId === b.id}
               onOpenAnswers={onOpenAnswers ? () => onOpenAnswers(b.id) : undefined}
               answersControls={answersControls}

@@ -178,29 +178,22 @@ export const Phone: Story = {
   },
 };
 
+/** The corner's labelled button (Bookings.dc.html `detailsAccess=corner`). */
+export const WithDetails: Story = { args: { onOpenDetails: () => {} } };
+
 /**
- * The configuration that broke: a row whose only control is the ⋯. It used to
- * sit in the actions group, which takes its own full-width line on a phone, so
- * the ⋯ went with it and landed under the card. It belongs in the corner.
+ * The configuration that broke: a row whose only control is the corner one. It
+ * used to sit in the actions group, which takes its own full-width line on a
+ * phone, so it went with them and landed under the card. It belongs in the
+ * corner, and Details inherits that place.
  */
-export const PhoneMenuOnly: Story = {
+export const PhoneDetailsOnly: Story = {
   globals: { viewport: { value: 'mobile2', isRotated: false } },
-  args: {
-    menu: [
-      { key: 'details', icon: 'info' as const, label: 'See details', onSelect: () => {} },
-      {
-        key: 'cancel',
-        icon: 'block' as const,
-        label: 'Cancel session',
-        onSelect: () => {},
-        danger: true,
-      },
-    ],
-  },
+  args: { onOpenDetails: () => {} },
 };
 
-/** Both: the actions take the second line, the ⋯ keeps the corner above them. */
-export const PhoneMenuAndActions: Story = {
+/** Both: the actions take the second line, Details keeps the corner above them. */
+export const PhoneDetailsAndActions: Story = {
   globals: { viewport: { value: 'mobile2', isRotated: false } },
   args: {
     actions: (
@@ -208,12 +201,31 @@ export const PhoneMenuAndActions: Story = {
         Book again
       </Button>
     ),
-    menu: [{ key: 'details', icon: 'info' as const, label: 'See details', onSelect: () => {} }],
+    onOpenDetails: () => {},
   },
 };
 
-/** With the answers preview, which makes the row tall enough to show that the
-    ⋯ is pinned to the top rather than floating to the middle. */
+/** A mentor's pending row keeps Accept and Decline: answering a request is the
+    row's job, and only the call-off moved into the panel. */
+export const PendingWithAcceptAndDecline: Story = {
+  args: {
+    booking: sampleBooking({ status: 'pending', respondBy: at(5) }),
+    onOpenDetails: () => {},
+    actions: (
+      <>
+        <Button variant="secondary-outlined" size="small">
+          Accept
+        </Button>
+        <Button variant="text-destructive" size="small">
+          Decline
+        </Button>
+      </>
+    ),
+  },
+};
+
+/** With the answers preview, which makes the row tall enough to show where the
+    corner's button sits once the content grows past it. */
 export const PhoneWithAnswers: Story = {
   globals: { viewport: { value: 'mobile2', isRotated: false } },
   args: {
@@ -226,7 +238,7 @@ export const PhoneWithAnswers: Story = {
         },
       },
     }),
-    menu: [{ key: 'details', icon: 'info' as const, label: 'See details', onSelect: () => {} }],
+    onOpenDetails: () => {},
     onOpenAnswers: () => {},
     answersControls: 'booking-details',
   },

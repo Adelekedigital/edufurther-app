@@ -534,16 +534,19 @@ describe('the details panel', () => {
     ]);
   });
 
-  it('every row offers it, and the menu says which way it goes', async () => {
+  it('every row offers it in the open, named by its own booking', () => {
     render(<BookingsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: /More options for Visa practice/ }));
-    expect(screen.getByRole('menuitem', { name: 'See details' })).toBeVisible();
+    // One press, not two, and the name says which row it belongs to — a list
+    // of identical "Details" tells a screen-reader user nothing.
+    expect(screen.getByRole('button', { name: /^Details for .*Visa practice/ })).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: /^Details for .*Statement of Purpose/ }),
+    ).toBeVisible();
   });
 
   it('opening it puts the booking in the URL', async () => {
     render(<BookingsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: /More options for Visa practice/ }));
-    await userEvent.click(screen.getByRole('menuitem', { name: 'See details' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Details for .*Visa practice/ }));
     expect(replace).toHaveBeenCalledWith('/bookings?booking=b', { scroll: false });
   });
 
@@ -885,13 +888,15 @@ describe('the actions appear only where they can succeed', () => {
     expect(actions.decline!.mutate).not.toHaveBeenCalled();
   });
 
-  it('a mentee gets Withdraw in the menu, and no Accept anywhere', async () => {
+  it('a mentee gets Withdraw in the panel, and no Accept anywhere', () => {
     pending = remote([pendingRow({ side: 'mentee' })]);
     tab = 'pending';
+    // Opened, because the call-off lives in the panel now: the row carries
+    // only what answering a request needs, and a mentee answers nothing.
+    selectedBooking = 'p1';
     render(<BookingsScreen />);
     expect(screen.queryByRole('button', { name: 'Accept' })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /More options for SOP review/ }));
-    expect(screen.getByRole('menuitem', { name: 'Withdraw request' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Withdraw request' })).toBeVisible();
   });
 
   it('a lapsed request offers nothing — it is the backend’s to expire', async () => {
@@ -903,24 +908,33 @@ describe('the actions appear only where they can succeed', () => {
     expect(screen.queryByRole('button', { name: 'Decline' })).not.toBeInTheDocument();
   });
 
-  it('a session inside ten minutes offers no Cancel', async () => {
+  it('a session inside ten minutes offers no Cancel', () => {
     upcoming = remote([
       booking({ id: 'a', title: 'Statement of Purpose' }),
       booking({ id: 'soon', title: 'Nearly now', startsAt: at(0.1), endsAt: at(1) }),
     ]);
+    selectedBooking = 'soon';
     render(<BookingsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: /More options for Nearly now/ }));
-    expect(screen.queryByRole('menuitem', { name: 'Cancel session' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel session' })).not.toBeInTheDocument();
   });
 
-  it('a session further out does', async () => {
+  it('a session further out does', () => {
     upcoming = remote([
       booking({ id: 'a', title: 'Statement of Purpose' }),
       booking({ id: 'later', title: 'Later one', startsAt: at(48), endsAt: at(49) }),
     ]);
+    selectedBooking = 'later';
     render(<BookingsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: /More options for Later one/ }));
-    expect(screen.getByRole('menuitem', { name: 'Cancel session' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Cancel session' })).toBeVisible();
+  });
+
+  it('and never from the row itself, one tap from a scrolling list', () => {
+    upcoming = remote([
+      booking({ id: 'later', title: 'Later one', startsAt: at(48), endsAt: at(49) }),
+    ]);
+    render(<BookingsScreen />);
+    expect(screen.getByRole('button', { name: /^Details for .*Later one/ })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Cancel session' })).not.toBeInTheDocument();
   });
 });
 

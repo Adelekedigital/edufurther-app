@@ -15,8 +15,8 @@ type AnswerPreviewProps = {
   /**
    * Which booking this is, for the button's accessible name. Without it every
    * row offers an identical "See all 4 answers" and a screen-reader user
-   * listing the buttons cannot tell them apart — the ⋯ beside it already names
-   * the booking for the same reason.
+   * listing the buttons cannot tell them apart — the row's Details button
+   * names the booking for the same reason.
    */
   forBooking?: string;
   /**

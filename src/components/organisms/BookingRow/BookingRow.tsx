@@ -12,7 +12,6 @@ import {
   timeRange,
   waitingPill,
 } from '@/lib/utils/bookings';
-import { RowMenu, type RowMenuItem } from '@/components/molecules/RowMenu/RowMenu';
 import { cx } from '@/lib/utils/cx';
 import type { Booking } from '@/types/booking';
 import styles from './BookingRow.module.css';
@@ -29,8 +28,11 @@ type BookingRowProps = {
    * for nowrap controls: a block in there collapses the content column.
    */
   notice?: ReactNode;
-  /** The ⋯ menu's items. Nothing renders when there are none. */
-  menu?: RowMenuItem[];
+  /**
+   * Opens this booking's details panel. The row's primary action, so it is a
+   * labelled button in the corner rather than an item in a menu.
+   */
+  onOpenDetails?: () => void;
   /** Its details are the ones on show: the design's --blue-50 ground. */
   selected?: boolean;
   /**
@@ -38,7 +40,10 @@ type BookingRowProps = {
    * the design does not show the preview at all.
    */
   onOpenAnswers?: () => void;
-  /** The panel the preview's button reveals. */
+  /**
+   * The details panel's id, where it is mounted — both of the row's
+   * disclosures point at it, so neither names an element that does not exist.
+   */
   answersControls?: string;
   /** Injected in tests and stories; the clock otherwise. */
   now?: Date;
@@ -63,7 +68,7 @@ export function BookingRow({
   timeZone,
   actions,
   notice,
-  menu,
+  onOpenDetails,
   selected,
   onOpenAnswers,
   answersControls,
@@ -133,17 +138,22 @@ export function BookingRow({
         )}
       </div>
       {/* Before the actions in the DOM because below 1100px the actions take
-          their own line underneath, and the ⋯ keeps the corner above them —
+          their own line underneath, and Details keeps the corner above them —
           tabbing down and then back up to it is the bug this order avoids. On
           wider screens `order` swaps them back, horizontally, within one line. */}
-      {!!menu?.length && (
-        <div className={styles.menuCorner}>
-          <RowMenu
-            label={`More options for ${bookingHeading(b)}`}
-            items={menu}
-            trigger={{ icon: 'more_horiz', size: 20, className: styles.more }}
-          />
-        </div>
+      {onOpenDetails && (
+        <button
+          type="button"
+          onClick={onOpenDetails}
+          // Named per booking: a list of rows all reading "Details" tells a
+          // screen-reader user which control they are on and nothing else.
+          aria-label={`Details for ${bookingHeading(b)}`}
+          aria-controls={answersControls}
+          className={styles.details}
+        >
+          Details
+          <Icon name="chevron_right" size={18} />
+        </button>
       )}
       {!!actions && <div className={styles.actions}>{actions}</div>}
     </div>
