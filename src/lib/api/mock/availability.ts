@@ -135,8 +135,22 @@ export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
   },
 ];
 
+/**
+ * `mock-mentor` is the mock **viewer** when the page is read as a mentor
+ * (`NEXT_PUBLIC_MOCK_VIEWER=mentor`, or `?mockViewer=mentor`), and it is not in
+ * the discovery list — nobody books themselves. It still has to resolve here,
+ * because a mentor offering another time in the cancel dialog reads their *own*
+ * open slots. Without it that panel never leaves its skeleton, so the picker
+ * could not be reviewed in the mock or by CI's page review.
+ */
+const MOCK_MENTOR_VIEWER = 'mock-mentor';
+
 export function mockMentorExists(mentorId: string): boolean {
-  return mentorId === FEATURED.id || MENTORS.some((m) => m.id === mentorId);
+  return (
+    mentorId === MOCK_MENTOR_VIEWER ||
+    mentorId === FEATURED.id ||
+    MENTORS.some((m) => m.id === mentorId)
+  );
 }
 
 /**

@@ -189,7 +189,9 @@ export function ConfirmActionDialog({
   return (
     <ModalShell
       title={TITLES[action]}
-      size="md"
+      // `size: panel ? 'lg' : 'md'` in the design: the slot picker needs the
+      // wider frame, and 480px squeezed its day chips.
+      size={offering ? 'lg' : 'md'}
       tone="danger"
       onClose={onClose}
       // A bottom sheet on phones, as `CancelModal.dc.html` draws it — content

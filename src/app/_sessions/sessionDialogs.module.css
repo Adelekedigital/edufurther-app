@@ -98,10 +98,18 @@
   color: var(--text-danger);
 }
 
+/* `CancelModal.dc.html`: `grid-template-columns: 1fr 1fr` with both buttons
+   full width — two equal columns filling the dialog, not a pair of auto-width
+   buttons pushed to the right. On a sheet the design collapses the same grid to
+   a single `1fr` column, which is what the phone block below does. */
 .confirmFooter {
-  display: flex;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
+}
+
+.confirmFooter > * {
+  width: 100%;
 }
 
 /* CancelModal.dc.html draws the suggest-a-time control inside its own bordered
@@ -133,17 +141,19 @@
 
 @media (max-width: 767px) {
   .confirmFooter {
-    /* The dialog fills the screen on a phone (ModalShell's own treatment, shared
-       by every modal here), so the footer is pushed to the bottom rather than
-       left floating under short content. */
+    /* `btnCols: sheet ? '1fr' : '1fr 1fr'` — the design collapses the same grid
+       to one column on a sheet, so the two stack full width.
+
+       This has to be `grid-template-columns`, not `flex-direction`. The footer
+       became a grid to match the desktop spec, which silently made the old
+       `flex-direction: column` here do nothing — and the buttons went back to
+       sitting side by side on a phone, each half the width. Measuring the
+       built page caught it; the tests could not. */
+    grid-template-columns: 1fr;
+    /* Pushed to the bottom rather than floating under short content. Inert in
+       the contained sheet, which is content-height, and still right for any
+       caller ModalShell renders full-screen. */
     margin-top: auto;
-    /* `column`, not `column-reverse`: reversing painted the destructive button
-       above the dismiss while the tab order ran the other way, so focus jumped
-       up the screen. */
-    flex-direction: column;
-  }
-  .confirmFooter > * {
-    width: 100%;
   }
 }
 
