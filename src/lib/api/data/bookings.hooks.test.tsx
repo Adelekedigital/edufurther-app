@@ -3,7 +3,15 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { components } from '@/lib/api/generated/schema';
-import { toBooking, useJoinSession, useSessionDoor, useUpcomingBookings } from './bookings';
+import type { BookingStatus } from '@/types/booking';
+import {
+  toBooking,
+  useBookingHistory,
+  useJoinSession,
+  usePendingBookings,
+  useSessionDoor,
+  useUpcomingBookings,
+} from './bookings';
 import { useSessionRoom } from './sessionRoom';
 
 type SessionRead = components['schemas']['SessionRead'];
@@ -184,5 +192,131 @@ describe('useUpcomingBookings', () => {
       'completed',
       'no_show',
     ]);
+  });
+});
+
+describe('an expired request belongs in History (owner, 2026-10-13)', () => {
+  // Judged against NOW: `respond_by` in the past is lapsed, whatever the API
+  // still calls the row.
+  const req = (id: string, respondBy: string, startsAt: string) =>
+    row({ id, status: 'pending_mentor_approval', respond_by: respondBy, starts_at: startsAt });
+  const lapsed = req('lapsed', '2026-10-04T12:00:00Z', '2026-10-06T10:00:00Z');
+  const waiting = req('waiting', '2026-10-05T12:00:00Z', '2026-10-07T10:00:00Z');
+  const done = row({ id: 'done', status: 'completed', starts_at: '2026-10-01T10:00:00Z' });
+  const calledOff = row({ id: 'called-off', status: 'cancelled', starts_at: '2026-09-28T10:00:00Z' });
+  const settled = (i: number) =>
+    row({
+      id: `h${i}`,
+      status: 'completed',
+      starts_at: new Date(Date.parse('2026-10-01T10:00:00Z') - i * 3_600_000).toISOString(),
+    });
+  const fullPage = (from: number) => Array.from({ length: 20 }, (_, i) => settled(from + i));
+
+  /**
+   * One fake endpoint for both reads, keyed on the statuses asked for rather
+   * than on call order: the two queries fire together and which lands first is
+   * React Query's business. A history cursor is the index of the next page.
+   */
+  const serve = ({ pending = [], pages = [[]] }: { pending?: SessionRead[]; pages?: SessionRead[][] }) =>
+    get.mockImplementation((_path: string, init: { params: { query: Query } }) => {
+      const q = init.params.query;
+      if (q.status.includes('pending_mentor_approval'))
+        return Promise.resolve(ok({ data: pending, next_cursor: null }));
+      const i = q.cursor ? Number(q.cursor) : 0;
+      const last = i >= pages.length - 1;
+      return Promise.resolve(ok({ data: pages[i] ?? [], next_cursor: last ? null : String(i + 1) }));
+    });
+  type Query = { status: string[]; cursor?: string; limit: number };
+  const queries = () =>
+    get.mock.calls.map(([, init]) => (init as { params: { query: Query } }).params.query);
+  const openRequests = () => queries().filter((q) => q.status.includes('pending_mentor_approval'));
+  const settledOnly = () => queries().filter((q) => !q.status.includes('pending_mentor_approval'));
+
+  // Both tabs at once, which the screen never does — it is what proves they
+  // partition one snapshot rather than each deciding for themselves.
+  const useTabs = (filters: BookingStatus[] = []) => ({
+    pending: usePendingBookings('me'),
+    history: useBookingHistory('me', filters),
+  });
+  const ids = (rows: { id: string }[]) => rows.map((b) => b.id);
+
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(NOW);
+  });
+
+  it('files a request past its deadline under History, in the server’s order', async () => {
+    serve({ pending: [lapsed, waiting], pages: [[done]] });
+    const { result } = renderHook(() => useTabs(), { wrapper });
+    await waitFor(() => expect(result.current.history.isLoading).toBe(false));
+    // Newest first, so the rescued row sorts above the completed session
+    // rather than landing at whichever end the merge left it.
+    expect(ids(result.current.history.bookings)).toEqual(['lapsed', 'done']);
+    expect(ids(result.current.pending.data!)).not.toContain('lapsed');
+  });
+
+  it('leaves a request still inside its deadline in Pending alone', async () => {
+    serve({ pending: [lapsed, waiting], pages: [[done]] });
+    const { result } = renderHook(() => useTabs(), { wrapper });
+    await waitFor(() => expect(result.current.history.isLoading).toBe(false));
+    expect(ids(result.current.pending.data!)).toEqual(['waiting']);
+    expect(ids(result.current.history.bookings)).not.toContain('waiting');
+  });
+
+  it('asks once for the open requests, however many tabs want them', async () => {
+    serve({ pending: [lapsed, waiting], pages: [[done]] });
+    const { result } = renderHook(() => useTabs(), { wrapper });
+    await waitFor(() => expect(result.current.history.isLoading).toBe(false));
+    expect(openRequests()).toHaveLength(1);
+  });
+
+  it('keeps them under the “Didn’t happen” filter', async () => {
+    serve({ pending: [lapsed], pages: [[calledOff]] });
+    const { result } = renderHook(
+      () => useBookingHistory('me', ['cancelled', 'declined', 'expired', 'withdrawn']),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(ids(result.current.bookings)).toEqual(['lapsed', 'called-off']);
+  });
+
+  it('never asks for them under a filter that excludes expired', async () => {
+    serve({ pending: [lapsed], pages: [[done]] });
+    const { result } = renderHook(() => useBookingHistory('me', ['completed']), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(ids(result.current.bookings)).toEqual(['done']);
+    expect(openRequests()).toHaveLength(0);
+  });
+
+  it('spends none of the page on them, and pages on the server’s own cursor', async () => {
+    serve({ pending: [lapsed, waiting], pages: [fullPage(0), fullPage(20)] });
+    const { result } = renderHook(() => useTabs(), { wrapper });
+    await waitFor(() => expect(result.current.history.isLoading).toBe(false));
+    // The paged query is untouched: twenty settled rows asked for, twenty
+    // shown, plus the one rescued request on top.
+    expect(settledOnly()[0]!.limit).toBe(20);
+    expect(settledOnly()[0]!.status).not.toContain('pending_mentor_approval');
+    expect(result.current.history.bookings).toHaveLength(21);
+    expect(result.current.history.hasMore).toBe(true);
+
+    act(() => result.current.history.loadMore());
+    await waitFor(() => expect(result.current.history.bookings).toHaveLength(41));
+    // Added once, at the top, and still there as the list grows beneath it.
+    expect(result.current.history.bookings.filter((b) => b.id === 'lapsed')).toHaveLength(1);
+    expect(result.current.history.bookings[0]!.id).toBe('lapsed');
+    // The end of the list is still the server's answer, not a short page.
+    expect(result.current.history.hasMore).toBe(false);
+  });
+
+  it('says so when the rescue read fails, rather than quietly dropping rows', async () => {
+    get.mockImplementation((_path: string, init: { params: { query: Query } }) =>
+      Promise.resolve(
+        init.params.query.status.includes('pending_mentor_approval')
+          ? fail(404)
+          : ok({ data: [done], next_cursor: null }),
+      ),
+    );
+    const { result } = renderHook(() => useBookingHistory('me', []), { wrapper });
+    await waitFor(() => expect(result.current.error).not.toBeNull());
   });
 });

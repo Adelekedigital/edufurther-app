@@ -1,7 +1,11 @@
 import type { Booking, BookingParty, BookingStatus } from '@/types/booking';
 import {
   attendanceLine,
+  byNewestFirst,
   canAccept,
+  HISTORY_FILTERS,
+  HISTORY_STATUSES,
+  wantsLapsed,
   overlapping,
   partyLine,
   refundWindowFor,
@@ -553,5 +557,49 @@ describe('the refund deadline comes from the server (backend #413)', () => {
     // No deadline, no derivation — the fallback, never a wrong number.
     expect(refundWindowFor(confirmed({ refundUntil: null }))).toBe(12);
     expect(refundWindowFor(confirmed({ refundUntil: 'not-a-date' }))).toBe(12);
+  });
+});
+
+describe('wantsLapsed', () => {
+  it('the “Didn’t happen” chip keeps a request that lapsed before the sweep ran', () => {
+    // Otherwise filtering would make the row vanish — the whole reason it is
+    // tied to the status rather than to the chip's key.
+    const chip = HISTORY_FILTERS.find((f) => f.key === 'didnt-happen')!;
+    expect(wantsLapsed(chip.statuses)).toBe(true);
+  });
+
+  it('an unfiltered History asks for them', () => {
+    expect(wantsLapsed(HISTORY_STATUSES)).toBe(true);
+  });
+
+  it('the other chips do not', () => {
+    expect(wantsLapsed(['completed'])).toBe(false);
+    expect(wantsLapsed(['noShow'])).toBe(false);
+    expect(wantsLapsed([])).toBe(false);
+  });
+});
+
+describe('byNewestFirst', () => {
+  it('sorts by start, newest first — the order the API itself sends', () => {
+    const rows = [
+      booking({ id: 'old', startsAt: at(-48) }),
+      booking({ id: 'new', startsAt: at(-1) }),
+      booking({ id: 'mid', startsAt: at(-24) }),
+    ];
+    expect([...rows].sort(byNewestFirst).map((b) => b.id)).toEqual(['new', 'mid', 'old']);
+  });
+
+  it('breaks a tie on the id, as the server does', () => {
+    const rows = [booking({ id: 'a', startsAt: at(-1) }), booking({ id: 'b', startsAt: at(-1) })];
+    expect([...rows].sort(byNewestFirst).map((b) => b.id)).toEqual(['b', 'a']);
+  });
+
+  it('reads the instant, not the spelling of it', () => {
+    // Two ways to write the same minute: a string compare would call one newer.
+    const rows = [
+      booking({ id: 'z', startsAt: '2026-10-03T12:00:00.000Z' }),
+      booking({ id: 'a', startsAt: '2026-10-03T13:00:00+01:00' }),
+    ];
+    expect([...rows].sort(byNewestFirst).map((b) => b.id)).toEqual(['z', 'a']);
   });
 });

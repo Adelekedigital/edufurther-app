@@ -59,6 +59,32 @@ export function isLapsed(b: Booking, now = new Date()): boolean {
 }
 
 /**
+ * Does this set of History filters want the requests that have lapsed while
+ * the API still calls them pending?
+ *
+ * They ride with `expired`, because that is what they are: `statusTag` and
+ * `panelStatus` already print "Expired" for them, and the sweep only has to
+ * catch up with the name. Tied to the status rather than to the chip, so the
+ * grouping behind "Didn't happen" can change without losing them.
+ */
+export function wantsLapsed(statuses: readonly BookingStatus[]): boolean {
+  return statuses.includes('expired');
+}
+
+/**
+ * The server's own order for a session list: by start, newest first, with the
+ * id as the tie-break (backend reply §1, `order=desc`).
+ *
+ * History merges rows the client rescued from Pending into server-paged ones,
+ * and sorting the result by the server's comparator is what puts a rescued row
+ * where the page would have put it — rather than at whichever end the merge
+ * happened to leave it.
+ */
+export function byNewestFirst(a: Booking, b: Booking): number {
+  return new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime() || b.id.localeCompare(a.id);
+}
+
+/**
  * "45 min" · "6h" · "3 days" — how long is left to answer (Bookings.dc.html).
  * Never says "0 min": under a minute still rounds up to one, because a request
  * that says zero reads as broken rather than urgent.

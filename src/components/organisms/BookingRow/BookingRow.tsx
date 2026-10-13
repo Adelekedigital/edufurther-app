@@ -62,8 +62,11 @@ export function BookingRow({
   answersControls,
   now = new Date(),
 }: BookingRowProps) {
-  const past = b.status !== 'confirmed' && b.status !== 'pending';
   const lapsed = isLapsed(b, now);
+  // A request nobody answered in time reads as over, whatever the API still
+  // calls it: it sits in History now (owner, 2026-10-13), so it wants the date
+  // its neighbours carry and not the "their time" line History leaves off.
+  const past = b.status !== 'confirmed' && (b.status !== 'pending' || lapsed);
   // One pill for both sides: what is left to do, and how long is left to do it.
   const pill = waitingPill(b, now);
   const other = otherTimeLine(b, timeZone);
