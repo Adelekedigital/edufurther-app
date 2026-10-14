@@ -1,9 +1,17 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
-import { HISTORY_STATUSES, joinState, respondDeadline, safeMeetingUrl } from '@/lib/utils/bookings';
+import {
+  byNewestFirst,
+  HISTORY_STATUSES,
+  isLapsed,
+  joinState,
+  respondDeadline,
+  safeMeetingUrl,
+  wantsLapsed,
+} from '@/lib/utils/bookings';
 import { coverFor } from '@/lib/utils/cover';
 import { dayKey } from '@/lib/utils/slots';
 import type {
@@ -225,15 +233,16 @@ export function useUpcomingBookings(
 }
 
 /**
- * Requests waiting on someone — the mentor's to answer, the mentee's to hear
- * back on. Soonest deadline first, so the one about to lapse is at the top.
- * Lapsed rows stay in the list (the sweep moves them within the hour); the UI
- * marks them rather than hiding a request the person may still be looking for.
+ * Every open request, soonest deadline first — before the lapse is judged.
+ *
+ * Both tabs that show requests read this one entry: Pending keeps the ones
+ * still waiting, History the ones that have lapsed. One key and one fetch, so
+ * the two tabs partition the same snapshot and no row can be in both lists or
+ * in neither.
  */
-export function usePendingBookings(userId: string | null, active = true): Remote<Booking[]> {
+function usePendingRows(userId: string | null, enabled: boolean) {
   const session = useSession();
-  const enabled = active && !!userId && session.status !== 'unknown';
-  const query = useQuery({
+  return useQuery({
     queryKey: keys.bookings.pending(sessionKey(session)),
     enabled,
     queryFn: async ({ signal }) => {
@@ -250,7 +259,34 @@ export function usePendingBookings(userId: string | null, active = true): Remote
     networkMode: 'always',
     retry: retryOnce,
   });
-  return remote(query, () => void query.refetch(), enabled);
+}
+
+/**
+ * Requests still waiting on someone — the mentor's to answer, the mentee's to
+ * hear back on. Soonest deadline first, so the one about to lapse is at the top.
+ *
+ * A request nobody answered in time is **not** one of them: it is expired, and
+ * expired belongs in History (owner, 2026-10-13). Backend #445 flips the stored
+ * status within about 30 seconds of the deadline, so the API usually agrees
+ * within moments — but not always (see `isLapsed`), and a row this dropped
+ * without `useBookingHistory` picking it up would sit in neither tab. So the
+ * two stay a pair: `isLapsed` decides here, and History reads the same rows.
+ *
+ * The lapse is judged when the list is read, not on every tick: a row is never
+ * pulled out from under someone mid-read, and until the next read its own tag
+ * already says "Expired".
+ */
+export function usePendingBookings(userId: string | null, active = true): Remote<Booking[]> {
+  const session = useSession();
+  const enabled = active && !!userId && session.status !== 'unknown';
+  const query = usePendingRows(userId, enabled);
+  const rows = query.data;
+  const waiting = useMemo(() => rows?.filter((r) => !isLapsed(r)), [rows]);
+  return remote(
+    { data: waiting, isPending: query.isPending, isError: query.isError, error: query.error },
+    () => void query.refetch(),
+    enabled,
+  );
 }
 
 /**
@@ -298,6 +334,33 @@ export type BookingHistoryResult = {
 /**
  * Everything that is over, newest first — the API's own order, so this one
  * pages honestly. `statuses` is the filter chips; empty means all six.
+ *
+ * **Lapsed requests ride alongside the paged list, not inside it.** A request
+ * past its deadline is expired and belongs here (owner, 2026-10-13), but for up
+ * to an hour the API still files it under `pending_mentor_approval`, where no
+ * status query reaches it. The obvious fix — add that status to the paged query
+ * and drop the rows that have not lapsed — is the wrong one, because the
+ * discards come out of the page: a `limit` of twenty can yield three rows, or
+ * none at all, since `order=desc` sorts on `starts_at` and every still-waiting
+ * request is future-dated, so they sit together at the front of page one. The
+ * cursor itself stays sound (it is cut server-side, before we discard
+ * anything), so nothing would be lost or repeated; what breaks is the page
+ * *size* the screen counts on. A first page that discards everything renders
+ * the empty state with `hasMore` true, and "Show more" fetches a page and adds
+ * no rows — and since only `next_cursor === null` ends the list, a short page
+ * cannot be told from the last one without asking again.
+ *
+ * So they are read as their own bounded list: one page of fifty, which is the
+ * same request Pending already makes against the same cache entry, so on a warm
+ * tab it costs no round trip. Arriving whole, before the first row paints, is
+ * also what makes the merge sound — `byNewestFirst` is the server's own
+ * comparator, so a rescued row lands where the page would have put it and stays
+ * there as later pages append below it. The bound is the one Pending already
+ * lives with (fifty open requests), and `hasMore` keeps meaning exactly what
+ * the server said.
+ *
+ * A backend filter for "pending and past its deadline" would collapse this back
+ * into one honest query; see the PR.
  */
 export function useBookingHistory(
   userId: string | null,
@@ -325,6 +388,24 @@ export function useBookingHistory(
     retry: retryOnce,
   });
 
+  // Only when the filters ask for `expired`, which an unfiltered History does:
+  // otherwise these rows would show up under "Completed" too.
+  const withLapsed = enabled && wantsLapsed(wanted);
+  const pending = usePendingRows(userId, withLapsed);
+  const pendingRows = pending.data;
+  // Guarded on `withLapsed` as well as passed to the query: the entry may be
+  // warm from the Pending tab, and a filter that excludes them must exclude
+  // them whether or not they happen to be in the cache.
+  const lapsed = useMemo(
+    () => (withLapsed ? (pendingRows ?? []).filter((r) => isLapsed(r)) : []),
+    [withLapsed, pendingRows],
+  );
+  const pages = query.data?.pages;
+  const bookings = useMemo(
+    () => [...lapsed, ...(pages ?? []).flatMap((p) => p.rows)].sort(byNewestFirst),
+    [lapsed, pages],
+  );
+
   const nextFailed = query.isFetchNextPageError;
   const loadMore = useCallback(async () => {
     const res = await query.fetchNextPage();
@@ -335,10 +416,23 @@ export function useBookingHistory(
   }, [query, qc, key]);
 
   return {
-    bookings: (query.data?.pages ?? []).flatMap((p) => p.rows),
-    isLoading: !enabled || query.isPending,
-    error: query.isError && !nextFailed ? normaliseError(query.error) : null,
-    retry: () => void query.refetch(),
+    bookings,
+    // Both reads, so the expired rows are in place before the list paints
+    // rather than dropping in above rows the person has started reading.
+    isLoading: !enabled || query.isPending || (withLapsed && pending.isPending),
+    // A failed rescue read is the tab's error, not a silent omission: a History
+    // that quietly hides sessions is the bug being fixed here. Both reads hit
+    // the same endpoint, so one failing alone is the unlikely case.
+    error:
+      query.isError && !nextFailed
+        ? normaliseError(query.error)
+        : withLapsed && pending.isError
+          ? normaliseError(pending.error)
+          : null,
+    retry: () => {
+      void query.refetch();
+      if (withLapsed) void pending.refetch();
+    },
     hasMore: query.hasNextPage,
     isLoadingMore: query.isFetchingNextPage,
     loadMoreError: nextFailed ? normaliseError(query.error) : null,

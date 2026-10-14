@@ -172,6 +172,7 @@ export function BookingsPanel({
             <BookingRow
               key={b.id}
               booking={b}
+              inHistory={tab === 'history'}
               timeZone={timeZone}
               actions={actionsFor?.(b)}
               notice={noticeFor?.(b)}

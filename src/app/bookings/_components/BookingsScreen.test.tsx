@@ -214,6 +214,26 @@ describe('the shell', () => {
     expect(screen.getByRole('tab', { name: 'History' })).toBeVisible();
   });
 
+  it('the Pending count is the rows on screen, not the server’s hourly figure', async () => {
+    // The server's aggregate still counts a request whose deadline has passed,
+    // for up to an hour, because its sweep is hourly — while the list drops it
+    // into History. Trusting the aggregate read "3 awaiting a response" over a
+    // list of 2 (GitHub review, PR 235).
+    tab = 'pending';
+    pending = remote([booking({ status: 'pending', respondBy: at(5) })]);
+    render(<BookingsScreen />);
+    // `bookingCounts.pending` is 2 in the fixture; one row is on screen.
+    expect(screen.getByRole('tab', { name: 'Pending, 1 awaiting a response' })).toBeVisible();
+  });
+
+  it('and falls back to the server’s figure where no list contradicts it', () => {
+    // On History the Pending query is idle. A tab reading nothing would hide a
+    // count the viewer had just seen.
+    tab = 'history';
+    render(<BookingsScreen />);
+    expect(screen.getByRole('tab', { name: 'Pending, 2 awaiting a response' })).toBeVisible();
+  });
+
   it('switching tab puts it in the URL, and Upcoming leaves it out', async () => {
     render(<BookingsScreen />);
     await userEvent.click(screen.getByRole('tab', { name: /Pending/ }));
