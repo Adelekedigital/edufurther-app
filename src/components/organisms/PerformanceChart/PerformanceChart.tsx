@@ -134,7 +134,9 @@ export function PerformanceChart({
       return;
     }
     if (e.key === 'Tab') {
-      setMenuOpen(false);
+      // Return focus to the trigger so the browser's Tab continues from there;
+      // closing alone would unmount the focused item and drop focus to <body>.
+      closeMenu();
       return;
     }
     const items = Array.from(
@@ -260,7 +262,7 @@ export function PerformanceChart({
                 type="button"
                 aria-haspopup="true"
                 aria-expanded={menuOpen}
-                aria-controls={menuId}
+                aria-controls={menuOpen ? menuId : undefined}
                 className={styles.menuTrigger}
                 onClick={() => setMenuOpen((o) => !o)}
                 onKeyDown={onTriggerKey}
@@ -269,7 +271,13 @@ export function PerformanceChart({
                 <Icon name="expand_more" size={18} />
               </button>
               {menuOpen && (
-                <div ref={menuRef} id={menuId} role="menu" className={styles.menu}>
+                <div
+                  ref={menuRef}
+                  id={menuId}
+                  role="menu"
+                  aria-label="Chart series"
+                  className={styles.menu}
+                >
                   {m.legend.map((l) => (
                     <button
                       key={l.key}
