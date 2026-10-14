@@ -131,4 +131,10 @@ export const keys = {
   },
   /** One intake file's bytes, held only while its viewer is open (gcTime 0). */
   intakeFile: (id: string, who: string) => ['intakeFile', id, who] as const,
+  /** The owner's mentor performance stats (GET /me/mentor-stats[/monthly]). */
+  mentorStats: {
+    monthly: (userId: string, months: number) => ['mentorStats', 'monthly', userId, months] as const,
+    window: (userId: string, windowDays: number) =>
+      ['mentorStats', 'window', userId, windowDays] as const,
+  },
 };
