@@ -202,6 +202,19 @@ export function BookingsScreen() {
   const reviewUnknown = reviewable.isLoading || !!reviewable.error;
 
   const clashId = (id: string) => `clash-${id}`;
+  /**
+   * The row's copy of the warning, except for the row whose panel is open —
+   * that one is rendered in the panel instead, beside the Accept being pressed.
+   *
+   * Exactly one, always. Above 1100px the panel is an aside and the row stays
+   * on screen beside it, so rendering both put two live regions carrying the
+   * same sentence on the page: it announced twice, and the shared `clash-<id>`
+   * meant `aria-describedby` on either Accept resolved to whichever the browser
+   * found first (GitHub review, PR 233). Both buttons point at the one that
+   * exists, which is what that attribute is for.
+   */
+  const panelNotice = (b: Booking) => (open?.id === b.id ? null : rowNotice(b));
+
 
   /**
    * Full width under the row's detail, never in the button rail: a block in
@@ -362,7 +375,7 @@ export function BookingsScreen() {
                   now={now}
                   onOpenDetails={toggle}
                   actionsFor={rowActions}
-                  noticeFor={rowNotice}
+                  noticeFor={panelNotice}
                   onOpenAnswers={openAnswers}
                   answersControls={showPanel ? PANEL_ID : undefined}
                   selectedId={selected}

@@ -141,6 +141,22 @@ describe('the actions appear only where they can succeed', () => {
     expect(within(panel).getByText(/Accepting books both/)).toBeVisible();
   });
 
+  it('and only once — the row does not keep a second copy of it', () => {
+    // Above 1100px the panel is an aside and the row stays beside it, so both
+    // copies were on the page at once: two live regions saying one thing, and
+    // one `clash-<id>` between them (GitHub review, PR 233).
+    h.viewer = { ...MEMBER, isMentor: true };
+    h.upcoming = remote([booking({ id: 'clash', startsAt: at(30), endsAt: at(31) })]);
+    h.pending = remote([
+      booking({ id: 'p1', status: 'pending', respondBy: at(5), startsAt: at(30), endsAt: at(31) }),
+    ]);
+    h.tab = 'pending';
+    h.selectedBooking = 'p1';
+    render(<BookingsScreen />);
+    expect(screen.getAllByText(/Accepting books both/)).toHaveLength(1);
+    expect(document.querySelectorAll('#clash-p1')).toHaveLength(1);
+  });
+
   it('declining from the panel still asks first', async () => {
     h.viewer = { ...MEMBER, isMentor: true };
     h.pending = remote([pendingRow({ side: 'mentor' })]);
