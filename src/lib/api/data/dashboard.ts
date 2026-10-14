@@ -32,6 +32,8 @@ export type DashboardActivation = {
   /** Absolute profile URL for the share menu; '' until the profile has loaded. */
   shareUrl: string;
   shareName: string;
+  /** The mentor's own profile path ('/mentors/{handle}') for in-app links. */
+  profileHref: string;
   setup: {
     doneCount: number;
     total: number;
@@ -121,6 +123,7 @@ export function deriveActivation(i: ActivationInputs): DashboardActivation {
     firstName: i.firstName,
     shareUrl: i.origin ? `${i.origin}${i.profileHref}` : '',
     shareName: i.fullName || i.firstName,
+    profileHref: i.profileHref,
     setup: {
       doneCount,
       total,

@@ -1,6 +1,7 @@
 'use client';
 
 import { useId } from 'react';
+import Link from 'next/link';
 import { Badge } from '@/components/atoms/Badge/Badge';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
@@ -101,8 +102,12 @@ function Empty() {
  * state banner. Its own fetch (useMentorStats, 90-day window) in all four
  * states — loading, error, empty (no settled session yet), content — with
  * error checked before empty so a failed load never reads as "no sessions".
+ *
+ * `profileHref` is the mentor's own profile path ('/mentors/{handle}'); the
+ * review count links to its Reviews tab (`?tab=reviews`) so a mentor can read
+ * what mentees wrote. Additive — not in the design (see design-divergence.md).
  */
-export function SessionQuality({ userId }: { userId: string }) {
+export function SessionQuality({ userId, profileHref }: { userId: string; profileHref: string }) {
   const headingId = useId();
   const { data, isLoading, error, retry } = useMentorStats(userId, WINDOW_DAYS);
 
@@ -168,14 +173,26 @@ export function SessionQuality({ userId }: { userId: string }) {
       <div className={styles.reviews}>
         <span className={styles.reviewsLabel}>Mentee reviews</span>
         {rating != null ? (
-          <div className={styles.stars} role="img" aria-label={`Rated ${rating} out of 5`}>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <span key={i} className={i <= Math.round(rating) ? styles.starOn : styles.starOff}>
-                <Star size={16} />
-              </span>
-            ))}
+          <div className={styles.ratingGroup}>
+            {/* The rating is conveyed by the img label; the count link sits
+                outside it so a screen reader reaches it as a real link, not as
+                presentational text inside the image. */}
+            <span className={styles.stars} role="img" aria-label={`Rated ${rating} out of 5`}>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <span key={i} className={i <= Math.round(rating) ? styles.starOn : styles.starOff}>
+                  <Star size={16} />
+                </span>
+              ))}
+            </span>
             <span className={styles.ratingValue}>{rating.toFixed(1)}</span>
-            <span className={styles.reviewCount}>({current.reviewCount})</span>
+            <Link
+              href={`${profileHref}?tab=reviews`}
+              prefetch={false}
+              className={styles.reviewCountLink}
+              aria-label={`See all ${current.reviewCount} reviews`}
+            >
+              ({current.reviewCount})
+            </Link>
           </div>
         ) : (
           <span className={styles.noReviews}>No reviews yet</span>

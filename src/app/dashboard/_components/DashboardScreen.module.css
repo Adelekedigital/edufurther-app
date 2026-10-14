@@ -27,3 +27,21 @@
   font-size: var(--text-p-sm);
   color: var(--text-secondary);
 }
+
+/* Active-mentor performance row (Mentor Dashboard v2.dc.html, notNew branch):
+   the chart beside the session-quality panel, wrapping to a stack below ~840px.
+   min-width:0 on the chart column lets the chart shrink instead of forcing the
+   page to scroll sideways. */
+.perfRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  align-items: flex-start;
+}
+.perfChartCol {
+  flex: 2 1 520px;
+  min-width: 0;
+}
+.perfQualityCol {
+  flex: 1 1 300px;
+}
