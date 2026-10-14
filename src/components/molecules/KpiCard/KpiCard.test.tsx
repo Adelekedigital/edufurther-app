@@ -30,9 +30,13 @@ describe('KpiCard', () => {
     expect(onClick).toHaveBeenCalledOnce();
   });
 
-  it('shows an info tooltip on the label when given (Mentor Dashboard)', () => {
+  it('shows an info tooltip on the label when given (Mentor Dashboard)', async () => {
     const hint = 'Sessions marked complete since you joined';
     render(<KpiCard label="Sessions completed" value="2" info={hint} />);
-    expect(screen.getByRole('img', { name: hint })).toHaveAttribute('title', hint);
+    const trigger = screen.getByRole('button', { name: hint });
+    // Closed until asked — not a hover-only native title this time.
+    expect(screen.queryByText(hint)).not.toBeInTheDocument();
+    await userEvent.hover(trigger);
+    expect(screen.getByText(hint)).toBeVisible();
   });
 });

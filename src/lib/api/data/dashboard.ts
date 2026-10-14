@@ -2,7 +2,7 @@
 
 import type { Booking } from '@/types/booking';
 import type { AppError, Remote } from '@/types/mentor';
-import { formatRating } from '@/lib/utils/format';
+import { formatCount, formatRating } from '@/lib/utils/format';
 import { useUpcomingBookings } from './bookings';
 import { useCalendarConnection } from './calendarConnection';
 import { useMentorProfile } from './profile';
@@ -145,7 +145,10 @@ export type KpiInputs = {
 
 export function deriveKpis(i: KpiInputs): Kpi[] {
   const hasReviews = i.reviewCount > 0;
-  const hours = Math.round(i.mentoringMinutes / 60);
+  // The figure stays in minutes (exact); the ⓘ carries the rough hour
+  // equivalent, so the card reads clean but the familiar unit is a tap away.
+  const hrs = i.mentoringMinutes / 60;
+  const hoursText = hrs.toLocaleString('en-US', { maximumFractionDigits: 1 });
   return [
     {
       key: 'sessions',
@@ -154,12 +157,13 @@ export function deriveKpis(i: KpiInputs): Kpi[] {
       info: 'Sessions marked complete since you joined',
     },
     {
-      key: 'hours',
+      // Minutes, not rounded hours: exact, and honest for a mentor with a single
+      // 90-minute session that "2 hrs" would have inflated.
+      key: 'time',
       label: 'Mentoring time',
-      value: String(hours),
-      // Pluralised off the figure, so 60 min reads "1 hr", not "1 hrs".
-      unit: hours === 1 ? 'hr' : 'hrs',
-      info: 'Estimated from completed session lengths',
+      value: formatCount(i.mentoringMinutes),
+      unit: 'min',
+      info: `≈ ${hoursText} ${hrs === 1 ? 'hour' : 'hours'} in total — shown in minutes for precision`,
     },
     {
       key: 'mentees',

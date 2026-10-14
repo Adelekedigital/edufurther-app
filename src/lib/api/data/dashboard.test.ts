@@ -84,21 +84,26 @@ const kpiInputs = (over: Partial<KpiInputs> = {}): KpiInputs => ({ ...kpiBase, .
 
 describe('deriveKpis', () => {
   it('maps the four figures from the profile', () => {
-    const [sessions, hours, mentees, rating] = deriveKpis(kpiInputs());
+    const [sessions, time, mentees, rating] = deriveKpis(kpiInputs());
     expect(sessions).toMatchObject({ label: 'Sessions completed', value: '2' });
-    expect(hours).toMatchObject({ label: 'Mentoring time', value: '2', unit: 'hrs' });
+    expect(time).toMatchObject({ label: 'Mentoring time', value: '120', unit: 'min' });
     expect(mentees).toMatchObject({ label: 'Mentees mentored', value: '1' });
     expect(rating).toMatchObject({ label: 'Average rating', value: '4.8', unit: '/ 5' });
   });
 
-  it('rounds mentoring minutes to whole hours', () => {
-    expect(deriveKpis(kpiInputs({ mentoringMinutes: 90 }))[1]!.value).toBe('2');
-    expect(deriveKpis(kpiInputs({ mentoringMinutes: 150 }))[1]!.value).toBe('3');
+  it('shows mentoring time in minutes, not rounded hours', () => {
+    expect(deriveKpis(kpiInputs({ mentoringMinutes: 90 }))[1]!.value).toBe('90');
+    expect(deriveKpis(kpiInputs({ mentoringMinutes: 45 }))[1]).toMatchObject({ value: '45', unit: 'min' });
   });
 
-  it('pluralises the hours unit off the figure (no "1 hrs")', () => {
-    expect(deriveKpis(kpiInputs({ mentoringMinutes: 60 }))[1]).toMatchObject({ value: '1', unit: 'hr' });
-    expect(deriveKpis(kpiInputs({ mentoringMinutes: 120 }))[1]!.unit).toBe('hrs');
+  it('separates thousands in the minutes figure', () => {
+    expect(deriveKpis(kpiInputs({ mentoringMinutes: 7320 }))[1]!.value).toBe('7,320');
+  });
+
+  it('names the hour equivalent in the mentoring-time hint', () => {
+    expect(deriveKpis(kpiInputs({ mentoringMinutes: 7320 }))[1]!.info).toContain('122 hours');
+    // Singular when it works out to exactly one hour.
+    expect(deriveKpis(kpiInputs({ mentoringMinutes: 60 }))[1]!.info).toContain('1 hour in total');
   });
 
   it('shows no rating without reviews — null, never 0', () => {

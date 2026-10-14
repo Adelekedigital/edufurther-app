@@ -21,13 +21,6 @@
   font-weight: var(--weight-medium);
   color: var(--text-secondary);
 }
-/* The Mentor Dashboard's metric hint (ⓘ): the design's faint help icon. */
-.info {
-  display: inline-flex;
-  flex: none;
-  color: var(--ink-400);
-  cursor: help;
-}
 .valueRow {
   display: flex;
   align-items: baseline;
