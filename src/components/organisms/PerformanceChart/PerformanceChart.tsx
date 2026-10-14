@@ -17,8 +17,6 @@ type PerformanceChartProps = {
   yUnit?: string;
   ranges?: ChartRange[];
   defaultRange?: string;
-  /** Empty-state action, shown only when the mentor has never had a session. */
-  emptyAction?: { label: string; onClick: () => void };
 };
 
 const DEFAULT_RANGES: ChartRange[] = [
@@ -41,7 +39,6 @@ export function PerformanceChart({
   yUnit = 'Sessions',
   ranges = DEFAULT_RANGES,
   defaultRange = '6m',
-  emptyAction,
 }: PerformanceChartProps) {
   const [range, setRange] = useState(defaultRange);
   const [hidden, setHidden] = useState<string[]>([]);
@@ -238,11 +235,6 @@ export function PerformanceChart({
           {m.empty.canWiden && (
             <Button variant="secondary-outlined" size="small" onClick={() => setRange('12m')}>
               View last 12 months
-            </Button>
-          )}
-          {m.empty.neverAny && emptyAction && (
-            <Button variant="primary" size="small" onClick={emptyAction.onClick}>
-              {emptyAction.label}
             </Button>
           )}
         </div>

@@ -53,7 +53,11 @@ export function buildChartModel(i: ChartModelInput) {
         const k = `${yr}-${String(m + 1).padStart(2, '0')}`;
         return { keys: [k], idx: [months.indexOf(k)] };
       })
-    : months.slice(-n).map((k, j) => ({ keys: [k], idx: [months.length - n + j] }));
+    : // Index from the sliced length, not n: with fewer months than the range,
+      // months.length - n would go negative and silently read as empty.
+      months
+        .slice(-n)
+        .map((k, j) => ({ keys: [k], idx: [months.length - Math.min(n, months.length) + j] }));
 
   const val = (s: ChartSeries, b: { idx: number[] }) =>
     sum(b.idx.map((ix) => (ix >= 0 ? s.values[ix] ?? 0 : 0)));
@@ -147,8 +151,9 @@ export function buildChartModel(i: ChartModelInput) {
     };
   });
 
-  const firstL = labelOf(buckets[0]!);
-  const lastL = labelOf(buckets[buckets.length - 1]!);
+  // Guard an empty months array (no data at all): the rest produces safe empties.
+  const firstL = buckets.length ? labelOf(buckets[0]!) : { top: '', year: '', full: '' };
+  const lastL = buckets.length ? labelOf(buckets[buckets.length - 1]!) : firstL;
   const period = isYear
     ? `Jan – Dec ${yr}`
     : firstL.year === lastL.year
@@ -200,6 +205,8 @@ export function buildChartModel(i: ChartModelInput) {
             show: true,
             left: `${((X0 + hover * cw + cw / 2) / 600) * 100}%`,
             title: labelOf(buckets[hover]!).full,
+            // All series — the tooltip is the month's full breakdown, even for a
+            // status toggled off in the legend (as the design draws it).
             rows: series.map((s) => ({ label: s.label, dot: s.color, value: val(s, buckets[hover]!) })),
           }
         : { show: false, left: '0', title: '', rows: [] },

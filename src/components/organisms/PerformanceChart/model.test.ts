@@ -12,7 +12,7 @@ const RANGES: ChartRange[] = [
 const series: ChartSeries[] = [
   { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: [0, 1, 2, 1, 3, 2, 4, 3, 5, 2, 6, 4] },
   { key: 'canceled', label: 'Canceled', color: 'var(--blue-200)', values: [0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0] },
-  { key: 'missed', label: 'Missed', color: 'var(--orange-500)', values: [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1] },
+  { key: 'missed', label: 'Missed', color: 'var(--red-500)', values: [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1] },
 ];
 const input = (over: Partial<ChartModelInput> = {}): ChartModelInput => ({
   series,

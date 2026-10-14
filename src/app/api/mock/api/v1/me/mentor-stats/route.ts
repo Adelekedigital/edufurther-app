@@ -10,7 +10,8 @@ import { ok } from '@/lib/api/mock/respond';
  */
 export async function GET(req: Request) {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
-  const w = Math.min(Math.max(Number(new URL(req.url).searchParams.get('window_days') ?? 90), 7), 365);
+  const raw = Number(new URL(req.url).searchParams.get('window_days') ?? 90);
+  const w = Number.isFinite(raw) ? Math.min(Math.max(raw, 7), 365) : 90;
   const now = Date.now();
   const iso = (daysAgo: number) => new Date(now - daysAgo * 86_400_000).toISOString();
   const wide = w >= 90;

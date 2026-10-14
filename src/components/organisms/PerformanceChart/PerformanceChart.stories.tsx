@@ -9,7 +9,7 @@ const months = Array.from({ length: 18 }, (_, i) => {
 const series: ChartSeries[] = [
   { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: [0, 1, 0, 2, 1, 2, 3, 2, 4, 3, 2, 5, 4, 6, 3, 5, 7, 6] },
   { key: 'canceled', label: 'Canceled', color: 'var(--blue-200)', values: [0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0] },
-  { key: 'missed', label: 'Missed', color: 'var(--orange-500)', values: [0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1] },
+  { key: 'missed', label: 'Missed', color: 'var(--red-500)', values: [0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1] },
 ];
 
 const meta: Meta<typeof PerformanceChart> = {

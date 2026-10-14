@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { PerformanceChart } from '@/components/organisms/PerformanceChart/PerformanceChart';
@@ -7,13 +8,15 @@ import type { ChartSeries } from '@/components/organisms/PerformanceChart/model'
 import { useMentorMonthlyStats, type MonthlyStats } from '@/lib/api/data/mentorStats';
 import styles from './PerformanceSection.module.css';
 
-// The design's series colours (PerformanceChart.dc.html). Labels and colours
-// are presentation, so they live here, not in the data layer.
+// Labels and colours are presentation, so they live here, not in the data
+// layer. "Missed" takes --red-500, not the design's --orange-500: the orange
+// ramp is a retired palette, banned in product UI; red is the sanctioned danger
+// hue, and a no-show is the negative outcome (divergence recorded).
 function toSeries(d: MonthlyStats): ChartSeries[] {
   return [
     { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: d.completed },
     { key: 'canceled', label: 'Canceled', color: 'var(--blue-200)', values: d.canceled },
-    { key: 'missed', label: 'Missed', color: 'var(--orange-500)', values: d.missed },
+    { key: 'missed', label: 'Missed', color: 'var(--red-500)', values: d.missed },
   ];
 }
 
@@ -25,6 +28,8 @@ function toSeries(d: MonthlyStats): ChartSeries[] {
  */
 export function PerformanceSection({ userId }: { userId: string }) {
   const { data, isLoading, error, retry } = useMentorMonthlyStats(userId, 12);
+  // Stable identity, so the chart's view-model isn't rebuilt on every render.
+  const series = useMemo(() => toSeries(data), [data]);
 
   if (isLoading) {
     return (
@@ -46,5 +51,5 @@ export function PerformanceSection({ userId }: { userId: string }) {
       </div>
     );
   }
-  return <PerformanceChart series={toSeries(data)} months={data.months} />;
+  return <PerformanceChart series={series} months={data.months} />;
 }
