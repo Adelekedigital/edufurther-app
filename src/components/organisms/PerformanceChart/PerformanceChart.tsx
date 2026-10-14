@@ -1,7 +1,8 @@
 'use client';
 
-import { Fragment, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
+import { Icon } from '@/components/atoms/Icon/Icon';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { cx } from '@/lib/utils/cx';
 import { buildChartModel, type ChartRange, type ChartSeries } from './model';
@@ -17,6 +18,12 @@ type PerformanceChartProps = {
   yUnit?: string;
   ranges?: ChartRange[];
   defaultRange?: string;
+  /**
+   * How the legend collapses once the card is narrow (< 440px): 'compact' hides
+   * the chip labels, 'wrap' keeps them wrapping, 'dropdown' swaps the chips for
+   * a disclosure menu. Default 'compact'.
+   */
+  mobileLegend?: 'compact' | 'dropdown' | 'wrap';
 };
 
 const DEFAULT_RANGES: ChartRange[] = [
@@ -25,11 +32,17 @@ const DEFAULT_RANGES: ChartRange[] = [
   { key: '12m', label: '12M', n: 12 },
 ];
 
+/** The card is "narrow" below this width (design's ResizeObserver threshold). */
+const NARROW_MAX = 440;
+
 /**
  * Session performance over time (Mentor Dashboard v2 / PerformanceChart.dc.html):
  * stacked bars (or lines) of each month's sessions by outcome, with a range
  * switch, a legend that filters, and a hover tooltip. Presentational — the page
  * supplies `series` + `months`; the geometry is the design's 600×262 viewBox.
+ *
+ * The legend is responsive: a ResizeObserver watches the card, and below 440px
+ * it collapses per `mobileLegend` (our dashboard uses the dropdown).
  */
 export function PerformanceChart({
   series,
@@ -39,19 +52,113 @@ export function PerformanceChart({
   yUnit = 'Sessions',
   ranges = DEFAULT_RANGES,
   defaultRange = '6m',
+  mobileLegend = 'compact',
 }: PerformanceChartProps) {
   const [range, setRange] = useState(defaultRange);
   const [hidden, setHidden] = useState<string[]>([]);
   const [hover, setHover] = useState(-1);
+  const [narrow, setNarrow] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const rootRef = useRef<HTMLElement>(null);
   const radiosRef = useRef<HTMLDivElement>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const narrowRef = useRef(false);
+  const menuId = useId();
 
   const m = useMemo(
-    () => buildChartModel({ series, months, ranges, variant, range, hidden, hover, title, yUnit }),
-    [series, months, ranges, variant, range, hidden, hover, title, yUnit],
+    () =>
+      buildChartModel({
+        series,
+        months,
+        ranges,
+        variant,
+        range,
+        hidden,
+        hover,
+        title,
+        yUnit,
+        narrow,
+        mobileLegend,
+      }),
+    [series, months, ranges, variant, range, hidden, hover, title, yUnit, narrow, mobileLegend],
   );
+
+  // Track the card width. ResizeObserver, not a media query: the card narrows
+  // with its column, not the viewport, and reflows the same in Storybook.
+  // Crossing the boundary closes the menu (its anchor may vanish); the ref
+  // guards against acting on every resize tick and stale-closure reads.
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const n = entry.contentRect.width < NARROW_MAX;
+      if (n === narrowRef.current) return;
+      narrowRef.current = n;
+      setNarrow(n);
+      setMenuOpen(false);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // On open, move focus into the menu; a click outside closes it.
+  useEffect(() => {
+    if (!menuOpen) return;
+    menuRef.current?.querySelector<HTMLButtonElement>('[role="menuitemcheckbox"]')?.focus();
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Node;
+      if (menuRef.current?.contains(target) || menuTriggerRef.current?.contains(target)) return;
+      setMenuOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown, true);
+    return () => document.removeEventListener('pointerdown', onPointerDown, true);
+  }, [menuOpen]);
 
   const toggle = (key: string) =>
     setHidden((h) => (h.includes(key) ? h.filter((k) => k !== key) : [...h, key]));
+
+  const closeMenu = () => {
+    setMenuOpen(false);
+    menuTriggerRef.current?.focus();
+  };
+
+  // Roving focus inside the menu: arrows move, Home/End jump, Escape closes and
+  // returns to the trigger, Tab closes and lets focus leave.
+  const onMenuKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeMenu();
+      return;
+    }
+    if (e.key === 'Tab') {
+      setMenuOpen(false);
+      return;
+    }
+    const items = Array.from(
+      menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitemcheckbox"]') ?? [],
+    );
+    if (items.length === 0) return;
+    const cur = items.findIndex((el) => el === document.activeElement);
+    let next = -1;
+    if (e.key === 'ArrowDown') next = (cur + 1) % items.length;
+    else if (e.key === 'ArrowUp') next = (cur - 1 + items.length) % items.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = items.length - 1;
+    if (next < 0) return;
+    e.preventDefault();
+    items[next]?.focus();
+  };
+
+  // ArrowDown/Up opens the menu from the trigger (menu-button pattern).
+  const onTriggerKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      setMenuOpen(true);
+    }
+  };
 
   const anyRangeOn = m.rangeButtons.some((r) => r.on);
   const onRangeKey = (e: React.KeyboardEvent) => {
@@ -71,7 +178,7 @@ export function PerformanceChart({
   };
 
   return (
-    <section className={styles.card}>
+    <section ref={rootRef} className={styles.card}>
       <div className={styles.header}>
         <div className={styles.heading}>
           <h2 className={styles.title}>{m.title}</h2>
@@ -125,24 +232,72 @@ export function PerformanceChart({
 
       {m.hasData ? (
         <>
-          <div className={styles.legend}>
-            {m.legend.map((l) => (
-              <button
-                key={l.key}
-                type="button"
-                aria-pressed={l.on}
-                className={styles.legendBtn}
-                style={{ borderColor: l.border, color: l.text }}
-                onClick={() => toggle(l.key)}
-              >
-                <span className={styles.dot} style={{ background: l.dot }} />
-                {l.label}
-                <strong className={styles.legendTotal}>{l.total}</strong>
-              </button>
-            ))}
-          </div>
+          {m.legendChips && (
+            <div className={styles.legend} style={{ flexWrap: m.legendWrap }}>
+              {m.legend.map((l) => (
+                <button
+                  key={l.key}
+                  type="button"
+                  aria-pressed={l.on}
+                  aria-label={l.label}
+                  title={l.label}
+                  className={styles.legendBtn}
+                  style={{ borderColor: l.border, color: l.text }}
+                  onClick={() => toggle(l.key)}
+                >
+                  <span className={styles.dot} style={{ background: l.dot }} />
+                  {m.showLabels && l.label}
+                  <strong className={styles.legendTotal}>{l.total}</strong>
+                </button>
+              ))}
+            </div>
+          )}
 
-          <div className={styles.plot}>
+          {m.legendMenu && (
+            <div className={styles.menuWrap} onKeyDown={onMenuKey}>
+              <button
+                ref={menuTriggerRef}
+                type="button"
+                aria-haspopup="true"
+                aria-expanded={menuOpen}
+                aria-controls={menuId}
+                className={styles.menuTrigger}
+                onClick={() => setMenuOpen((o) => !o)}
+                onKeyDown={onTriggerKey}
+              >
+                Showing <strong className={styles.menuTriggerValue}>{m.shownLabel}</strong>
+                <Icon name="expand_more" size={18} />
+              </button>
+              {menuOpen && (
+                <div ref={menuRef} id={menuId} role="menu" className={styles.menu}>
+                  {m.legend.map((l) => (
+                    <button
+                      key={l.key}
+                      type="button"
+                      role="menuitemcheckbox"
+                      aria-checked={l.on}
+                      className={styles.menuItem}
+                      onClick={() => toggle(l.key)}
+                    >
+                      <span className={styles.menuCheck} style={{ color: l.checkColor }}>
+                        <Icon name={l.checkIcon} size={20} />
+                      </span>
+                      <span className={styles.dot} style={{ background: l.dot }} />
+                      <span className={styles.menuItemLabel}>{l.label}</span>
+                      <strong className={styles.menuItemTotal}>{l.total}</strong>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div
+            className={cx(styles.plot, narrow && styles.plotNarrow)}
+            // headGap is the gap above the chart; the card's flex gap already
+            // adds --space-4, so subtract it to land on the design's value.
+            style={{ marginTop: `calc(${m.headGap} - var(--space-4))` }}
+          >
             <svg viewBox="0 0 600 262" role="img" aria-label={m.aria} className={styles.svg}>
               {m.grid.map((g, k) => (
                 <line key={`g${k}`} x1={28} x2={600} y1={g.y} y2={g.y} stroke="var(--ink-100)" strokeWidth={1} />

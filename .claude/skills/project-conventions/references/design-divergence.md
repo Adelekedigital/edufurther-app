@@ -648,6 +648,17 @@ place rather than re-syncing two.
 | 51 | "Canceled" is one series | Sum of `cancelled_by_mentor + _mentee + _other` | The backend splits cancellations by who caused them; product chose the **full activity** view (all cancellations) over mentor-only (2026-10-14). "Missed" is `missed_by_mentor` — attendance, not status. |
 | 52 | "Missed" series `--orange-500` | `--red-500` | The orange ramp is **banned in product UI** (retired palette — `project-conventions` Settled decisions + Guardrails "Never"). `--red-500` is the sanctioned danger hue, and a no-show is the negative outcome. |
 
+### Mentor Dashboard — Chart mobile legend + responsive spacing, 2026-10-14
+
+The design's updated mobile treatment (dropdown legend, `mobileLegend='dropdown'`
+on our dashboard; narrow driven by a ResizeObserver at container width < 440px).
+
+| # | Design | Built | Why |
+|---|---|---|---|
+| 53 | Dropdown trigger, menu and menu items `background:#fff`; menu check `check_box`/`check_box_outline_blank` with `color:var(--blue-500)`/`var(--ink-400)` | `background:var(--surface-card)` (= `#ffffff`); the same two glyphs via the `Icon` atom, tinted with the same two tokens | Tokens-only (no raw hex). The dropdown's "Missed" dot stays `--red-500` not the design's `--orange-500` (row 52 applies to the menu too). |
+| 54 | X-axis **month** `top:84.7%` / **year** `top:92%` (a 7.3% gap), fixed at every width | Keep those on the web layout; **at narrow** widen to `top:83%` / `top:97%` (a 14% gap) | The SVG is `viewBox 600×262`, `width:100%;height:auto`, so it scales down with the card and the percentage-positioned labels crowd — at 320/390px the 7.3% gap collapses to ~8–10px and the year touches the month. Widening to 14% keeps the year clearly below the month at phone widths, matching the web layout's readability. **Minimal, token-free (percentage) nudge — flagged for design sync.** |
+| 55 | `headGap` = `margin-top` on the chart container (`--space-2` narrow / `--space-4` otherwise) | Same value, applied as the legend-row ↔ chart gap: the card uses flex `gap:var(--space-4)`, so the chart container takes `margin-top: calc(headGap − var(--space-4))` (0 wide, −8px narrow). Header ↔ legend stays `--space-4` | Our card lays the header/legend/chart out with flex `gap`; the design card uses explicit margins. Subtracting the existing gap lands on the design's value without restructuring. |
+
 ### Mentor Dashboard — Session quality panel, 2026-10-14
 
 `Mentor Dashboard v2.dc.html`, the session-quality `<section>`. Built the

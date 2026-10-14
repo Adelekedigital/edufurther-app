@@ -27,7 +27,9 @@ function toSeries(d: MonthlyStats): ChartSeries[] {
  * before the chart, so a failed load never reads as "no sessions".
  */
 export function PerformanceSection({ userId }: { userId: string }) {
-  const { data, isLoading, error, retry } = useMentorMonthlyStats(userId, 12);
+  // The full platform history (months 1–60, since Sept 2024): the chart slices
+  // 3M/6M/12M and the year select reaches back to the start, all client-side.
+  const { data, isLoading, error, retry } = useMentorMonthlyStats(userId, 60);
   // Stable identity, so the chart's view-model isn't rebuilt on every render.
   const series = useMemo(() => toSeries(data), [data]);
 
@@ -51,5 +53,5 @@ export function PerformanceSection({ userId }: { userId: string }) {
       </div>
     );
   }
-  return <PerformanceChart series={series} months={data.months} />;
+  return <PerformanceChart series={series} months={data.months} mobileLegend="dropdown" />;
 }

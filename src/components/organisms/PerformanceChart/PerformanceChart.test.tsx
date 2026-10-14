@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PerformanceChart } from './PerformanceChart';
 import type { ChartSeries } from './model';
@@ -78,5 +78,116 @@ describe('PerformanceChart', () => {
     expect(cols).toHaveLength(6);
     cols[0]!.focus();
     expect(cols[0]).toHaveFocus();
+  });
+});
+
+describe('PerformanceChart mobile dropdown legend', () => {
+  // A ResizeObserver whose callback we can fire to simulate a narrow card.
+  let fire: ((width: number) => void) | undefined;
+  const original = globalThis.ResizeObserver;
+
+  beforeEach(() => {
+    class MockResizeObserver {
+      constructor(cb: ResizeObserverCallback) {
+        fire = (width: number) =>
+          act(() => cb([{ contentRect: { width } } as ResizeObserverEntry], this));
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+    }
+    globalThis.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
+  });
+  afterEach(() => {
+    globalThis.ResizeObserver = original;
+    fire = undefined;
+  });
+
+  const narrow = () => fire!(320);
+  const wide = () => fire!(800);
+
+  it('swaps inline chips for a disclosure when the card narrows, and back', () => {
+    render(<PerformanceChart series={series} months={months} mobileLegend="dropdown" />);
+    // Wide to start: inline chips, no disclosure.
+    expect(screen.getByRole('button', { name: /Completed/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Showing/ })).not.toBeInTheDocument();
+
+    narrow();
+    expect(screen.queryByRole('button', { name: 'Completed' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Showing/ })).toBeInTheDocument();
+
+    wide();
+    expect(screen.getByRole('button', { name: /Completed/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Showing/ })).not.toBeInTheDocument();
+  });
+
+  it('opens and closes the menu, and summarises the shown series', async () => {
+    const user = userEvent.setup();
+    render(<PerformanceChart series={series} months={months} mobileLegend="dropdown" />);
+    narrow();
+    const trigger = screen.getByRole('button', { name: /Showing/ });
+    expect(trigger).toHaveTextContent('All');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    const menu = screen.getByRole('menu');
+    expect(within(menu).getAllByRole('menuitemcheckbox')).toHaveLength(3);
+
+    // Click away → closes.
+    await user.click(document.body);
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('closes on Escape and returns focus to the trigger', async () => {
+    const user = userEvent.setup();
+    render(<PerformanceChart series={series} months={months} mobileLegend="dropdown" />);
+    narrow();
+    const trigger = screen.getByRole('button', { name: /Showing/ });
+    await user.click(trigger);
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
+  it('toggles a series from a menu item, updating the summary, menu kept open', async () => {
+    const user = userEvent.setup();
+    render(<PerformanceChart series={series} months={months} mobileLegend="dropdown" />);
+    narrow();
+    await user.click(screen.getByRole('button', { name: /Showing/ }));
+    const canceled = screen.getByRole('menuitemcheckbox', { name: /Canceled/ });
+    expect(canceled).toHaveAttribute('aria-checked', 'true');
+    await user.click(canceled);
+    expect(canceled).toHaveAttribute('aria-checked', 'false');
+    // Still open, and the trigger now names only the shown series.
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Showing/ })).toHaveTextContent('Completed, Missed');
+  });
+
+  it('moves focus between menu items with the arrow keys', async () => {
+    const user = userEvent.setup();
+    render(<PerformanceChart series={series} months={months} mobileLegend="dropdown" />);
+    narrow();
+    await user.click(screen.getByRole('button', { name: /Showing/ }));
+    const items = screen.getAllByRole('menuitemcheckbox');
+    expect(items[0]).toHaveFocus(); // focus lands on the first item on open
+    await user.keyboard('{ArrowDown}');
+    expect(items[1]).toHaveFocus();
+    await user.keyboard('{End}');
+    expect(items[2]).toHaveFocus();
+    await user.keyboard('{Home}');
+    expect(items[0]).toHaveFocus();
+  });
+
+  it('shows the empty copy, not a blank chart, when the series is all zero', () => {
+    render(<PerformanceChart series={zero} months={months} mobileLegend="dropdown" />);
+    narrow();
+    expect(screen.getByText('No sessions yet')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Showing/ })).not.toBeInTheDocument();
   });
 });

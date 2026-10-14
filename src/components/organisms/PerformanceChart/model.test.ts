@@ -111,6 +111,41 @@ describe('buildChartModel', () => {
     expect(m.cols.at(-1)!.aria).toBe('Dec 2025: 4 completed, 0 canceled, 1 missed');
   });
 
+  it('derives the mobile-legend flags from narrow + mobileLegend', () => {
+    const wide = buildChartModel(input({ narrow: false, mobileLegend: 'dropdown' }));
+    expect(wide.legendChips).toBe(true);
+    expect(wide.legendMenu).toBe(false);
+    expect(wide.headGap).toBe('var(--space-4)');
+
+    const drop = buildChartModel(input({ narrow: true, mobileLegend: 'dropdown' }));
+    expect(drop.legendChips).toBe(false);
+    expect(drop.legendMenu).toBe(true);
+    expect(drop.headGap).toBe('var(--space-2)');
+
+    const compact = buildChartModel(input({ narrow: true, mobileLegend: 'compact' }));
+    expect(compact.legendMenu).toBe(false);
+    expect(compact.showLabels).toBe(false);
+    expect(compact.legendWrap).toBe('nowrap');
+  });
+
+  it('names the shown series for the dropdown trigger', () => {
+    expect(buildChartModel(input()).shownLabel).toBe('All');
+    expect(buildChartModel(input({ hidden: ['canceled'] })).shownLabel).toBe('Completed, Missed');
+    expect(buildChartModel(input({ hidden: ['completed', 'canceled', 'missed'] })).shownLabel).toBe(
+      'None',
+    );
+  });
+
+  it('gives each legend item a checkbox icon and colour for the dropdown', () => {
+    const m = buildChartModel(input({ hidden: ['canceled'] }));
+    const completed = m.legend.find((l) => l.key === 'completed')!;
+    const canceled = m.legend.find((l) => l.key === 'canceled')!;
+    expect(completed.checkIcon).toBe('check_box');
+    expect(completed.checkColor).toBe('var(--blue-500)');
+    expect(canceled.checkIcon).toBe('check_box_outline_blank');
+    expect(canceled.checkColor).toBe('var(--ink-400)');
+  });
+
   it('suppresses the tooltip for an upcoming month — no false zeros', () => {
     const span = ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06'];
     const sr = series.map((s) => ({ ...s, values: s.values.slice(0, 6) }));

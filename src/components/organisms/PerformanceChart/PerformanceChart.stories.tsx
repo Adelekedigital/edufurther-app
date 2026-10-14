@@ -25,3 +25,15 @@ export const Line: Story = { args: { series, months, variant: 'line' } };
 export const Empty: Story = {
   args: { series: series.map((s) => ({ ...s, values: s.values.map(() => 0) })), months },
 };
+
+/** Below 440px the legend collapses to the disclosure menu (our dashboard's mode). */
+export const MobileDropdown: Story = {
+  args: { series, months, mobileLegend: 'dropdown' },
+  decorators: [
+    (Story) => (
+      <div style={{ maxWidth: 380 }}>
+        <Story />
+      </div>
+    ),
+  ],
+};

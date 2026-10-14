@@ -21,6 +21,10 @@ export type ChartModelInput = {
   hover: number;
   title: string;
   yUnit: string;
+  /** Container is below the mobile breakpoint (ResizeObserver, < 440px). */
+  narrow?: boolean;
+  /** How the legend collapses when narrow. Default 'compact'. */
+  mobileLegend?: 'compact' | 'dropdown' | 'wrap';
 };
 
 export type ChartModel = ReturnType<typeof buildChartModel>;
@@ -155,8 +159,30 @@ export function buildChartModel(i: ChartModelInput) {
       dot: on ? s.color : 'var(--ink-300)',
       border: on ? 'var(--ink-200)' : 'var(--ink-100)',
       text: on ? 'var(--ink-900)' : 'var(--ink-400)',
+      // For the mobile dropdown's checkbox rows.
+      checkIcon: (on ? 'check_box' : 'check_box_outline_blank') as
+        | 'check_box'
+        | 'check_box_outline_blank',
+      checkColor: on ? 'var(--blue-500)' : 'var(--ink-400)',
     };
   });
+
+  // The mobile legend. OUR dashboard uses 'dropdown'; 'compact'/'wrap' are the
+  // design's other collapses. The flags pick inline chips vs the dropdown, the
+  // chip wrap, whether chip labels show, and the gap above the chart.
+  const narrow = i.narrow ?? false;
+  const ml = i.mobileLegend ?? 'compact';
+  const headGap = narrow ? 'var(--space-2)' : 'var(--space-4)';
+  const legendChips = !(narrow && ml === 'dropdown');
+  const legendMenu = narrow && ml === 'dropdown';
+  const showLabels = !(narrow && ml === 'compact');
+  const legendWrap: 'wrap' | 'nowrap' = narrow && ml === 'compact' ? 'nowrap' : 'wrap';
+  const shownLabel = legend.every((l) => l.on)
+    ? 'All'
+    : legend
+        .filter((l) => l.on)
+        .map((l) => l.label)
+        .join(', ') || 'None';
 
   // Guard an empty months array (no data at all): the rest produces safe empties.
   const firstL = buckets.length ? labelOf(buckets[0]!) : { top: '', year: '', full: '' };
@@ -189,6 +215,13 @@ export function buildChartModel(i: ChartModelInput) {
     yearValue: yr ?? '',
     isYear,
     legend,
+    // Mobile-legend derivation (design PerformanceChart.dc.html mobile update).
+    headGap,
+    legendChips,
+    legendMenu,
+    showLabels,
+    legendWrap,
+    shownLabel,
     grid,
     rects,
     lines,
