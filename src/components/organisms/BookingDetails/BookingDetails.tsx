@@ -158,10 +158,12 @@ function outcomeHeading(o: BookingOutcome, b: Booking): string {
  * and the phone sheet — the two differ in their frame, never in what they say.
  *
  * The design pairs Join with "Send a message", and Cancel, Accept and Decline
- * sit in this footer too. Join and the call-off are here; the message control
- * has no endpoint, and Accept/Decline stay on the pending row, where the one
- * who answers a request is already looking. A footer with nothing in it does
- * not render at all.
+ * sit in this footer too. Join, the call-off and the answer are all here; the
+ * message control is the one thing still missing, because it has no endpoint.
+ * Accept and Decline also stay on the pending row — the owner asked for both,
+ * and the row is where someone scanning a list answers from.
+ *
+ * A footer with nothing in it does not render at all.
  */
 export function BookingDetails({
   booking: b,

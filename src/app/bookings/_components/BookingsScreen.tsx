@@ -254,16 +254,25 @@ export function BookingsScreen() {
    * own them. Size by placement, per the CTA hierarchy: `small` in a row,
    * `large` in a modal footer.
    */
-  const rowActions = (b: Booking, size: 'small' | 'large' = 'small') => {
+  const rowActions = (b: Booking, place: 'row' | 'panel' = 'row') => {
     if (!canAccept(b, now)) return null;
+    // The design draws these differently in the two places, so the placement
+    // decides the variant, the size and the label — not just the size. In a
+    // row: an outlined Accept and a text Decline, so a list does not carry a
+    // column of fills. In the panel: "Accept request" as the one filled button
+    // in that view, full width, with Decline quieter beneath it
+    // (`Bookings.dc.html`, the `d.pending` footer).
+    const inPanel = place === 'panel';
+    const size = inPanel ? ('large' as const) : ('small' as const);
     const clash = overlapping(b, upcoming.data ?? []);
     return (
       <>
         {/* The design's own variants: an outlined Accept and a destructive
          *text* Decline, so the row does not carry two competing fills. */}
         <Button
-          variant="secondary-outlined"
+          variant={inPanel ? 'primary' : 'secondary-outlined'}
           size={size}
+          fullWidth={inPanel}
           busy={accept.isPending && accept.variables?.bookingId === b.id}
           aria-describedby={clash ? clashId(b.id) : undefined}
           onClick={() =>
@@ -279,11 +288,16 @@ export function BookingsScreen() {
             )
           }
         >
-          {accept.isPending && accept.variables?.bookingId === b.id ? 'Accepting…' : 'Accept'}
+          {accept.isPending && accept.variables?.bookingId === b.id
+            ? 'Accepting…'
+            : inPanel
+              ? 'Accept request'
+              : 'Accept'}
         </Button>
         <Button
           variant="text-destructive"
           size={size}
+          fullWidth={inPanel}
           onClick={() => setConfirming({ action: 'decline', booking: b })}
         >
           Decline
@@ -462,7 +476,7 @@ export function BookingsScreen() {
                 // respond with, and on a phone the sheet covered the row's own
                 // buttons (UI review, PR 233; owner chose both over a pointer
                 // back to the row).
-                answer={open ? rowActions(open, 'large') : null}
+                answer={open ? rowActions(open, 'panel') : null}
                 // The clash warning and a failed Accept, in the panel too: on a
                 // phone the sheet covers the row, so a notice left only there
                 // is behind it and the mentor accepts a double booking having

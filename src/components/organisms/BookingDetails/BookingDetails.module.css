@@ -124,22 +124,15 @@
   border-top: var(--border-hairline) solid var(--ink-100);
 }
 
-/* Accept and Decline side by side, each taking half — the design's pairing for
-   a modal footer, and the same shape the cancel dialog's footer uses. They
-   stack on a phone, where two 48px buttons on one line leave neither room to
-   read. */
+/* Stacked, not side by side: `Bookings.dc.html` draws the panel's pending
+   footer as a full-width "Accept request" with the quieter Decline beneath it,
+   which is also the shape Join and Cancel already take here. Two equal halves
+   gave Decline the same weight as Accept, which is not what either the design
+   or the CTA hierarchy says. */
 .answer {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-3);
-}
-.answer > * {
-  width: 100%;
-}
-@media (max-width: 767px) {
-  .answer {
-    grid-template-columns: 1fr;
-  }
 }
 
 .lock {

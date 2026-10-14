@@ -118,11 +118,13 @@ describe('the actions appear only where they can succeed', () => {
     h.selectedBooking = 'p1';
     render(<BookingsScreen />);
     const panel = document.getElementById('booking-details')!;
-    expect(within(panel).getByRole('button', { name: 'Accept' })).toBeVisible();
+    // "Accept request" in the panel, "Accept" in the row — the design's own
+    // labels for the two places (`Bookings.dc.html`, the `d.pending` footer).
+    expect(within(panel).getByRole('button', { name: 'Accept request' })).toBeVisible();
     expect(within(panel).getByRole('button', { name: 'Decline' })).toBeVisible();
     // And the row keeps its own pair: the owner's decision was both, not a
     // move. One builder fills them, so they cannot disagree.
-    expect(screen.getAllByRole('button', { name: 'Accept' })).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'Accept' })).toBeVisible();
   });
 
   it('the overlap warning reaches the panel, where the Accept now is', () => {
