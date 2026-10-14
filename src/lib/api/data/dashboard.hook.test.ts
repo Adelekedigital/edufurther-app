@@ -2,11 +2,13 @@ import { renderHook } from '@testing-library/react';
 import { useUpcomingBookings } from './bookings';
 import { useCalendarConnection } from './calendarConnection';
 import { useMentorDashboard } from './dashboard';
+import { useMentorStats, type StatBlock } from './mentorStats';
 import { useMentorProfile } from './profile';
 
 vi.mock('./profile');
 vi.mock('./calendarConnection');
 vi.mock('./bookings');
+vi.mock('./mentorStats');
 
 const member = { id: 'm1', firstName: 'Gbenga' };
 
@@ -34,10 +36,38 @@ const cal = (over: Record<string, unknown> = {}): CalRet =>
 const upc = (over: Record<string, unknown> = {}): UpcRet =>
   ({ data: [], isLoading: false, error: null, retry: () => {}, ...over }) as unknown as UpcRet;
 
-function run(p: ProfileRet, c: CalRet, u: UpcRet) {
+type StatsRet = ReturnType<typeof useMentorStats>;
+const noStats = { data: null, isLoading: false, error: null, retry: () => {} } as unknown as StatsRet;
+const statBlock = (over: Partial<StatBlock> = {}): StatBlock => ({
+  since: '2026-09-14',
+  until: '2026-10-14',
+  completedSessions: 0,
+  mentoringMinutes: 0,
+  menteesMentored: 0,
+  attendanceRate: null,
+  missedByMentor: 0,
+  cancelledByMentor: 0,
+  reviewCount: 0,
+  averageRating: null,
+  ...over,
+});
+const windowStats = (current: Partial<StatBlock>, previous: Partial<StatBlock>): StatsRet =>
+  ({
+    data: { windowDays: 30, current: statBlock(current), previous: statBlock(previous) },
+    isLoading: false,
+    error: null,
+    retry: () => {},
+  }) as unknown as StatsRet;
+
+function run(p: ProfileRet, c: CalRet, u: UpcRet, stats?: { monthly: StatsRet; quarterly: StatsRet }) {
   vi.mocked(useMentorProfile).mockReturnValue(p);
   vi.mocked(useCalendarConnection).mockReturnValue(c);
   vi.mocked(useUpcomingBookings).mockReturnValue(u);
+  // useMentorDashboard fetches a 30-day ("this month") and a 90-day ("this
+  // quarter") window; without a QueryClient the real useQuery throws, so mock it.
+  vi.mocked(useMentorStats).mockImplementation((_id, days) =>
+    days === 30 ? (stats?.monthly ?? noStats) : (stats?.quarterly ?? noStats),
+  );
   return renderHook(() => useMentorDashboard(member, 'Africa/Lagos', false)).result;
 }
 
@@ -101,5 +131,25 @@ describe('useMentorDashboard', () => {
     ).current;
     expect(r.error).toBeNull();
     expect(r.data).not.toBeNull();
+  });
+
+  it('attaches a KPI trend to the matching metric once a stats window loads', () => {
+    const r = run(
+      profile({
+        data: {
+          mentor: { completedSessions: 4, profileHref: '/mentors/m1' },
+          names: { first: 'G', last: 'A' },
+          owner: { completeness: { percent: 100, missing: [] }, setupNeeded: [] },
+        },
+      }),
+      cal(),
+      upc(),
+      { monthly: windowStats({ completedSessions: 4 }, { completedSessions: 3 }), quarterly: noStats },
+    ).current;
+    expect(r.metrics?.find((k) => k.key === 'sessions')?.trend).toEqual({
+      text: '+1 this month',
+      icon: 'trending_up',
+      tone: 'positive',
+    });
   });
 });
