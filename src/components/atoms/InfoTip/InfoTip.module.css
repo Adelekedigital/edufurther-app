@@ -4,12 +4,14 @@
 }
 
 .trigger {
+  position: relative;
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
-  /* A 24px target around the 16px glyph (the "24px with spacing" floor), pulled
-     back with a negative margin so it doesn't grow the label row. */
+  /* 24px visual around the 16px glyph, pulled back with a negative margin so it
+     doesn't grow the dense label row; on phones an invisible area reaches the
+     44px house touch target (the media query below). */
   width: var(--space-6);
   height: var(--space-6);
   margin: calc(var(--space-1) * -1);
@@ -26,6 +28,16 @@
 .trigger:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
+}
+@media (max-width: 767px) {
+  /* Keep the 24px visual, but reach the 44px house target with an invisible
+     area (CTA Hierarchy rule 5), the same as IconButton's row actions, so the
+     label row doesn't reflow. */
+  .trigger::after {
+    content: '';
+    position: absolute;
+    inset: calc((var(--space-6) - var(--touch-target-min)) / 2);
+  }
 }
 
 .bubble {
