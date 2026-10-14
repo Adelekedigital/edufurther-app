@@ -1,4 +1,11 @@
-import { deriveActivation, deriveKpis, type ActivationInputs, type KpiInputs } from './dashboard';
+import {
+  deriveActivation,
+  deriveKpis,
+  deriveKpiTrends,
+  type ActivationInputs,
+  type KpiInputs,
+} from './dashboard';
+import type { StatBlock } from './mentorStats';
 
 const base: ActivationInputs = {
   completedSessions: 0,
@@ -117,5 +124,138 @@ describe('deriveKpis', () => {
 
   it('every KPI carries an info hint', () => {
     expect(deriveKpis(kpiInputs()).every((k) => k.info.length > 0)).toBe(true);
+  });
+});
+
+const statBase: StatBlock = {
+  since: '2026-09-14',
+  until: '2026-10-14',
+  completedSessions: 0,
+  mentoringMinutes: 0,
+  menteesMentored: 0,
+  attendanceRate: null,
+  missedByMentor: 0,
+  cancelledByMentor: 0,
+  reviewCount: 0,
+  averageRating: null,
+};
+const stat = (over: Partial<StatBlock> = {}): StatBlock => ({ ...statBase, ...over });
+
+describe('deriveKpiTrends', () => {
+  const MINUS = '−'; // the real minus sign, not a hyphen
+
+  it('a 30-day gain reads "+N this month"/"+N min this month" with an up arrow', () => {
+    const t = deriveKpiTrends({
+      monthly: {
+        current: stat({ completedSessions: 4, mentoringMinutes: 240, menteesMentored: 3 }),
+        previous: stat({ completedSessions: 3, mentoringMinutes: 180, menteesMentored: 3 }),
+      },
+      quarterly: null,
+    });
+    expect(t.sessions).toEqual({ text: '+1 this month', icon: 'trending_up', tone: 'positive' });
+    // Mentoring time's delta is phrased in minutes, matching the value's unit.
+    expect(t.time).toEqual({ text: '+60 min this month', icon: 'trending_up', tone: 'positive' });
+    // A flat metric reads "No change" with no arrow, never "+0".
+    expect(t.mentees).toEqual({ text: 'No change this month', tone: 'neutral' });
+    // No quarterly window supplied → no rating trend.
+    expect(t.rating).toBeUndefined();
+  });
+
+  it('a 30-day drop uses the real minus sign (U+2212) and a down arrow', () => {
+    const t = deriveKpiTrends({
+      monthly: {
+        current: stat({ completedSessions: 2, mentoringMinutes: 60 }),
+        previous: stat({ completedSessions: 3, mentoringMinutes: 180 }),
+      },
+      quarterly: null,
+    });
+    expect(t.sessions).toEqual({
+      text: `${MINUS}1 this month`,
+      icon: 'trending_down',
+      tone: 'negative',
+    });
+    expect(t.sessions!.text).toContain('−');
+    expect(t.sessions!.text).not.toContain('-'); // a hyphen would be wrong
+    expect(t.time).toEqual({
+      text: `${MINUS}120 min this month`,
+      icon: 'trending_down',
+      tone: 'negative',
+    });
+  });
+
+  it('separates thousands in a large minute delta', () => {
+    const t = deriveKpiTrends({
+      monthly: { current: stat({ mentoringMinutes: 1500 }), previous: stat({ mentoringMinutes: 180 }) },
+      quarterly: null,
+    });
+    expect(t.time?.text).toBe('+1,320 min this month');
+  });
+
+  it('a rating rise reads "N reviews · +0.X this quarter", N from the window', () => {
+    const t = deriveKpiTrends({
+      monthly: null,
+      quarterly: {
+        current: stat({ reviewCount: 14, averageRating: 4.8 }),
+        previous: stat({ reviewCount: 11, averageRating: 4.6 }),
+      },
+    });
+    expect(t.rating).toEqual({
+      text: '14 reviews · +0.2 this quarter',
+      icon: 'trending_up',
+      tone: 'positive',
+    });
+  });
+
+  it('a rating fall reads with the minus sign and a down arrow', () => {
+    const t = deriveKpiTrends({
+      monthly: null,
+      quarterly: {
+        current: stat({ reviewCount: 3, averageRating: 4.1 }),
+        previous: stat({ reviewCount: 2, averageRating: 4.5 }),
+      },
+    });
+    expect(t.rating).toEqual({
+      text: `3 reviews · ${MINUS}0.4 this quarter`,
+      icon: 'trending_down',
+      tone: 'negative',
+    });
+  });
+
+  it('one review is singular, and with no previous rating shows the count with the period', () => {
+    const t = deriveKpiTrends({
+      monthly: null,
+      quarterly: {
+        current: stat({ reviewCount: 1, averageRating: 5 }),
+        previous: stat({ reviewCount: 0, averageRating: null }),
+      },
+    });
+    expect(t.rating).toEqual({ text: '1 review this quarter', tone: 'neutral' });
+  });
+
+  it('no reviews in the window → no rating trend at all (the value shows "No data yet")', () => {
+    const t = deriveKpiTrends({
+      monthly: null,
+      quarterly: {
+        current: stat({ reviewCount: 0, averageRating: null }),
+        previous: stat({ reviewCount: 5, averageRating: 4.5 }),
+      },
+    });
+    expect(t.rating).toBeUndefined();
+  });
+
+  it('a rating unchanged at one decimal reads "No change this quarter", no arrow', () => {
+    const t = deriveKpiTrends({
+      monthly: null,
+      quarterly: {
+        // 4.84 − 4.80 rounds to 0.0 at the shown precision.
+        current: stat({ reviewCount: 9, averageRating: 4.84 }),
+        previous: stat({ reviewCount: 9, averageRating: 4.8 }),
+      },
+    });
+    expect(t.rating).toEqual({ text: '9 reviews · No change this quarter', tone: 'neutral' });
+  });
+
+  it('no windows loaded yet → no trends (cards render their value alone)', () => {
+    expect(deriveKpiTrends({ monthly: null, quarterly: null })).toEqual({});
   });
 });
