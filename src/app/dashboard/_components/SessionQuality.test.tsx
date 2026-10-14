@@ -85,6 +85,8 @@ describe('SessionQuality', () => {
     data = windowStats({ attendanceRate: 60, missedByMentor: 5, completedSessions: 9 });
     render(<SessionQuality userId="u1" />);
     expect(screen.getByText('At risk')).toBeInTheDocument();
+    // The context line is a plain count, never a derived "N of M" ratio.
+    expect(screen.getByText('5 missed sessions recently.')).toBeInTheDocument();
     expect(screen.getByText('5 mentees were left waiting')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Review your hours' })).toHaveAttribute(
       'href',
@@ -100,6 +102,12 @@ describe('SessionQuality', () => {
     data = windowStats({ attendanceRate: 50, missedByMentor: 1, completedSessions: 1 });
     render(<SessionQuality userId="u1" />);
     expect(screen.getByText('1 mentee was left waiting')).toBeInTheDocument();
+  });
+
+  it('reassures with no derived denominator when the rate held flat and none were missed', () => {
+    data = windowStats({ attendanceRate: 100, missedByMentor: 0 }, { attendanceRate: 100 });
+    render(<SessionQuality userId="u1" />);
+    expect(screen.getByText('No sessions missed — mentees can count on you.')).toBeInTheDocument();
   });
 
   it('falls back to "No reviews yet" when the window has no rating', () => {

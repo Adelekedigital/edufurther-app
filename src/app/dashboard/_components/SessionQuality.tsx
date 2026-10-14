@@ -20,10 +20,12 @@ const WINDOW_DAYS = 90;
 const GOOD_THRESHOLD = 85;
 
 /**
- * The line under the show-up rate. Rising reassures; otherwise it names the
- * no-shows behind the rate — only no-shows, never cancellations, since the rate
- * is attendance over the sessions you were expected at. "Up" needs both windows'
- * rates, so a first-ever previous window (null) falls to the no-show count.
+ * The line under the show-up rate. Rising reassures; otherwise it states the
+ * mentor's own missed sessions as a plain count — never a ratio. The backend's
+ * attendance_rate can't be reconciled to these rows (mentee no-shows raise it
+ * but aren't "completed", and migrated sessions sit outside it), so the ring
+ * stands on its own and this line never implies a denominator. "Up" needs both
+ * windows' rates, so a first-ever previous window (null) falls to the count.
  */
 function rateContext(current: StatBlock, previous: StatBlock): string {
   const cur = current.attendanceRate;
@@ -31,11 +33,10 @@ function rateContext(current: StatBlock, previous: StatBlock): string {
   if (cur != null && prev != null && cur > prev) {
     return `Up from ${prev}% last quarter. Mentees can count on you.`;
   }
-  const settled = current.completedSessions + current.missedByMentor;
   const missed = current.missedByMentor;
   return missed === 0
-    ? `No no-shows in your last ${settled} booked sessions.`
-    : `${missed} no-show${missed === 1 ? '' : 's'} in your last ${settled} booked sessions.`;
+    ? `No sessions missed — mentees can count on you.`
+    : `${missed} missed session${missed === 1 ? '' : 's'} recently.`;
 }
 
 function Loading() {
