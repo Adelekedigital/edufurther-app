@@ -83,7 +83,27 @@ function sumSides(a: number | null | undefined, b: number | null | undefined): n
   return a == null && b == null ? null : (a ?? 0) + (b ?? 0);
 }
 
-/** Local dev / CI page review without auth (NEXT_PUBLIC_MOCK_VIEWER). */
+/**
+ * Local dev / CI page review without auth (NEXT_PUBLIC_MOCK_VIEWER).
+ *
+ * **`bookingCounts` here is not derived from the sessions fixture, and does not
+ * agree with it.** These are already-mapped `Viewer` objects, so `/api/v1/me`
+ * is never called and the summing in `toViewer` never runs; the lists come from
+ * `app/api/mock/api/v1/users/[userId]/sessions`, which has eight upcoming and
+ * five pending rows against the 6 and 3 below.
+ *
+ * So in dev a tab count disagreeing with the list under it is expected here and
+ * is not a bug. It is worth knowing because `review-page.mjs` and every dev
+ * screenshot run against this viewer, and a real count-versus-list defect looks
+ * exactly the same — one was raised against the Pending badge in PR 235 (the
+ * server's aggregate keeps counting a lapsed request), and this fixture had me
+ * reporting the same symptom from a different cause.
+ *
+ * Not reconciled on purpose: matching the numbers by hand would drift the next
+ * time either fixture changes, and deriving them would couple this to the mock
+ * route. If dev ever needs counts that can be trusted, derive both from one
+ * place rather than re-syncing two.
+ */
 const MOCK_VIEWERS: Record<string, Viewer> = {
   guest: { kind: 'guest' },
   mentee: {
