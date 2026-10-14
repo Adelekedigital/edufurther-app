@@ -1,4 +1,4 @@
-import { deriveActivation, type ActivationInputs } from './dashboard';
+import { deriveActivation, deriveKpis, type ActivationInputs, type KpiInputs } from './dashboard';
 
 const base: ActivationInputs = {
   completedSessions: 0,
@@ -70,5 +70,43 @@ describe('deriveActivation', () => {
 
   it('falls back to the first name for the share subject', () => {
     expect(deriveActivation(inputs({ fullName: '' })).shareName).toBe('Gbenga');
+  });
+});
+
+const kpiBase: KpiInputs = {
+  completedSessions: 2,
+  mentoringMinutes: 120,
+  menteesMentored: 1,
+  rating: 4.8,
+  reviewCount: 12,
+};
+const kpiInputs = (over: Partial<KpiInputs> = {}): KpiInputs => ({ ...kpiBase, ...over });
+
+describe('deriveKpis', () => {
+  it('maps the four figures from the profile', () => {
+    const [sessions, hours, mentees, rating] = deriveKpis(kpiInputs());
+    expect(sessions).toMatchObject({ label: 'Sessions completed', value: '2' });
+    expect(hours).toMatchObject({ label: 'Mentoring time', value: '2', unit: 'hrs' });
+    expect(mentees).toMatchObject({ label: 'Mentees mentored', value: '1' });
+    expect(rating).toMatchObject({ label: 'Average rating', value: '4.8', unit: '/ 5' });
+  });
+
+  it('rounds mentoring minutes to whole hours', () => {
+    expect(deriveKpis(kpiInputs({ mentoringMinutes: 90 }))[1]!.value).toBe('2');
+    expect(deriveKpis(kpiInputs({ mentoringMinutes: 150 }))[1]!.value).toBe('3');
+  });
+
+  it('pluralises the hours unit off the figure (no "1 hrs")', () => {
+    expect(deriveKpis(kpiInputs({ mentoringMinutes: 60 }))[1]).toMatchObject({ value: '1', unit: 'hr' });
+    expect(deriveKpis(kpiInputs({ mentoringMinutes: 120 }))[1]!.unit).toBe('hrs');
+  });
+
+  it('shows no rating without reviews — null, never 0', () => {
+    expect(deriveKpis(kpiInputs({ reviewCount: 0, rating: null }))[3]!.value).toBeNull();
+    expect(deriveKpis(kpiInputs({ reviewCount: 0, rating: 4.2 }))[3]!.value).toBeNull();
+  });
+
+  it('every KPI carries an info hint', () => {
+    expect(deriveKpis(kpiInputs()).every((k) => k.info.length > 0)).toBe(true);
   });
 });

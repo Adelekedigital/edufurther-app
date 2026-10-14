@@ -116,6 +116,8 @@ export const ICON_NAMES = [
   'tips_and_updates',
   'toll',
   'translate',
+  'trending_down',
+  'trending_up',
   'tune',
   'upload',
   'upload_file',
