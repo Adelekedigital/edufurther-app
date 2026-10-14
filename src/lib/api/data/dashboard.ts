@@ -158,12 +158,16 @@ export function useMentorDashboard(
     retry: upcoming.retry,
   };
 
-  // Gate on profile and calendar together, so the setup steps are derived once
-  // both have settled (no doneCount / next-step flicker as calendar arrives).
-  // The screen checks `error` before `isLoading`, so a profile error still
-  // surfaces at once even while calendar is still retrying.
-  const isLoading = profile.isLoading || calendar.isLoading;
-  const error = profile.error;
+  // Calendar feeds only the Google setup step, which is shown only to a new
+  // mentor. So a new mentor waits for calendar to settle (no doneCount /
+  // next-step flicker) and sees its fetch failure surfaced with a retry,
+  // rather than a connected calendar silently regressing to "not connected";
+  // an active mentor's Next-session card is never held or hidden by a calendar
+  // blip. The screen checks `error` before `isLoading`, so a profile error
+  // still shows at once even while calendar is still retrying.
+  const isNewMentor = (p?.mentor.completedSessions ?? 1) === 0;
+  const isLoading = profile.isLoading || (isNewMentor && calendar.isLoading);
+  const error = profile.error ?? (isNewMentor ? calendar.error : null);
   const retry = () => {
     profile.retry();
     calendar.retry();

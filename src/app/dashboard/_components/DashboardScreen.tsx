@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/atoms/Button/Button';
+import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { useAppShell } from '@/app/_shell/useAppShell';
@@ -58,21 +59,23 @@ function DashboardError({ onRetry }: { onRetry: () => void }) {
 function MentorHome({ member }: { member: Member }) {
   const accountZone = member.timeZone ?? deviceTimeZone();
   const [shared, setShared] = useState(() => readShared(member.id));
-  const [announce, setAnnounce] = useState('');
+  // Keyed so a repeated identical message still re-announces (LiveRegion).
+  const [announce, setAnnounce] = useState<{ text: string; id: number } | null>(null);
+  const say = (text: string) => setAnnounce((a) => ({ text, id: (a?.id ?? 0) + 1 }));
   const dash = useMentorDashboard(member, accountZone, shared);
 
   const copyShareLink = (url: string) => {
     if (!url || !navigator.clipboard) {
-      setAnnounce('Couldn’t copy the link');
+      say('Couldn’t copy the link');
       return;
     }
     navigator.clipboard.writeText(url).then(
       () => {
         setShared(true);
         persistShared(member.id);
-        setAnnounce('Link copied');
+        say('Link copied');
       },
-      () => setAnnounce('Couldn’t copy the link'),
+      () => say('Couldn’t copy the link'),
     );
   };
 
@@ -117,9 +120,7 @@ function MentorHome({ member }: { member: Member }) {
           now={new Date()}
         />
       )}
-      <span role="status" className="sr-only">
-        {announce}
-      </span>
+      <LiveRegion message={announce} />
     </>
   );
 }

@@ -80,4 +80,26 @@ describe('useMentorDashboard', () => {
     expect(r.data?.isNew).toBe(false);
     expect(r.nextSession.data?.id).toBe('s1');
   });
+
+  it('a new mentor surfaces a calendar FETCH error (with retry), not a silent regression', () => {
+    const r = run(profile(), cal({ error: { kind: 'server' } }), upc()).current;
+    expect(r.error).toBeTruthy();
+    expect(r.data).toBeNull();
+  });
+
+  it('an active mentor is not blocked or hidden by a calendar fetch error', () => {
+    const r = run(
+      profile({
+        data: {
+          mentor: { completedSessions: 3, profileHref: '/mentors/m1' },
+          names: { first: 'G', last: 'A' },
+          owner: { completeness: { percent: 100, missing: [] }, setupNeeded: [] },
+        },
+      }),
+      cal({ error: { kind: 'server' } }),
+      upc(),
+    ).current;
+    expect(r.error).toBeNull();
+    expect(r.data).not.toBeNull();
+  });
 });
