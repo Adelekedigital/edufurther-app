@@ -53,7 +53,9 @@
   border-radius: var(--radius-xs);
   background: transparent;
   box-shadow: none;
-  color: var(--ink-500);
+  /* The design's --ink-500 fails 4.5:1 on the --ink-100 track; --ink-600 reads
+     the same "muted vs selected" and passes (divergence recorded). */
+  color: var(--ink-600);
   cursor: pointer;
   font-family: var(--font-ui);
   font-size: var(--text-p-xs);
@@ -123,7 +125,7 @@
   position: absolute;
   left: 0;
   top: -16px;
-  font-size: 10px;
+  font-size: var(--text-caption-xs);
   color: var(--ink-500);
 }
 .yLabel {
@@ -132,7 +134,7 @@
   width: 4%;
   transform: translateY(-50%);
   text-align: right;
-  font-size: 10px;
+  font-size: var(--text-caption-xs);
   line-height: 1;
   color: var(--ink-500);
   pointer-events: none;
@@ -141,7 +143,7 @@
   position: absolute;
   top: 84.7%;
   transform: translateX(-50%);
-  font-size: 11px;
+  font-size: var(--text-caption-sm);
   line-height: 1;
   white-space: nowrap;
   pointer-events: none;
@@ -150,7 +152,7 @@
   position: absolute;
   top: 92%;
   transform: translateX(-50%);
-  font-size: 10px;
+  font-size: var(--text-caption-xs);
   line-height: 1;
   color: var(--ink-500);
   pointer-events: none;
@@ -158,7 +160,7 @@
 
 .allHidden {
   position: absolute;
-  inset: 0 0 52px 28px;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
