@@ -221,7 +221,7 @@ describe('deriveKpiTrends', () => {
     });
   });
 
-  it('one review is singular, and with no previous rating shows the count alone', () => {
+  it('one review is singular, and with no previous rating shows the count with the period', () => {
     const t = deriveKpiTrends({
       monthly: null,
       quarterly: {
@@ -229,7 +229,7 @@ describe('deriveKpiTrends', () => {
         previous: stat({ reviewCount: 0, averageRating: null }),
       },
     });
-    expect(t.rating).toEqual({ text: '1 review', tone: 'neutral' });
+    expect(t.rating).toEqual({ text: '1 review this quarter', tone: 'neutral' });
   });
 
   it('no reviews in the window → no rating trend at all (the value shows "No data yet")', () => {

@@ -223,7 +223,9 @@ function ratingTrend(current: StatBlock, previous: StatBlock, period: string): K
   if (n <= 0) return undefined;
   const reviews = `${n} ${n === 1 ? 'review' : 'reviews'}`;
   if (current.averageRating == null || previous.averageRating == null) {
-    return { text: reviews, tone: 'neutral' };
+    // Keep the period, like every other trend line, so "1 review this quarter"
+    // doesn't read as a lifetime total under the all-time rating.
+    return { text: `${reviews} ${period}`, tone: 'neutral' };
   }
   // Round to the shown precision first, so a 4.84 → 4.80 reads "No change",
   // not a "+0.0" that rounding left behind.
