@@ -27,6 +27,8 @@ export async function GET(req: Request) {
     // sit higher — a mentee no-show still counts the mentor as attending.)
     attendance_rate: wide ? 86 : 80,
     missed_by_mentor: wide ? 2 : 1,
+    // Mentee no-shows (the mentor still attended) — feeds the "Mentee didn't show" row.
+    missed_by_mentee: wide ? 1 : 0,
     cancelled_by_mentor: wide ? 2 : 1,
     review_count: 14,
     average_rating: 4.8,
@@ -39,6 +41,7 @@ export async function GET(req: Request) {
     mentees_mentored: wide ? 5 : 3,
     attendance_rate: wide ? 77 : 75,
     missed_by_mentor: wide ? 3 : 1,
+    missed_by_mentee: wide ? 2 : 1,
     cancelled_by_mentor: wide ? 3 : 2,
     review_count: wide ? 11 : 13,
     average_rating: wide ? 4.6 : 4.75,
