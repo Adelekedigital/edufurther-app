@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import styles from './ShareMenu.module.css';
@@ -10,6 +11,12 @@ type ShareMenuProps = {
   url: string;
   /** Mentor's name, for the email subject. */
   name: string;
+  /**
+   * When set, the trigger is a labelled secondary-outlined button with this
+   * text (the Mentor Dashboard header's "Share profile") instead of the icon
+   * button. The menu and its a11y are unchanged.
+   */
+  triggerLabel?: string;
 } & (
   | {
       /**
@@ -33,7 +40,13 @@ type Item = { key: string; label: string; icon: IconName } & (
  * as AccountMenu: arrows / Home / End move, Escape and Tab close, focus
  * returns to the button. Copying is announced ("Link copied").
  */
-export function ShareMenu({ url, name, open: openProp, onOpenChange }: ShareMenuProps) {
+export function ShareMenu({
+  url,
+  name,
+  triggerLabel,
+  open: openProp,
+  onOpenChange,
+}: ShareMenuProps) {
   const [openState, setOpenState] = useState(false);
   const open = openProp ?? openState;
   const setOpen = (next: boolean) => {
@@ -69,6 +82,14 @@ export function ShareMenu({ url, name, open: openProp, onOpenChange }: ShareMenu
     setOpen(false);
     if (refocus)
       (returnFocus.current?.isConnected ? returnFocus.current : buttonRef.current)?.focus();
+  };
+
+  // Down/Up on the trigger opens the menu (its effect moves focus to item 0).
+  const onTriggerKey = (e: KeyboardEvent) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      setOpen(true);
+    }
   };
 
   const items: Item[] = [
@@ -122,24 +143,34 @@ export function ShareMenu({ url, name, open: openProp, onOpenChange }: ShareMenu
 
   return (
     <div className={styles.root}>
-      <button
-        ref={buttonRef}
-        type="button"
-        className={styles.trigger}
-        aria-label="Share profile"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={open ? menuId : undefined}
-        onClick={() => setOpen(!open)}
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-            e.preventDefault();
-            setOpen(true);
-          }
-        }}
-      >
-        <Icon name="ios_share" size={20} />
-      </button>
+      {triggerLabel ? (
+        <Button
+          ref={buttonRef}
+          variant="secondary-outlined"
+          size="small"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-controls={open ? menuId : undefined}
+          onClick={() => setOpen(!open)}
+          onKeyDown={onTriggerKey}
+        >
+          {triggerLabel}
+        </Button>
+      ) : (
+        <button
+          ref={buttonRef}
+          type="button"
+          className={styles.trigger}
+          aria-label="Share profile"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-controls={open ? menuId : undefined}
+          onClick={() => setOpen(!open)}
+          onKeyDown={onTriggerKey}
+        >
+          <Icon name="ios_share" size={20} />
+        </button>
+      )}
       {open && <div className={styles.backdrop} aria-hidden onClick={() => close(false)} />}
       {open && (
         <div

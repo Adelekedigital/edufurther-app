@@ -19,6 +19,24 @@ describe('ShareMenu', () => {
     expect(button).toHaveFocus();
   });
 
+  it('renders a labelled trigger when triggerLabel is set, which opens the same menu', async () => {
+    const user = userEvent.setup();
+    render(
+      <ShareMenu
+        url="https://edufurther.com/mentors/g"
+        name="Gbenga E"
+        triggerLabel="Share profile"
+      />,
+    );
+    const button = screen.getByRole('button', { name: 'Share profile' });
+    expect(button).toHaveTextContent('Share profile');
+    expect(button).toHaveAttribute('aria-haspopup', 'menu');
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    await user.click(button);
+    expect(button).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('menuitem', { name: 'Copy profile link' })).toHaveFocus();
+  });
+
   it('can be opened from outside and reports closing', async () => {
     const user = userEvent.setup();
     const onOpenChange = vi.fn();

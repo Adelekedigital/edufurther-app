@@ -50,6 +50,7 @@
     "folder_open",
     "format_list_numbered",
     "forum",
+    "group_add",
     "groups",
     "handshake",
     "help",
@@ -112,6 +113,7 @@
     "tune",
     "upload",
     "upload_file",
+    "verified",
     "verified_user",
     "video_call",
     "video_chat",
@@ -122,5 +124,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "dc7660784e30f451a4cbf8dbcb1852656ce1300e447136f3c74c30ed0f9dcdde"
+  "sha256": "c8896aa3ddadcf3686b5db5d9b97f1ab2f3269f82033ff28318f5d742ae1457e"
 }

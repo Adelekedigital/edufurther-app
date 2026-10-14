@@ -232,6 +232,12 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | Details aside pushed down by a measured `margin-top` (`asideMt`, read off the tabs) | The header and tabs are one row, the list and aside the next | Same position, nothing to measure, and no reflow on resize | never — same position with nothing to measure |
 | Which booking is open lives in component state | `?booking={id}` in the URL, beside `?tab=` | It survives a refresh and can be sent to someone, and it is what makes the single-booking read worth having | never — deliberate: survives refresh and can be shared |
 | Details panel close is 40px; the row "⋯" 40px desktop / 44px phone | Built at those values with local controls | The DS `IconButton` is 32/44 and `RowMenu`'s trigger 32px — those are Session Types' values, not this screen's, so reusing them would have been the look-alike trap | the DS adds a 40px size |
+| Dashboard next-session "· Google Meet" venue | Omitted | No per-row venue on the session list | #241; a combined dashboard summary endpoint |
+| Dashboard next-session "· New mentee" tag | Omitted | No first-time-with-this-mentor signal (the platform-wide "no settled sessions" means something different) | #241 |
+| Dashboard next-session "Send a message" | Omitted | No endpoint (backend #334) | #334 |
+| Dashboard next-session time "12:00 – 1:00 pm" (en-dash) | "12:00 pm to 1:00 pm" (`timeRange`, app-consistent with Bookings) | One time format app-wide | never |
+| Dashboard "Choose how to start" (open weekly hours / start a waitlist) | Deferred to PR B | Waitlist isn't built (backend); the Setup banner's "open hours" step still covers going live | waitlist ships (PR B) |
+| Setup "Next:" lowercases the whole title ("connect google calendar") | `inSentence` keeps proper nouns ("connect Google Calendar") | House sentence case lowercases the lead word only; "Google" is a brand | never |
 
 ## Rules
 

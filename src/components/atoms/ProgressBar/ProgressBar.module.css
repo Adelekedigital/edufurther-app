@@ -1,0 +1,33 @@
+/* DS ProgressBar — values from _ds_bundle.js (feedback/ProgressBar.jsx). */
+.root {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.track {
+  flex: 1;
+  border-radius: var(--radius-full);
+  background: var(--ink-100);
+  overflow: hidden;
+}
+.sm {
+  height: 8px;
+}
+.lg {
+  height: 12px;
+}
+.fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--action-primary);
+  transition: width var(--duration-slow) var(--ease-standard);
+}
+.label {
+  min-width: 36px;
+  font-family: var(--font-brand);
+  font-weight: var(--weight-medium);
+  font-size: var(--text-p-sm);
+  line-height: 1.45;
+  color: var(--text-secondary);
+  text-align: right;
+}

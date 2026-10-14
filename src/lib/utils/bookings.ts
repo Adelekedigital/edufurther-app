@@ -207,7 +207,7 @@ export function nextSessionWhen(
 }
 
 /** Whole calendar days from `a` to `b`, counted in `zone`. */
-function daysBetween(a: Date, b: Date, zone: string): number {
+export function daysBetween(a: Date, b: Date, zone: string): number {
   const day = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: zone }).format(d);
   const utc = (key: string) => Date.parse(`${key}T00:00:00Z`);
   return Math.round((utc(day(b)) - utc(day(a))) / (24 * HOUR));

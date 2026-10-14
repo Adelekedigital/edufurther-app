@@ -1,0 +1,113 @@
+/* Mentor Dashboard v2 "Next session" card. */
+.card {
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--ink-100);
+}
+.title {
+  margin: 0;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+.allLink {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--action-primary);
+}
+.body {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-4) var(--space-5);
+}
+.chip {
+  width: 56px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-2) 0;
+  border-radius: var(--radius-lg);
+  background: var(--blue-50);
+  color: var(--blue-700);
+}
+.chipMonth {
+  font-size: var(--text-caption-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-caption-xs);
+  text-transform: uppercase;
+}
+.chipDay {
+  font-family: var(--font-brand);
+  font-size: var(--text-h6);
+  font-weight: var(--weight-semibold);
+  line-height: 1.2;
+}
+.details {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.sessionTitle {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.meta {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-secondary);
+}
+.who {
+  color: var(--blue-700);
+  font-weight: var(--weight-semibold);
+}
+.sub {
+  font-size: var(--text-p-xs);
+  color: var(--text-tertiary);
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.empty {
+  flex: 1 1 280px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.illus {
+  flex: none;
+  display: block;
+}
+.lines {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.state {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-4) var(--space-5);
+}
+.stateText {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  color: var(--text-secondary);
+}
