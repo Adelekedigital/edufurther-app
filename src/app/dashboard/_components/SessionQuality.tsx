@@ -40,11 +40,15 @@ function rateContext(current: StatBlock, previous: StatBlock, good: boolean): st
       ? `No sessions missed — mentees can count on you.`
       : `Mentees can count on you.`;
   }
-  // At risk: the rate is below target, which — since it is attended ÷ (attended
-  // + your no-shows) — always means at least one missed session. Name them; a
-  // rise is progress, not yet reassurance.
-  const misses = `${missed} missed session${missed === 1 ? '' : 's'} recently.`;
-  return rose ? `Up from ${prev}% last quarter — ${misses}` : misses;
+  // At risk: name the misses when there are any; otherwise speak to the rate —
+  // never a "0 missed" count. A rise is progress, not yet reassurance.
+  if (missed > 0) {
+    const misses = `${missed} missed session${missed === 1 ? '' : 's'} recently.`;
+    return rose ? `Up from ${prev}% last quarter — ${misses}` : misses;
+  }
+  return rose
+    ? `Up from ${prev}% last quarter — still below your usual.`
+    : `Below your usual show-up rate.`;
 }
 
 function Loading() {
@@ -188,18 +192,29 @@ export function SessionQuality({ userId }: { userId: string }) {
           <Icon name="error" size={20} className={styles.bannerIconRisk} />
           <div className={styles.bannerBody}>
             {/*
-              At risk means the rate is below target, and the rate is
-              attended ÷ (attended + your no-shows) — so a sub-100 rate always
-              has at least one no-show. `missed` here is therefore never 0; the
-              count below is always ≥ 1.
+              The missed-count copy only holds when there are misses. An at-risk
+              rate almost always means a mentor no-show, but the ring
+              (attendance_rate) and this count aren't derivable from one another,
+              so guard the copy rather than assert a count we can't stand behind.
             */}
-            <p className={styles.bannerTitle}>
-              {missed} {missed === 1 ? 'mentee was' : 'mentees were'} left waiting
-            </p>
-            <p className={styles.bannerText}>
-              Most missed sessions happen on hours you can’t really keep. Trim those hours, or block
-              the days you’ll be away.
-            </p>
+            {missed > 0 ? (
+              <>
+                <p className={styles.bannerTitle}>
+                  {missed} {missed === 1 ? 'mentee was' : 'mentees were'} left waiting
+                </p>
+                <p className={styles.bannerText}>
+                  Most missed sessions happen on hours you can’t really keep. Trim those hours, or
+                  block the days you’ll be away.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className={styles.bannerTitle}>Your show-up rate is slipping</p>
+                <p className={styles.bannerText}>
+                  Hold your upcoming booked sessions to bring it back up.
+                </p>
+              </>
+            )}
             <div className={styles.bannerActions}>
               <ButtonLink href="/calendar" size="small">
                 Review your hours

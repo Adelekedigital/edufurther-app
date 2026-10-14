@@ -116,6 +116,17 @@ describe('SessionQuality', () => {
     expect(screen.queryByText(/Mentees can count on you/)).not.toBeInTheDocument();
   });
 
+  it('never claims "left waiting" when an at-risk rate carries no recorded miss', () => {
+    // Defensive: the ring is rate-based and needn't track missed_by_mentor, so a
+    // below-target rate with zero misses must not render "0 … left waiting".
+    data = windowStats({ attendanceRate: 70, missedByMentor: 0 });
+    render(<SessionQuality userId="u1" />);
+    expect(screen.getByText('At risk')).toBeInTheDocument();
+    expect(screen.queryByText(/left waiting/)).not.toBeInTheDocument();
+    expect(screen.getByText('Your show-up rate is slipping')).toBeInTheDocument();
+    expect(screen.getByText('Below your usual show-up rate.')).toBeInTheDocument();
+  });
+
   it('reassures without nagging about the odd miss while on track', () => {
     data = windowStats({ attendanceRate: 90, missedByMentor: 2 }, { attendanceRate: 90 });
     render(<SessionQuality userId="u1" />);
