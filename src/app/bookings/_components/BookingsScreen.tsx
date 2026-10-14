@@ -142,8 +142,8 @@ export function BookingsScreen() {
 
   const counts = member?.bookingCounts;
   // The list drops requests whose deadline has passed — they belong in History
-  // now — while the server's aggregate still counts them for up to an hour,
-  // because its sweep is hourly. Trusting the aggregate made the badge read
+  // now — while the server's aggregate goes on counting them until the
+  // status itself flips. Trusting the aggregate made the badge read
   // "3 awaiting a response" over a list of 2 (GitHub review, PR 235).
   //
   // So where the list is on screen, the badge counts the rows in it. Elsewhere

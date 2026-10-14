@@ -5,9 +5,9 @@ import { BookingStatusTag } from '@/components/molecules/BookingStatusTag/Bookin
 import { AnswerPreview } from '@/components/molecules/AnswerPreview/AnswerPreview';
 import { DeadlinePill } from '@/components/molecules/DeadlinePill/DeadlinePill';
 import {
+  isLapsed,
   bookingHeading,
   fullDate,
-  isLapsed,
   otherTimeLine,
   timeRange,
   waitingPill,
@@ -42,6 +42,13 @@ type BookingRowProps = {
   answersControls?: string;
   /** Injected in tests and stories; the clock otherwise. */
   now?: Date;
+  /**
+   * Whether this row is in History. Passed by the list, which is what put it
+   * there — a row must not decide it from a clock. Omitted (stories, and any
+   * standalone use) it falls back to the status, which is the same answer for
+   * everything but a request that has lapsed without the API saying so yet.
+   */
+  inHistory?: boolean;
 };
 
 /**
@@ -61,12 +68,23 @@ export function BookingRow({
   onOpenAnswers,
   answersControls,
   now = new Date(),
+  inHistory,
 }: BookingRowProps) {
+  // The tag follows the deadline, not the list: the moment `respond_by` passes
+  // this request is dead, accept and decline already 409, and saying so at once
+  // is the honest thing even while it is still sitting in Pending's cached
+  // list. The layout below is the opposite — it must not move under someone
+  // mid-read. Same fact, two different right answers.
   const lapsed = isLapsed(b, now);
-  // A request nobody answered in time reads as over, whatever the API still
-  // calls it: it sits in History now (owner, 2026-10-13), so it wants the date
-  // its neighbours carry and not the "their time" line History leaves off.
-  const past = b.status !== 'confirmed' && (b.status !== 'pending' || lapsed);
+  // Whether this reads as over: it carries the full date its neighbours carry,
+  // and drops the "their time" line nobody can act on.
+  //
+  // The list says so, because the list is what decided where the row went.
+  // Deriving it here from `isLapsed` instead meant the screen's minute clock
+  // could flip a row that was still sitting in the Pending tab's cached list
+  // into History's layout underneath the Pending heading — full date and no
+  // other-party line, both recorded as History-only (GitHub review, PR 235).
+  const past = inHistory ?? (b.status !== 'confirmed' && b.status !== 'pending');
   // One pill for both sides: what is left to do, and how long is left to do it.
   const pill = waitingPill(b, now);
   const other = otherTimeLine(b, timeZone);

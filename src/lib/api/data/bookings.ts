@@ -266,14 +266,15 @@ function usePendingRows(userId: string | null, enabled: boolean) {
  * hear back on. Soonest deadline first, so the one about to lapse is at the top.
  *
  * A request nobody answered in time is **not** one of them: it is expired, and
- * expired belongs in History (owner, 2026-10-13). The API goes on calling it
- * `pending_mentor_approval` for up to an hour, so `isLapsed` decides it here
- * and `useBookingHistory` picks the same rows up.
+ * expired belongs in History (owner, 2026-10-13). Backend #445 flips the stored
+ * status within about 30 seconds of the deadline, so the API usually agrees
+ * within moments — but not always (see `isLapsed`), and a row this dropped
+ * without `useBookingHistory` picking it up would sit in neither tab. So the
+ * two stay a pair: `isLapsed` decides here, and History reads the same rows.
  *
  * The lapse is judged when the list is read, not on every tick: a row is never
  * pulled out from under someone mid-read, and until the next read its own tag
- * already says "Expired". The sweep has an hour; a tab switch or a refetch is
- * well inside it.
+ * already says "Expired".
  */
 export function usePendingBookings(userId: string | null, active = true): Remote<Booking[]> {
   const session = useSession();

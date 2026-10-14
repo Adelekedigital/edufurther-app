@@ -50,9 +50,17 @@ export function respondDeadline(b: Booking): string {
 }
 
 /**
- * A request nobody answered in time. The backend's hourly sweep sets `expired`
- * up to an hour later, so for that hour the row still reads `pending` while
- * accept and decline already return 409 — the client has to decide this itself.
+ * A request nobody answered in time.
+ *
+ * Backend #445 (merged 2026-10-13) flips the stored status within about 30
+ * seconds of `respond_by`, so this is a narrow window now rather than the
+ * hour it used to be. It is not gone, and the client still has to decide:
+ *
+ *   - requests booked before that deploy fall back to the hourly sweep, once;
+ *   - a lost scheduler callback brings the old window back for that request.
+ *
+ * In either case accept and decline already return 409 while the API still
+ * says `pending`, and a row this says nothing about would sit in neither tab.
  */
 export function isLapsed(b: Booking, now = new Date()): boolean {
   return b.status === 'pending' && new Date(respondDeadline(b)).getTime() <= now.getTime();
@@ -63,7 +71,7 @@ export function isLapsed(b: Booking, now = new Date()): boolean {
  * the API still calls them pending?
  *
  * They ride with `expired`, because that is what they are: `statusTag` and
- * `panelStatus` already print "Expired" for them, and the sweep only has to
+ * `panelStatus` already print "Expired" for them, and the server only has to
  * catch up with the name. Tied to the status rather than to the chip, so the
  * grouping behind "Didn't happen" can change without losing them.
  */
@@ -246,7 +254,7 @@ export function panelStatus(
   now = new Date(),
 ): { label: string; tone: StatusTone | 'info' } {
   if (b.status === 'pending') {
-    // "Expired", like `statusTag`: the sweep has not run yet, but it is the
+    // "Expired", like `statusTag`: the status has not flipped yet, but it is the
     // same state, and otherwise the user meets both words within an hour.
     if (isLapsed(b, now)) return { label: 'Expired', tone: 'warning' };
     // The same words as the row it was opened from, so the panel never tells a
