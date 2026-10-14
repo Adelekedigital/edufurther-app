@@ -1,0 +1,108 @@
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type { StatBlock, WindowStats } from '@/lib/api/data/mentorStats';
+import { SessionQuality } from './SessionQuality';
+
+let data: WindowStats | null;
+let isLoading: boolean;
+let error: { kind: string; message: string } | null;
+const retry = vi.fn();
+
+vi.mock('@/lib/api/data/mentorStats', () => ({
+  useMentorStats: () => ({ data, isLoading, error, retry }),
+}));
+
+const block = (over: Partial<StatBlock> = {}): StatBlock => ({
+  since: '2026-07-16T00:00:00Z',
+  until: '2026-10-14T00:00:00Z',
+  completedSessions: 12,
+  mentoringMinutes: 720,
+  menteesMentored: 6,
+  attendanceRate: 94,
+  missedByMentor: 2,
+  cancelledByMentor: 2,
+  reviewCount: 14,
+  averageRating: 4.8,
+  ...over,
+});
+
+const windowStats = (
+  current: Partial<StatBlock>,
+  previous: Partial<StatBlock> = {},
+): WindowStats => ({
+  windowDays: 90,
+  current: block(current),
+  previous: block({ attendanceRate: 90, ...previous }),
+});
+
+beforeEach(() => {
+  data = null;
+  isLoading = false;
+  error = null;
+  retry.mockClear();
+});
+
+describe('SessionQuality', () => {
+  it('shows a loading status while the window is pending', () => {
+    isLoading = true;
+    render(<SessionQuality userId="u1" />);
+    expect(screen.getByRole('status')).toHaveTextContent('Loading your session quality');
+  });
+
+  it('shows the error state before the empty state, with a working retry', async () => {
+    error = { kind: 'server', message: 'boom' };
+    render(<SessionQuality userId="u1" />);
+    expect(screen.getByRole('alert')).toHaveTextContent('We couldn’t load your session quality.');
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(retry).toHaveBeenCalledTimes(1);
+  });
+
+  it('treats a null attendance rate as the empty state, never 0%', () => {
+    data = windowStats({ attendanceRate: null, completedSessions: 0, reviewCount: 0 });
+    render(<SessionQuality userId="u1" />);
+    expect(screen.getByText('Starts after your first session')).toBeInTheDocument();
+    expect(screen.queryByText('0%')).not.toBeInTheDocument();
+  });
+
+  it('renders the on-track content: ring, breakdown, rating and the good banner', () => {
+    data = windowStats({ attendanceRate: 94 }, { attendanceRate: 90 });
+    render(<SessionQuality userId="u1" />);
+    expect(screen.getByRole('img', { name: 'Show-up rate 94%' })).toBeInTheDocument();
+    expect(screen.getByText('On track')).toBeInTheDocument();
+    // held as booked = completed (12) of completed + missed (14)
+    expect(screen.getByText('12 of 14')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Rated 4.8 out of 5' })).toBeInTheDocument();
+    expect(screen.getByText('4.8')).toBeInTheDocument();
+    expect(screen.getByText('(14)')).toBeInTheDocument();
+    expect(screen.getByText(/keep it up/)).toBeInTheDocument();
+    // Rising rate reassures.
+    expect(screen.getByText(/Up from 90% last quarter/)).toBeInTheDocument();
+  });
+
+  it('renders the at-risk content: badge, banner and the two actions', () => {
+    data = windowStats({ attendanceRate: 60, missedByMentor: 5, completedSessions: 9 });
+    render(<SessionQuality userId="u1" />);
+    expect(screen.getByText('At risk')).toBeInTheDocument();
+    expect(screen.getByText('5 mentees were left waiting')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Review your hours' })).toHaveAttribute(
+      'href',
+      '/calendar',
+    );
+    expect(screen.getByRole('link', { name: 'See missed sessions' })).toHaveAttribute(
+      'href',
+      '/bookings',
+    );
+  });
+
+  it('makes the at-risk banner title singular for a single miss', () => {
+    data = windowStats({ attendanceRate: 50, missedByMentor: 1, completedSessions: 1 });
+    render(<SessionQuality userId="u1" />);
+    expect(screen.getByText('1 mentee was left waiting')).toBeInTheDocument();
+  });
+
+  it('falls back to "No reviews yet" when the window has no rating', () => {
+    data = windowStats({ attendanceRate: 92, averageRating: null, reviewCount: 0 });
+    render(<SessionQuality userId="u1" />);
+    expect(screen.getByText('No reviews yet')).toBeInTheDocument();
+  });
+});

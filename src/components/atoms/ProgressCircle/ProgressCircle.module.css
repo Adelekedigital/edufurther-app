@@ -1,0 +1,47 @@
+/* DS ProgressCircle — an SVG ring (track + value arc) with a centred label.
+   Geometry (radius, dash) is computed in the component; colour and the label's
+   type come from tokens here. */
+.root {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+.svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.track {
+  stroke: var(--ink-100);
+}
+.arc {
+  transition: stroke-dashoffset var(--duration-slow) var(--ease-standard);
+}
+.arc-primary {
+  stroke: var(--action-primary);
+}
+.arc-success {
+  stroke: var(--green-500);
+}
+.arc-danger {
+  stroke: var(--red-500);
+}
+.label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-brand);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  line-height: 1;
+}
+.lg .label {
+  font-size: var(--text-h5);
+}
+.md .label {
+  font-size: var(--text-h6);
+}

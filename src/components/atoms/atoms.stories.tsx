@@ -15,6 +15,7 @@ import { Switch } from './Switch/Switch';
 import { Skeleton } from './Skeleton/Skeleton';
 import { StepBars } from './StepBars/StepBars';
 import { ProgressBar } from './ProgressBar/ProgressBar';
+import { ProgressCircle } from './ProgressCircle/ProgressCircle';
 import { Tabs } from './Tabs/Tabs';
 import { Tag } from './Tag/Tag';
 
@@ -98,6 +99,20 @@ export const ProgressBars: Story = {
       <ProgressBar value={50} size="sm" aria-label="Half the steps done" />
       <ProgressBar value={75} size="lg" aria-label="Three of four steps done" />
       <ProgressBar value={100} showLabel aria-label="All steps done" />
+    </div>
+  ),
+};
+
+/** DS ProgressCircle (Mentor Dashboard v2): the show-up rate, lg 90px with a
+    centred label; the arc's tone tracks quality (good / needs attention). */
+export const ProgressCircles: Story = {
+  render: () => (
+    <div style={row}>
+      <ProgressCircle value={94} tone="success" aria-label="Show-up rate" />
+      <ProgressCircle value={72} tone="primary" aria-label="Show-up rate" />
+      <ProgressCircle value={48} tone="danger" aria-label="Show-up rate" />
+      <ProgressCircle value={88} size="md" tone="primary" aria-label="Show-up rate" />
+      <ProgressCircle value={100} size="md" tone="success" showLabel={false} aria-label="Show-up rate" />
     </div>
   ),
 };
