@@ -6,7 +6,7 @@ import styles from './ProgressCircle.module.css';
 export type ProgressCircleTone = 'primary' | 'success' | 'danger';
 
 type ProgressCircleProps = {
-  /** Progress 0–100; clamped and rounded. */
+  /** Progress 0–100; clamped and rounded. A non-finite value renders as 0. */
   value: number;
   /** lg ~90px (DS default, show-up rate). md ~64px for denser spots. */
   size?: 'md' | 'lg';
@@ -45,7 +45,7 @@ export function ProgressCircle({
   'aria-label': ariaLabel,
   className,
 }: ProgressCircleProps) {
-  const pct = Math.max(0, Math.min(100, Math.round(value)));
+  const pct = Number.isFinite(value) ? Math.max(0, Math.min(100, Math.round(value))) : 0;
   const { box, stroke } = SIZES[size];
   const radius = (box - stroke) / 2;
   const circumference = 2 * Math.PI * radius;

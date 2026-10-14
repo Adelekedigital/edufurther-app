@@ -20,23 +20,31 @@ const WINDOW_DAYS = 90;
 const GOOD_THRESHOLD = 85;
 
 /**
- * The line under the show-up rate. Rising reassures; otherwise it states the
- * mentor's own missed sessions as a plain count — never a ratio. The backend's
- * attendance_rate can't be reconciled to these rows (mentee no-shows raise it
- * but aren't "completed", and migrated sessions sit outside it), so the ring
- * stands on its own and this line never implies a denominator. "Up" needs both
- * windows' rates, so a first-ever previous window (null) falls to the count.
+ * The line under the show-up rate, keyed on the same `good` state as the badge
+ * so the two never contradict each other. When on track it reassures (noting a
+ * rise if there is one); when at risk it names the missed sessions and treats a
+ * rise as progress, not reassurance. Counts are plain, never a ratio: the
+ * backend's attendance_rate can't be reconciled to these rows (mentee no-shows
+ * raise it but aren't "completed", migrated sessions sit outside it), so the
+ * ring stands alone. "Up" needs both windows' rates, so a first-ever previous
+ * window (null) isn't a rise.
  */
-function rateContext(current: StatBlock, previous: StatBlock): string {
+function rateContext(current: StatBlock, previous: StatBlock, good: boolean): string {
   const cur = current.attendanceRate;
   const prev = previous.attendanceRate;
-  if (cur != null && prev != null && cur > prev) {
-    return `Up from ${prev}% last quarter. Mentees can count on you.`;
-  }
+  const rose = cur != null && prev != null && cur > prev;
   const missed = current.missedByMentor;
-  return missed === 0
-    ? `No sessions missed — mentees can count on you.`
-    : `${missed} missed session${missed === 1 ? '' : 's'} recently.`;
+  if (good) {
+    if (rose) return `Up from ${prev}% last quarter. Mentees can count on you.`;
+    return missed === 0
+      ? `No sessions missed — mentees can count on you.`
+      : `Mentees can count on you.`;
+  }
+  // At risk: the rate is below target, which — since it is attended ÷ (attended
+  // + your no-shows) — always means at least one missed session. Name them; a
+  // rise is progress, not yet reassurance.
+  const misses = `${missed} missed session${missed === 1 ? '' : 's'} recently.`;
+  return rose ? `Up from ${prev}% last quarter — ${misses}` : misses;
 }
 
 function Loading() {
@@ -131,7 +139,7 @@ export function SessionQuality({ userId }: { userId: string }) {
         />
         <div className={styles.showUpText}>
           <span className={styles.showUpLabel}>Show-up rate</span>
-          <span className={styles.rateContext}>{rateContext(current, previous)}</span>
+          <span className={styles.rateContext}>{rateContext(current, previous, good)}</span>
         </div>
       </div>
 
@@ -179,6 +187,12 @@ export function SessionQuality({ userId }: { userId: string }) {
         <div className={styles.bannerRisk}>
           <Icon name="error" size={20} className={styles.bannerIconRisk} />
           <div className={styles.bannerBody}>
+            {/*
+              At risk means the rate is below target, and the rate is
+              attended ÷ (attended + your no-shows) — so a sub-100 rate always
+              has at least one no-show. `missed` here is therefore never 0; the
+              count below is always ≥ 1.
+            */}
             <p className={styles.bannerTitle}>
               {missed} {missed === 1 ? 'mentee was' : 'mentees were'} left waiting
             </p>

@@ -104,6 +104,26 @@ describe('SessionQuality', () => {
     expect(screen.getByText('1 mentee was left waiting')).toBeInTheDocument();
   });
 
+  it('keeps the context line honest when the rate is rising but still at risk', () => {
+    // 50→60 is progress, but 60 < 85 is still at risk: show the rise as progress,
+    // never the "count on you" reassurance beside an "At risk" badge.
+    data = windowStats({ attendanceRate: 60, missedByMentor: 5 }, { attendanceRate: 50 });
+    render(<SessionQuality userId="u1" />);
+    expect(screen.getByText('At risk')).toBeInTheDocument();
+    expect(
+      screen.getByText('Up from 50% last quarter — 5 missed sessions recently.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Mentees can count on you/)).not.toBeInTheDocument();
+  });
+
+  it('reassures without nagging about the odd miss while on track', () => {
+    data = windowStats({ attendanceRate: 90, missedByMentor: 2 }, { attendanceRate: 90 });
+    render(<SessionQuality userId="u1" />);
+    expect(screen.getByText('On track')).toBeInTheDocument();
+    expect(screen.getByText('Mentees can count on you.')).toBeInTheDocument();
+    expect(screen.queryByText(/missed session/)).not.toBeInTheDocument();
+  });
+
   it('reassures with no derived denominator when the rate held flat and none were missed', () => {
     data = windowStats({ attendanceRate: 100, missedByMentor: 0 }, { attendanceRate: 100 });
     render(<SessionQuality userId="u1" />);
