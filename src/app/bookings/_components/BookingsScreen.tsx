@@ -141,6 +141,18 @@ export function BookingsScreen() {
   useEffect(() => resetHistory(), [filters, resetHistory]);
 
   const counts = member?.bookingCounts;
+  // The list drops requests whose deadline has passed — they belong in History
+  // now — while the server's aggregate still counts them for up to an hour,
+  // because its sweep is hourly. Trusting the aggregate made the badge read
+  // "3 awaiting a response" over a list of 2 (GitHub review, PR 235).
+  //
+  // So where the list is on screen, the badge counts the rows in it. Elsewhere
+  // the server's figure stands: nothing is visible to contradict it, and a tab
+  // reading nothing would hide a count the viewer had just seen. Keyed on the
+  // tab rather than on whether the query happens to hold data, so it does not
+  // rest on what an idle query returns.
+  const pendingCount =
+    tab === 'pending' ? (pending.data?.length ?? counts?.pending ?? null) : (counts?.pending ?? null);
   const items: TabItem[] = [
     {
       value: 'upcoming',
@@ -153,8 +165,8 @@ export function BookingsScreen() {
       value: 'pending',
       label: 'Pending',
       panelId: 'bookings-pending',
-      count: counts?.pending ?? null,
-      countLabel: counts?.pending != null ? `${counts.pending} awaiting a response` : undefined,
+      count: pendingCount,
+      countLabel: pendingCount != null ? `${pendingCount} awaiting a response` : undefined,
     },
     { value: 'history', label: 'History', panelId: 'bookings-history' },
   ];
