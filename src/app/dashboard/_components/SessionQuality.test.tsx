@@ -18,7 +18,9 @@ const block = (over: Partial<StatBlock> = {}): StatBlock => ({
   completedSessions: 12,
   mentoringMinutes: 720,
   menteesMentored: 6,
-  attendanceRate: 94,
+  // Consistent with completed / (completed + missed) = 12/14, so the ring (the
+  // attendance_rate) and "held of settled" agree.
+  attendanceRate: 86,
   missedByMentor: 2,
   cancelledByMentor: 2,
   reviewCount: 14,
@@ -65,18 +67,18 @@ describe('SessionQuality', () => {
   });
 
   it('renders the on-track content: ring, breakdown, rating and the good banner', () => {
-    data = windowStats({ attendanceRate: 94 }, { attendanceRate: 90 });
+    data = windowStats({ attendanceRate: 86 }, { attendanceRate: 77 });
     render(<SessionQuality userId="u1" />);
-    expect(screen.getByRole('img', { name: 'Show-up rate 94%' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Show-up rate 86%' })).toBeInTheDocument();
     expect(screen.getByText('On track')).toBeInTheDocument();
-    // held as booked = completed (12) of all booked: completed + canceled + missed (16)
-    expect(screen.getByText('12 of 16')).toBeInTheDocument();
+    // The breakdown is plain counts, so nothing competes with the ring.
+    expect(screen.getByText('Sessions completed')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Rated 4.8 out of 5' })).toBeInTheDocument();
     expect(screen.getByText('4.8')).toBeInTheDocument();
     expect(screen.getByText('(14)')).toBeInTheDocument();
     expect(screen.getByText(/keep it up/)).toBeInTheDocument();
     // Rising rate reassures.
-    expect(screen.getByText(/Up from 90% last quarter/)).toBeInTheDocument();
+    expect(screen.getByText(/Up from 77% last quarter/)).toBeInTheDocument();
   });
 
   it('renders the at-risk content: badge, banner and the two actions', () => {

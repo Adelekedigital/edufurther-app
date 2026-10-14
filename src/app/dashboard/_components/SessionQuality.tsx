@@ -20,9 +20,10 @@ const WINDOW_DAYS = 90;
 const GOOD_THRESHOLD = 85;
 
 /**
- * The line under the show-up rate. Rising reassures; otherwise it names how
- * many of the window's booked sessions didn't go ahead. "Up" needs both
- * windows' rates, so a first-ever previous window (null) falls to the count.
+ * The line under the show-up rate. Rising reassures; otherwise it names the
+ * no-shows behind the rate — only no-shows, never cancellations, since the rate
+ * is attendance over the sessions you were expected at. "Up" needs both windows'
+ * rates, so a first-ever previous window (null) falls to the no-show count.
  */
 function rateContext(current: StatBlock, previous: StatBlock): string {
   const cur = current.attendanceRate;
@@ -30,9 +31,11 @@ function rateContext(current: StatBlock, previous: StatBlock): string {
   if (cur != null && prev != null && cur > prev) {
     return `Up from ${prev}% last quarter. Mentees can count on you.`;
   }
-  const notHeld = current.missedByMentor + current.cancelledByMentor;
-  const booked = current.completedSessions + current.missedByMentor + current.cancelledByMentor;
-  return `${notHeld} of your last ${booked} booked sessions didn’t go ahead.`;
+  const settled = current.completedSessions + current.missedByMentor;
+  const missed = current.missedByMentor;
+  return missed === 0
+    ? `No no-shows in your last ${settled} booked sessions.`
+    : `${missed} no-show${missed === 1 ? '' : 's'} in your last ${settled} booked sessions.`;
 }
 
 function Loading() {
@@ -99,10 +102,6 @@ export function SessionQuality({ userId }: { userId: string }) {
 
   const rate = current.attendanceRate;
   const good = rate >= GOOD_THRESHOLD;
-  const held = current.completedSessions;
-  // Every booked session: held + canceled + missed (the design's "16 of 17"),
-  // the same total rateContext counts against, so the card agrees with itself.
-  const expected = current.completedSessions + current.cancelledByMentor + current.missedByMentor;
   const missed = current.missedByMentor;
   const rating = current.averageRating;
 
@@ -138,10 +137,8 @@ export function SessionQuality({ userId }: { userId: string }) {
       <div className={styles.breakdown}>
         <div className={styles.row}>
           <Icon name="check_circle" size={16} className={styles.iconHeld} />
-          <span className={styles.rowLabel}>Held as booked</span>
-          <span className={styles.rowValue}>
-            {held} of {expected}
-          </span>
+          <span className={styles.rowLabel}>Sessions completed</span>
+          <span className={styles.rowValue}>{current.completedSessions}</span>
         </div>
         <div className={styles.row}>
           <Icon name="event_busy" size={16} className={styles.iconMuted} />
