@@ -69,8 +69,8 @@ describe('SessionQuality', () => {
     render(<SessionQuality userId="u1" />);
     expect(screen.getByRole('img', { name: 'Show-up rate 94%' })).toBeInTheDocument();
     expect(screen.getByText('On track')).toBeInTheDocument();
-    // held as booked = completed (12) of completed + missed (14)
-    expect(screen.getByText('12 of 14')).toBeInTheDocument();
+    // held as booked = completed (12) of all booked: completed + canceled + missed (16)
+    expect(screen.getByText('12 of 16')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Rated 4.8 out of 5' })).toBeInTheDocument();
     expect(screen.getByText('4.8')).toBeInTheDocument();
     expect(screen.getByText('(14)')).toBeInTheDocument();

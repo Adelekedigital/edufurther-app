@@ -100,7 +100,9 @@ export function SessionQuality({ userId }: { userId: string }) {
   const rate = current.attendanceRate;
   const good = rate >= GOOD_THRESHOLD;
   const held = current.completedSessions;
-  const expected = current.completedSessions + current.missedByMentor;
+  // Every booked session: held + canceled + missed (the design's "16 of 17"),
+  // the same total rateContext counts against, so the card agrees with itself.
+  const expected = current.completedSessions + current.cancelledByMentor + current.missedByMentor;
   const missed = current.missedByMentor;
   const rating = current.averageRating;
 
