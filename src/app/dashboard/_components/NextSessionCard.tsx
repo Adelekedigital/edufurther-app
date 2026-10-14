@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { daysBetween, joinState, timeRange } from '@/lib/utils/bookings';
+import { sessionPhase } from '@/lib/utils/sessionPhase';
 import type { Booking } from '@/types/booking';
 import type { AppError } from '@/types/mentor';
 import styles from './NextSessionCard.module.css';
@@ -32,7 +33,14 @@ function SessionRow({
 }) {
   const days = daysBetween(now, new Date(booking.startsAt), timeZone);
   const rel = days <= 0 ? 'Today' : days === 1 ? 'Tomorrow' : `In ${days} days`;
+  // The session's own page is both the way in and, before the window opens, the
+  // countdown and details — so one href serves either CTA.
+  const sessionHref = `/sessions/${encodeURIComponent(booking.id)}`;
   const canJoin = joinState(booking, now) === 'open';
+  // Still ahead of the join window: a Join that can only fail is worse than
+  // none, so link to the details instead. "Upcoming" is the backend's window
+  // (sessionPhase), never a threshold invented here.
+  const upcoming = !canJoin && sessionPhase(booking, now) === 'upcoming';
   return (
     <div className={styles.body}>
       <div className={styles.chip} aria-hidden>
@@ -47,17 +55,19 @@ function SessionRow({
         </span>
         <span className={styles.sub}>{rel}</span>
       </div>
-      {canJoin && (
+      {canJoin ? (
         <div className={styles.actions}>
-          <ButtonLink
-            href={`/sessions/${encodeURIComponent(booking.id)}`}
-            variant="primary"
-            size="small"
-          >
+          <ButtonLink href={sessionHref} variant="primary" size="small">
             Join session
           </ButtonLink>
         </div>
-      )}
+      ) : upcoming ? (
+        <div className={styles.actions}>
+          <ButtonLink href={sessionHref} variant="secondary-outlined" size="small">
+            View session details
+          </ButtonLink>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -69,7 +79,8 @@ function SessionRow({
  *
  * Omitted from the design pending backend: the venue line (no per-row venue),
  * the "New mentee" tag (no first-time-with-you signal), and "Send a message"
- * (no endpoint — #334). Join shows only inside the join window.
+ * (no endpoint — #334). The CTA is time-aware: "Join session" inside the join
+ * window, and "View session details" while the session is still ahead of it.
  */
 export function NextSessionCard({
   isLoading,
