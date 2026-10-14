@@ -9,6 +9,8 @@ import { DetailFacts, type Fact } from '@/components/molecules/DetailFacts/Detai
 import { cx } from '@/lib/utils/cx';
 import {
   attendanceLine,
+  canCancel,
+  canWithdraw,
   fullDate,
   joinOpensInMinutes,
   joinState,
@@ -64,6 +66,27 @@ type BookingDetailsProps = {
   answersExpanded?: boolean;
   onToggleAnswers?: () => void;
   onOpenFile?: (file: AnswerFile) => void;
+  /**
+   * Calls the booking off — the destructive action the row's ⋯ menu used to
+   * carry. The panel decides which verb this booking takes and sends it back,
+   * so the screen never derives the same thing twice and the two cannot
+   * disagree about what the button it is confirming actually said.
+   */
+  onCallOff?: (action: 'cancel' | 'withdraw') => void;
+  /**
+   * Accept and Decline for a request this viewer must answer, built by the page
+   * — the same builder the row uses, so there is one set of mutations, one
+   * busy state and one opinion about whether accepting would clash. The panel
+   * places them; it does not own them.
+   */
+  answer?: ReactNode;
+  /**
+   * What the viewer must read **before** answering — the overlap warning, and
+   * the error if accepting failed. It belongs here and not only on the row:
+   * below 1100px this panel is a full-screen sheet, so a notice rendered in the
+   * row sits underneath it (GitHub review, PR 233).
+   */
+  answerNotice?: ReactNode;
   now?: Date;
 };
 
@@ -135,9 +158,12 @@ function outcomeHeading(o: BookingOutcome, b: Booking): string {
  * and the phone sheet — the two differ in their frame, never in what they say.
  *
  * The design pairs Join with "Send a message", and Cancel, Accept and Decline
- * sit in this footer too. Only Join is here: the message control has no
- * endpoint, and the write actions are PR 3. A footer with nothing in it does
- * not render at all.
+ * sit in this footer too. Join, the call-off and the answer are all here; the
+ * message control is the one thing still missing, because it has no endpoint.
+ * Accept and Decline also stay on the pending row — the owner asked for both,
+ * and the row is where someone scanning a list answers from.
+ *
+ * A footer with nothing in it does not render at all.
  */
 export function BookingDetails({
   booking: b,
@@ -156,6 +182,9 @@ export function BookingDetails({
   onBookSuggestion,
   onToggleAnswers,
   onOpenFile,
+  onCallOff,
+  answer,
+  answerNotice,
   joinHref,
   now = new Date(),
 }: BookingDetailsProps) {
@@ -164,6 +193,23 @@ export function BookingDetails({
   const join = joinState(b, now);
   const opensIn = joinOpensInMinutes(b);
   const showJoin = !!joinHref && (join === 'open' || join === 'before');
+  // The one destructive thing this viewer can still do to this booking, in the
+  // panel rather than a tap away in a scrolling list. The two are mutually
+  // exclusive — one wants `pending`, the other `confirmed` — so the order only
+  // decides which reads first, not which wins.
+  //
+  // Answering a request arrives as `answer` instead, from the page. This footer
+  // once offered neither Accept nor Decline, on the reasoning that the refusal
+  // without the acceptance is a trap — true, but the conclusion left the panel
+  // mute: it said "Respond within 2 days" and gave nothing to respond with, and
+  // on a phone the sheet covered the row's own buttons (UI review, PR 233).
+  // Both, or nothing.
+  const callOff = canWithdraw(b, now)
+    ? { action: 'withdraw' as const, label: 'Withdraw request' }
+    : canCancel(b, now)
+      ? { action: 'cancel' as const, label: 'Cancel session' }
+      : null;
+  const showCallOff = !!onCallOff && !!callOff;
   const answersTitle = b.side === 'mentee' ? 'Your answers' : `Answers from ${b.other.firstName}`;
   const credit = outcome ? creditLine(outcome, b, now) : '';
   // Collapsed, the preview shows the first two **answered** questions, not
@@ -384,20 +430,39 @@ export function BookingDetails({
         </div>
       </div>
 
-      {showJoin && (
+      {(showJoin || showCallOff || !!answer) && (
         <div className={styles.footer}>
-          {/* It navigates once open, so it is a link; before that, a locked button. */}
-          {join === 'open' ? (
-            <ButtonLink href={joinHref!} prefetch={false} variant="primary" size="large" fullWidth>
-              Join session
-            </ButtonLink>
-          ) : (
-            <Button variant="primary" size="large" fullWidth disabled>
-              Join session
-            </Button>
-          )}
-          {join === 'before' && opensIn != null && (
+          {/* Above the buttons, so it is read before it is acted on rather
+              than explaining afterwards. */}
+          {!!answer && answerNotice}
+          {/* For a request awaiting an answer this is the whole reason the
+              panel was opened. */}
+          {!!answer && <div className={styles.answer}>{answer}</div>}
+          {showJoin &&
+            /* It navigates once open, so it is a link; before that, a locked button. */
+            (join === 'open' ? (
+              <ButtonLink href={joinHref!} prefetch={false} variant="primary" size="large" fullWidth>
+                Join session
+              </ButtonLink>
+            ) : (
+              <Button variant="primary" size="large" fullWidth disabled>
+                Join session
+              </Button>
+            ))}
+          {showJoin && join === 'before' && opensIn != null && (
             <span className={styles.lock}>Join opens {opensIn} minutes before</span>
+          )}
+          {/* Low emphasis, under Join: calling the session off is the rarer
+              choice, and the same `text-destructive` the row's Decline uses. */}
+          {showCallOff && (
+            <Button
+              variant="text-destructive"
+              size="large"
+              fullWidth
+              onClick={() => onCallOff!(callOff!.action)}
+            >
+              {callOff!.label}
+            </Button>
           )}
         </div>
       )}

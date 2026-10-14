@@ -17,10 +17,20 @@ const meta: Meta<typeof NextSessionCard> = {
     timeZone: 'Africa/Lagos',
     joinHref: '/sessions/b1',
     now: NOW,
+    // The corner control renders in no story without this, and the hero has no
+    // test file of its own — so it was the one copy of this button nobody
+    // could look at (structural review, PR 233).
+    onOpenDetails: () => {},
+    answersControls: 'booking-details',
   },
 };
 export default meta;
 type Story = StoryObj<typeof NextSessionCard>;
+
+/** The panel it opens is on screen, so the control says so. */
+export const DetailsOpen: Story = {
+  args: { detailsOpen: true },
+};
 
 /** Days away: no Join yet, and no explanation needed either. */
 export const DaysAway: Story = {};

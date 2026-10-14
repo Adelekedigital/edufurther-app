@@ -1,9 +1,9 @@
 import { useId } from 'react';
+import { DetailsButton } from '@/components/molecules/DetailsButton/DetailsButton';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
-import { RowMenu, type RowMenuItem } from '@/components/molecules/RowMenu/RowMenu';
 import { cx } from '@/lib/utils/cx';
 import {
   bookingHeading,
@@ -26,8 +26,17 @@ type NextSessionCardProps = {
   answersControls?: string;
   /** The session's own page, where joining happens (Session Join.dc.html). */
   joinHref: string;
-  /** The ⋯ menu — "See details", as the design's hero has. */
-  menu?: RowMenuItem[];
+  /**
+   * Opens the details panel. The hero reads the same way as the rows below it:
+   * a labelled control, not a ⋯ hiding one item. Omit it and nothing is drawn.
+   */
+  onOpenDetails?: () => void;
+  /**
+   * Whether this booking's panel is the one open. The rows derive it from
+   * `selected`; the hero has no such prop, and without it the control would
+   * claim to be closed while the panel it opened is on screen.
+   */
+  detailsOpen?: boolean;
   now?: Date;
 };
 
@@ -51,7 +60,8 @@ export function NextSessionCard({
   booking: b,
   timeZone,
   joinHref,
-  menu,
+  onOpenDetails,
+  detailsOpen,
   onOpenAnswers,
   answersControls,
   now = new Date(),
@@ -78,11 +88,12 @@ export function NextSessionCard({
           <Icon name={when.icon} size={14} />
           {when.label}
         </span>
-        {!!menu?.length && (
-          <RowMenu
-            label={`More options for ${bookingHeading(b)}`}
-            items={menu}
-            trigger={{ icon: 'more_horiz', size: 20, className: styles.more }}
+        {onOpenDetails && (
+          <DetailsButton
+            name={bookingHeading(b)}
+            controls={answersControls}
+            expanded={detailsOpen}
+            onClick={onOpenDetails}
           />
         )}
       </div>

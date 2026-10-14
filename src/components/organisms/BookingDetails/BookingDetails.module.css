@@ -124,6 +124,17 @@
   border-top: var(--border-hairline) solid var(--ink-100);
 }
 
+/* Stacked, not side by side: `Bookings.dc.html` draws the panel's pending
+   footer as a full-width "Accept request" with the quieter Decline beneath it,
+   which is also the shape Join and Cancel already take here. Two equal halves
+   gave Decline the same weight as Accept, which is not what either the design
+   or the CTA hierarchy says. */
+.answer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
 .lock {
   font-size: var(--text-p-xs);
   color: var(--ink-600);

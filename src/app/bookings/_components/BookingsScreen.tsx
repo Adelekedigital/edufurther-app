@@ -30,18 +30,9 @@ import { BOOKINGS_GATE, memberGate } from '../../_shell/MentorGate';
 import { cx } from '@/lib/utils/cx';
 import { useAppShell } from '../../_shell/useAppShell';
 import { Button } from '@/components/atoms/Button/Button';
-import type { RowMenuItem } from '@/components/molecules/RowMenu/RowMenu';
 import { ConfirmActionDialog } from '@/app/_sessions/ConfirmActionDialog';
 import { IntakeFileViewer } from '@/app/_sessions/IntakeFileViewer';
-import {
-  bookingHeading,
-  canAccept,
-  canCancel,
-  canWithdraw,
-  fullDate,
-  HISTORY_FILTERS,
-  overlapping,
-} from '@/lib/utils/bookings';
+import { bookingHeading, canAccept, fullDate, HISTORY_FILTERS, overlapping } from '@/lib/utils/bookings';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
 import { useMyReviewableSessions } from '@/lib/api/data/reviewableSessions';
 import { BookingsPanel } from './BookingsPanel';
@@ -210,37 +201,20 @@ export function BookingsScreen() {
   // "you have reviewed everything", which is the error-before-empty rule.
   const reviewUnknown = reviewable.isLoading || !!reviewable.error;
 
-  const rowMenu = (b: Booking) => {
-    const items: RowMenuItem[] = [
-      {
-        key: 'details',
-        icon: 'info',
-        label: selected === b.id ? 'Hide details' : 'See details',
-        onSelect: () => toggle(b.id),
-      },
-    ];
-    // Only what this person can actually do to this booking, now. A control
-    // that would be refused is worse than no control.
-    if (canWithdraw(b, now))
-      items.push({
-        key: 'withdraw',
-        icon: 'block',
-        label: 'Withdraw request',
-        onSelect: () => setConfirming({ action: 'withdraw', booking: b }),
-        danger: true,
-      });
-    if (canCancel(b, now))
-      items.push({
-        key: 'cancel',
-        icon: 'block',
-        label: 'Cancel session',
-        onSelect: () => setConfirming({ action: 'cancel', booking: b }),
-        danger: true,
-      });
-    return items;
-  };
-
   const clashId = (id: string) => `clash-${id}`;
+  /**
+   * The row's copy of the warning, except for the row whose panel is open —
+   * that one is rendered in the panel instead, beside the Accept being pressed.
+   *
+   * Exactly one, always. Above 1100px the panel is an aside and the row stays
+   * on screen beside it, so rendering both put two live regions carrying the
+   * same sentence on the page: it announced twice, and the shared `clash-<id>`
+   * meant `aria-describedby` on either Accept resolved to whichever the browser
+   * found first (GitHub review, PR 233). Both buttons point at the one that
+   * exists, which is what that attribute is for.
+   */
+  const panelNotice = (b: Booking) => (open?.id === b.id ? null : rowNotice(b));
+
 
   /**
    * Full width under the row's detail, never in the button rail: a block in
@@ -273,16 +247,32 @@ export function BookingsScreen() {
   };
 
   /** The mentor's two answers to a pending request, on the row itself. */
-  const rowActions = (b: Booking) => {
+  /**
+   * Accept and Decline, for the row and for the details panel both. One
+   * builder, so there is one set of mutations, one busy state and one opinion
+   * about whether accepting would clash — the panel places them, it does not
+   * own them. Size by placement, per the CTA hierarchy: `small` in a row,
+   * `large` in a modal footer.
+   */
+  const rowActions = (b: Booking, place: 'row' | 'panel' = 'row') => {
     if (!canAccept(b, now)) return null;
+    // The design draws these differently in the two places, so the placement
+    // decides the variant, the size and the label — not just the size. In a
+    // row: an outlined Accept and a text Decline, so a list does not carry a
+    // column of fills. In the panel: "Accept request" as the one filled button
+    // in that view, full width, with Decline quieter beneath it
+    // (`Bookings.dc.html`, the `d.pending` footer).
+    const inPanel = place === 'panel';
+    const size = inPanel ? ('large' as const) : ('small' as const);
     const clash = overlapping(b, upcoming.data ?? []);
     return (
       <>
         {/* The design's own variants: an outlined Accept and a destructive
          *text* Decline, so the row does not carry two competing fills. */}
         <Button
-          variant="secondary-outlined"
-          size="small"
+          variant={inPanel ? 'primary' : 'secondary-outlined'}
+          size={size}
+          fullWidth={inPanel}
           busy={accept.isPending && accept.variables?.bookingId === b.id}
           aria-describedby={clash ? clashId(b.id) : undefined}
           onClick={() =>
@@ -298,11 +288,16 @@ export function BookingsScreen() {
             )
           }
         >
-          {accept.isPending && accept.variables?.bookingId === b.id ? 'Accepting…' : 'Accept'}
+          {accept.isPending && accept.variables?.bookingId === b.id
+            ? 'Accepting…'
+            : inPanel
+              ? 'Accept request'
+              : 'Accept'}
         </Button>
         <Button
           variant="text-destructive"
-          size="small"
+          size={size}
+          fullWidth={inPanel}
           onClick={() => setConfirming({ action: 'decline', booking: b })}
         >
           Decline
@@ -358,7 +353,7 @@ export function BookingsScreen() {
                   heading={later.length ? 'Later' : undefined}
                   now={now}
                   total={later.length}
-                  menuFor={rowMenu}
+                  onOpenDetails={toggle}
                   onOpenAnswers={openAnswers}
                   answersControls={showPanel ? PANEL_ID : undefined}
                   selectedId={selected}
@@ -372,7 +367,8 @@ export function BookingsScreen() {
                       answersControls={showPanel ? PANEL_ID : undefined}
                       timeZone={timeZone}
                       joinHref={joinHref(next.id)}
-                      menu={rowMenu(next)}
+                      onOpenDetails={() => toggle(next.id)}
+                      detailsOpen={selected === next.id}
                       now={now}
                     />
                   )}
@@ -391,9 +387,9 @@ export function BookingsScreen() {
                   intro={pendingIntro}
                   total={pending.data?.length}
                   now={now}
-                  menuFor={rowMenu}
+                  onOpenDetails={toggle}
                   actionsFor={rowActions}
-                  noticeFor={rowNotice}
+                  noticeFor={panelNotice}
                   onOpenAnswers={openAnswers}
                   answersControls={showPanel ? PANEL_ID : undefined}
                   selectedId={selected}
@@ -425,7 +421,7 @@ export function BookingsScreen() {
                   timeZone={timeZone}
                   isMentor={isMentor}
                   filtered={filters.length > 0}
-                  menuFor={rowMenu}
+                  onOpenDetails={toggle}
                   selectedId={selected}
                   shown={reveal.history.shown}
                   showMore={() => {
@@ -474,6 +470,18 @@ export function BookingsScreen() {
               <BookingDetailsPanel
                 asSheet={asSheet}
                 booking={open ?? null}
+                onCallOff={(action) => open && setConfirming({ action, booking: open })}
+                // Pressing Details on a request awaiting an answer used to open
+                // a panel saying "Respond within 2 days" with nothing to
+                // respond with, and on a phone the sheet covered the row's own
+                // buttons (UI review, PR 233; owner chose both over a pointer
+                // back to the row).
+                answer={open ? rowActions(open, 'panel') : null}
+                // The clash warning and a failed Accept, in the panel too: on a
+                // phone the sheet covers the row, so a notice left only there
+                // is behind it and the mentor accepts a double booking having
+                // read nothing (GitHub review, PR 233).
+                answerNotice={open ? rowNotice(open) : null}
                 timeZone={timeZone}
                 outcome={outcome.data}
                 outcomeLoading={outcome.isLoading}

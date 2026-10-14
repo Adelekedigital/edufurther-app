@@ -1,0 +1,29 @@
+/* `flex: none` so it never takes a line of its own. The negative vertical
+   margins let a 44px tap target sit in a row the design draws no taller, and
+   `align-self: flex-start` keeps it in the corner of a row whose content has
+   grown taller than it — a row with an answers preview, a notice or a deadline
+   pill would otherwise float it to the middle. */
+.details {
+  flex: none;
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: var(--touch-target-min);
+  margin: calc(var(--space-3) * -1) calc(var(--space-2) * -1) calc(var(--space-3) * -1) auto;
+  padding: 0 var(--space-2);
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-700);
+}
+.details:hover {
+  color: var(--ink-900);
+}
+.details:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
