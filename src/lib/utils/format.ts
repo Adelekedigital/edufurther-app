@@ -11,6 +11,11 @@ export function formatRating(r: number): string {
   return r.toFixed(1);
 }
 
+/** A whole-number count with thousands separators: 7320 → "7,320". */
+export function formatCount(n: number): string {
+  return Math.round(n).toLocaleString('en-US');
+}
+
 /** An instant as "Oct 12", in the viewer's zone: a deletion date, said the same on the row, the confirm and the announcement. */
 export function formatShortDate(isoInstant: string): string {
   return new Date(isoInstant).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });

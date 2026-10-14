@@ -7,6 +7,7 @@ import { Chip } from './Chip/Chip';
 import { Icon } from './Icon/Icon';
 import { Star } from './Star/Star';
 import { IconButton } from './IconButton/IconButton';
+import { InfoTip } from './InfoTip/InfoTip';
 import { Input } from './Input/Input';
 import { Radio } from './Radio/Radio';
 import { Select } from './Select/Select';
@@ -61,6 +62,18 @@ export const Buttons: Story = {
           Sending request…
         </Button>
       </div>
+    </div>
+  ),
+};
+
+/** Contextual help (BFM "Contextualising dates"): opens on hover, focus and tap; Escape closes. */
+export const InfoTips: Story = {
+  render: () => (
+    <div style={{ ...row, padding: 48 }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+        Average rating
+        <InfoTip label="Average of mentee reviews after completed sessions" />
+      </span>
     </div>
   ),
 };

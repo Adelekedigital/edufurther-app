@@ -1,5 +1,6 @@
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
+import { InfoTip } from '@/components/atoms/InfoTip/InfoTip';
 import { cx } from '@/lib/utils/cx';
 import styles from './KpiCard.module.css';
 
@@ -39,9 +40,7 @@ export function KpiCard({ label, value, unit, info, trend, link, className }: Kp
       {info ? (
         <div className={styles.labelRow}>
           <span className={styles.label}>{label}</span>
-          <span className={styles.info} role="img" aria-label={info} title={info}>
-            <Icon name="info" size={16} />
-          </span>
+          <InfoTip label={info} />
         </div>
       ) : (
         <span className={styles.label}>{label}</span>

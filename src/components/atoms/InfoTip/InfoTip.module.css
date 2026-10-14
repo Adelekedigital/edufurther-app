@@ -1,0 +1,66 @@
+.wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.trigger {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  /* 24px visual around the 16px glyph, pulled back with a negative margin so it
+     doesn't grow the dense label row; on phones an invisible area reaches the
+     44px house touch target (the media query below). */
+  width: var(--space-6);
+  height: var(--space-6);
+  margin: calc(var(--space-1) * -1);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--ink-400);
+  cursor: help;
+}
+.trigger:hover {
+  color: var(--ink-600);
+}
+.trigger:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+@media (max-width: 767px) {
+  /* Keep the 24px visual, but reach the 44px house target with an invisible
+     area (CTA Hierarchy rule 5), the same as IconButton's row actions, so the
+     label row doesn't reflow. */
+  .trigger::after {
+    content: '';
+    position: absolute;
+    inset: calc((var(--space-6) - var(--touch-target-min)) / 2);
+  }
+}
+
+.bubble {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: 0;
+  z-index: 10;
+  /* Right-anchored to the icon by default; .flipped opens rightward when the
+     right anchor would clip off a left-hand grid cell. */
+  width: max-content;
+  max-width: 220px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-menu), inset 0 0 0 1px var(--ink-200);
+  color: var(--text-secondary);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  text-align: left;
+  /* Purely informational — never swallow a click meant for what's underneath. */
+  pointer-events: none;
+}
+.flipped {
+  right: auto;
+  left: 0;
+}
