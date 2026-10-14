@@ -450,6 +450,11 @@ export function BookingsScreen() {
                 // buttons (UI review, PR 233; owner chose both over a pointer
                 // back to the row).
                 answer={open ? rowActions(open, 'large') : null}
+                // The clash warning and a failed Accept, in the panel too: on a
+                // phone the sheet covers the row, so a notice left only there
+                // is behind it and the mentor accepts a double booking having
+                // read nothing (GitHub review, PR 233).
+                answerNotice={open ? rowNotice(open) : null}
                 timeZone={timeZone}
                 outcome={outcome.data}
                 outcomeLoading={outcome.isLoading}

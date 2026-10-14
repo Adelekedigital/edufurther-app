@@ -125,6 +125,22 @@ describe('the actions appear only where they can succeed', () => {
     expect(screen.getAllByRole('button', { name: 'Accept' })).toHaveLength(2);
   });
 
+  it('the overlap warning reaches the panel, where the Accept now is', () => {
+    // Below 1100px the panel is a full-screen sheet, so a warning rendered only
+    // in the row sits underneath it — and the mentor accepts a double booking
+    // having read nothing (GitHub review, PR 233).
+    h.viewer = { ...MEMBER, isMentor: true };
+    h.upcoming = remote([booking({ id: 'clash', startsAt: at(30), endsAt: at(31) })]);
+    h.pending = remote([
+      booking({ id: 'p1', status: 'pending', respondBy: at(5), startsAt: at(30), endsAt: at(31) }),
+    ]);
+    h.tab = 'pending';
+    h.selectedBooking = 'p1';
+    render(<BookingsScreen />);
+    const panel = document.getElementById('booking-details')!;
+    expect(within(panel).getByText(/Accepting books both/)).toBeVisible();
+  });
+
   it('declining from the panel still asks first', async () => {
     h.viewer = { ...MEMBER, isMentor: true };
     h.pending = remote([pendingRow({ side: 'mentor' })]);

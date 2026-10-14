@@ -80,6 +80,13 @@ type BookingDetailsProps = {
    * places them; it does not own them.
    */
   answer?: ReactNode;
+  /**
+   * What the viewer must read **before** answering — the overlap warning, and
+   * the error if accepting failed. It belongs here and not only on the row:
+   * below 1100px this panel is a full-screen sheet, so a notice rendered in the
+   * row sits underneath it (GitHub review, PR 233).
+   */
+  answerNotice?: ReactNode;
   now?: Date;
 };
 
@@ -175,6 +182,7 @@ export function BookingDetails({
   onOpenFile,
   onCallOff,
   answer,
+  answerNotice,
   joinHref,
   now = new Date(),
 }: BookingDetailsProps) {
@@ -422,8 +430,11 @@ export function BookingDetails({
 
       {(showJoin || showCallOff || !!answer) && (
         <div className={styles.footer}>
-          {/* First: for a request awaiting an answer this is the whole reason
-              the panel was opened. */}
+          {/* Above the buttons, so it is read before it is acted on rather
+              than explaining afterwards. */}
+          {!!answer && answerNotice}
+          {/* For a request awaiting an answer this is the whole reason the
+              panel was opened. */}
           {!!answer && <div className={styles.answer}>{answer}</div>}
           {showJoin &&
             /* It navigates once open, so it is a link; before that, a locked button. */
