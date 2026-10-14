@@ -70,4 +70,13 @@ describe('PerformanceChart', () => {
     expect(screen.getByText('No sessions yet')).toBeInTheDocument();
     expect(screen.queryByRole('img', { name: /Session performance/ })).not.toBeInTheDocument();
   });
+
+  it('exposes each month column to the keyboard and screen reader', () => {
+    render(<PerformanceChart series={series} months={months} />);
+    // 6M range → 6 focusable columns, each named with its figures.
+    const cols = screen.getAllByRole('img', { name: /\d+ completed/ });
+    expect(cols).toHaveLength(6);
+    cols[0]!.focus();
+    expect(cols[0]).toHaveFocus();
+  });
 });

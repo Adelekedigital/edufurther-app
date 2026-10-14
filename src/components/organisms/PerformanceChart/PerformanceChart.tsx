@@ -172,6 +172,8 @@ export function PerformanceChart({
                 <line key={`y${k}`} x1={ym.x} x2={ym.x} y1={214} y2={258} stroke="var(--ink-200)" strokeWidth={1} />
               ))}
               {m.cols.map((c) => (
+                // Focusable, so the month's figures reach keyboard + screen
+                // readers, not just a mouse hover; focus shows the tooltip too.
                 <rect
                   key={`hit${c.index}`}
                   x={c.hx}
@@ -179,8 +181,14 @@ export function PerformanceChart({
                   width={c.hw}
                   height={262}
                   fill="transparent"
+                  tabIndex={0}
+                  role="img"
+                  aria-label={c.aria}
+                  className={styles.hit}
                   onMouseEnter={() => setHover(c.index)}
                   onMouseLeave={() => setHover(-1)}
+                  onFocus={() => setHover(c.index)}
+                  onBlur={() => setHover(-1)}
                 />
               ))}
             </svg>

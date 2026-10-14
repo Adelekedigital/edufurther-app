@@ -48,11 +48,14 @@ export function buildChartModel(i: ChartModelInput) {
     return { m: MN[(m ?? 1) - 1]!, y: y ?? 0, mi: (m ?? 1) - 1 };
   };
 
+  const lastMonth = months[months.length - 1] ?? '';
   const buckets: { keys: string[]; idx: number[] }[] = isYear
-    ? Array.from({ length: 12 }, (_, m) => {
-        const k = `${yr}-${String(m + 1).padStart(2, '0')}`;
-        return { keys: [k], idx: [months.indexOf(k)] };
-      })
+    ? Array.from({ length: 12 }, (_, m) => `${yr}-${String(m + 1).padStart(2, '0')}`)
+        // Keep the months we actually fetched, plus future months of the
+        // current year (drawn greyed). A month before the fetched window is not
+        // "0 sessions", it's "not loaded" — drop it rather than fake a zero.
+        .filter((k) => months.includes(k) || k > lastMonth)
+        .map((k) => ({ keys: [k], idx: [months.indexOf(k)] }))
     : // Index from the sliced length, not n: with fewer months than the range,
       // months.length - n would go negative and silently read as empty.
       months
@@ -135,6 +138,10 @@ export function buildChartModel(i: ChartModelInput) {
       hoverFill: hover === j ? 'var(--ink-50)' : 'transparent',
       labelColor: future ? 'var(--ink-300)' : hot ? 'var(--ink-900)' : 'var(--ink-500)',
       labelWeight: hot ? 'var(--weight-semibold)' : 'var(--weight-regular)',
+      // The month's figures, for a screen reader and a keyboard tooltip.
+      aria: future
+        ? `${L.full}: upcoming`
+        : `${L.full}: ${series.map((s) => `${val(s, b)} ${s.label.toLowerCase()}`).join(', ')}`,
     };
   });
 

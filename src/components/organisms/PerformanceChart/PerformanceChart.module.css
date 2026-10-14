@@ -121,6 +121,11 @@
   display: block;
   overflow: visible;
 }
+/* Each column is a focus target for the keyboard tooltip. */
+.hit:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: -2px;
+}
 .yUnit {
   position: absolute;
   left: 0;

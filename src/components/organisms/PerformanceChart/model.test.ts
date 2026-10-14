@@ -92,4 +92,22 @@ describe('buildChartModel', () => {
     expect(m.isYear).toBe(true);
     expect(m.period).toBe('Jan – Dec 2025');
   });
+
+  it('year view drops months before the fetched window — no false zeros', () => {
+    // A 12-month window Apr 2025 – Mar 2026; pick 2025.
+    const span = Array.from({ length: 12 }, (_, i) => {
+      const d = new Date(Date.UTC(2025, 3 + i, 1));
+      return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+    });
+    const m = buildChartModel(input({ months: span, range: 'y2025' }));
+    // Jan–Mar 2025 were never fetched, so they are dropped, not shown as 0.
+    expect(m.cols).toHaveLength(9);
+    expect(m.cols[0]!.label).toBe('Apr');
+  });
+
+  it('gives each column an accessible breakdown', () => {
+    const m = buildChartModel(input({ range: '6m' }));
+    // The last visible month (index 11 overall) is Dec: completed 4, canceled 0, missed 1.
+    expect(m.cols.at(-1)!.aria).toBe('Dec 2025: 4 completed, 0 canceled, 1 missed');
+  });
 });
