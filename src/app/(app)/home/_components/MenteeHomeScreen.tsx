@@ -1,0 +1,237 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button, ButtonLink } from '@/components/atoms/Button/Button';
+import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
+import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
+import { KpiCard } from '@/components/molecules/KpiCard/KpiCard';
+import { Notice } from '@/components/molecules/Notice/Notice';
+import { useUpcomingBookings } from '@/lib/api/data/bookings';
+import { EMPTY_STATS, useMenteeStats } from '@/lib/api/data/menteeHome';
+import { deviceTimeZone } from '@/lib/utils/format';
+import { useAppShell } from '@/app/_shell/useAppShell';
+import { MenteeFirstSession } from './MenteeFirstSession';
+import { MenteeNextSession } from './MenteeNextSession';
+import { NEW_MENTEE_KPIS, returningKpis } from './menteeKpis';
+import styles from './MenteeHomeScreen.module.css';
+
+/**
+ * The mentee's home (Mentee Dashboard v2.dc.html): greeting, progress, next
+ * session. The app shell is mounted once by the (app) route-group layout
+ * (ADR 0007), so this screen renders only its own content.
+ */
+export function MenteeHomeScreen() {
+  const { viewer, member } = useAppShell();
+  const router = useRouter();
+  // deviceTimeZone is a lazy initializer; read it once (as the other screens do).
+  const [browserZone] = useState(deviceTimeZone);
+
+  // A minute tick so the next-session card's join state advances while the tab
+  // stays open (as BookingsScreen does). Without it `now` is frozen at the
+  // render that first showed the card, and "Join" never opens on its own.
+  const [clock, setClock] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setClock(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+  const now = useMemo(() => new Date(clock), [clock]);
+
+  // Mirror homeFor: a mentee is a member with a goal (isMentee) who is not a
+  // mentor. A signed-in member without a goal is NOT a mentee (homeFor → /explore).
+  const menteeSide = !!member && member.isMentee && !member.isMentor;
+  const completed = member?.completedSessions ?? 0;
+  const counts = member?.bookingCounts;
+  // New = no activity at all, and we must be *sure* of it. An absent count, or a
+  // count whose field is null, is "unknown" not "zero": both must fall back to
+  // returning, so a real upcoming session is never hidden behind the "book your
+  // first session" hero. `=== 0` (not `?? 0`) is what makes null/undefined miss —
+  // the field type is `number | null`, nullable per field, not just as a whole.
+  // Treated as returning, the session is fetched and the no-upcoming empty state
+  // (not the hero) covers a genuinely new mentee.
+  const isNew =
+    menteeSide && completed === 0 && counts?.upcoming === 0 && counts?.pending === 0;
+
+  const zone = member?.timeZone ?? browserZone;
+  const stats = useMenteeStats(member?.id ?? null, menteeSide && !isNew);
+  const upcoming = useUpcomingBookings(member?.id ?? null, zone, menteeSide && !isNew);
+
+  // A mentor or a signed-out visitor who lands on /home directly goes to their
+  // own home instead (homeFor sends them there from /, this covers a typed URL).
+  useEffect(() => {
+    if (viewer.kind === 'loading') return;
+    if (viewer.kind !== 'member') {
+      router.replace('/explore');
+      return;
+    }
+    // A member who isn't a mentee goes where homeFor sends them: a mentor to the
+    // dashboard, anyone else (no goal — the client viewer can't see admin, so an
+    // admin direct-navigating here lands on Explore, harmlessly) to Explore. Only
+    // a mentee (goal, not mentor) stays on /home.
+    if (viewer.isMentor) router.replace('/dashboard');
+    else if (!viewer.isMentee) router.replace('/explore');
+  }, [viewer, router]);
+
+  // While /me loads, or a non-mentee is being redirected: a neutral skeleton.
+  if (viewer.kind === 'loading' || !member || member.isMentor || !member.isMentee) {
+    return (
+      <div className={styles.page}>
+        <HomeSkeleton />
+      </div>
+    );
+  }
+
+  // The sessions list can carry rows on either side; the backend asks us to pick
+  // the mentee-side rows client-side, so the next session is the soonest of those.
+  const nextBooking = upcoming.data?.find((b) => b.side === 'mentee') ?? null;
+
+  // Monthly credits only for "N free sessions this month" — `credits.balance`
+  // folds in non-expiring bonus credits, which aren't "this month".
+  const monthly = member.credits?.monthly;
+
+  // State-dependent subline (Mentee Dashboard v2.dc.html: new / nothingNext /
+  // default), read from the upcoming list — the SAME source the next-session
+  // card below uses — so the subline and the card never disagree (a count and
+  // the list can). Only once the list has loaded; while it loads the card shows
+  // a skeleton and the subline stays the default.
+  //
+  // No confirmed session isn't always "nothing": a mentee may have a request
+  // still awaiting the mentor (bookingCounts.pending). useUpcomingBookings
+  // returns only confirmed rows, so without this that mentee would read as
+  // "nothing booked" and be invited to book again — a duplicate. A null count
+  // is unknown, not zero, so it stays "nothing" (we don't assert a request).
+  const listSettled = !upcoming.isLoading && !upcoming.error;
+  const noConfirmed = !isNew && listSettled && nextBooking === null;
+  const hasPending = noConfirmed && (counts?.pending ?? 0) > 0;
+  const noUpcoming = noConfirmed && !hasPending;
+  const subline = isNew
+    ? 'Let’s find the right mentor for your goal.'
+    : hasPending
+      ? 'Your request is with your mentor — we’ll let you know.'
+      : noUpcoming
+        ? 'No session booked right now. Pick up where you left off.'
+        : 'Here’s what’s next on your journey.';
+
+  return (
+    <div className={styles.page}>
+      <header className={styles.greeting}>
+        <h1 className={styles.hello}>Welcome back, {member.firstName}</h1>
+        <p className={styles.subline}>{subline}</p>
+      </header>
+
+      {/* Progress — error checked before the figures (ui-states). */}
+      {!isNew && stats.error ? (
+        <Notice tone="neutral" icon="error" title="We couldn’t load your progress.">
+          <button type="button" className={styles.inlineAction} onClick={stats.retry}>
+            Try again
+          </button>
+        </Notice>
+      ) : (
+        <section aria-label="Your progress" className={styles.kpis}>
+          {isNew
+            ? NEW_MENTEE_KPIS.map(({ key, ...k }) => <KpiCard key={key} {...k} />)
+            : stats.isLoading
+              ? Array.from({ length: 4 }).map((_, i) => <KpiSkeleton key={i} />)
+              : returningKpis(stats.data ?? EMPTY_STATS).map(({ key, ...k }) => (
+                  <KpiCard key={key} {...k} />
+                ))}
+        </section>
+      )}
+
+      {/* Next session — new mentee gets the invitation; otherwise the real card,
+          its own loading / error / empty states. */}
+      {isNew ? (
+        <MenteeFirstSession credits={monthly?.unlocked ? monthly.balance : null} />
+      ) : upcoming.isLoading ? (
+        <NextSkeleton />
+      ) : upcoming.error ? (
+        <EmptyState
+          illustration="forms"
+          title="We couldn’t load your next session."
+          description="Your bookings are safe — this is just the view."
+          actions={
+            <Button variant="secondary-outlined" size="large" onClick={upcoming.retry}>
+              Try again
+            </Button>
+          }
+        />
+      ) : nextBooking ? (
+        <MenteeNextSession key={nextBooking.id} booking={nextBooking} timeZone={zone} now={now} />
+      ) : hasPending ? (
+        <EmptyState
+          illustration="calendar-grey"
+          title="Waiting on your mentor"
+          description="You’ve sent a session request — we’ll let you know as soon as they respond."
+          actions={
+            <ButtonLink
+              href="/bookings?tab=pending"
+              prefetch={false}
+              variant="secondary-outlined"
+              size="large"
+            >
+              View your request
+            </ButtonLink>
+          }
+        />
+      ) : (
+        <EmptyState
+          illustration="calendar"
+          title="Nothing booked yet"
+          description="Book a session with a mentor you’ve met or someone new."
+          actions={
+            <ButtonLink href="/explore" prefetch={false} variant="primary" size="large">
+              Book a session
+            </ButtonLink>
+          }
+        />
+      )}
+    </div>
+  );
+}
+
+/** One KPI tile, loading. */
+function KpiSkeleton() {
+  return (
+    <div className={styles.skelKpi}>
+      <Skeleton width="55%" height="12px" />
+      <Skeleton width="40%" height="28px" />
+      <Skeleton width="65%" height="12px" />
+    </div>
+  );
+}
+
+/** The Next-session card, loading. */
+function NextSkeleton() {
+  return (
+    <div className={styles.skelNext}>
+      <Skeleton width="30%" height="16px" />
+      <div className={styles.skelNextRow}>
+        <Skeleton width="56px" height="56px" radius="md" />
+        <div className={styles.skelNextLines}>
+          <Skeleton width="60%" height="14px" />
+          <Skeleton width="45%" height="12px" />
+          <Skeleton width="50%" height="12px" />
+        </div>
+      </div>
+      <Skeleton width="140px" height="40px" radius="md" />
+    </div>
+  );
+}
+
+/** Greeting + progress + next session, all loading. */
+function HomeSkeleton() {
+  return (
+    <>
+      <div className={styles.greeting}>
+        <Skeleton width="240px" height="24px" />
+        <Skeleton width="180px" height="14px" />
+      </div>
+      <div className={styles.kpis}>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <KpiSkeleton key={i} />
+        ))}
+      </div>
+      <NextSkeleton />
+    </>
+  );
+}

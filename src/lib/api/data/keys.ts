@@ -142,4 +142,12 @@ export const keys = {
     /** The newest showable review, for the dashboard's session-quality quote. */
     quote: (userId: string) => ['myReviews', 'quote', userId] as const,
   },
+  /**
+   * The mentee home KPI stats (GET /api/v1/me/mentee-stats). `who` = the session
+   * identity, as every per-account key here: one mentee's progress is never
+   * another's, and a sign-out must not leave it cached.
+   */
+  menteeHome: {
+    stats: (who: string) => ['menteeHome', 'stats', who] as const,
+  },
 };
