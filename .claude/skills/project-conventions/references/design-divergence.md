@@ -647,3 +647,27 @@ place rather than re-syncing two.
 | 50 | X-axis **month** label `11px` | `--text-caption-sm` (12px) | Tokens-only: there is no 11px type token; 12px keeps the month a step above the 10px year label (`--text-caption-xs`). |
 | 51 | "Canceled" is one series | Sum of `cancelled_by_mentor + _mentee + _other` | The backend splits cancellations by who caused them; product chose the **full activity** view (all cancellations) over mentor-only (2026-10-14). "Missed" is `missed_by_mentor` — attendance, not status. |
 | 52 | "Missed" series `--orange-500` | `--red-500` | The orange ramp is **banned in product UI** (retired palette — `project-conventions` Settled decisions + Guardrails "Never"). `--red-500` is the sanctioned danger hue, and a no-show is the negative outcome. |
+
+### Mentor Dashboard — Session quality panel, 2026-10-14
+
+`Mentor Dashboard v2.dc.html`, the session-quality `<section>`. Built the
+data-backed core (`GET /me/mentor-stats`, 90-day window); the design's figures
+that the stats endpoint can't supply are omitted and recorded here.
+
+| Design | We do | Why | Revisit when |
+|---|---|---|---|
+| ProgressCircle quality drives a `good`/`low` prop, no numeric cutoff drawn | `attendanceRate ≥ 85` ⇒ "On track" (green), below ⇒ "At risk" (red) — one threshold for the badge, the card border, the ring tone and which banner shows | A UI decision: the backend defines no quality cutoff (`attendance_rate` is just 0–100). A number had to be chosen to render the two states the design draws | product sets an official show-up threshold, or the backend returns a quality band |
+| A mentee **review quote** ("…") beside the rating (dc lines ~269/307) | Omitted — rating stars + `average_rating` + review count only | `GET /me/mentor-stats` has no review text; the quote needs the reviews endpoint. Deferred → GitHub issue (roadmap) | the panel can read a recent review (reviews endpoint wired in) |
+| A **streak** line in the good-state banner (e.g. "N sessions held in a row" / "next session with Taofeeq") | Generic positive line — "You're holding your sessions — keep it up." — with the `local_fire_department` icon but no count or name | No streak figure or next-session-name in the stats payload; inventing one would be a fake number | the backend exposes a streak, or the panel reads the next booking |
+| A compact **teaser ↔ expanded** disclosure toggle | Ship the expanded layout only; no toggle | The teaser's whole point is to preview the quote and streak, neither of which we have, so the collapsed state would be emptier than the expanded one. Deferred → GitHub issue (roadmap) | the quote and streak land, giving the teaser something to show |
+| At-risk banner title "{n} mentees were left waiting" | Singular handled: "1 mentee was left waiting" | Grammar, fixed here under the small-fixes rule — at `rate < 85` the missed count can be 1 | never |
+| ProgressCircle arc is one colour | Arc tone follows the state (green on track, red at risk) | Consistency with the badge, card border and banner, which all theme on the same threshold. Flagged to coordinator in case the design's ring is a fixed colour | design confirms the ring colour |
+| Rating row always shows stars + a number | When `average_rating` is null but the panel is in its content state (settled sessions, no reviews yet), show "No reviews yet" instead | `toFixed` on null would throw; a settled-but-unreviewed window is a real case the design doesn't draw | design draws the no-reviews-yet rating row |
+
+**Ours, not the design's:** the `ProgressCircle` atom
+(`components/atoms/ProgressCircle`). The DS ships one (hint-size 90px,90px); the
+DS bundle wasn't readable this session, so the atom is modelled as a standard
+SVG ring — neutral `--ink-100` track, a value arc (`--action-primary` /
+`--green-500` / `--red-500`) with a rounded cap from the top, and a centred
+`{pct}%` label. Re-check its stroke width and track colour against the DS
+`ProgressCircle` when the bundle is readable again.

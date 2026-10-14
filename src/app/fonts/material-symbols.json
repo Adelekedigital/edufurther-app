@@ -65,6 +65,7 @@
     "lightbulb",
     "link",
     "link_off",
+    "local_fire_department",
     "location_on",
     "lock",
     "lock_clock",
@@ -126,5 +127,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "edd32fdfc9208d0529838c149aaea122900d35ba5205bd95cc6933ec1b7e411a"
+  "sha256": "48df313e1b5780fb9f87c6a1c4cce4890873bba26f705de44ebe7abbe3fef915"
 }

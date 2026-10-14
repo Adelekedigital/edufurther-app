@@ -15,6 +15,7 @@ import { DashboardHeader } from './DashboardHeader';
 import { KpiGrid } from './KpiGrid';
 import { NextSessionCard } from './NextSessionCard';
 import { PerformanceSection } from './PerformanceSection';
+import { SessionQuality } from './SessionQuality';
 import { SetupBanner, type SetupAction } from './SetupBanner';
 import styles from './DashboardScreen.module.css';
 
@@ -127,6 +128,8 @@ function MentorHome({ member }: { member: Member }) {
           {/* The performance chart (design order: below the next session). Its
               own fetch, so a blip here never holds up the figures above. */}
           {!d.isNew && <PerformanceSection userId={member.id} />}
+          {/* Session quality (design order: below the chart). Its own fetch. */}
+          {!d.isNew && <SessionQuality userId={member.id} />}
         </>
       )}
       <LiveRegion message={announce} />

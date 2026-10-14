@@ -22,7 +22,10 @@ export async function GET(req: Request) {
     completed_sessions: wide ? 12 : 4,
     mentoring_minutes: wide ? 720 : 240,
     mentees_mentored: wide ? 6 : 3,
-    attendance_rate: 94,
+    // A plausible show-up rate, kept at completed / (completed + missed) for this
+    // demo so the dev ring and counts don't look contradictory. (Real data can
+    // sit higher — a mentee no-show still counts the mentor as attending.)
+    attendance_rate: wide ? 86 : 80,
     missed_by_mentor: wide ? 2 : 1,
     cancelled_by_mentor: wide ? 2 : 1,
     review_count: 14,
@@ -34,7 +37,7 @@ export async function GET(req: Request) {
     completed_sessions: wide ? 10 : 3,
     mentoring_minutes: wide ? 600 : 180,
     mentees_mentored: wide ? 5 : 3,
-    attendance_rate: 90,
+    attendance_rate: wide ? 77 : 75,
     missed_by_mentor: wide ? 3 : 1,
     cancelled_by_mentor: wide ? 3 : 2,
     review_count: wide ? 11 : 13,
