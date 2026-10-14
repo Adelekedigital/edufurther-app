@@ -45,6 +45,8 @@ export type MentorDashboard = {
   error: AppError | null;
   retry: () => void;
   data: DashboardActivation | null;
+  /** The KPI figures for the active-mentor view; null until the profile loads. */
+  metrics: Kpi[] | null;
   /** The soonest confirmed session the mentor hosts, with its own four states. */
   nextSession: Remote<Booking | null>;
 };
@@ -125,6 +127,54 @@ export function deriveActivation(i: ActivationInputs): DashboardActivation {
   };
 }
 
+/** One KPI card's content (active-mentor view). No trend line: the backend is
+ *  all-time only, so the design's month-over-month figure is omitted until
+ *  period data exists (design-divergence.md). */
+export type Kpi = { key: string; label: string; value: string | null; unit?: string; info: string };
+
+/** The KPI figures — primitives only, so it is pure and testable. */
+export type KpiInputs = {
+  completedSessions: number;
+  mentoringMinutes: number;
+  menteesMentored: number;
+  /** The overall rating, or null when there are no reviews. */
+  rating: number | null;
+  reviewCount: number;
+};
+
+export function deriveKpis(i: KpiInputs): Kpi[] {
+  const hasReviews = i.reviewCount > 0;
+  return [
+    {
+      key: 'sessions',
+      label: 'Sessions completed',
+      value: String(i.completedSessions),
+      info: 'Sessions marked complete since you joined',
+    },
+    {
+      key: 'hours',
+      label: 'Mentoring time',
+      value: String(Math.round(i.mentoringMinutes / 60)),
+      unit: 'hrs',
+      info: 'Estimated from completed session lengths',
+    },
+    {
+      key: 'mentees',
+      label: 'Mentees mentored',
+      value: String(i.menteesMentored),
+      info: 'Unique mentees with a completed session',
+    },
+    {
+      // A mentor with no reviews never shows a rating — "No data yet", never 0.
+      key: 'rating',
+      label: 'Average rating',
+      value: hasReviews && i.rating != null ? i.rating.toFixed(1) : null,
+      unit: '/ 5',
+      info: 'Average of mentee reviews after completed sessions',
+    },
+  ];
+}
+
 /**
  * The Mentor Dashboard's activation state, composed from signals that already
  * ship: the owner profile (completeness + setup_needed + completed sessions),
@@ -190,5 +240,18 @@ export function useMentorDashboard(
     });
   }
 
-  return { isLoading, error, retry, data, nextSession };
+  // KPIs need only the profile, so they are ready as soon as it loads (the
+  // active view, where calendar is irrelevant).
+  const metrics: Kpi[] | null =
+    !profile.isLoading && !profile.error && p
+      ? deriveKpis({
+          completedSessions: p.mentor.completedSessions ?? 0,
+          mentoringMinutes: p.mentoringMinutes ?? 0,
+          menteesMentored: p.menteesMentored ?? 0,
+          rating: p.mentor.rating ?? null,
+          reviewCount: p.mentor.reviewCount ?? 0,
+        })
+      : null;
+
+  return { isLoading, error, retry, data, metrics, nextSession };
 }

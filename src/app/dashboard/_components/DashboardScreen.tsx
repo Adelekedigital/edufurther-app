@@ -12,6 +12,7 @@ import { deviceTimeZone, inSentence } from '@/lib/utils/format';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { Viewer } from '@/types/mentor';
 import { DashboardHeader } from './DashboardHeader';
+import { KpiGrid } from './KpiGrid';
 import { NextSessionCard } from './NextSessionCard';
 import { SetupBanner, type SetupAction } from './SetupBanner';
 import styles from './DashboardScreen.module.css';
@@ -109,16 +110,20 @@ function MentorHome({ member }: { member: Member }) {
           action={toAction(d.setup.next, d.shareUrl)}
         />
       ) : (
-        // Also the interim for a new mentor who has finished setup, until the
-        // activation hero ships: a useful next-session / empty state, not a bare page.
-        <NextSessionCard
-          isLoading={dash.nextSession.isLoading}
-          error={dash.nextSession.error}
-          onRetry={dash.nextSession.retry}
-          booking={dash.nextSession.data}
-          timeZone={accountZone}
-          now={new Date()}
-        />
+        <>
+          {/* Active mentor: the KPI strip above the next session (design order).
+              A new mentor who has finished setup sees only the next-session
+              interim (no KPIs — they would all read zero) until the hero ships. */}
+          {!d.isNew && dash.metrics && <KpiGrid kpis={dash.metrics} />}
+          <NextSessionCard
+            isLoading={dash.nextSession.isLoading}
+            error={dash.nextSession.error}
+            onRetry={dash.nextSession.retry}
+            booking={dash.nextSession.data}
+            timeZone={accountZone}
+            now={new Date()}
+          />
+        </>
       )}
       <LiveRegion message={announce} />
     </>

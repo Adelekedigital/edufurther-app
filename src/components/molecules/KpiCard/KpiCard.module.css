@@ -1,0 +1,100 @@
+/* Mentee Dashboard v2.dc.html "Your progress": a text-only KPI card.
+   Values read straight from the design's inline styles. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}
+.labelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.label {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
+}
+/* The Mentor Dashboard's metric hint (ⓘ): the design's faint help icon. */
+.info {
+  display: inline-flex;
+  flex: none;
+  color: var(--ink-400);
+  cursor: help;
+}
+.valueRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+.value {
+  font-family: var(--font-brand);
+  font-size: var(--text-h4);
+  line-height: var(--lh-h4);
+  letter-spacing: var(--ls-h4);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+/* Nothing known yet: a muted line in its place, never a 0 that reads as a score
+   (same treatment as StatTile's empty figure). */
+.empty {
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  line-height: 1.2;
+  letter-spacing: normal;
+  font-weight: var(--weight-medium);
+  color: var(--text-tertiary);
+}
+.unit {
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+.trend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+}
+.positive {
+  color: var(--green-700);
+}
+.neutral {
+  color: var(--ink-600);
+}
+.negative {
+  color: var(--text-danger);
+}
+.link {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--space-8);
+  /* The 32px tap area without added visual height: the design hangs the link
+     tight under the value. */
+  margin: calc(var(--space-2) * -1) 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-link);
+  white-space: nowrap;
+}
+.link:hover {
+  color: var(--text-link-hover);
+}
+.link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-md);
+}

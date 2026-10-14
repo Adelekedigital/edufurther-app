@@ -238,6 +238,8 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | Dashboard next-session time "12:00 – 1:00 pm" (en-dash) | "12:00 pm to 1:00 pm" (`timeRange`, app-consistent with Bookings) | One time format app-wide | never |
 | Dashboard "Choose how to start" (open weekly hours / start a waitlist) | Deferred to PR B | Waitlist isn't built (backend); the Setup banner's "open hours" step still covers going live | waitlist ships (PR B) |
 | Setup "Next:" lowercases the whole title ("connect google calendar") | `inSentence` keeps proper nouns ("connect Google Calendar") | House sentence case lowercases the lead word only; "Google" is a brand | never |
+| Dashboard KPI cards: trend row ("+1 this month", up/down/flat) | Omitted | Backend is all-time only — no month-over-month / period figure to compute | #245; backend adds period data |
+| Dashboard KPI unit colour `--ink-500` | `--ink-600` (the shared KpiCard, from the mentee dashboard) | One shared KpiCard across both dashboards; a 1-shade difference kept rather than fork the component | the mentee dashboard (#239) and this merge, or design settles the unit colour |
 
 ## Rules
 

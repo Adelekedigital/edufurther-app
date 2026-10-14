@@ -110,6 +110,8 @@
     "tips_and_updates",
     "toll",
     "translate",
+    "trending_down",
+    "trending_up",
     "tune",
     "upload",
     "upload_file",
@@ -124,5 +126,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "c8896aa3ddadcf3686b5db5d9b97f1ab2f3269f82033ff28318f5d742ae1457e"
+  "sha256": "edd32fdfc9208d0529838c149aaea122900d35ba5205bd95cc6933ec1b7e411a"
 }

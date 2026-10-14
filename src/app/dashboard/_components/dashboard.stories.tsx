@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import type { Booking } from '@/types/booking';
+import type { Kpi } from '@/lib/api/data/dashboard';
 import { DashboardHeader } from './DashboardHeader';
+import { KpiGrid } from './KpiGrid';
 import { NextSessionCard } from './NextSessionCard';
 import { SetupBanner } from './SetupBanner';
 
@@ -101,6 +103,23 @@ export const NextSession: Story = {
         timeZone="Africa/Lagos"
         now={new Date()}
       />
+    </div>
+  ),
+};
+
+const activeKpis: Kpi[] = [
+  { key: 'sessions', label: 'Sessions completed', value: '2', info: 'Sessions marked complete since you joined' },
+  { key: 'hours', label: 'Mentoring time', value: '2', unit: 'hrs', info: 'Estimated from completed session lengths' },
+  { key: 'mentees', label: 'Mentees mentored', value: '1', info: 'Unique mentees with a completed session' },
+  { key: 'rating', label: 'Average rating', value: '4.8', unit: '/ 5', info: 'Average of mentee reviews after completed sessions' },
+];
+const freshKpis: Kpi[] = activeKpis.map((k) => ({ ...k, value: k.key === 'rating' ? null : '0' }));
+
+export const Kpis: Story = {
+  render: () => (
+    <div style={col}>
+      <KpiGrid kpis={activeKpis} />
+      <KpiGrid kpis={freshKpis} />
     </div>
   ),
 };
