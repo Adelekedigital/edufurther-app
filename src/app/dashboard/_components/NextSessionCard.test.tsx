@@ -55,19 +55,28 @@ describe('NextSessionCard', () => {
     );
   });
 
-  it('content: shows the session and mentee; Join appears only in the join window', () => {
+  it('content: shows the session and mentee; a far session links to details, not Join', () => {
     const now = new Date();
-    const { rerender } = render(
+    render(
       <NextSessionCard {...base} now={now} isLoading={false} error={null} booking={booking()} />,
     );
     const region = screen.getByRole('region', { name: 'Next session' });
     expect(region).toHaveTextContent('SOP review');
     expect(region).toHaveTextContent('Amara Okafor');
-    // 8 days out → no Join yet.
+    // 8 days out → still ahead of the join window: details, not a Join that
+    // cannot work yet.
     expect(screen.queryByRole('link', { name: 'Join session' })).not.toBeInTheDocument();
-    // A session whose join window is open now → Join to the session page.
+    expect(screen.getByRole('link', { name: 'View session details' })).toHaveAttribute(
+      'href',
+      '/sessions/s1',
+    );
+  });
+
+  it('content: a session whose join window is open shows Join, not the details link', () => {
+    const now = new Date();
+    // joinOpensAt in the past, start five minutes out → the join window is open.
     const soon = Date.now() + 5 * 60_000;
-    rerender(
+    render(
       <NextSessionCard
         {...base}
         now={now}
@@ -81,6 +90,10 @@ describe('NextSessionCard', () => {
         })}
       />,
     );
-    expect(screen.getByRole('link', { name: 'Join session' })).toHaveAttribute('href', '/sessions/s1');
+    expect(screen.getByRole('link', { name: 'Join session' })).toHaveAttribute(
+      'href',
+      '/sessions/s1',
+    );
+    expect(screen.queryByRole('link', { name: 'View session details' })).not.toBeInTheDocument();
   });
 });
