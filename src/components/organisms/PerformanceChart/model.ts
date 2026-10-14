@@ -207,7 +207,13 @@ export function buildChartModel(i: ChartModelInput) {
       neverAny,
     },
     tooltip:
-      hover >= 0 && allTotalRange > 0 && visible.length > 0 && buckets[hover]
+      // Not for an upcoming/unfetched month (idx < 0): its figures would read a
+      // false 0, contradicting its "upcoming" accessible name.
+      hover >= 0 &&
+      allTotalRange > 0 &&
+      visible.length > 0 &&
+      buckets[hover] &&
+      buckets[hover]!.idx[0]! >= 0
         ? {
             show: true,
             left: `${((X0 + hover * cw + cw / 2) / 600) * 100}%`,

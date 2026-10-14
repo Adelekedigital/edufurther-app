@@ -110,4 +110,14 @@ describe('buildChartModel', () => {
     // The last visible month (index 11 overall) is Dec: completed 4, canceled 0, missed 1.
     expect(m.cols.at(-1)!.aria).toBe('Dec 2025: 4 completed, 0 canceled, 1 missed');
   });
+
+  it('suppresses the tooltip for an upcoming month — no false zeros', () => {
+    const span = ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06'];
+    const sr = series.map((s) => ({ ...s, values: s.values.slice(0, 6) }));
+    const cols = buildChartModel(input({ months: span, series: sr, range: 'y2026' })).cols;
+    const jul = cols.findIndex((c) => c.aria.endsWith('upcoming')); // Jul–Dec 2026 are future
+    expect(jul).toBeGreaterThan(-1);
+    const hovered = buildChartModel(input({ months: span, series: sr, range: 'y2026', hover: jul }));
+    expect(hovered.tooltip.show).toBe(false);
+  });
 });
