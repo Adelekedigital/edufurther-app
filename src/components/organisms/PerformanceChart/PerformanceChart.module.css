@@ -112,6 +112,80 @@
   border-radius: var(--radius-full);
 }
 
+/* Mobile legend dropdown (narrow + mobileLegend="dropdown"). */
+.menuWrap {
+  position: relative;
+  align-self: flex-start;
+}
+.menuTrigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  /* 44px tap target on phones (the design's 32px misses the mobile rule). */
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-2) 0 var(--space-3);
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-full);
+  background: var(--surface-card);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  color: var(--ink-700);
+}
+.menuTrigger:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.menuTriggerValue {
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+.menu {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  z-index: 5;
+  min-width: 220px;
+  padding: var(--space-1);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-menu), inset 0 0 0 1px var(--ink-200);
+}
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: var(--touch-target-min);
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-xs);
+  background: var(--surface-card);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  color: var(--ink-900);
+}
+.menuItem:hover {
+  background: var(--ink-50);
+}
+.menuItem:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: calc(-1 * var(--focus-ring-width));
+}
+.menuCheck {
+  display: inline-flex;
+  flex: none;
+}
+.menuItemLabel {
+  flex: 1;
+}
+.menuItemTotal {
+  font-weight: var(--weight-semibold);
+}
+
 .plot {
   position: relative;
 }
@@ -161,6 +235,17 @@
   line-height: 1;
   color: var(--ink-500);
   pointer-events: none;
+}
+
+/* Narrow: the SVG (viewBox 600×262, height:auto) scales down with the card, so
+   the percentage-positioned month and year labels crowd together. Widening the
+   month→year gap (7.3% → 14%) keeps the year clearly below the month at phone
+   widths, matching the web layout's readability. */
+.plotNarrow .xLabel {
+  top: 83%;
+}
+.plotNarrow .xYear {
+  top: 97%;
 }
 
 .allHidden {

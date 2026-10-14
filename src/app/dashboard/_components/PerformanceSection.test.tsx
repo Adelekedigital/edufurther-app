@@ -38,4 +38,10 @@ describe('PerformanceSection', () => {
     render(<PerformanceSection userId="m1" />);
     expect(screen.getByText('No sessions yet')).toBeInTheDocument();
   });
+
+  it('fetches the full platform history (months=60) so the ranges and year select cover it', () => {
+    const hook = mockHook({ data: EMPTY });
+    render(<PerformanceSection userId="m1" />);
+    expect(hook).toHaveBeenCalledWith('m1', 60);
+  });
 });
