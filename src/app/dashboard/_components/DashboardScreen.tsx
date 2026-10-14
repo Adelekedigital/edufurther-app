@@ -14,6 +14,7 @@ import type { Viewer } from '@/types/mentor';
 import { DashboardHeader } from './DashboardHeader';
 import { KpiGrid } from './KpiGrid';
 import { NextSessionCard } from './NextSessionCard';
+import { PerformanceSection } from './PerformanceSection';
 import { SetupBanner, type SetupAction } from './SetupBanner';
 import styles from './DashboardScreen.module.css';
 
@@ -123,6 +124,9 @@ function MentorHome({ member }: { member: Member }) {
             timeZone={accountZone}
             now={new Date()}
           />
+          {/* The performance chart (design order: below the next session). Its
+              own fetch, so a blip here never holds up the figures above. */}
+          {!d.isNew && <PerformanceSection userId={member.id} />}
         </>
       )}
       <LiveRegion message={announce} />

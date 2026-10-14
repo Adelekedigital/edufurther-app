@@ -638,3 +638,12 @@ either fixture changes, and deriving them couples the viewer fixture to the mock
 route. The ambiguity is what cost the time, so the fixture says so in a comment
 instead. If dev ever needs counts that can be trusted, derive both from one
 place rather than re-syncing two.
+
+## Mentor Dashboard — Session performance chart (`PerformanceChart.dc.html`)
+
+| # | Design | Built | Why |
+|---|---|---|---|
+| 49 | Range control: unselected labels `--ink-500` on the `--ink-100` track | `--ink-600` | Accessibility. `--ink-500` on `--ink-100` is ~4.0:1 — under the 4.5:1 text minimum (axe flagged it *serious*). `--ink-600` reads the same "muted vs the selected pill" and passes. |
+| 50 | X-axis **month** label `11px` | `--text-caption-sm` (12px) | Tokens-only: there is no 11px type token; 12px keeps the month a step above the 10px year label (`--text-caption-xs`). |
+| 51 | "Canceled" is one series | Sum of `cancelled_by_mentor + _mentee + _other` | The backend splits cancellations by who caused them; product chose the **full activity** view (all cancellations) over mentor-only (2026-10-14). "Missed" is `missed_by_mentor` — attendance, not status. |
+| 52 | "Missed" series `--orange-500` | `--red-500` | The orange ramp is **banned in product UI** (retired palette — `project-conventions` Settled decisions + Guardrails "Never"). `--red-500` is the sanctioned danger hue, and a no-show is the negative outcome. |

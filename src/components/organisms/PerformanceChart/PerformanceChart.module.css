@@ -1,0 +1,219 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  font-family: var(--font-ui);
+  color: var(--ink-900);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.title {
+  margin: 0;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+.sub {
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+.period {
+  font-weight: var(--weight-semibold);
+  color: var(--ink-700);
+}
+
+/* The range segmented control + year select share one pill. */
+.rangeWrap {
+  display: flex;
+  padding: 2px;
+  border-radius: var(--radius-md);
+  background: var(--ink-100);
+}
+.radios {
+  display: flex;
+}
+.range,
+.year {
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  box-shadow: none;
+  /* The design's --ink-500 fails 4.5:1 on the --ink-100 track; --ink-600 reads
+     the same "muted vs selected" and passes (divergence recorded). */
+  color: var(--ink-600);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+}
+.range {
+  padding: 0 var(--space-3);
+}
+.year {
+  margin-left: 2px;
+  padding: 0 var(--space-2);
+}
+.rangeOn,
+.yearOn {
+  background: var(--surface-card);
+  box-shadow: var(--shadow-control);
+  color: var(--ink-900);
+}
+.range:focus-visible,
+.year:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.legend {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.legendBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 28px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-full);
+  background: var(--surface-card);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+}
+.legendBtn:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.legendTotal {
+  font-weight: var(--weight-semibold);
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: var(--radius-full);
+}
+
+.plot {
+  position: relative;
+}
+.svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+/* Each column is a focus target for the keyboard tooltip. */
+.hit:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: -2px;
+}
+.yUnit {
+  position: absolute;
+  left: 0;
+  top: -16px;
+  font-size: var(--text-caption-xs);
+  color: var(--ink-500);
+}
+.yLabel {
+  position: absolute;
+  left: 0;
+  width: 4%;
+  transform: translateY(-50%);
+  text-align: right;
+  font-size: var(--text-caption-xs);
+  line-height: 1;
+  color: var(--ink-500);
+  pointer-events: none;
+}
+.xLabel {
+  position: absolute;
+  top: 84.7%;
+  transform: translateX(-50%);
+  font-size: var(--text-caption-sm);
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.xYear {
+  position: absolute;
+  top: 92%;
+  transform: translateX(-50%);
+  font-size: var(--text-caption-xs);
+  line-height: 1;
+  color: var(--ink-500);
+  pointer-events: none;
+}
+
+.allHidden {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.allHiddenPill {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  box-shadow: inset 0 0 0 1px var(--ink-200);
+  font-size: var(--text-p-xs);
+  color: var(--ink-700);
+}
+
+.tip {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  pointer-events: none;
+  min-width: 140px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-menu), inset 0 0 0 1px var(--ink-200);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.tipTitle {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+}
+.tipRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-p-xs);
+  color: var(--ink-700);
+}
+.tipValue {
+  margin-left: auto;
+  color: var(--ink-900);
+}
+
+.emptyWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-4) var(--space-4);
+}

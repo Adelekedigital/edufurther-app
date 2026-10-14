@@ -13,7 +13,9 @@ export type Illustration =
   /** The design's `tone="grey"` calendar: a state, not an invitation (not taking bookings). */
   | 'calendar-grey'
   /** Integrations: connected tools. */
-  | 'subscriptions';
+  | 'subscriptions'
+  /** Mentor Dashboard: the performance chart with no sessions yet. */
+  | 'dashboard';
 
 type EmptyStateProps = {
   illustration: Illustration;
