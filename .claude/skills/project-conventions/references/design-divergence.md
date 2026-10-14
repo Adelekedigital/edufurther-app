@@ -610,3 +610,29 @@ side of that trade knowingly on 2026-10-13. Not logged as a divergence because
 the design and the build agree; logged because a reversed default is the kind
 of change that otherwise looks like a styling PR that happened to flip a
 boolean.
+
+### Dev fixtures — the mock viewer's counts disagree with the mock lists, 2026-10-14
+
+**Not a divergence, and not a bug.** Recorded because it looks like one, and
+already cost two people time.
+
+`MOCK_VIEWERS` in `lib/api/data/viewer.ts` hardcodes
+`bookingCounts: { pending: 3, upcoming: 6 }`. It supplies an already-mapped
+`Viewer`, so `/api/v1/me` is never called in dev and the summing in `toViewer`
+never runs. The lists come from the mock sessions route — **eight** upcoming and
+**five** pending rows. Nobody reconciled the two, and the numbers are plausible
+enough to read as data: dev shows "Upcoming 6" over eleven rows, and showed
+"Pending 3" over five.
+
+Why it matters more than a wrong fixture usually would: `review-page.mjs` and
+every dev screenshot run against this viewer, and a **real** count-versus-list
+defect looks identical. One was raised against the Pending badge in PR 235 — the
+server's aggregate goes on counting a request whose deadline has passed — and
+separately this fixture had the same symptom reported from a different cause,
+which is how it reached a backend session as evidence it wasn't.
+
+Left unreconciled on purpose. Matching the numbers by hand drifts the next time
+either fixture changes, and deriving them couples the viewer fixture to the mock
+route. The ambiguity is what cost the time, so the fixture says so in a comment
+instead. If dev ever needs counts that can be trusted, derive both from one
+place rather than re-syncing two.
