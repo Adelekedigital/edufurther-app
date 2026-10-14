@@ -13,6 +13,7 @@ import { Select } from './Select/Select';
 import { Switch } from './Switch/Switch';
 import { Skeleton } from './Skeleton/Skeleton';
 import { StepBars } from './StepBars/StepBars';
+import { ProgressBar } from './ProgressBar/ProgressBar';
 import { Tabs } from './Tabs/Tabs';
 import { Tag } from './Tag/Tag';
 
@@ -72,6 +73,18 @@ export const Chips: Story = {
       <Chip pressed={false} disabled>
         Visa and interview
       </Chip>
+    </div>
+  ),
+};
+
+/** DS ProgressBar: setup banner uses the sm (8px) track; lg is 12px. */
+export const ProgressBars: Story = {
+  render: () => (
+    <div style={{ ...col, maxWidth: 360 }}>
+      <ProgressBar value={0} aria-label="No steps done" />
+      <ProgressBar value={50} size="sm" aria-label="Half the steps done" />
+      <ProgressBar value={75} size="lg" aria-label="Three of four steps done" />
+      <ProgressBar value={100} showLabel aria-label="All steps done" />
     </div>
   ),
 };

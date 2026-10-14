@@ -1,0 +1,148 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/atoms/Button/Button';
+import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
+import { AppShell } from '@/components/templates/AppShell/AppShell';
+import { useAppShell } from '@/app/_shell/useAppShell';
+import { useMentorDashboard, type SetupNext } from '@/lib/api/data/dashboard';
+import { deviceTimeZone } from '@/lib/utils/format';
+import { useOnline } from '@/lib/utils/useOnline';
+import type { Viewer } from '@/types/mentor';
+import { DashboardHeader } from './DashboardHeader';
+import { NextSessionCard } from './NextSessionCard';
+import { SetupBanner, type SetupAction } from './SetupBanner';
+import styles from './DashboardScreen.module.css';
+
+type Member = Extract<Viewer, { kind: 'member' }>;
+
+const sharedKey = (id: string) => `ef-dash-shared-${id}`;
+function readShared(id: string): boolean {
+  try {
+    return typeof localStorage !== 'undefined' && localStorage.getItem(sharedKey(id)) === '1';
+  } catch {
+    return false;
+  }
+}
+function persistShared(id: string) {
+  try {
+    localStorage.setItem(sharedKey(id), '1');
+  } catch {
+    /* private mode / blocked storage: the step just won't be remembered */
+  }
+}
+
+function DashboardLoading() {
+  return (
+    <div className={styles.loading} role="status" aria-busy>
+      <span className="sr-only">Loading your dashboard</span>
+      <Skeleton width="240px" height="28px" />
+      <Skeleton width="320px" height="16px" />
+      <Skeleton height="96px" radius="lg" />
+    </div>
+  );
+}
+
+function DashboardError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className={styles.pageState} role="alert">
+      <p className={styles.stateText}>We couldn’t load your dashboard.</p>
+      <Button variant="secondary-outlined" onClick={onRetry}>
+        Try again
+      </Button>
+    </div>
+  );
+}
+
+function MentorHome({ member }: { member: Member }) {
+  const accountZone = member.timeZone ?? deviceTimeZone();
+  const [shared, setShared] = useState(() => readShared(member.id));
+  const [announce, setAnnounce] = useState('');
+  const dash = useMentorDashboard(member, accountZone, shared);
+
+  const copyShareLink = (url: string) => {
+    if (!url || !navigator.clipboard) {
+      setAnnounce('Couldn’t copy the link');
+      return;
+    }
+    navigator.clipboard.writeText(url).then(
+      () => {
+        setShared(true);
+        persistShared(member.id);
+        setAnnounce('Link copied');
+      },
+      () => setAnnounce('Couldn’t copy the link'),
+    );
+  };
+
+  if (dash.isLoading) return <DashboardLoading />;
+  if (dash.error) return <DashboardError onRetry={dash.retry} />;
+  const d = dash.data!;
+
+  const toAction = (next: SetupNext, shareUrl: string): SetupAction =>
+    'href' in next.action
+      ? { label: next.action.label, href: next.action.href }
+      : { label: next.action.label, onClick: () => copyShareLink(shareUrl) };
+
+  return (
+    <>
+      <DashboardHeader
+        name={d.firstName}
+        subline={d.isNew ? 'Let’s get your first session booked.' : 'Here’s how your mentoring is going.'}
+        shareUrl={d.shareUrl}
+        shareName={d.shareName}
+      />
+      {d.isNew
+        ? d.setup.next && (
+            <SetupBanner
+              doneCount={d.setup.doneCount}
+              total={d.setup.total}
+              pct={d.setup.pct}
+              nextTitle={d.setup.next.title.toLowerCase()}
+              action={toAction(d.setup.next, d.shareUrl)}
+            />
+          )
+        : (
+            <NextSessionCard
+              isLoading={dash.nextSession.isLoading}
+              error={dash.nextSession.error}
+              onRetry={dash.nextSession.retry}
+              booking={dash.nextSession.data}
+              timeZone={accountZone}
+              now={new Date()}
+            />
+          )}
+      <span role="status" className="sr-only">
+        {announce}
+      </span>
+    </>
+  );
+}
+
+/**
+ * Mentor Dashboard (home), the route every mentor lands on (homeFor →
+ * /dashboard). Only mentors belong here; anyone else is bounced to '/', which
+ * routes them to their own home. PR A ships the frame + activation setup banner
+ * + next-session card; the activation hero and metrics follow.
+ */
+export function DashboardScreen() {
+  const { member, chrome, account, nav } = useAppShell();
+  const online = useOnline();
+  const router = useRouter();
+
+  // Viewer resolved (guest or member) but not a mentor → send them home.
+  const resolved = chrome !== 'pending';
+  const isMentor = !!member?.isMentor;
+  useEffect(() => {
+    if (resolved && !isMentor) router.replace('/');
+  }, [resolved, isMentor, router]);
+
+  return (
+    <AppShell active="Home" nav={nav} chrome={chrome} account={account} offline={!online}>
+      <div className={styles.page}>
+        {member?.isMentor ? <MentorHome member={member} /> : <DashboardLoading />}
+      </div>
+    </AppShell>
+  );
+}
