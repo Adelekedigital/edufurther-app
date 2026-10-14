@@ -68,9 +68,21 @@ beforeAll(() => {
 afterAll(() => rmSync(repo, { recursive: true, force: true }));
 
 describe('vercel-ignore (exit 0 skips, 1 builds)', () => {
-  it('skips a push that only changes docs, root Markdown or tests', () => {
+  // One case per test, not three in one. Each case spends four real
+  // processes, so three in a single `it` spent twelve against one timeout -
+  // and in a full-suite run, with every worker contending for process
+  // creation, that reached 64s and failed even with the 60s budget. PR 237
+  // verified this file against `src/lib/utils` alone, which was too narrow a
+  // scope to see it. Split, each case has its own budget and none is near it.
+  it('skips a push that only changes docs', () => {
     expect(after(() => write('docs/x.md', '# changed\n'))).toBe(0);
+  });
+
+  it('skips a push that only changes root Markdown', () => {
     expect(after(() => write('README.md', '# changed\n'))).toBe(0);
+  });
+
+  it('skips a push that only changes tests', () => {
     expect(after(() => write('src/a.test.ts', 'test\n'))).toBe(0);
   });
 
