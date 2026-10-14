@@ -58,7 +58,6 @@ export type ActivationInputs = {
   setupNeeded: readonly string[];
   calendarConnected: boolean;
   shared: boolean;
-  memberId: string;
   firstName: string;
   /** Profile names joined; falls back to firstName for the share subject. */
   fullName: string;
@@ -69,7 +68,7 @@ export type ActivationInputs = {
 
 function buildNext(
   key: SetupStepKey,
-  memberId: string,
+  profileHref: string,
   setupNeeded: readonly string[],
 ): SetupNext {
   switch (key) {
@@ -77,7 +76,9 @@ function buildNext(
       return {
         key,
         title: 'Complete your profile',
-        action: { label: 'Edit profile', href: `/mentors/${encodeURIComponent(memberId)}` },
+        // The owner's own profile, where the editor lives — the same handle the
+        // share link uses, not a bare id.
+        action: { label: 'Edit profile', href: profileHref },
       };
     case 'sessions':
       // session_type and weekly_hours are the two things that block bookings.
@@ -119,7 +120,7 @@ export function deriveActivation(i: ActivationInputs): DashboardActivation {
       doneCount,
       total,
       pct: Math.round((doneCount / total) * 100),
-      next: nextKey ? buildNext(nextKey, i.memberId, i.setupNeeded) : null,
+      next: nextKey ? buildNext(nextKey, i.profileHref, i.setupNeeded) : null,
     },
   };
 }
@@ -157,10 +158,11 @@ export function useMentorDashboard(
     retry: upcoming.retry,
   };
 
-  // Gate on the core profile only. Calendar is secondary (just the Google step),
-  // so a slow or failing calendar must not hold the whole page in loading, nor
-  // hide a profile error behind its retries.
-  const isLoading = profile.isLoading;
+  // Gate on profile and calendar together, so the setup steps are derived once
+  // both have settled (no doneCount / next-step flicker as calendar arrives).
+  // The screen checks `error` before `isLoading`, so a profile error still
+  // surfaces at once even while calendar is still retrying.
+  const isLoading = profile.isLoading || calendar.isLoading;
   const error = profile.error;
   const retry = () => {
     profile.retry();
@@ -173,9 +175,10 @@ export function useMentorDashboard(
       completedSessions: p.mentor.completedSessions ?? 0,
       missing: owner?.completeness?.missing ?? [],
       setupNeeded: owner?.setupNeeded ?? [],
-      calendarConnected: calendar.data != null,
+      // A revoked / errored grant still returns an object; only an active
+      // connection counts as done, so a broken one keeps prompting a reconnect.
+      calendarConnected: calendar.data?.status === 'active',
       shared,
-      memberId: member.id,
       firstName: member.firstName,
       fullName: [p.names.first, p.names.last].filter(Boolean).join(' '),
       profileHref: p.mentor.profileHref,

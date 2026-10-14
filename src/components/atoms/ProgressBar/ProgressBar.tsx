@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react';
 import { cx } from '@/lib/utils/cx';
 import styles from './ProgressBar.module.css';
 
@@ -38,7 +37,7 @@ export function ProgressBar({
         aria-valuemax={100}
         aria-label={ariaLabel}
       >
-        <div className={styles.fill} style={{ width: `${pct}%` } as CSSProperties} />
+        <div className={styles.fill} style={{ width: `${pct}%` }} />
       </div>
       {showLabel && <span className={styles.label}>{pct}%</span>}
     </div>

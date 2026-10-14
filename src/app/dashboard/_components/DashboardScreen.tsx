@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { useMentorDashboard, type SetupNext } from '@/lib/api/data/dashboard';
-import { deviceTimeZone } from '@/lib/utils/format';
+import { deviceTimeZone, inSentence } from '@/lib/utils/format';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { Viewer } from '@/types/mentor';
 import { DashboardHeader } from './DashboardHeader';
@@ -76,9 +76,13 @@ function MentorHome({ member }: { member: Member }) {
     );
   };
 
-  if (dash.isLoading) return <DashboardLoading />;
+  // Error before loading, so a profile failure shows at once even while a
+  // secondary query is still retrying; then the settled-but-empty case (e.g. a
+  // 404 on the owner profile) falls through to the error state, never a crash.
   if (dash.error) return <DashboardError onRetry={dash.retry} />;
-  const d = dash.data!;
+  if (dash.isLoading) return <DashboardLoading />;
+  if (!dash.data) return <DashboardError onRetry={dash.retry} />;
+  const d = dash.data;
 
   const toAction = (next: SetupNext, shareUrl: string): SetupAction =>
     'href' in next.action
@@ -93,26 +97,26 @@ function MentorHome({ member }: { member: Member }) {
         shareUrl={d.shareUrl}
         shareName={d.shareName}
       />
-      {d.isNew
-        ? d.setup.next && (
-            <SetupBanner
-              doneCount={d.setup.doneCount}
-              total={d.setup.total}
-              pct={d.setup.pct}
-              nextTitle={d.setup.next.title.toLowerCase()}
-              action={toAction(d.setup.next, d.shareUrl)}
-            />
-          )
-        : (
-            <NextSessionCard
-              isLoading={dash.nextSession.isLoading}
-              error={dash.nextSession.error}
-              onRetry={dash.nextSession.retry}
-              booking={dash.nextSession.data}
-              timeZone={accountZone}
-              now={new Date()}
-            />
-          )}
+      {d.isNew && d.setup.next ? (
+        <SetupBanner
+          doneCount={d.setup.doneCount}
+          total={d.setup.total}
+          pct={d.setup.pct}
+          nextTitle={inSentence(d.setup.next.title)}
+          action={toAction(d.setup.next, d.shareUrl)}
+        />
+      ) : (
+        // Also the interim for a new mentor who has finished setup, until the
+        // activation hero ships: a useful next-session / empty state, not a bare page.
+        <NextSessionCard
+          isLoading={dash.nextSession.isLoading}
+          error={dash.nextSession.error}
+          onRetry={dash.nextSession.retry}
+          booking={dash.nextSession.data}
+          timeZone={accountZone}
+          now={new Date()}
+        />
+      )}
       <span role="status" className="sr-only">
         {announce}
       </span>

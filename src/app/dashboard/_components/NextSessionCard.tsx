@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
-import { joinState, timeRange } from '@/lib/utils/bookings';
+import { daysBetween, joinState, timeRange } from '@/lib/utils/bookings';
 import type { Booking } from '@/types/booking';
 import type { AppError } from '@/types/mentor';
 import styles from './NextSessionCard.module.css';
@@ -21,24 +21,6 @@ type NextSessionCardProps = {
 const inZone = (iso: string, timeZone: string, opts: Intl.DateTimeFormatOptions) =>
   new Intl.DateTimeFormat('en-US', { ...opts, timeZone }).format(new Date(iso));
 
-/** Whole calendar days from `now` to `iso`, read in the viewer's zone. */
-function daysUntil(iso: string, timeZone: string, now: Date): number {
-  const dayNumber = (d: Date) => {
-    const p = Object.fromEntries(
-      new Intl.DateTimeFormat('en-US', {
-        timeZone,
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
-      })
-        .formatToParts(d)
-        .map((x) => [x.type, Number(x.value)]),
-    ) as { year: number; month: number; day: number };
-    return Date.UTC(p.year, p.month - 1, p.day) / 86_400_000;
-  };
-  return dayNumber(new Date(iso)) - dayNumber(now);
-}
-
 function SessionRow({
   booking,
   timeZone,
@@ -48,7 +30,7 @@ function SessionRow({
   timeZone: string;
   now: Date;
 }) {
-  const days = daysUntil(booking.startsAt, timeZone, now);
+  const days = daysBetween(now, new Date(booking.startsAt), timeZone);
   const rel = days <= 0 ? 'Today' : days === 1 ? 'Tomorrow' : `In ${days} days`;
   const canJoin = joinState(booking, now) === 'open';
   return (
@@ -67,7 +49,11 @@ function SessionRow({
       </div>
       {canJoin && (
         <div className={styles.actions}>
-          <ButtonLink href={`/sessions/${booking.id}`} variant="primary" size="small">
+          <ButtonLink
+            href={`/sessions/${encodeURIComponent(booking.id)}`}
+            variant="primary"
+            size="small"
+          >
             Join session
           </ButtonLink>
         </div>

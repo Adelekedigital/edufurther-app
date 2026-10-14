@@ -6,7 +6,6 @@ const base: ActivationInputs = {
   setupNeeded: ['session_type', 'weekly_hours'],
   calendarConnected: false,
   shared: false,
-  memberId: 'm1',
   firstName: 'Gbenga',
   fullName: 'Gbenga Adeyemi',
   profileHref: '/mentors/m1',
