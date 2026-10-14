@@ -184,7 +184,9 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
                 </span>
               ))}
             </span>
-            <span className={styles.ratingValue}>{rating.toFixed(1)}</span>
+            <span className={styles.ratingValue} aria-hidden="true">
+              {rating.toFixed(1)}
+            </span>
             <Link
               href={`${profileHref}?tab=reviews`}
               prefetch={false}
