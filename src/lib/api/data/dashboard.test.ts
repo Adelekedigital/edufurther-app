@@ -100,10 +100,14 @@ describe('deriveKpis', () => {
     expect(deriveKpis(kpiInputs({ mentoringMinutes: 7320 }))[1]!.value).toBe('7,320');
   });
 
-  it('names the hour equivalent in the mentoring-time hint', () => {
+  it('names the hour equivalent in the hint, singular off the shown figure', () => {
     expect(deriveKpis(kpiInputs({ mentoringMinutes: 7320 }))[1]!.info).toContain('122 hours');
-    // Singular when it works out to exactly one hour.
+    // "1" however it is reached — exactly 60, and 59 which rounds to "1" —
+    // reads "1 hour", never "1 hours".
     expect(deriveKpis(kpiInputs({ mentoringMinutes: 60 }))[1]!.info).toContain('1 hour in total');
+    expect(deriveKpis(kpiInputs({ mentoringMinutes: 59 }))[1]!.info).toContain('1 hour in total');
+    // A fraction stays plural: 90 min → "1.5 hours".
+    expect(deriveKpis(kpiInputs({ mentoringMinutes: 90 }))[1]!.info).toContain('1.5 hours');
   });
 
   it('shows no rating without reviews — null, never 0', () => {

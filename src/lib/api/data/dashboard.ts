@@ -163,7 +163,9 @@ export function deriveKpis(i: KpiInputs): Kpi[] {
       label: 'Mentoring time',
       value: formatCount(i.mentoringMinutes),
       unit: 'min',
-      info: `≈ ${hoursText} ${hrs === 1 ? 'hour' : 'hours'} in total — shown in minutes for precision`,
+      // Singular off the displayed figure, not the raw float: 59 min rounds to
+      // "1" and must read "1 hour", never "1 hours".
+      info: `≈ ${hoursText} ${hoursText === '1' ? 'hour' : 'hours'} in total — shown in minutes for precision`,
     },
     {
       key: 'mentees',

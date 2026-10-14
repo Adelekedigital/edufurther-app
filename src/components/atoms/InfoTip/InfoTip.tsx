@@ -36,8 +36,9 @@ export function InfoTip({ label, className }: InfoTipProps) {
   const [open, setOpen] = useState(false);
   const [flipped, setFlipped] = useState(false);
   // Hover (mouse) and focus (keyboard + tap) each hold the bubble open on their
-  // own; mouse events — not pointer events — so a touch tap drives it through
-  // focus alone and can't leave `hovering` stuck true with no pointerleave.
+  // own. Blur clears both, so a tap — which some mobile browsers answer with a
+  // synthetic mouseenter but no matching mouseout — can't leave `hovering` stuck
+  // true once focus leaves.
   const hovering = useRef(false);
   const focused = useRef(false);
   const bubbleRef = useRef<HTMLSpanElement>(null);
@@ -71,16 +72,20 @@ export function InfoTip({ label, className }: InfoTipProps) {
           sync();
         }}
         onBlur={() => {
+          hovering.current = false;
           focused.current = false;
           sync();
         }}
         onKeyDown={(e) => {
           if (e.key === 'Escape' && open) {
             // Dismiss but keep focus on the trigger (tooltip convention); the
-            // refs stay in step so a later hover or re-focus reopens it.
+            // refs stay in step so a later hover or re-focus reopens it. Stop
+            // the event here so dismissing the tip doesn't also close a parent
+            // modal — a second Escape (tip already closed) falls through to it.
             hovering.current = false;
             focused.current = false;
             setOpen(false);
+            e.stopPropagation();
           }
         }}
       >

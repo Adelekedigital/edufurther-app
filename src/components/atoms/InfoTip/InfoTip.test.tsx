@@ -45,4 +45,20 @@ describe('InfoTip', () => {
     expect(screen.queryByText('Hint text')).not.toBeInTheDocument();
     expect(trigger).toHaveFocus();
   });
+
+  it('swallows the Escape that closes it, then lets a later Escape through to a parent', async () => {
+    const user = userEvent.setup();
+    const onParentKeyDown = vi.fn();
+    render(
+      <div onKeyDown={onParentKeyDown}>
+        <InfoTip label="Hint text" />
+      </div>,
+    );
+    await user.tab(); // focus → open
+    await user.keyboard('{Escape}'); // closes the tip; must not reach the parent
+    expect(screen.queryByText('Hint text')).not.toBeInTheDocument();
+    expect(onParentKeyDown).not.toHaveBeenCalled();
+    await user.keyboard('{Escape}'); // tip already closed → falls through (e.g. to a modal)
+    expect(onParentKeyDown).toHaveBeenCalledTimes(1);
+  });
 });
