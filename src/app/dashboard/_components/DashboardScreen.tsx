@@ -125,11 +125,21 @@ function MentorHome({ member }: { member: Member }) {
             timeZone={accountZone}
             now={new Date()}
           />
-          {/* The performance chart (design order: below the next session). Its
-              own fetch, so a blip here never holds up the figures above. */}
-          {!d.isNew && <PerformanceSection userId={member.id} />}
-          {/* Session quality (design order: below the chart). Its own fetch. */}
-          {!d.isNew && <SessionQuality userId={member.id} />}
+          {/* Active mentor: the performance chart beside the session-quality
+              panel (Mentor Dashboard v2.dc.html, notNew branch — a wrapping flex
+              row that stacks below ~840px). Each keeps its own fetch and four
+              states, so a blip in one never holds up the other. min-width:0 on
+              the chart column lets the chart shrink rather than scroll the page. */}
+          {!d.isNew && (
+            <div className={styles.perfRow}>
+              <div className={styles.perfChartCol}>
+                <PerformanceSection userId={member.id} />
+              </div>
+              <div className={styles.perfQualityCol}>
+                <SessionQuality userId={member.id} profileHref={d.profileHref} />
+              </div>
+            </div>
+          )}
         </>
       )}
       <LiveRegion message={announce} />

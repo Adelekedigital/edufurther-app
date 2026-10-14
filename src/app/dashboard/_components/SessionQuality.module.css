@@ -121,11 +121,17 @@
   font-weight: var(--weight-semibold);
   color: var(--ink-900);
 }
-.stars {
+/* Stars + rating + review-count link, pushed to the right of the label. */
+.ratingGroup {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
   margin-left: auto;
+}
+.stars {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
 }
 .starOn {
   display: inline-flex;
@@ -136,14 +142,37 @@
   color: var(--ink-200);
 }
 .ratingValue {
-  margin-left: var(--space-1);
   font-size: var(--text-p-sm);
   font-weight: var(--weight-semibold);
   color: var(--ink-900);
 }
-.reviewCount {
+/* The count links to the profile's Reviews tab. Kept muted like the design's
+   plain count, underlined so it reads as a link, with the app focus ring. */
+.reviewCountLink {
+  position: relative;
   font-size: var(--text-p-xs);
   color: var(--ink-500);
+  text-decoration: underline;
+}
+/* An invisible 44px tap target over the compact count (the project's mobile
+   rule) without enlarging the visible text. */
+.reviewCountLink::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  transform: translate(-50%, -50%);
+}
+.reviewCountLink:hover {
+  color: var(--ink-700);
+}
+.reviewCountLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-sm);
 }
 .noReviews {
   margin-left: auto;
