@@ -1,10 +1,12 @@
 'use client';
 
+import type { KpiTrend } from '@/components/molecules/KpiCard/KpiCard';
 import type { Booking } from '@/types/booking';
 import type { AppError, Remote } from '@/types/mentor';
 import { formatCount, formatRating } from '@/lib/utils/format';
 import { useUpcomingBookings } from './bookings';
 import { useCalendarConnection } from './calendarConnection';
+import { useMentorStats, type StatBlock } from './mentorStats';
 import { useMentorProfile } from './profile';
 
 /** The mentor's own id, name and zone — the screen passes a resolved member. */
@@ -128,10 +130,17 @@ export function deriveActivation(i: ActivationInputs): DashboardActivation {
   };
 }
 
-/** One KPI card's content (active-mentor view). No trend line: the backend is
- *  all-time only, so the design's month-over-month figure is omitted until
- *  period data exists (design-divergence.md). */
-export type Kpi = { key: string; label: string; value: string | null; unit?: string; info: string };
+/** One KPI card's content (active-mentor view). `value` is the all-time figure
+ *  from the profile; `trend` is the design's ↑/↓ delta over a fixed window
+ *  (current vs the equal window before), attached once the windowed stats load. */
+export type Kpi = {
+  key: string;
+  label: string;
+  value: string | null;
+  unit?: string;
+  info: string;
+  trend?: KpiTrend;
+};
 
 /** The KPI figures — primitives only, so it is pure and testable. */
 export type KpiInputs = {
@@ -185,6 +194,77 @@ export function deriveKpis(i: KpiInputs): Kpi[] {
   ];
 }
 
+// The real minus sign (U+2212), not a hyphen — the design's "−1" / "−0.4".
+const MINUS = '−';
+
+/**
+ * A signed count or duration delta as a KPI trend line. `unit` is placed before
+ * the period ("+120 min this month"); omit it for a bare count ("+1 this
+ * month"). A flat delta reads "No change …" with no arrow — the design's
+ * neutral note — so the card never shows a meaningless "+0".
+ */
+function countTrend(delta: number, period: string, unit?: string): KpiTrend {
+  if (delta === 0) return { text: `No change ${period}`, tone: 'neutral' };
+  const magnitude = Math.abs(delta).toLocaleString('en-US');
+  const body = unit ? `${magnitude} ${unit} ${period}` : `${magnitude} ${period}`;
+  return delta > 0
+    ? { text: `+${body}`, icon: 'trending_up', tone: 'positive' }
+    : { text: `${MINUS}${body}`, icon: 'trending_down', tone: 'negative' };
+}
+
+/**
+ * The average-rating trend: "N reviews" from the window's own review count, then
+ * the change in average to one decimal ("14 reviews · +0.2 this quarter"). No
+ * reviews in the window → no trend at all (the value shows "No data yet"); a
+ * window with no previous rating to compare → the review count alone, no arrow.
+ */
+function ratingTrend(current: StatBlock, previous: StatBlock, period: string): KpiTrend | undefined {
+  const n = current.reviewCount;
+  if (n <= 0) return undefined;
+  const reviews = `${n} ${n === 1 ? 'review' : 'reviews'}`;
+  if (current.averageRating == null || previous.averageRating == null) {
+    return { text: reviews, tone: 'neutral' };
+  }
+  // Round to the shown precision first, so a 4.84 → 4.80 reads "No change",
+  // not a "+0.0" that rounding left behind.
+  const delta = Math.round((current.averageRating - previous.averageRating) * 10) / 10;
+  if (delta === 0) return { text: `${reviews} · No change ${period}`, tone: 'neutral' };
+  const magnitude = Math.abs(delta).toFixed(1);
+  return delta > 0
+    ? { text: `${reviews} · +${magnitude} ${period}`, icon: 'trending_up', tone: 'positive' }
+    : { text: `${reviews} · ${MINUS}${magnitude} ${period}`, icon: 'trending_down', tone: 'negative' };
+}
+
+/** The windowed stat blocks the KPI trends are derived from (primitives only). */
+export type KpiTrendInputs = {
+  /** 30-day current/previous — sessions, mentoring time, mentees ("this month"). */
+  monthly: { current: StatBlock; previous: StatBlock } | null;
+  /** 90-day current/previous — average rating ("this quarter"). */
+  quarterly: { current: StatBlock; previous: StatBlock } | null;
+};
+
+/**
+ * The per-metric trend line (the design's ↑/↓ delta), keyed by KPI key: the
+ * current window minus the equal one before it. The windows are fixed to match
+ * the design — sessions / time / mentees over 30 days, rating over 90. A window
+ * still loading or errored yields no entry for its metrics, so the card shows
+ * its value now and the trend appears when the stats arrive. Pure and tested.
+ */
+export function deriveKpiTrends(i: KpiTrendInputs): Record<string, KpiTrend> {
+  const trends: Record<string, KpiTrend> = {};
+  if (i.monthly) {
+    const { current: c, previous: p } = i.monthly;
+    trends.sessions = countTrend(c.completedSessions - p.completedSessions, 'this month');
+    trends.time = countTrend(c.mentoringMinutes - p.mentoringMinutes, 'this month', 'min');
+    trends.mentees = countTrend(c.menteesMentored - p.menteesMentored, 'this month');
+  }
+  if (i.quarterly) {
+    const rating = ratingTrend(i.quarterly.current, i.quarterly.previous, 'this quarter');
+    if (rating) trends.rating = rating;
+  }
+  return trends;
+}
+
 /**
  * The Mentor Dashboard's activation state, composed from signals that already
  * ship: the owner profile (completeness + setup_needed + completed sessions),
@@ -206,6 +286,15 @@ export function useMentorDashboard(
 
   const p = profile.data;
   const owner = p?.owner ?? null;
+
+  // The KPI trend row compares the mentor's own recent windows. Only the
+  // active-mentor view shows the KPI strip, so gate the fetch on an active
+  // mentor (a new mentor's grid never renders) rather than fetch stats no one
+  // will see. Windows are fixed to the design: 30 days ("this month") for
+  // sessions, time and mentees; 90 ("this quarter") for the rating.
+  const activeMentorId = p && (p.mentor.completedSessions ?? 0) > 0 ? member.id : null;
+  const monthly = useMentorStats(activeMentorId, 30);
+  const quarterly = useMentorStats(activeMentorId, 90);
 
   // The hero row: the soonest confirmed session the mentor hosts. The list mixes
   // both sides (a mentor can book as a mentee), so filter to their mentor side.
@@ -252,7 +341,7 @@ export function useMentorDashboard(
 
   // KPIs need only the profile, so they are ready as soon as it loads (the
   // active view, where calendar is irrelevant).
-  const metrics: Kpi[] | null =
+  const baseMetrics: Kpi[] | null =
     !profile.isLoading && !profile.error && p
       ? deriveKpis({
           completedSessions: p.mentor.completedSessions ?? 0,
@@ -262,6 +351,21 @@ export function useMentorDashboard(
           reviewCount: p.mentor.reviewCount ?? 0,
         })
       : null;
+
+  // The ↑/↓ delta per metric, attached once each window's stats load. A stats
+  // blip never holds up or blanks the figures above: a missing window just
+  // means no trend line yet (KpiCard renders the value without one).
+  const trends = deriveKpiTrends({
+    monthly: monthly.data ? { current: monthly.data.current, previous: monthly.data.previous } : null,
+    quarterly: quarterly.data
+      ? { current: quarterly.data.current, previous: quarterly.data.previous }
+      : null,
+  });
+  const metrics: Kpi[] | null =
+    baseMetrics?.map((k) => {
+      const trend = trends[k.key];
+      return trend ? { ...k, trend } : k;
+    }) ?? null;
 
   return { isLoading, error, retry, data, metrics, nextSession };
 }
