@@ -96,6 +96,11 @@ describe('deriveKpis', () => {
     expect(deriveKpis(kpiInputs({ mentoringMinutes: 150 }))[1]!.value).toBe('3');
   });
 
+  it('pluralises the hours unit off the figure (no "1 hrs")', () => {
+    expect(deriveKpis(kpiInputs({ mentoringMinutes: 60 }))[1]).toMatchObject({ value: '1', unit: 'hr' });
+    expect(deriveKpis(kpiInputs({ mentoringMinutes: 120 }))[1]!.unit).toBe('hrs');
+  });
+
   it('shows no rating without reviews — null, never 0', () => {
     expect(deriveKpis(kpiInputs({ reviewCount: 0, rating: null }))[3]!.value).toBeNull();
     expect(deriveKpis(kpiInputs({ reviewCount: 0, rating: 4.2 }))[3]!.value).toBeNull();

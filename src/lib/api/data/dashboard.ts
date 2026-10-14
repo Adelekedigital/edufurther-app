@@ -2,6 +2,7 @@
 
 import type { Booking } from '@/types/booking';
 import type { AppError, Remote } from '@/types/mentor';
+import { formatRating } from '@/lib/utils/format';
 import { useUpcomingBookings } from './bookings';
 import { useCalendarConnection } from './calendarConnection';
 import { useMentorProfile } from './profile';
@@ -144,6 +145,7 @@ export type KpiInputs = {
 
 export function deriveKpis(i: KpiInputs): Kpi[] {
   const hasReviews = i.reviewCount > 0;
+  const hours = Math.round(i.mentoringMinutes / 60);
   return [
     {
       key: 'sessions',
@@ -154,8 +156,9 @@ export function deriveKpis(i: KpiInputs): Kpi[] {
     {
       key: 'hours',
       label: 'Mentoring time',
-      value: String(Math.round(i.mentoringMinutes / 60)),
-      unit: 'hrs',
+      value: String(hours),
+      // Pluralised off the figure, so 60 min reads "1 hr", not "1 hrs".
+      unit: hours === 1 ? 'hr' : 'hrs',
       info: 'Estimated from completed session lengths',
     },
     {
@@ -166,9 +169,10 @@ export function deriveKpis(i: KpiInputs): Kpi[] {
     },
     {
       // A mentor with no reviews never shows a rating — "No data yet", never 0.
+      // The shared formatRating helper keeps it identical to every other rating.
       key: 'rating',
       label: 'Average rating',
-      value: hasReviews && i.rating != null ? i.rating.toFixed(1) : null,
+      value: hasReviews && i.rating != null ? formatRating(i.rating) : null,
       unit: '/ 5',
       info: 'Average of mentee reviews after completed sessions',
     },
