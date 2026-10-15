@@ -92,7 +92,7 @@ function teaserOf(
   onTrack: boolean,
   streak: number,
   leftWaiting: number,
-  rate: number,
+  displayRate: number,
 ): { text: string; icon: IconName; good: boolean } {
   if (onTrack) {
     const text = streak > 0 ? streakLine(streak) : 'You’re holding your sessions';
@@ -101,7 +101,7 @@ function teaserOf(
   const text =
     leftWaiting > 0
       ? `${leftWaiting} ${leftWaiting === 1 ? 'mentee was' : 'mentees were'} left waiting in 90 days`
-      : `Your show-up rate is ${Math.round(rate)}%`;
+      : `Your show-up rate is ${displayRate}%`;
   return { text, icon: 'error', good: false };
 }
 
@@ -328,6 +328,10 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
   if (current.attendanceRate == null) return <Empty />;
 
   const rate = current.attendanceRate;
+  // The ring, badge, and headline all show the same rounded integer, so the
+  // on-track decision is made on that integer too. Otherwise a rate like 84.6
+  // rounds to a displayed "85%" while the raw value (< 85) still badges "At risk".
+  const displayRate = Math.round(rate);
   // "Missed by you" (the breakdown row) is every mentor no-show; the "left
   // waiting" headline is only the ones where a mentee was actually present
   // (mentees_left_waiting), so the two can differ. Clamp to the row's count (the
@@ -336,7 +340,7 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
   const leftWaiting = Math.min(current.menteesLeftWaiting, current.missedByMentor);
   const rating = current.averageRating;
   const reviewCount = current.reviewCount;
-  const onTrack = rate >= GOOD_THRESHOLD;
+  const onTrack = displayRate >= GOOD_THRESHOLD;
   // The quote is the latest review (social proof); it shows whenever one exists
   // and is never gated on the 90-day window. The "no reviews yet" note stands in
   // only when there is genuinely no review to show, and only once the fetch has
@@ -348,7 +352,7 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
   // breakdown disclosure.
   const canExpand = !onTrack || rating != null;
   const isOpen = expanded && canExpand;
-  const teaser = teaserOf(onTrack, currentStreak, leftWaiting, rate);
+  const teaser = teaserOf(onTrack, currentStreak, leftWaiting, displayRate);
 
   const toggleLabel = isOpen
     ? 'Show less'
@@ -445,7 +449,7 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
                     <>
                       {/* No mentee was left waiting, but the rate itself is the
                           risk — name it, rather than a vague "slipping". */}
-                      <p className={styles.bannerTitle}>Your show-up rate is {Math.round(rate)}%</p>
+                      <p className={styles.bannerTitle}>Your show-up rate is {displayRate}%</p>
                       <p className={styles.bannerText}>
                         Hold your upcoming booked sessions to bring it back up.
                       </p>

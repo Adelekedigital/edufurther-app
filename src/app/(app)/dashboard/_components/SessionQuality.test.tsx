@@ -253,6 +253,17 @@ describe('SessionQuality', () => {
     expect(screen.getByText('Your show-up rate is 61%')).toBeInTheDocument();
   });
 
+  it('decides on-track on the rounded rate the ring shows, not the raw value', () => {
+    // 84.6 rounds to the "85%" the ring displays, so the card reads On track —
+    // never "At risk" beside a headline that already says 85% (the good line).
+    data = windowStats({ attendanceRate: 84.6, menteesLeftWaiting: 0, completedSessions: 5 });
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByRole('img', { name: 'Show-up rate 85%' })).toBeInTheDocument();
+    expect(screen.getByText('On track')).toBeInTheDocument();
+    expect(screen.queryByText('At risk')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Your show-up rate is 85%/)).not.toBeInTheDocument();
+  });
+
   it('leads the no-reviews note with a star icon', () => {
     data = windowStats({ attendanceRate: 92, averageRating: null, reviewCount: 0 });
     quote = { data: null, isLoading: false, error: null, retry: vi.fn() };
