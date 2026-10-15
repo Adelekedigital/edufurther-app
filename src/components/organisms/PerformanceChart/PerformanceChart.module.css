@@ -129,11 +129,25 @@
   font-weight: var(--weight-semibold);
 }
 .range {
+  position: relative;
   padding: 0 var(--space-3);
 }
 .year {
   margin-left: 2px;
   padding: 0 var(--space-2);
+}
+/* Each range button keeps its 28px pill but gets the 44px minimum tap target,
+   grown vertically only — a wider overlay would overlap the neighbour (mirrors
+   the chart-type switch). The year <select> is a native control, so the browser
+   owns its touch handling. */
+.range::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  min-height: var(--touch-target-min);
+  transform: translateY(-50%);
 }
 .rangeOn,
 .yearOn {

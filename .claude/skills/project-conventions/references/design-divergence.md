@@ -671,6 +671,7 @@ defaults to bars for short ranges and a line for 12M/Year (the trend view). When
 | # | Design | Built | Why |
 |---|---|---|---|
 | 56 | Unselected chart-type icon `--ink-500` on the `--ink-100` track | `--ink-600` | Same as row 49 — matches the range switch's muted/selected on the shared pill style (`--ink-500` on `--ink-100` is ~4.0:1). |
+| 57 | Range and chart-type segmented buttons 28px tall | Keep the 28px visible pill; add an invisible `::before` that grows each button's tap target to the 44px minimum **vertically** (no horizontal growth, which would overlap the neighbour) | Touch-target a11y (ours, like focus rings). The year `<select>` is native, so the browser owns its touch handling. |
 
 ### Mentor Dashboard — Session quality panel, 2026-10-14
 
