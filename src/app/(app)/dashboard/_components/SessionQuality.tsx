@@ -52,12 +52,14 @@ function rateContext(current: StatBlock, previous: StatBlock, state: QualityStat
   const rose = cur != null && prev != null && cur > prev;
   const missed = current.missedByMentor;
   // noReviews, clean record: lead with the sessions that went ahead rather than a
-  // rating the mentor doesn't have yet. "Clean" means every booked session in the
-  // window actually happened — no mentor miss, no cancellation, and no mentee
-  // no-show — and at least one did, so the claim is always true. Anything else
-  // falls through to the generic on-track line.
+  // rating the mentor doesn't have yet. Only when the ring itself reads 100% AND
+  // every row is clean — no mentor miss, no cancellation, no mentee no-show — and
+  // at least one session completed, so the claim never contradicts the ring beside
+  // it (the rows and the ring don't always reconcile) or a row in the breakdown.
+  // Anything else falls through to the generic on-track line.
   if (
     state === 'noReviews' &&
+    cur === 100 &&
     current.completedSessions > 0 &&
     missed === 0 &&
     current.cancelledByMentor === 0 &&

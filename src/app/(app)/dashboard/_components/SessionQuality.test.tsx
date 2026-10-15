@@ -266,6 +266,26 @@ describe('SessionQuality', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('does not claim all went ahead when the show-up ring is below 100%', () => {
+    // The ring and the breakdown rows don't always reconcile; "all went ahead"
+    // must not contradict a sub-100% ring, even with zero miss/cancel counts.
+    data = windowStats({
+      attendanceRate: 86,
+      completedSessions: 12,
+      missedByMentor: 0,
+      cancelledByMentor: 0,
+      missedByMentee: 0,
+      reviewCount: 0,
+      averageRating: null,
+    });
+    quote = { data: null, isLoading: false, error: null, retry: vi.fn() };
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByRole('img', { name: 'Show-up rate 86%' })).toBeInTheDocument();
+    expect(
+      screen.queryByText(/All \d+ of your booked sessions went ahead/),
+    ).not.toBeInTheDocument();
+  });
+
   it('a failed quote fetch never breaks the card — the rating line still shows', () => {
     data = windowStats({ attendanceRate: 86 });
     quote = { data: null, isLoading: false, error: { kind: 'server', message: 'x' }, retry: vi.fn() };
