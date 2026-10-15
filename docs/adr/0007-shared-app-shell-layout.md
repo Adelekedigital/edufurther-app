@@ -24,7 +24,7 @@ Every signed-in screen — Dashboard, Bookings, Calendar, Explore, Integrations,
 
 ## Decision
 
-Option 1. An `src/app/(app)/` route group whose `layout.tsx` renders `<AppShell>` once — fed by `useAppShell`, `active` derived from the pathname — and the shell-rendering routes move inside it. Each screen stops rendering `<AppShell>` and returns only its content. The nav's "Home" links straight to each viewer's home — mentor → `/dashboard`, mentee → `/explore` (both from `homeFor`) — instead of `/`, so in-app Home nav skips the 307. There is no `/home` route yet; mentees' home is Explore today, so mentee Home and Explore share an href (aria-current lands on Explore) — unchanged from before, where Home `/` already redirected mentees to Explore. `/` stays the cold-entry redirect. Focus moves to the page heading on route change. The public mentor profile (`mentors/[handle]`) and the focused session-join (`sessions/[id]`) keep their own chrome for now (follow-up).
+Option 1. An `src/app/(app)/` route group whose `layout.tsx` renders `<AppShell>` once — fed by `useAppShell`, `active` derived from the pathname — and the shell-rendering routes move inside it. Each screen stops rendering `<AppShell>` and returns only its content. The nav's "Home" links straight to each viewer's home — mentor → `/dashboard`, mentee → `/explore` (both from `homeFor`) — instead of `/`, so in-app Home nav skips the 307. There is no `/home` route yet; mentees' home is Explore today, so mentee Home and Explore share an href (aria-current lands on Explore) — unchanged from before, where Home `/` already redirected mentees to Explore. `/` stays the cold-entry redirect. Route-change focus is handled app-wide by a `RouteFocusManager` mounted once in the root layout — not in the group layout — so entering a shell route from a flat route (e.g. a mentor profile) also moves focus to the new page's heading; it skips only the initial document load. The public mentor profile (`mentors/[handle]`) and the focused session-join (`sessions/[id]`) keep their own chrome for now (follow-up).
 
 Option 2 is rejected: the root layout also serves signed-out routes (sign-in), so branching it by pathname is fragile. Option 3 leaves a user-visible defect.
 
@@ -32,7 +32,7 @@ Option 2 is rejected: the root layout also serves signed-out routes (sign-in), s
 
 Good:
 - The shell persists across app navigation — no remount/blank/flash — for mentee, mentor and guest alike; the sidebar stays put.
-- Focus is managed on route change — an accessibility gain the per-page shell blocked.
+- Route-change focus is managed app-wide by a root `RouteFocusManager` — an accessibility gain the per-page shell blocked. Living above the group, it also covers navigations into the shell from flat routes (a profile, the session view), not just within it, so a keyboard or screen-reader user never lands on `<body>` after a client navigation.
 - Screens get simpler (content only); the shell wiring lives in one place.
 
 Bad:

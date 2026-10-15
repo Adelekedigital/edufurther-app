@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/react';
-import { StrictMode, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 // The shell, viewer and connectivity are mocked: this tests the layout's own
 // contract — one AppShell, its props derived from the route and the viewer —
-// not AppShell's internals (covered by its own tests).
+// not AppShell's internals (covered by its own tests). Route-change focus lives
+// in RouteFocusManager now (ADR 0007), tested there.
 const h = vi.hoisted(() => ({
   pathname: '/bookings',
   online: true,
@@ -18,7 +19,7 @@ vi.mock('next/navigation', () => ({ usePathname: () => h.pathname }));
 vi.mock('@/lib/utils/useOnline', () => ({ useOnline: () => h.online }));
 vi.mock('@/app/_shell/useAppShell', () => ({ useAppShell: () => h.shell }));
 vi.mock('@/components/templates/AppShell/AppShell', () => ({
-  // Stand-in with the one landmark the focus effect looks for.
+  // Stand-in that records the props the layout passes.
   AppShell: (props: {
     active: string;
     nav: string;
@@ -27,7 +28,6 @@ vi.mock('@/components/templates/AppShell/AppShell', () => ({
     children: ReactNode;
   }) => (
     <main
-      id="main"
       data-testid="app-shell"
       data-active={props.active}
       data-nav={props.nav}
@@ -95,55 +95,5 @@ describe('AppGroupLayout', () => {
     expect(shell).toHaveAttribute('data-chrome', 'guest');
     expect(shell).toHaveAttribute('data-nav', 'unknown');
     expect(shell).toHaveAttribute('data-offline', 'true');
-  });
-
-  it('moves focus to the page heading on route change, but not on first mount', () => {
-    h.pathname = '/bookings';
-    const { rerender } = render(
-      <AppGroupLayout>
-        <h1>Bookings</h1>
-      </AppGroupLayout>,
-    );
-    // A fresh mount keeps the browser's focus — it does not steal it.
-    expect(screen.getByRole('heading', { name: 'Bookings' })).not.toHaveFocus();
-
-    h.pathname = '/calendar';
-    rerender(
-      <AppGroupLayout>
-        <h1>Your calendar</h1>
-      </AppGroupLayout>,
-    );
-    expect(screen.getByRole('heading', { name: 'Your calendar' })).toHaveFocus();
-  });
-
-  it('does not steal focus on first mount under StrictMode (double-invoked effects)', () => {
-    h.pathname = '/bookings';
-    render(
-      <StrictMode>
-        <AppGroupLayout>
-          <h1>Bookings</h1>
-        </AppGroupLayout>
-      </StrictMode>,
-    );
-    // StrictMode double-invokes the focus effect on mount; the hook keys off the
-    // previous pathname (equal across the double-invoke) so it still counts as
-    // first mount and leaves the browser's focus alone (ADR 0007).
-    expect(screen.getByRole('heading', { name: 'Bookings' })).not.toHaveFocus();
-  });
-
-  it('falls back to the main landmark when the new page has no heading yet', () => {
-    h.pathname = '/bookings';
-    const { rerender } = render(
-      <AppGroupLayout>
-        <h1>Bookings</h1>
-      </AppGroupLayout>,
-    );
-    h.pathname = '/dashboard';
-    rerender(
-      <AppGroupLayout>
-        <div role="status">Loading your dashboard</div>
-      </AppGroupLayout>,
-    );
-    expect(screen.getByTestId('app-shell')).toHaveFocus();
   });
 });

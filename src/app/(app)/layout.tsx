@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { useAppShell } from '@/app/_shell/useAppShell';
@@ -44,7 +44,6 @@ export default function AppGroupLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { chrome, account, nav } = useAppShell();
   const online = useOnline();
-  useFocusMainOnRouteChange(pathname);
 
   return (
     <AppShell
@@ -57,31 +56,4 @@ export default function AppGroupLayout({ children }: { children: ReactNode }) {
       {children}
     </AppShell>
   );
-}
-
-/**
- * Move focus to the new page on a client-side route change. With the shell
- * persistent, Next leaves focus on the nav link that was clicked; a keyboard or
- * screen-reader user should land on the new content instead (accessibility:
- * route change → the `<h1>`, or the `<main>` landmark it falls back to while the
- * page is still loading its heading). Skipped on first mount, so a fresh load or
- * entry from a non-group route keeps the browser's own focus, and never
- * scroll-jumps (`preventScroll`).
- */
-function useFocusMainOnRouteChange(pathname: string) {
-  const prevPathname = useRef<string | null>(null);
-  useEffect(() => {
-    const prev = prevPathname.current;
-    // No-op unless the path actually changed. This also absorbs React Strict
-    // Mode's dev-only double-invoke (the pathname is equal across it), so a
-    // fresh load never steals focus from the browser's own target.
-    if (prev === pathname) return;
-    prevPathname.current = pathname;
-    if (prev === null) return; // first mount — keep the browser's focus
-    const main = document.getElementById('main');
-    if (!main) return;
-    const target = main.querySelector<HTMLElement>('h1') ?? main;
-    if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
-    target.focus({ preventScroll: true });
-  }, [pathname]);
 }
