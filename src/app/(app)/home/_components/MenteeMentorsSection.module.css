@@ -1,0 +1,108 @@
+/* Home "Book again" section (Mentee Dashboard v2.dc.html). */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.headText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.title {
+  margin: 0;
+  font-size: var(--text-p-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+.sub {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+/* "See all mentors" — a text link with a 44px tap target (design draws it so). */
+.seeAll {
+  flex: none;
+  display: flex;
+  align-items: center;
+  min-height: var(--space-11);
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-link);
+  white-space: nowrap;
+}
+.seeAll:hover {
+  color: var(--text-link-hover);
+}
+/* The inline list: one bordered card, rows divided. */
+.list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  overflow: hidden;
+}
+.list > * + *,
+.modalList > * + * {
+  border-top: 1px solid var(--border-subtle);
+}
+.modalList {
+  display: flex;
+  flex-direction: column;
+}
+/* "Try again" inside the error notice: a text action with a 44px tap target. */
+.inlineAction {
+  position: relative;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  color: var(--text-link-hover);
+}
+.inlineAction::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: var(--space-11);
+}
+.inlineAction:hover {
+  color: var(--text-link);
+}
+.seeAll:focus-visible,
+.inlineAction:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-md);
+}
+/* Loading rows (mirror MentorRow's layout). */
+.skelRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+}
+.skelLines {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}

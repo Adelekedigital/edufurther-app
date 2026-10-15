@@ -73,6 +73,12 @@ export type BookingFlowProps = {
   /** Hide "View profile" — the flow was opened from that profile. */
   hideProfileLink?: boolean;
   /**
+   * The rating and review count aren't known (a re-booking from the home list,
+   * where /me/mentors carries no reviews) — suppress the proof token rather than
+   * claim "New to EduFurther" about a mentor the mentee has already met.
+   */
+  ratingUnknown?: boolean;
+  /**
    * A time to open on (UTC ISO), e.g. the profile's "Book Mon, Sep 28 ·
    * 9:00 am" — the mentor's earliest across offerings. Each offering is tried
    * (via onSessionTypeChange) until one offers it; it's then picked on its
@@ -256,8 +262,9 @@ export function BookingFlow(p: BookingFlowProps) {
   const subtitle =
     step === 'done' || oneStep ? '' : `Step ${at + 1} of ${steps.length} · ${stepName}`;
 
-  const proof =
-    m.reviewCount > 0 && m.rating !== null
+  const proof = p.ratingUnknown
+    ? ''
+    : m.reviewCount > 0 && m.rating !== null
       ? `★ ${formatRating(m.rating)} (${m.reviewCount} ${m.reviewCount === 1 ? 'review' : 'reviews'})`
       : 'New to EduFurther';
   const mentorMeta = [m.degreeLine, m.institution, proof].filter(Boolean).join(' · ');

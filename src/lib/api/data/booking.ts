@@ -303,6 +303,11 @@ export function useRequestBooking() {
       // settles that offer — the notice would otherwise keep counting down a
       // hold on a time already booked.
       void queryClient.invalidateQueries({ queryKey: keys.bookings.all });
+      // Booking a mentor you've met flips their bookability (open → pending /
+      // has_upcoming) on the home "Book again" list; without this it stays stale
+      // behind the 60s window and invites a duplicate request. A no-op where the
+      // list isn't mounted (Explore).
+      void queryClient.invalidateQueries({ queryKey: keys.metMentors.all });
     },
     onSettled: (_data, error, req) => {
       // The questions changed under the modal (a required one we didn't show, or

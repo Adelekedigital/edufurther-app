@@ -7,11 +7,15 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { KpiCard } from '@/components/molecules/KpiCard/KpiCard';
 import { Notice } from '@/components/molecules/Notice/Notice';
+import { BookingLauncher } from '@/app/_shell/BookingLauncher/BookingLauncher';
+import { FloatingHelp } from '@/components/organisms/FloatingHelp/FloatingHelp';
 import { useUpcomingBookings } from '@/lib/api/data/bookings';
 import { EMPTY_STATS, useMenteeStats } from '@/lib/api/data/menteeHome';
+import { toBookingMentor, useMetMentors, type MetMentor } from '@/lib/api/data/metMentors';
 import { deviceTimeZone } from '@/lib/utils/format';
-import { useAppShell } from '@/app/_shell/useAppShell';
+import { MATCH_CALL_URL, useAppShell } from '@/app/_shell/useAppShell';
 import { MenteeFirstSession } from './MenteeFirstSession';
+import { MENTORS_SECTION_ID, MenteeMentorsSection } from './MenteeMentorsSection';
 import { MenteeNextSession } from './MenteeNextSession';
 import { NEW_MENTEE_KPIS, returningKpis } from './menteeKpis';
 import styles from './MenteeHomeScreen.module.css';
@@ -55,6 +59,9 @@ export function MenteeHomeScreen() {
   const zone = member?.timeZone ?? browserZone;
   const stats = useMenteeStats(member?.id ?? null, menteeSide && !isNew);
   const upcoming = useUpcomingBookings(member?.id ?? null, zone, menteeSide && !isNew);
+  const metMentors = useMetMentors(menteeSide && !isNew);
+  const [bookTarget, setBookTarget] = useState<MetMentor | null>(null);
+  const bookMentor = useMemo(() => (bookTarget ? toBookingMentor(bookTarget) : null), [bookTarget]);
 
   // A mentor or a signed-out visitor who lands on /home directly goes to their
   // own home instead (homeFor sends them there from /, this covers a typed URL).
@@ -88,6 +95,19 @@ export function MenteeHomeScreen() {
   // Monthly credits only for "N free sessions this month" — `credits.balance`
   // folds in non-expiring bonus credits, which aren't "this month".
   const monthly = member.credits?.monthly;
+
+  // The "Mentors met" KPI links down to the Book-again section on the same page.
+  const scrollToMentors = () => {
+    const el = document.getElementById(MENTORS_SECTION_ID);
+    if (!el) return;
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  };
+  // "Talk to us" opens the external Cal booking page (same link as Explore's
+  // "Find my mentor matches"); the pill is hidden when it isn't configured.
+  const openCall = () => {
+    if (MATCH_CALL_URL) window.open(MATCH_CALL_URL, '_blank', 'noopener,noreferrer');
+  };
 
   // State-dependent subline (Mentee Dashboard v2.dc.html: new / nothingNext /
   // default), read from the upcoming list — the SAME source the next-session
@@ -133,7 +153,15 @@ export function MenteeHomeScreen() {
             : stats.isLoading
               ? Array.from({ length: 4 }).map((_, i) => <KpiSkeleton key={i} />)
               : returningKpis(stats.data ?? EMPTY_STATS).map(({ key, ...k }) => (
-                  <KpiCard key={key} {...k} />
+                  <KpiCard
+                    key={key}
+                    {...k}
+                    link={
+                      key === 'mentors' && (metMentors.data?.length ?? 0) > 0
+                        ? { label: 'View mentors', onClick: scrollToMentors }
+                        : undefined
+                    }
+                  />
                 ))}
         </section>
       )}
@@ -185,6 +213,27 @@ export function MenteeHomeScreen() {
           }
         />
       )}
+
+      {!isNew && (
+        <MenteeMentorsSection mentors={metMentors} timeZone={zone} onBook={setBookTarget} />
+      )}
+
+      <FloatingHelp
+        show={!!MATCH_CALL_URL}
+        title="Not sure which mentor to choose?"
+        label="Talk to us"
+        sheetLabel="Book a free call"
+        body="Book a free 15-min call with our team and we’ll suggest mentors who fit. No credit used."
+        external
+        endAt={`#${MENTORS_SECTION_ID}`}
+        onAction={openCall}
+      />
+      <BookingLauncher
+        mentor={bookMentor}
+        hideProfileLink={bookTarget?.slug === null}
+        ratingUnknown
+        onClose={() => setBookTarget(null)}
+      />
     </div>
   );
 }

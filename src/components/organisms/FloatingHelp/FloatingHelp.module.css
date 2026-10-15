@@ -1,0 +1,170 @@
+/* FloatingHelp.dc.html: a fixed, scroll-aware help pill that collapses to an
+   icon and, on mobile, opens a sheet. The bottom/left offsets are set inline
+   from scroll state (dynamic px); the look lives here, tokens only. */
+.pill {
+  position: fixed;
+  z-index: 25;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: max-content;
+  max-width: calc(100vw - var(--space-8));
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border: 1px solid var(--green-100);
+  border-radius: var(--radius-full);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-float);
+  font-family: var(--font-ui);
+  transition:
+    left var(--duration-slow) var(--ease-standard),
+    transform var(--duration-base) var(--ease-standard);
+}
+.glyph {
+  width: var(--space-5);
+  height: var(--space-5);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--green-700);
+}
+.title {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+.action {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--space-8);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--green-700);
+  border-radius: var(--radius-full);
+  background: var(--green-50);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--green-700);
+  white-space: nowrap;
+}
+.action:hover {
+  background: var(--green-100);
+}
+.dismiss {
+  position: relative;
+  width: var(--space-8);
+  height: var(--space-8);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  cursor: pointer;
+  color: var(--ink-500);
+}
+.dismiss:hover {
+  background: var(--ink-100);
+}
+/* 44px tap targets over the 32px visuals (our rule; the design draws 32px). */
+.action::before {
+  content: '';
+  position: absolute;
+  inset: calc((var(--space-11) - var(--space-8)) / -2) 0;
+}
+.dismiss::before {
+  content: '';
+  position: absolute;
+  inset: calc((var(--space-11) - var(--space-8)) / -2);
+}
+/* Collapsed: a 48px icon button in the corner (≥44px tap target). */
+.mini {
+  position: fixed;
+  z-index: 25;
+  width: var(--space-12);
+  height: var(--space-12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--green-50);
+  box-shadow: var(--shadow-float);
+  cursor: pointer;
+  color: var(--green-700);
+  transition: transform var(--duration-base) var(--ease-standard);
+}
+/* Mobile sheet, opened from the mini icon. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 26;
+}
+.sheet {
+  position: fixed;
+  z-index: 27;
+  box-sizing: border-box;
+  width: 16.5rem;
+  max-width: calc(100vw - var(--space-8));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-popover);
+  font-family: var(--font-ui);
+}
+.sheetHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+.sheetBody {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+.sheetAction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: var(--space-11);
+  margin-top: var(--space-1);
+  border: 1px solid var(--green-700);
+  border-radius: var(--radius-lg);
+  background: var(--green-50);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--green-700);
+}
+.trail {
+  display: flex;
+  line-height: 1;
+}
+.action:focus-visible,
+.dismiss:focus-visible,
+.mini:focus-visible,
+.sheetAction:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pill,
+  .mini {
+    transition: none;
+  }
+}

@@ -29,14 +29,14 @@ describe('AppShell navigation', () => {
       </AppShell>,
     );
     // The first '/' is the rail logo; Home links straight to the mentee home,
-    // '/explore' (ADR 0007), so it shares Explore's href rather than hitting '/'.
-    expect(hrefs(0)).toEqual(['/', '/explore', '/explore', '/bookings', '/settings']);
-    expect(groups(0)).toEqual([['/explore', '/explore', '/bookings'], ['/settings']]);
+    // '/home' (ADR 0007), not '/'.
+    expect(hrefs(0)).toEqual(['/', '/home', '/explore', '/bookings', '/settings']);
+    expect(groups(0)).toEqual([['/home', '/explore', '/bookings'], ['/settings']]);
     // A divider sits between the two groups, and only there.
     const [daily, setup] = nav(0).getAllByRole('list');
     expect(daily!.nextElementSibling).toHaveAttribute('aria-hidden');
     expect(daily!.nextElementSibling!.nextElementSibling).toBe(setup);
-    expect(hrefs(1)).toEqual(['/explore', '/explore', '/bookings']);
+    expect(hrefs(1)).toEqual(['/home', '/explore', '/bookings']);
   });
 
   it('Messages is not shown anywhere until it is built (product, 2026-09-30)', async () => {
