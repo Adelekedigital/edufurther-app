@@ -67,6 +67,13 @@
   padding: var(--space-5);
 }
 
+/* Info + action side by side on desktop (design nextActions=beside); stacks below. */
+.main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
 /* "Starts in 8 min" — only when the session is near or live. */
 .soon {
   align-self: flex-start;
@@ -91,6 +98,8 @@
 }
 
 .when {
+  flex: 1;
+  min-width: 0;
   display: flex;
   gap: var(--space-4);
   align-items: flex-start;
@@ -234,6 +243,7 @@
 }
 
 .actions {
+  flex: none;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -242,6 +252,11 @@
 
 /* Phone (AppShell.dc.html 768px rule): actions stack and stretch full width. */
 @media (max-width: 767px) {
+  .main {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-4);
+  }
   .actions {
     flex-direction: column;
     align-items: stretch;

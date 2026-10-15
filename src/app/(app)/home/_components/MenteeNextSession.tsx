@@ -105,20 +105,46 @@ export function MenteeNextSession({ booking: b, timeZone, now = new Date() }: Me
           </span>
         )}
 
-        <div className={styles.when}>
-          <span aria-hidden="true" className={styles.date}>
-            <span className={styles.dateMonth}>{month}</span>
-            <span className={styles.dateDay}>{day}</span>
-          </span>
-          <div className={styles.detail}>
-            <span className="sr-only">{fullDate(b.startsAt, timeZone)}</span>
-            <span className={styles.sessionTitle}>{b.title ?? 'Session'}</span>
-            <span className={styles.with}>
-              with <strong className={styles.name}>{b.other.name}</strong>
+        {/* Info and action side by side on desktop (design nextActions=beside),
+            stacked on a phone. */}
+        <div className={styles.main}>
+          <div className={styles.when}>
+            <span aria-hidden="true" className={styles.date}>
+              <span className={styles.dateMonth}>{month}</span>
+              <span className={styles.dateDay}>{day}</span>
             </span>
-            <span className={styles.time}>
-              {weekday(b.startsAt, timeZone)}, {timeRange(b, timeZone)}
-            </span>
+            <div className={styles.detail}>
+              <span className="sr-only">{fullDate(b.startsAt, timeZone)}</span>
+              <span className={styles.sessionTitle}>{b.title ?? 'Session'}</span>
+              <span className={styles.with}>
+                with <strong className={styles.name}>{b.other.name}</strong>
+              </span>
+              <span className={styles.time}>
+                {weekday(b.startsAt, timeZone)}, {timeRange(b, timeZone)}
+              </span>
+            </div>
+          </div>
+
+          <div className={styles.actions}>
+            {soon ? (
+              <ButtonLink
+                href={`/sessions/${encodeURIComponent(b.id)}`}
+                prefetch={false}
+                variant="primary"
+                size="medium"
+              >
+                Join session
+              </ButtonLink>
+            ) : (
+              <ButtonLink
+                href={`/bookings?booking=${encodeURIComponent(b.id)}`}
+                prefetch={false}
+                variant="secondary-outlined"
+                size="medium"
+              >
+                View details
+              </ButtonLink>
+            )}
           </div>
         </div>
 
@@ -162,28 +188,6 @@ export function MenteeNextSession({ booking: b, timeZone, now = new Date() }: Me
                 </li>
               ))}
             </ul>
-          )}
-        </div>
-
-        <div className={styles.actions}>
-          {soon ? (
-            <ButtonLink
-              href={`/sessions/${encodeURIComponent(b.id)}`}
-              prefetch={false}
-              variant="primary"
-              size="medium"
-            >
-              Join session
-            </ButtonLink>
-          ) : (
-            <ButtonLink
-              href={`/bookings?booking=${encodeURIComponent(b.id)}`}
-              prefetch={false}
-              variant="secondary-outlined"
-              size="medium"
-            >
-              View details
-            </ButtonLink>
           )}
         </div>
       </div>
