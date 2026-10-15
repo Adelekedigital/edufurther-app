@@ -5,11 +5,9 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
-import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { useMentorDashboard, type SetupNext } from '@/lib/api/data/dashboard';
 import { deviceTimeZone, inSentence } from '@/lib/utils/format';
-import { useOnline } from '@/lib/utils/useOnline';
 import type { Viewer } from '@/types/mentor';
 import { DashboardHeader } from './DashboardHeader';
 import { KpiGrid } from './KpiGrid';
@@ -154,8 +152,7 @@ function MentorHome({ member }: { member: Member }) {
  * + next-session card; the activation hero and metrics follow.
  */
 export function DashboardScreen() {
-  const { member, chrome, account, nav } = useAppShell();
-  const online = useOnline();
+  const { member, chrome } = useAppShell();
   const router = useRouter();
 
   // Viewer resolved (guest or member) but not a mentor → send them home.
@@ -166,10 +163,8 @@ export function DashboardScreen() {
   }, [resolved, isMentor, router]);
 
   return (
-    <AppShell active="Home" nav={nav} chrome={chrome} account={account} offline={!online}>
-      <div className={styles.page}>
-        {member?.isMentor ? <MentorHome member={member} /> : <DashboardLoading />}
-      </div>
-    </AppShell>
+    <div className={styles.page}>
+      {member?.isMentor ? <MentorHome member={member} /> : <DashboardLoading />}
+    </div>
   );
 }

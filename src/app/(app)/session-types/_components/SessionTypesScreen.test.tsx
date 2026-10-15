@@ -135,8 +135,9 @@ describe('SessionTypesScreen', () => {
   it('a guest is asked to log in and comes back here', () => {
     viewer = { kind: 'guest' };
     render(<SessionTypesScreen />);
-    // The shell's header also offers Log in; the page's own one returns here.
-    expect(within(screen.getByRole('main')).getByRole('link', { name: 'Log in' })).toHaveAttribute(
+    // The screen renders content only now (the shell is the route-group layout,
+    // ADR 0007), so the page's own gate link is the one on screen.
+    expect(screen.getByRole('link', { name: 'Log in' })).toHaveAttribute(
       'href',
       '/login?next=%2Fsession-types',
     );

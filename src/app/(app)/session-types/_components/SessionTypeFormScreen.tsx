@@ -6,7 +6,6 @@ import { Button } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { SessionTypeWizard } from '@/components/organisms/SessionTypeWizard/SessionTypeWizard';
-import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ConfirmDialog } from '@/components/templates/ConfirmDialog/ConfirmDialog';
 import { useTopics } from '@/lib/api/data/mentors';
 import {
@@ -26,9 +25,8 @@ import {
   weeklySummary,
   type Draft,
 } from '@/lib/utils/sessionTypeDraft';
-import { useOnline } from '@/lib/utils/useOnline';
-import { useAppShell } from '../../_shell/useAppShell';
-import { mentorGate, SESSION_TYPES_GATE } from '../../_shell/MentorGate';
+import { useAppShell } from '@/app/_shell/useAppShell';
+import { mentorGate, SESSION_TYPES_GATE } from '@/app/_shell/MentorGate';
 import {
   DefaultsModal,
   PublishedModal,
@@ -64,8 +62,7 @@ export function SessionTypeFormScreen({
   edit?: EditTarget;
 }) {
   const router = useRouter();
-  const { viewer, member, chrome, account, nav } = useAppShell();
-  const online = useOnline();
+  const { viewer, member } = useAppShell();
   const isMentor = !!member?.isMentor;
   const { topics, isLoading: topicsLoading, error: topicsError, retry: retryTopics } = useTopics();
   const mentorId = isMentor ? member!.id : null;
@@ -128,7 +125,7 @@ export function SessionTypeFormScreen({
   const loading = viewer.kind === 'loading' || topicsLoading;
 
   return (
-    <AppShell active="Sessions" nav={nav} chrome={chrome} account={account} offline={!online}>
+    <>
       {gate ??
         (topicsError && topics.length === 0 ? (
           // The form can't be filled without the catalog's topics (step 1 needs one).
@@ -284,6 +281,6 @@ export function SessionTypeFormScreen({
           onDone={toList}
         />
       )}
-    </AppShell>
+    </>
   );
 }

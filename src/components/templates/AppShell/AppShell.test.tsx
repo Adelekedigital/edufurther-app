@@ -28,13 +28,15 @@ describe('AppShell navigation', () => {
         <p>Page</p>
       </AppShell>,
     );
-    expect(hrefs(0)).toEqual(['/', '/', '/explore', '/bookings', '/settings']);
-    expect(groups(0)).toEqual([['/', '/explore', '/bookings'], ['/settings']]);
+    // The first '/' is the rail logo; Home links straight to the mentee home,
+    // '/explore' (ADR 0007), so it shares Explore's href rather than hitting '/'.
+    expect(hrefs(0)).toEqual(['/', '/explore', '/explore', '/bookings', '/settings']);
+    expect(groups(0)).toEqual([['/explore', '/explore', '/bookings'], ['/settings']]);
     // A divider sits between the two groups, and only there.
     const [daily, setup] = nav(0).getAllByRole('list');
     expect(daily!.nextElementSibling).toHaveAttribute('aria-hidden');
     expect(daily!.nextElementSibling!.nextElementSibling).toBe(setup);
-    expect(hrefs(1)).toEqual(['/', '/explore', '/bookings']);
+    expect(hrefs(1)).toEqual(['/explore', '/explore', '/bookings']);
   });
 
   it('Messages is not shown anywhere until it is built (product, 2026-09-30)', async () => {
@@ -82,8 +84,9 @@ describe('AppShell navigation', () => {
         <p>Page</p>
       </AppShell>,
     );
+    // Home links straight to the mentor home, '/dashboard' (ADR 0007).
     expect(groups(0)).toEqual([
-      ['/', '/bookings', '/calendar'],
+      ['/dashboard', '/bookings', '/calendar'],
       ['/session-types', '/integrations', '/settings'],
     ]);
     expect(nav(0).getByRole('link', { name: 'Sessions' })).toHaveAttribute('aria-current', 'page');
@@ -95,7 +98,7 @@ describe('AppShell navigation', () => {
         <p>Page</p>
       </AppShell>,
     );
-    expect(hrefs(1)).toEqual(['/', '/calendar', '/bookings']);
+    expect(hrefs(1)).toEqual(['/dashboard', '/calendar', '/bookings']);
     expect(nav(1).getByRole('button', { name: 'More' })).toHaveAttribute('data-current', 'true');
   });
 
