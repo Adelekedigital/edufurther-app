@@ -253,4 +253,21 @@ describe('PerformanceChart chart-type switch', () => {
     await user.keyboard('{ArrowRight}'); // wraps back to bar
     expect(screen.getByRole('radio', { name: 'Bar chart' })).toHaveAttribute('aria-checked', 'true');
   });
+
+  it('keeps two charts in sync through the shared preference store', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <PerformanceChart series={series} months={months} />
+        <PerformanceChart series={series} months={months} />
+      </>,
+    );
+    const lines = screen.getAllByRole('radio', { name: 'Line chart' });
+    expect(lines).toHaveLength(2);
+    await user.click(lines[0]!);
+    // The pick flows through the store, so the second chart follows too.
+    for (const r of screen.getAllByRole('radio', { name: 'Line chart' })) {
+      expect(r).toHaveAttribute('aria-checked', 'true');
+    }
+  });
 });

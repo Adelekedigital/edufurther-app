@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
@@ -48,7 +48,12 @@ const CHART_TYPES = [
 ] as const;
 
 const CHART_TYPE_KEY = 'ef-chart-type';
-/** The mentor's remembered chart type, or null before they pick (per-viewer). */
+// A tiny external store over localStorage['ef-chart-type'], read through
+// useSyncExternalStore: the value is SSR-safe (the server snapshot is null, so no
+// hydration mismatch) and every mounted chart re-reads when the pick changes —
+// here or in another tab.
+const chartTypeListeners = new Set<() => void>();
+/** The mentor's remembered chart type, or null before they pick (per device). */
 function readChartType(): 'bar' | 'line' | null {
   try {
     const v = typeof localStorage !== 'undefined' ? localStorage.getItem(CHART_TYPE_KEY) : null;
@@ -63,6 +68,18 @@ function persistChartType(v: 'bar' | 'line') {
   } catch {
     /* private mode / blocked storage: the pick just won't be remembered */
   }
+  chartTypeListeners.forEach((cb) => cb());
+}
+function subscribeChartType(cb: () => void) {
+  chartTypeListeners.add(cb);
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === CHART_TYPE_KEY) cb();
+  };
+  window.addEventListener('storage', onStorage);
+  return () => {
+    chartTypeListeners.delete(cb);
+    window.removeEventListener('storage', onStorage);
+  };
 }
 
 /**
@@ -86,7 +103,6 @@ export function PerformanceChart({
   chartSwitch = 'show',
 }: PerformanceChartProps) {
   const [range, setRange] = useState(defaultRange);
-  const [chartType, setChartType] = useState<'bar' | 'line' | null>(() => readChartType());
   const [hidden, setHidden] = useState<string[]>([]);
   const [hover, setHover] = useState(-1);
   const [narrow, setNarrow] = useState(false);
@@ -98,6 +114,8 @@ export function PerformanceChart({
   const menuRef = useRef<HTMLDivElement>(null);
   const narrowRef = useRef(false);
   const menuId = useId();
+  // The remembered chart type, read from the external store above.
+  const chartType = useSyncExternalStore(subscribeChartType, readChartType, () => null);
 
   const showSwitch = chartSwitch === 'show';
   // Before any pick: bars for short ranges, a line for a year+ (the trend view).
@@ -202,7 +220,6 @@ export function PerformanceChart({
 
   const pickType = (t: 'bar' | 'line') => {
     persistChartType(t);
-    setChartType(t);
     setHover(-1);
   };
   // Radiogroup roving focus for the bar/line switch (mirrors the range switch).
