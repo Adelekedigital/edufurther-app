@@ -22,8 +22,18 @@ const WINDOW_DAYS = 90;
  */
 const GOOD_THRESHOLD = 85;
 
-/** Shown in both views when there is no review to quote (see design-divergence.md). */
-const NO_REVIEWS = 'No reviews yet — they’ll appear after mentees review you';
+/**
+ * The design's three quality states (Mentor Dashboard v2.dc.html, `qualityState`):
+ * at risk → `low`; otherwise `good` when there are reviews, `noReviews` when the
+ * mentor has settled sessions but none reviewed yet. `noReviews` reads as
+ * on-track — it is not the no-session empty state. Keyed off the window's own
+ * `reviewCount` so the state never flickers on the async review quote.
+ */
+type QualityState = 'low' | 'good' | 'noReviews';
+function qualityStateOf(rate: number, hasReviews: boolean): QualityState {
+  if (rate < GOOD_THRESHOLD) return 'low';
+  return hasReviews ? 'good' : 'noReviews';
+}
 
 /**
  * The line under the show-up rate, keyed on the same `good` state as the badge
@@ -35,12 +45,21 @@ const NO_REVIEWS = 'No reviews yet — they’ll appear after mentees review you
  * ring stands alone. "Up" needs both windows' rates, so a first-ever previous
  * window (null) isn't a rise.
  */
-function rateContext(current: StatBlock, previous: StatBlock, good: boolean): string {
+function rateContext(current: StatBlock, previous: StatBlock, state: QualityState): string {
   const cur = current.attendanceRate;
   const prev = previous.attendanceRate;
   const rose = cur != null && prev != null && cur > prev;
   const missed = current.missedByMentor;
-  if (good) {
+  // noReviews, clean record: lead with the sessions that went ahead rather than a
+  // rating the mentor doesn't have yet. Falls through to the generic on-track line
+  // when the record isn't clean, so we never claim "all went ahead" untruthfully.
+  if (state === 'noReviews' && missed === 0 && current.cancelledByMentor === 0) {
+    const n = current.completedSessions;
+    const went =
+      n === 1 ? 'Your one booked session went ahead' : `All ${n} of your booked sessions went ahead`;
+    return `${went}. Mentees can count on you.`;
+  }
+  if (state !== 'low') {
     if (rose) return `Up from ${prev}% last quarter. Mentees can count on you.`;
     return missed === 0
       ? `No sessions missed — mentees can count on you.`
@@ -57,17 +76,28 @@ function rateContext(current: StatBlock, previous: StatBlock, good: boolean): st
     : `Below your usual show-up rate.`;
 }
 
-/** "5 sessions held in a row" / "1 session held in a row". */
+/** "5 sessions in a row completed" / "1 session in a row completed". */
 function streakLine(streak: number): string {
-  return `${streak} session${streak === 1 ? '' : 's'} held in a row`;
+  return `${streak} session${streak === 1 ? '' : 's'} in a row completed`;
 }
 
-/** The compact headline: a one-line summary keyed on the same `good` state. */
-function teaserOf(good: boolean, missed: number): { text: string; icon: IconName; good: boolean } {
-  if (good) return { text: 'You’re holding your sessions', icon: 'verified', good: true };
+/**
+ * The compact headline, keyed on the quality state. On track it leads with the
+ * streak (the design's "N sessions in a row completed"), falling back to plain
+ * reassurance when there is no streak; at risk it names the mentees left waiting.
+ */
+function teaserOf(
+  state: QualityState,
+  streak: number,
+  missed: number,
+): { text: string; icon: IconName; good: boolean } {
+  if (state !== 'low') {
+    const text = streak > 0 ? streakLine(streak) : 'You’re holding your sessions';
+    return { text, icon: 'local_fire_department', good: true };
+  }
   const text =
     missed > 0
-      ? `${missed} ${missed === 1 ? 'mentee was' : 'mentees were'} left waiting`
+      ? `${missed} ${missed === 1 ? 'mentee was' : 'mentees were'} left waiting in 90 days`
       : 'Your show-up rate is slipping';
   return { text, icon: 'error', good: false };
 }
@@ -82,9 +112,9 @@ type BreakdownRow = {
 };
 
 /**
- * The outcome rows, held / canceled / missed-by-you / missed-by-mentee. The
- * mentee no-show is tinted muted, not red: the mentor still attended, so it is
- * not their miss.
+ * The three outcome rows the design shows — completed / canceled / missed-by-you
+ * (Mentor Dashboard v2.dc.html). The mentee's own no-shows are deliberately not
+ * surfaced to the mentor.
  */
 function breakdownRows(current: StatBlock): BreakdownRow[] {
   const missed = current.missedByMentor;
@@ -110,13 +140,6 @@ function breakdownRows(current: StatBlock): BreakdownRow[] {
       label: 'Missed by you',
       value: missed,
       valueClass: missed > 0 ? styles.rowValueMissed : undefined,
-    },
-    {
-      key: 'menteeMissed',
-      icon: 'person_off',
-      iconClass: styles.iconMuted,
-      label: 'Mentee didn’t show',
-      value: current.missedByMentee,
     },
   ];
 }
@@ -205,6 +228,16 @@ function Quote({ quote }: { quote: ReviewQuote }) {
   );
 }
 
+/** Shown in both views when there is no review to quote (Mentor Dashboard v2.dc.html). */
+function NoReviewsNote() {
+  return (
+    <div className={styles.noReviews}>
+      <span className={styles.noReviewsTitle}>No reviews yet</span>
+      <span className={styles.noReviewsBody}>Your latest mentee review will show here.</span>
+    </div>
+  );
+}
+
 /**
  * The Session-quality panel: the mentor's show-up rate as a ring, a compact
  * summary that expands to the full breakdown, their mentee-review quote, and one
@@ -234,10 +267,11 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
   if (current.attendanceRate == null) return <Empty />;
 
   const rate = current.attendanceRate;
-  const good = rate >= GOOD_THRESHOLD;
   const missed = current.missedByMentor;
   const rating = current.averageRating;
   const reviewCount = current.reviewCount;
+  const state = qualityStateOf(rate, reviewCount > 0);
+  const good = state !== 'low';
 
   // Stars and the quote are independent. The stars are the 90-day window rating;
   // the quote is the latest all-time review (social proof), which can exist even
@@ -249,7 +283,7 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
   // never flash the fallback before the quote has had its say, and never leave a
   // failed request reading as "nothing here".
   const showNoReviews = rating == null && quote.data == null && !quote.isLoading;
-  const teaser = teaserOf(good, missed);
+  const teaser = teaserOf(state, currentStreak, missed);
 
   const toggleLabel = expanded
     ? 'Show less'
@@ -283,7 +317,7 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
         />
         <div className={styles.showUpText}>
           <span className={styles.showUpLabel}>Show-up rate</span>
-          <span className={styles.rateContext}>{rateContext(current, previous, good)}</span>
+          <span className={styles.rateContext}>{rateContext(current, previous, state)}</span>
         </div>
       </div>
 
@@ -308,7 +342,7 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
                 )}
               </div>
               {quote.data && <Quote quote={quote.data} />}
-              {showNoReviews && <p className={styles.noReviewsMsg}>{NO_REVIEWS}</p>}
+              {showNoReviews && <NoReviewsNote />}
             </div>
 
             {good ? (
@@ -387,7 +421,7 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
               </div>
             )}
             {quote.data && <Quote quote={quote.data} />}
-            {showNoReviews && <p className={styles.noReviewsMsg}>{NO_REVIEWS}</p>}
+            {showNoReviews && <NoReviewsNote />}
           </div>
         )}
       </div>
