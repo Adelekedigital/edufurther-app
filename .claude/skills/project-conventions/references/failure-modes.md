@@ -401,3 +401,20 @@ what nearly happened here, in a PR body.
 `Bookings.next.dc.html` is local-only, and a divergence row had been citing its
 line numbers since 2026-10-03. A citation nobody else can open is not a
 citation.
+
+### #64 — A spacing token used as a size, because the convention lived only in the code
+
+Building the home "Book again" skeleton, I passed `width="var(--space-12)"` to a
+`Skeleton` for a 48px avatar — "48px is a token, so use the token." Two things
+were wrong: `--space-12` is a *spacing* token, not a size, and the codebase's
+real convention is to pass **literal px** to `Skeleton` dimensions (a shimmer's
+measurement), with a *semantic component-size* token only where one names the
+element (`var(--button-h-small|medium|large)` for a button placeholder, as
+`FeaturedMentorSkeleton`/`MentorCardSkeleton` do). My change was the only
+`--space-*` in any `Skeleton` in the repo.
+
+The rule is enforced by `check-css`, which scans `.module.css` only — so a raw
+dimension in a `.tsx` prop sits outside both the written rule and the guard, and
+every session re-infers it (I inferred it wrong). The fix was not the one line of
+CSS; it was writing the convention down (House conventions) so it is read, not
+re-derived.

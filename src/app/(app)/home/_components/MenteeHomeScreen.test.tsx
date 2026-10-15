@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { MenteeStats } from '@/lib/api/data/menteeHome';
 import type { Booking, BookingParty } from '@/types/booking';
 import type { AppError, Remote, Viewer } from '@/types/mentor';
+import type { MetMentor } from '@/lib/api/data/metMentors';
 import { MenteeHomeScreen } from './MenteeHomeScreen';
 
 const replace = vi.fn();
@@ -12,6 +13,7 @@ vi.mock('next/navigation', () => ({
 
 let viewer: Viewer;
 vi.mock('@/app/_shell/useAppShell', () => ({
+  MATCH_CALL_URL: '',
   useAppShell: () => ({
     viewer,
     member: viewer.kind === 'member' ? viewer : null,
@@ -29,6 +31,19 @@ vi.mock('@/lib/api/data/menteeHome', () => ({
 let upcoming: Remote<Booking[]>;
 vi.mock('@/lib/api/data/bookings', () => ({
   useUpcomingBookings: () => upcoming,
+}));
+
+let metMentors: Remote<MetMentor[]>;
+vi.mock('@/lib/api/data/metMentors', () => ({
+  useMetMentors: () => metMentors,
+  toBookingMentor: (m: MetMentor) => m,
+}));
+
+// BookingLauncher pulls in the booking query hooks (need a QueryClient); the
+// screen only needs to know a booking opened, so stub it to a marker.
+vi.mock('@/app/_shell/BookingLauncher/BookingLauncher', () => ({
+  BookingLauncher: ({ mentor }: { mentor: unknown }) =>
+    mentor ? <div data-testid="booking-open" /> : null,
 }));
 
 const remote =<T,>(data: T | null, over: Partial<Remote<T>> = {}): Remote<T> => ({
@@ -115,6 +130,23 @@ const NEW_MEMBER: Extract<Viewer, { kind: 'member' }> = {
   bookingCounts: { pending: 0, upcoming: 0 },
 };
 
+const metMentor = (over: Partial<MetMentor> = {}): MetMentor => ({
+  id: 'm1',
+  slug: 'mariam-alamata',
+  name: 'Mariam Alamata',
+  firstName: 'Mariam',
+  initials: 'MA',
+  tone: 1,
+  avatarUrl: null,
+  avatarFocus: null,
+  degree: 'MSc, Public Health',
+  institution: 'University of Edinburgh',
+  sessionCount: 2,
+  lastSessionAt: inHours(-200),
+  bookability: 'open',
+  ...over,
+});
+
 const err = {} as unknown as AppError;
 
 beforeEach(() => {
@@ -122,6 +154,7 @@ beforeEach(() => {
   viewer = MEMBER;
   stats = remote(STATS);
   upcoming = remote([booking()]);
+  metMentors = remote([]);
 });
 
 describe('MenteeHomeScreen', () => {
@@ -206,6 +239,21 @@ describe('MenteeHomeScreen', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('lists Book-again mentors and links the "Mentors met" KPI to the section', () => {
+    metMentors = remote([metMentor()]);
+    render(<MenteeHomeScreen />);
+    expect(screen.getByRole('heading', { name: 'Your mentors' })).toBeInTheDocument();
+    expect(screen.getByText('Mariam Alamata')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'View mentors' })).toBeInTheDocument();
+  });
+
+  it('opening "Book again" launches the booking flow', async () => {
+    metMentors = remote([metMentor()]);
+    render(<MenteeHomeScreen />);
+    await userEvent.click(screen.getByRole('button', { name: /^Book again/ }));
+    expect(screen.getByTestId('booking-open')).toBeInTheDocument();
   });
 
   it('sends a signed-in member with no goal (not a mentee) to Explore, not the mentee page', async () => {

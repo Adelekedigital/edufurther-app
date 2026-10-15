@@ -112,6 +112,7 @@ export const ICON_NAMES = [
   'short_text',
   'smart_display',
   'star',
+  'support_agent',
   'task_alt',
   'timer',
   'tips_and_updates',

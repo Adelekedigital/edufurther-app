@@ -151,4 +151,13 @@ export const keys = {
   menteeHome: {
     stats: (who: string) => ['menteeHome', 'stats', who] as const,
   },
+  /**
+   * Mentors the mentee has met (GET /me/mentors), for the home "Book again"
+   * list. `who` = the session identity, as every per-account key here.
+   */
+  metMentors: {
+    /** Prefix, for invalidating the list after a booking flips a bookability. */
+    all: ['metMentors'] as const,
+    list: (who: string) => ['metMentors', 'list', who] as const,
+  },
 };

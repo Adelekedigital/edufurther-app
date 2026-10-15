@@ -106,6 +106,7 @@
     "short_text",
     "smart_display",
     "star",
+    "support_agent",
     "task_alt",
     "timer",
     "tips_and_updates",
@@ -127,5 +128,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "48df313e1b5780fb9f87c6a1c4cce4890873bba26f705de44ebe7abbe3fef915"
+  "sha256": "54873fa11e464c4fcd608a2d6609500ba7222702b474e353d14792c6b1ce58d8"
 }
