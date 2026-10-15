@@ -10,7 +10,10 @@ import { useOnline } from '@/lib/utils/useOnline';
  * Which nav item the current route is, by its first path segment. The shell is
  * mounted once in this layout (ADR 0007), so `active` is derived from the
  * pathname rather than passed per screen. `/dashboard` and the (unbuilt)
- * `/home` are both Home; the rest map to their nav label.
+ * `/home` are both Home; the rest map to their nav label. `home` and `settings`
+ * are forward-looking — neither route is live in the group yet (mentee Home
+ * resolves to `/explore`, `/settings` isn't built) — kept so `active` is already
+ * right when they ship.
  */
 const ACTIVE_BY_SEGMENT: Record<string, string> = {
   dashboard: 'Home',
@@ -66,12 +69,15 @@ export default function AppGroupLayout({ children }: { children: ReactNode }) {
  * scroll-jumps (`preventScroll`).
  */
 function useFocusMainOnRouteChange(pathname: string) {
-  const firstRender = useRef(true);
+  const prevPathname = useRef<string | null>(null);
   useEffect(() => {
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
+    const prev = prevPathname.current;
+    // No-op unless the path actually changed. This also absorbs React Strict
+    // Mode's dev-only double-invoke (the pathname is equal across it), so a
+    // fresh load never steals focus from the browser's own target.
+    if (prev === pathname) return;
+    prevPathname.current = pathname;
+    if (prev === null) return; // first mount — keep the browser's focus
     const main = document.getElementById('main');
     if (!main) return;
     const target = main.querySelector<HTMLElement>('h1') ?? main;

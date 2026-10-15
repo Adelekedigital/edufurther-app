@@ -24,7 +24,7 @@ Every signed-in screen — Dashboard, Bookings, Calendar, Explore, Integrations,
 
 ## Decision
 
-Option 1. An `src/app/(app)/` route group whose `layout.tsx` renders `<AppShell>` once — fed by `useAppShell`, `active` derived from the pathname — and the shell-rendering routes move inside it. Each screen stops rendering `<AppShell>` and returns only its content. The nav's "Home" links to `/dashboard` (mentor) / `/home` (mentee) directly; `/` stays the cold-entry redirect. Focus moves to the page heading on route change. The public mentor profile (`mentors/[handle]`) and the focused session-join (`sessions/[id]`) keep their own chrome for now (follow-up).
+Option 1. An `src/app/(app)/` route group whose `layout.tsx` renders `<AppShell>` once — fed by `useAppShell`, `active` derived from the pathname — and the shell-rendering routes move inside it. Each screen stops rendering `<AppShell>` and returns only its content. The nav's "Home" links straight to each viewer's home — mentor → `/dashboard`, mentee → `/explore` (both from `homeFor`) — instead of `/`, so in-app Home nav skips the 307. There is no `/home` route yet; mentees' home is Explore today, so mentee Home and Explore share an href (aria-current lands on Explore) — unchanged from before, where Home `/` already redirected mentees to Explore. `/` stays the cold-entry redirect. Focus moves to the page heading on route change. The public mentor profile (`mentors/[handle]`) and the focused session-join (`sessions/[id]`) keep their own chrome for now (follow-up).
 
 Option 2 is rejected: the root layout also serves signed-out routes (sign-in), so branching it by pathname is fragile. Option 3 leaves a user-visible defect.
 

@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { StrictMode, type ReactNode } from 'react';
 
 // The shell, viewer and connectivity are mocked: this tests the layout's own
 // contract — one AppShell, its props derived from the route and the viewer —
@@ -114,6 +114,21 @@ describe('AppGroupLayout', () => {
       </AppGroupLayout>,
     );
     expect(screen.getByRole('heading', { name: 'Your calendar' })).toHaveFocus();
+  });
+
+  it('does not steal focus on first mount under StrictMode (double-invoked effects)', () => {
+    h.pathname = '/bookings';
+    render(
+      <StrictMode>
+        <AppGroupLayout>
+          <h1>Bookings</h1>
+        </AppGroupLayout>
+      </StrictMode>,
+    );
+    // StrictMode double-invokes the focus effect on mount; the hook keys off the
+    // previous pathname (equal across the double-invoke) so it still counts as
+    // first mount and leaves the browser's focus alone (ADR 0007).
+    expect(screen.getByRole('heading', { name: 'Bookings' })).not.toHaveFocus();
   });
 
   it('falls back to the main landmark when the new page has no heading yet', () => {
