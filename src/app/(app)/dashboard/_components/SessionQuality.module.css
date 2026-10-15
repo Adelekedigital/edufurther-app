@@ -211,9 +211,20 @@
   font-weight: var(--weight-semibold);
   color: var(--ink-900);
 }
-.noReviewsMsg {
-  margin: 0;
-  font-size: var(--text-p-sm);
+/* No review to quote yet — a title line plus a muted body (design markup). */
+.noReviews {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.noReviewsTitle {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+.noReviewsBody {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
   color: var(--ink-500);
 }
 /* Stars + rating + review-count link, pushed to the right of the label. */

@@ -680,6 +680,35 @@ decoupled**: the stars are the 90-day window rating, the quote is the latest
 all-time review (social proof), so an older quote still shows after the window's
 own reviews age out. The rows below are updated in place.
 
+**Update 2026-10-15 (design re-sync):** the design's session-quality panel gained a
+`qualityState` enum (`low` / `good` / `noReviews`) and the shipped card was re-synced
+to it. Changes that supersede the rows below:
+
+- **Three quality states.** `noReviews` (settled sessions, no window rating yet)
+  reads as on-track, distinct from the no-settled-session empty state. Its
+  rate-context line is "All N of your booked sessions went ahead. Mentees can count
+  on you." — shown **only** when the ring reads 100% and the record is fully clean
+  (≥1 completed, no mentor miss/cancellation, no mentee no-show), so it never
+  contradicts the ring or a breakdown row; otherwise the generic on-track line is
+  used. The state is keyed off the window's `average_rating` (the same signal the
+  no-reviews note uses) so the two can't disagree.
+- **Streak wording** is now "N sessions in a row completed" / "1 session in a row
+  completed" (was "held in a row"), per the re-synced design — supersedes the streak
+  row below.
+- **The "Mentee didn't show" breakdown row is removed.** The re-synced design shows
+  only Sessions completed / Canceled by you / Missed by you; the mentee's own
+  no-shows (`missed_by_mentee`) are deliberately not surfaced to the mentor.
+  Supersedes the 2026-10-14 note that the row ships.
+- **Compact teaser** now leads with the streak on track, and "N mentees were left
+  waiting in 90 days" at risk; the expanded banner title keeps "left waiting"
+  without the window qualifier (it sits under the ring's "last 90 days" subline).
+- **No-review note** is the design's two lines — "No reviews yet" / "Your latest
+  mentee review will show here." — so the panel now has a drawn no-reviews state
+  (supersedes the "design draws no no-reviews state" row).
+
+The at-risk "left waiting" count still reads `missed_by_mentor`; swapping it to the
+honest `mentees_left_waiting` is tracked in edufurtherbe#466.
+
 | Design | We do | Why | Revisit when |
 |---|---|---|---|
 | ProgressCircle quality drives a `good`/`low` prop, no numeric cutoff drawn | `attendanceRate ≥ 85` ⇒ "On track" (green), below ⇒ "At risk" (red) — one threshold for the badge, the card border, the ring tone and which banner shows | A UI decision: the backend defines no quality cutoff (`attendance_rate` is just 0–100). A number had to be chosen to render the two states the design draws | product sets an official show-up threshold, or the backend returns a quality band |

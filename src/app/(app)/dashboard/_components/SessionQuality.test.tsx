@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { StatBlock, WindowStats } from '@/lib/api/data/mentorStats';
 import type { ReviewQuote } from '@/lib/api/data/myReviews';
@@ -99,7 +99,7 @@ describe('SessionQuality', () => {
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     expect(screen.getByRole('img', { name: 'Show-up rate 86%' })).toBeInTheDocument();
     expect(screen.getByText('On track')).toBeInTheDocument();
-    expect(screen.getByText('You’re holding your sessions')).toBeInTheDocument();
+    expect(screen.getByText('5 sessions in a row completed')).toBeInTheDocument();
     // The rating line and the quote preview the reviews without expanding.
     expect(screen.getByText('4.8')).toBeInTheDocument();
     expect(screen.getByText('from 14')).toBeInTheDocument();
@@ -134,7 +134,7 @@ describe('SessionQuality', () => {
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     expect(screen.getByText('At risk')).toBeInTheDocument();
     // The at-risk teaser headlines the problem.
-    expect(screen.getByText('5 mentees were left waiting')).toBeInTheDocument();
+    expect(screen.getByText('5 mentees were left waiting in 90 days')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'See what’s pulling this down' }),
     ).toBeInTheDocument();
@@ -159,15 +159,16 @@ describe('SessionQuality', () => {
     expect(reviewsLink).toHaveAttribute('href', '/mentors/gbenga?tab=reviews');
     expect(reviewsLink).toHaveTextContent('(14)');
     // The streak carries the good banner.
-    expect(screen.getByText(/5 sessions held in a row/)).toBeInTheDocument();
+    expect(screen.getByText(/5 sessions in a row completed/)).toBeInTheDocument();
   });
 
-  it('renders a "Mentee didn’t show" row from missed_by_mentee', async () => {
+  it('does not surface the mentee’s own no-shows to the mentor', async () => {
     data = windowStats({ attendanceRate: 86, missedByMentee: 3 });
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
-    const row = screen.getByText('Mentee didn’t show').closest('div')!;
-    expect(within(row).getByText('3')).toBeInTheDocument();
+    // The design shows only completed / canceled / missed-by-you.
+    expect(screen.getByText('Missed by you')).toBeInTheDocument();
+    expect(screen.queryByText('Mentee didn’t show')).not.toBeInTheDocument();
   });
 
   it('renders the at-risk expanded banner and its two actions', async () => {
@@ -206,8 +207,8 @@ describe('SessionQuality', () => {
     data = windowStats({ attendanceRate: 90 }, {}, { currentStreak: 1 });
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
-    expect(screen.getByText(/1 session held in a row/)).toBeInTheDocument();
-    expect(screen.queryByText(/sessions held/)).not.toBeInTheDocument();
+    expect(screen.getByText(/1 session in a row completed/)).toBeInTheDocument();
+    expect(screen.queryByText(/sessions in a row/)).not.toBeInTheDocument();
   });
 
   // ---- reviews / quote states ----------------------------------------------
@@ -223,6 +224,66 @@ describe('SessionQuality', () => {
     // Expanded: still the message, and no link to a reviews tab.
     expect(screen.getByText(/No reviews yet/)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /reviews/ })).not.toBeInTheDocument();
+  });
+
+  it('reads as on-track with the sessions-went-ahead line when there are no reviews', () => {
+    // noReviews quality state: settled sessions, a clean record, zero reviews.
+    data = windowStats({
+      attendanceRate: 100,
+      completedSessions: 3,
+      missedByMentor: 0,
+      cancelledByMentor: 0,
+      missedByMentee: 0,
+      reviewCount: 0,
+      averageRating: null,
+    });
+    quote = { data: null, isLoading: false, error: null, retry: vi.fn() };
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByText('On track')).toBeInTheDocument();
+    expect(
+      screen.getByText('All 3 of your booked sessions went ahead. Mentees can count on you.'),
+    ).toBeInTheDocument();
+    // The on-track disclosure wording, not the at-risk one.
+    expect(screen.getByRole('button', { name: 'See your full breakdown' })).toBeInTheDocument();
+  });
+
+  it('does not claim all sessions went ahead when a mentee no-showed', () => {
+    // noReviews but not a clean record: a mentee no-show means not every booked
+    // session went ahead, so the "all went ahead" line must not fire.
+    data = windowStats({
+      attendanceRate: 100,
+      completedSessions: 3,
+      missedByMentor: 0,
+      cancelledByMentor: 0,
+      missedByMentee: 2,
+      reviewCount: 0,
+      averageRating: null,
+    });
+    quote = { data: null, isLoading: false, error: null, retry: vi.fn() };
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(
+      screen.queryByText(/All \d+ of your booked sessions went ahead/),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not claim all went ahead when the show-up ring is below 100%', () => {
+    // The ring and the breakdown rows don't always reconcile; "all went ahead"
+    // must not contradict a sub-100% ring, even with zero miss/cancel counts.
+    data = windowStats({
+      attendanceRate: 86,
+      completedSessions: 12,
+      missedByMentor: 0,
+      cancelledByMentor: 0,
+      missedByMentee: 0,
+      reviewCount: 0,
+      averageRating: null,
+    });
+    quote = { data: null, isLoading: false, error: null, retry: vi.fn() };
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByRole('img', { name: 'Show-up rate 86%' })).toBeInTheDocument();
+    expect(
+      screen.queryByText(/All \d+ of your booked sessions went ahead/),
+    ).not.toBeInTheDocument();
   });
 
   it('a failed quote fetch never breaks the card — the rating line still shows', () => {
@@ -265,7 +326,7 @@ describe('SessionQuality', () => {
     expect(screen.queryByText(/No reviews yet/)).not.toBeInTheDocument();
     expect(screen.queryByText(/The clearest hour/)).not.toBeInTheDocument();
     // The teaser (about show-up, not reviews) still shows.
-    expect(screen.getByText('You’re holding your sessions')).toBeInTheDocument();
+    expect(screen.getByText('5 sessions in a row completed')).toBeInTheDocument();
   });
 
   it('falls back to the no-reviews message when the window has no rating and the quote errors', async () => {
