@@ -367,4 +367,18 @@ describe('SessionQuality', () => {
     expect(screen.queryByText(/No reviews yet/)).not.toBeInTheDocument();
     expect(screen.queryByText(/The clearest hour/)).not.toBeInTheDocument();
   });
+
+  it('moves focus to the heading when a refetch collapses an expanded panel', async () => {
+    // P1: an on-track mentor with a rating expands the panel; a refetch then returns
+    // no window rating, so the panel can no longer expand and unmounts. Focus must
+    // land on the card heading, not be lost to <body>.
+    data = windowStats({ attendanceRate: 86 });
+    const { rerender } = render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
+    expect(screen.getByRole('button', { name: 'Show less' })).toHaveFocus();
+
+    data = windowStats({ attendanceRate: 86, averageRating: null, reviewCount: 0 });
+    rerender(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByRole('heading', { name: 'Session quality' })).toHaveFocus();
+  });
 });

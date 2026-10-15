@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Badge } from '@/components/atoms/Badge/Badge';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
@@ -297,6 +297,25 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
   const stats = useMentorStats(userId, WINDOW_DAYS);
   const quote = useMyReviewQuote(userId);
 
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const prevExpandable = useRef(false);
+  // If a refetch makes an open panel non-expandable (on track, and the window
+  // rating just went null), the focused control in the expanded view unmounts and
+  // focus falls to <body>. Move it to the card heading so a keyboard or screen
+  // reader keeps its place — but only when focus actually fell to <body>, so focus
+  // elsewhere on the page is never stolen. (Mirrors the `canExpand` rule below; it
+  // is computed here from the raw data because the hook must sit above the early
+  // returns.)
+  useEffect(() => {
+    const c = stats.data?.current;
+    const expandable =
+      c?.attendanceRate != null && (c.attendanceRate < GOOD_THRESHOLD || c.averageRating != null);
+    if (prevExpandable.current && !expandable && document.activeElement === document.body) {
+      headingRef.current?.focus();
+    }
+    prevExpandable.current = expandable;
+  }, [stats.data]);
+
   if (stats.isLoading) return <Loading />;
   if (stats.error) return <ErrorState onRetry={stats.retry} />;
   if (!stats.data) return <ErrorState onRetry={stats.retry} />;
@@ -333,7 +352,7 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
     <section className={cx(styles.card, !onTrack && styles.cardRisk)} aria-labelledby={headingId}>
       <header className={styles.header}>
         <div className={styles.headingGroup}>
-          <h2 id={headingId} className={styles.title}>
+          <h2 id={headingId} ref={headingRef} tabIndex={-1} className={styles.title}>
             Session quality
           </h2>
           <span className={styles.subline}>
