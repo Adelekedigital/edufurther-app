@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Badge } from '@/components/atoms/Badge/Badge';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
@@ -23,22 +23,8 @@ const WINDOW_DAYS = 90;
 const GOOD_THRESHOLD = 85;
 
 /**
- * The design's three quality states (Mentor Dashboard v2.dc.html, `qualityState`):
- * at risk → `low`; otherwise `good` when the window has a rating to show,
- * `noReviews` when it doesn't. `noReviews` reads as on-track — it is not the
- * no-session empty state. Keyed off the window's own `averageRating` (the same
- * sync signal the no-reviews note uses), so the state can't disagree with the
- * note and never flickers on the async review quote.
- */
-type QualityState = 'low' | 'good' | 'noReviews';
-function qualityStateOf(rate: number, hasRating: boolean): QualityState {
-  if (rate < GOOD_THRESHOLD) return 'low';
-  return hasRating ? 'good' : 'noReviews';
-}
-
-/**
- * The line under the show-up rate, keyed on the same `good` state as the badge
- * so the two never contradict each other. When on track it reassures (noting a
+ * The line under the show-up rate, keyed on the same `onTrack` signal as the
+ * badge so the two never contradict each other. When on track it reassures (noting a
  * rise if there is one); when at risk it names the missed sessions and treats a
  * rise as progress, not reassurance. Counts are plain, never a ratio: the
  * backend's attendance_rate can't be reconciled to these rows (mentee no-shows
@@ -46,7 +32,12 @@ function qualityStateOf(rate: number, hasRating: boolean): QualityState {
  * ring stands alone. "Up" needs both windows' rates, so a first-ever previous
  * window (null) isn't a rise.
  */
-function rateContext(current: StatBlock, previous: StatBlock, state: QualityState): string {
+function rateContext(
+  current: StatBlock,
+  previous: StatBlock,
+  onTrack: boolean,
+  noReviews: boolean,
+): string {
   const cur = current.attendanceRate;
   const prev = previous.attendanceRate;
   const rose = cur != null && prev != null && cur > prev;
@@ -58,7 +49,7 @@ function rateContext(current: StatBlock, previous: StatBlock, state: QualityStat
   // it (the rows and the ring don't always reconcile) or a row in the breakdown.
   // Anything else falls through to the generic on-track line.
   if (
-    state === 'noReviews' &&
+    noReviews &&
     cur === 100 &&
     current.completedSessions > 0 &&
     missed === 0 &&
@@ -70,7 +61,7 @@ function rateContext(current: StatBlock, previous: StatBlock, state: QualityStat
       n === 1 ? 'Your one booked session went ahead' : `All ${n} of your booked sessions went ahead`;
     return `${went}. Mentees can count on you.`;
   }
-  if (state !== 'low') {
+  if (onTrack) {
     if (rose) return `Up from ${prev}% last quarter. Mentees can count on you.`;
     return missed === 0
       ? `No sessions missed — mentees can count on you.`
@@ -98,11 +89,11 @@ function streakLine(streak: number): string {
  * reassurance when there is no streak; at risk it names the mentees left waiting.
  */
 function teaserOf(
-  state: QualityState,
+  onTrack: boolean,
   streak: number,
   missed: number,
 ): { text: string; icon: IconName; good: boolean } {
-  if (state !== 'low') {
+  if (onTrack) {
     const text = streak > 0 ? streakLine(streak) : 'You’re holding your sessions';
     return { text, icon: 'local_fire_department', good: true };
   }
@@ -239,12 +230,48 @@ function Quote({ quote }: { quote: ReviewQuote }) {
   );
 }
 
-/** Shown in both views when there is no review to quote (Mentor Dashboard v2.dc.html). */
+/** Shown when there is no review to quote (Mentor Dashboard v2.dc.html). */
 function NoReviewsNote() {
   return (
     <div className={styles.noReviews}>
       <span className={styles.noReviewsTitle}>No reviews yet</span>
       <span className={styles.noReviewsBody}>Your latest mentee review will show here.</span>
+    </div>
+  );
+}
+
+/** The review slot, in every view: the latest review quote, the no-reviews note, or nothing yet. */
+function ReviewSlot({ quoteData, showNote }: { quoteData: ReviewQuote | null; showNote: boolean }) {
+  if (quoteData) return <Quote quote={quoteData} />;
+  if (showNote) return <NoReviewsNote />;
+  return null;
+}
+
+/** The outcome rows — inline in the no-reviews view, and inside the expanded view. */
+function Breakdown({ current }: { current: StatBlock }) {
+  return (
+    <div className={styles.breakdown}>
+      {breakdownRows(current).map((row) => (
+        <div key={row.key} className={styles.row}>
+          <Icon name={row.icon} size={16} className={row.iconClass} />
+          <span className={styles.rowLabel}>{row.label}</span>
+          <span className={cx(styles.rowValue, row.valueClass)}>{row.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** The compact headline chip, tinted on the on-track / at-risk state. */
+function Teaser({ teaser }: { teaser: { text: string; icon: IconName; good: boolean } }) {
+  return (
+    <div className={cx(styles.teaser, teaser.good ? styles.teaserGood : styles.teaserRisk)}>
+      <Icon
+        name={teaser.icon}
+        size={20}
+        className={teaser.good ? styles.teaserIconGood : styles.teaserIconRisk}
+      />
+      <span className={styles.teaserText}>{teaser.text}</span>
     </div>
   );
 }
@@ -270,6 +297,25 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
   const stats = useMentorStats(userId, WINDOW_DAYS);
   const quote = useMyReviewQuote(userId);
 
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const prevExpandable = useRef(false);
+  // If a refetch makes an open panel non-expandable (on track, and the window
+  // rating just went null), the focused control in the expanded view unmounts and
+  // focus falls to <body>. Move it to the card heading so a keyboard or screen
+  // reader keeps its place — but only when focus actually fell to <body>, so focus
+  // elsewhere on the page is never stolen. (Mirrors the `canExpand` rule below; it
+  // is computed here from the raw data because the hook must sit above the early
+  // returns.)
+  useEffect(() => {
+    const c = stats.data?.current;
+    const expandable =
+      c?.attendanceRate != null && (c.attendanceRate < GOOD_THRESHOLD || c.averageRating != null);
+    if (prevExpandable.current && !expandable && document.activeElement === document.body) {
+      headingRef.current?.focus();
+    }
+    prevExpandable.current = expandable;
+  }, [stats.data]);
+
   if (stats.isLoading) return <Loading />;
   if (stats.error) return <ErrorState onRetry={stats.retry} />;
   if (!stats.data) return <ErrorState onRetry={stats.retry} />;
@@ -281,41 +327,40 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
   const missed = current.missedByMentor;
   const rating = current.averageRating;
   const reviewCount = current.reviewCount;
-  const state = qualityStateOf(rate, rating != null);
-  const good = state !== 'low';
+  const onTrack = rate >= GOOD_THRESHOLD;
+  // The quote is the latest review (social proof); it shows whenever one exists
+  // and is never gated on the 90-day window. The "no reviews yet" note stands in
+  // only when there is genuinely no review to show, and only once the fetch has
+  // settled, so it never flashes before the quote arrives.
+  const showNote = rating == null && quote.data == null && !quote.isLoading;
+  // The compact no-reviews layout (breakdown inline, no disclosure) is only for an
+  // on-track mentor with no window rating. At risk always keeps the "what's pulling
+  // this down" disclosure and its guidance banner; a window rating gets the full
+  // breakdown disclosure.
+  const canExpand = !onTrack || rating != null;
+  const isOpen = expanded && canExpand;
+  const teaser = teaserOf(onTrack, currentStreak, missed);
 
-  // Stars and the quote are independent. The stars are the 90-day window rating;
-  // the quote is the latest all-time review (social proof), which can exist even
-  // when the window itself has no rating. So: show the stars when the window has
-  // a rating, show the quote whenever one was found, and otherwise — the window
-  // has no rating and the quote is done (settled empty OR errored) with nothing
-  // to show — fall back to the "no reviews yet" message rather than an empty
-  // block. While the quote is still loading with no window rating, show neither:
-  // never flash the fallback before the quote has had its say, and never leave a
-  // failed request reading as "nothing here".
-  const showNoReviews = rating == null && quote.data == null && !quote.isLoading;
-  const teaser = teaserOf(state, currentStreak, missed);
-
-  const toggleLabel = expanded
+  const toggleLabel = isOpen
     ? 'Show less'
-    : good
+    : onTrack
       ? 'See your full breakdown'
       : 'See what’s pulling this down';
-  const toggleVariant = expanded ? 'text' : good ? 'secondary-outlined' : 'primary';
+  const toggleVariant = isOpen ? 'text' : onTrack ? 'secondary-outlined' : 'primary';
 
   return (
-    <section className={cx(styles.card, !good && styles.cardRisk)} aria-labelledby={headingId}>
+    <section className={cx(styles.card, !onTrack && styles.cardRisk)} aria-labelledby={headingId}>
       <header className={styles.header}>
         <div className={styles.headingGroup}>
-          <h2 id={headingId} className={styles.title}>
+          <h2 id={headingId} ref={headingRef} tabIndex={-1} className={styles.title}>
             Session quality
           </h2>
           <span className={styles.subline}>
             How you show up for booked sessions · last 90 days
           </span>
         </div>
-        <Badge type="accent" color={good ? 'green' : 'red'} size="sm">
-          {good ? 'On track' : 'At risk'}
+        <Badge type="accent" color={onTrack ? 'green' : 'red'} size="sm">
+          {onTrack ? 'On track' : 'At risk'}
         </Badge>
       </header>
 
@@ -323,27 +368,21 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
         <ProgressCircle
           value={rate}
           size="lg"
-          tone={good ? 'success' : 'danger'}
+          tone={onTrack ? 'success' : 'danger'}
           aria-label="Show-up rate"
         />
         <div className={styles.showUpText}>
           <span className={styles.showUpLabel}>Show-up rate</span>
-          <span className={styles.rateContext}>{rateContext(current, previous, state)}</span>
+          <span className={styles.rateContext}>
+            {rateContext(current, previous, onTrack, rating == null)}
+          </span>
         </div>
       </div>
 
       <div id={panelId}>
-        {expanded ? (
+        {isOpen ? (
           <div className={styles.expanded}>
-            <div className={styles.breakdown}>
-              {breakdownRows(current).map((row) => (
-                <div key={row.key} className={styles.row}>
-                  <Icon name={row.icon} size={16} className={row.iconClass} />
-                  <span className={styles.rowLabel}>{row.label}</span>
-                  <span className={cx(styles.rowValue, row.valueClass)}>{row.value}</span>
-                </div>
-              ))}
-            </div>
+            <Breakdown current={current} />
 
             <div className={styles.reviewsSection}>
               <div className={styles.reviewsHead}>
@@ -352,11 +391,10 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
                   <RatingGroup rating={rating} reviewCount={reviewCount} profileHref={profileHref} />
                 )}
               </div>
-              {quote.data && <Quote quote={quote.data} />}
-              {showNoReviews && <NoReviewsNote />}
+              <ReviewSlot quoteData={quote.data} showNote={showNote} />
             </div>
 
-            {good ? (
+            {onTrack ? (
               <div className={styles.bannerGood}>
                 <Icon name="local_fire_department" size={20} className={styles.bannerIconGood} />
                 <p className={styles.bannerGoodText}>
@@ -415,16 +453,12 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
             )}
           </div>
         ) : (
+          // Collapsed. On track with no window rating shows the breakdown inline
+          // (the design's no-reviews layout, no disclosure); otherwise the rating
+          // line previews the review above the disclosure.
           <div className={styles.compact}>
-            <div className={cx(styles.teaser, teaser.good ? styles.teaserGood : styles.teaserRisk)}>
-              <Icon
-                name={teaser.icon}
-                size={20}
-                className={teaser.good ? styles.teaserIconGood : styles.teaserIconRisk}
-              />
-              <span className={styles.teaserText}>{teaser.text}</span>
-            </div>
-
+            <Teaser teaser={teaser} />
+            {!canExpand && <Breakdown current={current} />}
             {rating != null && (
               <div className={styles.ratingLine}>
                 <span className={styles.ratingLineStar}>
@@ -434,24 +468,25 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
                 <span>from {reviewCount}</span>
               </div>
             )}
-            {quote.data && <Quote quote={quote.data} />}
-            {showNoReviews && <NoReviewsNote />}
+            <ReviewSlot quoteData={quote.data} showNote={showNote} />
           </div>
         )}
       </div>
 
-      <Button
-        variant={toggleVariant}
-        size="small"
-        fullWidth={!expanded}
-        icon={expanded ? 'expand_less' : 'expand_more'}
-        iconPosition="trailing"
-        aria-expanded={expanded}
-        aria-controls={panelId}
-        onClick={() => setExpanded((v) => !v)}
-      >
-        {toggleLabel}
-      </Button>
+      {canExpand && (
+        <Button
+          variant={toggleVariant}
+          size="small"
+          fullWidth={!isOpen}
+          icon={isOpen ? 'expand_less' : 'expand_more'}
+          iconPosition="trailing"
+          aria-expanded={isOpen}
+          aria-controls={panelId}
+          onClick={() => setExpanded((v) => !v)}
+        >
+          {toggleLabel}
+        </Button>
+      )}
     </section>
   );
 }

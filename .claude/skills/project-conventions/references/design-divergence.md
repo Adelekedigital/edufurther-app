@@ -705,6 +705,21 @@ to it. Changes that supersede the rows below:
 - **No-review note** is the design's two lines — "No reviews yet" / "Your latest
   mentee review will show here." — so the panel now has a drawn no-reviews state
   (supersedes the "design draws no no-reviews state" row).
+- **No-reviews layout (correction, owner 2026-10-15).** The inline breakdown with
+  **no disclosure control** applies **only to an on-track mentor with no window
+  rating** — the breakdown rows show by default with the note, and there is no CTA
+  (`<sc-if value="{{ q.noReviews }}">` draws the breakdown in this state and no
+  expand control). Two refinements beyond the mock, both owner decisions:
+  - **The latest review always shows.** The quote is never gated on the 90-day
+    window — a mentor whose reviews aged out still sees it (not a false "No reviews
+    yet"); the note stands in only when there is genuinely no review and the fetch
+    has settled, so it never flashes before the quote arrives.
+  - **An at-risk mentor keeps the low treatment even with no reviews** — the "See
+    what's pulling this down" CTA, the breakdown and the guidance banner — and the
+    badge reflects the real rate (no forced on-track for `noReviews`).
+
+  `onTrack` (rate ≥ threshold) and "has a window rating" are tracked as two
+  orthogonal signals rather than one `good`/`noReviews` enum.
 
 The at-risk "left waiting" count still reads `missed_by_mentor`; swapping it to the
 honest `mentees_left_waiting` is tracked in edufurtherbe#466.
