@@ -41,9 +41,10 @@ export function MenteeHomeScreen() {
   }, []);
   const now = useMemo(() => new Date(clock), [clock]);
 
-  // Mirror homeFor: any member who isn't a mentor is mentee-side and gets the
-  // home — goal or not. A no-goal member still sees their progress and books;
-  // goal setup moves here once onboarding/Settings ships (product, 2026-10-15).
+  // Mentee-side = any member who isn't a mentor (mirrors isMenteeSide in
+  // useAppShell — keep the two in step), goal or not: a no-goal member still sees
+  // their progress and books; goal setup moves here once onboarding/Settings ships
+  // (product, 2026-10-15).
   const menteeSide = !!member && !member.isMentor;
   const completed = member?.completedSessions ?? 0;
   const counts = member?.bookingCounts;

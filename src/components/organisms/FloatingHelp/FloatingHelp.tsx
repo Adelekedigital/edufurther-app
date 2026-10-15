@@ -24,6 +24,8 @@ type FloatingHelpProps = {
 };
 
 // Resting distance from the bottom: above a mobile bottom-nav, or a desktop gutter.
+// A consumer that puts content behind the pill reserves matching bottom clearance
+// (see MenteeHomeScreen.module.css `.page[data-help]`); keep the two in sync.
 const MOBILE_BASE = 72;
 const DESKTOP_BASE = 24; // var(--space-6)
 const PHONE = '(max-width: 767px)';

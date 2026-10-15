@@ -9,7 +9,8 @@
 /* Standing clearance for the fixed FloatingHelp pill (bottom-right): the last
    content must never sit under it at full scroll. The shell's .main already pads
    the bottom (48px desktop, ~80px with the phone tab bar); this adds enough to
-   clear the pill, which rests ~72px up. Only when the pill is shown (data-help). */
+   clear the pill, which rests MOBILE_BASE/DESKTOP_BASE up (FloatingHelp.tsx) —
+   keep these in sync. Only when the pill is shown (data-help). */
 .page[data-help] {
   padding-bottom: var(--space-12);
 }

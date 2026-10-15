@@ -7,7 +7,9 @@ import type { components, paths } from '@/lib/api/generated/schema';
  */
 export type Home = '/explore' | '/home' | '/dashboard' | '/admin';
 
-type Me = Pick<components['schemas']['UserRead'], 'is_admin' | 'mentor_profile' | 'goal'>;
+// Only the two fields the router reads — a goal no longer changes the destination
+// (every non-mentor member → /home), so homeFor doesn't pick it.
+type Me = Pick<components['schemas']['UserRead'], 'is_admin' | 'mentor_profile'>;
 
 /**
  * Platform admins first (even if also a mentor), then any mentor profile, then
@@ -26,9 +28,9 @@ export function homeFor(me: Me | null): Home {
 /** Local dev / CI without auth (NEXT_PUBLIC_MOCK_VIEWER): `admin` exists for routing checks only. */
 const MOCK_ROLES: Record<string, Me | null> = {
   guest: null,
-  mentee: { is_admin: false, mentor_profile: null, goal: {} as NonNullable<Me['goal']> },
-  mentor: { is_admin: false, mentor_profile: {} as NonNullable<Me['mentor_profile']>, goal: null },
-  admin: { is_admin: true, mentor_profile: null, goal: null },
+  mentee: { is_admin: false, mentor_profile: null },
+  mentor: { is_admin: false, mentor_profile: {} as NonNullable<Me['mentor_profile']> },
+  admin: { is_admin: true, mentor_profile: null },
 };
 
 /** Past this, `/` stops waiting and sends the viewer to Explore, which loads them itself. */
