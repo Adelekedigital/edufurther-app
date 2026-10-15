@@ -47,8 +47,10 @@ const inZone = (iso: string, timeZone: string, opts: Intl.DateTimeFormatOptions)
 const WINDOW_DAYS_BY_RANGE: Record<string, number> = { '3m': 90, '6m': 180, '12m': 365 };
 export function chartRangeToStatsQuery(range: string): StatsQuery {
   if (range.startsWith('y')) {
+    // `Number('')` is 0 and passes Number.isInteger, so a malformed 'y' (no year)
+    // must not become {year: 0} (a 422) — require a real year, else fall through.
     const year = Number(range.slice(1));
-    if (Number.isInteger(year)) return { year };
+    if (Number.isInteger(year) && year > 0) return { year };
   }
   return { windowDays: WINDOW_DAYS_BY_RANGE[range] ?? 180 };
 }

@@ -14,4 +14,9 @@ describe('chartRangeToStatsQuery', () => {
     expect(chartRangeToStatsQuery('y2026')).toEqual({ year: 2026 });
     expect(chartRangeToStatsQuery('y2022')).toEqual({ year: 2022 });
   });
+
+  it('falls back to a window for a malformed year, never {year: 0}', () => {
+    // `Number('')` is 0, which would 422 as ?year=0; guard against it.
+    expect(chartRangeToStatsQuery('y')).toEqual({ windowDays: 180 });
+  });
 });
