@@ -105,7 +105,8 @@ export const keys = {
     all: ['bookings'] as const,
     // `from` (today in the account's zone) is an input to the result, so it is
     // in the key: without it the page would survive midnight unchanged.
-    upcoming: (who: string, from: string) => ['bookings', 'upcoming', who, from] as const,
+    upcoming: (who: string, from: string, as?: 'mentor' | 'mentee') =>
+      ['bookings', 'upcoming', who, from, as ?? 'all'] as const,
     pending: (who: string) => ['bookings', 'pending', who] as const,
     // Statuses are sorted so two orders of the same filter share one entry.
     history: (who: string, statuses: readonly string[]) =>

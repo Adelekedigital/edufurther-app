@@ -287,7 +287,7 @@ export function useMentorDashboard(
 ): MentorDashboard {
   const profile = useMentorProfile(member.id);
   const calendar = useCalendarConnection(member.id);
-  const upcoming = useUpcomingBookings(member.id, accountZone);
+  const upcoming = useUpcomingBookings(member.id, accountZone, true, 'mentor');
 
   const p = profile.data;
   const owner = p?.owner ?? null;
@@ -301,8 +301,12 @@ export function useMentorDashboard(
   const monthly = useMentorStats(activeMentorId, 30);
   const quarterly = useMentorStats(activeMentorId, 90);
 
-  // The hero row: the soonest confirmed session the mentor hosts. The list mixes
-  // both sides (a mentor can book as a mentee), so filter to their mentor side.
+  // The hero row: the soonest confirmed session the mentor hosts that hasn't ended
+  // yet. `as=mentor` fetches only their mentor side (so a dual-role mentor's next
+  // session is never pushed off the page by mentee-side rows). The hook also keeps
+  // just-settled rows whose door is still open, but those serve the Bookings tab's
+  // re-entry — a finished session is deliberately not the dashboard hero, so the
+  // hero stays `status === 'confirmed'`.
   const nextBooking =
     (upcoming.data ?? []).find((b) => b.side === 'mentor' && b.status === 'confirmed') ?? null;
   const nextSession: Remote<Booking | null> = {
