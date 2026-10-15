@@ -19,8 +19,8 @@ let quote: QuoteState;
 
 const mentorStatsSpy = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/api/data/mentorStats', () => ({
-  useMentorStats: (userId: string, windowDays: number) => {
-    mentorStatsSpy(userId, windowDays);
+  useMentorStats: (userId: string, query: unknown) => {
+    mentorStatsSpy(userId, query);
     return { data, isLoading, error, retry };
   },
 }));
@@ -52,6 +52,7 @@ const windowStats = (
   over: Partial<WindowStats> = {},
 ): WindowStats => ({
   windowDays: 90,
+  year: null,
   currentStreak: 5,
   current: block(current),
   previous: block({ attendanceRate: 90, ...previous }),
@@ -281,8 +282,8 @@ describe('SessionQuality', () => {
 
   it('fetches the window it is given and labels the subline from the data window', () => {
     data = windowStats({ attendanceRate: 86 }, {}, { windowDays: 180 });
-    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" windowDays={180} />);
-    expect(mentorStatsSpy).toHaveBeenCalledWith('u1', 180);
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" statsQuery={{ windowDays: 180 }} />);
+    expect(mentorStatsSpy).toHaveBeenCalledWith('u1', { windowDays: 180 });
     expect(screen.getByText(/last 6 months/)).toBeInTheDocument();
     expect(screen.queryByText(/last 90 days/)).not.toBeInTheDocument();
   });
@@ -293,8 +294,18 @@ describe('SessionQuality', () => {
       {},
       { windowDays: 180 },
     );
-    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" windowDays={180} />);
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" statsQuery={{ windowDays: 180 }} />);
     expect(screen.getByText('2 mentees were left waiting in the last 6 months')).toBeInTheDocument();
+  });
+
+  it('labels the card "in YYYY" for a calendar-year query', () => {
+    data = windowStats({ attendanceRate: 92 }, { attendanceRate: 80 }, { year: 2026, windowDays: 365 });
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" statsQuery={{ year: 2026 }} />);
+    expect(mentorStatsSpy).toHaveBeenCalledWith('u1', { year: 2026 });
+    expect(screen.getByText(/in 2026/)).toBeInTheDocument();
+    expect(screen.queryByText(/last \d+ months/)).not.toBeInTheDocument();
+    // The prior window is the year before, not "the previous N months".
+    expect(screen.getByText(/over the previous year/)).toBeInTheDocument();
   });
 
   it('names the next session in the good banner when there is one', async () => {

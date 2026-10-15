@@ -298,8 +298,8 @@ export function useMentorDashboard(
   // will see. Windows are fixed to the design: 30 days ("this month") for
   // sessions, time and mentees; 90 ("this quarter") for the rating.
   const activeMentorId = p && (p.mentor.completedSessions ?? 0) > 0 ? member.id : null;
-  const monthly = useMentorStats(activeMentorId, 30);
-  const quarterly = useMentorStats(activeMentorId, 90);
+  const monthly = useMentorStats(activeMentorId, { windowDays: 30 });
+  const quarterly = useMentorStats(activeMentorId, { windowDays: 90 });
 
   // The hero row: the soonest confirmed session the mentor hosts that hasn't ended
   // yet. `as=mentor` fetches only their mentor side (so a dual-role mentor's next

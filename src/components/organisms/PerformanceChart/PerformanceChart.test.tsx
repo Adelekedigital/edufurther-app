@@ -67,6 +67,24 @@ describe('PerformanceChart', () => {
     expect(screen.getByRole('radio', { name: '6M' })).toHaveAttribute('aria-checked', 'false');
   });
 
+  it('offers only the five most recent whole years in the year picker', () => {
+    // Six calendar years of data; the Year select caps at the 5 mentor-stats
+    // allows (current + 4 prior), dropping the oldest — so a Year pick can't 422.
+    const sixYears = Array.from({ length: 72 }, (_, i) => {
+      const d = new Date(Date.UTC(2021, i, 1));
+      return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+    });
+    const oneSeries: ChartSeries[] = [
+      { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: sixYears.map(() => 1) },
+    ];
+    render(<PerformanceChart series={oneSeries} months={sixYears} />);
+    const years = within(screen.getByRole('combobox', { name: 'Show a year' }))
+      .getAllByRole('option')
+      .map((o) => o.textContent)
+      .filter((t) => t !== 'Year');
+    expect(years).toEqual(['2026', '2025', '2024', '2023', '2022']);
+  });
+
   it('toggles a series off from the legend', async () => {
     const user = userEvent.setup();
     render(<PerformanceChart series={series} months={months} />);
