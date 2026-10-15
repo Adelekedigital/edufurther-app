@@ -10,6 +10,7 @@
     "arrow_forward",
     "arrow_upward",
     "badge",
+    "bar_chart",
     "bedtime",
     "block",
     "bolt",
@@ -104,6 +105,7 @@
     "settings",
     "share",
     "short_text",
+    "show_chart",
     "smart_display",
     "star",
     "support_agent",
@@ -128,5 +130,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "54873fa11e464c4fcd608a2d6609500ba7222702b474e353d14792c6b1ce58d8"
+  "sha256": "dac9ed6389efd28872efb128340f05266fbaeea9a351bf68bfc10077b59e5275"
 }

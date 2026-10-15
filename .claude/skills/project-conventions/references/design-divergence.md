@@ -660,6 +660,18 @@ on our dashboard; narrow driven by a ResizeObserver at container width < 440px).
 | 54 | X-axis **month** `top:84.7%` / **year** `top:92%` (a 7.3% gap), fixed at every width | Keep those on the web layout; **at narrow** widen to `top:83%` / `top:97%` (a 14% gap) | The SVG is `viewBox 600×262`, `width:100%;height:auto`, so it scales down with the card and the percentage-positioned labels crowd — at 320/390px the 7.3% gap collapses to ~8–10px and the year touches the month. Widening to 14% keeps the year clearly below the month at phone widths, matching the web layout's readability. **Minimal, token-free (percentage) nudge — flagged for design sync.** |
 | 55 | `headGap` = `margin-top` on the chart container (`--space-2` narrow / `--space-4` otherwise) | Same value, applied as the legend-row ↔ chart gap: the card uses flex `gap:var(--space-4)`, so the chart container takes `margin-top: calc(headGap − var(--space-4))` (0 wide, −8px narrow). Header ↔ legend stays `--space-4` | Our card lays the header/legend/chart out with flex `gap`; the design card uses explicit margins. Subtracting the existing gap lands on the design's value without restructuring. |
 
+### Mentor Dashboard — Chart-type (bar/line) switch, 2026-10-15
+
+The design's `chartSwitch` segmented control (a radiogroup of `bar_chart` /
+`show_chart` icon buttons, styled like the range switch), default `show`. The
+mentor's pick persists in `localStorage['ef-chart-type']`; before any pick it
+defaults to bars for short ranges and a line for 12M/Year (the trend view). When
+`chartSwitch='hide'`, the chart is pinned to the `variant` prop. Built to the design.
+
+| # | Design | Built | Why |
+|---|---|---|---|
+| 56 | Unselected chart-type icon `--ink-500` on the `--ink-100` track | `--ink-600` | Same as row 49 — matches the range switch's muted/selected on the shared pill style (`--ink-500` on `--ink-100` is ~4.0:1). |
+
 ### Mentor Dashboard — Session quality panel, 2026-10-14
 
 `Mentor Dashboard v2.dc.html`, the session-quality `<section>`. Built the

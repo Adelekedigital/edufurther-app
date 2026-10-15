@@ -36,6 +36,60 @@
   color: var(--ink-700);
 }
 
+/* Chart-type and range controls share one row; each is its own pill. */
+.ctrlRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+/* Narrow: the controls take the full wrapped line and the range switch
+   stretches to fill it; the type switch keeps its size. */
+.ctrlRowNarrow {
+  width: 100%;
+}
+.ctrlRowNarrow .rangeWrap {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.ctrlRowNarrow .range {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* The bar/line segmented control — its own pill, matching the range switch. */
+.types {
+  display: flex;
+  flex: none;
+  padding: 2px;
+  border-radius: var(--radius-md);
+  background: var(--ink-100);
+}
+.type {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  box-shadow: none;
+  /* Matches the range switch's muted/selected (ink-600 for contrast on ink-100). */
+  color: var(--ink-600);
+  cursor: pointer;
+}
+.typeOn {
+  background: var(--surface-card);
+  box-shadow: var(--shadow-control);
+  color: var(--ink-900);
+}
+.type:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
 /* The range segmented control + year select share one pill. */
 .rangeWrap {
   display: flex;

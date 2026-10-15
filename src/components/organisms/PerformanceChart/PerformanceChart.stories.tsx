@@ -20,8 +20,12 @@ const meta: Meta<typeof PerformanceChart> = {
 export default meta;
 type Story = StoryObj<typeof PerformanceChart>;
 
+/** Default: the bar/line switch shows, defaulting to bars for a short range. */
 export const Bars: Story = { args: { series, months } };
-export const Line: Story = { args: { series, months, variant: 'line' } };
+/** The switch defaults to a line for a 12-month (trend) range. */
+export const TrendLine: Story = { args: { series, months, defaultRange: '12m' } };
+/** Switch hidden, pinned to the line variant (chartSwitch="hide"). */
+export const LinePinned: Story = { args: { series, months, variant: 'line', chartSwitch: 'hide' } };
 export const Empty: Story = {
   args: { series: series.map((s) => ({ ...s, values: s.values.map(() => 0) })), months },
 };
