@@ -41,9 +41,10 @@ export function MenteeHomeScreen() {
   }, []);
   const now = useMemo(() => new Date(clock), [clock]);
 
-  // Mirror homeFor: a mentee is a member with a goal (isMentee) who is not a
-  // mentor. A signed-in member without a goal is NOT a mentee (homeFor → /explore).
-  const menteeSide = !!member && member.isMentee && !member.isMentor;
+  // Mirror homeFor: any member who isn't a mentor is mentee-side and gets the
+  // home — goal or not. A no-goal member still sees their progress and books;
+  // goal setup moves here once onboarding/Settings ships (product, 2026-10-15).
+  const menteeSide = !!member && !member.isMentor;
   const completed = member?.completedSessions ?? 0;
   const counts = member?.bookingCounts;
   // New = no activity at all, and we must be *sure* of it. An absent count, or a
@@ -71,16 +72,13 @@ export function MenteeHomeScreen() {
       router.replace('/explore');
       return;
     }
-    // A member who isn't a mentee goes where homeFor sends them: a mentor to the
-    // dashboard, anyone else (no goal — the client viewer can't see admin, so an
-    // admin direct-navigating here lands on Explore, harmlessly) to Explore. Only
-    // a mentee (goal, not mentor) stays on /home.
+    // Mirror homeFor: only a mentor goes elsewhere (to the dashboard). Every
+    // other member — goal or not — is mentee-side and stays on /home.
     if (viewer.isMentor) router.replace('/dashboard');
-    else if (!viewer.isMentee) router.replace('/explore');
   }, [viewer, router]);
 
-  // While /me loads, or a non-mentee is being redirected: a neutral skeleton.
-  if (viewer.kind === 'loading' || !member || member.isMentor || !member.isMentee) {
+  // While /me loads, or a mentor is being redirected: a neutral skeleton.
+  if (viewer.kind === 'loading' || !member || member.isMentor) {
     return (
       <div className={styles.page}>
         <HomeSkeleton />
@@ -105,6 +103,7 @@ export function MenteeHomeScreen() {
   };
   // "Talk to us" opens the external Cal booking page (same link as Explore's
   // "Find my mentor matches"); the pill is hidden when it isn't configured.
+  const showHelp = !!MATCH_CALL_URL;
   const openCall = () => {
     if (MATCH_CALL_URL) window.open(MATCH_CALL_URL, '_blank', 'noopener,noreferrer');
   };
@@ -133,7 +132,10 @@ export function MenteeHomeScreen() {
         : 'Here’s what’s next on your journey.';
 
   return (
-    <div className={styles.page}>
+    // data-help reserves bottom room so the fixed help pill never overlaps the
+    // last content at full scroll (it floats at the bottom-right; only needed
+    // when the pill is shown).
+    <div className={styles.page} data-help={showHelp ? '' : undefined}>
       <header className={styles.greeting}>
         <h1 className={styles.hello}>Welcome back, {member.firstName}</h1>
         <p className={styles.subline}>{subline}</p>
@@ -219,13 +221,12 @@ export function MenteeHomeScreen() {
       )}
 
       <FloatingHelp
-        show={!!MATCH_CALL_URL}
+        show={showHelp}
         title="Not sure which mentor to choose?"
         label="Talk to us"
         sheetLabel="Book a free call"
         body="Book a free 15-min call with our team and we’ll suggest mentors who fit. No credit used."
         external
-        endAt={`#${MENTORS_SECTION_ID}`}
         onAction={openCall}
       />
       <BookingLauncher

@@ -256,11 +256,20 @@ describe('MenteeHomeScreen', () => {
     expect(screen.getByTestId('booking-open')).toBeInTheDocument();
   });
 
-  it('sends a signed-in member with no goal (not a mentee) to Explore, not the mentee page', async () => {
+  it('keeps a signed-in member with no goal on the home — mentee-side, not redirected', () => {
     viewer = { ...MEMBER, isMentee: false, isMentor: false };
     render(<MenteeHomeScreen />);
-    await waitFor(() => expect(replace).toHaveBeenCalledWith('/explore'));
-    expect(screen.queryByText(/Welcome back/)).not.toBeInTheDocument();
+    // No goal yet, but a non-mentor member is mentee-side: they stay and see
+    // their home (product, 2026-10-15), not bounced to Explore.
+    expect(screen.getByRole('heading', { name: /Welcome back, Damilola/ })).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('a no-goal member with no activity still gets the first-booking invitation', () => {
+    viewer = { ...NEW_MEMBER, isMentee: false, isMentor: false };
+    render(<MenteeHomeScreen />);
+    expect(screen.getByRole('heading', { name: 'Book your first session' })).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('a failed next-session load offers a retry, not a blank space', async () => {

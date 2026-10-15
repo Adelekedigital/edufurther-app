@@ -6,6 +6,18 @@
   gap: var(--space-6);
   max-width: 1080px;
 }
+/* Standing clearance for the fixed FloatingHelp pill (bottom-right): the last
+   content must never sit under it at full scroll. The shell's .main already pads
+   the bottom (48px desktop, ~80px with the phone tab bar); this adds enough to
+   clear the pill, which rests ~72px up. Only when the pill is shown (data-help). */
+.page[data-help] {
+  padding-bottom: var(--space-12);
+}
+@media (max-width: 767px) {
+  .page[data-help] {
+    padding-bottom: var(--space-16);
+  }
+}
 
 .greeting {
   display: flex;

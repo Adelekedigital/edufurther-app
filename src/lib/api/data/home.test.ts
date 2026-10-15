@@ -4,11 +4,11 @@ type Me = Parameters<typeof homeFor>[0];
 const mentorProfile = {} as NonNullable<NonNullable<Me>['mentor_profile']>;
 const goal = {} as NonNullable<NonNullable<Me>['goal']>;
 
-describe('homeFor: where / sends each viewer (product 2026-09-30; mentee → /home)', () => {
+describe('homeFor: where / sends each viewer (product 2026-10-15; every non-mentor member → /home)', () => {
   it.each([
     ['signed out', null, '/explore'],
     ['a mentee (has a goal)', { is_admin: false, mentor_profile: null, goal }, '/home'],
-    ['a signed-in account with no goal yet', { is_admin: false, mentor_profile: null, goal: null }, '/explore'],
+    ['a signed-in member, no goal yet (still mentee-side)', { is_admin: false, mentor_profile: null, goal: null }, '/home'],
     ['a mentor, any state', { is_admin: false, mentor_profile: mentorProfile, goal: null }, '/dashboard'],
     ['a platform admin', { is_admin: true, mentor_profile: null, goal: null }, '/admin'],
     ['an admin who is also a mentor', { is_admin: true, mentor_profile: mentorProfile, goal: null }, '/admin'],
