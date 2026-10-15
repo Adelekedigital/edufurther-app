@@ -137,6 +137,7 @@ export const keys = {
     monthly: (userId: string, months: number) => ['mentorStats', 'monthly', userId, months] as const,
     window: (userId: string, windowDays: number) =>
       ['mentorStats', 'window', userId, windowDays] as const,
+    year: (userId: string, year: number) => ['mentorStats', 'year', userId, year] as const,
   },
   /** Reviews written about the owner (GET /me/reviews). Scoped by user id, like every owner-only key. */
   myReviews: {

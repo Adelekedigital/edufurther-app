@@ -212,6 +212,10 @@ export function buildChartModel(i: ChartModelInput) {
     allHidden: visible.length === 0,
     rangeButtons: ranges.map((r) => ({ key: r.key, label: r.label, on: r.key === range })),
     years,
+    // The year <select> offers only the whole calendar years mentor-stats allows
+    // (the current one + 4 prior); the 60-month span's partial oldest year is
+    // dropped, so a Year selection can't 422 the session-quality card (contract #469).
+    yearOptions: years.slice(0, 5),
     yearValue: yr ?? '',
     isYear,
     legend,

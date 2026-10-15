@@ -1,16 +1,22 @@
-import { chartRangeToWindowDays } from './DashboardScreen';
+import { chartRangeToStatsQuery } from './DashboardScreen';
 
-describe('chartRangeToWindowDays', () => {
-  // The session-quality card follows the chart's range by fetching this window.
-  it('maps each preset range to its stats window (days)', () => {
-    expect(chartRangeToWindowDays('3m')).toBe(90);
-    expect(chartRangeToWindowDays('6m')).toBe(180);
-    expect(chartRangeToWindowDays('12m')).toBe(365);
+describe('chartRangeToStatsQuery', () => {
+  // The session-quality card follows the chart's range by fetching this query.
+  it('maps the preset ranges to a trailing window', () => {
+    expect(chartRangeToStatsQuery('3m')).toEqual({ windowDays: 90 });
+    expect(chartRangeToStatsQuery('6m')).toEqual({ windowDays: 180 });
+    expect(chartRangeToStatsQuery('12m')).toEqual({ windowDays: 365 });
   });
 
-  it('treats a year as the trailing 12-month window, not a calendar year', () => {
-    // mentor-stats is a trailing window, so a year reads 365 days; the card then
-    // labels it "last 12 months" rather than "in 2026".
-    expect(chartRangeToWindowDays('y2026')).toBe(365);
+  it('maps a year selection to a calendar-year query', () => {
+    // A chart Year picks `y<year>`; the card fetches that whole calendar year
+    // (contract #469) rather than a trailing window.
+    expect(chartRangeToStatsQuery('y2026')).toEqual({ year: 2026 });
+    expect(chartRangeToStatsQuery('y2022')).toEqual({ year: 2022 });
+  });
+
+  it('falls back to a window for a malformed year, never {year: 0}', () => {
+    // `Number('')` is 0, which would 422 as ?year=0; guard against it.
+    expect(chartRangeToStatsQuery('y')).toEqual({ windowDays: 180 });
   });
 });

@@ -83,6 +83,13 @@ export type StatBlock = {
 export type WindowStats = {
   windowDays: number;
   /**
+   * The calendar year the figures are for when fetched by year (contract #469),
+   * else null for a trailing window. Set client-side from the request so the card
+   * can label a year "in YYYY" — `window_days` alone can't tell a calendar year
+   * (365/366) from a trailing 12 months.
+   */
+  year: number | null;
+  /**
    * Held sessions in a row since the mentor's own last miss or cancellation.
    * Top-level, not windowed; 0 means none since (or not a mentor).
    */
@@ -90,6 +97,12 @@ export type WindowStats = {
   current: StatBlock;
   previous: StatBlock;
 };
+
+/**
+ * How the session-quality card queries mentor-stats: a trailing window, or a
+ * whole calendar year. They map to `window_days` / `year` — never both (422).
+ */
+export type StatsQuery = { windowDays: number } | { year: number };
 
 const block = (b: {
   since: string;
@@ -120,13 +133,17 @@ const block = (b: {
 });
 
 /**
- * GET /me/mentor-stats?window_days=N. The current window and the equal one
- * before it, so the caller computes its own trend (the KPI ↑/↓ delta) or reads
- * the current figures (the session-quality panel). `window_days` is 7–365.
+ * GET /me/mentor-stats by a trailing `window_days` (7–365) or a whole calendar
+ * `year` (contract #469) — the current window/year and the equal one before it,
+ * so the caller computes its own trend (the KPI ↑/↓ delta) or reads the current
+ * figures (the session-quality panel).
  */
-export function useMentorStats(userId: string | null, windowDays: number): Remote<WindowStats> {
+export function useMentorStats(userId: string | null, q: StatsQuery): Remote<WindowStats> {
+  const byYear = 'year' in q;
   const query = useQuery({
-    queryKey: keys.mentorStats.window(userId ?? 'none', windowDays),
+    queryKey: byYear
+      ? keys.mentorStats.year(userId ?? 'none', q.year)
+      : keys.mentorStats.window(userId ?? 'none', q.windowDays),
     enabled: userId !== null,
     // The window changes when the mentor switches the chart range; keep the last
     // window's figures on screen while the new one loads, so the card updates in
@@ -134,12 +151,14 @@ export function useMentorStats(userId: string | null, windowDays: number): Remot
     placeholderData: keepPreviousData,
     queryFn: async ({ signal }): Promise<WindowStats> => {
       const { data, error, response } = await api.GET('/api/v1/me/mentor-stats', {
-        params: { query: { window_days: windowDays } },
+        // One of window_days / year — sending both is a 422 (contract #469).
+        params: { query: byYear ? { year: q.year } : { window_days: q.windowDays } },
         signal,
       });
       if (!response.ok || !data) throw apiError(response.status, error);
       return {
         windowDays: data.window_days,
+        year: byYear ? q.year : null,
         currentStreak: data.current_streak ?? 0,
         current: block(data.current),
         previous: block(data.previous),

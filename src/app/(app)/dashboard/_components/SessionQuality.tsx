@@ -9,7 +9,7 @@ import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { ProgressCircle } from '@/components/atoms/ProgressCircle/ProgressCircle';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Star } from '@/components/atoms/Star/Star';
-import { useMentorStats, type StatBlock } from '@/lib/api/data/mentorStats';
+import { useMentorStats, type StatBlock, type StatsQuery } from '@/lib/api/data/mentorStats';
 import { useMyReviewQuote, type ReviewQuote } from '@/lib/api/data/myReviews';
 import { cx } from '@/lib/utils/cx';
 import styles from './SessionQuality.module.css';
@@ -326,24 +326,24 @@ function Teaser({ teaser }: { teaser: { text: string; icon: IconName; good: bool
 export function SessionQuality({
   userId,
   profileHref,
-  windowDays = WINDOW_DAYS,
+  statsQuery = { windowDays: WINDOW_DAYS },
   nextSession = null,
 }: {
   userId: string;
   profileHref: string;
   /**
-   * The stats window to fetch (days); the dashboard syncs it to the performance
-   * chart's range. The card's period labels are derived from the window the data
-   * is for, so they always match the figures (see `windowLabels`).
+   * How to fetch mentor-stats — a trailing window or a whole calendar year; the
+   * dashboard syncs it to the performance chart's range. The card's period labels
+   * derive from the window the data is for, so they always match the figures.
    */
-  windowDays?: number;
+  statsQuery?: StatsQuery;
   /** The mentor's next session, named in the good banner when present. */
   nextSession?: { firstName: string; dayLabel: string } | null;
 }) {
   const headingId = useId();
   const panelId = useId();
   const [expanded, setExpanded] = useState(false);
-  const stats = useMentorStats(userId, windowDays);
+  const stats = useMentorStats(userId, statsQuery);
   const quote = useMyReviewQuote(userId);
 
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -386,9 +386,17 @@ export function SessionQuality({
   const rating = current.averageRating;
   const reviewCount = current.reviewCount;
   const onTrack = displayRate >= GOOD_THRESHOLD;
-  // Labels for the window the figures are actually for — `stats.data.windowDays`,
-  // not the requested prop — so a mid-switch placeholder can't mislabel them.
-  const { period, periodPhrase, priorLabel } = windowLabels(stats.data.windowDays);
+  // Labels for the window the figures are actually for — the data's own window,
+  // not the requested query — so a mid-switch placeholder can't mislabel them. A
+  // calendar year reads "in YYYY"; a trailing window reads "last N months".
+  const { period, periodPhrase, priorLabel } =
+    stats.data.year != null
+      ? {
+          period: `in ${stats.data.year}`,
+          periodPhrase: `in ${stats.data.year}`,
+          priorLabel: 'the previous year',
+        }
+      : windowLabels(stats.data.windowDays);
   // The quote is the latest review (social proof); it shows whenever one exists
   // and is never gated on the 90-day window. The "no reviews yet" note stands in
   // only when there is genuinely no review to show, and only once the fetch has

@@ -67,8 +67,10 @@ function run(p: ProfileRet, c: CalRet, u: UpcRet, stats?: { monthly: StatsRet; q
   vi.mocked(useUpcomingBookings).mockReturnValue(u);
   // useMentorDashboard fetches a 30-day ("this month") and a 90-day ("this
   // quarter") window; without a QueryClient the real useQuery throws, so mock it.
-  vi.mocked(useMentorStats).mockImplementation((_id, days) =>
-    days === 30 ? (stats?.monthly ?? noStats) : (stats?.quarterly ?? noStats),
+  vi.mocked(useMentorStats).mockImplementation((_id, q) =>
+    'windowDays' in q && q.windowDays === 30
+      ? (stats?.monthly ?? noStats)
+      : (stats?.quarterly ?? noStats),
   );
   return renderHook(() => useMentorDashboard(member, 'Africa/Lagos', false)).result;
 }

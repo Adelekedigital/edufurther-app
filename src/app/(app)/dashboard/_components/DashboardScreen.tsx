@@ -14,6 +14,7 @@ import { KpiGrid } from './KpiGrid';
 import { NextSessionCard } from './NextSessionCard';
 import { PerformanceSection } from './PerformanceSection';
 import { SessionQuality } from './SessionQuality';
+import type { StatsQuery } from '@/lib/api/data/mentorStats';
 import { SetupBanner, type SetupAction } from './SetupBanner';
 import styles from './DashboardScreen.module.css';
 
@@ -39,15 +40,19 @@ const inZone = (iso: string, timeZone: string, opts: Intl.DateTimeFormatOptions)
   new Intl.DateTimeFormat('en-US', { ...opts, timeZone }).format(new Date(iso));
 
 // The session-quality card follows the chart's range (Mentor Dashboard v2,
-// qualityRange 'synced'): map a range key to the stats window the card fetches. The
-// card derives its own period labels from that window (see SessionQuality), so the
-// labels always match the figures. A year has no trailing-window equivalent in
-// mentor-stats, so it reads the 12-month window and the card labels it "last 12
-// months", not a calendar year (design-divergence.md).
+// qualityRange 'synced'): map a range key to how the card fetches mentor-stats — a
+// trailing window for 3M/6M/12M, or a whole calendar year for a Year selection
+// (contract #469). The card derives its own period labels from the fetched window
+// (see SessionQuality), so the labels always match the figures.
 const WINDOW_DAYS_BY_RANGE: Record<string, number> = { '3m': 90, '6m': 180, '12m': 365 };
-export function chartRangeToWindowDays(range: string): number {
-  const rk = range.startsWith('y') ? '12m' : range;
-  return WINDOW_DAYS_BY_RANGE[rk] ?? 180;
+export function chartRangeToStatsQuery(range: string): StatsQuery {
+  if (range.startsWith('y')) {
+    // `Number('')` is 0 and passes Number.isInteger, so a malformed 'y' (no year)
+    // must not become {year: 0} (a 422) — require a real year, else fall through.
+    const year = Number(range.slice(1));
+    if (Number.isInteger(year) && year > 0) return { year };
+  }
+  return { windowDays: WINDOW_DAYS_BY_RANGE[range] ?? 180 };
 }
 
 function DashboardLoading() {
@@ -105,7 +110,7 @@ function MentorHome({ member }: { member: Member }) {
   if (!dash.data) return <DashboardError onRetry={dash.retry} />;
   const d = dash.data;
 
-  const windowDays = chartRangeToWindowDays(chartRange);
+  const statsQuery = chartRangeToStatsQuery(chartRange);
   const upcoming = dash.nextSession.data;
   const nextSession = upcoming
     ? {
@@ -167,7 +172,7 @@ function MentorHome({ member }: { member: Member }) {
                 <SessionQuality
                   userId={member.id}
                   profileHref={d.profileHref}
-                  windowDays={windowDays}
+                  statsQuery={statsQuery}
                   nextSession={nextSession}
                 />
               </div>

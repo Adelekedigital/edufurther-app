@@ -342,7 +342,7 @@ export function PerformanceChart({
               }}
             >
               <option value="">Year</option>
-              {m.years.map((yr) => (
+              {m.yearOptions.map((yr) => (
                 <option key={yr} value={yr}>
                   {yr}
                 </option>
