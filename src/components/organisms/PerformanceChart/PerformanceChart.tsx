@@ -30,6 +30,11 @@ type PerformanceChartProps = {
    * the mentor picks and the choice is remembered; 'hide' pins it to `variant`.
    */
   chartSwitch?: 'show' | 'hide';
+  /**
+   * Called with the active range key ('3m' | '6m' | '12m' | 'y<year>') on mount
+   * and whenever it changes, so a sibling can follow the same window.
+   */
+  onRangeChange?: (range: string) => void;
 };
 
 const DEFAULT_RANGES: ChartRange[] = [
@@ -101,6 +106,7 @@ export function PerformanceChart({
   defaultRange = '6m',
   mobileLegend = 'compact',
   chartSwitch = 'show',
+  onRangeChange,
 }: PerformanceChartProps) {
   const [range, setRange] = useState(defaultRange);
   const [hidden, setHidden] = useState<string[]>([]);
@@ -172,6 +178,12 @@ export function PerformanceChart({
     document.addEventListener('pointerdown', onPointerDown, true);
     return () => document.removeEventListener('pointerdown', onPointerDown, true);
   }, [menuOpen]);
+
+  // Report the active range up (the session-quality card follows it). Fires on
+  // mount and on every change; a parent that stores it bails on an equal value.
+  useEffect(() => {
+    onRangeChange?.(range);
+  }, [range, onRangeChange]);
 
   const toggle = (key: string) =>
     setHidden((h) => (h.includes(key) ? h.filter((k) => k !== key) : [...h, key]));

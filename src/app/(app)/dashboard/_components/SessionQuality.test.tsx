@@ -17,8 +17,12 @@ type QuoteState = {
 };
 let quote: QuoteState;
 
+const mentorStatsSpy = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/api/data/mentorStats', () => ({
-  useMentorStats: () => ({ data, isLoading, error, retry }),
+  useMentorStats: (userId: string, windowDays: number) => {
+    mentorStatsSpy(userId, windowDays);
+    return { data, isLoading, error, retry };
+  },
 }));
 vi.mock('@/lib/api/data/myReviews', () => ({
   useMyReviewQuote: () => quote,
@@ -66,6 +70,7 @@ beforeEach(() => {
   isLoading = false;
   error = null;
   retry.mockClear();
+  mentorStatsSpy.mockClear();
   quote = hasQuote();
 });
 
@@ -155,7 +160,7 @@ describe('SessionQuality', () => {
     // The count links to the profile's Reviews tab. The visible "(14)" is in the
     // accessible name (Label-in-Name), scoped so it never reads as an all-time total.
     const reviewsLink = screen.getByRole('link', {
-      name: 'See all reviews — 14 in the last 90 days',
+      name: 'See all reviews — 14 in 90 days',
     });
     expect(reviewsLink).toHaveAttribute('href', '/mentors/gbenga?tab=reviews');
     expect(reviewsLink).toHaveTextContent('(14)');
@@ -270,6 +275,58 @@ describe('SessionQuality', () => {
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     expect(screen.getByText(/No reviews yet/)).toBeInTheDocument();
     expect(screen.getByText('star')).toBeInTheDocument();
+  });
+
+  // ---- timeline sync + next session ----------------------------------------
+
+  it('fetches the window it is given and labels the subline with the period', () => {
+    data = windowStats({ attendanceRate: 86 });
+    render(
+      <SessionQuality
+        userId="u1"
+        profileHref="/mentors/gbenga"
+        windowDays={180}
+        period="last 6 months"
+        periodPhrase="in the last 6 months"
+      />,
+    );
+    expect(mentorStatsSpy).toHaveBeenCalledWith('u1', 180);
+    expect(screen.getByText(/last 6 months/)).toBeInTheDocument();
+    expect(screen.queryByText(/last 90 days/)).not.toBeInTheDocument();
+  });
+
+  it('folds the period phrase into the at-risk left-waiting teaser', () => {
+    data = windowStats({ attendanceRate: 40, missedByMentor: 3, menteesLeftWaiting: 2 });
+    render(
+      <SessionQuality
+        userId="u1"
+        profileHref="/mentors/gbenga"
+        period="last 6 months"
+        periodPhrase="in the last 6 months"
+      />,
+    );
+    expect(screen.getByText('2 mentees were left waiting in the last 6 months')).toBeInTheDocument();
+  });
+
+  it('names the next session in the good banner when there is one', async () => {
+    data = windowStats({ attendanceRate: 90 });
+    render(
+      <SessionQuality
+        userId="u1"
+        profileHref="/mentors/gbenga"
+        nextSession={{ firstName: 'Taofeeq', dayLabel: 'Sun, Oct 4' }}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
+    expect(screen.getByText(/Your next session is Sun, Oct 4 with Taofeeq\./)).toBeInTheDocument();
+  });
+
+  it('omits the next-session line when there is none', async () => {
+    data = windowStats({ attendanceRate: 90 });
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
+    expect(screen.queryByText(/Your next session is/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Keep it going\./)).toBeInTheDocument();
   });
 
   // ---- the streak -----------------------------------------------------------

@@ -35,6 +35,22 @@ function persistShared(id: string) {
   }
 }
 
+const inZone = (iso: string, timeZone: string, opts: Intl.DateTimeFormatOptions) =>
+  new Intl.DateTimeFormat('en-US', { ...opts, timeZone }).format(new Date(iso));
+
+// The session-quality card follows the chart's range (Mentor Dashboard v2,
+// qualityRange 'synced'): map a range key to its stats window and the labels the
+// card reads — the subline ("last 6 months"), and the teaser phrase it folds into
+// "...left waiting in the last 6 months".
+const WINDOW_DAYS_BY_RANGE: Record<string, number> = { '3m': 90, '6m': 180, '12m': 365 };
+export function qualityWindow(range: string): { days: number; period: string; periodPhrase: string } {
+  const rk = range.startsWith('y') ? '12m' : range;
+  const days = WINDOW_DAYS_BY_RANGE[rk] ?? 180;
+  const months = rk === '3m' ? 3 : rk === '12m' ? 12 : 6;
+  const period = range.startsWith('y') ? `in ${range.slice(1)}` : `last ${months} months`;
+  return { days, period, periodPhrase: period.replace('last', 'in the last') };
+}
+
 function DashboardLoading() {
   return (
     <div className={styles.loading} role="status" aria-busy>
@@ -62,6 +78,8 @@ function MentorHome({ member }: { member: Member }) {
   const [shared, setShared] = useState(() => readShared(member.id));
   // Keyed so a repeated identical message still re-announces (LiveRegion).
   const [announce, setAnnounce] = useState<{ text: string; id: number } | null>(null);
+  // The chart reports its range here; the session-quality card follows it.
+  const [chartRange, setChartRange] = useState('6m');
   const say = (text: string) => setAnnounce((a) => ({ text, id: (a?.id ?? 0) + 1 }));
   const dash = useMentorDashboard(member, accountZone, shared);
 
@@ -87,6 +105,19 @@ function MentorHome({ member }: { member: Member }) {
   if (dash.isLoading) return <DashboardLoading />;
   if (!dash.data) return <DashboardError onRetry={dash.retry} />;
   const d = dash.data;
+
+  const qw = qualityWindow(chartRange);
+  const upcoming = dash.nextSession.data;
+  const nextSession = upcoming
+    ? {
+        firstName: upcoming.other.name.split(' ')[0] || upcoming.other.name,
+        dayLabel: inZone(upcoming.startsAt, accountZone, {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+        }),
+      }
+    : null;
 
   const toAction = (next: SetupNext, shareUrl: string): SetupAction =>
     'href' in next.action
@@ -131,10 +162,17 @@ function MentorHome({ member }: { member: Member }) {
           {!d.isNew && (
             <div className={styles.perfRow}>
               <div className={styles.perfChartCol}>
-                <PerformanceSection userId={member.id} />
+                <PerformanceSection userId={member.id} onRangeChange={setChartRange} />
               </div>
               <div className={styles.perfQualityCol}>
-                <SessionQuality userId={member.id} profileHref={d.profileHref} />
+                <SessionQuality
+                  userId={member.id}
+                  profileHref={d.profileHref}
+                  windowDays={qw.days}
+                  period={qw.period}
+                  periodPhrase={qw.periodPhrase}
+                  nextSession={nextSession}
+                />
               </div>
             </div>
           )}

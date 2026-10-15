@@ -32,6 +32,16 @@ describe('PerformanceChart', () => {
     expect(screen.getByRole('radio', { name: '6M' })).toHaveAttribute('aria-checked', 'false');
   });
 
+  it('reports its range on mount and when it changes (onRangeChange)', async () => {
+    const user = userEvent.setup();
+    const onRangeChange = vi.fn();
+    render(<PerformanceChart series={series} months={months} onRangeChange={onRangeChange} />);
+    expect(onRangeChange).toHaveBeenCalledWith('6m'); // the default, on mount
+    onRangeChange.mockClear();
+    await user.click(screen.getByRole('radio', { name: '12M' }));
+    expect(onRangeChange).toHaveBeenCalledWith('12m');
+  });
+
   it('moves the range with arrows, Home and End, wrapping, and moves focus', async () => {
     const user = userEvent.setup();
     render(<PerformanceChart series={series} months={months} />);
