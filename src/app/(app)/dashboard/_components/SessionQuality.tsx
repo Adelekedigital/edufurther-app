@@ -91,15 +91,15 @@ function streakLine(streak: number): string {
 function teaserOf(
   onTrack: boolean,
   streak: number,
-  missed: number,
+  leftWaiting: number,
 ): { text: string; icon: IconName; good: boolean } {
   if (onTrack) {
     const text = streak > 0 ? streakLine(streak) : 'You’re holding your sessions';
     return { text, icon: 'local_fire_department', good: true };
   }
   const text =
-    missed > 0
-      ? `${missed} ${missed === 1 ? 'mentee was' : 'mentees were'} left waiting in 90 days`
+    leftWaiting > 0
+      ? `${leftWaiting} ${leftWaiting === 1 ? 'mentee was' : 'mentees were'} left waiting in 90 days`
       : 'Your show-up rate is slipping';
   return { text, icon: 'error', good: false };
 }
@@ -324,7 +324,12 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
   if (current.attendanceRate == null) return <Empty />;
 
   const rate = current.attendanceRate;
-  const missed = current.missedByMentor;
+  // "Missed by you" (the breakdown row) is every mentor no-show; the "left
+  // waiting" headline is only the ones where a mentee was actually present
+  // (mentees_left_waiting), so the two can differ. Clamp to the row's count (the
+  // backend's own invariant, #466) so the headline can never exceed the row
+  // rendered beside it, even if the backend drifts.
+  const leftWaiting = Math.min(current.menteesLeftWaiting, current.missedByMentor);
   const rating = current.averageRating;
   const reviewCount = current.reviewCount;
   const onTrack = rate >= GOOD_THRESHOLD;
@@ -339,7 +344,7 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
   // breakdown disclosure.
   const canExpand = !onTrack || rating != null;
   const isOpen = expanded && canExpand;
-  const teaser = teaserOf(onTrack, currentStreak, missed);
+  const teaser = teaserOf(onTrack, currentStreak, leftWaiting);
 
   const toggleLabel = isOpen
     ? 'Show less'
@@ -413,19 +418,19 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
                 <Icon name="error" size={20} className={styles.bannerIconRisk} />
                 <div className={styles.bannerBody}>
                   {/*
-                    The missed-count copy only holds when there are misses. An
-                    at-risk rate almost always means a mentor no-show, but the
-                    ring (attendance_rate) and this count aren't derivable from
-                    one another, so guard the copy rather than assert a count we
-                    can't stand behind.
+                    The left-waiting copy only holds when a mentee was actually
+                    waiting. mentees_left_waiting (backend #466) counts exactly
+                    that — a mentor no-show with the mentee present — so it can be
+                    lower than the ring's miss rate; guard the copy on it rather
+                    than assert a count we can't stand behind.
                   */}
-                  {missed > 0 ? (
+                  {leftWaiting > 0 ? (
                     <>
                       {/* The compact teaser carries the "in 90 days" qualifier;
                           the banner sits under the ring's "last 90 days" subline,
                           so it isn't repeated here (design). */}
                       <p className={styles.bannerTitle}>
-                        {missed} {missed === 1 ? 'mentee was' : 'mentees were'} left waiting
+                        {leftWaiting} {leftWaiting === 1 ? 'mentee was' : 'mentees were'} left waiting
                       </p>
                       <p className={styles.bannerText}>
                         Most missed sessions happen on hours you can’t really keep. Trim those hours,

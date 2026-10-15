@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { StatBlock, WindowStats } from '@/lib/api/data/mentorStats';
 import type { ReviewQuote } from '@/lib/api/data/myReviews';
@@ -34,6 +34,7 @@ const block = (over: Partial<StatBlock> = {}): StatBlock => ({
   // attendance_rate) and "held of settled" agree.
   attendanceRate: 86,
   missedByMentor: 2,
+  menteesLeftWaiting: 2,
   missedByMentee: 1,
   cancelledByMentor: 2,
   reviewCount: 14,
@@ -130,11 +131,11 @@ describe('SessionQuality', () => {
   });
 
   it('uses a primary, differently-worded disclosure when at risk', () => {
-    data = windowStats({ attendanceRate: 60, missedByMentor: 5 });
+    data = windowStats({ attendanceRate: 60, missedByMentor: 5, menteesLeftWaiting: 3 });
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     expect(screen.getByText('At risk')).toBeInTheDocument();
-    // The at-risk teaser headlines the problem.
-    expect(screen.getByText('5 mentees were left waiting in 90 days')).toBeInTheDocument();
+    // The at-risk teaser headlines the honest "left waiting" count, not missed-by-you.
+    expect(screen.getByText('3 mentees were left waiting in 90 days')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'See what’s pulling this down' }),
     ).toBeInTheDocument();
@@ -172,10 +173,15 @@ describe('SessionQuality', () => {
   });
 
   it('renders the at-risk expanded banner and its two actions', async () => {
-    data = windowStats({ attendanceRate: 60, missedByMentor: 5, completedSessions: 9 });
+    data = windowStats({
+      attendanceRate: 60,
+      missedByMentor: 5,
+      menteesLeftWaiting: 3,
+      completedSessions: 9,
+    });
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     await userEvent.click(screen.getByRole('button', { name: 'See what’s pulling this down' }));
-    expect(screen.getByText('5 mentees were left waiting')).toBeInTheDocument();
+    expect(screen.getByText('3 mentees were left waiting')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Review your hours' })).toHaveAttribute(
       'href',
       '/calendar',
@@ -186,11 +192,47 @@ describe('SessionQuality', () => {
     );
   });
 
-  it('makes the at-risk banner title singular for a single miss', async () => {
-    data = windowStats({ attendanceRate: 50, missedByMentor: 1, completedSessions: 1 });
+  it('makes the at-risk banner title singular for a single mentee left waiting', async () => {
+    data = windowStats({
+      attendanceRate: 50,
+      missedByMentor: 1,
+      menteesLeftWaiting: 1,
+      completedSessions: 1,
+    });
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     await userEvent.click(screen.getByRole('button', { name: 'See what’s pulling this down' }));
     expect(screen.getByText('1 mentee was left waiting')).toBeInTheDocument();
+  });
+
+  it('counts mentees_left_waiting in the headline but missed_by_mentor in the row', async () => {
+    // The honest distinction: 4 sessions missed, but only 2 had a mentee waiting.
+    data = windowStats({
+      attendanceRate: 50,
+      missedByMentor: 4,
+      menteesLeftWaiting: 2,
+      completedSessions: 4,
+    });
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    await userEvent.click(screen.getByRole('button', { name: 'See what’s pulling this down' }));
+    expect(screen.getByText('2 mentees were left waiting')).toBeInTheDocument();
+    expect(screen.queryByText('4 mentees were left waiting')).not.toBeInTheDocument();
+    const row = screen.getByText('Missed by you').closest('div')!;
+    expect(within(row).getByText('4')).toBeInTheDocument();
+  });
+
+  it('never shows a left-waiting count above "Missed by you" (clamped)', async () => {
+    // Defensive: if the backend ever sent left-waiting > missed, the headline must
+    // not exceed the breakdown row beside it.
+    data = windowStats({
+      attendanceRate: 50,
+      missedByMentor: 2,
+      menteesLeftWaiting: 5,
+      completedSessions: 2,
+    });
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    await userEvent.click(screen.getByRole('button', { name: 'See what’s pulling this down' }));
+    expect(screen.getByText('2 mentees were left waiting')).toBeInTheDocument();
+    expect(screen.queryByText('5 mentees were left waiting')).not.toBeInTheDocument();
   });
 
   // ---- the streak -----------------------------------------------------------
@@ -256,6 +298,7 @@ describe('SessionQuality', () => {
       attendanceRate: 40,
       completedSessions: 0,
       missedByMentor: 1,
+      menteesLeftWaiting: 1,
       cancelledByMentor: 0,
       missedByMentee: 0,
       reviewCount: 0,
