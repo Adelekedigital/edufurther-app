@@ -130,7 +130,7 @@ describe('SessionQuality', () => {
     );
   });
 
-  it('uses a primary, differently-worded disclosure when at risk', () => {
+  it('uses a differently-worded disclosure when at risk', () => {
     data = windowStats({ attendanceRate: 60, missedByMentor: 5, menteesLeftWaiting: 3 });
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     expect(screen.getByText('At risk')).toBeInTheDocument();
@@ -235,19 +235,22 @@ describe('SessionQuality', () => {
     expect(screen.queryByText('5 mentees were left waiting')).not.toBeInTheDocument();
   });
 
-  it('names the show-up rate when at risk with no mentee left waiting', async () => {
+  it('names the rounded show-up rate when at risk with no mentee left waiting', async () => {
     // At risk via misses, but every miss was a double no-show → leftWaiting 0.
-    // The banner names the rate (the actual risk), not a vague "slipping".
+    // Teaser AND banner name the rate, rounded to match the ring — never "slipping".
     data = windowStats({
-      attendanceRate: 60,
+      attendanceRate: 60.7,
       missedByMentor: 2,
       menteesLeftWaiting: 0,
       completedSessions: 3,
     });
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    // Compact teaser.
+    expect(screen.getByText('Your show-up rate is 61%')).toBeInTheDocument();
+    expect(screen.queryByText(/slipping|60\.7/)).not.toBeInTheDocument();
+    // Expanded banner.
     await userEvent.click(screen.getByRole('button', { name: 'See what’s pulling this down' }));
-    expect(screen.getByText('Your show-up rate is 60%')).toBeInTheDocument();
-    expect(screen.queryByText(/slipping/)).not.toBeInTheDocument();
+    expect(screen.getByText('Your show-up rate is 61%')).toBeInTheDocument();
   });
 
   it('leads the no-reviews note with a star icon', () => {

@@ -92,6 +92,7 @@ function teaserOf(
   onTrack: boolean,
   streak: number,
   leftWaiting: number,
+  rate: number,
 ): { text: string; icon: IconName; good: boolean } {
   if (onTrack) {
     const text = streak > 0 ? streakLine(streak) : 'You’re holding your sessions';
@@ -100,7 +101,7 @@ function teaserOf(
   const text =
     leftWaiting > 0
       ? `${leftWaiting} ${leftWaiting === 1 ? 'mentee was' : 'mentees were'} left waiting in 90 days`
-      : 'Your show-up rate is slipping';
+      : `Your show-up rate is ${Math.round(rate)}%`;
   return { text, icon: 'error', good: false };
 }
 
@@ -347,7 +348,7 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
   // breakdown disclosure.
   const canExpand = !onTrack || rating != null;
   const isOpen = expanded && canExpand;
-  const teaser = teaserOf(onTrack, currentStreak, leftWaiting);
+  const teaser = teaserOf(onTrack, currentStreak, leftWaiting, rate);
 
   const toggleLabel = isOpen
     ? 'Show less'
@@ -444,7 +445,7 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
                     <>
                       {/* No mentee was left waiting, but the rate itself is the
                           risk — name it, rather than a vague "slipping". */}
-                      <p className={styles.bannerTitle}>Your show-up rate is {rate}%</p>
+                      <p className={styles.bannerTitle}>Your show-up rate is {Math.round(rate)}%</p>
                       <p className={styles.bannerText}>
                         Hold your upcoming booked sessions to bring it back up.
                       </p>
