@@ -9,7 +9,6 @@ import {
   type ConfirmShell,
 } from '@/components/organisms/SessionTypeConfirms/SessionTypeConfirms';
 import { SessionTypeManager } from '@/components/organisms/SessionTypeManager/SessionTypeManager';
-import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useRouter } from 'next/navigation';
 import { useTopics } from '@/lib/api/data/mentors';
@@ -24,11 +23,10 @@ import {
 import { formatShortDate } from '@/lib/utils/format';
 import { SESSION_TEMPLATES, templateHint } from '@/lib/utils/sessionTemplates';
 import { useLatest } from '@/lib/utils/useLatest';
-import { useOnline } from '@/lib/utils/useOnline';
 import type { Remote } from '@/types/mentor';
 import type { DeleteError, OwnSessionType } from '@/types/sessionType';
-import { useAppShell } from '../../_shell/useAppShell';
-import { mentorGate, SESSION_TYPES_GATE } from '../../_shell/MentorGate';
+import { useAppShell } from '@/app/_shell/useAppShell';
+import { mentorGate, SESSION_TYPES_GATE } from '@/app/_shell/MentorGate';
 import styles from './SessionTypesScreen.module.css';
 
 const CREATE_HREF = '/session-types/new';
@@ -48,8 +46,7 @@ const confirmShell = (shell: ConfirmShell, body: ReactNode) => (
 
 /** /session-types — the mentor's own session types (Session Types.dc.html, List). */
 export function SessionTypesScreen() {
-  const { viewer, member, chrome, account, nav } = useAppShell();
-  const online = useOnline();
+  const { viewer, member } = useAppShell();
   const isMentor = !!member?.isMentor;
   const remote = useOwnSessionTypes(isMentor);
   // Until we know who this is, the list is loading — never "no session types".
@@ -330,7 +327,7 @@ export function SessionTypesScreen() {
   );
 
   return (
-    <AppShell active="Sessions" nav={nav} chrome={chrome} account={account} offline={!online}>
+    <>
       {body}
       {visibility && (
         <VisibilityConfirm
@@ -369,6 +366,6 @@ export function SessionTypesScreen() {
         />
       )}
       <LiveRegion message={announcement} />
-    </AppShell>
+    </>
   );
 }

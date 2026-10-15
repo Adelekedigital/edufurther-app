@@ -16,7 +16,6 @@ import { ReturnDateForm } from '@/components/organisms/ReturnDateForm/ReturnDate
 import { SchedulingWindowForm } from '@/components/organisms/SchedulingWindowForm/SchedulingWindowForm';
 import { VideoProviderForm } from '@/components/organisms/VideoProviderForm/VideoProviderForm';
 import { WeeklyHoursCard } from '@/components/organisms/WeeklyHoursCard/WeeklyHoursCard';
-import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useBlockedDays, useBookedDays, useSaveBlockedDays } from '@/lib/api/data/calendar';
 import { useConferencing, useSaveConferencing } from '@/lib/api/data/conferencing';
@@ -42,8 +41,8 @@ import { deviceTimeZone } from '@/lib/utils/format';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { useOnline } from '@/lib/utils/useOnline';
 import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
-import { mentorGate, type GateCopy } from '../../_shell/MentorGate';
-import { useAppShell } from '../../_shell/useAppShell';
+import { mentorGate, type GateCopy } from '@/app/_shell/MentorGate';
+import { useAppShell } from '@/app/_shell/useAppShell';
 import { CalendarSkeleton } from './CalendarSkeleton';
 import { SaveBar, type SaveProblem } from './SaveBar';
 import { useHoursDraft } from './useHoursDraft';
@@ -60,7 +59,7 @@ const CALENDAR_GATE: GateCopy = {
 
 /** /calendar — the mentor's availability (Calendar v2.dc.html, scene Available). */
 export function CalendarScreen() {
-  const { viewer, member, chrome, account, nav } = useAppShell();
+  const { viewer, member } = useAppShell();
   const online = useOnline();
   const isMentor = !!member?.isMentor;
   const mentorId = isMentor ? member!.id : null;
@@ -560,7 +559,7 @@ export function CalendarScreen() {
   }
 
   return (
-    <AppShell active="Calendar" nav={nav} chrome={chrome} account={account} offline={!online}>
+    <>
       <div className={styles.page} aria-busy={!panel && !accountGate && loading}>
         {body}
       </div>
@@ -687,7 +686,7 @@ export function CalendarScreen() {
         </ModalShell>
       )}
       <LiveRegion message={announcement} />
-    </AppShell>
+    </>
   );
 }
 

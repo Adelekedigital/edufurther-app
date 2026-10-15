@@ -4,14 +4,12 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
-import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { useTopics } from '@/lib/api/data/mentors';
 import { toDraft, useSavedSessionType } from '@/lib/api/data/sessionTypeEdit';
 import { useMentorDefaults } from '@/lib/api/data/sessionTypes';
 import type { BookingDefaults } from '@/lib/utils/sessionTypeDraft';
-import { useOnline } from '@/lib/utils/useOnline';
-import { useAppShell } from '../../_shell/useAppShell';
-import { mentorGate, SESSION_TYPES_GATE } from '../../_shell/MentorGate';
+import { useAppShell } from '@/app/_shell/useAppShell';
+import { mentorGate, SESSION_TYPES_GATE } from '@/app/_shell/MentorGate';
 import { SessionTypeFormScreen } from './SessionTypeFormScreen';
 import styles from './SessionTypesScreen.module.css';
 
@@ -22,8 +20,7 @@ import styles from './SessionTypesScreen.module.css';
  * error with a retry, then the form.
  */
 export function EditSessionTypeScreen({ id }: { id: string }) {
-  const { viewer, member, chrome, account, nav } = useAppShell();
-  const online = useOnline();
+  const { viewer, member } = useAppShell();
   const isMentor = !!member?.isMentor;
   const saved = useSavedSessionType(id, isMentor);
   const defaults = useMentorDefaults(isMentor ? member!.id : null);
@@ -42,11 +39,7 @@ export function EditSessionTypeScreen({ id }: { id: string }) {
     return <SessionTypeFormScreen template={null} edit={{ id, saved: saved.data, draft }} />;
 
   const gate = mentorGate(viewer, isMentor, `/session-types/${id}/edit`, SESSION_TYPES_GATE);
-  const shell = (body: ReactNode) => (
-    <AppShell active="Sessions" nav={nav} chrome={chrome} account={account} offline={!online}>
-      {gate ?? body}
-    </AppShell>
-  );
+  const shell = (body: ReactNode) => <>{gate ?? body}</>;
   if (saved.error?.kind === 'notFound')
     return shell(
       <div className={styles.gate}>

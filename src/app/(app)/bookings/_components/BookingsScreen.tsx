@@ -10,7 +10,6 @@ import { Notice } from '@/components/molecules/Notice/Notice';
 import { TimezonePicker } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import { BookingDetailsPanel } from '@/components/organisms/BookingDetailsPanel/BookingDetailsPanel';
 import { NextSessionCard } from '@/components/organisms/NextSessionCard/NextSessionCard';
-import { AppShell } from '@/components/templates/AppShell/AppShell';
 import {
   useBooking,
   useBookingHistory,
@@ -23,12 +22,11 @@ import { normaliseError } from '@/lib/api/data/errors';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { useHydrated } from '@/lib/utils/useHydrated';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
-import { useOnline } from '@/lib/utils/useOnline';
 import type { AnswerFile, Booking, BookingStatus } from '@/types/booking';
-import { canBookFor } from '../../_shell/bookBlocked';
-import { BOOKINGS_GATE, memberGate } from '../../_shell/MentorGate';
+import { canBookFor } from '@/app/_shell/bookBlocked';
+import { BOOKINGS_GATE, memberGate } from '@/app/_shell/MentorGate';
 import { cx } from '@/lib/utils/cx';
-import { useAppShell } from '../../_shell/useAppShell';
+import { useAppShell } from '@/app/_shell/useAppShell';
 import { Button } from '@/components/atoms/Button/Button';
 import { ConfirmActionDialog } from '@/app/_sessions/ConfirmActionDialog';
 import { IntakeFileViewer } from '@/app/_sessions/IntakeFileViewer';
@@ -47,8 +45,7 @@ const PANEL_ID = 'booking-details';
 
 /** `/bookings` — the sessions a person has booked or been booked for (Bookings.dc.html). */
 export function BookingsScreen() {
-  const { viewer, member, chrome, account, nav } = useAppShell();
-  const online = useOnline();
+  const { viewer, member } = useAppShell();
   const { tab, setTab } = useBookingsTab();
   const userId = member?.id ?? null;
   const isMentor = !!member?.isMentor;
@@ -325,7 +322,7 @@ export function BookingsScreen() {
   const [next, ...later] = all;
 
   return (
-    <AppShell active="Bookings" nav={nav} chrome={chrome} account={account} offline={!online}>
+    <>
       {gate ?? (
         <div className={cx(styles.page, showPanel && !asSheet && styles.withAside)}>
           <header className={styles.header}>
@@ -555,6 +552,6 @@ export function BookingsScreen() {
           )}
         </div>
       )}
-    </AppShell>
+    </>
   );
 }

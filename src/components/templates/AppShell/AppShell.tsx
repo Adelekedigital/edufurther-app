@@ -25,16 +25,24 @@ type NavItem = { label: string; href: string; icon: IconName; group: 'daily' | '
 /**
  * Mentee navigation (design AppShell role=mentee). Messages is held until it's
  * built (product 2026-09-30). Routes belong to their own screens.
+ *
+ * Home links straight to the mentee home — `/explore` (`homeFor`) — not to `/`,
+ * so in-app Home nav skips the 307 redirect (ADR 0007). There is no `/home`
+ * route yet; `/` stays the cold-entry redirect.
  */
 const MENTEE_NAV: NavItem[] = [
-  { label: 'Home', href: '/', icon: 'home', group: 'daily' },
+  { label: 'Home', href: '/explore', icon: 'home', group: 'daily' },
   { label: 'Explore', href: '/explore', icon: 'explore', group: 'daily' },
   { label: 'Bookings', href: '/bookings', icon: 'schedule', group: 'daily' },
   { label: 'Settings', href: '/settings', icon: 'settings', group: 'setup' },
 ];
-/** Mentor navigation (design AppShell role=mentor, sidebar=grouped, integrationIn=nav). */
+/**
+ * Mentor navigation (design AppShell role=mentor, sidebar=grouped, integrationIn=nav).
+ * Home links straight to `/dashboard` (the mentor home, `homeFor`), not `/`, so
+ * in-app Home nav skips the 307 redirect (ADR 0007).
+ */
 const MENTOR_NAV: NavItem[] = [
-  { label: 'Home', href: '/', icon: 'home', group: 'daily' },
+  { label: 'Home', href: '/dashboard', icon: 'home', group: 'daily' },
   { label: 'Bookings', href: '/bookings', icon: 'schedule', group: 'daily' },
   { label: 'Calendar', href: '/calendar', icon: 'calendar_month', group: 'daily' },
   { label: 'Sessions', href: '/session-types', icon: 'event_note', group: 'setup' },

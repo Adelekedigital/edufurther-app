@@ -10,7 +10,6 @@ import { IntegrationRow } from '@/components/molecules/IntegrationRow/Integratio
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { IntegrationGroup } from '@/components/organisms/IntegrationGroup/IntegrationGroup';
 import { VideoSection, type Provider } from '@/components/organisms/VideoSection/VideoSection';
-import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ConfirmDialog } from '@/components/templates/ConfirmDialog/ConfirmDialog';
 import {
   useCalendarConnection,
@@ -21,8 +20,8 @@ import { useConferencing, useSaveConferencing } from '@/lib/api/data/conferencin
 import { useInterest, useRegisterInterest } from '@/lib/api/data/interest';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { useOnline } from '@/lib/utils/useOnline';
-import { mentorGate, type GateCopy } from '../../_shell/MentorGate';
-import { useAppShell } from '../../_shell/useAppShell';
+import { mentorGate, type GateCopy } from '@/app/_shell/MentorGate';
+import { useAppShell } from '@/app/_shell/useAppShell';
 import { IntegrationsSkeleton } from './IntegrationsSkeleton';
 import { useCalendarConnect } from './useCalendarConnect';
 import styles from './IntegrationsScreen.module.css';
@@ -56,7 +55,7 @@ const NAMES: Record<Provider, string> = {
 
 /** /integrations — the mentor's connected tools (Integrations.dc.html, saved defaults). */
 export function IntegrationsScreen() {
-  const { viewer, member, chrome, account, nav } = useAppShell();
+  const { viewer, member } = useAppShell();
   const online = useOnline();
   const isMentor = !!member?.isMentor;
   const mentorId = isMentor ? member!.id : null;
@@ -458,7 +457,7 @@ export function IntegrationsScreen() {
   );
 
   return (
-    <AppShell active="Integration" nav={nav} chrome={chrome} account={account} offline={!online}>
+    <>
       {body}
       {confirmDisconnect && (
         <ConfirmDialog
@@ -496,6 +495,6 @@ export function IntegrationsScreen() {
         />
       )}
       <LiveRegion message={announcement} />
-    </AppShell>
+    </>
   );
 }

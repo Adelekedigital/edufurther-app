@@ -5,6 +5,7 @@ import { SESSION_HINT_HEADER } from '@/lib/vendor/supabase/server';
 import type { SessionState } from '@/lib/vendor/supabase/browser';
 import { fontVariables } from './fonts';
 import { Providers } from './providers';
+import { RouteFocusManager } from './_shell/RouteFocusManager';
 import '@/styles/globals.css';
 import { BRAND_BLUE } from '@/styles/brand';
 
@@ -33,6 +34,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html lang="en" className={fontVariables}>
       <body>
+        <RouteFocusManager />
         <Providers session={await sessionHint()}>{children}</Providers>
       </body>
     </html>
