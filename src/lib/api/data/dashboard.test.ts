@@ -135,6 +135,7 @@ const statBase: StatBlock = {
   menteesMentored: 0,
   attendanceRate: null,
   missedByMentor: 0,
+  menteesLeftWaiting: 0,
   missedByMentee: 0,
   cancelledByMentor: 0,
   reviewCount: 0,

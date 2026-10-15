@@ -721,8 +721,11 @@ to it. Changes that supersede the rows below:
   `onTrack` (rate ≥ threshold) and "has a window rating" are tracked as two
   orthogonal signals rather than one `good`/`noReviews` enum.
 
-The at-risk "left waiting" count still reads `missed_by_mentor`; swapping it to the
-honest `mentees_left_waiting` is tracked in edufurtherbe#466.
+The at-risk "left waiting" headline and teaser count **`mentees_left_waiting`**
+(backend #466, merged) — sessions the mentor missed where the mentee was actually
+present — while the "Missed by you" breakdown row keeps `missed_by_mentor`. The two
+can legitimately differ (a double no-show left no mentee waiting), and the headline
+is always ≤ the row.
 
 | Design | We do | Why | Revisit when |
 |---|---|---|---|

@@ -67,6 +67,12 @@ export type StatBlock = {
   menteesMentored: number;
   attendanceRate: number | null;
   missedByMentor: number;
+  /**
+   * Sessions the mentor missed where the mentee attended — the honest "left
+   * waiting" count (backend #466). Always ≤ missedByMentor; excludes both-missed
+   * and unknown-mentee sessions.
+   */
+  menteesLeftWaiting: number;
   /** The mentee's own no-shows — the mentor still attended, so not their fault. */
   missedByMentee: number;
   cancelledByMentor: number;
@@ -93,6 +99,7 @@ const block = (b: {
   mentees_mentored: number;
   attendance_rate?: number | null;
   missed_by_mentor: number;
+  mentees_left_waiting: number;
   missed_by_mentee: number;
   cancelled_by_mentor: number;
   review_count: number;
@@ -105,6 +112,7 @@ const block = (b: {
   menteesMentored: b.mentees_mentored,
   attendanceRate: b.attendance_rate ?? null,
   missedByMentor: b.missed_by_mentor,
+  menteesLeftWaiting: b.mentees_left_waiting,
   missedByMentee: b.missed_by_mentee,
   cancelledByMentor: b.cancelled_by_mentor,
   reviewCount: b.review_count,
