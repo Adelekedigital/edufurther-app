@@ -8,6 +8,7 @@
 }
 .head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: var(--space-3);
@@ -19,11 +20,59 @@
   font-size: var(--text-p-md);
   font-weight: var(--weight-semibold);
 }
+.headActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+/* "Tips" — a text link with the lightbulb, beside "All bookings". */
+.tips {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-link);
+}
+.tips:hover {
+  color: var(--text-link-hover);
+}
+.tips:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-md);
+}
+/* 44px tap target without changing the inline height (our rule; as KpiCard .link). */
+.tips::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: var(--space-11);
+}
+.tipsIcon {
+  color: inherit;
+}
 .body {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   padding: var(--space-5);
+}
+
+/* Info + action side by side on desktop (design nextActions=beside); stacks below. */
+.main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
 }
 
 /* "Starts in 8 min" — only when the session is near or live. */
@@ -50,6 +99,8 @@
 }
 
 .when {
+  flex: 1;
+  min-width: 0;
   display: flex;
   gap: var(--space-4);
   align-items: flex-start;
@@ -193,6 +244,7 @@
 }
 
 .actions {
+  flex: none;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -201,6 +253,11 @@
 
 /* Phone (AppShell.dc.html 768px rule): actions stack and stretch full width. */
 @media (max-width: 767px) {
+  .main {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-4);
+  }
   .actions {
     flex-direction: column;
     align-items: stretch;

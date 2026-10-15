@@ -1,0 +1,43 @@
+/* "Tips for great sessions" modal body: a numbered list of tips; tokens only. */
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+.num {
+  flex: none;
+  width: var(--space-6);
+  height: var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--green-50);
+  color: var(--green-700);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+}
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.title {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+.body {
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--text-secondary);
+}
