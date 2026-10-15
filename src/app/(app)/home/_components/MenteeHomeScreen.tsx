@@ -108,8 +108,11 @@ export function MenteeHomeScreen() {
     el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
   };
   // "Talk to us" opens the external Cal booking page (same link as Explore's
-  // "Find my mentor matches"); the pill is hidden when it isn't configured.
-  const showHelp = !!MATCH_CALL_URL;
+  // "Find my mentor matches"). Hidden when unconfigured, and — per the design
+  // (menteeSessions ≤ 2) — shown only to an early mentee: a brand-new one gets
+  // the hero instead, and an experienced one (3+ sessions) doesn't need help
+  // choosing a mentor.
+  const showHelp = !!MATCH_CALL_URL && !isNew && completed <= 2;
   const openCall = () => {
     if (MATCH_CALL_URL) window.open(MATCH_CALL_URL, '_blank', 'noopener,noreferrer');
   };

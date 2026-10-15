@@ -13,7 +13,7 @@ vi.mock('next/navigation', () => ({
 
 let viewer: Viewer;
 vi.mock('@/app/_shell/useAppShell', () => ({
-  MATCH_CALL_URL: '',
+  MATCH_CALL_URL: 'https://cal.test',
   useAppShell: () => ({
     viewer,
     member: viewer.kind === 'member' ? viewer : null,
@@ -281,6 +281,25 @@ describe('MenteeHomeScreen', () => {
     expect(screen.getByTestId('booking-open')).toBeInTheDocument();
     // "View profile" isn't hidden: a met mentor is reachable by id, slug or not.
     expect(screen.getByTestId('booking-open')).toHaveAttribute('data-hide-profile', 'false');
+  });
+
+  it('shows the help pill only for an early mentee (≤ 2 sessions), not experienced or new', () => {
+    // Experienced (12 sessions): no "which mentor?" help pill.
+    viewer = { ...MEMBER, completedSessions: 12 };
+    const { unmount } = render(<MenteeHomeScreen />);
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+    unmount();
+    // A brand-new mentee gets the hero, not the pill.
+    viewer = NEW_MEMBER;
+    const next = render(<MenteeHomeScreen />);
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+    next.unmount();
+    // Early (2 sessions, has a booking so not new): the pill shows.
+    viewer = { ...MEMBER, completedSessions: 2 };
+    render(<MenteeHomeScreen />);
+    expect(
+      screen.getByRole('complementary', { name: 'Not sure which mentor to choose?' }),
+    ).toBeInTheDocument();
   });
 
   it('keeps a signed-in member with no goal on the home — mentee-side, not redirected', () => {

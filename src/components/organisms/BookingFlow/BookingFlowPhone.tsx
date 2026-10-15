@@ -117,12 +117,14 @@ export function PhoneBody(p: {
               className={styles.summaryChevron}
             />
           </button>
+          {/* Always visible, not inside the collapsed body — otherwise a mobile
+              user never sees it (the summary is collapsed by default). */}
+          {s.profileLink && <div className={styles.summaryProfile}>{s.profileLink}</div>}
           {s.open && (
             <div className={styles.summaryBody}>
               {s.typeSelect}
               <p className={styles.desc}>{s.session.description}</p>
               <span className={styles.mentorMeta}>{s.mentorMeta}</span>
-              {s.profileLink}
             </div>
           )}
         </div>
