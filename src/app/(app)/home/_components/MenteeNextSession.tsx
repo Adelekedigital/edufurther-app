@@ -6,6 +6,7 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import { cx } from '@/lib/utils/cx';
 import { joinState, nextSessionWhen, timeRange } from '@/lib/utils/bookings';
 import type { Booking } from '@/types/booking';
+import { MenteeTipsModal } from './MenteeTipsModal';
 import styles from './MenteeNextSession.module.css';
 
 type MenteeNextSessionProps = {
@@ -64,6 +65,7 @@ export function MenteeNextSession({ booking: b, timeZone, now = new Date() }: Me
   const prepId = useId();
   const [prepOpen, setPrepOpen] = useState(false);
   const [done, setDone] = useState<boolean[]>(() => PREP.map(() => false));
+  const [tipsOpen, setTipsOpen] = useState(false);
 
   const { month, day } = monthDay(b.startsAt, timeZone);
   const when = nextSessionWhen(b, now, timeZone);
@@ -84,9 +86,15 @@ export function MenteeNextSession({ booking: b, timeZone, now = new Date() }: Me
     <section aria-label="Next session" className={styles.card}>
       <div className={styles.head}>
         <h2 className={styles.title}>Next session</h2>
-        <ButtonLink href="/bookings" prefetch={false} variant="text" size="small">
-          All bookings
-        </ButtonLink>
+        <div className={styles.headActions}>
+          <button type="button" className={styles.tips} onClick={() => setTipsOpen(true)}>
+            <Icon name="lightbulb" size={16} className={styles.tipsIcon} />
+            Tips
+          </button>
+          <ButtonLink href="/bookings" prefetch={false} variant="text" size="small">
+            All bookings
+          </ButtonLink>
+        </div>
       </div>
 
       <div className={styles.body}>
@@ -179,6 +187,7 @@ export function MenteeNextSession({ booking: b, timeZone, now = new Date() }: Me
           )}
         </div>
       </div>
+      {tipsOpen && <MenteeTipsModal onClose={() => setTipsOpen(false)} />}
     </section>
   );
 }

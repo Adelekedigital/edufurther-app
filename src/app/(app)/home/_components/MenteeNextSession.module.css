@@ -19,6 +19,47 @@
   font-size: var(--text-p-md);
   font-weight: var(--weight-semibold);
 }
+.headActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+/* "Tips" — a text link with the lightbulb, beside "All bookings". */
+.tips {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-link-hover);
+}
+.tips:hover {
+  color: var(--text-link);
+}
+.tips:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-md);
+}
+/* 44px tap target without changing the inline height (our rule; as KpiCard .link). */
+.tips::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: var(--space-11);
+}
+.tipsIcon {
+  color: inherit;
+}
 .body {
   display: flex;
   flex-direction: column;

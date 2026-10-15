@@ -42,8 +42,8 @@ vi.mock('@/lib/api/data/metMentors', () => ({
 // BookingLauncher pulls in the booking query hooks (need a QueryClient); the
 // screen only needs to know a booking opened, so stub it to a marker.
 vi.mock('@/app/_shell/BookingLauncher/BookingLauncher', () => ({
-  BookingLauncher: ({ mentor }: { mentor: unknown }) =>
-    mentor ? <div data-testid="booking-open" /> : null,
+  BookingLauncher: ({ mentor, hideProfileLink }: { mentor: unknown; hideProfileLink?: boolean }) =>
+    mentor ? <div data-testid="booking-open" data-hide-profile={String(!!hideProfileLink)} /> : null,
 }));
 
 const remote =<T,>(data: T | null, over: Partial<Remote<T>> = {}): Remote<T> => ({
@@ -168,6 +168,8 @@ describe('MenteeHomeScreen', () => {
     expect(screen.getByText('Scholarship strategy call')).toBeInTheDocument();
     // Far off (120h): the action is View details, not Join.
     expect(screen.getByRole('link', { name: 'View details' })).toBeInTheDocument();
+    // The Next-session card offers Tips (a static modal) beside All bookings.
+    expect(screen.getByRole('button', { name: 'Tips' })).toBeInTheDocument();
   });
 
   it('a new mentee gets the first-booking invitation and encouraging zeros', () => {
@@ -254,6 +256,8 @@ describe('MenteeHomeScreen', () => {
     render(<MenteeHomeScreen />);
     await userEvent.click(screen.getByRole('button', { name: /^Book again/ }));
     expect(screen.getByTestId('booking-open')).toBeInTheDocument();
+    // "View profile" isn't hidden: a met mentor is reachable by id, slug or not.
+    expect(screen.getByTestId('booking-open')).toHaveAttribute('data-hide-profile', 'false');
   });
 
   it('keeps a signed-in member with no goal on the home — mentee-side, not redirected', () => {
