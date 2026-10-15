@@ -1,0 +1,208 @@
+/* Mentee Dashboard v2.dc.html "Next session" card. Values read from the design's
+   inline styles. */
+.card {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  overflow: hidden;
+}
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-muted);
+}
+.title {
+  margin: 0;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+
+/* "Starts in 8 min" — only when the session is near or live. */
+.soon {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 24px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--green-50);
+  font-size: var(--text-caption-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-caption-xs);
+  text-transform: uppercase;
+  color: var(--green-700);
+}
+.soonDot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--green-700);
+}
+
+.when {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+.date {
+  width: 56px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-2) 0;
+  border-radius: var(--radius-lg);
+  background: var(--blue-50);
+  color: var(--blue-700);
+}
+.dateMonth {
+  font-size: var(--text-caption-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-caption-xs);
+  text-transform: uppercase;
+}
+.dateDay {
+  font-family: var(--font-brand);
+  font-size: var(--text-h6);
+  font-weight: var(--weight-semibold);
+  line-height: 1.2;
+}
+.detail {
+  /* The .sr-only full-date band is absolutely placed; without a positioned
+     ancestor it escapes .card's overflow:hidden and widens the page (failure
+     log #29, as SuggestionCountdown .pill). */
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.sessionTitle {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+.with {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-secondary);
+}
+.name {
+  color: var(--text-primary);
+  font-weight: var(--weight-semibold);
+}
+.time {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+
+.prep {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-subtle);
+}
+.prepToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--space-11);
+  /* The 44px tap area without added height, as the design hangs it. */
+  margin: calc(var(--space-2) * -1) 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+.prepLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+}
+.prepIcon {
+  color: var(--text-link);
+}
+.prepChevron {
+  color: var(--ink-600);
+  transition: transform 0.15s ease;
+}
+.prepChevronOpen {
+  transform: rotate(180deg);
+}
+.prepToggle:focus-visible,
+.prepItem:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-md);
+}
+.prepList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.prepItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--space-11);
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-primary);
+}
+.prepItemIcon {
+  flex: none;
+  color: var(--ink-500);
+}
+.prepItemDone {
+  color: var(--text-tertiary);
+}
+.prepItemDone .prepItemIcon {
+  color: var(--text-link);
+}
+
+.actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Phone (AppShell.dc.html 768px rule): actions stack and stretch full width. */
+@media (max-width: 767px) {
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

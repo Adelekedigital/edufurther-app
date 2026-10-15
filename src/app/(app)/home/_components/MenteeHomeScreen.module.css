@@ -1,0 +1,104 @@
+/* Mentee Dashboard v2.dc.html screen container: a left-aligned column up to
+   1080px (layout=wide: margin 0, not centred), gap 24. */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 1080px;
+}
+
+.greeting {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.hello {
+  margin: 0;
+  font-size: var(--text-h6);
+  line-height: var(--lh-h6);
+  letter-spacing: var(--ls-h6);
+  font-weight: var(--weight-semibold);
+}
+.subline {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--text-secondary);
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-4);
+}
+/* Phone: two per row (Mentee Dashboard v2.dc.html phone kpiCols). */
+@media (max-width: 767px) {
+  .kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* "Try again" inside a notice: a text action, blue-700 for contrast on the tint. */
+.inlineAction {
+  position: relative;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  color: var(--text-link-hover);
+}
+/* A 44px tap target without changing the inline text's height (our accessibility
+   rule; same approach as KpiCard .link): a transparent overlay centred on the
+   button, as tall as --space-11 (44px) and spanning its width. */
+.inlineAction::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: var(--space-11);
+}
+.inlineAction:hover {
+  color: var(--text-link);
+}
+.inlineAction:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-md);
+}
+
+/* Skeletons — the figures' and card's own chrome, so the swap to content is calm. */
+.skelKpi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}
+.skelNext {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}
+.skelNextRow {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+.skelNextLines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+}

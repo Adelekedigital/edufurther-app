@@ -2,14 +2,16 @@ import { HOME_ME_TIMEOUT_MS, fetchHome, homeFor } from './home';
 
 type Me = Parameters<typeof homeFor>[0];
 const mentorProfile = {} as NonNullable<NonNullable<Me>['mentor_profile']>;
+const goal = {} as NonNullable<NonNullable<Me>['goal']>;
 
-describe('homeFor: where / sends each viewer (product, 2026-09-30)', () => {
+describe('homeFor: where / sends each viewer (product 2026-09-30; mentee → /home)', () => {
   it.each([
     ['signed out', null, '/explore'],
-    ['a mentee', { is_admin: false, mentor_profile: null }, '/explore'],
-    ['a mentor, any state', { is_admin: false, mentor_profile: mentorProfile }, '/dashboard'],
-    ['a platform admin', { is_admin: true, mentor_profile: null }, '/admin'],
-    ['an admin who is also a mentor', { is_admin: true, mentor_profile: mentorProfile }, '/admin'],
+    ['a mentee (has a goal)', { is_admin: false, mentor_profile: null, goal }, '/home'],
+    ['a signed-in account with no goal yet', { is_admin: false, mentor_profile: null, goal: null }, '/explore'],
+    ['a mentor, any state', { is_admin: false, mentor_profile: mentorProfile, goal: null }, '/dashboard'],
+    ['a platform admin', { is_admin: true, mentor_profile: null, goal: null }, '/admin'],
+    ['an admin who is also a mentor', { is_admin: true, mentor_profile: mentorProfile, goal: null }, '/admin'],
   ] as const)('%s → %s', (_who, me, home) => {
     expect(homeFor(me as Me)).toBe(home);
   });
@@ -79,9 +81,9 @@ describe('fetchHome', () => {
 
   it('mock mode: the env viewer, or ?mockViewer (own keys only)', async () => {
     vi.stubEnv('NEXT_PUBLIC_MOCK_VIEWER', 'mentee');
-    expect(await fetchHome({ accessToken: null })).toBe('/explore');
+    expect(await fetchHome({ accessToken: null })).toBe('/home');
     expect(await fetchHome({ accessToken: null, mockViewer: 'mentor' })).toBe('/dashboard');
     expect(await fetchHome({ accessToken: null, mockViewer: 'admin' })).toBe('/admin');
-    expect(await fetchHome({ accessToken: null, mockViewer: 'constructor' })).toBe('/explore');
+    expect(await fetchHome({ accessToken: null, mockViewer: 'constructor' })).toBe('/home');
   });
 });

@@ -65,6 +65,7 @@
   color: var(--text-danger);
 }
 .link {
+  position: relative;
   align-self: flex-start;
   display: flex;
   align-items: center;
@@ -82,6 +83,13 @@
   font-weight: var(--weight-semibold);
   color: var(--text-link);
   white-space: nowrap;
+}
+/* A 44px tap target without the visual height (our accessibility rule; the
+   design draws 32px): extends the 32px (--space-8) link to 44px (--space-11). */
+.link::before {
+  content: '';
+  position: absolute;
+  inset: calc((var(--space-11) - var(--space-8)) / -2) 0;
 }
 .link:hover {
   color: var(--text-link-hover);

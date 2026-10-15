@@ -39,6 +39,7 @@ import { SearchField } from './SearchField/SearchField';
 import { ShareMenu } from './ShareMenu/ShareMenu';
 import { SocialLink } from './SocialLink/SocialLink';
 import { StatTile } from './StatTile/StatTile';
+import { KpiCard } from './KpiCard/KpiCard';
 import { SuggestionCountdown } from './SuggestionCountdown/SuggestionCountdown';
 import { TimezonePicker } from './TimezonePicker/TimezonePicker';
 import { TopicFilter } from './TopicFilter/TopicFilter';
@@ -281,6 +282,38 @@ export const StatTiles: Story = {
       <StatTile icon="event_available" tone="blue" value="51" label="sessions completed" />
       <StatTile icon="groups" tone="green" value="27" label="mentees mentored" />
       <StatTile icon="verified_user" tone="neutral" value="88%" label="avg. attendance" />
+    </div>
+  ),
+};
+
+export const KpiCards: Story = {
+  render: () => (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+        gap: 16,
+        maxWidth: 760,
+      }}
+    >
+      <KpiCard
+        label="Sessions held"
+        value="12"
+        trend={{ text: '2 in the last 30 days', icon: 'trending_up', tone: 'positive' }}
+      />
+      <KpiCard label="Mentors met" value="8" link={{ label: 'View mentors', onClick: fn() }} />
+      <KpiCard
+        label="Hours of guidance"
+        value="9"
+        unit="hrs"
+        trend={{ text: '1.5 hrs in the last 30 days', icon: 'trending_up', tone: 'positive' }}
+      />
+      <KpiCard
+        label="Missed sessions"
+        value="0"
+        trend={{ text: 'None in the last 90 days', icon: 'check_circle', tone: 'positive' }}
+      />
+      <KpiCard label="Hours of guidance" value={null} />
     </div>
   ),
 };
