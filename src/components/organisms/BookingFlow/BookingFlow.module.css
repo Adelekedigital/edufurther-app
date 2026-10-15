@@ -288,6 +288,12 @@
   padding: var(--space-3);
   border-top: var(--border-hairline) solid var(--border-muted);
 }
+/* "View profile" — always visible under the summary toggle, not inside the
+   collapsible body, so a mobile user can reach it without expanding. */
+.summaryProfile {
+  padding: var(--space-3);
+  border-top: var(--border-hairline) solid var(--border-muted);
+}
 .done {
   flex: 1;
   display: flex;
