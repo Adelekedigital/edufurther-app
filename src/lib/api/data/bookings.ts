@@ -164,6 +164,7 @@ async function fetchPage(
     order?: 'asc' | 'desc';
     cursor?: string;
     from?: string;
+    as?: 'mentor' | 'mentee';
   },
   signal?: AbortSignal,
 ) {
@@ -203,6 +204,7 @@ export function useUpcomingBookings(
   userId: string | null,
   accountZone: string,
   active = true,
+  as?: 'mentor' | 'mentee',
 ): Remote<Booking[]> {
   const session = useSession();
   const enabled = active && !!userId && session.status !== 'unknown';
@@ -210,20 +212,36 @@ export function useUpcomingBookings(
   // fifteen minutes and must not vanish mid-session.
   const from = dayKey(new Date().toISOString(), accountZone);
   const query = useQuery({
-    queryKey: keys.bookings.upcoming(sessionKey(session), from),
+    queryKey: keys.bookings.upcoming(sessionKey(session), from, as),
     enabled,
     queryFn: async ({ signal }) => {
+      // `as=mentor`/`as=mentee` narrows the page to one side server-side, so a
+      // dual-role viewer's soonest session for that side is never pushed off the
+      // page by the other side's rows (and `as` is in the query key so the sides
+      // don't share a cache entry).
+      //
       // Settled sessions too: the backend can rule a session completed or a
       // no-show while people are still in the call, and someone who drops out
-      // then needs this row's Join to get back (backend #380). Only those
-      // whose door is still open for the viewer stay; the rest are History's.
+      // then needs this row's Join to get back (backend #380). Only those whose
+      // door is still open for the viewer stay; the rest are History's.
       const { rows } = await fetchPage(
         userId!,
-        { status: ['confirmed', 'completed', 'no_show'], limit: PAGE, order: 'asc', from },
+        { status: ['confirmed', 'completed', 'no_show'], limit: PAGE, order: 'asc', from, as },
         signal,
       );
       const now = new Date();
-      return rows.filter((r) => r.status === 'confirmed' || joinState(r, now) === 'open');
+      // A session leaves "upcoming" at its scheduled end: a confirmed session is
+      // kept only while it is still before `endsAt`, so a just-ended one settling
+      // into completed/no-show vanishes here rather than lingering with no action.
+      // Evaluated per read, not on a wall-clock tick, so the drop lands on the next
+      // fetch — on the dashboard that is the focus/navigation refetch
+      // (refetchOnWindowFocus), which is the common way the hero is seen again.
+      // A still-open door keeps a mid-session row for re-entry regardless.
+      return rows.filter(
+        (r) =>
+          (r.status === 'confirmed' && new Date(r.endsAt).getTime() > now.getTime()) ||
+          joinState(r, now) === 'open',
+      );
     },
     staleTime: 30_000,
     networkMode: 'always',

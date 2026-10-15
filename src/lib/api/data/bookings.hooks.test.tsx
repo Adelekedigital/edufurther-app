@@ -193,6 +193,36 @@ describe('useUpcomingBookings', () => {
       'no_show',
     ]);
   });
+
+  it('drops a confirmed session past its scheduled end, keeps one still running', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(NOW); // 17:20 — the 17:00–17:30 session is still running
+    get.mockResolvedValueOnce(
+      ok({
+        data: [
+          // Confirmed but ended at 09:30 — settling into its outcome; it vanishes.
+          row({ id: 'ended-confirmed', starts_at: '2026-10-04T09:00:00Z' }),
+          // Confirmed and still inside its scheduled time (17:00–17:30) — kept.
+          row({ id: 'running' }),
+          // Confirmed and upcoming — kept.
+          row({ id: 'later', starts_at: '2026-10-04T19:00:00Z' }),
+        ],
+        next_cursor: null,
+      }),
+    );
+    const { result } = renderHook(() => useUpcomingBookings('me', 'Africa/Lagos'), { wrapper });
+    await waitFor(() => expect(result.current.data).not.toBeNull());
+    expect(result.current.data!.map((b) => b.id)).toEqual(['running', 'later']);
+  });
+
+  it('forwards `as` to the sessions query so one side is fetched server-side', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(NOW);
+    get.mockResolvedValue(ok({ data: [], next_cursor: null }));
+    renderHook(() => useUpcomingBookings('me', 'Africa/Lagos', true, 'mentor'), { wrapper });
+    await waitFor(() => expect(get).toHaveBeenCalled());
+    expect(get.mock.calls[0]![1].params.query.as).toBe('mentor');
+  });
 });
 
 describe('an expired request belongs in History (owner, 2026-10-13)', () => {
