@@ -268,6 +268,18 @@ describe('SessionQuality', () => {
     expect(screen.getByText('You’re holding your sessions')).toBeInTheDocument();
   });
 
+  it('falls back to the no-reviews message when the window has no rating and the quote errors', async () => {
+    // A failed quote with no window rating must not leave an empty "Mentee
+    // reviews" block — it reads as the no-reviews state, in both views.
+    data = windowStats({ attendanceRate: 92, averageRating: null, reviewCount: 0 });
+    quote = { data: null, isLoading: false, error: { kind: 'server', message: 'x' }, retry: vi.fn() };
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByText(/No reviews yet/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
+    expect(screen.getByText(/No reviews yet/)).toBeInTheDocument();
+    expect(screen.queryByText('4.8')).not.toBeInTheDocument();
+  });
+
   it('keeps the expanded card intact when the quote fails — stars, no quote, no message', async () => {
     data = windowStats({ attendanceRate: 86 });
     quote = { data: null, isLoading: false, error: { kind: 'server', message: 'x' }, retry: vi.fn() };

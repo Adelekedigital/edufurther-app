@@ -242,12 +242,13 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
   // Stars and the quote are independent. The stars are the 90-day window rating;
   // the quote is the latest all-time review (social proof), which can exist even
   // when the window itself has no rating. So: show the stars when the window has
-  // a rating, show the quote whenever one was found, and show "no reviews yet"
-  // only once the quote has settled empty AND the window has no rating either.
-  // While the quote is still loading with no window rating, show neither — never
-  // flash "no reviews yet" before the quote has had its say.
-  const quoteSettled = !quote.isLoading && !quote.error;
-  const showNoReviews = rating == null && quoteSettled && quote.data == null;
+  // a rating, show the quote whenever one was found, and otherwise — the window
+  // has no rating and the quote is done (settled empty OR errored) with nothing
+  // to show — fall back to the "no reviews yet" message rather than an empty
+  // block. While the quote is still loading with no window rating, show neither:
+  // never flash the fallback before the quote has had its say, and never leave a
+  // failed request reading as "nothing here".
+  const showNoReviews = rating == null && quote.data == null && !quote.isLoading;
   const teaser = teaserOf(good, missed);
 
   const toggleLabel = expanded
