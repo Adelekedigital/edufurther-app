@@ -14,8 +14,25 @@ import { useMyReviewQuote, type ReviewQuote } from '@/lib/api/data/myReviews';
 import { cx } from '@/lib/utils/cx';
 import styles from './SessionQuality.module.css';
 
-/** The window shown: the design's "last 90 days". */
+/** Default fetch window (days) when the dashboard doesn't sync one to the chart. */
 const WINDOW_DAYS = 90;
+
+/**
+ * The subline / teaser / rate labels for a stats window, derived from the window
+ * the figures are actually for (`stats.data.windowDays`), never the requested one.
+ * During a range switch `keepPreviousData` serves the previous window for a beat,
+ * so deriving from the data keeps the labels and the numbers describing the same
+ * window — they can never disagree.
+ */
+function windowLabels(windowDays: number): {
+  period: string;
+  periodPhrase: string;
+  priorLabel: string;
+} {
+  const months = Math.max(1, Math.round(windowDays / 30));
+  const period = `last ${months} months`;
+  return { period, periodPhrase: `in the ${period}`, priorLabel: `the previous ${months} months` };
+}
 /**
  * A show-up rate at or above this reads "On track"; below it "At risk". A UI
  * decision — the backend defines no quality cutoff (see design-divergence.md).
@@ -37,6 +54,7 @@ function rateContext(
   previous: StatBlock,
   onTrack: boolean,
   noReviews: boolean,
+  priorLabel: string,
 ): string {
   const cur = current.attendanceRate;
   const prev = previous.attendanceRate;
@@ -62,7 +80,7 @@ function rateContext(
     return `${went}. Mentees can count on you.`;
   }
   if (onTrack) {
-    if (rose) return `Up from ${prev}% last quarter. Mentees can count on you.`;
+    if (rose) return `Up from ${prev}% over ${priorLabel}. Mentees can count on you.`;
     return missed === 0
       ? `No sessions missed — mentees can count on you.`
       : `Mentees can count on you.`;
@@ -71,10 +89,10 @@ function rateContext(
   // never a "0 missed" count. A rise is progress, not yet reassurance.
   if (missed > 0) {
     const misses = `${missed} missed session${missed === 1 ? '' : 's'} recently.`;
-    return rose ? `Up from ${prev}% last quarter — ${misses}` : misses;
+    return rose ? `Up from ${prev}% over ${priorLabel} — ${misses}` : misses;
   }
   return rose
-    ? `Up from ${prev}% last quarter — still below your usual.`
+    ? `Up from ${prev}% over ${priorLabel} — still below your usual.`
     : `Below your usual show-up rate.`;
 }
 
@@ -93,6 +111,7 @@ function teaserOf(
   streak: number,
   leftWaiting: number,
   displayRate: number,
+  periodPhrase: string,
 ): { text: string; icon: IconName; good: boolean } {
   if (onTrack) {
     const text = streak > 0 ? streakLine(streak) : 'You’re holding your sessions';
@@ -100,7 +119,7 @@ function teaserOf(
   }
   const text =
     leftWaiting > 0
-      ? `${leftWaiting} ${leftWaiting === 1 ? 'mentee was' : 'mentees were'} left waiting in 90 days`
+      ? `${leftWaiting} ${leftWaiting === 1 ? 'mentee was' : 'mentees were'} left waiting ${periodPhrase}`
       : `Your show-up rate is ${displayRate}%`;
   return { text, icon: 'error', good: false };
 }
@@ -192,7 +211,17 @@ function Empty() {
 }
 
 /** The star row + rating value + a count-free link to the mentor's own Reviews tab. */
-function RatingGroup({ rating, reviewCount, profileHref }: { rating: number; reviewCount: number; profileHref: string }) {
+function RatingGroup({
+  rating,
+  reviewCount,
+  profileHref,
+  periodPhrase,
+}: {
+  rating: number;
+  reviewCount: number;
+  profileHref: string;
+  periodPhrase: string;
+}) {
   return (
     <div className={styles.ratingGroup}>
       {/* The rating is conveyed by the img label; the count link sits outside it
@@ -213,7 +242,7 @@ function RatingGroup({ rating, reviewCount, profileHref }: { rating: number; rev
         href={`${profileHref}?tab=reviews`}
         prefetch={false}
         className={styles.reviewCountLink}
-        aria-label={`See all reviews — ${reviewCount} in the last 90 days`}
+        aria-label={`See all reviews — ${reviewCount} ${periodPhrase}`}
       >
         ({reviewCount})
       </Link>
@@ -294,11 +323,27 @@ function Teaser({ teaser }: { teaser: { text: string; icon: IconName; good: bool
  * review count links to its Reviews tab (`?tab=reviews`) so a mentor can read
  * what mentees wrote. Additive — not in the design (see design-divergence.md).
  */
-export function SessionQuality({ userId, profileHref }: { userId: string; profileHref: string }) {
+export function SessionQuality({
+  userId,
+  profileHref,
+  windowDays = WINDOW_DAYS,
+  nextSession = null,
+}: {
+  userId: string;
+  profileHref: string;
+  /**
+   * The stats window to fetch (days); the dashboard syncs it to the performance
+   * chart's range. The card's period labels are derived from the window the data
+   * is for, so they always match the figures (see `windowLabels`).
+   */
+  windowDays?: number;
+  /** The mentor's next session, named in the good banner when present. */
+  nextSession?: { firstName: string; dayLabel: string } | null;
+}) {
   const headingId = useId();
   const panelId = useId();
   const [expanded, setExpanded] = useState(false);
-  const stats = useMentorStats(userId, WINDOW_DAYS);
+  const stats = useMentorStats(userId, windowDays);
   const quote = useMyReviewQuote(userId);
 
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -341,6 +386,9 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
   const rating = current.averageRating;
   const reviewCount = current.reviewCount;
   const onTrack = displayRate >= GOOD_THRESHOLD;
+  // Labels for the window the figures are actually for — `stats.data.windowDays`,
+  // not the requested prop — so a mid-switch placeholder can't mislabel them.
+  const { period, periodPhrase, priorLabel } = windowLabels(stats.data.windowDays);
   // The quote is the latest review (social proof); it shows whenever one exists
   // and is never gated on the 90-day window. The "no reviews yet" note stands in
   // only when there is genuinely no review to show, and only once the fetch has
@@ -352,7 +400,7 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
   // breakdown disclosure.
   const canExpand = !onTrack || rating != null;
   const isOpen = expanded && canExpand;
-  const teaser = teaserOf(onTrack, currentStreak, leftWaiting, displayRate);
+  const teaser = teaserOf(onTrack, currentStreak, leftWaiting, displayRate, periodPhrase);
 
   const toggleLabel = isOpen
     ? 'Show less'
@@ -369,7 +417,7 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
             Session quality
           </h2>
           <span className={styles.subline}>
-            How you show up for booked sessions · last 90 days
+            How you show up for booked sessions · {period}
           </span>
         </div>
         <Badge type="accent" color={onTrack ? 'green' : 'red'} size="sm">
@@ -387,7 +435,7 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
         <div className={styles.showUpText}>
           <span className={styles.showUpLabel}>Show-up rate</span>
           <span className={styles.rateContext}>
-            {rateContext(current, previous, onTrack, rating == null)}
+            {rateContext(current, previous, onTrack, rating == null, priorLabel)}
           </span>
         </div>
       </div>
@@ -401,7 +449,12 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
               <div className={styles.reviewsHead}>
                 <span className={styles.reviewsLabel}>Mentee reviews</span>
                 {rating != null && (
-                  <RatingGroup rating={rating} reviewCount={reviewCount} profileHref={profileHref} />
+                  <RatingGroup
+                    rating={rating}
+                    reviewCount={reviewCount}
+                    profileHref={profileHref}
+                    periodPhrase={periodPhrase}
+                  />
                 )}
               </div>
               <ReviewSlot quoteData={quote.data} showNote={showNote} />
@@ -410,16 +463,19 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
             {onTrack ? (
               <div className={styles.bannerGood}>
                 <Icon name="local_fire_department" size={20} className={styles.bannerIconGood} />
-                <p className={styles.bannerGoodText}>
-                  {currentStreak > 0 ? (
-                    <>
-                      <strong className={styles.streak}>{streakLine(currentStreak)}</strong>. Keep it
-                      going.
-                    </>
-                  ) : (
-                    'You’re holding your sessions — keep it up.'
+                <div className={styles.bannerBody}>
+                  {currentStreak > 0 && (
+                    <p className={styles.bannerGoodTitle}>{streakLine(currentStreak)}</p>
                   )}
-                </p>
+                  <p className={styles.bannerGoodText}>
+                    {currentStreak > 0
+                      ? 'Keep it going.'
+                      : 'You’re holding your sessions — keep it up.'}
+                    {nextSession
+                      ? ` Your next session is ${nextSession.dayLabel} with ${nextSession.firstName}.`
+                      : ''}
+                  </p>
+                </div>
               </div>
             ) : (
               <div className={styles.bannerRisk}>

@@ -26,7 +26,13 @@ function toSeries(d: MonthlyStats): ChartSeries[] {
  * with no sessions yet gets its "No sessions yet" state). Error is checked
  * before the chart, so a failed load never reads as "no sessions".
  */
-export function PerformanceSection({ userId }: { userId: string }) {
+export function PerformanceSection({
+  userId,
+  onRangeChange,
+}: {
+  userId: string;
+  onRangeChange?: (range: string) => void;
+}) {
   // The full platform history (months 1–60, since Sept 2024): the chart slices
   // 3M/6M/12M and the year select reaches back to the start, all client-side.
   const { data, isLoading, error, retry } = useMentorMonthlyStats(userId, 60);
@@ -53,5 +59,12 @@ export function PerformanceSection({ userId }: { userId: string }) {
       </div>
     );
   }
-  return <PerformanceChart series={series} months={data.months} mobileLegend="dropdown" />;
+  return (
+    <PerformanceChart
+      series={series}
+      months={data.months}
+      mobileLegend="dropdown"
+      onRangeChange={onRangeChange}
+    />
+  );
 }

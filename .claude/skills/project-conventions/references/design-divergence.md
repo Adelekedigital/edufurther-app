@@ -746,9 +746,20 @@ streak are `text-p-xs` (the streak `green-900`); the no-reviews note leads with 
 `star` icon. One remaining divergence: when a mentor is at risk but
 `mentees_left_waiting` is 0 (every miss a double no-show — a case the design doesn't
 draw), the banner names the actual risk measure, "Your show-up rate is {rate}%",
-rather than the rate-less "left waiting" line. The good banner's "Your next session
-is {name}" clause, the two-line restructure, and the dynamic `{{ q.period }}`
-subline (the timeline switch) are deferred to the next PR.
+rather than the rate-less "left waiting" line.
+
+**Update 2026-10-15 (timeline sync):** built the design's `qualityRange: synced` —
+the card follows the performance chart's range. The dashboard observes the chart's
+`onRangeChange` and maps the range key to a stats window and the labels: 3M → 90d
+"last 3 months", 6M → 180d "last 6 months", 12M / Year → 365d "last 12 months"; the
+subline, the teaser's "...left waiting {phrase}", the rate line's "over {priorLabel}"
+and the reviews-link count all read that window. The good banner is now the design's
+two lines — the streak as a green title, then "Keep it going." plus "Your next
+session is {day} with {name}." when there's an upcoming session. Two value
+divergences: the 90/180/365-day map is ours (the design's synced figures imply
+per-range windows but don't name the days); and a **Year** selection reads "last 12
+months", not the design's "in YYYY" — `mentor-stats` is a trailing `window_days`,
+never a calendar year, so "in 2025" would mislabel the last 365 days as a year.
 
 | Design | We do | Why | Revisit when |
 |---|---|---|---|

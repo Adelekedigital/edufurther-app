@@ -329,7 +329,7 @@
 }
 .bannerGood {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-3);
   padding: var(--space-4);
   background: var(--green-50);
@@ -339,15 +339,18 @@
   flex: none;
   color: var(--green-700);
 }
+/* The streak is the good banner's title line, emphasised in green (design). */
+.bannerGoodTitle {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--green-900);
+}
 .bannerGoodText {
   margin: 0;
   font-size: var(--text-p-xs);
-  color: var(--ink-900);
-}
-/* The streak count carries the emphasis in the good banner (design: green-900). */
-.streak {
-  font-weight: var(--weight-semibold);
-  color: var(--green-900);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
 }
 
 /* Empty: no settled session yet. */
