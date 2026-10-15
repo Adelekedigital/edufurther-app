@@ -727,6 +727,17 @@ present — while the "Missed by you" breakdown row keeps `missed_by_mentor`. Th
 can legitimately differ (a double no-show left no mentee waiting), and the headline
 is always ≤ the row.
 
+**Update 2026-10-15 (fidelity pass):** brought the card back in line with the
+re-synced markup — the expand CTA and "Review your hours" are `secondary-outlined`
+(the design uses it for both states, not `primary`); banner titles and the good
+streak are `text-p-xs` (the streak `green-900`); the no-reviews note leads with its
+`star` icon. One remaining divergence: when a mentor is at risk but
+`mentees_left_waiting` is 0 (every miss a double no-show — a case the design doesn't
+draw), the banner names the actual risk measure, "Your show-up rate is {rate}%",
+rather than the rate-less "left waiting" line. The good banner's "Your next session
+is {name}" clause, the two-line restructure, and the dynamic `{{ q.period }}`
+subline (the timeline switch) are deferred to the next PR.
+
 | Design | We do | Why | Revisit when |
 |---|---|---|---|
 | ProgressCircle quality drives a `good`/`low` prop, no numeric cutoff drawn | `attendanceRate ≥ 85` ⇒ "On track" (green), below ⇒ "At risk" (red) — one threshold for the badge, the card border, the ring tone and which banner shows | A UI decision: the backend defines no quality cutoff (`attendance_rate` is just 0–100). A number had to be chosen to render the two states the design draws | product sets an official show-up threshold, or the backend returns a quality band |

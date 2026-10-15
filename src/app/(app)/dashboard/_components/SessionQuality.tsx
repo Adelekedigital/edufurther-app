@@ -234,8 +234,11 @@ function Quote({ quote }: { quote: ReviewQuote }) {
 function NoReviewsNote() {
   return (
     <div className={styles.noReviews}>
-      <span className={styles.noReviewsTitle}>No reviews yet</span>
-      <span className={styles.noReviewsBody}>Your latest mentee review will show here.</span>
+      <Icon name="star" size={16} className={styles.noReviewsIcon} />
+      <div className={styles.noReviewsText}>
+        <span className={styles.noReviewsTitle}>No reviews yet</span>
+        <span className={styles.noReviewsBody}>Your latest mentee review will show here.</span>
+      </div>
     </div>
   );
 }
@@ -351,7 +354,7 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
     : onTrack
       ? 'See your full breakdown'
       : 'See what’s pulling this down';
-  const toggleVariant = isOpen ? 'text' : onTrack ? 'secondary-outlined' : 'primary';
+  const toggleVariant = isOpen ? 'text' : 'secondary-outlined';
 
   return (
     <section className={cx(styles.card, !onTrack && styles.cardRisk)} aria-labelledby={headingId}>
@@ -439,14 +442,16 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
                     </>
                   ) : (
                     <>
-                      <p className={styles.bannerTitle}>Your show-up rate is slipping</p>
+                      {/* No mentee was left waiting, but the rate itself is the
+                          risk — name it, rather than a vague "slipping". */}
+                      <p className={styles.bannerTitle}>Your show-up rate is {rate}%</p>
                       <p className={styles.bannerText}>
                         Hold your upcoming booked sessions to bring it back up.
                       </p>
                     </>
                   )}
                   <div className={styles.bannerActions}>
-                    <ButtonLink href="/calendar" size="small">
+                    <ButtonLink href="/calendar" variant="secondary-outlined" size="small">
                       Review your hours
                     </ButtonLink>
                     <ButtonLink href="/bookings" variant="text" size="small">

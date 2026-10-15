@@ -235,6 +235,29 @@ describe('SessionQuality', () => {
     expect(screen.queryByText('5 mentees were left waiting')).not.toBeInTheDocument();
   });
 
+  it('names the show-up rate when at risk with no mentee left waiting', async () => {
+    // At risk via misses, but every miss was a double no-show → leftWaiting 0.
+    // The banner names the rate (the actual risk), not a vague "slipping".
+    data = windowStats({
+      attendanceRate: 60,
+      missedByMentor: 2,
+      menteesLeftWaiting: 0,
+      completedSessions: 3,
+    });
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    await userEvent.click(screen.getByRole('button', { name: 'See what’s pulling this down' }));
+    expect(screen.getByText('Your show-up rate is 60%')).toBeInTheDocument();
+    expect(screen.queryByText(/slipping/)).not.toBeInTheDocument();
+  });
+
+  it('leads the no-reviews note with a star icon', () => {
+    data = windowStats({ attendanceRate: 92, averageRating: null, reviewCount: 0 });
+    quote = { data: null, isLoading: false, error: null, retry: vi.fn() };
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByText(/No reviews yet/)).toBeInTheDocument();
+    expect(screen.getByText('star')).toBeInTheDocument();
+  });
+
   // ---- the streak -----------------------------------------------------------
 
   it('drops the streak line and reassures plainly when the streak is zero', async () => {

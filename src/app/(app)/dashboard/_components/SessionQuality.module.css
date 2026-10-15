@@ -211,8 +211,17 @@
   font-weight: var(--weight-semibold);
   color: var(--ink-900);
 }
-/* No review to quote yet — a title line plus a muted body (design markup). */
+/* No review to quote yet — a star icon beside a title line and a muted body (design markup). */
 .noReviews {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.noReviewsIcon {
+  flex: none;
+  color: var(--ink-400);
+}
+.noReviewsText {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -301,7 +310,7 @@
 }
 .bannerTitle {
   margin: 0;
-  font-size: var(--text-p-sm);
+  font-size: var(--text-p-xs);
   font-weight: var(--weight-semibold);
   color: var(--ink-900);
 }
@@ -332,12 +341,13 @@
 }
 .bannerGoodText {
   margin: 0;
-  font-size: var(--text-p-sm);
+  font-size: var(--text-p-xs);
   color: var(--ink-900);
 }
-/* The streak count carries the emphasis in the good banner. */
+/* The streak count carries the emphasis in the good banner (design: green-900). */
 .streak {
   font-weight: var(--weight-semibold);
+  color: var(--green-900);
 }
 
 /* Empty: no settled session yet. */
