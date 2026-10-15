@@ -671,6 +671,7 @@ defaults to bars for short ranges and a line for 12M/Year (the trend view). When
 | # | Design | Built | Why |
 |---|---|---|---|
 | 56 | Unselected chart-type icon `--ink-500` on the `--ink-100` track | `--ink-600` | Same as row 49 — matches the range switch's muted/selected on the shared pill style (`--ink-500` on `--ink-100` is ~4.0:1). |
+| 57 | Range + chart-type segmented buttons and the year `<select>` 28px tall | Keep 28px on desktop; on phones (≤768px) grow all three to the 44px tap-target minimum | Touch-target a11y (ours, the project's mobile rule at 768px). A native `<select>`'s tap area is its own box and it can't take an invisible overlay, so the whole row gets real height rather than overlaying only the buttons. |
 
 ### Mentor Dashboard — Session quality panel, 2026-10-14
 
