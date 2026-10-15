@@ -213,21 +213,23 @@ describe('SessionQuality', () => {
 
   // ---- reviews / quote states ----------------------------------------------
 
-  it('shows the no-reviews message and no rating when the window has no rating', async () => {
+  it('shows the breakdown inline, a no-reviews note, and no CTA when the window has no rating', () => {
     data = windowStats({ attendanceRate: 92, averageRating: null, reviewCount: 0 });
     quote = { data: null, isLoading: false, error: null, retry: vi.fn() };
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
-    // Compact: the message replaces the rating line and the quote.
+    // No reviews: the breakdown shows by default, with the note — no disclosure
+    // to open and no rating line (Mentor Dashboard v2.dc.html).
+    expect(screen.getByText('Sessions completed')).toBeInTheDocument();
+    expect(screen.getByText('Missed by you')).toBeInTheDocument();
     expect(screen.getByText(/No reviews yet/)).toBeInTheDocument();
     expect(screen.queryByText('4.8')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
-    // Expanded: still the message, and no link to a reviews tab.
-    expect(screen.getByText(/No reviews yet/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /breakdown|pulling/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /reviews/ })).not.toBeInTheDocument();
   });
 
-  it('reads as on-track with the sessions-went-ahead line when there are no reviews', () => {
-    // noReviews quality state: settled sessions, a clean record, zero reviews.
+  it('reads on-track with the went-ahead line and inline breakdown when there are no reviews', () => {
+    // No reviews + a clean 100% record: the positive line, the breakdown inline,
+    // and no disclosure control.
     data = windowStats({
       attendanceRate: 100,
       completedSessions: 3,
@@ -243,8 +245,29 @@ describe('SessionQuality', () => {
     expect(
       screen.getByText('All 3 of your booked sessions went ahead. Mentees can count on you.'),
     ).toBeInTheDocument();
-    // The on-track disclosure wording, not the at-risk one.
-    expect(screen.getByRole('button', { name: 'See your full breakdown' })).toBeInTheDocument();
+    expect(screen.getByText('Sessions completed')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /breakdown|pulling/ })).not.toBeInTheDocument();
+  });
+
+  it('gives a no-review at-risk mentor the "what’s pulling this down" CTA and guidance', async () => {
+    // An at-risk mentor keeps the low treatment even with no reviews: the badge is
+    // honest, and the disclosure opens the breakdown, the note and the guidance.
+    data = windowStats({
+      attendanceRate: 40,
+      completedSessions: 0,
+      missedByMentor: 1,
+      cancelledByMentor: 0,
+      missedByMentee: 0,
+      reviewCount: 0,
+      averageRating: null,
+    });
+    quote = { data: null, isLoading: false, error: null, retry: vi.fn() };
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByText('At risk')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'See what’s pulling this down' }));
+    expect(screen.getByText('Missed by you')).toBeInTheDocument();
+    expect(screen.getByText(/No reviews yet/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Review your hours' })).toBeInTheDocument();
   });
 
   it('does not claim all sessions went ahead when a mentee no-showed', () => {
@@ -306,37 +329,30 @@ describe('SessionQuality', () => {
     expect(screen.queryByText(/The clearest hour/)).not.toBeInTheDocument();
   });
 
-  it('shows an all-time quote even when the 90-day window has no rating', () => {
-    // The stars are the window rating; the quote is the latest all-time review —
-    // an older review survives even after the window's own reviews age out.
+  it('always shows the latest review, even when the 90-day window has no rating', () => {
+    // The quote (most recent review) is never gated on the window — a mentor whose
+    // reviews aged out still sees it, not a false "No reviews yet".
     data = windowStats({ attendanceRate: 92, averageRating: null, reviewCount: 0 });
     quote = hasQuote();
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     expect(screen.getByText(/The clearest hour/)).toBeInTheDocument();
     expect(screen.queryByText(/No reviews yet/)).not.toBeInTheDocument();
-    // No window rating → no stars line.
-    expect(screen.queryByText('4.8')).not.toBeInTheDocument();
+    // On track with no window rating → breakdown inline, no disclosure.
+    expect(screen.getByText('Sessions completed')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /breakdown|pulling/ })).not.toBeInTheDocument();
   });
 
-  it('shows neither the no-reviews message nor a quote while the quote is still settling', () => {
+  it('shows the no-reviews note only once the quote settles empty, never while loading', () => {
+    // On track, no window rating, no review: while the quote loads show neither (no
+    // flash); once it settles empty the note stands in. The breakdown stays inline.
     data = windowStats({ attendanceRate: 92, averageRating: null, reviewCount: 0 });
     quote = { data: null, isLoading: true, error: null, retry: vi.fn() };
-    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
-    // Don't flash "no reviews" before the all-time quote has had its say.
+    const { rerender } = render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     expect(screen.queryByText(/No reviews yet/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/The clearest hour/)).not.toBeInTheDocument();
-    // The teaser (about show-up, not reviews) still shows.
-    expect(screen.getByText('5 sessions in a row completed')).toBeInTheDocument();
-  });
+    expect(screen.getByText('Sessions completed')).toBeInTheDocument();
 
-  it('falls back to the no-reviews message when the window has no rating and the quote errors', async () => {
-    // A failed quote with no window rating must not leave an empty "Mentee
-    // reviews" block — it reads as the no-reviews state, in both views.
-    data = windowStats({ attendanceRate: 92, averageRating: null, reviewCount: 0 });
     quote = { data: null, isLoading: false, error: { kind: 'server', message: 'x' }, retry: vi.fn() };
-    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
-    expect(screen.getByText(/No reviews yet/)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
+    rerender(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     expect(screen.getByText(/No reviews yet/)).toBeInTheDocument();
     expect(screen.queryByText('4.8')).not.toBeInTheDocument();
   });
