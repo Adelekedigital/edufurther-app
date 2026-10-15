@@ -67,6 +67,8 @@ export type StatBlock = {
   menteesMentored: number;
   attendanceRate: number | null;
   missedByMentor: number;
+  /** The mentee's own no-shows — the mentor still attended, so not their fault. */
+  missedByMentee: number;
   cancelledByMentor: number;
   reviewCount: number;
   averageRating: number | null;
@@ -74,6 +76,11 @@ export type StatBlock = {
 
 export type WindowStats = {
   windowDays: number;
+  /**
+   * Held sessions in a row since the mentor's own last miss or cancellation.
+   * Top-level, not windowed; 0 means none since (or not a mentor).
+   */
+  currentStreak: number;
   current: StatBlock;
   previous: StatBlock;
 };
@@ -86,6 +93,7 @@ const block = (b: {
   mentees_mentored: number;
   attendance_rate?: number | null;
   missed_by_mentor: number;
+  missed_by_mentee: number;
   cancelled_by_mentor: number;
   review_count: number;
   average_rating?: number | null;
@@ -97,6 +105,7 @@ const block = (b: {
   menteesMentored: b.mentees_mentored,
   attendanceRate: b.attendance_rate ?? null,
   missedByMentor: b.missed_by_mentor,
+  missedByMentee: b.missed_by_mentee,
   cancelledByMentor: b.cancelled_by_mentor,
   reviewCount: b.review_count,
   averageRating: b.average_rating ?? null,
@@ -119,6 +128,7 @@ export function useMentorStats(userId: string | null, windowDays: number): Remot
       if (!response.ok || !data) throw apiError(response.status, error);
       return {
         windowDays: data.window_days,
+        currentStreak: data.current_streak ?? 0,
         current: block(data.current),
         previous: block(data.previous),
       };

@@ -137,4 +137,9 @@ export const keys = {
     window: (userId: string, windowDays: number) =>
       ['mentorStats', 'window', userId, windowDays] as const,
   },
+  /** Reviews written about the owner (GET /me/reviews). Scoped by user id, like every owner-only key. */
+  myReviews: {
+    /** The newest showable review, for the dashboard's session-quality quote. */
+    quote: (userId: string) => ['myReviews', 'quote', userId] as const,
+  },
 };

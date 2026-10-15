@@ -46,6 +46,7 @@ const statBlock = (over: Partial<StatBlock> = {}): StatBlock => ({
   menteesMentored: 0,
   attendanceRate: null,
   missedByMentor: 0,
+  missedByMentee: 0,
   cancelledByMentor: 0,
   reviewCount: 0,
   averageRating: null,

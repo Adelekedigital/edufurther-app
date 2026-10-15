@@ -48,5 +48,11 @@ export async function GET(req: Request) {
   };
 
   await new Promise((r) => setTimeout(r, 200));
-  return ok('/api/v1/me/mentor-stats', 'get', { window_days: w, current, previous });
+  return ok('/api/v1/me/mentor-stats', 'get', {
+    window_days: w,
+    // Held sessions in a row since the mentor's own last miss (#460), not windowed.
+    current_streak: 5,
+    current,
+    previous,
+  });
 }

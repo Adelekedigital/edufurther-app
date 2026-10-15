@@ -108,18 +108,113 @@
   color: var(--red-500);
 }
 
-/* Mentee reviews: label left, stars + rating + count right. */
-.reviews {
+/* Compact (default) view: a flat stack of the headline, rating and quote. */
+.compact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+/* Expanded view: the breakdown, the full reviews block and a banner. */
+.expanded {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Compact headline: a one-line summary, tinted on the same good/at-risk state. */
+.teaser {
   display: flex;
   align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+}
+.teaserGood {
+  background: var(--green-50);
+}
+.teaserRisk {
+  background: var(--red-50);
+}
+.teaserIconGood {
+  flex: none;
+  color: var(--green-700);
+}
+.teaserIconRisk {
+  flex: none;
+  color: var(--red-500);
+}
+.teaserText {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+
+/* Compact rating line: a star, the rating, then "from N". */
+.ratingLine {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-p-xs);
+  color: var(--ink-700);
+}
+.ratingLineStar {
+  display: inline-flex;
+  color: var(--rating-star);
+}
+.ratingLineValue {
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+
+/* A mentee quote, clamped to three lines, in both views. */
+.quote {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--ink-50);
+}
+.quoteText {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--ink-900);
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+.quoteBy {
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+
+/* Expanded reviews block: the label + rating row, then the quote below it. */
+.reviewsSection {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-3);
   padding-top: var(--space-4);
   border-top: 1px solid var(--ink-100);
+}
+.reviewsHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
 }
 .reviewsLabel {
   font-size: var(--text-p-sm);
   font-weight: var(--weight-semibold);
   color: var(--ink-900);
+}
+.noReviewsMsg {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  color: var(--ink-500);
 }
 /* Stars + rating + review-count link, pushed to the right of the label. */
 .ratingGroup {
@@ -173,11 +268,6 @@
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
   border-radius: var(--radius-sm);
-}
-.noReviews {
-  margin-left: auto;
-  font-size: var(--text-p-sm);
-  color: var(--ink-500);
 }
 
 /* State banner — one of two, below the reviews. */
@@ -233,6 +323,10 @@
   margin: 0;
   font-size: var(--text-p-sm);
   color: var(--ink-900);
+}
+/* The streak count carries the emphasis in the good banner. */
+.streak {
+  font-weight: var(--weight-semibold);
 }
 
 /* Empty: no settled session yet. */

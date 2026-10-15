@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { StatBlock, WindowStats } from '@/lib/api/data/mentorStats';
+import type { ReviewQuote } from '@/lib/api/data/myReviews';
 import { SessionQuality } from './SessionQuality';
 
 let data: WindowStats | null;
@@ -8,8 +9,19 @@ let isLoading: boolean;
 let error: { kind: string; message: string } | null;
 const retry = vi.fn();
 
+type QuoteState = {
+  data: ReviewQuote | null;
+  isLoading: boolean;
+  error: { kind: string; message: string } | null;
+  retry: () => void;
+};
+let quote: QuoteState;
+
 vi.mock('@/lib/api/data/mentorStats', () => ({
   useMentorStats: () => ({ data, isLoading, error, retry }),
+}));
+vi.mock('@/lib/api/data/myReviews', () => ({
+  useMyReviewQuote: () => quote,
 }));
 
 const block = (over: Partial<StatBlock> = {}): StatBlock => ({
@@ -22,6 +34,7 @@ const block = (over: Partial<StatBlock> = {}): StatBlock => ({
   // attendance_rate) and "held of settled" agree.
   attendanceRate: 86,
   missedByMentor: 2,
+  missedByMentee: 1,
   cancelledByMentor: 2,
   reviewCount: 14,
   averageRating: 4.8,
@@ -31,10 +44,20 @@ const block = (over: Partial<StatBlock> = {}): StatBlock => ({
 const windowStats = (
   current: Partial<StatBlock>,
   previous: Partial<StatBlock> = {},
+  over: Partial<WindowStats> = {},
 ): WindowStats => ({
   windowDays: 90,
+  currentStreak: 5,
   current: block(current),
   previous: block({ attendanceRate: 90, ...previous }),
+  ...over,
+});
+
+const hasQuote = (over: Partial<ReviewQuote> = {}): QuoteState => ({
+  data: { quote: 'The clearest hour I spent on my application.', by: 'Amara O. · Visa and interview', ...over },
+  isLoading: false,
+  error: null,
+  retry: vi.fn(),
 });
 
 beforeEach(() => {
@@ -42,9 +65,12 @@ beforeEach(() => {
   isLoading = false;
   error = null;
   retry.mockClear();
+  quote = hasQuote();
 });
 
 describe('SessionQuality', () => {
+  // ---- the four states ------------------------------------------------------
+
   it('shows a loading status while the window is pending', () => {
     isLoading = true;
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
@@ -66,30 +92,88 @@ describe('SessionQuality', () => {
     expect(screen.queryByText('0%')).not.toBeInTheDocument();
   });
 
-  it('renders the on-track content: ring, breakdown, rating and the good banner', () => {
+  // ---- compact (default) view ----------------------------------------------
+
+  it('defaults to the compact view: ring, teaser, rating line and quote — no breakdown', () => {
     data = windowStats({ attendanceRate: 86 }, { attendanceRate: 77 });
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     expect(screen.getByRole('img', { name: 'Show-up rate 86%' })).toBeInTheDocument();
     expect(screen.getByText('On track')).toBeInTheDocument();
-    // The breakdown is plain counts, so nothing competes with the ring.
-    expect(screen.getByText('Sessions completed')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'Rated 4.8 out of 5' })).toBeInTheDocument();
+    expect(screen.getByText('You’re holding your sessions')).toBeInTheDocument();
+    // The rating line and the quote preview the reviews without expanding.
     expect(screen.getByText('4.8')).toBeInTheDocument();
-    // The count is a link to the profile's Reviews tab, labelled for context.
-    const reviewsLink = screen.getByRole('link', { name: 'See all 14 reviews' });
-    expect(reviewsLink).toHaveAttribute('href', '/mentors/gbenga?tab=reviews');
-    expect(reviewsLink).toHaveTextContent('(14)');
-    expect(screen.getByText(/keep it up/)).toBeInTheDocument();
-    // Rising rate reassures.
-    expect(screen.getByText(/Up from 77% last quarter/)).toBeInTheDocument();
+    expect(screen.getByText('from 14')).toBeInTheDocument();
+    expect(screen.getByText(/The clearest hour/)).toBeInTheDocument();
+    expect(screen.getByText('Amara O. · Visa and interview')).toBeInTheDocument();
+    // The full breakdown is collapsed until the disclosure is opened.
+    expect(screen.queryByText('Sessions completed')).not.toBeInTheDocument();
+    const toggle = screen.getByRole('button', { name: 'See your full breakdown' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('renders the at-risk content: badge, banner and the two actions', () => {
-    data = windowStats({ attendanceRate: 60, missedByMentor: 5, completedSessions: 9 });
+  it('opens and closes the breakdown through the disclosure button', async () => {
+    data = windowStats({ attendanceRate: 86 });
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'See your full breakdown' }));
+    const shown = screen.getByRole('button', { name: 'Show less' });
+    expect(shown).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Sessions completed')).toBeInTheDocument();
+
+    await user.click(shown);
+    expect(screen.queryByText('Sessions completed')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'See your full breakdown' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
+  it('uses a primary, differently-worded disclosure when at risk', () => {
+    data = windowStats({ attendanceRate: 60, missedByMentor: 5 });
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     expect(screen.getByText('At risk')).toBeInTheDocument();
-    // The context line is a plain count, never a derived "N of M" ratio.
-    expect(screen.getByText('5 missed sessions recently.')).toBeInTheDocument();
+    // The at-risk teaser headlines the problem.
+    expect(screen.getByText('5 mentees were left waiting')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'See what’s pulling this down' }),
+    ).toBeInTheDocument();
+  });
+
+  // ---- expanded content -----------------------------------------------------
+
+  it('renders the expanded on-track content: breakdown, rating, quote and the streak banner', async () => {
+    data = windowStats({ attendanceRate: 86 }, { attendanceRate: 77 });
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
+
+    expect(screen.getByText('Sessions completed')).toBeInTheDocument();
+    expect(screen.getByText('Canceled by you')).toBeInTheDocument();
+    expect(screen.getByText('Missed by you')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Rated 4.8 out of 5' })).toBeInTheDocument();
+    // The count links to the profile's Reviews tab. The visible "(14)" is in the
+    // accessible name (Label-in-Name), scoped so it never reads as an all-time total.
+    const reviewsLink = screen.getByRole('link', {
+      name: 'See all reviews — 14 in the last 90 days',
+    });
+    expect(reviewsLink).toHaveAttribute('href', '/mentors/gbenga?tab=reviews');
+    expect(reviewsLink).toHaveTextContent('(14)');
+    // The streak carries the good banner.
+    expect(screen.getByText(/5 sessions held in a row/)).toBeInTheDocument();
+  });
+
+  it('renders a "Mentee didn’t show" row from missed_by_mentee', async () => {
+    data = windowStats({ attendanceRate: 86, missedByMentee: 3 });
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
+    const row = screen.getByText('Mentee didn’t show').closest('div')!;
+    expect(within(row).getByText('3')).toBeInTheDocument();
+  });
+
+  it('renders the at-risk expanded banner and its two actions', async () => {
+    data = windowStats({ attendanceRate: 60, missedByMentor: 5, completedSessions: 9 });
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    await userEvent.click(screen.getByRole('button', { name: 'See what’s pulling this down' }));
     expect(screen.getByText('5 mentees were left waiting')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Review your hours' })).toHaveAttribute(
       'href',
@@ -101,54 +185,109 @@ describe('SessionQuality', () => {
     );
   });
 
-  it('makes the at-risk banner title singular for a single miss', () => {
+  it('makes the at-risk banner title singular for a single miss', async () => {
     data = windowStats({ attendanceRate: 50, missedByMentor: 1, completedSessions: 1 });
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    await userEvent.click(screen.getByRole('button', { name: 'See what’s pulling this down' }));
     expect(screen.getByText('1 mentee was left waiting')).toBeInTheDocument();
   });
 
-  it('keeps the context line honest when the rate is rising but still at risk', () => {
-    // 50→60 is progress, but 60 < 85 is still at risk: show the rise as progress,
-    // never the "count on you" reassurance beside an "At risk" badge.
-    data = windowStats({ attendanceRate: 60, missedByMentor: 5 }, { attendanceRate: 50 });
+  // ---- the streak -----------------------------------------------------------
+
+  it('drops the streak line and reassures plainly when the streak is zero', async () => {
+    data = windowStats({ attendanceRate: 90 }, {}, { currentStreak: 0 });
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
-    expect(screen.getByText('At risk')).toBeInTheDocument();
-    expect(
-      screen.getByText('Up from 50% last quarter — 5 missed sessions recently.'),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/Mentees can count on you/)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
+    expect(screen.getByText(/keep it up/)).toBeInTheDocument();
+    expect(screen.queryByText(/in a row/)).not.toBeInTheDocument();
   });
 
-  it('never claims "left waiting" when an at-risk rate carries no recorded miss', () => {
-    // Defensive: the ring is rate-based and needn't track missed_by_mentor, so a
-    // below-target rate with zero misses must not render "0 … left waiting".
-    data = windowStats({ attendanceRate: 70, missedByMentor: 0 });
+  it('uses the singular streak line at exactly one held session', async () => {
+    data = windowStats({ attendanceRate: 90 }, {}, { currentStreak: 1 });
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
-    expect(screen.getByText('At risk')).toBeInTheDocument();
-    expect(screen.queryByText(/left waiting/)).not.toBeInTheDocument();
-    expect(screen.getByText('Your show-up rate is slipping')).toBeInTheDocument();
-    expect(screen.getByText('Below your usual show-up rate.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
+    expect(screen.getByText(/1 session held in a row/)).toBeInTheDocument();
+    expect(screen.queryByText(/sessions held/)).not.toBeInTheDocument();
   });
 
-  it('reassures without nagging about the odd miss while on track', () => {
-    data = windowStats({ attendanceRate: 90, missedByMentor: 2 }, { attendanceRate: 90 });
-    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
-    expect(screen.getByText('On track')).toBeInTheDocument();
-    expect(screen.getByText('Mentees can count on you.')).toBeInTheDocument();
-    expect(screen.queryByText(/missed session/)).not.toBeInTheDocument();
-  });
+  // ---- reviews / quote states ----------------------------------------------
 
-  it('reassures with no derived denominator when the rate held flat and none were missed', () => {
-    data = windowStats({ attendanceRate: 100, missedByMentor: 0 }, { attendanceRate: 100 });
-    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
-    expect(screen.getByText('No sessions missed — mentees can count on you.')).toBeInTheDocument();
-  });
-
-  it('falls back to "No reviews yet" when the window has no rating, with no link', () => {
+  it('shows the no-reviews message and no rating when the window has no rating', async () => {
     data = windowStats({ attendanceRate: 92, averageRating: null, reviewCount: 0 });
+    quote = { data: null, isLoading: false, error: null, retry: vi.fn() };
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
-    expect(screen.getByText('No reviews yet')).toBeInTheDocument();
-    // No rating means no review-count link to the profile's Reviews tab.
+    // Compact: the message replaces the rating line and the quote.
+    expect(screen.getByText(/No reviews yet/)).toBeInTheDocument();
+    expect(screen.queryByText('4.8')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
+    // Expanded: still the message, and no link to a reviews tab.
+    expect(screen.getByText(/No reviews yet/)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /reviews/ })).not.toBeInTheDocument();
+  });
+
+  it('a failed quote fetch never breaks the card — the rating line still shows', () => {
+    data = windowStats({ attendanceRate: 86 });
+    quote = { data: null, isLoading: false, error: { kind: 'server', message: 'x' }, retry: vi.fn() };
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByRole('img', { name: 'Show-up rate 86%' })).toBeInTheDocument();
+    expect(screen.getByText('4.8')).toBeInTheDocument();
+    expect(screen.getByText('from 14')).toBeInTheDocument();
+    // A missing quote is not a "no reviews" state.
+    expect(screen.queryByText(/No reviews yet/)).not.toBeInTheDocument();
+  });
+
+  it('shows the rating line but no quote while the quote is still loading', () => {
+    data = windowStats({ attendanceRate: 86 });
+    quote = { data: null, isLoading: true, error: null, retry: vi.fn() };
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByText('4.8')).toBeInTheDocument();
+    expect(screen.queryByText(/No reviews yet/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/The clearest hour/)).not.toBeInTheDocument();
+  });
+
+  it('shows an all-time quote even when the 90-day window has no rating', () => {
+    // The stars are the window rating; the quote is the latest all-time review —
+    // an older review survives even after the window's own reviews age out.
+    data = windowStats({ attendanceRate: 92, averageRating: null, reviewCount: 0 });
+    quote = hasQuote();
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByText(/The clearest hour/)).toBeInTheDocument();
+    expect(screen.queryByText(/No reviews yet/)).not.toBeInTheDocument();
+    // No window rating → no stars line.
+    expect(screen.queryByText('4.8')).not.toBeInTheDocument();
+  });
+
+  it('shows neither the no-reviews message nor a quote while the quote is still settling', () => {
+    data = windowStats({ attendanceRate: 92, averageRating: null, reviewCount: 0 });
+    quote = { data: null, isLoading: true, error: null, retry: vi.fn() };
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    // Don't flash "no reviews" before the all-time quote has had its say.
+    expect(screen.queryByText(/No reviews yet/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/The clearest hour/)).not.toBeInTheDocument();
+    // The teaser (about show-up, not reviews) still shows.
+    expect(screen.getByText('You’re holding your sessions')).toBeInTheDocument();
+  });
+
+  it('falls back to the no-reviews message when the window has no rating and the quote errors', async () => {
+    // A failed quote with no window rating must not leave an empty "Mentee
+    // reviews" block — it reads as the no-reviews state, in both views.
+    data = windowStats({ attendanceRate: 92, averageRating: null, reviewCount: 0 });
+    quote = { data: null, isLoading: false, error: { kind: 'server', message: 'x' }, retry: vi.fn() };
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByText(/No reviews yet/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
+    expect(screen.getByText(/No reviews yet/)).toBeInTheDocument();
+    expect(screen.queryByText('4.8')).not.toBeInTheDocument();
+  });
+
+  it('keeps the expanded card intact when the quote fails — stars, no quote, no message', async () => {
+    data = windowStats({ attendanceRate: 86 });
+    quote = { data: null, isLoading: false, error: { kind: 'server', message: 'x' }, retry: vi.fn() };
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
+    expect(screen.getByRole('img', { name: 'Rated 4.8 out of 5' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /See all reviews/ })).toBeInTheDocument();
+    expect(screen.queryByText(/No reviews yet/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/The clearest hour/)).not.toBeInTheDocument();
   });
 });
