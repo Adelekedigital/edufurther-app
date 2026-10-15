@@ -14,8 +14,25 @@ import { useMyReviewQuote, type ReviewQuote } from '@/lib/api/data/myReviews';
 import { cx } from '@/lib/utils/cx';
 import styles from './SessionQuality.module.css';
 
-/** The window shown: the design's "last 90 days". */
+/** Default fetch window (days) when the dashboard doesn't sync one to the chart. */
 const WINDOW_DAYS = 90;
+
+/**
+ * The subline / teaser / rate labels for a stats window, derived from the window
+ * the figures are actually for (`stats.data.windowDays`), never the requested one.
+ * During a range switch `keepPreviousData` serves the previous window for a beat,
+ * so deriving from the data keeps the labels and the numbers describing the same
+ * window — they can never disagree.
+ */
+function windowLabels(windowDays: number): {
+  period: string;
+  periodPhrase: string;
+  priorLabel: string;
+} {
+  const months = Math.max(1, Math.round(windowDays / 30));
+  const period = `last ${months} months`;
+  return { period, periodPhrase: `in the ${period}`, priorLabel: `the previous ${months} months` };
+}
 /**
  * A show-up rate at or above this reads "On track"; below it "At risk". A UI
  * decision — the backend defines no quality cutoff (see design-divergence.md).
@@ -310,22 +327,16 @@ export function SessionQuality({
   userId,
   profileHref,
   windowDays = WINDOW_DAYS,
-  period = 'last 90 days',
-  periodPhrase = 'in 90 days',
-  priorLabel = 'the previous quarter',
   nextSession = null,
 }: {
   userId: string;
   profileHref: string;
   /**
-   * The stats window to fetch (days) and the labels that describe it. Defaults to
-   * the design's 90 days / "last 90 days"; the dashboard syncs them to the
-   * performance chart's range (`periodPhrase` folds into the teaser copy).
+   * The stats window to fetch (days); the dashboard syncs it to the performance
+   * chart's range. The card's period labels are derived from the window the data
+   * is for, so they always match the figures (see `windowLabels`).
    */
   windowDays?: number;
-  period?: string;
-  periodPhrase?: string;
-  priorLabel?: string;
   /** The mentor's next session, named in the good banner when present. */
   nextSession?: { firstName: string; dayLabel: string } | null;
 }) {
@@ -375,6 +386,9 @@ export function SessionQuality({
   const rating = current.averageRating;
   const reviewCount = current.reviewCount;
   const onTrack = displayRate >= GOOD_THRESHOLD;
+  // Labels for the window the figures are actually for — `stats.data.windowDays`,
+  // not the requested prop — so a mid-switch placeholder can't mislabel them.
+  const { period, periodPhrase, priorLabel } = windowLabels(stats.data.windowDays);
   // The quote is the latest review (social proof); it shows whenever one exists
   // and is never gated on the 90-day window. The "no reviews yet" note stands in
   // only when there is genuinely no review to show, and only once the fetch has

@@ -39,30 +39,15 @@ const inZone = (iso: string, timeZone: string, opts: Intl.DateTimeFormatOptions)
   new Intl.DateTimeFormat('en-US', { ...opts, timeZone }).format(new Date(iso));
 
 // The session-quality card follows the chart's range (Mentor Dashboard v2,
-// qualityRange 'synced'): map a range key to its stats window and the labels the
-// card reads — the subline ("last 6 months"), and the teaser phrase it folds into
-// "...left waiting in the last 6 months".
+// qualityRange 'synced'): map a range key to the stats window the card fetches. The
+// card derives its own period labels from that window (see SessionQuality), so the
+// labels always match the figures. A year has no trailing-window equivalent in
+// mentor-stats, so it reads the 12-month window and the card labels it "last 12
+// months", not a calendar year (design-divergence.md).
 const WINDOW_DAYS_BY_RANGE: Record<string, number> = { '3m': 90, '6m': 180, '12m': 365 };
-export function qualityWindow(range: string): {
-  days: number;
-  period: string;
-  periodPhrase: string;
-  priorLabel: string;
-} {
+export function chartRangeToWindowDays(range: string): number {
   const rk = range.startsWith('y') ? '12m' : range;
-  const days = WINDOW_DAYS_BY_RANGE[rk] ?? 180;
-  const months = rk === '3m' ? 3 : rk === '12m' ? 12 : 6;
-  // mentor-stats is a trailing window (window_days), never a calendar year, so a
-  // year selection reads "last 12 months" — labelling it "in 2025" would claim a
-  // calendar year the figures aren't (they are the last 365 days). Divergence from
-  // the design's "in YYYY" recorded.
-  const period = `last ${months} months`;
-  return {
-    days,
-    period,
-    periodPhrase: period.replace('last', 'in the last'),
-    priorLabel: `the previous ${months} months`,
-  };
+  return WINDOW_DAYS_BY_RANGE[rk] ?? 180;
 }
 
 function DashboardLoading() {
@@ -120,7 +105,7 @@ function MentorHome({ member }: { member: Member }) {
   if (!dash.data) return <DashboardError onRetry={dash.retry} />;
   const d = dash.data;
 
-  const qw = qualityWindow(chartRange);
+  const windowDays = chartRangeToWindowDays(chartRange);
   const upcoming = dash.nextSession.data;
   const nextSession = upcoming
     ? {
@@ -182,10 +167,7 @@ function MentorHome({ member }: { member: Member }) {
                 <SessionQuality
                   userId={member.id}
                   profileHref={d.profileHref}
-                  windowDays={qw.days}
-                  period={qw.period}
-                  periodPhrase={qw.periodPhrase}
-                  priorLabel={qw.priorLabel}
+                  windowDays={windowDays}
                   nextSession={nextSession}
                 />
               </div>

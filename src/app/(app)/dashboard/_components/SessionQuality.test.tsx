@@ -140,7 +140,7 @@ describe('SessionQuality', () => {
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     expect(screen.getByText('At risk')).toBeInTheDocument();
     // The at-risk teaser headlines the honest "left waiting" count, not missed-by-you.
-    expect(screen.getByText('3 mentees were left waiting in 90 days')).toBeInTheDocument();
+    expect(screen.getByText('3 mentees were left waiting in the last 3 months')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'See what’s pulling this down' }),
     ).toBeInTheDocument();
@@ -160,7 +160,7 @@ describe('SessionQuality', () => {
     // The count links to the profile's Reviews tab. The visible "(14)" is in the
     // accessible name (Label-in-Name), scoped so it never reads as an all-time total.
     const reviewsLink = screen.getByRole('link', {
-      name: 'See all reviews — 14 in 90 days',
+      name: 'See all reviews — 14 in the last 3 months',
     });
     expect(reviewsLink).toHaveAttribute('href', '/mentors/gbenga?tab=reviews');
     expect(reviewsLink).toHaveTextContent('(14)');
@@ -279,32 +279,21 @@ describe('SessionQuality', () => {
 
   // ---- timeline sync + next session ----------------------------------------
 
-  it('fetches the window it is given and labels the subline with the period', () => {
-    data = windowStats({ attendanceRate: 86 });
-    render(
-      <SessionQuality
-        userId="u1"
-        profileHref="/mentors/gbenga"
-        windowDays={180}
-        period="last 6 months"
-        periodPhrase="in the last 6 months"
-      />,
-    );
+  it('fetches the window it is given and labels the subline from the data window', () => {
+    data = windowStats({ attendanceRate: 86 }, {}, { windowDays: 180 });
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" windowDays={180} />);
     expect(mentorStatsSpy).toHaveBeenCalledWith('u1', 180);
     expect(screen.getByText(/last 6 months/)).toBeInTheDocument();
     expect(screen.queryByText(/last 90 days/)).not.toBeInTheDocument();
   });
 
-  it('folds the period phrase into the at-risk left-waiting teaser', () => {
-    data = windowStats({ attendanceRate: 40, missedByMentor: 3, menteesLeftWaiting: 2 });
-    render(
-      <SessionQuality
-        userId="u1"
-        profileHref="/mentors/gbenga"
-        period="last 6 months"
-        periodPhrase="in the last 6 months"
-      />,
+  it('folds the data window into the at-risk left-waiting teaser', () => {
+    data = windowStats(
+      { attendanceRate: 40, missedByMentor: 3, menteesLeftWaiting: 2 },
+      {},
+      { windowDays: 180 },
     );
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" windowDays={180} />);
     expect(screen.getByText('2 mentees were left waiting in the last 6 months')).toBeInTheDocument();
   });
 
