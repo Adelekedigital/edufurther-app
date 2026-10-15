@@ -205,6 +205,29 @@ describe('MenteeHomeScreen', () => {
     expect(screen.getByRole('link', { name: 'Book a session' })).toBeInTheDocument();
   });
 
+  it('the idle card shows free sessions left, pluralised, and drops the line at 0', () => {
+    const monthly = (balance: number) =>
+      ({ monthly: { balance, ceiling: 3, expiresAt: null, unlocked: true } }) as unknown as (typeof MEMBER)['credits'];
+    upcoming = remote([]);
+    viewer = { ...MEMBER, credits: monthly(2) };
+    const { rerender } = render(<MenteeHomeScreen />);
+    expect(screen.getByText(/2 free sessions left this month/)).toBeInTheDocument();
+    viewer = { ...MEMBER, credits: monthly(1) };
+    rerender(<MenteeHomeScreen />);
+    expect(screen.getByText(/1 free session left this month/)).toBeInTheDocument();
+    viewer = { ...MEMBER, credits: monthly(0) };
+    rerender(<MenteeHomeScreen />);
+    expect(screen.getByText('Nothing booked yet')).toBeInTheDocument();
+    expect(screen.queryByText(/free session/)).not.toBeInTheDocument();
+  });
+
+  it('the Next-session "Tips" link opens the tips modal', async () => {
+    render(<MenteeHomeScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Tips' }));
+    expect(screen.getByText('Tips for great sessions')).toBeInTheDocument();
+    expect(screen.getByText('Take notes')).toBeInTheDocument();
+  });
+
   it('a pending request reads as "waiting", not "nothing booked" (no duplicate invite)', () => {
     // completedSessions 0 with a pending request (count) but no confirmed
     // upcoming: useUpcomingBookings returns only confirmed rows, so the list is

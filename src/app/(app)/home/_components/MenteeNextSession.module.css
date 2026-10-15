@@ -8,6 +8,7 @@
 }
 .head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: var(--space-3);
@@ -37,10 +38,10 @@
   font: inherit;
   font-size: var(--text-p-sm);
   font-weight: var(--weight-semibold);
-  color: var(--text-link-hover);
+  color: var(--text-link);
 }
 .tips:hover {
-  color: var(--text-link);
+  color: var(--text-link-hover);
 }
 .tips:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);

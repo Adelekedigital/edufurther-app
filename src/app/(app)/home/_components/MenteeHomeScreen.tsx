@@ -96,7 +96,8 @@ export function MenteeHomeScreen() {
   // folds in non-expiring bonus credits, which aren't "this month".
   const monthly = member.credits?.monthly;
   // Free sessions left this month, for the idle card's line (design copy); null
-  // when the monthly grant isn't unlocked (no "N free sessions left" then).
+  // when the grant isn't unlocked. The `freeLeft ?` guard below drops the line at
+  // null or 0, so "0 free sessions left" never sits beside the Book CTA.
   const freeLeft = monthly?.unlocked ? monthly.balance : null;
 
   // The "Mentors met" KPI links down to the Book-again section on the same page.
@@ -202,7 +203,7 @@ export function MenteeHomeScreen() {
               href="/bookings?tab=pending"
               prefetch={false}
               variant="secondary-outlined"
-              size="medium"
+              size="large"
             >
               View your request
             </ButtonLink>
@@ -213,12 +214,12 @@ export function MenteeHomeScreen() {
           illustration="calendar"
           title="Nothing booked yet"
           body={
-            freeLeft != null
+            freeLeft
               ? `Book a mentor you’ve met or someone new. ${freeLeft} free session${freeLeft === 1 ? '' : 's'} left this month.`
               : 'Book a mentor you’ve met or someone new.'
           }
           action={
-            <ButtonLink href="/explore" prefetch={false} variant="primary" size="medium">
+            <ButtonLink href="/explore" prefetch={false} variant="primary" size="large">
               Book a session
             </ButtonLink>
           }
@@ -238,9 +239,9 @@ export function MenteeHomeScreen() {
         external
         onAction={openCall}
       />
-      {/* No hideProfileLink: a met mentor is always reachable by id (schema:
-          "a mentor without [a slug] is reachable by id"), so "View profile"
-          links to /mentors/{id} even without a public handle — as Explore does. */}
+      {/* No hideProfileLink: Book-again only opens for an `open` (taking-bookings)
+          mentor, who is approved + listed = public, so "View profile"
+          (/mentors/{slug ?? id}) always resolves — as Explore does. */}
       <BookingLauncher
         mentor={bookMentor}
         ratingUnknown
