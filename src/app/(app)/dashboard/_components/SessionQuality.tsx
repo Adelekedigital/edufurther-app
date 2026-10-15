@@ -37,6 +37,7 @@ function rateContext(
   previous: StatBlock,
   onTrack: boolean,
   noReviews: boolean,
+  priorLabel: string,
 ): string {
   const cur = current.attendanceRate;
   const prev = previous.attendanceRate;
@@ -62,7 +63,7 @@ function rateContext(
     return `${went}. Mentees can count on you.`;
   }
   if (onTrack) {
-    if (rose) return `Up from ${prev}% last quarter. Mentees can count on you.`;
+    if (rose) return `Up from ${prev}% over ${priorLabel}. Mentees can count on you.`;
     return missed === 0
       ? `No sessions missed — mentees can count on you.`
       : `Mentees can count on you.`;
@@ -71,10 +72,10 @@ function rateContext(
   // never a "0 missed" count. A rise is progress, not yet reassurance.
   if (missed > 0) {
     const misses = `${missed} missed session${missed === 1 ? '' : 's'} recently.`;
-    return rose ? `Up from ${prev}% last quarter — ${misses}` : misses;
+    return rose ? `Up from ${prev}% over ${priorLabel} — ${misses}` : misses;
   }
   return rose
-    ? `Up from ${prev}% last quarter — still below your usual.`
+    ? `Up from ${prev}% over ${priorLabel} — still below your usual.`
     : `Below your usual show-up rate.`;
 }
 
@@ -311,6 +312,7 @@ export function SessionQuality({
   windowDays = WINDOW_DAYS,
   period = 'last 90 days',
   periodPhrase = 'in 90 days',
+  priorLabel = 'the previous quarter',
   nextSession = null,
 }: {
   userId: string;
@@ -323,6 +325,7 @@ export function SessionQuality({
   windowDays?: number;
   period?: string;
   periodPhrase?: string;
+  priorLabel?: string;
   /** The mentor's next session, named in the good banner when present. */
   nextSession?: { firstName: string; dayLabel: string } | null;
 }) {
@@ -418,7 +421,7 @@ export function SessionQuality({
         <div className={styles.showUpText}>
           <span className={styles.showUpLabel}>Show-up rate</span>
           <span className={styles.rateContext}>
-            {rateContext(current, previous, onTrack, rating == null)}
+            {rateContext(current, previous, onTrack, rating == null, priorLabel)}
           </span>
         </div>
       </div>

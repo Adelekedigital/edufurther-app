@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { AppError, Remote } from '@/types/mentor';
 import { apiError, normaliseError } from './errors';
 import { api } from './http';
@@ -128,6 +128,10 @@ export function useMentorStats(userId: string | null, windowDays: number): Remot
   const query = useQuery({
     queryKey: keys.mentorStats.window(userId ?? 'none', windowDays),
     enabled: userId !== null,
+    // The window changes when the mentor switches the chart range; keep the last
+    // window's figures on screen while the new one loads, so the card updates in
+    // place instead of flashing back to its skeleton on every toggle.
+    placeholderData: keepPreviousData,
     queryFn: async ({ signal }): Promise<WindowStats> => {
       const { data, error, response } = await api.GET('/api/v1/me/mentor-stats', {
         params: { query: { window_days: windowDays } },

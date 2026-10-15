@@ -43,12 +43,26 @@ const inZone = (iso: string, timeZone: string, opts: Intl.DateTimeFormatOptions)
 // card reads — the subline ("last 6 months"), and the teaser phrase it folds into
 // "...left waiting in the last 6 months".
 const WINDOW_DAYS_BY_RANGE: Record<string, number> = { '3m': 90, '6m': 180, '12m': 365 };
-export function qualityWindow(range: string): { days: number; period: string; periodPhrase: string } {
+export function qualityWindow(range: string): {
+  days: number;
+  period: string;
+  periodPhrase: string;
+  priorLabel: string;
+} {
   const rk = range.startsWith('y') ? '12m' : range;
   const days = WINDOW_DAYS_BY_RANGE[rk] ?? 180;
   const months = rk === '3m' ? 3 : rk === '12m' ? 12 : 6;
-  const period = range.startsWith('y') ? `in ${range.slice(1)}` : `last ${months} months`;
-  return { days, period, periodPhrase: period.replace('last', 'in the last') };
+  // mentor-stats is a trailing window (window_days), never a calendar year, so a
+  // year selection reads "last 12 months" — labelling it "in 2025" would claim a
+  // calendar year the figures aren't (they are the last 365 days). Divergence from
+  // the design's "in YYYY" recorded.
+  const period = `last ${months} months`;
+  return {
+    days,
+    period,
+    periodPhrase: period.replace('last', 'in the last'),
+    priorLabel: `the previous ${months} months`,
+  };
 }
 
 function DashboardLoading() {
@@ -110,7 +124,7 @@ function MentorHome({ member }: { member: Member }) {
   const upcoming = dash.nextSession.data;
   const nextSession = upcoming
     ? {
-        firstName: upcoming.other.name.split(' ')[0] || upcoming.other.name,
+        firstName: upcoming.other.firstName,
         dayLabel: inZone(upcoming.startsAt, accountZone, {
           weekday: 'short',
           month: 'short',
@@ -171,6 +185,7 @@ function MentorHome({ member }: { member: Member }) {
                   windowDays={qw.days}
                   period={qw.period}
                   periodPhrase={qw.periodPhrase}
+                  priorLabel={qw.priorLabel}
                   nextSession={nextSession}
                 />
               </div>
