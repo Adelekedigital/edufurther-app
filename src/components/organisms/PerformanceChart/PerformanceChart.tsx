@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
@@ -14,6 +14,7 @@ type PerformanceChartProps = {
   /** 'YYYY-MM', oldest first. */
   months: string[];
   title?: string;
+  /** Chart type when `chartSwitch` is 'hide'; ignored when the switch shows. */
   variant?: 'bar' | 'line';
   yUnit?: string;
   ranges?: ChartRange[];
@@ -24,6 +25,11 @@ type PerformanceChartProps = {
    * a disclosure menu. Default 'compact'.
    */
   mobileLegend?: 'compact' | 'dropdown' | 'wrap';
+  /**
+   * Whether the bar/line chart-type switch shows (default 'show'). When shown,
+   * the mentor picks and the choice is remembered; 'hide' pins it to `variant`.
+   */
+  chartSwitch?: 'show' | 'hide';
 };
 
 const DEFAULT_RANGES: ChartRange[] = [
@@ -34,6 +40,47 @@ const DEFAULT_RANGES: ChartRange[] = [
 
 /** The card is "narrow" below this width (design's ResizeObserver threshold). */
 const NARROW_MAX = 440;
+
+/** The bar/line switch, as the design draws it (bar_chart / show_chart icons). */
+const CHART_TYPES = [
+  { key: 'bar', icon: 'bar_chart', label: 'Bar chart' },
+  { key: 'line', icon: 'show_chart', label: 'Line chart' },
+] as const;
+
+const CHART_TYPE_KEY = 'ef-chart-type';
+// A tiny external store over localStorage['ef-chart-type'], read through
+// useSyncExternalStore: the value is SSR-safe (the server snapshot is null, so no
+// hydration mismatch) and every mounted chart re-reads when the pick changes —
+// here or in another tab.
+const chartTypeListeners = new Set<() => void>();
+/** The mentor's remembered chart type, or null before they pick (per device). */
+function readChartType(): 'bar' | 'line' | null {
+  try {
+    const v = typeof localStorage !== 'undefined' ? localStorage.getItem(CHART_TYPE_KEY) : null;
+    return v === 'bar' || v === 'line' ? v : null;
+  } catch {
+    return null;
+  }
+}
+function persistChartType(v: 'bar' | 'line') {
+  try {
+    localStorage.setItem(CHART_TYPE_KEY, v);
+  } catch {
+    /* private mode / blocked storage: the pick just won't be remembered */
+  }
+  chartTypeListeners.forEach((cb) => cb());
+}
+function subscribeChartType(cb: () => void) {
+  chartTypeListeners.add(cb);
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === CHART_TYPE_KEY) cb();
+  };
+  window.addEventListener('storage', onStorage);
+  return () => {
+    chartTypeListeners.delete(cb);
+    window.removeEventListener('storage', onStorage);
+  };
+}
 
 /**
  * Session performance over time (Mentor Dashboard v2 / PerformanceChart.dc.html):
@@ -53,6 +100,7 @@ export function PerformanceChart({
   ranges = DEFAULT_RANGES,
   defaultRange = '6m',
   mobileLegend = 'compact',
+  chartSwitch = 'show',
 }: PerformanceChartProps) {
   const [range, setRange] = useState(defaultRange);
   const [hidden, setHidden] = useState<string[]>([]);
@@ -61,10 +109,18 @@ export function PerformanceChart({
   const [menuOpen, setMenuOpen] = useState(false);
   const rootRef = useRef<HTMLElement>(null);
   const radiosRef = useRef<HTMLDivElement>(null);
+  const typesRef = useRef<HTMLDivElement>(null);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const narrowRef = useRef(false);
   const menuId = useId();
+  // The remembered chart type, read from the external store above.
+  const chartType = useSyncExternalStore(subscribeChartType, readChartType, () => null);
+
+  const showSwitch = chartSwitch === 'show';
+  // Before any pick: bars for short ranges, a line for a year+ (the trend view).
+  const longRange = range.startsWith('y') || (ranges.find((r) => r.key === range)?.n ?? 6) >= 12;
+  const effectiveVariant = showSwitch ? chartType ?? (longRange ? 'line' : 'bar') : variant;
 
   const m = useMemo(
     () =>
@@ -72,7 +128,7 @@ export function PerformanceChart({
         series,
         months,
         ranges,
-        variant,
+        variant: effectiveVariant,
         range,
         hidden,
         hover,
@@ -81,7 +137,7 @@ export function PerformanceChart({
         narrow,
         mobileLegend,
       }),
-    [series, months, ranges, variant, range, hidden, hover, title, yUnit, narrow, mobileLegend],
+    [series, months, ranges, effectiveVariant, range, hidden, hover, title, yUnit, narrow, mobileLegend],
   );
 
   // Track the card width. ResizeObserver, not a media query: the card narrows
@@ -162,6 +218,28 @@ export function PerformanceChart({
     }
   };
 
+  const pickType = (t: 'bar' | 'line') => {
+    persistChartType(t);
+    setHover(-1);
+  };
+  // Radiogroup roving focus for the bar/line switch (mirrors the range switch).
+  const onTypeKey = (e: React.KeyboardEvent) => {
+    const cur = Math.max(
+      0,
+      CHART_TYPES.findIndex((t) => t.key === effectiveVariant),
+    );
+    let next = -1;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (cur + 1) % CHART_TYPES.length;
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp')
+      next = (cur - 1 + CHART_TYPES.length) % CHART_TYPES.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = CHART_TYPES.length - 1;
+    if (next < 0) return;
+    e.preventDefault();
+    pickType(CHART_TYPES[next]!.key);
+    typesRef.current?.querySelectorAll<HTMLButtonElement>('[role="radio"]')[next]?.focus();
+  };
+
   const anyRangeOn = m.rangeButtons.some((r) => r.on);
   const onRangeKey = (e: React.KeyboardEvent) => {
     const keys = m.rangeButtons.map((r) => r.key);
@@ -188,47 +266,77 @@ export function PerformanceChart({
             <strong className={styles.period}>{m.period}</strong> · {m.summary}
           </span>
         </div>
-        <div className={styles.rangeWrap}>
-          <div
-            ref={radiosRef}
-            role="radiogroup"
-            aria-label="Time range"
-            className={styles.radios}
-            onKeyDown={onRangeKey}
-          >
-            {m.rangeButtons.map((r, idx) => (
-              <button
-                key={r.key}
-                type="button"
-                role="radio"
-                aria-checked={r.on}
-                tabIndex={r.on || (!anyRangeOn && idx === 0) ? 0 : -1}
-                className={cx(styles.range, r.on && styles.rangeOn)}
-                onClick={() => {
-                  setRange(r.key);
-                  setHover(-1);
-                }}
-              >
-                {r.label}
-              </button>
-            ))}
+        <div className={cx(styles.ctrlRow, narrow && styles.ctrlRowNarrow)}>
+          {showSwitch && (
+            <div
+              ref={typesRef}
+              role="radiogroup"
+              aria-label="Chart type"
+              className={styles.types}
+              onKeyDown={onTypeKey}
+            >
+              {CHART_TYPES.map((t) => {
+                const on = effectiveVariant === t.key;
+                return (
+                  <button
+                    key={t.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    aria-label={t.label}
+                    title={t.label}
+                    tabIndex={on ? 0 : -1}
+                    className={cx(styles.type, on && styles.typeOn)}
+                    onClick={() => pickType(t.key)}
+                  >
+                    <Icon name={t.icon} size={18} />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <div className={styles.rangeWrap}>
+            <div
+              ref={radiosRef}
+              role="radiogroup"
+              aria-label="Time range"
+              className={styles.radios}
+              onKeyDown={onRangeKey}
+            >
+              {m.rangeButtons.map((r, idx) => (
+                <button
+                  key={r.key}
+                  type="button"
+                  role="radio"
+                  aria-checked={r.on}
+                  tabIndex={r.on || (!anyRangeOn && idx === 0) ? 0 : -1}
+                  className={cx(styles.range, r.on && styles.rangeOn)}
+                  onClick={() => {
+                    setRange(r.key);
+                    setHover(-1);
+                  }}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+            <select
+              aria-label="Show a year"
+              className={cx(styles.year, m.isYear && styles.yearOn)}
+              value={m.yearValue}
+              onChange={(e) => {
+                setRange(e.target.value ? `y${e.target.value}` : '12m');
+                setHover(-1);
+              }}
+            >
+              <option value="">Year</option>
+              {m.years.map((yr) => (
+                <option key={yr} value={yr}>
+                  {yr}
+                </option>
+              ))}
+            </select>
           </div>
-          <select
-            aria-label="Show a year"
-            className={cx(styles.year, m.isYear && styles.yearOn)}
-            value={m.yearValue}
-            onChange={(e) => {
-              setRange(e.target.value ? `y${e.target.value}` : '12m');
-              setHover(-1);
-            }}
-          >
-            <option value="">Year</option>
-            {m.years.map((yr) => (
-              <option key={yr} value={yr}>
-                {yr}
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 

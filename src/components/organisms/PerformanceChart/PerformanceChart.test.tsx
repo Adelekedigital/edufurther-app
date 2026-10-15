@@ -191,3 +191,83 @@ describe('PerformanceChart mobile dropdown legend', () => {
     expect(screen.queryByRole('button', { name: /Showing/ })).not.toBeInTheDocument();
   });
 });
+
+describe('PerformanceChart chart-type switch', () => {
+  // A line chart draws <polyline>s; bars draw none — the reliable discriminator
+  // (plain <rect>s exist in both for the grid and hit areas).
+  const isLine = (c: HTMLElement) => c.querySelector('polyline') !== null;
+
+  beforeEach(() => localStorage.clear());
+  afterEach(() => localStorage.clear());
+
+  it('shows a Chart type switch, defaulting to bars for a short range', () => {
+    const { container } = render(<PerformanceChart series={series} months={months} />);
+    expect(screen.getByRole('radiogroup', { name: 'Chart type' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Bar chart' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('radio', { name: 'Line chart' })).toHaveAttribute('aria-checked', 'false');
+    expect(isLine(container)).toBe(false);
+  });
+
+  it('defaults to a line for a 12-month (trend) range', () => {
+    const { container } = render(
+      <PerformanceChart series={series} months={months} defaultRange="12m" />,
+    );
+    expect(screen.getByRole('radio', { name: 'Line chart' })).toHaveAttribute('aria-checked', 'true');
+    expect(isLine(container)).toBe(true);
+  });
+
+  it('switches to a line on click and remembers the choice', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<PerformanceChart series={series} months={months} />);
+    expect(isLine(container)).toBe(false);
+    await user.click(screen.getByRole('radio', { name: 'Line chart' }));
+    expect(screen.getByRole('radio', { name: 'Line chart' })).toHaveAttribute('aria-checked', 'true');
+    expect(isLine(container)).toBe(true);
+    expect(localStorage.getItem('ef-chart-type')).toBe('line');
+  });
+
+  it('honours a remembered chart type on mount, over the range default', () => {
+    localStorage.setItem('ef-chart-type', 'line');
+    const { container } = render(<PerformanceChart series={series} months={months} />);
+    // 6M would default to bars; the remembered line wins.
+    expect(screen.getByRole('radio', { name: 'Line chart' })).toHaveAttribute('aria-checked', 'true');
+    expect(isLine(container)).toBe(true);
+  });
+
+  it('hides the switch and uses the variant prop when chartSwitch is "hide"', () => {
+    const { container } = render(
+      <PerformanceChart series={series} months={months} chartSwitch="hide" variant="line" />,
+    );
+    expect(screen.queryByRole('radiogroup', { name: 'Chart type' })).not.toBeInTheDocument();
+    expect(isLine(container)).toBe(true);
+  });
+
+  it('moves between bar and line with the arrow keys', async () => {
+    const user = userEvent.setup();
+    render(<PerformanceChart series={series} months={months} />);
+    screen.getByRole('radio', { name: 'Bar chart' }).focus();
+    await user.keyboard('{ArrowRight}');
+    const line = screen.getByRole('radio', { name: 'Line chart' });
+    expect(line).toHaveAttribute('aria-checked', 'true');
+    expect(line).toHaveFocus(); // roving tabindex follows the selection
+    await user.keyboard('{ArrowRight}'); // wraps back to bar
+    expect(screen.getByRole('radio', { name: 'Bar chart' })).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('keeps two charts in sync through the shared preference store', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <PerformanceChart series={series} months={months} />
+        <PerformanceChart series={series} months={months} />
+      </>,
+    );
+    const lines = screen.getAllByRole('radio', { name: 'Line chart' });
+    expect(lines).toHaveLength(2);
+    await user.click(lines[0]!);
+    // The pick flows through the store, so the second chart follows too.
+    for (const r of screen.getAllByRole('radio', { name: 'Line chart' })) {
+      expect(r).toHaveAttribute('aria-checked', 'true');
+    }
+  });
+});
