@@ -1,6 +1,7 @@
-/* FloatingHelp.dc.html: a fixed, scroll-aware help pill that collapses to an
-   icon and, on mobile, opens a sheet. The bottom/left offsets are set inline
-   from scroll state (dynamic px); the look lives here, tokens only. */
+/* FloatingHelp.dc.html: a fixed bottom-right help pill that collapses to an
+   icon and, on a phone, opens a sheet. It does not move on scroll; the resting
+   offset is set inline (base px per breakpoint); the look lives here, tokens
+   only. */
 .pill {
   position: fixed;
   z-index: 25;
@@ -16,9 +17,6 @@
   background: var(--surface-card);
   box-shadow: var(--shadow-float);
   font-family: var(--font-ui);
-  transition:
-    left var(--duration-slow) var(--ease-standard),
-    transform var(--duration-base) var(--ease-standard);
 }
 .glyph {
   width: var(--space-5);
@@ -99,7 +97,6 @@
   box-shadow: var(--shadow-float);
   cursor: pointer;
   color: var(--green-700);
-  transition: transform var(--duration-base) var(--ease-standard);
 }
 /* Mobile sheet, opened from the mini icon. */
 .scrim {
@@ -161,10 +158,4 @@
 .sheetAction:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
-}
-@media (prefers-reduced-motion: reduce) {
-  .pill,
-  .mini {
-    transition: none;
-  }
 }

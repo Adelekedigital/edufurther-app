@@ -7,27 +7,30 @@ import type { components, paths } from '@/lib/api/generated/schema';
  */
 export type Home = '/explore' | '/home' | '/dashboard' | '/admin';
 
-type Me = Pick<components['schemas']['UserRead'], 'is_admin' | 'mentor_profile' | 'goal'>;
+// Only the two fields the router reads — a goal no longer changes the destination
+// (every non-mentor member → /home), so homeFor doesn't pick it.
+type Me = Pick<components['schemas']['UserRead'], 'is_admin' | 'mentor_profile'>;
 
 /**
  * Platform admins first (even if also a mentor), then any mentor profile, then
- * a mentee (someone with a goal) to their home. A signed-in account with
- * neither, a guest, and any failed or unlinked /me fall back to Explore.
+ * every other signed-in member to the mentee home — goal or not (product,
+ * 2026-10-15): a member without a goal is still mentee-side, and the home
+ * welcomes them; goal setup moves there once onboarding/Settings ships. A guest
+ * and any failed or unlinked /me fall back to Explore.
  */
 export function homeFor(me: Me | null): Home {
   if (!me) return '/explore';
   if (me.is_admin) return '/admin';
   if (me.mentor_profile) return '/dashboard';
-  if (me.goal) return '/home';
-  return '/explore';
+  return '/home';
 }
 
 /** Local dev / CI without auth (NEXT_PUBLIC_MOCK_VIEWER): `admin` exists for routing checks only. */
 const MOCK_ROLES: Record<string, Me | null> = {
   guest: null,
-  mentee: { is_admin: false, mentor_profile: null, goal: {} as NonNullable<Me['goal']> },
-  mentor: { is_admin: false, mentor_profile: {} as NonNullable<Me['mentor_profile']>, goal: null },
-  admin: { is_admin: true, mentor_profile: null, goal: null },
+  mentee: { is_admin: false, mentor_profile: null },
+  mentor: { is_admin: false, mentor_profile: {} as NonNullable<Me['mentor_profile']> },
+  admin: { is_admin: true, mentor_profile: null },
 };
 
 /** Past this, `/` stops waiting and sends the viewer to Explore, which loads them itself. */

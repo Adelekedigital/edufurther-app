@@ -2,16 +2,14 @@ import { HOME_ME_TIMEOUT_MS, fetchHome, homeFor } from './home';
 
 type Me = Parameters<typeof homeFor>[0];
 const mentorProfile = {} as NonNullable<NonNullable<Me>['mentor_profile']>;
-const goal = {} as NonNullable<NonNullable<Me>['goal']>;
 
-describe('homeFor: where / sends each viewer (product 2026-09-30; mentee → /home)', () => {
+describe('homeFor: where / sends each viewer (product 2026-10-15; every non-mentor member → /home)', () => {
   it.each([
     ['signed out', null, '/explore'],
-    ['a mentee (has a goal)', { is_admin: false, mentor_profile: null, goal }, '/home'],
-    ['a signed-in account with no goal yet', { is_admin: false, mentor_profile: null, goal: null }, '/explore'],
-    ['a mentor, any state', { is_admin: false, mentor_profile: mentorProfile, goal: null }, '/dashboard'],
-    ['a platform admin', { is_admin: true, mentor_profile: null, goal: null }, '/admin'],
-    ['an admin who is also a mentor', { is_admin: true, mentor_profile: mentorProfile, goal: null }, '/admin'],
+    ['a signed-in member — goal or not (homeFor no longer checks)', { is_admin: false, mentor_profile: null }, '/home'],
+    ['a mentor, any state', { is_admin: false, mentor_profile: mentorProfile }, '/dashboard'],
+    ['a platform admin', { is_admin: true, mentor_profile: null }, '/admin'],
+    ['an admin who is also a mentor', { is_admin: true, mentor_profile: mentorProfile }, '/admin'],
   ] as const)('%s → %s', (_who, me, home) => {
     expect(homeFor(me as Me)).toBe(home);
   });

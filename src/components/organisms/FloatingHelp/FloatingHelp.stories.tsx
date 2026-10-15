@@ -20,7 +20,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** The resting pill (bottom-centre). Dismiss collapses it to a corner icon. */
+/** The resting pill (bottom-right). Dismiss collapses it to a corner icon. */
 export const Pill: Story = {};
 
 /** Hidden — e.g. the booking URL isn't configured, so there's no dead control. */
