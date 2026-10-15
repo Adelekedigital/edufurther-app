@@ -24,15 +24,16 @@ const GOOD_THRESHOLD = 85;
 
 /**
  * The design's three quality states (Mentor Dashboard v2.dc.html, `qualityState`):
- * at risk → `low`; otherwise `good` when there are reviews, `noReviews` when the
- * mentor has settled sessions but none reviewed yet. `noReviews` reads as
- * on-track — it is not the no-session empty state. Keyed off the window's own
- * `reviewCount` so the state never flickers on the async review quote.
+ * at risk → `low`; otherwise `good` when the window has a rating to show,
+ * `noReviews` when it doesn't. `noReviews` reads as on-track — it is not the
+ * no-session empty state. Keyed off the window's own `averageRating` (the same
+ * sync signal the no-reviews note uses), so the state can't disagree with the
+ * note and never flickers on the async review quote.
  */
 type QualityState = 'low' | 'good' | 'noReviews';
-function qualityStateOf(rate: number, hasReviews: boolean): QualityState {
+function qualityStateOf(rate: number, hasRating: boolean): QualityState {
   if (rate < GOOD_THRESHOLD) return 'low';
-  return hasReviews ? 'good' : 'noReviews';
+  return hasRating ? 'good' : 'noReviews';
 }
 
 /**
@@ -51,9 +52,17 @@ function rateContext(current: StatBlock, previous: StatBlock, state: QualityStat
   const rose = cur != null && prev != null && cur > prev;
   const missed = current.missedByMentor;
   // noReviews, clean record: lead with the sessions that went ahead rather than a
-  // rating the mentor doesn't have yet. Falls through to the generic on-track line
-  // when the record isn't clean, so we never claim "all went ahead" untruthfully.
-  if (state === 'noReviews' && missed === 0 && current.cancelledByMentor === 0) {
+  // rating the mentor doesn't have yet. "Clean" means every booked session in the
+  // window actually happened — no mentor miss, no cancellation, and no mentee
+  // no-show — and at least one did, so the claim is always true. Anything else
+  // falls through to the generic on-track line.
+  if (
+    state === 'noReviews' &&
+    current.completedSessions > 0 &&
+    missed === 0 &&
+    current.cancelledByMentor === 0 &&
+    current.missedByMentee === 0
+  ) {
     const n = current.completedSessions;
     const went =
       n === 1 ? 'Your one booked session went ahead' : `All ${n} of your booked sessions went ahead`;
@@ -270,7 +279,7 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
   const missed = current.missedByMentor;
   const rating = current.averageRating;
   const reviewCount = current.reviewCount;
-  const state = qualityStateOf(rate, reviewCount > 0);
+  const state = qualityStateOf(rate, rating != null);
   const good = state !== 'low';
 
   // Stars and the quote are independent. The stars are the 90-day window rating;
@@ -372,6 +381,9 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
                   */}
                   {missed > 0 ? (
                     <>
+                      {/* The compact teaser carries the "in 90 days" qualifier;
+                          the banner sits under the ring's "last 90 days" subline,
+                          so it isn't repeated here (design). */}
                       <p className={styles.bannerTitle}>
                         {missed} {missed === 1 ? 'mentee was' : 'mentees were'} left waiting
                       </p>

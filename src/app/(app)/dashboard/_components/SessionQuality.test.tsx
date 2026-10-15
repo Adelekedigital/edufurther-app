@@ -233,6 +233,7 @@ describe('SessionQuality', () => {
       completedSessions: 3,
       missedByMentor: 0,
       cancelledByMentor: 0,
+      missedByMentee: 0,
       reviewCount: 0,
       averageRating: null,
     });
@@ -244,6 +245,25 @@ describe('SessionQuality', () => {
     ).toBeInTheDocument();
     // The on-track disclosure wording, not the at-risk one.
     expect(screen.getByRole('button', { name: 'See your full breakdown' })).toBeInTheDocument();
+  });
+
+  it('does not claim all sessions went ahead when a mentee no-showed', () => {
+    // noReviews but not a clean record: a mentee no-show means not every booked
+    // session went ahead, so the "all went ahead" line must not fire.
+    data = windowStats({
+      attendanceRate: 100,
+      completedSessions: 3,
+      missedByMentor: 0,
+      cancelledByMentor: 0,
+      missedByMentee: 2,
+      reviewCount: 0,
+      averageRating: null,
+    });
+    quote = { data: null, isLoading: false, error: null, retry: vi.fn() };
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(
+      screen.queryByText(/All \d+ of your booked sessions went ahead/),
+    ).not.toBeInTheDocument();
   });
 
   it('a failed quote fetch never breaks the card — the rating line still shows', () => {
