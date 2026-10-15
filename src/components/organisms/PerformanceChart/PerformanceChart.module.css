@@ -66,6 +66,7 @@
   background: var(--ink-100);
 }
 .type {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -79,6 +80,18 @@
   /* Matches the range switch's muted/selected (ink-600 for contrast on ink-100). */
   color: var(--ink-600);
   cursor: pointer;
+}
+/* The visible pill is 28px tall (the design, and the range switch beside it);
+   extend the tap target to the 44px minimum vertically. It can't grow wider
+   without overlapping the adjacent button, so the two stay 32px side by side. */
+.type::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  min-height: var(--touch-target-min);
+  transform: translateY(-50%);
 }
 .typeOn {
   background: var(--surface-card);
