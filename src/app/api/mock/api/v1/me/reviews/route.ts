@@ -13,7 +13,7 @@ type OwnReview = components['schemas']['OwnReviewRead'];
  * card exercises the skip; the deleted-author / no-offering shapes follow.
  * ENABLE_MOCK_API=1 only.
  */
-export async function GET(req: Request) {
+export async function GET() {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
   const now = Date.now();
   const iso = (daysAgo: number) => new Date(now - daysAgo * 86_400_000).toISOString();

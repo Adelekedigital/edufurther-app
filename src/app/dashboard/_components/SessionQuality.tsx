@@ -181,12 +181,13 @@ function RatingGroup({ rating, reviewCount, profileHref }: { rating: number; rev
       <span className={styles.ratingValue} aria-hidden="true">
         {rating.toFixed(1)}
       </span>
-      {/* Count-free label: the window count is not the profile's all-time total. */}
+      {/* The visible "(N)" is in the accessible name (WCAG 2.5.3 Label-in-Name,
+          so "click 14" works), scoped so it never reads as the all-time total. */}
       <Link
         href={`${profileHref}?tab=reviews`}
         prefetch={false}
         className={styles.reviewCountLink}
-        aria-label="See all reviews"
+        aria-label={`See all reviews — ${reviewCount} in the last 90 days`}
       >
         ({reviewCount})
       </Link>
@@ -238,13 +239,15 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
   const rating = current.averageRating;
   const reviewCount = current.reviewCount;
 
-  // Reviews: the window's rating drives the star row; a settled-empty quote
-  // fetch (or a null window rating) means "no reviews yet". A quote still
-  // loading or errored is simply no quote — never a reason to blank the row or
-  // to fail the card.
+  // Stars and the quote are independent. The stars are the 90-day window rating;
+  // the quote is the latest all-time review (social proof), which can exist even
+  // when the window itself has no rating. So: show the stars when the window has
+  // a rating, show the quote whenever one was found, and show "no reviews yet"
+  // only once the quote has settled empty AND the window has no rating either.
+  // While the quote is still loading with no window rating, show neither — never
+  // flash "no reviews yet" before the quote has had its say.
   const quoteSettled = !quote.isLoading && !quote.error;
-  const noShowableReview = quoteSettled && quote.data == null;
-  const noReviews = rating == null || noShowableReview;
+  const showNoReviews = rating == null && quoteSettled && quote.data == null;
   const teaser = teaserOf(good, missed);
 
   const toggleLabel = expanded
@@ -299,15 +302,12 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
             <div className={styles.reviewsSection}>
               <div className={styles.reviewsHead}>
                 <span className={styles.reviewsLabel}>Mentee reviews</span>
-                {!noReviews && rating != null && (
+                {rating != null && (
                   <RatingGroup rating={rating} reviewCount={reviewCount} profileHref={profileHref} />
                 )}
               </div>
-              {noReviews ? (
-                <p className={styles.noReviewsMsg}>{NO_REVIEWS}</p>
-              ) : (
-                quote.data && <Quote quote={quote.data} />
-              )}
+              {quote.data && <Quote quote={quote.data} />}
+              {showNoReviews && <p className={styles.noReviewsMsg}>{NO_REVIEWS}</p>}
             </div>
 
             {good ? (
@@ -376,22 +376,17 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
               <span className={styles.teaserText}>{teaser.text}</span>
             </div>
 
-            {noReviews ? (
-              <p className={styles.noReviewsMsg}>{NO_REVIEWS}</p>
-            ) : (
-              <>
-                {rating != null && (
-                  <div className={styles.ratingLine}>
-                    <span className={styles.ratingLineStar}>
-                      <Star size={14} />
-                    </span>
-                    <strong className={styles.ratingLineValue}>{rating.toFixed(1)}</strong>
-                    <span>from {reviewCount}</span>
-                  </div>
-                )}
-                {quote.data && <Quote quote={quote.data} />}
-              </>
+            {rating != null && (
+              <div className={styles.ratingLine}>
+                <span className={styles.ratingLineStar}>
+                  <Star size={14} />
+                </span>
+                <strong className={styles.ratingLineValue}>{rating.toFixed(1)}</strong>
+                <span>from {reviewCount}</span>
+              </div>
             )}
+            {quote.data && <Quote quote={quote.data} />}
+            {showNoReviews && <p className={styles.noReviewsMsg}>{NO_REVIEWS}</p>}
           </div>
         )}
       </div>

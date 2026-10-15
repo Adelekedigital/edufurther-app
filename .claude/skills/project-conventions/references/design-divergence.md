@@ -672,10 +672,13 @@ top-level, non-windowed int on `GET /me/mentor-stats`), `missed_by_mentee` (#463
 per window block), and a reviews endpoint, `GET /api/v1/me/reviews` (#459) — so
 the compact↔expanded disclosure, the mentee-review **quote**, the **streak**
 line, and a "Mentee didn't show" breakdown row all ship. The quote is fetched by
-a new data-layer hook, `useMyReviewQuote` (`lib/api/data/myReviews.ts`): it takes
-the newest `withdrawn: false` review and is **supplementary** — its own loading,
-empty and error are owned by the card, and a missing or failed quote never breaks
-it. The rows below are updated in place.
+a new data-layer hook, `useMyReviewQuote` (`lib/api/data/myReviews.ts`): it walks
+the pages (`next_cursor`) for the newest `withdrawn: false` review and is
+**supplementary** — its own loading, empty and error are owned by the card, and a
+missing or failed quote never breaks it. The **stars and the quote are
+decoupled**: the stars are the 90-day window rating, the quote is the latest
+all-time review (social proof), so an older quote still shows after the window's
+own reviews age out. The rows below are updated in place.
 
 | Design | We do | Why | Revisit when |
 |---|---|---|---|
@@ -685,8 +688,8 @@ it. The rows below are updated in place.
 | A compact **teaser ↔ expanded** disclosure toggle | **Built.** Compact by default (headline + rating line + quote), expanding to the full breakdown, reviews block and banner, via a real `<button aria-expanded aria-controls>` | The quote and streak now give the compact view something to preview, so the disclosure earns its place | — |
 | At-risk banner title "{n} mentees were left waiting" | Singular handled: "1 mentee was left waiting" | Grammar, fixed here under the small-fixes rule — at `rate < 85` the missed count can be 1 | never |
 | ProgressCircle arc is one colour | Arc tone follows the state (green on track, red at risk) | Consistency with the badge, card border and banner, which all theme on the same threshold. Flagged to coordinator in case the design's ring is a fixed colour | design confirms the ring colour |
-| Rating row always shows stars + a number | When there is no review to show — `average_rating` null, or the quote fetch confirms no `withdrawn: false` review — show "No reviews yet — they'll appear after mentees review you" instead, in **both** views, and hide the stars and the quote | `toFixed` on null would throw, and a settled-but-unreviewed window is a real case the design doesn't draw. **Addition (not in the design):** the design draws no no-reviews state for this panel; the copy and the both-views behaviour are ours | design draws the no-reviews-yet state |
-| Review count "(N)" is plain text beside the rating | **Addition (not in the design):** "(N)" is a link to the mentor's own profile Reviews tab (`{profileHref}?tab=reviews`, the same route Bookings and the profile header use), labelled **count-free** `aria-label="See all reviews"` (the window count is not the profile's all-time total, so the label must not imply it), keyboard-focusable with the app focus ring. Sits outside the stars' `role="img"` so a screen reader reaches it as a real link | The panel shows the count but gave no way through to read what mentees wrote; linking to the existing Reviews tab reuses one implementation rather than duplicating the list on the dashboard | design draws a reviews affordance here, or a dashboard-local reviews view ships |
+| Rating row always shows stars + a number | Stars + number render only when the window `average_rating` is non-null (`toFixed` on null would throw). **Stars and quote are independent:** the quote shows whenever one was found (even with a null window rating). "No reviews yet — they'll appear after mentees review you" shows in **both** views **only** when the window rating is null **and** the quote has settled with nothing; while the quote is still loading with no window rating, neither the message nor the quote shows (no premature "no reviews" flash) | A settled-but-unreviewed window is a real case the design doesn't draw. **Addition (not in the design):** the design draws no no-reviews state for this panel; the copy and the both-views behaviour are ours | design draws the no-reviews-yet state |
+| Review count "(N)" is plain text beside the rating | **Addition (not in the design):** "(N)" is a link to the mentor's own profile Reviews tab (`{profileHref}?tab=reviews`, the same route Bookings and the profile header use), labelled `aria-label="See all reviews — {N} in the last 90 days"` — the visible "(N)" is kept in the accessible name (WCAG 2.5.3 Label-in-Name, so voice control's "click 14" works), scoped to the window so it never reads as the profile's all-time total. Keyboard-focusable with the app focus ring; sits outside the stars' `role="img"` so a screen reader reaches it as a real link | The panel shows the count but gave no way through to read what mentees wrote; linking to the existing Reviews tab reuses one implementation rather than duplicating the list on the dashboard | design draws a reviews affordance here, or a dashboard-local reviews view ships |
 
 **Ours, not the design's:** the `ProgressCircle` atom
 (`components/atoms/ProgressCircle`). The DS ships one (hint-size 90px,90px); the

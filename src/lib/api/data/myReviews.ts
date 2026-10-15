@@ -17,8 +17,10 @@ export type ReviewQuote = {
   by: string;
 };
 
-/** How many recent reviews to scan for the newest showable one (withdrawn ones are skipped). */
-const SCAN = 10;
+/** Reviews per page while scanning for the newest showable one. */
+const PAGE_SIZE = 20;
+/** Cap on pages walked, so a misbehaving cursor can never loop forever. */
+const MAX_PAGES = 25;
 
 /**
  * The attribution line: first name + initial exactly as the public page shows
@@ -37,8 +39,10 @@ function quoteBy(r: OwnReviewRead): string {
 /**
  * GET /api/v1/me/reviews → the newest review worth quoting on the dashboard.
  * The list is newest first and includes withdrawn reviews (only the subject may
- * see those), so we take the newest `withdrawn: false` one. `null` data means no
- * showable review — a real, non-error state the card renders as "no reviews yet".
+ * see those), so we take the newest `withdrawn: false` one. Pages are walked via
+ * `next_cursor` until a showable review is found or the list is exhausted, so
+ * `null` data means no showable review **all-time** — not merely none on the
+ * newest page — a real, non-error state the card renders as "no reviews yet".
  *
  * Supplementary to the session-quality card: the caller treats a failure or an
  * empty result as "no quote", never as a reason to fail the whole panel.
@@ -50,14 +54,19 @@ export function useMyReviewQuote(userId: string | null): Remote<ReviewQuote> {
     staleTime: 60_000,
     retry: retryOnce,
     queryFn: async ({ signal }): Promise<ReviewQuote | null> => {
-      const { data, error, response } = await api.GET('/api/v1/me/reviews', {
-        params: { query: { limit: SCAN } },
-        signal,
-      });
-      if (!data) throw apiError(response.status, error);
-      const showable = data.data.find((r) => !r.withdrawn);
-      if (!showable) return null;
-      return { quote: showable.public_review, by: quoteBy(showable) };
+      let cursor: string | undefined;
+      for (let page = 0; page < MAX_PAGES; page++) {
+        const { data, error, response } = await api.GET('/api/v1/me/reviews', {
+          params: { query: { cursor, limit: PAGE_SIZE } },
+          signal,
+        });
+        if (!data) throw apiError(response.status, error);
+        const showable = data.data.find((r) => !r.withdrawn);
+        if (showable) return { quote: showable.public_review, by: quoteBy(showable) };
+        if (!data.next_cursor) return null;
+        cursor = data.next_cursor;
+      }
+      return null;
     },
   });
   return {

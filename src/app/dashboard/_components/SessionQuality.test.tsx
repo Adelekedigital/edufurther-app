@@ -151,9 +151,11 @@ describe('SessionQuality', () => {
     expect(screen.getByText('Canceled by you')).toBeInTheDocument();
     expect(screen.getByText('Missed by you')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Rated 4.8 out of 5' })).toBeInTheDocument();
-    // The count links to the profile's Reviews tab, but never claims to be the
-    // all-time total (the window count is not that total).
-    const reviewsLink = screen.getByRole('link', { name: 'See all reviews' });
+    // The count links to the profile's Reviews tab. The visible "(14)" is in the
+    // accessible name (Label-in-Name), scoped so it never reads as an all-time total.
+    const reviewsLink = screen.getByRole('link', {
+      name: 'See all reviews — 14 in the last 90 days',
+    });
     expect(reviewsLink).toHaveAttribute('href', '/mentors/gbenga?tab=reviews');
     expect(reviewsLink).toHaveTextContent('(14)');
     // The streak carries the good banner.
@@ -200,6 +202,14 @@ describe('SessionQuality', () => {
     expect(screen.queryByText(/in a row/)).not.toBeInTheDocument();
   });
 
+  it('uses the singular streak line at exactly one held session', async () => {
+    data = windowStats({ attendanceRate: 90 }, {}, { currentStreak: 1 });
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
+    expect(screen.getByText(/1 session held in a row/)).toBeInTheDocument();
+    expect(screen.queryByText(/sessions held/)).not.toBeInTheDocument();
+  });
+
   // ---- reviews / quote states ----------------------------------------------
 
   it('shows the no-reviews message and no rating when the window has no rating', async () => {
@@ -231,6 +241,40 @@ describe('SessionQuality', () => {
     quote = { data: null, isLoading: true, error: null, retry: vi.fn() };
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     expect(screen.getByText('4.8')).toBeInTheDocument();
+    expect(screen.queryByText(/No reviews yet/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/The clearest hour/)).not.toBeInTheDocument();
+  });
+
+  it('shows an all-time quote even when the 90-day window has no rating', () => {
+    // The stars are the window rating; the quote is the latest all-time review —
+    // an older review survives even after the window's own reviews age out.
+    data = windowStats({ attendanceRate: 92, averageRating: null, reviewCount: 0 });
+    quote = hasQuote();
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByText(/The clearest hour/)).toBeInTheDocument();
+    expect(screen.queryByText(/No reviews yet/)).not.toBeInTheDocument();
+    // No window rating → no stars line.
+    expect(screen.queryByText('4.8')).not.toBeInTheDocument();
+  });
+
+  it('shows neither the no-reviews message nor a quote while the quote is still settling', () => {
+    data = windowStats({ attendanceRate: 92, averageRating: null, reviewCount: 0 });
+    quote = { data: null, isLoading: true, error: null, retry: vi.fn() };
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    // Don't flash "no reviews" before the all-time quote has had its say.
+    expect(screen.queryByText(/No reviews yet/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/The clearest hour/)).not.toBeInTheDocument();
+    // The teaser (about show-up, not reviews) still shows.
+    expect(screen.getByText('You’re holding your sessions')).toBeInTheDocument();
+  });
+
+  it('keeps the expanded card intact when the quote fails — stars, no quote, no message', async () => {
+    data = windowStats({ attendanceRate: 86 });
+    quote = { data: null, isLoading: false, error: { kind: 'server', message: 'x' }, retry: vi.fn() };
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
+    expect(screen.getByRole('img', { name: 'Rated 4.8 out of 5' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /See all reviews/ })).toBeInTheDocument();
     expect(screen.queryByText(/No reviews yet/)).not.toBeInTheDocument();
     expect(screen.queryByText(/The clearest hour/)).not.toBeInTheDocument();
   });

@@ -23,8 +23,8 @@ const review = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-const res = (rows: unknown[]) => ({
-  data: { data: rows, next_cursor: null },
+const res = (rows: unknown[], next: string | null = null) => ({
+  data: { data: rows, next_cursor: next },
   error: undefined,
   response: new Response(null, { status: 200 }),
 });
@@ -51,11 +51,33 @@ describe('useMyReviewQuote', () => {
     );
     const { result } = renderHook(() => useMyReviewQuote('u1'), { wrapper });
     await waitFor(() => expect(result.current.data).not.toBeNull());
-    expect(GET.mock.calls[0]![1].params.query).toMatchObject({ limit: 10 });
+    expect(GET.mock.calls[0]![1].params.query).toMatchObject({ limit: 20 });
     expect(result.current.data).toEqual({
       quote: 'The one that should show.',
       by: 'Ada O. · Visa and interview',
     });
+  });
+
+  it('follows next_cursor to a later page when the newest page is all withdrawn', async () => {
+    GET.mockResolvedValueOnce(
+      res([review({ withdrawn: true }), review({ withdrawn: true })], 'cursor-2'),
+    ).mockResolvedValueOnce(res([review({ public_review: 'Found on page two.' })]));
+    const { result } = renderHook(() => useMyReviewQuote('u1'), { wrapper });
+    await waitFor(() => expect(result.current.data).not.toBeNull());
+    expect(GET).toHaveBeenCalledTimes(2);
+    expect(GET.mock.calls[1]![1].params.query).toMatchObject({ cursor: 'cursor-2' });
+    expect(result.current.data!.quote).toBe('Found on page two.');
+  });
+
+  it('returns null once a cursor-walked list is exhausted with no showable review', async () => {
+    GET.mockResolvedValueOnce(res([review({ withdrawn: true })], 'cursor-2')).mockResolvedValueOnce(
+      res([review({ withdrawn: true })]),
+    );
+    const { result } = renderHook(() => useMyReviewQuote('u1'), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(GET).toHaveBeenCalledTimes(2);
+    expect(result.current.data).toBeNull();
+    expect(result.current.error).toBeNull();
   });
 
   it('attributes a deleted author as "Deleted user" with no offering suffix', async () => {
