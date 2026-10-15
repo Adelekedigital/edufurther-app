@@ -130,7 +130,7 @@ describe('SessionQuality', () => {
     );
   });
 
-  it('uses a primary, differently-worded disclosure when at risk', () => {
+  it('uses a differently-worded disclosure when at risk', () => {
     data = windowStats({ attendanceRate: 60, missedByMentor: 5, menteesLeftWaiting: 3 });
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     expect(screen.getByText('At risk')).toBeInTheDocument();
@@ -233,6 +233,43 @@ describe('SessionQuality', () => {
     await userEvent.click(screen.getByRole('button', { name: 'See what’s pulling this down' }));
     expect(screen.getByText('2 mentees were left waiting')).toBeInTheDocument();
     expect(screen.queryByText('5 mentees were left waiting')).not.toBeInTheDocument();
+  });
+
+  it('names the rounded show-up rate when at risk with no mentee left waiting', async () => {
+    // At risk via misses, but every miss was a double no-show → leftWaiting 0.
+    // Teaser AND banner name the rate, rounded to match the ring — never "slipping".
+    data = windowStats({
+      attendanceRate: 60.7,
+      missedByMentor: 2,
+      menteesLeftWaiting: 0,
+      completedSessions: 3,
+    });
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    // Compact teaser.
+    expect(screen.getByText('Your show-up rate is 61%')).toBeInTheDocument();
+    expect(screen.queryByText(/slipping|60\.7/)).not.toBeInTheDocument();
+    // Expanded banner.
+    await userEvent.click(screen.getByRole('button', { name: 'See what’s pulling this down' }));
+    expect(screen.getByText('Your show-up rate is 61%')).toBeInTheDocument();
+  });
+
+  it('decides on-track on the rounded rate the ring shows, not the raw value', () => {
+    // 84.6 rounds to the "85%" the ring displays, so the card reads On track —
+    // never "At risk" beside a headline that already says 85% (the good line).
+    data = windowStats({ attendanceRate: 84.6, menteesLeftWaiting: 0, completedSessions: 5 });
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByRole('img', { name: 'Show-up rate 85%' })).toBeInTheDocument();
+    expect(screen.getByText('On track')).toBeInTheDocument();
+    expect(screen.queryByText('At risk')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Your show-up rate is 85%/)).not.toBeInTheDocument();
+  });
+
+  it('leads the no-reviews note with a star icon', () => {
+    data = windowStats({ attendanceRate: 92, averageRating: null, reviewCount: 0 });
+    quote = { data: null, isLoading: false, error: null, retry: vi.fn() };
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByText(/No reviews yet/)).toBeInTheDocument();
+    expect(screen.getByText('star')).toBeInTheDocument();
   });
 
   // ---- the streak -----------------------------------------------------------

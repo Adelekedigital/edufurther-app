@@ -92,6 +92,7 @@ function teaserOf(
   onTrack: boolean,
   streak: number,
   leftWaiting: number,
+  displayRate: number,
 ): { text: string; icon: IconName; good: boolean } {
   if (onTrack) {
     const text = streak > 0 ? streakLine(streak) : 'You’re holding your sessions';
@@ -100,7 +101,7 @@ function teaserOf(
   const text =
     leftWaiting > 0
       ? `${leftWaiting} ${leftWaiting === 1 ? 'mentee was' : 'mentees were'} left waiting in 90 days`
-      : 'Your show-up rate is slipping';
+      : `Your show-up rate is ${displayRate}%`;
   return { text, icon: 'error', good: false };
 }
 
@@ -234,8 +235,11 @@ function Quote({ quote }: { quote: ReviewQuote }) {
 function NoReviewsNote() {
   return (
     <div className={styles.noReviews}>
-      <span className={styles.noReviewsTitle}>No reviews yet</span>
-      <span className={styles.noReviewsBody}>Your latest mentee review will show here.</span>
+      <Icon name="star" size={16} className={styles.noReviewsIcon} />
+      <div className={styles.noReviewsText}>
+        <span className={styles.noReviewsTitle}>No reviews yet</span>
+        <span className={styles.noReviewsBody}>Your latest mentee review will show here.</span>
+      </div>
     </div>
   );
 }
@@ -324,6 +328,10 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
   if (current.attendanceRate == null) return <Empty />;
 
   const rate = current.attendanceRate;
+  // The ring, badge, and headline all show the same rounded integer, so the
+  // on-track decision is made on that integer too. Otherwise a rate like 84.6
+  // rounds to a displayed "85%" while the raw value (< 85) still badges "At risk".
+  const displayRate = Math.round(rate);
   // "Missed by you" (the breakdown row) is every mentor no-show; the "left
   // waiting" headline is only the ones where a mentee was actually present
   // (mentees_left_waiting), so the two can differ. Clamp to the row's count (the
@@ -332,7 +340,7 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
   const leftWaiting = Math.min(current.menteesLeftWaiting, current.missedByMentor);
   const rating = current.averageRating;
   const reviewCount = current.reviewCount;
-  const onTrack = rate >= GOOD_THRESHOLD;
+  const onTrack = displayRate >= GOOD_THRESHOLD;
   // The quote is the latest review (social proof); it shows whenever one exists
   // and is never gated on the 90-day window. The "no reviews yet" note stands in
   // only when there is genuinely no review to show, and only once the fetch has
@@ -344,14 +352,14 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
   // breakdown disclosure.
   const canExpand = !onTrack || rating != null;
   const isOpen = expanded && canExpand;
-  const teaser = teaserOf(onTrack, currentStreak, leftWaiting);
+  const teaser = teaserOf(onTrack, currentStreak, leftWaiting, displayRate);
 
   const toggleLabel = isOpen
     ? 'Show less'
     : onTrack
       ? 'See your full breakdown'
       : 'See what’s pulling this down';
-  const toggleVariant = isOpen ? 'text' : onTrack ? 'secondary-outlined' : 'primary';
+  const toggleVariant = isOpen ? 'text' : 'secondary-outlined';
 
   return (
     <section className={cx(styles.card, !onTrack && styles.cardRisk)} aria-labelledby={headingId}>
@@ -439,14 +447,16 @@ export function SessionQuality({ userId, profileHref }: { userId: string; profil
                     </>
                   ) : (
                     <>
-                      <p className={styles.bannerTitle}>Your show-up rate is slipping</p>
+                      {/* No mentee was left waiting, but the rate itself is the
+                          risk — name it, rather than a vague "slipping". */}
+                      <p className={styles.bannerTitle}>Your show-up rate is {displayRate}%</p>
                       <p className={styles.bannerText}>
                         Hold your upcoming booked sessions to bring it back up.
                       </p>
                     </>
                   )}
                   <div className={styles.bannerActions}>
-                    <ButtonLink href="/calendar" size="small">
+                    <ButtonLink href="/calendar" variant="secondary-outlined" size="small">
                       Review your hours
                     </ButtonLink>
                     <ButtonLink href="/bookings" variant="text" size="small">
