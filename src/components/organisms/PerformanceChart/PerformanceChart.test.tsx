@@ -67,22 +67,47 @@ describe('PerformanceChart', () => {
     expect(screen.getByRole('radio', { name: '6M' })).toHaveAttribute('aria-checked', 'false');
   });
 
-  it('offers only the five most recent whole years in the year picker', () => {
-    // Six calendar years of data; the Year select caps at the 5 mentor-stats
-    // allows (current + 4 prior), dropping the oldest — so a Year pick can't 422.
-    const sixYears = Array.from({ length: 72 }, (_, i) => {
-      const d = new Date(Date.UTC(2021, i, 1));
-      return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-    });
-    const oneSeries: ChartSeries[] = [
-      { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: sixYears.map(() => 1) },
+  describe('year picker (mentor tenure)', () => {
+    // The picker depends on the current UTC year (the backend's query bound), so
+    // pin the clock.
+    beforeEach(() => vi.setSystemTime(new Date('2026-06-15T00:00:00Z')));
+    afterEach(() => vi.useRealTimers());
+
+    const yearOptions = () =>
+      within(screen.getByRole('combobox', { name: 'Show a year' }))
+        .getAllByRole('option')
+        .map((o) => o.textContent)
+        .filter((t) => t !== 'Year');
+
+    const seriesFor = (months: string[], active: (m: string) => number): ChartSeries[] => [
+      { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: months.map(active) },
     ];
-    render(<PerformanceChart series={oneSeries} months={sixYears} />);
-    const years = within(screen.getByRole('combobox', { name: 'Show a year' }))
-      .getAllByRole('option')
-      .map((o) => o.textContent)
-      .filter((t) => t !== 'Year');
-    expect(years).toEqual(['2026', '2025', '2024', '2023', '2022']);
+    const monthsFrom = (startYear: number, n: number) =>
+      Array.from({ length: n }, (_, i) => {
+        const d = new Date(Date.UTC(startYear, i, 1));
+        return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+      });
+
+    it('caps a long-tenured mentor at the current year + 4 prior (the queryable range)', () => {
+      // Six calendar years of data, active throughout; the oldest (2021) is older
+      // than the backend can query, so it is dropped.
+      const months = monthsFrom(2021, 72);
+      render(<PerformanceChart series={seriesFor(months, () => 1)} months={months} />);
+      expect(yearOptions()).toEqual(['2026', '2025', '2024', '2023', '2022']);
+    });
+
+    it("offers only the mentor's active years, from their first session", () => {
+      // 48 months (2023–2026), but sessions only from 2025 — the empty 2023/2024
+      // are the backend's zero rows and must not appear.
+      const months = monthsFrom(2023, 48);
+      render(
+        <PerformanceChart
+          series={seriesFor(months, (m) => (Number(m.slice(0, 4)) >= 2025 ? 1 : 0))}
+          months={months}
+        />,
+      );
+      expect(yearOptions()).toEqual(['2026', '2025']);
+    });
   });
 
   it('toggles a series off from the legend', async () => {

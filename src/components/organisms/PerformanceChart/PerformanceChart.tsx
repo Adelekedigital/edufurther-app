@@ -146,6 +146,13 @@ export function PerformanceChart({
     [series, months, ranges, effectiveVariant, range, hidden, hover, title, yUnit, narrow, mobileLegend],
   );
 
+  // The year picker offers the mentor's active years — from their first session to
+  // now — never older than the backend can query (current UTC year − 4), so a Year
+  // pick can't 422.
+  const yearOptions = m.years.filter(
+    (yr) => Number(yr) >= Math.max(m.firstActiveYear, new Date().getUTCFullYear() - 4),
+  );
+
   // Track the card width. ResizeObserver, not a media query: the card narrows
   // with its column, not the viewport, and reflows the same in Storybook.
   // Crossing the boundary closes the menu (its anchor may vanish); the ref
@@ -342,7 +349,7 @@ export function PerformanceChart({
               }}
             >
               <option value="">Year</option>
-              {m.yearOptions.map((yr) => (
+              {yearOptions.map((yr) => (
                 <option key={yr} value={yr}>
                   {yr}
                 </option>

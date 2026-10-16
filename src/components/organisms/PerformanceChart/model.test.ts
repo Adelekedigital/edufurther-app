@@ -41,6 +41,29 @@ describe('buildChartModel', () => {
     expect(m.legend.find((l) => l.key === 'missed')?.total).toBe(2);
   });
 
+  it('reports the first active year — the earliest month with any session', () => {
+    // Default series: month 1 (2025-01) is all zero, active from month 2.
+    expect(buildChartModel(input()).firstActiveYear).toBe(2025);
+
+    // Leading zero months (2024) before the mentor's first session (2025-01).
+    const twoYears = [
+      ...Array.from({ length: 6 }, (_, i) => `2024-${String(i + 7).padStart(2, '0')}`),
+      ...Array.from({ length: 6 }, (_, i) => `2025-${String(i + 1).padStart(2, '0')}`),
+    ];
+    const activeFrom2025: ChartSeries[] = [
+      { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: [0, 0, 0, 0, 0, 0, 1, 2, 1, 3, 2, 4] },
+    ];
+    expect(
+      buildChartModel(input({ months: twoYears, series: activeFrom2025, range: '12m' })).firstActiveYear,
+    ).toBe(2025);
+
+    // No sessions at all → the most recent year.
+    const none: ChartSeries[] = [
+      { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: months.map(() => 0) },
+    ];
+    expect(buildChartModel(input({ series: none })).firstActiveYear).toBe(2025);
+  });
+
   it('stacks bars for the bar variant and draws lines for the line variant', () => {
     const bar = buildChartModel(input({ variant: 'bar' }));
     expect(bar.rects.length).toBeGreaterThan(0);

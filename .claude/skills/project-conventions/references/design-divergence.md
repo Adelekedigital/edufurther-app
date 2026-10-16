@@ -756,8 +756,11 @@ the card follows the performance chart's range. The dashboard observes the chart
 the teaser's "...left waiting {phrase}", the rate line's "over {priorLabel}" and the
 reviews-link count all read that window. A **Year** selection fetches `?year=YYYY`
 (contract #469) and reads **"in YYYY"** with the prior calendar year as the
-comparison — matching the design; the year `<select>` is capped to the whole years
-the backend allows (the current UTC year + 4). The good banner is the design's two
+comparison — matching the design; the year `<select>` offers the mentor's **active
+years** — from their first session (the first month with any session) up to now,
+capped at the current UTC year − 4 so a pick can't 422 — rather than the design's
+"every data year", which would offer empty years before the mentor joined. The good
+banner is the design's two
 lines — the streak as a green title, then "Keep it going." plus "Your next session is
 {day} with {name}." when there's an upcoming session. One value divergence remains:
 the 90/180/365-day map for 3M/6M/12M is ours (the design's synced figures imply
