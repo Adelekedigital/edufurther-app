@@ -21,6 +21,11 @@ export type ChartModelInput = {
   hover: number;
   title: string;
   yUnit: string;
+  /**
+   * The current UTC year — the clock, passed in so the model stays pure. Caps the
+   * year picker at the backend's queryable range (`currentYear − 4`).
+   */
+  currentYear: number;
   /** Container is below the mobile breakpoint (ResizeObserver, < 440px). */
   narrow?: boolean;
   /** How the legend collapses when narrow. Default 'compact'. */
@@ -47,6 +52,11 @@ export function buildChartModel(i: ChartModelInput) {
     firstActiveIdx >= 0 && months[firstActiveIdx]
       ? Number(months[firstActiveIdx]!.slice(0, 4))
       : Number(years[0] ?? 0);
+  // The year picker offers the mentor's active years — first session to now — never
+  // older than the backend can query (`currentYear − 4`), so a Year pick can't 422.
+  // Empty only for stale data entirely outside the queryable range (the component
+  // then hides the picker), which the current-month-ending window never produces.
+  const yearOptions = years.filter((y) => Number(y) >= Math.max(firstActiveYear, i.currentYear - 4));
 
   let range = i.range;
   if (range === 'all') range = `y${years[0]}`;
@@ -222,6 +232,7 @@ export function buildChartModel(i: ChartModelInput) {
     rangeButtons: ranges.map((r) => ({ key: r.key, label: r.label, on: r.key === range })),
     years,
     firstActiveYear,
+    yearOptions,
     yearValue: yr ?? '',
     isYear,
     legend,

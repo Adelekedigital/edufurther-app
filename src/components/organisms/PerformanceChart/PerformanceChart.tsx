@@ -128,6 +128,9 @@ export function PerformanceChart({
   const longRange = range.startsWith('y') || (ranges.find((r) => r.key === range)?.n ?? 6) >= 12;
   const effectiveVariant = showSwitch ? chartType ?? (longRange ? 'line' : 'bar') : variant;
 
+  // The clock, read once and passed into the pure model so it owns the year
+  // picker's cap (the backend's queryable range) and stays unit-testable.
+  const currentYear = new Date().getUTCFullYear();
   const m = useMemo(
     () =>
       buildChartModel({
@@ -140,17 +143,11 @@ export function PerformanceChart({
         hover,
         title,
         yUnit,
+        currentYear,
         narrow,
         mobileLegend,
       }),
-    [series, months, ranges, effectiveVariant, range, hidden, hover, title, yUnit, narrow, mobileLegend],
-  );
-
-  // The year picker offers the mentor's active years — from their first session to
-  // now — never older than the backend can query (current UTC year − 4), so a Year
-  // pick can't 422.
-  const yearOptions = m.years.filter(
-    (yr) => Number(yr) >= Math.max(m.firstActiveYear, new Date().getUTCFullYear() - 4),
+    [series, months, ranges, effectiveVariant, range, hidden, hover, title, yUnit, currentYear, narrow, mobileLegend],
   );
 
   // Track the card width. ResizeObserver, not a media query: the card narrows
@@ -339,22 +336,26 @@ export function PerformanceChart({
                 </button>
               ))}
             </div>
-            <select
-              aria-label="Show a year"
-              className={cx(styles.year, m.isYear && styles.yearOn)}
-              value={m.yearValue}
-              onChange={(e) => {
-                setRange(e.target.value ? `y${e.target.value}` : '12m');
-                setHover(-1);
-              }}
-            >
-              <option value="">Year</option>
-              {yearOptions.map((yr) => (
-                <option key={yr} value={yr}>
-                  {yr}
-                </option>
-              ))}
-            </select>
+            {/* No picker when the mentor has no year the backend can query (only
+                stale data entirely outside the range), so it's never an empty box. */}
+            {m.yearOptions.length > 0 && (
+              <select
+                aria-label="Show a year"
+                className={cx(styles.year, m.isYear && styles.yearOn)}
+                value={m.yearValue}
+                onChange={(e) => {
+                  setRange(e.target.value ? `y${e.target.value}` : '12m');
+                  setHover(-1);
+                }}
+              >
+                <option value="">Year</option>
+                {m.yearOptions.map((yr) => (
+                  <option key={yr} value={yr}>
+                    {yr}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         </div>
       </div>

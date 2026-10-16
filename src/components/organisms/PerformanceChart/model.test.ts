@@ -24,6 +24,7 @@ const input = (over: Partial<ChartModelInput> = {}): ChartModelInput => ({
   hover: -1,
   title: 'Session performance',
   yUnit: 'Sessions',
+  currentYear: 2026,
   ...over,
 });
 
@@ -62,6 +63,40 @@ describe('buildChartModel', () => {
       { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: months.map(() => 0) },
     ];
     expect(buildChartModel(input({ series: none })).firstActiveYear).toBe(2025);
+  });
+
+  it("offers the mentor's active years, capped at the backend's queryable range", () => {
+    const monthsFrom = (startYear: number, n: number) =>
+      Array.from({ length: n }, (_, i) => {
+        const d = new Date(Date.UTC(startYear, i, 1));
+        return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+      });
+    const activeWhen = (mo: string[], from: (m: string) => boolean): ChartSeries[] => [
+      { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: mo.map((m) => (from(m) ? 1 : 0)) },
+    ];
+
+    // Default fixture: 2025 only, active → [2025].
+    expect(buildChartModel(input()).yearOptions).toEqual(['2025']);
+
+    // 48 months (2023–2026), sessions only from 2025: the empty 2023/2024 drop.
+    const recent = monthsFrom(2023, 48);
+    expect(
+      buildChartModel(
+        input({ months: recent, series: activeWhen(recent, (m) => Number(m.slice(0, 4)) >= 2025), range: '12m' }),
+      ).yearOptions,
+    ).toEqual(['2026', '2025']);
+
+    // Six active years: capped at currentYear − 4 (2022), dropping the oldest (2021).
+    const long = monthsFrom(2021, 72);
+    expect(
+      buildChartModel(input({ months: long, series: activeWhen(long, () => true), range: '12m' })).yearOptions,
+    ).toEqual(['2026', '2025', '2024', '2023', '2022']);
+
+    // Stale data entirely before the queryable range → no options.
+    const stale = ['2019-01', '2019-02'];
+    expect(
+      buildChartModel(input({ months: stale, series: activeWhen(stale, () => true), range: '12m' })).yearOptions,
+    ).toEqual([]);
   });
 
   it('stacks bars for the bar variant and draws lines for the line variant', () => {

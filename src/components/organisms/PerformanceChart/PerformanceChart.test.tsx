@@ -13,6 +13,16 @@ const series: ChartSeries[] = [
   { key: 'missed', label: 'Missed', color: 'var(--red-500)', values: [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1] },
 ];
 const zero = series.map((s) => ({ ...s, values: s.values.map(() => 0) }));
+// A 12-month window ending at the current month, so the year picker always offers
+// at least the current year whatever year the suite runs in. Which years it offers
+// is the model's concern (model.test.ts); here we only exercise the behaviour.
+const recentMonths = (() => {
+  const now = new Date();
+  return Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (11 - i), 1));
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+  });
+})();
 
 describe('PerformanceChart', () => {
   it('renders a labelled chart, a time-range radiogroup and a legend', () => {
@@ -62,52 +72,25 @@ describe('PerformanceChart', () => {
 
   it('switching to a year via the select clears the preset radios', async () => {
     const user = userEvent.setup();
-    render(<PerformanceChart series={series} months={months} />);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Show a year' }), '2025');
+    render(<PerformanceChart series={series} months={recentMonths} />);
+    const select = screen.getByRole('combobox', { name: 'Show a year' });
+    // Any offered year does — which years are offered is the model's concern.
+    const [year] = within(select)
+      .getAllByRole('option')
+      .filter((o) => (o as HTMLOptionElement).value);
+    await user.selectOptions(select, year as HTMLOptionElement);
     expect(screen.getByRole('radio', { name: '6M' })).toHaveAttribute('aria-checked', 'false');
   });
 
-  describe('year picker (mentor tenure)', () => {
-    // The picker depends on the current UTC year (the backend's query bound), so
-    // pin the clock.
-    beforeEach(() => vi.setSystemTime(new Date('2026-06-15T00:00:00Z')));
-    afterEach(() => vi.useRealTimers());
-
-    const yearOptions = () =>
-      within(screen.getByRole('combobox', { name: 'Show a year' }))
-        .getAllByRole('option')
-        .map((o) => o.textContent)
-        .filter((t) => t !== 'Year');
-
-    const seriesFor = (months: string[], active: (m: string) => number): ChartSeries[] => [
-      { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: months.map(active) },
+  it('hides the year picker when no year is within the queryable range', () => {
+    // Data entirely older than the backend can query (the current year − 4): there
+    // is no year to offer, so the picker is absent rather than an empty box.
+    const stale = ['2018-01', '2018-02'];
+    const staleSeries: ChartSeries[] = [
+      { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: [1, 2] },
     ];
-    const monthsFrom = (startYear: number, n: number) =>
-      Array.from({ length: n }, (_, i) => {
-        const d = new Date(Date.UTC(startYear, i, 1));
-        return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-      });
-
-    it('caps a long-tenured mentor at the current year + 4 prior (the queryable range)', () => {
-      // Six calendar years of data, active throughout; the oldest (2021) is older
-      // than the backend can query, so it is dropped.
-      const months = monthsFrom(2021, 72);
-      render(<PerformanceChart series={seriesFor(months, () => 1)} months={months} />);
-      expect(yearOptions()).toEqual(['2026', '2025', '2024', '2023', '2022']);
-    });
-
-    it("offers only the mentor's active years, from their first session", () => {
-      // 48 months (2023–2026), but sessions only from 2025 — the empty 2023/2024
-      // are the backend's zero rows and must not appear.
-      const months = monthsFrom(2023, 48);
-      render(
-        <PerformanceChart
-          series={seriesFor(months, (m) => (Number(m.slice(0, 4)) >= 2025 ? 1 : 0))}
-          months={months}
-        />,
-      );
-      expect(yearOptions()).toEqual(['2026', '2025']);
-    });
+    render(<PerformanceChart series={staleSeries} months={stale} />);
+    expect(screen.queryByRole('combobox', { name: 'Show a year' })).not.toBeInTheDocument();
   });
 
   it('toggles a series off from the legend', async () => {
