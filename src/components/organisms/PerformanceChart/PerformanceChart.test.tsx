@@ -13,6 +13,16 @@ const series: ChartSeries[] = [
   { key: 'missed', label: 'Missed', color: 'var(--red-500)', values: [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1] },
 ];
 const zero = series.map((s) => ({ ...s, values: s.values.map(() => 0) }));
+// A 12-month window ending at the current month, so the year picker always offers
+// at least the current year whatever year the suite runs in. Which years it offers
+// is the model's concern (model.test.ts); here we only exercise the behaviour.
+const recentMonths = (() => {
+  const now = new Date();
+  return Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (11 - i), 1));
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+  });
+})();
 
 describe('PerformanceChart', () => {
   it('renders a labelled chart, a time-range radiogroup and a legend', () => {
@@ -62,27 +72,25 @@ describe('PerformanceChart', () => {
 
   it('switching to a year via the select clears the preset radios', async () => {
     const user = userEvent.setup();
-    render(<PerformanceChart series={series} months={months} />);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Show a year' }), '2025');
+    render(<PerformanceChart series={series} months={recentMonths} />);
+    const select = screen.getByRole('combobox', { name: 'Show a year' });
+    // Any offered year does — which years are offered is the model's concern.
+    const [year] = within(select)
+      .getAllByRole('option')
+      .filter((o) => (o as HTMLOptionElement).value);
+    await user.selectOptions(select, year as HTMLOptionElement);
     expect(screen.getByRole('radio', { name: '6M' })).toHaveAttribute('aria-checked', 'false');
   });
 
-  it('offers only the five most recent whole years in the year picker', () => {
-    // Six calendar years of data; the Year select caps at the 5 mentor-stats
-    // allows (current + 4 prior), dropping the oldest — so a Year pick can't 422.
-    const sixYears = Array.from({ length: 72 }, (_, i) => {
-      const d = new Date(Date.UTC(2021, i, 1));
-      return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-    });
-    const oneSeries: ChartSeries[] = [
-      { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: sixYears.map(() => 1) },
+  it('hides the year picker when no year is within the queryable range', () => {
+    // Data entirely older than the backend can query (the current year − 4): there
+    // is no year to offer, so the picker is absent rather than an empty box.
+    const stale = ['2018-01', '2018-02'];
+    const staleSeries: ChartSeries[] = [
+      { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: [1, 2] },
     ];
-    render(<PerformanceChart series={oneSeries} months={sixYears} />);
-    const years = within(screen.getByRole('combobox', { name: 'Show a year' }))
-      .getAllByRole('option')
-      .map((o) => o.textContent)
-      .filter((t) => t !== 'Year');
-    expect(years).toEqual(['2026', '2025', '2024', '2023', '2022']);
+    render(<PerformanceChart series={staleSeries} months={stale} />);
+    expect(screen.queryByRole('combobox', { name: 'Show a year' })).not.toBeInTheDocument();
   });
 
   it('toggles a series off from the legend', async () => {

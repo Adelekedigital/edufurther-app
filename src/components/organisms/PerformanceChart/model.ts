@@ -21,6 +21,11 @@ export type ChartModelInput = {
   hover: number;
   title: string;
   yUnit: string;
+  /**
+   * The current UTC year — the clock, passed in so the model stays pure. Caps the
+   * year picker at the backend's queryable range (`currentYear − 4`).
+   */
+  currentYear: number;
   /** Container is below the mobile breakpoint (ResizeObserver, < 440px). */
   narrow?: boolean;
   /** How the legend collapses when narrow. Default 'compact'. */
@@ -38,6 +43,20 @@ const BASE = 210;
 export function buildChartModel(i: ChartModelInput) {
   const { series, months, ranges, variant, hidden, hover } = i;
   const years = [...new Set(months.map((k) => k.slice(0, 4)))].sort().reverse();
+  // The mentor's first active month — the earliest with any session. The monthly
+  // endpoint returns the full window with zero rows for empty months, so the first
+  // non-zero month marks their tenure; the year picker starts there. No sessions at
+  // all falls back to the most recent year.
+  const firstActiveIdx = months.findIndex((_, idx) => series.some((s) => (s.values[idx] ?? 0) > 0));
+  const firstActiveYear =
+    firstActiveIdx >= 0 && months[firstActiveIdx]
+      ? Number(months[firstActiveIdx]!.slice(0, 4))
+      : Number(years[0] ?? 0);
+  // The year picker offers the mentor's active years — first session to now — never
+  // older than the backend can query (`currentYear − 4`), so a Year pick can't 422.
+  // Empty only for stale data entirely outside the queryable range (the component
+  // then hides the picker), which the current-month-ending window never produces.
+  const yearOptions = years.filter((y) => Number(y) >= Math.max(firstActiveYear, i.currentYear - 4));
 
   let range = i.range;
   if (range === 'all') range = `y${years[0]}`;
@@ -212,10 +231,8 @@ export function buildChartModel(i: ChartModelInput) {
     allHidden: visible.length === 0,
     rangeButtons: ranges.map((r) => ({ key: r.key, label: r.label, on: r.key === range })),
     years,
-    // The year <select> offers only the whole calendar years mentor-stats allows
-    // (the current one + 4 prior); the 60-month span's partial oldest year is
-    // dropped, so a Year selection can't 422 the session-quality card (contract #469).
-    yearOptions: years.slice(0, 5),
+    firstActiveYear,
+    yearOptions,
     yearValue: yr ?? '',
     isYear,
     legend,

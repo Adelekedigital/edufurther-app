@@ -24,6 +24,7 @@ const input = (over: Partial<ChartModelInput> = {}): ChartModelInput => ({
   hover: -1,
   title: 'Session performance',
   yUnit: 'Sessions',
+  currentYear: 2026,
   ...over,
 });
 
@@ -39,6 +40,63 @@ describe('buildChartModel', () => {
     expect(m.legend.find((l) => l.key === 'completed')?.total).toBe(24);
     expect(m.legend.find((l) => l.key === 'canceled')?.total).toBe(1);
     expect(m.legend.find((l) => l.key === 'missed')?.total).toBe(2);
+  });
+
+  it('reports the first active year — the earliest month with any session', () => {
+    // Default series: month 1 (2025-01) is all zero, active from month 2.
+    expect(buildChartModel(input()).firstActiveYear).toBe(2025);
+
+    // Leading zero months (2024) before the mentor's first session (2025-01).
+    const twoYears = [
+      ...Array.from({ length: 6 }, (_, i) => `2024-${String(i + 7).padStart(2, '0')}`),
+      ...Array.from({ length: 6 }, (_, i) => `2025-${String(i + 1).padStart(2, '0')}`),
+    ];
+    const activeFrom2025: ChartSeries[] = [
+      { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: [0, 0, 0, 0, 0, 0, 1, 2, 1, 3, 2, 4] },
+    ];
+    expect(
+      buildChartModel(input({ months: twoYears, series: activeFrom2025, range: '12m' })).firstActiveYear,
+    ).toBe(2025);
+
+    // No sessions at all → the most recent year.
+    const none: ChartSeries[] = [
+      { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: months.map(() => 0) },
+    ];
+    expect(buildChartModel(input({ series: none })).firstActiveYear).toBe(2025);
+  });
+
+  it("offers the mentor's active years, capped at the backend's queryable range", () => {
+    const monthsFrom = (startYear: number, n: number) =>
+      Array.from({ length: n }, (_, i) => {
+        const d = new Date(Date.UTC(startYear, i, 1));
+        return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+      });
+    const activeWhen = (mo: string[], from: (m: string) => boolean): ChartSeries[] => [
+      { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: mo.map((m) => (from(m) ? 1 : 0)) },
+    ];
+
+    // Default fixture: 2025 only, active → [2025].
+    expect(buildChartModel(input()).yearOptions).toEqual(['2025']);
+
+    // 48 months (2023–2026), sessions only from 2025: the empty 2023/2024 drop.
+    const recent = monthsFrom(2023, 48);
+    expect(
+      buildChartModel(
+        input({ months: recent, series: activeWhen(recent, (m) => Number(m.slice(0, 4)) >= 2025), range: '12m' }),
+      ).yearOptions,
+    ).toEqual(['2026', '2025']);
+
+    // Six active years: capped at currentYear − 4 (2022), dropping the oldest (2021).
+    const long = monthsFrom(2021, 72);
+    expect(
+      buildChartModel(input({ months: long, series: activeWhen(long, () => true), range: '12m' })).yearOptions,
+    ).toEqual(['2026', '2025', '2024', '2023', '2022']);
+
+    // Stale data entirely before the queryable range → no options.
+    const stale = ['2019-01', '2019-02'];
+    expect(
+      buildChartModel(input({ months: stale, series: activeWhen(stale, () => true), range: '12m' })).yearOptions,
+    ).toEqual([]);
   });
 
   it('stacks bars for the bar variant and draws lines for the line variant', () => {
