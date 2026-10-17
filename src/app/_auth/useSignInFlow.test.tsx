@@ -24,7 +24,7 @@ vi.mock('@/lib/api/data/signIn', () => ({
   useSaveName: () => ({ mutateAsync: (v: unknown) => save(v) }),
 }));
 
-const { useSignInFlow, TOAST_MS, CODE_LIFETIME_MS, ACCOUNT_RETRY_MS } =
+const { useSignInFlow, TOAST_MS, CODE_LIFETIME_MS, ACCOUNT_RETRY_MS, GOOGLE_WAIT_MS } =
   await import('./useSignInFlow');
 
 const member = (over: object = {}) => ({
@@ -265,6 +265,14 @@ describe('useSignInFlow — Google', () => {
     expect(result.current.form.redirecting).toBe(true);
   });
 
+  it('lets go of the card if the session never arrives', () => {
+    session = { status: 'unknown' };
+    const { result } = renderHook(() => useSignInFlow(opts({ googleReturn: true })));
+    expect(result.current.form.redirecting).toBe(true);
+    act(() => vi.advanceTimersByTime(GOOGLE_WAIT_MS));
+    expect(result.current.form.redirecting).toBe(false);
+  });
+
   it('is not busy back from Google when no session came with it', () => {
     session = { status: 'none' };
     const { result } = renderHook(() => useSignInFlow(opts({ googleReturn: true })));
@@ -287,7 +295,11 @@ describe('useSignInFlow — Google', () => {
   it("keeps Google's own split when it sends given and family names", async () => {
     session = { status: 'present', userId: 'u1' };
     account.mockResolvedValueOnce(member());
-    user.mockResolvedValue({ givenName: 'Mary Jane', familyName: 'Adebayo', googleJustLinked: false });
+    user.mockResolvedValue({
+      givenName: 'Mary Jane',
+      familyName: 'Adebayo',
+      googleJustLinked: false,
+    });
     renderHook(() => useSignInFlow(opts({ googleReturn: true })));
     await flush();
     await flush();

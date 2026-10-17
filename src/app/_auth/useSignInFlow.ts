@@ -23,6 +23,8 @@ export { CODE_LIFETIME_MS, RESEND_WAIT_MS } from './useEmailCodeAuth';
 
 /** The toast shows this long, then the page moves on (Sign In.dc.html `_finish`). */
 export const TOAST_MS = 1400;
+/** How long a Google return waits for the session before the card lets go. */
+export const GOOGLE_WAIT_MS = 10_000;
 export { ACCOUNT_RETRY_MS } from './account';
 
 type Method = 'email' | 'google';
@@ -80,6 +82,14 @@ export function useSignInFlow({
   );
   const [googleBusy, setGoogleBusy] = useState(false);
   const [finishing, setFinishing] = useState(false);
+  // Back from Google, the card waits for the session; if the SDK never says,
+  // it lets go, so the page can't stay locked.
+  const [googleWaitOver, setGoogleWaitOver] = useState(false);
+  useEffect(() => {
+    if (!googleReturn) return;
+    const t = setTimeout(() => setGoogleWaitOver(true), GOOGLE_WAIT_MS);
+    return () => clearTimeout(t);
+  }, [googleReturn]);
   const [nameError, setNameError] = useState<string>();
   const [outcome, setOutcome] = useState<Outcome | null>(null);
 
@@ -160,12 +170,14 @@ export function useSignInFlow({
   );
 
   const name = useCallback(
-    async (a: Account, toSave: NameToSave): Promise<boolean> => {
+    async (a: Account, toSave: NameToSave, onRefused?: () => void): Promise<boolean> => {
       try {
         await saveName.mutateAsync({ userId: a.id, name: toSave });
         return true;
       } catch (e) {
-        // The session stays: the finish step offers the retry (PRD).
+        // The session stays: the finish step offers the retry (PRD). Its
+        // fields are filled first, so it never shows empty for a frame.
+        onRefused?.();
         setNameError((e as Error).message);
         setStep('finish');
         return false;
@@ -209,12 +221,10 @@ export function useSignInFlow({
             g?.givenName && g.familyName
               ? { firstName: g.givenName, lastName: g.familyName }
               : null;
-          const saved = await name(a, parts ?? { fullName: fromGoogle });
-          const first = parts?.firstName ?? splitFullName(fromGoogle).firstName;
-          if (!mounted.current) return;
           // A refused save shows the finish step with Google's name in it.
-          if (saved) finish(a, first);
-          else prefill();
+          const saved = await name(a, parts ?? { fullName: fromGoogle }, prefill);
+          const first = parts?.firstName ?? splitFullName(fromGoogle).firstName;
+          if (saved && mounted.current) finish(a, first);
           return;
         }
         // One word, or none, from Google: ask once, under the same rule.
@@ -351,7 +361,8 @@ export function useSignInFlow({
     redirecting:
       outcome !== null ||
       (step === 'start' &&
-        (session.status === 'present' || (googleReturn && session.status === 'unknown'))),
+        (session.status === 'present' ||
+          (googleReturn && !googleWaitOver && session.status === 'unknown'))),
   };
 
   return { form, toast: outcome };
