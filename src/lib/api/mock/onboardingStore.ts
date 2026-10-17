@@ -112,8 +112,10 @@ function levelOf(degree: string | null | undefined): { rank: number; label: stri
 const RANK: Record<string, number> = { bachelors: 1, masters: 2, doctorate: 3 };
 
 /**
- * The PRD B4 order, approximately (the real rule lives in the backend's
- * domain/matching.py): study country, level, help areas, field, origin, soonest.
+ * The owner's order (2026-10-17, superseding PRD B4), approximately (the real
+ * rule lives in the backend's domain/matching.py): help-area overlap, field of
+ * study, same origin, any free slot, then study country and level; reasons in
+ * the same order, so the card's line leads with the strongest.
  */
 export function mockMatches(userId: string, limit: number, forMentor: string | null): WireMatches {
   const g = goals.get(userId);
@@ -140,23 +142,23 @@ export function mockMatches(userId: string, limit: number, forMentor: string | n
       areas: areas.length,
       field: field && (m.study_course ?? '').toLowerCase().includes(field.split(' ')[0]!) ? 1 : 0,
       origin: origin && c.origin_country === origin ? 1 : 0,
-      soon: -(Date.parse(mockNextAvailableAt(m.id, now) ?? '') || Infinity),
+      slot: mockNextAvailableAt(m.id, now) ? 1 : 0,
     };
     const ref = (name: string) => ({
       id: MOCK_COUNTRIES.find((x) => x.display_name === name)?.id ?? name,
       label: name,
     });
     const reasons: WireMatches['matches'][number]['reasons'] = [
+      ...(areas.length ? [{ code: 'help_areas' as const, offering_ids: areas }] : []),
+      ...(s.field ? [{ code: 'field' as const, field: m.study_course! }] : []),
+      ...(s.origin ? [{ code: 'origin' as const, country: ref(origin!) }] : []),
       ...(s.country ? [{ code: 'study_country' as const, country: ref(dest!) }] : []),
       ...(s.level === 1 && lv
         ? [{ code: 'degree' as const, level: { id: level!.id, label: lv.label } }]
         : []),
-      ...(areas.length ? [{ code: 'help_areas' as const, offering_ids: areas }] : []),
-      ...(s.field ? [{ code: 'field' as const, field: m.study_course! }] : []),
-      ...(s.origin ? [{ code: 'origin' as const, country: ref(origin!) }] : []),
     ];
     return {
-      key: [s.country, s.level, s.areas, s.field, s.origin, s.soon],
+      key: [s.areas, s.field, s.origin, s.slot, s.country, s.level],
       match: {
         mentor: {
           ...m,
@@ -180,7 +182,8 @@ export function mockMatches(userId: string, limit: number, forMentor: string | n
   const rows = picked ? [picked] : rest.slice(0, limit);
   return {
     matches: rows.map((r) => r.match),
-    exact: rows.some((r) => r.key[0]! > 0 || r.key[1]! > 0),
+    // "No exact matches yet" when nobody matches on study country or degree (PRD US-4).
+    exact: rows.some((r) => r.key[4]! > 0 || r.key[5]! > 0),
     based_on: {
       degree: level
         ? { id: level.id, label: level.display_name, raw: g?.degree_goal_raw ?? null }
