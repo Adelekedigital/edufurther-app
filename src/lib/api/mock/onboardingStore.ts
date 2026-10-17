@@ -82,9 +82,12 @@ export function setMockGoal(userId: string, body: Partial<Goal>) {
 }
 
 /** PRD B3: ≥ 1 need AND origin AND degree AND field. Destination may be empty. */
-export function mockMissing(userId: string): string[] {
+/** The parts /me's `onboarding.missing` may name (the published contract's closed list). */
+export type MissingPart = 'help' | 'origin' | 'degree' | 'field';
+
+export function mockMissing(userId: string): MissingPart[] {
   const g = goals.get(userId);
-  const missing: string[] = [];
+  const missing: MissingPart[] = [];
   if (!g?.need_ids.length) missing.push('help');
   if (!mockItems(userId).origin_country_id) missing.push('origin');
   if (!g?.degree_goal_id) missing.push('degree');
