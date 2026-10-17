@@ -88,13 +88,13 @@ describe('SignInForm — start', () => {
 
   it('keeps the code button off until the email is valid and the name passes', async () => {
     render(<Live />);
-    expect(sendButton()).toBeDisabled();
+    expect(sendButton()).toHaveAttribute('aria-disabled', 'true');
     await userEvent.type(screen.getByLabelText('Email'), 'amara@example.com');
-    expect(sendButton()).toBeDisabled();
+    expect(sendButton()).toHaveAttribute('aria-disabled', 'true');
     await userEvent.type(screen.getByLabelText('Full name'), 'Amara');
-    expect(sendButton()).toBeDisabled();
+    expect(sendButton()).toHaveAttribute('aria-disabled', 'true');
     await userEvent.type(screen.getByLabelText('Full name'), ' Okafor');
-    expect(sendButton()).toBeEnabled();
+    expect(sendButton()).not.toHaveAttribute('aria-disabled');
   });
 
   it('says what is wrong with the name once they leave the field', async () => {
@@ -128,6 +128,7 @@ describe('SignInForm — start', () => {
     sendButton().focus();
     rerender(<SignInForm {...props({ mode: 'login', email: 'amara@example.com', offline: true })} />);
     expect(regions.some((r) => /You’re offline/.test(r.textContent ?? ''))).toBe(true);
+    expect(sendButton()).not.toBeDisabled();
     // Held, not disabled: the focused button keeps focus when the connection drops.
     expect(sendButton()).toHaveAttribute('aria-disabled', 'true');
     expect(sendButton()).toHaveFocus();
@@ -378,5 +379,21 @@ describe('SignInForm — review fixes', () => {
       />,
     );
     expect(screen.queryByText(/Join as a mentor/)).not.toBeInTheDocument();
+  });
+
+  it('keeps focus on the send button when the connection returns with the email still unfinished', () => {
+    const { rerender } = render(<SignInForm {...props({ mode: 'login', email: 'amara@', offline: true })} />);
+    sendButton().focus();
+    rerender(<SignInForm {...props({ mode: 'login', email: 'amara@' })} />);
+    expect(sendButton()).toHaveFocus();
+    expect(sendButton()).not.toBeDisabled();
+    expect(sendButton()).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('refuses to send from an unfinished form even though the button stays pressable', async () => {
+    const onSendCode = vi.fn();
+    render(<SignInForm {...props({ mode: 'login', email: 'amara@', onSendCode })} />);
+    await userEvent.click(sendButton());
+    expect(onSendCode).not.toHaveBeenCalled();
   });
 });

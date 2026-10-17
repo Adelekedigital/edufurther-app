@@ -59,10 +59,10 @@ export function StartStep({
   // One way in at a time: while a code is being sent, Google waits, and the
   // reverse; the fields hold still so the code step names the address used.
   const busy = !!sending || !!googleBusy;
-  // Held (offline, or Google on its way) is aria-disabled, not disabled: it
-  // can change while the button has focus, and disabling a focused button
-  // throws focus to <body>. An unfinished form can't change under the button.
-  const held = !!offline || !!googleBusy;
+  // Never the native `disabled`: any of these can change while the button has
+  // focus (the connection drops or returns), and disabling a focused button
+  // throws focus to <body>. aria-disabled, and the form's submit refuses.
+  const held = !canSend || !!offline || !!googleBusy;
   return (
     <div className={styles.step}>
       {signup && (
@@ -106,7 +106,6 @@ export function StartStep({
         type="submit"
         size="large"
         fullWidth
-        disabled={!canSend && !held}
         aria-disabled={held || undefined}
         className={cx(held && styles.held)}
         busy={sending}
