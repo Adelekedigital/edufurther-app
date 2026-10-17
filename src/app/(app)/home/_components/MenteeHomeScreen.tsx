@@ -18,6 +18,7 @@ import { MenteeEmptyCard } from './MenteeEmptyCard';
 import { MenteeFirstSession } from './MenteeFirstSession';
 import { MENTORS_SECTION_ID, MenteeMentorsSection } from './MenteeMentorsSection';
 import { MenteeNextSession } from './MenteeNextSession';
+import { greeting } from './greeting';
 import { NEW_MENTEE_KPIS, returningKpis } from './menteeKpis';
 import styles from './MenteeHomeScreen.module.css';
 
@@ -146,7 +147,9 @@ export function MenteeHomeScreen() {
     // when the pill is shown).
     <div className={styles.page} data-help={showHelp ? '' : undefined}>
       <header className={styles.greeting}>
-        <h1 className={styles.hello}>Welcome back, {member.firstName}</h1>
+        <h1 className={styles.hello}>
+          {greeting(member.firstName, member.createdAt, completed, now)}
+        </h1>
         <p className={styles.subline}>{subline}</p>
       </header>
 

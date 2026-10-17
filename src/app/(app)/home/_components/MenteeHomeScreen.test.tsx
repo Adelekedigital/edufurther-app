@@ -335,10 +335,17 @@ describe('MenteeHomeScreen', () => {
     expect(stats.retry).toHaveBeenCalled();
   });
 
+  it('greets an account made this week, with no session held, with "Welcome"', () => {
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    viewer = { ...NEW_MEMBER, createdAt: yesterday };
+    render(<MenteeHomeScreen />);
+    expect(screen.getByRole('heading', { name: 'Welcome, Damilola' })).toBeInTheDocument();
+  });
+
   it('shows no content while /me is still loading', () => {
     viewer = { kind: 'loading', signedIn: true };
     render(<MenteeHomeScreen />);
-    expect(screen.queryByText(/Welcome back/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Welcome/)).not.toBeInTheDocument();
   });
 
   it('sends a mentor who lands here to their own dashboard', async () => {

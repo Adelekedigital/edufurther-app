@@ -196,6 +196,8 @@ export type Viewer =
       timeZone?: string;
       /** Sessions had as a mentee; drives the match prompt (≤ 2 → shown). */
       completedSessions: number;
+      /** When the account was made (`/me` created_at). Absent: not known. */
+      createdAt?: string;
       /** Null for users without a mentee goal (no credit block). */
       credits: {
         /** Everything spendable: monthly + bonus. */
