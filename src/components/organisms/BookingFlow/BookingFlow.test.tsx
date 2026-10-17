@@ -14,6 +14,8 @@ import {
   sessionTypes,
   setPhone,
   slots,
+  guestSignIn,
+  signedIn,
 } from './BookingFlow.testkit';
 
 pinToday();
@@ -174,15 +176,99 @@ describe('BookingFlow on real slots', () => {
     );
   });
 
-  it('a guest with no questions requests straight after signing up', async () => {
+  it('a guest signs in on step 2: the design’s copy, Email, Google, the legal line', async () => {
     const user = userEvent.setup();
-    const onRequest = vi.fn();
-    render(<BookingFlow {...props({ sessionTypeId: 'st2', isGuest: true, onRequest })} />);
+    render(
+      <BookingFlow {...props({ sessionTypeId: 'st2', isGuest: true, guest: guestSignIn() })} />,
+    );
     await user.click(screen.getByRole('radio', { name: '9:00 am' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
-    await user.type(screen.getByRole('textbox', { name: 'Email address' }), 'a@b.co');
-    await user.click(screen.getByRole('button', { name: 'Continue with email' }));
+    expect(screen.getByRole('progressbar', { name: /Step 2 of 2/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Log in or sign up to book Olajuwon' })).toBeVisible();
+    // PRD F3: the pick is remembered, not held.
+    expect(
+      screen.getByText('Your pick is saved. We’ll take you back to book Olajuwon.'),
+    ).toBeVisible();
+    expect(screen.queryByText(/held for you/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Email')).toBeVisible();
+    expect(screen.getByRole('button', { name: /Continue with Google/ })).toBeVisible();
+    expect(screen.getByText(/By continuing, you agree/)).toHaveTextContent('Community guide');
+  });
+
+  it('sends the code from the footer once the email is valid', async () => {
+    const user = userEvent.setup();
+    const g = guestSignIn();
+    const base = { sessionTypeId: 'st2', isGuest: true };
+    const { rerender } = render(<BookingFlow {...props({ ...base, guest: g })} />);
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(screen.getByRole('button', { name: 'Email me a code' })).toBeDisabled();
+    rerender(<BookingFlow {...props({ ...base, guest: { ...g, email: 'a@b.co' } })} />);
+    await user.click(screen.getByRole('button', { name: 'Email me a code' }));
+    expect(g.onSendCode).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets the code step bring its own "Verify and continue"', async () => {
+    const user = userEvent.setup();
+    const base = { sessionTypeId: 'st2', isGuest: true };
+    const { rerender } = render(<BookingFlow {...props({ ...base, guest: guestSignIn() })} />);
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    rerender(
+      <BookingFlow
+        {...props({ ...base, guest: guestSignIn({ stage: 'code', email: 'a@b.co' }) })}
+      />,
+    );
+    expect(screen.getByRole('heading', { name: 'Check your email' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Verify and continue' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Email me a code' })).not.toBeInTheDocument();
+  });
+
+  it('creates a new account with the pick, so it can go on to onboarding', async () => {
+    const user = userEvent.setup();
+    const g = guestSignIn({ stage: 'name', email: 'a@b.co' });
+    const base = { sessionTypeId: 'st2', isGuest: true };
+    const { rerender } = render(<BookingFlow {...props({ ...base, guest: g })} />);
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(screen.getByRole('heading', { name: 'Finish creating your account' })).toBeVisible();
+    expect(
+      screen.getByText('Next, two quick questions so Olajuwon knows how to help.'),
+    ).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Create account' })).toBeDisabled();
+    rerender(<BookingFlow {...props({ ...base, guest: { ...g, fullName: 'Amara Okafor' } })} />);
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    expect(g.onFinish).toHaveBeenCalledWith({
+      sessionTypeId: 'st2',
+      time: '2026-09-28T09:00:00Z',
+    });
+  });
+
+  it('hands Google the pick, since it leaves the page', async () => {
+    const user = userEvent.setup();
+    const g = guestSignIn();
+    render(<BookingFlow {...props({ sessionTypeId: 'st2', isGuest: true, guest: g })} />);
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await user.click(screen.getByRole('button', { name: /Continue with Google/ }));
+    expect(g.onGoogle).toHaveBeenCalledWith({ sessionTypeId: 'st2', time: '2026-09-28T09:00:00Z' });
+  });
+
+  it('a guest with no questions requests once, straight after signing in', async () => {
+    const user = userEvent.setup();
+    const onRequest = vi.fn();
+    const base = { sessionTypeId: 'st2', isGuest: true, onRequest };
+    const { rerender } = render(<BookingFlow {...props({ ...base, guest: guestSignIn() })} />);
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    // Signing in turns the page's isGuest off too; the steps don't change.
+    rerender(<BookingFlow {...props({ ...base, isGuest: false, guest: signedIn() })} />);
+    rerender(<BookingFlow {...props({ ...base, isGuest: false, guest: signedIn() })} />);
     expect(onRequest).toHaveBeenCalledTimes(1);
+    expect(onRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionTypeId: 'st2', startsAt: '2026-09-28T09:00:00Z' }),
+    );
+    expect(screen.getByRole('progressbar', { name: /Step 2 of 2/ })).toBeInTheDocument();
   });
 
   it('a guest stays on step 2 of 2 while their request sends (review of #26)', async () => {
@@ -190,100 +276,67 @@ describe('BookingFlow on real slots', () => {
     const reasons = [
       { icon: 'flight_takeoff' as const, k: 'Made the move you’re planning.', v: 'From A to B.' },
     ];
-    const { rerender } = render(
-      <BookingFlow {...props({ sessionTypeId: 'st2', isGuest: true, firstReasons: reasons })} />,
-    );
+    const base = { sessionTypeId: 'st2', isGuest: true, firstReasons: reasons };
+    const { rerender } = render(<BookingFlow {...props({ ...base, guest: guestSignIn() })} />);
     await user.click(screen.getByRole('radio', { name: '9:00 am' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
-    await user.type(screen.getByRole('textbox', { name: 'Email address' }), 'a@b.co');
-    await user.click(screen.getByRole('button', { name: 'Continue with email' }));
-    rerender(
-      <BookingFlow
-        {...props({
-          sessionTypeId: 'st2',
-          isGuest: true,
-          firstReasons: reasons,
-          requestPending: true,
-        })}
-      />,
-    );
+    rerender(<BookingFlow {...props({ ...base, guest: signedIn(), requestPending: true })} />);
     expect(screen.getByRole('progressbar', { name: /Step 2 of 2/ })).toBeInTheDocument();
     expect(screen.queryByText(/first mentees/)).not.toBeInTheDocument();
     expect(screen.queryByRole('radio', { name: '9:00 am' })).not.toBeInTheDocument();
   });
 
-  it('a guest with questions stays on the questions while sending and after an error', async () => {
+  it('a guest with questions goes on to them, says who is logged in, and stays there while sending or after an error', async () => {
     const user = userEvent.setup();
-    const { rerender } = render(
-      <BookingFlow {...props({ sessionTypeId: 'st1', isGuest: true })} />,
-    );
+    const base = { sessionTypeId: 'st1', isGuest: true };
+    const { rerender } = render(<BookingFlow {...props({ ...base, guest: guestSignIn() })} />);
     await user.click(screen.getByRole('radio', { name: '9:00 am' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
-    await user.type(screen.getByRole('textbox', { name: 'Email address' }), 'a@b.co');
-    await user.click(screen.getByRole('button', { name: 'Continue with email' }));
+    rerender(<BookingFlow {...props({ ...base, guest: signedIn() })} />);
     expect(screen.getByRole('progressbar', { name: /Step 3 of 3/ })).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: '' })).toHaveTextContent('Logged in as a@b.co.');
     for (const over of [
       { requestPending: true },
       { requestError: { kind: 'offline', message: 'x' } as const },
     ]) {
-      rerender(<BookingFlow {...props({ sessionTypeId: 'st1', isGuest: true, ...over })} />);
+      rerender(<BookingFlow {...props({ ...base, guest: signedIn(), ...over })} />);
       expect(screen.getByRole('progressbar', { name: /Step 3 of 3/ })).toBeInTheDocument();
-      expect(screen.queryByRole('textbox', { name: 'Email address' })).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Email')).not.toBeInTheDocument();
       expect(screen.getByText('What would you like to cover?')).toBeInTheDocument();
     }
   });
 
-  it('a guest error without questions stays on step 2, signed up, with a retry and no second sign-up', async () => {
+  it('a guest error without questions stays on step 2, signed in, with a retry', async () => {
     const user = userEvent.setup();
-    const onSignup = vi.fn();
     const onRequest = vi.fn();
-    const base = { sessionTypeId: 'st2', isGuest: true, onSignup, onRequest };
-    const { rerender } = render(<BookingFlow {...props(base)} />);
+    const base = { sessionTypeId: 'st2', isGuest: true, onRequest };
+    const { rerender } = render(<BookingFlow {...props({ ...base, guest: guestSignIn() })} />);
     await user.click(screen.getByRole('radio', { name: '9:00 am' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
-    await user.type(screen.getByRole('textbox', { name: 'Email address' }), 'a@b.co');
-    await user.click(screen.getByRole('button', { name: 'Continue with email' }));
+    rerender(<BookingFlow {...props({ ...base, guest: signedIn() })} />);
     rerender(
-      <BookingFlow {...props({ ...base, requestError: { kind: 'offline', message: 'x' } })} />,
+      <BookingFlow
+        {...props({ ...base, guest: signedIn(), requestError: { kind: 'offline', message: 'x' } })}
+      />,
     );
     expect(screen.getByRole('progressbar', { name: /Step 2 of 2/ })).toBeInTheDocument();
-    // No second sign-up form: they're signed up, and the button retries.
-    expect(screen.queryByRole('textbox', { name: 'Email address' })).not.toBeInTheDocument();
-    expect(screen.getByText('Signed up as a@b.co')).toBeInTheDocument();
+    // No second sign-in form: the button retries the request.
+    expect(screen.queryByLabelText('Email')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /^Request Mon, Sep 28/ }));
     expect(onRequest).toHaveBeenCalledTimes(2);
-    expect(onSignup).toHaveBeenCalledTimes(1);
   });
 
-  it('a double-click on "Continue with Google" books once (review r3 of #26)', async () => {
+  it('a double-click on the request after signing in books once (review r3 of #26)', async () => {
     const user = userEvent.setup();
-    const onSignup = vi.fn();
     const onRequest = vi.fn();
-    render(
-      <BookingFlow {...props({ sessionTypeId: 'st2', isGuest: true, onSignup, onRequest })} />,
-    );
+    const base = { sessionTypeId: 'st1', isGuest: true, onRequest };
+    const { rerender } = render(<BookingFlow {...props({ ...base, guest: guestSignIn() })} />);
     await user.click(screen.getByRole('radio', { name: '9:00 am' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
-    await user.dblClick(screen.getByRole('button', { name: 'Continue with Google' }));
+    rerender(<BookingFlow {...props({ ...base, guest: signedIn() })} />);
+    await user.type(screen.getByRole('textbox', { name: /What would you like to cover/ }), 'Visa');
+    await user.dblClick(screen.getByRole('button', { name: /^Request Mon, Sep 28/ }));
     expect(onRequest).toHaveBeenCalledTimes(1);
-    expect(onSignup).toHaveBeenCalledTimes(1);
-  });
-
-  it('a double-click on "Continue with email" books once (review r4 of #26)', async () => {
-    const user = userEvent.setup();
-    const onSignup = vi.fn();
-    const onRequest = vi.fn();
-    render(
-      <BookingFlow {...props({ sessionTypeId: 'st2', isGuest: true, onSignup, onRequest })} />,
-    );
-    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
-    await user.click(screen.getByRole('button', { name: 'Continue' }));
-    await user.type(screen.getByRole('textbox', { name: 'Email address' }), 'a@b.co');
-    // The second click lands on the same footer button, now "Request …",
-    // before the page's requestPending arrives.
-    await user.dblClick(screen.getByRole('button', { name: 'Continue with email' }));
-    expect(onRequest).toHaveBeenCalledTimes(1);
-    expect(onSignup).toHaveBeenCalledTimes(1);
   });
 
   it('Back is disabled while a request is out', async () => {
@@ -312,13 +365,13 @@ describe('BookingFlow on real slots', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('going back after signing up skips the sign-up step', async () => {
+  it('going back after signing in skips the sign-in step', async () => {
     const user = userEvent.setup();
-    render(<BookingFlow {...props({ sessionTypeId: 'st1', isGuest: true })} />);
+    const base = { sessionTypeId: 'st1', isGuest: true };
+    const { rerender } = render(<BookingFlow {...props({ ...base, guest: guestSignIn() })} />);
     await user.click(screen.getByRole('radio', { name: '9:00 am' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
-    await user.type(screen.getByRole('textbox', { name: 'Email address' }), 'a@b.co');
-    await user.click(screen.getByRole('button', { name: 'Continue with email' }));
+    rerender(<BookingFlow {...props({ ...base, guest: signedIn() })} />);
     await user.click(screen.getByRole('button', { name: 'Back' }));
     expect(screen.getByRole('progressbar', { name: /Step 1 of 3/ })).toBeInTheDocument();
     // And forward again goes straight to the questions.

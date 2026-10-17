@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
 import type { AppError, Mentor, Remote, SessionType } from '@/types/mentor';
-import { BookingFlow, type BookingFlowProps } from './BookingFlow';
+import { BookingFlow, type BookingFlowProps, type GuestSignIn } from './BookingFlow';
 
 const mentor: Mentor = {
   id: 'm1',
@@ -92,6 +92,31 @@ const remote = <T,>(data: T | null, over: Partial<Remote<T>> = {}): Remote<T> =>
 });
 const failed: AppError = { kind: 'server', message: 'x' };
 
+/** A guest sign-in at its first stage; the page runs the real one. */
+const guest: GuestSignIn = {
+  stage: 'email',
+  email: '',
+  onEmailChange: fn(),
+  sending: false,
+  googleBusy: false,
+  onSendCode: fn(),
+  onGoogle: fn(),
+  code: '',
+  onCodeChange: fn(),
+  onVerify: fn(),
+  verifying: false,
+  resentCount: 0,
+  resendIn: 30,
+  onResend: fn(),
+  onUseDifferentEmail: fn(),
+  fullName: '',
+  onFullNameChange: fn(),
+  finishing: false,
+  onFinish: fn(),
+  signedInAs: null,
+  offline: false,
+};
+
 /** Rendered without the ModalShell: the page supplies the frame via renderShell. */
 const meta: Meta<typeof BookingFlow> = {
   title: 'Organisms/BookingFlow',
@@ -103,7 +128,6 @@ const meta: Meta<typeof BookingFlow> = {
     onSessionTypeChange: fn(),
     slots: remote(slots),
     isGuest: false,
-    onSignup: fn(),
     onRequest: fn(),
     // Resolves like POST /me/intake-files after a moment.
     onUpload: (f: File) =>
@@ -133,7 +157,7 @@ export default meta;
 type Story = StoryObj<typeof BookingFlow>;
 
 export const PickTime: Story = {};
-export const Guest: Story = { args: { isGuest: true } };
+export const Guest: Story = { args: { isGuest: true, guest } };
 export const SingleSessionType: Story = { args: { sessionTypes: remote([sessionTypes[0]!]) } };
 /** An offering that asks nothing (every offering until the backend ships questions). */
 export const NoQuestions: Story = {
@@ -201,7 +225,10 @@ const phone = {
 };
 
 export const PhonePickTime: Story = { ...phone, args: { renderShell: phoneShell } };
-export const PhoneGuest: Story = { ...phone, args: { renderShell: phoneShell, isGuest: true } };
+export const PhoneGuest: Story = {
+  ...phone,
+  args: { renderShell: phoneShell, isGuest: true, guest },
+};
 export const PhoneSingleType: Story = {
   ...phone,
   args: { renderShell: phoneShell, sessionTypes: remote([sessionTypes[0]!]) },

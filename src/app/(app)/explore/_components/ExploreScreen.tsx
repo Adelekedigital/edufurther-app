@@ -9,7 +9,7 @@ import { SearchField } from '@/components/molecules/SearchField/SearchField';
 import { TopicFilter } from '@/components/molecules/TopicFilter/TopicFilter';
 import { FeaturedMentor } from '@/components/organisms/FeaturedMentor/FeaturedMentor';
 import { FeaturedMentorSkeleton } from '@/components/organisms/FeaturedMentor/FeaturedMentorSkeleton';
-import { BookingFlow } from '@/components/organisms/BookingFlow/BookingFlow';
+import { SignInBookingFlow } from '@/app/_shell/SignInBookingFlow';
 import { MentorResults } from '@/components/organisms/MentorResults/MentorResults';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import {
@@ -250,7 +250,7 @@ export function ExploreScreen() {
 
       {/* Also closes an open booking if /me turns the viewer into a mentor (review of #52). */}
       {booking && canBook && (
-        <BookingFlow
+        <SignInBookingFlow
           key={booking.id}
           mentor={booking}
           sessionTypes={sessionTypes}
@@ -258,8 +258,6 @@ export function ExploreScreen() {
           onSessionTypeChange={setBookingTypeId}
           slots={slots}
           isGuest={guest}
-          // PHASE A: no auth yet — continuing counts as signed up.
-          onSignup={() => undefined}
           onRequest={request.request}
           requestPending={request.isPending}
           requestDone={request.isDone}

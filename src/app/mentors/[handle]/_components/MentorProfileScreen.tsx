@@ -14,7 +14,7 @@ import { ShareMenu } from '@/components/molecules/ShareMenu/ShareMenu';
 import { BookSessionCard } from '@/components/organisms/BookSessionCard/BookSessionCard';
 import { FirstMenteesCard } from '@/components/organisms/FirstMenteesCard/FirstMenteesCard';
 import { ProfileStrengthCard } from '@/components/organisms/ProfileStrengthCard/ProfileStrengthCard';
-import { BookingFlow } from '@/components/organisms/BookingFlow/BookingFlow';
+import { SignInBookingFlow } from '@/app/_shell/SignInBookingFlow';
 import { ProfileHeader } from '@/components/organisms/ProfileHeader/ProfileHeader';
 import { ProfileOverview } from '@/components/organisms/ProfileOverview/ProfileOverview';
 import { ReviewDialog } from '@/app/_reviews/ReviewDialog';
@@ -708,15 +708,13 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
       )}
 
       {booking.active && (
-        <BookingFlow
+        <SignInBookingFlow
           mentor={booking.active}
           sessionTypes={booking.sessionTypes}
           sessionTypeId={booking.typeId}
           onSessionTypeChange={booking.setTypeId}
           slots={booking.slots}
           isGuest={viewer.kind === 'guest'}
-          // PHASE A: no auth yet — continuing counts as signed up.
-          onSignup={() => undefined}
           onRequest={booking.request.request}
           requestPending={booking.request.isPending}
           requestDone={booking.request.isDone}

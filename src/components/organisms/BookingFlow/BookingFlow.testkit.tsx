@@ -1,5 +1,5 @@
 import type { Mentor, Remote, SessionType } from '@/types/mentor';
-import type { BookingFlowProps } from './BookingFlow';
+import type { BookingFlowProps, GuestSignIn } from './BookingFlow';
 
 /** Shared by the BookingFlow test files: fixtures, props, the pinned clock and the phone switch. */
 export const mentor: Mentor = {
@@ -108,7 +108,6 @@ export const props = (over: Partial<BookingFlowProps> = {}): BookingFlowProps =>
   onSessionTypeChange: vi.fn(),
   slots: remote(slots),
   isGuest: false,
-  onSignup: vi.fn(),
   onRequest: vi.fn(),
   requestPending: false,
   requestDone: false,
@@ -136,3 +135,35 @@ export function setPhone(phone: boolean) {
     removeEventListener: vi.fn(),
   }));
 }
+
+/** A guest-step sign-in as the page would hand it over, at a given stage. */
+export function guestSignIn(over: Partial<GuestSignIn> = {}): GuestSignIn {
+  return {
+    stage: 'email',
+    email: '',
+    onEmailChange: vi.fn(),
+    sending: false,
+    googleBusy: false,
+    onSendCode: vi.fn(),
+    onGoogle: vi.fn(),
+    code: '',
+    onCodeChange: vi.fn(),
+    onVerify: vi.fn(),
+    verifying: false,
+    resentCount: 0,
+    resendIn: 30,
+    onResend: vi.fn(),
+    onUseDifferentEmail: vi.fn(),
+    fullName: '',
+    onFullNameChange: vi.fn(),
+    finishing: false,
+    onFinish: vi.fn(),
+    signedInAs: null,
+    offline: false,
+    ...over,
+  };
+}
+
+/** Signed in as an existing account. */
+export const signedIn = (over: Partial<GuestSignIn> = {}) =>
+  guestSignIn({ stage: 'done', email: 'a@b.co', signedInAs: 'a@b.co', ...over });

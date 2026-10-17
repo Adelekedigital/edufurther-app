@@ -6,6 +6,7 @@ import {
   newAccountDestination,
 } from '@/lib/config/auth';
 import { homeFor } from '@/lib/api/data/home';
+import { bookingFromNext, isOnboardingNext } from './booking';
 
 type Me = NonNullable<Parameters<typeof homeFor>[0]>;
 
@@ -47,7 +48,7 @@ export type OutcomeInput = {
  * The design's outcomes. Where a screen doesn't exist yet the words say where
  * they really go: a new mentor hears "Opening your Home…" until mentor
  * onboarding is on (owner 2026-10-17), and a return to a page they came from
- * says so plainly until PR 4 names the booking.
+ * says so plainly. A booking in `next` is handed to onboarding (or returned to).
  */
 export function signInOutcome(o: OutcomeInput): Outcome {
   const back = 'Taking you back to where you left off…';
@@ -58,23 +59,37 @@ export function signInOutcome(o: OutcomeInput): Outcome {
         ? 'Account created with Google'
         : `Account created. Welcome, ${o.firstName}`;
     const mentor = o.role === 'mentor' && o.mode === 'signup';
-    const href = newAccountDestination({ role: mentor ? 'mentor' : 'mentee', next: o.next });
+    // A booking they were in the middle of (the modal's Google return), or a
+    // link back into onboarding itself: both survive the sign-up.
+    const booking = mentor ? null : bookingFromNext(o.next);
+    const intoOnboarding = ONBOARDING_LIVE && !mentor && isOnboardingNext(o.next);
+    const href = intoOnboarding
+      ? o.next!
+      : newAccountDestination({ role: mentor ? 'mentor' : 'mentee', booking, next: o.next });
     if (mentor) {
       const body = MENTOR_ONBOARDING_LIVE
         ? 'Opening your mentor application…'
         : 'Opening your Home…';
       return { icon: 'how_to_reg', title, body, href };
     }
-    // Onboarding keeps a booking only when it is handed one (PR 4), not a
-    // bare `next`, so the booking promise waits for that.
-    const body = !ONBOARDING_LIVE && o.next ? back : 'Next, let’s find your first mentor…';
+    const body = ONBOARDING_LIVE
+      ? booking || intoOnboarding
+        ? 'Next, a few quick questions, then back to your booking.'
+        : 'Next, let’s find your first mentor…'
+      : o.next
+        ? booking
+          ? 'Taking you back to your booking…'
+          : back
+        : 'Next, let’s find your first mentor…';
     return { icon: 'how_to_reg', title, body, href };
   }
 
   const home = accountHome(o);
   const href = o.next ?? home;
   const where = o.next
-    ? back
+    ? bookingFromNext(o.next)
+      ? 'Taking you back to your booking…'
+      : back
     : home === '/dashboard'
       ? 'Opening your mentor dashboard…'
       : home === '/mentor-application'

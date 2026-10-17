@@ -10,49 +10,21 @@ import {
   type SignInMode,
   type SignInRole,
 } from '@/lib/api/data/auth';
-import {
-  fetchSignInAccount,
-  useSaveName,
-  type NameToSave,
-  type SignInAccount,
-} from '@/lib/api/data/signIn';
+import { useSaveName, type NameToSave } from '@/lib/api/data/signIn';
 import { useSession } from '@/lib/api/data/session';
 import { lastSignInMethod, rememberSignInMethod } from '@/lib/utils/lastUsed';
 import { checkFullName, splitFullName } from '@/lib/utils/name';
 import { useHydrated } from '@/lib/utils/useHydrated';
 import { useOnline } from '@/lib/utils/useOnline';
 import { accountHome, signInOutcome, type Outcome } from './outcome';
+import { loadAccount, toAccount } from './account';
 import { useEmailCodeAuth } from './useEmailCodeAuth';
 
 export { CODE_LIFETIME_MS, RESEND_WAIT_MS } from './useEmailCodeAuth';
 
 /** The toast shows this long, then the page moves on (Sign In.dc.html `_finish`). */
 export const TOAST_MS = 1400;
-/** A failed GET /me right after sign-in is tried again after these waits. */
-export const ACCOUNT_RETRY_MS = [400, 1200];
-
-const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-/** GET /me, tried again on a failure (not on "no account"): a blip must not cost the name. */
-async function loadAccount(): Promise<SignInAccount> {
-  let acct = await fetchSignInAccount();
-  for (const ms of ACCOUNT_RETRY_MS) {
-    if (acct.kind !== 'error') break;
-    await wait(ms);
-    acct = await fetchSignInAccount();
-  }
-  return acct;
-}
-
-function toAccount(acct: Extract<SignInAccount, { kind: 'member' }>) {
-  return {
-    id: acct.id,
-    isAdmin: acct.isAdmin,
-    isMentor: acct.isMentor,
-    mentorApproved: acct.mentorApproved,
-    isNew: acct.firstName === null,
-  };
-}
+export { ACCOUNT_RETRY_MS } from './account';
 
 type Method = 'email' | 'google';
 type Account = {

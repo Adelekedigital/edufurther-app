@@ -1,0 +1,83 @@
+/* BookingModal.dc.html guest step (`isSignup`). Values from its inline styles. */
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* The saved-pick note: green-50, p-xs green-700, 8px / 12px. */
+.note {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--green-50);
+  font-size: var(--text-p-xs);
+  color: var(--green-700);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.title {
+  margin: 0;
+  outline: none;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+
+.sub {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+
+.email {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-medium);
+}
+
+.or {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+
+.or::before,
+.or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--ink-200);
+}
+
+/* "Logged in as …" on the steps after the guest step (`showLoggedIn`). */
+.loggedIn {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--green-50);
+  font-size: var(--text-p-xs);
+  color: var(--green-700);
+}

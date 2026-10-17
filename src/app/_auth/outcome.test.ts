@@ -140,4 +140,41 @@ describe('signInOutcome — new accounts', () => {
     const out = await load(false);
     expect(out({ ...base, isNew: true })).toMatchObject({ title: 'Account created. Welcome, Amara' });
   });
+
+  const reopen = '/mentors/gbenga?book=st1&at=2026-10-20T09%3A00%3A00Z';
+
+  it('hands a booking in next to onboarding when it is on', async () => {
+    const out = await load(true);
+    expect(out({ ...fresh, method: 'google', next: reopen })).toMatchObject({
+      href: '/onboarding?for=gbenga&sid=st1&time=2026-10-20T09%3A00%3A00Z',
+      body: 'Next, a few quick questions, then back to your booking.',
+    });
+  });
+
+  it('with onboarding off, returns a new account to its booking', async () => {
+    const out = await load(false);
+    expect(out({ ...fresh, method: 'google', next: reopen })).toMatchObject({
+      href: reopen,
+      body: 'Taking you back to your booking…',
+    });
+  });
+
+  it('keeps a link into onboarding through sign-up', async () => {
+    const out = await load(true);
+    const into = '/onboarding?for=gbenga&sid=st1&time=2026-10-20T09%3A00%3A00Z';
+    expect(out({ ...fresh, next: into })).toMatchObject({
+      href: into,
+      body: 'Next, a few quick questions, then back to your booking.',
+    });
+  });
 });
+
+describe('signInOutcome — returning to a booking', () => {
+  it('names the booking when next is one', async () => {
+    const out = await load(false);
+    expect(out({ ...base, next: '/mentors/gbenga?book=st1&at=2026-10-20T09:00:00Z' })).toMatchObject({
+      body: 'Taking you back to your booking…',
+    });
+  });
+});
+

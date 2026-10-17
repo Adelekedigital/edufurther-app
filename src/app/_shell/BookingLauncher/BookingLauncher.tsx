@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { BookingFlow } from '@/components/organisms/BookingFlow/BookingFlow';
+import { SignInBookingFlow } from '@/app/_shell/SignInBookingFlow';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import {
   useRequestBooking,
@@ -60,7 +60,7 @@ export function BookingLauncher({
   };
 
   return (
-    <BookingFlow
+    <SignInBookingFlow
       key={mentor.id}
       mentor={mentor}
       sessionTypes={sessionTypes}
@@ -68,8 +68,6 @@ export function BookingLauncher({
       onSessionTypeChange={setTypeIdState}
       slots={slots}
       isGuest={isGuest}
-      // PHASE A: no auth yet — continuing counts as signed up (as Explore).
-      onSignup={() => undefined}
       onRequest={request.request}
       requestPending={request.isPending}
       requestDone={request.isDone}
