@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { SignInFormProps } from '@/components/organisms/SignInForm/SignInForm';
-import type { SignInStep, StartError } from '@/components/organisms/SignInForm/types';
+import type { SignInFormProps, SignInStep, StartError } from '@/components/organisms/SignInForm';
 import {
   signedInUser,
   startGoogleSignIn,

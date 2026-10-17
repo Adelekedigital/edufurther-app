@@ -4,7 +4,7 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import { Input } from '@/components/atoms/Input/Input';
 import { GoogleButton } from '@/components/molecules/GoogleButton/GoogleButton';
 import { LegalLine } from '@/components/molecules/LegalLine/LegalLine';
-import { CodeStep } from '@/components/organisms/SignInForm/CodeStep';
+import { CodeStep } from '@/components/organisms/SignInForm';
 import { FieldError } from '@/components/molecules/FieldError/FieldError';
 import { FullNameField } from '@/components/molecules/FullNameField/FullNameField';
 import { SUPPORT_EMAIL } from '@/lib/config/auth';

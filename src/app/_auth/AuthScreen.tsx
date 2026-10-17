@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { SignInContext } from '@/components/molecules/SignInContext/SignInContext';
 import { Toast } from '@/components/molecules/Toast/Toast';
-import { SignInForm } from '@/components/organisms/SignInForm/SignInForm';
+import { SignInForm } from '@/components/organisms/SignInForm';
 import { authConfigured, type SignInMode, type SignInRole } from '@/lib/api/data/auth';
 import { useBookingContext } from './useBookingContext';
 import { useSignInFlow } from './useSignInFlow';

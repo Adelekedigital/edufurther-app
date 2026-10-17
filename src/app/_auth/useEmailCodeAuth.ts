@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { CodeProblem } from '@/components/organisms/SignInForm/types';
+import type { CodeProblem } from '@/components/organisms/SignInForm';
 import { sendSignInCode, verifySignInCode } from '@/lib/api/data/auth';
 import { codeTries, recordMiss, resetTries } from '@/lib/utils/codeLock';
 import { useLatest } from '@/lib/utils/useLatest';
