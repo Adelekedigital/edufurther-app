@@ -27,6 +27,14 @@ export const TOAST_MS = 1400;
 export { ACCOUNT_RETRY_MS } from './account';
 
 type Method = 'email' | 'google';
+type GoogleUser = Awaited<ReturnType<typeof signedInUser>>;
+
+/** The name Google gave: given + family when both came, else its whole name. */
+function googleName(u: GoogleUser): string {
+  if (u?.givenName && u.familyName) return `${u.givenName} ${u.familyName}`;
+  return u?.fullName ?? u?.givenName ?? '';
+}
+
 type Account = {
   id: string;
   isAdmin: boolean;
@@ -190,15 +198,15 @@ export function useSignInFlow({
         if (!mounted.current) return;
         // Nobody typed an email on the way in: the finish step names this one.
         if (g?.email) setEmail(g.email);
-        if (g?.givenName && g.familyName) {
-          // In the field first, so a refused save shows the finish step with it.
-          setFullName(`${g.givenName} ${g.familyName}`);
-          const saved = await name(a, { firstName: g.givenName, lastName: g.familyName });
-          if (saved && mounted.current) finish(a, g.givenName);
+        // In the field first, so a refused save shows the finish step with it.
+        const fromGoogle = googleName(g);
+        setFullName(fromGoogle);
+        if (checkFullName(fromGoogle) === null) {
+          const saved = await name(a, { fullName: fromGoogle });
+          if (saved && mounted.current) finish(a, splitFullName(fromGoogle).firstName);
           return;
         }
-        // No family name from Google: ask once, under the same rule.
-        setFullName(g?.givenName ?? '');
+        // One word, or none, from Google: ask once, under the same rule.
         setStep('finish');
         return;
       }
@@ -250,7 +258,7 @@ export function useSignInFlow({
         const u = await signedInUser().catch(() => null);
         if (!mounted.current) return;
         if (u?.email) setEmail(u.email);
-        setFullName([u?.givenName, u?.familyName].filter(Boolean).join(' '));
+        setFullName(googleName(u));
         setStep('finish');
         return;
       }
