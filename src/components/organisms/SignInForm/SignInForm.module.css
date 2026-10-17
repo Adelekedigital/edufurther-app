@@ -221,6 +221,15 @@
   font-weight: var(--weight-semibold);
 }
 
+/* A held primary button looks like the Button atom's disabled primary. */
+.held,
+.held:hover,
+.held:active {
+  background: var(--surface-muted);
+  color: var(--ink-600);
+  cursor: not-allowed;
+}
+
 /* While the toast shows and the page moves on, nothing here takes a press. */
 .redirecting {
   pointer-events: none;

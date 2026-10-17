@@ -35,8 +35,17 @@ describe('GoogleButton', () => {
     expect(screen.getByText('Last used')).toHaveAttribute('aria-hidden', 'true');
   });
 
-  it('can be disabled (offline)', () => {
-    render(<GoogleButton onClick={() => {}} disabled />);
-    expect(screen.getByRole('button')).toBeDisabled();
+  it('can be disabled (offline) without giving up focus', async () => {
+    const onClick = vi.fn();
+    const { rerender } = render(<GoogleButton onClick={onClick} />);
+    const button = screen.getByRole('button');
+    button.focus();
+    rerender(<GoogleButton onClick={onClick} disabled />);
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).not.toBeDisabled();
+    expect(button).toHaveFocus();
+    await userEvent.click(button);
+    await userEvent.keyboard('{Enter}');
+    expect(onClick).not.toHaveBeenCalled();
   });
 });

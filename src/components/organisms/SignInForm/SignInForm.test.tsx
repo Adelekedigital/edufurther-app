@@ -125,10 +125,16 @@ describe('SignInForm — start', () => {
       <SignInForm {...props({ mode: 'login', email: 'amara@example.com' })} />,
     );
     const regions = screen.getAllByRole('status');
+    sendButton().focus();
     rerender(<SignInForm {...props({ mode: 'login', email: 'amara@example.com', offline: true })} />);
     expect(regions.some((r) => /You’re offline/.test(r.textContent ?? ''))).toBe(true);
-    expect(sendButton()).toBeDisabled();
-    expect(screen.getByRole('button', { name: /Continue with Google/ })).toBeDisabled();
+    // Held, not disabled: the focused button keeps focus when the connection drops.
+    expect(sendButton()).toHaveAttribute('aria-disabled', 'true');
+    expect(sendButton()).toHaveFocus();
+    expect(screen.getByRole('button', { name: /Continue with Google/ })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   });
 
   it('keeps what was typed when Google sign-in fails', () => {
@@ -328,11 +334,14 @@ describe('SignInForm — review fixes', () => {
   it('lets one way in run at a time, and holds the fields while sending', () => {
     const filled = { email: 'amara@example.com', fullName: 'Amara Okafor' };
     const { rerender } = render(<SignInForm {...props({ ...filled, sending: true })} />);
-    expect(screen.getByRole('button', { name: /Continue with Google/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Continue with Google/ })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
     expect(screen.getByLabelText('Email')).toHaveAttribute('readonly');
     expect(screen.getByLabelText('Full name')).toHaveAttribute('readonly');
     rerender(<SignInForm {...props({ ...filled, googleBusy: true })} />);
-    expect(sendButton()).toBeDisabled();
+    expect(sendButton()).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('ties the send error and the typo hint to the email field', () => {

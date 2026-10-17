@@ -42,10 +42,12 @@ type GoogleButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children
  * "Continue with Google" (an approved label in Google's branding guidelines),
  * drawn as Sign In.dc.html draws it: white, an ink-300 hairline, ink-900 label,
  * 48px. Not the Button atom's outlined variant, whose blue values differ.
- * `disabled` covers offline: the design dims it to half.
+ * `disabled` covers offline: the design dims it to half. It is rendered as
+ * aria-disabled with the press ignored, never the native attribute: going
+ * offline while the button has focus must not throw that focus to <body>.
  */
 export const GoogleButton = forwardRef<HTMLButtonElement, GoogleButtonProps>(
-  function GoogleButton({ busy, lastUsed, className, onClick, ...rest }, ref) {
+  function GoogleButton({ busy, lastUsed, disabled, className, onClick, ...rest }, ref) {
     return (
       <button
         {...rest}
@@ -54,11 +56,12 @@ export const GoogleButton = forwardRef<HTMLButtonElement, GoogleButtonProps>(
         className={cx(styles.button, lastUsed && !busy && styles.withBadge, className)}
         // After ...rest, like the Button atom: busy wins whatever the caller passes.
         aria-busy={busy || undefined}
+        aria-disabled={disabled || undefined}
         // The whole name in one string: a name stitched from visible text and a
         // punctuation-led .sr-only piece loses its separator (failure log #51).
         aria-label={lastUsed && !busy ? 'Continue with Google, last used' : undefined}
-        // Not `disabled` while busy: that would drop focus mid-press.
-        onClick={busy ? undefined : onClick}
+        // Not `disabled` while busy either: that would drop focus mid-press.
+        onClick={busy || disabled ? undefined : onClick}
       >
         <GoogleMark />
         {busy ? 'Taking you to Google…' : 'Continue with Google'}
