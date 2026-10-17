@@ -32,6 +32,8 @@ export type CodeStepProps = {
   resendIn: number;
   onResend: () => void;
   onUseDifferentEmail: () => void;
+  /** The check button's words: "Verify" on the sign-in page, "Verify and continue" in the booking modal. */
+  verifyLabel?: string;
 };
 
 /** The 6-digit code (Sign In.dc.html `isCode`): code, error, expired, locked, resent. */
@@ -46,6 +48,7 @@ export function CodeStep({
   resendIn,
   onResend,
   onUseDifferentEmail,
+  verifyLabel = 'Verify',
 }: CodeStepProps) {
   const problemId = useId();
   const fieldRef = useRef<HTMLInputElement>(null);
@@ -145,7 +148,7 @@ export function CodeStep({
         disabled={code.length !== CODE_LENGTH || locked || expired}
         busy={verifying}
       >
-        {verifying ? 'Checking…' : 'Verify'}
+        {verifying ? 'Checking…' : verifyLabel}
       </Button>
       <button
         type="button"

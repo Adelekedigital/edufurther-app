@@ -71,7 +71,11 @@ describe('MentorProfileScreen — ?book= links', () => {
   });
 
   it.each([
-    ['an unknown or hidden type', () => withLink('book=nope')],
+    [
+      'an unknown or hidden type',
+      () => withLink('book=nope'),
+      'That session isn’t offered any more. Pick another one below.',
+    ],
     [
       'the owner',
       () => {
@@ -80,6 +84,7 @@ describe('MentorProfileScreen — ?book= links', () => {
           data: { ...profile, owner: { approval: 'approved', listed: true } },
         });
       },
+      null,
     ],
     [
       'a mentor looking (mentors can’t book)',
@@ -87,6 +92,7 @@ describe('MentorProfileScreen — ?book= links', () => {
         withLink(`book=${second.id}`);
         h.viewerIsMentor = true;
       },
+      null,
     ],
     [
       'a mentor not taking bookings',
@@ -94,14 +100,23 @@ describe('MentorProfileScreen — ?book= links', () => {
         withLink(`book=${second.id}`);
         h.profile = state({ data: { ...profile, takingBookings: false } });
       },
+      /isn’t taking bookings right now, so your booking can’t be reopened\./,
     ],
-  ])('is ignored for %s: the page just opens, and the parameter goes', (_why, arrange) => {
-    h.profile = state({ data: profile });
-    arrange();
-    render(<MentorProfileScreen handle="gbenga" />);
-    expect(screen.queryByRole('dialog')).toBeNull();
-    expect(replace).toHaveBeenCalledWith('/mentors/gbenga', { scroll: false });
-  });
+  ])(
+    'is not opened for %s: the page opens, the parameter goes, and a booker is told why',
+    (_why, arrange, said) => {
+      h.profile = state({ data: profile });
+      arrange();
+      render(<MentorProfileScreen handle="gbenga" />);
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(replace).toHaveBeenCalledWith('/mentors/gbenga', { scroll: false });
+      if (said) {
+        // Shown, and said by a status region that was already on the page.
+        expect(screen.getAllByText(said).length).toBeGreaterThan(0);
+        expect(screen.getAllByRole('status').some((r) => r.textContent?.match(said))).toBe(true);
+      } else expect(screen.queryByText(/can’t be reopened|isn’t offered any more/)).toBeNull();
+    },
+  );
 });
 
 describe('MentorProfileScreen — ?book= links, gated like Book (review of #81)', () => {

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
+import { Notice } from '@/components/molecules/Notice/Notice';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
 import { AboutEditor } from '@/components/molecules/AboutEditor/AboutEditor';
@@ -14,7 +15,7 @@ import { ShareMenu } from '@/components/molecules/ShareMenu/ShareMenu';
 import { BookSessionCard } from '@/components/organisms/BookSessionCard/BookSessionCard';
 import { FirstMenteesCard } from '@/components/organisms/FirstMenteesCard/FirstMenteesCard';
 import { ProfileStrengthCard } from '@/components/organisms/ProfileStrengthCard/ProfileStrengthCard';
-import { BookingFlow } from '@/components/organisms/BookingFlow/BookingFlow';
+import { SignInBookingFlow } from '@/app/_shell/SignInBookingFlow';
 import { ProfileHeader } from '@/components/organisms/ProfileHeader/ProfileHeader';
 import { ProfileOverview } from '@/components/organisms/ProfileOverview/ProfileOverview';
 import { ReviewDialog } from '@/app/_reviews/ReviewDialog';
@@ -157,7 +158,21 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const bookBlocked = !online ? 'Booking needs a connection' : bookBlockedFor(viewer);
   const mayBook = canBookHere && !notTaking;
   const booking = useProfileBooking({ mentor: p?.mentor ?? null, mayBook, canBook, timeZone });
+  // A booking link the page couldn't reopen (useBookLink): said, not silent.
+  const [bookingDropped, setBookingDropped] = useState<'type' | 'blocked' | null>(null);
+  const droppedText = !bookingDropped
+    ? null
+    : bookingDropped === 'type'
+      ? 'That session isn’t offered any more. Pick another one below.'
+      : notTaking && p
+        ? `${p.mentor.firstName} isn’t taking bookings right now, so your booking can’t be reopened.`
+        : 'Your booking can’t be reopened right now.';
   useBookLink({
+    // Only for someone who could book: an owner or a mentor following a shared
+    // link was never booking, so there is nothing to explain to them.
+    onDropped: (why) => {
+      if (canBook && !isOwner) setBookingDropped(why);
+    },
     profile: p ?? null,
     gone: profile.notFound || (!!profile.error && !p),
     ready: viewer.kind !== 'loading' && online,
@@ -391,6 +406,18 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 previewBlocked={previewBlocked}
               />
             )}
+            {droppedText && (
+              <Notice
+                tone="info"
+                icon="info"
+                live={false}
+                onDismiss={() => setBookingDropped(null)}
+              >
+                {droppedText}
+              </Notice>
+            )}
+            {/* Said through a region that is always there (the notice arrives with its text). */}
+            <LiveRegion message={droppedText ? { text: droppedText, id: 1 } : null} />
             <ProfileHeader
               profile={p}
               onShowReviews={hasReviews ? () => setTab('reviews') : undefined}
@@ -708,15 +735,13 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
       )}
 
       {booking.active && (
-        <BookingFlow
+        <SignInBookingFlow
           mentor={booking.active}
           sessionTypes={booking.sessionTypes}
           sessionTypeId={booking.typeId}
           onSessionTypeChange={booking.setTypeId}
           slots={booking.slots}
-          isGuest={viewer.kind === 'guest'}
-          // PHASE A: no auth yet — continuing counts as signed up.
-          onSignup={() => undefined}
+          isGuest={viewer.kind === 'loading' ? null : viewer.kind === 'guest'}
           onRequest={booking.request.request}
           requestPending={booking.request.isPending}
           requestDone={booking.request.isDone}

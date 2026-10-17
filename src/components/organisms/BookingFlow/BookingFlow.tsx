@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { formatDay, formatRating, formatTime } from '@/lib/utils/format';
 import { dayKey } from '@/lib/utils/slots';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
@@ -21,21 +22,30 @@ import { PhoneBody, PhoneFooter, phoneChrome } from './BookingFlowPhone';
 import { FirstMenteesBox, PickedTime, SessionTypeSelect } from './FlowParts';
 import { FlowSkeleton, LoadError, NoTimes, RequestSent } from './FlowStates';
 import { QuestionsStep } from './QuestionsStep';
-import { SignupStep } from './SignupStep';
+import { SignupStep, guestCanContinue } from './SignupStep';
+import signupStyles from './SignupStep.module.css';
 import { TimeStep } from './TimeStep';
 import { isAnswered, useIntakeAnswers } from './useIntakeAnswers';
 import { useTimeChoice } from './useTimeChoice';
-import type { FirstReason } from './types';
+import type { FirstReason, GuestSignIn } from './types';
 import styles from './BookingFlow.module.css';
 
-export type { FirstReason };
+export type { FirstReason, GuestSignIn };
 
 type Step = 'time' | 'signup' | 'questions' | 'done';
 
 const STEP_LABEL: Record<Exclude<Step, 'done'>, string> = {
   time: 'Pick a date and time',
-  signup: 'Create your free account',
+  signup: 'Log in or sign up',
   questions: 'Questions from',
+};
+
+/** The guest step's name follows its stage (BookingModal.dc.html LBL.signup). */
+const GUEST_LABEL: Partial<Record<GuestSignIn['stage'], string>> = {
+  code: 'Check your email',
+  name: 'Create your account',
+  // Signed in, still on this step (the request failed): no "Log in" any more.
+  done: 'Send your request',
 };
 
 export type BookingFlowProps = {
@@ -50,10 +60,10 @@ export type BookingFlowProps = {
   onSessionTypeChange: (id: string) => void;
   /** Bookable UTC instants for that offering (GET …/availability/slots). */
   slots: Remote<string[]>;
-  /** Guests create an account after choosing a time (signupAt=afterTime). */
+  /** Guests sign in or create an account after choosing a time (signupAt=afterTime). */
   isGuest: boolean;
-  /** PHASE A: auth is not wired; the page decides what signing up does. */
-  onSignup: () => void;
+  /** The guest step's sign-in, run by the page. Required while `isGuest`. */
+  guest?: GuestSignIn;
   onRequest: (req: BookingRequest) => void;
   requestPending: boolean;
   requestDone: boolean;
@@ -125,12 +135,13 @@ const BOOKING_LIMIT_KINDS: AppError['kind'][] = [
  * useTimeChoice and useIntakeAnswers; the step order and sending live here.
  */
 export function BookingFlow(p: BookingFlowProps) {
-  const [signedUp, setSignedUp] = useState(false);
+  // Decided once: signing in mid-flow turns the page's `isGuest` off, and the
+  // step list must not change under them ("Step 2 of 3" stays).
+  const [startedAsGuest] = useState(p.isGuest);
   const [stepIndex, setStepIndex] = useState(0);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const isPhone = useMediaQuery(PHONE);
   const intake = useIntakeAnswers({ onUpload: p.onUpload, requestError: p.requestError });
-  const [email, setEmail] = useState('');
 
   const m = p.mentor;
   const types = p.sessionTypes.data ?? [];
@@ -152,16 +163,21 @@ export function BookingFlow(p: BookingFlowProps) {
     // A guest's sign-up step stays in the list for the whole flow, so "Step n
     // of N" never changes under them (sending, an error, going back). Once
     // they've signed up it's stepped over instead (review of #26).
-    if (p.isGuest) s.push('signup');
+    if (startedAsGuest) s.push('signup');
     if (hasQuestions) s.push('questions');
     return s;
-  }, [p.isGuest, hasQuestions]);
+  }, [startedAsGuest, hasQuestions]);
+  const guest = p.guest;
+  const signedUp = !startedAsGuest || guest?.stage === 'done';
   // The next / previous step to show, stepping over a sign-up already done.
   const skip = (i: number) => steps[i] === 'signup' && signedUp;
   const after = (i: number) => (skip(i + 1) ? i + 2 : i + 1);
   const before = (i: number) => (skip(i - 1) ? i - 2 : i - 1);
   // Without a (still valid) time there is nothing to continue with: back to it.
-  const at = time || p.requestDone ? Math.min(stepIndex, steps.length - 1) : 0;
+  const shownAt = time || p.requestDone ? Math.min(stepIndex, steps.length - 1) : 0;
+  // Signed in on the guest step: on to the step after it, when there is one.
+  const at =
+    steps[shownAt] === 'signup' && signedUp && shownAt + 1 < steps.length ? shownAt + 1 : shownAt;
   const step: Step = p.requestDone ? 'done' : steps[at]!;
   const isLast = after(at) >= steps.length;
 
@@ -188,7 +204,6 @@ export function BookingFlow(p: BookingFlowProps) {
   // A double-click fires twice before the page's `requestPending` arrives:
   // guard here too. Cleared by a failed send, so a retry goes through.
   const sent = useRef(false);
-  const signedUpNow = useRef(false);
   useEffect(() => {
     if (p.requestError) sent.current = false;
   }, [p.requestError]);
@@ -203,20 +218,21 @@ export function BookingFlow(p: BookingFlowProps) {
     );
     p.onRequest({ mentorId: m.id, sessionTypeId: session.id, startsAt: time, answers: asked });
   };
+  const pick = session && time ? { sessionTypeId: session.id, time } : null;
   const next = () => {
     // One request per action: nothing submits again while one is out
     // (review r3 of #26: the sign-up step's Google button double-booked).
     if (p.requestPending) return;
     if (step === 'signup') {
-      // Signed up already (a retry after an error): don't sign up twice.
-      if (!signedUp && !signedUpNow.current) {
-        signedUpNow.current = true;
-        p.onSignup();
-        setSignedUp(true);
+      if (!guest || signedUp) {
+        // Signed in already (a retry after an error): the request goes now.
+        if (isLast) submit();
+        return;
       }
-      // Nothing after sign-up (no questions): the request goes now.
-      if (isLast) submit();
-      else setStepIndex(at + 1);
+      if (guest.stage === 'email' && guestCanContinue(guest) && !guest.sending) guest.onSendCode();
+      else if (guest.stage === 'name' && guestCanContinue(guest) && !guest.finishing && pick) {
+        guest.onFinish(pick);
+      }
       return;
     }
     if (isLast) {
@@ -225,6 +241,15 @@ export function BookingFlow(p: BookingFlowProps) {
     }
     setStepIndex(after(at));
   };
+  // Signed in where the guest step is the last one (no questions): the
+  // request goes at once, as it did when the step was a formality.
+  const signedInLast = step === 'signup' && signedUp && isLast;
+  useEffect(() => {
+    if (signedInLast) submit();
+    // `submit` reads the latest render; only the moment of signing in matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signedInLast]);
+
   const back = () => {
     const to = before(at);
     if (to < 0) p.onClose();
@@ -243,7 +268,9 @@ export function BookingFlow(p: BookingFlowProps) {
     step === 'time' && !time
       ? 'Pick a time'
       : step === 'signup' && !signedUp
-        ? 'Continue with email'
+        ? guest?.stage === 'name'
+          ? 'Create account'
+          : 'Email me a code'
         : isLast
           ? `Request ${picked}`
           : nextStep === 'questions'
@@ -256,7 +283,9 @@ export function BookingFlow(p: BookingFlowProps) {
       ? `${STEP_LABEL.questions} ${m.firstName}`
       : step === 'done'
         ? ''
-        : STEP_LABEL[step];
+        : step === 'signup'
+          ? (guest && GUEST_LABEL[guest.stage]) || STEP_LABEL.signup
+          : STEP_LABEL[step];
   // Design #39: with a single step there's no "Step 1 of 1" and no bar.
   const oneStep = steps.length === 1;
   const subtitle =
@@ -274,7 +303,7 @@ export function BookingFlow(p: BookingFlowProps) {
     (step === 'time' && !time) ||
     missingRequired ||
     uploading ||
-    (step === 'signup' && !signedUp && !email);
+    (step === 'signup' && !signedUp && (!guest || !guestCanContinue(guest)));
 
   const typeSelect = session && (
     <SessionTypeSelect types={types} value={session.id} locked={at > 0} onChange={chooseType} />
@@ -342,14 +371,20 @@ export function BookingFlow(p: BookingFlowProps) {
           }}
         />
       )}
-      {step === 'signup' && (
-        <SignupStep
-          picked={picked}
-          signedUp={signedUp}
-          email={email}
-          onEmailChange={setEmail}
-          onContinue={next}
-          busy={p.requestPending}
+      {step === 'signup' && guest && !signedUp && (
+        <SignupStep guest={guest} pick={pick} firstName={m.firstName} />
+      )}
+      {step !== 'done' && signedUp && guest?.signedInAs && (
+        <p className={signupStyles.loggedIn}>
+          <Icon name="check_circle" size={16} />
+          Logged in as {guest.signedInAs}.
+        </p>
+      )}
+      {/* Said through a region that is always there: one inserted with its
+          text already in it is often not read out. */}
+      {guest && (
+        <LiveRegion
+          message={guest.signedInAs ? { text: `Logged in as ${guest.signedInAs}.`, id: 1 } : null}
         />
       )}
       {step === 'questions' && (
@@ -392,12 +427,19 @@ export function BookingFlow(p: BookingFlowProps) {
     </>
   );
 
-  const nextButton = (
+  // The code and suspended stages bring their own actions ("Verify and continue").
+  const guestOwnsActions =
+    step === 'signup' && !signedUp && (guest?.stage === 'code' || guest?.stage === 'suspended');
+  const guestBusy =
+    step === 'signup' &&
+    !signedUp &&
+    (guest?.stage === 'name' ? guest.finishing : !!guest?.sending);
+  const nextButton = guestOwnsActions ? null : (
     <Button
       size="large"
       onClick={next}
       disabled={nextDisabled}
-      busy={p.requestPending}
+      busy={p.requestPending || guestBusy}
       fullWidth={isPhone}
     >
       {p.requestPending ? 'Sending request…' : nextLabel}

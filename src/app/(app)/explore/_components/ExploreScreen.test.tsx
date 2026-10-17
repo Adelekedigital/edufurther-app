@@ -57,6 +57,33 @@ vi.mock('@/lib/api/data/mentors', () => ({
   }),
 }));
 const remote = { data: [], isLoading: false, error: null, retry: vi.fn() };
+// The guest step's sign-in has its own tests (useBookingSignIn.test): here it
+// is a guest step that hasn't started.
+vi.mock('@/app/_shell/useBookingSignIn', () => ({
+  useBookingSignIn: () => ({
+    stage: 'email',
+    email: '',
+    onEmailChange: () => {},
+    sending: false,
+    googleBusy: false,
+    onSendCode: () => {},
+    onGoogle: () => {},
+    code: '',
+    onCodeChange: () => {},
+    onVerify: () => {},
+    verifying: false,
+    resentCount: 0,
+    resendIn: 0,
+    onResend: () => {},
+    onUseDifferentEmail: () => {},
+    fullName: '',
+    onFullNameChange: () => {},
+    finishing: false,
+    onFinish: () => {},
+    signedInAs: null,
+    offline: false,
+  }),
+}));
 vi.mock('@/lib/api/data/booking', () => ({
   useSessionTypes: () => remote,
   useSlots: () => remote,

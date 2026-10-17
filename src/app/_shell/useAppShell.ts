@@ -125,7 +125,8 @@ export function useAppShell() {
             items,
             /** Mentees only: their monthly credits (AppShell.dc.html creditsIn=both). */
             credits: isMenteeSide(member)
-              ? (creditsView(member.credits, undefined, member.menteeCancelRefundHours) ?? undefined)
+              ? (creditsView(member.credits, undefined, member.menteeCancelRefundHours) ??
+                undefined)
               : undefined,
             /** Bookings badge: requests awaiting a response (product, 2026-09-30). */
             counts: countsFor(member),

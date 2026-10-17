@@ -122,9 +122,12 @@ describe('MentorProfileScreen — education', () => {
     expect(removeEducation).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: /^Delete MSc, Sociology/ }));
     await user.click(
-      within(screen.getByRole('alertdialog', { name: 'Delete this education?' })).getByRole('button', {
-        name: 'Delete education',
-      }),
+      within(screen.getByRole('alertdialog', { name: 'Delete this education?' })).getByRole(
+        'button',
+        {
+          name: 'Delete education',
+        },
+      ),
     );
     expect(removeEducation).toHaveBeenCalledWith('e2');
     expect(screen.queryByRole('alertdialog')).toBeNull();
