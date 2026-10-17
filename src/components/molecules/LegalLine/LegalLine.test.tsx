@@ -11,7 +11,8 @@ describe('LegalLine', () => {
       ['Community guide', LEGAL_LINKS.communityGuide],
     ] as const;
     for (const [name, href] of links) {
-      const a = screen.getByRole('link', { name: new RegExp(`^${name}\\s*\\(opens in a new tab\\)$`) });
+      const a = screen.getByRole('link', { name: `${name} (opens in a new tab)` });
+      expect(a).toHaveAttribute('aria-label', `${name} (opens in a new tab)`);
       expect(a).toHaveAttribute('href', href);
       expect(a).toHaveAttribute('target', '_blank');
       expect(a.getAttribute('rel')).toContain('noopener');

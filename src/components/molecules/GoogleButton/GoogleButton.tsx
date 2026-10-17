@@ -54,14 +54,17 @@ export const GoogleButton = forwardRef<HTMLButtonElement, GoogleButtonProps>(
         className={cx(styles.button, lastUsed && !busy && styles.withBadge, className)}
         // After ...rest, like the Button atom: busy wins whatever the caller passes.
         aria-busy={busy || undefined}
+        // The whole name in one string: a name stitched from visible text and a
+        // punctuation-led .sr-only piece loses its separator (failure log #51).
+        aria-label={lastUsed && !busy ? 'Continue with Google, last used' : undefined}
         // Not `disabled` while busy: that would drop focus mid-press.
         onClick={busy ? undefined : onClick}
       >
         <GoogleMark />
         {busy ? 'Taking you to Google…' : 'Continue with Google'}
         {lastUsed && !busy && (
-          <span className={styles.badge}>
-            <span className="sr-only">, </span>Last used
+          <span className={styles.badge} aria-hidden>
+            Last used
           </span>
         )}
       </button>

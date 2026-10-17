@@ -1,11 +1,16 @@
 import { LEGAL_LINKS } from '@/lib/config/auth';
 import styles from './LegalLine.module.css';
 
+/** The name is one string: an .sr-only piece led by a space can lose it (failure log #51). */
 function External({ href, children }: { href: string; children: string }) {
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer">
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`${children} (opens in a new tab)`}
+    >
       {children}
-      <span className="sr-only"> (opens in a new tab)</span>
     </a>
   );
 }

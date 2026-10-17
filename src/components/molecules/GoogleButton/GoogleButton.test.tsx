@@ -27,9 +27,12 @@ describe('GoogleButton', () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
-  it('names the Last used badge as part of the button', () => {
+  it('names the Last used badge as part of the button, in one label', () => {
     render(<GoogleButton onClick={() => {}} lastUsed />);
-    expect(screen.getByRole('button', { name: /^Continue with Google\s*,\s*Last used$/ })).toBeVisible();
+    const button = screen.getByRole('button', { name: 'Continue with Google, last used' });
+    // One string, not visible text stitched to an .sr-only piece (failure log #51).
+    expect(button).toHaveAttribute('aria-label', 'Continue with Google, last used');
+    expect(screen.getByText('Last used')).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('can be disabled (offline)', () => {
