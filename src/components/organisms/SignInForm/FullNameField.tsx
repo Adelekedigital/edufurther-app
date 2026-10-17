@@ -39,7 +39,7 @@ export function FullNameField({ value, onChange, serverError, reveal, readOnly }
           invalid={!!message}
           aria-describedby={message ? errorId : undefined}
           readOnly={readOnly}
-          className={styles.input}
+          fieldSize="xl"
         />
       </label>
       {message && <FieldError id={errorId}>{message}</FieldError>}

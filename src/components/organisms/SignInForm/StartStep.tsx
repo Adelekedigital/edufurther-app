@@ -85,7 +85,7 @@ export function StartStep({
           onChange={(e) => onEmailChange(e.target.value)}
           readOnly={busy}
           aria-describedby={describedBy}
-          className={styles.input}
+          fieldSize="xl"
         />
       </label>
       {fix && (

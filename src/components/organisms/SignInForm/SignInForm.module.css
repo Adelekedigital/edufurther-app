@@ -85,12 +85,7 @@
   font-weight: var(--weight-medium);
 }
 
-/* Inputs: 48px, 16px side padding (the Input atom keeps focus, hover, invalid). */
-.input {
-  height: var(--button-h-large);
-  padding: 0 var(--space-4);
-}
-
+/* Inputs are the Input atom's `xl` (48px, 16px side padding); the code field is taller. */
 .code {
   height: var(--space-14);
   font-size: var(--text-h6);

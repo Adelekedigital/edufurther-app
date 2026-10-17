@@ -90,7 +90,8 @@ export function CodeStep({
           disabled={locked || expired}
           invalid={!!wrong}
           aria-describedby={problem ? problemId : undefined}
-          className={cx(styles.input, styles.code)}
+          fieldSize="xl"
+          className={styles.code}
         />
       </label>
       {wrong && (
