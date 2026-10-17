@@ -21,6 +21,13 @@ type Options = {
    */
   allowed: boolean;
   open: (sessionTypeId: string, at?: string) => void;
+  /**
+   * The link asked for a booking the page can't reopen: the session type isn't
+   * offered (`type`), or this viewer may not book now (`blocked`). The page
+   * says so rather than showing nothing after "Taking you back to your
+   * booking…".
+   */
+  onDropped?: (reason: 'type' | 'blocked') => void;
 };
 
 /**
@@ -35,7 +42,7 @@ type Options = {
  * for them. It is dropped with `book`; a stray `at` left in the URL would ride
  * along into anything they shared.
  */
-export function useBookLink({ profile, gone, ready, allowed, open }: Options) {
+export function useBookLink({ profile, gone, ready, allowed, open, onDropped }: Options) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -52,11 +59,13 @@ export function useBookLink({ profile, gone, ready, allowed, open }: Options) {
     if (handled.current === asked) return;
     if (!gone && (!ready || !profile)) return;
     handled.current = asked;
-    if (!gone && allowed && profile?.sessionTypes.some((t) => t.id === asked)) open(asked, at);
+    const offered = !!profile?.sessionTypes.some((t) => t.id === asked);
+    if (!gone && allowed && offered) open(asked, at);
+    else if (!gone) onDropped?.(allowed ? 'type' : 'blocked');
     const next = new URLSearchParams(params.toString());
     next.delete('book');
     next.delete('at');
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }, [asked, at, gone, ready, profile, allowed, open, params, pathname, router]);
+  }, [asked, at, gone, ready, profile, allowed, open, onDropped, params, pathname, router]);
 }

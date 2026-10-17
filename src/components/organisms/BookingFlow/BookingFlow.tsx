@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { formatDay, formatRating, formatTime } from '@/lib/utils/format';
 import { dayKey } from '@/lib/utils/slots';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
@@ -374,10 +375,17 @@ export function BookingFlow(p: BookingFlowProps) {
         <SignupStep guest={guest} pick={pick} firstName={m.firstName} />
       )}
       {step !== 'done' && signedUp && guest?.signedInAs && (
-        <p role="status" className={signupStyles.loggedIn}>
+        <p className={signupStyles.loggedIn}>
           <Icon name="check_circle" size={16} />
           Logged in as {guest.signedInAs}.
         </p>
+      )}
+      {/* Said through a region that is always there: one inserted with its
+          text already in it is often not read out. */}
+      {guest && (
+        <LiveRegion
+          message={guest.signedInAs ? { text: `Logged in as ${guest.signedInAs}.`, id: 1 } : null}
+        />
       )}
       {step === 'questions' && (
         <QuestionsStep

@@ -301,9 +301,12 @@ describe('BookingFlow on real slots', () => {
     const { rerender } = render(<BookingFlow {...props({ ...base, guest: guestSignIn() })} />);
     await user.click(screen.getByRole('radio', { name: '9:00 am' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
+    // The status region was there before signing in, so the change is heard.
+    const region = screen.getAllByRole('status').find((r) => r.textContent === '')!;
     rerender(<BookingFlow {...props({ ...base, guest: signedIn() })} />);
     expect(screen.getByRole('progressbar', { name: /Step 3 of 3/ })).toBeInTheDocument();
-    expect(screen.getByRole('status', { name: '' })).toHaveTextContent('Logged in as a@b.co.');
+    expect(region).toHaveTextContent('Logged in as a@b.co.');
+    expect(screen.getByText('Logged in as a@b.co.', { selector: 'p:not([role])' })).toBeVisible();
     for (const over of [
       { requestPending: true },
       { requestError: { kind: 'offline', message: 'x' } as const },
@@ -334,7 +337,7 @@ describe('BookingFlow on real slots', () => {
     // No second sign-in form, and no "Log in" copy: they are signed in.
     expect(screen.queryByLabelText('Email')).not.toBeInTheDocument();
     expect(screen.queryByText(/Log in or sign up/)).not.toBeInTheDocument();
-    expect(screen.getByRole('status', { name: '' })).toHaveTextContent('Logged in as a@b.co.');
+    expect(screen.getByText('Logged in as a@b.co.', { selector: 'p:not([role])' })).toBeVisible();
     await user.click(screen.getByRole('button', { name: /^Request Mon, Sep 28/ }));
     expect(onRequest).toHaveBeenCalledTimes(2);
   });

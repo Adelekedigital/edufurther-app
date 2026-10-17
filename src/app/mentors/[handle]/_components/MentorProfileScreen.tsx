@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
+import { Notice } from '@/components/molecules/Notice/Notice';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
 import { AboutEditor } from '@/components/molecules/AboutEditor/AboutEditor';
@@ -157,7 +158,21 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const bookBlocked = !online ? 'Booking needs a connection' : bookBlockedFor(viewer);
   const mayBook = canBookHere && !notTaking;
   const booking = useProfileBooking({ mentor: p?.mentor ?? null, mayBook, canBook, timeZone });
+  // A booking link the page couldn't reopen (useBookLink): said, not silent.
+  const [bookingDropped, setBookingDropped] = useState<'type' | 'blocked' | null>(null);
+  const droppedText = !bookingDropped
+    ? null
+    : bookingDropped === 'type'
+      ? 'That session isn’t offered any more. Pick another one below.'
+      : notTaking && p
+        ? `${p.mentor.firstName} isn’t taking bookings right now, so your booking can’t be reopened.`
+        : 'Your booking can’t be reopened right now.';
   useBookLink({
+    // Only for someone who could book: an owner or a mentor following a shared
+    // link was never booking, so there is nothing to explain to them.
+    onDropped: (why) => {
+      if (canBook && !isOwner) setBookingDropped(why);
+    },
     profile: p ?? null,
     gone: profile.notFound || (!!profile.error && !p),
     ready: viewer.kind !== 'loading' && online,
@@ -391,6 +406,18 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 previewBlocked={previewBlocked}
               />
             )}
+            {droppedText && (
+              <Notice
+                tone="info"
+                icon="info"
+                live={false}
+                onDismiss={() => setBookingDropped(null)}
+              >
+                {droppedText}
+              </Notice>
+            )}
+            {/* Said through a region that is always there (the notice arrives with its text). */}
+            <LiveRegion message={droppedText ? { text: droppedText, id: 1 } : null} />
             <ProfileHeader
               profile={p}
               onShowReviews={hasReviews ? () => setTab('reviews') : undefined}

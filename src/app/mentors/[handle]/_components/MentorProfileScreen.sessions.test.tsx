@@ -100,7 +100,9 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('switch', { name: 'Visible to mentees: SOP draft review' }));
     expect(setLive).not.toHaveBeenCalled();
-    const confirm = screen.getByRole('alertdialog', { name: 'Hide “SOP draft review” from mentees?' });
+    const confirm = screen.getByRole('alertdialog', {
+      name: 'Hide “SOP draft review” from mentees?',
+    });
     expect(confirm).toHaveTextContent(`It leaves your profile and Explore`);
     expect(confirm).toHaveTextContent(SHOW_AGAIN);
     await user.click(within(confirm).getByRole('button', { name: 'Hide it' }));
@@ -172,7 +174,9 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     await user.click(within(dialog).getByRole('switch', { name: 'Visible to mentees' }));
     await user.click(within(dialog).getByRole('button', { name: 'Save changes' }));
     expect(quickEdit).not.toHaveBeenCalled();
-    const confirm = screen.getByRole('alertdialog', { name: 'Hide “SOP draft review” from mentees?' });
+    const confirm = screen.getByRole('alertdialog', {
+      name: 'Hide “SOP draft review” from mentees?',
+    });
     await user.click(within(confirm).getByRole('button', { name: 'Hide it' }));
     expect(quickEdit).toHaveBeenCalledWith({ id: 'st1', durationMin: undefined, live: false });
     expect(
@@ -468,7 +472,9 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
       await user.click(
         screen.getByRole('switch', { name: 'Visible to mentees: SOP draft review' }),
       );
-      expect(screen.getByRole('alertdialog', { name: /Hide “SOP draft review”/ })).toBeInTheDocument();
+      expect(
+        screen.getByRole('alertdialog', { name: /Hide “SOP draft review”/ }),
+      ).toBeInTheDocument();
       await act(async () => d.ok({ kind: 'deleted' }));
       expect(screen.queryByRole('alertdialog')).toBeNull();
       expect(setLive).not.toHaveBeenCalled();
