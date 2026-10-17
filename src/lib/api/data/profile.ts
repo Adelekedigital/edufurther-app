@@ -242,16 +242,19 @@ export function toCompleteness(r: MentorPublicRead): Completeness | undefined {
  * indistinguishable on purpose — the screen says so without guessing which.
  * The owner gets their page in any state, so the key carries the session.
  */
-export function useMentorProfile(handle: string): Remote<MentorProfile> & { notFound: boolean } {
+export function useMentorProfile(
+  handle: string | null,
+): Remote<MentorProfile> & { notFound: boolean } {
   const session = useSession();
   const queryClient = useQueryClient();
   const query = useQuery({
-    queryKey: keys.mentors.profile(handle, sessionKey(session)),
-    // Wait for the session: the owner's view differs from a stranger's.
-    enabled: session.status !== 'unknown',
+    queryKey: keys.mentors.profile(handle ?? '', sessionKey(session)),
+    // Wait for the session: the owner's view differs from a stranger's. No
+    // handle (a caller with no mentor to show): no request.
+    enabled: session.status !== 'unknown' && !!handle,
     queryFn: async ({ signal }) => {
       const { data, error, response } = await api.GET('/api/v1/mentors/{handle}', {
-        params: { path: { handle } },
+        params: { path: { handle: handle! } },
         signal,
       });
       if (!data) throw apiError(response.status, error);

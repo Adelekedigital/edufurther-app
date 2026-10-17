@@ -40,6 +40,8 @@ export type SignInFlowOptions = {
   role: SignInRole;
   /** A checked return path (safeReturnTo), or null. */
   next: string | null;
+  /** The first name of the mentor a booking `next` is with, for the toast ("Gbenga"). */
+  bookingWith?: string | null;
   /** Back from Google with a session: finish the sign-in here. */
   googleReturn: boolean;
   /** Back from Google without one. */
@@ -51,7 +53,14 @@ export type SignInFlowOptions = {
  * the toast and the redirect. Role comes from the account, not the page; the
  * page's role only says where a brand-new mentor sign-up goes.
  */
-export function useSignInFlow({ mode, role, next, googleReturn, googleFailed }: SignInFlowOptions) {
+export function useSignInFlow({
+  mode,
+  role,
+  next,
+  bookingWith = null,
+  googleReturn,
+  googleFailed,
+}: SignInFlowOptions) {
   const router = useRouter();
   const session = useSession();
   const online = useOnline();
@@ -134,12 +143,13 @@ export function useSignInFlow({ mode, role, next, googleReturn, googleFailed }: 
         mentorApproved: a.mentorApproved,
         googleJustLinked,
         next,
+        bookingWith,
       });
       setOutcome(o);
       clearTimeout(redirectTimer.current);
       redirectTimer.current = setTimeout(() => router.replace(o.href), TOAST_MS);
     },
-    [mode, role, next, router],
+    [mode, role, next, bookingWith, router],
   );
 
   const name = useCallback(
@@ -252,7 +262,8 @@ export function useSignInFlow({ mode, role, next, googleReturn, googleFailed }: 
     setStartError(undefined);
     const sent = await auth.send();
     if (sent === 'sent') setStep('code');
-    else if (sent === 'failed') setStartError('sendFailed');
+    else if (sent === 'offline') setStartError('sendFailed');
+    else if (sent === 'failed') setStartError('sendUnavailable');
   };
 
   const onFinish = async () => {

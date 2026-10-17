@@ -80,10 +80,11 @@ export function useEmailCodeAuth(opts: EmailCodeAuthOptions) {
   };
 
   /**
-   * Email a code. `sent`: the caller shows the code step; `failed`: say so;
-   * `busy`: a send is already out, and this press did nothing.
+   * Email a code. `sent`: the caller shows the code step; `offline` / `failed`
+   * (refused by the server or rate-limited): say which; `busy`: a send is
+   * already out, and this press did nothing.
    */
-  const send = async (): Promise<'sent' | 'failed' | 'busy'> => {
+  const send = async (): Promise<'sent' | 'offline' | 'failed' | 'busy'> => {
     if (sendingNow.current) return 'busy';
     sendingNow.current = true;
     setSending(true);
@@ -91,7 +92,7 @@ export function useEmailCodeAuth(opts: EmailCodeAuthOptions) {
     sendingNow.current = false;
     if (!mounted.current) return 'busy';
     setSending(false);
-    if (!r.ok) return 'failed';
+    if (!r.ok) return r.reason === 'offline' ? 'offline' : 'failed';
     codeSent(false);
     return 'sent';
   };

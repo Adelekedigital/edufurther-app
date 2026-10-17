@@ -99,8 +99,8 @@ export function CodeStep({
       </label>
       {wrong && (
         <FieldError id={problemId}>
-          That code didn’t work. {triesLeft(wrong.triesLeft)} left. Check the latest email from
-          us, or send a new code.
+          That code didn’t work. {triesLeft(wrong.triesLeft)} left. Check the latest email from us,
+          or send a new code.
         </FieldError>
       )}
       {expired && (

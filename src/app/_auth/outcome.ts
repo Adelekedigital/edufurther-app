@@ -42,6 +42,8 @@ export type OutcomeInput = {
   googleJustLinked: boolean;
   /** A checked return path (safeReturnTo), or null. */
   next: string | null;
+  /** The first name of the mentor a booking `next` is with ("Gbenga"), once known. */
+  bookingWith?: string | null;
 };
 
 /**
@@ -52,6 +54,9 @@ export type OutcomeInput = {
  */
 export function signInOutcome(o: OutcomeInput): Outcome {
   const back = 'Taking you back to where you left off…';
+  const toBooking = o.bookingWith
+    ? `Taking you back to your booking with ${o.bookingWith}…`
+    : 'Taking you back to your booking…';
 
   if (o.isNew) {
     const title =
@@ -78,7 +83,7 @@ export function signInOutcome(o: OutcomeInput): Outcome {
         : 'Next, let’s find your first mentor…'
       : o.next
         ? booking
-          ? 'Taking you back to your booking…'
+          ? toBooking
           : back
         : 'Next, let’s find your first mentor…';
     return { icon: 'how_to_reg', title, body, href };
@@ -86,9 +91,10 @@ export function signInOutcome(o: OutcomeInput): Outcome {
 
   const home = accountHome(o);
   const href = o.next ?? home;
+  // Known to be a booking: the reopen link, or a mentor the page named.
   const where = o.next
-    ? bookingFromNext(o.next)
-      ? 'Taking you back to your booking…'
+    ? bookingFromNext(o.next) || o.bookingWith
+      ? toBooking
       : back
     : home === '/dashboard'
       ? 'Opening your mentor dashboard…'

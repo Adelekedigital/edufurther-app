@@ -46,3 +46,23 @@ export function isOnboardingNext(next: string | null): boolean {
   const path = sameSite(next)?.pathname;
   return path === '/onboarding' || !!path?.startsWith('/onboarding/');
 }
+
+/**
+ * The mentor a booking `next` is about: the profile's reopen link, or a link
+ * into onboarding carrying the booking (`/onboarding?for={handle}…`). Bounded
+ * like the rest; anything else is no mentor.
+ */
+export function bookingMentorHandle(next: string | null): string | null {
+  const booking = bookingFromNext(next);
+  if (booking) return booking.handle;
+  if (!isOnboardingNext(next)) return null;
+  // A whole booking only (for, sid and time), like the reopen link: a bare
+  // `for` names a mentor with nothing booked.
+  const q = sameSite(next)?.searchParams;
+  const handle = q?.get('for') ?? null;
+  const sid = q?.get('sid') ?? null;
+  const time = q?.get('time') ?? null;
+  const whole =
+    !!handle && TOKEN.test(handle) && !!sid && TOKEN.test(sid) && !!time && ISO_INSTANT.test(time);
+  return whole ? handle : null;
+}
