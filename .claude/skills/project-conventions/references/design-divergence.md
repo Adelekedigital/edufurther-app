@@ -855,6 +855,10 @@ PRD: Mentee Onboarding v5 (deviation table, H8). Rows the PRD settles are produc
 | "Edit your answers" is a 32px text button | 32px drawn, with an invisible 44px tap area (ours) | 44px targets (PRD guardrail) | — |
 | A match card's name is the card's `h3` | `h2` on the matches page (`headingLevel`) | Under the page's `h1`, an `h3` skips a level (axe `heading-order`) | — |
 | Destination hint "Pick one for now. You can add up to 3 countries later in Settings." | "Pick one for now. You can add more later." | No Settings screen exists yet: copy never names a feature that isn't built (owner, 2026-10-17) | mentee Settings › Goals ships: restore the design's words |
+| Guest banner sub: "{time} is held for you" | "Your pick is saved. We’ll take you back to book {First}." | Nothing holds the time (PRD US-6; holds deferred, B5): the copy never says "held" | holds ship |
+| Banner avatar shows the mentor's initials (DS default avatar) | The same, `tone="plain"` (our name for the DS default) | — | — |
+| Field-of-study suggestions: 9 names in the prototype | The backend's 20 (`GET /catalog/fields-of-study`, the owner's order); the short list only until they load | The owner set the list with the backend (#482); free text is still saved as typed | — |
+| Book on the guest's match opens the modal at the start | Opens on the questions with their time and session (BookingFlow `startAfterTime`); the slot grid if that time is gone | PRD US-6: back where they left off | — |
 
 ### Sign up and log in — the screen (PR 3, `/signup`, `/login`)
 

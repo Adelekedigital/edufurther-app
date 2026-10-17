@@ -1,10 +1,8 @@
 import type { PendingBooking } from '@/lib/config/auth';
+import { BOOKING_TOKEN as TOKEN, ISO_INSTANT } from '@/lib/utils/guestBooking';
 
 const BASE = 'https://edufurther.invalid';
 const PROFILE = /^\/mentors\/([^/]+)$/;
-/** Handles and session-type ids as they are minted: letters, digits, - and _. */
-const TOKEN = /^[A-Za-z0-9_-]{1,128}$/;
-const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/;
 
 /** `next` as a same-site URL, or null. Never throws. */
 function sameSite(next: string | null): URL | null {

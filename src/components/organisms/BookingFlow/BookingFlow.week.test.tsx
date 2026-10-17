@@ -338,4 +338,71 @@ describe('BookingFlow week view (7 days at a time)', () => {
     );
     expect(screen.getByText('Next 5 days · Sep 27 – Oct 1')).toBeInTheDocument();
   });
+
+  it('opens on the questions with the remembered time (a guest back from onboarding)', () => {
+    render(
+      <BookingFlow
+        {...props({
+          slots: remote([...slots, '2026-10-06T09:00:00Z']),
+          initialTime: '2026-10-06T09:00:00Z',
+          startAfterTime: true,
+        })}
+      />,
+    );
+    expect(screen.getByRole('progressbar', { name: /Step 2 of 2/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
+  });
+
+  it('starts from the grid when the remembered time is gone, and waits for Continue', async () => {
+    const user = userEvent.setup();
+    render(
+      <BookingFlow
+        {...props({
+          sessionTypes: remote([sessionTypes[0]!]),
+          initialTime: '2026-10-09T09:00:00Z',
+          startAfterTime: true,
+        })}
+      />,
+    );
+    expect(screen.getByRole('progressbar', { name: /Step 1 of 2/ })).toBeInTheDocument();
+    await user.click(screen.getAllByRole('radio', { name: /am|pm/ })[0]!);
+    // A new pick stays on the grid: no jump past the time.
+    expect(screen.getByRole('progressbar', { name: /Step 1 of 2/ })).toBeInTheDocument();
+  });
+
+  it('stays on the time step, ready to request, when the offering asks no questions', () => {
+    render(
+      <BookingFlow
+        {...props({
+          sessionTypeId: 'st2',
+          slots: remote([...slots, '2026-10-06T09:00:00Z']),
+          initialTime: '2026-10-06T09:00:00Z',
+          startAfterTime: true,
+        })}
+      />,
+    );
+    expect(screen.getByRole('radio', { name: '9:00 am' })).toBeChecked();
+    expect(screen.getByRole('button', { name: /^Request Tue, Oct 6/ })).toBeEnabled();
+  });
+
+  it('starts from the time step when the remembered time turns up on another offering', () => {
+    // A page stand-in: st2 (remembered) lacks the time; st1 (with questions) has it.
+    function Page() {
+      const [typeId, setTypeId] = useState('st2');
+      return (
+        <BookingFlow
+          {...props({
+            sessionTypeId: typeId,
+            onSessionTypeChange: setTypeId,
+            slots: remote(typeId === 'st1' ? [...slots, '2026-10-06T09:00:00Z'] : slots),
+            initialTime: '2026-10-06T09:00:00Z',
+            startAfterTime: true,
+          })}
+        />
+      );
+    }
+    render(<Page />);
+    expect(screen.getByRole('radio', { name: '9:00 am' })).toBeChecked();
+    expect(screen.queryByRole('button', { name: 'Back' })).toBeNull();
+  });
 });

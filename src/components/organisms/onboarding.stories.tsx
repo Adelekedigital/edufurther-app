@@ -179,6 +179,17 @@ export const MatchesError: Story = {
   render: () => <Results matches={[]} error={{ kind: 'server', message: 'x' }} />,
 };
 export const MatchesEmpty: Story = { render: () => <Results matches={[]} /> };
+export const MatchesGuest: Story = {
+  render: () => (
+    <Results
+      matches={MATCHES.slice(0, 1)}
+      guest={{ firstName: MATCHES[0]!.mentor.firstName, available: true }}
+    />
+  ),
+};
+export const MatchesGuestUnavailable: Story = {
+  render: () => <Results guest={{ firstName: 'Ada', available: false }} />,
+};
 
 export const CardSixTopicsHighlighted: Story = {
   render: () => (

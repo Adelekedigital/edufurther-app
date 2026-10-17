@@ -29,3 +29,26 @@
   font-weight: var(--weight-semibold);
   text-decoration: underline;
 }
+
+/* DS Notice `warning` (Mentee Onboarding v5 `unavailable`): 18px padding, the
+   icon trailing 48px off, a 2px inset ring, 12/18 copy in navy-900. */
+.warning {
+  gap: var(--space-12);
+  padding: 18px;
+  border-radius: var(--radius-md);
+  background: var(--gold-subtle);
+  box-shadow: inset 0 0 0 2px var(--warning-ring);
+  color: var(--navy-900);
+}
+.warning .icon {
+  flex: none;
+  color: var(--warning-ring);
+}
+/* The DS sets 18px, not the paragraph ratio (12 × 1.45 = 17.4). */
+.warning .text {
+  line-height: var(--lh-notice);
+}
+.warning .text strong {
+  display: block;
+  margin-bottom: 2px;
+}

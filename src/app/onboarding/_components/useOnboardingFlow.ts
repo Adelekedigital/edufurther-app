@@ -1,15 +1,17 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useCountries, useDegreeLevels } from '@/lib/api/data/catalog';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCountries, useDegreeLevels, useFieldsOfStudy } from '@/lib/api/data/catalog';
 import { useTopics } from '@/lib/api/data/mentors';
 import { useMentorMatches } from '@/lib/api/data/mentorMatches';
+import { useMentorProfile } from '@/lib/api/data/profile';
 import { useOnboarding, useSaveOnboarding, type OnboardingState } from '@/lib/api/data/onboarding';
 import { useViewer } from '@/lib/api/data/viewer';
 import { NEW_MENTOR_HOME } from '@/lib/config/auth';
 import { HELP_LIMIT, type MissingKey } from '@/lib/copy/onboarding';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
+import { parseGuestBooking } from '@/lib/utils/guestBooking';
 import { EMPTY_PLANS, missingHelp, missingPlans } from '@/lib/utils/onboardingAnswers';
 import type { PlanAnswers } from '@/types/onboarding';
 
@@ -54,10 +56,16 @@ export function useOnboardingFlow() {
   const router = useRouter();
   const member = viewer.kind === 'member' && !viewer.isMentor ? viewer : null;
   const userId = member?.id ?? null;
+  // A guest back from Book (PRD US-6), read once and checked before it's trusted.
+  const search = useSearchParams();
+  const [guest] = useState(() => parseGuestBooking(new URLSearchParams(search.toString())));
+  const guestProfile = useMentorProfile(guest?.handle ?? null);
+  const guestMentor = guestProfile.data?.mentor ?? null;
 
   const countries = useCountries(member !== null);
   const levels = useDegreeLevels(member !== null);
   const topics = useTopics();
+  const fields = useFieldsOfStudy(member !== null);
   const ob = useOnboarding(userId, countries.countries);
   const save = useSaveOnboarding(userId, ob.saved, levels.levels, countries.countries);
 
@@ -66,7 +74,12 @@ export function useOnboardingFlow() {
   // go out as none) and the help areas (step 1 must never render without cards).
   const [form, setForm] = useState<Form | null>(null);
   const [doneAtLoad, setDoneAtLoad] = useState(false);
-  const ready = countries.status === 'ready' && levels.status === 'ready' && !topics.isLoading;
+  // A guest's mentor too, so the banner and the last button's name never pop in under them.
+  const ready =
+    countries.status === 'ready' &&
+    levels.status === 'ready' &&
+    !topics.isLoading &&
+    !guestProfile.isLoading;
   if (form === null && !doneAtLoad && ob.state && ready) {
     if (ob.state.complete) setDoneAtLoad(true);
     else setForm(startFrom(ob.state));
@@ -91,7 +104,10 @@ export function useOnboardingFlow() {
   }, [doneAtLoad, router]);
 
   const step = form?.step ?? 'help';
-  const matches = useMentorMatches(userId, topics.topics, { enabled: step === 'matches' });
+  const matches = useMentorMatches(userId, topics.topics, {
+    enabled: step === 'matches',
+    forMentor: guest?.handle ?? null,
+  });
 
   const dirty =
     !!form &&
@@ -149,6 +165,9 @@ export function useOnboardingFlow() {
 
   return {
     viewer,
+    guest,
+    guestMentor,
+    fields,
     form,
     doneAtLoad,
     loadError,

@@ -10,10 +10,14 @@ vi.mock('@/components/organisms/BookingFlow/BookingFlow', () => ({
     mentor: { name: string };
     ratingUnknown?: boolean;
     hideProfileLink?: boolean;
+    sessionTypeId?: string | null;
+    startAfterTime?: boolean;
     onClose: () => void;
   }) => (
     <div
       data-testid="flow"
+      data-type={String(p.sessionTypeId)}
+      data-after-time={String(!!p.startAfterTime)}
       data-rating-unknown={String(!!p.ratingUnknown)}
       data-hide-profile={String(!!p.hideProfileLink)}
     >
@@ -25,10 +29,11 @@ vi.mock('@/components/organisms/BookingFlow/BookingFlow', () => ({
   ),
 }));
 
-const remote = () => ({ data: null, isLoading: false, error: null, retry: vi.fn() });
+const remote = (data: unknown = null) => ({ data, isLoading: false, error: null, retry: vi.fn() });
 let requestDone = false;
+let types: { id: string }[] | null = null;
 vi.mock('@/lib/api/data/booking', () => ({
-  useSessionTypes: () => remote(),
+  useSessionTypes: () => remote(types),
   useSlots: () => remote(),
   useRequestBooking: () => ({
     request: vi.fn(),
@@ -73,5 +78,23 @@ describe('BookingLauncher', () => {
     screen.getByRole('button', { name: 'Close flow' }).click();
     expect(onBooked).toHaveBeenCalledTimes(1);
     requestDone = false;
+  });
+
+  it('books the offering remembered from before sign-up while it is still offered, else the first', () => {
+    types = [{ id: 'st-general' }, { id: 'st-cv' }];
+    const { unmount } = render(
+      <BookingLauncher
+        mentor={mentor}
+        initialSessionTypeId="st-cv"
+        startAfterTime
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('flow')).toHaveAttribute('data-type', 'st-cv');
+    expect(screen.getByTestId('flow')).toHaveAttribute('data-after-time', 'true');
+    unmount();
+    render(<BookingLauncher mentor={mentor} initialSessionTypeId="st-gone" onClose={vi.fn()} />);
+    expect(screen.getByTestId('flow')).toHaveAttribute('data-type', 'st-general');
+    types = null;
   });
 });

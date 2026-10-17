@@ -6,7 +6,11 @@ import { IconButton } from '@/components/atoms/IconButton/IconButton';
 import styles from './Notice.module.css';
 
 type NoticeProps = {
-  tone: 'neutral' | 'info';
+  /**
+   * warning: the DS onboarding callout (Mentee Onboarding v5 `unavailable`). It
+   * always shows the DS's trailing `error` icon, so `icon` is ignored.
+   */
+  tone: 'neutral' | 'info' | 'warning';
   /** Omit for a plain tip (Session Types' "Every extra question lowers bookings"). */
   icon?: IconName;
   /** Bold lead-in, e.g. "You're offline." */
@@ -27,10 +31,11 @@ type NoticeProps = {
 export function Notice({ tone, icon, title, children, onDismiss, id, live = true }: NoticeProps) {
   return (
     <div id={id} role={live ? 'status' : undefined} className={cx(styles.notice, styles[tone])}>
-      {icon && <Icon name={icon} size={20} className={styles.icon} />}
+      {icon && tone !== 'warning' && <Icon name={icon} size={20} className={styles.icon} />}
       <p className={styles.text}>
         {title && <strong>{title}</strong>} {children}
       </p>
+      {tone === 'warning' && <Icon name="error" size={24} className={styles.icon} />}
       {onDismiss && <IconButton icon="close" size="sm" aria-label="Dismiss" onClick={onDismiss} />}
     </div>
   );

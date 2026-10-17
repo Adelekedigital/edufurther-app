@@ -5,7 +5,8 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { MatchReason } from '@/components/molecules/MatchReason/MatchReason';
-import { MATCH_COPY } from '@/lib/copy/onboarding';
+import { Notice } from '@/components/molecules/Notice/Notice';
+import { GUEST_COPY, MATCH_COPY } from '@/lib/copy/onboarding';
 import { basedOnLine, reasonLine } from '@/lib/utils/matchReason';
 import type { AppError, Mentor } from '@/types/mentor';
 import type { MatchBasis, MentorMatch } from '@/types/onboarding';
@@ -14,6 +15,11 @@ import styles from './MatchResults.module.css';
 
 export type MatchResultsProps = {
   matches: MentorMatch[];
+  /**
+   * A guest back from Book (PRD US-6): `available` shows only their mentor;
+   * otherwise the notice and the other matches (Mentee Onboarding v5 `unavailable`).
+   */
+  guest?: { firstName: string; available: boolean };
   /** False: nobody matches on study country or degree, so these are the closest. */
   exact: boolean;
   basis: MatchBasis | null;
@@ -54,15 +60,21 @@ function MatchSkeleton() {
  */
 export function MatchResults({ headingRef, ...p }: MatchResultsProps) {
   const { matches } = p;
+  const g = p.guest;
+  const unavailable = !!g && !g.available;
   const [title, sub] = p.isLoading
     ? [MATCH_COPY.loadingTitle, MATCH_COPY.loadingSub]
     : p.error
       ? [MATCH_COPY.errorPageTitle, null]
       : matches.length === 0
         ? [MATCH_COPY.errorPageTitle, null]
-        : !p.exact
-          ? [MATCH_COPY.noExactTitle, MATCH_COPY.noExactSub]
-          : [MATCH_COPY.title(matches.length), MATCH_COPY.sub];
+        : unavailable
+          ? [GUEST_COPY.unavailableTitle, GUEST_COPY.unavailableSub]
+          : g
+            ? [GUEST_COPY.matchTitle(g.firstName), GUEST_COPY.matchSub(g.firstName)]
+            : !p.exact
+              ? [MATCH_COPY.noExactTitle, MATCH_COPY.noExactSub]
+              : [MATCH_COPY.title(matches.length), MATCH_COPY.sub];
   const basedOn = (p.basis && basedOnLine(p.basis)) ?? MATCH_COPY.basedOnFallback;
 
   return (
@@ -85,6 +97,12 @@ export function MatchResults({ headingRef, ...p }: MatchResultsProps) {
           {MATCH_COPY.edit}
         </button>
       </div>
+
+      {unavailable && !p.isLoading && !p.error && matches.length > 0 && (
+        <Notice tone="warning" title={GUEST_COPY.unavailableNotice(g.firstName)} live={false}>
+          {GUEST_COPY.unavailableBody}
+        </Notice>
+      )}
 
       {p.isLoading ? (
         <div aria-busy className={styles.grid}>
@@ -140,7 +158,7 @@ export function MatchResults({ headingRef, ...p }: MatchResultsProps) {
               );
             })}
           </ul>
-          {matches.length === 1 && <p className={styles.oneNote}>{MATCH_COPY.oneNote}</p>}
+          {matches.length === 1 && !g && <p className={styles.oneNote}>{MATCH_COPY.oneNote}</p>}
         </>
       )}
 

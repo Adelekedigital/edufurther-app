@@ -13,6 +13,7 @@ import { BookingLauncher } from '@/app/_shell/BookingLauncher/BookingLauncher';
 import {
   DEGREE_OPTIONS,
   FLOW_COPY,
+  GUEST_COPY,
   MATCH_COPY,
   STEP_COPY,
   missingLine,
@@ -23,6 +24,7 @@ import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import { cx } from '@/lib/utils/cx';
 import type { Mentor } from '@/types/mentor';
+import { GuestBanner } from './GuestBanner';
 import { OnboardingFrame } from './OnboardingFrame';
 import { TopicsSheet } from './TopicsSheet';
 import { Waiting } from './Waiting';
@@ -72,6 +74,13 @@ export function OnboardingScreen() {
     body = <Waiting text={FLOW_COPY.loading} hidden />;
   } else if (form.step === 'matches') {
     const m = f.matches.data;
+    // Their mentor from the profile, or from the matches if that read failed (it carries them alone).
+    const guestMentor =
+      f.guestMentor ??
+      (f.guest
+        ? (m?.matches.find((x) => x.mentor.profileHref === `/mentors/${f.guest!.handle}`)?.mentor ??
+          null)
+        : null);
     // Their own answers until the server's basis arrives, so the line never reads blank.
     const label = (id: string) => f.countries.find((c) => c.id === id)?.label ?? null;
     const local = {
@@ -89,6 +98,14 @@ export function OnboardingScreen() {
           isLoading={f.matches.isLoading}
           error={f.matches.error}
           onRetry={f.matches.retry}
+          guest={
+            f.guest && (guestMentor || m?.forMentorBookable === false)
+              ? {
+                  firstName: guestMentor?.firstName ?? '',
+                  available: !!guestMentor && (m?.forMentorBookable ?? true),
+                }
+              : undefined
+          }
           highlight={f.topics.filter((t) => t.id && form.needIds.includes(t.id)).map((t) => t.slug)}
           compact={phone}
           timeZone={zone}
@@ -135,7 +152,8 @@ export function OnboardingScreen() {
             <StepBars total={2} current={n - 1} label={label} spaced />
           </div>
 
-          {form.resumed && (
+          {/* A guest gets the booking banner instead: the design shows one or the other. */}
+          {form.resumed && !f.guestMentor && (
             <div role="status" className={styles.resume}>
               <span className={styles.resumeText}>
                 <Icon name="history" size={18} className={styles.resumeIcon} />
@@ -151,6 +169,8 @@ export function OnboardingScreen() {
               </button>
             </div>
           )}
+
+          {f.guestMentor && <GuestBanner mentor={f.guestMentor} />}
 
           <div className={styles.titles}>
             <h1 ref={headingRef} tabIndex={-1} className={styles.title}>
@@ -173,7 +193,12 @@ export function OnboardingScreen() {
               describedBy={subId}
             />
           ) : (
-            <StudyPlansForm countries={f.countries} value={form.plans} onChange={f.setPlans} />
+            <StudyPlansForm
+              countries={f.countries}
+              fields={f.fields}
+              value={form.plans}
+              onChange={f.setPlans}
+            />
           )}
 
           <div className={styles.cta}>
@@ -195,7 +220,11 @@ export function OnboardingScreen() {
               busy={f.save.isPending}
               aria-describedby={gaps.length ? needId : undefined}
             >
-              {n === 1 ? FLOW_COPY.continue : FLOW_COPY.seeMatches}
+              {n === 1
+                ? FLOW_COPY.continue
+                : f.guestMentor
+                  ? GUEST_COPY.continueToBook(f.guestMentor.firstName)
+                  : FLOW_COPY.seeMatches}
             </Button>
           </div>
         </form>
@@ -208,6 +237,14 @@ export function OnboardingScreen() {
       {body}
       <BookingLauncher
         mentor={bookMentor}
+        // Their own mentor from Book: back on the questions with the time they picked.
+        {...(bookMentor && f.guest && bookMentor.profileHref === `/mentors/${f.guest.handle}`
+          ? {
+              initialTime: f.guest.time,
+              initialSessionTypeId: f.guest.sid,
+              startAfterTime: f.guest.time !== null,
+            }
+          : {})}
         onClose={() => setBookMentor(null)}
         // PRD US-5: a sent request lands on Home's "Waiting for {First} to confirm".
         onBooked={() => router.push('/home')}

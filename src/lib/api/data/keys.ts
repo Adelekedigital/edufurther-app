@@ -11,6 +11,7 @@ export const keys = {
     /** '' = the common set. */
     languages: (q: string) => ['catalog', 'languages', q] as const,
     degreeLevels: ['catalog', 'degree-levels'] as const,
+    fieldsOfStudy: ['catalog', 'fields-of-study'] as const,
   },
   /** The owner's own education entries (GET /users/{id}/education), for editing. */
   education: (userId: string) => ['education', userId] as const,

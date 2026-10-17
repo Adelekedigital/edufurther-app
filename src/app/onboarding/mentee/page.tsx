@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ONBOARDING_LIVE } from '@/lib/config/auth';
@@ -15,5 +16,10 @@ export const metadata: Metadata = {
  */
 export default function OnboardingPage() {
   if (!ONBOARDING_LIVE) notFound();
-  return <OnboardingScreen />;
+  // It reads the query (a guest's for/sid/time): rendered inside a boundary.
+  return (
+    <Suspense>
+      <OnboardingScreen />
+    </Suspense>
+  );
 }
