@@ -46,12 +46,21 @@
 .compact .chevron {
   right: var(--space-1);
 }
+.xl .select {
+  height: var(--space-12);
+  padding: 0 var(--space-10) 0 var(--space-4);
+  font-size: var(--text-p-sm);
+}
+.xl .chevron {
+  right: var(--space-3);
+}
 @media (max-width: 767px) {
   /* Design phone rule: full width, 44px, 16px text (no iOS zoom). */
   .wrap {
     width: 100% !important;
   }
-  .select {
+  .select,
+  .xl .select {
     min-height: var(--touch-target-min);
     font-size: var(--text-p-md);
   }

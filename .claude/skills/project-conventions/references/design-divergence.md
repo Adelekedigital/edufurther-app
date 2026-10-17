@@ -838,3 +838,20 @@ SVG ring — neutral `--ink-100` track, a value arc (`--action-primary` /
 | Small text buttons (resend, typo fix, Use a different email, Log in / Sign up) drawn at 24–32px | Drawn as designed, with an invisible 44px tap area below 900px | Our 44px tap-target rule (handoff, Accessibility) | — |
 | "Did you mean …?" row pulled 8px up under the email field | Pulled up on desktop as drawn; a full gap below the field under 900px | The fix's 44px tap area would cover the bottom of the email field on phones, so a tap on the field could rewrite the address (_ours_) | — |
 | Resend link `disabled` during the countdown | `aria-disabled` with the press ignored | Pressing it starts the countdown, and a button that disables itself under focus drops that focus (_ours_) | — |
+
+## Mentee onboarding (Mentee Onboarding v5.dc.html, route `/onboarding`, PR A: components)
+
+PRD: Mentee Onboarding v5 (deviation table, H8). Rows the PRD settles are product decisions, not open questions.
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| "Where are you from?" is a select of 11 countries plus "Other" | `CountryPicker` (48px, `size="xl"`) over the full `/catalog/countries` | The profile stores a country id; "Other" can't be stored (PRD deviation table) | never |
+| "Where do you want to study?" is a text field with suggestions (`destInput=dropdown`, `planFields=search`) | `CountryPicker` over the full catalog: the design's 8 first, then "Not sure yet", then the rest | Goal countries are stored as ids, not text (PRD deviation table) | never |
+| MBA is a level of its own | Shown as drawn; stored as `masters` with `degree_goal_raw` "MBA" | The catalog follows ISCED 2011, where an MBA is Master's level (PRD H8) | never |
+| The topics "+N" opens `role="dialog"` | A disclosure region (`aria-expanded` on "+N"), as the match pill's popover: Escape and an outside click close it, focus returns to "+N" | A non-modal panel inside a card; a dialog role promises a focus trap the popover shouldn't have. The phone sheet is a real dialog, opened by the page | — |
+| The topic popover's groups come from the design's granular topics | Our six catalog offerings under the same four captions (`groupTopics`) | Mentor topics are the six offerings, not the design's sample sub-topics | the catalog grows sub-topics |
+| The skeleton card's radius is `var(--radius-xl, 16px)` | `--radius-xl` (10px) | The fallback is stale; the token is the value (design-spec-fidelity) | — |
+| "Nobody is bookable" is not drawn | `EmptyState` "No mentors are taking bookings right now" + "Browse all mentors", title "Your matches" | PRD F1 names the state and its copy | design draws it |
+| "Edit your answers" is a 32px text button | 32px drawn, with an invisible 44px tap area (ours) | 44px targets (PRD guardrail) | — |
+| A match card's name is the card's `h3` | `h2` on the matches page (`headingLevel`) | Under the page's `h1`, an `h3` skips a level (axe `heading-order`) | — |
+| Destination hint "Pick one for now. You can add up to 3 countries later in Settings." | "Pick one for now. You can add more later." | No Settings screen exists yet: copy never names a feature that isn't built (owner, 2026-10-17) | mentee Settings › Goals ships: restore the design's words |

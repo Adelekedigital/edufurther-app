@@ -36,6 +36,7 @@
     "edit",
     "edit_calendar",
     "edit_document",
+    "edit_note",
     "error",
     "event",
     "event_available",
@@ -56,6 +57,7 @@
     "handshake",
     "help",
     "hide_image",
+    "history",
     "home",
     "home_pin",
     "hourglass_top",
@@ -75,6 +77,7 @@
     "logout",
     "mail",
     "menu",
+    "menu_book",
     "more_horiz",
     "my_location",
     "new_releases",
@@ -134,5 +137,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "7c2c7a7763734a1e0189ccb0a0adcd0bf8593af33056aa6597affa4f62a5628d"
+  "sha256": "5d1fc6ee94205e9d88362ffea658b2c5c55ffc664a2bf45b2a45871f395bf4b8"
 }

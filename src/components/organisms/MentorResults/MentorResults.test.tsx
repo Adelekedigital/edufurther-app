@@ -148,6 +148,16 @@ describe('MentorResults', () => {
     expect(screen.queryByRole('list', { name: 'Helps with' })).not.toBeInTheDocument();
   });
 
+  it('with topics shown, a card lists three and "+N" for the rest (MentorCard.dc.html topicsMore)', () => {
+    const topics = ['a', 'b', 'c', 'd', 'e'].map((x) => ({ slug: x, label: `Topic ${x}` }));
+    render(<MentorResults {...props({ mentors: [mentor({ topics })], showTopics: true })} />);
+    const list = screen.getByRole('list', { name: 'Helps with' });
+    expect(within(list).getAllByText(/^Topic /)).toHaveLength(3);
+    expect(
+      within(list).getByRole('button', { name: /^\+2: show all 5 areas/ }),
+    ).toBeInTheDocument();
+  });
+
   it('interstitial goes after the first row when there is more than one row', () => {
     const ms = [1, 2, 3].map((i) =>
       mentor({ id: `m${i}`, name: `Mentor ${i}`, firstName: `M${i}` }),

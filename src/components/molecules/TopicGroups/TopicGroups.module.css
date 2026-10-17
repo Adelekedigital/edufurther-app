@@ -1,0 +1,37 @@
+/* MentorCard.dc.html `topicGroups`, in the popover (sm) and the phone sheet (md). */
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.md {
+  gap: var(--space-5);
+}
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.caption {
+  font-size: var(--text-caption-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-caption-xs);
+  text-transform: uppercase;
+  color: var(--ink-600);
+}
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.md .list {
+  gap: var(--space-2);
+}
+.md .chip {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+}

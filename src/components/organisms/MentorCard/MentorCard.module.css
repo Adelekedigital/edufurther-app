@@ -126,7 +126,10 @@
   color: var(--text-tertiary);
 }
 
+/* MentorCard.dc.html: chips and "+N" wrap together; the popover hangs from the list. */
 .topics {
+  position: relative;
+  align-items: center;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -177,4 +180,116 @@
 .nextTime {
   color: var(--green-700);
   font-weight: var(--weight-bold);
+}
+
+/* "+N" (MentorCard.dc.html `hasMoreTopics`). */
+.moreWrap {
+  display: flex;
+}
+.more {
+  position: relative;
+  padding: 2px var(--space-2);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--blue-50);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  /* 16px on the 12px label, as the Tag chips beside it. */
+  line-height: calc(16 / 12);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-700);
+}
+.more:hover {
+  background: var(--blue-100);
+}
+.more:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+/* The design's invisible hit area around the 20px chip. */
+.more::after {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--space-2) - 2px) calc(-1 * var(--space-1));
+}
+.popover {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  right: 0;
+  /* The design's 260px, never wider than the card. */
+  min-width: min(260px, 100%);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    inset 0 0 0 1px var(--ink-200),
+    var(--shadow-menu);
+  outline: none;
+}
+.popoverHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}
+.popoverTitle {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.popoverClose {
+  width: var(--button-h-small);
+  height: var(--button-h-small);
+  margin: calc(var(--space-2) * -1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-full);
+  background: none;
+  cursor: pointer;
+  color: var(--ink-500);
+}
+.popoverClose:hover {
+  background: var(--ink-50);
+}
+.popoverClose:focus-visible,
+.popoverLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.popoverLink {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--button-h-small);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+  text-decoration: none;
+}
+.popoverLink:hover {
+  color: var(--blue-700);
+}
+
+@media (max-width: 767px) {
+  /* 44px targets on phones (a card without the page's sheet keeps the popover). */
+  .more::after {
+    /* Percentages are the chip's own height: grows it to 44px whatever its size. */
+    inset: calc((100% - var(--touch-target-min)) / 2) calc(-1 * var(--space-3));
+  }
+  .popoverClose {
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+    margin: calc(var(--space-3) * -1);
+  }
+  .popoverLink {
+    min-height: var(--touch-target-min);
+  }
 }
