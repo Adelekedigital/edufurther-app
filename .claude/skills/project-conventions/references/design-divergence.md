@@ -826,3 +826,13 @@ SVG ring — neutral `--ink-100` track, a value arc (`--action-primary` /
 | Google button has no pressed/busy state | "Taking you to Google…" with `aria-busy` while the browser leaves for Google | Interaction state (_ours_): stops a second press while the redirect starts | — |
 | 5 wrong codes lock for 15 minutes (server rule) | Counted on screen per address, kept in sessionStorage keyed by a hash of the address (a 32-bit hash: keeps it out of sight, no secret) | Supabase doesn't count misses per code; its per-IP verify limit is the real guard. Server-side lock: edufurtherbe#475 | edufurtherbe#475 ships |
 | "Last used" badge pinned 12px from the Google button's right edge | Pinned as drawn; on a button under ~350px it joins the row after the words | Narrower than the design's 350px button (a 320 phone), the pinned badge sat on "Google" (_ours_) | — |
+
+### Sign up and log in — the form (PR 2, `organisms/SignInForm`)
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| No message for a name that fails the rule (Create just stays disabled) | The rule's message under Full name once the person leaves the field ("Enter your first and last name." / "Use letters, spaces, hyphens, apostrophes or full stops."), and the server's 422 in the same place | A disabled button with no reason is a dead end; the copy is the backend's own 422 wording (PRD Q2) | design draws the message |
+| Code field `autoFocus`, and focus to the heading on every step change (the heading wins in the prototype) | Heading only | The handoff's accessibility rule: focus moves to the heading on each step change; the OTP autofill still lands in the field | — |
+| "New code sent…" line is a `role=status` inserted when shown | Visible line shown when resent; announced through the always-mounted `LiveRegion` | A region inserted with its text is often not read; an always-mounted empty line would add a gap | — |
+| Mentor sign-up subline "Guide students on a path you've already walked…" (PRD) | No subline on either sign-up start | The saved default `signupSub=hide` hides it for mentees and mentors alike; the design is the build | design or product shows the mentor subline |
+| Small text buttons (resend, typo fix, Use a different email, Log in / Sign up) drawn at 24–32px | Drawn as designed, with an invisible 44px tap area below 900px | Our 44px tap-target rule (handoff, Accessibility) | — |
