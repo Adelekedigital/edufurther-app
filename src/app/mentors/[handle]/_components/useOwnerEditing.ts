@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { useProfileEdit, type IntroEdit } from '@/lib/api/data/profileEdit';
+import { useWritingAssist } from '@/lib/api/data/writingAssist';
 import type { MentorProfile } from '@/types/mentor';
 
 /**
@@ -17,6 +18,7 @@ export function useOwnerEditing(
   editButton: RefObject<HTMLButtonElement | null>,
 ) {
   const edit = useProfileEdit(isOwner && profile ? profile.mentor.id : null);
+  const writing = useWritingAssist('mentor_about');
   const [introOpen, setIntroOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const wasOpen = useRef(false);
@@ -66,7 +68,10 @@ export function useOwnerEditing(
       setAboutOpen(false);
       edit.resetAbout();
     },
-    saveAbout: (text: string) => edit.saveAbout(text, () => setAboutOpen(false)),
+    saveAbout: (text: string, meta: { drafted: boolean; promptVersion: string | null }) =>
+      edit.saveAbout(text, () => setAboutOpen(false), meta),
+    /** "Write a draft" / "Improve" on the About (PRD F6). */
+    assistAbout: writing.assist,
     aboutSaving: edit.aboutSaving,
     aboutError: edit.aboutError,
   };

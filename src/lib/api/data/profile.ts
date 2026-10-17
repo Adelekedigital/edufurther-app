@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { PendingAboutRead } from './pending';
 import type { components } from '@/lib/api/generated/schema';
 import { coverArt, coverKey } from '@/lib/utils/cover';
 import { stageText } from '@/lib/utils/stageText';
@@ -175,6 +176,8 @@ export function toMentorProfile(r: MentorPublicRead): MentorProfile {
     takingBookings: r.taking_bookings ?? true,
     headline: r.headline?.trim() || null,
     about: r.about_me?.trim() || null,
+    // PENDING BACKEND #8: still the untouched AI draft.
+    aboutDrafted: !!(r as PendingAboutRead).about_me_drafted_at,
     bannerUrl: r.banner_url ?? null,
     // Checked against our 12 keys: an unknown value falls back to the automatic cover.
     cover: { color: coverKey(r.cover_color), art: coverArt(r.cover_art) },

@@ -20,6 +20,10 @@ export const untyped = api as unknown as {
     path: string,
     init?: unknown,
   ) => Promise<{ data?: unknown; error?: unknown; response: Response }>;
+  POST: (
+    path: string,
+    init?: unknown,
+  ) => Promise<{ data?: unknown; error?: unknown; response: Response }>;
 };
 
 /** #1 `field_of_study` on the goal. */
@@ -60,7 +64,20 @@ export type WireMatches = {
   for_mentor_bookable?: boolean;
 };
 
+/** #7 `POST /me/writing-assist` (PRD B7): never saves. */
+export type AssistField = 'mentor_about' | 'mentee_bio';
+export type WireAssistRequest = { field: AssistField; mode: 'draft' | 'improve'; text?: string };
+export type WireAssist = { text: string; prompt_version: string };
+
+/** #8: the About's provenance, read with the profile and sent with its PATCH. */
+export type PendingAboutRead = { about_me_drafted_at?: string | null };
+export type PendingAboutWrite = {
+  about_me_drafted?: boolean;
+  about_me_prompt_version?: string | null;
+};
+
 /** What the mock may answer for an operation the spec lacks, by "METHOD path" (respond.ts `pendingOk`). */
 export type PendingResponses = {
   'GET /api/v1/me/mentor-matches': WireMatches;
+  'POST /api/v1/me/writing-assist': WireAssist;
 };
