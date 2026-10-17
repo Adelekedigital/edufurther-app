@@ -8,8 +8,11 @@ type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
   /** Width of the control; the design draws 160px (rules) and 240px (overrides). */
   width?: number;
   invalid?: boolean;
-  /** compact: 36px, tighter padding and a 16px chevron (TimeSlots.dc.html `compact`). */
-  density?: 'default' | 'compact';
+  /**
+   * compact: 36px, tighter padding and a 16px chevron (TimeSlots.dc.html `compact`).
+   * xl: 48px flow-form field with a 24px chevron (Mentee Onboarding v5.dc.html).
+   */
+  density?: 'default' | 'compact' | 'xl';
 };
 
 /**
@@ -22,7 +25,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
 ) {
   return (
     <span
-      className={cx(styles.wrap, density === 'compact' && styles.compact, className)}
+      className={cx(styles.wrap, density !== 'default' && styles[density], className)}
       style={width ? { width } : undefined}
     >
       <select
@@ -39,7 +42,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
           </option>
         ))}
       </select>
-      <Icon name="expand_more" size={density === 'compact' ? 16 : 18} className={styles.chevron} />
+      <Icon
+        name="expand_more"
+        size={density === 'compact' ? 16 : density === 'xl' ? 24 : 18}
+        className={styles.chevron}
+      />
     </span>
   );
 });

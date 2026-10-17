@@ -1,0 +1,114 @@
+/* Mentee Onboarding v5.dc.html, the matches page (`isMatches`). */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.title {
+  font-family: var(--font-brand);
+  font-size: var(--text-h4);
+  line-height: var(--lh-h4);
+  letter-spacing: var(--ls-h4);
+  font-weight: var(--weight-bold);
+  text-wrap: balance;
+  outline: none;
+}
+.sub {
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+  text-wrap: pretty;
+}
+
+.basis {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+.edit {
+  position: relative;
+  min-height: var(--button-h-small);
+  padding: 0 var(--space-1);
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+}
+.edit:hover {
+  color: var(--blue-700);
+}
+/* Ours: a 44px tap area around the 32px link-button. */
+.edit::after {
+  content: '';
+  position: absolute;
+  inset: -6px 0;
+}
+
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: var(--space-5);
+}
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-xl);
+}
+
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-8) 0;
+}
+
+.oneNote {
+  text-align: center;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+
+.browse {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--touch-target-min);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-medium);
+  color: var(--blue-500);
+  text-decoration: none;
+}
+.browse:hover {
+  color: var(--blue-700);
+}
+.edit:focus-visible,
+.browse:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}

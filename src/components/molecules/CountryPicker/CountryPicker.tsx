@@ -14,6 +14,8 @@ type CountryPickerProps = FieldControlProps & {
   value: string;
   onChange: (id: string) => void;
   placeholder?: string;
+  /** xl: 48px flow-form field with a 24px chevron (Mentee Onboarding v5.dc.html). */
+  size?: 'default' | 'xl';
 };
 
 /** Case- and accent-insensitive, so "cote" finds Côte d’Ivoire. */
@@ -33,6 +35,7 @@ export function CountryPicker({
   value,
   onChange,
   placeholder = 'Search countries',
+  size = 'default',
 }: CountryPickerProps) {
   const listId = useId();
   const chosen = options.find((o) => o.id === value)?.label ?? '';
@@ -96,7 +99,7 @@ export function CountryPicker({
         aria-describedby={describedBy}
         aria-invalid={invalid || undefined}
         autoComplete="off"
-        className={cx(styles.input, invalid && styles.invalid)}
+        className={cx(styles.input, size === 'xl' && styles.xl, invalid && styles.invalid)}
         placeholder={placeholder}
         value={text ?? chosen}
         onChange={(e) => {
@@ -122,7 +125,11 @@ export function CountryPicker({
         }}
         onKeyDown={onKeyDown}
       />
-      <Icon name={open ? 'expand_less' : 'expand_more'} size={18} className={styles.chevron} />
+      <Icon
+        name={open ? 'expand_less' : 'expand_more'}
+        size={size === 'xl' ? 24 : 18}
+        className={cx(styles.chevron, size === 'xl' && styles.chevronXl)}
+      />
       <ul
         id={listId}
         ref={listRef}

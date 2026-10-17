@@ -7,7 +7,7 @@ type SkeletonProps = {
   height?: string;
   /** e.g. '3 / 2' for a photo block. */
   aspectRatio?: string;
-  radius?: 'sm' | 'md' | 'lg';
+  radius?: 'sm' | 'md' | 'lg' | 'full';
   className?: string;
 };
 

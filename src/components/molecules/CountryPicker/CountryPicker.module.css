@@ -16,6 +16,10 @@
   color: var(--ink-900);
   box-sizing: border-box;
 }
+.xl {
+  height: var(--space-12);
+  padding: 0 var(--space-10) 0 var(--space-4);
+}
 .input:hover {
   border-color: var(--ink-400);
 }
@@ -34,6 +38,9 @@
   transform: translateY(-50%);
   pointer-events: none;
   color: var(--ink-500);
+}
+.chevronXl {
+  right: var(--space-3);
 }
 .list {
   position: absolute;

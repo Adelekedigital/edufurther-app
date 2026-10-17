@@ -9,6 +9,7 @@ import { Tag } from '@/components/atoms/Tag/Tag';
 import { MentorProof } from '@/components/molecules/MentorProof/MentorProof';
 import type { Mentor, MentorLabel } from '@/types/mentor';
 import { cx } from '@/lib/utils/cx';
+import { MoreTopics } from './MoreTopics';
 import styles from './MentorCard.module.css';
 
 const LABEL_TEXT: Record<MentorLabel, string> = {
@@ -44,7 +45,16 @@ type MentorCardProps = {
    * "isn't available" page.
    */
   variant?: 'photo' | 'compact';
+  /** Topic slugs to show first (MentorCard.dc.html `highlight`: the help areas a mentee picked). */
+  highlight?: string[];
+  /** Phones: open the page's sheet listing every topic. Without it, "+N" opens the popover. */
+  onMoreTopics?: (mentor: Mentor) => void;
+  /** The name's heading level, so the card fits the page outline (h2 under a page's h1). */
+  headingLevel?: 2 | 3;
 };
+
+/** Chips a card shows before "+N" (MentorCard.dc.html `topicsMore=popover`). */
+const TOPICS_SHOWN = 3;
 
 /**
  * MentorCard, `photo` variant (the chosen default) or `compact`. Name and photo
@@ -67,8 +77,16 @@ export function MentorCard({
   bookBlocked = null,
   canBook = true,
   variant = 'photo',
+  highlight = [],
+  onMoreTopics,
+  headingLevel = 3,
 }: MentorCardProps) {
+  const H = `h${headingLevel}` as const;
   const compact = variant === 'compact';
+  const topics = [...m.topics].sort(
+    (a, b) => Number(highlight.includes(b.slug)) - Number(highlight.includes(a.slug)),
+  );
+  const cut = topics.length > TOPICS_SHOWN;
   // The face position (backend avatar_focus) drives the crop via CSS custom
   // properties; without it the CSS falls back to the design's 50% 25%.
   const tone = {
@@ -124,7 +142,7 @@ export function MentorCard({
         )}
         <div className={styles.who}>
           <div className={styles.nameRow}>
-            <h3 className={styles.nameWrap}>
+            <H className={styles.nameWrap}>
               <Link
                 href={m.profileHref}
                 prefetch={false}
@@ -133,7 +151,7 @@ export function MentorCard({
               >
                 {m.name}
               </Link>
-            </h3>
+            </H>
             {/* "New mentor" is already the proof line's first words: not twice. */}
             {compact && m.label && m.label !== 'new' && (
               <Tag tone="badge">{LABEL_TEXT[m.label]}</Tag>
@@ -156,14 +174,23 @@ export function MentorCard({
         </div>
       </div>
 
-      {showTopics && m.topics.length > 0 && (
-        <ul className={styles.topics} aria-label="Helps with">
-          {m.topics.map((t) => (
-            <li key={t.slug}>
-              <Tag tone="neutral">{t.label}</Tag>
-            </li>
-          ))}
-        </ul>
+      {showTopics && topics.length > 0 && (
+        <div className={styles.topicsRow}>
+          <ul className={styles.topics} aria-label="Helps with">
+            {(cut ? topics.slice(0, TOPICS_SHOWN) : topics).map((t) => (
+              <li key={t.slug}>
+                <Tag tone="neutral">{t.label}</Tag>
+              </li>
+            ))}
+          </ul>
+          {cut && (
+            <MoreTopics
+              mentor={{ ...m, topics }}
+              hidden={topics.length - TOPICS_SHOWN}
+              onOpenSheet={onMoreTopics}
+            />
+          )}
+        </div>
       )}
 
       {/* MentorCard.dc.html bottom block: offer line, then availability. */}
