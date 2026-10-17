@@ -20,7 +20,7 @@
   transition: background-color var(--duration-fast) var(--ease-standard);
 }
 
-.button:hover:not(:disabled):not([aria-busy='true']) {
+.button:hover:not([aria-disabled='true']):not([aria-busy='true']) {
   background: var(--ink-50);
 }
 
@@ -29,7 +29,7 @@
   outline-offset: var(--focus-ring-offset);
 }
 
-.button:disabled {
+.button[aria-disabled='true'] {
   opacity: 0.5;
   cursor: not-allowed;
 }

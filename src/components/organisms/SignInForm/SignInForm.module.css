@@ -1,0 +1,267 @@
+/* Sign In.dc.html, saved defaults. Values from the markup's inline styles.
+   The design switches to its phone layout below 900px (`st.w < 900`). */
+
+/* <main>: the card on desktop, a plain column on phones. */
+.card {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-8);
+  border-radius: var(--radius-xl);
+  background: var(--white);
+  box-shadow: inset 0 0 0 var(--border-hairline) var(--ink-200);
+  color: var(--ink-900);
+  font-family: var(--font-ui);
+}
+
+.logo {
+  align-self: flex-start;
+  width: auto;
+  height: 28px;
+}
+
+/* ---- notices above the title ---- */
+.offline {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--ink-100);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-900);
+}
+
+/* ---- heading ---- */
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.eyebrow {
+  font-size: var(--text-caption-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-caption-xs);
+  text-transform: uppercase;
+  color: var(--blue-700);
+}
+
+.title {
+  margin: 0;
+  outline: none;
+  font-family: var(--font-brand);
+  font-size: var(--text-h5);
+  line-height: var(--lh-h5);
+  letter-spacing: var(--ls-h5);
+  font-weight: var(--weight-bold);
+}
+
+.sub {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+  text-wrap: pretty;
+}
+
+/* ---- a step's body ---- */
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-medium);
+}
+
+/* Inputs: 48px, 16px side padding (the Input atom keeps focus, hover, invalid). */
+.input {
+  height: var(--button-h-large);
+  padding: 0 var(--space-4);
+}
+
+.code {
+  height: var(--space-14);
+  font-size: var(--text-h6);
+  letter-spacing: 0.5em;
+}
+
+/* Red lines under a field: icon + text, p-xs, red-600. */
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--red-600);
+}
+
+.typo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  margin: calc(var(--space-2) * -1) 0 0;
+  font-size: var(--text-p-xs);
+  color: var(--ink-700);
+}
+
+.or {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+
+.or::before,
+.or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--ink-200);
+}
+
+.resent {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+
+.resendRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  font-size: var(--text-p-xs);
+  color: var(--ink-700);
+}
+
+/* ---- text buttons and links ---- */
+.textButton {
+  position: relative;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+}
+
+.textButton:hover:not(:disabled):not([aria-disabled='true']) {
+  color: var(--blue-700);
+}
+
+.textButton:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-xs);
+}
+
+.textButton:disabled,
+.textButton[aria-disabled='true'] {
+  cursor: default;
+  color: var(--ink-600);
+}
+
+.xs {
+  min-height: 24px;
+  font-size: var(--text-p-xs);
+}
+
+/* "Use a different email": centred, a 4px pad around it. */
+.centered {
+  align-self: center;
+  padding: var(--space-1);
+  font-size: var(--text-p-xs);
+}
+
+.switch {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  color: var(--ink-700);
+}
+
+.switch a {
+  font-weight: var(--weight-semibold);
+}
+
+.roleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding-top: var(--space-5);
+  border-top: var(--border-hairline) solid var(--ink-200);
+  font-size: var(--text-p-sm);
+  color: var(--ink-700);
+}
+
+.roleLink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--touch-target-min);
+  font-weight: var(--weight-semibold);
+}
+
+/* A held primary button looks like the Button atom's disabled primary. */
+.held,
+.held:hover,
+.held:active {
+  background: var(--surface-muted);
+  color: var(--ink-600);
+  cursor: not-allowed;
+}
+
+/* While the toast shows and the page moves on, nothing here takes a press. */
+.redirecting {
+  pointer-events: none;
+}
+
+@media (max-width: 899px) {
+  .card {
+    max-width: none;
+    padding: var(--space-8) var(--space-5);
+    background: transparent;
+    box-shadow: none;
+  }
+
+  /* Drawn small; an invisible 44px tap area around them (our 44px rule). */
+  .textButton::after,
+  .switch a::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, var(--touch-target-min));
+    height: var(--touch-target-min);
+    transform: translate(-50%, -50%);
+  }
+
+  .switch a {
+    position: relative;
+  }
+
+  /* The fix's 44px tap area would reach over the email field above it; the
+     row keeps a full gap below the field instead (ours, phones only). */
+  .typo {
+    margin-top: 0;
+  }
+}
