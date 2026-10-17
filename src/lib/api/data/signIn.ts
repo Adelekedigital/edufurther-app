@@ -57,28 +57,57 @@ const SAVE_FAILED = 'We couldn’t save your name. Try again.';
 const ONE_WORD = /first and a last name/i;
 
 /**
+ * A proxy in front of the API (the Vercel rewrite, Railway's edge) can answer
+ * 502–504, or drop the line, after the save committed; the API itself never
+ * sends these here.
+ */
+const PROXY_ERRORS = new Set([502, 503, 504]);
+
+type NameBody = { full_name: string } | { first_name: string; last_name: string };
+
+/** The PATCH, or null when a proxy failed it: setting the same name again is safe. */
+async function patchName(userId: string, body: NameBody) {
+  try {
+    const res = await api.PATCH('/api/v1/users/{user_id}/profile', {
+      params: { path: { user_id: userId } },
+      body,
+    });
+    return PROXY_ERRORS.has(res.response.status) ? null : res;
+  } catch {
+    return null;
+  }
+}
+
+/** Whether the account has a name now: a save a proxy failed may have landed. */
+async function nameLanded() {
+  try {
+    const { data } = await api.GET('/api/v1/me');
+    return !!data?.first_name;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Save a name from either shape of input. A full name goes out as `full_name`
  * and the backend splits it (first word / the rest); two fields go out as
  * `first_name` + `last_name`. A 422 on a name field reads as the rule's own
  * words, told apart by its message; anything else is a plain "try again"
- * (Problem Details `detail` is never shown).
+ * (Problem Details `detail` is never shown). A proxy error is tried once
+ * more, then GET /me says whether the name landed anyway.
  */
 export function useSaveName() {
   const qc = useQueryClient();
   return useMutation<void, NameSaveError, { userId: string; name: NameToSave }>({
     networkMode: 'always',
     mutationFn: async ({ userId, name }) => {
-      const body =
+      const body: NameBody =
         'fullName' in name
           ? { full_name: tidyName(name.fullName) }
           : { first_name: tidyName(name.firstName), last_name: tidyName(name.lastName) };
-      let res;
-      try {
-        res = await api.PATCH('/api/v1/users/{user_id}/profile', {
-          params: { path: { user_id: userId } },
-          body,
-        });
-      } catch {
+      const res = (await patchName(userId, body)) ?? (await patchName(userId, body));
+      if (!res) {
+        if (await nameLanded()) return;
         throw new NameSaveError(SAVE_FAILED);
       }
       if (res.response.ok) return;

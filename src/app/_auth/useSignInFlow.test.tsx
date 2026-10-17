@@ -126,6 +126,26 @@ describe('useSignInFlow — sign-up with a code', () => {
     await act(async () => result.current.form.onFinish!());
     expect(result.current.toast).toMatchObject({ title: 'Account created. Welcome, Amara' });
   });
+
+  it('stays on the finish step when the name won’t save, even once the session lands', async () => {
+    const { result, rerender } = await toCode();
+    verify.mockResolvedValueOnce({ ok: true });
+    account.mockResolvedValueOnce(member());
+    // The save may have landed behind the proxy error: a later /me has the name.
+    account.mockResolvedValue(member({ firstName: 'Amara' }));
+    save.mockRejectedValueOnce(new Error('We couldn’t save your name. Try again.'));
+    await act(async () => result.current.form.onVerify!('482913'));
+    session = { status: 'present', userId: 'u1' };
+    rerender(opts());
+    await flush();
+    act(() => vi.advanceTimersByTime(TOAST_MS * 2));
+    await flush();
+    expect(result.current.form.step).toBe('finish');
+    expect(result.current.form.nameError).toBe('We couldn’t save your name. Try again.');
+    expect(result.current.toast).toBeNull();
+    expect(account).toHaveBeenCalledTimes(1);
+    expect(replace).not.toHaveBeenCalled();
+  });
 });
 
 describe('useSignInFlow — log-in', () => {

@@ -119,12 +119,85 @@ describe('useSaveName (either shape of name input)', () => {
         result.current.mutateAsync({ userId: 'u1', name: { fullName: 'Amara Okafor' } }),
       ).rejects.toThrow('We couldn’t save your name. Try again.');
     });
-    PATCH.mockRejectedValueOnce(new Error('offline'));
+    // Offline twice, and /me can't say the name landed.
+    PATCH.mockRejectedValueOnce(new Error('offline')).mockRejectedValueOnce(new Error('offline'));
+    GET.mockResolvedValueOnce(res(200, { id: 'u1', first_name: null }));
     await act(async () => {
       await expect(
         result.current.mutateAsync({ userId: 'u1', name: { fullName: 'Amara Okafor' } }),
       ).rejects.toThrow('We couldn’t save your name. Try again.');
     });
     await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+describe('useSaveName (a proxy error after the save)', () => {
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>
+  );
+  const save = () => {
+    const { result } = renderHook(() => useSaveName(), { wrapper });
+    return () => result.current.mutateAsync({ userId: 'u1', name: { fullName: 'Amara Okafor' } });
+  };
+  beforeEach(() => {
+    PATCH.mockReset();
+    GET.mockReset();
+  });
+
+  it('sends the PATCH once more after a 503', async () => {
+    PATCH.mockResolvedValueOnce(res(503)).mockResolvedValueOnce(res(204));
+    const run = save();
+    await act(() => run());
+    expect(PATCH).toHaveBeenCalledTimes(2);
+    expect(GET).not.toHaveBeenCalled();
+  });
+
+  it('sends it once more after the line dropped', async () => {
+    PATCH.mockRejectedValueOnce(new TypeError('Failed to fetch')).mockResolvedValueOnce(res(204));
+    const run = save();
+    await act(() => run());
+    expect(PATCH).toHaveBeenCalledTimes(2);
+  });
+
+  it('counts it saved when a second 503 leaves the name on /me', async () => {
+    PATCH.mockResolvedValue(res(503));
+    GET.mockResolvedValueOnce(res(200, { id: 'u1', first_name: 'Amara' }));
+    const run = save();
+    await act(() => run());
+    expect(PATCH).toHaveBeenCalledTimes(2);
+    expect(GET).toHaveBeenCalledWith('/api/v1/me');
+  });
+
+  it('says "try again" when /me has no name either', async () => {
+    PATCH.mockResolvedValue(res(503));
+    GET.mockResolvedValueOnce(res(200, { id: 'u1', first_name: null }));
+    const run = save();
+    await act(async () => {
+      await expect(run()).rejects.toThrow('We couldn’t save your name. Try again.');
+    });
+    expect(PATCH).toHaveBeenCalledTimes(2);
+  });
+
+  it('never retries a name refusal', async () => {
+    PATCH.mockResolvedValue(
+      res(422, undefined, {
+        errors: [{ pointer: '/full_name', message: 'enter a first and a last name' }],
+      }),
+    );
+    const run = save();
+    await act(async () => {
+      await expect(run()).rejects.toThrow('Enter your first and last name.');
+    });
+    expect(PATCH).toHaveBeenCalledTimes(1);
+    expect(GET).not.toHaveBeenCalled();
+  });
+
+  it('never retries the API’s own 500', async () => {
+    PATCH.mockResolvedValue(res(500));
+    const run = save();
+    await act(async () => {
+      await expect(run()).rejects.toThrow('We couldn’t save your name. Try again.');
+    });
+    expect(PATCH).toHaveBeenCalledTimes(1);
   });
 });
