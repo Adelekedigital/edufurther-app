@@ -9,6 +9,15 @@
  */
 const ALLOWED = /^[\p{L}\p{M}\s’'.-]+$/u;
 const HAS_LETTER = /\p{L}/u;
+/** More marks on one letter than any real name carries (Yoruba stacks two). */
+const MARK_PILE = /\p{M}{4,}/u;
+/**
+ * Invisible characters that ride along in text pasted from documents and chat
+ * apps: zero-width space, soft hyphen, word joiner, BOM. Dropped, so a name
+ * that looks right isn't refused for something nobody can see. ZWJ/ZWNJ are
+ * not dropped: in some scripts they change the name, so they stay refused.
+ */
+const INVISIBLE = /[​­⁠﻿]/g;
 
 /** Per part, after the split (handoff: 1–60 characters per field). */
 export const NAME_PART_MAX = 60;
@@ -26,9 +35,13 @@ export const NAME_PROBLEM_COPY: Record<NameProblem, string> = {
   tooLong: `Keep each name to ${NAME_PART_MAX} characters or fewer.`,
 };
 
-/** Trimmed, inner runs of spaces collapsed: what the person meant to type. */
+/**
+ * What the person meant to type, and what is saved: composed (NFC, so "ọ̀"
+ * typed as a letter plus marks counts and compares like the precomposed
+ * one), invisible characters dropped, trimmed, inner spaces collapsed.
+ */
 export function tidyName(value: string): string {
-  return value.trim().replace(/\s+/g, ' ');
+  return value.normalize('NFC').replace(INVISIBLE, '').trim().replace(/\s+/g, ' ');
 }
 
 /**
@@ -43,7 +56,11 @@ export function splitFullName(value: string): { firstName: string; lastName: str
 
 function partProblem(part: string): NameProblem | null {
   // Every word needs a letter: "-" or "." alone is not a name.
-  if (!ALLOWED.test(part) || part.split(' ').some((w) => !HAS_LETTER.test(w))) {
+  if (
+    !ALLOWED.test(part) ||
+    MARK_PILE.test(part) ||
+    part.split(' ').some((w) => !HAS_LETTER.test(w))
+  ) {
     return 'characters';
   }
   return part.length > NAME_PART_MAX ? 'tooLong' : null;

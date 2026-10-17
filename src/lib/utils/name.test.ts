@@ -60,6 +60,34 @@ describe('checkFullName', () => {
   });
 });
 
+describe('how the name was typed', () => {
+  const yoruba = 'Adébáyọ̀ Ọlásùnkànmí';
+
+  it('treats decomposed input (letter + marks) like the composed name', () => {
+    const typed = yoruba.normalize('NFD');
+    expect(typed).not.toBe(yoruba.normalize('NFC'));
+    expect(checkFullName(typed)).toBeNull();
+    expect(tidyName(typed)).toBe(yoruba.normalize('NFC'));
+    expect(splitFullName(typed).firstName).toBe('Adébáyọ̀'.normalize('NFC'));
+  });
+
+  it('measures length on the composed form', () => {
+    const word = 'ọ̀'.repeat(30); // 60 composed units, 90 decomposed
+    expect(checkFullName(`${word.normalize('NFD')} Obi`)).toBeNull();
+  });
+
+  it('drops invisible characters pasted along with a name', () => {
+    expect(checkFullName('Amara​ Oka­for﻿')).toBeNull();
+    expect(tidyName('Amara​ Oka­for')).toBe('Amara Okafor');
+  });
+
+  it('refuses a pile of marks on one letter', () => {
+    // Composing folds the first acute into "á", leaving four marks on it.
+    expect(checkFullName(`a${'́'.repeat(5)} Okafor`)).toBe('characters');
+    expect(checkFullName(`a${'́'.repeat(3)} Okafor`)).toBeNull();
+  });
+});
+
 describe('checkNamePart', () => {
   it('accepts one or more words', () => {
     expect(checkNamePart('Amara')).toBeNull();

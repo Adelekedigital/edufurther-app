@@ -40,13 +40,45 @@ describe('codeLock', () => {
   it('keeps one address’s count from another', () => {
     recordMiss(A, T0);
     expect(codeTries(B, T0).triesLeft).toBe(MAX_TRIES);
+    recordMiss(B, T0);
+    expect(codeTries(A, T0).triesLeft).toBe(4);
+  });
+
+  it('keeps a lock when the person switches to another address and back', () => {
+    for (let i = 0; i < MAX_TRIES; i++) recordMiss(A, T0);
+    resetTries(B, T0);
+    recordMiss(B, T0);
+    expect(codeTries(A, T0).lockedUntil).toBe(T0 + LOCK_MS);
+  });
+
+  it('counts an address however it was typed', () => {
+    recordMiss(' Amara@Example.com ', T0);
+    expect(codeTries(A, T0).triesLeft).toBe(4);
   });
 
   it('survives a reload of the tab, without storing the address', () => {
     recordMiss(A, T0);
     const stored = window.sessionStorage.getItem('ef-code-tries') ?? '';
     expect(stored).not.toContain('amara');
-    expect(JSON.parse(stored).misses).toBe(1);
+    expect(Object.values(JSON.parse(stored))).toEqual([{ misses: 1, lockedUntil: null }]);
+  });
+
+  it('reading never writes', () => {
+    for (let i = 0; i < MAX_TRIES; i++) recordMiss(A, T0);
+    const set = vi.spyOn(Storage.prototype, 'setItem');
+    codeTries(A, T0 + LOCK_MS);
+    expect(set).not.toHaveBeenCalled();
+    set.mockRestore();
+  });
+
+  it('does not fall back to an older stored count when saving fails', () => {
+    recordMiss(A, T0);
+    const set = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('full');
+    });
+    expect(recordMiss(A, T0).triesLeft).toBe(3);
+    expect(codeTries(A, T0).triesLeft).toBe(3);
+    set.mockRestore();
   });
 
   it('still counts on this page when storage throws', () => {

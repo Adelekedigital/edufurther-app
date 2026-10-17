@@ -1,21 +1,22 @@
-/* The region itself takes no space; only the toast is drawn. */
+/* The status region is the positioned container: a real box (not
+   `display: contents`, which some browsers drop from the accessibility tree
+   along with the role). Empty, it has no size. Sign In.dc.html toast: centred
+   32px above the bottom, at most the width less 16px a side. */
 .region {
-  display: contents;
-}
-
-/* Sign In.dc.html toast: centred 32px above the bottom, navy-900, white
-   p-sm medium, radius-lg, the menu shadow; at most the width less 16px a side. */
-.toast {
   position: fixed;
   left: 50%;
   bottom: var(--space-8);
   z-index: 100;
   transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - var(--space-8));
+}
+
+/* navy-900, white p-sm medium, radius-lg, the menu shadow. */
+.toast {
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
-  width: max-content;
-  max-width: calc(100% - var(--space-8));
   box-sizing: border-box;
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-lg);

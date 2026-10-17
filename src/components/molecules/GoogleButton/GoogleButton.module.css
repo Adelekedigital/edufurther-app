@@ -20,7 +20,7 @@
   transition: background-color var(--duration-fast) var(--ease-standard);
 }
 
-.button:hover:not(:disabled) {
+.button:hover:not(:disabled):not([aria-busy='true']) {
   background: var(--ink-50);
 }
 
@@ -54,4 +54,18 @@
   font-size: var(--text-p-xs);
   font-weight: var(--weight-semibold);
   color: var(--blue-700);
+}
+
+/* On a button narrower than ~350px the pinned badge would sit on "Google"
+   (the centred words need about 178px, the badge 85px): it joins the row
+   instead, after the words (ours; the design is drawn at 350, a 390 phone).
+   The query sees the content box: the button less 16px padding and 1px border a side. */
+.withBadge {
+  container-type: inline-size;
+}
+
+@container (max-width: 315px) {
+  .badge {
+    position: static;
+  }
 }

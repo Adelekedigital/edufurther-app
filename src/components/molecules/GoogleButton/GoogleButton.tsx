@@ -48,13 +48,14 @@ export const GoogleButton = forwardRef<HTMLButtonElement, GoogleButtonProps>(
   function GoogleButton({ busy, lastUsed, className, onClick, ...rest }, ref) {
     return (
       <button
+        {...rest}
         ref={ref}
         type="button"
-        className={cx(styles.button, className)}
+        className={cx(styles.button, lastUsed && !busy && styles.withBadge, className)}
+        // After ...rest, like the Button atom: busy wins whatever the caller passes.
         aria-busy={busy || undefined}
         // Not `disabled` while busy: that would drop focus mid-press.
         onClick={busy ? undefined : onClick}
-        {...rest}
       >
         <GoogleMark />
         {busy ? 'Taking you to Google…' : 'Continue with Google'}
