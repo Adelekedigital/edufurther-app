@@ -44,7 +44,7 @@ export function ok<P extends keyof paths, M extends MethodOf<P>>(
 }
 
 /** The error statuses the mocks answer with. */
-export type ErrorStatus = 404 | 409 | 413 | 422 | 500;
+export type ErrorStatus = 404 | 409 | 413 | 422 | 429 | 500 | 503;
 
 /** An RFC 9457 problem body; `status` is always the response's own. */
 export type ProblemBody = {

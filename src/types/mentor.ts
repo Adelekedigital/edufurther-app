@@ -315,6 +315,8 @@ export type MentorProfile = {
   takingBookings: boolean;
   headline: string | null;
   about: string | null;
+  /** The About is still an untouched AI draft ("Drafted for you"). */
+  aboutDrafted: boolean;
   bannerUrl: string | null;
   /** The mentor's chosen cover (null colour: the automatic one) and cover art. */
   cover: {

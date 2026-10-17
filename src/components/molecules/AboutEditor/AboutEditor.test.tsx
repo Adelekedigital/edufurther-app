@@ -14,21 +14,21 @@ function setup(extra: Partial<Parameters<typeof AboutEditor>[0]> = {}) {
 }
 
 describe('AboutEditor', () => {
-  it('opens on the text with the cursor at the end, capped at 600, counting', async () => {
+  it('opens on the text with the cursor at the end, capped at 1,500 (owner, 2026-10-17), counting', async () => {
     const { user } = setup();
     const box = screen.getByRole('textbox', { name: 'About' });
     expect(box).toHaveFocus();
-    expect(box).toHaveAttribute('maxLength', '600');
-    expect(screen.getByText('7 / 600')).toBeInTheDocument();
+    expect(box).toHaveAttribute('maxLength', '1500');
+    expect(screen.getByText('7/1500')).toBeInTheDocument();
     await user.type(box, ' More');
     expect(box).toHaveValue('I help. More');
-    expect(screen.getByText('12 / 600')).toBeInTheDocument();
+    expect(screen.getByText('12/1500')).toBeInTheDocument();
   });
 
   it('Save sends the text; Escape and Cancel cancel', async () => {
     const { user, onSave, onCancel } = setup();
     await user.click(screen.getByRole('button', { name: 'Save' }));
-    expect(onSave).toHaveBeenCalledWith('I help.');
+    expect(onSave).toHaveBeenCalledWith('I help.', { drafted: false, promptVersion: null });
     screen.getByRole('textbox', { name: 'About' }).focus();
     await user.keyboard('{Escape}');
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
@@ -45,7 +45,9 @@ describe('AboutEditor', () => {
     const box = screen.getByRole('textbox', { name: 'About' });
     expect(box).toBeInvalid();
     // The failure is the textarea's description, and focus is back on it.
-    expect(box).toHaveAccessibleDescription('That didn’t save. Try again.');
+    expect(box).toHaveAccessibleDescription(
+      expect.stringContaining('That didn’t save. Try again.'),
+    );
     expect(box).toHaveFocus();
   });
 
@@ -67,5 +69,38 @@ describe('AboutEditor', () => {
     expect(hasUnsavedChanges()).toBe(false);
     rerender(<AboutEditor initial="Two." onSave={vi.fn()} onCancel={vi.fn()} saving={false} />);
     expect(hasUnsavedChanges()).toBe(false);
+  });
+
+  it('saves an untouched AI draft as drafted, with its prompt; editing a word clears it', async () => {
+    const assist = vi.fn().mockResolvedValue({ text: 'A drafted About.', promptVersion: 'v1' });
+    const { user, onSave } = setup({ initial: '', assist });
+    await user.click(screen.getByRole('button', { name: 'Write a draft' }));
+    expect(await screen.findByText('Drafted for you')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(onSave).toHaveBeenLastCalledWith('A drafted About.', {
+      drafted: true,
+      promptVersion: 'v1',
+    });
+    await user.type(screen.getByRole('textbox', { name: 'About' }), ' Mine');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(onSave).toHaveBeenLastCalledWith('A drafted About. Mine', {
+      drafted: false,
+      promptVersion: null,
+    });
+  });
+
+  it('is a plain field without assist', () => {
+    setup();
+    expect(screen.queryByRole('button', { name: /Write a draft|Improve/ })).toBeNull();
+  });
+
+  it('holds Save while an AI call runs', async () => {
+    const assist = vi.fn(() => new Promise<never>(() => {}));
+    const { user, onSave } = setup({ assist });
+    await user.click(screen.getByRole('button', { name: 'Improve' }));
+    const save = screen.getByRole('button', { name: 'Save' });
+    expect(save).toHaveAttribute('aria-disabled', 'true');
+    await user.click(save);
+    expect(onSave).not.toHaveBeenCalled();
   });
 });

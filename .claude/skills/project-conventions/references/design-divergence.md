@@ -893,3 +893,15 @@ PRD: Mentee Onboarding v5 (deviation table, H8). Rows the PRD settles are produc
 | Context line shown when `from=booking` (a prototype prop) | Shown when `next` is a booking: the profile reopen link (`/mentors/{h}?book&at`) or an onboarding link with `for={h}`; the mentor read from their public profile; nothing while it loads or if it's gone | The app has no `from` parameter: the booking is the return path itself | — |
 | Toast "Taking you back to your booking with Gbenga…" opens the BookingModal | Same words; the reopen link opens the modal at the time (profile `?book&at`), or the profile says why it can't (#287) | — | — |
 | One send error: "We couldn't send your code. Check your connection and try again." | That copy when offline; "We couldn't send your code right now. Try again in a few minutes." when the server refuses or rate-limits the send (sign-in page and booking modal) | A server-side failure (e.g. Supabase couldn't send the email) isn't the person's connection; the design's line sent them looking for the wrong problem (_ours_, owner report 2026-10-17) | design writes the server copy |
+
+## AiField (`AiField.dc.html`, mentor About on `Mentor Profile.dc.html`, PR D)
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| About `max` 600 (AiField and Mentor Profile); PRD: mentor About 600, mentee bio 300, Why I mentor 300 | About (`about_me`, mentor About and mentee bio) **1,500**; Why I mentor **500** | Owner, 2026-10-17; backend told to enforce and publish it | design updates its max |
+| The status line is always empty (the prototype never fails) | A 429 reads "You’ve used today’s writing help. Try again tomorrow." (PRD B7); a 503 reads "Writing help isn’t available right now. Try again later." (ours, PROVISIONAL); offline says so | The PRD names the 503 but not its copy | design words the 503 |
+| The box’s focus ring is set from React state | `:focus-within` on the box, same values (blue-500 border + 1px ring, 120 ms) | One CSS rule instead of focus/blur state | — |
+| The action is `disabled` while working | `aria-disabled` + `aria-busy`, press ignored | A button that disables itself under focus drops that focus (as the sign-in resend) | — |
+| After an AI change, nothing is said and the pressed button vanishes | Focus returns to the text; a screen-reader-only line says "Draft added. Undo to go back." / "Improved. Undo to go back." / "Your text is back."; Save waits while a call runs | Keyboard and screen-reader users would land on the page with no word of what changed (_ours_) | — |
+| "Improve" always marks the result as a draft | An Improve that changes nothing says "No changes to suggest." (_ours_) and the words stay theirs, not "Drafted for you" | Labelling the person's own words as AI's is the failure ADR 0008 prevents | design words it |
+| Undo stays after the person edits the AI text (`canUndo` while `prev !== value`) | Undo ends at their first own edit | Undo would also throw away what they typed since, with no warning (GitHub review of #289) | — |

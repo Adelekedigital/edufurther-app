@@ -584,6 +584,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                           editor: owner.aboutOpen ? (
                             <AboutEditor
                               initial={p.about ?? ''}
+                              initialDrafted={p.aboutDrafted}
+                              assist={owner.assistAbout}
                               onSave={owner.saveAbout}
                               onCancel={owner.closeAbout}
                               saving={owner.aboutSaving}

@@ -9,6 +9,7 @@
     "arrow_downward",
     "arrow_forward",
     "arrow_upward",
+    "auto_awesome",
     "badge",
     "bar_chart",
     "bedtime",
@@ -123,6 +124,7 @@
     "trending_down",
     "trending_up",
     "tune",
+    "undo",
     "upload",
     "upload_file",
     "verified",
@@ -137,5 +139,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "5d1fc6ee94205e9d88362ffea658b2c5c55ffc664a2bf45b2a45871f395bf4b8"
+  "sha256": "437470415e63fb98ae4cdf3496355b67a31a16c2899d35755949e2a87a970235"
 }

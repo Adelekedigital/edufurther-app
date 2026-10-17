@@ -88,7 +88,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
         ? [
             {
               // backend #305: a LookupRef carries the catalog id.
-              id: OFFERINGS.find((o) => o.code === m.offerings![k]!.slug)?.id ?? m.offerings[k]!.slug,
+              id:
+                OFFERINGS.find((o) => o.code === m.offerings![k]!.slug)?.id ?? m.offerings[k]!.slug,
               code: m.offerings[k]!.slug,
               display_name: m.offerings[k]!.display_name,
             },
@@ -229,6 +230,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
     if (t.first_name) body.first_name = t.first_name;
     if (t.last_name) body.last_name = t.last_name;
     if ('about_me' in t) body.about_me = t.about_me ?? null;
+    // PENDING BACKEND #8.
+    if ('about_me_drafted_at' in t)
+      Object.assign(body, { about_me_drafted_at: t.about_me_drafted_at ?? null });
     const saved = (prefs as { headline?: string | null }).headline;
     if (saved !== undefined) body.headline = saved?.trim() || null;
     // Profile strength, by backend #317's rule: nine steps, equal weight,

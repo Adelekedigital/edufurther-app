@@ -3,7 +3,13 @@
  * In memory on globalThis, so route modules share it; resets on restart.
  * ENABLE_MOCK_API=1 only.
  */
-export type MockText = { first_name?: string; last_name?: string; about_me?: string | null };
+export type MockText = {
+  first_name?: string;
+  last_name?: string;
+  about_me?: string | null;
+  /** PENDING BACKEND #8. */
+  about_me_drafted_at?: string | null;
+};
 
 const g = globalThis as typeof globalThis & { __mockText?: Map<string, MockText> };
 const store = (g.__mockText ??= new Map());

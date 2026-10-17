@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApiError, apiError, normaliseError } from './errors';
 import { api } from './http';
+import type { PendingAboutWrite } from './pending';
 import { keys } from './keys';
 
 export type IntroEdit = { firstName: string; lastName: string; headline: string };
@@ -72,6 +73,28 @@ export function introProblems(before: IntroEdit, after: IntroEdit): IntroEditErr
  * this mentor) has refetched, so the form closes onto the new values, never
  * a flash of the old ones (review of #78). Offline fails at once.
  */
+/** Whether the saved About is still an untouched AI draft (PRD B7). */
+export type AboutProvenance = { drafted: boolean; promptVersion: string | null };
+
+/**
+ * The About PATCH. Blank clears it (the server treats blank as null). With
+ * provenance: true stamps the draft and its prompt version, false clears both
+ * (PENDING BACKEND #8, lib/api/data/pending.ts). Still drafted but with no
+ * version (a draft saved earlier, untouched now) sends nothing, so what the
+ * server holds stays as it is.
+ */
+export function aboutBody(text: string, provenance?: AboutProvenance) {
+  const keep = provenance?.drafted && !provenance.promptVersion;
+  const pending: PendingAboutWrite | undefined =
+    provenance && !keep
+      ? {
+          about_me_drafted: provenance.drafted,
+          about_me_prompt_version: provenance.drafted ? provenance.promptVersion : null,
+        }
+      : undefined;
+  return { about_me: text.trim() || null, ...pending };
+}
+
 export function useProfileEdit(userId: string | null) {
   const qc = useQueryClient();
   // Anything listing this mentor, and the viewer's own name in the shell.
@@ -125,15 +148,14 @@ export function useProfileEdit(userId: string | null) {
     onSettled: () => refresh(),
   });
 
-  const about = useMutation<void, EditError, string>({
+  const about = useMutation<void, EditError, { text: string; provenance?: AboutProvenance }>({
     networkMode: 'always',
-    mutationFn: async (text) => {
+    mutationFn: async ({ text, provenance }) => {
       if (!userId) throw new EditError({ general: 'That didn’t save. Try again.' });
       try {
         const { error, response } = await api.PATCH('/api/v1/users/{user_id}/profile', {
           params: { path: { user_id: userId } },
-          // Blank clears it (the server treats blank as null).
-          body: { about_me: text.trim() || null },
+          body: aboutBody(text, provenance),
         });
         if (!response.ok) throw toEditError(apiError(response.status, error), error);
       } catch (e) {
@@ -149,7 +171,8 @@ export function useProfileEdit(userId: string | null) {
     introSaving: intro.isPending,
     introErrors: intro.error?.errors ?? {},
     resetIntro: () => intro.reset(),
-    saveAbout: (text: string, done: () => void) => about.mutate(text, { onSuccess: done }),
+    saveAbout: (text: string, done: () => void, provenance?: AboutProvenance) =>
+      about.mutate({ text, provenance }, { onSuccess: done }),
     aboutSaving: about.isPending,
     aboutError: about.error
       ? (about.error.errors.about ?? about.error.errors.general ?? null)
