@@ -25,7 +25,8 @@ export async function requestAssist(
     const body: WireAssistRequest = mode === 'improve' ? { field, mode, text } : { field, mode };
     const { data, error, response } = await untyped.POST('/api/v1/me/writing-assist', {
       body,
-      // The router gives up at 20 s (PRD B7); past that, say so rather than spin.
+      // The backend answers 503 when the router passes 20 s (PRD B7); 5 s more
+      // covers the network, then we say so ourselves rather than spin.
       signal: AbortSignal.timeout(ASSIST_TIMEOUT_MS),
     });
     if (!response.ok) throw apiError(response.status, error, response);

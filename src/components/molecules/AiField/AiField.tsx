@@ -195,6 +195,8 @@ export const AiField = forwardRef<HTMLTextAreaElement, AiFieldProps>(function Ai
           className={cx(styles.text, busy && styles.textBusy)}
           onChange={(e) => {
             setStatus('');
+            // Their own edit ends Undo: it would also throw away what they typed.
+            setPrev(null);
             emit(e.target.value, base);
           }}
           {...textareaProps}

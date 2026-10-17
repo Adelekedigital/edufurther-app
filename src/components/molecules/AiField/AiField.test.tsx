@@ -141,4 +141,14 @@ describe('AiField', () => {
     rerender(<AiField label="About" value="Someone else’s." onChange={onChange} max={40} />);
     expect(screen.queryByText('Drafted for you')).toBeNull();
   });
+
+  it('ends Undo once they edit by hand, so it never throws away their typing', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial="my text" onAssist={vi.fn().mockResolvedValue('My text.')} />);
+    await user.click(screen.getByRole('button', { name: 'Improve' }));
+    expect(await screen.findByRole('button', { name: 'Undo' })).toBeInTheDocument();
+    await user.type(box(), ' More');
+    expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+    expect(box()).toHaveValue('My text. More');
+  });
 });
