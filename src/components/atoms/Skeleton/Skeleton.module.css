@@ -11,3 +11,6 @@
 .lg {
   border-radius: var(--radius-lg);
 }
+.full {
+  border-radius: var(--radius-full);
+}

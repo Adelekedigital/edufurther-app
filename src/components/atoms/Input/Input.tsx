@@ -7,7 +7,8 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   /** Room for an icon or button inside the field (px of padding to reserve). */
   padStart?: boolean;
   padEnd?: boolean;
-  fieldSize?: 'md' | 'lg';
+  /** xl: 48px flow-form field (Mentee Onboarding v5, Sign In). */
+  fieldSize?: 'md' | 'lg' | 'xl';
 };
 
 /**
