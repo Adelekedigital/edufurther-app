@@ -65,13 +65,9 @@ export function signInOutcome(o: OutcomeInput): Outcome {
         : 'Opening your Home…';
       return { icon: 'how_to_reg', title, body, href };
     }
-    const body = ONBOARDING_LIVE
-      ? o.next
-        ? 'Next, a few quick questions, then back to your booking.'
-        : 'Next, let’s find your first mentor…'
-      : o.next
-        ? back
-        : 'Next, let’s find your first mentor…';
+    // Onboarding keeps a booking only when it is handed one (PR 4), not a
+    // bare `next`, so the booking promise waits for that.
+    const body = !ONBOARDING_LIVE && o.next ? back : 'Next, let’s find your first mentor…';
     return { icon: 'how_to_reg', title, body, href };
   }
 

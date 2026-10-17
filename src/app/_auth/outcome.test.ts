@@ -96,9 +96,11 @@ describe('signInOutcome — new accounts', () => {
   it('with onboarding on, sends every new mentee to /onboarding first', async () => {
     const out = await load(true);
     expect(out(fresh)).toMatchObject({ href: '/onboarding' });
+    // A bare next isn't a booking: onboarding can't take them back to it, so
+    // the toast doesn't promise to (PR 4 hands the booking over).
     expect(out({ ...fresh, next: '/mentors/gbenga' })).toMatchObject({
       href: '/onboarding',
-      body: 'Next, a few quick questions, then back to your booking.',
+      body: 'Next, let’s find your first mentor…',
     });
   });
 

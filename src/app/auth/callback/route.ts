@@ -17,7 +17,8 @@ export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const code = params.get('code');
   const rawNext = params.get('next');
-  const next = rawNext ? safeReturnTo(rawNext) : null;
+  // A next that fails the check is dropped, not replaced with a default.
+  const next = (rawNext && safeReturnTo(rawNext, '')) || null;
   const ok = code ? await exchangeCodeForSession(code) : false;
   const google = params.get('from') === 'google';
 

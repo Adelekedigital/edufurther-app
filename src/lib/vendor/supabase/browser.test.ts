@@ -137,7 +137,12 @@ describe('signedInUser (Google names, and whether Google was just linked)', () =
         },
       },
     });
-    expect(await signedInUser(NOW)).toEqual({ givenName: 'Tolu', familyName: 'Adebayo', googleJustLinked: false });
+    expect(await signedInUser(NOW)).toEqual({
+      email: null,
+      givenName: 'Tolu',
+      familyName: 'Adebayo',
+      googleJustLinked: false,
+    });
   });
 
   it('calls Google just linked only when it joined another way in a moment ago', async () => {
@@ -161,7 +166,12 @@ describe('signedInUser (Google names, and whether Google was just linked)', () =
     getUserCall.mockResolvedValueOnce({
       data: { user: { identities: [{ provider: 'email' }], user_metadata: { given_name: 'X' } } },
     });
-    expect(await signedInUser(NOW)).toEqual({ givenName: null, familyName: null, googleJustLinked: false });
+    expect(await signedInUser(NOW)).toEqual({
+      email: null,
+      givenName: null,
+      familyName: null,
+      googleJustLinked: false,
+    });
     getUserCall.mockResolvedValueOnce({ data: { user: null } });
     expect(await signedInUser(NOW)).toBeNull();
   });

@@ -109,6 +109,11 @@ export function CodeStep({
           Too many wrong codes. For your security, try again in 15 minutes.
         </FieldError>
       )}
+      {problem?.kind === 'resendFailed' && (
+        <FieldError id={problemId}>
+          We couldn’t send a new code. Check your connection and try again.
+        </FieldError>
+      )}
       {resentCount > 0 && <p className={styles.resent}>{resentLine}</p>}
       {/* Said through a region that is always there; the visible line above
           takes no gap while it is empty. */}

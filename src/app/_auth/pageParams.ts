@@ -12,7 +12,8 @@ export function authPageParams(sp: SearchParams, mode: 'login' | 'signup') {
   return {
     // Log-in has no role: the account decides where they land.
     role: mode === 'signup' && one(sp.role) === 'mentor' ? ('mentor' as const) : ('mentee' as const),
-    next: rawNext ? safeReturnTo(rawNext) : null,
+    // A next that fails the check is ignored, not replaced: no stray detour.
+    next: (rawNext && safeReturnTo(rawNext, '')) || null,
     google:
       one(sp.auth) === 'google'
         ? ('returned' as const)

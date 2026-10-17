@@ -40,7 +40,7 @@ describe('/auth/callback', () => {
     expect(await call('code=c')).toBe('/');
     exchange.mockResolvedValueOnce(true);
     expect(await call('code=c&from=google&next=%2F%2Fevil.com')).toBe(
-      '/login?next=%2Fexplore&auth=google',
+      '/login?auth=google',
     );
   });
 });

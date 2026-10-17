@@ -12,7 +12,12 @@ import {
   type SignInMode,
   type SignInRole,
 } from '@/lib/api/data/auth';
-import { fetchSignInAccount, useSaveName, type NameToSave } from '@/lib/api/data/signIn';
+import {
+  fetchSignInAccount,
+  useSaveName,
+  type NameToSave,
+  type SignInAccount,
+} from '@/lib/api/data/signIn';
 import { useSession } from '@/lib/api/data/session';
 import { codeTries, recordMiss, resetTries } from '@/lib/utils/codeLock';
 import { lastSignInMethod, rememberSignInMethod } from '@/lib/utils/lastUsed';
@@ -27,6 +32,31 @@ export const TOAST_MS = 1400;
 export const RESEND_WAIT_MS = 30_000;
 /** Supabase's email OTP expiry, set to 600 s in the dashboard (PRD). */
 export const CODE_LIFETIME_MS = 10 * 60_000;
+/** A failed GET /me right after sign-in is tried again after these waits. */
+export const ACCOUNT_RETRY_MS = [400, 1200];
+
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** GET /me, tried again on a failure (not on "no account"): a blip must not cost the name. */
+async function loadAccount(): Promise<SignInAccount> {
+  let acct = await fetchSignInAccount();
+  for (const ms of ACCOUNT_RETRY_MS) {
+    if (acct.kind !== 'error') break;
+    await wait(ms);
+    acct = await fetchSignInAccount();
+  }
+  return acct;
+}
+
+function toAccount(acct: Extract<SignInAccount, { kind: 'member' }>) {
+  return {
+    id: acct.id,
+    isAdmin: acct.isAdmin,
+    isMentor: acct.isMentor,
+    mentorApproved: acct.mentorApproved,
+    isNew: acct.firstName === null,
+  };
+}
 
 type Method = 'email' | 'google';
 type Account = {
@@ -82,6 +112,22 @@ export function useSignInFlow({ mode, role, next, googleReturn, googleFailed }: 
   const sentAt = useRef(0);
   const account = useRef<Account | null>(null);
   const method = useRef<Method>('email');
+  // Latches read at the moment of the call, not from a render's closure: an
+  // autofilled sixth digit and an Enter in the same tick would both pass a
+  // state check.
+  const verifyingNow = useRef(false);
+  const resendingNow = useRef(false);
+  const mounted = useRef(true);
+  const redirectTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // Leaving the page during the toast (Back, a link) cancels the redirect.
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      clearTimeout(redirectTimer.current);
+    };
+  }, []);
 
   // Storage isn't there on the server: read it once the client runs.
   const hydrated = useHydrated();
@@ -125,7 +171,8 @@ export function useSignInFlow({ mode, role, next, googleReturn, googleFailed }: 
         next,
       });
       setOutcome(o);
-      setTimeout(() => router.replace(o.href), TOAST_MS);
+      clearTimeout(redirectTimer.current);
+      redirectTimer.current = setTimeout(() => router.replace(o.href), TOAST_MS);
     },
     [mode, role, next, router],
   );
@@ -150,29 +197,27 @@ export function useSignInFlow({ mode, role, next, googleReturn, googleFailed }: 
     async (via: Method) => {
       method.current = via;
       rememberSignInMethod(via);
-      const acct = await fetchSignInAccount();
-      if (acct.kind !== 'member') {
-        // `/` and the page there explain a missing or unlinked account.
-        router.replace(next ?? '/');
-        return;
-      }
-      const a: Account = {
-        id: acct.id,
-        isAdmin: acct.isAdmin,
-        isMentor: acct.isMentor,
-        mentorApproved: acct.mentorApproved,
-        isNew: acct.firstName === null,
-      };
+      const acct = await loadAccount();
+      if (!mounted.current) return;
+      // `/` explains a missing or unlinked account (409), so never skip it for
+      // `next`; a /me that keeps failing goes on rather than stranding them.
+      if (acct.kind === 'noAccount') return router.replace('/');
+      if (acct.kind === 'error') return router.replace(next ?? '/');
+      const a = toAccount(acct);
       account.current = a;
       if (!a.isNew) {
         const google = via === 'google' ? await signedInUser() : null;
+        if (!mounted.current) return;
         return finish(a, acct.firstName ?? '', !!google?.googleJustLinked);
       }
       if (via === 'google') {
         const g = await signedInUser();
+        if (!mounted.current) return;
         if (g?.givenName && g.familyName) {
+          // In the field first, so a refused save shows the finish step with it.
+          setFullName(`${g.givenName} ${g.familyName}`);
           const saved = await name(a, { firstName: g.givenName, lastName: g.familyName });
-          if (saved) finish(a, g.givenName);
+          if (saved && mounted.current) finish(a, g.givenName);
           return;
         }
         // No family name from Google: ask once, under the same rule.
@@ -181,7 +226,8 @@ export function useSignInFlow({ mode, role, next, googleReturn, googleFailed }: 
         return;
       }
       if (mode === 'signup' && checkFullName(fullName) === null) {
-        if (await name(a, { fullName })) finish(a, splitFullName(fullName).firstName);
+        const saved = await name(a, { fullName });
+        if (saved && mounted.current) finish(a, splitFullName(fullName).firstName);
         return;
       }
       setStep('finish');
@@ -189,22 +235,46 @@ export function useSignInFlow({ mode, role, next, googleReturn, googleFailed }: 
     [finish, fullName, mode, name, next, router],
   );
 
+  /** Something threw after sign-in (storage, the SDK): go on rather than hang on "Checking...". */
+  const afterSignInSafely = useCallback(
+    async (via: Method) => {
+      try {
+        await afterSignIn(via);
+      } catch {
+        if (mounted.current) router.replace(next ?? '/');
+      }
+    },
+    [afterSignIn, next, router],
+  );
+
   // Back from Google with a session.
   const googleHandled = useRef(false);
   useEffect(() => {
     if (!googleReturn || googleHandled.current || session.status !== 'present') return;
     googleHandled.current = true;
-    void afterSignIn('google');
-  }, [googleReturn, session.status, afterSignIn]);
+    void afterSignInSafely('google');
+  }, [googleReturn, session.status, afterSignInSafely]);
 
-  // Already signed in and not mid-flow: straight on, no toast.
+  // Already signed in and not mid-flow: straight on, no toast. An account
+  // that was never named (a reload on the finish step, or back later) is
+  // asked for its name first: signing in again doesn't skip naming.
   useEffect(() => {
     if (session.status !== 'present' || handling.current) return;
     handling.current = true;
-    void fetchSignInAccount().then((acct) => {
-      const home = acct.kind === 'member' ? accountHome(acct) : '/';
-      router.replace(next ?? home);
-    });
+    void (async () => {
+      const acct = await loadAccount();
+      if (!mounted.current) return;
+      if (acct.kind === 'member' && acct.firstName === null) {
+        account.current = toAccount(acct);
+        const u = await signedInUser().catch(() => null);
+        if (!mounted.current) return;
+        if (u?.email) setEmail(u.email);
+        setFullName([u?.givenName, u?.familyName].filter(Boolean).join(' '));
+        setStep('finish');
+        return;
+      }
+      router.replace(next ?? (acct.kind === 'member' ? accountHome(acct) : '/'));
+    })();
   }, [session.status, next, router]);
 
   const startCode = (resend: boolean) => {
@@ -231,21 +301,28 @@ export function useSignInFlow({ mode, role, next, googleReturn, googleFailed }: 
   };
 
   const onResend = async () => {
+    if (resendingNow.current) return;
+    resendingNow.current = true;
     const r = await sendSignInCode(email, next);
+    resendingNow.current = false;
     if (r.ok) startCode(true);
+    else setCodeProblem({ kind: 'resendFailed' });
   };
 
   const onVerify = async (c: string) => {
-    if (verifying) return;
+    if (verifyingNow.current) return;
+    verifyingNow.current = true;
     setVerifying(true);
     handling.current = true;
     const r = await verifySignInCode(email, c);
     if (r.ok) {
       resetTries(email);
-      await afterSignIn('email');
-      setVerifying(false);
+      await afterSignInSafely('email');
+      verifyingNow.current = false;
+      if (mounted.current) setVerifying(false);
       return;
     }
+    verifyingNow.current = false;
     handling.current = false;
     setVerifying(false);
     if (r.reason === 'banned') {
@@ -267,6 +344,7 @@ export function useSignInFlow({ mode, role, next, googleReturn, googleFailed }: 
     setFinishing(true);
     setNameError(undefined);
     const saved = await name(a, { fullName });
+    if (!mounted.current) return;
     setFinishing(false);
     if (saved) finish(a, splitFullName(fullName).firstName);
   };
@@ -307,7 +385,7 @@ export function useSignInFlow({ mode, role, next, googleReturn, googleFailed }: 
     code,
     onCodeChange: (c) => {
       setCode(c);
-      setCodeProblem((p) => (p?.kind === 'wrong' ? undefined : p));
+      setCodeProblem((p) => (p?.kind === 'wrong' || p?.kind === 'resendFailed' ? undefined : p));
     },
     onVerify: (c) => void onVerify(c),
     verifying,
@@ -324,7 +402,9 @@ export function useSignInFlow({ mode, role, next, googleReturn, googleFailed }: 
     finishing,
     onFinish: () => void onFinish(),
     offline: !online,
-    redirecting: outcome !== null,
+    // Signed in on the start step: the account is being read (a Google return,
+    // or a visitor already signed in), so nothing here takes a press.
+    redirecting: outcome !== null || (session.status === 'present' && step === 'start'),
   };
 
   return { form, toast: outcome };

@@ -118,6 +118,7 @@ export async function verifyEmailCode(
 const JUST_LINKED_MS = 10 * 60 * 1000;
 
 export type SignedInUser = {
+  email: string | null;
   /** Google's given / family names, when the person signed in with Google. */
   givenName: string | null;
   familyName: string | null;
@@ -146,6 +147,7 @@ export async function signedInUser(now = Date.now()): Promise<SignedInUser | nul
   const addedAt = google?.created_at ? Date.parse(google.created_at) : NaN;
   const meta = (google?.identity_data ?? user.user_metadata ?? {}) as Record<string, unknown>;
   return {
+    email: user.email ?? null,
     givenName: google ? text(meta.given_name) : null,
     familyName: google ? text(meta.family_name) : null,
     googleJustLinked: !!google && others && now - addedAt < JUST_LINKED_MS,

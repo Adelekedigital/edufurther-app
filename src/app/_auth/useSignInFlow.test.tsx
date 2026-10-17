@@ -24,7 +24,8 @@ vi.mock('@/lib/api/data/signIn', () => ({
   useSaveName: () => ({ mutateAsync: (v: unknown) => save(v) }),
 }));
 
-const { useSignInFlow, TOAST_MS, CODE_LIFETIME_MS } = await import('./useSignInFlow');
+const { useSignInFlow, TOAST_MS, CODE_LIFETIME_MS, ACCOUNT_RETRY_MS } =
+  await import('./useSignInFlow');
 
 const member = (over: object = {}) => ({
   kind: 'member',
@@ -63,7 +64,11 @@ beforeEach(() => {
 });
 afterEach(() => vi.useRealTimers());
 
-async function toCode(over: Partial<Opts> = {}, email = 'amara@example.com', name = 'Amara Okafor') {
+async function toCode(
+  over: Partial<Opts> = {},
+  email = 'amara@example.com',
+  name = 'Amara Okafor',
+) {
   const hook = renderHook((o: Opts) => useSignInFlow(o), { initialProps: opts(over) });
   act(() => {
     hook.result.current.form.onEmailChange(email);
@@ -86,7 +91,10 @@ describe('useSignInFlow — sign-up with a code', () => {
     await flush();
 
     expect(save).toHaveBeenCalledWith({ userId: 'u1', name: { fullName: 'Amara Okafor' } });
-    expect(result.current.toast).toMatchObject({ title: 'Account created. Welcome, Amara', href: '/home' });
+    expect(result.current.toast).toMatchObject({
+      title: 'Account created. Welcome, Amara',
+      href: '/home',
+    });
     expect(result.current.form.redirecting).toBe(true);
     expect(replace).not.toHaveBeenCalled();
     act(() => vi.advanceTimersByTime(TOAST_MS));
@@ -124,7 +132,9 @@ describe('useSignInFlow — log-in', () => {
   it('sends a returning mentor to the dashboard', async () => {
     const { result } = await toCode({ mode: 'login' }, 'gbenga@example.com', '');
     verify.mockResolvedValueOnce({ ok: true });
-    account.mockResolvedValueOnce(member({ firstName: 'Gbenga', isMentor: true, mentorApproved: true }));
+    account.mockResolvedValueOnce(
+      member({ firstName: 'Gbenga', isMentor: true, mentorApproved: true }),
+    );
     await act(async () => result.current.form.onVerify!('482913'));
     await flush();
     act(() => vi.advanceTimersByTime(TOAST_MS));
@@ -205,7 +215,10 @@ describe('useSignInFlow — Google', () => {
     const { result } = renderHook(() => useSignInFlow(opts({ googleReturn: true })));
     await flush();
     await flush();
-    expect(save).toHaveBeenCalledWith({ userId: 'u1', name: { firstName: 'Tolu', lastName: 'Adebayo' } });
+    expect(save).toHaveBeenCalledWith({
+      userId: 'u1',
+      name: { firstName: 'Tolu', lastName: 'Adebayo' },
+    });
     expect(result.current.toast).toMatchObject({ title: 'Account created with Google' });
     expect(window.localStorage.getItem('ef-last-sign-in')).toBe('google');
   });
@@ -250,7 +263,9 @@ describe('useSignInFlow — Google', () => {
 describe('useSignInFlow — already signed in', () => {
   it('goes straight to the account’s home, with no toast', async () => {
     session = { status: 'present', userId: 'u1' };
-    account.mockResolvedValueOnce(member({ firstName: 'Gbenga', isMentor: true, mentorApproved: true }));
+    account.mockResolvedValueOnce(
+      member({ firstName: 'Gbenga', isMentor: true, mentorApproved: true }),
+    );
     const { result } = renderHook(() => useSignInFlow(opts({ mode: 'login' })));
     await flush();
     expect(replace).toHaveBeenCalledWith('/dashboard');
@@ -263,5 +278,168 @@ describe('useSignInFlow — already signed in', () => {
     renderHook(() => useSignInFlow(opts({ mode: 'login', next: '/bookings' })));
     await flush();
     expect(replace).toHaveBeenCalledWith('/bookings');
+  });
+});
+
+describe('useSignInFlow — review fixes', () => {
+  it('redirects once, with the toast, when the session lands while the code is being checked', async () => {
+    const hook = await toCode();
+    let resolveVerify: (v: unknown) => void = () => {};
+    verify.mockReturnValueOnce(new Promise((r) => (resolveVerify = r)));
+    account.mockResolvedValue(member({ firstName: 'Amara' }));
+    let pending: Promise<void> | undefined;
+    act(() => {
+      pending = Promise.resolve(hook.result.current.form.onVerify!('482913'));
+    });
+    // The SDK reports the new session before verify's promise settles.
+    session = { status: 'present', userId: 'u1' };
+    hook.rerender(opts());
+    await act(async () => {
+      resolveVerify({ ok: true });
+      await pending;
+    });
+    await flush();
+    act(() => vi.advanceTimersByTime(TOAST_MS));
+    expect(account).toHaveBeenCalledTimes(1);
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(replace).toHaveBeenCalledWith('/home');
+    expect(hook.result.current.toast).not.toBeNull();
+  });
+
+  it('checks a code once when autofill and Enter land in the same tick', async () => {
+    const { result } = await toCode({ mode: 'login' });
+    verify.mockResolvedValue({ ok: false, reason: 'invalidCode' });
+    await act(async () => {
+      void result.current.form.onVerify!('111111');
+      void result.current.form.onVerify!('111111');
+    });
+    expect(verify).toHaveBeenCalledTimes(1);
+    expect(result.current.form.codeProblem).toEqual({ kind: 'wrong', triesLeft: 4 });
+  });
+
+  it('reads the account once on a Google return', async () => {
+    session = { status: 'present', userId: 'u1' };
+    account.mockResolvedValue(member({ firstName: 'Amara' }));
+    user.mockResolvedValue({
+      email: 'a@b.co',
+      givenName: 'Amara',
+      familyName: 'Okafor',
+      googleJustLinked: false,
+    });
+    renderHook(() => useSignInFlow(opts({ mode: 'login', googleReturn: true })));
+    await flush();
+    await flush();
+    expect(account).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends a sign-in with no account to /, never to next', async () => {
+    const { result } = await toCode({ next: '/bookings' });
+    verify.mockResolvedValueOnce({ ok: true });
+    account.mockResolvedValueOnce({ kind: 'noAccount' });
+    await act(async () => result.current.form.onVerify!('482913'));
+    await flush();
+    expect(replace).toHaveBeenCalledWith('/');
+  });
+
+  it('tries GET /me again before giving up, and keeps the typed name when it recovers', async () => {
+    const { result } = await toCode();
+    verify.mockResolvedValueOnce({ ok: true });
+    account.mockResolvedValueOnce({ kind: 'error' }).mockResolvedValueOnce(member());
+    await act(async () => {
+      void result.current.form.onVerify!('482913');
+      await vi.advanceTimersByTimeAsync(ACCOUNT_RETRY_MS[0]!);
+    });
+    await flush();
+    expect(account).toHaveBeenCalledTimes(2);
+    expect(save).toHaveBeenCalledWith({ userId: 'u1', name: { fullName: 'Amara Okafor' } });
+  });
+
+  it('goes on to next when GET /me keeps failing', async () => {
+    const { result } = await toCode({ next: '/bookings' });
+    verify.mockResolvedValueOnce({ ok: true });
+    account.mockResolvedValue({ kind: 'error' });
+    await act(async () => {
+      void result.current.form.onVerify!('482913');
+      await vi.advanceTimersByTimeAsync(ACCOUNT_RETRY_MS.reduce((a, b) => a + b, 0));
+    });
+    await flush();
+    expect(account).toHaveBeenCalledTimes(1 + ACCOUNT_RETRY_MS.length);
+    expect(replace).toHaveBeenCalledWith('/bookings');
+    expect(result.current.form.verifying).toBe(false);
+  });
+
+  it('says a failed resend failed, and sends once for a double press', async () => {
+    const { result } = await toCode();
+    act(() => vi.advanceTimersByTime(30_000));
+    let resolve: (v: unknown) => void = () => {};
+    send.mockReturnValueOnce(new Promise((r) => (resolve = r)));
+    await act(async () => {
+      result.current.form.onResend!();
+      result.current.form.onResend!();
+    });
+    await act(async () => resolve({ ok: false, reason: 'rateLimited' }));
+    expect(send).toHaveBeenCalledTimes(2); // the first send, then one resend
+    expect(result.current.form.codeProblem).toEqual({ kind: 'resendFailed' });
+    act(() => result.current.form.onCodeChange!('4'));
+    expect(result.current.form.codeProblem).toBeUndefined();
+  });
+
+  it('cancels the redirect when the page is left during the toast', async () => {
+    const { result, unmount } = await toCode();
+    verify.mockResolvedValueOnce({ ok: true });
+    account.mockResolvedValueOnce(member({ firstName: 'Amara' }));
+    await act(async () => result.current.form.onVerify!('482913'));
+    await flush();
+    expect(result.current.toast).not.toBeNull();
+    unmount();
+    act(() => vi.advanceTimersByTime(TOAST_MS));
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('keeps Google’s names in the field when saving them is refused', async () => {
+    session = { status: 'present', userId: 'u1' };
+    account.mockResolvedValueOnce(member());
+    user.mockResolvedValue({
+      email: 'a@b.co',
+      givenName: 'Tolu',
+      familyName: 'Ade',
+      googleJustLinked: false,
+    });
+    save.mockRejectedValueOnce(
+      new Error('Use letters, spaces, hyphens, apostrophes or full stops.'),
+    );
+    const { result } = renderHook(() => useSignInFlow(opts({ googleReturn: true })));
+    await flush();
+    await flush();
+    expect(result.current.form.step).toBe('finish');
+    expect(result.current.form.fullName).toBe('Tolu Ade');
+    expect(result.current.form.nameError).toMatch(/Use letters/);
+  });
+
+  it('asks an account that was never named for its name, even when already signed in', async () => {
+    session = { status: 'present', userId: 'u1' };
+    account.mockResolvedValueOnce(member());
+    user.mockResolvedValue({
+      email: 'amara@example.com',
+      givenName: null,
+      familyName: null,
+      googleJustLinked: false,
+    });
+    const { result } = renderHook(() => useSignInFlow(opts({ mode: 'login' })));
+    await flush();
+    await flush();
+    expect(replace).not.toHaveBeenCalled();
+    expect(result.current.form.step).toBe('finish');
+    expect(result.current.form.email).toBe('amara@example.com');
+    act(() => result.current.form.onFullNameChange('Amara Okafor'));
+    await act(async () => result.current.form.onFinish!());
+    expect(save).toHaveBeenCalledWith({ userId: 'u1', name: { fullName: 'Amara Okafor' } });
+  });
+
+  it('holds the form still while a signed-in account is being read', () => {
+    session = { status: 'present', userId: 'u1' };
+    account.mockReturnValue(new Promise(() => {}));
+    const { result } = renderHook(() => useSignInFlow(opts({ mode: 'login' })));
+    expect(result.current.form.redirecting).toBe(true);
   });
 });

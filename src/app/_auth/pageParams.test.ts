@@ -9,7 +9,8 @@ describe('authPageParams', () => {
 
   it('keeps only a same-site next', () => {
     expect(authPageParams({ next: '/mentors/gbenga' }, 'login').next).toBe('/mentors/gbenga');
-    expect(authPageParams({ next: '//evil.com' }, 'login').next).toBe('/explore');
+    // A next that fails the check is ignored, not swapped for a default page.
+    expect(authPageParams({ next: '//evil.com' }, 'login').next).toBeNull();
     expect(authPageParams({}, 'login').next).toBeNull();
     expect(authPageParams({ next: ['/a', '/b'] }, 'login').next).toBeNull();
   });
