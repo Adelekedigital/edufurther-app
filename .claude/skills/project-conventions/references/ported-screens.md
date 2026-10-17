@@ -51,3 +51,5 @@ Mentee Onboarding v5.dc.html saved defaults, PRD "Mentee Onboarding v5" (rev 95)
 - **Next:** the guest path (`for/sid/time`, "Your pick is saved"), the Home/Explore nudge and migrated-mentee routing (H5), AiField.
 
 PR 4 (booking guest step): the booking modal's guest step signs people in for real (BookingModal.dc.html, `signupAt=afterTime`) — email → code → name, Google with a return to the reopened modal, PRD F3 copy (no hold claimed). The code logic is shared with the sign-in page (`useEmailCodeAuth`). PR 5: the sign-in page's booking context line and mentor-named toasts. Invites: #281; waitlist line: #282.
+
+PR 5 (booking context): the sign-in page shows "Log in or sign up to finish booking {First L.}" with the mentor's avatar when `next` is a booking, on the mentee pages; booking toasts name the mentor ("…your booking with {First}…"). This closes the Sign up and log in build; open follow-ups: #281 (invites, after onboarding), #282 (waitlist line, no waitlist screen yet).

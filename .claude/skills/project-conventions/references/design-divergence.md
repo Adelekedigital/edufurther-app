@@ -885,3 +885,10 @@ PRD: Mentee Onboarding v5 (deviation table, H8). Rows the PRD settles are produc
 | Google in the modal signs in and carries on | Google leaves the page and comes back to the profile's reopen link (`?book&at`), the modal open at the same time; a new account goes to onboarding | OAuth is a full-page round trip; the reopen link already exists (useBookLink) | — |
 | Phone: the chosen-time row's "Change" in blue-500 on blue-50 | blue-700 | blue-500 on blue-50 is 4.28:1 (axe), under 4.5:1; blue-700 is the codebase's colour for links on blue-50 (_ours_) | — |
 | (no design) A `?book=` link the profile can't reopen is dropped silently | An info notice above the profile header for someone who could book: "That session isn't offered any more. Pick another one below." / "{First} isn't taking bookings right now, so your booking can't be reopened." / "Your booking can't be reopened right now." — dismissible, announced through a standing LiveRegion; nothing for an owner or a mentor following a shared link | After "Taking you back to your booking…", silence reads as broken (_ours_, provisional) | design draws it |
+
+### Sign up and log in — booking context (sign-in PR 5)
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| Context line shown when `from=booking` (a prototype prop) | Shown when `next` is a booking: the profile reopen link (`/mentors/{h}?book&at`) or an onboarding link with `for={h}`; the mentor read from their public profile; nothing while it loads or if it's gone | The app has no `from` parameter: the booking is the return path itself | — |
+| Toast "Taking you back to your booking with Gbenga…" opens the BookingModal | Same words; the reopen link opens the modal at the time (profile `?book&at`), or the profile says why it can't (#287) | — | — |

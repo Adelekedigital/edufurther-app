@@ -1,4 +1,4 @@
-import { bookingFromNext, isOnboardingNext } from './booking';
+import { bookingFromNext, bookingMentorHandle, isOnboardingNext } from './booking';
 
 describe('bookingFromNext', () => {
   it('reads the profile’s reopen link as a booking', () => {
@@ -43,5 +43,22 @@ describe('isOnboardingNext', () => {
     // Same-site only, even if a caller forgot to check it.
     expect(isOnboardingNext('https://evil.example/onboarding')).toBe(false);
     expect(isOnboardingNext('//evil.example/onboarding')).toBe(false);
+  });
+});
+
+describe('bookingMentorHandle', () => {
+  it('finds the mentor in a reopen link or an onboarding link', () => {
+    expect(bookingMentorHandle('/mentors/gbenga?book=st1&at=2026-10-20T09:00:00Z')).toBe('gbenga');
+    expect(bookingMentorHandle('/onboarding?for=gbenga&sid=st1&time=2026-10-20T09:00:00Z')).toBe(
+      'gbenga',
+    );
+  });
+
+  it('finds none elsewhere, or in a crafted link', () => {
+    expect(bookingMentorHandle(null)).toBeNull();
+    expect(bookingMentorHandle('/mentors/gbenga')).toBeNull();
+    expect(bookingMentorHandle('/onboarding')).toBeNull();
+    expect(bookingMentorHandle('/onboarding?for=gb%20enga')).toBeNull();
+    expect(bookingMentorHandle('/home?for=gbenga')).toBeNull();
   });
 });

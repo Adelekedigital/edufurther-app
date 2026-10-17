@@ -185,3 +185,44 @@ describe('signInOutcome — returning to a booking', () => {
     });
   });
 });
+
+describe('signInOutcome — naming the mentor', () => {
+  const reopen = '/mentors/gbenga?book=st1&at=2026-10-20T09:00:00Z';
+
+  it('names who the booking is with, once known', async () => {
+    const out = await load(false);
+    expect(out({ ...base, next: reopen, bookingWith: 'Gbenga' })).toMatchObject({
+      body: 'Taking you back to your booking with Gbenga…',
+      href: reopen,
+    });
+    expect(out({ ...base, mode: 'signup', next: reopen, bookingWith: 'Gbenga' })).toMatchObject({
+      title: 'You already have an account',
+      body: 'We logged you in instead. Taking you back to your booking with Gbenga…',
+    });
+    expect(
+      out({
+        ...base,
+        method: 'google',
+        googleJustLinked: true,
+        next: reopen,
+        bookingWith: 'Gbenga',
+      }),
+    ).toMatchObject({
+      body: 'Google is now linked to your account. Taking you back to your booking with Gbenga…',
+    });
+  });
+
+  it('keeps the plain words while the mentor is unknown', async () => {
+    const out = await load(false);
+    expect(out({ ...base, next: reopen })).toMatchObject({
+      body: 'Taking you back to your booking…',
+    });
+  });
+
+  it('sends a new account through onboarding with the questions copy', async () => {
+    const out = await load(true);
+    expect(
+      out({ ...base, isNew: true, mode: 'signup', next: reopen, bookingWith: 'Gbenga' }),
+    ).toMatchObject({ body: 'Next, a few quick questions, then back to your booking.' });
+  });
+});

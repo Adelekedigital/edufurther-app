@@ -1,0 +1,18 @@
+/* Sign In.dc.html context row: blue-50, radius-lg, 12px / 16px, gap 12px,
+   p-xs --lh-p ink-900. */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--blue-50);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-900);
+}
+
+.text {
+  margin: 0;
+  text-wrap: pretty;
+}
