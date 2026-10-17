@@ -226,12 +226,19 @@ describe('useSignInFlow — Google', () => {
   it('asks once for a full name when Google sends no family name', async () => {
     session = { status: 'present', userId: 'u1' };
     account.mockResolvedValueOnce(member());
-    user.mockResolvedValue({ givenName: 'Tolu', familyName: null, googleJustLinked: false });
+    user.mockResolvedValue({
+      email: 'tolu@example.com',
+      givenName: 'Tolu',
+      familyName: null,
+      googleJustLinked: false,
+    });
     const { result } = renderHook(() => useSignInFlow(opts({ googleReturn: true })));
     await flush();
     await flush();
     expect(result.current.form.step).toBe('finish');
     expect(result.current.form.fullName).toBe('Tolu');
+    // The finish step's sentence names the account: Google's email, as nobody typed one.
+    expect(result.current.form.email).toBe('tolu@example.com');
     expect(save).not.toHaveBeenCalled();
   });
 
@@ -413,6 +420,7 @@ describe('useSignInFlow — review fixes', () => {
     await flush();
     expect(result.current.form.step).toBe('finish');
     expect(result.current.form.fullName).toBe('Tolu Ade');
+    expect(result.current.form.email).toBe('a@b.co');
     expect(result.current.form.nameError).toMatch(/Use letters/);
   });
 

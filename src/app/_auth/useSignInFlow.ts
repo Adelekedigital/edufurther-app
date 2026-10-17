@@ -213,6 +213,8 @@ export function useSignInFlow({ mode, role, next, googleReturn, googleFailed }: 
       if (via === 'google') {
         const g = await signedInUser();
         if (!mounted.current) return;
+        // Nobody typed an email on the way in: the finish step names this one.
+        if (g?.email) setEmail(g.email);
         if (g?.givenName && g.familyName) {
           // In the field first, so a refused save shows the finish step with it.
           setFullName(`${g.givenName} ${g.familyName}`);
