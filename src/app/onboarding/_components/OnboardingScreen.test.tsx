@@ -159,6 +159,17 @@ describe('OnboardingScreen', () => {
     expect(screen.getByRole('button', { name: 'Start over' })).toBeDisabled();
   });
 
+  it('shows the spinner at once on "already set up", even right after a quick load', () => {
+    topicsLoading = true;
+    const { container, rerender } = render(<OnboardingScreen />);
+    expect(container.querySelector('main svg')).toBeNull();
+    topicsLoading = false;
+    state = { ...fresh, complete: true };
+    rerender(<OnboardingScreen />);
+    expect(screen.getByRole('status')).toHaveTextContent('You’re already set up');
+    expect(container.querySelector('main svg')).not.toBeNull();
+  });
+
   it('greets an onboarded mentee, then goes Home after 1.2 s', () => {
     vi.useFakeTimers();
     try {

@@ -14,7 +14,7 @@ export const SPINNER_DELAY_MS = 300;
  * so the page keeps its main landmark.
  */
 export function Waiting({ text, hidden = false }: { text: string; hidden?: boolean }) {
-  const [late, setLate] = useState(!hidden);
+  const [late, setLate] = useState(false);
   useEffect(() => {
     if (!hidden) return;
     const t = setTimeout(() => setLate(true), SPINNER_DELAY_MS);
@@ -22,7 +22,8 @@ export function Waiting({ text, hidden = false }: { text: string; hidden?: boole
   }, [hidden]);
   return (
     <main className={styles.waiting}>
-      {late && <Spinner size={32} />}
+      {/* Read at render: the same instance can turn from loading into "already set up". */}
+      {(!hidden || late) && <Spinner size={32} />}
       <p role="status" className={hidden ? 'sr-only' : styles.waitingText}>
         {text}
       </p>
