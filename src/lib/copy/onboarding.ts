@@ -112,6 +112,7 @@ export const TOP_DESTINATIONS = [
 ];
 /** The destination answer for "Not sure yet": no goal country is stored. */
 export const NOT_SURE = 'not-sure';
+export const NOT_SURE_LABEL = 'Not sure yet';
 
 export const STEP_COPY = {
   help: {

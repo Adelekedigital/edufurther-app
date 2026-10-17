@@ -74,6 +74,11 @@ export function MatchResults({ headingRef, ...p }: MatchResultsProps) {
         {sub && <p className={styles.sub}>{sub}</p>}
       </header>
 
+      {/* Always in the DOM, so the switch from loading to results is heard. */}
+      <p role="status" className="sr-only">
+        {p.isLoading ? MATCH_COPY.loadingLabel : p.error ? '' : title}
+      </p>
+
       <div className={styles.basis}>
         <span>{basedOn}</span>
         <button type="button" className={styles.edit} onClick={p.onEdit}>
@@ -82,12 +87,12 @@ export function MatchResults({ headingRef, ...p }: MatchResultsProps) {
       </div>
 
       {p.isLoading ? (
-        <div role="status" aria-label={MATCH_COPY.loadingLabel} className={styles.grid}>
+        <div aria-busy className={styles.grid}>
           <MatchSkeleton />
           <MatchSkeleton />
         </div>
       ) : p.error ? (
-        <div className={styles.error}>
+        <div role="alert" className={styles.error}>
           <EmptyState
             illustration="forms"
             title={MATCH_COPY.errorTitle}
@@ -113,12 +118,13 @@ export function MatchResults({ headingRef, ...p }: MatchResultsProps) {
             {matches.map((mt) => {
               return (
                 <li key={mt.mentor.id} className={styles.item}>
-                  <MatchReason
-                    line={reasonLine(mt.reasons, {
+                  {(() => {
+                    const line = reasonLine(mt.reasons, {
                       level: mt.level,
                       studyCountry: mt.studyCountry,
-                    })}
-                  />
+                    });
+                    return line && <MatchReason line={line} />;
+                  })()}
                   <MentorCard
                     mentor={mt.mentor}
                     variant={p.compact ? 'compact' : 'photo'}

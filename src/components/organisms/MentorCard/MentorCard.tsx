@@ -175,14 +175,12 @@ export function MentorCard({
       </div>
 
       {showTopics && topics.length > 0 && (
-        <div className={styles.topicsRow}>
-          <ul className={styles.topics} aria-label="Helps with">
-            {(cut ? topics.slice(0, TOPICS_SHOWN) : topics).map((t) => (
-              <li key={t.slug}>
-                <Tag tone="neutral">{t.label}</Tag>
-              </li>
-            ))}
-          </ul>
+        <ul className={styles.topics} aria-label="Helps with">
+          {(cut ? topics.slice(0, TOPICS_SHOWN) : topics).map((t) => (
+            <li key={t.slug}>
+              <Tag tone="neutral">{t.label}</Tag>
+            </li>
+          ))}
           {cut && (
             <MoreTopics
               mentor={{ ...m, topics }}
@@ -190,7 +188,7 @@ export function MentorCard({
               onOpenSheet={onMoreTopics}
             />
           )}
-        </div>
+        </ul>
       )}
 
       {/* MentorCard.dc.html bottom block: offer line, then availability. */}

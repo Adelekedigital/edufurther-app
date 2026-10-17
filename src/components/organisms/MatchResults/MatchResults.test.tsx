@@ -93,14 +93,29 @@ describe('MatchResults', () => {
 
   it('shows the loading cards', () => {
     render(<MatchResults {...base} matches={[]} isLoading />);
-    expect(screen.getByRole('status', { name: 'Finding your mentors' })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Finding your mentors');
   });
 
   it('checks the error before the empty list', () => {
     render(<MatchResults {...base} matches={[]} error={failed} />);
     expect(screen.getByText('We couldn’t load your matches')).toBeInTheDocument();
     expect(screen.queryByText('No mentors are taking bookings right now')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('We couldn’t load your matches');
+    screen.getByRole('button', { name: 'Try again' }).click();
+    expect(base.onRetry).toHaveBeenCalled();
+  });
+
+  it('announces the results and goes back to edit the answers', () => {
+    render(<MatchResults {...base} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Your top 2 mentor matches');
+    screen.getByRole('button', { name: 'Edit your answers' }).click();
+    expect(base.onEdit).toHaveBeenCalled();
+  });
+
+  it('shows no reason line when there is nothing to say', () => {
+    const bare = { ...match('m3', 'Kofi Asante'), level: null, studyCountry: null };
+    render(<MatchResults {...base} matches={[bare]} />);
+    expect(document.querySelector('li > p')).toBeNull();
   });
 
   it('offers Explore when nobody is bookable', () => {

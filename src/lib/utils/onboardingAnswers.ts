@@ -1,14 +1,5 @@
 import { FIELD_MAX, FIELD_MIN, NOT_SURE, type MissingKey } from '@/lib/copy/onboarding';
-
-/** Step 2's four answers as the form holds them. */
-export type PlanAnswers = {
-  originId: string;
-  /** A DEGREE_OPTIONS value ("mba", not the stored "masters"); '' for none. */
-  degree: string;
-  field: string;
-  /** A country id, NOT_SURE, or '' for none. */
-  destinationId: string;
-};
+import type { PlanAnswers } from '@/types/onboarding';
 
 export const EMPTY_PLANS: PlanAnswers = { originId: '', degree: '', field: '', destinationId: '' };
 

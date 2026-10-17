@@ -50,8 +50,8 @@ describe('reasonLine', () => {
     });
   });
 
-  it('skips help areas it has no copy for', () => {
-    expect(reasonLine([{ code: 'help_areas', slugs: ['unknown'] }], none).matched).toBe(false);
+  it('is null when nothing is left to say', () => {
+    expect(reasonLine([{ code: 'help_areas', slugs: ['unknown'] }], none)).toBeNull();
   });
 
   it('falls back to "{level} · {country}" with no reason', () => {
@@ -74,6 +74,15 @@ describe('basedOnLine', () => {
     expect(basedOnLine({ degree: 'PhD', field: 'Law', country: null, origin: null })).toBe(
       'Based on: PhD Law',
     );
+  });
+
+  it('never starts with a separator', () => {
+    expect(basedOnLine({ degree: null, field: null, country: null, origin: 'Nigeria' })).toBe(
+      'Based on: from Nigeria',
+    );
+    expect(
+      basedOnLine({ degree: null, field: null, country: 'United Kingdom', origin: null }),
+    ).toBe('Based on: in the UK');
   });
 
   it('is null with nothing to say', () => {

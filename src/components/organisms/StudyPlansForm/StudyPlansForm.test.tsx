@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { EMPTY_PLANS, type PlanAnswers } from '@/lib/utils/onboardingAnswers';
+import { EMPTY_PLANS } from '@/lib/utils/onboardingAnswers';
+import type { PlanAnswers } from '@/types/onboarding';
 import { StudyPlansForm } from './StudyPlansForm';
 
 const countries = [

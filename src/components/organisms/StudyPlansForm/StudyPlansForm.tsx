@@ -9,12 +9,13 @@ import {
   FIELD_MAX,
   FIELD_SUGGESTIONS,
   NOT_SURE,
+  NOT_SURE_LABEL,
   PLAN_HINTS,
   PLAN_LABELS,
   PLAN_PLACEHOLDERS,
   TOP_DESTINATIONS,
 } from '@/lib/copy/onboarding';
-import type { PlanAnswers } from '@/lib/utils/onboardingAnswers';
+import type { PlanAnswers } from '@/types/onboarding';
 import { cx } from '@/lib/utils/cx';
 import styles from './StudyPlansForm.module.css';
 
@@ -31,7 +32,7 @@ type StudyPlansFormProps = {
 function destinationOptions(countries: CatalogOption[]): CatalogOption[] {
   const top = TOP_DESTINATIONS.flatMap((name) => countries.filter((c) => c.label === name));
   const rest = countries.filter((c) => !top.includes(c));
-  return [...top, { id: NOT_SURE, label: 'Not sure yet' }, ...rest];
+  return [...top, { id: NOT_SURE, label: NOT_SURE_LABEL }, ...rest];
 }
 
 function Field({

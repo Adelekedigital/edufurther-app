@@ -86,20 +86,18 @@ describe('MentorCard, topics', () => {
       />,
     );
     const shown = screen.getByRole('list', { name: 'Helps with' });
-    expect(Array.from(shown.querySelectorAll('li')).map((li) => li.textContent)).toEqual([
-      'Scholarships',
-      'Test preparation',
-      'School selection',
-    ]);
     expect(
-      screen.getByRole('button', { name: 'Show all 5 areas Olajuwon helps with' }),
+      Array.from(shown.querySelectorAll('li:not(:has(button))')).map((li) => li.textContent),
+    ).toEqual(['Scholarships', 'Test preparation', 'School selection']);
+    expect(
+      screen.getByRole('button', { name: '+2: show all 5 areas Olajuwon helps with' }),
     ).toHaveTextContent('+2');
   });
 
   it('opens every area in a popover that Escape closes', async () => {
     const user = userEvent.setup();
     render(<MentorCard mentor={mentor({ topics })} onBook={vi.fn()} timeZone="UTC" />);
-    const more = screen.getByRole('button', { name: /Show all 5 areas/ });
+    const more = screen.getByRole('button', { name: /show all 5 areas/ });
     await user.click(more);
     expect(more).toHaveAttribute('aria-expanded', 'true');
     const region = screen.getByRole('region', { name: 'Olajuwon can help with' });
@@ -118,6 +116,6 @@ describe('MentorCard, topics', () => {
         timeZone="UTC"
       />,
     );
-    expect(screen.queryByRole('button', { name: /Show all/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /show all/ })).toBeNull();
   });
 });

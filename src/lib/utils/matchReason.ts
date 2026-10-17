@@ -37,18 +37,19 @@ export type ReasonLine = { lead: string; rest: string; matched: boolean };
 
 /**
  * One line per match card: the first reason bold, the rest after " · ". With
- * no reason, "{level} · {country}" and an info icon instead of the tick.
+ * no reason, "{level} · {country}" and an info icon instead of the tick; null
+ * when there is nothing at all to say.
  */
 export function reasonLine(
   reasons: MatchReason[],
   fallback: { level: string | null; studyCountry: string | null },
-): ReasonLine {
+): ReasonLine | null {
   const bits = reasons.map(phrase).filter((p): p is string => !!p);
   if (bits.length === 0) {
     const lead = [fallback.level, fallback.studyCountry && countryInSentence(fallback.studyCountry)]
       .filter(Boolean)
       .join(' · ');
-    return { lead, rest: '', matched: false };
+    return lead ? { lead, rest: '', matched: false } : null;
   }
   return {
     lead: bits[0]!,
@@ -59,11 +60,10 @@ export function reasonLine(
 
 /** "Based on: Master's Public Health in the UK · from Nigeria" (Mentee Onboarding v5.dc.html). */
 export function basedOnLine(b: MatchBasis): string | null {
-  const parts = [
-    b.degree,
-    b.field,
-    b.country ? `in ${countryInSentence(b.country)}` : null,
-    b.origin ? `· from ${b.origin}` : null,
-  ].filter(Boolean);
-  return parts.length ? `Based on: ${parts.join(' ')}` : null;
+  const subject = [b.degree, b.field, b.country ? `in ${countryInSentence(b.country)}` : null]
+    .filter(Boolean)
+    .join(' ');
+  const from = b.origin ? `from ${b.origin}` : '';
+  const line = subject && from ? `${subject} · ${from}` : subject || from;
+  return line ? `Based on: ${line}` : null;
 }

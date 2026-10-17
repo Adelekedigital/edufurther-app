@@ -14,6 +14,8 @@ type HelpAreaPickerProps = {
   limit: number;
   /** The group's name, the step's question. */
   label: string;
+  /** Id of the text that states the limit ("Choose up to 3 areas"), so dimmed cards say why. */
+  describedBy?: string;
 };
 
 /**
@@ -23,7 +25,14 @@ type HelpAreaPickerProps = {
  * catalog name with no body, after the known ones (PRD H8). Holds no mentee
  * wording, so mentor onboarding can reuse it.
  */
-export function HelpAreaPicker({ options, value, onChange, limit, label }: HelpAreaPickerProps) {
+export function HelpAreaPicker({
+  options,
+  value,
+  onChange,
+  limit,
+  label,
+  describedBy,
+}: HelpAreaPickerProps) {
   const known = HELP_AREAS.flatMap((h) => {
     const o = options.find((x) => x.slug === h.slug);
     return o ? [{ option: o, copy: h.copy }] : [];
@@ -31,10 +40,11 @@ export function HelpAreaPicker({ options, value, onChange, limit, label }: HelpA
   const unknown = options
     .filter((o) => !HELP_AREAS.some((h) => h.slug === o.slug))
     .map((o) => ({ option: o, copy: null }));
-  const full = value.length >= limit;
+  // Only ids still in the catalog count: a dropped offering can't be unpicked.
+  const full = value.filter((id) => options.some((o) => o.id === id)).length >= limit;
 
   return (
-    <div role="group" aria-label={label} className={styles.grid}>
+    <div role="group" aria-label={label} aria-describedby={describedBy} className={styles.grid}>
       {[...known, ...unknown].map(({ option, copy }) => {
         const on = value.includes(option.id);
         const off = !on && full;

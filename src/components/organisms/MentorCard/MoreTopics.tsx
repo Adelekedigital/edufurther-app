@@ -27,9 +27,10 @@ type MoreTopicsProps = {
  */
 export function MoreTopics({ mentor: m, hidden, onOpenSheet }: MoreTopicsProps) {
   const phone = useMediaQuery('(max-width: 767px)');
+  const sheet = phone ? onOpenSheet : undefined;
   const [open, setOpen] = useState(false);
   const id = useId();
-  const wrap = useRef<HTMLDivElement>(null);
+  const wrap = useRef<HTMLLIElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
 
@@ -49,7 +50,8 @@ export function MoreTopics({ mentor: m, hidden, onOpenSheet }: MoreTopicsProps) 
   };
 
   return (
-    <div
+    // The list's last item, so the chips keep a real list box (no display: contents).
+    <li
       ref={wrap}
       className={styles.moreWrap}
       onKeyDown={(e) => {
@@ -63,11 +65,14 @@ export function MoreTopics({ mentor: m, hidden, onOpenSheet }: MoreTopicsProps) 
         ref={toggle}
         type="button"
         className={styles.more}
-        aria-expanded={open}
-        aria-controls={open ? id : undefined}
-        aria-label={`Show all ${m.topics.length} areas ${m.firstName} helps with`}
+        // Phones with a sheet: the page opens a dialog, so no expand state here.
+        {...(sheet
+          ? { 'aria-haspopup': 'dialog' as const }
+          : { 'aria-expanded': open, 'aria-controls': open ? id : undefined })}
+        // Starts with what it shows, so "click plus 2" finds it (WCAG 2.5.3).
+        aria-label={`+${hidden}: show all ${m.topics.length} areas ${m.firstName} helps with`}
         onClick={() => {
-          if (phone && onOpenSheet) return onOpenSheet(m);
+          if (sheet) return sheet(m);
           if (open) close();
           else setOpen(true);
         }}
@@ -103,6 +108,6 @@ export function MoreTopics({ mentor: m, hidden, onOpenSheet }: MoreTopicsProps) 
           </Link>
         </div>
       )}
-    </div>
+    </li>
   );
 }

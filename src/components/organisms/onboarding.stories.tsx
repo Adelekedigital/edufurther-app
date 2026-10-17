@@ -2,7 +2,8 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
 import { NOT_SURE } from '@/lib/copy/onboarding';
-import { EMPTY_PLANS, type PlanAnswers } from '@/lib/utils/onboardingAnswers';
+import { EMPTY_PLANS } from '@/lib/utils/onboardingAnswers';
+import type { PlanAnswers } from '@/types/onboarding';
 import type { Mentor } from '@/types/mentor';
 import type { MentorMatch } from '@/types/onboarding';
 import { HelpAreaPicker } from './HelpAreaPicker/HelpAreaPicker';
@@ -57,7 +58,10 @@ export const HelpAreasNone: Story = { render: () => <Picker initial={[]} /> };
 export const HelpAreasAtLimit: Story = { render: () => <Picker initial={['o4', 'o2', 'o6']} /> };
 export const HelpAreasUnknownSlug: Story = {
   render: () => (
-    <Picker initial={[]} extra={[{ id: 'o7', slug: 'career-guidance', label: 'Career guidance' }]} />
+    <Picker
+      initial={[]}
+      extra={[{ id: 'o7', slug: 'career-guidance', label: 'Career guidance' }]}
+    />
   ),
 };
 

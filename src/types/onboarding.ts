@@ -34,3 +34,13 @@ export type MatchBasis = {
   country: string | null;
   origin: string | null;
 };
+
+/** Step 2's four answers as the form holds them. */
+export type PlanAnswers = {
+  originId: string;
+  /** A DEGREE_OPTIONS value ("mba", not the stored "masters"); '' for none. */
+  degree: string;
+  field: string;
+  /** A country id, NOT_SURE, or '' for none. */
+  destinationId: string;
+};

@@ -13,8 +13,8 @@ const options = [
   { id: 'o-fun', slug: 'scholarships-financial-aid', label: 'Scholarships' },
 ];
 
-function Harness({ extra = [] as typeof options }) {
-  const [value, setValue] = useState<string[]>([]);
+function Harness({ extra = [] as typeof options, initial = [] as string[] }) {
+  const [value, setValue] = useState<string[]>(initial);
   return (
     <HelpAreaPicker
       options={[...options, ...extra]}
@@ -71,5 +71,10 @@ describe('HelpAreaPicker', () => {
     expect(school).not.toHaveAttribute('aria-disabled');
     await user.click(school);
     expect(school).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('does not count saved ids the catalog no longer has towards the limit', () => {
+    render(<Harness initial={['gone-1', 'gone-2', 'gone-3']} />);
+    expect(card(/Find a program/)).not.toHaveAttribute('aria-disabled');
   });
 });

@@ -126,19 +126,10 @@
   color: var(--text-tertiary);
 }
 
-/* MentorCard.dc.html: chips and "+N" wrap together; the popover hangs from this row. */
-.topicsRow {
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1);
-}
-/* The chips flow in the row with "+N" (as the profile header's topics do). */
-.topicsRow > .topics {
-  display: contents;
-}
+/* MentorCard.dc.html: chips and "+N" wrap together; the popover hangs from the list. */
 .topics {
+  position: relative;
+  align-items: center;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -227,7 +218,8 @@
   top: calc(100% + var(--space-2));
   left: 0;
   right: 0;
-  min-width: 260px;
+  /* The design's 260px, never wider than the card. */
+  min-width: min(260px, 100%);
   z-index: 30;
   display: flex;
   flex-direction: column;
@@ -284,4 +276,20 @@
 }
 .popoverLink:hover {
   color: var(--blue-700);
+}
+
+@media (max-width: 767px) {
+  /* 44px targets on phones (a card without the page's sheet keeps the popover). */
+  .more::after {
+    /* Percentages are the chip's own height: grows it to 44px whatever its size. */
+    inset: calc((100% - var(--touch-target-min)) / 2) calc(-1 * var(--space-3));
+  }
+  .popoverClose {
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+    margin: calc(var(--space-3) * -1);
+  }
+  .popoverLink {
+    min-height: var(--touch-target-min);
+  }
 }
