@@ -18,11 +18,23 @@ function supabase(): SupabaseClient | null {
   return client;
 }
 
-export type AuthFailure = 'rateLimited' | 'invalidCode' | 'offline' | 'unavailable' | 'unknown';
+export type AuthFailure =
+  | 'rateLimited'
+  | 'invalidCode'
+  | 'banned'
+  | 'offline'
+  | 'unavailable'
+  | 'unknown';
 
+/**
+ * `invalidCode` covers expired codes too: Supabase answers both with
+ * `otp_expired` ("Token has expired or is invalid"), so only the screen, which
+ * knows when the code was sent, can tell them apart.
+ */
 function failure(err: { status?: number; code?: string; message?: string } | null): AuthFailure {
   if (!err) return 'unknown';
   if (typeof navigator !== 'undefined' && !navigator.onLine) return 'offline';
+  if (err.code === 'user_banned') return 'banned';
   if (err.status === 429 || err.code === 'over_email_send_rate_limit') return 'rateLimited';
   if (err.code === 'otp_expired' || err.code === 'otp_invalid' || err.status === 403)
     return 'invalidCode';
@@ -100,6 +112,46 @@ export async function verifyEmailCode(
   if (!sb) return { ok: false, reason: 'unavailable' };
   const { error } = await sb.auth.verifyOtp({ email, token: code, type: 'email' });
   return error ? { ok: false, reason: failure(error) } : { ok: true };
+}
+
+/** How recently a Google identity must have been added to count as "just linked". */
+const JUST_LINKED_MS = 10 * 60 * 1000;
+
+export type SignedInUser = {
+  email: string | null;
+  /** Google's given / family names, when the person signed in with Google. */
+  givenName: string | null;
+  familyName: string | null;
+  /**
+   * Google was added just now to an account that already had another way in
+   * (Supabase links a verified email automatically): the "Google is now
+   * linked" toast. Read from the identities, as the backend can't see it.
+   */
+  googleJustLinked: boolean;
+};
+
+function text(v: unknown): string | null {
+  return typeof v === 'string' && v.trim() ? v.trim() : null;
+}
+
+/** What the signed-in Supabase user says about itself; null when signed out. */
+export async function signedInUser(now = Date.now()): Promise<SignedInUser | null> {
+  const sb = supabase();
+  if (!sb) return null;
+  const { data } = await sb.auth.getUser();
+  const user = data.user;
+  if (!user) return null;
+  const ids = user.identities ?? [];
+  const google = ids.find((i) => i.provider === 'google');
+  const others = ids.some((i) => i.provider !== 'google');
+  const addedAt = google?.created_at ? Date.parse(google.created_at) : NaN;
+  const meta = (google?.identity_data ?? user.user_metadata ?? {}) as Record<string, unknown>;
+  return {
+    email: user.email ?? null,
+    givenName: google ? text(meta.given_name) : null,
+    familyName: google ? text(meta.family_name) : null,
+    googleJustLinked: !!google && others && now - addedAt < JUST_LINKED_MS,
+  };
 }
 
 /** Past this, Logout stops waiting for Supabase and ends the session here. */

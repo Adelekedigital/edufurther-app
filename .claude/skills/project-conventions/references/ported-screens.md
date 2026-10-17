@@ -33,3 +33,12 @@ PR 4 (`active-mentor KPI grid`): the 4 active-mentor KPIs (sessions completed, m
 Fix (`fix/mentor-dashboard-kpi-polish`): Mentoring time now reads in **minutes** — exact, so a single 90-minute session no longer rounds up to "2 hrs" (user direction, 2026-10-14). The metric-hint ⓘ became an accessible **InfoTip** atom — opens on hover, keyboard focus and tap, closes on Escape, flips to stay on-screen — replacing the hover-only native `title` that was dead to keyboard and touch (BFM "Contextualising dates"). Backend #446/#449 (mentor-stats) later unblock the trend line + the chart's real time-series.
 
 PR 5 (`session performance chart`): **PerformanceChart** (organisms) — stacked bars (completed / canceled-all / missed) or lines over months, a range switch (3M/6M/12M + year, a radiogroup + a year select), a filtering legend and a hover tooltip, ported to the design's fixed 600×262 geometry. Real data from `GET /me/mentor-stats/monthly` (#449) via `useMentorMonthlyStats`; a `PerformanceSection` holds loading/error, the chart owns empty/content. Adds a `dashboard` EmptyState illustration + a `--shadow-control` token. The shared `useMentorStats` (windowed, #446) lands here for the KPI-trend + session-quality panels, with mock handlers for both mentor-stats endpoints so the dev page shows real-shaped data.
+
+## Sign up and log in (`/signup`, `/signup?role=mentor`, `/login`; Sign In.dc.html)
+
+PR 1 (#277, building blocks): the name rule for one- and two-field inputs (`lib/utils/name.ts`), email typo fixes, the on-screen code lock, Last used, `lib/config/auth.ts`, and the `LegalLine`, `Toast` and restyled `GoogleButton` molecules.
+
+PR 2 (#278, the form): `organisms/SignInForm` — every step (start, code, finish, suspended) and state of the design, props only, 30 stories.
+
+PR 3 (the screen): `AuthScreen` + `useSignInFlow` run the flow — code or Google, then `GET /me`: a never-named account (`first_name === null`) is named from the sign-up field, Google's names, or the finish step (`PATCH …/profile {full_name}`), then a toast (1.4 s) and the redirect from `signInOutcome` (`app/_auth/outcome.ts`). Google comes back through `/auth/callback` to the screen (`auth=google`, with `mode`, `role`, `next`). `EmailCodeForm` removed. PR 4 adds the booking / invite context line and the invite claim.
+

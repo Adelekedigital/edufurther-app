@@ -3,9 +3,11 @@
 import { useCallback } from 'react';
 import { hardNavigate } from '@/lib/utils/hardNavigate';
 import { releaseLeaveGuards } from '@/lib/utils/leaveGuard';
+import { normaliseEmail } from '@/lib/utils/emailTypo';
 import { safeReturnTo } from '@/lib/utils/safeReturnTo';
 import {
   sendEmailCode,
+  signedInUser,
   signInWithGoogle,
   signOut,
   verifyEmailCode,
@@ -13,39 +15,41 @@ import {
 import { authConfigured } from '@/lib/vendor/supabase/config';
 import { beginSignOut } from './session';
 
-export { authConfigured };
-export type { AuthFailure } from '@/lib/vendor/supabase/browser';
+export { authConfigured, signedInUser };
+export type { AuthFailure, SignedInUser } from '@/lib/vendor/supabase/browser';
 
-/**
- * Email a sign-in code. The same email carries a magic link that lands on
- * /auth/callback and then `next` (a local path only).
- */
-export function sendSignInCode(email: string, next: string) {
-  return sendEmailCode(email, callbackUrl(next));
-}
+export type SignInMode = 'login' | 'signup';
+export type SignInRole = 'mentee' | 'mentor';
 
 /**
  * Where Supabase sends the browser back to. Local paths only (safeReturnTo).
  * `from` tells the callback which way in this was: it cannot tell from the
  * error codes, which overlap between a cancelled Google sign-in and a dead
- * email link. `mode` sends a failed sign-up back to /signup, so someone who
- * was creating an account isn't answered with "New here?" on the log-in page.
+ * email link. `mode` and `role` bring a Google sign-in back to the screen it
+ * started on, so a mentor sign-up finishes as one.
  */
-function callbackUrl(next: string, from?: 'google', mode?: 'login' | 'signup') {
-  const origin = window.location.origin;
-  const path = `/auth/callback?next=${encodeURIComponent(safeReturnTo(next))}`;
-  // Only signup is worth carrying: login is where a failure lands by default.
-  return `${origin}${path}${from ? `&from=${from}` : ''}${mode === 'signup' ? '&mode=signup' : ''}`;
+function callbackUrl(next: string | null, from?: 'google', mode?: SignInMode, role?: SignInRole) {
+  const q = new URLSearchParams();
+  if (next) q.set('next', safeReturnTo(next));
+  if (from) q.set('from', from);
+  if (mode === 'signup') q.set('mode', 'signup');
+  if (role === 'mentor') q.set('role', 'mentor');
+  const query = q.toString();
+  return `${window.location.origin}/auth/callback${query ? `?${query}` : ''}`;
 }
 
-export const verifySignInCode = verifyEmailCode;
+/** Email a 6-digit code to the address, trimmed and lowercased. */
+export function sendSignInCode(email: string, next: string | null) {
+  return sendEmailCode(normaliseEmail(email), callbackUrl(next));
+}
 
-/**
- * Start Google sign-in. Same landing as the email link, so `next` survives the
- * round trip through Google and Supabase.
- */
-export function startGoogleSignIn(next: string, mode: 'login' | 'signup' = 'login') {
-  return signInWithGoogle(callbackUrl(next, 'google', mode));
+export function verifySignInCode(email: string, code: string) {
+  return verifyEmailCode(normaliseEmail(email), code);
+}
+
+/** Start Google sign-in; the callback brings the browser back to this screen. */
+export function startGoogleSignIn(next: string | null, mode: SignInMode, role: SignInRole) {
+  return signInWithGoogle(callbackUrl(next, 'google', mode, role));
 }
 
 /**

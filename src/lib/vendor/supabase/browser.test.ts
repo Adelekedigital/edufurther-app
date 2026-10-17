@@ -3,12 +3,16 @@ export {};
 const signOutCall = vi.fn();
 const oauthCall = vi.fn();
 const stopAutoRefresh = vi.fn(async () => {});
+const verifyCall = vi.fn();
+const getUserCall = vi.fn();
 vi.mock('@supabase/ssr', () => ({
   createBrowserClient: () => ({
     auth: {
       signOut: (o: unknown) => signOutCall(o),
       stopAutoRefresh: () => stopAutoRefresh(),
       signInWithOAuth: (o: unknown) => oauthCall(o),
+      verifyOtp: (o: unknown) => verifyCall(o),
+      getUser: () => getUserCall(),
     },
   }),
 }));
@@ -19,7 +23,9 @@ vi.mock('./config', () => ({
   COOKIE_OPTIONS: { secure: false },
 }));
 
-const { signOut, signInWithGoogle, SIGN_OUT_TIMEOUT_MS } = await import('./browser');
+const { signOut, signInWithGoogle, SIGN_OUT_TIMEOUT_MS, verifyEmailCode, signedInUser } = await import(
+  './browser'
+);
 
 const setCookies = () => {
   document.cookie = 'sb-proj-auth-token.0=a; path=/';
@@ -102,5 +108,71 @@ describe('signInWithGoogle', () => {
   it('reports a failure to start instead of rejecting', async () => {
     oauthCall.mockRejectedValue(new Error('cookies are blocked'));
     expect(await signInWithGoogle(BACK)).toEqual({ ok: false, reason: 'unknown' });
+  });
+});
+
+describe('verifyEmailCode (what a refused code means)', () => {
+  it('calls a banned account banned, and an expired or wrong code invalid', async () => {
+    verifyCall.mockResolvedValueOnce({ error: { status: 400, code: 'user_banned' } });
+    expect(await verifyEmailCode('a@b.co', '123456')).toEqual({ ok: false, reason: 'banned' });
+    // Supabase answers wrong and expired alike; the screen's clock tells them apart.
+    verifyCall.mockResolvedValueOnce({ error: { status: 403, code: 'otp_expired' } });
+    expect(await verifyEmailCode('a@b.co', '123456')).toEqual({ ok: false, reason: 'invalidCode' });
+    verifyCall.mockResolvedValueOnce({ error: null });
+    expect(await verifyEmailCode('a@b.co', '123456')).toEqual({ ok: true });
+  });
+});
+
+describe('signedInUser (Google names, and whether Google was just linked)', () => {
+  const NOW = Date.parse('2026-10-17T12:00:00Z');
+  const ago = (min: number) => new Date(NOW - min * 60_000).toISOString();
+
+  it('reads the names Google sent', async () => {
+    getUserCall.mockResolvedValueOnce({
+      data: {
+        user: {
+          identities: [
+            { provider: 'google', created_at: ago(0), identity_data: { given_name: ' Tolu ', family_name: 'Adebayo' } },
+          ],
+        },
+      },
+    });
+    expect(await signedInUser(NOW)).toEqual({
+      email: null,
+      givenName: 'Tolu',
+      familyName: 'Adebayo',
+      googleJustLinked: false,
+    });
+  });
+
+  it('calls Google just linked only when it joined another way in a moment ago', async () => {
+    const user = (googleAt: string) => ({
+      data: {
+        user: {
+          identities: [
+            { provider: 'email', created_at: ago(500) },
+            { provider: 'google', created_at: googleAt, identity_data: { given_name: 'Amara' } },
+          ],
+        },
+      },
+    });
+    getUserCall.mockResolvedValueOnce(user(ago(1)));
+    expect((await signedInUser(NOW))?.googleJustLinked).toBe(true);
+    getUserCall.mockResolvedValueOnce(user(ago(60)));
+    expect((await signedInUser(NOW))?.googleJustLinked).toBe(false);
+  });
+
+  it('has no Google names for an email account, and is null when signed out', async () => {
+    getUserCall.mockResolvedValueOnce({
+      data: { user: { identities: [{ provider: 'email' }], user_metadata: { given_name: 'X' } } },
+    });
+    expect(await signedInUser(NOW)).toEqual({
+      email: null,
+      givenName: null,
+      familyName: null,
+      googleJustLinked: false,
+    });
+    getUserCall.mockResolvedValueOnce({ data: { user: null } });
+    expect(await signedInUser(NOW)).toBeNull();
   });
 });

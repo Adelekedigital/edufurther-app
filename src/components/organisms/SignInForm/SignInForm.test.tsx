@@ -396,4 +396,17 @@ describe('SignInForm — review fixes', () => {
     await userEvent.click(sendButton());
     expect(onSendCode).not.toHaveBeenCalled();
   });
+
+  it('says nothing when someone only tabs past the empty name field', async () => {
+    render(<Live />);
+    await userEvent.click(screen.getByLabelText('Full name'));
+    await userEvent.tab();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('says when a new code could not be sent, and keeps the field usable', () => {
+    render(<SignInForm {...props({ ...code, codeProblem: { kind: 'resendFailed' } })} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('We couldn’t send a new code.');
+    expect(screen.getByLabelText('6-digit code')).toBeEnabled();
+  });
 });

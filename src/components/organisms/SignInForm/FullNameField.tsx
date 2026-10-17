@@ -23,7 +23,9 @@ export function FullNameField({ value, onChange, serverError, reveal, readOnly }
   const [left, setLeft] = useState(false);
   const errorId = useId();
   const problem = checkFullName(value);
-  const message = serverError ?? ((left || reveal) && problem ? NAME_PROBLEM_COPY[problem] : null);
+  // Tabbing past an empty field isn't a mistake: "required" waits for an attempt to go on.
+  const said = reveal || (left && problem !== 'required');
+  const message = serverError ?? (said && problem ? NAME_PROBLEM_COPY[problem] : null);
   return (
     <>
       <label className={styles.label}>
@@ -37,7 +39,7 @@ export function FullNameField({ value, onChange, serverError, reveal, readOnly }
           invalid={!!message}
           aria-describedby={message ? errorId : undefined}
           readOnly={readOnly}
-          className={styles.input}
+          fieldSize="xl"
         />
       </label>
       {message && <FieldError id={errorId}>{message}</FieldError>}

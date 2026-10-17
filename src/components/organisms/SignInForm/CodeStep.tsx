@@ -90,7 +90,8 @@ export function CodeStep({
           disabled={locked || expired}
           invalid={!!wrong}
           aria-describedby={problem ? problemId : undefined}
-          className={cx(styles.input, styles.code)}
+          fieldSize="xl"
+          className={styles.code}
         />
       </label>
       {wrong && (
@@ -107,6 +108,11 @@ export function CodeStep({
       {locked && (
         <FieldError id={problemId} icon="lock">
           Too many wrong codes. For your security, try again in 15 minutes.
+        </FieldError>
+      )}
+      {problem?.kind === 'resendFailed' && (
+        <FieldError id={problemId}>
+          We couldn’t send a new code. Check your connection and try again.
         </FieldError>
       )}
       {resentCount > 0 && <p className={styles.resent}>{resentLine}</p>}

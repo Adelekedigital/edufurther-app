@@ -418,3 +418,24 @@ dimension in a `.tsx` prop sits outside both the written rule and the guard, and
 every session re-infers it (I inferred it wrong). The fix was not the one line of
 CSS; it was writing the convention down (House conventions) so it is read, not
 re-derived.
+
+### #65 — An error code that names one of two causes
+
+_(real, 2026-10-17, sign-in PR 3.)_ The design has a separate "This code has
+expired" state, and Supabase has an `otp_expired` error code, so the first
+mapping read `otp_expired` as expired. But Supabase answers a **wrong** code
+with `otp_expired` too ("Token has expired or is invalid"): every typo would
+have said "expired" and offered no tries-left count. Same family as #59 (a cause
+named where the code cannot tell causes apart). The fix: the seam maps both to
+`invalidCode`, and the screen, which knows when it sent the code, calls a
+refusal 10 minutes or more after the send expired. Before mapping a vendor
+error code to a user-facing state, check what else the vendor sends it for.
+
+### #66 — review-page's focus trace stops at the second identical field
+
+_(real, 2026-10-17, sign-in PR 3.)_ `review-page.mjs` reported one focus stop on
+`/signup`. A manual Tab trace showed all nine. The tracer keys a stop by
+`tag:id:className`; two inputs with the same CSS-module class and no id share a
+key, so it decided focus had wrapped after the first. A short focus order on a
+form with several same-styled fields is the tracer, not the page — trace it by
+hand (Tab and read `document.activeElement`) before believing either.

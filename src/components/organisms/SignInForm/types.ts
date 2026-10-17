@@ -11,4 +11,6 @@ export type StartError = 'sendFailed' | 'googleError';
 export type CodeProblem =
   | { kind: 'wrong'; triesLeft: number }
   | { kind: 'expired' }
-  | { kind: 'locked' };
+  | { kind: 'locked' }
+  /** "Send a new code" didn't go out (rate limit, connection): ours, no design state. */
+  | { kind: 'resendFailed' };

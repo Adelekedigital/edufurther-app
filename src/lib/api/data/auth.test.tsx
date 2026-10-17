@@ -7,6 +7,8 @@ const signOut = vi.fn(async () => {
 vi.mock('@/lib/vendor/supabase/browser', () => ({
   sendEmailCode: vi.fn(),
   verifyEmailCode: vi.fn(),
+  signInWithGoogle: vi.fn(),
+  signedInUser: vi.fn(),
   signOut: () => signOut(),
 }));
 vi.mock('@/lib/utils/hardNavigate', () => ({
