@@ -202,8 +202,14 @@ export function useSignInFlow({
         const fromGoogle = googleName(g);
         setFullName(fromGoogle);
         if (checkFullName(fromGoogle) === null) {
-          const saved = await name(a, { fullName: fromGoogle });
-          if (saved && mounted.current) finish(a, splitFullName(fromGoogle).firstName);
+          // Google's own split keeps a two-word given name ("Mary Jane") whole.
+          const parts =
+            g?.givenName && g.familyName
+              ? { firstName: g.givenName, lastName: g.familyName }
+              : null;
+          const saved = await name(a, parts ?? { fullName: fromGoogle });
+          const first = parts?.firstName ?? splitFullName(fromGoogle).firstName;
+          if (saved && mounted.current) finish(a, first);
           return;
         }
         // One word, or none, from Google: ask once, under the same rule.

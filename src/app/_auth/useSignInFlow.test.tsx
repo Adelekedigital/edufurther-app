@@ -256,14 +256,17 @@ describe('useSignInFlow — Google', () => {
     expect(window.localStorage.getItem('ef-last-sign-in')).toBe('google');
   });
 
-  it('joins given and family names when Google sends both', async () => {
+  it("keeps Google's own split when it sends given and family names", async () => {
     session = { status: 'present', userId: 'u1' };
     account.mockResolvedValueOnce(member());
-    user.mockResolvedValue({ givenName: 'Tolu', familyName: 'Adebayo', googleJustLinked: false });
+    user.mockResolvedValue({ givenName: 'Mary Jane', familyName: 'Adebayo', googleJustLinked: false });
     renderHook(() => useSignInFlow(opts({ googleReturn: true })));
     await flush();
     await flush();
-    expect(save).toHaveBeenCalledWith({ userId: 'u1', name: { fullName: 'Tolu Adebayo' } });
+    expect(save).toHaveBeenCalledWith({
+      userId: 'u1',
+      name: { firstName: 'Mary Jane', lastName: 'Adebayo' },
+    });
   });
 
   it('puts a one-word Google name in the finish step to complete', async () => {
