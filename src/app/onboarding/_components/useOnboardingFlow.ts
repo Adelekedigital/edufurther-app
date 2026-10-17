@@ -79,7 +79,9 @@ export function useOnboardingFlow() {
     countries.status === 'ready' &&
     levels.status === 'ready' &&
     !topics.isLoading &&
-    !guestProfile.isLoading;
+    // Only with a guest: with no handle the read is disabled, and a disabled
+    // query reads as loading forever.
+    !(guest && guestProfile.isLoading);
   if (form === null && !doneAtLoad && ob.state && ready) {
     if (ob.state.complete) setDoneAtLoad(true);
     else setForm(startFrom(ob.state));

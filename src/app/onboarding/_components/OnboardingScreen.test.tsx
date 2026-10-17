@@ -57,7 +57,8 @@ let profileFails = false;
 vi.mock('@/lib/api/data/profile', () => ({
   useMentorProfile: (h: string | null) => ({
     data: h === 'ada-obi' && !profileFails ? { mentor: ada } : null,
-    isLoading: false,
+    // As the real hook: with no handle the query is disabled, which reads as loading.
+    isLoading: h === null,
     error: profileFails ? { kind: 'server', message: 'x' } : null,
     notFound: false,
     retry: vi.fn(),
