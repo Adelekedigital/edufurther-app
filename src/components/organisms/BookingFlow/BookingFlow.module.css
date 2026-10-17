@@ -333,6 +333,9 @@
   .change {
     height: var(--touch-target-min);
     padding: 0 var(--space-3);
+    /* On the blue-50 strip blue-500 is 4.28:1; blue-700 passes (as Notice and
+       BlockedDatesPanel do on blue-50). */
+    color: var(--blue-700);
   }
 }
 

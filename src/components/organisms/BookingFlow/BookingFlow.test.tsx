@@ -184,7 +184,13 @@ describe('BookingFlow on real slots', () => {
     await user.click(screen.getByRole('radio', { name: '9:00 am' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     expect(screen.getByRole('progressbar', { name: /Step 2 of 2/ })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Log in or sign up to book Olajuwon' })).toBeVisible();
+    // Named for everyone, not only new accounts.
+    expect(
+      screen.getByRole('progressbar', { name: 'Step 2 of 2 · Log in or sign up' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Log in or sign up to book Olajuwon' }),
+    ).toBeVisible();
     // PRD F3: the pick is remembered, not held.
     expect(
       screen.getByText('Your pick is saved. We’ll take you back to book Olajuwon.'),
@@ -220,6 +226,9 @@ describe('BookingFlow on real slots', () => {
       />,
     );
     expect(screen.getByRole('heading', { name: 'Check your email' })).toBeVisible();
+    expect(
+      screen.getByRole('progressbar', { name: 'Step 2 of 2 · Check your email' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Verify and continue' })).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Email me a code' })).not.toBeInTheDocument();
   });

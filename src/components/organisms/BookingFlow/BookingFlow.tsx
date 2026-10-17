@@ -35,8 +35,14 @@ type Step = 'time' | 'signup' | 'questions' | 'done';
 
 const STEP_LABEL: Record<Exclude<Step, 'done'>, string> = {
   time: 'Pick a date and time',
-  signup: 'Create your free account',
+  signup: 'Log in or sign up',
   questions: 'Questions from',
+};
+
+/** The guest step's name follows its stage (BookingModal.dc.html LBL.signup). */
+const GUEST_LABEL: Partial<Record<GuestSignIn['stage'], string>> = {
+  code: 'Check your email',
+  name: 'Create your account',
 };
 
 export type BookingFlowProps = {
@@ -274,7 +280,9 @@ export function BookingFlow(p: BookingFlowProps) {
       ? `${STEP_LABEL.questions} ${m.firstName}`
       : step === 'done'
         ? ''
-        : STEP_LABEL[step];
+        : step === 'signup'
+          ? (guest && GUEST_LABEL[guest.stage]) || STEP_LABEL.signup
+          : STEP_LABEL[step];
   // Design #39: with a single step there's no "Step 1 of 1" and no bar.
   const oneStep = steps.length === 1;
   const subtitle =

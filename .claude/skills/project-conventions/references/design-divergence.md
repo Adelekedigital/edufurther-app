@@ -874,3 +874,13 @@ PRD: Mentee Onboarding v5 (deviation table, H8). Rows the PRD settles are produc
 | Book on a match opens BookingModal | Same (BookingLauncher); closing it after a sent request goes to `/home` ("Waiting for {First} to confirm") | PRD US-5 | — |
 | Continue `disabled` until the step is complete (`btnNext disabled: !okNow`) | Built as drawn, against forms-validation's "don't disable submit": the missing line above it is always visible and live, so the button never fails silently | The design and the PRD both specify the disabled Continue with a "To continue, add …" line (PRD H1) | usability shows people stuck at a disabled Continue |
 | Steps are local state (the prototype has no URLs) | Same: the step isn't in the URL, so the browser's Back leaves onboarding; answers saved on each Continue resume on return, and unsaved edits get the leave prompt | Deep links to step 2 with no state are the wizard pattern's known failure; resume-from-server covers coming back | — |
+
+### Booking modal — sign-in in the guest step (sign-in PR 4, BookingModal.dc.html)
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| "{time} is held for you for 10 minutes"; "Your time stays held"; "Logged in as … Your time is still held." | "Your pick is saved. We'll take you back to book {First}."; the name step's line ends at "…knows how to help."; "Logged in as {email}." | Nothing holds the time (Mentee onboarding PRD F3; a hold is deferred, B5): copy never promises what isn't built | a slot hold ships |
+| Legal line: "Terms of use and Privacy policy" | The shared `LegalLine` (Terms, Privacy and Community guide) | PRD: the guest step uses the same legal line as sign-up (owner, 2026-10-17) | — |
+| New account (`guestSetup=full`) always leaves for Mentee Onboarding with the booking | `/onboarding?for&sid&time` when `NEXT_PUBLIC_ONBOARDING_V5_ENABLED=true`; while off, the booking carries on in the modal (`nameOnly` behaviour) | The onboarding route 404s while its flag is off (owner, 2026-10-17) | the flag is on everywhere |
+| Google in the modal signs in and carries on | Google leaves the page and comes back to the profile's reopen link (`?book&at`), the modal open at the same time; a new account goes to onboarding | OAuth is a full-page round trip; the reopen link already exists (useBookLink) | — |
+| Phone: the chosen-time row's "Change" in blue-500 on blue-50 | blue-700 | blue-500 on blue-50 is 4.28:1 (axe), under 4.5:1; blue-700 is the codebase's colour for links on blue-50 (_ours_) | — |
