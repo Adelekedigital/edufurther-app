@@ -250,8 +250,9 @@ export function useSignInFlow({ mode, role, next, googleReturn, googleFailed }: 
 
   const onSendCode = async () => {
     setStartError(undefined);
-    if (await auth.send()) setStep('code');
-    else if (!auth.sending) setStartError('sendFailed');
+    const sent = await auth.send();
+    if (sent === 'sent') setStep('code');
+    else if (sent === 'failed') setStartError('sendFailed');
   };
 
   const onFinish = async () => {

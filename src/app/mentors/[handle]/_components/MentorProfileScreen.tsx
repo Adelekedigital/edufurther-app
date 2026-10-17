@@ -714,7 +714,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           sessionTypeId={booking.typeId}
           onSessionTypeChange={booking.setTypeId}
           slots={booking.slots}
-          isGuest={viewer.kind === 'guest'}
+          isGuest={viewer.kind === 'loading' ? null : viewer.kind === 'guest'}
           onRequest={booking.request.request}
           requestPending={booking.request.isPending}
           requestDone={booking.request.isDone}

@@ -43,6 +43,8 @@ const STEP_LABEL: Record<Exclude<Step, 'done'>, string> = {
 const GUEST_LABEL: Partial<Record<GuestSignIn['stage'], string>> = {
   code: 'Check your email',
   name: 'Create your account',
+  // Signed in, still on this step (the request failed): no "Log in" any more.
+  done: 'Send your request',
 };
 
 export type BookingFlowProps = {
@@ -368,10 +370,10 @@ export function BookingFlow(p: BookingFlowProps) {
           }}
         />
       )}
-      {step === 'signup' && guest && (
+      {step === 'signup' && guest && !signedUp && (
         <SignupStep guest={guest} pick={pick} firstName={m.firstName} />
       )}
-      {step !== 'signup' && step !== 'done' && guest?.signedInAs && (
+      {step !== 'done' && signedUp && guest?.signedInAs && (
         <p role="status" className={signupStyles.loggedIn}>
           <Icon name="check_circle" size={16} />
           Logged in as {guest.signedInAs}.

@@ -7,7 +7,9 @@ describe('bookingFromNext', () => {
       sid: 'st1',
       time: '2026-10-20T09:00:00Z',
     });
-    expect(bookingFromNext('/mentors/gbenga?tab=reviews&book=st1&at=2026-10-20T09:00:00.000Z')).toMatchObject({
+    expect(
+      bookingFromNext('/mentors/gbenga?tab=reviews&book=st1&at=2026-10-20T09:00:00.000Z'),
+    ).toMatchObject({
       sid: 'st1',
     });
   });
@@ -20,6 +22,15 @@ describe('bookingFromNext', () => {
     expect(bookingFromNext('/mentors/gbenga/reviews?book=st1&at=2026-10-20T09:00:00Z')).toBeNull();
     expect(bookingFromNext('/bookings?book=st1&at=2026-10-20T09:00:00Z')).toBeNull();
   });
+
+  it('never throws, and bounds what it passes on to onboarding', () => {
+    expect(bookingFromNext('/mentors/%E0?book=st1&at=2026-10-20T09:00:00Z')).toBeNull();
+    expect(bookingFromNext('/mentors/gb%20enga?book=st1&at=2026-10-20T09:00:00Z')).toBeNull();
+    expect(bookingFromNext('/mentors/gbenga?book=st1%26x%3Dy&at=2026-10-20T09:00:00Z')).toBeNull();
+    expect(
+      bookingFromNext('https://evil.example/mentors/gbenga?book=st1&at=2026-10-20T09:00:00Z'),
+    ).toBeNull();
+  });
 });
 
 describe('isOnboardingNext', () => {
@@ -29,5 +40,8 @@ describe('isOnboardingNext', () => {
     expect(isOnboardingNext('/onboardingx')).toBe(false);
     expect(isOnboardingNext('/home')).toBe(false);
     expect(isOnboardingNext(null)).toBe(false);
+    // Same-site only, even if a caller forgot to check it.
+    expect(isOnboardingNext('https://evil.example/onboarding')).toBe(false);
+    expect(isOnboardingNext('//evil.example/onboarding')).toBe(false);
   });
 });

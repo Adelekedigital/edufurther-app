@@ -44,6 +44,13 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
   const [finishing, setFinishing] = useState(false);
   const [signedInAs, setSignedInAs] = useState<string | null>(null);
   const userId = useRef<string | null>(null);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   // Back from Google (bfcache restores the busy button): let it be pressed again.
   useEffect(() => {
@@ -56,15 +63,28 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
     next: null,
     codeShowing: stage === 'code',
     onBanned: () => setStage('suspended'),
-    onVerified: async () => {
-      rememberSignInMethod('email');
-      const acct = await loadAccount();
-      // No account behind this sign-in, or /me keeps failing: `/` explains it.
-      if (acct.kind !== 'member') return router.replace('/');
-      userId.current = acct.id;
-      if (toAccount(acct).isNew) return setStage('name');
-      setSignedInAs(auth.email.trim().toLowerCase());
-      setStage('done');
+    onVerified: async (email) => {
+      // Signed in either way: whatever fails from here, the booking carries on.
+      try {
+        rememberSignInMethod('email');
+        const acct = await loadAccount();
+        // Closed while the code was checked: nothing on this page to change.
+        if (!mounted.current) return;
+        // No account behind this sign-in (or one not linked to it): `/` explains it.
+        if (acct.kind === 'noAccount') return router.replace('/');
+        if (acct.kind === 'member') {
+          userId.current = acct.id;
+          if (toAccount(acct).isNew) return setStage('name');
+        }
+        // A /me that keeps failing: carry on rather than drop the booking. An
+        // account left unnamed is asked for its name at the next sign-in.
+        setSignedInAs(email.trim().toLowerCase());
+        setStage('done');
+      } catch {
+        if (!mounted.current) return;
+        setSignedInAs(email.trim().toLowerCase());
+        setStage('done');
+      }
     },
   });
 
@@ -80,7 +100,10 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
     googleBusy,
     onSendCode: () => {
       setError(undefined);
-      void auth.send().then((ok) => (ok ? setStage('code') : setError('sendFailed')));
+      void auth.send().then((sent) => {
+        if (sent === 'sent') setStage('code');
+        else if (sent === 'failed') setError('sendFailed');
+      });
     },
     onGoogle: (pick) => {
       setGoogleBusy(true);
@@ -119,8 +142,12 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
       void saveName
         .mutateAsync({ userId: id, name: { fullName } })
         .then(() => {
-          if (!ONBOARDING_LIVE) return setStage('done');
-          // guestSetup=full: onboarding asks its questions, then finishes the booking.
+          if (!ONBOARDING_LIVE) {
+            setFinishing(false);
+            return setStage('done');
+          }
+          // guestSetup=full: onboarding asks its questions, then finishes the
+          // booking. "Create account" stays busy while the page moves on.
           const booking = {
             handle: handleOf(profileHref),
             sid: pick.sessionTypeId,
@@ -128,8 +155,10 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
           };
           router.push(newAccountDestination({ role: 'mentee', booking }));
         })
-        .catch((e: Error) => setNameError(e.message))
-        .finally(() => setFinishing(false));
+        .catch((e: Error) => {
+          setNameError(e.message);
+          setFinishing(false);
+        });
     },
     signedInAs,
     offline: !online,

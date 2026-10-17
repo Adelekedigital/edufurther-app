@@ -11,7 +11,8 @@ export function authPageParams(sp: SearchParams, mode: 'login' | 'signup') {
   const reason = parseFailureReason(sp.error);
   return {
     // Log-in has no role: the account decides where they land.
-    role: mode === 'signup' && one(sp.role) === 'mentor' ? ('mentor' as const) : ('mentee' as const),
+    role:
+      mode === 'signup' && one(sp.role) === 'mentor' ? ('mentor' as const) : ('mentee' as const),
     // A next that fails the check is ignored, not replaced: no stray detour.
     next: (rawNext && safeReturnTo(rawNext, '')) || null,
     google:

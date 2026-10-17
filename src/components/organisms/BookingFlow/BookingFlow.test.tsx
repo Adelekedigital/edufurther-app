@@ -328,9 +328,13 @@ describe('BookingFlow on real slots', () => {
         {...props({ ...base, guest: signedIn(), requestError: { kind: 'offline', message: 'x' } })}
       />,
     );
-    expect(screen.getByRole('progressbar', { name: /Step 2 of 2/ })).toBeInTheDocument();
-    // No second sign-in form: the button retries the request.
+    expect(
+      screen.getByRole('progressbar', { name: 'Step 2 of 2 · Send your request' }),
+    ).toBeInTheDocument();
+    // No second sign-in form, and no "Log in" copy: they are signed in.
     expect(screen.queryByLabelText('Email')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Log in or sign up/)).not.toBeInTheDocument();
+    expect(screen.getByRole('status', { name: '' })).toHaveTextContent('Logged in as a@b.co.');
     await user.click(screen.getByRole('button', { name: /^Request Mon, Sep 28/ }));
     expect(onRequest).toHaveBeenCalledTimes(2);
   });

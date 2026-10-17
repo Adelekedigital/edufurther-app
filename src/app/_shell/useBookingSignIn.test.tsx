@@ -86,7 +86,9 @@ describe('useBookingSignIn', () => {
     await act(async () => result.current.onVerify('482913'));
     act(() => result.current.onFullNameChange('Amara Okafor'));
     await act(async () => result.current.onFinish(pick));
-    expect(push).toHaveBeenCalledWith('/onboarding?for=gbenga&sid=st1&time=2026-10-20T09%3A00%3A00Z');
+    expect(push).toHaveBeenCalledWith(
+      '/onboarding?for=gbenga&sid=st1&time=2026-10-20T09%3A00%3A00Z',
+    );
   });
 
   it('keeps the account on the name step when the name won’t save', async () => {
@@ -151,5 +153,74 @@ describe('useBookingSignIn', () => {
     account.mockResolvedValueOnce({ kind: 'noAccount' });
     await act(async () => result.current.onVerify('482913'));
     expect(replace).toHaveBeenCalledWith('/');
+  });
+
+  it('carries on in the modal when /me keeps failing, rather than drop the booking', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { result } = await toCode();
+    verify.mockResolvedValueOnce({ ok: true });
+    account.mockResolvedValue({ kind: 'error' });
+    await act(async () => {
+      void result.current.onVerify('482913');
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+    expect(replace).not.toHaveBeenCalled();
+    expect(result.current.stage).toBe('done');
+    expect(result.current.signedInAs).toBe('amara@example.com');
+    expect(result.current.verifying).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it('carries on when something throws after the code checked out', async () => {
+    const { result } = await toCode();
+    verify.mockResolvedValueOnce({ ok: true });
+    account.mockRejectedValueOnce(new Error('boom'));
+    await act(async () => result.current.onVerify('482913'));
+    expect(result.current.stage).toBe('done');
+    expect(result.current.verifying).toBe(false);
+  });
+
+  it('changes nothing when the modal was closed while the code was checked', async () => {
+    const hook = await toCode();
+    let resolveAccount: (v: unknown) => void = () => {};
+    verify.mockResolvedValueOnce({ ok: true });
+    account.mockReturnValueOnce(new Promise((r) => (resolveAccount = r)));
+    let pending: Promise<void> | undefined;
+    act(() => {
+      pending = Promise.resolve(hook.result.current.onVerify('482913'));
+    });
+    hook.unmount();
+    await act(async () => {
+      resolveAccount({ kind: 'noAccount' });
+      await pending;
+    });
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('says nothing failed when a send is already out', async () => {
+    const { useBookingSignIn } = await load(false);
+    const { result } = renderHook(() => useBookingSignIn({ profileHref: '/mentors/gbenga' }));
+    act(() => result.current.onEmailChange('amara@example.com'));
+    let resolve: (v: unknown) => void = () => {};
+    send.mockReturnValueOnce(new Promise((r) => (resolve = r)));
+    await act(async () => {
+      result.current.onSendCode();
+      result.current.onSendCode();
+    });
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(result.current.error).toBeUndefined();
+    await act(async () => resolve({ ok: true }));
+    expect(result.current.stage).toBe('code');
+  });
+
+  it('keeps "Create account" busy while the page moves on to onboarding', async () => {
+    const { result } = await toCode(true);
+    verify.mockResolvedValueOnce({ ok: true });
+    account.mockResolvedValueOnce(member());
+    await act(async () => result.current.onVerify('482913'));
+    act(() => result.current.onFullNameChange('Amara Okafor'));
+    await act(async () => result.current.onFinish(pick));
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(result.current.finishing).toBe(true);
   });
 });

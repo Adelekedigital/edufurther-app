@@ -257,7 +257,7 @@ export function ExploreScreen() {
           sessionTypeId={typeId}
           onSessionTypeChange={setBookingTypeId}
           slots={slots}
-          isGuest={guest}
+          isGuest={viewer.kind === 'loading' ? null : guest}
           onRequest={request.request}
           requestPending={request.isPending}
           requestDone={request.isDone}

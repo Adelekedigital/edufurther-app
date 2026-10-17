@@ -31,7 +31,9 @@ describe('signInOutcome — returning accounts', () => {
       body: 'Opening your Home…',
       href: '/home',
     });
-    expect(out({ ...base, firstName: 'Gbenga', isMentor: true, mentorApproved: true })).toMatchObject({
+    expect(
+      out({ ...base, firstName: 'Gbenga', isMentor: true, mentorApproved: true }),
+    ).toMatchObject({
       body: 'Opening your mentor dashboard…',
       href: '/dashboard',
     });
@@ -106,7 +108,9 @@ describe('signInOutcome — new accounts', () => {
 
   it('names a Google account by the way in', async () => {
     const out = await load(false);
-    expect(out({ ...fresh, method: 'google' })).toMatchObject({ title: 'Account created with Google' });
+    expect(out({ ...fresh, method: 'google' })).toMatchObject({
+      title: 'Account created with Google',
+    });
   });
 
   it('sends a new mentor home for now, saying so plainly', async () => {
@@ -138,7 +142,9 @@ describe('signInOutcome — new accounts', () => {
 
   it('treats a never-named account at log-in as new', async () => {
     const out = await load(false);
-    expect(out({ ...base, isNew: true })).toMatchObject({ title: 'Account created. Welcome, Amara' });
+    expect(out({ ...base, isNew: true })).toMatchObject({
+      title: 'Account created. Welcome, Amara',
+    });
   });
 
   const reopen = '/mentors/gbenga?book=st1&at=2026-10-20T09%3A00%3A00Z';
@@ -172,9 +178,10 @@ describe('signInOutcome — new accounts', () => {
 describe('signInOutcome — returning to a booking', () => {
   it('names the booking when next is one', async () => {
     const out = await load(false);
-    expect(out({ ...base, next: '/mentors/gbenga?book=st1&at=2026-10-20T09:00:00Z' })).toMatchObject({
+    expect(
+      out({ ...base, next: '/mentors/gbenga?book=st1&at=2026-10-20T09:00:00Z' }),
+    ).toMatchObject({
       body: 'Taking you back to your booking…',
     });
   });
 });
-

@@ -18,8 +18,8 @@ export type EmailCodeAuthOptions = {
   codeShowing: boolean;
   /** Right before a code goes out for checking. */
   onVerifyStart?: () => void;
-  /** The code checked out. "Checking…" stays up until this settles. */
-  onVerified: () => Promise<void>;
+  /** The code checked out, for this address. "Checking…" stays up until this settles. */
+  onVerified: (email: string) => Promise<void>;
   /** The code was refused, for any reason. */
   onVerifyRefused?: () => void;
   /** The account is suspended (a Supabase ban). */
@@ -50,6 +50,7 @@ export function useEmailCodeAuth(opts: EmailCodeAuthOptions) {
   // state check.
   const verifyingNow = useRef(false);
   const resendingNow = useRef(false);
+  const sendingNow = useRef(false);
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
@@ -78,16 +79,21 @@ export function useEmailCodeAuth(opts: EmailCodeAuthOptions) {
     if (resend) setResentCount((n) => n + 1);
   };
 
-  /** Email a code. True when it went out (the caller shows the code step). */
-  const send = async (): Promise<boolean> => {
-    if (sending) return false;
+  /**
+   * Email a code. `sent`: the caller shows the code step; `failed`: say so;
+   * `busy`: a send is already out, and this press did nothing.
+   */
+  const send = async (): Promise<'sent' | 'failed' | 'busy'> => {
+    if (sendingNow.current) return 'busy';
+    sendingNow.current = true;
     setSending(true);
     const r = await sendSignInCode(email, opts.next);
-    if (!mounted.current) return false;
+    sendingNow.current = false;
+    if (!mounted.current) return 'busy';
     setSending(false);
-    if (!r.ok) return false;
+    if (!r.ok) return 'failed';
     codeSent(false);
-    return true;
+    return 'sent';
   };
 
   const resend = async () => {
@@ -109,7 +115,7 @@ export function useEmailCodeAuth(opts: EmailCodeAuthOptions) {
     if (r.ok) {
       resetTries(email);
       try {
-        await latest.current.onVerified();
+        await latest.current.onVerified(email);
       } finally {
         verifyingNow.current = false;
         if (mounted.current) setVerifying(false);
