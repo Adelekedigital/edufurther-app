@@ -92,17 +92,6 @@
   letter-spacing: 0.5em;
 }
 
-/* Red lines under a field: icon + text, p-xs, red-600. */
-.error {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  margin: 0;
-  font-size: var(--text-p-xs);
-  line-height: var(--lh-p);
-  color: var(--red-600);
-}
-
 .typo {
   display: flex;
   align-items: center;

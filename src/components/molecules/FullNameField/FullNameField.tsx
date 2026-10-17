@@ -1,8 +1,8 @@
 import { useId, useState } from 'react';
 import { Input } from '@/components/atoms/Input/Input';
 import { NAME_PROBLEM_COPY, checkFullName } from '@/lib/utils/name';
-import { FieldError } from './FieldError';
-import styles from './SignInForm.module.css';
+import { FieldError } from '@/components/molecules/FieldError/FieldError';
+import styles from './FullNameField.module.css';
 
 type FullNameFieldProps = {
   value: string;

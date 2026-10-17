@@ -5,8 +5,8 @@ import { GoogleButton } from '@/components/molecules/GoogleButton/GoogleButton';
 import { LegalLine } from '@/components/molecules/LegalLine/LegalLine';
 import { emailTypoFix } from '@/lib/utils/emailTypo';
 import { cx } from '@/lib/utils/cx';
-import { FieldError } from './FieldError';
-import { FullNameField } from './FullNameField';
+import { FieldError } from '@/components/molecules/FieldError/FieldError';
+import { FullNameField } from '@/components/molecules/FullNameField/FullNameField';
 import type { SignInMode, StartError } from './types';
 import styles from './SignInForm.module.css';
 
