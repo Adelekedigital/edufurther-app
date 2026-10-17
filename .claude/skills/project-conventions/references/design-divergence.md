@@ -854,3 +854,4 @@ PRD: Mentee Onboarding v5 (deviation table, H8). Rows the PRD settles are produc
 | "Nobody is bookable" is not drawn | `EmptyState` "No mentors are taking bookings right now" + "Browse all mentors", title "Your matches" | PRD F1 names the state and its copy | design draws it |
 | "Edit your answers" is a 32px text button | 32px drawn, with an invisible 44px tap area (ours) | 44px targets (PRD guardrail) | — |
 | A match card's name is the card's `h3` | `h2` on the matches page (`headingLevel`) | Under the page's `h1`, an `h3` skips a level (axe `heading-order`) | — |
+| Destination hint "Pick one for now. You can add up to 3 countries later in Settings." | "Pick one for now. You can add more later." | No Settings screen exists yet: copy never names a feature that isn't built (owner, 2026-10-17) | mentee Settings › Goals ships: restore the design's words |

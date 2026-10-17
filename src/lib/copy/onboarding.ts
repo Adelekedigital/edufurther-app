@@ -136,7 +136,8 @@ export const PLAN_HINTS = {
   origin: 'We look for mentors who made the same move.',
   degree: 'Your current education goes on your profile later.',
   field: 'Pick a suggestion or type your own.',
-  destination: 'Pick one for now. You can add up to 3 countries later in Settings.',
+  // Not "…later in Settings" (the design's words) until Settings ships (owner, 2026-10-17).
+  destination: 'Pick one for now. You can add more later.',
 };
 
 export const PLAN_PLACEHOLDERS = {
