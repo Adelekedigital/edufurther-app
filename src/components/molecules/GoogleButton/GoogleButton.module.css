@@ -1,16 +1,57 @@
-/* The Button atom puts its children in a label span, so the mark and the words
-   are laid out here rather than by the atom's own gap. */
-.inner {
-  display: inline-flex;
+/* Sign In.dc.html Google button: 48px, gap space-2, ink-300 hairline, radius-md,
+   white; p-sm semibold ink-900; hover ink-50; offline at half opacity. */
+.button {
+  position: relative;
+  display: flex;
   align-items: center;
-  gap: var(--space-3);
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  height: var(--button-h-large);
+  padding: 0 var(--space-4);
+  border: var(--border-hairline) solid var(--ink-300);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+  transition: background-color var(--duration-fast) var(--ease-standard);
 }
 
-/* 18px: the Button atom's icon size, so this sits like any other leading icon.
-   Google's guidelines set a 20% clear space around the mark; the button's
-   padding covers it many times over. */
+.button:hover:not(:disabled) {
+  background: var(--ink-50);
+}
+
+.button:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button[aria-busy='true'] {
+  cursor: progress;
+}
+
 .mark {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
+}
+
+/* "Last used": pinned 12px from the right edge, blue-50 pill, p-xs semibold blue-700. */
+.badge {
+  position: absolute;
+  right: var(--space-3);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--blue-50);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-700);
 }

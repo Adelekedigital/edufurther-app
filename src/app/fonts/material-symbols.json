@@ -59,6 +59,7 @@
     "home",
     "home_pin",
     "hourglass_top",
+    "how_to_reg",
     "info",
     "ios_share",
     "join_inner",
@@ -70,6 +71,7 @@
     "location_on",
     "lock",
     "lock_clock",
+    "login",
     "logout",
     "mail",
     "menu",
@@ -111,6 +113,7 @@
     "support_agent",
     "task_alt",
     "timer",
+    "timer_off",
     "tips_and_updates",
     "toll",
     "translate",
@@ -127,8 +130,9 @@
     "visibility",
     "visibility_off",
     "wifi",
+    "wifi_off",
     "work",
     "workspace_premium"
   ],
-  "sha256": "dac9ed6389efd28872efb128340f05266fbaeea9a351bf68bfc10077b59e5275"
+  "sha256": "7c2c7a7763734a1e0189ccb0a0adcd0bf8593af33056aa6597affa4f62a5628d"
 }
