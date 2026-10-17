@@ -396,4 +396,11 @@ describe('SignInForm — review fixes', () => {
     await userEvent.click(sendButton());
     expect(onSendCode).not.toHaveBeenCalled();
   });
+
+  it('says nothing when someone only tabs past the empty name field', async () => {
+    render(<Live />);
+    await userEvent.click(screen.getByLabelText('Full name'));
+    await userEvent.tab();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
 });

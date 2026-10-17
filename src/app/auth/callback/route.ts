@@ -4,24 +4,33 @@ import { safeReturnTo } from '@/lib/utils/safeReturnTo';
 import { exchangeCodeForSession } from '@/lib/vendor/supabase/server';
 
 /**
- * Where Supabase sends the browser back: the email's magic link, and Google's
- * consent screen. Both carry `code` (PKCE); swapping it sets the session
- * cookie. A link only works in the browser that asked for the email — on
- * another device the login page says to type the 6-digit code instead.
+ * Where Supabase sends the browser back: Google's consent screen (and an old
+ * email's magic link). Both carry `code` (PKCE); swapping it sets the session
+ * cookie.
  *
- * A refusal arrives as `error` instead, and the two ways in need different
- * words: a Google sign-in someone cancelled is not a broken link.
+ * A Google sign-in goes back to the screen it started on (`auth=google`), so
+ * the screen can name a new account, show the toast and pick the account's
+ * home; `mode`, `role` and `next` come along. A refusal goes back there too,
+ * with the reason. A magic link that worked goes straight to `next`.
  */
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const code = params.get('code');
-  const next = safeReturnTo(params.get('next'));
+  const rawNext = params.get('next');
+  const next = rawNext ? safeReturnTo(rawNext) : null;
   const ok = code ? await exchangeCodeForSession(code) : false;
-  // Back to the screen they started on, so a failed sign-up isn't answered on
-  // the log-in page with "New here? Create a free account".
-  const back = params.get('mode') === 'signup' ? '/signup' : '/login';
-  const to = ok
-    ? next
-    : `${back}?error=${failureReason(params)}&next=${encodeURIComponent(next)}`;
+  const google = params.get('from') === 'google';
+
+  const back = new URLSearchParams();
+  if (params.get('role') === 'mentor') back.set('role', 'mentor');
+  if (next) back.set('next', next);
+  const screen = params.get('mode') === 'signup' ? '/signup' : '/login';
+
+  let to: string;
+  if (ok && !google) to = next ?? '/';
+  else {
+    back.set(ok ? 'auth' : 'error', ok ? 'google' : failureReason(params));
+    to = `${screen}?${back}`;
+  }
   return NextResponse.redirect(new URL(to, request.nextUrl.origin));
 }

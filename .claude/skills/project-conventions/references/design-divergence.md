@@ -821,7 +821,7 @@ SVG ring — neutral `--ink-100` track, a value arc (`--action-primary` /
 
 | Design says | We do | Why | Revisit when |
 | --- | --- | --- | --- |
-| Full name: Create enables at 2+ characters | Two words or more, each part 1–60 characters, letters (accents and Yoruba/Igbo dot-below included), spaces, ’ ' - . — one rule in `lib/utils/name.ts` for one-field and two-field name inputs | The account always needs a last name (PRD, Sign up and log in). Owner, 2026-10-17: the one-field forms split on the frontend (first word / the rest) and save `first_name` + `last_name` until the backend takes `full_name` | the backend ships `full_name` (the split moves there; the rule stays) |
+| Full name: Create enables at 2+ characters | Two words or more, each part 1–60 characters, letters (accents and Yoruba/Igbo dot-below included), spaces, ’ ' - . — one rule in `lib/utils/name.ts` for one-field and two-field name inputs | The account always needs a last name (PRD, Sign up and log in). One-field forms send `full_name` and the backend splits it (first word / the rest; backend #476, since PR 3); two-field forms send `first_name` + `last_name` | — |
 | No copy for a name part over 60 characters | "Keep each name to 60 characters or fewer." (_ours_, provisional) | The handoff sets the limit but draws no message | design writes the copy |
 | Google button has no pressed/busy state | "Taking you to Google…" with `aria-busy` while the browser leaves for Google | Interaction state (_ours_): stops a second press while the redirect starts | — |
 | 5 wrong codes lock for 15 minutes (server rule) | Counted on screen per address, kept in sessionStorage keyed by a hash of the address (a 32-bit hash: keeps it out of sight, no secret) | Supabase doesn't count misses per code; its per-IP verify limit is the real guard. Server-side lock: edufurtherbe#475 | edufurtherbe#475 ships |
@@ -855,3 +855,13 @@ PRD: Mentee Onboarding v5 (deviation table, H8). Rows the PRD settles are produc
 | "Edit your answers" is a 32px text button | 32px drawn, with an invisible 44px tap area (ours) | 44px targets (PRD guardrail) | — |
 | A match card's name is the card's `h3` | `h2` on the matches page (`headingLevel`) | Under the page's `h1`, an `h3` skips a level (axe `heading-order`) | — |
 | Destination hint "Pick one for now. You can add up to 3 countries later in Settings." | "Pick one for now. You can add more later." | No Settings screen exists yet: copy never names a feature that isn't built (owner, 2026-10-17) | mentee Settings › Goals ships: restore the design's words |
+
+### Sign up and log in — the screen (PR 3, `/signup`, `/login`)
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| New mentor toast: "Opening your mentor application…", to Mentor Onboarding | As drawn once `NEXT_PUBLIC_MENTOR_ONBOARDING_ENABLED=true`; until then "Opening your Home…", to `/home` | There is no mentor application screen yet; the toast must not promise one (owner, 2026-10-17) | the mentor onboarding flag is on everywhere |
+| New mentee → Mentee Onboarding v5; not-approved mentor → Approved.dc.html review | The `/onboarding` entry when `NEXT_PUBLIC_ONBOARDING_V5_ENABLED=true`, else straight back to a checked `next`, else `/home`; not-approved mentors → `/mentor-application` once mentor onboarding is on, else `/dashboard` | Those routes 404 while their flags are off, and a booking interrupted by sign-up must not be lost to them (PRD rev 9; agreed with the onboarding session) | both flags are on everywhere |
+| Return to a booking / waitlist: "Taking you back to your booking with {mentor}…" | "Taking you back to where you left off…" for any `next` | The page doesn't know what `next` is until PR 4 passes the booking context | PR 4 |
+| Code `expired` is a server state | Supabase answers a wrong and an expired code alike (`otp_expired`), so a refusal 10 minutes or more after the send reads as expired | No other signal exists (failure log) | Supabase separates the two |
+| Resend failure: no state drawn | "We couldn’t send a new code. Check your connection and try again." under the code field; the countdown doesn’t restart and the link stays pressable | A rate-limited or offline resend must not look like it worked (_ours_, provisional) | design draws one |

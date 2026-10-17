@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
-import { safeReturnTo } from '@/lib/utils/safeReturnTo';
-import { parseFailureReason } from '../_auth/failureReason';
 import { AuthScreen } from '../_auth/AuthScreen';
+import { authPageParams } from '../_auth/pageParams';
 
 export const metadata: Metadata = { title: 'Log in', robots: { index: false } };
 
@@ -10,7 +9,6 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const sp = await searchParams;
-  const next = safeReturnTo(typeof sp.next === 'string' ? sp.next : null);
-  return <AuthScreen mode="login" next={next} failure={parseFailureReason(sp.error)} />;
+  const { role, next, google } = authPageParams(await searchParams, 'login');
+  return <AuthScreen mode="login" role={role} next={next} google={google} />;
 }
