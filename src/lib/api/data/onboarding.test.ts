@@ -59,10 +59,18 @@ describe('toState', () => {
     expect(s.plans.destinationId).toBe(NOT_SURE);
   });
 
-  it('trusts /me onboarding when it is there, else the PRD B3 rule', () => {
+  it('is complete only when /me says so: filled-in answers alone never skip completion', () => {
     const full = { degree_goal: masters, field_of_study: 'Law', needs: [need] };
-    expect(toState(saved(full, { originCode: 'NG' }), countries).complete).toBe(true);
-    expect(toState(saved(full), countries).complete).toBe(false);
+    // Every answer saved, but completion (and its starter credit) may never have run.
+    const filled = toState(saved(full, { originCode: 'NG' }), countries);
+    expect(filled.complete).toBe(false);
+    expect(filled.lastStep).toBe('plans');
+    expect(
+      toState(
+        saved(full, { originCode: 'NG', onboarding: { complete: true, missing: [] } }),
+        countries,
+      ).complete,
+    ).toBe(true);
     const reported = saved(full, {
       originCode: 'NG',
       onboarding: { complete: false, missing: ['field'] },

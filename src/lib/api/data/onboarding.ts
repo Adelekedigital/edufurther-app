@@ -57,9 +57,10 @@ export function toState(saved: Saved, countries: CatalogOption[]): OnboardingSta
   const originId = saved.originCode
     ? (countries.find((c) => c.code === saved.originCode)?.id ?? '')
     : '';
-  // Until /me reports it (#5), the PRD B3 rule on what is saved.
-  const complete =
-    saved.onboarding?.complete ?? (needIds.length > 0 && !!originId && answeredPlans);
+  // Done only when the server says so (/me `onboarding`, backend #5). Filled-in
+  // answers alone aren't done: completion may never have run, and it pays the
+  // starter credit. Until #5 ships they resume at step 2 and finish (idempotent).
+  const complete = saved.onboarding?.complete ?? false;
   return {
     lastStep: answeredPlans ? 'plans' : needIds.length ? 'help' : null,
     complete,
