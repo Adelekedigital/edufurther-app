@@ -48,6 +48,7 @@ describe('toViewer (backend auth reply #3)', () => {
     const v = toViewer(
       me({
         mentee_completed_sessions: 2,
+        created_at: '2026-10-10T09:00:00Z',
         credits: {
           balance: 1,
           allowance: 3,
@@ -59,6 +60,7 @@ describe('toViewer (backend auth reply #3)', () => {
       }),
     );
     expect(v.completedSessions).toBe(2);
+    expect(v.createdAt).toBe('2026-10-10T09:00:00Z');
     expect(v.credits).toEqual({
       balance: 1,
       state: 'low',

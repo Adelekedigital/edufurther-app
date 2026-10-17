@@ -122,6 +122,8 @@ export type SignedInUser = {
   /** Google's given / family names, when the person signed in with Google. */
   givenName: string | null;
   familyName: string | null;
+  /** Google's whole name (`full_name`, else `name`): Supabase's Google identity carries only these. */
+  fullName: string | null;
   /**
    * Google was added just now to an account that already had another way in
    * (Supabase links a verified email automatically): the "Google is now
@@ -150,6 +152,7 @@ export async function signedInUser(now = Date.now()): Promise<SignedInUser | nul
     email: user.email ?? null,
     givenName: google ? text(meta.given_name) : null,
     familyName: google ? text(meta.family_name) : null,
+    fullName: google ? (text(meta.full_name) ?? text(meta.name)) : null,
     googleJustLinked: !!google && others && now - addedAt < JUST_LINKED_MS,
   };
 }

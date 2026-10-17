@@ -141,8 +141,25 @@ describe('signedInUser (Google names, and whether Google was just linked)', () =
       email: null,
       givenName: 'Tolu',
       familyName: 'Adebayo',
+      fullName: null,
       googleJustLinked: false,
     });
+  });
+
+  it('reads the whole name from Supabase’s real Google shape (no given / family names)', async () => {
+    const google = (identity_data: object) => ({
+      data: { user: { identities: [{ provider: 'google', created_at: ago(0), identity_data }] } },
+    });
+    getUserCall.mockResolvedValueOnce(
+      google({ full_name: 'Tolu Adebayo', name: 'Tolu Adebayo', email: 't@example.com' }),
+    );
+    expect(await signedInUser(NOW)).toMatchObject({
+      givenName: null,
+      familyName: null,
+      fullName: 'Tolu Adebayo',
+    });
+    getUserCall.mockResolvedValueOnce(google({ name: ' Tolu Adebayo ' }));
+    expect((await signedInUser(NOW))?.fullName).toBe('Tolu Adebayo');
   });
 
   it('calls Google just linked only when it joined another way in a moment ago', async () => {
@@ -164,12 +181,13 @@ describe('signedInUser (Google names, and whether Google was just linked)', () =
 
   it('has no Google names for an email account, and is null when signed out', async () => {
     getUserCall.mockResolvedValueOnce({
-      data: { user: { identities: [{ provider: 'email' }], user_metadata: { given_name: 'X' } } },
+      data: { user: { identities: [{ provider: 'email' }], user_metadata: { given_name: 'X', full_name: 'X Y' } } },
     });
     expect(await signedInUser(NOW)).toEqual({
       email: null,
       givenName: null,
       familyName: null,
+      fullName: null,
       googleJustLinked: false,
     });
     getUserCall.mockResolvedValueOnce({ data: { user: null } });

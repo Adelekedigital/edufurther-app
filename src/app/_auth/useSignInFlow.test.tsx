@@ -126,6 +126,26 @@ describe('useSignInFlow — sign-up with a code', () => {
     await act(async () => result.current.form.onFinish!());
     expect(result.current.toast).toMatchObject({ title: 'Account created. Welcome, Amara' });
   });
+
+  it('stays on the finish step when the name won’t save, even once the session lands', async () => {
+    const { result, rerender } = await toCode();
+    verify.mockResolvedValueOnce({ ok: true });
+    account.mockResolvedValueOnce(member());
+    // The save may have landed behind the proxy error: a later /me has the name.
+    account.mockResolvedValue(member({ firstName: 'Amara' }));
+    save.mockRejectedValueOnce(new Error('We couldn’t save your name. Try again.'));
+    await act(async () => result.current.form.onVerify!('482913'));
+    session = { status: 'present', userId: 'u1' };
+    rerender(opts());
+    await flush();
+    act(() => vi.advanceTimersByTime(TOAST_MS * 2));
+    await flush();
+    expect(result.current.form.step).toBe('finish');
+    expect(result.current.form.nameError).toBe('We couldn’t save your name. Try again.');
+    expect(result.current.toast).toBeNull();
+    expect(account).toHaveBeenCalledTimes(1);
+    expect(replace).not.toHaveBeenCalled();
+  });
 });
 
 describe('useSignInFlow — log-in', () => {
@@ -214,19 +234,63 @@ describe('useSignInFlow — code problems', () => {
 });
 
 describe('useSignInFlow — Google', () => {
-  it('names a new Google account from Google and sends it on', async () => {
+  // Supabase's Google identity carries full_name / name, not given / family names.
+  const fromGoogle = (fullName: string | null) => ({
+    email: 'tolu@example.com',
+    givenName: null,
+    familyName: null,
+    fullName,
+    googleJustLinked: false,
+  });
+
+  it('names a new Google account from Google’s full name, with no name step', async () => {
     session = { status: 'present', userId: 'u1' };
     account.mockResolvedValueOnce(member());
-    user.mockResolvedValue({ givenName: 'Tolu', familyName: 'Adebayo', googleJustLinked: false });
+    user.mockResolvedValue(fromGoogle('Tolu Adebayo'));
     const { result } = renderHook(() => useSignInFlow(opts({ googleReturn: true })));
+    await flush();
+    await flush();
+    expect(save).toHaveBeenCalledWith({ userId: 'u1', name: { fullName: 'Tolu Adebayo' } });
+    expect(result.current.form.step).toBe('start');
+    expect(result.current.toast).toMatchObject({ title: 'Account created with Google' });
+    expect(window.localStorage.getItem('ef-last-sign-in')).toBe('google');
+  });
+
+  it("keeps Google's own split when it sends given and family names", async () => {
+    session = { status: 'present', userId: 'u1' };
+    account.mockResolvedValueOnce(member());
+    user.mockResolvedValue({ givenName: 'Mary Jane', familyName: 'Adebayo', googleJustLinked: false });
+    renderHook(() => useSignInFlow(opts({ googleReturn: true })));
     await flush();
     await flush();
     expect(save).toHaveBeenCalledWith({
       userId: 'u1',
-      name: { firstName: 'Tolu', lastName: 'Adebayo' },
+      name: { firstName: 'Mary Jane', lastName: 'Adebayo' },
     });
-    expect(result.current.toast).toMatchObject({ title: 'Account created with Google' });
-    expect(window.localStorage.getItem('ef-last-sign-in')).toBe('google');
+  });
+
+  it('puts a one-word Google name in the finish step to complete', async () => {
+    session = { status: 'present', userId: 'u1' };
+    account.mockResolvedValueOnce(member());
+    user.mockResolvedValue(fromGoogle('Tolu'));
+    const { result } = renderHook(() => useSignInFlow(opts({ googleReturn: true })));
+    await flush();
+    await flush();
+    expect(result.current.form.step).toBe('finish');
+    expect(result.current.form.fullName).toBe('Tolu');
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it('shows an empty finish step when Google sends no name', async () => {
+    session = { status: 'present', userId: 'u1' };
+    account.mockResolvedValueOnce(member());
+    user.mockResolvedValue(fromGoogle(null));
+    const { result } = renderHook(() => useSignInFlow(opts({ googleReturn: true })));
+    await flush();
+    await flush();
+    expect(result.current.form.step).toBe('finish');
+    expect(result.current.form.fullName).toBe('');
+    expect(save).not.toHaveBeenCalled();
   });
 
   it('asks once for a full name when Google sends no family name', async () => {

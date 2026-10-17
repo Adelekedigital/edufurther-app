@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { NAME_PROBLEM_COPY, tidyName } from '@/lib/utils/name';
+import { NAME_PROBLEM_COPY, splitFullName, tidyName } from '@/lib/utils/name';
 import { api } from './http';
 import { keys } from './keys';
 
@@ -57,31 +57,68 @@ const SAVE_FAILED = 'We couldn’t save your name. Try again.';
 const ONE_WORD = /first and a last name/i;
 
 /**
+ * A proxy in front of the API (the Vercel rewrite, Railway's edge) can answer
+ * 502–504, or drop the line, after the save committed; the API itself never
+ * sends these here.
+ */
+const PROXY_ERRORS = new Set([502, 503, 504]);
+
+/** A blip at the edge (a redeploy, a cold start) usually clears within a second. */
+export const NAME_RETRY_MS = 800;
+
+type NameBody = { full_name: string } | { first_name: string; last_name: string };
+
+/** The PATCH, or null when a proxy failed it: the backend sets the name, so sending it twice is safe. */
+async function patchName(userId: string, body: NameBody) {
+  try {
+    const res = await api.PATCH('/api/v1/users/{user_id}/profile', {
+      params: { path: { user_id: userId } },
+      body,
+    });
+    return PROXY_ERRORS.has(res.response.status) ? null : res;
+  } catch {
+    return null;
+  }
+}
+
+/** Whether /me now has the first name we sent: a save a proxy failed may have landed. */
+async function nameLanded(body: NameBody) {
+  const first = 'first_name' in body ? body.first_name : splitFullName(body.full_name).firstName;
+  try {
+    const { data } = await api.GET('/api/v1/me');
+    return !!first && data?.first_name === first;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Save a name from either shape of input. A full name goes out as `full_name`
  * and the backend splits it (first word / the rest); two fields go out as
  * `first_name` + `last_name`. A 422 on a name field reads as the rule's own
  * words, told apart by its message; anything else is a plain "try again"
- * (Problem Details `detail` is never shown).
+ * (Problem Details `detail` is never shown). A proxy error is tried once
+ * more, then GET /me says whether the name landed anyway.
  */
 export function useSaveName() {
   const qc = useQueryClient();
   return useMutation<void, NameSaveError, { userId: string; name: NameToSave }>({
     networkMode: 'always',
     mutationFn: async ({ userId, name }) => {
-      const body =
+      const body: NameBody =
         'fullName' in name
           ? { full_name: tidyName(name.fullName) }
           : { first_name: tidyName(name.firstName), last_name: tidyName(name.lastName) };
-      let res;
-      try {
-        res = await api.PATCH('/api/v1/users/{user_id}/profile', {
-          params: { path: { user_id: userId } },
-          body,
-        });
-      } catch {
-        throw new NameSaveError(SAVE_FAILED);
+      const first = await patchName(userId, body);
+      let res = first;
+      if (!res) {
+        await new Promise((r) => setTimeout(r, NAME_RETRY_MS));
+        res = await patchName(userId, body);
       }
-      if (res.response.ok) return;
+      if (res?.response.ok) return;
+      // The first try may have landed behind the proxy error, whatever the retry says.
+      if (!first && (await nameLanded(body))) return;
+      if (!res) throw new NameSaveError(SAVE_FAILED);
       const errors =
         (res.error as { errors?: { pointer?: string; message?: string }[] } | undefined)?.errors ??
         [];
