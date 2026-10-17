@@ -136,7 +136,7 @@ export const PLAN_HINTS = {
   origin: 'We look for mentors who made the same move.',
   degree: 'Your current education goes on your profile later.',
   field: 'Pick a suggestion or type your own.',
-  // Not "…later in Settings" (the design's words) until Settings ships (owner, 2026-10-17).
+  // Not "…later in Settings" until Settings › Goals ships (design, 2026-10-17; #284).
   destination: 'Pick one for now. You can add more later.',
 };
 
@@ -175,8 +175,9 @@ export const MATCH_COPY = {
   errorTitle: 'We couldn’t load your matches',
   errorBody: 'Your answers are saved. Check your connection and try again.',
   retry: 'Try again',
-  // PRD F1: the design draws no "nobody is bookable" state; title and link from the PRD.
+  // matchState=noMentors (design, 2026-10-17).
   emptyTitle: 'No mentors are taking bookings right now',
+  emptyBody: 'Your answers are saved. Browse all mentors to see who’s on EduFurther.',
   emptyAction: 'Browse all mentors',
   edit: 'Edit your answers',
   browse: 'Browse all mentors',

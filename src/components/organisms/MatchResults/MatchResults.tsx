@@ -104,8 +104,9 @@ export function MatchResults({ headingRef, ...p }: MatchResultsProps) {
         </div>
       ) : matches.length === 0 ? (
         <EmptyState
-          illustration="search-results"
+          illustration="team"
           title={MATCH_COPY.emptyTitle}
+          description={MATCH_COPY.emptyBody}
           actions={
             <ButtonLink href={p.browseHref} size="large" prefetch={false}>
               {MATCH_COPY.emptyAction}

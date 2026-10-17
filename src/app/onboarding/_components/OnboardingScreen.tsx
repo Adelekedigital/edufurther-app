@@ -179,7 +179,7 @@ export function OnboardingScreen() {
           <div className={styles.cta}>
             {f.save.error && !f.save.error.missing?.length && (
               <p role="alert" className={styles.saveError}>
-                <Icon name="error" size={16} />
+                <Icon name="error" size={16} className={styles.saveErrorIcon} />
                 {FLOW_COPY.saveError}
               </p>
             )}

@@ -121,6 +121,10 @@ describe('MatchResults', () => {
   it('offers Explore when nobody is bookable', () => {
     render(<MatchResults {...base} matches={[]} />);
     expect(screen.getByText('No mentors are taking bookings right now')).toBeInTheDocument();
+    expect(
+      screen.getByText('Your answers are saved. Browse all mentors to see who’s on EduFurther.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Your matches');
     expect(screen.getByRole('link', { name: 'Browse all mentors' })).toHaveAttribute(
       'href',
       '/explore',
