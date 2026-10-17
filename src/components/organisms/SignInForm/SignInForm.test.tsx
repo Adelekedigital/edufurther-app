@@ -120,9 +120,13 @@ describe('SignInForm — start', () => {
     expect(screen.queryByText(/Did you mean/)).not.toBeInTheDocument();
   });
 
-  it('turns off both ways to sign in while offline', () => {
-    render(<SignInForm {...props({ mode: 'login', email: 'amara@example.com', offline: true })} />);
-    expect(screen.getByRole('status', { name: '' })).toHaveTextContent(/You’re offline/);
+  it('turns off both ways to sign in while offline, and says so in a standing region', () => {
+    const { rerender } = render(
+      <SignInForm {...props({ mode: 'login', email: 'amara@example.com' })} />,
+    );
+    const regions = screen.getAllByRole('status');
+    rerender(<SignInForm {...props({ mode: 'login', email: 'amara@example.com', offline: true })} />);
+    expect(regions.some((r) => /You’re offline/.test(r.textContent ?? ''))).toBe(true);
     expect(sendButton()).toBeDisabled();
     expect(screen.getByRole('button', { name: /Continue with Google/ })).toBeDisabled();
   });
@@ -167,7 +171,10 @@ describe('SignInForm — code', () => {
 
   it('counts down to the next code', () => {
     render(<SignInForm {...props(code)} />);
-    expect(screen.getByRole('button', { name: 'Send a new code in 0:24' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Send a new code in 0:24' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   });
 
   it('offers a new code at once when the code has expired, and stops Verify', () => {
@@ -181,15 +188,19 @@ describe('SignInForm — code', () => {
   it('stops Verify and resend while locked', () => {
     render(<SignInForm {...props({ ...code, resendIn: 0, codeProblem: { kind: 'locked' } })} />);
     expect(screen.getByRole('alert')).toHaveTextContent('Too many wrong codes.');
-    expect(screen.getByRole('button', { name: 'Send a new code' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Send a new code' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
     expect(screen.getByRole('button', { name: 'Verify' })).toBeDisabled();
   });
 
   it('says a new code went out, in a region that was already there, each time', () => {
     const { rerender } = render(<SignInForm {...props(code)} />);
-    const status = screen.getByRole('status');
-    expect(status).toBeEmptyDOMElement();
+    const regions = screen.getAllByRole('status');
+    regions.forEach((r) => expect(r).toBeEmptyDOMElement());
     rerender(<SignInForm {...props({ ...code, resentCount: 1 })} />);
+    const status = regions.find((r) => r.textContent)!;
     expect(status).toHaveTextContent('New code sent to amara@example.com. Still nothing?');
     const first = status.firstChild;
     rerender(<SignInForm {...props({ ...code, resentCount: 2 })} />);
@@ -241,5 +252,122 @@ describe('SignInForm — focus', () => {
     expect(document.activeElement).toBe(document.body);
     rerender(<SignInForm {...props({ email: 'amara@example.com', step: 'code' })} />);
     expect(screen.getByRole('heading', { name: 'Check your email' })).toHaveFocus();
+  });
+});
+
+describe('SignInForm — review fixes', () => {
+  const code = { step: 'code' as const, email: 'amara@example.com', resendIn: 0 };
+
+  it.each([
+    ['482 913', '482913'],
+    ['482-913', '482913'],
+    ['Code: 482913', '482913'],
+  ])('verifies a pasted %s whole', async (pasted, digits) => {
+    const onVerify = vi.fn();
+    render(<Live {...code} onVerify={onVerify} />);
+    await userEvent.click(screen.getByLabelText('6-digit code'));
+    await userEvent.paste(pasted);
+    expect(onVerify).toHaveBeenCalledOnce();
+    expect(onVerify).toHaveBeenCalledWith(digits);
+  });
+
+  it('keeps focus in the code field while it is checked', () => {
+    render(<SignInForm {...props({ ...code, code: '482913', verifying: true })} />);
+    const field = screen.getByLabelText('6-digit code');
+    expect(field).not.toBeDisabled();
+    expect(field).toHaveAttribute('readonly');
+  });
+
+  it('puts focus back in the field, code selected, after a wrong code', () => {
+    const { rerender } = render(<SignInForm {...props({ ...code, code: '482913', verifying: true })} />);
+    rerender(
+      <SignInForm {...props({ ...code, code: '482913', codeProblem: { kind: 'wrong', triesLeft: 4 } })} />,
+    );
+    const field = screen.getByLabelText<HTMLInputElement>('6-digit code');
+    expect(field).toHaveFocus();
+    expect(field.selectionStart).toBe(0);
+    expect(field.selectionEnd).toBe(6);
+  });
+
+  it('sends a new code without dropping focus, and refuses while the countdown runs or a check is out', async () => {
+    const onResend = vi.fn();
+    const { rerender } = render(<SignInForm {...props({ ...code, onResend })} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Send a new code' }));
+    expect(onResend).toHaveBeenCalledOnce();
+    expect(screen.getByLabelText('6-digit code')).toHaveFocus();
+
+    rerender(<SignInForm {...props({ ...code, onResend, resendIn: 30 })} />);
+    const wait = screen.getByRole('button', { name: 'Send a new code in 0:30' });
+    expect(wait).toHaveAttribute('aria-disabled', 'true');
+    expect(wait).not.toBeDisabled();
+    await userEvent.click(wait);
+    rerender(<SignInForm {...props({ ...code, onResend, code: '482913', verifying: true })} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Send a new code' }));
+    expect(onResend).toHaveBeenCalledOnce();
+  });
+
+  it('says why when Enter is pressed with a one-word name at the finish step', async () => {
+    const onFinish = vi.fn();
+    render(<Live mode="login" step="finish" email="amara@example.com" onFinish={onFinish} />);
+    await userEvent.type(screen.getByLabelText('Full name'), 'Amara{Enter}');
+    expect(onFinish).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent('Enter your first and last name.');
+  });
+
+  it('says why when Enter is pressed in the email with a one-word name at sign-up', async () => {
+    render(<Live email="amara@example.com" fullName="Amara" />);
+    await userEvent.type(screen.getByLabelText('Email'), '{Enter}');
+    expect(screen.getByRole('alert')).toHaveTextContent('Enter your first and last name.');
+  });
+
+  it('makes the form inert while the page redirects', () => {
+    const { container } = render(<SignInForm {...props({ ...code, redirecting: true })} />);
+    expect(container.querySelector('form')).toHaveAttribute('inert');
+  });
+
+  it('lets one way in run at a time, and holds the fields while sending', () => {
+    const filled = { email: 'amara@example.com', fullName: 'Amara Okafor' };
+    const { rerender } = render(<SignInForm {...props({ ...filled, sending: true })} />);
+    expect(screen.getByRole('button', { name: /Continue with Google/ })).toBeDisabled();
+    expect(screen.getByLabelText('Email')).toHaveAttribute('readonly');
+    expect(screen.getByLabelText('Full name')).toHaveAttribute('readonly');
+    rerender(<SignInForm {...props({ ...filled, googleBusy: true })} />);
+    expect(sendButton()).toBeDisabled();
+  });
+
+  it('ties the send error and the typo hint to the email field', () => {
+    render(
+      <SignInForm {...props({ mode: 'login', email: 'amara@gmial.com', startError: 'sendFailed' })} />,
+    );
+    const field = screen.getByLabelText('Email');
+    const ids = (field.getAttribute('aria-describedby') ?? '').split(' ');
+    expect(ids).toHaveLength(2);
+    const described = ids.map((id) => document.getElementById(id)?.textContent ?? '').join(' | ');
+    expect(described).toContain('Did you mean');
+    expect(described).toContain('We couldn’t send your code. Check your connection and try again.');
+  });
+
+  it('shows a server refusal of the name in place of the live rule', () => {
+    render(<SignInForm {...props({ fullName: 'Amara Okafor', nameError: 'Use letters, spaces, hyphens, apostrophes or full stops.' })} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('Use letters, spaces, hyphens');
+    expect(screen.getByLabelText('Full name')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('needs no code-step props to render the start step, and hides the role row without roleHref', () => {
+    render(
+      <SignInForm
+        mode="signup"
+        role="mentee"
+        step="start"
+        email=""
+        onEmailChange={() => {}}
+        fullName=""
+        onFullNameChange={() => {}}
+        onSendCode={() => {}}
+        onGoogle={() => {}}
+        switchHref="/login"
+      />,
+    );
+    expect(screen.queryByText(/Join as a mentor/)).not.toBeInTheDocument();
   });
 });

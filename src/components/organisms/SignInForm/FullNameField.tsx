@@ -9,19 +9,21 @@ type FullNameFieldProps = {
   onChange: (value: string) => void;
   /** A refusal from the server (a 422 on the name), already in our words. */
   serverError?: string;
-  disabled?: boolean;
+  /** The person tried to go on (Enter): say what is wrong even if they never left the field. */
+  reveal?: boolean;
+  readOnly?: boolean;
 };
 
 /**
  * One "Full name" field (`nameFields=one`). The rule is checked as they type,
- * but only said once they leave the field or press Create: an error while
+ * but only said once they leave the field or try to go on: an error while
  * someone is still typing their first name is noise.
  */
-export function FullNameField({ value, onChange, serverError, disabled }: FullNameFieldProps) {
+export function FullNameField({ value, onChange, serverError, reveal, readOnly }: FullNameFieldProps) {
   const [left, setLeft] = useState(false);
   const errorId = useId();
   const problem = checkFullName(value);
-  const message = serverError ?? (left && problem ? NAME_PROBLEM_COPY[problem] : null);
+  const message = serverError ?? ((left || reveal) && problem ? NAME_PROBLEM_COPY[problem] : null);
   return (
     <>
       <label className={styles.label}>
@@ -34,7 +36,7 @@ export function FullNameField({ value, onChange, serverError, disabled }: FullNa
           onBlur={() => setLeft(true)}
           invalid={!!message}
           aria-describedby={message ? errorId : undefined}
-          disabled={disabled}
+          readOnly={readOnly}
           className={styles.input}
         />
       </label>

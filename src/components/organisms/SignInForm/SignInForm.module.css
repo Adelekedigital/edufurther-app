@@ -163,7 +163,7 @@
   color: var(--blue-500);
 }
 
-.textButton:hover:not(:disabled) {
+.textButton:hover:not(:disabled):not([aria-disabled='true']) {
   color: var(--blue-700);
 }
 
@@ -173,7 +173,8 @@
   border-radius: var(--radius-xs);
 }
 
-.textButton:disabled {
+.textButton:disabled,
+.textButton[aria-disabled='true'] {
   cursor: default;
   color: var(--ink-600);
 }
@@ -247,5 +248,11 @@
 
   .switch a {
     position: relative;
+  }
+
+  /* The fix's 44px tap area would reach over the email field above it; the
+     row keeps a full gap below the field instead (ours, phones only). */
+  .typo {
+    margin-top: 0;
   }
 }

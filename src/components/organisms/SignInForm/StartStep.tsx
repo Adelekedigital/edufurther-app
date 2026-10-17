@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Input } from '@/components/atoms/Input/Input';
 import { GoogleButton } from '@/components/molecules/GoogleButton/GoogleButton';
@@ -21,6 +22,8 @@ export type StartStepProps = {
   fullName: string;
   onFullNameChange: (value: string) => void;
   nameError?: string;
+  /** Enter was pressed with a name that doesn't pass: say why. */
+  revealName?: boolean;
   /** "Email me a code" may be pressed: a valid email, and a valid name at sign-up. */
   canSend: boolean;
   sending?: boolean;
@@ -39,6 +42,7 @@ export function StartStep({
   fullName,
   onFullNameChange,
   nameError,
+  revealName,
   canSend,
   sending,
   error,
@@ -49,10 +53,22 @@ export function StartStep({
 }: StartStepProps) {
   const signup = mode === 'signup';
   const fix = emailTypoFix(email);
+  const typoId = useId();
+  const errorId = useId();
+  const describedBy = [fix && typoId, error && errorId].filter(Boolean).join(' ') || undefined;
+  // One way in at a time: while a code is being sent, Google waits, and the
+  // reverse; the fields hold still so the code step names the address used.
+  const busy = !!sending || !!googleBusy;
   return (
     <div className={styles.step}>
       {signup && (
-        <FullNameField value={fullName} onChange={onFullNameChange} serverError={nameError} />
+        <FullNameField
+          value={fullName}
+          onChange={onFullNameChange}
+          serverError={nameError}
+          reveal={revealName}
+          readOnly={busy}
+        />
       )}
       <label className={styles.label}>
         Email
@@ -63,11 +79,13 @@ export function StartStep({
           placeholder="you@example.com"
           value={email}
           onChange={(e) => onEmailChange(e.target.value)}
+          readOnly={busy}
+          aria-describedby={describedBy}
           className={styles.input}
         />
       </label>
       {fix && (
-        <p className={styles.typo}>
+        <p id={typoId} className={styles.typo}>
           Did you mean{' '}
           <button
             type="button"
@@ -79,12 +97,12 @@ export function StartStep({
           ?
         </p>
       )}
-      {error && <FieldError>{START_ERROR[error]}</FieldError>}
+      {error && <FieldError id={errorId}>{START_ERROR[error]}</FieldError>}
       <Button
         type="submit"
         size="large"
         fullWidth
-        disabled={!canSend || offline}
+        disabled={!canSend || offline || googleBusy}
         busy={sending}
       >
         {sending ? 'Sending code…' : 'Email me a code'}
@@ -93,7 +111,7 @@ export function StartStep({
       <GoogleButton
         onClick={onGoogle}
         busy={googleBusy}
-        disabled={offline}
+        disabled={offline || sending}
         lastUsed={lastUsed && !signup}
       />
       {signup && <LegalLine />}

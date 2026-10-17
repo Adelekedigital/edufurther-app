@@ -8,6 +8,8 @@ export type FinishStepProps = {
   fullName: string;
   onFullNameChange: (value: string) => void;
   nameError?: string;
+  /** Enter was pressed with a name that doesn't pass: say why. */
+  revealName?: boolean;
   finishing?: boolean;
 };
 
@@ -16,10 +18,22 @@ export type FinishStepProps = {
  * name and the account is set up. Also where a Google account with no family
  * name lands, once.
  */
-export function FinishStep({ fullName, onFullNameChange, nameError, finishing }: FinishStepProps) {
+export function FinishStep({
+  fullName,
+  onFullNameChange,
+  nameError,
+  revealName,
+  finishing,
+}: FinishStepProps) {
   return (
     <div className={styles.step}>
-      <FullNameField value={fullName} onChange={onFullNameChange} serverError={nameError} />
+      <FullNameField
+        value={fullName}
+        onChange={onFullNameChange}
+        serverError={nameError}
+        reveal={revealName}
+        readOnly={finishing}
+      />
       <Button
         type="submit"
         size="large"

@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Input } from '@/components/atoms/Input/Input';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
@@ -48,14 +48,25 @@ export function CodeStep({
   onUseDifferentEmail,
 }: CodeStepProps) {
   const problemId = useId();
+  const fieldRef = useRef<HTMLInputElement>(null);
   const locked = problem?.kind === 'locked';
   const expired = problem?.kind === 'expired';
   const wrong = problem?.kind === 'wrong' ? problem : null;
   const resentLine = `New code sent to ${sentTo}. Still nothing? Check your spam or Promotions folder.`;
-  // An expired code may be replaced at once; a lock waits it out.
-  const resendOff = locked || (!expired && resendIn > 0);
+  // An expired code may be replaced at once; a lock waits it out. Never while
+  // a check is out: a new code would make the one being checked stale.
+  const resendOff = locked || !!verifying || (!expired && resendIn > 0);
+
+  // A wrong code: back in the field with it selected, so typing replaces it.
+  useEffect(() => {
+    if (!wrong) return;
+    fieldRef.current?.focus();
+    fieldRef.current?.select();
+  }, [wrong]);
 
   const change = (raw: string) => {
+    // No maxLength on the field: a pasted "482 913" or "Code: 482913" must
+    // arrive whole, then lose everything that isn't a digit.
     const digits = raw.replace(/\D/g, '').slice(0, CODE_LENGTH);
     onCodeChange(digits);
     // Checks itself at six digits (paste or autofill included), once per entry.
@@ -67,13 +78,16 @@ export function CodeStep({
       <label className={styles.label}>
         6-digit code
         <Input
+          ref={fieldRef}
           name="code"
           inputMode="numeric"
           autoComplete="one-time-code"
-          maxLength={CODE_LENGTH}
           value={code}
           onChange={(e) => change(e.target.value)}
-          disabled={locked || expired || verifying}
+          // Read-only, not disabled, while checking: disabling the focused
+          // field drops focus (and closes the phone keyboard).
+          readOnly={verifying}
+          disabled={locked || expired}
           invalid={!!wrong}
           aria-describedby={problem ? problemId : undefined}
           className={cx(styles.input, styles.code)}
@@ -101,11 +115,17 @@ export function CodeStep({
       <LiveRegion message={resentCount > 0 ? { text: resentLine, id: resentCount } : null} />
       <p className={styles.resendRow}>
         The code expires in 10 minutes.
+        {/* aria-disabled, not disabled: a press starts the countdown, and a
+            button that disables itself under focus drops that focus. */}
         <button
           type="button"
           className={cx(styles.textButton, styles.xs)}
-          disabled={resendOff}
-          onClick={onResend}
+          aria-disabled={resendOff || undefined}
+          onClick={() => {
+            if (resendOff) return;
+            onResend();
+            fieldRef.current?.focus();
+          }}
         >
           {!expired && !locked && resendIn > 0
             ? `Send a new code in ${clock(resendIn)}`
