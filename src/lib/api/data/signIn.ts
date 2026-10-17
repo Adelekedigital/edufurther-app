@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { NAME_PROBLEM_COPY, tidyName } from '@/lib/utils/name';
+import { NAME_PROBLEM_COPY, splitFullName, tidyName } from '@/lib/utils/name';
 import { api } from './http';
 import { keys } from './keys';
 
@@ -63,9 +63,12 @@ const ONE_WORD = /first and a last name/i;
  */
 const PROXY_ERRORS = new Set([502, 503, 504]);
 
+/** A blip at the edge (a redeploy, a cold start) usually clears within a second. */
+export const NAME_RETRY_MS = 800;
+
 type NameBody = { full_name: string } | { first_name: string; last_name: string };
 
-/** The PATCH, or null when a proxy failed it: setting the same name again is safe. */
+/** The PATCH, or null when a proxy failed it: the backend sets the name, so sending it twice is safe. */
 async function patchName(userId: string, body: NameBody) {
   try {
     const res = await api.PATCH('/api/v1/users/{user_id}/profile', {
@@ -78,11 +81,12 @@ async function patchName(userId: string, body: NameBody) {
   }
 }
 
-/** Whether the account has a name now: a save a proxy failed may have landed. */
-async function nameLanded() {
+/** Whether /me now has the first name we sent: a save a proxy failed may have landed. */
+async function nameLanded(body: NameBody) {
+  const first = 'first_name' in body ? body.first_name : splitFullName(body.full_name).firstName;
   try {
     const { data } = await api.GET('/api/v1/me');
-    return !!data?.first_name;
+    return !!first && data?.first_name === first;
   } catch {
     return false;
   }
@@ -105,12 +109,16 @@ export function useSaveName() {
         'fullName' in name
           ? { full_name: tidyName(name.fullName) }
           : { first_name: tidyName(name.firstName), last_name: tidyName(name.lastName) };
-      const res = (await patchName(userId, body)) ?? (await patchName(userId, body));
+      const first = await patchName(userId, body);
+      let res = first;
       if (!res) {
-        if (await nameLanded()) return;
-        throw new NameSaveError(SAVE_FAILED);
+        await new Promise((r) => setTimeout(r, NAME_RETRY_MS));
+        res = await patchName(userId, body);
       }
-      if (res.response.ok) return;
+      if (res?.response.ok) return;
+      // The first try may have landed behind the proxy error, whatever the retry says.
+      if (!first && (await nameLanded(body))) return;
+      if (!res) throw new NameSaveError(SAVE_FAILED);
       const errors =
         (res.error as { errors?: { pointer?: string; message?: string }[] } | undefined)?.errors ??
         [];

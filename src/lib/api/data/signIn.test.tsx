@@ -192,6 +192,48 @@ describe('useSaveName (a proxy error after the save)', () => {
     expect(GET).not.toHaveBeenCalled();
   });
 
+  it('checks /me when the retry fails another way after a proxy error', async () => {
+    PATCH.mockResolvedValueOnce(res(503)).mockResolvedValueOnce(res(500));
+    GET.mockResolvedValueOnce(res(200, { id: 'u1', first_name: 'Amara' }));
+    const run = save();
+    await act(() => run());
+    expect(GET).toHaveBeenCalledWith('/api/v1/me');
+  });
+
+  it('does not count a different name on /me as this save', async () => {
+    PATCH.mockResolvedValue(res(503));
+    GET.mockResolvedValueOnce(res(200, { id: 'u1', first_name: 'Bola' }));
+    const run = save();
+    await act(async () => {
+      await expect(run()).rejects.toThrow('We couldn’t save your name. Try again.');
+    });
+  });
+
+  it('says "try again" when /me cannot be read either', async () => {
+    PATCH.mockResolvedValue(res(503));
+    GET.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    const run = save();
+    await act(async () => {
+      await expect(run()).rejects.toThrow('We couldn’t save your name. Try again.');
+    });
+  });
+
+  it('refreshes the viewer when /me says the name landed', async () => {
+    PATCH.mockResolvedValue(res(503));
+    GET.mockResolvedValueOnce(res(200, { id: 'u1', first_name: 'Amara' }));
+    const client = new QueryClient();
+    const invalidate = vi.spyOn(client, 'invalidateQueries');
+    const { result } = renderHook(() => useSaveName(), {
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      ),
+    });
+    await act(() =>
+      result.current.mutateAsync({ userId: 'u1', name: { fullName: 'Amara Okafor' } }),
+    );
+    expect(invalidate).toHaveBeenCalled();
+  });
+
   it('never retries the API’s own 500', async () => {
     PATCH.mockResolvedValue(res(500));
     const run = save();
