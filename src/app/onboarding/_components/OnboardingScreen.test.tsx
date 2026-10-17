@@ -98,6 +98,22 @@ describe('OnboardingScreen', () => {
     expect(screen.queryByRole('group')).toBeNull();
   });
 
+  it('shows the loading spinner only after 300 ms, so a quick load doesn’t flash', () => {
+    vi.useFakeTimers();
+    try {
+      topicsLoading = true;
+      const { container } = render(<OnboardingScreen />);
+      expect(screen.getByRole('status')).toHaveTextContent('Loading your answers');
+      expect(container.querySelector('main svg')).toBeNull();
+      act(() => vi.advanceTimersByTime(299));
+      expect(container.querySelector('main svg')).toBeNull();
+      act(() => vi.advanceTimersByTime(1));
+      expect(container.querySelector('main svg')).not.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('saves step 1 and moves focus to step 2’s heading', async () => {
     render(<OnboardingScreen />);
     const cont = screen.getByRole('button', { name: 'Continue' });
@@ -118,6 +134,8 @@ describe('OnboardingScreen', () => {
     saveError = { kind: 'offline', message: 'x' };
     rerender(<OnboardingScreen />);
     expect(screen.getByRole('alert')).toHaveTextContent('We couldn’t save your answers');
+    // The button stays enabled, so they can try again (design, 2026-10-17).
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
     expect(screen.getByRole('button', { name: /Find a program/ })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -139,6 +157,17 @@ describe('OnboardingScreen', () => {
     render(<OnboardingScreen />);
     expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Start over' })).toBeDisabled();
+  });
+
+  it('shows the spinner at once on "already set up", even right after a quick load', () => {
+    topicsLoading = true;
+    const { container, rerender } = render(<OnboardingScreen />);
+    expect(container.querySelector('main svg')).toBeNull();
+    topicsLoading = false;
+    state = { ...fresh, complete: true };
+    rerender(<OnboardingScreen />);
+    expect(screen.getByRole('status')).toHaveTextContent('You’re already set up');
+    expect(container.querySelector('main svg')).not.toBeNull();
   });
 
   it('greets an onboarded mentee, then goes Home after 1.2 s', () => {
