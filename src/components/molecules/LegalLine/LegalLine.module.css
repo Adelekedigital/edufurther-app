@@ -1,0 +1,11 @@
+/* Sign In.dc.html: p-xs, --lh-p, ink-600; links blue-500 semibold, hover blue-700. */
+.line {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+
+.line a {
+  font-weight: var(--weight-semibold);
+}

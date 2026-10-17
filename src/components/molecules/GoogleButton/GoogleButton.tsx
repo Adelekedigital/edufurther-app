@@ -1,5 +1,5 @@
-import { Button, type ButtonProps } from '@/components/atoms/Button/Button';
-import { forwardRef } from 'react';
+import { forwardRef, type ButtonHTMLAttributes } from 'react';
+import { cx } from '@/lib/utils/cx';
 import styles from './GoogleButton.module.css';
 
 /**
@@ -31,35 +31,43 @@ function GoogleMark() {
   );
 }
 
-/**
- * The shell's own props pass through — a caller needs `disabled` while another
- * form is submitting, `aria-describedby` to point at a failure notice, and a
- * ref once this sits in a modal that manages focus. What it does not get is
- * the look: variant, size and the label are this component.
- */
-type GoogleButtonProps = Omit<ButtonProps, 'children' | 'variant' | 'size' | 'icon' | 'iconPosition'>;
+type GoogleButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'type'> & {
+  /** Held from the press until the browser leaves for Google's consent screen. */
+  busy?: boolean;
+  /** This device last signed in with Google (Sign In.dc.html `lastUsed`, log-in only). */
+  lastUsed?: boolean;
+};
 
 /**
- * "Continue with Google" (an approved label in Google's branding guidelines).
- * Our outlined shell, not Google's drawn button: one filled button per view is
- * the CTA hierarchy, and on this screen that one is "Continue with email".
+ * "Continue with Google" (an approved label in Google's branding guidelines),
+ * drawn as Sign In.dc.html draws it: white, an ink-300 hairline, ink-900 label,
+ * 48px. Not the Button atom's outlined variant, whose blue values differ.
+ * `disabled` covers offline: the design dims it to half.
  */
 export const GoogleButton = forwardRef<HTMLButtonElement, GoogleButtonProps>(
-  function GoogleButton({ busy, fullWidth = true, ...rest }, ref) {
+  function GoogleButton({ busy, lastUsed, className, onClick, ...rest }, ref) {
     return (
-      <Button
-        ref={ref}
-        variant="secondary-outlined"
-        size="large"
-        fullWidth={fullWidth}
-        busy={busy}
+      <button
         {...rest}
+        ref={ref}
+        type="button"
+        className={cx(styles.button, lastUsed && !busy && styles.withBadge, className)}
+        // After ...rest, like the Button atom: busy wins whatever the caller passes.
+        aria-busy={busy || undefined}
+        // The whole name in one string: a name stitched from visible text and a
+        // punctuation-led .sr-only piece loses its separator (failure log #51).
+        aria-label={lastUsed && !busy ? 'Continue with Google, last used' : undefined}
+        // Not `disabled` while busy: that would drop focus mid-press.
+        onClick={busy ? undefined : onClick}
       >
-        <span className={styles.inner}>
-          <GoogleMark />
-          {busy ? 'Taking you to Google…' : 'Continue with Google'}
-        </span>
-      </Button>
+        <GoogleMark />
+        {busy ? 'Taking you to Google…' : 'Continue with Google'}
+        {lastUsed && !busy && (
+          <span className={styles.badge} aria-hidden>
+            Last used
+          </span>
+        )}
+      </button>
     );
   },
 );
