@@ -79,13 +79,19 @@ export type AboutProvenance = { drafted: boolean; promptVersion: string | null }
 /**
  * The About PATCH. Blank clears it (the server treats blank as null). With
  * provenance: true stamps the draft and its prompt version, false clears both
- * (PENDING BACKEND #8, lib/api/data/pending.ts).
+ * (PENDING BACKEND #8, lib/api/data/pending.ts). Still drafted but with no
+ * version (a draft saved earlier, untouched now) sends nothing, so what the
+ * server holds stays as it is.
  */
 export function aboutBody(text: string, provenance?: AboutProvenance) {
-  const pending: PendingAboutWrite | undefined = provenance && {
-    about_me_drafted: provenance.drafted,
-    about_me_prompt_version: provenance.drafted ? provenance.promptVersion : null,
-  };
+  const keep = provenance?.drafted && !provenance.promptVersion;
+  const pending: PendingAboutWrite | undefined =
+    provenance && !keep
+      ? {
+          about_me_drafted: provenance.drafted,
+          about_me_prompt_version: provenance.drafted ? provenance.promptVersion : null,
+        }
+      : undefined;
   return { about_me: text.trim() || null, ...pending };
 }
 

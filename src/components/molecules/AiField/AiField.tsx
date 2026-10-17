@@ -1,6 +1,13 @@
 'use client';
 
-import { forwardRef, useId, useState, type TextareaHTMLAttributes } from 'react';
+import {
+  forwardRef,
+  useId,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type TextareaHTMLAttributes,
+} from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Spinner } from '@/components/atoms/Spinner/Spinner';
 import { cx } from '@/lib/utils/cx';
@@ -31,6 +38,8 @@ type AiFieldProps = {
   /** The caller's own error, described by the box as well as the hint. */
   invalid?: boolean;
   describedBy?: string;
+  /** While an AI call runs: the form around it holds its Save. */
+  onBusyChange?: (busy: boolean) => void;
   textareaProps?: Pick<TextareaHTMLAttributes<HTMLTextAreaElement>, 'onKeyDown'>;
 };
 
@@ -43,6 +52,12 @@ const LABELS = {
   improving: 'Improving…',
   undo: 'Undo',
   badge: 'Drafted for you',
+  // Ours (the prototype's status line is always empty): heard, not shown.
+  drafted: 'Draft added. Undo to go back.',
+  improved: 'Improved. Undo to go back.',
+  restored: 'Your text is back.',
+  // Ours, shown: an improve that changed nothing.
+  unchanged: 'No changes to suggest.',
 };
 
 /**
@@ -67,34 +82,67 @@ export const AiField = forwardRef<HTMLTextAreaElement, AiFieldProps>(function Ai
     invalid,
     describedBy,
     textareaProps,
+    onBusyChange,
   },
   ref,
 ) {
   const id = useId();
   const hintId = `${id}-hint`;
+  const badgeId = `${id}-badge`;
+  const box = useRef<HTMLTextAreaElement>(null);
+  useImperativeHandle(ref, () => box.current!, []);
   // The draft as it arrived: typing back to it still counts as untouched.
   const [base, setBase] = useState<string | null>(drafted ? value : null);
-  const [busy, setBusy] = useState<AssistMode | null>(null);
+  const [busy, setBusyState] = useState<AssistMode | null>(null);
   const [prev, setPrev] = useState<string | null>(null);
   const [status, setStatus] = useState('');
+  // Heard only: the outcome of an AI change, for screen readers.
+  const [said, setSaid] = useState('');
+  // A value the parent set from outside (a refetch, a reset), not one this
+  // field emitted: the draft, Undo and the status belong to the old text.
+  const [own, setOwn] = useState(value);
+  if (value !== own) {
+    setOwn(value);
+    setBase(drafted ? value : null);
+    setPrev(null);
+    setStatus('');
+  }
 
   const isDraft = (text: string, b: string | null) =>
     b !== null && norm(text) !== '' && norm(text) === norm(b);
   const ai = drafted && isDraft(value, base);
   const empty = !value.trim();
 
-  const emit = (text: string, b: string | null) => onChange(text, { drafted: isDraft(text, b) });
+  const emit = (text: string, b: string | null) => {
+    setOwn(text);
+    onChange(text, { drafted: isDraft(text, b) });
+  };
+  const setBusy = (b: AssistMode | null) => {
+    setBusyState(b);
+    onBusyChange?.(b !== null);
+  };
+  // The button pressed may be gone (the draft hides it, Undo hides itself):
+  // focus goes back to the text, never to the page.
+  const refocus = () => requestAnimationFrame(() => box.current?.focus());
 
   const run = async () => {
     if (!onAssist || busy) return;
     const mode: AssistMode = empty ? 'draft' : 'improve';
     setBusy(mode);
     setStatus('');
+    setSaid('');
     try {
       const out = (await onAssist(mode, value)).slice(0, max);
+      if (mode === 'improve' && norm(out) === norm(value)) {
+        // Nothing changed: their words stay theirs, not a draft.
+        setStatus(LABELS.unchanged);
+        return;
+      }
       setPrev(value);
       setBase(out);
       emit(out, out);
+      setSaid(mode === 'draft' ? LABELS.drafted : LABELS.improved);
+      refocus();
     } catch (e) {
       // The text is left exactly as it was.
       setStatus(e instanceof Error && e.message ? e.message : 'That didn’t work. Try again.');
@@ -110,6 +158,8 @@ export const AiField = forwardRef<HTMLTextAreaElement, AiFieldProps>(function Ai
     setBase(null);
     setStatus('');
     emit(back, null);
+    setSaid(LABELS.restored);
+    refocus();
   };
 
   const showAction = !!onAssist && (!ai || empty || !!busy);
@@ -121,11 +171,15 @@ export const AiField = forwardRef<HTMLTextAreaElement, AiFieldProps>(function Ai
         <label htmlFor={id} className={styles.label}>
           {label}
         </label>
-        {ai && !busy && !empty && <span className={styles.badge}>{LABELS.badge}</span>}
+        {ai && !busy && !empty && (
+          <span id={badgeId} className={styles.badge}>
+            {LABELS.badge}
+          </span>
+        )}
       </span>
       <div className={cx(styles.box, invalid && styles.invalid)}>
         <textarea
-          ref={ref}
+          ref={box}
           id={id}
           rows={rows}
           maxLength={max}
@@ -134,7 +188,10 @@ export const AiField = forwardRef<HTMLTextAreaElement, AiFieldProps>(function Ai
           readOnly={!!busy}
           aria-busy={!!busy || undefined}
           aria-invalid={invalid || undefined}
-          aria-describedby={[describedBy, hintId].filter(Boolean).join(' ')}
+          // The badge too: "still an AI draft" is what the provenance rule is about.
+          aria-describedby={[describedBy, ai && !busy && !empty ? badgeId : null, hintId]
+            .filter(Boolean)
+            .join(' ')}
           className={cx(styles.text, busy && styles.textBusy)}
           onChange={(e) => {
             setStatus('');
@@ -146,6 +203,9 @@ export const AiField = forwardRef<HTMLTextAreaElement, AiFieldProps>(function Ai
           {/* Always in the DOM, so a failure is heard. */}
           <span aria-live="polite" className={styles.status}>
             {status}
+          </span>
+          <span aria-live="polite" className="sr-only">
+            {said}
           </span>
           <div className={styles.actions}>
             {canUndo && (

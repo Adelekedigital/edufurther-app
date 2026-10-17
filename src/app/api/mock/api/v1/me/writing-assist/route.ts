@@ -3,7 +3,7 @@ import { pendingOk, problem } from '@/lib/api/mock/respond';
 
 // Both write about_me: 1,500 (owner, 2026-10-17).
 const MAX = { mentor_about: 1500, mentee_bio: 1500 } as const;
-let used = 0;
+let used = { day: '', n: 0 };
 
 /**
  * PENDING BACKEND (#7, PRD B7): POST /api/v1/me/writing-assist. Never saves.
@@ -20,7 +20,9 @@ export async function POST(req: Request) {
   const field = body?.field as keyof typeof MAX | undefined;
   if (!field || !(field in MAX) || (body?.mode !== 'draft' && body?.mode !== 'improve'))
     return problem(422, { title: 'Validation failed' });
-  if (++used > 10)
+  const day = new Date().toISOString().slice(0, 10);
+  if (used.day !== day) used = { day, n: 0 };
+  if (++used.n > 10)
     return problem(429, { type: '/problems/writing-assist-limit', title: 'Too many requests' });
   await new Promise((r) => setTimeout(r, 900));
   const text =

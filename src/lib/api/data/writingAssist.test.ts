@@ -19,14 +19,18 @@ describe('requestAssist', () => {
       text: 'Drafted.',
       promptVersion: 'v1',
     });
-    expect(post).toHaveBeenLastCalledWith('/api/v1/me/writing-assist', {
-      body: { field: 'mentor_about', mode: 'draft' },
-    });
+    expect(post).toHaveBeenLastCalledWith(
+      '/api/v1/me/writing-assist',
+      expect.objectContaining({ body: { field: 'mentor_about', mode: 'draft' } }),
+    );
+    // Bounded: a hung call ends in our copy, not an endless spinner.
+    expect(post.mock.lastCall![1].signal).toBeInstanceOf(AbortSignal);
     post.mockResolvedValueOnce(res(200, { text: 'Better.', prompt_version: 'v1' }));
     await requestAssist('mentor_about', 'improve', 'better');
-    expect(post).toHaveBeenLastCalledWith('/api/v1/me/writing-assist', {
-      body: { field: 'mentor_about', mode: 'improve', text: 'better' },
-    });
+    expect(post).toHaveBeenLastCalledWith(
+      '/api/v1/me/writing-assist',
+      expect.objectContaining({ body: { field: 'mentor_about', mode: 'improve', text: 'better' } }),
+    );
   });
 
   it('words the limit and the outage in our copy', async () => {
@@ -52,5 +56,12 @@ describe('aboutBody', () => {
       about_me_prompt_version: null,
     });
     expect(aboutBody('  ')).toEqual({ about_me: null });
+  });
+
+  it('leaves a draft saved earlier alone when it is saved again untouched', () => {
+    // Drafted, but no AI run this time, so no version: the stored stamp and version stay.
+    expect(aboutBody('A draft.', { drafted: true, promptVersion: null })).toEqual({
+      about_me: 'A draft.',
+    });
   });
 });

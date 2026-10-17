@@ -93,4 +93,14 @@ describe('AboutEditor', () => {
     setup();
     expect(screen.queryByRole('button', { name: /Write a draft|Improve/ })).toBeNull();
   });
+
+  it('holds Save while an AI call runs', async () => {
+    const assist = vi.fn(() => new Promise<never>(() => {}));
+    const { user, onSave } = setup({ assist });
+    await user.click(screen.getByRole('button', { name: 'Improve' }));
+    const save = screen.getByRole('button', { name: 'Save' });
+    expect(save).toHaveAttribute('aria-disabled', 'true');
+    await user.click(save);
+    expect(onSave).not.toHaveBeenCalled();
+  });
 });

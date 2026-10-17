@@ -93,7 +93,7 @@ describe('AiField', () => {
     expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
   });
 
-  it('keeps an AI answer within the limit, and counts as drawn', async () => {
+  it('keeps an AI answer within the limit, and counts it', async () => {
     const user = userEvent.setup();
     render(<Harness onAssist={vi.fn().mockResolvedValue('x'.repeat(60))} />);
     await user.click(screen.getByRole('button', { name: 'Write a draft' }));
@@ -105,5 +105,40 @@ describe('AiField', () => {
   it('is a plain field with no assist', () => {
     render(<Harness initial="text" />);
     expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('puts focus back on the text after a draft and after Undo, and says what happened', async () => {
+    const user = userEvent.setup();
+    render(<Harness onAssist={vi.fn().mockResolvedValue('A draft.')} />);
+    await user.click(screen.getByRole('button', { name: 'Write a draft' }));
+    await vi.waitFor(() => expect(box()).toHaveFocus());
+    expect(screen.getByText('Draft added. Undo to go back.')).toHaveClass('sr-only');
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    await vi.waitFor(() => expect(box()).toHaveFocus());
+    expect(box()).toHaveValue('');
+  });
+
+  it('leaves their words as theirs when Improve changes nothing', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial="Tidy." onAssist={vi.fn().mockResolvedValue('Tidy.')} />);
+    await user.click(screen.getByRole('button', { name: 'Improve' }));
+    expect(await screen.findByText('No changes to suggest.')).toBeInTheDocument();
+    expect(screen.queryByText('Drafted for you')).toBeNull();
+    expect(screen.getByTestId('drafted')).toHaveTextContent('false');
+  });
+
+  it('tells assistive tech the text is still an AI draft', () => {
+    render(<Harness initial="A draft." drafted onAssist={vi.fn()} />);
+    expect(box()).toHaveAccessibleDescription(expect.stringContaining('Drafted for you'));
+  });
+
+  it('forgets the old draft and Undo when the parent replaces the text', () => {
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <AiField label="About" value="A draft." drafted onChange={onChange} max={40} />,
+    );
+    expect(screen.getByText('Drafted for you')).toBeInTheDocument();
+    rerender(<AiField label="About" value="Someone else’s." onChange={onChange} max={40} />);
+    expect(screen.queryByText('Drafted for you')).toBeNull();
   });
 });

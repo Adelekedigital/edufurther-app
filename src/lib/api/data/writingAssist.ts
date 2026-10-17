@@ -13,6 +13,8 @@ export const ASSIST_COPY = {
 
 export type AssistResult = { text: string; promptVersion: string };
 
+export const ASSIST_TIMEOUT_MS = 25_000;
+
 /** One call, its text back; a failure rejects with an Error whose message is our copy. */
 export async function requestAssist(
   field: AssistField,
@@ -21,7 +23,11 @@ export async function requestAssist(
 ): Promise<AssistResult> {
   try {
     const body: WireAssistRequest = mode === 'improve' ? { field, mode, text } : { field, mode };
-    const { data, error, response } = await untyped.POST('/api/v1/me/writing-assist', { body });
+    const { data, error, response } = await untyped.POST('/api/v1/me/writing-assist', {
+      body,
+      // The router gives up at 20 s (PRD B7); past that, say so rather than spin.
+      signal: AbortSignal.timeout(ASSIST_TIMEOUT_MS),
+    });
     if (!response.ok) throw apiError(response.status, error, response);
     const r = data as WireAssist;
     return { text: r.text, promptVersion: r.prompt_version };

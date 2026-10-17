@@ -43,6 +43,8 @@ export function AboutEditor({
 }: AboutEditorProps) {
   const [text, setText] = useState(initial);
   const [drafted, setDrafted] = useState(initialDrafted);
+  // An AI call is running: Save waits (the box is read-only meanwhile).
+  const [assisting, setAssisting] = useState(false);
   // The prompt behind the text in the box, kept for provenance (PRD B7).
   const promptVersion = useRef<string | null>(null);
   // Leaving with edits asks first (any in-app link, Logout, the browser's
@@ -63,7 +65,8 @@ export function AboutEditor({
   }, []);
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!saving) onSave(text, { drafted, promptVersion: drafted ? promptVersion.current : null });
+    if (!saving && !assisting)
+      onSave(text, { drafted, promptVersion: drafted ? promptVersion.current : null });
   };
   return (
     <form
@@ -98,6 +101,7 @@ export function AboutEditor({
         }
         invalid={!!error}
         describedBy={error ? errorId : undefined}
+        onBusyChange={setAssisting}
       />
       {error && (
         <p id={errorId} role="alert" className={styles.error}>
@@ -108,7 +112,7 @@ export function AboutEditor({
         <Button
           type="submit"
           size="medium"
-          aria-disabled={saving || undefined}
+          aria-disabled={saving || assisting || undefined}
           aria-busy={saving || undefined}
         >
           {saving ? 'Saving…' : 'Save'}
