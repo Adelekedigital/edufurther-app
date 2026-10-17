@@ -190,11 +190,17 @@ describe('useSignInFlow — code problems', () => {
     expect(result.current.form.verifying).toBe(false);
   });
 
-  it('says the code could not be sent', async () => {
-    send.mockResolvedValueOnce({ ok: false, reason: 'rateLimited' });
+  it.each([
+    // The server refused it (e.g. Supabase couldn't send the email) or rate-limited it:
+    // "check your connection" would send them looking for the wrong problem.
+    ['unknown', 'sendUnavailable'],
+    ['rateLimited', 'sendUnavailable'],
+    ['offline', 'sendFailed'],
+  ])('says the code could not be sent (%s → %s)', async (reason, shown) => {
+    send.mockResolvedValueOnce({ ok: false, reason });
     const { result } = await toCode();
     expect(result.current.form.step).toBe('start');
-    expect(result.current.form.startError).toBe('sendFailed');
+    expect(result.current.form.startError).toBe(shown);
   });
 
   it('resends after the wait, and says so', async () => {

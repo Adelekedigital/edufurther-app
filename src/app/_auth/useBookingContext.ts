@@ -25,10 +25,11 @@ export function useBookingContext(next: string | null): BookingContext | null {
   const profile = useMentorProfile(handle);
   if (!handle || !profile.data) return null;
   const { mentor, names } = profile.data;
+  const first = names.first.trim();
   const last = names.last.trim();
   return {
-    mentorName: last ? `${names.first} ${last[0]!.toUpperCase()}.` : names.first,
-    firstName: names.first,
+    mentorName: last ? `${first} ${last[0]!.toUpperCase()}.` : first,
+    firstName: first,
     initials: mentor.initials,
     tone: mentor.tone,
     photoUrl: mentor.photoUrl,

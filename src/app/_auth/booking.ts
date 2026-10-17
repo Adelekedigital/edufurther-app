@@ -56,6 +56,13 @@ export function bookingMentorHandle(next: string | null): string | null {
   const booking = bookingFromNext(next);
   if (booking) return booking.handle;
   if (!isOnboardingNext(next)) return null;
-  const handle = sameSite(next)?.searchParams.get('for') ?? null;
-  return handle && TOKEN.test(handle) ? handle : null;
+  // A whole booking only (for, sid and time), like the reopen link: a bare
+  // `for` names a mentor with nothing booked.
+  const q = sameSite(next)?.searchParams;
+  const handle = q?.get('for') ?? null;
+  const sid = q?.get('sid') ?? null;
+  const time = q?.get('time') ?? null;
+  const whole =
+    !!handle && TOKEN.test(handle) && !!sid && TOKEN.test(sid) && !!time && ISO_INSTANT.test(time);
+  return whole ? handle : null;
 }

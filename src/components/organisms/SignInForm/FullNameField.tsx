@@ -19,7 +19,13 @@ type FullNameFieldProps = {
  * but only said once they leave the field or try to go on: an error while
  * someone is still typing their first name is noise.
  */
-export function FullNameField({ value, onChange, serverError, reveal, readOnly }: FullNameFieldProps) {
+export function FullNameField({
+  value,
+  onChange,
+  serverError,
+  reveal,
+  readOnly,
+}: FullNameFieldProps) {
   const [left, setLeft] = useState(false);
   const errorId = useId();
   const problem = checkFullName(value);

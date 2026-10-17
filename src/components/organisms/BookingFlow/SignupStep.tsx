@@ -15,6 +15,7 @@ import styles from './SignupStep.module.css';
 
 const ERROR: Record<NonNullable<GuestSignIn['error']>, string> = {
   sendFailed: 'We couldn’t send your code. Check your connection and try again.',
+  sendUnavailable: 'We couldn’t send your code right now. Try again in a few minutes.',
   googleError: 'Google sign-in didn’t finish. Try again, or use your email.',
 };
 

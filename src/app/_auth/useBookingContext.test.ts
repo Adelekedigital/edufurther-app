@@ -33,7 +33,9 @@ describe('useBookingContext', () => {
 
   it('reads an onboarding link too', () => {
     profile.mockReturnValue(loaded('Gbenga', 'eze'));
-    const { result } = renderHook(() => useBookingContext('/onboarding?for=gbenga&sid=st1'));
+    const { result } = renderHook(() =>
+      useBookingContext('/onboarding?for=gbenga&sid=st1&time=2026-10-20T09:00:00Z'),
+    );
     expect(result.current?.mentorName).toBe('Gbenga E.');
   });
 
@@ -45,5 +47,13 @@ describe('useBookingContext', () => {
       renderHook(() => useBookingContext('/mentors/gbenga?book=st1&at=2026-10-20T09:00:00Z')).result
         .current,
     ).toBeNull();
+  });
+
+  it('names a mentor with no last name by their first name, trimmed', () => {
+    profile.mockReturnValue(loaded(' Gbenga ', ''));
+    const { result } = renderHook(() =>
+      useBookingContext('/mentors/gbenga?book=st1&at=2026-10-20T09:00:00Z'),
+    );
+    expect(result.current).toMatchObject({ mentorName: 'Gbenga', firstName: 'Gbenga' });
   });
 });

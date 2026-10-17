@@ -42,7 +42,7 @@ export type OutcomeInput = {
   googleJustLinked: boolean;
   /** A checked return path (safeReturnTo), or null. */
   next: string | null;
-  /** The mentor a booking `next` is with ("Gbenga E."), once known. */
+  /** The first name of the mentor a booking `next` is with ("Gbenga"), once known. */
   bookingWith?: string | null;
 };
 
@@ -91,8 +91,9 @@ export function signInOutcome(o: OutcomeInput): Outcome {
 
   const home = accountHome(o);
   const href = o.next ?? home;
+  // Known to be a booking: the reopen link, or a mentor the page named.
   const where = o.next
-    ? bookingFromNext(o.next)
+    ? bookingFromNext(o.next) || o.bookingWith
       ? toBooking
       : back
     : home === '/dashboard'

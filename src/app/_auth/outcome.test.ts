@@ -225,4 +225,11 @@ describe('signInOutcome — naming the mentor', () => {
       out({ ...base, isNew: true, mode: 'signup', next: reopen, bookingWith: 'Gbenga' }),
     ).toMatchObject({ body: 'Next, a few quick questions, then back to your booking.' });
   });
+
+  it('says "your booking" for any next the page named a mentor for', async () => {
+    const out = await load(false);
+    expect(
+      out({ ...base, next: '/onboarding?for=gbenga&sid=st1', bookingWith: 'Gbenga' }),
+    ).toMatchObject({ body: 'Taking you back to your booking with Gbenga…' });
+  });
 });

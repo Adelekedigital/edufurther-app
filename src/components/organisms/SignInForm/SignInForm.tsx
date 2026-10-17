@@ -1,6 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Icon } from '@/components/atoms/Icon/Icon';
@@ -90,9 +97,11 @@ function heading(p: SignInFormProps): { title: string; sub?: string } {
       sub: `There’s no EduFurther account for ${p.email} yet. Add your name and we’ll set one up.`,
     };
   }
-  if (p.step === 'code') return { title: 'Check your email', sub: `We sent a 6-digit code to ${p.email}.` };
+  if (p.step === 'code')
+    return { title: 'Check your email', sub: `We sent a 6-digit code to ${p.email}.` };
   // Sign-up has no subline (`signupSub=hide`, the saved default).
-  if (p.mode === 'signup') return { title: p.role === 'mentor' ? 'Apply to mentor' : 'Create your free account' };
+  if (p.mode === 'signup')
+    return { title: p.role === 'mentor' ? 'Apply to mentor' : 'Create your free account' };
   return { title: 'Log in', sub: 'Welcome back. Pick up where you left off.' };
 }
 
@@ -217,7 +226,9 @@ export function SignInForm(p: SignInFormProps) {
           finishing={p.finishing}
         />
       )}
-      {step === 'suspended' && <SuspendedStep onUseDifferentEmail={p.onUseDifferentEmail ?? noop} />}
+      {step === 'suspended' && (
+        <SuspendedStep onUseDifferentEmail={p.onUseDifferentEmail ?? noop} />
+      )}
 
       {step === 'start' && !redirecting && (
         <p className={styles.switch}>

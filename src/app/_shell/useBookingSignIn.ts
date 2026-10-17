@@ -102,7 +102,8 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
       setError(undefined);
       void auth.send().then((sent) => {
         if (sent === 'sent') setStage('code');
-        else if (sent === 'failed') setError('sendFailed');
+        else if (sent === 'offline') setError('sendFailed');
+        else if (sent === 'failed') setError('sendUnavailable');
       });
     },
     onGoogle: (pick) => {

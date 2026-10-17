@@ -40,7 +40,7 @@ export type SignInFlowOptions = {
   role: SignInRole;
   /** A checked return path (safeReturnTo), or null. */
   next: string | null;
-  /** The mentor a booking `next` is with, for the toast ("Gbenga E."). */
+  /** The first name of the mentor a booking `next` is with, for the toast ("Gbenga"). */
   bookingWith?: string | null;
   /** Back from Google with a session: finish the sign-in here. */
   googleReturn: boolean;
@@ -262,7 +262,8 @@ export function useSignInFlow({
     setStartError(undefined);
     const sent = await auth.send();
     if (sent === 'sent') setStep('code');
-    else if (sent === 'failed') setStartError('sendFailed');
+    else if (sent === 'offline') setStartError('sendFailed');
+    else if (sent === 'failed') setStartError('sendUnavailable');
   };
 
   const onFinish = async () => {

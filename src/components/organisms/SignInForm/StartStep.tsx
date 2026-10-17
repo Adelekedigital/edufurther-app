@@ -12,6 +12,7 @@ import styles from './SignInForm.module.css';
 
 const START_ERROR: Record<StartError, string> = {
   sendFailed: 'We couldn’t send your code. Check your connection and try again.',
+  sendUnavailable: 'We couldn’t send your code right now. Try again in a few minutes.',
   googleError: 'Google sign-in didn’t finish. Try again, or use your email.',
 };
 

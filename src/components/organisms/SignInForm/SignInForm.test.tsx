@@ -50,7 +50,9 @@ const sendButton = () => screen.getByRole('button', { name: 'Email me a code' })
 describe('SignInForm — start', () => {
   it('signs up a mentee: Full name above Email, legal line, both switches, no subline', () => {
     render(<SignInForm {...props()} />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Create your free account' })).toBeVisible();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Create your free account' }),
+    ).toBeVisible();
     const name = screen.getByLabelText('Full name');
     const email = screen.getByLabelText('Email');
     expect(name.compareDocumentPosition(email) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -67,7 +69,10 @@ describe('SignInForm — start', () => {
     render(<SignInForm {...props({ role: 'mentor', roleHref: '/signup' })} />);
     expect(screen.getByText('For mentors')).toBeVisible();
     expect(screen.getByRole('heading', { name: 'Apply to mentor' })).toBeVisible();
-    expect(screen.getByRole('link', { name: /Continue as a mentee/ })).toHaveAttribute('href', '/signup');
+    expect(screen.getByRole('link', { name: /Continue as a mentee/ })).toHaveAttribute(
+      'href',
+      '/signup',
+    );
   });
 
   it('logs in with no name, no legal line and no role switch', () => {
@@ -126,7 +131,9 @@ describe('SignInForm — start', () => {
     );
     const regions = screen.getAllByRole('status');
     sendButton().focus();
-    rerender(<SignInForm {...props({ mode: 'login', email: 'amara@example.com', offline: true })} />);
+    rerender(
+      <SignInForm {...props({ mode: 'login', email: 'amara@example.com', offline: true })} />,
+    );
     expect(regions.some((r) => /You’re offline/.test(r.textContent ?? ''))).toBe(true);
     expect(sendButton()).not.toBeDisabled();
     // Held, not disabled: the focused button keeps focus when the connection drops.
@@ -141,7 +148,11 @@ describe('SignInForm — start', () => {
   it('keeps what was typed when Google sign-in fails', () => {
     render(
       <SignInForm
-        {...props({ email: 'amara@example.com', fullName: 'Amara Okafor', startError: 'googleError' })}
+        {...props({
+          email: 'amara@example.com',
+          fullName: 'Amara Okafor',
+          startError: 'googleError',
+        })}
       />,
     );
     expect(screen.getByRole('alert')).toHaveTextContent('Google sign-in didn’t finish.');
@@ -167,11 +178,15 @@ describe('SignInForm — code', () => {
 
   it('counts the tries left', () => {
     const { rerender } = render(
-      <SignInForm {...props({ ...code, code: '111111', codeProblem: { kind: 'wrong', triesLeft: 3 } })} />,
+      <SignInForm
+        {...props({ ...code, code: '111111', codeProblem: { kind: 'wrong', triesLeft: 3 } })}
+      />,
     );
     expect(screen.getByRole('alert')).toHaveTextContent('That code didn’t work. 3 tries left.');
     rerender(
-      <SignInForm {...props({ ...code, code: '111111', codeProblem: { kind: 'wrong', triesLeft: 1 } })} />,
+      <SignInForm
+        {...props({ ...code, code: '111111', codeProblem: { kind: 'wrong', triesLeft: 1 } })}
+      />,
     );
     expect(screen.getByRole('alert')).toHaveTextContent('1 try left.');
   });
@@ -185,7 +200,9 @@ describe('SignInForm — code', () => {
   });
 
   it('offers a new code at once when the code has expired, and stops Verify', () => {
-    render(<SignInForm {...props({ ...code, code: '111111', codeProblem: { kind: 'expired' } })} />);
+    render(
+      <SignInForm {...props({ ...code, code: '111111', codeProblem: { kind: 'expired' } })} />,
+    );
     expect(screen.getByRole('alert')).toHaveTextContent('This code has expired.');
     expect(screen.getByRole('button', { name: 'Send a new code' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Verify' })).toBeDisabled();
@@ -236,7 +253,9 @@ describe('SignInForm — finish and suspended', () => {
     const onFinish = vi.fn();
     render(<Live mode="login" step="finish" email="amara@example.com" onFinish={onFinish} />);
     expect(screen.getByRole('heading', { name: 'Finish creating your account' })).toBeVisible();
-    expect(screen.getByText(/There’s no EduFurther account for amara@example.com yet/)).toBeVisible();
+    expect(
+      screen.getByText(/There’s no EduFurther account for amara@example.com yet/),
+    ).toBeVisible();
     expect(screen.getByRole('button', { name: 'Create account' })).toBeDisabled();
     expect(screen.getByText(/By continuing/)).toBeVisible();
     await userEvent.type(screen.getByLabelText('Full name'), 'Amara Okafor{Enter}');
@@ -244,7 +263,9 @@ describe('SignInForm — finish and suspended', () => {
   });
 
   it('offers support by email when the account is suspended', () => {
-    render(<SignInForm {...props({ mode: 'login', step: 'suspended', email: 'amara@example.com' })} />);
+    render(
+      <SignInForm {...props({ mode: 'login', step: 'suspended', email: 'amara@example.com' })} />,
+    );
     expect(screen.getByRole('heading', { name: 'We can’t log you in' })).toBeVisible();
     expect(screen.getByRole('link', { name: 'Contact support' })).toHaveAttribute(
       'href',
@@ -286,9 +307,13 @@ describe('SignInForm — review fixes', () => {
   });
 
   it('puts focus back in the field, code selected, after a wrong code', () => {
-    const { rerender } = render(<SignInForm {...props({ ...code, code: '482913', verifying: true })} />);
+    const { rerender } = render(
+      <SignInForm {...props({ ...code, code: '482913', verifying: true })} />,
+    );
     rerender(
-      <SignInForm {...props({ ...code, code: '482913', codeProblem: { kind: 'wrong', triesLeft: 4 } })} />,
+      <SignInForm
+        {...props({ ...code, code: '482913', codeProblem: { kind: 'wrong', triesLeft: 4 } })}
+      />,
     );
     const field = screen.getByLabelText<HTMLInputElement>('6-digit code');
     expect(field).toHaveFocus();
@@ -347,7 +372,9 @@ describe('SignInForm — review fixes', () => {
 
   it('ties the send error and the typo hint to the email field', () => {
     render(
-      <SignInForm {...props({ mode: 'login', email: 'amara@gmial.com', startError: 'sendFailed' })} />,
+      <SignInForm
+        {...props({ mode: 'login', email: 'amara@gmial.com', startError: 'sendFailed' })}
+      />,
     );
     const field = screen.getByLabelText('Email');
     const ids = (field.getAttribute('aria-describedby') ?? '').split(' ');
@@ -358,7 +385,14 @@ describe('SignInForm — review fixes', () => {
   });
 
   it('shows a server refusal of the name in place of the live rule', () => {
-    render(<SignInForm {...props({ fullName: 'Amara Okafor', nameError: 'Use letters, spaces, hyphens, apostrophes or full stops.' })} />);
+    render(
+      <SignInForm
+        {...props({
+          fullName: 'Amara Okafor',
+          nameError: 'Use letters, spaces, hyphens, apostrophes or full stops.',
+        })}
+      />,
+    );
     expect(screen.getByRole('alert')).toHaveTextContent('Use letters, spaces, hyphens');
     expect(screen.getByLabelText('Full name')).toHaveAttribute('aria-invalid', 'true');
   });
@@ -382,7 +416,9 @@ describe('SignInForm — review fixes', () => {
   });
 
   it('keeps focus on the send button when the connection returns with the email still unfinished', () => {
-    const { rerender } = render(<SignInForm {...props({ mode: 'login', email: 'amara@', offline: true })} />);
+    const { rerender } = render(
+      <SignInForm {...props({ mode: 'login', email: 'amara@', offline: true })} />,
+    );
     sendButton().focus();
     rerender(<SignInForm {...props({ mode: 'login', email: 'amara@' })} />);
     expect(sendButton()).toHaveFocus();
@@ -408,5 +444,15 @@ describe('SignInForm — review fixes', () => {
     render(<SignInForm {...props({ ...code, codeProblem: { kind: 'resendFailed' } })} />);
     expect(screen.getByRole('alert')).toHaveTextContent('We couldn’t send a new code.');
     expect(screen.getByLabelText('6-digit code')).toBeEnabled();
+  });
+
+  it('tells a server refusal from a lost connection', () => {
+    render(
+      <SignInForm {...props({ mode: 'login', email: 'a@b.co', startError: 'sendUnavailable' })} />,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'We couldn’t send your code right now. Try again in a few minutes.',
+    );
+    expect(screen.queryByText(/Check your connection/)).not.toBeInTheDocument();
   });
 });

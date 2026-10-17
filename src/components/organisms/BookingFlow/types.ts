@@ -1,4 +1,4 @@
-import type { CodeProblem } from '@/components/organisms/SignInForm/types';
+import type { CodeProblem, StartError } from '@/components/organisms/SignInForm/types';
 
 /** BookingModal.dc.html `showFirstReasons`: one reason a new mentor is worth booking. */
 export type FirstReason = {
@@ -24,8 +24,8 @@ export type GuestSignIn = {
   email: string;
   onEmailChange: (value: string) => void;
   sending: boolean;
-  /** The code couldn't be sent, or Google didn't finish. */
-  error?: 'sendFailed' | 'googleError';
+  /** The code couldn't be sent (offline, or refused by the server), or Google didn't finish. */
+  error?: StartError;
   googleBusy: boolean;
   onSendCode: () => void;
   onGoogle: (pick: GuestPick) => void;

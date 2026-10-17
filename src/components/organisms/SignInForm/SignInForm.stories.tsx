@@ -66,6 +66,8 @@ export const LogIn: Story = {
 export const LogInLastUsedGoogle: Story = { args: { mode: 'login', lastUsed: true } };
 export const Sending: Story = { args: { ...filled, sending: true } };
 export const SendFailed: Story = { args: { ...filled, startError: 'sendFailed' } };
+/** The server refused or rate-limited the send (not a connection problem). */
+export const SendUnavailable: Story = { args: { ...filled, startError: 'sendUnavailable' } };
 export const GoogleError: Story = { args: { ...filled, startError: 'googleError' } };
 export const EmailTypo: Story = { args: { fullName: 'Amara Okafor', email: 'amara@gmial.com' } };
 export const NameRefused: Story = {

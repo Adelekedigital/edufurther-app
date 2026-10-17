@@ -118,11 +118,14 @@ describe('useBookingSignIn', () => {
     expect(result.current.stage).toBe('suspended');
   });
 
-  it('says the code could not be sent', async () => {
-    send.mockResolvedValueOnce({ ok: false, reason: 'rateLimited' });
+  it.each([
+    ['unknown', 'sendUnavailable'],
+    ['offline', 'sendFailed'],
+  ])('says the code could not be sent (%s → %s)', async (reason, shown) => {
+    send.mockResolvedValueOnce({ ok: false, reason });
     const { result } = await toCode();
     expect(result.current.stage).toBe('email');
-    expect(result.current.error).toBe('sendFailed');
+    expect(result.current.error).toBe(shown);
   });
 
   it('sends Google back to the profile with the booking to reopen', async () => {

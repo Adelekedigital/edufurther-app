@@ -58,6 +58,9 @@ describe('bookingMentorHandle', () => {
     expect(bookingMentorHandle(null)).toBeNull();
     expect(bookingMentorHandle('/mentors/gbenga')).toBeNull();
     expect(bookingMentorHandle('/onboarding')).toBeNull();
+    // A bare `for` (or a broken time) is a mentor with nothing booked.
+    expect(bookingMentorHandle('/onboarding?for=gbenga')).toBeNull();
+    expect(bookingMentorHandle('/onboarding?for=gbenga&sid=st1&time=soon')).toBeNull();
     expect(bookingMentorHandle('/onboarding?for=gb%20enga')).toBeNull();
     expect(bookingMentorHandle('/home?for=gbenga')).toBeNull();
   });
