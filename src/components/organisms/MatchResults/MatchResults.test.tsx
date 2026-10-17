@@ -130,4 +130,42 @@ describe('MatchResults', () => {
       '/explore',
     );
   });
+
+  it('shows a guest only their mentor, with no one-match note', () => {
+    render(
+      <MatchResults
+        {...base}
+        matches={[match('m1', 'Jesuah Mica')]}
+        guest={{ firstName: 'Jesuah', available: true }}
+      />,
+    );
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'You’re all set to book Jesuah',
+    );
+    expect(
+      screen.getByText('Your time and session are saved. Book now and Jesuah will see your goals.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/isn’t taking new bookings/)).toBeNull();
+    expect(screen.queryByText(/one closest fit/)).toBeNull();
+  });
+
+  it('tells a guest their mentor is unavailable, then shows the others', () => {
+    render(<MatchResults {...base} guest={{ firstName: 'Ada', available: false }} />);
+    expect(screen.getByText('Ada isn’t taking new bookings right now')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Mentors who fit your goals',
+    );
+    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(2);
+  });
+
+  it('shows no unavailable notice while loading or failed', () => {
+    const { rerender } = render(
+      <MatchResults {...base} isLoading guest={{ firstName: 'Ada', available: false }} />,
+    );
+    expect(screen.queryByText(/isn’t taking new bookings/)).toBeNull();
+    rerender(
+      <MatchResults {...base} error={failed} guest={{ firstName: 'Ada', available: false }} />,
+    );
+    expect(screen.queryByText(/isn’t taking new bookings/)).toBeNull();
+  });
 });

@@ -162,6 +162,21 @@ export const missingLine = (gaps: MissingKey[]) =>
 
 export const stepLabel = (n: number, total: number) => `Step ${n} of ${total}`;
 
+/** The guest path from Book (PRD H1, US-6; Mentee Onboarding v5.dc.html `forBanner`). */
+export const GUEST_COPY = {
+  bannerTitle: (first: string) => `Almost there. Then you’ll book with ${first}.`,
+  // PRD US-6: nothing holds the time, so never "held".
+  bannerSub: (first: string) => `Your pick is saved. We’ll take you back to book ${first}.`,
+  continueToBook: (first: string) => `Continue to book ${first}`,
+  matchTitle: (first: string) => `You’re all set to book ${first}`,
+  matchSub: (first: string) =>
+    `Your time and session are saved. Book now and ${first} will see your goals.`,
+  unavailableNotice: (first: string) => `${first} isn’t taking new bookings right now`,
+  unavailableBody: 'Your answers are saved. Here are mentors with open times who fit your goals.',
+  unavailableTitle: 'Mentors who fit your goals',
+  unavailableSub: 'Book one of these instead, or browse all mentors.',
+};
+
 export const MATCH_COPY = {
   title: (n: number) => (n === 1 ? 'Your top mentor match' : `Your top ${n} mentor matches`),
   sub: 'These mentors fit your goals. Pick one and book your first free session.',

@@ -26,15 +26,6 @@ export const untyped = api as unknown as {
   ) => Promise<{ data?: unknown; error?: unknown; response: Response }>;
 };
 
-/** #1 `field_of_study` on the goal. */
-export type PendingGoal = components['schemas']['GoalRead'] & { field_of_study?: string | null };
-
-/** `GET /me` with #1 (`goal.field_of_study`) and #5 `onboarding`. */
-export type PendingMe = components['schemas']['UserRead'] & {
-  goal?: PendingGoal | null;
-  onboarding?: { complete: boolean; missing: string[] } | null;
-};
-
 /** #3: the completion refusal names what is missing. */
 export type PendingIncomplete = { missing?: unknown };
 

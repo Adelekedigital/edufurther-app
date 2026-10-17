@@ -92,3 +92,22 @@ export function useDegreeLevels(enabled: boolean) {
   const status: Status = query.data ? 'ready' : query.error ? 'error' : 'loading';
   return { levels: query.data ?? [], status, retry: () => void query.refetch() };
 }
+
+/**
+ * Field-of-study suggestions for onboarding step 2, in the owner's order. Only
+ * suggestions: a typed answer is saved as typed. Until they load (or if they
+ * fail) the form falls back to its own short list, so the field never waits.
+ */
+export function useFieldsOfStudy(enabled: boolean): string[] | null {
+  const query = useQuery({
+    queryKey: keys.catalog.fieldsOfStudy,
+    queryFn: async ({ signal }) => {
+      const { data, response } = await api.GET('/api/v1/catalog/fields-of-study', { signal });
+      if (!data) throw new ApiError(response.status);
+      return data.data.map((f) => f.name);
+    },
+    enabled,
+    staleTime: HOUR,
+  });
+  return query.data?.length ? query.data : null;
+}

@@ -24,6 +24,8 @@ type CatalogOption = { id: string; label: string };
 type StudyPlansFormProps = {
   /** The full country catalog (`/catalog/countries`). */
   countries: CatalogOption[];
+  /** Field-of-study suggestions (`/catalog/fields-of-study`); the short built-in list until they load. */
+  fields?: string[] | null;
   value: PlanAnswers;
   onChange: (next: PlanAnswers) => void;
 };
@@ -68,7 +70,7 @@ function Field({
  * CountryPicker over the full catalog instead of the design's short lists,
  * because the profile stores a country id (PRD deviation table).
  */
-export function StudyPlansForm({ countries, value, onChange }: StudyPlansFormProps) {
+export function StudyPlansForm({ countries, fields, value, onChange }: StudyPlansFormProps) {
   const listId = useId();
   const set = (patch: Partial<PlanAnswers>) => onChange({ ...value, ...patch });
   return (
@@ -118,7 +120,7 @@ export function StudyPlansForm({ countries, value, onChange }: StudyPlansFormPro
               onChange={(e) => set({ field: e.target.value })}
             />
             <datalist id={listId}>
-              {FIELD_SUGGESTIONS.map((f) => (
+              {(fields ?? FIELD_SUGGESTIONS).map((f) => (
                 <option key={f} value={f} />
               ))}
             </datalist>

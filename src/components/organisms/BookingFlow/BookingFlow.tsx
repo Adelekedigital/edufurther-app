@@ -99,6 +99,12 @@ export type BookingFlowProps = {
    */
   initialTime?: string | null;
   /**
+   * Open one step past the time (the questions, or the guest step), with
+   * `initialTime` picked: a guest back from onboarding (PRD US-6). If that
+   * time can't be booked any more, the flow is on the slot grid as usual.
+   */
+  startAfterTime?: boolean;
+  /**
    * BookingModal.dc.html `showFirstReasons`: for a new mentor, why they're
    * worth booking ("Made the move…", "Got funded."), shown on the first step.
    * The page decides when (Explore turns it on; the profile's card already
@@ -138,7 +144,7 @@ export function BookingFlow(p: BookingFlowProps) {
   // Decided once: signing in mid-flow turns the page's `isGuest` off, and the
   // step list must not change under them ("Step 2 of 3" stays).
   const [startedAsGuest] = useState(p.isGuest);
-  const [stepIndex, setStepIndex] = useState(0);
+  const [stepIndex, setStepIndex] = useState(p.startAfterTime ? 1 : 0);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const isPhone = useMediaQuery(PHONE);
   const intake = useIntakeAnswers({ onUpload: p.onUpload, requestError: p.requestError });
@@ -156,6 +162,13 @@ export function BookingFlow(p: BookingFlowProps) {
     onSessionTypeChange: p.onSessionTypeChange,
   });
   const { time, zone } = timeChoice;
+  // startAfterTime is for the offering they chose. If the remembered time turns
+  // up on another one instead, start from the time step so they see the switch.
+  const [afterTimeType, setAfterTimeType] = useState(p.startAfterTime ? p.sessionTypeId : null);
+  if (afterTimeType && time && session) {
+    if (session.id !== afterTimeType) setStepIndex(0);
+    setAfterTimeType(null);
+  }
 
   const hasQuestions = (session?.questions.length ?? 0) > 0;
   const steps = useMemo<Step[]>(() => {

@@ -8,7 +8,11 @@ import type { CatalogOption } from './catalog';
 import { ApiError, apiError, normaliseError, retryOnce } from './errors';
 import { api } from './http';
 import { keys } from './keys';
-import { untyped, type PendingIncomplete, type PendingMe } from './pending';
+import type { components } from '@/lib/api/generated/schema';
+import type { PendingIncomplete } from './pending';
+
+type Me = components['schemas']['UserRead'];
+type GoalWrite = components['schemas']['GoalWrite'];
 
 export type OnboardingStep = 'help' | 'plans';
 
@@ -22,11 +26,11 @@ export type OnboardingState = {
 
 /** What the server sends, kept so a write never drops what onboarding doesn't show. */
 export type Saved = {
-  goal: NonNullable<PendingMe['goal']> | null;
+  goal: NonNullable<Me['goal']> | null;
   /** The origin's ISO code (`/me` sends a CountryRef, not a catalog id). */
   originCode: string | null;
-  /** `GET /me` `onboarding` (backend #5); absent until it ships. */
-  onboarding: PendingMe['onboarding'] | null;
+  /** `GET /me` `onboarding`: whether they finished, and what's still owed. */
+  onboarding: Me['onboarding'] | null;
 };
 
 /** The stored goal level back to what the mentee picked: `masters` + raw "MBA" is MBA. */
@@ -77,11 +81,10 @@ export function toState(saved: Saved, countries: CatalogOption[]): OnboardingSta
 async function readSaved(signal: AbortSignal): Promise<Saved> {
   const { data, response } = await api.GET('/api/v1/me', { signal });
   if (!data) throw new ApiError(response.status);
-  const me = data as PendingMe;
   return {
-    goal: me.goal ?? null,
-    originCode: me.profile?.origin_country?.code ?? null,
-    onboarding: me.onboarding ?? null,
+    goal: data.goal ?? null,
+    originCode: data.profile?.origin_country?.code ?? null,
+    onboarding: data.onboarding ?? null,
   };
 }
 
@@ -139,12 +142,12 @@ export function goalBody(
   a: Answers,
   levels: { id: string; code: string }[],
   countries: CatalogOption[],
-): Record<string, unknown> {
+): GoalWrite {
   const g = saved?.goal;
   const savedCountryIds = [...(g?.countries ?? [])]
     .sort((x, y) => x.priority - y.priority)
     .flatMap((c) => countries.find((k) => k.code === c.code)?.id ?? []);
-  const body: Record<string, unknown> = {
+  const body: GoalWrite = {
     // Kept as they are: onboarding doesn't ask these.
     target_start_term: g?.target_start_term ?? null,
     notes: g?.notes ?? null,
@@ -168,9 +171,8 @@ export function goalBody(
   return body;
 }
 
-async function putGoal(userId: string, body: Record<string, unknown>) {
-  // PENDING BACKEND #1: `field_of_study` isn't on GoalWrite yet.
-  const { error, response } = await untyped.PUT('/api/v1/users/{user_id}/goal', {
+async function putGoal(userId: string, body: GoalWrite) {
+  const { error, response } = await api.PUT('/api/v1/users/{user_id}/goal', {
     params: { path: { user_id: userId } },
     body,
   });

@@ -96,6 +96,31 @@
   inset: calc((100% - var(--touch-target-min)) / 2) 0;
 }
 
+/* Mentee Onboarding v5.dc.html `forBanner`. */
+.guest {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--green-50);
+}
+.guestText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+}
+.guestTitle {
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+.guestSub {
+  color: var(--green-700);
+}
+
 .titles {
   display: flex;
   flex-direction: column;

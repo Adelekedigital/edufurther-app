@@ -13,11 +13,18 @@ const countries = [
   { id: 'us', label: 'United States' },
 ];
 
-function Harness({ onChange }: { onChange?: (a: PlanAnswers) => void }) {
+function Harness({
+  onChange,
+  fields,
+}: {
+  onChange?: (a: PlanAnswers) => void;
+  fields?: string[] | null;
+}) {
   const [value, setValue] = useState(EMPTY_PLANS);
   return (
     <StudyPlansForm
       countries={countries}
+      fields={fields}
       value={value}
       onChange={(a) => {
         setValue(a);
@@ -67,5 +74,15 @@ describe('StudyPlansForm', () => {
       'MBA',
     );
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ degree: 'mba' }));
+  });
+
+  it('suggests the catalog’s fields once they load, and the short list until then', () => {
+    const options = () =>
+      [...document.querySelectorAll('datalist option')].map((o) => o.getAttribute('value'));
+    const { unmount } = render(<Harness fields={null} />);
+    expect(options()).toContain('Computer Science');
+    unmount();
+    render(<Harness fields={['Law', 'Data Science']} />);
+    expect(options()).toEqual(['Law', 'Data Science']);
   });
 });
