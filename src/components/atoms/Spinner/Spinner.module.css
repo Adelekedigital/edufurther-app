@@ -1,0 +1,27 @@
+/* DS Spinner: 900ms linear turn. */
+.spinner {
+  flex: none;
+  animation: spin 900ms linear infinite;
+}
+.track,
+.arc {
+  fill: none;
+}
+.track {
+  stroke: var(--ink-100);
+}
+.arc {
+  stroke: var(--action-primary);
+  stroke-linecap: round;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* Ours: still, for reduced motion; the arc alone still reads as "working". */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}

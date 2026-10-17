@@ -6,7 +6,8 @@ import { ApiError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
 
-export type CatalogOption = { id: string; label: string };
+/** `code`: the catalog's stable code (ISO for countries), for matching records that carry no id. */
+export type CatalogOption = { id: string; label: string; code?: string };
 type Status = 'loading' | 'error' | 'ready';
 
 const HOUR = 60 * 60 * 1000;
@@ -21,7 +22,7 @@ async function lookup(
     signal,
   });
   if (!data) throw new ApiError(response.status);
-  return data.data.map((l) => ({ id: l.id, label: l.display_name }));
+  return data.data.map((l) => ({ id: l.id, label: l.display_name, code: l.code ?? undefined }));
 }
 
 /**

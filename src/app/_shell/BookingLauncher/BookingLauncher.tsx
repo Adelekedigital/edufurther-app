@@ -22,6 +22,8 @@ type BookingLauncherProps = {
   /** The mentor's rating/reviews aren't known (e.g. a met mentor from /me/mentors). */
   ratingUnknown?: boolean;
   onClose: () => void;
+  /** The flow closed after the request went through (onboarding then goes Home, PRD US-5). */
+  onBooked?: () => void;
 };
 
 /**
@@ -36,6 +38,7 @@ export function BookingLauncher({
   hideProfileLink,
   ratingUnknown,
   onClose,
+  onBooked,
 }: BookingLauncherProps) {
   const [typeIdState, setTypeIdState] = useState<string | null>(null);
   const [zone] = useState(deviceTimeZone);
@@ -49,9 +52,11 @@ export function BookingLauncher({
   if (!mentor) return null;
 
   const close = () => {
+    const booked = request.isDone;
     setTypeIdState(null);
     request.reset();
     onClose();
+    if (booked) onBooked?.();
   };
 
   return (

@@ -43,6 +43,9 @@ export function awardProblem(body: Record<string, unknown>, partial: boolean): s
 /** The catalog's degree levels (backend lookups migration), with mock ids. */
 export const MOCK_DEGREE_LEVELS = [
   ['undergraduate', 'Undergraduate'],
+  // The live catalog's codes (PRD H8, ISCED 2011), which onboarding stores.
+  ['bachelors', 'Bachelor’s'],
+  ['doctorate', 'Doctorate'],
   ['diploma', 'Diploma'],
   ['masters', 'Masters'],
   ['mba', 'MBA'],

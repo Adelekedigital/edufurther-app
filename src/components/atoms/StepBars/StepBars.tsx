@@ -11,13 +11,20 @@ type StepBarsProps = {
   thin?: boolean;
   /** Unfilled bars in --ink-100 instead of the border tone (ReviewModal.dc.html). */
   faint?: boolean;
+  /** 8px apart, filling over 240ms (Mentee Onboarding v5.dc.html). */
+  spaced?: boolean;
 };
 
 /** Segmented progress across the top of a multi-step flow. */
-export function StepBars({ total, current, label, thin, faint }: StepBarsProps) {
+export function StepBars({ total, current, label, thin, faint, spaced }: StepBarsProps) {
   return (
     <div
-      className={cx(styles.bars, thin && styles.thin, faint && styles.faint)}
+      className={cx(
+        styles.bars,
+        thin && styles.thin,
+        faint && styles.faint,
+        spaced && styles.spaced,
+      )}
       role="progressbar"
       aria-label={label}
       aria-valuemin={1}

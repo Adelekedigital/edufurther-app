@@ -1,0 +1,72 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useViewer } from '@/lib/api/data/viewer';
+import { Button } from '@/components/atoms/Button/Button';
+import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
+import { FLOW_COPY, MATCH_COPY } from '@/lib/copy/onboarding';
+import { MENTOR_ONBOARDING_LIVE, NEW_MENTOR_HOME } from '@/lib/config/auth';
+import { OnboardingFrame } from './OnboardingFrame';
+import { Waiting } from './Waiting';
+import styles from './OnboardingScreen.module.css';
+
+/**
+ * Where `/onboarding` sends each viewer. A mentor is someone with a mentor
+ * profile, or a brand-new account sign-in marks `role=mentor` (it has no
+ * profile yet). The hint only picks the page; that page checks the account.
+ * Mentor onboarding has its own flag: off, mentors go to their home.
+ */
+export function onboardingDestination(
+  viewer: ReturnType<typeof useViewer>,
+  query: URLSearchParams,
+): string | null {
+  const keep = query.toString();
+  switch (viewer.kind) {
+    case 'loading':
+    case 'error':
+      return null;
+    case 'guest':
+      return `/signup?next=${encodeURIComponent(`/onboarding${keep ? `?${keep}` : ''}`)}`;
+    case 'member':
+      if (viewer.isMentor || query.get('role') === 'mentor')
+        return MENTOR_ONBOARDING_LIVE
+          ? `/onboarding/mentor${keep ? `?${keep}` : ''}`
+          : NEW_MENTOR_HOME;
+      return `/onboarding/mentee${keep ? `?${keep}` : ''}`;
+    default:
+      return '/explore';
+  }
+}
+
+export function OnboardingEntry() {
+  const viewer = useViewer();
+  const query = useSearchParams();
+  const router = useRouter();
+  const to = onboardingDestination(viewer, new URLSearchParams(query.toString()));
+  useEffect(() => {
+    if (to) router.replace(to);
+  }, [to, router]);
+  return (
+    <OnboardingFrame>
+      {viewer.kind === 'error' ? (
+        // Error before empty: a failed /me never leaves a spinner with no way out.
+        <main className={styles.state}>
+          <EmptyState
+            illustration="forms"
+            headingLevel={1}
+            title={FLOW_COPY.loadErrorTitle}
+            description={FLOW_COPY.loadErrorBody}
+            actions={
+              <Button size="large" onClick={viewer.retry}>
+                {MATCH_COPY.retry}
+              </Button>
+            }
+          />
+        </main>
+      ) : (
+        <Waiting text={FLOW_COPY.loading} hidden />
+      )}
+    </OnboardingFrame>
+  );
+}

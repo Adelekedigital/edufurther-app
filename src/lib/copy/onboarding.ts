@@ -182,3 +182,26 @@ export const MATCH_COPY = {
   browse: 'Browse all mentors',
   basedOnFallback: 'Based on your answers',
 };
+
+/** The phone topics sheet, worded as MentorCard words its own Book button. */
+export const SHEET_COPY = {
+  title: (first: string) => `${first} can help with`,
+  book: (first: string) => `Book session with ${first}`,
+  seeAvailability: 'See availability',
+  offline: 'Booking needs a connection',
+  viewProfile: 'View profile',
+};
+
+export const FLOW_COPY = {
+  back: 'Back',
+  continue: 'Continue',
+  seeMatches: 'See my matches',
+  resume: 'Welcome back. We kept your answers, so you can pick up here.',
+  startOver: 'Start over',
+  alreadySetUp: 'You’re already set up. Taking you to your Home…',
+  // Ours, PROVISIONAL (design draws no loading or failed load for the steps; design request).
+  loading: 'Loading your answers',
+  loadErrorTitle: 'We couldn’t load your answers',
+  loadErrorBody: 'Check your connection and try again.',
+  saveError: 'We couldn’t save your answers. Check your connection and try again.',
+};
