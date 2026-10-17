@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import type { PendingResponses } from '@/lib/api/data/pending';
 import type { paths } from '@/lib/api/generated/schema';
 
 // Why: a mock that drifts from the backend contract should fail `tsc`, not a screen.
@@ -70,5 +71,41 @@ export function problem(
 
 /** A mock helper's answer before it becomes a response: the contract's success, or a problem. */
 export type MockResult<B, S extends number = 201> =
-  | { ok: true; status: S; body: B }
-  | { ok: false; status: ErrorStatus; problem: ProblemBody };
+  { ok: true; status: S; body: B } | { ok: false; status: ErrorStatus; problem: ProblemBody };
+
+/**
+ * A success body for a status other than the one `ok` picks (the completion
+ * route: 201 with the record, a bare 200 after), still typed by the contract.
+ */
+export function okStatus<P extends keyof paths, M extends MethodOf<P>, S extends 200 | 201 | 202>(
+  _path: P,
+  _method: M,
+  status: S,
+  body: Responses<P, M> extends { [K in S]: infer R } ? Json<R> : never,
+): NextResponse {
+  return NextResponse.json(body, { status });
+}
+
+/** True once the published spec defines this "METHOD path" operation. */
+type Shipped<K> = K extends `${infer M} ${infer Path}`
+  ? Path extends keyof paths
+    ? Lowercase<M> extends keyof paths[Path]
+      ? paths[Path][Lowercase<M>] extends { responses: unknown }
+        ? true
+        : false
+      : false
+    : false
+  : false;
+
+/**
+ * PENDING BACKEND: a success body for an operation the published spec doesn't
+ * have yet ("PUT /api/v1/me/onboarding"), typed by the frontend's request shape
+ * (lib/api/data/pending.ts). Once the regenerated spec has it, this stops
+ * compiling: answer with `ok`.
+ */
+export function pendingOk<K extends keyof PendingResponses>(
+  _op: Shipped<K> extends true ? never : K,
+  body: PendingResponses[K],
+): NextResponse {
+  return NextResponse.json(body);
+}

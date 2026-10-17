@@ -99,7 +99,7 @@ cutover list: `references/environments.md`.
 | Slot | A concrete start time a session type can be booked at | a weekly availability window |
 | New mentor | Explore label and profile card for a mentor under 3 completed sessions (label also needs no reviews). Was "Rising mentor" until design reply #45 | — |
 | Plus | Premium mentor tag (gold, dark text) | a paid plan for mentees |
-| Match | % fit to the mentee's onboarding goals. **Not built** (tweak `matchScore=hide` is the default) | a search relevance score |
+| Match | A mentor ranked for a mentee's onboarding answers (`/onboarding/mentee`, PRD Mentee Onboarding v5 B4): the backend's one rule, shown as a one-line reason (codes worded in `lib/copy/onboarding.ts`). Never a % score (`matchScore=hide`); Explore's order is not this rule yet | a search relevance score |
 
 ---
 

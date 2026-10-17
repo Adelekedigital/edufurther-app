@@ -14,6 +14,14 @@ export const keys = {
   },
   /** The owner's own education entries (GET /users/{id}/education), for editing. */
   education: (userId: string) => ['education', userId] as const,
+  /** Mentee onboarding (Mentee Onboarding v5): progress + saved answers, and the matches. */
+  onboarding: {
+    all: ['onboarding'] as const,
+    state: (userId: string) => ['onboarding', 'state', userId] as const,
+    matchesAll: ['onboarding', 'matches'] as const,
+    matches: (userId: string, forMentor: string) =>
+      ['onboarding', 'matches', userId, forMentor] as const,
+  },
   viewer: {
     all: ['viewer'] as const,
     me: (userId: string) => ['viewer', 'me', userId] as const,
@@ -134,7 +142,8 @@ export const keys = {
   intakeFile: (id: string, who: string) => ['intakeFile', id, who] as const,
   /** The owner's mentor performance stats (GET /me/mentor-stats[/monthly]). */
   mentorStats: {
-    monthly: (userId: string, months: number) => ['mentorStats', 'monthly', userId, months] as const,
+    monthly: (userId: string, months: number) =>
+      ['mentorStats', 'monthly', userId, months] as const,
     window: (userId: string, windowDays: number) =>
       ['mentorStats', 'window', userId, windowDays] as const,
     year: (userId: string, year: number) => ['mentorStats', 'year', userId, year] as const,
@@ -150,6 +159,8 @@ export const keys = {
    * another's, and a sign-out must not leave it cached.
    */
   menteeHome: {
+    /** Prefix, for refreshing Home after onboarding completes (the starter credit). */
+    all: ['menteeHome'] as const,
     stats: (who: string) => ['menteeHome', 'stats', who] as const,
   },
   /**

@@ -1,0 +1,21 @@
+/* Mentee Onboarding v5.dc.html root and <header>. */
+.page {
+  min-height: 100vh;
+  background: var(--white);
+  font-family: var(--font-ui);
+  color: var(--ink-900);
+}
+.header {
+  height: var(--navbar-h-mobile);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 0 var(--space-5);
+  border-bottom: var(--border-hairline) solid var(--ink-200);
+  box-sizing: border-box;
+}
+/* 24px tall from the image's own size attributes (as FocusPage). */
+.header img {
+  display: block;
+}
