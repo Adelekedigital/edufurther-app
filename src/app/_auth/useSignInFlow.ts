@@ -195,11 +195,14 @@ export function useSignInFlow({
       if (via === 'google') {
         const g = await signedInUser();
         if (!mounted.current) return;
-        // Nobody typed an email on the way in: the finish step names this one.
-        if (g?.email) setEmail(g.email);
-        // In the field first, so a refused save shows the finish step with it.
         const fromGoogle = googleName(g);
-        setFullName(fromGoogle);
+        // Only for the finish step: filled while the card waits, the start
+        // form visibly types itself in before the page leaves.
+        const prefill = () => {
+          // Nobody typed an email on the way in: the finish step names this one.
+          if (g?.email) setEmail(g.email);
+          setFullName(fromGoogle);
+        };
         if (checkFullName(fromGoogle) === null) {
           // Google's own split keeps a two-word given name ("Mary Jane") whole.
           const parts =
@@ -208,10 +211,14 @@ export function useSignInFlow({
               : null;
           const saved = await name(a, parts ?? { fullName: fromGoogle });
           const first = parts?.firstName ?? splitFullName(fromGoogle).firstName;
-          if (saved && mounted.current) finish(a, first);
+          if (!mounted.current) return;
+          // A refused save shows the finish step with Google's name in it.
+          if (saved) finish(a, first);
+          else prefill();
           return;
         }
         // One word, or none, from Google: ask once, under the same rule.
+        prefill();
         setStep('finish');
         return;
       }
@@ -339,8 +346,12 @@ export function useSignInFlow({
     onFinish: () => void onFinish(),
     offline: !online,
     // Signed in on the start step: the account is being read (a Google return,
-    // or a visitor already signed in), so nothing here takes a press.
-    redirecting: outcome !== null || (session.status === 'present' && step === 'start'),
+    // or a visitor already signed in), so nothing here takes a press. Back from
+    // Google, that holds from the first frame, before the session is known.
+    redirecting:
+      outcome !== null ||
+      (step === 'start' &&
+        (session.status === 'present' || (googleReturn && session.status === 'unknown'))),
   };
 
   return { form, toast: outcome };
