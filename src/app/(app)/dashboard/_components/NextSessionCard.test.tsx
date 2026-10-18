@@ -96,4 +96,36 @@ describe('NextSessionCard', () => {
     );
     expect(screen.queryByRole('link', { name: 'View session details' })).not.toBeInTheDocument();
   });
+  // #255: outside the join window the card still leads to the session page.
+  it.each([
+    [
+      'running, past the join window',
+      { start: -20 * 60_000, opens: -30 * 60_000, closes: -5 * 60_000, end: 40 * 60_000 },
+    ],
+    [
+      'just ended, attendance not settled',
+      { start: -65 * 60_000, opens: -75 * 60_000, closes: -50 * 60_000, end: -5 * 60_000 },
+    ],
+  ])('content: %s links to details', (_name, t) => {
+    const at = (d: number) => iso(Date.now() + d);
+    render(
+      <NextSessionCard
+        {...base}
+        now={new Date()}
+        isLoading={false}
+        error={null}
+        booking={booking({
+          startsAt: at(t.start),
+          endsAt: at(t.end),
+          joinOpensAt: at(t.opens),
+          joinClosesAt: at(t.closes),
+        })}
+      />,
+    );
+    expect(screen.queryByRole('link', { name: 'Join session' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View session details' })).toHaveAttribute(
+      'href',
+      '/sessions/s1',
+    );
+  });
 });
