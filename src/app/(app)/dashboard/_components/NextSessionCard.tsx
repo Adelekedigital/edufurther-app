@@ -32,8 +32,8 @@ function SessionRow({
 }) {
   const days = daysBetween(now, new Date(booking.startsAt), timeZone);
   const rel = days <= 0 ? 'Today' : days === 1 ? 'Tomorrow' : `In ${days} days`;
-  // The session's own page is both the way in and, before the window opens, the
-  // countdown and details — so one href serves either CTA.
+  // The session's own page is both the way in and, outside the join window, the
+  // countdown, details or outcome — so one href serves either CTA.
   const sessionHref = `/sessions/${encodeURIComponent(booking.id)}`;
   // Join only while the window is open: outside it, a Join that can only fail
   // is worse than none. Every other moment (ahead of the window, running past
