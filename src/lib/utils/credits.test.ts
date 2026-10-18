@@ -49,6 +49,7 @@ describe('creditsView (backend #344: monthly and bonus)', () => {
       monthlyTotal: 3,
       bonus: [{ count: 1, expires: false, expiresOn: null }],
       showMonthly: true,
+      hadSession: false,
       resetsOn: 'Nov 1',
     });
     expect(creditsView(null)).toBeNull();
@@ -241,6 +242,18 @@ describe('the account menu line and "How credits work"', () => {
     expect(summarySub(base)).toBe('For your first session');
     // Nothing left to spend on a first session.
     expect(summarySub({ ...base, left: 0, bonus: [] })).toBeNull();
+    // Already had a session (e.g. a later support credit): not "first" (#312 review).
+    expect(summarySub({ ...base, hadSession: true })).toBeNull();
+  });
+
+  it('creditsView carries whether the mentee has had a session', () => {
+    const c = {
+      balance: 1,
+      monthly: { balance: 0, ceiling: 3, expiresAt: null, unlocked: false },
+      bonus: { balance: 1, groups: [{ count: 1, expiresAt: null }] },
+    };
+    expect(creditsView(c, undefined, null, 2)?.hadSession).toBe(true);
+    expect(creditsView(c)?.hadSession).toBe(false);
   });
   it('three rules, as designed: no em dashes', () => {
     expect(HOW_CREDITS_WORK).toHaveLength(3);

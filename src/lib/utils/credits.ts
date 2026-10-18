@@ -36,6 +36,8 @@ export type CreditsView = {
    * backend's rule, so the reset line never goes missing or reads "null".
    */
   resetsOn: string | null;
+  /** Has had a session already (`/me` mentee_completed_sessions > 0): no "first session" line. */
+  hadSession?: boolean;
 };
 
 /** `expires` with no `expiresOn`: a date that couldn't be read. Never "never". */
@@ -52,6 +54,7 @@ export function creditsView(
   c: Credits | null | undefined,
   now: Date = new Date(),
   refundHours: number | null = null,
+  completedSessions = 0,
 ): CreditsView | null {
   if (!c) return null;
   const monthlyLeft = Math.max(0, c.monthly.balance);
@@ -73,6 +76,7 @@ export function creditsView(
     monthlyTotal: Math.max(1, c.monthly.ceiling, monthlyLeft),
     bonus,
     showMonthly,
+    hadSession: completedSessions > 0,
     resetsOn: showMonthly
       ? ((c.nextResetAt ? resetDay(c.nextResetAt) : null) ?? resetDay(nextFirst(now)))
       : null,
@@ -182,12 +186,13 @@ export function creditRows(v: CreditsView): CreditRow[] {
 
 /**
  * The account menu's line under the bar (design creditSub): "Resets Nov 1",
- * or "For your first session" before the monthly grant. Null for a mentee with
- * neither: no monthly part and nothing left to spend on a first session.
+ * or "For your first session" before the monthly grant. Null otherwise: no
+ * monthly part and nothing left to spend, or a session already had (a later
+ * support credit is not for a "first" session).
  */
 export function summarySub(v: CreditsView): string | null {
   if (v.resetsOn) return `Resets ${v.resetsOn}`;
-  return v.showMonthly || isOut(v) ? null : 'For your first session';
+  return v.showMonthly || isOut(v) || v.hadSession ? null : 'For your first session';
 }
 
 /**
