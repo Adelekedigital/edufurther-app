@@ -44,7 +44,7 @@ PR 3 (the screen): `AuthScreen` + `useSignInFlow` run the flow — code or Googl
 
 ## Mentee onboarding (`/onboarding`, `/onboarding/mentee`)
 
-Mentee Onboarding v5.dc.html saved defaults, PRD "Mentee Onboarding v5" (rev 95). Behind `NEXT_PUBLIC_ONBOARDING_V5_ENABLED` (`ONBOARDING_LIVE`): a 404 where it is off.
+Mentee Onboarding v5.dc.html saved defaults, PRD "Mentee Onboarding v5" (rev 95). Behind `NEXT_PUBLIC_ONBOARDING_ENABLED` (`ONBOARDING_LIVE`): a 404 where it is off.
 
 - **PR A (#279):** HelpAreaPicker, StudyPlansForm, MatchResults, MatchReason, TopicGroups; MentorCard `highlight` and "+N"; 48px `xl` fields.
 - **PR B:** `/onboarding` reads `/me` and redirects by role, keeping the query (mentors home until mentor onboarding ships); `/onboarding/mentee` runs help areas → study plans → matches. Answers resume from the server (`GET /me`), each Continue saves, step 2 completes (PRD B3). Book opens BookingLauncher in place; a sent request goes Home. Endpoints the backend hasn't shipped are typed mocks marked PENDING BACKEND (docs/handoff/onboarding-backend-request.md #1–6).

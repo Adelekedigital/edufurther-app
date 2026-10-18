@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
 
 // The onboarding flag is read when the config loads: on, before the flow imports it.
-vi.stubEnv('NEXT_PUBLIC_ONBOARDING_V5_ENABLED', 'true');
+vi.stubEnv('NEXT_PUBLIC_ONBOARDING_ENABLED', 'true');
 
 const replace = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));

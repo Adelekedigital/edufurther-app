@@ -15,7 +15,7 @@ const base: OutcomeInput = {
 
 async function load(onboarding: boolean, mentorOnboarding = false) {
   vi.resetModules();
-  vi.stubEnv('NEXT_PUBLIC_ONBOARDING_V5_ENABLED', onboarding ? 'true' : '');
+  vi.stubEnv('NEXT_PUBLIC_ONBOARDING_ENABLED', onboarding ? 'true' : '');
   vi.stubEnv('NEXT_PUBLIC_MENTOR_ONBOARDING_ENABLED', mentorOnboarding ? 'true' : '');
   return (await import('./outcome')).signInOutcome;
 }

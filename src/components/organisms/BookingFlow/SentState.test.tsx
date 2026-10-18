@@ -27,8 +27,10 @@ describe('SentState', () => {
       expect.stringContaining('Chidi accepts or declines'),
       expect.stringContaining('Join your session'),
     ]);
-    // Messages isn't built, and emails never carry the call link: neither is promised.
-    expect(screen.queryByText(/confirmation email/)).toBeNull();
+    // The acceptance email links to the session page; Messages isn't built.
+    expect(
+      screen.getByText('Once it’s confirmed, join from Bookings or the link in your confirmation email.'),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/message them/i)).toBeNull();
   });
 
@@ -36,10 +38,14 @@ describe('SentState', () => {
     render(<SentState {...base} confirmed />);
     expect(screen.getByRole('heading', { name: 'You’re booked with Chidi' })).toBeInTheDocument();
     expect(
-      screen.getByText('Mon, Oct 19 · 9:00 am is confirmed. You’ll find it in Bookings.'),
+      screen.getByText(
+        'Mon, Oct 19 · 9:00 am is confirmed. It’s in Bookings, and we’ll email you a reminder before it starts.',
+      ),
     ).toBeInTheDocument();
     expect(screen.getByText('Confirmed')).toBeInTheDocument();
     expect(screen.getByText('Prepare for your session')).toBeInTheDocument();
+    // No email at booking time (it goes to the mentor): the reminders carry the link.
+    expect(screen.getByText('Join from Bookings or the link in your reminder emails.')).toBeInTheDocument();
     expect(screen.queryByText(/accepts or declines/)).toBeNull();
   });
 

@@ -26,10 +26,10 @@ export const NEW_MENTEE_HOME = '/home';
 export const NEW_MENTOR_HOME = '/home';
 
 /**
- * Mentee Onboarding v5 is switched on per environment (its PRD's flag); the
- * /onboarding route 404s while it is off.
+ * Mentee onboarding is switched on per environment; the /onboarding route
+ * 404s while it is off.
  */
-export const ONBOARDING_LIVE = process.env.NEXT_PUBLIC_ONBOARDING_V5_ENABLED === 'true';
+export const ONBOARDING_LIVE = process.env.NEXT_PUBLIC_ONBOARDING_ENABLED === 'true';
 
 /**
  * Mentor onboarding (`/onboarding/mentor`, `/mentor-application`, Mentor

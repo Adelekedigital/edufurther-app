@@ -237,8 +237,8 @@ export const FLOW_COPY = {
   continue: 'Continue',
   seeMatches: 'See my matches',
   resume: 'Welcome back. We kept your answers, so you can pick up here.',
-  // PRD H5, provisional (design request item 7).
-  broughtOver: 'We’ve brought over your answers. Just check these.',
+  // PRD H5; Mentee Onboarding v5.dc.html `visitor=migrated` (design reply, 2026-10-17).
+  broughtOver: 'We brought over your earlier answers. Check them and continue.',
   startOver: 'Start over',
   alreadySetUp: 'You’re already set up. Taking you to your Home…',
   // Ours, PROVISIONAL (design draws no loading or failed load for the steps; design request).
