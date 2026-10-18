@@ -2,6 +2,7 @@
  * Every word onboarding shows, from Mentee Onboarding v5.dc.html via the PRD's
  * H8 table, keyed by catalog slug or reason code so wording changes in one place.
  */
+import type { NudgePart } from '@/types/onboarding';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 
 export type HelpAreaCopy = {
@@ -176,9 +177,6 @@ export const GUEST_COPY = {
   unavailableTitle: 'Mentors who fit your goals',
   unavailableSub: 'Book one of these instead, or browse all mentors.',
 };
-
-/** The parts of onboarding a mentee may still owe, as the nudge words them. */
-export type NudgePart = 'help' | 'plans';
 
 /** OnboardingNudge.dc.html: title, body and button by what's missing. */
 export function nudgeCopy(parts: NudgePart[]): { title: string; body: string; cta: string } {

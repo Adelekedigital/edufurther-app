@@ -12,8 +12,8 @@
   color: var(--ink-900);
 }
 .badge {
-  width: 40px;
-  height: 40px;
+  width: var(--space-10);
+  height: var(--space-10);
   flex: none;
   border-radius: var(--radius-full);
   background: var(--white);
@@ -30,6 +30,7 @@
   gap: 2px;
 }
 .title {
+  margin: 0;
   font-size: var(--text-p-md);
   line-height: var(--lh-p);
   font-weight: var(--weight-semibold);
@@ -48,8 +49,8 @@
   position: absolute;
   top: var(--space-2);
   right: var(--space-2);
-  width: 44px;
-  height: 44px;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
   display: flex;
   align-items: center;
   justify-content: center;

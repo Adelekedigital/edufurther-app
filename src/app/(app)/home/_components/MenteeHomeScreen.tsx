@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
@@ -35,6 +35,9 @@ export function MenteeHomeScreen() {
   const router = useRouter();
   // deviceTimeZone is a lazy initializer; read it once (as the other screens do).
   const [browserZone] = useState(deviceTimeZone);
+  // "Hide for now" on the onboarding nudge: before any early return (hook order).
+  const [nudgeHidden, hideNudge] = useSessionFlag('ef-onboarding-nudge-hidden');
+  const helloRef = useRef<HTMLHeadingElement>(null);
 
   // A minute tick so the next-session card's join state advances while the tab
   // stays open (as BookingsScreen does). Without it `now` is frozen at the
@@ -118,7 +121,6 @@ export function MenteeHomeScreen() {
   // The onboarding nudge (OnboardingNudge.dc.html, PRD F4): a mentee still
   // owing answers, until they hide it for this visit. While it shows, the
   // team-call pill steps aside, as the design draws it.
-  const [nudgeHidden, hideNudge] = useSessionFlag('ef-onboarding-nudge-hidden');
   const nudgeParts = member?.onboardingMissing ?? [];
   const showNudge = ONBOARDING_LIVE && menteeSide && nudgeParts.length > 0 && !nudgeHidden;
   const showHelp = !showNudge && !!MATCH_CALL_URL && !isNew && completed <= 2;
@@ -155,14 +157,22 @@ export function MenteeHomeScreen() {
     // when the pill is shown).
     <div className={styles.page} data-help={showHelp ? '' : undefined}>
       <header className={styles.greeting}>
-        <h1 className={styles.hello}>
+        <h1 ref={helloRef} tabIndex={-1} className={styles.hello}>
           {greeting(member.firstName, member.createdAt, completed, now)}
         </h1>
         <p className={styles.subline}>{subline}</p>
       </header>
 
       {showNudge && (
-        <OnboardingNudge missing={nudgeParts} href="/onboarding" onDismiss={hideNudge} />
+        <OnboardingNudge
+          missing={nudgeParts}
+          href="/onboarding"
+          onDismiss={() => {
+            hideNudge();
+            // The nudge held focus and is gone: keep the reader's place at the top.
+            helloRef.current?.focus();
+          }}
+        />
       )}
 
       {/* Progress — error checked before the figures (ui-states). */}

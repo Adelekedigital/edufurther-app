@@ -1,6 +1,8 @@
+import { useId } from 'react';
 import { ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
-import { nudgeCopy, type NudgePart } from '@/lib/copy/onboarding';
+import { nudgeCopy } from '@/lib/copy/onboarding';
+import type { NudgePart } from '@/types/onboarding';
 import styles from './OnboardingNudge.module.css';
 
 type OnboardingNudgeProps = {
@@ -17,15 +19,18 @@ type OnboardingNudgeProps = {
  * The words follow what's missing; × hides it for now.
  */
 export function OnboardingNudge({ missing, href, onDismiss }: OnboardingNudgeProps) {
+  const titleId = useId();
   if (missing.length === 0) return null;
   const c = nudgeCopy(missing);
   return (
-    <section aria-label="Finish setting up" className={styles.nudge}>
+    <section aria-labelledby={titleId} className={styles.nudge}>
       <span className={styles.badge} aria-hidden>
         <Icon name="checklist" size={22} />
       </span>
       <div className={styles.copy}>
-        <span className={styles.title}>{c.title}</span>
+        <h2 id={titleId} className={styles.title}>
+          {c.title}
+        </h2>
         <span className={styles.body}>{c.body}</span>
       </div>
       <div className={styles.action}>

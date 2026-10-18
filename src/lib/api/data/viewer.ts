@@ -6,6 +6,7 @@ import { useQuery, type QueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { authConfigured } from '@/lib/vendor/supabase/config';
 import type { Viewer } from '@/types/mentor';
+import type { NudgePart } from '@/types/onboarding';
 import { coverKey } from '@/lib/utils/cover';
 import { ApiError } from './errors';
 import { api } from './http';
@@ -14,12 +15,17 @@ import { useSession } from './session';
 
 type UserRead = components['schemas']['UserRead'];
 
-/** `/me onboarding.missing` → the nudge's two parts (help; origin/degree/field → plans). */
-export function nudgeParts(missing: readonly string[] | null | undefined): ('help' | 'plans')[] {
+const PLAN_CODES = new Set(['origin', 'degree', 'field']);
+
+/**
+ * `/me onboarding.missing` → the nudge's two parts: help, and origin/degree/field
+ * as plans. A code a later backend adds is ignored, never worded as plans.
+ */
+export function nudgeParts(missing: readonly string[] | null | undefined): NudgePart[] {
   if (!missing) return [];
-  const parts: ('help' | 'plans')[] = [];
+  const parts: NudgePart[] = [];
   if (missing.includes('help')) parts.push('help');
-  if (missing.some((m) => m !== 'help')) parts.push('plans');
+  if (missing.some((m) => PLAN_CODES.has(m))) parts.push('plans');
   return parts;
 }
 
@@ -141,13 +147,6 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     // Not 12, so a number baked into copy would be visible in dev.
     menteeCancelRefundHours: 10,
   },
-  // The same mentee, still owing their study plans: the onboarding nudge on Home.
-  get 'mentee-unfinished'(): Viewer {
-    return {
-      ...(MOCK_VIEWERS.mentee as Extract<Viewer, { kind: 'member' }>),
-      onboardingMissing: ['plans'],
-    };
-  },
   mentor: {
     kind: 'member',
     id: 'mock-mentor',
@@ -168,6 +167,12 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     // Not 12, so a number baked into copy would be visible in dev.
     menteeCancelRefundHours: 10,
   },
+};
+
+// The same mentee, still owing their study plans: the onboarding nudge on Home.
+MOCK_VIEWERS['mentee-unfinished'] = {
+  ...(MOCK_VIEWERS.mentee as Extract<Viewer, { kind: 'member' }>),
+  onboardingMissing: ['plans'],
 };
 
 const readMockParam = () => new URLSearchParams(window.location.search).get('mockViewer');
@@ -248,7 +253,7 @@ type Member = Extract<Viewer, { kind: 'member' }>;
  */
 export function patchViewer(
   qc: QueryClient,
-  patch: Partial<Pick<Member, 'avatarUrl' | 'avatarFocus' | 'coverKey'>>,
+  patch: Partial<Pick<Member, 'avatarUrl' | 'avatarFocus' | 'coverKey' | 'onboardingMissing'>>,
 ) {
   qc.setQueriesData<unknown>({ queryKey: keys.viewer.all }, (v: unknown) =>
     typeof v === 'object' && v !== null && (v as Viewer).kind === 'member'

@@ -6,6 +6,9 @@ import type { AppError, Remote, Viewer } from '@/types/mentor';
 import type { MetMentor } from '@/lib/api/data/metMentors';
 import { MenteeHomeScreen } from './MenteeHomeScreen';
 
+/** The nudge's region, named by whichever title it shows. */
+const NUDGE = /^(Add your study plans|What do you need help with\?|Finish setting up)$/;
+
 const replace = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace }),
@@ -388,9 +391,7 @@ describe('MenteeHomeScreen', () => {
     it('shows what is missing under the greeting, and the help pill steps aside', () => {
       viewer = { ...MEMBER, completedSessions: 2, onboardingMissing: ['plans'] };
       render(<MenteeHomeScreen />);
-      expect(screen.getByRole('region', { name: 'Finish setting up' })).toHaveTextContent(
-        'Add your study plans',
-      );
+      expect(screen.getByRole('region', { name: NUDGE })).toHaveTextContent('Add your study plans');
       expect(screen.getByRole('link', { name: 'Add study plans' })).toHaveAttribute(
         'href',
         '/onboarding',
@@ -402,29 +403,44 @@ describe('MenteeHomeScreen', () => {
       viewer = { ...MEMBER, completedSessions: 2, onboardingMissing: ['help'] };
       const { unmount } = render(<MenteeHomeScreen />);
       await userEvent.click(screen.getByRole('button', { name: 'Hide for now' }));
-      expect(screen.queryByRole('region', { name: 'Finish setting up' })).toBeNull();
+      expect(screen.queryByRole('region', { name: NUDGE })).toBeNull();
       expect(
         screen.getByRole('complementary', { name: 'Not sure where to start?' }),
       ).toBeInTheDocument();
       unmount();
       // Back on Home in the same visit: still hidden.
       render(<MenteeHomeScreen />);
-      expect(screen.queryByRole('region', { name: 'Finish setting up' })).toBeNull();
+      expect(screen.queryByRole('region', { name: NUDGE })).toBeNull();
+    });
+
+    it('survives the move from loading to a member (hooks keep their order)', () => {
+      viewer = { kind: 'loading', signedIn: true };
+      const { rerender } = render(<MenteeHomeScreen />);
+      viewer = { ...MEMBER, onboardingMissing: ['plans'] };
+      rerender(<MenteeHomeScreen />);
+      expect(screen.getByRole('region', { name: NUDGE })).toBeInTheDocument();
+    });
+
+    it('keeps the reader at the top after Hide for now: focus moves to the greeting', async () => {
+      viewer = { ...MEMBER, onboardingMissing: ['plans'] };
+      render(<MenteeHomeScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Hide for now' }));
+      expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
     });
 
     it('never shows with nothing missing, for a mentor, or with the flag off', () => {
       viewer = { ...MEMBER, onboardingMissing: [] };
       const a = render(<MenteeHomeScreen />);
-      expect(screen.queryByRole('region', { name: 'Finish setting up' })).toBeNull();
+      expect(screen.queryByRole('region', { name: NUDGE })).toBeNull();
       a.unmount();
       viewer = { ...MEMBER, isMentor: true, onboardingMissing: ['plans'] };
       const b = render(<MenteeHomeScreen />);
-      expect(screen.queryByRole('region', { name: 'Finish setting up' })).toBeNull();
+      expect(screen.queryByRole('region', { name: NUDGE })).toBeNull();
       b.unmount();
       onboardingLive = false;
       viewer = { ...MEMBER, onboardingMissing: ['plans'] };
       render(<MenteeHomeScreen />);
-      expect(screen.queryByRole('region', { name: 'Finish setting up' })).toBeNull();
+      expect(screen.queryByRole('region', { name: NUDGE })).toBeNull();
     });
   });
 });

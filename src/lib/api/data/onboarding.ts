@@ -8,6 +8,7 @@ import type { CatalogOption } from './catalog';
 import { ApiError, apiError, normaliseError, retryOnce } from './errors';
 import { api } from './http';
 import { keys } from './keys';
+import { patchViewer } from './viewer';
 import type { components } from '@/lib/api/generated/schema';
 import type { PendingIncomplete } from './pending';
 
@@ -231,11 +232,14 @@ export function useSaveOnboarding(
       if (!response.ok) throw apiError(response.status, error, response);
     },
     onSuccess: (_d, a) => {
+      // What's still owed changed: Home's nudge reads /me.
+      void qc.invalidateQueries({ queryKey: keys.viewer.all });
       if (a.step !== 'plans') return;
+      // Done: no nudge on the way Home, before /me comes back.
+      patchViewer(qc, { onboardingMissing: [] });
       // New answers, new ranking: never show the last answers' matches first.
       qc.removeQueries({ queryKey: keys.onboarding.matchesAll });
-      // Completion pays the starter credit and the origin changed: /me and Home refresh.
-      void qc.invalidateQueries({ queryKey: keys.viewer.all });
+      // Completion pays the starter credit and the origin changed: Home refreshes too.
       void qc.invalidateQueries({ queryKey: keys.menteeHome.all });
     },
     onSettled: () => {
