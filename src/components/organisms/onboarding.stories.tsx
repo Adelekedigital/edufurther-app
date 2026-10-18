@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
-import { NOT_SURE } from '@/lib/copy/onboarding';
-import { EMPTY_PLANS } from '@/lib/utils/onboardingAnswers';
+import { FIELD_ERRORS, NOT_SURE } from '@/lib/copy/onboarding';
+import { EMPTY_PLANS, missingPlans } from '@/lib/utils/onboardingAnswers';
 import type { PlanAnswers } from '@/types/onboarding';
 import type { Mentor } from '@/types/mentor';
 import type { MentorMatch } from '@/types/onboarding';
@@ -65,15 +65,22 @@ export const HelpAreasUnknownSlug: Story = {
   ),
 };
 
-function Plans({ initial }: { initial: PlanAnswers }) {
+function Plans({ initial, marked }: { initial: PlanAnswers; marked?: boolean }) {
   const [value, setValue] = useState(initial);
+  // As the page does once Continue was pressed: each gap marked, cleared as it's answered.
+  const errors = marked
+    ? Object.fromEntries(missingPlans(value).map((g) => [g, FIELD_ERRORS[g]]))
+    : undefined;
   return (
     <div style={{ maxWidth: 480 }}>
-      <StudyPlansForm countries={COUNTRIES} value={value} onChange={setValue} />
+      <StudyPlansForm countries={COUNTRIES} value={value} onChange={setValue} errors={errors} />
     </div>
   );
 }
 export const StudyPlansEmpty: Story = { render: () => <Plans initial={EMPTY_PLANS} /> };
+export const StudyPlansMissingMarked: Story = {
+  render: () => <Plans initial={{ ...EMPTY_PLANS, degree: 'mba' }} marked />,
+};
 export const StudyPlansFilled: Story = {
   render: () => (
     <Plans

@@ -135,10 +135,10 @@ export const PLAN_LABELS = {
 
 export const PLAN_HINTS = {
   origin: 'We look for mentors who made the same move.',
-  degree: 'Your current education goes on your profile later.',
-  field: 'Pick a suggestion or type your own.',
+  degree: 'The next degree you want to study, not the one you have now.',
+  field: 'Choose from the list, or type it if it’s not there.',
   // Not "…later in Settings" until Settings › Goals ships (design, 2026-10-17; #284).
-  destination: 'Pick one for now. You can add more later.',
+  destination: 'Choose your top choice. You can add 2 more later.',
 };
 
 export const PLAN_PLACEHOLDERS = {
@@ -148,18 +148,15 @@ export const PLAN_PLACEHOLDERS = {
   destination: 'Select a country',
 };
 
-/** The missing-answers line names each gap in this order. */
-export const MISSING = {
-  help: 'at least one area',
-  origin: 'where you’re from',
-  degree: 'what you’re applying for',
-  field: 'what you want to study',
-  destination: 'where you want to study',
+/** The line under each missing answer, once Continue was pressed (design `fieldGuide=marked`). */
+export const FIELD_ERRORS = {
+  help: 'Pick at least one area.',
+  origin: 'Select your home country.',
+  degree: 'Pick the degree you’re applying for.',
+  field: 'Add what you want to study.',
+  destination: 'Pick where you want to study.',
 };
-export type MissingKey = keyof typeof MISSING;
-
-export const missingLine = (gaps: MissingKey[]) =>
-  `To continue, add ${gaps.map((g) => MISSING[g]).join(', ')}.`;
+export type MissingKey = keyof typeof FIELD_ERRORS;
 
 export const stepLabel = (n: number, total: number) => `Step ${n} of ${total}`;
 
@@ -235,6 +232,8 @@ export const SHEET_COPY = {
 export const FLOW_COPY = {
   back: 'Back',
   continue: 'Continue',
+  // Above Continue once it was pressed with answers missing (as in mentor onboarding).
+  fillRequired: 'Fill in the required fields to continue.',
   seeMatches: 'See my matches',
   resume: 'Welcome back. We kept your answers, so you can pick up here.',
   // PRD H5; Mentee Onboarding v5.dc.html `visitor=migrated` (design reply, 2026-10-17).

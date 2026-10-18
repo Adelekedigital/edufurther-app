@@ -169,11 +169,67 @@ describe('OnboardingScreen', () => {
     }
   });
 
+  it('marks a missing answer only once Continue is pressed, then lets it go', async () => {
+    render(<OnboardingScreen />);
+    const cont = screen.getByRole('button', { name: 'Continue' });
+    // Enabled from the start, with nothing marked (design `fieldGuide=marked`).
+    expect(cont).toBeEnabled();
+    expect(screen.queryByText('Pick at least one area.')).toBeNull();
+    await userEvent.click(cont);
+    expect(save).not.toHaveBeenCalled();
+    expect(screen.getByText('Fill in the required fields to continue.')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Pick at least one area.');
+    // Focus lands on the first card, which says why (the alert may be skipped
+    // by a screen reader, as it arrives already full).
+    const first = screen.getByRole('button', { name: /Find a program/ });
+    expect(first).toHaveFocus();
+    expect(first).toHaveAccessibleDescription('Pick at least one area.');
+    await userEvent.click(screen.getByRole('button', { name: /Find a program/ }));
+    expect(screen.queryByText('Pick at least one area.')).toBeNull();
+    expect(screen.queryByText('Fill in the required fields to continue.')).toBeNull();
+  });
+
+  it('marks each missing plan, focuses the first, and clears each as it’s answered', async () => {
+    state = { ...fresh, lastStep: 'help', needIds: ['o1'] };
+    render(<OnboardingScreen />);
+    // Nothing is marked before Continue.
+    expect(screen.queryByText('Select your home country.')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'See my matches' }));
+    expect(save).not.toHaveBeenCalled();
+    // Focus lands on the first gap.
+    expect(screen.getByLabelText('Where are you from?')).toHaveFocus();
+    for (const line of [
+      'Select your home country.',
+      'Pick the degree you’re applying for.',
+      'Add what you want to study.',
+      'Pick where you want to study.',
+    ])
+      expect(screen.getByText(line)).toBeInTheDocument();
+    const field = screen.getByLabelText('What do you want to study?');
+    expect(field).toHaveAttribute('aria-invalid', 'true');
+    expect(field).toHaveAccessibleDescription(
+      'Choose from the list, or type it if it’s not there. Add what you want to study.',
+    );
+    await userEvent.type(field, 'Law');
+    expect(screen.queryByText('Add what you want to study.')).toBeNull();
+    expect(field).not.toHaveAttribute('aria-invalid');
+    // The rest stay marked until answered.
+    expect(screen.getByText('Select your home country.')).toBeInTheDocument();
+  });
+
+  it('forgets the marks on Back', async () => {
+    state = { ...fresh, lastStep: 'help', needIds: ['o1'] };
+    render(<OnboardingScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'See my matches' }));
+    expect(screen.getByText('Fill in the required fields to continue.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.queryByText('Fill in the required fields to continue.')).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('saves step 1 and moves focus to step 2’s heading', async () => {
     render(<OnboardingScreen />);
     const cont = screen.getByRole('button', { name: 'Continue' });
-    expect(cont).toBeDisabled();
-    expect(screen.getByText('To continue, add at least one area.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /Find a program/ }));
     await userEvent.click(cont);
     expect(save).toHaveBeenCalledWith({ step: 'help', needIds: ['o1'] });
@@ -201,9 +257,10 @@ describe('OnboardingScreen', () => {
     state = { ...fresh, lastStep: 'help', needIds: ['o1'] };
     saveError = { kind: 'conflict', message: 'x', missing: ['origin', 'field'] };
     render(<OnboardingScreen />);
-    expect(
-      screen.getByText('To continue, add where you’re from, what you want to study.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Fill in the required fields to continue.')).toBeInTheDocument();
+    expect(screen.getByText('Select your home country.')).toBeInTheDocument();
+    expect(screen.getByText('Add what you want to study.')).toBeInTheDocument();
+    expect(screen.queryByText('Pick where you want to study.')).toBeNull();
   });
 
   it('locks Back and Start over while a save runs', () => {

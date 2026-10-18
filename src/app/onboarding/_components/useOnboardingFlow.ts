@@ -147,23 +147,41 @@ export function useOnboardingFlow() {
 
   const set = (patch: Partial<Form>) => setForm((f) => (f ? { ...f, ...patch } : f));
 
-  const next = async () => {
-    if (!form || gaps.length || save.isPending) return;
+  // Continue was pressed with answers missing: their errors show, and clear
+  // one by one as each is answered (design `fieldGuide=marked`).
+  const [tried, setTried] = useState(false);
+
+  /** Saves the step, or returns the gaps that stop it (the page moves focus to the first). */
+  const next = async (): Promise<MissingKey[]> => {
+    if (!form || save.isPending) return [];
+    if (gaps.length) {
+      setTried(true);
+      return gaps;
+    }
+    setTried(false);
     const from = form.step;
     try {
       if (from === 'help') await save.save({ step: 'help', needIds: form.needIds });
       else if (from === 'plans')
         await save.save({ step: 'plans', needIds: form.needIds, plans: form.plans });
-      else return;
+      else return [];
       // Only if they're still where they saved from (Back can't be pressed mid-save, but stay safe).
       setForm((f) =>
         f && f.step === from
           ? { ...f, step: from === 'help' ? 'plans' : 'matches', resumed: false, migrated: false }
           : f,
       );
-    } catch {
-      // Shown from save.error; the answers stay as typed.
+    } catch (e) {
+      // Shown from save.error; the answers stay as typed. A refusal that names
+      // gaps marks the step like a local one, so its errors also clear as each
+      // is answered, and focus goes to the first (PRD B3).
+      const missing = (e as { missing?: MissingKey[] }).missing;
+      if (missing?.length) {
+        setTried(true);
+        return missing;
+      }
     }
+    return [];
   };
 
   // Error before empty, but only before the form exists: a failed background
@@ -190,6 +208,7 @@ export function useOnboardingFlow() {
     topics: topics.topics,
     helpLimit: HELP_LIMIT,
     gaps,
+    tried,
     save,
     matches,
     headingRef,
@@ -208,16 +227,19 @@ export function useOnboardingFlow() {
     back: () => {
       if (save.isPending) return;
       save.reset();
+      setTried(false);
       set({ step: 'help' });
     },
     edit: () => {
       save.reset();
+      setTried(false);
       set({ step: 'help', resumed: false, migrated: false });
     },
     startOver: () => {
       if (save.isPending) return;
       save.reset();
       // Nothing saved is deleted until they continue again (PRD F1).
+      setTried(false);
       set({ step: 'help', needIds: [], plans: EMPTY_PLANS, resumed: false, migrated: false });
     },
   };

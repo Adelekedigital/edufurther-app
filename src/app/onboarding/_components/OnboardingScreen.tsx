@@ -6,18 +6,20 @@ import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { StepBars } from '@/components/atoms/StepBars/StepBars';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
+import { FieldError } from '@/components/molecules/FieldError/FieldError';
 import { HelpAreaPicker } from '@/components/organisms/HelpAreaPicker/HelpAreaPicker';
 import { MatchResults } from '@/components/organisms/MatchResults/MatchResults';
 import { StudyPlansForm } from '@/components/organisms/StudyPlansForm/StudyPlansForm';
 import { BookingLauncher } from '@/app/_shell/BookingLauncher/BookingLauncher';
 import {
   DEGREE_OPTIONS,
+  FIELD_ERRORS,
   FLOW_COPY,
   GUEST_COPY,
   MATCH_COPY,
   STEP_COPY,
-  missingLine,
   stepLabel,
+  type MissingKey,
 } from '@/lib/copy/onboarding';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { basedOnLine } from '@/lib/utils/matchReason';
@@ -31,6 +33,17 @@ import { TopicsSheet } from './TopicsSheet';
 import { Waiting } from './Waiting';
 import { useOnboardingFlow } from './useOnboardingFlow';
 import styles from './OnboardingScreen.module.css';
+
+/** Room above a focused field, so its label shows (the design's 160). */
+const FOCUS_OFFSET = 160;
+
+/** Focus a field and bring it into view (scrollTo, not scrollIntoView: phones). */
+function focusField(id: string) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.focus({ preventScroll: true });
+  window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - FOCUS_OFFSET) });
+}
 
 /**
  * Mentee Onboarding v5.dc.html, saved defaults (PRD H1): help areas → study
@@ -48,6 +61,8 @@ export function OnboardingScreen() {
   const [sheetMentor, setSheetMentor] = useState<Mentor | null>(null);
   const subId = useId();
   const needId = useId();
+  const helpId = useId();
+  const plansId = useId();
 
   const form = f.form;
   const viewerError = f.viewer.kind === 'error' ? f.viewer : null;
@@ -124,8 +139,14 @@ export function OnboardingScreen() {
     const n = form.step === 'help' ? 1 : 2;
     const copy = STEP_COPY[form.step];
     const label = stepLabel(n, 2);
-    // A refusal from the server names its own gaps (PRD B3).
-    const gaps = f.save.error?.missing?.length ? f.save.error.missing : f.gaps;
+    // Once Continue was pressed, each answer still missing is marked; a refusal
+    // from the server names its own gaps too (PRD B3).
+    const gaps: MissingKey[] = [
+      ...new Set([...(f.tried ? f.gaps : []), ...(f.save.error?.missing ?? [])]),
+    ];
+    const planErrors = Object.fromEntries(
+      gaps.filter((g) => g !== 'help').map((g) => [g, FIELD_ERRORS[g]]),
+    );
     body = (
       <main className={cx(styles.flow, form.step === 'help' ? styles.wide : styles.narrow)}>
         <form
@@ -133,7 +154,9 @@ export function OnboardingScreen() {
           noValidate
           onSubmit={(e) => {
             e.preventDefault();
-            void f.next();
+            void f.next().then(([first]) => {
+              if (first) focusField(first === 'help' ? `${helpId}-first` : `${plansId}-${first}`);
+            });
           }}
         >
           <div className={styles.top}>
@@ -192,6 +215,10 @@ export function OnboardingScreen() {
             </p>
           </div>
 
+          {form.step === 'help' && gaps.includes('help') && (
+            <FieldError id={`${helpId}-error`}>{FIELD_ERRORS.help}</FieldError>
+          )}
+
           {form.step === 'help' ? (
             <HelpAreaPicker
               options={f.topics.flatMap((t) =>
@@ -202,6 +229,8 @@ export function OnboardingScreen() {
               limit={f.helpLimit}
               label={copy.title}
               describedBy={subId}
+              firstId={`${helpId}-first`}
+              errorId={gaps.includes('help') ? `${helpId}-error` : undefined}
             />
           ) : (
             <StudyPlansForm
@@ -209,6 +238,8 @@ export function OnboardingScreen() {
               fields={f.fields}
               value={form.plans}
               onChange={f.setPlans}
+              errors={planErrors}
+              idPrefix={plansId}
             />
           )}
 
@@ -219,15 +250,14 @@ export function OnboardingScreen() {
                 {FLOW_COPY.saveError}
               </p>
             )}
-            {/* Always in the DOM, so each gap is heard as it opens or closes. */}
+            {/* Always in the DOM, so the line is heard when it appears. */}
             <p id={needId} aria-live="polite" className={styles.need}>
-              {gaps.length ? missingLine(gaps) : ''}
+              {gaps.length ? FLOW_COPY.fillRequired : ''}
             </p>
             <Button
               type="submit"
               size="large"
               fullWidth
-              disabled={f.gaps.length > 0}
               busy={f.save.isPending}
               aria-describedby={gaps.length ? needId : undefined}
             >

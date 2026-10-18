@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { missingLine, NOT_SURE } from '@/lib/copy/onboarding';
+import { NOT_SURE } from '@/lib/copy/onboarding';
 import { EMPTY_PLANS, fieldOk, missingHelp, missingPlans } from './onboardingAnswers';
 
 describe('missingPlans', () => {
   it('names every gap, in the design’s order', () => {
-    expect(missingLine(missingPlans(EMPTY_PLANS))).toBe(
-      'To continue, add where you’re from, what you’re applying for, what you want to study, where you want to study.',
-    );
+    // First is where focus goes when Continue is pressed.
+    expect(missingPlans(EMPTY_PLANS)).toEqual(['origin', 'degree', 'field', 'destination']);
   });
 
   it('accepts "Not sure yet" as an answer', () => {
@@ -24,7 +23,7 @@ describe('missingPlans', () => {
 
 describe('missingHelp', () => {
   it('wants at least one area', () => {
-    expect(missingLine(missingHelp([]))).toBe('To continue, add at least one area.');
+    expect(missingHelp([])).toEqual(['help']);
     expect(missingHelp(['a'])).toEqual([]);
   });
 });
