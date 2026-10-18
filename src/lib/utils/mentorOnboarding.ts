@@ -74,7 +74,15 @@ export function headlineFor(s: SchoolDraft | undefined): string {
   return [lead, s.school.trim()].filter(Boolean).join(' · ');
 }
 
-const LINKEDIN = /^(?:https?:\/\/)?(?:[a-z]{1,3}\.)?linkedin\.com\/in\/([^/?#\s]+)\/?(?:[?#].*)?$/i;
+/**
+ * The backend's profile-link rule (edufurtherbe domain/social_links.py), so a
+ * link that passes here is never a 422 on save: a 3–100 character slug of
+ * A–Z a–z 0–9 _ - on linkedin.com or its www, m or two-letter country host.
+ * Anything after the slug (…/details/experience) is dropped, as the backend
+ * does. A bare handle isn't offered: the step asks for the profile link.
+ */
+const LINKEDIN =
+  /^(?:https?:\/\/)?(?:(?:www|m|[a-z]{2})\.)?linkedin\.com\/in\/([a-z0-9_-]{3,100})(?:\/[^?#\s]*)?(?:[?#].*)?$/i;
 
 export const isLinkedInProfile = (url: string) => LINKEDIN.test(url.trim());
 

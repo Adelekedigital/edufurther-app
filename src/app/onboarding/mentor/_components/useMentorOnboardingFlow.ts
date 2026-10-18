@@ -53,6 +53,18 @@ type Form = {
 };
 
 /** The submit refusal's codes (PRD B2 `missing`) → the step and field to send them to. */
+/** The answer each gap is about. */
+const GAP_FIELD: Record<MentorGap, keyof MentorAnswers> = {
+  help: 'helpIds',
+  education: 'schools',
+  studyCountry: 'schools',
+  photo: 'photoUrl',
+  origin: 'originId',
+  linkedin: 'linkedin',
+  linkedinFormat: 'linkedin',
+  days: 'days',
+};
+
 const MISSING: Record<string, { step: MentorStep; gap: MentorGap | null }> = {
   offerings: { step: 'help', gap: 'help' },
   education: { step: 'education', gap: 'education' },
@@ -270,7 +282,8 @@ export function useMentorOnboardingFlow() {
     if (save.isPending || submit.isPending) return;
     save.reset();
     submit.reset();
-    setServerGaps([]);
+    // A server's error stays until its own field is edited.
+    setServerGaps((g) => g.filter((gap) => !(GAP_FIELD[gap] in patch)));
     setForm((f) => (f ? { ...f, answers: { ...f.answers, ...patch } } : f));
   };
   // A school saved on this Continue keeps its new id, so the next save edits it.
@@ -313,8 +326,16 @@ export function useMentorOnboardingFlow() {
     const from = form.step;
     try {
       await save.save(from, form.answers, standing, keepSchoolId);
-    } catch {
-      return; // Shown from save.error; the answers stay as typed.
+    } catch (e) {
+      // A field the server refused shows under that field, not as the general notice.
+      const fields = (e as { fields?: MentorGap[] }).fields;
+      if (fields?.length) {
+        save.reset();
+        setServerGaps(fields);
+        setTried(true);
+        focusField(gapField(fields[0]!, form.answers));
+      }
+      return; // Otherwise shown from save.error; the answers stay as typed.
     }
     setSaved(true);
     setBaseline(form.answers);

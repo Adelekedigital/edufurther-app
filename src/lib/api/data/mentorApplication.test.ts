@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import type { components } from '@/lib/api/generated/schema';
 import { toDayHours } from '@/lib/utils/mentorOnboarding';
 import type { SchoolDraft } from '@/types/mentorOnboarding';
-import { educationBody, planEducation, toApplicationState } from './mentorApplication';
+import {
+  educationBody,
+  planEducation,
+  refusedFields,
+  toApplicationState,
+} from './mentorApplication';
 import type { WeeklyHours } from './weeklyHours';
 
 type Me = components['schemas']['UserRead'];
@@ -256,5 +261,26 @@ describe('planEducation', () => {
     expect(plan.remove).toEqual(['e2']);
     expect(plan.edit).toEqual([{ id: 'e1', body: { study_course: 'Epidemiology' } }]);
     expect(plan.add).toHaveLength(1);
+  });
+});
+
+describe('refusedFields', () => {
+  it('names the step fields a 422 points at', () => {
+    expect(
+      refusedFields({
+        errors: [
+          { pointer: '/social_linkedin', message: 'not a LinkedIn profile' },
+          { pointer: '/origin_country_id' },
+        ],
+      }),
+    ).toEqual(['linkedinFormat', 'origin']);
+  });
+
+  it('names none when one refused field has no place on the step, so the notice shows', () => {
+    expect(
+      refusedFields({ errors: [{ pointer: '/social_linkedin' }, { pointer: '/about_me' }] }),
+    ).toEqual([]);
+    expect(refusedFields({ title: 'Unprocessable Content' })).toEqual([]);
+    expect(refusedFields(null)).toEqual([]);
   });
 });

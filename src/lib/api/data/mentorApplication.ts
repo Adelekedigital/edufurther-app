@@ -21,6 +21,7 @@ import type { AppError } from '@/types/mentor';
 import type {
   MentorAnswers,
   MentorApplicationState,
+  MentorGap,
   MentorStep,
   MentorStepName,
   SchoolDraft,
@@ -323,10 +324,36 @@ export function planEducation(
   return { remove, edit, add };
 }
 
+/** The fields a step's 422 can name (Problem Details `errors[].pointer`), as the step's gaps. */
+const REFUSED: Record<string, MentorGap> = {
+  '/social_linkedin': 'linkedinFormat',
+  '/origin_country_id': 'origin',
+};
+
+/**
+ * The step gaps a 422 names. None unless every refused field has a place on
+ * the step: one with nowhere to show must keep the general notice.
+ */
+export function refusedFields(body: unknown): MentorGap[] {
+  const errors = (body as { errors?: unknown } | null)?.errors;
+  if (!Array.isArray(errors) || !errors.length) return [];
+  const gaps = errors.map((e) => REFUSED[(e as { pointer?: unknown } | null)?.pointer as string]);
+  return gaps.every(Boolean) ? (gaps as MentorGap[]) : [];
+}
+
+/** A refusal that names fields the step shows: each error goes under its field. */
+export class FieldsRefused extends ApiError {
+  constructor(readonly fields: MentorGap[]) {
+    super(422, 'Unprocessable Content');
+  }
+}
+
 async function check(p: Promise<Result>, okStatus?: number) {
   const { error, response } = await p;
-  if (!response.ok && response.status !== okStatus)
-    throw apiError(response.status, error, response);
+  if (response.ok || response.status === okStatus) return;
+  const fields = response.status === 422 ? refusedFields(error) : [];
+  if (fields.length) throw new FieldsRefused(fields);
+  throw apiError(response.status, error, response);
 }
 
 async function saveStepName(step: MentorStep) {
