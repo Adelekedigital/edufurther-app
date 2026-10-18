@@ -56,6 +56,9 @@
 }
 .rail {
   position: sticky;
+  /* Its own layer: the account menu inside it must paint over in-page
+     popovers (30), and stay under "Your credits" (40), modals (50), toasts (100). */
+  z-index: 35;
   top: 0;
   align-self: flex-start;
   height: 100vh;
