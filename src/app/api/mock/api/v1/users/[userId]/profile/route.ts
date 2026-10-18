@@ -10,7 +10,8 @@ const invalid = (pointer: string) =>
 
 /**
  * MOCK of PATCH /api/v1/users/{user_id}/profile: cover, names, About and
- * where they're from (origin_country_id: a catalog id or null).
+ * where they're from (origin_country_id: a catalog id or null), and
+ * primary_role (pending).
  * Partial like the backend: only the fields sent are written. Names can't be
  * cleared (422) and are at most 100 characters; About at most 1500, blank is
  * null. ENABLE_MOCK_API=1 only.
@@ -51,6 +52,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ userId: strin
     if (v !== null && !MOCK_COUNTRIES.some((c) => c.id === v)) return invalid('/origin_country_id');
     setMockItems(userId, { origin_country_id: v as string | null });
   }
+  // PENDING BACKEND (Mentor Onboarding B3): "Continue as a mentee" writes the role.
+  if ('primary_role' in body && body.primary_role !== 'mentee' && body.primary_role !== 'mentor')
+    return invalid('/primary_role');
   await new Promise((r) => setTimeout(r, 300));
   setMockText(userId, text);
   setMockCover(userId, next);

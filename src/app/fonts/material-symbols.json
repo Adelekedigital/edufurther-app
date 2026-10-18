@@ -47,6 +47,7 @@
     "expand_less",
     "expand_more",
     "explore",
+    "fact_check",
     "find_in_page",
     "flag",
     "flight_takeoff",
@@ -121,6 +122,7 @@
     "tips_and_updates",
     "toll",
     "translate",
+    "travel_explore",
     "trending_down",
     "trending_up",
     "tune",
@@ -139,5 +141,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "437470415e63fb98ae4cdf3496355b67a31a16c2899d35755949e2a87a970235"
+  "sha256": "0d1fb8497448352058daecc0ff619b14c1c7ecbe7bc6cb1286d61ad440c8e728"
 }

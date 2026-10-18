@@ -1,0 +1,43 @@
+/* Approved.dc.html: a fixed, click-through layer above the page (z 80). */
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.piece {
+  position: absolute;
+  top: 0;
+  border-radius: 2px;
+  opacity: 0;
+  animation-name: fall;
+  animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1);
+  animation-fill-mode: forwards;
+}
+
+.round {
+  border-radius: var(--radius-full);
+}
+
+@keyframes fall {
+  0% {
+    transform: translate3d(0, -12vh, 0) rotate(0deg);
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--dx, 0), 108vh, 0) rotate(var(--rot, 540deg));
+    opacity: 0;
+  }
+}
+
+/* Belt and braces: the component already renders nothing here. */
+@media (prefers-reduced-motion: reduce) {
+  .layer {
+    display: none;
+  }
+}

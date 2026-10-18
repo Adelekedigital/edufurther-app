@@ -15,6 +15,8 @@ type Me = NonNullable<Parameters<typeof homeFor>[0]>;
  * approved goes to their application review (PRD rev 9) once it exists, and a
  * mentee whose onboarding isn't finished (a migrated one, say) goes to it at
  * their first gap (PRD H5). Only an explicit `false` sends them: unknown is done.
+ * An approved mentor who hasn't seen the approved screen yet goes to it once
+ * (PRD "Where people land"); unknown (an older backend) is seen.
  * This is the sign-in rule only: `/` itself still sends every mentee Home, where
  * the onboarding nudge (PRD F4, with design) picks up the rest.
  */
@@ -22,13 +24,16 @@ export function accountHome(a: {
   isAdmin: boolean;
   isMentor: boolean;
   mentorApproved: boolean;
+  mentorApprovedSeen?: boolean;
   onboardingComplete?: boolean | null;
 }): string {
   // homeFor only asks whether a mentor profile exists, not what is in it.
   const profile = (a.isMentor ? {} : null) as Me['mentor_profile'];
   const home = homeFor({ is_admin: a.isAdmin, mentor_profile: profile });
   if (home === '/home' && ONBOARDING_LIVE && a.onboardingComplete === false) return '/onboarding';
-  return home === '/dashboard' && !a.mentorApproved ? MENTOR_REVIEW_HOME : home;
+  if (home !== '/dashboard') return home;
+  if (!a.mentorApproved) return MENTOR_REVIEW_HOME;
+  return MENTOR_ONBOARDING_LIVE && a.mentorApprovedSeen === false ? '/mentor-application' : home;
 }
 
 /** What the toast says and where the page goes next (Sign In.dc.html TOAST / DEST). */
@@ -45,6 +50,8 @@ export type OutcomeInput = {
   isAdmin: boolean;
   isMentor: boolean;
   mentorApproved: boolean;
+  /** The approved screen was already shown (absent: seen). */
+  mentorApprovedSeen?: boolean;
   /** `/me` `onboarding.complete` (null: unknown, treated as done). */
   onboardingComplete?: boolean | null;
   googleJustLinked: boolean;
@@ -107,7 +114,9 @@ export function signInOutcome(o: OutcomeInput): Outcome {
     : home === '/dashboard'
       ? 'Opening your mentor dashboard…'
       : home === '/mentor-application'
-        ? 'Opening your application review…'
+        ? o.mentorApproved
+          ? 'Opening your mentor application…'
+          : 'Opening your application review…'
         : home === '/home'
           ? 'Opening your Home…'
           : home === '/onboarding'

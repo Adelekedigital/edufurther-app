@@ -1,0 +1,28 @@
+/* Mentor Dashboard v2.dc.html toast: centred 88px up (clear of the phone tab
+   bar), ink-900, white p-xs, a green-300 verified mark. */
+.region {
+  position: fixed;
+  left: 50%;
+  bottom: 88px;
+  z-index: 60;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - var(--space-8));
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--ink-900);
+  color: var(--white);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  box-shadow: var(--shadow-menu);
+}
+
+.icon {
+  color: var(--green-300);
+}

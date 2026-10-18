@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
@@ -9,6 +9,7 @@ import { useAppShell } from '@/app/_shell/useAppShell';
 import { useMentorDashboard, type SetupNext } from '@/lib/api/data/dashboard';
 import { deviceTimeZone, inSentence } from '@/lib/utils/format';
 import type { Viewer } from '@/types/mentor';
+import { ApprovedToast } from './ApprovedToast';
 import { DashboardHeader } from './DashboardHeader';
 import { KpiGrid } from './KpiGrid';
 import { NextSessionCard } from './NextSessionCard';
@@ -140,7 +141,9 @@ function MentorHome({ member }: { member: Member }) {
     <>
       <DashboardHeader
         name={d.firstName}
-        subline={d.isNew ? 'Let’s get your first session booked.' : 'Here’s how your mentoring is going.'}
+        subline={
+          d.isNew ? 'Let’s get your first session booked.' : 'Here’s how your mentoring is going.'
+        }
         shareUrl={d.shareUrl}
         shareName={d.shareName}
       />
@@ -213,6 +216,10 @@ export function DashboardScreen() {
   return (
     <div className={styles.page}>
       {member?.isMentor ? <MentorHome member={member} /> : <DashboardLoading />}
+      {/* It reads the query: inside its own boundary. */}
+      <Suspense>
+        <ApprovedToast />
+      </Suspense>
     </div>
   );
 }

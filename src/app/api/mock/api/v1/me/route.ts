@@ -7,6 +7,11 @@ import {
   mockMissing,
   mockProgress,
 } from '@/lib/api/mock/onboardingStore';
+import {
+  isMockApplicationState,
+  mentorApplication,
+  seed,
+} from '@/lib/api/mock/mentorApplicationStore';
 
 /**
  * MOCK of GET /api/v1/me for the mock mentee, as onboarding reads it: the
@@ -19,7 +24,36 @@ const originRef = (id: string | null) => {
   return c ? { code: c.code, display_name: c.display_name } : null;
 };
 
-export async function GET() {
+/**
+ * The mock applicant's mentor profile (PENDING BACKEND, Mentor Onboarding B2):
+ * the page's `?mockApplication=` when its Referer has one, else the store.
+ */
+function mentorProfile(req: Request) {
+  let asked: string | null = null;
+  // An opaque or malformed Referer is normal (a privacy setting, a redirect).
+  try {
+    const referer = req.headers.get('referer');
+    if (referer) asked = new URL(referer).searchParams.get('mockApplication');
+  } catch {}
+  const app = isMockApplicationState(asked) ? seed(asked) : mentorApplication.application;
+  if (!app) return null;
+  return {
+    id: '00000000-0000-4000-8000-000000000001',
+    headline: null,
+    years_of_experience: null,
+    listing_status: app.approval_status === 'approved' ? 'listed' : 'unlisted',
+    paused_by_mentor: false,
+    requires_booking_confirmation: false,
+    max_booking_window_days: 56,
+    default_booking_window_days: 56,
+    primary_study_program: null,
+    primary_study_country: null,
+    offerings: [],
+    ...app,
+  };
+}
+
+export async function GET(req: Request) {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
   await new Promise((r) => setTimeout(r, 200));
   const missing = mockMissing(MOCK_VIEWER_ID);
@@ -37,6 +71,7 @@ export async function GET() {
     mentee_completed_sessions: 0,
     mentee_cancel_refund_hours: 12,
     goal: mockGoal(MOCK_VIEWER_ID),
+    mentor_profile: mentorProfile(req),
     profile: {
       cover_art: 'none' as const,
       origin_country: originRef(mockItems(MOCK_VIEWER_ID).origin_country_id ?? null),

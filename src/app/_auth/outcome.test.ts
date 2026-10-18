@@ -270,3 +270,36 @@ describe('signInOutcome — a mentee whose onboarding is unfinished (PRD H5)', (
     });
   });
 });
+
+describe('signInOutcome — mentor application (Mentor Onboarding PRD F4)', () => {
+  const mentor = { ...base, firstName: 'Gbenga', isMentor: true };
+
+  it('sends a pending or declined mentor to their application', async () => {
+    const out = await load(false, true);
+    expect(out({ ...mentor, mentorApproved: false })).toMatchObject({
+      body: 'Opening your application review…',
+      href: '/mentor-application',
+    });
+  });
+
+  it('shows an approved mentor the approved screen once, then the dashboard', async () => {
+    const out = await load(false, true);
+    expect(out({ ...mentor, mentorApproved: true, mentorApprovedSeen: false })).toMatchObject({
+      body: 'Opening your mentor application…',
+      href: '/mentor-application',
+    });
+    expect(out({ ...mentor, mentorApproved: true, mentorApprovedSeen: true }).href).toBe(
+      '/dashboard',
+    );
+    // An older backend doesn't say: seen.
+    expect(out({ ...mentor, mentorApproved: true }).href).toBe('/dashboard');
+  });
+
+  it('keeps every mentor on the dashboard with the flag off', async () => {
+    const out = await load(false, false);
+    expect(out({ ...mentor, mentorApproved: true, mentorApprovedSeen: false }).href).toBe(
+      '/dashboard',
+    );
+    expect(out({ ...mentor, mentorApproved: false }).href).toBe('/dashboard');
+  });
+});

@@ -182,7 +182,7 @@ const onPopState = (cb: () => void) => {
 };
 
 /** Screens only a mentor can use: in mock mode they default to the mentor viewer. */
-const MENTOR_ONLY_ROUTES = ['/session-types', '/dashboard'];
+const MENTOR_ONLY_ROUTES = ['/session-types', '/dashboard', '/mentor-application'];
 
 /**
  * The mock viewer, or null when NEXT_PUBLIC_MOCK_VIEWER is unset (every real

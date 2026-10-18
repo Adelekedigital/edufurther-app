@@ -35,8 +35,24 @@ describe('fetchSignInAccount (who just signed in)', () => {
       isAdmin: false,
       isMentor: false,
       mentorApproved: false,
+      // No mentor profile: nothing to show.
+      mentorApprovedSeen: true,
       onboardingComplete: null,
       timezone: null,
+    });
+  });
+
+  it('carries whether the approved screen was seen (pending backend approved_seen_at)', async () => {
+    GET.mockResolvedValueOnce(
+      res(200, {
+        id: 'u2',
+        first_name: 'Gbenga',
+        mentor_profile: { approval_status: 'approved', approved_seen_at: null },
+      }),
+    );
+    expect(await fetchSignInAccount()).toMatchObject({
+      mentorApproved: true,
+      mentorApprovedSeen: false,
     });
   });
 
