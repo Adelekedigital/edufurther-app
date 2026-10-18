@@ -170,6 +170,15 @@ export function OnboardingScreen() {
             </div>
           )}
 
+          {form.migrated && !f.guestMentor && (
+            <div role="status" className={styles.resume}>
+              <span className={styles.resumeText}>
+                <Icon name="history" size={18} className={styles.resumeIcon} />
+                {FLOW_COPY.broughtOver}
+              </span>
+            </div>
+          )}
+
           {f.guestMentor && <GuestBanner mentor={f.guestMentor} />}
 
           <div className={styles.titles}>

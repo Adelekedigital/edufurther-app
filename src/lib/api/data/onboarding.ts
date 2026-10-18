@@ -9,7 +9,7 @@ import { ApiError, apiError, normaliseError, retryOnce } from './errors';
 import { api } from './http';
 import { keys } from './keys';
 import type { components } from '@/lib/api/generated/schema';
-import type { PendingIncomplete } from './pending';
+import type { PendingIncomplete, PendingOnboardingStatus } from './pending';
 
 type Me = components['schemas']['UserRead'];
 type GoalWrite = components['schemas']['GoalWrite'];
@@ -19,6 +19,12 @@ export type OnboardingStep = 'help' | 'plans';
 export type OnboardingState = {
   /** The furthest step with saved answers; null when they never started. */
   lastStep: OnboardingStep | null;
+  /**
+   * Answers brought over from the old platform, never stepped through here
+   * (PRD H5): the server's `last_step` is null but they hold answers. False
+   * while the server doesn't send `last_step`.
+   */
+  migrated: boolean;
   complete: boolean;
   needIds: string[];
   plans: PlanAnswers;
@@ -29,8 +35,8 @@ export type Saved = {
   goal: NonNullable<Me['goal']> | null;
   /** The origin's ISO code (`/me` sends a CountryRef, not a catalog id). */
   originCode: string | null;
-  /** `GET /me` `onboarding`: whether they finished, and what's still owed. */
-  onboarding: Me['onboarding'] | null;
+  /** `GET /me` `onboarding`: whether they finished, what's still owed, and (pending) the last step. */
+  onboarding: PendingOnboardingStatus | null;
 };
 
 /** The stored goal level back to what the mentee picked: `masters` + raw "MBA" is MBA. */
@@ -65,8 +71,13 @@ export function toState(saved: Saved, countries: CatalogOption[]): OnboardingSta
   // answers alone aren't done: completion may never have run, and it pays the
   // starter credit. Until #5 ships they resume at step 2 and finish (idempotent).
   const complete = saved.onboarding?.complete ?? false;
+  const answered = needIds.length > 0 || !!degree || !!field.trim() || !!originId;
+  // The server's own step once it sends one; until then, read from the answers.
+  const serverStep = saved.onboarding?.last_step;
+  const known = serverStep !== undefined;
   return {
-    lastStep: answeredPlans ? 'plans' : needIds.length ? 'help' : null,
+    lastStep: known ? serverStep : answeredPlans ? 'plans' : needIds.length ? 'help' : null,
+    migrated: known && serverStep === null && answered && !complete,
     complete,
     needIds,
     plans: { originId, degree, field, destinationId },

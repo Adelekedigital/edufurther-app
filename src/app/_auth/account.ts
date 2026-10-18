@@ -22,6 +22,7 @@ export function toAccount(acct: Extract<SignInAccount, { kind: 'member' }>) {
     isAdmin: acct.isAdmin,
     isMentor: acct.isMentor,
     mentorApproved: acct.mentorApproved,
+    onboardingComplete: acct.onboardingComplete,
     isNew: acct.firstName === null,
   };
 }

@@ -23,6 +23,8 @@ type Form = {
   plans: PlanAnswers;
   /** They came back to an unfinished onboarding: the welcome-back banner shows. */
   resumed: boolean;
+  /** Their answers came from the old platform (PRD H5): "We've brought over your answers". */
+  migrated: boolean;
 };
 
 /** PRD F1: "You're already set up…", then Home after 1.2 s. */
@@ -36,14 +38,19 @@ const samePlans = (a: PlanAnswers, b: PlanAnswers) =>
   a.field.trim() === b.field.trim() &&
   a.destinationId === b.destinationId;
 
-/** Where the server says they are: a saved step resumes at step 2 with the answers. */
+/**
+ * The first gap, answers prefilled (PRD H5). Answers save on Continue, so any
+ * help area means step 1 is done: step 2 next. None means step 1, even when a
+ * migrated mentee already holds their plans.
+ */
 function startFrom(s: OnboardingState): Form {
   return {
-    step: s.lastStep ? 'plans' : 'help',
+    step: s.needIds.length ? 'plans' : 'help',
     // Not capped here: a migrated mentee may hold more than 3; the cap applies to new picks (PRD H5).
     needIds: s.needIds,
     plans: s.plans,
-    resumed: s.lastStep !== null,
+    resumed: s.lastStep !== null && !s.migrated,
+    migrated: s.migrated,
   };
 }
 
@@ -151,7 +158,7 @@ export function useOnboardingFlow() {
       // Only if they're still where they saved from (Back can't be pressed mid-save, but stay safe).
       setForm((f) =>
         f && f.step === from
-          ? { ...f, step: from === 'help' ? 'plans' : 'matches', resumed: false }
+          ? { ...f, step: from === 'help' ? 'plans' : 'matches', resumed: false, migrated: false }
           : f,
       );
     } catch {
@@ -205,13 +212,13 @@ export function useOnboardingFlow() {
     },
     edit: () => {
       save.reset();
-      set({ step: 'help', resumed: false });
+      set({ step: 'help', resumed: false, migrated: false });
     },
     startOver: () => {
       if (save.isPending) return;
       save.reset();
       // Nothing saved is deleted until they continue again (PRD F1).
-      set({ step: 'help', needIds: [], plans: EMPTY_PLANS, resumed: false });
+      set({ step: 'help', needIds: [], plans: EMPTY_PLANS, resumed: false, migrated: false });
     },
   };
 }

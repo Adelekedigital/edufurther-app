@@ -41,6 +41,7 @@ type Account = {
   isAdmin: boolean;
   isMentor: boolean;
   mentorApproved: boolean;
+  onboardingComplete: boolean | null;
   isNew: boolean;
 };
 
@@ -158,6 +159,7 @@ export function useSignInFlow({
         isAdmin: a.isAdmin,
         isMentor: a.isMentor,
         mentorApproved: a.mentorApproved,
+        onboardingComplete: a.onboardingComplete,
         googleJustLinked,
         next,
         bookingWith,
