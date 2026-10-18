@@ -14,6 +14,15 @@ import { useSession } from './session';
 
 type UserRead = components['schemas']['UserRead'];
 
+/** `/me onboarding.missing` → the nudge's two parts (help; origin/degree/field → plans). */
+export function nudgeParts(missing: readonly string[] | null | undefined): ('help' | 'plans')[] {
+  if (!missing) return [];
+  const parts: ('help' | 'plans')[] = [];
+  if (missing.includes('help')) parts.push('help');
+  if (missing.some((m) => m !== 'help')) parts.push('plans');
+  return parts;
+}
+
 /**
  * GET /api/v1/me → Viewer (backend auth reply #3). Roles come from rows, never
  * `primary_role`: goal → mentee, approved mentor_profile → mentor.
@@ -31,6 +40,7 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     isListedMentor: me.mentor_profile?.listing_status === 'listed',
     timeZone: me.timezone || undefined,
     completedSessions: me.mentee_completed_sessions,
+    onboardingMissing: nudgeParts(me.onboarding?.missing),
     createdAt: me.created_at,
     credits: me.credits
       ? {
@@ -130,6 +140,13 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     bookingCounts: { pending: 3, upcoming: 6 },
     // Not 12, so a number baked into copy would be visible in dev.
     menteeCancelRefundHours: 10,
+  },
+  // The same mentee, still owing their study plans: the onboarding nudge on Home.
+  get 'mentee-unfinished'(): Viewer {
+    return {
+      ...(MOCK_VIEWERS.mentee as Extract<Viewer, { kind: 'member' }>),
+      onboardingMissing: ['plans'],
+    };
   },
   mentor: {
     kind: 'member',
