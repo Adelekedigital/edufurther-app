@@ -152,7 +152,7 @@ export function CodeStep({
       </Button>
       <button
         type="button"
-        className={cx(styles.textButton, styles.centered)}
+        className={cx(styles.textButton, styles.codeLink)}
         onClick={onUseDifferentEmail}
       >
         Use a different email

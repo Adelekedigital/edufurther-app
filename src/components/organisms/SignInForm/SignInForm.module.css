@@ -92,6 +92,11 @@
   letter-spacing: 0.5em;
 }
 
+/* Expired or locked: the field greys, the digits stay ink-900 (CodeEntry.dc.html). */
+.label .code:disabled {
+  color: var(--ink-900);
+}
+
 .typo {
   display: flex;
   align-items: center;
@@ -168,11 +173,20 @@
   font-size: var(--text-p-xs);
 }
 
-/* "Use a different email": centred, a 4px pad around it. */
+/* "Use a different email" on the finish and suspended steps: centred, a 4px
+   pad around it, at least 32px tall. */
 .centered {
   align-self: center;
+  min-height: var(--space-8);
   padding: var(--space-1);
   font-size: var(--text-p-xs);
+}
+
+/* The code step's (CodeEntry.dc.html): p-sm, no pad, 44px tall. */
+.codeLink {
+  align-self: center;
+  min-height: var(--touch-target-min);
+  font-size: var(--text-p-sm);
 }
 
 .switch {
