@@ -10,7 +10,7 @@ import {
   type SignInMode,
   type SignInRole,
 } from '@/lib/api/data/auth';
-import { useSaveName, type NameToSave } from '@/lib/api/data/signIn';
+import { useSaveName, zoneToSave, type NameToSave } from '@/lib/api/data/signIn';
 import { useSession } from '@/lib/api/data/session';
 import { lastSignInMethod, rememberSignInMethod } from '@/lib/utils/lastUsed';
 import { checkFullName, splitFullName } from '@/lib/utils/name';
@@ -47,6 +47,8 @@ type Account = {
   mentorApproved: boolean;
   onboardingComplete: boolean | null;
   isNew: boolean;
+  /** `/me` `timezone`: the device's goes with the name only while this is unset or UTC. */
+  timezone: string | null;
 };
 
 export type SignInFlowOptions = {
@@ -182,7 +184,11 @@ export function useSignInFlow({
   const name = useCallback(
     async (a: Account, toSave: NameToSave, onRefused?: () => void): Promise<boolean> => {
       try {
-        await saveName.mutateAsync({ userId: a.id, name: toSave });
+        await saveName.mutateAsync({
+          userId: a.id,
+          name: toSave,
+          timezone: zoneToSave(a.timezone),
+        });
         return true;
       } catch (e) {
         // The session stays: the finish step offers the retry (PRD). Its

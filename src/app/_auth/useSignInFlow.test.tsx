@@ -14,6 +14,7 @@ const account = vi.fn();
 const user = vi.fn();
 const save = vi.fn();
 const signOutHere = vi.fn();
+const zoneFor = vi.fn();
 vi.mock('@/lib/api/data/auth', () => ({
   useSignOutHere: () => signOutHere,
   sendSignInCode: (...a: unknown[]) => send(...a),
@@ -24,6 +25,7 @@ vi.mock('@/lib/api/data/auth', () => ({
 vi.mock('@/lib/api/data/signIn', () => ({
   fetchSignInAccount: () => account(),
   useSaveName: () => ({ mutateAsync: (v: unknown) => save(v) }),
+  zoneToSave: (z: unknown) => zoneFor(z),
 }));
 
 const {
@@ -64,7 +66,9 @@ async function flush() {
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   session = { status: 'none' };
-  [replace, send, verify, google, account, user, save, signOutHere].forEach((f) => f.mockReset());
+  [replace, send, verify, google, account, user, save, signOutHere, zoneFor].forEach((f) =>
+    f.mockReset(),
+  );
   send.mockResolvedValue({ ok: true });
   save.mockResolvedValue(undefined);
   window.sessionStorage.clear();
@@ -663,11 +667,65 @@ describe('useSignInFlow — Use a different email on the finish step', () => {
     expect(save).toHaveBeenCalledWith({ userId: 'u1', name: { fullName: 'Amara Okafor' } });
   });
 
+  it('a sign-out that ends after the page is left changes nothing', async () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { result, unmount } = await onFinishStep();
+    let done!: (v: boolean) => void;
+    signOutHere.mockReturnValue(new Promise<boolean>((r) => (done = r)));
+    act(() => result.current.form.onUseDifferentEmail!());
+    unmount();
+    await act(async () => done(true));
+    await flush();
+    expect(replace).not.toHaveBeenCalled();
+    expect(errors).not.toHaveBeenCalled();
+    errors.mockRestore();
+  });
+
   it('leaves the code step’s Use a different email as it was: back to the start, no sign-out', async () => {
     const { result } = await toCode();
     act(() => result.current.form.onUseDifferentEmail!());
     expect(result.current.form.step).toBe('start');
     expect(result.current.form.email).toBe('amara@example.com');
     expect(signOutHere).not.toHaveBeenCalled();
+  });
+});
+
+describe('useSignInFlow — the device’s timezone with the name', () => {
+  // The rule itself is zoneToSave's (signIn.test): here, the account's /me zone reaches it.
+  beforeEach(() =>
+    zoneFor.mockImplementation((v) => (!v || v === 'UTC' ? 'Europe/London' : undefined)),
+  );
+
+  it.each([
+    ['still has the UTC default', 'UTC', 'Europe/London'],
+    ['already has a zone', 'Africa/Lagos', undefined],
+  ])('at sign-up, only when the account %s', async (_, z, sent) => {
+    const { result } = await toCode();
+    verify.mockResolvedValueOnce({ ok: true });
+    account.mockResolvedValueOnce(member({ timezone: z }));
+    await act(async () => result.current.form.onVerify!('482913'));
+    await flush();
+    expect(zoneFor).toHaveBeenCalledWith(z);
+    expect(save.mock.calls[0]![0]).toEqual({
+      userId: 'u1',
+      name: { fullName: 'Amara Okafor' },
+      timezone: sent,
+    });
+  });
+
+  it('on the finish step too, from the account read there', async () => {
+    session = { status: 'present', userId: 'u1' };
+    account.mockResolvedValueOnce(member({ timezone: 'UTC' }));
+    user.mockResolvedValue({ email: 'a@b.co', givenName: null, familyName: null });
+    const { result } = renderHook(() => useSignInFlow(opts({ mode: 'login' })));
+    await flush();
+    await flush();
+    act(() => result.current.form.onFullNameChange('Amara Okafor'));
+    await act(async () => result.current.form.onFinish!());
+    expect(save.mock.calls[0]![0]).toEqual({
+      userId: 'u1',
+      name: { fullName: 'Amara Okafor' },
+      timezone: 'Europe/London',
+    });
   });
 });

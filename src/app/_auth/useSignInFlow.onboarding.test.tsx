@@ -23,6 +23,7 @@ vi.mock('@/lib/api/data/auth', () => ({
 vi.mock('@/lib/api/data/signIn', () => ({
   fetchSignInAccount: () => account(),
   useSaveName: () => ({ mutateAsync: vi.fn() }),
+  zoneToSave: () => undefined,
 }));
 
 const { useSignInFlow, TOAST_MS } = await import('./useSignInFlow');

@@ -10,6 +10,7 @@ const verify = vi.fn();
 const google = vi.fn();
 const account = vi.fn();
 const save = vi.fn();
+const zoneFor = vi.fn();
 vi.mock('@/lib/api/data/auth', () => ({
   sendSignInCode: (...a: unknown[]) => send(...a),
   verifySignInCode: (...a: unknown[]) => verify(...a),
@@ -18,6 +19,7 @@ vi.mock('@/lib/api/data/auth', () => ({
 vi.mock('@/lib/api/data/signIn', () => ({
   fetchSignInAccount: () => account(),
   useSaveName: () => ({ mutateAsync: (v: unknown) => save(v) }),
+  zoneToSave: (z: unknown) => zoneFor(z),
 }));
 
 const pick = { sessionTypeId: 'st1', time: '2026-10-20T09:00:00Z' };
@@ -46,7 +48,7 @@ async function toCode(onboarding = false) {
 }
 
 beforeEach(() => {
-  [push, replace, send, verify, google, account, save].forEach((f) => f.mockReset());
+  [push, replace, send, verify, google, account, save, zoneFor].forEach((f) => f.mockReset());
   send.mockResolvedValue({ ok: true });
   save.mockResolvedValue(undefined);
   window.sessionStorage.clear();
@@ -77,6 +79,26 @@ describe('useBookingSignIn', () => {
     expect(result.current.stage).toBe('done');
     expect(result.current.signedInAs).toBeNull();
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['still has the UTC default', 'UTC', 'Europe/London'],
+    ['already has a zone', 'Africa/Lagos', undefined],
+  ])('saves the name with the device’s zone only when the account %s', async (_, z, sent) => {
+    // The rule itself is zoneToSave's (signIn.test): here, the account's /me zone reaches it.
+    zoneFor.mockImplementation((v) => (!v || v === 'UTC' ? 'Europe/London' : undefined));
+    const { result } = await toCode(false);
+    verify.mockResolvedValueOnce({ ok: true });
+    account.mockResolvedValueOnce(member({ timezone: z }));
+    await act(async () => result.current.onVerify('482913'));
+    act(() => result.current.onFullNameChange('Amara Okafor'));
+    await act(async () => result.current.onFinish(pick));
+    expect(zoneFor).toHaveBeenCalledWith(z);
+    expect(save.mock.calls[0]![0]).toEqual({
+      userId: 'u1',
+      name: { fullName: 'Amara Okafor' },
+      timezone: sent,
+    });
   });
 
   it('sends a new account to onboarding with the booking while onboarding is on', async () => {

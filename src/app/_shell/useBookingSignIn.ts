@@ -6,7 +6,7 @@ import type { GuestPick, GuestSignIn, GuestStage } from '@/components/organisms/
 import { loadAccount, toAccount } from '@/app/_auth/account';
 import { useEmailCodeAuth } from '@/app/_auth/useEmailCodeAuth';
 import { startGoogleSignIn } from '@/lib/api/data/auth';
-import { useSaveName } from '@/lib/api/data/signIn';
+import { useSaveName, zoneToSave } from '@/lib/api/data/signIn';
 import { ONBOARDING_LIVE, newAccountDestination } from '@/lib/config/auth';
 import { rememberSignInMethod } from '@/lib/utils/lastUsed';
 import { useOnline } from '@/lib/utils/useOnline';
@@ -44,6 +44,8 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
   const [finishing, setFinishing] = useState(false);
   const [signedInAs, setSignedInAs] = useState<string | null>(null);
   const userId = useRef<string | null>(null);
+  // The account's `/me` zone: the device's goes with the name only while it's unset or UTC.
+  const accountZone = useRef<string | null>(null);
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
@@ -74,6 +76,7 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
         if (acct.kind === 'noAccount') return router.replace('/');
         if (acct.kind === 'member') {
           userId.current = acct.id;
+          accountZone.current = acct.timezone;
           if (toAccount(acct).isNew) return setStage('name');
         }
         // A /me that keeps failing: carry on rather than drop the booking. An
@@ -141,7 +144,7 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
       setFinishing(true);
       setNameError(undefined);
       void saveName
-        .mutateAsync({ userId: id, name: { fullName } })
+        .mutateAsync({ userId: id, name: { fullName }, timezone: zoneToSave(accountZone.current) })
         .then(() => {
           if (!ONBOARDING_LIVE) {
             setFinishing(false);
