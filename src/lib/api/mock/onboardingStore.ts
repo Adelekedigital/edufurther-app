@@ -1,17 +1,16 @@
 /**
  * PHASE A MOCK STATE for mentee onboarding (Mentee Onboarding v5), served by
  * app/api/mock/… only when ENABLE_MOCK_API=1. In memory for the server's
- * lifetime. **PENDING BACKEND** (docs/handoff/onboarding-backend-request.md):
- * `PUT /me/onboarding`, `field_of_study`, the completion rule's `missing` and
- * `/me/mentor-matches` follow the request's shapes until the backend ships them.
+ * lifetime. Shapes follow the published spec (backend #1–#5 shipped); the mock
+ * ranking only approximates the backend's (domain/matching.py).
  */
-import type { WireMatches } from '@/lib/api/data/pending';
+import type { WireMatches } from '@/lib/api/data/mentorMatches';
 import { mockAvailabilityState, mockNextAvailableAt } from './availability';
 import { MOCK_COUNTRIES, mockItems } from './catalog';
 import { MOCK_DEGREE_LEVELS } from './entries';
 import { MENTORS, OFFERINGS, mockCountries } from './fixtures';
 
-type Progress = { last_step: string | null; completed_at: string | null };
+type Progress = { last_step: 'help' | 'plans' | null; completed_at: string | null };
 type Goal = {
   degree_goal_id: string | null;
   degree_goal_raw: string | null;
@@ -46,7 +45,11 @@ export const STEPS = ['help', 'plans'] as const;
 
 export const mockProgress = (userId: string) => progress.get(userId) ?? null;
 
-export function setMockStep(userId: string, step: string) {
+export type MockStep = (typeof STEPS)[number];
+export const isMockStep = (s: unknown): s is MockStep =>
+  typeof s === 'string' && (STEPS as readonly string[]).includes(s);
+
+export function setMockStep(userId: string, step: MockStep) {
   const p = progress.get(userId);
   // Never moves completed_at (PRD B2).
   progress.set(userId, { last_step: step, completed_at: p?.completed_at ?? null });
@@ -127,6 +130,9 @@ function levelOf(degree: string | null | undefined): { rank: number; label: stri
   return null;
 }
 const RANK: Record<string, number> = { bachelors: 1, masters: 2, doctorate: 3 };
+const LEVEL_ID: Record<number, string> = Object.fromEntries(
+  MOCK_DEGREE_LEVELS.flatMap((l) => (RANK[l.code] ? [[RANK[l.code]!, l.id]] : [])),
+);
 
 /**
  * The owner's order (2026-10-17, superseding PRD B4), approximately (the real
@@ -184,8 +190,9 @@ export function mockMatches(userId: string, limit: number, forMentor: string | n
           next_available_state: mockAvailabilityState(m.id),
         },
         reasons,
-        level: lv?.label ?? null,
-        study_country: c.primary_study_country,
+        // The mentor's own level, by rank, as a catalogue ref.
+        level: lv ? { id: LEVEL_ID[lv.rank] ?? lv.label, label: lv.label } : null,
+        study_country: c.primary_study_country ? ref(c.primary_study_country) : null,
       },
     };
   });

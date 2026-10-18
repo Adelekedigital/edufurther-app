@@ -3,12 +3,15 @@
 import { useQuery } from '@tanstack/react-query';
 import type { Topic } from '@/types/mentor';
 import type { MatchBasis, MatchReason, MentorMatch } from '@/types/onboarding';
+import type { components } from '@/lib/api/generated/schema';
 import { ApiError, normaliseError, retryOnce } from './errors';
+import { api } from './http';
 import { keys } from './keys';
 import { toMentor } from './mentors';
-import { untyped, type WireMatches, type WireReason } from './pending';
 
-export type { WireMatches };
+/** `GET /me/mentor-matches` as the spec publishes it (backend #4). */
+export type WireMatches = components['schemas']['MentorMatchesRead'];
+type WireReason = WireMatches['matches'][number]['reasons'][number];
 
 /** Reason codes the frontend words; an unknown code from a later backend is skipped. */
 function toReason(r: WireReason, topics: Topic[]): MatchReason | null {
@@ -26,6 +29,7 @@ function toReason(r: WireReason, topics: Topic[]): MatchReason | null {
     case 'field':
       return { code: 'field', field: r.field };
     default:
+      // A later backend may add codes the published union doesn't list yet: skipped.
       return null;
   }
 }
@@ -33,7 +37,7 @@ function toReason(r: WireReason, topics: Topic[]): MatchReason | null {
 export type Matches = {
   matches: MentorMatch[];
   exact: boolean;
-  basis: MatchBasis | null;
+  basis: MatchBasis;
   forMentorBookable: boolean;
 };
 
@@ -43,14 +47,15 @@ export function toMatches(w: WireMatches, topics: Topic[]): Matches {
     matches: w.matches.map((m) => ({
       mentor: toMentor(m.mentor),
       reasons: m.reasons.flatMap((r) => toReason(r, topics) ?? []),
-      level: m.level ?? null,
-      studyCountry: m.study_country ?? m.mentor.primary_study_country ?? null,
+      // Refs ({id, label}): the label is what the "{level} · {country}" line shows.
+      level: m.level?.label ?? null,
+      studyCountry: m.study_country?.label ?? m.mentor.primary_study_country ?? null,
     })),
     exact: w.exact,
-    basis: b && {
+    basis: {
       // As the mentee chose it: "MBA", not the stored Master's.
       degree: b.degree?.raw || b.degree?.label || null,
-      field: b.field,
+      field: b.field ?? null,
       country: b.country?.label ?? null,
       origin: b.origin?.label ?? null,
     },
@@ -70,12 +75,12 @@ export function useMentorMatches(
   const query = useQuery({
     queryKey: keys.onboarding.matches(userId ?? 'none', forMentor ?? ''),
     queryFn: async ({ signal }) => {
-      const { data, response } = await untyped.GET('/api/v1/me/mentor-matches', {
+      const { data, response } = await api.GET('/api/v1/me/mentor-matches', {
         params: { query: { limit: 2, ...(forMentor ? { for_mentor: forMentor } : {}) } },
         signal,
       });
       if (!response.ok || !data) throw new ApiError(response.status);
-      return data as WireMatches;
+      return data;
     },
     enabled: enabled && userId !== null,
     retry: retryOnce,

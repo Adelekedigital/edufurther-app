@@ -42,7 +42,6 @@ export async function GET() {
       origin_country: originRef(mockItems(MOCK_VIEWER_ID).origin_country_id ?? null),
     },
     // Complete once completion has run (PRD B3), not merely when nothing is missing.
-    // `last_step` is pending on the real /me (requested 2026-10-17).
     onboarding: {
       complete: !!mockProgress(MOCK_VIEWER_ID)?.completed_at,
       missing,

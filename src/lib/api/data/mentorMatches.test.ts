@@ -25,7 +25,7 @@ describe('toMatches', () => {
             { code: 'help_areas', offering_ids: ['o-doc', 'gone'] },
             { code: 'unknown' } as never,
           ],
-          level: 'Master’s',
+          level: { id: 'dl-masters', label: 'Master’s' },
         },
       ],
       exact: false,
@@ -49,7 +49,55 @@ describe('toMatches', () => {
   });
 
   it('reads a picked mentor who is no longer bookable (PRD rev 93)', () => {
-    const w: WireMatches = { matches: [], exact: true, based_on: null, for_mentor_bookable: false };
+    const w: WireMatches = { matches: [], exact: true, based_on: {}, for_mentor_bookable: false };
     expect(toMatches(w, []).forMentorBookable).toBe(false);
+    // Sent only with for_mentor: null (or absent) never reads as unbookable.
+    expect(toMatches({ ...w, for_mentor_bookable: null }, []).forMentorBookable).toBe(true);
+  });
+
+  it('reads the fallback line from the match item’s own refs, never an object', () => {
+    const w: WireMatches = {
+      matches: [
+        {
+          mentor,
+          reasons: [],
+          level: { id: 'dl-masters', label: 'Master’s' },
+          study_country: { id: 'c-gb', label: 'United Kingdom' },
+        },
+      ],
+      exact: false,
+      based_on: {},
+    };
+    const m = toMatches(w, []).matches[0]!;
+    expect(m.level).toBe('Master’s');
+    expect(m.studyCountry).toBe('United Kingdom');
+    // No refs: the card's own country, and no level.
+    const bare = toMatches({ ...w, matches: [{ mentor, reasons: [] }] }, []).matches[0]!;
+    expect(bare).toMatchObject({ level: null, studyCountry: 'United Kingdom' });
+  });
+
+  it('maps the country, origin and field reasons, and an empty basis to nothing', () => {
+    const uk = { id: 'c-gb', label: 'United Kingdom' };
+    const w: WireMatches = {
+      matches: [
+        {
+          mentor,
+          reasons: [
+            { code: 'field', field: 'International Law' },
+            { code: 'origin', country: { id: 'c-ng', label: 'Nigeria' } },
+            { code: 'study_country', country: uk },
+          ],
+        },
+      ],
+      exact: true,
+      based_on: {},
+    };
+    const m = toMatches(w, []);
+    expect(m.matches[0]!.reasons).toEqual([
+      { code: 'field', field: 'International Law' },
+      { code: 'origin', country: { id: 'c-ng', label: 'Nigeria' } },
+      { code: 'study_country', country: uk },
+    ]);
+    expect(m.basis).toEqual({ degree: null, field: null, country: null, origin: null });
   });
 });
