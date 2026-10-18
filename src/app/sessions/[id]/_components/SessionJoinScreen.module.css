@@ -38,6 +38,8 @@
   margin: 0;
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
-  color: var(--text-danger);
+  /* red-600, not --text-danger (red-500): this sits on the lobby's blue-50,
+     where red-500 is 4.46:1, under AA. Calendar v2 draws errors in red-600. */
+  color: var(--red-600);
   text-align: center;
 }
