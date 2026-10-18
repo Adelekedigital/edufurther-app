@@ -1,9 +1,9 @@
 'use client';
 
+import type { components } from '@/lib/api/generated/schema';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApiError, apiError, normaliseError } from './errors';
 import { api } from './http';
-import type { PendingAboutWrite } from './pending';
 import { keys } from './keys';
 
 export type IntroEdit = { firstName: string; lastName: string; headline: string };
@@ -76,23 +76,31 @@ export function introProblems(before: IntroEdit, after: IntroEdit): IntroEditErr
 /** Whether the saved About is still an untouched AI draft (PRD B7). */
 export type AboutProvenance = { drafted: boolean; promptVersion: string | null };
 
+type AboutWrite = Pick<
+  components['schemas']['UserProfileWrite'],
+  'about_me_drafted' | 'about_me_prompt_version'
+>;
+
 /**
- * The About PATCH. Blank clears it (the server treats blank as null). With
- * provenance: true stamps the draft and its prompt version, false clears both
- * (PENDING BACKEND #8, lib/api/data/pending.ts). Still drafted but with no
- * version (a draft saved earlier, untouched now) sends nothing, so what the
- * server holds stays as it is.
+ * The About PATCH (backend #8). Blank clears it (the server treats blank as
+ * null). With provenance: true stamps the draft with its prompt version (the
+ * server sets the time); false alone clears the record. Still drafted but
+ * with no version (a draft saved earlier, untouched now) sends neither, so
+ * what the server holds stays as it is.
  */
+
 export function aboutBody(text: string, provenance?: AboutProvenance) {
   const keep = provenance?.drafted && !provenance.promptVersion;
-  const pending: PendingAboutWrite | undefined =
-    provenance && !keep
-      ? {
-          about_me_drafted: provenance.drafted,
-          about_me_prompt_version: provenance.drafted ? provenance.promptVersion : null,
-        }
-      : undefined;
-  return { about_me: text.trim() || null, ...pending };
+  // The published contract: drafted:true carries its version (the server
+  // stamps the time); drafted:false alone clears both. A version without
+  // drafted:true is refused, so it's never sent to clear.
+  const stamp: AboutWrite =
+    !provenance || keep
+      ? {}
+      : provenance.drafted && provenance.promptVersion
+        ? { about_me_drafted: true, about_me_prompt_version: provenance.promptVersion }
+        : { about_me_drafted: false };
+  return { about_me: text.trim() || null, ...stamp };
 }
 
 export function useProfileEdit(userId: string | null) {
