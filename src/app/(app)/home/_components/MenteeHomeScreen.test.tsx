@@ -6,12 +6,22 @@ import type { AppError, Remote, Viewer } from '@/types/mentor';
 import type { MetMentor } from '@/lib/api/data/metMentors';
 import { MenteeHomeScreen } from './MenteeHomeScreen';
 
+/** The nudge's region, named by whichever title it shows. */
+const NUDGE = /^(Add your study plans|What do you need help with\?|Finish setting up)$/;
+
 const replace = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace }),
 }));
 
 let viewer: Viewer;
+let onboardingLive = false;
+vi.mock('@/lib/config/auth', async (orig) => ({
+  ...(await orig<typeof import('@/lib/config/auth')>()),
+  get ONBOARDING_LIVE() {
+    return onboardingLive;
+  },
+}));
 vi.mock('@/app/_shell/useAppShell', () => ({
   MATCH_CALL_URL: 'https://cal.test',
   useAppShell: () => ({
@@ -43,10 +53,12 @@ vi.mock('@/lib/api/data/metMentors', () => ({
 // screen only needs to know a booking opened, so stub it to a marker.
 vi.mock('@/app/_shell/BookingLauncher/BookingLauncher', () => ({
   BookingLauncher: ({ mentor, hideProfileLink }: { mentor: unknown; hideProfileLink?: boolean }) =>
-    mentor ? <div data-testid="booking-open" data-hide-profile={String(!!hideProfileLink)} /> : null,
+    mentor ? (
+      <div data-testid="booking-open" data-hide-profile={String(!!hideProfileLink)} />
+    ) : null,
 }));
 
-const remote =<T,>(data: T | null, over: Partial<Remote<T>> = {}): Remote<T> => ({
+const remote = <T,>(data: T | null, over: Partial<Remote<T>> = {}): Remote<T> => ({
   data,
   isLoading: false,
   error: null,
@@ -207,7 +219,9 @@ describe('MenteeHomeScreen', () => {
 
   it('the idle card shows free sessions left, pluralised, and drops the line at 0', () => {
     const monthly = (balance: number) =>
-      ({ monthly: { balance, ceiling: 3, expiresAt: null, unlocked: true } }) as unknown as (typeof MEMBER)['credits'];
+      ({
+        monthly: { balance, ceiling: 3, expiresAt: null, unlocked: true },
+      }) as unknown as (typeof MEMBER)['credits'];
     upcoming = remote([]);
     viewer = { ...MEMBER, credits: monthly(2) };
     const { rerender } = render(<MenteeHomeScreen />);
@@ -251,7 +265,12 @@ describe('MenteeHomeScreen', () => {
       // 61 min out: just outside the within-the-hour window, join not yet open.
       viewer = MEMBER;
       upcoming = remote([
-        booking({ startsAt: mins(61), endsAt: mins(106), joinOpensAt: mins(51), joinClosesAt: mins(76) }),
+        booking({
+          startsAt: mins(61),
+          endsAt: mins(106),
+          joinOpensAt: mins(51),
+          joinClosesAt: mins(76),
+        }),
       ]);
       render(<MenteeHomeScreen />);
       expect(screen.getByRole('link', { name: 'View details' })).toBeInTheDocument();
@@ -298,7 +317,7 @@ describe('MenteeHomeScreen', () => {
     viewer = { ...MEMBER, completedSessions: 2 };
     render(<MenteeHomeScreen />);
     expect(
-      screen.getByRole('complementary', { name: 'Not sure which mentor to choose?' }),
+      screen.getByRole('complementary', { name: 'Not sure where to start?' }),
     ).toBeInTheDocument();
   });
 
@@ -358,5 +377,80 @@ describe('MenteeHomeScreen', () => {
     viewer = { kind: 'guest' };
     render(<MenteeHomeScreen />);
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/explore'));
+  });
+
+  describe('the onboarding nudge (PRD F4)', () => {
+    beforeEach(() => {
+      onboardingLive = true;
+      window.sessionStorage.clear();
+    });
+    afterEach(() => {
+      onboardingLive = false;
+    });
+
+    it('shows what is missing under the greeting, and the help pill steps aside', () => {
+      viewer = { ...MEMBER, completedSessions: 2, onboardingMissing: ['plans'] };
+      render(<MenteeHomeScreen />);
+      expect(screen.getByRole('region', { name: NUDGE })).toHaveTextContent('Add your study plans');
+      expect(screen.getByRole('link', { name: 'Add study plans' })).toHaveAttribute(
+        'href',
+        '/onboarding',
+      );
+      expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+    });
+
+    it('hides for the rest of the visit, and the help pill comes back', async () => {
+      viewer = { ...MEMBER, completedSessions: 2, onboardingMissing: ['help'] };
+      const { unmount } = render(<MenteeHomeScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Hide for now' }));
+      expect(screen.queryByRole('region', { name: NUDGE })).toBeNull();
+      expect(
+        screen.getByRole('complementary', { name: 'Not sure where to start?' }),
+      ).toBeInTheDocument();
+      unmount();
+      // Back on Home in the same visit: still hidden.
+      render(<MenteeHomeScreen />);
+      expect(screen.queryByRole('region', { name: NUDGE })).toBeNull();
+    });
+
+    it('survives the move from loading to a member (hooks keep their order)', () => {
+      viewer = { kind: 'loading', signedIn: true };
+      const { rerender } = render(<MenteeHomeScreen />);
+      viewer = { ...MEMBER, onboardingMissing: ['plans'] };
+      rerender(<MenteeHomeScreen />);
+      expect(screen.getByRole('region', { name: NUDGE })).toBeInTheDocument();
+    });
+
+    it('keeps the reader at the top after Hide for now: focus moves to the greeting', async () => {
+      viewer = { ...MEMBER, onboardingMissing: ['plans'] };
+      render(<MenteeHomeScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Hide for now' }));
+      expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
+    });
+
+    it('hides per account: another sign-in on the same tab still gets its nudge', async () => {
+      viewer = { ...MEMBER, onboardingMissing: ['plans'] };
+      const { unmount } = render(<MenteeHomeScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Hide for now' }));
+      unmount();
+      viewer = { ...MEMBER, id: 'someone-else', onboardingMissing: ['plans'] };
+      render(<MenteeHomeScreen />);
+      expect(screen.getByRole('region', { name: NUDGE })).toBeInTheDocument();
+    });
+
+    it('never shows with nothing missing, for a mentor, or with the flag off', () => {
+      viewer = { ...MEMBER, onboardingMissing: [] };
+      const a = render(<MenteeHomeScreen />);
+      expect(screen.queryByRole('region', { name: NUDGE })).toBeNull();
+      a.unmount();
+      viewer = { ...MEMBER, isMentor: true, onboardingMissing: ['plans'] };
+      const b = render(<MenteeHomeScreen />);
+      expect(screen.queryByRole('region', { name: NUDGE })).toBeNull();
+      b.unmount();
+      onboardingLive = false;
+      viewer = { ...MEMBER, onboardingMissing: ['plans'] };
+      render(<MenteeHomeScreen />);
+      expect(screen.queryByRole('region', { name: NUDGE })).toBeNull();
+    });
   });
 });

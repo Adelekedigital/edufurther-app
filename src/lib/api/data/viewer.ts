@@ -6,6 +6,7 @@ import { useQuery, type QueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { authConfigured } from '@/lib/vendor/supabase/config';
 import type { Viewer } from '@/types/mentor';
+import type { NudgePart } from '@/types/onboarding';
 import { coverKey } from '@/lib/utils/cover';
 import { ApiError } from './errors';
 import { api } from './http';
@@ -13,6 +14,20 @@ import { keys } from './keys';
 import { useSession } from './session';
 
 type UserRead = components['schemas']['UserRead'];
+
+const PLAN_CODES = new Set(['origin', 'degree', 'field']);
+
+/**
+ * `/me onboarding.missing` → the nudge's two parts: help, and origin/degree/field
+ * as plans. A code a later backend adds is ignored, never worded as plans.
+ */
+export function nudgeParts(missing: readonly string[] | null | undefined): NudgePart[] {
+  if (!missing) return [];
+  const parts: NudgePart[] = [];
+  if (missing.includes('help')) parts.push('help');
+  if (missing.some((m) => PLAN_CODES.has(m))) parts.push('plans');
+  return parts;
+}
 
 /**
  * GET /api/v1/me → Viewer (backend auth reply #3). Roles come from rows, never
@@ -31,6 +46,7 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     isListedMentor: me.mentor_profile?.listing_status === 'listed',
     timeZone: me.timezone || undefined,
     completedSessions: me.mentee_completed_sessions,
+    onboardingMissing: nudgeParts(me.onboarding?.missing),
     createdAt: me.created_at,
     credits: me.credits
       ? {
@@ -153,6 +169,12 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
   },
 };
 
+// The same mentee, still owing their study plans: the onboarding nudge on Home.
+MOCK_VIEWERS['mentee-unfinished'] = {
+  ...(MOCK_VIEWERS.mentee as Extract<Viewer, { kind: 'member' }>),
+  onboardingMissing: ['plans'],
+};
+
 const readMockParam = () => new URLSearchParams(window.location.search).get('mockViewer');
 const onPopState = (cb: () => void) => {
   window.addEventListener('popstate', cb);
@@ -231,7 +253,7 @@ type Member = Extract<Viewer, { kind: 'member' }>;
  */
 export function patchViewer(
   qc: QueryClient,
-  patch: Partial<Pick<Member, 'avatarUrl' | 'avatarFocus' | 'coverKey'>>,
+  patch: Partial<Pick<Member, 'avatarUrl' | 'avatarFocus' | 'coverKey' | 'onboardingMissing'>>,
 ) {
   qc.setQueriesData<unknown>({ queryKey: keys.viewer.all }, (v: unknown) =>
     typeof v === 'object' && v !== null && (v as Viewer).kind === 'member'

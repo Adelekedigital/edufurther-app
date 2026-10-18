@@ -44,3 +44,6 @@ export type PlanAnswers = {
   /** A country id, NOT_SURE, or '' for none. */
   destinationId: string;
 };
+
+/** The parts of onboarding a mentee may still owe, as the nudge groups them (origin/degree/field are "plans"). */
+export type NudgePart = 'help' | 'plans';
