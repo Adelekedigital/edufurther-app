@@ -66,7 +66,7 @@ export const MatchPromptGuest: StoryObj = {
     <MatchPrompt
       href="https://example.invalid/match"
       external
-      body="Tell us your goals and we’ll suggest mentors who’ve already been where you’re going."
+      body="Book a free 1-on-1 call with someone from the EduFurther team. We’ll help you plan your next steps and suggest mentors to start with."
     />
   ),
 };

@@ -81,7 +81,7 @@ export function MatchPill({
   return (
     <aside
       ref={asideRef}
-      aria-label="Get matched"
+      aria-label="Talk to our team"
       className={cx(
         styles.pill,
         styles[size],
@@ -113,7 +113,7 @@ export function MatchPill({
           <Icon name="route" size={20} className={styles.route} />
           <span className={styles.label}>Not sure where to start?</span>
           <a href={href} className={styles.cta} {...linkProps}>
-            Find matches
+            Book a free call
             <Icon name={external ? 'open_in_new' : 'arrow_forward'} size={16} />
             {external && <span className="sr-only"> (opens in a new tab)</span>}
           </a>
@@ -162,7 +162,7 @@ export function MatchPill({
               </p>
               <p className={styles.popoverBody}>{body}</p>
               <a href={href} className={styles.popoverCta} {...linkProps}>
-                Find my matches
+                Book a free call
                 <Icon name={external ? 'open_in_new' : 'arrow_forward'} size={16} />
                 {external && <span className="sr-only"> (opens in a new tab)</span>}
               </a>
