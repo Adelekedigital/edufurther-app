@@ -12,6 +12,7 @@ import { PhotoPicker } from '@/components/molecules/PhotoPicker/PhotoPicker';
 import type { CatalogOption } from '@/lib/api/data/catalog';
 import { ABOUT_COPY as C, GAP_COPY } from '@/lib/copy/mentorOnboarding';
 import type { MentorGap } from '@/types/mentorOnboarding';
+import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { StepTitles } from './StepTitles';
 import styles from './AboutStep.module.css';
 import step from './steps.module.css';
@@ -164,8 +165,18 @@ export function AboutStep({
       </section>
 
       <section className={step.section}>
+        {/* Always mounted, so the draft starting and failing are both heard. */}
+        <LiveRegion
+          message={
+            drafting
+              ? { text: C.drafting, id: 1 }
+              : draftFailed
+                ? { text: C.draftFailed, id: 2 }
+                : null
+          }
+        />
         {drafting ? (
-          <div role="status" className={styles.drafting}>
+          <div className={styles.drafting}>
             <Spinner size={20} />
             {C.drafting}
           </div>
@@ -182,7 +193,11 @@ export function AboutStep({
               placeholder={C.aboutPlaceholder}
               onAssist={onAssist}
             />
-            {draftFailed && <Notice tone="info">{C.draftFailed}</Notice>}
+            {draftFailed && (
+              <Notice tone="info" live={false}>
+                {C.draftFailed}
+              </Notice>
+            )}
           </>
         )}
       </section>

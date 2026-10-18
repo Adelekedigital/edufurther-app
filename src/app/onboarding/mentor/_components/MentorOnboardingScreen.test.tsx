@@ -23,14 +23,17 @@ const countries = [
   { id: 'c-us', label: 'United States', code: 'US' },
 ];
 vi.mock('@/lib/api/data/catalog', () => ({ useFieldsOfStudy: () => null }));
+let topicsError: Error | null = null;
 vi.mock('@/lib/api/data/mentors', () => ({
   useTopics: () => ({
-    topics: [
-      { id: 'o-docs', slug: 'document-preparation', label: 'Document preparation' },
-      { id: 'o-school', slug: 'school-selection', label: 'School selection' },
-    ],
+    topics: topicsError
+      ? []
+      : [
+          { id: 'o-docs', slug: 'document-preparation', label: 'Document preparation' },
+          { id: 'o-school', slug: 'school-selection', label: 'School selection' },
+        ],
     isLoading: false,
-    error: null,
+    error: topicsError,
     retry: vi.fn(),
   }),
 }));
@@ -149,6 +152,7 @@ beforeEach(() => {
   institutions = [];
   avatar.uploadedStamp = 0;
   avatar.uploadedUrl = null;
+  topicsError = null;
 });
 
 describe('MentorOnboardingScreen', () => {
@@ -259,12 +263,13 @@ describe('MentorOnboardingScreen', () => {
     appState = stateWith({ lastStep: 'education', hasProfile: true });
     requestAssist.mockRejectedValueOnce(new Error('down'));
     render(<MentorOnboardingScreen />);
-    expect(screen.getByText('Drafting from your education and help areas…')).toBeInTheDocument();
+    // On screen and in the announcement: both copies.
+    expect(screen.getAllByText('Drafting from your education and help areas…')).toHaveLength(2);
     expect(
-      await screen.findByText(
+      await screen.findAllByText(
         'We couldn’t draft your About right now. Write a few lines, or add it later in your profile.',
       ),
-    ).toBeInTheDocument();
+    ).toHaveLength(2);
     expect(screen.getByLabelText('About (optional)')).toBeEnabled();
   });
 
@@ -461,6 +466,31 @@ describe('MentorOnboardingScreen', () => {
     await userEvent.click(add);
     await userEvent.click(screen.getByRole('button', { name: 'Remove school 2' }));
     expect(add).toHaveFocus();
+  });
+
+  it('a failed help-areas list shows the load error, never an empty step 1', () => {
+    topicsError = new Error('down');
+    render(<MentorOnboardingScreen />);
+    expect(screen.getByText('We couldn’t load your application')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'What can you help mentees with?' })).toBeNull();
+  });
+
+  it('the first draft is announced from a region that was already there, start and failure', async () => {
+    appState = stateWith({ lastStep: 'education', hasProfile: true });
+    let fail: (e: Error) => void = () => {};
+    requestAssist.mockReturnValueOnce(new Promise((_, reject) => (fail = reject)));
+    render(<MentorOnboardingScreen />);
+    const regions = () =>
+      screen.getAllByRole('status').filter((r) => r.className.includes('sr-only'));
+    expect(regions().some((r) => r.textContent?.includes('Drafting from your education'))).toBe(
+      true,
+    );
+    fail(new Error('down'));
+    await waitFor(() =>
+      expect(regions().some((r) => r.textContent?.includes('We couldn’t draft your About'))).toBe(
+        true,
+      ),
+    );
   });
 
   it('a decided application at submit goes to the status page, never "try again"', async () => {

@@ -153,7 +153,8 @@ export function useMentorOnboardingFlow() {
   const promptVersion = useRef<string | null>(null);
 
   const state = app.state;
-  const ready = !!state && !topics.isLoading;
+  // A failed help-areas list is a load error, never a step 1 with no chips.
+  const ready = !!state && !topics.isLoading && !topics.error;
   const decided = state?.approvalStatus === 'declined' || state?.approvalStatus === 'approved';
   if (form === null && ready && !decided) {
     const last = state.lastStep;
