@@ -117,6 +117,12 @@ export type SessionType = {
   /** What the mentor asks before the session. */
   questions: IntakeQuestion[];
   /**
+   * Booking it is a request the mentor accepts (true), or confirms at once
+   * (false): the offering's setting, else its mentor's (backend-resolved).
+   * Absent in older fixtures: a request.
+   */
+  requiresConfirmation?: boolean;
+  /**
    * How many days ahead it can be booked (its effective window). Absent only
    * in older fixtures: the modal then shows its default four weeks.
    */

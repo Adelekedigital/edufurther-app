@@ -405,4 +405,19 @@ describe('BookingFlow week view (7 days at a time)', () => {
     expect(screen.getByRole('radio', { name: '9:00 am' })).toBeChecked();
     expect(screen.queryByRole('button', { name: 'Back' })).toBeNull();
   });
+
+  it('says Book, not Request, when the offering confirms at once', () => {
+    const instant = sessionTypes.map((t) => ({ ...t, requiresConfirmation: false }));
+    render(
+      <BookingFlow
+        {...props({
+          sessionTypeId: 'st2',
+          sessionTypes: remote(instant),
+          slots: remote([...slots, '2026-10-06T09:00:00Z']),
+          initialTime: '2026-10-06T09:00:00Z',
+        })}
+      />,
+    );
+    expect(screen.getByRole('button', { name: /^Book Tue, Oct 6/ })).toBeEnabled();
+  });
 });

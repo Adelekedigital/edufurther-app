@@ -52,17 +52,3 @@ export function NoTimes({ firstName, manyTypes }: { firstName: string; manyTypes
     />
   );
 }
-
-export function RequestSent({ picked, firstName }: { picked: string; firstName: string }) {
-  return (
-    <div className={styles.done}>
-      <EmptyState
-        illustration="calendar"
-        headingLevel={3}
-        size={120}
-        title="Request sent"
-        description={`${picked} is on hold. You’ll get an email when ${firstName} replies.`}
-      />
-    </div>
-  );
-}

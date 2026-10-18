@@ -124,6 +124,8 @@ describe('toSessionType', () => {
       name: 'CV review',
       durationMin: 45,
       description: '',
+      // No setting sent: a request, as before.
+      requiresConfirmation: true,
       questions: [],
       windowDays: 56,
     });

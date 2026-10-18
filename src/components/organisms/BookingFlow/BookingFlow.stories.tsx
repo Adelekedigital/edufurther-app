@@ -80,8 +80,14 @@ const sessionTypes: SessionType[] = [
   },
 ];
 // Bookable instants, as GET …/availability/slots returns them (UTC).
+// Five days from tomorrow, real dates: the grid only offers future times, and
+// the old fixed "2026-09-${28 + i}" made Sep 31 and 32 (every story with slots
+// crashed) and has since slipped into the past.
+const tomorrow = new Date();
+tomorrow.setUTCHours(0, 0, 0, 0);
+tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 const slots = [0, 1, 2, 3, 4].flatMap((i) =>
-  [9, 13].map((h) => `2026-09-${28 + i}T${String(h).padStart(2, '0')}:00:00Z`),
+  [9, 13].map((h) => new Date(tomorrow.getTime() + (i * 24 + h) * 3_600_000).toISOString()),
 );
 const remote = <T,>(data: T | null, over: Partial<Remote<T>> = {}): Remote<T> => ({
   data,
@@ -178,7 +184,11 @@ export const RequestFailed: Story = {
   },
 };
 export const Sending: Story = { args: { requestPending: true } };
-export const Sent: Story = { args: { requestDone: true } };
+// A request is always sent with a time: the sent state shows it.
+export const Sent: Story = { args: { requestDone: true, initialTime: slots[2] } };
+export const SentConfirmed: Story = {
+  args: { requestDone: true, requestConfirmed: true, initialTime: slots[2] },
+};
 
 // ---- phones: the sheet (BookingModal.dc.html mobileView=sheet) --------------
 // The organism stories cannot import ModalShell (a template), so this frame only
@@ -245,7 +255,19 @@ export const PhoneError: Story = {
   ...phone,
   args: { renderShell: phoneShell, slots: remote<string[]>(null, { error: failed }) },
 };
-export const PhoneSent: Story = { ...phone, args: { renderShell: phoneShell, requestDone: true } };
+export const PhoneSent: Story = {
+  ...phone,
+  args: { renderShell: phoneShell, requestDone: true, initialTime: slots[2] },
+};
+export const PhoneSentConfirmed: Story = {
+  ...phone,
+  args: {
+    renderShell: phoneShell,
+    requestDone: true,
+    requestConfirmed: true,
+    initialTime: slots[2],
+  },
+};
 export const PhoneNoOpenTimes: Story = {
   ...phone,
   args: { renderShell: phoneShell, slots: remote([]) },

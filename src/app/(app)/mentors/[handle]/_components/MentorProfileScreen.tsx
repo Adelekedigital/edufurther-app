@@ -746,6 +746,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           onRequest={booking.request.request}
           requestPending={booking.request.isPending}
           requestDone={booking.request.isDone}
+          requestConfirmed={booking.request.isConfirmed}
           requestError={booking.request.error}
           onUpload={booking.uploadIntakeFile}
           onClose={booking.close}

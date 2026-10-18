@@ -364,6 +364,7 @@ const bookingMock = () => ({
     request: vi.fn(),
     isPending: false,
     isDone: false,
+    isConfirmed: false,
     error: null,
     reset: vi.fn(),
   }),
