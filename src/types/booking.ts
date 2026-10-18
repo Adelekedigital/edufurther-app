@@ -175,12 +175,6 @@ export type Booking = {
 /** Which tab a booking belongs to. */
 export type BookingTab = 'upcoming' | 'pending' | 'history';
 
-/** What `POST /sessions/{id}/join` gives back. */
-export type JoinResult = {
-  /** Where to go. Null means attendance was recorded but there is no venue. */
-  meetingUrl: string | null;
-};
-
 /** The one Word type the upload accepts; spelled out because it is unreadable inline. */
 type IntakeDocType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 

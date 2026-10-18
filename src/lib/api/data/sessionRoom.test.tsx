@@ -1,17 +1,15 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { focusManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { components } from '@/lib/api/generated/schema';
-import { useJoinSession } from './bookings';
 import { pollInterval, ROOM_POLL_MS, toSessionRoom, useSessionRoom } from './sessionRoom';
 
 type SessionRead = components['schemas']['SessionRead'];
 
 const get = vi.fn();
-const post = vi.fn();
 vi.mock('./http', () => ({
-  api: { GET: (...a: unknown[]) => get(...a), POST: (...a: unknown[]) => post(...a) },
+  api: { GET: (...a: unknown[]) => get(...a) },
 }));
 vi.mock('./session', () => ({
   useSession: () => ({ status: 'present', userId: 'me' }),
@@ -62,7 +60,6 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 beforeEach(() => {
   get.mockReset();
-  post.mockReset();
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 });
 
@@ -92,19 +89,15 @@ describe('pollInterval', () => {
   });
 });
 
-describe('after Join', () => {
-  it('re-reads the room at once, so the page shows you as here without waiting for a poll', async () => {
+describe('back on the page after Join', () => {
+  it('re-reads the room on return, even inside the fresh window, so Joined and Rejoin show at once', async () => {
     get.mockResolvedValueOnce(ok(row())).mockResolvedValueOnce(ok(row('2026-10-04T16:57:00Z')));
-    post.mockResolvedValue(ok({ meeting_url: 'https://room.test/x' }));
-    const { result } = renderHook(
-      () => ({ room: useSessionRoom('s1', 'me'), join: useJoinSession() }),
-      { wrapper },
-    );
-    await waitFor(() => expect(result.current.room.data?.me.joinedAt).toBeNull());
-    act(() => result.current.join.mutate('s1'));
-    await waitFor(() =>
-      expect(result.current.room.data?.me.joinedAt).toBe('2026-10-04T16:57:00Z'),
-    );
+    const { result } = renderHook(() => useSessionRoom('s1', 'me'), { wrapper });
+    await waitFor(() => expect(result.current.data?.me.joinedAt).toBeNull());
+    // Join opened the call in a new tab; this one comes back into view.
+    act(() => focusManager.setFocused(true));
+    await waitFor(() => expect(result.current.data?.me.joinedAt).toBe('2026-10-04T16:57:00Z'));
     expect(get).toHaveBeenCalledTimes(2);
+    act(() => focusManager.setFocused(undefined));
   });
 });

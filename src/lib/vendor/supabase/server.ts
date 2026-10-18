@@ -36,11 +36,11 @@ export const SESSION_HINT_HEADER = 'x-ef-session';
 
 /**
  * Request header carrying the access token the proxy just verified (and, if
- * needed, refreshed and saved), for the one render that calls the API on the
- * server (`/`). The render never builds a Supabase client: one there could
- * refresh the token without being able to save the new cookies, leaving the
- * browser a rotated-out refresh token. Set only for `/`; any client value is
- * removed.
+ * needed, refreshed and saved), for the two requests that call the API on the
+ * server: `/` and `/sessions/{id}/enter` (ADR 0009). Neither builds a Supabase
+ * client: one there could refresh the token without being able to save the new
+ * cookies, leaving the browser a rotated-out refresh token. Set only for those
+ * paths; any client value is removed on every path.
  */
 export const ACCESS_TOKEN_HEADER = 'x-ef-access-token';
 

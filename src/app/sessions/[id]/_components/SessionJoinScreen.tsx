@@ -1,12 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
-import { Notice } from '@/components/molecules/Notice/Notice';
 import { SessionLobby } from '@/components/organisms/SessionLobby/SessionLobby';
 import { SessionOutcome } from '@/components/organisms/SessionOutcome/SessionOutcome';
 import {
@@ -30,8 +29,6 @@ import { IntakeFileViewer } from '@/app/_sessions/IntakeFileViewer';
 import { canBookFor } from '@/app/_shell/bookBlocked';
 import { memberGate, SESSION_GATE } from '@/app/_shell/MentorGate';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
-import { useJoinSession, useSessionDoor } from '@/lib/api/data/bookings';
-import { ApiError, normaliseError } from '@/lib/api/data/errors';
 import { useMyReviewableSessions } from '@/lib/api/data/reviewableSessions';
 import { useSendReview } from '@/lib/api/data/reviewWrite';
 import { useBookingAnswers } from '@/lib/api/data/sessionAnswers';
@@ -40,8 +37,14 @@ import { useViewer } from '@/lib/api/data/viewer';
 import { canCancel } from '@/lib/utils/bookings';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { presenceOf } from '@/lib/utils/presence';
+import {
+  ENTER_PARAM,
+  enterPath,
+  isEnterProblem,
+  type EnterProblem,
+} from '@/lib/utils/sessionEnter';
 import { outcomeView } from '@/lib/utils/sessionOutcome';
-import { isFinal, sessionPhase } from '@/lib/utils/sessionPhase';
+import { entryFor, isFinal, sessionPhase } from '@/lib/utils/sessionPhase';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { CalendarEvent } from '@/lib/utils/calendarLinks';
 import type { AnswerFile } from '@/types/booking';
@@ -58,9 +61,31 @@ import styles from './SessionJoinScreen.module.css';
 /** The design's back link names Home for mentors, but there is no mentor home yet. */
 const BACK = { href: '/bookings', label: 'Go to Bookings' };
 
-/** What a screen reader hears when the browser swallows the meeting tab. */
-const BLOCKED =
-  'Your browser blocked the meeting window. Use the Open the session link. Your arrival is recorded.';
+const NOT_OPEN = 'This session isn’t open to join right now.';
+
+/**
+ * Why the entry route (`/sessions/{id}/enter`, ADR 0009) sent the browser back
+ * here rather than into the call, in the page's words.
+ */
+function enterProblemText(
+  problem: EnterProblem,
+  booking: Parameters<typeof joiningClosedNote>[0],
+  timeZone: string,
+): string {
+  switch (problem) {
+    case 'nolink':
+      // A 200 with no link: the venue didn't answer this time, and the next
+      // press asks again (backend #402). Not an error.
+      return 'There’s no way into this call right now. Try again in a moment.';
+    case 'closed':
+      // A first arrival after the window (backend #382): say the rule.
+      return joiningClosedNote(booking, timeZone) ?? NOT_OPEN;
+    case 'notopen':
+      return NOT_OPEN;
+    case 'failed':
+      return 'We couldn’t join you. Try again in a moment.';
+  }
+}
 
 /** Statuses where the session is not this page's to show: an id we may not see, or a bad one. */
 const NOT_FOUND = new Set([403, 404, 422]);
@@ -77,14 +102,6 @@ function useNow(ticking: boolean): Date {
 }
 
 /** `/sessions/{id}` — Session Join.dc.html, `layout=lobby`. */
-/**
- * The tab a Join click opened while the server mints the link. Module scope,
- * not a ref: the click handler goes into `lobbyModel` during render, and only
- * one session page is ever mounted. Written in the click and its answer, read
- * when the page goes away.
- */
-let waitingTab: Window | null = null;
-
 export function SessionJoinScreen({ id }: { id: string }) {
   const viewer = useViewer();
   const online = useOnline();
@@ -143,101 +160,42 @@ export function SessionJoinScreen({ id }: { id: string }) {
   // The phone's sheets (below 768px): the answers, the guide, or the calendar choices.
   const [sheet, setSheet] = useState<PrepSheet | 'calendar' | null>(null);
 
-  // The first arrival goes through /join (the attendance record); every way
-  // back in after it through /door, which records nothing. Both return a link
-  // minted for this caller.
-  const join = useJoinSession();
-  const door = useSessionDoor();
-  const [blockedUrl, setBlockedUrl] = useState<string | null>(null);
-  const [problem, setProblem] = useState<string | null>(null);
+  // Join and Rejoin are a link to our entry route, which records the arrival
+  // and redirects to the call (#207, ADR 0009). When it can't, it sends the
+  // browser back here with `?enter=` saying why.
+  const params = useSearchParams();
+  const entered = params.get(ENTER_PARAM);
+  // The line under Join, with the lobby state it was said in (`phase:entry`):
+  // once the phase or the way in changes, it no longer describes the Join on
+  // screen and goes. Following Join clears it too.
+  const [problem, setProblem] = useState<{ text: string; at: string } | null>(null);
+  const entryNow = data && live ? entryFor(data.booking, data.me.joinedAt, live, now) : null;
+  const lobbyAt = `${live}:${entryNow}`;
   // Every message gets a new id, so the same words said twice are heard twice.
   const [said, setSaid] = useState<{ text: string; id: number } | null>(null);
-  const say = useCallback(
-    (text: string) => setSaid((last) => ({ text, id: (last?.id ?? 0) + 1 })),
-    [],
-  );
-
-  // Leaving the page mid-request must not strand the blank tab: the
-  // mutation's own callbacks don't run once the page has gone.
-  useEffect(
-    () => () => {
-      waitingTab?.close();
-      waitingTab = null;
-    },
-    [],
-  );
-
-  const onEnter = useCallback(
-    (entry: 'join' | 'door') => {
-      setProblem(null);
-      setBlockedUrl(null);
-      // The link only exists after the POST, and a tab opened after it is
-      // outside the click, where popup blockers (Safari's every time) refuse
-      // it. So open a blank tab now, inside the click, and send it on when the
-      // answer comes (#207 records the plain-link alternative). Not `noopener`
-      // in the features: with it, open() returns null even when the tab
-      // opened, and every Join would read as blocked. The opener is cut by hand.
-      const tab = window.open('', '_blank');
-      if (tab) {
-        tab.opener = null;
-        try {
-          tab.document.title = 'Opening your session…';
-          tab.document.body.textContent = 'Opening your session…';
-        } catch {
-          // Some browsers don't let the blank page be written to; it stays blank.
-        }
-      }
-      waitingTab = tab;
-      const done = () => {
-        waitingTab = null;
-      };
-      const drop = () => {
-        tab?.close();
-        done();
-      };
-      (entry === 'join' ? join : door).mutate(id, {
-        onSuccess: ({ meetingUrl }) => {
-          if (!meetingUrl) {
-            drop();
-            // A 200 with no link: the venue didn't answer this time, and the
-            // next press asks again (backend #402). Not an error.
-            const text =
-              entry === 'join'
-                ? 'Your arrival is recorded, but the call link isn’t ready. Try again in a moment.'
-                : 'There’s no way into this call right now. Try again in a moment.';
-            setProblem(text);
-            say(text);
-            return;
-          }
-          done();
-          if (tab && !tab.closed) {
-            tab.location.replace(meetingUrl);
-            return;
-          }
-          // No tab: the browser refused even one opened in the click, or the
-          // person closed it while waiting. Silence would read as a dead button.
-          setBlockedUrl(meetingUrl);
-          say(BLOCKED);
-        },
-        onError: (e) => {
-          drop();
-          // The server refuses a first arrival after the window (backend
-          // #382): say the rule, as the page says it, not a generic refusal.
-          const lateFirstTimer =
-            e instanceof ApiError && !!e.type?.endsWith('/problems/join-window-closed');
-          const closed = lateFirstTimer && data ? joiningClosedNote(data.booking, timeZone) : null;
-          const text =
-            closed ??
-            (normaliseError(e).status === 409
-              ? 'This session isn’t open to join right now.'
-              : 'We couldn’t join you. Try again in a moment.');
-          setProblem(text);
-          say(text);
-        },
-      });
-    },
-    [join, door, id, say, data, timeZone],
-  );
+  // Said once the session is here (the closed rule needs its times), then the
+  // parameter goes, so a reload doesn't say it again.
+  const [heard, setHeard] = useState<string | null>(null);
+  if (entered === null && heard !== null) setHeard(null);
+  if (entered !== heard && data && isEnterProblem(entered)) {
+    setHeard(entered);
+    const text = enterProblemText(entered, data.booking, timeZone);
+    setProblem({ text, at: lobbyAt });
+    setSaid((last) => ({ text, id: (last?.id ?? 0) + 1 }));
+  }
+  if (problem && problem.at !== lobbyAt) setProblem(null);
+  // Not while leaving for Bookings: that replace drops the parameter too, and
+  // two replaces racing can leave the page on its skeleton.
+  const settledEnter =
+    entered !== null && !leaving && (!!data || !!room.error || !isEnterProblem(entered));
+  useEffect(() => {
+    if (!settledEnter) return;
+    const rest = new URLSearchParams(params.toString());
+    rest.delete(ENTER_PARAM);
+    const qs = rest.toString();
+    const path = `/sessions/${encodeURIComponent(id)}`;
+    router.replace(qs ? `${path}?${qs}` : path, { scroll: false });
+  }, [settledEnter, params, router, id]);
 
   const cancel = useBookingAction('cancel');
   const [cancelling, setCancelling] = useState(false);
@@ -345,8 +303,8 @@ export function SessionJoinScreen({ id }: { id: string }) {
       phase: live,
       now,
       timeZone,
-      joining: join.isPending || door.isPending,
-      onEnter,
+      enterHref: enterPath(id),
+      onFollow: () => setProblem(null),
       // Only rendered once the session has loaded, which is in the browser.
       pageUrl: new URL(`/sessions/${encodeURIComponent(id)}`, window.location.origin).toString(),
       onCancel: canCancel(b, now) ? () => setCancelling(true) : undefined,
@@ -376,20 +334,13 @@ export function SessionJoinScreen({ id }: { id: string }) {
           guide,
         }
       : null;
-    const notice = blockedUrl ? (
-      // Said through the LiveRegion above; this is the link to act on.
-      <Notice tone="info" live={false}>
-        Your browser blocked the meeting window.{' '}
-        <a href={blockedUrl} target="_blank" rel="noopener noreferrer">
-          Open the session
-        </a>
-        . Your arrival is recorded.
-      </Notice>
-    ) : problem ? (
-      // Plain text: the live region above already says it, and a second
-      // status region would read it out twice.
-      <p className={styles.problem}>{problem}</p>
-    ) : null;
+    // Plain text: the live region above already says it, and a second status
+    // region would read it out twice. Not when the lobby's own note already
+    // says the same (the closed rule), so it isn't printed twice.
+    const notice =
+      problem && problem.text !== lobby.note ? (
+        <p className={styles.problem}>{problem.text}</p>
+      ) : null;
 
     body = (
       <>

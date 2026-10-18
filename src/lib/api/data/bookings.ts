@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useMemo } from 'react';
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import {
   byNewestFirst,
@@ -9,18 +9,11 @@ import {
   isLapsed,
   joinState,
   respondDeadline,
-  safeMeetingUrl,
   wantsLapsed,
 } from '@/lib/utils/bookings';
 import { coverFor } from '@/lib/utils/cover';
 import { dayKey } from '@/lib/utils/slots';
-import type {
-  Booking,
-  BookingParty,
-  BookingStatus,
-  JoinResult,
-  SessionRoom,
-} from '@/types/booking';
+import type { Booking, BookingParty, BookingStatus } from '@/types/booking';
 import type { AppError, Remote } from '@/types/mentor';
 import { ApiError, apiError, normaliseError, retryOnce } from './errors';
 import { api } from './http';
@@ -456,73 +449,4 @@ export function useBookingHistory(
     loadMoreError: nextFailed ? normaliseError(query.error) : null,
     loadMore: () => void loadMore(),
   };
-}
-
-/**
- * POST /sessions/{id}/join. This call *is* the attendance record, so the UI
- * always goes through it: opening the session's own `meeting_url` marks nobody
- * present, and for EduFurther video the stored URL does not open the room at
- * all (backend reply §6). It returns a link minted for this caller.
- */
-export function useJoinSession() {
-  const qc = useQueryClient();
-  return useMutation<JoinResult, ApiError, string>({
-    mutationFn: async (sessionId) => {
-      const { data, error, response } = await api.POST('/api/v1/sessions/{session_id}/join', {
-        params: { path: { session_id: sessionId } },
-      });
-      if (!data) throw apiError(response.status, error);
-      // Checked here, not at the call site, so an unsafe value can never reach
-      // the view model. A `custom` venue is a mentor's own typed link — someone
-      // else's text on our page — and gets the same treatment as a profile URL
-      // (lib/utils/socialUrl). A rejected link reads as "no venue", which is
-      // what it is.
-      return { meetingUrl: safeMeetingUrl(data.meeting_url) };
-    },
-    onSuccess: (_result, sessionId) => {
-      // The arrival is recorded now: say so in the open page at once, so a
-      // second press before the re-read goes through the door rather than
-      // /join again. The re-read below then brings the server's own time.
-      const arrivedAt = new Date().toISOString();
-      qc.setQueriesData<SessionRoom>({ queryKey: keys.bookings.roomAll(sessionId) }, (r) =>
-        r && !r.me.joinedAt
-          ? {
-              ...r,
-              me: { ...r.me, joinedAt: arrivedAt },
-              booking: { ...r.booking, myJoinedAt: arrivedAt },
-            }
-          : r,
-      );
-      void qc.invalidateQueries({ queryKey: keys.bookings.all });
-    },
-  });
-}
-
-/**
- * POST /sessions/{id}/door: a way back into a running session's call for
- * someone who has already joined (backend #380). It records **no** attendance:
- * the first arrival goes through `useJoinSession`, every reconnect through
- * here, so the record keeps the first press. Open from `join_opens_at` until
- * `door_closes_at`; outside that, a 409. A `null` link on a 200 means there is
- * no way in right now, which the page says rather than treating as an error.
- */
-export function useSessionDoor() {
-  const qc = useQueryClient();
-  return useMutation<JoinResult, ApiError, string>({
-    mutationFn: async (sessionId) => {
-      const { data, error, response } = await api.POST('/api/v1/sessions/{session_id}/door', {
-        params: { path: { session_id: sessionId } },
-      });
-      if (!data) throw apiError(response.status, error);
-      // The same check as Join: an unsafe link reads as "no way in".
-      return { meetingUrl: safeMeetingUrl(data.meeting_url) };
-    },
-    onError: (e) => {
-      // Refused as a late first arrival (backend #382): the server has no
-      // Join press for this person, whatever our copy says, so re-read the
-      // session; the page then shows the closed note, not Rejoin.
-      if (e.type?.endsWith('/problems/join-window-closed'))
-        void qc.invalidateQueries({ queryKey: keys.bookings.all });
-    },
-  });
 }
