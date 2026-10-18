@@ -146,9 +146,12 @@ export type LobbyInput = {
   phase: DrawnPhase;
   now: Date;
   timeZone: string;
-  joining: boolean;
-  /** `join` records the first arrival; `door` is every way back in after it. */
-  onEnter: (entry: 'join' | 'door') => void;
+  /**
+   * Where Join and Rejoin link to: our entry route, which records the arrival
+   * (a first one through /join, any after it through /door) and redirects to
+   * the call (#207, ADR 0009).
+   */
+  enterHref: string;
   /** Present only while the session may still be called off. */
   onCancel?: () => void;
   /** Absolute URL of this page, for the calendar event (never the call link). */
@@ -175,8 +178,7 @@ export function lobbyModel({
   phase,
   now,
   timeZone,
-  joining,
-  onEnter,
+  enterHref,
   onCancel,
   pageUrl,
 }: LobbyInput): LobbyProps {
@@ -200,8 +202,7 @@ export function lobbyModel({
       // mentor, including one who hasn't arrived yet).
       label: entry === 'door' ? 'Rejoin session' : phase === 'soon' ? pv.join : 'Join now',
       enabled: true,
-      busy: joining,
-      onJoin: () => onEnter(entry),
+      href: enterHref,
       hint: otherJoined && phase !== 'soon' ? `${other.firstName} has joined. ${pv.hint}` : pv.hint,
     };
   } else if (phase === 'closed' && b.joinClosesAt && !room.me.joinedAt) {

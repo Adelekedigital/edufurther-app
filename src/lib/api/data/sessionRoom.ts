@@ -52,7 +52,9 @@ export function toSessionRoom(s: SessionRead, viewerId: string): SessionRoom {
  * One session for the join page (GET /sessions/{id}), re-read on `pollInterval`.
  * TanStack pauses the interval while the tab is hidden
  * (`refetchIntervalInBackground` is off) and refetches on focus, so a page left
- * in a background tab costs nothing.
+ * in a background tab costs nothing. On focus **always**, not only once stale:
+ * Join opens the call in a new tab (#207), and coming back to this one should
+ * show "Joined" and Rejoin at once, even within `staleTime`.
  */
 export function useSessionRoom(id: string, userId: string | null): Remote<SessionRoom> {
   const session = useSession();
@@ -69,6 +71,7 @@ export function useSessionRoom(id: string, userId: string | null): Remote<Sessio
       return toSessionRoom(data, userId!);
     },
     staleTime: 10_000,
+    refetchOnWindowFocus: 'always',
     refetchInterval: (q) => pollInterval(q.state.data),
     networkMode: 'always',
     retry: retryOnce,

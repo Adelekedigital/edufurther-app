@@ -499,6 +499,12 @@ Source: `Session Join.dc.html`, defaults `layout=lobby`, `provider=edufurther`; 
 | "You’re marked as here, but this session has no meeting link yet." | "Your arrival is recorded, but the call link isn’t ready. Try again in a moment." | No link now means the venue didn't answer, and pressing Join again asks again (backend #402). "Here" is gone everywhere else (PR 4b). Small copy fix, ours. |
 | Popup blocked: "…You’re already marked as here." | "…Your arrival is recorded." | Same. Not "You've joined": on EduFurther video that's Daily's call, and a blocked tab never reached the room. |
 
+**Superseded 2026-10-17 (#207, ADR 0009).** Join and Rejoin are now a new-tab link to
+our entry route, so there is no popup to block and that notice is gone. A missing link
+reads "There’s no way into this call right now. Try again in a moment." for Join and
+Rejoin alike: the route sends the page back with `?enter=nolink` without saying which
+of the two calls answered.
+
 ### Bookings — who the other person is (backend #409), 2026-10-10
 
 Neither line is drawn anywhere; the contract says so outright for the degree

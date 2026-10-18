@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
-import { Notice } from '@/components/molecules/Notice/Notice';
 import { sampleParty } from '@/lib/utils/bookingTestFixtures';
 import type { BookingAnswer } from '@/types/booking';
 import { SessionPrepAside, SessionPrepButtons, type GuideTip } from '../SessionPrep/SessionPrep';
@@ -119,7 +118,7 @@ export const StartingSoon: Story = {
     join: {
       label: 'Join session',
       enabled: true,
-      onJoin: fn(),
+      href: '/sessions/b1/enter',
       hint: 'Opens in your browser. No download needed.',
     },
     links: cancel,
@@ -137,22 +136,20 @@ export const InProgress: Story = {
     join: {
       label: 'Join now',
       enabled: true,
-      onJoin: fn(),
+      href: '/sessions/b1/enter',
       hint: 'Amara has joined. Opens in your browser. No download needed.',
     },
   },
 };
 
-/** The popup was blocked: the link, under the button. */
-export const PopupBlocked: Story = {
+/**
+ * Join is a link to our entry route (#207, ADR 0009); when the route couldn't
+ * open the call, the page comes back with why, under Join.
+ */
+export const EnterFailed: Story = {
   args: {
     ...InProgress.args,
-    notice: (
-      <Notice tone="info">
-        Your browser blocked the meeting window. <a href="#">Open the session</a>. Your arrival is
-        recorded.
-      </Notice>
-    ),
+    notice: 'We couldn’t join you. Try again in a moment.',
   },
 };
 
@@ -166,7 +163,7 @@ export const Rejoin: Story = {
     join: {
       label: 'Rejoin session',
       enabled: true,
-      onJoin: fn(),
+      href: '/sessions/b1/enter',
       hint: 'Amara has joined. Opens in your browser. No download needed.',
     },
   },
@@ -290,7 +287,7 @@ export const JoiningOnDaily: Story = {
     join: {
       label: 'Join now',
       enabled: true,
-      onJoin: fn(),
+      href: '/sessions/b1/enter',
       hint: 'Opens in your browser. No download needed.',
     },
   },

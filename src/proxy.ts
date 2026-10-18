@@ -4,6 +4,7 @@ import {
   SESSION_HINT_HEADER,
   refreshSessionCookies,
 } from '@/lib/vendor/supabase/server';
+import { isEnterPath } from '@/lib/utils/sessionEnter';
 
 /**
  * Next 16 proxy (formerly middleware): keeps the Supabase session cookie fresh
@@ -18,9 +19,12 @@ export function proxy(request: NextRequest) {
     // removed when the check failed (no hint: the browser decides, as before).
     if (userId === undefined) headers.delete(SESSION_HINT_HEADER);
     else headers.set(SESSION_HINT_HEADER, userId ?? 'none');
-    // Only `/` calls the API on the server (to pick the viewer's home).
+    // Only `/` (to pick the viewer's home) and `/sessions/{id}/enter` (to
+    // record an arrival, ADR 0009) call the API on the server. A client's own
+    // value is removed on every path first.
     headers.delete(ACCESS_TOKEN_HEADER);
-    if (accessToken && request.nextUrl.pathname === '/') {
+    const path = request.nextUrl.pathname;
+    if (accessToken && (path === '/' || isEnterPath(path))) {
       headers.set(ACCESS_TOKEN_HEADER, accessToken);
     }
     return NextResponse.next({ request: { headers } });

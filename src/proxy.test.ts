@@ -71,4 +71,45 @@ describe('proxy: the session hint for the render', () => {
     expect(forwarded(res, 'x-ef-access-token')).toBeNull();
     expect(res.headers.get('x-middleware-override-headers')).not.toContain('x-ef-access-token');
   });
+
+  it('/sessions/{id}/enter gets it too, to record the arrival; only that exact path', async () => {
+    getClaims.mockResolvedValue({ data: { claims: { sub: 'u1' } }, error: null });
+    const enter = await proxy(new NextRequest('https://app.test/sessions/b1/enter'));
+    expect(forwarded(enter, 'x-ef-access-token')).toBe('tok-fresh');
+    for (const path of [
+      '/sessions/b1',
+      '/sessions/b1/enter/more',
+      '/sessions/b1/entering',
+      '/sessions/a/b/enter',
+      '/x/sessions/b1/enter',
+    ]) {
+      const res = await proxy(new NextRequest(`https://app.test${path}`));
+      expect(forwarded(res, 'x-ef-access-token'), path).toBeNull();
+    }
+  });
+
+  it('strips a client-sent token header on every path, the entry route included', async () => {
+    getClaims.mockResolvedValue({ data: null, error: null });
+    for (const path of ['/', '/explore', '/sessions/b1', '/sessions/b1/enter']) {
+      const res = await proxy(
+        new NextRequest(`https://app.test${path}`, {
+          headers: { 'x-ef-access-token': 'someone-elses' },
+        }),
+      );
+      expect(forwarded(res, 'x-ef-access-token'), path).toBeNull();
+      expect(res.headers.get('x-middleware-override-headers'), path).not.toContain(
+        'x-ef-access-token',
+      );
+    }
+  });
+
+  it('a signed-in visitor’s own header is replaced by the verified token, never passed on', async () => {
+    getClaims.mockResolvedValue({ data: { claims: { sub: 'u1' } }, error: null });
+    const res = await proxy(
+      new NextRequest('https://app.test/sessions/b1/enter', {
+        headers: { 'x-ef-access-token': 'someone-elses' },
+      }),
+    );
+    expect(forwarded(res, 'x-ef-access-token')).toBe('tok-fresh');
+  });
 });

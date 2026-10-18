@@ -4,8 +4,9 @@ import { getAccessToken, refreshAccessToken, signOut } from '@/lib/vendor/supaba
 import { createAuthMiddleware } from './authMiddleware';
 
 /**
- * The browser's generated client. The one server-side call, /me for the `/`
- * redirect, builds its own in home.ts (ADR 0005).
+ * The browser's generated client. The server-side calls build their own:
+ * /me for the `/` redirect in home.ts (ADR 0005), and Join's /join and /door in
+ * sessionEnter.ts (ADR 0009).
  *
  * NEXT_PUBLIC_API_BASE_URL:
  *   - unset (deployed): same origin, `/api/v1/…`, proxied to BACKEND_URL by the

@@ -75,3 +75,40 @@ describe('when Join goes away under the keyboard', () => {
     expect(screen.getByRole('button', { name: 'Elsewhere' })).toHaveFocus();
   });
 });
+
+describe('Join as a link to the entry route (issue 207)', () => {
+  const join = (over = {}) => ({
+    label: 'Join now',
+    enabled: true,
+    href: '/sessions/b1/enter',
+    hint: 'Opens in your browser.',
+    ...over,
+  });
+
+  it('is a plain anchor opening a new tab, named as the button was', () => {
+    render(<SessionLobby {...base} join={join()} />);
+    const a = screen.getByRole('link', { name: 'Join now' });
+    expect(a.tagName).toBe('A');
+    expect(a).toHaveAttribute('href', '/sessions/b1/enter');
+    expect(a).toHaveAttribute('target', '_blank');
+    expect(a).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(screen.queryByRole('button', { name: 'Join now' })).not.toBeInTheDocument();
+  });
+
+  it('is not next/link, so nothing prefetches a route that records an arrival', async () => {
+    vi.resetModules();
+    const link = vi.fn(() => null);
+    vi.doMock('next/link', () => ({ default: link }));
+    const { SessionLobby: Fresh } = await import('./SessionLobby');
+    render(<Fresh {...base} join={join()} />);
+    expect(link).not.toHaveBeenCalled();
+    expect(screen.getByRole('link', { name: 'Join now' })).toBeInTheDocument();
+    vi.doUnmock('next/link');
+  });
+
+  it('locked, it is the disabled button, with no link to follow', () => {
+    render(<SessionLobby {...base} join={join({ enabled: false, label: 'Join opens in 5:00' })} />);
+    expect(screen.queryByRole('link', { name: /Join/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Join opens in 5:00' })).toBeDisabled();
+  });
+});

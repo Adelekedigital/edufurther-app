@@ -4,22 +4,13 @@ import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { components } from '@/lib/api/generated/schema';
 import type { BookingStatus } from '@/types/booking';
-import {
-  toBooking,
-  useBookingHistory,
-  useJoinSession,
-  usePendingBookings,
-  useSessionDoor,
-  useUpcomingBookings,
-} from './bookings';
-import { useSessionRoom } from './sessionRoom';
+import { toBooking, useBookingHistory, usePendingBookings, useUpcomingBookings } from './bookings';
 
 type SessionRead = components['schemas']['SessionRead'];
 
 const get = vi.fn();
-const post = vi.fn();
 vi.mock('./http', () => ({
-  api: { GET: (...a: unknown[]) => get(...a), POST: (...a: unknown[]) => post(...a) },
+  api: { GET: (...a: unknown[]) => get(...a) },
 }));
 vi.mock('./session', () => ({
   useSession: () => ({ status: 'present', userId: 'me' }),
@@ -78,7 +69,6 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 beforeEach(() => {
   get.mockReset();
-  post.mockReset();
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 });
 afterEach(() => vi.useRealTimers());
@@ -89,78 +79,6 @@ describe('toBooking', () => {
       '2026-10-04T17:01:00Z',
     );
     expect(toBooking(row(), 'me').myJoinedAt).toBeNull();
-  });
-});
-
-describe('useSessionDoor', () => {
-  it('asks the door, and hands back only a safe link', async () => {
-    post.mockResolvedValueOnce(ok({ meeting_url: 'https://room.test/x' }));
-    const { result } = renderHook(() => useSessionDoor(), { wrapper });
-    act(() => result.current.mutate('s1'));
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(post).toHaveBeenCalledWith('/api/v1/sessions/{session_id}/door', {
-      params: { path: { session_id: 's1' } },
-    });
-    expect(result.current.data).toEqual({ meetingUrl: 'https://room.test/x' });
-  });
-
-  it('reads an unsafe or missing link as no way in', async () => {
-    post.mockResolvedValueOnce(ok({ meeting_url: 'javascript:alert(1)' }));
-    const { result } = renderHook(() => useSessionDoor(), { wrapper });
-    act(() => result.current.mutate('s1'));
-    await waitFor(() => expect(result.current.data).toEqual({ meetingUrl: null }));
-  });
-
-  it('a late-first-arrival refusal re-reads the session: the server has no Join press', async () => {
-    get.mockResolvedValueOnce(ok(row({}, '2026-10-04T17:01:00Z'))).mockResolvedValueOnce(ok(row()));
-    post.mockResolvedValueOnce({
-      data: undefined,
-      error: { type: '/problems/join-window-closed', title: 'Join window closed' },
-      response: { ok: false, status: 409, headers: new Headers() },
-    });
-    const { result } = renderHook(
-      () => ({ room: useSessionRoom('s1', 'me'), door: useSessionDoor() }),
-      { wrapper },
-    );
-    await waitFor(() => expect(result.current.room.data?.me.joinedAt).not.toBeNull());
-    act(() => result.current.door.mutate('s1'));
-    await waitFor(() => expect(result.current.room.data?.me.joinedAt).toBeNull());
-    expect(get).toHaveBeenCalledTimes(2);
-  });
-
-  it('other refusals leave the session as it is', async () => {
-    get.mockResolvedValue(ok(row({}, '2026-10-04T17:01:00Z')));
-    post.mockResolvedValueOnce(fail(409));
-    const { result } = renderHook(
-      () => ({ room: useSessionRoom('s1', 'me'), door: useSessionDoor() }),
-      { wrapper },
-    );
-    await waitFor(() => expect(result.current.room.data).not.toBeNull());
-    act(() => result.current.door.mutate('s1'));
-    await waitFor(() => expect(result.current.door.error?.status).toBe(409));
-    expect(get).toHaveBeenCalledTimes(1);
-  });
-
-  it('surfaces a refusal with its status', async () => {
-    post.mockResolvedValueOnce(fail(409));
-    const { result } = renderHook(() => useSessionDoor(), { wrapper });
-    act(() => result.current.mutate('s1'));
-    await waitFor(() => expect(result.current.error?.status).toBe(409));
-  });
-});
-
-describe('after Join, before the re-read', () => {
-  it('marks the viewer as arrived at once, so a second press uses the door', async () => {
-    get.mockResolvedValueOnce(ok(row())).mockReturnValueOnce(new Promise(() => {}));
-    post.mockResolvedValue(ok({ joined: true, meeting_url: 'https://room.test/x' }));
-    const { result } = renderHook(
-      () => ({ room: useSessionRoom('s1', 'me'), join: useJoinSession() }),
-      { wrapper },
-    );
-    await waitFor(() => expect(result.current.room.data?.me.joinedAt).toBeNull());
-    act(() => result.current.join.mutate('s1'));
-    await waitFor(() => expect(result.current.room.data?.me.joinedAt).not.toBeNull());
-    expect(result.current.room.data?.booking.myJoinedAt).not.toBeNull();
   });
 });
 
@@ -233,7 +151,11 @@ describe('an expired request belongs in History (owner, 2026-10-13)', () => {
   const lapsed = req('lapsed', '2026-10-04T12:00:00Z', '2026-10-06T10:00:00Z');
   const waiting = req('waiting', '2026-10-05T12:00:00Z', '2026-10-07T10:00:00Z');
   const done = row({ id: 'done', status: 'completed', starts_at: '2026-10-01T10:00:00Z' });
-  const calledOff = row({ id: 'called-off', status: 'cancelled', starts_at: '2026-09-28T10:00:00Z' });
+  const calledOff = row({
+    id: 'called-off',
+    status: 'cancelled',
+    starts_at: '2026-09-28T10:00:00Z',
+  });
   const settled = (i: number) =>
     row({
       id: `h${i}`,
@@ -247,14 +169,22 @@ describe('an expired request belongs in History (owner, 2026-10-13)', () => {
    * than on call order: the two queries fire together and which lands first is
    * React Query's business. A history cursor is the index of the next page.
    */
-  const serve = ({ pending = [], pages = [[]] }: { pending?: SessionRead[]; pages?: SessionRead[][] }) =>
+  const serve = ({
+    pending = [],
+    pages = [[]],
+  }: {
+    pending?: SessionRead[];
+    pages?: SessionRead[][];
+  }) =>
     get.mockImplementation((_path: string, init: { params: { query: Query } }) => {
       const q = init.params.query;
       if (q.status.includes('pending_mentor_approval'))
         return Promise.resolve(ok({ data: pending, next_cursor: null }));
       const i = q.cursor ? Number(q.cursor) : 0;
       const last = i >= pages.length - 1;
-      return Promise.resolve(ok({ data: pages[i] ?? [], next_cursor: last ? null : String(i + 1) }));
+      return Promise.resolve(
+        ok({ data: pages[i] ?? [], next_cursor: last ? null : String(i + 1) }),
+      );
     });
   type Query = { status: string[]; cursor?: string; limit: number };
   const queries = () =>

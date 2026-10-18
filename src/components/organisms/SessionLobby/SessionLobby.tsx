@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import { Button } from '@/components/atoms/Button/Button';
+import { Button, ButtonAnchor } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { AddToCalendarMenu } from '@/components/molecules/AddToCalendarMenu/AddToCalendarMenu';
@@ -49,6 +49,11 @@ type SessionLobbyProps = {
     busy?: boolean;
     /** Absent while locked: there is nothing to do yet. */
     onJoin?: () => void;
+    /**
+     * Join as an ordinary link, opening a new tab (#207): our own entry route,
+     * which records the arrival and redirects to the call. Ignored while locked.
+     */
+    href?: string;
     hint: string;
   };
   /** In place of Join when the session has moved past it (window closed, ended). */
@@ -116,15 +121,30 @@ export function SessionLobby({
           onFocus={() => (joinHadFocus.current = true)}
           onBlur={() => (joinHadFocus.current = false)}
         >
-          <Button
-            size="large"
-            fullWidth
-            disabled={!join.enabled}
-            busy={join.busy}
-            onClick={join.onJoin}
-          >
-            {join.label}
-          </Button>
+          {join.enabled && join.href ? (
+            // A plain <a>, not next/link: the route records an arrival, so
+            // nothing may prefetch it. The browser opens the tab itself, so
+            // there is no popup to block.
+            <ButtonAnchor
+              href={join.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              size="large"
+              fullWidth
+            >
+              {join.label}
+            </ButtonAnchor>
+          ) : (
+            <Button
+              size="large"
+              fullWidth
+              disabled={!join.enabled}
+              busy={join.busy}
+              onClick={join.onJoin}
+            >
+              {join.label}
+            </Button>
+          )}
           <span className={styles.hint}>{join.hint}</span>
         </div>
       )}

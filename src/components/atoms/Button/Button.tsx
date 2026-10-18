@@ -11,12 +11,7 @@ import type { IconName } from '../Icon/iconNames';
 import styles from './Button.module.css';
 
 export type ButtonVariant =
-  | 'primary'
-  | 'secondary-outlined'
-  | 'text'
-  | 'text-destructive'
-  | 'dark'
-  | 'destructive';
+  'primary' | 'secondary-outlined' | 'text' | 'text-destructive' | 'dark' | 'destructive';
 /**
  * Sizes follow placement, variants follow importance (CTA Hierarchy.dc.html,
  * replacing the one-size #28 rule). Labels are DM Sans semibold (ADR 0002).
@@ -111,6 +106,26 @@ export type ButtonLinkProps = Common &
     /** Passed to next/link. Off for routes that don't exist yet (they stall prefetch). */
     prefetch?: boolean;
   };
+
+export type ButtonAnchorProps = Common &
+  Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'children' | 'href'> & { href: string };
+
+/**
+ * A button-styled plain <a>, not next/link: for a link the router must never
+ * prefetch or take over, such as a route with a side effect (ADR 0009).
+ */
+export const ButtonAnchor = forwardRef<HTMLAnchorElement, ButtonAnchorProps>(function ButtonAnchor(
+  { variant, size, fullWidth, icon, iconPosition, className, children, ...rest },
+  ref,
+) {
+  return (
+    <a ref={ref} className={classes({ variant, size, fullWidth, className })} {...rest}>
+      <Content icon={icon} iconPosition={iconPosition}>
+        {children}
+      </Content>
+    </a>
+  );
+});
 
 /** A button-styled link: it navigates, so it is an <a>. */
 export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(function ButtonLink(

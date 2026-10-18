@@ -33,6 +33,8 @@ than swapping it after load (failure log #37). The vendor SDK must stay replacea
 - **Only `/` calls the API on the server.** The proxy passes the verified access token in
   `x-ef-access-token` for `/` alone (to pick the viewer's home), so the render never builds
   its own Supabase client that could rotate a refresh token it cannot save.
+  *Amended 2026-10-17 (ADR 0009):* also for exactly `/sessions/{id}/enter`, the Join
+  route that records an arrival. A client's own copy is removed on every path first.
 - **API calls:** `authMiddleware.ts` adds `Bearer <token>`, refreshes once on 401 and
   retries a pre-sent clone (so `POST /sessions` keeps its Idempotency-Key), else signs out.
 - **No config, no auth:** with `NEXT_PUBLIC_SUPABASE_URL` / `_ANON_KEY` unset, auth is off
