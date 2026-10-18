@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { deviceTimeZone } from '@/lib/utils/format';
 import { NAME_PROBLEM_COPY, splitFullName, tidyName } from '@/lib/utils/name';
 import { api } from './http';
 import { keys } from './keys';
@@ -69,7 +70,22 @@ const PROXY_ERRORS = new Set([502, 503, 504]);
 /** A blip at the edge (a redeploy, a cold start) usually clears within a second. */
 export const NAME_RETRY_MS = 800;
 
-type NameBody = { full_name: string } | { first_name: string; last_name: string };
+type NameBody = ({ full_name: string } | { first_name: string; last_name: string }) & {
+  timezone?: string;
+};
+
+/** This device's IANA zone, or undefined when it isn't one (the backend's default then stands). */
+function zoneToSave(): string | undefined {
+  const zone = deviceTimeZone();
+  if (!zone) return undefined;
+  try {
+    // Throws a RangeError on anything that isn't a zone.
+    new Intl.DateTimeFormat('en', { timeZone: zone });
+    return zone;
+  } catch {
+    return undefined;
+  }
+}
 
 /** The PATCH, or null when a proxy failed it: the backend sets the name, so sending it twice is safe. */
 async function patchName(userId: string, body: NameBody) {
@@ -101,17 +117,24 @@ async function nameLanded(body: NameBody) {
  * `first_name` + `last_name`. A 422 on a name field reads as the rule's own
  * words, told apart by its message; anything else is a plain "try again"
  * (Problem Details `detail` is never shown). A proxy error is tried once
- * more, then GET /me says whether the name landed anyway.
+ * more, then GET /me says whether the name landed anyway. The device's
+ * timezone goes with it.
  */
 export function useSaveName() {
   const qc = useQueryClient();
   return useMutation<void, NameSaveError, { userId: string; name: NameToSave }>({
     networkMode: 'always',
     mutationFn: async ({ userId, name }) => {
-      const body: NameBody =
-        'fullName' in name
+      // Only ever a new or never-named account (the finish step, sign-up, the
+      // booking modal's name step), so the device's zone can't overwrite one
+      // someone chose: without it, the backend's UTC default would stand.
+      const timezone = zoneToSave();
+      const body: NameBody = {
+        ...('fullName' in name
           ? { full_name: tidyName(name.fullName) }
-          : { first_name: tidyName(name.firstName), last_name: tidyName(name.lastName) };
+          : { first_name: tidyName(name.firstName), last_name: tidyName(name.lastName) }),
+        ...(timezone ? { timezone } : {}),
+      };
       const first = await patchName(userId, body);
       let res = first;
       if (!res) {

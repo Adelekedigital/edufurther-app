@@ -18,6 +18,7 @@ vi.mock('@/lib/api/data/auth', () => ({
   verifySignInCode: (...a: unknown[]) => verify(...a),
   startGoogleSignIn: vi.fn(),
   signedInUser: vi.fn(),
+  useSignOutHere: () => vi.fn(),
 }));
 vi.mock('@/lib/api/data/signIn', () => ({
   fetchSignInAccount: () => account(),

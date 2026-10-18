@@ -23,9 +23,14 @@ vi.mock('./config', () => ({
   COOKIE_OPTIONS: { secure: false },
 }));
 
-const { signOut, signInWithGoogle, SIGN_OUT_TIMEOUT_MS, verifyEmailCode, signedInUser } = await import(
-  './browser'
-);
+const {
+  endSessionHere,
+  signOut,
+  signInWithGoogle,
+  SIGN_OUT_TIMEOUT_MS,
+  verifyEmailCode,
+  signedInUser,
+} = await import('./browser');
 
 const setCookies = () => {
   document.cookie = 'sb-proj-auth-token.0=a; path=/';
@@ -87,6 +92,47 @@ describe('signOut (Logout ends this device’s session)', () => {
     document.cookie = 'sb-proj-auth-token=refreshed; path=/';
     window.dispatchEvent(new Event('pagehide'));
     expect(document.cookie).not.toContain('sb-proj-auth-token');
+  });
+});
+
+describe('endSessionHere (sign out and stay on the sign-in screen)', () => {
+  beforeEach(() => {
+    signOutCall.mockReset();
+    stopAutoRefresh.mockClear();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    document.cookie.split(';').forEach((c) => {
+      const n = c.split('=')[0]!.trim();
+      if (n) document.cookie = `${n}=; Max-Age=0; path=/`;
+    });
+  });
+
+  it('signs out locally and says so', async () => {
+    signOutCall.mockResolvedValue({ error: null });
+    expect(await endSessionHere()).toBe(true);
+    expect(signOutCall).toHaveBeenCalledWith({ scope: 'local' });
+  });
+
+  it('the SDK kept the session: false, and nothing is forced (cookies, refresh)', async () => {
+    setCookies();
+    signOutCall.mockResolvedValue({ error: new Error('Failed to fetch') });
+    expect(await endSessionHere()).toBe(false);
+    expect(document.cookie).toContain('sb-proj-auth-token.0=a');
+    expect(stopAutoRefresh).not.toHaveBeenCalled();
+  });
+
+  it('the SDK throws: false', async () => {
+    signOutCall.mockRejectedValue(new TypeError('network'));
+    expect(await endSessionHere()).toBe(false);
+  });
+
+  it('Supabase never answers: false after the time limit', async () => {
+    vi.useFakeTimers();
+    signOutCall.mockReturnValue(new Promise(() => {}));
+    const done = endSessionHere();
+    await vi.advanceTimersByTimeAsync(SIGN_OUT_TIMEOUT_MS + 1);
+    expect(await done).toBe(false);
   });
 });
 

@@ -186,6 +186,23 @@ export async function signOut(): Promise<void> {
 }
 
 /**
+ * End this device's session and stay on the page (the sign-in screen's "Use a
+ * different email"). Unlike signOut, nothing is forced: no cookie sweep, no
+ * stopping the SDK's refresh, as the person signs in again right here. False
+ * when the SDK kept the session (Supabase unreachable, or it stalled).
+ */
+export async function endSessionHere(): Promise<boolean> {
+  const sb = supabase();
+  if (!sb) return true;
+  const ended = sb.auth.signOut({ scope: 'local' }).catch((e: unknown) => ({ error: e }));
+  const timedOut = new Promise<{ error: Error }>((resolve) =>
+    setTimeout(() => resolve({ error: new Error('sign-out timed out') }), SIGN_OUT_TIMEOUT_MS),
+  );
+  const { error } = await Promise.race([ended, timedOut]);
+  return !error;
+}
+
+/**
  * The SDK's session cookies (`sb-<project>-auth-token`, chunked as `.0`, `.1`…)
  * and the PKCE verifier beside them. The SDK deletes the verifier only when an
  * exchange succeeds, so a sign-in someone abandoned leaves one behind for 400

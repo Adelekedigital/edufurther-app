@@ -8,6 +8,13 @@ vi.mock('./http', () => ({
   api: { GET: (...a: unknown[]) => GET(...a), PATCH: (...a: unknown[]) => PATCH(...a) },
 }));
 
+// The device's zone, as Intl reports it; each test starts in New York.
+let zone = 'America/New_York';
+vi.mock('@/lib/utils/format', () => ({ deviceTimeZone: () => zone }));
+beforeEach(() => {
+  zone = 'America/New_York';
+});
+
 const { useSaveName, fetchSignInAccount } = await import('./signIn');
 
 const res = (status: number, data?: unknown, error?: unknown) => ({
@@ -87,7 +94,7 @@ describe('useSaveName (either shape of name input)', () => {
     );
     expect(PATCH).toHaveBeenCalledWith('/api/v1/users/{user_id}/profile', {
       params: { path: { user_id: 'u1' } },
-      body: { full_name: 'Chiamaka Ngozi Obi' },
+      body: { full_name: 'Chiamaka Ngozi Obi', timezone: 'America/New_York' },
     });
   });
 
@@ -100,7 +107,31 @@ describe('useSaveName (either shape of name input)', () => {
         name: { firstName: ' Amara ', lastName: 'Okafor' },
       }),
     );
-    expect(PATCH.mock.calls[0]![1].body).toEqual({ first_name: 'Amara', last_name: 'Okafor' });
+    expect(PATCH.mock.calls[0]![1].body).toEqual({
+      first_name: 'Amara',
+      last_name: 'Okafor',
+      timezone: 'America/New_York',
+    });
+  });
+
+  it.each([
+    ['empty', ''],
+    ['not a zone', 'Mars/Olympus_Mons'],
+  ])('leaves the timezone out when the device’s is %s', async (_, z) => {
+    zone = z;
+    PATCH.mockResolvedValue(res(200, {}));
+    const { result } = renderHook(() => useSaveName(), { wrapper });
+    await act(() =>
+      result.current.mutateAsync({ userId: 'u1', name: { fullName: 'Amara Okafor' } }),
+    );
+    await act(() =>
+      result.current.mutateAsync({
+        userId: 'u1',
+        name: { firstName: 'Amara', lastName: 'Okafor' },
+      }),
+    );
+    expect(PATCH.mock.calls[0]![1].body).toEqual({ full_name: 'Amara Okafor' });
+    expect(PATCH.mock.calls[1]![1].body).toEqual({ first_name: 'Amara', last_name: 'Okafor' });
   });
 
   it.each([

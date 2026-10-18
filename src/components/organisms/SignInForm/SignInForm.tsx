@@ -32,6 +32,7 @@ const noop = () => {};
  * - `codeProblem` when the code is edited (an old error must not sit under a
  *   new code), and `code` itself after a wrong answer is fine to keep: the
  *   field selects it, so the next digits replace it;
+ * - `signOutError` when "Use a different email" is pressed again;
  * - `onVerify` / `onSendCode` / `onFinish` calls while that call is pending
  *   are the page's to ignore (`verifying`, `sending`, `finishing`).
  */
@@ -57,7 +58,7 @@ export type SignInFormProps = {
   onSendCode: () => void;
   onGoogle: () => void;
 
-  // Code step (and "Use a different email" on the suspended step).
+  // Code step (and "Use a different email" on the suspended and finish steps).
   code?: string;
   onCodeChange?: (code: string) => void;
   onVerify?: (code: string) => void;
@@ -72,6 +73,10 @@ export type SignInFormProps = {
   // Finish step.
   finishing?: boolean;
   onFinish?: () => void;
+  /** "Use a different email" is signing out of this account: nothing takes a press. */
+  signingOut?: boolean;
+  /** Signing out didn't work, in our words. */
+  signOutError?: string;
 
   offline?: boolean;
   /** The toast is up and the page is leaving: nothing takes a press or a key. */
@@ -141,7 +146,7 @@ export function SignInForm(p: SignInFormProps) {
     if (step === 'start' && canSend && !offline && !p.sending && !p.googleBusy) p.onSendCode();
     else if (step === 'code' && code.length === CODE_LENGTH && !p.verifying && !stuck) {
       p.onVerify?.(code);
-    } else if (step === 'finish' && nameOk && !p.finishing) {
+    } else if (step === 'finish' && nameOk && !p.finishing && !p.signingOut) {
       p.onFinish?.();
     }
   };
@@ -224,6 +229,9 @@ export function SignInForm(p: SignInFormProps) {
           nameError={p.nameError}
           revealName={revealName}
           finishing={p.finishing}
+          onUseDifferentEmail={p.onUseDifferentEmail ?? noop}
+          signingOut={p.signingOut}
+          signOutError={p.signOutError}
         />
       )}
       {step === 'suspended' && (
