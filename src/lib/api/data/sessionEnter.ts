@@ -16,7 +16,11 @@ export type EnterOutcome =
   /** Signed out (or the token was refused): sign in, then back to the page. */
   | { to: 'login' };
 
-/** Per backend call. /join can create the Meet link, which is the slow part. */
+/**
+ * The whole budget for /join and, after a 409, /door: one deadline shared by
+ * both, so the person waits at most this long. /join can create the Meet
+ * link, which is the slow part.
+ */
 export const ENTER_TIMEOUT_MS = 8000;
 
 /** Statuses that mean "not this person's session to enter": the page shows its own not-found. */
@@ -60,6 +64,7 @@ export async function enterSession({
   const headers: Record<string, string> = accessToken
     ? { Authorization: `Bearer ${accessToken}` }
     : {};
+  const deadline = AbortSignal.timeout(ENTER_TIMEOUT_MS);
   const call = async (step: 'join' | 'door'): Promise<Answer> => {
     const path =
       step === 'join'
@@ -69,7 +74,7 @@ export async function enterSession({
       params: { path: { session_id: sessionId } },
       headers,
       cache: 'no-store',
-      signal: AbortSignal.timeout(ENTER_TIMEOUT_MS),
+      signal: deadline,
     });
     const body = (error && typeof error === 'object' ? error : {}) as { type?: unknown };
     return {

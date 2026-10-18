@@ -12,8 +12,9 @@ import { ACCESS_TOKEN_HEADER } from '@/lib/vendor/supabase/server';
  * page.
  *
  * A GET with a side effect: only a navigation started on this site (or typed,
- * or from a bookmark) may record anything, which Sec-Fetch-Site tells us, and
- * nothing links to it with next/link, so nothing prefetches it.
+ * or from a bookmark) may record anything, which Sec-Fetch-Site tells us; a
+ * request that says it is a prefetch records nothing; and nothing links to it
+ * with next/link, so the router never prefetches it.
  */
 export async function GET(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const { id: raw } = await ctx.params;
@@ -28,6 +29,10 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ id: str
   // Older browsers send no Sec-Fetch-Site; every current one does.
   const site = request.headers.get('sec-fetch-site');
   if (site && site !== 'same-origin' && site !== 'none') return see(request, page);
+  // A prefetch or prerender (a browser's speculation, a link preview) is not
+  // someone arriving: record nothing.
+  const purpose = `${request.headers.get('sec-purpose') ?? ''} ${request.headers.get('purpose') ?? ''}`;
+  if (/prefetch/i.test(purpose)) return see(request, page);
 
   const outcome = await enterSession({
     sessionId: id,

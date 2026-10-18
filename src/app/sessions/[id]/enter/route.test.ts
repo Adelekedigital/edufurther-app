@@ -40,9 +40,13 @@ afterEach(() => {
 
 async function enter(
   id = 'b1',
-  { site = 'same-origin', token = 'tok' }: { site?: string | null; token?: string | null } = {},
+  {
+    site = 'same-origin',
+    token = 'tok',
+    extra = {},
+  }: { site?: string | null; token?: string | null; extra?: Record<string, string> } = {},
 ) {
-  const headers = new Headers();
+  const headers = new Headers(extra);
   if (site) headers.set('sec-fetch-site', site);
   if (token) headers.set('x-ef-access-token', token);
   const res = await GET(new NextRequest(`https://app.test/sessions/${id}/enter`, { headers }), {
@@ -72,6 +76,21 @@ describe('/sessions/{id}/enter: CSRF', () => {
       expect((await enter('b1', { site })).to).toBe('https://room.test/x');
     }
     expect(seen).toHaveLength(3);
+  });
+});
+
+describe('/sessions/{id}/enter: prefetch', () => {
+  it('a prefetch or prerender records nothing and goes to the session page', async () => {
+    for (const extra of <Record<string, string>[]>[
+      { 'sec-purpose': 'prefetch' },
+      { 'sec-purpose': 'prefetch;prerender' },
+      { purpose: 'prefetch' },
+    ]) {
+      const { res, to } = await enter('b1', { extra });
+      expect(res.status).toBe(303);
+      expect(to).toBe('/sessions/b1');
+    }
+    expect(seen).toHaveLength(0);
   });
 });
 
@@ -160,6 +179,32 @@ describe('/sessions/{id}/enter: recording the arrival', () => {
     replies.join = { status: 409, body: {} };
     replies.door = { status: 500, body: {} };
     expect((await enter()).to).toBe('/sessions/b1?enter=failed');
+  });
+
+  it('/join and /door share one deadline; running out of it is failed', async () => {
+    const budget = new AbortController();
+    const timeout = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(budget.signal);
+    replies.join = { status: 409, body: {} };
+    // The door hangs until the shared deadline passes.
+    const door = vi.fn(async (input: Request) => {
+      seen.push({ url: input.url, auth: null, method: input.method });
+      await new Promise((_, fail) =>
+        input.signal.addEventListener('abort', () =>
+          fail(new DOMException('The operation timed out.', 'TimeoutError')),
+        ),
+      );
+    });
+    const real = globalThis.fetch as unknown as (i: Request) => Promise<Response>;
+    vi.stubGlobal('fetch', (input: Request) =>
+      input.url.endsWith('/door') ? door(input) : real(input),
+    );
+    const pending = enter();
+    await vi.waitFor(() => expect(door).toHaveBeenCalled());
+    budget.abort();
+    expect((await pending).to).toBe('/sessions/b1?enter=failed');
+    expect(timeout).toHaveBeenCalledTimes(1);
+    expect(timeout).toHaveBeenCalledWith(8000);
+    timeout.mockRestore();
   });
 
   it('no backend configured: failed, nothing called', async () => {
