@@ -428,6 +428,16 @@ describe('MenteeHomeScreen', () => {
       expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
     });
 
+    it('hides per account: another sign-in on the same tab still gets its nudge', async () => {
+      viewer = { ...MEMBER, onboardingMissing: ['plans'] };
+      const { unmount } = render(<MenteeHomeScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Hide for now' }));
+      unmount();
+      viewer = { ...MEMBER, id: 'someone-else', onboardingMissing: ['plans'] };
+      render(<MenteeHomeScreen />);
+      expect(screen.getByRole('region', { name: NUDGE })).toBeInTheDocument();
+    });
+
     it('never shows with nothing missing, for a mentor, or with the flag off', () => {
       viewer = { ...MEMBER, onboardingMissing: [] };
       const a = render(<MenteeHomeScreen />);

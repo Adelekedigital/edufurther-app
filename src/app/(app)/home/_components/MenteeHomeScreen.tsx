@@ -36,7 +36,10 @@ export function MenteeHomeScreen() {
   // deviceTimeZone is a lazy initializer; read it once (as the other screens do).
   const [browserZone] = useState(deviceTimeZone);
   // "Hide for now" on the onboarding nudge: before any early return (hook order).
-  const [nudgeHidden, hideNudge] = useSessionFlag('ef-onboarding-nudge-hidden');
+  // Per account: another sign-in on the same tab gets its own nudge.
+  const [nudgeHidden, hideNudge] = useSessionFlag(
+    `ef-onboarding-nudge-hidden:${member?.id ?? 'none'}`,
+  );
   const helloRef = useRef<HTMLHeadingElement>(null);
 
   // A minute tick so the next-session card's join state advances while the tab
