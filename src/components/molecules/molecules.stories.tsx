@@ -224,7 +224,7 @@ export const AccountMenuRail: Story = {
         items={[
           {
             key: 'matches',
-            label: 'Find my mentor matches',
+            label: 'Talk to our team',
             icon: 'route',
             href: '#',
             external: true,
@@ -706,14 +706,7 @@ export const BookingOutcomes: Story = {
   render: () => (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
       {(
-        [
-          'completed',
-          'cancelled',
-          'noShow',
-          'declined',
-          'expired',
-          'withdrawn',
-        ] as BookingStatus[]
+        ['completed', 'cancelled', 'noShow', 'declined', 'expired', 'withdrawn'] as BookingStatus[]
       ).map((s) => (
         <BookingStatusTag key={s} status={s} />
       ))}
@@ -781,7 +774,9 @@ export const BookingAnswers: Story = {
       available: true,
     };
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', maxWidth: 380 }}>
+      <div
+        style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', maxWidth: 380 }}
+      >
         {/* Asked and left blank (backend #412). Here so the next change to
             AnswerItem can see the state — in the app it only appears behind
             particular mock bookings. */}
@@ -822,7 +817,13 @@ export const BookingAnswers: Story = {
           }}
         />
         <AnswerItem
-          answer={{ ...base, question: 'Upload your draft or CV', kind: 'file_upload', text: pdf.filename, file: pdf }}
+          answer={{
+            ...base,
+            question: 'Upload your draft or CV',
+            kind: 'file_upload',
+            text: pdf.filename,
+            file: pdf,
+          }}
           onOpenFile={fn()}
         />
         <AnswerItem
@@ -920,7 +921,9 @@ export const Reason: Story = {
       'I found the answer in the webinar, so I no longer need the session. Sorry for the late notice.',
     );
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)', maxWidth: 520 }}>
+      <div
+        style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)', maxWidth: 520 }}
+      >
         <ReasonField
           side="mentor"
           label="Reason for canceling"

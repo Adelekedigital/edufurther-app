@@ -143,7 +143,7 @@ describe('AppShell navigation', () => {
             { key: 'profile', label: 'View profile', icon: 'account_box', href: '/mentors/u1' },
             {
               key: 'matches',
-              label: 'Find my mentor matches',
+              label: 'Talk to our team',
               icon: 'route',
               href: 'https://x.test',
               external: true,
@@ -158,7 +158,7 @@ describe('AppShell navigation', () => {
     const profile = screen.getAllByRole('link', { name: /View profile/ }).at(-1)!;
     expect(profile).toHaveAttribute('href', '/mentors/u1');
     expect(profile).not.toHaveAttribute('target');
-    const matches = screen.getAllByRole('link', { name: /Find my mentor matches/ }).at(-1)!;
+    const matches = screen.getAllByRole('link', { name: /Talk to our team/ }).at(-1)!;
     expect(matches).toHaveAttribute('target', '_blank');
   });
 

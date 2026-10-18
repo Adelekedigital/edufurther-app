@@ -33,12 +33,12 @@ import { pillLayout, useFloatingPrompt } from './useFloatingPrompt';
 const SEARCH_DEBOUNCE_MS = 300;
 
 /**
- * Design matchPrompt: signed-in mentees with ≤ 2 sessions only. Guests don't see
- * it — matching needs an account, and they have "Get started free" instead.
+ * Design matchPrompt, the team-call prompt: signed-in mentees with ≤ 2 sessions
+ * only. Guests don't see it; they have "Get started free" instead.
  */
 const MATCH_PROMPT_MAX_SESSIONS = 2;
 const MATCH_PROMPT_BODY =
-  'Share your goals and we’ll suggest mentors who fit your path, so your first sessions count.';
+  'Book a free 1-on-1 call with someone from the EduFurther team. We’ll help you plan your next steps and suggest mentors to start with.';
 
 function countLabel(q: string, topicCount: number, total: number | null): string {
   const topics = topicCount ? ` for ${topicCount} topic${topicCount > 1 ? 's' : ''}` : '';

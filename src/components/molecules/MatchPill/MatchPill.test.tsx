@@ -7,7 +7,7 @@ const base = {
   external: true,
   dock: 'center' as const,
   bottom: '24px',
-  body: 'Share your goals and we’ll suggest mentors who fit your path.',
+  body: 'Book a free 1-on-1 call with someone from the EduFurther team. We’ll help you plan your next steps and suggest mentors to start with.',
   onMinimise: vi.fn(),
   onRestore: vi.fn(),
 };
@@ -26,15 +26,13 @@ describe('MatchPill', () => {
   it('desktop: the round icon after × restores the pill', async () => {
     const onRestore = vi.fn();
     render(<MatchPill {...base} size="mini" miniAction="restore" onRestore={onRestore} />);
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Show “Not sure who’s right for you?”' }),
-    );
+    await userEvent.click(screen.getByRole('button', { name: 'Show “Not sure where to start?”' }));
     expect(onRestore).toHaveBeenCalled();
   });
 
   it('phones: the round icon opens an explainer popover, and closes it again', async () => {
     render(<MatchPill {...base} size="mini" miniAction="popover" />);
-    const toggle = screen.getByRole('button', { name: 'Not sure who’s right for you?' });
+    const toggle = screen.getByRole('button', { name: 'Not sure where to start?' });
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
 
@@ -52,7 +50,7 @@ describe('MatchPill', () => {
 
   it('phones: Escape closes the popover and returns focus to the icon', async () => {
     render(<MatchPill {...base} size="mini" miniAction="popover" />);
-    const toggle = screen.getByRole('button', { name: 'Not sure who’s right for you?' });
+    const toggle = screen.getByRole('button', { name: 'Not sure where to start?' });
     await userEvent.click(toggle);
     await userEvent.tab();
     await userEvent.keyboard('{Escape}');

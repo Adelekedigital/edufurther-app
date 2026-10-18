@@ -20,7 +20,7 @@ const account = {
   items: [
     {
       key: 'matches',
-      label: 'Find my mentor matches',
+      label: 'Talk to our team',
       icon: 'route' as const,
       href: '#',
       external: true,

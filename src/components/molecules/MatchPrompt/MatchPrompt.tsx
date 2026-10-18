@@ -3,14 +3,14 @@ import styles from './MatchPrompt.module.css';
 
 type MatchPromptProps = {
   body: string;
-  /** Where "Find my mentor matches" goes. */
+  /** Where "Book a free call" goes (the team-call booking page). */
   href: string;
   /** True for an off-platform link: opens in a new tab and says so. */
   external?: boolean;
 };
 
 /**
- * "Not sure who's right for you?" panel (Design decisions: Explore, match prompt).
+ * "Not sure where to start?" panel (Design decisions: Explore, match prompt).
  * The CTA is deliberately secondary (green outline) so it never competes with Book.
  */
 export function MatchPrompt({ body, href, external }: MatchPromptProps) {
@@ -21,7 +21,7 @@ export function MatchPrompt({ body, href, external }: MatchPromptProps) {
       </span>
       <div className={styles.copy}>
         <h2 id="match-prompt-title" className={styles.title}>
-          Not sure who’s right for you?
+          Not sure where to start?
         </h2>
         <p className={styles.body}>{body}</p>
       </div>
@@ -30,7 +30,7 @@ export function MatchPrompt({ body, href, external }: MatchPromptProps) {
         className={styles.cta}
         {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
       >
-        Find my mentor matches
+        Book a free call
         <Icon name={external ? 'open_in_new' : 'arrow_forward'} size={16} />
         {external && <span className="sr-only"> (opens in a new tab)</span>}
       </a>

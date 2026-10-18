@@ -45,7 +45,7 @@ describe('accountItems (AppShell.dc.html account menu)', () => {
     expect(signOut).toHaveBeenCalled();
   });
 
-  it('"Find my mentor matches" is for mentees only: never a mentor, pending included (product, 2026-09-30)', async () => {
+  it('"Talk to our team" is for mentees only: never a mentor, pending included (product, 2026-09-30)', async () => {
     vi.stubEnv('NEXT_PUBLIC_MATCH_CALL_URL', 'https://cal.example/match');
     vi.resetModules();
     const { accountItems: fresh } = await import('./useAppShell');
@@ -53,12 +53,12 @@ describe('accountItems (AppShell.dc.html account menu)', () => {
     expect(labels(member({ isApprovedMentor: false }))).toEqual(['View profile', 'Logout']);
     expect(labels(member())).toEqual(['View profile', 'Logout']);
     expect(labels(member({ isMentor: false, isApprovedMentor: false, isMentee: true }))).toEqual([
-      'Find my mentor matches',
+      'Talk to our team',
       'Logout',
     ]);
     // Signed up, no goal yet and no mentor profile: still a would-be mentee.
     expect(labels(member({ isMentor: false, isApprovedMentor: false, isMentee: false }))).toContain(
-      'Find my mentor matches',
+      'Talk to our team',
     );
   });
 
@@ -84,7 +84,7 @@ describe('countsFor (the Bookings badge)', () => {
   });
 });
 
-describe('isMenteeSide (who gets "Find my mentor matches", menu and Explore)', () => {
+describe('isMenteeSide (who gets "Talk to our team", menu and Explore)', () => {
   it.each([
     ['a mentee', { isMentor: false, isApprovedMentor: false, isMentee: true }, true],
     [

@@ -30,7 +30,7 @@ type MatchPillProps = {
 };
 
 /**
- * Floating "Not sure who's right for you?" pill (Design decisions: sticky match
+ * Floating "Not sure where to start?" pill (Design decisions: sticky match
  * prompt, `promptSticky=on`, "Float behaviour, final"). Positioning is decided by
  * the page from scroll state; this component only draws it.
  */
@@ -111,7 +111,7 @@ export function MatchPill({
       {size === 'full' ? (
         <>
           <Icon name="route" size={20} className={styles.route} />
-          <span className={styles.label}>Not sure who’s right for you?</span>
+          <span className={styles.label}>Not sure where to start?</span>
           <a href={href} className={styles.cta} {...linkProps}>
             Find matches
             <Icon name={external ? 'open_in_new' : 'arrow_forward'} size={16} />
@@ -130,8 +130,8 @@ export function MatchPill({
         <button
           type="button"
           className={styles.mini}
-          aria-label="Show “Not sure who’s right for you?”"
-          title="Show “Not sure who’s right for you?”"
+          aria-label="Show “Not sure where to start?”"
+          title="Show “Not sure where to start?”"
           onClick={onRestore}
         >
           <Icon name="route" size={24} />
@@ -141,7 +141,7 @@ export function MatchPill({
           <button
             type="button"
             className={styles.mini}
-            aria-label="Not sure who’s right for you?"
+            aria-label="Not sure where to start?"
             aria-expanded={popoverOpen}
             aria-controls={popoverOpen ? popoverId : undefined}
             onClick={() => setPopoverOpen((o) => !o)}
@@ -158,7 +158,7 @@ export function MatchPill({
             >
               <p id={`${popoverId}-title`} className={styles.popoverTitle}>
                 <Icon name="route" size={18} className={styles.route} />
-                Not sure who’s right for you?
+                Not sure where to start?
               </p>
               <p className={styles.popoverBody}>{body}</p>
               <a href={href} className={styles.popoverCta} {...linkProps}>

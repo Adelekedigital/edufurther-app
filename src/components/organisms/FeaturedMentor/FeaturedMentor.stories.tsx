@@ -57,7 +57,7 @@ export const MatchPromptMentee: StoryObj = {
     <MatchPrompt
       href="https://example.invalid/match"
       external
-      body="Share your goals and we’ll suggest mentors who fit your path, so your first sessions count."
+      body="Book a free 1-on-1 call with someone from the EduFurther team. We’ll help you plan your next steps and suggest mentors to start with."
     />
   ),
 };
