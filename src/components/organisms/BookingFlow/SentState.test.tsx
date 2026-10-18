@@ -27,7 +27,8 @@ describe('SentState', () => {
       expect.stringContaining('Chidi accepts or declines'),
       expect.stringContaining('Join your session'),
     ]);
-    // Messages isn't built: the sent state never offers it.
+    // Messages isn't built, and emails never carry the call link: neither is promised.
+    expect(screen.queryByText(/confirmation email/)).toBeNull();
     expect(screen.queryByText(/message them/i)).toBeNull();
   });
 
@@ -35,7 +36,7 @@ describe('SentState', () => {
     render(<SentState {...base} confirmed />);
     expect(screen.getByRole('heading', { name: 'You’re booked with Chidi' })).toBeInTheDocument();
     expect(
-      screen.getByText('Mon, Oct 19 · 9:00 am is confirmed. We’ve emailed you the details.'),
+      screen.getByText('Mon, Oct 19 · 9:00 am is confirmed. You’ll find it in Bookings.'),
     ).toBeInTheDocument();
     expect(screen.getByText('Confirmed')).toBeInTheDocument();
     expect(screen.getByText('Prepare for your session')).toBeInTheDocument();

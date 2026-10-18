@@ -477,6 +477,7 @@ export function BookingFlow(p: BookingFlowProps) {
     const ready = session && step !== 'done' && !p.sessionTypes.isLoading && !p.sessionTypes.error;
     const sheet = phoneChrome({
       done: step === 'done',
+      confirmed: !!p.requestConfirmed,
       oneStep,
       at,
       total: steps.length,

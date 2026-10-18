@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Badge } from '@/components/atoms/Badge/Badge';
 import { Icon } from '@/components/atoms/Icon/Icon';
@@ -13,7 +14,7 @@ function sentCopy(first: string, picked: string, confirmed: boolean) {
   return confirmed
     ? {
         title: `You’re booked with ${first}`,
-        lead: `${picked} is confirmed. We’ve emailed you the details.`,
+        lead: `${picked || 'Your session'} is confirmed. You’ll find it in Bookings.`,
         badge: 'Confirmed',
         badgeColor: 'green' as const,
         steps: [
@@ -32,7 +33,7 @@ function sentCopy(first: string, picked: string, confirmed: boolean) {
           {
             icon: 'videocam',
             title: 'Join your session',
-            body: 'The call link is in Bookings and in your confirmation email.',
+            body: 'Join from Bookings when it’s time.',
             tone: 'later',
           },
         ] satisfies Step[],
@@ -58,7 +59,7 @@ function sentCopy(first: string, picked: string, confirmed: boolean) {
           {
             icon: 'videocam',
             title: 'Join your session',
-            body: 'Once it’s confirmed, the call link is in Bookings and in your confirmation email.',
+            body: 'Once it’s confirmed, join from Bookings when it’s time.',
             tone: 'later',
           },
         ] satisfies Step[],
@@ -84,6 +85,9 @@ type SentStateProps = {
  */
 export function SentState({ mentor, sessionName, picked, month, day, confirmed }: SentStateProps) {
   const c = sentCopy(mentor.firstName, picked, confirmed);
+  // The button that sent it is gone: keep the reader's place on the outcome.
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => headingRef.current?.focus(), []);
   return (
     <div className={styles.sent}>
       <div className={styles.hero}>
@@ -99,17 +103,21 @@ export function SentState({ mentor, sessionName, picked, month, day, confirmed }
         </span>
       </div>
       <div className={styles.text}>
-        <h3 className={styles.title}>{c.title}</h3>
+        <h3 ref={headingRef} tabIndex={-1} className={styles.title}>
+          {c.title}
+        </h3>
         <p className={styles.lead}>{c.lead}</p>
       </div>
       <div className={styles.card}>
-        <span className={styles.tile} aria-hidden>
-          <span className={styles.month}>{month}</span>
-          <span className={styles.day}>{day}</span>
-        </span>
+        {month && day && (
+          <span className={styles.tile} aria-hidden>
+            <span className={styles.month}>{month}</span>
+            <span className={styles.day}>{day}</span>
+          </span>
+        )}
         <span className={styles.cardBody}>
           <span className={styles.name}>{sessionName}</span>
-          <span className={styles.when}>{picked}</span>
+          {picked && <span className={styles.when}>{picked}</span>}
         </span>
         <Badge type="accent" color={c.badgeColor} size="sm">
           {c.badge}
