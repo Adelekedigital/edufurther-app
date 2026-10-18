@@ -113,7 +113,7 @@ export function useOnboardingFlow() {
   }, [doneAtLoad, router]);
 
   const step = form?.step ?? 'help';
-  const matches = useMentorMatches(userId, topics.topics, {
+  const matches = useMentorMatches(userId, topics.topics, levels.levels, {
     enabled: step === 'matches',
     forMentor: guest?.handle ?? null,
   });
