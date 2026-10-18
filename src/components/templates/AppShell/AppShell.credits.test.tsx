@@ -81,6 +81,35 @@ describe('AppShell: a mentee’s credits', () => {
     expect(pill).toHaveFocus();
   });
 
+  it('"How credits work": closed by default, before Refund policy; opens to the three rules', async () => {
+    shell(three);
+    const user = userEvent.setup();
+    await user.click(firstPill());
+    const dialog = screen.getByRole('dialog', { name: 'Your credits' });
+    const toggle = within(dialog).getByRole('button', { name: 'How credits work' });
+    const refund = within(dialog).getByRole('button', { name: 'Refund policy' });
+    // Design order: How credits work, then Refund policy.
+    expect(toggle.compareDocumentPosition(refund) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).not.toHaveAttribute('aria-controls');
+    expect(dialog).not.toHaveTextContent('No rollover');
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    const list = document.getElementById(toggle.getAttribute('aria-controls')!)!;
+    const items = within(list).getAllByRole('listitem');
+    expect(items.map((li) => li.textContent)).toEqual([
+      'Start with 1 free credit when you finish your profile. It never expires.',
+      'Invite a friend: when they finish their profile, you get 2 more, then 3 every month.',
+      'Monthly credits reset on the 1st. No rollover.',
+    ]);
+    // Independent of the refund toggle.
+    expect(refund).toHaveAttribute('aria-expanded', 'false');
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).not.toHaveAttribute('aria-controls');
+    expect(dialog).not.toHaveTextContent('No rollover');
+  });
+
   it('account menu: the credits group comes first; the keyboard reaches "How credits work", and focus returns to the avatar', async () => {
     shell(three);
     const user = userEvent.setup();
@@ -149,6 +178,20 @@ describe('AppShell: a mentee’s credits', () => {
     expect(firstPill()).toHaveAccessibleName('3 credits left, monthly resets Nov 1');
     await userEvent.click(firstPill());
     expect(screen.getByRole('dialog', { name: 'Your credits' })).not.toHaveTextContent(/Bonus/);
+  });
+
+  it('account menu before the monthly grant: "For your first session", never "Resets null"', async () => {
+    shell({ ...three, left: 1, monthlyLeft: 0, showMonthly: false, resetsOn: null });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Account menu' }));
+    const group = within(screen.getByRole('menu', { name: 'Account' })).getByRole('group', {
+      name: 'Credits',
+    });
+    expect(group).toHaveTextContent('For your first session');
+    expect(group).not.toHaveTextContent(/Resets|null/);
+    expect(
+      within(group).getByRole('menuitem', { name: 'How credits work' }),
+    ).toHaveAccessibleDescription('1 credit left For your first session');
   });
 
   it('monthly grant not unlocked (starter only): no Monthly row or reset', async () => {

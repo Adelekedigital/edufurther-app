@@ -3,7 +3,13 @@
 import { useId } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { cx } from '@/lib/utils/cx';
-import { creditSegments, creditsTitle, isLow, type CreditsView } from '@/lib/utils/credits';
+import {
+  creditSegments,
+  creditsTitle,
+  isLow,
+  summarySub,
+  type CreditsView,
+} from '@/lib/utils/credits';
 import styles from './CreditsSummary.module.css';
 
 /** One segment per credit: bonus blue, monthly green, spent grey (yellow when low). */
@@ -20,7 +26,8 @@ export function CreditsBar({ credits }: { credits: CreditsView }) {
 /**
  * The credits block at the top of the account menu and the More sheet
  * (AppShell.dc.html creditMenu, creditSplit on): "3 credits left", the bar,
- * "Resets Nov 1" and "How credits work", which opens "Your credits".
+ * "Resets Nov 1" (or "For your first session" before the monthly grant) and
+ * "How credits work", which opens "Your credits".
  */
 export function CreditsSummary({
   credits,
@@ -37,6 +44,7 @@ export function CreditsSummary({
   asMenuItem?: { ref: (el: HTMLButtonElement | null) => void };
 }) {
   const id = useId();
+  const sub = summarySub(credits);
   return (
     <div
       className={cx(styles.summary, isLow(credits) && styles.low)}
@@ -51,9 +59,9 @@ export function CreditsSummary({
       </div>
       <CreditsBar credits={credits} />
       <div className={styles.foot}>
-        {credits.resetsOn ? (
+        {sub ? (
           <span id={`${id}-r`} className={styles.sub}>
-            Resets {credits.resetsOn}
+            {sub}
           </span>
         ) : (
           <span />
@@ -66,9 +74,7 @@ export function CreditsSummary({
             ref: asMenuItem.ref,
             role: 'menuitem',
             tabIndex: -1,
-            'aria-describedby': [`${id}-t`, credits.resetsOn && `${id}-r`]
-              .filter(Boolean)
-              .join(' '),
+            'aria-describedby': [`${id}-t`, sub && `${id}-r`].filter(Boolean).join(' '),
           })}
         >
           How credits work

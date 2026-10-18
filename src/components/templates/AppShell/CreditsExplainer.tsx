@@ -8,6 +8,7 @@ import { cx } from '@/lib/utils/cx';
 import {
   creditRows,
   creditsTitle,
+  HOW_CREDITS_WORK,
   isLow,
   refundPolicy,
   SPEND_ORDER,
@@ -21,7 +22,8 @@ import styles from './CreditsExplainer.module.css';
  * inside, closes on Escape or outside; the caller returns focus.
  *
  * Design creditSplit on: the total, a bar, Monthly/Bonus rows, the spend
- * order, then "Refund policy". The refund text is ours (see REFUND_POLICY).
+ * order, then "How credits work" and "Refund policy", both closed by default.
+ * The refund text is ours (see refundPolicy).
  */
 export function CreditsExplainer({
   id,
@@ -33,10 +35,12 @@ export function CreditsExplainer({
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [howOpen, setHowOpen] = useState(false);
   const [policyOpen, setPolicyOpen] = useState(false);
   // The window is deployment configuration, so the line is built, not written.
   const policy = refundPolicy(credits.refundHours);
   const rows = creditRows(credits);
+  const howId = useId();
   const policyId = useId();
 
   useEffect(() => {
@@ -108,21 +112,49 @@ export function CreditsExplainer({
             <span className={styles.spend}>{SPEND_ORDER}</span>
           </div>
         )}
-        <div className={styles.policy}>
+        <div className={styles.section}>
           <button
             type="button"
-            className={styles.policyToggle}
+            className={styles.toggle}
+            aria-expanded={howOpen}
+            // Only while the list exists: a dangling reference reads as nothing.
+            aria-controls={howOpen ? howId : undefined}
+            onClick={() => setHowOpen((o) => !o)}
+          >
+            <Icon name="help" size={16} className={styles.toggleIcon} />
+            <span className={styles.toggleLabel}>How credits work</span>
+            <Icon
+              name={howOpen ? 'expand_less' : 'expand_more'}
+              size={18}
+              className={styles.chevron}
+            />
+          </button>
+          {howOpen && (
+            <ul id={howId} className={styles.howList}>
+              {HOW_CREDITS_WORK.map((t) => (
+                <li key={t} className={styles.howItem}>
+                  <span aria-hidden className={styles.howDot} />
+                  <span>{t}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className={styles.section}>
+          <button
+            type="button"
+            className={styles.toggle}
             aria-expanded={policyOpen}
             // Only while the panel exists: a dangling reference reads as nothing.
             aria-controls={policyOpen ? policyId : undefined}
             onClick={() => setPolicyOpen((o) => !o)}
           >
-            <Icon name="replay" size={16} className={styles.policyIcon} />
-            <span className={styles.policyLabel}>Refund policy</span>
+            <Icon name="replay" size={16} className={styles.toggleIcon} />
+            <span className={styles.toggleLabel}>Refund policy</span>
             <Icon
               name={policyOpen ? 'expand_less' : 'expand_more'}
               size={18}
-              className={styles.policyChevron}
+              className={styles.chevron}
             />
           </button>
           {policyOpen && (
