@@ -859,6 +859,8 @@ PRD: Mentee Onboarding v5 (deviation table, H8). Rows the PRD settles are produc
 | Banner avatar shows the mentor's initials (DS default avatar) | The same, `tone="plain"` (our name for the DS default) | — | — |
 | Field-of-study suggestions: 9 names in the prototype | The backend's 20 (`GET /catalog/fields-of-study`, the owner's order); the short list only until they load | The owner set the list with the backend (#482); free text is still saved as typed | — |
 | Book on the guest's match opens the modal at the start | Opens on the questions with their time and session (BookingFlow `startAfterTime`); the slot grid if that time is gone | PRD US-6: back where they left off | — |
+| No migrated-mentee state drawn | "We’ve brought over your answers. Just check these." (PRD H5) in the resume notice's blue style, no Start over; opens at the first gap with their answers, all brought-over help areas kept. Read as "no `last_step` but holds answers", so until the backend sends `last_step` on `/me` a migrated mentee sees the welcome-back line instead; and a new mentee whose step save failed after their answers saved would read as migrated | PRD H5; provisional until design answers request item 7 | design draws it; or the backend marks migrated users explicitly |
+| Returning mentees always land on Home | A returning mentee whose `/me onboarding.complete` is false goes to `/onboarding` ("Opening your setup…") at sign-in; any return path (`next`) still wins, and `/` still opens Home | PRD H5 (migrated mentees fill their gaps); F4 (booking never gated) | — |
 
 ### Sign up and log in — the screen (PR 3, `/signup`, `/login`)
 

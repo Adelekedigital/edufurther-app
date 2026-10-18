@@ -233,3 +233,38 @@ describe('signInOutcome — naming the mentor', () => {
     ).toMatchObject({ body: 'Taking you back to your booking with Gbenga…' });
   });
 });
+
+describe('signInOutcome — a mentee whose onboarding is unfinished (PRD H5)', () => {
+  it('opens onboarding at the first gap, once the flag is on', async () => {
+    const out = await load(true);
+    expect(out({ ...base, onboardingComplete: false })).toMatchObject({
+      title: 'Welcome back, Amara',
+      body: 'Opening your setup…',
+      href: '/onboarding',
+    });
+  });
+
+  it('leaves everyone else where they went', async () => {
+    const on = await load(true);
+    // Done, or /me doesn't say: Home.
+    expect(on({ ...base, onboardingComplete: true }).href).toBe('/home');
+    expect(on({ ...base, onboardingComplete: null }).href).toBe('/home');
+    expect(on(base).href).toBe('/home');
+    // A mentor or an admin never goes to mentee onboarding.
+    expect(
+      on({ ...base, isMentor: true, mentorApproved: true, onboardingComplete: false }).href,
+    ).toBe('/dashboard');
+    expect(on({ ...base, isAdmin: true, onboardingComplete: false }).href).toBe('/admin');
+    // Any return path wins, a booking included: booking is never gated (PRD F4).
+    const next = '/mentors/ada?book=st-1&at=2026-10-20T10:00:00Z';
+    expect(on({ ...base, onboardingComplete: false, next }).href).toBe(next);
+  });
+
+  it('changes nothing with the flag off', async () => {
+    const off = await load(false);
+    expect(off({ ...base, onboardingComplete: false })).toMatchObject({
+      body: 'Opening your Home…',
+      href: '/home',
+    });
+  });
+});

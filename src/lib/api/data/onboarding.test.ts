@@ -79,6 +79,41 @@ describe('toState', () => {
   });
 });
 
+describe('toState — migrated mentees (PRD H5)', () => {
+  const brought = { needs: [need], degree_goal: masters };
+
+  it('is migrated when the server has no step for them but they hold answers', () => {
+    const s = toState(
+      saved(brought, { onboarding: { complete: false, missing: ['origin'], last_step: null } }),
+      countries,
+    );
+    expect(s).toMatchObject({ lastStep: null, migrated: true });
+  });
+
+  it('is not migrated once they step through here, or with nothing brought over', () => {
+    expect(
+      toState(
+        saved(brought, { onboarding: { complete: false, missing: [], last_step: 'help' } }),
+        countries,
+      ),
+    ).toMatchObject({ lastStep: 'help', migrated: false });
+    expect(
+      toState(
+        saved(null, { onboarding: { complete: false, missing: ['help'], last_step: null } }),
+        countries,
+      ).migrated,
+    ).toBe(false);
+  });
+
+  it('reads the step from the answers, never migrated, while the server sends no last_step', () => {
+    const s = toState(
+      saved(brought, { onboarding: { complete: false, missing: ['origin'] } }),
+      countries,
+    );
+    expect(s).toMatchObject({ lastStep: 'help', migrated: false });
+  });
+});
+
 describe('goalBody', () => {
   const plans = (over = {}) => ({
     originId: 'c-ng',

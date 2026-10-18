@@ -26,6 +26,16 @@ export const untyped = api as unknown as {
   ) => Promise<{ data?: unknown; error?: unknown; response: Response }>;
 };
 
+/**
+ * `/me` `onboarding` with `last_step` (requested 2026-10-17; GET /me/onboarding
+ * has it but answers 404 to anyone who never started). Absent until it ships.
+ */
+export type PendingOnboardingStatus = NonNullable<
+  components['schemas']['UserRead']['onboarding']
+> & {
+  last_step?: 'help' | 'plans' | null;
+};
+
 /** #3: the completion refusal names what is missing. */
 export type PendingIncomplete = { missing?: unknown };
 

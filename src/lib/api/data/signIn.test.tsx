@@ -28,7 +28,21 @@ describe('fetchSignInAccount (who just signed in)', () => {
       isAdmin: false,
       isMentor: false,
       mentorApproved: false,
+      onboardingComplete: null,
     });
+  });
+
+  it('carries /me onboarding.complete, so an unfinished mentee goes back to it', async () => {
+    GET.mockResolvedValueOnce(
+      res(200, {
+        id: 'u3',
+        first_name: 'Amara',
+        is_admin: false,
+        mentor_profile: null,
+        onboarding: { complete: false, missing: ['field'] },
+      }),
+    );
+    expect(await fetchSignInAccount()).toMatchObject({ onboardingComplete: false });
   });
 
   it('counts any mentor profile as a mentor, approved or not', async () => {

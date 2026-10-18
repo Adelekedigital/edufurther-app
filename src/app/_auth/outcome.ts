@@ -12,16 +12,22 @@ type Me = NonNullable<Parameters<typeof homeFor>[0]>;
 
 /**
  * The account's own home: `/`'s rule (homeFor), except that a mentor not yet
- * approved goes to their application review (PRD rev 9) once it exists.
+ * approved goes to their application review (PRD rev 9) once it exists, and a
+ * mentee whose onboarding isn't finished (a migrated one, say) goes to it at
+ * their first gap (PRD H5). Only an explicit `false` sends them: unknown is done.
+ * This is the sign-in rule only: `/` itself still sends every mentee Home, where
+ * the onboarding nudge (PRD F4, with design) picks up the rest.
  */
 export function accountHome(a: {
   isAdmin: boolean;
   isMentor: boolean;
   mentorApproved: boolean;
+  onboardingComplete?: boolean | null;
 }): string {
   // homeFor only asks whether a mentor profile exists, not what is in it.
   const profile = (a.isMentor ? {} : null) as Me['mentor_profile'];
   const home = homeFor({ is_admin: a.isAdmin, mentor_profile: profile });
+  if (home === '/home' && ONBOARDING_LIVE && a.onboardingComplete === false) return '/onboarding';
   return home === '/dashboard' && !a.mentorApproved ? MENTOR_REVIEW_HOME : home;
 }
 
@@ -39,6 +45,8 @@ export type OutcomeInput = {
   isAdmin: boolean;
   isMentor: boolean;
   mentorApproved: boolean;
+  /** `/me` `onboarding.complete` (null: unknown, treated as done). */
+  onboardingComplete?: boolean | null;
   googleJustLinked: boolean;
   /** A checked return path (safeReturnTo), or null. */
   next: string | null;
@@ -102,7 +110,9 @@ export function signInOutcome(o: OutcomeInput): Outcome {
         ? 'Opening your application review…'
         : home === '/home'
           ? 'Opening your Home…'
-          : 'Opening EduFurther…';
+          : home === '/onboarding'
+            ? 'Opening your setup…'
+            : 'Opening EduFurther…';
   if (o.mode === 'signup') {
     return {
       icon: 'login',

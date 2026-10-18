@@ -28,6 +28,20 @@ export const MOCK_VIEWER_ID = 'mock-viewer';
 const progress = new Map<string, Progress>();
 const goals = new Map<string, Goal>();
 
+// MOCK_ONBOARDING=migrated: a mentee brought over from the old platform (PRD H5),
+// with 4 help areas (over the new cap of 3) and a degree, but no origin or field,
+// and no step taken here.
+if (process.env.ENABLE_MOCK_API === '1' && process.env.MOCK_ONBOARDING === 'migrated')
+  goals.set(MOCK_VIEWER_ID, {
+    degree_goal_id: MOCK_DEGREE_LEVELS.find((l) => l.code === 'masters')?.id ?? null,
+    degree_goal_raw: null,
+    field_of_study: null,
+    country_ids: [],
+    need_ids: OFFERINGS.slice(0, 4).map((o) => o.id),
+    target_start_term: null,
+    notes: null,
+  });
+
 export const STEPS = ['help', 'plans'] as const;
 
 export const mockProgress = (userId: string) => progress.get(userId) ?? null;

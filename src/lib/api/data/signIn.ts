@@ -17,6 +17,8 @@ export type SignInAccount =
       isMentor: boolean;
       /** The mentor profile's approval_status is `approved` (pending and declined are not). */
       mentorApproved: boolean;
+      /** `/me` `onboarding.complete`; null when /me doesn't say (treated as done). */
+      onboardingComplete: boolean | null;
     }
   /** No account for this sign-in (404) or one that isn't linked to it (409). */
   | { kind: 'noAccount' }
@@ -39,6 +41,7 @@ export async function fetchSignInAccount(): Promise<SignInAccount> {
       isAdmin: !!data.is_admin,
       isMentor: !!data.mentor_profile,
       mentorApproved: data.mentor_profile?.approval_status === 'approved',
+      onboardingComplete: data.onboarding?.complete ?? null,
     };
   } catch {
     return { kind: 'error' };

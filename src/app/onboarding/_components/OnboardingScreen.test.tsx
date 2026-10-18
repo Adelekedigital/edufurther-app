@@ -109,7 +109,13 @@ vi.mock('@/app/_shell/BookingLauncher/BookingLauncher', () => ({
 }));
 
 const mentee = { kind: 'member', id: 'u1', isMentor: false } as Viewer;
-const fresh: OnboardingState = { lastStep: null, complete: false, needIds: [], plans: EMPTY_PLANS };
+const fresh: OnboardingState = {
+  lastStep: null,
+  migrated: false,
+  complete: false,
+  needIds: [],
+  plans: EMPTY_PLANS,
+};
 
 beforeEach(() => {
   viewer = mentee;
@@ -249,6 +255,7 @@ describe('OnboardingScreen', () => {
   describe('a guest back from Book', () => {
     const planned: OnboardingState = {
       lastStep: 'help',
+      migrated: false,
       complete: false,
       needIds: ['o1'],
       plans: { originId: 'c-ng', degree: 'masters', field: 'Law', destinationId: 'c-gb' },
@@ -353,6 +360,62 @@ describe('OnboardingScreen', () => {
       ).toBeInTheDocument();
       await userEvent.click(screen.getByRole('button', { name: /^Book/ }));
       expect(launcher).toMatchObject({ initialTime: '2026-10-20T12:00:00Z', startAfterTime: true });
+    });
+  });
+
+  describe('a migrated mentee (PRD H5)', () => {
+    const brought: OnboardingState = {
+      lastStep: null,
+      migrated: true,
+      complete: false,
+      // 4 areas: over the new cap of 3, and kept.
+      needIds: ['o1', 'o2', 'o3', 'o4'],
+      plans: { ...EMPTY_PLANS, degree: 'masters' },
+    };
+
+    it('opens at the first gap with what they gave us, under the brought-over line', () => {
+      state = brought;
+      render(<OnboardingScreen />);
+      expect(
+        screen.getByRole('heading', { name: 'Tell us about your study plans' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText('We’ve brought over your answers. Just check these.'),
+      ).toBeInTheDocument();
+      // Not the mid-way welcome back, and nothing to start over.
+      expect(screen.queryByText(/Welcome back/)).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Start over' })).toBeNull();
+    });
+
+    it('starts at step 1 when the help areas are what is missing', () => {
+      state = {
+        ...brought,
+        needIds: [],
+        plans: { ...EMPTY_PLANS, degree: 'masters', field: 'Law' },
+      };
+      render(<OnboardingScreen />);
+      expect(
+        screen.getByRole('heading', { name: 'What would you like help with?' }),
+      ).toBeInTheDocument();
+    });
+
+    it('keeps all 4 brought-over help areas when they go on', async () => {
+      state = {
+        ...brought,
+        plans: { originId: 'c-ng', degree: 'masters', field: 'Law', destinationId: 'c-gb' },
+      };
+      render(<OnboardingScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'See my matches' }));
+      expect(save).toHaveBeenCalledWith(
+        expect.objectContaining({ needIds: ['o1', 'o2', 'o3', 'o4'] }),
+      );
+    });
+
+    it('still welcomes back someone who came back mid-way, with Start over', () => {
+      state = { ...brought, migrated: false, lastStep: 'help' };
+      render(<OnboardingScreen />);
+      expect(screen.getByText(/Welcome back/)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Start over' })).toBeInTheDocument();
     });
   });
 });
