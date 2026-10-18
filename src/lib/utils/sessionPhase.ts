@@ -56,13 +56,15 @@ export function sessionPhase(b: Booking, now: Date): SessionPhase {
 }
 
 /**
- * How this person gets into the call now:
- * - `join`: their first arrival (`POST /join`, the attendance record), while
- *   the join window is open;
- * - `door`: back in after they have joined (`POST /door`, records nothing),
- *   until `door_closes_at`;
+ * Whether this person has a way into the call now, as the page draws it:
+ * - `join`: a first arrival, while the join window is open ("Join");
+ * - `door`: back in after they have joined, until `door_closes_at` ("Rejoin");
  * - null: no way in. Before the window, or a first arrival after it closed
  *   (product, 2026-10-08: late first-timers are not let in).
+ *
+ * It only picks the label and whether Join shows. Both link to the entry
+ * route (`/sessions/{id}/enter`, ADR 0009), and the server decides there:
+ * `POST /join` records the arrival, `POST /door` after a 409.
  *
  * `join_closes_at` and `door_closes_at` are compared as instants, never by an
  * assumed order: the backend publishes both, and their relation has changed

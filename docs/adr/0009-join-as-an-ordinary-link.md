@@ -38,19 +38,23 @@ not next/link) to **our** route, `GET /sessions/{id}/enter`
 
 1. Refuses a navigation another site started: `Sec-Fetch-Site` must be `same-origin` or
    `none` (missing is allowed for older browsers). Anything else goes to the session page
-   with nothing recorded.
+   with nothing recorded. So does a request that says it is a prefetch or prerender
+   (`Sec-Purpose` or `Purpose` containing `prefetch`).
 2. Takes the access token the proxy verified (`x-ef-access-token`, forwarded for this
    exact path and `/` only; a client's own copy is removed on every path, ADR 0004).
    Signed out goes to `/login?next=/sessions/{id}`.
-3. Sends `POST /join` as the person; on a `409`, `POST /door`. A safe link
+3. Sends `POST /join` as the person; on a `409`, `POST /door`. Both share one 8-second
+   deadline; running out of it is `?enter=failed`. A safe link
    (`safeMeetingUrl`) is a `303` to the call. Otherwise it is a `303` back to
    `/sessions/{id}?enter=nolink|closed|notopen|failed`, which the page says in its usual
    words and then removes from the URL. `404`/`403`/`422` go to the page, which shows its
    own not-found; `401` goes to sign in.
-4. Answers with `Cache-Control: no-store` and never logs the link or the token.
+4. Answers with `Cache-Control: no-store` and `Referrer-Policy: no-referrer` (the call's
+   site learns nothing of our pages), and never logs the link or the token.
 
 In local dev and CI (`NEXT_PUBLIC_MOCK_VIEWER` set, as `home.ts` decides) it calls the
-in-app mock on its own origin (ADR 0006). The page re-reads the session whenever its tab
+in-app mock on its own origin (ADR 0006); the mock's j-8 and j-9 refuse entry, so
+`?enter=closed` and `?enter=notopen` can be seen there. The page re-reads the session whenever its tab
 comes back into view (`refetchOnWindowFocus: 'always'`), so "Joined" and Rejoin show on
 return.
 
@@ -64,14 +68,20 @@ Good:
 - No popup, no blank tab, no blocked-window notice.
 
 Bad, accepted:
-- A GET with a side effect. Mitigated by the `Sec-Fetch-Site` check and by never using
-  next/link (nothing prefetches it).
+- A GET with a side effect. Mitigated by the `Sec-Fetch-Site` check, the refusal of
+  requests that announce themselves as prefetches, and never using next/link (the router
+  never prefetches it).
 - iOS Safari's long-press preview may load the link, which records an arrival and can
   show the call in the preview.
 - Each press mints a fresh link, so pressing twice opens two tabs.
+- A failure doesn't come back to the page the person pressed Join on: the new tab shows
+  the session page with the reason, beside the original, and pressing Join again there
+  opens yet another tab.
+- A Rejoin inside the join window sends `POST /join` again before anything else. That is
+  safe: `/join` keeps the first arrival, and only a 409 sends the route to `/door`.
 - Space doesn't activate a link; only Enter does.
-- A second server-side path to the backend besides `/` (ADR 0003), configured by the same
-  `BACKEND_URL`.
+- A second server-side path to the backend besides `/`'s `/me` (ADR 0005), configured by
+  the same `BACKEND_URL`.
 
 ## Evidence
 

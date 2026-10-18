@@ -137,7 +137,7 @@ cutover list: `references/environments.md`.
 | Where do tokens come from? | The **screens project's** `_ds/edufurther-design-system-…/tokens/*.css` (live, via `DesignSync`) → `src/styles/tokens/`; checked identical on 2026-10-12. The standalone DS project `c4e21801…` lags it (no phone scale), so never import from that one |
 | Where is divergence recorded? | `references/design-divergence.md` |
 | What is deliberately not from the design? | Focus rings, disabled/busy, skeleton colour, reduced-motion, a text-on-photo scrim token — listed as _ours_ in `design-divergence.md` |
-| Session Join (`/sessions/[id]`) | Built (4 PRs, `layout=lobby`); screen complete, follow-ups are issues. **Rules:** never infer "missed" from the clock (only each party's recorded attendance); credit copy only within the backend's rule (refund only when the mentor alone was absent); Rejoin (`POST /door`, until `door_closes_at`) stays gated on `joined_at`, no late first-timers; never a live "Here now" until backend #394. What each PR built: `references/ported-screens.md` |
+| Session Join (`/sessions/[id]`) | Built (4 PRs, `layout=lobby`); screen complete, follow-ups are issues. **Rules:** never infer "missed" from the clock (only each party's recorded attendance); credit copy only within the backend's rule (refund only when the mentor alone was absent); Rejoin (until `door_closes_at`; Join and Rejoin link to `/sessions/{id}/enter`, which sends `POST /join`, then `POST /door` on a 409, ADR 0009) stays gated on `joined_at`, no late first-timers; never a live "Here now" until backend #394. What each PR built: `references/ported-screens.md` |
 
 Prototype files (`support.js`, `image-slot.js`, `dc-import`, `sc-if`) are the prototype runtime. **Never port them.**
 

@@ -451,7 +451,7 @@ Source: `Session Join.dc.html`, defaults `layout=lobby`, `provider=edufurther`; 
 | Design says | We do | Why | Revisit |
 |---|---|---|---|
 | In progress: "In session 12:00 · 18 min left" clock | No clock once the session has started; the countdown before it stays | Product, 2026-10-08: the meeting may run on another platform, and a timer here would disagree with it | product |
-| "Rejoin session" through the same Join | First arrival through `POST /join` (the attendance record), every way back in through `POST /door` (records nothing), until `door_closes_at` | Backend #380. `join_closes_at` and `door_closes_at` read and compared as instants, never by an assumed order (#388 changed it once) | the backend changes the join / door split (#380) |
+| "Rejoin session" through the same Join | Join and Rejoin both link to our entry route, `/sessions/{id}/enter` (ADR 0009, 2026-10-17), which sends `POST /join` (the attendance record; a repeat keeps the first arrival) and, on a 409, `POST /door` (records nothing), until `door_closes_at` | Backend #380. `join_closes_at` and `door_closes_at` read and compared as instants, never by an assumed order (#388 changed it once) | the backend changes the join / door split (#380) |
 | Settled sessions (completed, missed) show their outcome | While the session is still running, the page follows the clock whatever the status; the outcome shows only once it has ended | The backend can settle a session while people are still in the call (#380); sending them away mid-call was a bug in PR 1 | never — sending people away mid-call was a bug |
 | "Add to calendar": a single link | A menu from that link (ours): Google Calendar, Outlook.com, and "Download for other calendars (.ics)". The file is made in the browser | Product, 2026-10-08: any calendar, not only Google | design draws the menu |
 | (no rule) | The Google and Outlook.com links carry the session title, which names the other person, to Google or Microsoft | Product chose the web-calendar options knowing this (2026-10-08). The .ics sends nothing anywhere. No event ever contains the call link: it carries a personal access token | product revisits sending the title to Google / Microsoft |
@@ -478,7 +478,7 @@ Source: `Session Join.dc.html`, defaults `layout=lobby`, `provider=edufurther`; 
 
 | Design says | We do | Why | Revisit |
 |---|---|---|---|
-| (no state) the server refuses a first arrival after the window | `POST /door` 409 `/problems/join-window-closed` reads "Joining closed at 6:15 pm, 15 minutes after the start.", the same sentence the page shows where Join is gone | Product, 2026-10-08: enforced on the server too (backend #382). One rule, one sentence | design request |
+| (no state) the server refuses a first arrival after the window | `POST /door` 409 `/problems/join-window-closed`, sent back by the entry route as `?enter=closed`, reads "Joining closed at 6:15 pm, 15 minutes after the start.", the same sentence the page shows where Join is gone | Product, 2026-10-08: enforced on the server too (backend #382). One rule, one sentence | design request |
 | "Join opens 10 minutes before" | Now true: the backend opens at 10 (#391), and the page reads it from `join_opens_at`; the fallback for an unstamped row is 10 | — | never — now matches the design |
 
 ### Session Join — presence from where people have been (PR 4b), 2026-10-09
