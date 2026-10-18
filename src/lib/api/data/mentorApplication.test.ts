@@ -265,16 +265,21 @@ describe('planEducation', () => {
 });
 
 describe('refusedFields', () => {
-  it('names the step fields a 422 points at, and nothing else', () => {
+  it('names the step fields a 422 points at', () => {
     expect(
       refusedFields({
         errors: [
           { pointer: '/social_linkedin', message: 'not a LinkedIn profile' },
           { pointer: '/origin_country_id' },
-          { pointer: '/gender' },
         ],
       }),
     ).toEqual(['linkedinFormat', 'origin']);
+  });
+
+  it('names none when one refused field has no place on the step, so the notice shows', () => {
+    expect(
+      refusedFields({ errors: [{ pointer: '/social_linkedin' }, { pointer: '/about_me' }] }),
+    ).toEqual([]);
     expect(refusedFields({ title: 'Unprocessable Content' })).toEqual([]);
     expect(refusedFields(null)).toEqual([]);
   });

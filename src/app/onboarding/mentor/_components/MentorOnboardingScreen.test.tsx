@@ -513,6 +513,11 @@ describe('MentorOnboardingScreen', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText(/We couldn’t save this step/)).not.toBeInTheDocument();
     expect(screen.getByLabelText('LinkedIn profile')).toHaveFocus();
+    // Typing elsewhere doesn't hide it: only editing the link does.
+    await userEvent.type(screen.getByLabelText('About (optional)'), ' more');
+    expect(
+      screen.getByText('Use your profile link, like linkedin.com/in/your-name.'),
+    ).toBeInTheDocument();
   });
 
   it('a decided application at submit goes to the status page, never "try again"', async () => {

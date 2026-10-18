@@ -330,13 +330,15 @@ const REFUSED: Record<string, MentorGap> = {
   '/origin_country_id': 'origin',
 };
 
+/**
+ * The step gaps a 422 names. None unless every refused field has a place on
+ * the step: one with nowhere to show must keep the general notice.
+ */
 export function refusedFields(body: unknown): MentorGap[] {
   const errors = (body as { errors?: unknown } | null)?.errors;
-  if (!Array.isArray(errors)) return [];
-  return errors.flatMap((e) => {
-    const gap = REFUSED[(e as { pointer?: unknown } | null)?.pointer as string];
-    return gap ? [gap] : [];
-  });
+  if (!Array.isArray(errors) || !errors.length) return [];
+  const gaps = errors.map((e) => REFUSED[(e as { pointer?: unknown } | null)?.pointer as string]);
+  return gaps.every(Boolean) ? (gaps as MentorGap[]) : [];
 }
 
 /** A refusal that names fields the step shows: each error goes under its field. */

@@ -109,6 +109,9 @@ describe('LinkedIn', () => {
 
   it('saves one form', () => {
     expect(normaliseLinkedIn('linkedin.com/in/gbenga/')).toBe('https://www.linkedin.com/in/gbenga');
+    expect(normaliseLinkedIn('linkedin.com/in/gbenga/details/experience?x=1')).toBe(
+      'https://www.linkedin.com/in/gbenga',
+    );
   });
 
   // The backend's rule (domain/social_links.py): a slug of 3–100 of A–Z a–z 0–9 _ -,
@@ -124,10 +127,11 @@ describe('LinkedIn', () => {
     `linkedin.com/in/${'a'.repeat(101)}`,
   ])('refuses %s, as the backend does', (u) => expect(isLinkedInProfile(u)).toBe(false));
 
-  it.each(['linkedin.com/in/ada_obi-2', 'https://WWW.LinkedIn.com/in/Ada-Obi'])(
-    'accepts %s, as the backend does',
-    (u) => expect(isLinkedInProfile(u)).toBe(true),
-  );
+  it.each([
+    'linkedin.com/in/ada_obi-2',
+    'https://WWW.LinkedIn.com/in/Ada-Obi',
+    'https://www.linkedin.com/in/ada-obi/details/experience/',
+  ])('accepts %s, as the backend does', (u) => expect(isLinkedInProfile(u)).toBe(true));
 });
 
 describe('gapsFor', () => {
