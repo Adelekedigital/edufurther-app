@@ -14,6 +14,19 @@ export const MENTOR_DEGREES: { value: string; label: string; code: string; raw: 
   { value: 'phd', label: 'PhD', code: 'doctorate', raw: 'PhD' },
 ];
 
+/** The profile editor's abbreviations (lib/utils/degrees.ts), on the chip each one sits under. */
+const SAVED_ALIASES: Record<string, string> = {
+  bsc: 'bachelors',
+  ba: 'bachelors',
+  msc: 'masters',
+  ma: 'masters',
+  mph: 'masters',
+  meng: 'masters',
+};
+
+/** The profile editor's level codes, where they differ from the catalogue's. */
+const LEVEL_ALIASES: Record<string, string> = { undergraduate: 'bachelors', phd: 'doctorate' };
+
 /** A saved entry's degree back to a chip: by abbreviation, then by level alone. */
 export function mentorDegreeFromSaved(
   abbreviation: string | null | undefined,
@@ -24,8 +37,10 @@ export function mentorDegreeFromSaved(
     ? MENTOR_DEGREES.find((d) => d.raw.toLowerCase() === raw || d.label.toLowerCase() === raw)
     : undefined;
   if (byRaw) return byRaw.value;
+  if (raw && SAVED_ALIASES[raw]) return SAVED_ALIASES[raw];
+  const code = (levelCode && LEVEL_ALIASES[levelCode]) ?? levelCode;
   // MBA and Master's share a level: the plain one when only the level is known.
-  return MENTOR_DEGREES.find((d) => d.code === levelCode && d.value !== 'mba')?.value ?? '';
+  return MENTOR_DEGREES.find((d) => d.code === code && d.value !== 'mba')?.value ?? '';
 }
 
 export const degreeLabel = (value: string) =>

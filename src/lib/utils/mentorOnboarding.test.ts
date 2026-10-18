@@ -54,6 +54,19 @@ describe('degrees', () => {
     expect(mentorDegreeFromSaved('M.Phil', 'doctorate')).toBe('phd');
     expect(mentorDegreeFromSaved(null, null)).toBe('');
   });
+
+  it('places the profile editor’s abbreviations and its undergraduate level on a chip', () => {
+    expect(mentorDegreeFromSaved('BSc', 'undergraduate')).toBe('bachelors');
+    expect(mentorDegreeFromSaved('BA', null)).toBe('bachelors');
+    expect(mentorDegreeFromSaved(null, 'undergraduate')).toBe('bachelors');
+    expect(mentorDegreeFromSaved(null, 'phd')).toBe('phd');
+    expect(mentorDegreeFromSaved('MSc', 'masters')).toBe('masters');
+    expect(mentorDegreeFromSaved('MPH', null)).toBe('masters');
+    expect(mentorDegreeFromSaved('MEng', null)).toBe('masters');
+    expect(mentorDegreeFromSaved('MA', null)).toBe('masters');
+    // "Other" names no degree: no chip, so they pick one.
+    expect(mentorDegreeFromSaved('Other', null)).toBe('');
+  });
 });
 
 describe('years and headline', () => {
