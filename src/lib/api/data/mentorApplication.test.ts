@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import type { components } from '@/lib/api/generated/schema';
 import { toDayHours } from '@/lib/utils/mentorOnboarding';
 import type { SchoolDraft } from '@/types/mentorOnboarding';
-import { educationBody, planEducation, toApplicationState } from './mentorApplication';
+import {
+  educationBody,
+  planEducation,
+  refusedFields,
+  toApplicationState,
+} from './mentorApplication';
 import type { WeeklyHours } from './weeklyHours';
 
 type Me = components['schemas']['UserRead'];
@@ -256,5 +261,21 @@ describe('planEducation', () => {
     expect(plan.remove).toEqual(['e2']);
     expect(plan.edit).toEqual([{ id: 'e1', body: { study_course: 'Epidemiology' } }]);
     expect(plan.add).toHaveLength(1);
+  });
+});
+
+describe('refusedFields', () => {
+  it('names the step fields a 422 points at, and nothing else', () => {
+    expect(
+      refusedFields({
+        errors: [
+          { pointer: '/social_linkedin', message: 'not a LinkedIn profile' },
+          { pointer: '/origin_country_id' },
+          { pointer: '/gender' },
+        ],
+      }),
+    ).toEqual(['linkedinFormat', 'origin']);
+    expect(refusedFields({ title: 'Unprocessable Content' })).toEqual([]);
+    expect(refusedFields(null)).toEqual([]);
   });
 });

@@ -313,8 +313,16 @@ export function useMentorOnboardingFlow() {
     const from = form.step;
     try {
       await save.save(from, form.answers, standing, keepSchoolId);
-    } catch {
-      return; // Shown from save.error; the answers stay as typed.
+    } catch (e) {
+      // A field the server refused shows under that field, not as the general notice.
+      const fields = (e as { fields?: MentorGap[] }).fields;
+      if (fields?.length) {
+        save.reset();
+        setServerGaps(fields);
+        setTried(true);
+        focusField(gapField(fields[0]!, form.answers));
+      }
+      return; // Otherwise shown from save.error; the answers stay as typed.
     }
     setSaved(true);
     setBaseline(form.answers);

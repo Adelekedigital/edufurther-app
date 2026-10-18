@@ -110,6 +110,24 @@ describe('LinkedIn', () => {
   it('saves one form', () => {
     expect(normaliseLinkedIn('linkedin.com/in/gbenga/')).toBe('https://www.linkedin.com/in/gbenga');
   });
+
+  // The backend's rule (domain/social_links.py): a slug of 3–100 of A–Z a–z 0–9 _ -,
+  // on linkedin.com or its www, m or two-letter country host. Anything it refuses is a
+  // 422 on save, so the step must catch it first.
+  it.each([
+    'linkedin.com/in/ab',
+    'linkedin.com/in/ada.obi',
+    'linkedin.com/in/jos%C3%A9-silva',
+    'linkedin.com/in/josé-silva',
+    'https://abc.linkedin.com/in/jane',
+    'https://x.linkedin.com/in/jane',
+    `linkedin.com/in/${'a'.repeat(101)}`,
+  ])('refuses %s, as the backend does', (u) => expect(isLinkedInProfile(u)).toBe(false));
+
+  it.each(['linkedin.com/in/ada_obi-2', 'https://WWW.LinkedIn.com/in/Ada-Obi'])(
+    'accepts %s, as the backend does',
+    (u) => expect(isLinkedInProfile(u)).toBe(true),
+  );
 });
 
 describe('gapsFor', () => {

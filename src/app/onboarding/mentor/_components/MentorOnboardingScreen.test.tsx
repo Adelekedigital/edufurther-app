@@ -493,6 +493,28 @@ describe('MentorOnboardingScreen', () => {
     );
   });
 
+  it('a field the server refuses shows under that field, not as a general save error', async () => {
+    appState = stateWith({
+      lastStep: 'education',
+      hasProfile: true,
+      answers: answers({
+        helpIds: ['o-docs'],
+        photoUrl: '/p.png',
+        originId: 'c-ng',
+        linkedin: 'linkedin.com/in/ada-obi',
+        about: 'Mine',
+      }),
+    });
+    save.mockRejectedValueOnce(Object.assign(new Error('422'), { fields: ['linkedinFormat'] }));
+    render(<MentorOnboardingScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(
+      await screen.findByText('Use your profile link, like linkedin.com/in/your-name.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/We couldn’t save this step/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('LinkedIn profile')).toHaveFocus();
+  });
+
   it('a decided application at submit goes to the status page, never "try again"', async () => {
     appState = stateWith({
       lastStep: 'about',
