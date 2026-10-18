@@ -20,6 +20,7 @@ import {
   stepLabel,
 } from '@/lib/copy/onboarding';
 import { deviceTimeZone } from '@/lib/utils/format';
+import { basedOnLine } from '@/lib/utils/matchReason';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import { cx } from '@/lib/utils/cx';
@@ -94,7 +95,8 @@ export function OnboardingScreen() {
         <MatchResults
           matches={m?.matches ?? []}
           exact={m?.exact ?? true}
-          basis={m?.basis ?? local}
+          // The server's basis when it says something; the mentee's own answers otherwise.
+          basis={m?.basis && basedOnLine(m.basis) ? m.basis : local}
           isLoading={f.matches.isLoading}
           error={f.matches.error}
           onRetry={f.matches.retry}

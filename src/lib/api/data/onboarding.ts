@@ -9,7 +9,7 @@ import { ApiError, apiError, normaliseError, retryOnce } from './errors';
 import { api } from './http';
 import { keys } from './keys';
 import type { components } from '@/lib/api/generated/schema';
-import type { PendingIncomplete, PendingOnboardingStatus } from './pending';
+import type { PendingIncomplete } from './pending';
 
 type Me = components['schemas']['UserRead'];
 type GoalWrite = components['schemas']['GoalWrite'];
@@ -35,8 +35,8 @@ export type Saved = {
   goal: NonNullable<Me['goal']> | null;
   /** The origin's ISO code (`/me` sends a CountryRef, not a catalog id). */
   originCode: string | null;
-  /** `GET /me` `onboarding`: whether they finished, what's still owed, and (pending) the last step. */
-  onboarding: PendingOnboardingStatus | null;
+  /** `GET /me` `onboarding`: whether they finished, what's still owed, and the last step saved here. */
+  onboarding: Me['onboarding'] | null;
 };
 
 /** The stored goal level back to what the mentee picked: `masters` + raw "MBA" is MBA. */
