@@ -174,7 +174,8 @@ export function setupCredits<
   return {
     ...c,
     balance: 0,
-    monthly: { ...c.monthly, balance: 0 },
+    // Not unlocked either: setup draws no "0 of N" spent segments.
+    monthly: { ...c.monthly, balance: 0, unlocked: false },
     bonus: { ...c.bonus, balance: 0, groups: [] },
   };
 }

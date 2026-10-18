@@ -220,7 +220,8 @@ describe('setupCredits', () => {
     expect(setupCredits(c)).toEqual({
       balance: 0,
       nextResetAt: '2026-11-01T00:00:00Z',
-      monthly: { balance: 0, ceiling: 3, expiresAt: null, unlocked: true },
+      // Not unlocked: setup draws no "0 of 3" spent segments.
+      monthly: { balance: 0, ceiling: 3, expiresAt: null, unlocked: false },
       bonus: { balance: 0, groups: [] },
     });
   });
