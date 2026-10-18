@@ -90,15 +90,10 @@
   color: var(--green-700);
 }
 
+/* Approved.dc.html `single` (design update, 18 Oct): one button, centred. */
 .actions {
   display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-  max-width: 560px;
-  width: 100%;
-  margin: 0 auto;
+  justify-content: center;
 }
 
 /* Not approved. */
