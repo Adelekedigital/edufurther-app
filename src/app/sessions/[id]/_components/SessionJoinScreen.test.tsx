@@ -5,15 +5,36 @@ import type { BookingAnswer, SessionRoom } from '@/types/booking';
 import type { AppError, Remote, Viewer } from '@/types/mentor';
 import { SessionJoinScreen } from './SessionJoinScreen';
 
-const replace = vi.fn();
-// What the entry route sent the page back with (`?enter=`), if anything.
+// What the entry route sent the page back with (`?enter=`), if anything. A
+// tiny store, so a replace() back to this page re-renders it without the
+// parameter, as the router does.
 let search = new URLSearchParams();
+const searchListeners = new Set<() => void>();
+function setSearch(query: string) {
+  search = new URLSearchParams(query);
+  searchListeners.forEach((l) => l());
+}
+const replace = vi.fn((url: string) => {
+  if (url.startsWith('/sessions/')) setSearch(url.split('?')[1] ?? '');
+});
 const push = vi.fn();
-vi.mock('next/navigation', () => ({
-  usePathname: () => '/sessions/b1',
-  useRouter: () => ({ replace, push }),
-  useSearchParams: () => search,
-}));
+vi.mock('next/navigation', async () => {
+  const { useSyncExternalStore } = await import('react');
+  const subscribe = (l: () => void) => {
+    searchListeners.add(l);
+    return () => void searchListeners.delete(l);
+  };
+  return {
+    usePathname: () => '/sessions/b1',
+    useRouter: () => ({ replace, push }),
+    useSearchParams: () =>
+      useSyncExternalStore(
+        subscribe,
+        () => search,
+        () => search,
+      ),
+  };
+});
 
 let viewer: Viewer;
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => viewer }));
@@ -175,7 +196,7 @@ beforeEach(() => {
   answers = remote<BookingAnswer[]>([]);
   sent.length = 0;
   reviewables = remote([{ id: 'b1', startsAt: START, typeName: '1:1 call' }]);
-  replace.mockReset();
+  replace.mockClear();
   cancel.mutate.mockReset();
 });
 afterEach(() => {
@@ -669,6 +690,74 @@ describe('back from the entry route (?enter=)', () => {
   it('nothing to say, and nothing replaced, without the parameter', () => {
     renderAt('16:56:00');
     expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('the line stays after the parameter goes, and is said only once', () => {
+    search = new URLSearchParams('enter=failed');
+    renderAt('16:56:00');
+    const said = srStatus().firstElementChild;
+    expect(said).toHaveTextContent('We couldn’t join you. Try again in a moment.');
+    // The strip re-rendered the page without the parameter.
+    expect(search.get('enter')).toBeNull();
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(visible('We couldn’t join you. Try again in a moment.')).toBeVisible();
+    // The same node: the region was not handed the words a second time.
+    expect(srStatus().firstElementChild).toBe(said);
+  });
+
+  it('a later ?enter= on the same page is said again', () => {
+    search = new URLSearchParams('enter=failed');
+    renderAt('16:56:00');
+    const first = srStatus().firstElementChild;
+    act(() => setSearch('enter=failed'));
+    const again = srStatus().firstElementChild;
+    expect(again).toHaveTextContent('We couldn’t join you. Try again in a moment.');
+    expect(again).not.toBe(first);
+    expect(search.get('enter')).toBeNull();
+  });
+
+  it('following Join drops the line', () => {
+    search = new URLSearchParams('enter=notopen');
+    renderAt('16:56:00');
+    const join = screen.getByRole('link', { name: 'Join session' });
+    join.addEventListener('click', (e) => e.preventDefault());
+    act(() => join.click());
+    expect(
+      screen.queryByText('This session isn’t open to join right now.', {
+        selector: 'p:not(.sr-only)',
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('the line goes once the lobby moves on (a new phase or way in)', () => {
+    search = new URLSearchParams('enter=notopen');
+    renderAt('16:59:58');
+    expect(visible('This session isn’t open to join right now.')).toBeVisible();
+    // Starting soon → in progress: the Join on screen is a different one now.
+    act(() => void vi.advanceTimersByTime(3000));
+    expect(screen.getByRole('link', { name: 'Join now' })).toBeVisible();
+    expect(
+      screen.queryByText('This session isn’t open to join right now.', {
+        selector: 'p:not(.sr-only)',
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('a session that failed to load still loses the parameter, with nothing said', () => {
+    room = remote<SessionRoom>(null, { error: { status: 500 } as AppError });
+    search = new URLSearchParams('enter=failed');
+    renderAt('16:56:00');
+    expect(replace).toHaveBeenCalledWith('/sessions/b1', { scroll: false });
+    expect(screen.getByText('We couldn’t load this session')).toBeVisible();
+    expect(screen.queryByText(/couldn’t join you/)).not.toBeInTheDocument();
+  });
+
+  it('a session that has gone to Bookings leaves once, without a second replace racing it', () => {
+    room = remote(sessionRoom({ status: 'cancelled' }));
+    search = new URLSearchParams('enter=notopen');
+    renderAt('15:15:00');
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(replace).toHaveBeenCalledWith('/bookings?booking=b1');
   });
 });
 

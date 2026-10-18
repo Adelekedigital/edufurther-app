@@ -44,7 +44,7 @@ import {
   type EnterProblem,
 } from '@/lib/utils/sessionEnter';
 import { outcomeView } from '@/lib/utils/sessionOutcome';
-import { isFinal, sessionPhase } from '@/lib/utils/sessionPhase';
+import { entryFor, isFinal, sessionPhase } from '@/lib/utils/sessionPhase';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { CalendarEvent } from '@/lib/utils/calendarLinks';
 import type { AnswerFile } from '@/types/booking';
@@ -165,7 +165,12 @@ export function SessionJoinScreen({ id }: { id: string }) {
   // browser back here with `?enter=` saying why.
   const params = useSearchParams();
   const entered = params.get(ENTER_PARAM);
-  const [problem, setProblem] = useState<string | null>(null);
+  // The line under Join, with the lobby state it was said in (`phase:entry`):
+  // once the phase or the way in changes, it no longer describes the Join on
+  // screen and goes. Following Join clears it too.
+  const [problem, setProblem] = useState<{ text: string; at: string } | null>(null);
+  const entryNow = data && live ? entryFor(data.booking, data.me.joinedAt, live, now) : null;
+  const lobbyAt = `${live}:${entryNow}`;
   // Every message gets a new id, so the same words said twice are heard twice.
   const [said, setSaid] = useState<{ text: string; id: number } | null>(null);
   // Said once the session is here (the closed rule needs its times), then the
@@ -175,10 +180,14 @@ export function SessionJoinScreen({ id }: { id: string }) {
   if (entered !== heard && data && isEnterProblem(entered)) {
     setHeard(entered);
     const text = enterProblemText(entered, data.booking, timeZone);
-    setProblem(text);
+    setProblem({ text, at: lobbyAt });
     setSaid((last) => ({ text, id: (last?.id ?? 0) + 1 }));
   }
-  const settledEnter = entered !== null && (!!data || !!room.error || !isEnterProblem(entered));
+  if (problem && problem.at !== lobbyAt) setProblem(null);
+  // Not while leaving for Bookings: that replace drops the parameter too, and
+  // two replaces racing can leave the page on its skeleton.
+  const settledEnter =
+    entered !== null && !leaving && (!!data || !!room.error || !isEnterProblem(entered));
   useEffect(() => {
     if (!settledEnter) return;
     const rest = new URLSearchParams(params.toString());
@@ -295,6 +304,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
       now,
       timeZone,
       enterHref: enterPath(id),
+      onFollow: () => setProblem(null),
       // Only rendered once the session has loaded, which is in the browser.
       pageUrl: new URL(`/sessions/${encodeURIComponent(id)}`, window.location.origin).toString(),
       onCancel: canCancel(b, now) ? () => setCancelling(true) : undefined,
@@ -328,7 +338,9 @@ export function SessionJoinScreen({ id }: { id: string }) {
     // region would read it out twice. Not when the lobby's own note already
     // says the same (the closed rule), so it isn't printed twice.
     const notice =
-      problem && problem !== lobby.note ? <p className={styles.problem}>{problem}</p> : null;
+      problem && problem.text !== lobby.note ? (
+        <p className={styles.problem}>{problem.text}</p>
+      ) : null;
 
     body = (
       <>

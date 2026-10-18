@@ -29,6 +29,22 @@ export type LobbyLink = {
   danger?: boolean;
 };
 
+/**
+ * Join is either locked (a disabled button saying when it opens) or an
+ * ordinary new-tab link to our entry route, which records the arrival and
+ * redirects to the call (#207, ADR 0009). Never a pressable button.
+ */
+export type LobbyJoin =
+  | { enabled: false; label: string; hint: string }
+  | {
+      enabled: true;
+      label: string;
+      hint: string;
+      href: string;
+      /** Told when Join is followed (click or middle-click); cosmetic only. */
+      onFollow?: () => void;
+    };
+
 type SessionLobbyProps = {
   /**
    * The hero's ground: white before the door opens, blue once it has, green
@@ -42,20 +58,8 @@ type SessionLobbyProps = {
   meta: string;
   clock: { label: string; value: string; sub: string } | null;
   people: [LobbyPerson, LobbyPerson];
-  /** The Join button and the line under it. Absent once nobody can join. */
-  join?: {
-    label: string;
-    enabled: boolean;
-    busy?: boolean;
-    /** Absent while locked: there is nothing to do yet. */
-    onJoin?: () => void;
-    /**
-     * Join as an ordinary link, opening a new tab (#207): our own entry route,
-     * which records the arrival and redirects to the call. Ignored while locked.
-     */
-    href?: string;
-    hint: string;
-  };
+  /** Join and the line under it. Absent once nobody can join. */
+  join?: LobbyJoin;
   /** In place of Join when the session has moved past it (window closed, ended). */
   note?: string;
   links?: LobbyLink[];
@@ -121,7 +125,7 @@ export function SessionLobby({
           onFocus={() => (joinHadFocus.current = true)}
           onBlur={() => (joinHadFocus.current = false)}
         >
-          {join.enabled && join.href ? (
+          {join.enabled ? (
             // A plain <a>, not next/link: the route records an arrival, so
             // nothing may prefetch it. The browser opens the tab itself, so
             // there is no popup to block.
@@ -131,17 +135,13 @@ export function SessionLobby({
               rel="noopener noreferrer"
               size="large"
               fullWidth
+              onClick={join.onFollow}
+              onAuxClick={(e) => e.button === 1 && join.onFollow?.()}
             >
               {join.label}
             </ButtonAnchor>
           ) : (
-            <Button
-              size="large"
-              fullWidth
-              disabled={!join.enabled}
-              busy={join.busy}
-              onClick={join.onJoin}
-            >
+            <Button size="large" fullWidth disabled>
               {join.label}
             </Button>
           )}

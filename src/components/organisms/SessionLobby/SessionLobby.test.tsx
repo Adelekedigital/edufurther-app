@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { sampleParty } from '@/lib/utils/bookingTestFixtures';
 import { SessionLobby, type LobbyPerson } from './SessionLobby';
 
@@ -23,10 +23,15 @@ describe('when Join goes away under the keyboard', () => {
     const { rerender } = render(
       <SessionLobby
         {...base}
-        join={{ label: 'Join now', enabled: true, onJoin: vi.fn(), hint: 'Opens in your browser.' }}
+        join={{
+          label: 'Join now',
+          enabled: true,
+          href: '/x/enter',
+          hint: 'Opens in your browser.',
+        }}
       />,
     );
-    screen.getByRole('button', { name: 'Join now' }).focus();
+    screen.getByRole('link', { name: 'Join now' }).focus();
     rerender(
       <SessionLobby {...base} note="Joining closed at 6:15 pm, 15 minutes after the start." />,
     );
@@ -40,12 +45,12 @@ describe('when Join goes away under the keyboard', () => {
         join={{
           label: 'Rejoin session',
           enabled: true,
-          onJoin: vi.fn(),
+          href: '/x/enter',
           hint: 'Opens in your browser.',
         }}
       />,
     );
-    screen.getByRole('button', { name: 'Rejoin session' }).focus();
+    screen.getByRole('link', { name: 'Rejoin session' }).focus();
     rerender(<SessionLobby {...base} />);
     expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
   });
@@ -59,7 +64,7 @@ describe('when Join goes away under the keyboard', () => {
           join={{
             label: 'Join now',
             enabled: true,
-            onJoin: vi.fn(),
+            href: '/x/enter',
             hint: 'Opens in your browser.',
           }}
         />
@@ -79,7 +84,7 @@ describe('when Join goes away under the keyboard', () => {
 describe('Join as a link to the entry route (issue 207)', () => {
   const join = (over = {}) => ({
     label: 'Join now',
-    enabled: true,
+    enabled: true as const,
     href: '/sessions/b1/enter',
     hint: 'Opens in your browser.',
     ...over,
@@ -107,8 +112,26 @@ describe('Join as a link to the entry route (issue 207)', () => {
   });
 
   it('locked, it is the disabled button, with no link to follow', () => {
-    render(<SessionLobby {...base} join={join({ enabled: false, label: 'Join opens in 5:00' })} />);
+    render(
+      <SessionLobby
+        {...base}
+        join={{ enabled: false, label: 'Join opens in 5:00', hint: 'Opens in your browser.' }}
+      />,
+    );
     expect(screen.queryByRole('link', { name: /Join/ })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Join opens in 5:00' })).toBeDisabled();
+  });
+
+  it('tells the page when Join is followed, by click or middle-click, not by right-click', () => {
+    const onFollow = vi.fn();
+    render(<SessionLobby {...base} join={join({ onFollow })} />);
+    const a = screen.getByRole('link', { name: 'Join now' });
+    a.addEventListener('click', (e) => e.preventDefault());
+    fireEvent.click(a);
+    expect(onFollow).toHaveBeenCalledTimes(1);
+    fireEvent(a, new MouseEvent('auxclick', { bubbles: true, button: 2 }));
+    expect(onFollow).toHaveBeenCalledTimes(1);
+    fireEvent(a, new MouseEvent('auxclick', { bubbles: true, button: 1 }));
+    expect(onFollow).toHaveBeenCalledTimes(2);
   });
 });

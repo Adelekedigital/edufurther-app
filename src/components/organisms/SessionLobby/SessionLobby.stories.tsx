@@ -101,7 +101,6 @@ export const Upcoming: Story = {
     join: {
       label: 'Join opens in 1:40:00',
       enabled: false,
-      onJoin: fn(),
       hint: 'The button turns on 5 minutes before the start.',
     },
     links: cancel,
