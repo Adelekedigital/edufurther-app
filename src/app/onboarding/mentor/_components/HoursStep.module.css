@@ -1,0 +1,133 @@
+/* Mentor Onboarding.dc.html `showHours`, `hiDays`. */
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.daysAndHours {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+.day {
+  height: var(--space-12);
+  min-width: var(--touch-target-min);
+  border: var(--border-hairline) solid var(--ink-300);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-700);
+}
+.dayOn {
+  border: 2px solid var(--blue-500);
+  background: var(--blue-50);
+  color: var(--blue-700);
+}
+.presets {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.preset {
+  position: relative;
+  min-height: var(--button-h-small);
+  border: none;
+  background: none;
+  padding: 0 var(--space-1);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+}
+/* Ours: a 44px tap area around the 32px text button. */
+.preset::after {
+  content: '';
+  position: absolute;
+  inset: calc((100% - var(--touch-target-min)) / 2) 0;
+}
+.preset:hover {
+  color: var(--blue-700);
+}
+.range {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+}
+.rangeLabel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+.dash {
+  padding-top: var(--space-5);
+  color: var(--ink-500);
+}
+.tzNote {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+.tzIcon {
+  flex: none;
+  height: calc(var(--text-p-xs) * var(--lh-p));
+  color: var(--ink-600);
+}
+.firstHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-xl);
+}
+.introHead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.introName {
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+.introMeta {
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+.introDesc {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+  text-wrap: pretty;
+}
+.day:focus-visible,
+.preset:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+@media (max-width: 767px) {
+  .days {
+    gap: var(--space-1);
+  }
+}

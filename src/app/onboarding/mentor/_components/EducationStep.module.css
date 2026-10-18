@@ -1,0 +1,98 @@
+/* Mentor Onboarding.dc.html `showEdu` / `eduRows`. */
+.school {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+/* More than one school: each sits in a card. */
+.card {
+  padding: var(--space-5);
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-xl);
+}
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+}
+.headLabel {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  border: none;
+  background: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--ink-500);
+}
+.remove:hover {
+  color: var(--red-600);
+  background: var(--ink-50);
+}
+.inCountry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-top: calc(var(--space-3) * -1);
+  font-size: var(--text-p-xs);
+  color: var(--ink-700);
+}
+.pin {
+  color: var(--ink-500);
+}
+.change {
+  position: relative;
+  min-height: var(--button-h-small);
+  border: none;
+  background: none;
+  padding: 0 var(--space-1);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+}
+/* Ours: a 44px tap area around the 32px text button. */
+.change::after {
+  content: '';
+  position: absolute;
+  inset: calc((100% - var(--touch-target-min)) / 2) 0;
+}
+.years {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.current {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--touch-target-min);
+  font-size: var(--text-p-sm);
+  cursor: pointer;
+}
+.box {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--blue-500);
+  cursor: pointer;
+}
+.add {
+  align-self: flex-start;
+}
+.remove:focus-visible,
+.change:focus-visible,
+.box:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}

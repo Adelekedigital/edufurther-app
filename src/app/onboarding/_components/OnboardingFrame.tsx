@@ -7,7 +7,14 @@ import styles from './OnboardingFrame.module.css';
  * (signed in, so no "Log in"), over a white page. Not FocusPage: that one has
  * a grey page, an ink-100 rule and a way back, none of which this draws.
  */
-export function OnboardingFrame({ children }: { children: ReactNode }) {
+export function OnboardingFrame({
+  children,
+  status,
+}: {
+  children: ReactNode;
+  /** The header's right side (mentor onboarding's "Progress saved"). */
+  status?: ReactNode;
+}) {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -18,6 +25,7 @@ export function OnboardingFrame({ children }: { children: ReactNode }) {
           height={24}
           priority
         />
+        {status}
       </header>
       {children}
     </div>

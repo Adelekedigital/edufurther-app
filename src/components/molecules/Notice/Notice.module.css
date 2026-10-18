@@ -30,25 +30,37 @@
   text-decoration: underline;
 }
 
-/* DS Notice `warning` (Mentee Onboarding v5 `unavailable`): 18px padding, the
-   icon trailing 48px off, a 2px inset ring, 12/18 copy in navy-900. */
-.warning {
+/* DS Notice `warning` (Mentee Onboarding v5 `unavailable`) and `danger`
+   (Mentor Onboarding `submitErr`): 18px padding, the icon trailing 48px off,
+   a 2px inset ring, 12/18 copy in navy-900. */
+.ds {
   gap: var(--space-12);
   padding: 18px;
   border-radius: var(--radius-md);
-  background: var(--gold-subtle);
-  box-shadow: inset 0 0 0 2px var(--warning-ring);
   color: var(--navy-900);
 }
-.warning .icon {
+.ds .icon {
   flex: none;
-  color: var(--warning-ring);
 }
 /* The DS sets 18px, not the paragraph ratio (12 × 1.45 = 17.4). */
-.warning .text {
+.ds .text {
   line-height: var(--lh-notice);
 }
-.warning .text strong {
+.warning {
+  background: var(--gold-subtle);
+  box-shadow: inset 0 0 0 2px var(--warning-ring);
+}
+.warning .icon {
+  color: var(--warning-ring);
+}
+.danger {
+  background: var(--red-50);
+  box-shadow: inset 0 0 0 2px var(--red-500);
+}
+.danger .icon {
+  color: var(--red-500);
+}
+.ds .text strong {
   display: block;
   margin-bottom: 2px;
 }

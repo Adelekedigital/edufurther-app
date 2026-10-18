@@ -1,0 +1,174 @@
+/* Mentor Onboarding.dc.html `isForm` (steps, lite), the header status and the load error. */
+.flow {
+  max-width: calc(560px + 2 * var(--space-6));
+  margin: 0 auto;
+  padding: var(--space-10) var(--space-6);
+  box-sizing: border-box;
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.saved {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+
+.resume {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--blue-50);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-900);
+}
+.resumeText {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.resumeIcon {
+  flex: none;
+  color: var(--blue-700);
+}
+.startOver {
+  position: relative;
+  min-height: var(--button-h-small);
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-700);
+}
+/* Ours: a 44px tap area around the 32px text button. */
+.startOver::after {
+  content: '';
+  position: absolute;
+  inset: calc((100% - var(--touch-target-min)) / 2) 0;
+}
+
+.top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.topRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--touch-target-min);
+}
+.back {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--touch-target-min);
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-700);
+}
+.back:hover {
+  color: var(--ink-900);
+}
+.stepLabel {
+  margin-left: auto;
+  font-size: var(--text-caption-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-caption-xs);
+  text-transform: uppercase;
+  color: var(--ink-600);
+}
+
+.cta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.need {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+/* Nothing to say: no room taken (the gap cancels), but never display: none,
+   so the live region stays in the accessibility tree and is heard. */
+.need:empty {
+  margin-bottom: calc(-1 * var(--space-3));
+}
+.saveError {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--red-600);
+}
+.saveErrorIcon {
+  flex: none;
+  height: calc(var(--text-p-xs) * var(--lh-p));
+}
+
+/* Load error: centred in 60vh, as mentee onboarding draws it. */
+.state {
+  min-height: 60vh;
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-10) var(--space-6);
+  box-sizing: border-box;
+}
+
+.back:focus-visible,
+.startOver:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (max-width: 767px) {
+  /* The design's phone padding; 120px under the pinned footer (`rootPadB`). */
+  .flow {
+    padding: var(--space-6) var(--space-5) calc(var(--space-6) + 120px + env(safe-area-inset-bottom));
+  }
+  .state {
+    padding: var(--space-6) var(--space-5);
+  }
+  /* Pinned 48px full-width Continue (design `showMobFoot`). */
+  .cta {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-5) calc(var(--space-4) + env(safe-area-inset-bottom));
+    background: var(--white);
+    border-top: var(--border-hairline) solid var(--ink-200);
+  }
+  .need:empty {
+    margin-bottom: calc(-1 * var(--space-2));
+  }
+}
