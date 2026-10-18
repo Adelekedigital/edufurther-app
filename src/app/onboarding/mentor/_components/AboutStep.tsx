@@ -16,6 +16,9 @@ import { StepTitles } from './StepTitles';
 import styles from './AboutStep.module.css';
 import step from './steps.module.css';
 
+/** About (`about_me`) holds 1,500 characters (owner, 2026-10-17; design-divergence.md). */
+const ABOUT_MAX = 1500;
+
 export const ABOUT_IDS = {
   photo: 'mo-photo',
   origin: 'mo-origin',
@@ -144,10 +147,15 @@ export function AboutStep({
           />
           <span id={`${id}-linkedin`} className={styles.linkedinHint}>
             <span>{C.linkedinHint}</span>
-            <a href={C.linkedinUrl} target="_blank" rel="noopener noreferrer" className={styles.link}>
+            <a
+              href={C.linkedinUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.link}
+              aria-label={C.linkedinLinkLabel}
+            >
               {C.linkedinLink}
               <Icon name="open_in_new" size={14} />
-              <span className="sr-only">{C.newTab}</span>
             </a>
           </span>
           {has('linkedin') && <FieldError>{GAP_COPY.linkedin}</FieldError>}
@@ -168,7 +176,7 @@ export function AboutStep({
               value={about}
               drafted={aboutDrafted}
               onChange={(text, meta) => onAbout(text, meta.drafted)}
-              max={600}
+              max={ABOUT_MAX}
               rows={6}
               hint={C.aboutHint}
               placeholder={C.aboutPlaceholder}

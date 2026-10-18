@@ -268,6 +268,17 @@ describe('MentorOnboardingScreen', () => {
     expect(screen.getByLabelText('About (optional)')).toBeEnabled();
   });
 
+  it('about: the About takes 1,500 characters and the LinkedIn link has one name', async () => {
+    appState = stateWith({ lastStep: 'education', hasProfile: true });
+    requestAssist.mockRejectedValueOnce(new Error('down'));
+    render(<MentorOnboardingScreen />);
+    // Owner, 2026-10-17: About (about_me) is 1,500, not the prototype's 600.
+    expect(await screen.findByLabelText('About (optional)')).toHaveAttribute('maxlength', '1500');
+    expect(
+      screen.getByRole('link', { name: 'Get your LinkedIn link (opens in a new tab)' }),
+    ).toHaveAttribute('target', '_blank');
+  });
+
   it('about: empty Continue flags the photo, origin and LinkedIn', async () => {
     appState = stateWith({
       lastStep: 'education',
