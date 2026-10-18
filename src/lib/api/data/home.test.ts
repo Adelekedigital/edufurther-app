@@ -128,6 +128,10 @@ describe('homeFor: the setup detours, one rule with sign-in (memberHome)', () =>
       '/mentor-application',
     );
     expect(home(mentorAt({ approval_status: 'declined' }))).toBe('/mentor-application');
+    // Never submitted: straight to mentor onboarding (owner, 2026-10-18).
+    expect(home(mentorAt({ approval_status: 'pending', submitted_at: null }))).toBe(
+      '/onboarding/mentor',
+    );
     expect(home(mentorAt({ approval_status: 'approved', approved_seen_at: null }))).toBe(
       '/mentor-application',
     );
@@ -144,6 +148,7 @@ describe('homeFor: the setup detours, one rule with sign-in (memberHome)', () =>
     const home = await load(false, false);
     expect(home(unfinished as Me)).toBe('/home');
     expect(home(mentorAt({ approval_status: 'declined' }))).toBe('/dashboard');
+    expect(home(mentorAt({ approval_status: 'pending', submitted_at: null }))).toBe('/dashboard');
     expect(home(mentorAt({ approval_status: 'approved', approved_seen_at: null }))).toBe(
       '/dashboard',
     );

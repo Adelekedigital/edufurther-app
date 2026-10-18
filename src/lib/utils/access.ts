@@ -44,6 +44,7 @@ export type Access = {
 
 const ONBOARDING = '/onboarding';
 const APPLICATION = '/mentor-application';
+const MENTOR_ONBOARDING = '/onboarding/mentor';
 
 /** Copy from AppShell.dc.html `LK`, word for word. */
 const LOCKS: Record<Exclude<AccessState, 'none'>, { items: NavKey[]; copy: LockCopy }> = {
@@ -113,17 +114,19 @@ type HomeInput = {
 
 /**
  * A member's own home (admins aside), shared by `/` (homeFor), sign-in
- * (accountHome) and the nav's Home. A mentor not yet approved goes to their
- * application, as does an approved one who hasn't seen the approved screen; a
+ * (accountHome) and the nav's Home. A mentor who never submitted goes to the
+ * application form, one not yet approved to their application, as does an approved one who hasn't seen the approved screen; a
  * mentee who hasn't finished onboarding goes to it. Each only while the page
  * it sends them to is switched on, so nobody lands on a 404.
  */
 export function memberHome(
   a: HomeInput,
-): '/home' | '/dashboard' | '/onboarding' | '/mentor-application' {
+): '/home' | '/dashboard' | '/onboarding' | '/onboarding/mentor' | '/mentor-application' {
   if (a.isMentor) {
     if (!MENTOR_ONBOARDING_LIVE) return '/dashboard';
     const stage = a.mentorStage ?? 'approved';
+    // Never submitted: straight to the application form (owner, 2026-10-18).
+    if (stage === 'unsubmitted') return MENTOR_ONBOARDING;
     if (stage !== 'approved') return APPLICATION;
     return a.mentorApprovedSeen === false ? APPLICATION : '/dashboard';
   }

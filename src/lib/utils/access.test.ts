@@ -117,9 +117,12 @@ describe('accessFor: who is locked (owner, 2026-10-18)', () => {
     expect(accessFor(unfinished).state).toBe('menteeSetup');
   });
 
-  it('a mentor who never submitted is in mentor onboarding: no lock', async () => {
+  it('a mentor who never submitted: no lock, Home goes straight to mentor onboarding (owner, 2026-10-18)', async () => {
     const { accessFor } = await load();
-    expect(accessFor(mentor({ mentorStage: 'unsubmitted' })).state).toBe('none');
+    expect(accessFor(mentor({ mentorStage: 'unsubmitted' }))).toMatchObject({
+      state: 'none',
+      homeHref: '/onboarding/mentor',
+    });
   });
 
   it('a mentor whose mentee onboarding is unfinished is still judged as a mentor', async () => {
@@ -169,6 +172,31 @@ describe('accessFor: a state whose page is switched off applies nothing (no 404s
   });
 });
 
+describe('homeHref for every mentor stage', () => {
+  it.each([
+    ['none', null],
+    ['unsubmitted', '/onboarding/mentor'],
+    ['pending', '/mentor-application'],
+    ['declined', '/mentor-application'],
+    ['approved', null],
+  ] as const)('%s → %s (flag on)', async (stage, href) => {
+    const { accessFor } = await load();
+    const v = stage === 'none' ? member({ mentorStage: 'none' }) : mentor({ mentorStage: stage });
+    expect(accessFor(v).homeHref).toBe(href);
+  });
+
+  it.each(['unsubmitted', 'pending', 'declined', 'approved'] as const)(
+    '%s → the dashboard with mentor onboarding off',
+    async (stage) => {
+      const { accessFor, memberHome } = await load(true, false);
+      expect(
+        accessFor(mentor({ mentorStage: stage, mentorApprovedSeen: false })).homeHref,
+      ).toBeNull();
+      expect(memberHome({ isMentor: true, mentorStage: stage })).toBe('/dashboard');
+    },
+  );
+});
+
 describe('memberHome: one rule for /, sign-in and the nav', () => {
   it('sends each member to their own home', async () => {
     const { memberHome } = await load();
@@ -176,6 +204,7 @@ describe('memberHome: one rule for /, sign-in and the nav', () => {
     expect(memberHome({ isMentor: false, onboardingComplete: null })).toBe('/home');
     expect(memberHome({ isMentor: false, onboardingComplete: false })).toBe('/onboarding');
     expect(memberHome({ isMentor: true })).toBe('/dashboard');
+    expect(memberHome({ isMentor: true, mentorStage: 'unsubmitted' })).toBe('/onboarding/mentor');
     expect(memberHome({ isMentor: true, mentorStage: 'pending' })).toBe('/mentor-application');
     expect(memberHome({ isMentor: true, mentorStage: 'declined' })).toBe('/mentor-application');
     expect(memberHome({ isMentor: true, mentorStage: 'approved', mentorApprovedSeen: false })).toBe(

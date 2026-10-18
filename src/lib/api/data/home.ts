@@ -8,7 +8,13 @@ import { menteeByChoice } from './roles';
  * decides before any HTML is sent, so nobody sees the wrong page first.
  */
 export type Home =
-  '/explore' | '/home' | '/dashboard' | '/admin' | '/onboarding' | '/mentor-application';
+  | '/explore'
+  | '/home'
+  | '/dashboard'
+  | '/admin'
+  | '/onboarding'
+  | '/onboarding/mentor'
+  | '/mentor-application';
 
 type Profile = components['schemas']['MentorProfileRead'];
 // What the router reads: who the member is, and how far their setup has got.
