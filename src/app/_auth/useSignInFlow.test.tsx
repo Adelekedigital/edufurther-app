@@ -24,7 +24,7 @@ vi.mock('@/lib/api/data/signIn', () => ({
   useSaveName: () => ({ mutateAsync: (v: unknown) => save(v) }),
 }));
 
-const { useSignInFlow, TOAST_MS, CODE_LIFETIME_MS, ACCOUNT_RETRY_MS } =
+const { useSignInFlow, TOAST_MS, CODE_LIFETIME_MS, ACCOUNT_RETRY_MS, GOOGLE_WAIT_MS } =
   await import('./useSignInFlow');
 
 const member = (over: object = {}) => ({
@@ -254,12 +254,52 @@ describe('useSignInFlow — Google', () => {
     expect(result.current.form.step).toBe('start');
     expect(result.current.toast).toMatchObject({ title: 'Account created with Google' });
     expect(window.localStorage.getItem('ef-last-sign-in')).toBe('google');
+    // The start form never fills itself in on the way out.
+    expect(result.current.form.fullName).toBe('');
+    expect(result.current.form.email).toBe('');
+  });
+
+  it('is busy from the first frame back from Google, before the session is known', () => {
+    session = { status: 'unknown' };
+    const { result } = renderHook(() => useSignInFlow(opts({ googleReturn: true })));
+    expect(result.current.form.redirecting).toBe(true);
+  });
+
+  it('lets go of the card if the session never arrives', () => {
+    session = { status: 'unknown' };
+    const { result } = renderHook(() => useSignInFlow(opts({ googleReturn: true })));
+    expect(result.current.form.redirecting).toBe(true);
+    act(() => vi.advanceTimersByTime(GOOGLE_WAIT_MS));
+    expect(result.current.form.redirecting).toBe(false);
+  });
+
+  it('is not busy back from Google when no session came with it', () => {
+    session = { status: 'none' };
+    const { result } = renderHook(() => useSignInFlow(opts({ googleReturn: true })));
+    expect(result.current.form.redirecting).toBe(false);
+  });
+
+  it('shows the finish step with Google’s name when the save is refused', async () => {
+    session = { status: 'present', userId: 'u1' };
+    account.mockResolvedValueOnce(member());
+    user.mockResolvedValue(fromGoogle('Tolu Adebayo'));
+    save.mockRejectedValueOnce(new Error('We couldn’t save your name. Try again.'));
+    const { result } = renderHook(() => useSignInFlow(opts({ googleReturn: true })));
+    await flush();
+    await flush();
+    expect(result.current.form.step).toBe('finish');
+    expect(result.current.form.fullName).toBe('Tolu Adebayo');
+    expect(result.current.form.email).toBe('tolu@example.com');
   });
 
   it("keeps Google's own split when it sends given and family names", async () => {
     session = { status: 'present', userId: 'u1' };
     account.mockResolvedValueOnce(member());
-    user.mockResolvedValue({ givenName: 'Mary Jane', familyName: 'Adebayo', googleJustLinked: false });
+    user.mockResolvedValue({
+      givenName: 'Mary Jane',
+      familyName: 'Adebayo',
+      googleJustLinked: false,
+    });
     renderHook(() => useSignInFlow(opts({ googleReturn: true })));
     await flush();
     await flush();

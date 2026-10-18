@@ -7,7 +7,7 @@ vi.mock('./useSignInFlow', () => ({
 }));
 vi.mock('@/lib/api/data/auth', () => ({ authConfigured: true }));
 // The form itself has its own tests: here, only what the screen hands it.
-vi.mock('@/components/organisms/SignInForm/SignInForm', () => ({
+vi.mock('@/components/organisms/SignInForm', () => ({
   SignInForm: (p: { context?: React.ReactNode }) => <div data-testid="form">{p.context}</div>,
 }));
 

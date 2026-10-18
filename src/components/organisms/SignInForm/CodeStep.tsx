@@ -3,7 +3,7 @@ import { Button } from '@/components/atoms/Button/Button';
 import { Input } from '@/components/atoms/Input/Input';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { cx } from '@/lib/utils/cx';
-import { FieldError } from './FieldError';
+import { FieldError } from '@/components/molecules/FieldError/FieldError';
 import type { CodeProblem } from './types';
 import styles from './SignInForm.module.css';
 

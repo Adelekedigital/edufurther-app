@@ -1,7 +1,7 @@
 import { Button } from '@/components/atoms/Button/Button';
 import { LegalLine } from '@/components/molecules/LegalLine/LegalLine';
 import { checkFullName } from '@/lib/utils/name';
-import { FullNameField } from './FullNameField';
+import { FullNameField } from '@/components/molecules/FullNameField/FullNameField';
 import styles from './SignInForm.module.css';
 
 export type FinishStepProps = {

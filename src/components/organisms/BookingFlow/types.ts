@@ -1,4 +1,4 @@
-import type { CodeProblem, StartError } from '@/components/organisms/SignInForm/types';
+import type { CodeProblem, StartError } from '@/components/organisms/SignInForm';
 
 /** BookingModal.dc.html `showFirstReasons`: one reason a new mentor is worth booking. */
 export type FirstReason = {
