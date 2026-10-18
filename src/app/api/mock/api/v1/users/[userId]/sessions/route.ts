@@ -155,7 +155,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
   // Sessions on the clock, for the join page: j-1 inside its join window; j-2
   // under way, the other side pressed Join but Daily hasn't seen them
   // (Joining…); j-3 past its window, both seen in the room (Joined, Rejoin
-  // through the door); j-7 on Google Meet (Joined from the Join press).
+  // through the door); j-7 on Google Meet (Joined from the Join press); j-8
+  // and j-9 inside their window, but the mock's /join and /door refuse them
+  // (409), so /enter comes back with ?enter=closed and ?enter=notopen.
   const fromNow = (m: number) => minutesFrom(CLOCK_ANCHOR, m);
   const all = [
     session('j-1', fromNow(3), 'confirmed', ['Amara', 'Okafor'], {
@@ -169,6 +171,14 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
           text: 'I’m applying to PhD programs in public health for Fall 2027 and don’t know how to pick between funded and unfunded offers.',
         },
       },
+    }),
+    session('j-8', fromNow(4), 'confirmed', ['Ngozi', 'Eze'], {
+      typeName: '1:1 call',
+      duration: 30,
+    }),
+    session('j-9', fromNow(4), 'confirmed', ['Femi', 'Ade'], {
+      typeName: '1:1 call',
+      duration: 30,
     }),
     session('j-3', fromNow(-20), 'confirmed', ['Kemi', 'Adebayo'], {
       typeName: 'SOP review',
