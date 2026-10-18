@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
@@ -86,6 +86,14 @@ function MentorHome({ member }: { member: Member }) {
   const [chartRange, setChartRange] = useState('6m');
   const say = (text: string) => setAnnounce((a) => ({ text, id: (a?.id ?? 0) + 1 }));
   const dash = useMentorDashboard(member, accountZone, shared);
+  // A minute tick, as on the mentee Home: without it `now` is frozen at the
+  // last render, so the next-session card never turns to Join on its own.
+  const [clock, setClock] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setClock(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+  const now = useMemo(() => new Date(clock), [clock]);
 
   const copyShareLink = (url: string) => {
     if (!url || !navigator.clipboard) {
@@ -156,7 +164,7 @@ function MentorHome({ member }: { member: Member }) {
             onRetry={dash.nextSession.retry}
             booking={dash.nextSession.data}
             timeZone={accountZone}
-            now={new Date()}
+            now={now}
           />
           {/* Active mentor: the performance chart beside the session-quality
               panel (Mentor Dashboard v2.dc.html, notNew branch — a wrapping flex
