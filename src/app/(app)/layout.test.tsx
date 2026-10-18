@@ -54,6 +54,7 @@ describe('activeFor', () => {
     ['/bookings', 'Bookings'],
     ['/calendar', 'Calendar'],
     ['/explore', 'Explore'],
+    ['/mentors/ada-okafor', 'Explore'],
     ['/integrations', 'Integration'],
     ['/session-types', 'Sessions'],
     ['/session-types/new', 'Sessions'],
@@ -95,5 +96,16 @@ describe('AppGroupLayout', () => {
     expect(shell).toHaveAttribute('data-chrome', 'guest');
     expect(shell).toHaveAttribute('data-nav', 'unknown');
     expect(shell).toHaveAttribute('data-offline', 'true');
+  });
+});
+
+describe('routes that share this shell', () => {
+  // #258: a route outside the group mounts its own shell, which remounts on the
+  // way in and out. The mentor profile lives here so Explore ⇄ profile keeps it.
+  it('includes the mentor profile', async () => {
+    const { existsSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    expect(existsSync(join(__dirname, 'mentors', '[handle]', 'page.tsx'))).toBe(true);
+    expect(existsSync(join(__dirname, '..', 'mentors'))).toBe(false);
   });
 });

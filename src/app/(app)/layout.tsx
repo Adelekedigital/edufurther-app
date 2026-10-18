@@ -21,6 +21,8 @@ const ACTIVE_BY_SEGMENT: Record<string, string> = {
   bookings: 'Bookings',
   calendar: 'Calendar',
   explore: 'Explore',
+  // A mentor's profile is reached from Explore, so Explore stays lit there.
+  mentors: 'Explore',
   integrations: 'Integration',
   'session-types': 'Sessions',
   settings: 'Settings',
@@ -33,7 +35,7 @@ export function activeFor(pathname: string): string {
 
 /**
  * The app shell, rendered once for every route in this group (Dashboard,
- * Bookings, Calendar, Explore, Integrations, Session types). It stays mounted
+ * Bookings, Calendar, Explore, a mentor profile, Integrations, Session types). It stays mounted
  * while the user moves between these routes — only `children` changes — so the
  * sidebar, header and account menu never unmount and the screen never blanks
  * (ADR 0007). Viewer-aware through `useAppShell` exactly as the per-screen

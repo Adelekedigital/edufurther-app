@@ -22,7 +22,6 @@ import { ReviewDialog } from '@/app/_reviews/ReviewDialog';
 import { SessionTypeList } from '@/components/organisms/SessionTypeList/SessionTypeList';
 import { SimilarMentorsCard } from '@/components/organisms/SimilarMentorsCard/SimilarMentorsCard';
 import { TrackRecordCard } from '@/components/organisms/TrackRecordCard/TrackRecordCard';
-import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { bookBlockedFor } from '@/app/_shell/bookBlocked';
 import { useAppShell } from '@/app/_shell/useAppShell';
@@ -112,7 +111,7 @@ const NEW_MENTOR_UNDER = 3;
  * component lays the page out.
  */
 export function MentorProfileScreen({ handle }: { handle: string }) {
-  const { viewer, member, chrome, account, nav, canBook } = useAppShell();
+  const { viewer, member, canBook } = useAppShell();
   const online = useOnline();
   const profile = useMentorProfile(handle);
   const p = profile.data;
@@ -368,7 +367,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
     ) : null;
 
   return (
-    <AppShell active="Explore" nav={nav} chrome={chrome} account={account} offline={!online}>
+    <>
       <div className={styles.page}>
         {profile.isLoading ? (
           <ProfileSkeleton />
@@ -821,6 +820,6 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           }
         />
       )}
-    </AppShell>
+    </>
   );
 }

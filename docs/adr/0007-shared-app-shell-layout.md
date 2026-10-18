@@ -45,3 +45,6 @@ Accepted because the reload is user-visible and a shared layout is the idiomatic
 ## Evidence
 - `src/app/*/_components/*Screen.tsx` (`<AppShell active=…>`), `src/app/_shell/useAppShell.ts`, root `src/app/layout.tsx`, Home redirect `src/app/page.tsx`.
 - `CLAUDE.md` → Layout.
+
+## Update 2026-10-18 (#258)
+The mentor profile moved into the group (`src/app/(app)/mentors/[handle]`, same URL). It already drew the same viewer-aware shell, so it now renders content only and the layout maps the `mentors` segment to Explore. Explore ⇄ profile no longer remounts the shell. Session join stays outside on purpose: it's a focused full-screen view with no app shell to share.
