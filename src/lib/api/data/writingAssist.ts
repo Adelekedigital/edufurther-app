@@ -1,7 +1,11 @@
 'use client';
 
+import type { components } from '@/lib/api/generated/schema';
 import { apiError, normaliseError } from './errors';
-import { untyped, type AssistField, type WireAssist, type WireAssistRequest } from './pending';
+import { api } from './http';
+
+/** Which long text: a mentor's About or a mentee's bio (both `about_me`, counted apart). */
+export type AssistField = components['schemas']['WritingAssistField'];
 
 /** Our words for each failure (PRD B7); the server's `detail` is never shown. */
 export const ASSIST_COPY = {
@@ -22,16 +26,15 @@ export async function requestAssist(
   text: string,
 ): Promise<AssistResult> {
   try {
-    const body: WireAssistRequest = mode === 'improve' ? { field, mode, text } : { field, mode };
-    const { data, error, response } = await untyped.POST('/api/v1/me/writing-assist', {
-      body,
+    // Text only to improve: a draft sent with text is refused (422).
+    const { data, error, response } = await api.POST('/api/v1/me/writing-assist', {
+      body: mode === 'improve' ? { field, mode, text } : { field, mode },
       // The backend answers 503 when the router passes 20 s (PRD B7); 5 s more
       // covers the network, then we say so ourselves rather than spin.
       signal: AbortSignal.timeout(ASSIST_TIMEOUT_MS),
     });
-    if (!response.ok) throw apiError(response.status, error, response);
-    const r = data as WireAssist;
-    return { text: r.text, promptVersion: r.prompt_version };
+    if (!response.ok || !data) throw apiError(response.status, error, response);
+    return { text: data.text, promptVersion: data.prompt_version };
   } catch (e) {
     const err = normaliseError(e);
     throw new Error(
@@ -45,8 +48,8 @@ export async function requestAssist(
 }
 
 /**
- * "Write a draft" / "Improve" for one long profile text (PRD B7, F6). PENDING
- * BACKEND #7 (lib/api/data/pending.ts). Nothing is saved: the text goes back
+ * "Write a draft" / "Improve" for one long profile text (PRD B7, F6; backend
+ * #7). Nothing is saved: the text goes back
  * into the box, and the field's own Save keeps it or not. No cache and no
  * shared state, so a plain call rather than a mutation.
  */

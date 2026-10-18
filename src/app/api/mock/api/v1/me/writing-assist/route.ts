@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { pendingOk, problem } from '@/lib/api/mock/respond';
+import { ok, problem } from '@/lib/api/mock/respond';
 
 // Both write about_me: 1,500 (owner, 2026-10-17).
 const MAX = { mentor_about: 1500, mentee_bio: 1500 } as const;
 let used = { day: '', n: 0 };
 
 /**
- * PENDING BACKEND (#7, PRD B7): POST /api/v1/me/writing-assist. Never saves.
+ * MOCK of POST /api/v1/me/writing-assist (backend #7, PRD B7). Never saves.
  * Draft writes from "the profile"; improve tidies the text it's sent. The
  * 11th call answers 429 (the daily limit). ENABLE_MOCK_API=1 only.
  */
@@ -33,8 +33,9 @@ export async function POST(req: Request) {
           .replace(/\s+/g, ' ')
           .replace(/(^|[.!?]\s+)([a-z])/g, (_m, a: string, b: string) => a + b.toUpperCase())
           .replace(/([^.!?])$/, '$1.');
-  return pendingOk('POST /api/v1/me/writing-assist', {
+  return ok('/api/v1/me/writing-assist', 'post', {
     text: text.slice(0, MAX[field]),
-    prompt_version: `${field}_${body.mode}-v1`,
+    // Named like the backend's bio prompts (a version it doesn't know is a 422 on save).
+    prompt_version: body.mode === 'draft' ? 'bio_draft-v1' : 'bio_improve-v1',
   });
 }

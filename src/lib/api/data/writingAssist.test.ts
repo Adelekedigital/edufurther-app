@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 const post = vi.fn();
-vi.mock('./pending', () => ({ untyped: { POST: (...a: unknown[]) => post(...a) } }));
+vi.mock('./http', () => ({ api: { POST: (...a: unknown[]) => post(...a) } }));
 
 const { ASSIST_COPY, requestAssist } = await import('./writingAssist');
 const { aboutBody } = await import('./profileEdit');
@@ -43,6 +43,15 @@ describe('requestAssist', () => {
   });
 });
 
+describe('requestAssist: an empty success', () => {
+  it('reads a 200 with no body as unavailable, never as an empty draft', async () => {
+    post.mockResolvedValueOnce({ data: undefined, error: undefined, response: new Response(null) });
+    await expect(requestAssist('mentor_about', 'draft', '')).rejects.toThrow(
+      ASSIST_COPY.unavailable,
+    );
+  });
+});
+
 describe('aboutBody', () => {
   it('stamps an untouched draft with its prompt, and clears both otherwise', () => {
     expect(aboutBody(' Mine ', { drafted: true, promptVersion: 'v1' })).toEqual({
@@ -50,10 +59,10 @@ describe('aboutBody', () => {
       about_me_drafted: true,
       about_me_prompt_version: 'v1',
     });
+    // Clearing is drafted:false alone: a version without drafted:true is refused (422).
     expect(aboutBody('Mine', { drafted: false, promptVersion: 'v1' })).toEqual({
       about_me: 'Mine',
       about_me_drafted: false,
-      about_me_prompt_version: null,
     });
     expect(aboutBody('  ')).toEqual({ about_me: null });
   });
