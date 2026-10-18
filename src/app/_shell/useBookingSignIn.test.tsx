@@ -35,7 +35,7 @@ const member = (over: object = {}) => ({
 
 async function load(onboarding: boolean) {
   vi.resetModules();
-  vi.stubEnv('NEXT_PUBLIC_ONBOARDING_V5_ENABLED', onboarding ? 'true' : '');
+  vi.stubEnv('NEXT_PUBLIC_ONBOARDING_ENABLED', onboarding ? 'true' : '');
   return import('./useBookingSignIn');
 }
 

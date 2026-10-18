@@ -14,7 +14,7 @@ function sentCopy(first: string, picked: string, confirmed: boolean, answered: b
   return confirmed
     ? {
         title: `You’re booked with ${first}`,
-        lead: `${picked || 'Your session'} is confirmed. You’ll find it in Bookings.`,
+        lead: `${picked || 'Your session'} is confirmed. It’s in Bookings, and we’ll email you a reminder before it starts.`,
         badge: 'Confirmed',
         badgeColor: 'green' as const,
         steps: [
@@ -35,7 +35,7 @@ function sentCopy(first: string, picked: string, confirmed: boolean, answered: b
           {
             icon: 'videocam',
             title: 'Join your session',
-            body: 'Join from Bookings when it’s time.',
+            body: 'Join from Bookings or the link in your reminder emails.',
             tone: 'later',
           },
         ] satisfies Step[],
@@ -63,7 +63,7 @@ function sentCopy(first: string, picked: string, confirmed: boolean, answered: b
           {
             icon: 'videocam',
             title: 'Join your session',
-            body: 'Once it’s confirmed, join from Bookings when it’s time.',
+            body: 'Once it’s confirmed, join from Bookings or the link in your confirmation email.',
             tone: 'later',
           },
         ] satisfies Step[],

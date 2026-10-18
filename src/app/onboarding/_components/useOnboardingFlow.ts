@@ -23,7 +23,7 @@ type Form = {
   plans: PlanAnswers;
   /** They came back to an unfinished onboarding: the welcome-back banner shows. */
   resumed: boolean;
-  /** Their answers came from the old platform (PRD H5): "We've brought over your answers". */
+  /** Their answers came from the old platform (PRD H5): "We brought over your earlier answers". */
   migrated: boolean;
 };
 

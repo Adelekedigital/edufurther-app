@@ -26,8 +26,7 @@ export function phoneChrome(p: {
   const atStart = p.at === 0 || p.done;
   return {
     caption: p.done || p.oneStep ? undefined : `Step ${p.at + 1} of ${p.total}`,
-    // The design's sheet says "Booking requested" either way; an instant booking isn't one.
-    heading: p.done ? (p.confirmed ? 'Booking confirmed' : 'Booking requested') : p.stepName,
+    heading: p.done ? (p.confirmed ? 'Booking confirmed' : 'Request sent') : p.stepName,
     leading: atStart
       ? { icon: 'close', label: 'Close', onClick: p.onClose }
       : { icon: 'arrow_back', label: 'Back', onClick: p.onBack, disabled: p.requestPending },

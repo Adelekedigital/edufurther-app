@@ -380,7 +380,7 @@ describe('OnboardingScreen', () => {
         screen.getByRole('heading', { name: 'Tell us about your study plans' }),
       ).toBeInTheDocument();
       expect(
-        screen.getByText('We’ve brought over your answers. Just check these.'),
+        screen.getByText('We brought over your earlier answers. Check them and continue.'),
       ).toBeInTheDocument();
       // Not the mid-way welcome back, and nothing to start over.
       expect(screen.queryByText(/Welcome back/)).toBeNull();
