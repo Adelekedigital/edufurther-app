@@ -43,6 +43,12 @@
   /* Compact Plus / warning-note ground (design literal #fef6e7). */
   --warning-subtle: #fef6e7;
   --warning-text: var(--yellow-900);
+  /* The ring on that ground: the nav's "Set up" pill (AppShell.dc.html literal #f7d394). */
+  --warning-subtle-ring: #f7d394;
+  /* The nav's 16px marks, the lock badge and "Set up" pill (AppShell.dc.html
+     literals: lock 11px on a 16px line; no DS step). */
+  --text-nav-lock: 11px;
+  --lh-nav-mark: 16px;
   /* Hover on a low-credits pill (AppShell.dc.html literal #fdeccb). */
   --warning-subtle-hover: #fdeccb;
   /* Mentor Profile.dc.html literal #fffbef: the gold tile behind award and

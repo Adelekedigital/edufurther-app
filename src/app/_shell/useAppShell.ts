@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { AccountMenuItem } from '@/components/molecules/AccountMenu/AccountMenu';
 import { useSignOut } from '@/lib/api/data/auth';
 import { useViewer } from '@/lib/api/data/viewer';
+import { accessFor, setupCredits } from '@/lib/utils/access';
 import { coverFor } from '@/lib/utils/cover';
 import { creditsView } from '@/lib/utils/credits';
 import { hasUnsavedChanges } from '@/lib/utils/leaveGuard';
@@ -96,6 +97,8 @@ export function useAppShell() {
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const chrome = chromeFor(viewer);
   const member = viewer.kind === 'member' ? viewer : null;
+  // The setup lock: nav items held until onboarding or approval (lib/utils/access).
+  const access = accessFor(viewer);
   const items = accountItems(member, () => {
     if (hasUnsavedChanges()) setConfirmingLogout(true);
     else void signOut();
@@ -113,6 +116,7 @@ export function useAppShell() {
         : ('mentee' as const),
     /** Mentors can't book (product, 2026-09-29): "View profile" instead of Book. */
     canBook: canBookFor(viewer),
+    access,
     account:
       chrome === 'member'
         ? {
@@ -125,9 +129,12 @@ export function useAppShell() {
             },
             items,
             /** Mentees only: their monthly credits (AppShell.dc.html creditsIn=both). */
+            // In setup the starter credit isn't paid yet (it is at completion): 0.
             credits: isMenteeSide(member)
               ? (creditsView(
-                  member.credits,
+                  member.credits && access.state === 'menteeSetup'
+                    ? setupCredits(member.credits)
+                    : member.credits,
                   undefined,
                   member.menteeCancelRefundHours,
                   member.completedSessions,

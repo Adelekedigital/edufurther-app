@@ -132,3 +132,44 @@ describe('toViewer: mentor application (Mentor Onboarding PRD)', () => {
     ).toBe(true);
   });
 });
+
+describe('toViewer: the setup lock fields (onboardingComplete, mentorStage)', () => {
+  type Profile = NonNullable<Me['mentor_profile']>;
+  const profile = (p: Partial<Profile>) => p as Profile;
+
+  it('onboardingComplete is /me onboarding.complete; unknown reads as finished', () => {
+    expect(
+      toViewer(me({ onboarding: { complete: false, missing: ['help'] } })).onboardingComplete,
+    ).toBe(false);
+    expect(toViewer(me({ onboarding: { complete: true, missing: [] } })).onboardingComplete).toBe(
+      true,
+    );
+    expect(toViewer(me({ onboarding: null })).onboardingComplete).toBe(true);
+    expect(toViewer(me()).onboardingComplete).toBe(true);
+  });
+
+  it('mentorStage follows toMentorApplication: none, unsubmitted, pending, approved, declined', () => {
+    expect(toViewer(me()).mentorStage).toBe('none');
+    const stage = (p: Partial<Profile>) => toViewer(me({ mentor_profile: profile(p) })).mentorStage;
+    expect(stage({ approval_status: 'pending', submitted_at: null })).toBe('unsubmitted');
+    expect(stage({ approval_status: 'pending', submitted_at: '2026-10-01T00:00:00Z' })).toBe(
+      'pending',
+    );
+    expect(stage({ approval_status: 'approved', approved_seen_at: null })).toBe('approved');
+    expect(stage({ approval_status: 'declined' })).toBe('declined');
+  });
+
+  it('a declined applicant who chose mentee reads as no application (mentee rules)', () => {
+    const v = toViewer(
+      me({ primary_role: 'mentee', mentor_profile: profile({ approval_status: 'declined' }) }),
+    );
+    expect(v).toMatchObject({ isMentor: false, mentorStage: 'none' });
+  });
+
+  it('approved_seen_at null is not yet seen', () => {
+    const v = toViewer(
+      me({ mentor_profile: profile({ approval_status: 'approved', approved_seen_at: null }) }),
+    );
+    expect(v).toMatchObject({ mentorStage: 'approved', mentorApprovedSeen: false });
+  });
+});

@@ -37,9 +37,6 @@ export const ONBOARDING_LIVE = process.env.NEXT_PUBLIC_ONBOARDING_ENABLED === 't
  */
 export const MENTOR_ONBOARDING_LIVE = process.env.NEXT_PUBLIC_MENTOR_ONBOARDING_ENABLED === 'true';
 
-/** Where a mentor whose application isn't approved yet goes at log-in. */
-export const MENTOR_REVIEW_HOME = MENTOR_ONBOARDING_LIVE ? '/mentor-application' : '/dashboard';
-
 /** A booking interrupted by sign-up, handed to onboarding (its PRD, guest path). */
 export type PendingBooking = { handle: string; sid: string; time: string };
 

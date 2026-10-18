@@ -39,6 +39,12 @@ type ModalShellProps = {
   alert?: boolean;
   /** The × is off (a confirm whose request is running). Centred modal only. */
   closeDisabled?: boolean;
+  /**
+   * Under 768px (Modal.dc.html `mobile`): `full`, the whole screen (default),
+   * or `sheet`, a bottom sheet as tall as its content that keeps the centred
+   * modal's header, icon included. Centred modal only.
+   */
+  mobile?: 'full' | 'sheet';
 };
 
 /**
@@ -61,6 +67,7 @@ export function ModalShell({
   footer,
   alert = false,
   closeDisabled = false,
+  mobile = 'full',
 }: ModalShellProps) {
   const titleId = useId();
   const subId = useId();
@@ -129,8 +136,9 @@ export function ModalShell({
     );
   }
 
+  const phoneSheet = mobile === 'sheet';
   return createPortal(
-    <div className={styles.root}>
+    <div className={cx(styles.root, phoneSheet && styles.phoneSheetRoot)}>
       <div className={styles.overlay} aria-hidden />
       <div
         ref={dialogRef}
@@ -139,8 +147,9 @@ export function ModalShell({
         aria-labelledby={titleId}
         aria-describedby={subtitle ? subId : undefined}
         tabIndex={-1}
-        className={cx(styles.dialog, styles[size])}
+        className={cx(styles.dialog, styles[size], phoneSheet && styles.phoneSheet)}
       >
+        {phoneSheet && <span className={cx(styles.grabber, styles.phoneGrabber)} aria-hidden />}
         <IconButton
           icon="close"
           aria-label="Close"

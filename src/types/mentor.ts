@@ -163,6 +163,9 @@ export type BookingRequest = {
 };
 
 /** Who is looking (GET /api/v1/me; backend auth reply #3). */
+/** Where a mentor application stands (/me mentor_profile), as toMentorApplication reads it. */
+export type MentorStage = 'none' | 'unsubmitted' | 'pending' | 'approved' | 'declined';
+
 export type Viewer =
   /**
    * Not known yet. `signedIn`: null while the session itself is unknown (render
@@ -202,6 +205,19 @@ export type Viewer =
        * `approved_seen_at`, PRD B2). Absent: not known, treated as seen.
        */
       mentorApprovedSeen?: boolean;
+      /**
+       * Where the mentor application stands (`/me` mentor_profile
+       * `approval_status` and `submitted_at`, read as toMentorApplication does).
+       * `none` for a mentee, including a declined applicant who chose mentee.
+       * Absent: not known, treated as approved (no setup lock).
+       */
+      mentorStage?: MentorStage;
+      /**
+       * Onboarding is finished (`/me` onboarding.complete; a mentee migrated
+       * from the old platform counts as finished). Absent: not known, treated
+       * as finished (no setup lock).
+       */
+      onboardingComplete?: boolean;
       /** The mentor profile appears in search (`listing_status` listed). Absent: not known. */
       isListedMentor?: boolean;
       /** The account's IANA zone (`/me` timezone): the backend judges "today" in it (return dates). */

@@ -14,13 +14,27 @@ import { fullNavigate } from '@/lib/utils/hardNavigate';
 import { CreditsPill } from '@/components/molecules/CreditsPill/CreditsPill';
 import { CreditsSummary } from '@/components/molecules/CreditsSummary/CreditsSummary';
 import type { CreditsView } from '@/lib/utils/credits';
+import type { Access, NavKey } from '@/lib/utils/access';
 import { CreditsExplainer } from './CreditsExplainer';
+import { LockExplainer } from './LockExplainer';
 import { UnsavedChangesDialog } from './UnsavedChangesDialog';
 import { cx } from '@/lib/utils/cx';
 import styles from './AppShell.module.css';
 
 /** Rail group: `daily` above the divider, `setup` below (design sidebar=grouped). */
 type NavItem = { label: string; href: string; icon: IconName; group: 'daily' | 'setup' };
+
+/**
+ * A nav item as this viewer gets it (the setup lock, lib/utils/access):
+ * `locked` opens the explainer instead of the page, `pill` is Home's "Set up",
+ * `name` the accessible name when it isn't the label alone.
+ */
+type ShownItem = NavItem & {
+  locked: boolean;
+  pill: boolean;
+  name?: string;
+  count?: { count: number; label: string };
+};
 
 /**
  * Mentee navigation (design AppShell role=mentee). Messages is held until it's
@@ -97,6 +111,8 @@ type AppShellProps = {
     /** Logout with unsaved changes: the confirm is open (useAppShell). */
     logoutConfirm?: { onKeep: () => void; onLogout: () => void };
   };
+  /** The setup lock (accessFor): what is held, and where Home goes meanwhile. */
+  access?: Access;
   offline: boolean;
   children: ReactNode;
 };
@@ -110,6 +126,7 @@ export function AppShell({
   nav = 'mentee',
   chrome,
   account,
+  access,
   offline,
   children,
 }: AppShellProps) {
@@ -167,13 +184,28 @@ export function AppShell({
         onClick={togglePill}
       />
     ) : null;
-  const items = NAV[nav];
+  const counts = account?.counts ?? {};
+  // The lock explainer: which item it's about, and where focus goes after.
+  const [lock, setLock] = useState<string | null>(null);
+  const lockReturn = useRef<HTMLElement | null>(null);
+  const openLock = (label: string, from: HTMLElement | null) => {
+    // From the More sheet, the item goes with the sheet: come back to More.
+    lockReturn.current = from?.closest('#more-sheet') ? moreRef.current : from;
+    setMoreOpen(false);
+    setLock(label);
+  };
+  useEffect(() => {
+    if (lock !== null || !lockReturn.current) return;
+    // After the dialog's own focus return, which can't reach a closed sheet.
+    lockReturn.current.focus();
+    lockReturn.current = null;
+  }, [lock]);
+  const items = NAV[nav].map((n) => shownItem(n, access, counts));
   const primary = PRIMARY_TABS[nav];
   // In the design's pick order: mentor tabs read Home, Calendar, Bookings.
   const tabs = primary.flatMap((l) => items.filter((n) => n.label === l));
   const extra = items.filter((n) => !primary.includes(n.label));
   const moreActive = extra.some((n) => n.label === active);
-  const counts = account?.counts ?? {};
   const daily = items.filter((n) => n.group === 'daily');
   const setup = items.filter((n) => n.group === 'setup');
 
@@ -234,11 +266,11 @@ export function AppShell({
               <Image src="/brand/edufurther-mark-swoosh.png" alt="" width={48} height={20} />
             </Link>
             <div className={styles.railScroll}>
-              <RailList items={daily} active={active} counts={counts} />
+              <RailList items={daily} active={active} onLock={openLock} />
               {daily.length > 0 && setup.length > 0 && (
                 <span className={styles.railDivider} aria-hidden />
               )}
-              <RailList items={setup} active={active} counts={counts} />
+              <RailList items={setup} active={active} onLock={openLock} />
             </div>
             {account && (
               <AccountMenu
@@ -290,22 +322,42 @@ export function AppShell({
 
       {member && (
         <nav aria-label="Main" className={styles.tabs}>
-          {tabs.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              prefetch={PREFETCH}
-              className={styles.tab}
-              aria-current={n.label === active ? 'page' : undefined}
-              aria-label={nameWithCount(n.label, counts[n.label])}
-            >
-              <span className={styles.tabIcon}>
-                <Icon name={n.icon} size={22} />
-                <CountBadge count={counts[n.label]} />
-              </span>
-              {n.label}
-            </Link>
-          ))}
+          {tabs.map((n) => {
+            const body = (
+              <>
+                <span className={styles.tabIcon}>
+                  <Icon name={n.icon} size={22} />
+                  {n.locked ? <LockBadge /> : <CountBadge count={n.count} />}
+                </span>
+                {/* The pill takes the label's place on a phone tab (design). */}
+                {n.pill ? <SetupPill /> : n.label}
+              </>
+            );
+            return n.locked ? (
+              <button
+                key={n.href}
+                type="button"
+                className={styles.tab}
+                aria-current={n.label === active ? 'page' : undefined}
+                aria-label={n.name}
+                aria-haspopup="dialog"
+                onClick={(e) => openLock(n.label, e.currentTarget)}
+              >
+                {body}
+              </button>
+            ) : (
+              <Link
+                key={n.href}
+                href={n.href}
+                prefetch={PREFETCH}
+                className={styles.tab}
+                aria-current={n.label === active ? 'page' : undefined}
+                aria-label={n.name}
+              >
+                {body}
+              </Link>
+            );
+          })}
           {nav !== 'unknown' && (
             <button
               ref={moreRef}
@@ -325,6 +377,9 @@ export function AppShell({
         </nav>
       )}
 
+      {lock !== null && access?.copy && (
+        <LockExplainer item={lock} copy={access.copy} onClose={() => setLock(null)} />
+      )}
       {creditsOpen && credits && (
         <CreditsExplainer id={creditsId} credits={credits} onClose={closeCredits} />
       )}
@@ -349,16 +404,33 @@ export function AppShell({
             <ul className={styles.sheetList}>
               {extra.map((n) => (
                 <li key={n.href}>
-                  <Link
-                    href={n.href}
-                    prefetch={PREFETCH}
-                    className={styles.sheetItem}
-                    aria-current={n.label === active ? 'page' : undefined}
-                    onClick={() => setMoreOpen(false)}
-                  >
-                    <Icon name={n.icon} size={20} />
-                    {n.label}
-                  </Link>
+                  {n.locked ? (
+                    <button
+                      type="button"
+                      className={styles.sheetItem}
+                      aria-current={n.label === active ? 'page' : undefined}
+                      aria-label={n.name}
+                      aria-haspopup="dialog"
+                      onClick={(e) => openLock(n.label, e.currentTarget)}
+                    >
+                      <Icon name={n.icon} size={20} />
+                      <span className={styles.sheetLabel}>{n.label}</span>
+                      <span className={styles.sheetLock} aria-hidden>
+                        lock
+                      </span>
+                    </button>
+                  ) : (
+                    <Link
+                      href={n.href}
+                      prefetch={PREFETCH}
+                      className={styles.sheetItem}
+                      aria-current={n.label === active ? 'page' : undefined}
+                      onClick={() => setMoreOpen(false)}
+                    >
+                      <Icon name={n.icon} size={20} />
+                      {n.label}
+                    </Link>
+                  )}
                 </li>
               ))}
               {account?.items.map((it) => (
@@ -407,28 +479,92 @@ export function AppShell({
   );
 }
 
-function RailList({ items, active, counts }: { items: NavItem[]; active: string; counts: Counts }) {
+function RailList({
+  items,
+  active,
+  onLock,
+}: {
+  items: ShownItem[];
+  active: string;
+  onLock: (label: string, from: HTMLElement) => void;
+}) {
   if (items.length === 0) return null;
   return (
     <ul className={styles.railList}>
-      {items.map((n) => (
-        <li key={n.href}>
-          <Link
-            href={n.href}
-            prefetch={PREFETCH}
-            className={styles.railItem}
-            aria-current={n.label === active ? 'page' : undefined}
-            aria-label={nameWithCount(n.label, counts[n.label])}
-          >
+      {items.map((n) => {
+        const body = (
+          <>
             <span className={styles.railIcon}>
               <Icon name={n.icon} size={20} />
-              <CountBadge count={counts[n.label]} />
+              {n.locked ? <LockBadge /> : <CountBadge count={n.count} />}
             </span>
             {n.label}
-          </Link>
-        </li>
-      ))}
+            {n.pill && <SetupPill />}
+          </>
+        );
+        return (
+          <li key={n.href}>
+            {n.locked ? (
+              <button
+                type="button"
+                className={styles.railItem}
+                aria-current={n.label === active ? 'page' : undefined}
+                aria-label={n.name}
+                aria-haspopup="dialog"
+                onClick={(e) => onLock(n.label, e.currentTarget)}
+              >
+                {body}
+              </button>
+            ) : (
+              <Link
+                href={n.href}
+                prefetch={PREFETCH}
+                className={styles.railItem}
+                aria-current={n.label === active ? 'page' : undefined}
+                aria-label={n.name}
+              >
+                {body}
+              </Link>
+            )}
+          </li>
+        );
+      })}
     </ul>
+  );
+}
+
+/**
+ * The viewer's version of a nav item. Locked: no count (AppShell.dc.html
+ * `hasCount: false`) and the reason in its name. Home in setup: the pill, its
+ * own name, and the page that finishes setup.
+ */
+function shownItem(n: NavItem, access: Access | undefined, counts: Counts): ShownItem {
+  const copy = access?.copy;
+  if (copy && access.locked.has(n.label as NavKey))
+    return { ...n, locked: true, pill: false, name: `${n.label}, ${copy.why}` };
+  const home = n.label === 'Home';
+  const href = home && access?.homeHref ? access.homeHref : n.href;
+  if (home && access?.setupPill)
+    return { ...n, href, locked: false, pill: true, name: 'Home, finish setting up' };
+  const count = counts[n.label];
+  return { ...n, href, locked: false, pill: false, count, name: nameWithCount(n.label, count) };
+}
+
+/** The lock on a locked item's icon (AppShell.dc.html `locked`). */
+function LockBadge() {
+  return (
+    <span className={styles.lockBadge} aria-hidden>
+      lock
+    </span>
+  );
+}
+
+/** Home's "Set up" pill while a mentee finishes onboarding (AppShell.dc.html `setupDot`). */
+function SetupPill() {
+  return (
+    <span className={styles.setupPill} aria-hidden>
+      Set up
+    </span>
   );
 }
 

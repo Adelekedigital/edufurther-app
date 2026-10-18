@@ -120,6 +120,10 @@
   background: var(--border-subtle);
 }
 .railItem {
+  /* Also a <button> when locked: no UA border or ground. */
+  border: none;
+  background: none;
+  cursor: pointer;
   width: 76px;
   display: flex;
   flex-direction: column;
@@ -164,6 +168,39 @@
   font-weight: var(--weight-semibold);
   line-height: 18px;
   text-align: center;
+}
+/* The setup lock (AppShell.dc.html `locked`): a ringed lock on the icon's
+   corner, in place of the count. */
+.lockBadge {
+  position: absolute;
+  bottom: -3px;
+  right: -5px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background: var(--white);
+  box-shadow: 0 0 0 1px var(--ink-300);
+  font-family: var(--font-icon);
+  font-size: var(--text-nav-lock);
+  line-height: var(--lh-nav-mark);
+  text-align: center;
+  color: var(--ink-700);
+  font-feature-settings: 'liga';
+  font-weight: normal;
+}
+/* Home's "Set up" pill (AppShell.dc.html `setupDot`): under the rail label,
+   in place of the tab label. */
+.setupPill {
+  padding: 0 6px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background: var(--warning-subtle);
+  box-shadow: inset 0 0 0 1px var(--warning-subtle-ring);
+  font-size: var(--text-caption-xs);
+  line-height: var(--lh-nav-mark);
+  font-weight: var(--weight-semibold);
+  color: var(--yellow-900);
+  white-space: nowrap;
 }
 /* activeStyle=none: no ground, no ring; the blue icon and label carry it. */
 .railItem[aria-current='page'] {
@@ -290,6 +327,9 @@
   .tabIcon .badge {
     right: 2px;
   }
+  .tabIcon .lockBadge {
+    right: 6px;
+  }
   .tab[aria-current='page'],
   .tab[data-current] {
     color: var(--blue-700);
@@ -353,6 +393,17 @@
     font-family: var(--font-ui);
     text-align: left;
     text-decoration: none;
+  }
+  /* A locked More item: the label takes the row, a lock trails (design). */
+  .sheetLabel {
+    flex: 1;
+  }
+  .sheetLock {
+    font-family: var(--font-icon);
+    font-size: var(--text-p-md);
+    font-feature-settings: 'liga';
+    font-weight: normal;
+    color: var(--ink-600);
   }
   .sheetDanger,
   .sheetDanger:hover {
