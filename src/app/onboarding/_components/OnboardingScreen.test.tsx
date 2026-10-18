@@ -179,8 +179,11 @@ describe('OnboardingScreen', () => {
     expect(save).not.toHaveBeenCalled();
     expect(screen.getByText('Fill in the required fields to continue.')).toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent('Pick at least one area.');
-    // Focus lands on the first card, so they can pick right away.
-    expect(screen.getByRole('button', { name: /Find a program/ })).toHaveFocus();
+    // Focus lands on the first card, which says why (the alert may be skipped
+    // by a screen reader, as it arrives already full).
+    const first = screen.getByRole('button', { name: /Find a program/ });
+    expect(first).toHaveFocus();
+    expect(first).toHaveAccessibleDescription('Pick at least one area.');
     await userEvent.click(screen.getByRole('button', { name: /Find a program/ }));
     expect(screen.queryByText('Pick at least one area.')).toBeNull();
     expect(screen.queryByText('Fill in the required fields to continue.')).toBeNull();

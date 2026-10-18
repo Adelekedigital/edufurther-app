@@ -228,8 +228,9 @@ export function OnboardingScreen() {
               onChange={f.setNeeds}
               limit={f.helpLimit}
               label={copy.title}
-              describedBy={gaps.includes('help') ? `${subId} ${helpId}-error` : subId}
+              describedBy={subId}
               firstId={`${helpId}-first`}
+              errorId={gaps.includes('help') ? `${helpId}-error` : undefined}
             />
           ) : (
             <StudyPlansForm
