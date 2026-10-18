@@ -6,6 +6,7 @@ import { ApiError, apiError, normaliseError, retryOnce } from './errors';
 import { keys } from './keys';
 import type { components } from '@/lib/api/generated/schema';
 import { api } from './http';
+import { patchViewer } from './viewer';
 import { mentorStageOf } from '@/lib/utils/access';
 
 type UserRead = components['schemas']['UserRead'];
@@ -98,10 +99,13 @@ export function useMarkApprovedSeen(userId: string | null) {
       const { error, response } = await api.POST('/api/v1/me/mentor-application/approved-seen');
       if (!response.ok && response.status !== 409) throw apiError(response.status, error);
     },
-    onSuccess: () =>
+    onSuccess: () => {
       qc.setQueryData<MentorApplication>(keys.viewer.mentorApplication(userId ?? 'none'), (a) =>
         a?.stage === 'approved' ? { ...a, seen: true } : a,
-      ),
+      );
+      // And the viewer: Home stops sending them back here (and its toast).
+      patchViewer(qc, { mentorApprovedSeen: true });
+    },
   });
   return { markSeen: mutation.mutate, isPending: mutation.isPending };
 }

@@ -293,7 +293,17 @@ type Member = Extract<Viewer, { kind: 'member' }>;
  */
 export function patchViewer(
   qc: QueryClient,
-  patch: Partial<Pick<Member, 'avatarUrl' | 'avatarFocus' | 'coverKey' | 'onboardingMissing'>>,
+  patch: Partial<
+    Pick<
+      Member,
+      | 'avatarUrl'
+      | 'avatarFocus'
+      | 'coverKey'
+      | 'onboardingMissing'
+      | 'onboardingComplete'
+      | 'mentorApprovedSeen'
+    >
+  >,
 ) {
   qc.setQueriesData<unknown>({ queryKey: keys.viewer.all }, (v: unknown) =>
     typeof v === 'object' && v !== null && (v as Viewer).kind === 'member'
