@@ -1,10 +1,13 @@
 import { Button } from '@/components/atoms/Button/Button';
+import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { FieldError } from '@/components/molecules/FieldError/FieldError';
 import { LegalLine } from '@/components/molecules/LegalLine/LegalLine';
 import { cx } from '@/lib/utils/cx';
 import { checkFullName } from '@/lib/utils/name';
 import { FullNameField } from '@/components/molecules/FullNameField/FullNameField';
 import styles from './SignInForm.module.css';
+
+const SIGNING_OUT = 'Signing out…';
 
 export type FinishStepProps = {
   fullName: string;
@@ -63,8 +66,10 @@ export function FinishStep({
         aria-busy={signingOut || undefined}
         onClick={held ? undefined : onUseDifferentEmail}
       >
-        Use a different email
+        {signingOut ? SIGNING_OUT : 'Use a different email'}
       </button>
+      {/* Always mounted, so the change of label is heard (it keeps focus, but its name changes quietly). */}
+      <LiveRegion message={signingOut ? { text: SIGNING_OUT, id: 1 } : null} />
       {signOutError && <FieldError>{signOutError}</FieldError>}
       <LegalLine />
     </div>

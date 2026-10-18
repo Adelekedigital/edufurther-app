@@ -297,14 +297,29 @@ describe('SignInForm — finish and suspended', () => {
         onFinish={onFinish}
       />,
     );
-    const other = screen.getByRole('button', { name: 'Use a different email' });
+    const other = screen.getByRole('button', { name: 'Signing out…' });
     expect(other).toHaveAttribute('aria-disabled', 'true');
     expect(other).toHaveAttribute('aria-busy', 'true');
+    expect(screen.queryByRole('button', { name: 'Use a different email' })).toBeNull();
+    // Announced politely, beside the offline region.
+    expect(screen.getAllByRole('status').some((r) => r.textContent === 'Signing out…')).toBe(true);
     expect(screen.getByRole('button', { name: 'Create account' })).toBeDisabled();
+    other.focus();
     await userEvent.click(other);
     expect(onUseDifferentEmail).not.toHaveBeenCalled();
+    // Still focusable and focused: aria-disabled, not disabled.
+    expect(other).toHaveFocus();
     await userEvent.type(screen.getByLabelText('Full name'), '{Enter}');
     expect(onFinish).not.toHaveBeenCalled();
+  });
+
+  it('goes back to its own label, and the status empties, once signing out is over', () => {
+    const p = props({ step: 'finish', email: 'amara@example.com', signingOut: true });
+    const { rerender } = render(<SignInForm {...p} />);
+    const other = screen.getByRole('button', { name: 'Signing out…' });
+    rerender(<SignInForm {...p} signingOut={false} />);
+    expect(other).toHaveAccessibleName('Use a different email');
+    expect(screen.getAllByRole('status').every((r) => r.textContent === '')).toBe(true);
   });
 
   it('says so when signing out didn’t work', () => {

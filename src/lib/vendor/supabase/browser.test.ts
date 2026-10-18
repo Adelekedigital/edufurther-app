@@ -5,6 +5,7 @@ const oauthCall = vi.fn();
 const stopAutoRefresh = vi.fn(async () => {});
 const verifyCall = vi.fn();
 const getUserCall = vi.fn();
+const getSessionCall = vi.fn();
 vi.mock('@supabase/ssr', () => ({
   createBrowserClient: () => ({
     auth: {
@@ -13,6 +14,7 @@ vi.mock('@supabase/ssr', () => ({
       signInWithOAuth: (o: unknown) => oauthCall(o),
       verifyOtp: (o: unknown) => verifyCall(o),
       getUser: () => getUserCall(),
+      getSession: () => getSessionCall(),
     },
   }),
 }));
@@ -96,8 +98,11 @@ describe('signOut (Logout ends this device’s session)', () => {
 });
 
 describe('endSessionHere (sign out and stay on the sign-in screen)', () => {
+  const gone = { data: { session: null } };
+  const kept = { data: { session: { access_token: 't' } } };
   beforeEach(() => {
     signOutCall.mockReset();
+    getSessionCall.mockReset();
     stopAutoRefresh.mockClear();
   });
   afterEach(() => {
@@ -112,24 +117,50 @@ describe('endSessionHere (sign out and stay on the sign-in screen)', () => {
     signOutCall.mockResolvedValue({ error: null });
     expect(await endSessionHere()).toBe(true);
     expect(signOutCall).toHaveBeenCalledWith({ scope: 'local' });
+    expect(getSessionCall).not.toHaveBeenCalled();
   });
 
-  it('the SDK kept the session: false, and nothing is forced (cookies, refresh)', async () => {
+  it('a network error, but the SDK dropped the session anyway: signed out', async () => {
+    signOutCall.mockResolvedValue({ error: new Error('Failed to fetch') });
+    getSessionCall.mockResolvedValue(gone);
+    expect(await endSessionHere()).toBe(true);
+  });
+
+  it('a network error and the session is still there: false, and nothing is forced', async () => {
     setCookies();
     signOutCall.mockResolvedValue({ error: new Error('Failed to fetch') });
+    getSessionCall.mockResolvedValue(kept);
     expect(await endSessionHere()).toBe(false);
+    // Unlike Logout, no cookie sweep and no stopping the refresh.
     expect(document.cookie).toContain('sb-proj-auth-token.0=a');
     expect(stopAutoRefresh).not.toHaveBeenCalled();
   });
 
-  it('the SDK throws: false', async () => {
+  it('the SDK throws and the session is still there: false', async () => {
     signOutCall.mockRejectedValue(new TypeError('network'));
+    getSessionCall.mockResolvedValue(kept);
     expect(await endSessionHere()).toBe(false);
   });
 
-  it('Supabase never answers: false after the time limit', async () => {
+  it('the session can’t be read either: false', async () => {
+    signOutCall.mockRejectedValue(new TypeError('network'));
+    getSessionCall.mockRejectedValue(new Error('lock'));
+    expect(await endSessionHere()).toBe(false);
+  });
+
+  it('past the time limit, the session gone in the background: signed out', async () => {
     vi.useFakeTimers();
     signOutCall.mockReturnValue(new Promise(() => {}));
+    getSessionCall.mockResolvedValue(gone);
+    const done = endSessionHere();
+    await vi.advanceTimersByTimeAsync(SIGN_OUT_TIMEOUT_MS + 1);
+    expect(await done).toBe(true);
+  });
+
+  it('past the time limit, the session still there: false', async () => {
+    vi.useFakeTimers();
+    signOutCall.mockReturnValue(new Promise(() => {}));
+    getSessionCall.mockResolvedValue(kept);
     const done = endSessionHere();
     await vi.advanceTimersByTimeAsync(SIGN_OUT_TIMEOUT_MS + 1);
     expect(await done).toBe(false);

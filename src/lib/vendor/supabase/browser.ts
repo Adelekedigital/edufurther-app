@@ -188,8 +188,12 @@ export async function signOut(): Promise<void> {
 /**
  * End this device's session and stay on the page (the sign-in screen's "Use a
  * different email"). Unlike signOut, nothing is forced: no cookie sweep, no
- * stopping the SDK's refresh, as the person signs in again right here. False
- * when the SDK kept the session (Supabase unreachable, or it stalled).
+ * stopping the SDK's refresh, as the person signs in again right here.
+ *
+ * The SDK's error isn't the answer: on a network error it still drops the
+ * session here and reports the error, and a sign-out past the time limit may
+ * finish in the background. So whether a session remains is asked of the SDK
+ * itself; false only when one does.
  */
 export async function endSessionHere(): Promise<boolean> {
   const sb = supabase();
@@ -199,7 +203,13 @@ export async function endSessionHere(): Promise<boolean> {
     setTimeout(() => resolve({ error: new Error('sign-out timed out') }), SIGN_OUT_TIMEOUT_MS),
   );
   const { error } = await Promise.race([ended, timedOut]);
-  return !error;
+  if (!error) return true;
+  try {
+    const { data } = await sb.auth.getSession();
+    return !data.session;
+  } catch {
+    return false;
+  }
 }
 
 /**
