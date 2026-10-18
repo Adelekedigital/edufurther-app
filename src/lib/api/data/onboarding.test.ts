@@ -80,6 +80,14 @@ describe('toState', () => {
 });
 
 describe('toState — migrated mentees (PRD H5)', () => {
+  it('is unfinished on complete: false alone, even with nothing missing, as sign-in reads it', () => {
+    // Sign-in routes on the same flag, so the two can never bounce a mentee between them.
+    expect(
+      toState(saved({ needs: [need] }, { onboarding: { complete: false, missing: [] } }), countries)
+        .complete,
+    ).toBe(false);
+  });
+
   const brought = { needs: [need], degree_goal: masters };
 
   it('is migrated when the server has no step for them but they hold answers', () => {

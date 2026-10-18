@@ -258,6 +258,8 @@ describe('signInOutcome — a mentee whose onboarding is unfinished (PRD H5)', (
     // Any return path wins, a booking included: booking is never gated (PRD F4).
     const next = '/mentors/ada?book=st-1&at=2026-10-20T10:00:00Z';
     expect(on({ ...base, onboardingComplete: false, next }).href).toBe(next);
+    // Not only a booking: any return path.
+    expect(on({ ...base, onboardingComplete: false, next: '/bookings' }).href).toBe('/bookings');
   });
 
   it('changes nothing with the flag off', async () => {
