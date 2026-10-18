@@ -112,7 +112,7 @@ const viewer = (over: Partial<Member>): Member => ({
   credits: null,
   ...over,
 });
-const prompt = () => screen.queryByText('Not sure who’s right for you?');
+const prompt = () => screen.queryByText('Not sure where to start?');
 
 describe('Explore match prompt: mentees only (product, 2026-09-30)', () => {
   it('a mentee with 2 or fewer sessions sees it', () => {

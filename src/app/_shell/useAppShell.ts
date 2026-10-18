@@ -11,9 +11,10 @@ import { canBookFor } from './bookBlocked';
 import type { Viewer } from '@/types/mentor';
 
 /**
- * "Find my mentor matches" goes to an external Cal booking page for now (product
- * decision, 2026-09-26). TEMPORARY: matching must move onto the platform — see
- * project-conventions → Known rough edges. Unset → the prompt is not rendered.
+ * The team-call booking page (Cal): a free 1-on-1 call with someone from the
+ * EduFurther team, who helps a mentee decide where to start and suggests
+ * mentors. Its own purpose, not a stand-in for matching (owner, 2026-10-17).
+ * Unset → the prompt, pill and menu link are not rendered.
  */
 export const MATCH_CALL_URL = process.env.NEXT_PUBLIC_MATCH_CALL_URL ?? '';
 
@@ -36,7 +37,7 @@ export function chromeFor(viewer: Viewer): ShellChrome {
 type Member = Extract<Viewer, { kind: 'member' }>;
 
 /**
- * Who gets "Find my mentor matches" (account menu, Explore's prompt): mentees,
+ * Who gets "Talk to our team" (account menu, Explore's prompt): mentees,
  * and new members with no goal yet. A mentor profile in any state, pending
  * included, is a mentor: one role per account (product, 2026-09-29/30).
  */
@@ -46,7 +47,7 @@ export function isMenteeSide(member: Member | null): member is Member {
 
 /**
  * The account menu (AppShell.dc.html `menuItems`), in the design's order:
- * View profile, Find my mentor matches, Logout. "View profile" is the viewer's
+ * View profile, Talk to our team, Logout. "View profile" is the viewer's
  * own Mentor Profile, so mentors only: mentees have no profile page yet (#50).
  * "Feedback" has no destination yet (#51).
  */
@@ -66,7 +67,7 @@ export function accountItems(member: Member | null, signOut: () => void): Accoun
       ? [
           {
             key: 'matches',
-            label: 'Find my mentor matches',
+            label: 'Talk to our team',
             icon: 'route' as const,
             href: MATCH_CALL_URL,
             external: true,

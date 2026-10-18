@@ -11,7 +11,7 @@ const setup = () => {
         { key: 'profile', label: 'View profile', icon: 'account_box', href: '/mentors/u1' },
         {
           key: 'matches',
-          label: 'Find my mentor matches',
+          label: 'Talk to our team',
           icon: 'route',
           href: 'https://x.test',
           external: true,
@@ -45,7 +45,7 @@ describe('AccountMenu', () => {
   it('Logout runs and closes; the external link opens in a new tab', async () => {
     const { button, onLogout } = setup();
     await userEvent.click(button);
-    expect(screen.getByRole('menuitem', { name: /Find my mentor matches/ })).toHaveAttribute(
+    expect(screen.getByRole('menuitem', { name: /Talk to our team/ })).toHaveAttribute(
       'target',
       '_blank',
     );
