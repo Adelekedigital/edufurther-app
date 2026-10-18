@@ -3,10 +3,20 @@ import { mockCreateSessionType, mockOwnSessionTypes } from '@/lib/api/mock/sessi
 import { ok, problem } from '@/lib/api/mock/respond';
 
 /** MOCK of GET /api/v1/me/session-types (every state, is_active flagged). ENABLE_MOCK_API=1 only. */
-export async function GET() {
+export async function GET(req: Request) {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
   await new Promise((r) => setTimeout(r, 250));
-  return ok('/api/v1/me/session-types', 'get', { data: mockOwnSessionTypes(), next_cursor: null });
+  const data = mockOwnSessionTypes();
+  // The approved mentor application (`?mockApplication=`, via the Referer) has
+  // the Intro chat mentor onboarding creates: the first type plays it, so its
+  // Edit link opens a type that exists.
+  let asked: string | null = null;
+  try {
+    const referer = req.headers.get('referer');
+    if (referer) asked = new URL(referer).searchParams.get('mockApplication');
+  } catch {}
+  if (asked === 'approved' && data[0]) data[0] = { ...data[0], name: 'Intro chat' };
+  return ok('/api/v1/me/session-types', 'get', { data, next_cursor: null });
 }
 
 /**
