@@ -154,6 +154,8 @@ export function useAvatarUpload(handle: string, userId: string | null) {
       remove.reset();
     },
     uploadedStamp,
+    /** The photo the last upload put on the account, for a form that holds its own copy. */
+    uploadedUrl: upload.data?.avatar_url ?? null,
     removedStamp,
   };
 }

@@ -175,4 +175,13 @@ export const keys = {
     all: ['metMentors'] as const,
     list: (who: string) => ['metMentors', 'list', who] as const,
   },
+  /**
+   * Mentor onboarding's read of /me (Mentor Onboarding PRD F1). Under `viewer`,
+   * so whatever refreshes the viewer (a new photo) refreshes the answers too.
+   */
+  mentorApplication: {
+    all: ['viewer', 'mentorApplication'] as const,
+    me: (userId: string) => ['viewer', 'mentorApplication', userId] as const,
+    institutions: (q: string) => ['institutions', q] as const,
+  },
 };

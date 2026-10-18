@@ -49,6 +49,25 @@ export type MockStep = (typeof STEPS)[number];
 export const isMockStep = (s: unknown): s is MockStep =>
   typeof s === 'string' && (STEPS as readonly string[]).includes(s);
 
+/**
+ * Mentor onboarding's steps (PENDING BACKEND B3), kept apart from the mentee's:
+ * `/me` types `last_step` as the mentee's two until the spec has these.
+ */
+export const MENTOR_STEPS = [
+  'mentor_help',
+  'mentor_education',
+  'mentor_about',
+  'mentor_hours',
+] as const;
+export type MentorMockStep = (typeof MENTOR_STEPS)[number];
+export const isMentorMockStep = (s: unknown): s is MentorMockStep =>
+  typeof s === 'string' && (MENTOR_STEPS as readonly string[]).includes(s);
+const mentorProgress = new Map<string, MentorMockStep>();
+export const mockMentorStep = (userId: string) => mentorProgress.get(userId) ?? null;
+export function setMentorMockStep(userId: string, step: MentorMockStep) {
+  mentorProgress.set(userId, step);
+}
+
 export function setMockStep(userId: string, step: MockStep) {
   const p = progress.get(userId);
   // Never moves completed_at (PRD B2).
