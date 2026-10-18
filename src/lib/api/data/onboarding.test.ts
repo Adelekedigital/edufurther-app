@@ -188,11 +188,19 @@ describe('goalBody', () => {
 });
 
 describe('toState — a mentor application step (B3 shares last_step)', () => {
-  it('reads as no mentee step', () => {
-    const s = toState(
+  it('reads as no mentee step known: the answers decide, never "migrated"', () => {
+    const none = toState(
       saved(null, { onboarding: { complete: false, missing: [], last_step: 'mentor_hours' } }),
       countries,
     );
-    expect(s.lastStep).toBeNull();
+    expect(none).toMatchObject({ lastStep: null, migrated: false });
+    const answered = toState(
+      saved(
+        { needs: [need] },
+        { onboarding: { complete: false, missing: ['origin'], last_step: 'mentor_hours' } },
+      ),
+      countries,
+    );
+    expect(answered).toMatchObject({ lastStep: 'help', migrated: false });
   });
 });

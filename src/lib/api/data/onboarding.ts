@@ -74,12 +74,11 @@ export function toState(saved: Saved, countries: CatalogOption[]): OnboardingSta
   const complete = saved.onboarding?.complete ?? false;
   const answered = needIds.length > 0 || !!degree || !!field.trim() || !!originId;
   // The server's own step once it sends one; until then, read from the answers.
-  // A mentor application's step (B3 shares the column) isn't a mentee step.
+  // A mentor application's step (B3 shares the column) says nothing about the
+  // mentee flow: read it as no step known, so the answers decide (never "migrated").
   const rawStep = saved.onboarding?.last_step;
   const serverStep =
-    rawStep === undefined || rawStep === null || rawStep === 'help' || rawStep === 'plans'
-      ? rawStep
-      : null;
+    rawStep === null || rawStep === 'help' || rawStep === 'plans' ? rawStep : undefined;
   const known = serverStep !== undefined;
   return {
     lastStep: known ? serverStep : answeredPlans ? 'plans' : needIds.length ? 'help' : null,
