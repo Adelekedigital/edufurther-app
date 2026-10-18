@@ -360,6 +360,7 @@ export function BookingFlow(p: BookingFlowProps) {
       month={tileDate[0] ?? ''}
       day={tileDate[1] ?? ''}
       confirmed={!!p.requestConfirmed}
+      answered={(session?.questions.length ?? 0) > 0}
     />
   ) : null;
 

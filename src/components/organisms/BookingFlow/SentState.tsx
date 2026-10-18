@@ -10,7 +10,7 @@ import styles from './SentState.module.css';
 type Step = { icon: IconName; title: string; body: string; tone: 'done' | 'next' | 'later' };
 
 /** BookingModal.dc.html's words for each outcome (free sessions: a credit, never a charge). */
-function sentCopy(first: string, picked: string, confirmed: boolean) {
+function sentCopy(first: string, picked: string, confirmed: boolean, answered: boolean) {
   return confirmed
     ? {
         title: `You’re booked with ${first}`,
@@ -21,7 +21,9 @@ function sentCopy(first: string, picked: string, confirmed: boolean) {
           {
             icon: 'check',
             title: 'Booking confirmed',
-            body: `${first} can read your answers before you meet.`,
+            body: answered
+              ? `${first} can read your answers before you meet.`
+              : `${first} has it in their Bookings too.`,
             tone: 'done',
           },
           {
@@ -47,7 +49,9 @@ function sentCopy(first: string, picked: string, confirmed: boolean) {
           {
             icon: 'check',
             title: 'Request sent',
-            body: `${first} sees your answers before replying.`,
+            body: answered
+              ? `${first} sees your answers before replying.`
+              : `${first} has your request.`,
             tone: 'done',
           },
           {
@@ -76,6 +80,8 @@ type SentStateProps = {
   day: string;
   /** The created session came back confirmed (an instant offering), not pending. */
   confirmed: boolean;
+  /** The offering asked questions, so answers went with it (else the copy never mentions them). */
+  answered?: boolean;
 };
 
 /**
@@ -83,8 +89,16 @@ type SentStateProps = {
  * booked and where it stands, then what happens next. Two outcomes, as the
  * design draws them: a request waiting for the mentor, or an instant booking.
  */
-export function SentState({ mentor, sessionName, picked, month, day, confirmed }: SentStateProps) {
-  const c = sentCopy(mentor.firstName, picked, confirmed);
+export function SentState({
+  mentor,
+  sessionName,
+  picked,
+  month,
+  day,
+  confirmed,
+  answered = true,
+}: SentStateProps) {
+  const c = sentCopy(mentor.firstName, picked, confirmed, answered);
   // The button that sent it is gone: keep the reader's place on the outcome.
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => headingRef.current?.focus(), []);

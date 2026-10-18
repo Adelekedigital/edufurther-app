@@ -42,4 +42,14 @@ describe('SentState', () => {
     expect(screen.getByText('Prepare for your session')).toBeInTheDocument();
     expect(screen.queryByText(/accepts or declines/)).toBeNull();
   });
+
+  it('never mentions answers when the offering asked no questions', () => {
+    const { unmount } = render(<SentState {...base} confirmed={false} answered={false} />);
+    expect(screen.getByText('Chidi has your request.')).toBeInTheDocument();
+    expect(screen.queryByText(/answers/)).toBeNull();
+    unmount();
+    render(<SentState {...base} confirmed answered={false} />);
+    expect(screen.getByText('Chidi has it in their Bookings too.')).toBeInTheDocument();
+    expect(screen.queryByText(/answers/)).toBeNull();
+  });
 });
