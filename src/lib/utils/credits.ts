@@ -30,7 +30,11 @@ export type CreditsView = {
    * yet and holds none: "0 of 3" would describe credits they don't receive.
    */
   showMonthly: boolean;
-  /** When the monthly credits reset ("Nov 1"); null with no date or no monthly part. */
+  /**
+   * When the monthly credits reset ("Nov 1"); null only with no monthly part.
+   * Without a readable `next_reset_at` it is the next 1st (UTC), which is the
+   * backend's rule, so the reset line never goes missing or reads "null".
+   */
   resetsOn: string | null;
 };
 
@@ -69,8 +73,15 @@ export function creditsView(
     monthlyTotal: Math.max(1, c.monthly.ceiling, monthlyLeft),
     bonus,
     showMonthly,
-    resetsOn: showMonthly && c.nextResetAt ? resetDay(c.nextResetAt) : null,
+    resetsOn: showMonthly
+      ? ((c.nextResetAt ? resetDay(c.nextResetAt) : null) ?? resetDay(nextFirst(now)))
+      : null,
   };
+}
+
+/** Midnight UTC on the next 1st: the backend's reset (`end_of_month`). */
+function nextFirst(now: Date): string {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString();
 }
 
 /**
@@ -168,6 +179,28 @@ export function creditRows(v: CreditsView): CreditRow[] {
     })),
   ];
 }
+
+/**
+ * The account menu's line under the bar (design creditSub): "Resets Nov 1",
+ * or "For your first session" before the monthly grant. Null for a mentee with
+ * neither: no monthly part and nothing left to spend on a first session.
+ */
+export function summarySub(v: CreditsView): string | null {
+  if (v.resetsOn) return `Resets ${v.resetsOn}`;
+  return v.showMonthly || isOut(v) ? null : 'For your first session';
+}
+
+/**
+ * "How credits work" in the explainer (design howList, owner 2026-10-18).
+ * Matches the backend's ladder: a never-expiring starter on finishing the
+ * profile, +2 then 3 a month once an invitee finishes theirs, monthly credits
+ * dying at the 1st (UTC).
+ */
+export const HOW_CREDITS_WORK = [
+  'Start with 1 free credit when you finish your profile. It never expires.',
+  'Invite a friend: when they finish their profile, you get 2 more, then 3 every month.',
+  'Monthly credits reset on the 1st. No rollover.',
+] as const;
 
 /** Design, under the rows. True to the backend: soonest-expiring first. */
 export const SPEND_ORDER = 'Expiring credits are used first.';

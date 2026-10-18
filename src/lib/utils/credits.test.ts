@@ -10,6 +10,8 @@ import {
   lastDay,
   resetDay,
   SPEND_ORDER,
+  summarySub,
+  HOW_CREDITS_WORK,
   type CreditsView,
 } from './credits';
 
@@ -42,7 +44,7 @@ describe('creditsView (backend #344: monthly and bonus)', () => {
   it('splits the total: the bar is monthly of the ceiling; bonus groups are their own lines', () => {
     expect(creditsView(api({ groups: [{ count: 1, expiresAt: null }] }))).toEqual({
       refundHours: null,
-  left: 4,
+      left: 4,
       monthlyLeft: 3,
       monthlyTotal: 3,
       bonus: [{ count: 1, expires: false, expiresOn: null }],
@@ -103,8 +105,12 @@ describe('creditsView (backend #344: monthly and bonus)', () => {
     expect(creditsView(api({ monthly: 2, unlocked: false }))?.showMonthly).toBe(true);
   });
 
-  it('no reset date: no "Resets" line', () => {
-    expect(creditsView(api({ nextResetAt: null }))?.resetsOn).toBeNull();
+  it('no readable reset date: the next 1st in UTC, the backend’s rule', () => {
+    const now = new Date('2026-10-31T23:30:00-04:00'); // Nov 1, 03:30 UTC
+    expect(creditsView(api({ nextResetAt: null }), now)?.resetsOn).toBe('Dec 1');
+    expect(
+      creditsView(api({ nextResetAt: 'nope' }), new Date('2026-12-15T12:00:00Z'))?.resetsOn,
+    ).toBe('Jan 1');
   });
 });
 
@@ -217,5 +223,27 @@ describe('the refund policy names the deployment’s window (backend #413)', () 
   it('says nothing else about timing, so only this line can go stale', () => {
     const others = refundPolicy(10).items.filter((i) => !i.includes('hours before'));
     expect(others.some((i) => /\d/.test(i))).toBe(false);
+  });
+});
+
+describe('the account menu line and "How credits work"', () => {
+  const base: CreditsView = {
+    refundHours: null,
+    left: 1,
+    monthlyLeft: 0,
+    monthlyTotal: 3,
+    bonus: [{ count: 1, expires: false, expiresOn: null }],
+    showMonthly: false,
+    resetsOn: null,
+  };
+  it('the reset when there is a monthly part; the first session before it; never "null"', () => {
+    expect(summarySub({ ...base, showMonthly: true, resetsOn: 'Nov 1' })).toBe('Resets Nov 1');
+    expect(summarySub(base)).toBe('For your first session');
+    // Nothing left to spend on a first session.
+    expect(summarySub({ ...base, left: 0, bonus: [] })).toBeNull();
+  });
+  it('three rules, as designed: no em dashes', () => {
+    expect(HOW_CREDITS_WORK).toHaveLength(3);
+    for (const t of HOW_CREDITS_WORK) expect(t).not.toMatch(/—/);
   });
 });
