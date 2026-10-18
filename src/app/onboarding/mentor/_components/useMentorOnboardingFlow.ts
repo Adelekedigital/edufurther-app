@@ -177,6 +177,8 @@ export function useMentorOnboardingFlow() {
       setForm((f) => (f ? { ...f, answers: { ...f.answers, photoUrl: url } } : f));
       // Already on the account: not an unsaved change.
       setBaseline((b) => (b ? { ...b, photoUrl: url } : b));
+      // A refused submit's "Add a profile photo." is answered now.
+      setServerGaps((g) => g.filter((x) => x !== 'photo'));
     }
   }
 

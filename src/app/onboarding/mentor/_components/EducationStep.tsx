@@ -1,6 +1,6 @@
 'use client';
 
-import type { Ref } from 'react';
+import { useRef, type Ref } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { FieldError } from '@/components/molecules/FieldError/FieldError';
 import type { CatalogOption } from '@/lib/api/data/catalog';
@@ -53,6 +53,7 @@ export function EducationStep({
   headingRef,
 }: EducationStepProps) {
   const multi = schools.length > 1;
+  const addRef = useRef<HTMLButtonElement>(null);
   return (
     <section className={step.section}>
       <StepTitles title={C.title} sub={C.sub} headingRef={headingRef} />
@@ -67,7 +68,13 @@ export function EducationStep({
           thisYear={thisYear}
           onChange={(next) => onChange(schools.map((x) => (x.key === s.key ? next : x)))}
           onRemove={
-            i > 0 && blank(s) ? () => onChange(schools.filter((x) => x.key !== s.key)) : undefined
+            i > 0 && blank(s)
+              ? () => {
+                  // The button goes with its school: hand focus on before it does.
+                  addRef.current?.focus();
+                  onChange(schools.filter((x) => x.key !== s.key));
+                }
+              : undefined
           }
           onToggleCurrent={() =>
             onChange(schools.map((x) => ({ ...x, current: x.key === s.key ? !s.current : false })))
@@ -76,6 +83,7 @@ export function EducationStep({
       ))}
       {error && <FieldError>{GAP_COPY[error]}</FieldError>}
       <button
+        ref={addRef}
         type="button"
         className={`${step.textButton} ${styles.add}`}
         onClick={() => onChange([...schools, defaultSchool()])}

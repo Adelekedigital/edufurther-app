@@ -434,6 +434,35 @@ describe('MentorOnboardingScreen', () => {
     ).toContain('Add a profile photo.');
   });
 
+  it('a refused photo clears once a new photo is uploaded', async () => {
+    appState = stateWith({
+      lastStep: 'about',
+      hasProfile: true,
+      answers: answers({ helpIds: ['o-docs'], days: [0], photoUrl: '/p.png', about: 'Mine' }),
+    });
+    submit.mockRejectedValueOnce(Object.assign(new Error('incomplete'), { missing: ['avatar'] }));
+    const { rerender } = render(<MentorOnboardingScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Submit application' }));
+    expect(await screen.findByText('Add a profile photo.')).toBeInTheDocument();
+    avatar.uploadedStamp = 1;
+    avatar.uploadedUrl = '/photos/new.png';
+    rerender(<MentorOnboardingScreen />);
+    expect(screen.queryByText('Add a profile photo.')).not.toBeInTheDocument();
+  });
+
+  it('removing a blank school hands focus to "Add another school"', async () => {
+    appState = stateWith({
+      lastStep: 'help',
+      hasProfile: true,
+      answers: answers({ helpIds: ['o-docs'] }),
+    });
+    render(<MentorOnboardingScreen />);
+    const add = screen.getByRole('button', { name: 'Add another school' });
+    await userEvent.click(add);
+    await userEvent.click(screen.getByRole('button', { name: 'Remove school 2' }));
+    expect(add).toHaveFocus();
+  });
+
   it('a decided application at submit goes to the status page, never "try again"', async () => {
     appState = stateWith({
       lastStep: 'about',
