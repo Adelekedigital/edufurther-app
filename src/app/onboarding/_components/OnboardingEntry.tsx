@@ -15,7 +15,10 @@ import styles from './OnboardingScreen.module.css';
  * Where `/onboarding` sends each viewer. A mentor is someone with a mentor
  * profile, or a brand-new account sign-in marks `role=mentor` (it has no
  * profile yet). The hint only picks the page; that page checks the account.
- * Mentor onboarding has its own flag: off, mentors go to their home.
+ * Mentor onboarding has its own flag: off, mentors go to their home. On, a
+ * new mentor applies; one with a profile goes to their application, which
+ * sends an unfinished one back to the steps (PRD F4); an approved mentor has
+ * nothing left to do here.
  */
 export function onboardingDestination(
   viewer: ReturnType<typeof useViewer>,
@@ -29,10 +32,14 @@ export function onboardingDestination(
     case 'guest':
       return `/signup?next=${encodeURIComponent(`/onboarding${keep ? `?${keep}` : ''}`)}`;
     case 'member':
-      if (viewer.isMentor || query.get('role') === 'mentor')
-        return MENTOR_ONBOARDING_LIVE
-          ? `/onboarding/mentor${keep ? `?${keep}` : ''}`
-          : NEW_MENTOR_HOME;
+      if (viewer.isMentor || query.get('role') === 'mentor') {
+        if (!MENTOR_ONBOARDING_LIVE) return NEW_MENTOR_HOME;
+        // Approved: the approved screen once (sign-in's rule), then the dashboard.
+        if (viewer.isApprovedMentor)
+          return viewer.mentorApprovedSeen === false ? '/mentor-application' : '/dashboard';
+        const to = viewer.isMentor ? '/mentor-application' : '/onboarding/mentor';
+        return `${to}${keep ? `?${keep}` : ''}`;
+      }
       return `/onboarding/mentee${keep ? `?${keep}` : ''}`;
     default:
       return '/explore';

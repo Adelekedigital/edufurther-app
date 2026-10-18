@@ -26,6 +26,8 @@ export const keys = {
   viewer: {
     all: ['viewer'] as const,
     me: (userId: string) => ['viewer', 'me', userId] as const,
+    /** The raw /me mentor application (mentorApplicationStatus.ts), under the viewer prefix. */
+    mentorApplication: (userId: string) => ['viewer', 'mentorApplication', userId] as const,
   },
   // `who` = the session identity (session.ts sessionKey): signed-in lists are
   // ordered by the viewer's goals and leave the viewer out, so they can't share

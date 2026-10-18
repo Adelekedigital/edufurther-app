@@ -1,0 +1,40 @@
+/* Approved.dc.html notApproved: grey quoted card. */
+.note {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-radius: var(--radius-xl);
+  background: var(--ink-50);
+  border: 1px solid var(--ink-200);
+}
+
+.caption {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.icon {
+  color: var(--ink-600);
+}
+
+.date {
+  margin-left: auto;
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-regular);
+  color: var(--ink-600);
+}
+
+.quote {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--ink-900);
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+}

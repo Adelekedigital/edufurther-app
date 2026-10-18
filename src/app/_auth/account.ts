@@ -22,6 +22,7 @@ export function toAccount(acct: Extract<SignInAccount, { kind: 'member' }>) {
     isAdmin: acct.isAdmin,
     isMentor: acct.isMentor,
     mentorApproved: acct.mentorApproved,
+    mentorApprovedSeen: acct.mentorApprovedSeen,
     onboardingComplete: acct.onboardingComplete,
     isNew: acct.firstName === null,
     timezone: acct.timezone,

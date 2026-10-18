@@ -35,8 +35,36 @@ describe('fetchSignInAccount (who just signed in)', () => {
       isAdmin: false,
       isMentor: false,
       mentorApproved: false,
+      // No mentor profile: nothing to show.
+      mentorApprovedSeen: true,
       onboardingComplete: null,
       timezone: null,
+    });
+  });
+
+  it('signs a declined applicant who chose mentee in as a mentee', async () => {
+    GET.mockResolvedValueOnce(
+      res(200, {
+        id: 'u4',
+        first_name: 'Gbenga',
+        primary_role: 'mentee',
+        mentor_profile: { approval_status: 'declined' },
+      }),
+    );
+    expect(await fetchSignInAccount()).toMatchObject({ isMentor: false, mentorApproved: false });
+  });
+
+  it('carries whether the approved screen was seen (pending backend approved_seen_at)', async () => {
+    GET.mockResolvedValueOnce(
+      res(200, {
+        id: 'u2',
+        first_name: 'Gbenga',
+        mentor_profile: { approval_status: 'approved', approved_seen_at: null },
+      }),
+    );
+    expect(await fetchSignInAccount()).toMatchObject({
+      mentorApproved: true,
+      mentorApprovedSeen: false,
     });
   });
 

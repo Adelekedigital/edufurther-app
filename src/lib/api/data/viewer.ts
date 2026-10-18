@@ -10,6 +10,7 @@ import type { NudgePart } from '@/types/onboarding';
 import { coverKey } from '@/lib/utils/cover';
 import { ApiError } from './errors';
 import { api } from './http';
+import { menteeByChoice } from './roles';
 import { keys } from './keys';
 import { useSession } from './session';
 
@@ -35,6 +36,8 @@ export function nudgeParts(missing: readonly string[] | null | undefined): Nudge
  */
 export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
   const name = me.first_name?.trim() || me.email.split('@')[0] || '';
+  // A declined applicant who chose mentee is mentee-side: no mentor nav, badge or home.
+  const mentor = me.mentor_profile && !menteeByChoice(me) ? me.mentor_profile : null;
   return {
     kind: 'member',
     id: me.id,
@@ -42,7 +45,8 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     initial: (name[0] ?? '?').toUpperCase(),
     isMentee: me.goal != null,
     isApprovedMentor: me.mentor_profile?.approval_status === 'approved',
-    isMentor: me.mentor_profile != null,
+    isMentor: mentor != null,
+    mentorApprovedSeen: me.mentor_profile?.approved_seen_at !== null,
     isListedMentor: me.mentor_profile?.listing_status === 'listed',
     timeZone: me.timezone || undefined,
     completedSessions: me.mentee_completed_sessions,
@@ -73,7 +77,7 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     coverKey: coverKey(me.profile?.cover_color),
     // The nav follows the mentor role whenever a mentor profile exists, so the
     // badge does too.
-    awaitingResponse: me.mentor_profile
+    awaitingResponse: mentor
       ? (me.booking_counts?.as_mentor?.awaiting_your_response ?? null)
       : (me.booking_counts?.as_mentee?.awaiting_mentor ?? null),
     menteeCancelRefundHours: me.mentee_cancel_refund_hours ?? null,
@@ -182,7 +186,7 @@ const onPopState = (cb: () => void) => {
 };
 
 /** Screens only a mentor can use: in mock mode they default to the mentor viewer. */
-const MENTOR_ONLY_ROUTES = ['/session-types', '/dashboard'];
+const MENTOR_ONLY_ROUTES = ['/session-types', '/dashboard', '/mentor-application'];
 
 /**
  * The mock viewer, or null when NEXT_PUBLIC_MOCK_VIEWER is unset (every real

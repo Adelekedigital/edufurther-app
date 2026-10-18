@@ -23,7 +23,7 @@
   "checkBoundaries": {
     "root": "src",
     "allowRawHex": [
-      "components/molecules/GoogleButton"
+      "components/atoms/GoogleMark"
     ],
     "clientModules": [
       "lib/api/generated"

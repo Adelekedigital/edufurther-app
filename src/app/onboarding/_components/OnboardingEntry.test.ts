@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { onboardingDestination } from './OnboardingEntry';
 
 type Viewer = Parameters<typeof onboardingDestination>[0];
-const member = (isMentor: boolean) => ({ kind: 'member', id: 'u1', isMentor }) as Viewer;
+const member = (isMentor: boolean, isApprovedMentor = false, mentorApprovedSeen?: boolean) =>
+  ({ kind: 'member', id: 'u1', isMentor, isApprovedMentor, mentorApprovedSeen }) as Viewer;
 const q = (s = '') => new URLSearchParams(s);
 
 describe('onboardingDestination', () => {
@@ -30,5 +31,27 @@ describe('onboardingDestination', () => {
 
   it('waits while the viewer loads', () => {
     expect(onboardingDestination({ kind: 'loading', signedIn: null }, q())).toBeNull();
+  });
+});
+
+describe('onboardingDestination — mentor onboarding on (PRD F4)', () => {
+  async function load() {
+    vi.resetModules();
+    vi.stubEnv('NEXT_PUBLIC_MENTOR_ONBOARDING_ENABLED', 'true');
+    return (await import('./OnboardingEntry')).onboardingDestination;
+  }
+
+  it('sends a new mentor to the steps and an applicant to their application, keeping the query', async () => {
+    const dest = await load();
+    expect(dest(member(false), q('role=mentor'))).toBe('/onboarding/mentor?role=mentor');
+    expect(dest(member(true), q('utm=email'))).toBe('/mentor-application?utm=email');
+    expect(dest(member(true), q())).toBe('/mentor-application');
+  });
+
+  it('sends an approved mentor to the dashboard, after the approved screen once', async () => {
+    const dest = await load();
+    expect(dest(member(true, true), q())).toBe('/dashboard');
+    expect(dest(member(true, true, true), q())).toBe('/dashboard');
+    expect(dest(member(true, true, false), q())).toBe('/mentor-application');
   });
 });

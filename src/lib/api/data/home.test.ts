@@ -6,7 +6,11 @@ const mentorProfile = {} as NonNullable<NonNullable<Me>['mentor_profile']>;
 describe('homeFor: where / sends each viewer (product 2026-10-15; every non-mentor member → /home)', () => {
   it.each([
     ['signed out', null, '/explore'],
-    ['a signed-in member — goal or not (homeFor no longer checks)', { is_admin: false, mentor_profile: null }, '/home'],
+    [
+      'a signed-in member — goal or not (homeFor no longer checks)',
+      { is_admin: false, mentor_profile: null },
+      '/home',
+    ],
     ['a mentor, any state', { is_admin: false, mentor_profile: mentorProfile }, '/dashboard'],
     ['a platform admin', { is_admin: true, mentor_profile: null }, '/admin'],
     ['an admin who is also a mentor', { is_admin: true, mentor_profile: mentorProfile }, '/admin'],
@@ -83,5 +87,21 @@ describe('fetchHome', () => {
     expect(await fetchHome({ accessToken: null, mockViewer: 'mentor' })).toBe('/dashboard');
     expect(await fetchHome({ accessToken: null, mockViewer: 'admin' })).toBe('/admin');
     expect(await fetchHome({ accessToken: null, mockViewer: 'constructor' })).toBe('/home');
+  });
+});
+
+describe('homeFor: a declined applicant who chose mentee (owner, 2026-10-18)', () => {
+  const profile = (approval_status: string) =>
+    ({ approval_status }) as NonNullable<NonNullable<Me>['mentor_profile']>;
+  it('is mentee-side; any other mentor stays on the dashboard', () => {
+    expect(
+      homeFor({ is_admin: false, mentor_profile: profile('declined'), primary_role: 'mentee' }),
+    ).toBe('/home');
+    expect(
+      homeFor({ is_admin: false, mentor_profile: profile('declined'), primary_role: 'mentor' }),
+    ).toBe('/dashboard');
+    expect(
+      homeFor({ is_admin: false, mentor_profile: profile('pending'), primary_role: 'mentee' }),
+    ).toBe('/dashboard');
   });
 });

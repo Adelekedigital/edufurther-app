@@ -45,6 +45,7 @@ type Account = {
   isAdmin: boolean;
   isMentor: boolean;
   mentorApproved: boolean;
+  mentorApprovedSeen?: boolean;
   onboardingComplete: boolean | null;
   isNew: boolean;
   /** `/me` `timezone`: the device's goes with the name only while this is unset or UTC. */
@@ -169,6 +170,7 @@ export function useSignInFlow({
         isAdmin: a.isAdmin,
         isMentor: a.isMentor,
         mentorApproved: a.mentorApproved,
+        mentorApprovedSeen: a.mentorApprovedSeen,
         onboardingComplete: a.onboardingComplete,
         googleJustLinked,
         next,

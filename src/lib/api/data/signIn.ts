@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { menteeByChoice } from './roles';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { NAME_PROBLEM_COPY, splitFullName, tidyName } from '@/lib/utils/name';
 import { api } from './http';
@@ -18,6 +19,11 @@ export type SignInAccount =
       isMentor: boolean;
       /** The mentor profile's approval_status is `approved` (pending and declined are not). */
       mentorApproved: boolean;
+      /**
+       * The approved screen was shown (`approved_seen_at`, PRD B2; always sent,
+       * null until seen). Absent (a backend without B2): treated as seen.
+       */
+      mentorApprovedSeen?: boolean;
       /** `/me` `onboarding.complete`; null when /me doesn't say (treated as done). */
       onboardingComplete: boolean | null;
       /** `/me` `timezone`; null when /me doesn't say. `UTC` is the backend's default. */
@@ -42,8 +48,10 @@ export async function fetchSignInAccount(): Promise<SignInAccount> {
       id: data.id,
       firstName: data.first_name ?? null,
       isAdmin: !!data.is_admin,
-      isMentor: !!data.mentor_profile,
+      // A declined applicant who chose mentee signs in to the mentee side.
+      isMentor: !!data.mentor_profile && !menteeByChoice(data),
       mentorApproved: data.mentor_profile?.approval_status === 'approved',
+      mentorApprovedSeen: data.mentor_profile?.approved_seen_at !== null,
       onboardingComplete: data.onboarding?.complete ?? null,
       timezone: data.timezone || null,
     };
