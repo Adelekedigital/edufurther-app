@@ -12,7 +12,6 @@ import { ApiError } from './errors';
 import { api } from './http';
 import { menteeByChoice } from './roles';
 import { keys } from './keys';
-import type { PendingMe } from './pending';
 import { useSession } from './session';
 
 type UserRead = components['schemas']['UserRead'];
@@ -47,7 +46,7 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     isMentee: me.goal != null,
     isApprovedMentor: me.mentor_profile?.approval_status === 'approved',
     isMentor: mentor != null,
-    mentorApprovedSeen: (me as PendingMe).mentor_profile?.approved_seen_at !== null,
+    mentorApprovedSeen: me.mentor_profile?.approved_seen_at !== null,
     isListedMentor: me.mentor_profile?.listing_status === 'listed',
     timeZone: me.timezone || undefined,
     completedSessions: me.mentee_completed_sessions,

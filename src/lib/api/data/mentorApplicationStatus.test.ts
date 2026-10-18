@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { toMentorApplication } from './mentorApplicationStatus';
-import type { PendingMe, PendingMentorProfile } from './pending';
+import type { components } from '@/lib/api/generated/schema';
 
-const me = (
-  profile: Partial<PendingMentorProfile> | null,
-  names = { first: 'Gbenga', last: 'Ekundayo' },
-) =>
+type UserRead = components['schemas']['UserRead'];
+type Profile = NonNullable<UserRead['mentor_profile']>;
+
+const me = (profile: Partial<Profile> | null, names = { first: 'Gbenga', last: 'Ekundayo' }) =>
   ({
     id: 'u1',
     email: 'gbenga@example.com',
     first_name: names.first,
     last_name: names.last,
-    mentor_profile: profile && ({ approval_status: 'pending', ...profile } as PendingMentorProfile),
-  }) as PendingMe;
+    mentor_profile: profile && ({ approval_status: 'pending', ...profile } as Profile),
+  }) as UserRead;
 
 describe('toMentorApplication (PRD "Where people land")', () => {
   it('reads no profile, and a profile never sent', () => {

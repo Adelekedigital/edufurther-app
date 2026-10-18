@@ -1,6 +1,6 @@
 /**
  * The mock applicant's mentor application (ENABLE_MOCK_API=1), as GET /me's
- * `mentor_profile` will carry it (PENDING BACKEND, PRD B2/B3). Seeded from
+ * `mentor_profile` carries it (PRD B2; approved-seen is B3, pending). Seeded from
  * MOCK_MENTOR_APPLICATION (unset: no mentor profile, so the mock mentee's
  * /me is unchanged); a page can pick its own with `?mockApplication=`,
  * which the /me route reads from the Referer (as the session route reads

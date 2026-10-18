@@ -25,7 +25,7 @@ const originRef = (id: string | null) => {
 };
 
 /**
- * The mock applicant's mentor profile (PENDING BACKEND, Mentor Onboarding B2):
+ * The mock applicant's mentor profile (Mentor Onboarding B2, edufurtherbe #492):
  * the page's `?mockApplication=` when its Referer has one, else the store.
  */
 function mentorProfile(req: Request) {

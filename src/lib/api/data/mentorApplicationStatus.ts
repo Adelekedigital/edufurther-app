@@ -4,7 +4,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AppError, Remote } from '@/types/mentor';
 import { ApiError, apiError, normaliseError, retryOnce } from './errors';
 import { keys } from './keys';
-import { APPROVED_SEEN_PATH, untyped, type PendingMe, type PendingProfileRole } from './pending';
+import type { components } from '@/lib/api/generated/schema';
+import { api } from './http';
+import { APPROVED_SEEN_PATH, untyped, type PendingProfileRole } from './pending';
+
+type UserRead = components['schemas']['UserRead'];
 
 type Person = {
   /** "Gbenga", or the email's name when the account has none. */
@@ -31,7 +35,7 @@ export type MentorApplication =
  * (creating one used to apply), and no `approved_seen_at` means already seen,
  * so the approved screen never shows twice on an older backend.
  */
-export function toMentorApplication(me: PendingMe): MentorApplication {
+export function toMentorApplication(me: UserRead): MentorApplication {
   const p = me.mentor_profile;
   if (!p) return { stage: 'none' };
   const firstName = me.first_name?.trim() || me.email.split('@')[0] || '';
@@ -59,9 +63,9 @@ export function useMentorApplication(
     queryKey: keys.viewer.mentorApplication(userId ?? 'none'),
     enabled: userId !== null,
     queryFn: async ({ signal }) => {
-      const { data, error, response } = await untyped.GET('/api/v1/me', { signal });
+      const { data, error, response } = await api.GET('/api/v1/me', { signal });
       if (!data) throw apiError(response.status, error);
-      return toMentorApplication(data as PendingMe);
+      return toMentorApplication(data);
     },
     retry: retryOnce,
     // What the page shows is decided once (approved-seen flips it), so a

@@ -198,8 +198,8 @@ export type Viewer =
        */
       isMentor: boolean;
       /**
-       * An approved mentor has been shown the approved screen (PENDING BACKEND
-       * `approved_seen_at`). Absent: not known, treated as seen.
+       * An approved mentor has been shown the approved screen (`/me`
+       * `approved_seen_at`, PRD B2). Absent: not known, treated as seen.
        */
       mentorApprovedSeen?: boolean;
       /** The mentor profile appears in search (`listing_status` listed). Absent: not known. */
