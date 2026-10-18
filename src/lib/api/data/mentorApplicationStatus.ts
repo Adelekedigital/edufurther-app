@@ -6,7 +6,6 @@ import { ApiError, apiError, normaliseError, retryOnce } from './errors';
 import { keys } from './keys';
 import type { components } from '@/lib/api/generated/schema';
 import { api } from './http';
-import { APPROVED_SEEN_PATH, untyped, type PendingProfileRole } from './pending';
 
 type UserRead = components['schemas']['UserRead'];
 
@@ -93,7 +92,7 @@ export function useMarkApprovedSeen(userId: string | null) {
   const qc = useQueryClient();
   const mutation = useMutation<void, AppError, void>({
     mutationFn: async () => {
-      const { error, response } = await untyped.POST(APPROVED_SEEN_PATH);
+      const { error, response } = await api.POST('/api/v1/me/mentor-application/approved-seen');
       if (!response.ok && response.status !== 409) throw apiError(response.status, error);
     },
     onSuccess: () =>
@@ -114,9 +113,9 @@ export function useContinueAsMentee(userId: string | null) {
     mutationFn: async () => {
       let r;
       try {
-        r = await untyped.PATCH('/api/v1/users/{user_id}/profile', {
+        r = await api.PATCH('/api/v1/users/{user_id}/profile', {
           params: { path: { user_id: userId! } },
-          body: { primary_role: 'mentee' } satisfies PendingProfileRole,
+          body: { primary_role: 'mentee' },
         });
       } catch (e) {
         throw normaliseError(e);

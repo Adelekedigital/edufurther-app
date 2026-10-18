@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { isMockApplicationState, markApprovedSeen } from '@/lib/api/mock/mentorApplicationStore';
-import { pendingOk, problem } from '@/lib/api/mock/respond';
+import { ok, problem } from '@/lib/api/mock/respond';
 
 /**
- * MOCK of POST /api/v1/me/mentor-application/approved-seen (PENDING BACKEND,
- * Mentor Onboarding B3): sets approved_seen_at once, idempotent; 409 unless
+ * MOCK of POST /api/v1/me/mentor-application/approved-seen (Mentor Onboarding
+ * B3, edufurtherbe #493): sets approved_seen_at once, idempotent; 409 unless
  * approved. ENABLE_MOCK_API=1 only.
  */
 export async function POST(req: Request) {
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   } catch {}
   if (isMockApplicationState(asked))
     return asked === 'approved' || asked === 'seen'
-      ? pendingOk('POST /api/v1/me/mentor-application/approved-seen', {
+      ? ok('/api/v1/me/mentor-application/approved-seen', 'post', {
           approved_seen_at: new Date().toISOString(),
         })
       : problem(409, { title: 'Not approved', type: '/problems/mentor-application-not-approved' });
@@ -28,5 +28,5 @@ export async function POST(req: Request) {
       title: 'Not approved',
       type: '/problems/mentor-application-not-approved',
     });
-  return pendingOk('POST /api/v1/me/mentor-application/approved-seen', { approved_seen_at: r.at });
+  return ok('/api/v1/me/mentor-application/approved-seen', 'post', { approved_seen_at: r.at });
 }
