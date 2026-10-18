@@ -16,6 +16,8 @@ type HelpAreaPickerProps = {
   label: string;
   /** Id of the text that states the limit ("Choose up to 3 areas"), so dimmed cards say why. */
   describedBy?: string;
+  /** Id for the first card: where focus goes when none is picked and Continue is pressed. */
+  firstId?: string;
 };
 
 /**
@@ -32,6 +34,7 @@ export function HelpAreaPicker({
   limit,
   label,
   describedBy,
+  firstId,
 }: HelpAreaPickerProps) {
   const known = HELP_AREAS.flatMap((h) => {
     const o = options.find((x) => x.slug === h.slug);
@@ -45,12 +48,13 @@ export function HelpAreaPicker({
 
   return (
     <div role="group" aria-label={label} aria-describedby={describedBy} className={styles.grid}>
-      {[...known, ...unknown].map(({ option, copy }) => {
+      {[...known, ...unknown].map(({ option, copy }, i) => {
         const on = value.includes(option.id);
         const off = !on && full;
         return (
           <button
             key={option.id}
+            id={i === 0 ? firstId : undefined}
             type="button"
             aria-pressed={on}
             aria-disabled={off || undefined}

@@ -4,6 +4,7 @@ import { useId, type ReactNode } from 'react';
 import { Input } from '@/components/atoms/Input/Input';
 import { Select } from '@/components/atoms/Select/Select';
 import { CountryPicker } from '@/components/molecules/CountryPicker/CountryPicker';
+import { FieldError } from '@/components/molecules/FieldError/FieldError';
 import {
   DEGREE_OPTIONS,
   FIELD_MAX,
@@ -14,6 +15,7 @@ import {
   PLAN_LABELS,
   PLAN_PLACEHOLDERS,
   TOP_DESTINATIONS,
+  type MissingKey,
 } from '@/lib/copy/onboarding';
 import type { PlanAnswers } from '@/types/onboarding';
 import { cx } from '@/lib/utils/cx';
@@ -28,7 +30,13 @@ type StudyPlansFormProps = {
   fields?: string[] | null;
   value: PlanAnswers;
   onChange: (next: PlanAnswers) => void;
+  /** The line under each answer still missing (only once Continue was pressed). */
+  errors?: Partial<Record<PlanKey, string>>;
+  /** Field ids are `${idPrefix}-origin` etc., so the page can move focus to the first gap. */
+  idPrefix?: string;
 };
+
+export type PlanKey = Exclude<MissingKey, 'help'>;
 
 /** The design's 8 first, then "Not sure yet", then the rest of the catalog (PRD H8). */
 function destinationOptions(countries: CatalogOption[]): CatalogOption[] {
@@ -38,28 +46,34 @@ function destinationOptions(countries: CatalogOption[]): CatalogOption[] {
 }
 
 function Field({
+  id,
   label,
   hint,
+  error,
   wide,
   children,
 }: {
+  id: string;
   label: string;
   hint: string;
+  error?: string;
   /** The destination hint runs two lines on phones: the design gives it the paragraph leading. */
   wide?: boolean;
-  children: (ids: { id: string; hintId: string }) => ReactNode;
+  children: (a: { id: string; describedBy: string; invalid: boolean }) => ReactNode;
 }) {
-  const id = useId();
   const hintId = `${id}-hint`;
+  const errorId = `${id}-error`;
   return (
     <div className={styles.field}>
       <label htmlFor={id} className={styles.label}>
         {label}
       </label>
-      {children({ id, hintId })}
+      {children({ id, describedBy: error ? `${hintId} ${errorId}` : hintId, invalid: !!error })}
       <p id={hintId} className={cx(styles.hint, wide && styles.hintWide)}>
         {hint}
       </p>
+      {/* Under the hint, as drawn (Mentee Onboarding v5.dc.html `errOrigin` and the rest). */}
+      {error && <FieldError id={errorId}>{error}</FieldError>}
     </div>
   );
 }
@@ -70,17 +84,31 @@ function Field({
  * CountryPicker over the full catalog instead of the design's short lists,
  * because the profile stores a country id (PRD deviation table).
  */
-export function StudyPlansForm({ countries, fields, value, onChange }: StudyPlansFormProps) {
-  const listId = useId();
+export function StudyPlansForm({
+  countries,
+  fields,
+  value,
+  onChange,
+  errors = {},
+  idPrefix,
+}: StudyPlansFormProps) {
+  const own = useId();
+  const pre = idPrefix ?? own;
+  const listId = `${pre}-fields`;
   const set = (patch: Partial<PlanAnswers>) => onChange({ ...value, ...patch });
   return (
     <div className={styles.form}>
-      <Field label={PLAN_LABELS.origin} hint={PLAN_HINTS.origin}>
-        {({ id, hintId }) => (
+      <Field
+        id={`${pre}-origin`}
+        label={PLAN_LABELS.origin}
+        hint={PLAN_HINTS.origin}
+        error={errors.origin}
+      >
+        {({ id, describedBy, invalid }) => (
           <CountryPicker
             id={id}
-            aria-describedby={hintId}
-            invalid={false}
+            aria-describedby={describedBy}
+            invalid={invalid}
             size="xl"
             options={countries}
             value={value.originId}
@@ -89,12 +117,18 @@ export function StudyPlansForm({ countries, fields, value, onChange }: StudyPlan
           />
         )}
       </Field>
-      <Field label={PLAN_LABELS.degree} hint={PLAN_HINTS.degree}>
-        {({ id, hintId }) => (
+      <Field
+        id={`${pre}-degree`}
+        label={PLAN_LABELS.degree}
+        hint={PLAN_HINTS.degree}
+        error={errors.degree}
+      >
+        {({ id, describedBy, invalid }) => (
           <Select
             id={id}
-            aria-describedby={hintId}
+            aria-describedby={describedBy}
             density="xl"
+            invalid={invalid}
             className={styles.select}
             value={value.degree}
             onChange={(e) => set({ degree: e.target.value })}
@@ -105,13 +139,19 @@ export function StudyPlansForm({ countries, fields, value, onChange }: StudyPlan
           />
         )}
       </Field>
-      <Field label={PLAN_LABELS.field} hint={PLAN_HINTS.field}>
-        {({ id, hintId }) => (
+      <Field
+        id={`${pre}-field`}
+        label={PLAN_LABELS.field}
+        hint={PLAN_HINTS.field}
+        error={errors.field}
+      >
+        {({ id, describedBy, invalid }) => (
           <>
             <Input
               id={id}
-              aria-describedby={hintId}
+              aria-describedby={describedBy}
               fieldSize="xl"
+              invalid={invalid}
               list={listId}
               maxLength={FIELD_MAX}
               autoComplete="off"
@@ -127,12 +167,18 @@ export function StudyPlansForm({ countries, fields, value, onChange }: StudyPlan
           </>
         )}
       </Field>
-      <Field label={PLAN_LABELS.destination} hint={PLAN_HINTS.destination} wide>
-        {({ id, hintId }) => (
+      <Field
+        id={`${pre}-destination`}
+        label={PLAN_LABELS.destination}
+        hint={PLAN_HINTS.destination}
+        error={errors.destination}
+        wide
+      >
+        {({ id, describedBy, invalid }) => (
           <CountryPicker
             id={id}
-            aria-describedby={hintId}
-            invalid={false}
+            aria-describedby={describedBy}
+            invalid={invalid}
             size="xl"
             options={destinationOptions(countries)}
             value={value.destinationId}

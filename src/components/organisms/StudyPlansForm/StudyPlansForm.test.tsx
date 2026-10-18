@@ -45,7 +45,7 @@ describe('StudyPlansForm', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole('combobox', { name: 'What do you want to study?' }),
-    ).toHaveAccessibleDescription('Pick a suggestion or type your own.');
+    ).toHaveAccessibleDescription('Choose from the list, or type it if it’s not there.');
   });
 
   it('lists the design’s destinations first, then "Not sure yet", then the rest', async () => {
