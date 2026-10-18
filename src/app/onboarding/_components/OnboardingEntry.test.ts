@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { onboardingDestination } from './OnboardingEntry';
 
 type Viewer = Parameters<typeof onboardingDestination>[0];
-const member = (isMentor: boolean, isApprovedMentor = false) =>
-  ({ kind: 'member', id: 'u1', isMentor, isApprovedMentor }) as Viewer;
+const member = (isMentor: boolean, isApprovedMentor = false, mentorApprovedSeen?: boolean) =>
+  ({ kind: 'member', id: 'u1', isMentor, isApprovedMentor, mentorApprovedSeen }) as Viewer;
 const q = (s = '') => new URLSearchParams(s);
 
 describe('onboardingDestination', () => {
@@ -48,8 +48,10 @@ describe('onboardingDestination — mentor onboarding on (PRD F4)', () => {
     expect(dest(member(true), q())).toBe('/mentor-application');
   });
 
-  it('sends an approved mentor to the dashboard', async () => {
+  it('sends an approved mentor to the dashboard, after the approved screen once', async () => {
     const dest = await load();
     expect(dest(member(true, true), q())).toBe('/dashboard');
+    expect(dest(member(true, true, true), q())).toBe('/dashboard');
+    expect(dest(member(true, true, false), q())).toBe('/mentor-application');
   });
 });

@@ -53,12 +53,13 @@ export function MentorApplicationScreen() {
   const userId = member?.id ?? null;
   const app = useMentorApplication(userId);
   const [shown, setShown] = useState<MentorApplication | null>(null);
-  if (app.data && shown === null) setShown(app.data);
+  // Fresh only: a cached read could still say "not seen" after it was.
+  if (app.data && app.fresh && shown === null) setShown(app.data);
 
   const approved = shown?.stage === 'approved' && !shown.seen;
   const hours = useWeeklyHours(approved ? userId : null);
   const types = useOwnSessionTypes(approved);
-  const seen = useMarkApprovedSeen();
+  const seen = useMarkApprovedSeen(userId);
   const mentee = useContinueAsMentee(userId);
   const [menteeFailed, setMenteeFailed] = useState(false);
 
@@ -73,14 +74,6 @@ export function MentorApplicationScreen() {
   useEffect(() => {
     if (to) router.replace(to);
   }, [to, router]);
-
-  // Once per account (PRD B3): marked as the approved screen renders.
-  const marked = useRef(false);
-  useEffect(() => {
-    if (!approved || marked.current) return;
-    marked.current = true;
-    seen.markSeen();
-  }, [approved, seen]);
 
   const props = ((): MentorApplicationStatusProps => {
     if (viewer.kind === 'error')
@@ -133,6 +126,17 @@ export function MentorApplicationScreen() {
         return { state: 'loading' };
     }
   })();
+
+  // Once per account (PRD B3): marked when the approved screen is on screen,
+  // not while its rows are still loading.
+  const onScreen = props.state === 'approved';
+  const marked = useRef(false);
+  const { markSeen } = seen;
+  useEffect(() => {
+    if (!onScreen || marked.current) return;
+    marked.current = true;
+    markSeen();
+  }, [onScreen, markSeen]);
 
   return <MentorApplicationStatus {...props} />;
 }

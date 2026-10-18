@@ -34,7 +34,9 @@ export function onboardingDestination(
     case 'member':
       if (viewer.isMentor || query.get('role') === 'mentor') {
         if (!MENTOR_ONBOARDING_LIVE) return NEW_MENTOR_HOME;
-        if (viewer.isApprovedMentor) return '/dashboard';
+        // Approved: the approved screen once (sign-in's rule), then the dashboard.
+        if (viewer.isApprovedMentor)
+          return viewer.mentorApprovedSeen === false ? '/mentor-application' : '/dashboard';
         const to = viewer.isMentor ? '/mentor-application' : '/onboarding/mentor';
         return `${to}${keep ? `?${keep}` : ''}`;
       }

@@ -42,6 +42,18 @@ describe('fetchSignInAccount (who just signed in)', () => {
     });
   });
 
+  it('signs a declined applicant who chose mentee in as a mentee', async () => {
+    GET.mockResolvedValueOnce(
+      res(200, {
+        id: 'u4',
+        first_name: 'Gbenga',
+        primary_role: 'mentee',
+        mentor_profile: { approval_status: 'declined' },
+      }),
+    );
+    expect(await fetchSignInAccount()).toMatchObject({ isMentor: false, mentorApproved: false });
+  });
+
   it('carries whether the approved screen was seen (pending backend approved_seen_at)', async () => {
     GET.mockResolvedValueOnce(
       res(200, {

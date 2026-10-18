@@ -104,3 +104,31 @@ describe('toViewer (backend auth reply #3)', () => {
     ).toBeNull();
   });
 });
+
+describe('toViewer: mentor application (Mentor Onboarding PRD)', () => {
+  const profile = (over: object) =>
+    ({
+      approval_status: 'approved',
+      listing_status: 'listed',
+      ...over,
+    }) as unknown as Me['mentor_profile'];
+
+  it('carries whether the approved screen was seen; absent reads as seen', () => {
+    expect(
+      toViewer(me({ mentor_profile: profile({ approved_seen_at: null }) })).mentorApprovedSeen,
+    ).toBe(false);
+    expect(toViewer(me({ mentor_profile: profile({}) })).mentorApprovedSeen).toBe(true);
+  });
+
+  it('a declined applicant who chose mentee gets no mentor side', () => {
+    const v = toViewer(
+      me({ primary_role: 'mentee', mentor_profile: profile({ approval_status: 'declined' }) }),
+    );
+    expect(v.isMentor).toBe(false);
+    expect(v.isApprovedMentor).toBe(false);
+    // Declined without the switch: still their application's side.
+    expect(
+      toViewer(me({ mentor_profile: profile({ approval_status: 'declined' }) })).isMentor,
+    ).toBe(true);
+  });
+});

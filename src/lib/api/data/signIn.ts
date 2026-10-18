@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { menteeByChoice } from './roles';
 import type { PendingMe } from './pending';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { NAME_PROBLEM_COPY, splitFullName, tidyName } from '@/lib/utils/name';
@@ -48,7 +49,8 @@ export async function fetchSignInAccount(): Promise<SignInAccount> {
       id: data.id,
       firstName: data.first_name ?? null,
       isAdmin: !!data.is_admin,
-      isMentor: !!data.mentor_profile,
+      // A declined applicant who chose mentee signs in to the mentee side.
+      isMentor: !!data.mentor_profile && !menteeByChoice(data),
       mentorApproved: data.mentor_profile?.approval_status === 'approved',
       mentorApprovedSeen: (data as PendingMe).mentor_profile?.approved_seen_at !== null,
       onboardingComplete: data.onboarding?.complete ?? null,

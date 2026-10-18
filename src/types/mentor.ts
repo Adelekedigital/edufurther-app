@@ -197,6 +197,11 @@ export type Viewer =
        * mentor navigation and may manage session types (backend reply #6).
        */
       isMentor: boolean;
+      /**
+       * An approved mentor has been shown the approved screen (PENDING BACKEND
+       * `approved_seen_at`). Absent: not known, treated as seen.
+       */
+      mentorApprovedSeen?: boolean;
       /** The mentor profile appears in search (`listing_status` listed). Absent: not known. */
       isListedMentor?: boolean;
       /** The account's IANA zone (`/me` timezone): the backend judges "today" in it (return dates). */

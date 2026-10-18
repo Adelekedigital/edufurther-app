@@ -13,7 +13,13 @@ vi.mock('@/app/_shell/useAppShell', () => ({
   useAppShell: () => ({ viewer, member: viewer.kind === 'member' ? viewer : null }),
 }));
 
-let app: { data: MentorApplication | null; isLoading: boolean; error: unknown; retry: () => void };
+let app: {
+  data: MentorApplication | null;
+  isLoading: boolean;
+  error: unknown;
+  retry: () => void;
+  fresh: boolean;
+};
 const markSeen = vi.fn();
 const continueAsMentee = vi.fn();
 vi.mock('@/lib/api/data/mentorApplicationStatus', () => ({
@@ -25,11 +31,12 @@ vi.mock('@/lib/api/data/mentorApplicationStatus', () => ({
 const week = emptyWeek().map((d, i) =>
   i >= 1 && i <= 5 ? { on: true, slots: [[1080, 1260]] } : d,
 );
+let hoursFail = false;
 vi.mock('@/lib/api/data/weeklyHours', () => ({
   useWeeklyHours: (id: string | null) => ({
-    data: id ? { days: week, timeZone: 'Africa/Lagos' } : null,
+    data: id && !hoursFail ? { days: week, timeZone: 'Africa/Lagos' } : null,
     isLoading: false,
-    error: null,
+    error: hoursFail ? { kind: 'server' } : null,
   }),
 }));
 vi.mock('@/lib/api/data/sessionTypes', () => ({
@@ -43,15 +50,17 @@ vi.mock('@/lib/api/data/sessionTypes', () => ({
 const { MentorApplicationScreen } = await import('./MentorApplicationScreen');
 
 const person = { firstName: 'Gbenga', fullName: 'Gbenga Ekundayo', email: 'gbenga@example.com' };
-const remote = (data: MentorApplication | null) => ({
+const remote = (data: MentorApplication | null, fresh = true) => ({
   data,
   isLoading: !data,
   error: null,
   retry: vi.fn(),
+  fresh,
 });
 
 beforeEach(() => {
   viewer = { kind: 'member', id: 'u1' };
+  hoursFail = false;
   replace.mockReset();
   push.mockReset();
   markSeen.mockReset();
@@ -83,6 +92,39 @@ describe('MentorApplicationScreen (PRD F3, "Where people land")', () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
+  it('waits for a fresh read: a cached one may predate approved-seen', () => {
+    app = remote({ stage: 'approved', seen: false, ...person }, false);
+    const { rerender } = render(<MentorApplicationScreen />);
+    expect(screen.getByRole('status')).toHaveTextContent('Loading your application…');
+    expect(markSeen).not.toHaveBeenCalled();
+    app = remote({ stage: 'approved', seen: true, ...person });
+    rerender(<MentorApplicationScreen />);
+    expect(replace).toHaveBeenCalledWith('/dashboard?toast=approved');
+    expect(markSeen).not.toHaveBeenCalled();
+  });
+
+  it('a failed hours read only leaves its row out', () => {
+    hoursFail = true;
+    app = remote({ stage: 'approved', seen: false, ...person });
+    render(<MentorApplicationScreen />);
+    expect(screen.queryByText('Weekly hours drafted')).toBeNull();
+    expect(screen.getByText('Intro chat is ready to book')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+  });
+
+  it('an account that can’t be read as a member goes to /; a failed viewer offers a retry', async () => {
+    viewer = { kind: 'unlinked' };
+    app = remote(null);
+    const { unmount } = render(<MentorApplicationScreen />);
+    expect(replace).toHaveBeenCalledWith('/');
+    unmount();
+    const retry = vi.fn();
+    viewer = { kind: 'error', retry };
+    render(<MentorApplicationScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(retry).toHaveBeenCalled();
+  });
+
   it('approved and seen: the dashboard with the toast', () => {
     app = remote({ stage: 'approved', seen: true, ...person });
     render(<MentorApplicationScreen />);
@@ -108,7 +150,7 @@ describe('MentorApplicationScreen (PRD F3, "Where people land")', () => {
   });
 
   it('error before empty: a failed read offers a retry', async () => {
-    app = { data: null, isLoading: false, error: { kind: 'server' }, retry: vi.fn() };
+    app = { data: null, isLoading: false, error: { kind: 'server' }, retry: vi.fn(), fresh: true };
     render(<MentorApplicationScreen />);
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(app.retry).toHaveBeenCalled();

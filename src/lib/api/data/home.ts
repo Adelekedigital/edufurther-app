@@ -1,5 +1,6 @@
 import createClient from 'openapi-fetch';
 import type { components, paths } from '@/lib/api/generated/schema';
+import { menteeByChoice } from './roles';
 
 /**
  * Where `/` sends each viewer (product, 2026-09-30). Server-only: app/page.tsx
@@ -9,7 +10,8 @@ export type Home = '/explore' | '/home' | '/dashboard' | '/admin';
 
 // Only the two fields the router reads — a goal no longer changes the destination
 // (every non-mentor member → /home), so homeFor doesn't pick it.
-type Me = Pick<components['schemas']['UserRead'], 'is_admin' | 'mentor_profile'>;
+type Me = Pick<components['schemas']['UserRead'], 'is_admin' | 'mentor_profile'> &
+  Partial<Pick<components['schemas']['UserRead'], 'primary_role'>>;
 
 /**
  * Platform admins first (even if also a mentor), then any mentor profile, then
@@ -21,7 +23,7 @@ type Me = Pick<components['schemas']['UserRead'], 'is_admin' | 'mentor_profile'>
 export function homeFor(me: Me | null): Home {
   if (!me) return '/explore';
   if (me.is_admin) return '/admin';
-  if (me.mentor_profile) return '/dashboard';
+  if (me.mentor_profile && !menteeByChoice(me)) return '/dashboard';
   return '/home';
 }
 

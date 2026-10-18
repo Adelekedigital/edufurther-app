@@ -52,7 +52,9 @@ export function toMentorApplication(me: PendingMe): MentorApplication {
 }
 
 /** GET /me, read for the application only (the viewer drops these fields). */
-export function useMentorApplication(userId: string | null): Remote<MentorApplication> {
+export function useMentorApplication(
+  userId: string | null,
+): Remote<MentorApplication> & { fresh: boolean } {
   const query = useQuery({
     queryKey: keys.viewer.mentorApplication(userId ?? 'none'),
     enabled: userId !== null,
@@ -71,20 +73,29 @@ export function useMentorApplication(userId: string | null): Remote<MentorApplic
     isLoading: query.isPending && userId !== null,
     error: query.error ? normaliseError(query.error) : null,
     retry: () => void query.refetch(),
+    // A cached read from earlier in the visit may predate approved-seen.
+    fresh: !query.isFetching,
   };
 }
 
 /**
  * POST approved-seen (PRD B3), as the approved screen renders. Idempotent, and
  * a 409 (not approved after all) changes nothing on screen: the mentor reads
- * the page either way, and the next visit asks the server again.
+ * the page either way, and the next visit asks the server again. Once it
+ * lands, the cached read says seen too, so coming back in the same visit
+ * (Back from the dashboard) never shows the screen a second time.
  */
-export function useMarkApprovedSeen() {
+export function useMarkApprovedSeen(userId: string | null) {
+  const qc = useQueryClient();
   const mutation = useMutation<void, AppError, void>({
     mutationFn: async () => {
       const { error, response } = await untyped.POST(APPROVED_SEEN_PATH);
       if (!response.ok && response.status !== 409) throw apiError(response.status, error);
     },
+    onSuccess: () =>
+      qc.setQueryData<MentorApplication>(keys.viewer.mentorApplication(userId ?? 'none'), (a) =>
+        a?.stage === 'approved' ? { ...a, seen: true } : a,
+      ),
   });
   return { markSeen: mutation.mutate, isPending: mutation.isPending };
 }
