@@ -74,7 +74,12 @@ export function toState(saved: Saved, countries: CatalogOption[]): OnboardingSta
   const complete = saved.onboarding?.complete ?? false;
   const answered = needIds.length > 0 || !!degree || !!field.trim() || !!originId;
   // The server's own step once it sends one; until then, read from the answers.
-  const serverStep = saved.onboarding?.last_step;
+  // A mentor application's step (B3 shares the column) isn't a mentee step.
+  const rawStep = saved.onboarding?.last_step;
+  const serverStep =
+    rawStep === undefined || rawStep === null || rawStep === 'help' || rawStep === 'plans'
+      ? rawStep
+      : null;
   const known = serverStep !== undefined;
   return {
     lastStep: known ? serverStep : answeredPlans ? 'plans' : needIds.length ? 'help' : null,
