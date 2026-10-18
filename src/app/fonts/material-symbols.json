@@ -27,6 +27,7 @@
     "chevron_left",
     "chevron_right",
     "close",
+    "cloud_done",
     "cloud_off",
     "content_copy",
     "date_range",
@@ -141,5 +142,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "0d1fb8497448352058daecc0ff619b14c1c7ecbe7bc6cb1286d61ad440c8e728"
+  "sha256": "d8e25ed13c59945a7e978b3f44d8b41bdab08f08ca21c2a020164170f879112b"
 }

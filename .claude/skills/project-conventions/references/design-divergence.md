@@ -920,3 +920,19 @@ PRD: Mentee Onboarding v5 (deviation table, H8). Rows the PRD settles are produc
 | BookingModal sent state: the mentor's initials on the DS default avatar | The mentor's photo when they have one, else their initials on their tone (as the modal header shows them) | One face for the same person across the modal; the prototype has no photos | design draws photo avatars here |
 | BookingModal sent, first step: "{First} sees your answers…" / "…can read your answers…" for every offering | Said only when the offering asked questions; otherwise "{First} has your request." / "{First} has it in their Bookings too." | An offering with no intake questions sends no answers | design draws the no-questions copy |
 | Approved.dc.html notApproved: "Continue as a mentee" link in the sentence, no underline (`a{text-decoration:none}`) | Underlined | A link inside running text can't rely on colour alone (WCAG 1.4.1, axe `link-in-text-block`) | — |
+
+## Mentor onboarding (`Mentor Onboarding.dc.html`, route `/onboarding/mentor`, mentor onboarding PR 4)
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| Each step's heading is an `h2` (h5 values) with no `h1` (`showPageHead` is off in steps mode) | The same values on an `h1` that takes focus on every step change | A page needs one `h1`, and the PRD moves focus to the step heading | — |
+| "All fields are required unless marked optional." under About you only | Under every step's heading | PRD: "Each step starts with" it | design draws it on every step |
+| "Where are you from?" and "Country of study" are native selects | `CountryPicker` (type to find), 48px like the drawn field | About 250 countries is too long to scroll (existing CountryPicker divergence) | — |
+| Draft failure is the DS info Notice (`--brand-*` ground and ring) | Our info Notice (blue-50, no ring) | `--brand-*` is banned in product UI | DS moves Notice off the brand palette |
+| Submit failure: DS danger Notice | Notice gains a `danger` tone (red-50 ground, red-500 ring, the warning layout) | The molecule had no danger tone | — |
+| A missing field shows only the red line under it | Also a red border on the field | Marks the field itself, not only the line under it (ours) | design draws error fields |
+| Start over, Change and the day presets are 32px text buttons | Same look, with an invisible 44px tap area | 44px targets on phones | — |
+| Inputs and selects 14px on phones | 16px | iOS zooms on focus under 16px (house rule) | never |
+| Photo initials `32px` | `--text-h3` (32px on desktop, smaller on the phone type scale) | Raw px fails `lint:css`; the phone scale shrinks it with the rest | — |
+| "See approval preview" on the Application sent screen | Not rendered | A prototype link to another design file | never |
+| "Add the country you studied in." for every school without a catalogue country | Only the current school, an unsaved school, or one with its picker open | The API keeps a typed school's country only as the current school's study country, so an older saved school can't hold one | backend stores a country per education entry |

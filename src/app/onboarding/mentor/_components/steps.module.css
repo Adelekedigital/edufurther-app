@@ -1,0 +1,93 @@
+/* Mentor Onboarding.dc.html: what every step's section shares. */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+.titles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+/* The design's h2 (h5 values) is the page's one heading on each step. */
+.title {
+  margin: 0;
+  font-family: var(--font-brand);
+  font-size: var(--text-h5);
+  line-height: var(--lh-h5);
+  letter-spacing: var(--ls-h5);
+  font-weight: var(--weight-bold);
+  outline: none;
+}
+.sub {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+  text-wrap: pretty;
+}
+.note {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+
+/* A labelled field: label over control over hint. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.label {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-medium);
+  color: var(--ink-900);
+}
+.hint {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+/* Caption over a chip group (topic headings). */
+.caption {
+  font-size: var(--text-caption-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-caption-xs);
+  text-transform: uppercase;
+  color: var(--ink-600);
+}
+.chips {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* Blue text buttons: "Add another school", "Change", the day presets. */
+.textButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--touch-target-min);
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+}
+.textButton:hover {
+  color: var(--blue-700);
+}
+.textButton:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}

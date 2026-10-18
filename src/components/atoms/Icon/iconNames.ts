@@ -33,6 +33,7 @@ export const ICON_NAMES = [
   'chevron_left',
   'chevron_right',
   'close',
+  'cloud_done',
   'cloud_off',
   'content_copy',
   'date_range',

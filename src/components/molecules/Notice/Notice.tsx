@@ -9,8 +9,9 @@ type NoticeProps = {
   /**
    * warning: the DS onboarding callout (Mentee Onboarding v5 `unavailable`). It
    * always shows the DS's trailing `error` icon, so `icon` is ignored.
+   * danger: the same DS callout in red (Mentor Onboarding `submitErr`).
    */
-  tone: 'neutral' | 'info' | 'warning';
+  tone: 'neutral' | 'info' | 'warning' | 'danger';
   /** Omit for a plain tip (Session Types' "Every extra question lowers bookings"). */
   icon?: IconName;
   /** Bold lead-in, e.g. "You're offline." */
@@ -27,15 +28,20 @@ type NoticeProps = {
   live?: boolean;
 };
 
-/** Inline status notice inside a page region. Announced politely. */
+/** Inline status notice inside a page region. Announced politely; a danger one interrupts. */
 export function Notice({ tone, icon, title, children, onDismiss, id, live = true }: NoticeProps) {
+  const ds = tone === 'warning' || tone === 'danger';
   return (
-    <div id={id} role={live ? 'status' : undefined} className={cx(styles.notice, styles[tone])}>
-      {icon && tone !== 'warning' && <Icon name={icon} size={20} className={styles.icon} />}
+    <div
+      id={id}
+      role={live ? (tone === 'danger' ? 'alert' : 'status') : undefined}
+      className={cx(styles.notice, ds && styles.ds, styles[tone])}
+    >
+      {icon && !ds && <Icon name={icon} size={20} className={styles.icon} />}
       <p className={styles.text}>
         {title && <strong>{title}</strong>} {children}
       </p>
-      {tone === 'warning' && <Icon name="error" size={24} className={styles.icon} />}
+      {ds && <Icon name="error" size={24} className={styles.icon} />}
       {onDismiss && <IconButton icon="close" size="sm" aria-label="Dismiss" onClick={onDismiss} />}
     </div>
   );
