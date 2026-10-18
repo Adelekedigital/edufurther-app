@@ -5,8 +5,10 @@ import {
   MOCK_VIEWER_ID,
   mockGoal,
   mockMissing,
+  mockMentorStep,
   mockProgress,
 } from '@/lib/api/mock/onboardingStore';
+import { OFFERINGS } from '@/lib/api/mock/fixtures';
 import {
   isMockApplicationState,
   mentorApplication,
@@ -48,7 +50,9 @@ function mentorProfile(req: Request) {
     default_booking_window_days: 56,
     primary_study_program: null,
     primary_study_country: null,
-    offerings: [],
+    offerings: OFFERINGS.filter((o) =>
+      (mockItems(MOCK_VIEWER_ID).offering_ids ?? []).includes(o.id),
+    ).map((o) => ({ id: o.id, code: o.code ?? '', display_name: o.display_name })),
     ...app,
   };
 }
@@ -80,7 +84,8 @@ export async function GET(req: Request) {
     onboarding: {
       complete: !!mockProgress(MOCK_VIEWER_ID)?.completed_at,
       missing,
-      last_step: mockProgress(MOCK_VIEWER_ID)?.last_step ?? null,
+      // A mentor applicant's step wins over the mentee's.
+      last_step: mockMentorStep(MOCK_VIEWER_ID) ?? mockProgress(MOCK_VIEWER_ID)?.last_step ?? null,
     },
   };
   return ok('/api/v1/me', 'get', me);

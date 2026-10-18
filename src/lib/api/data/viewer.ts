@@ -173,6 +173,20 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
   },
 };
 
+// Someone who joined as a mentor and hasn't applied yet (/onboarding/mentor):
+// no goal, no mentor profile. The mock /me routes act for 'mock-viewer'.
+MOCK_VIEWERS['mentor-applicant'] = {
+  ...(MOCK_VIEWERS.mentee as Extract<Viewer, { kind: 'member' }>),
+  firstName: 'Gbenga',
+  initial: 'G',
+  isMentee: false,
+  credits: null,
+  avatarUrl: null,
+  avatarFocus: null,
+  awaitingResponse: 0,
+  bookingCounts: { pending: 0, upcoming: 0 },
+};
+
 // The same mentee, still owing their study plans: the onboarding nudge on Home.
 MOCK_VIEWERS['mentee-unfinished'] = {
   ...(MOCK_VIEWERS.mentee as Extract<Viewer, { kind: 'member' }>),

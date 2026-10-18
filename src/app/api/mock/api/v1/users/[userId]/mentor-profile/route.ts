@@ -1,14 +1,10 @@
 import { NextResponse } from 'next/server';
-import {
-  DEFAULT_WINDOW_DAYS,
-  MAX_WINDOW_DAYS,
-  prefs,
-  windowOk,
-} from '@/lib/api/mock/bookingPrefs';
+import { DEFAULT_WINDOW_DAYS, MAX_WINDOW_DAYS, prefs, windowOk } from '@/lib/api/mock/bookingPrefs';
 import { MOCK_COUNTRIES, setMockItems } from '@/lib/api/mock/catalog';
+import { mentorApplication, reset } from '@/lib/api/mock/mentorApplicationStore';
 import { mentorStatus } from '@/lib/api/mock/mentorStatusStore';
 import { OFFERINGS } from '@/lib/api/mock/fixtures';
-import { ok, problem } from '@/lib/api/mock/respond';
+import { ok, okStatus, problem } from '@/lib/api/mock/respond';
 
 /**
  * MOCK of GET /api/v1/users/{id}/mentor-profile — only what Session Types reads:
@@ -75,4 +71,24 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ userId: strin
   for (const k of Object.keys(ALLOWED)) if (k in body) Object.assign(prefs, { [k]: body[k] });
   for (const k of Object.keys(ITEMS)) if (k in body) setMockItems(userId, { [k]: body[k] });
   return ok('/api/v1/users/{user_id}/mentor-profile', 'patch', { updated: true });
+}
+
+/**
+ * MOCK of POST /api/v1/users/{id}/mentor-profile (mentor onboarding step 1):
+ * creates the profile with its help areas; a second create is a 409.
+ */
+export async function POST(req: Request, ctx: { params: Promise<{ userId: string }> }) {
+  if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
+  const { userId } = await ctx.params;
+  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  await new Promise((r) => setTimeout(r, 400));
+  // One store with GET /me, so a profile made here shows there (unsubmitted).
+  if (mentorApplication.application) return problem(409, { title: 'Mentor profile exists' });
+  if ('offering_ids' in body && !ITEMS.offering_ids!(body.offering_ids))
+    return problem(422, { title: 'Validation failed', errors: [{ pointer: '/offering_ids' }] });
+  reset('unsubmitted');
+  if ('offering_ids' in body) setMockItems(userId, { offering_ids: body.offering_ids as string[] });
+  return okStatus('/api/v1/users/{user_id}/mentor-profile', 'post', 201, {
+    id: '00000000-0000-4000-8000-000000000001',
+  });
 }
