@@ -20,7 +20,8 @@ import type { SheetChrome } from '@/types/ui';
 import { BookingFlowDesktop } from './BookingFlowDesktop';
 import { PhoneBody, PhoneFooter, phoneChrome } from './BookingFlowPhone';
 import { FirstMenteesBox, PickedTime, SessionTypeSelect } from './FlowParts';
-import { FlowSkeleton, LoadError, NoTimes, RequestSent } from './FlowStates';
+import { FlowSkeleton, LoadError, NoTimes } from './FlowStates';
+import { SentState } from './SentState';
 import { QuestionsStep } from './QuestionsStep';
 import { SignupStep, guestCanContinue } from './SignupStep';
 import signupStyles from './SignupStep.module.css';
@@ -67,6 +68,8 @@ export type BookingFlowProps = {
   onRequest: (req: BookingRequest) => void;
   requestPending: boolean;
   requestDone: boolean;
+  /** The request came back confirmed (an instant offering): "You're booked", not "Request sent". */
+  requestConfirmed?: boolean;
   /**
    * Already worded for the user (lib/api/data/booking.ts). `questionId` when the
    * server refused one answer: the message shows under that question.
@@ -194,6 +197,8 @@ export function BookingFlow(p: BookingFlowProps) {
   const step: Step = p.requestDone ? 'done' : steps[at]!;
   const isLast = after(at) >= steps.length;
 
+  // The sent state's date tile: "Oct", "19" in the viewer's zone.
+  const tileDate = time ? formatDay(dayKey(time, zone)).date.split(' ') : [];
   const picked = time
     ? (() => {
         const f = formatDay(dayKey(time, zone));
@@ -285,7 +290,9 @@ export function BookingFlow(p: BookingFlowProps) {
           ? 'Create account'
           : 'Email me a code'
         : isLast
-          ? `Request ${picked}`
+          ? session?.requiresConfirmation === false
+            ? `Book ${picked}`
+            : `Request ${picked}`
           : nextStep === 'questions'
             ? 'Continue to questions'
             : 'Continue';
@@ -346,7 +353,15 @@ export function BookingFlow(p: BookingFlowProps) {
   ) : !session ? (
     <NoTimes {...noTimes} />
   ) : step === 'done' ? (
-    <RequestSent picked={picked} firstName={m.firstName} />
+    <SentState
+      mentor={m}
+      sessionName={session?.name ?? ''}
+      picked={picked}
+      month={tileDate[0] ?? ''}
+      day={tileDate[1] ?? ''}
+      confirmed={!!p.requestConfirmed}
+      answered={(session?.questions.length ?? 0) > 0}
+    />
   ) : null;
 
   const firstBox =
@@ -463,6 +478,7 @@ export function BookingFlow(p: BookingFlowProps) {
     const ready = session && step !== 'done' && !p.sessionTypes.isLoading && !p.sessionTypes.error;
     const sheet = phoneChrome({
       done: step === 'done',
+      confirmed: !!p.requestConfirmed,
       oneStep,
       at,
       total: steps.length,

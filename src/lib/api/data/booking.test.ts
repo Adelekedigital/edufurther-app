@@ -76,8 +76,9 @@ describe('booking errors (POST /sessions)', () => {
 
     it('never shows the server’s own detail', () => {
       expect(
-        bookingError(normaliseError(apiError(409, { type: '/problems/booking-overlap', detail: 'secret' })))
-          .message,
+        bookingError(
+          normaliseError(apiError(409, { type: '/problems/booking-overlap', detail: 'secret' })),
+        ).message,
       ).not.toMatch(/secret/);
     });
   });
@@ -124,6 +125,8 @@ describe('toSessionType', () => {
       name: 'CV review',
       durationMin: 45,
       description: '',
+      // The mentor accepts first: "Request …".
+      requiresConfirmation: true,
       questions: [],
       windowDays: 56,
     });
@@ -246,5 +249,17 @@ describe('the upload rate limit (backend #358)', () => {
 
   it('the 409 for unused uploads still comes first', () => {
     expect(uploadError(apiError(409, {})).message).toMatch(/too many files waiting/);
+  });
+
+  it('reads an offering that confirms at once, so the button says Book', () => {
+    const r = {
+      id: 'st',
+      name: 'Quick chat',
+      duration_minutes: 30,
+      booking_window_days: 28,
+      is_featured: false,
+      requires_booking_confirmation: false,
+    } as Parameters<typeof toSessionType>[0];
+    expect(toSessionType(r).requiresConfirmation).toBe(false);
   });
 });

@@ -61,7 +61,7 @@ describe('BookingFlow on phones (sheet)', () => {
     expect(screen.getByRole('button', { name: /^Change/ })).toBeInTheDocument();
 
     rerender(<BookingFlow {...props({ requestDone: true })} />);
-    expect(screen.getByText('Request sent')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Request sent to / })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Change/ })).not.toBeInTheDocument();
 
     rerender(
@@ -793,5 +793,13 @@ describe('a booking limit refuses the request (backend 342)', () => {
     );
     expect(screen.getByRole('alert')).toHaveTextContent('That time was just taken.');
     expect(screen.queryByRole('link', { name: 'See your bookings' })).not.toBeInTheDocument();
+  });
+
+  it('ends on the instant outcome when the request came back confirmed', () => {
+    render(<BookingFlow {...props({ requestDone: true, requestConfirmed: true })} />);
+    const heading = screen.getByRole('heading', { name: /^You’re booked with / });
+    expect(heading).toHaveFocus();
+    expect(screen.getByText('Confirmed')).toBeInTheDocument();
+    expect(screen.queryByText(/accepts or declines/)).toBeNull();
   });
 });

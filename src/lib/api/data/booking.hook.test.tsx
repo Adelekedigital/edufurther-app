@@ -266,6 +266,31 @@ describe('useSlots: the request follows the session type’s window (backend #30
 });
 
 describe('useRequestBooking: a sent request', () => {
+  it('says whether it came back confirmed (instant) or pending', async () => {
+    const send = (status: string) =>
+      POST.mockResolvedValueOnce({
+        data: { id: 'b1', status },
+        error: undefined,
+        response: new Response(null),
+      });
+    const req = {
+      mentorId: 'm1',
+      sessionTypeId: 'st',
+      startsAt: '2026-09-30T09:00:00Z',
+      answers: {},
+    };
+    send('confirmed');
+    const a = renderHook(() => useRequestBooking(), { wrapper });
+    act(() => a.result.current.request(req));
+    await waitFor(() => expect(a.result.current.isDone).toBe(true));
+    expect(a.result.current.isConfirmed).toBe(true);
+    send('pending_mentor_approval');
+    const b = renderHook(() => useRequestBooking(), { wrapper });
+    act(() => b.result.current.request(req));
+    await waitFor(() => expect(b.result.current.isDone).toBe(true));
+    expect(b.result.current.isConfirmed).toBe(false);
+  });
+
   it('refreshes /me, so the mentee’s Bookings badge counts it', async () => {
     const invalidate = vi.spyOn(qc, 'invalidateQueries');
     POST.mockResolvedValue({ data: { id: 'b1' }, error: undefined, response: new Response(null) });

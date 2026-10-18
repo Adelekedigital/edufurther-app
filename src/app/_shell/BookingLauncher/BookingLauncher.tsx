@@ -83,6 +83,7 @@ export function BookingLauncher({
       onRequest={request.request}
       requestPending={request.isPending}
       requestDone={request.isDone}
+      requestConfirmed={request.isConfirmed}
       requestError={request.error}
       onUpload={uploadIntakeFile}
       onClose={close}

@@ -20,11 +20,14 @@ export function phoneChrome(p: {
   requestPending: boolean;
   onClose: () => void;
   onBack: () => void;
+  /** The request came back confirmed (an instant booking). */
+  confirmed?: boolean;
 }): SheetChrome {
   const atStart = p.at === 0 || p.done;
   return {
     caption: p.done || p.oneStep ? undefined : `Step ${p.at + 1} of ${p.total}`,
-    heading: p.done ? 'Booking requested' : p.stepName,
+    // The design's sheet says "Booking requested" either way; an instant booking isn't one.
+    heading: p.done ? (p.confirmed ? 'Booking confirmed' : 'Booking requested') : p.stepName,
     leading: atStart
       ? { icon: 'close', label: 'Close', onClick: p.onClose }
       : { icon: 'arrow_back', label: 'Back', onClick: p.onBack, disabled: p.requestPending },

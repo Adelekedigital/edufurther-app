@@ -48,6 +48,8 @@ export function toSessionType(r: SessionTypeRead): SessionType {
     description: r.description?.trim() ?? '',
     // The window this type really uses (the platform cap applied), backend #309.
     windowDays: r.booking_window_days,
+    // Request or instant: picks "Request …" vs "Book …" before sending.
+    requiresConfirmation: r.requires_booking_confirmation !== false,
     // The live intake form, in the order mentees see it (backend #268).
     questions: [...(r.questions ?? [])]
       .sort((a, b) => a.display_order - b.display_order)
@@ -331,6 +333,8 @@ export function useRequestBooking() {
     request: mutation.mutate,
     isPending: mutation.isPending,
     isDone: mutation.isSuccess,
+    /** The created session came back confirmed (an instant offering), not pending. */
+    isConfirmed: mutation.data?.status === 'confirmed',
     // One object per error: the flow reacts to a new refusal by identity (review r2 of #62).
     error,
     reset: () => {
