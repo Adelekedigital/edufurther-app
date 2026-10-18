@@ -92,9 +92,13 @@
   letter-spacing: 0.5em;
 }
 
-/* Expired or locked: the field greys, the digits stay ink-900 (CodeEntry.dc.html). */
+/* Expired or locked: the field greys, the digits stay ink-900 (CodeEntry.dc.html).
+   Safari draws disabled text with its own fill colour and fades it, hence the
+   last two lines. */
 .label .code:disabled {
   color: var(--ink-900);
+  -webkit-text-fill-color: var(--ink-900);
+  opacity: 1;
 }
 
 .typo {
@@ -169,7 +173,7 @@
 }
 
 .xs {
-  min-height: 24px;
+  min-height: var(--space-6);
   font-size: var(--text-p-xs);
 }
 
