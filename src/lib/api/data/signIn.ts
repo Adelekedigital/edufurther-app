@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { deviceTimeZone } from '@/lib/utils/format';
 import { NAME_PROBLEM_COPY, splitFullName, tidyName } from '@/lib/utils/name';
 import { api } from './http';
 import { keys } from './keys';
@@ -19,6 +20,8 @@ export type SignInAccount =
       mentorApproved: boolean;
       /** `/me` `onboarding.complete`; null when /me doesn't say (treated as done). */
       onboardingComplete: boolean | null;
+      /** `/me` `timezone`; null when /me doesn't say. `UTC` is the backend's default. */
+      timezone: string | null;
     }
   /** No account for this sign-in (404) or one that isn't linked to it (409). */
   | { kind: 'noAccount' }
@@ -42,6 +45,7 @@ export async function fetchSignInAccount(): Promise<SignInAccount> {
       isMentor: !!data.mentor_profile,
       mentorApproved: data.mentor_profile?.approval_status === 'approved',
       onboardingComplete: data.onboarding?.complete ?? null,
+      timezone: data.timezone || null,
     };
   } catch {
     return { kind: 'error' };
@@ -69,7 +73,31 @@ const PROXY_ERRORS = new Set([502, 503, 504]);
 /** A blip at the edge (a redeploy, a cold start) usually clears within a second. */
 export const NAME_RETRY_MS = 800;
 
-type NameBody = { full_name: string } | { first_name: string; last_name: string };
+type NameBody = ({ full_name: string } | { first_name: string; last_name: string }) & {
+  timezone?: string;
+};
+
+/** The zone a new account is made with until someone picks one. */
+const BACKEND_DEFAULT_ZONE = 'UTC';
+
+/**
+ * The zone to save with a name: this device's, but only when the account has
+ * none of its own yet (empty, or still the backend's UTC default), so a zone
+ * someone chose is never overwritten. Undefined when the device's isn't a
+ * valid IANA zone either.
+ */
+export function zoneToSave(accountZone: string | null | undefined): string | undefined {
+  if (accountZone && accountZone !== BACKEND_DEFAULT_ZONE) return undefined;
+  const zone = deviceTimeZone();
+  if (!zone) return undefined;
+  try {
+    // Throws a RangeError on anything that isn't a zone.
+    new Intl.DateTimeFormat('en', { timeZone: zone });
+    return zone;
+  } catch {
+    return undefined;
+  }
+}
 
 /** The PATCH, or null when a proxy failed it: the backend sets the name, so sending it twice is safe. */
 async function patchName(userId: string, body: NameBody) {
@@ -95,6 +123,40 @@ async function nameLanded(body: NameBody) {
   }
 }
 
+type ProfileError = { errors?: { pointer?: string; message?: string }[] } | undefined;
+
+/** A 422's error on a name field, if it has one. */
+function nameRefusal(res: NonNullable<Awaited<ReturnType<typeof patchName>>>) {
+  if (res.response.status !== 422) return undefined;
+  return ((res.error as ProfileError)?.errors ?? []).find((e) =>
+    NAME_POINTERS.has(e.pointer ?? ''),
+  );
+}
+
+/**
+ * The PATCH with its proxy retry. `saved` when it went through, or when a
+ * proxy failed the first try and /me shows the name landed anyway.
+ */
+async function sendName(userId: string, body: NameBody) {
+  const first = await patchName(userId, body);
+  let res = first;
+  if (!res) {
+    await new Promise((r) => setTimeout(r, NAME_RETRY_MS));
+    res = await patchName(userId, body);
+  }
+  if (res?.response.ok) return { saved: true as const };
+  // The first try may have landed behind the proxy error, whatever the retry says.
+  if (!first && (await nameLanded(body))) return { saved: true as const };
+  return { saved: false as const, res };
+}
+
+export type SaveNameInput = {
+  userId: string;
+  name: NameToSave;
+  /** An IANA zone to save with the name (zoneToSave decides); left out, the account's stays. */
+  timezone?: string;
+};
+
 /**
  * Save a name from either shape of input. A full name goes out as `full_name`
  * and the backend splits it (first word / the rest); two fields go out as
@@ -102,33 +164,27 @@ async function nameLanded(body: NameBody) {
  * words, told apart by its message; anything else is a plain "try again"
  * (Problem Details `detail` is never shown). A proxy error is tried once
  * more, then GET /me says whether the name landed anyway.
+ *
+ * A `timezone` the caller passes goes with it. A refused zone never stops
+ * the name: any other 422 sends the name once more without it.
  */
 export function useSaveName() {
   const qc = useQueryClient();
-  return useMutation<void, NameSaveError, { userId: string; name: NameToSave }>({
+  return useMutation<void, NameSaveError, SaveNameInput>({
     networkMode: 'always',
-    mutationFn: async ({ userId, name }) => {
-      const body: NameBody =
+    mutationFn: async ({ userId, name, timezone }) => {
+      const named: NameBody =
         'fullName' in name
           ? { full_name: tidyName(name.fullName) }
           : { first_name: tidyName(name.firstName), last_name: tidyName(name.lastName) };
-      const first = await patchName(userId, body);
-      let res = first;
-      if (!res) {
-        await new Promise((r) => setTimeout(r, NAME_RETRY_MS));
-        res = await patchName(userId, body);
+      let sent = await sendName(userId, timezone ? { ...named, timezone } : named);
+      if (timezone && !sent.saved && sent.res?.response.status === 422 && !nameRefusal(sent.res)) {
+        sent = await sendName(userId, named);
       }
-      if (res?.response.ok) return;
-      // The first try may have landed behind the proxy error, whatever the retry says.
-      if (!first && (await nameLanded(body))) return;
+      if (sent.saved) return;
+      const { res } = sent;
       if (!res) throw new NameSaveError(SAVE_FAILED);
-      const errors =
-        (res.error as { errors?: { pointer?: string; message?: string }[] } | undefined)?.errors ??
-        [];
-      const onName =
-        res.response.status === 422
-          ? errors.find((e) => NAME_POINTERS.has(e.pointer ?? ''))
-          : undefined;
+      const onName = nameRefusal(res);
       if (!onName) throw new NameSaveError(SAVE_FAILED);
       throw new NameSaveError(
         ONE_WORD.test(onName.message ?? '')

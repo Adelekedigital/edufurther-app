@@ -6,10 +6,11 @@ import type { SignInFormProps, SignInStep, StartError } from '@/components/organ
 import {
   signedInUser,
   startGoogleSignIn,
+  useSignOutHere,
   type SignInMode,
   type SignInRole,
 } from '@/lib/api/data/auth';
-import { useSaveName, type NameToSave } from '@/lib/api/data/signIn';
+import { useSaveName, zoneToSave, type NameToSave } from '@/lib/api/data/signIn';
 import { useSession } from '@/lib/api/data/session';
 import { lastSignInMethod, rememberSignInMethod } from '@/lib/utils/lastUsed';
 import { checkFullName, splitFullName } from '@/lib/utils/name';
@@ -27,6 +28,9 @@ export const TOAST_MS = 1400;
 export const GOOGLE_WAIT_MS = 10_000;
 export { ACCOUNT_RETRY_MS } from './account';
 
+// PROVISIONAL: ours, no design state; the finish step's "Use a different email" didn't sign out.
+export const SIGN_OUT_FAILED = 'We couldn’t sign you out. Try again.';
+
 type Method = 'email' | 'google';
 type GoogleUser = Awaited<ReturnType<typeof signedInUser>>;
 
@@ -43,6 +47,8 @@ type Account = {
   mentorApproved: boolean;
   onboardingComplete: boolean | null;
   isNew: boolean;
+  /** `/me` `timezone`: the device's goes with the name only while this is unset or UTC. */
+  timezone: string | null;
 };
 
 export type SignInFlowOptions = {
@@ -75,6 +81,7 @@ export function useSignInFlow({
   const session = useSession();
   const online = useOnline();
   const saveName = useSaveName();
+  const signOutHere = useSignOutHere();
 
   const [step, setStep] = useState<SignInStep>('start');
   const [fullName, setFullName] = useState('');
@@ -83,6 +90,9 @@ export function useSignInFlow({
   );
   const [googleBusy, setGoogleBusy] = useState(false);
   const [finishing, setFinishing] = useState(false);
+  // The finish step's "Use a different email": out of this account, back to the start.
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState<string>();
   // Back from Google, the card waits for the session; if the SDK never says,
   // it lets go, so the page can't stay locked.
   const [googleWaitOver, setGoogleWaitOver] = useState(false);
@@ -174,7 +184,11 @@ export function useSignInFlow({
   const name = useCallback(
     async (a: Account, toSave: NameToSave, onRefused?: () => void): Promise<boolean> => {
       try {
-        await saveName.mutateAsync({ userId: a.id, name: toSave });
+        await saveName.mutateAsync({
+          userId: a.id,
+          name: toSave,
+          timezone: zoneToSave(a.timezone),
+        });
         return true;
       } catch (e) {
         // The session stays: the finish step offers the retry (PRD). Its
@@ -300,13 +314,43 @@ export function useSignInFlow({
 
   const onFinish = async () => {
     const a = account.current;
-    if (!a || finishing) return;
+    if (!a || finishing || signingOut) return;
     setFinishing(true);
     setNameError(undefined);
     const saved = await name(a, { fullName });
     if (!mounted.current) return;
     setFinishing(false);
     if (saved) finish(a, splitFullName(fullName).firstName);
+  };
+
+  /**
+   * "Use a different email" on the finish step: a session is behind it (an
+   * abandoned Google try, say), so it ends on this device first, without
+   * Logout's trip to /login, and the start step shows empty. It doesn't
+   * bounce back: the session is gone before the start step shows (the SDK
+   * reports SIGNED_OUT before its signOut resolves), so the "already signed
+   * in" effect, which reads it, has nothing to act on, and its handling flag
+   * is free again for the next sign-in on this page.
+   */
+  const leaveFinish = async () => {
+    if (signingOut || finishing) return;
+    setSigningOut(true);
+    setSignOutError(undefined);
+    const ended = await signOutHere();
+    if (!mounted.current) return;
+    setSigningOut(false);
+    if (!ended) {
+      setSignOutError(SIGN_OUT_FAILED);
+      return;
+    }
+    account.current = null;
+    handling.current = false;
+    auth.setEmail('');
+    auth.clearCode();
+    setFullName('');
+    setNameError(undefined);
+    setStartError(undefined);
+    setStep('start');
   };
 
   const onGoogle = async () => {
@@ -351,10 +395,14 @@ export function useSignInFlow({
     resendIn: auth.resendIn,
     onResend: () => void auth.resend(),
     onUseDifferentEmail: () => {
+      if (step === 'finish') return void leaveFinish();
+      // The code and suspended steps: no session yet, so only back to the start.
       setStep('start');
       auth.clearCode();
     },
     finishing,
+    signingOut,
+    signOutError,
     onFinish: () => void onFinish(),
     offline: !online,
     // Signed in on the start step: the account is being read (a Google return,

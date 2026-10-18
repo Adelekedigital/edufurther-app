@@ -8,7 +8,14 @@ vi.mock('./http', () => ({
   api: { GET: (...a: unknown[]) => GET(...a), PATCH: (...a: unknown[]) => PATCH(...a) },
 }));
 
-const { useSaveName, fetchSignInAccount } = await import('./signIn');
+// The device's zone, as Intl reports it; each test starts in New York.
+let zone = 'America/New_York';
+vi.mock('@/lib/utils/format', () => ({ deviceTimeZone: () => zone }));
+beforeEach(() => {
+  zone = 'America/New_York';
+});
+
+const { useSaveName, fetchSignInAccount, zoneToSave } = await import('./signIn');
 
 const res = (status: number, data?: unknown, error?: unknown) => ({
   data,
@@ -29,7 +36,13 @@ describe('fetchSignInAccount (who just signed in)', () => {
       isMentor: false,
       mentorApproved: false,
       onboardingComplete: null,
+      timezone: null,
     });
+  });
+
+  it('carries /me timezone, so a zone the account has is never overwritten', async () => {
+    GET.mockResolvedValueOnce(res(200, { id: 'u1', first_name: null, timezone: 'Africa/Lagos' }));
+    expect(await fetchSignInAccount()).toMatchObject({ timezone: 'Africa/Lagos' });
   });
 
   it('carries /me onboarding.complete, so an unfinished mentee goes back to it', async () => {
@@ -91,6 +104,28 @@ describe('useSaveName (either shape of name input)', () => {
     });
   });
 
+  it('sends the timezone the caller passes, with either shape', async () => {
+    PATCH.mockResolvedValue(res(200, {}));
+    const { result } = renderHook(() => useSaveName(), { wrapper });
+    const timezone = 'America/New_York';
+    await act(() =>
+      result.current.mutateAsync({ userId: 'u1', name: { fullName: 'Amara Okafor' }, timezone }),
+    );
+    await act(() =>
+      result.current.mutateAsync({
+        userId: 'u1',
+        name: { firstName: 'Amara', lastName: 'Okafor' },
+        timezone,
+      }),
+    );
+    expect(PATCH.mock.calls[0]![1].body).toEqual({ full_name: 'Amara Okafor', timezone });
+    expect(PATCH.mock.calls[1]![1].body).toEqual({
+      first_name: 'Amara',
+      last_name: 'Okafor',
+      timezone,
+    });
+  });
+
   it('sends two fields as first_name + last_name', async () => {
     PATCH.mockResolvedValueOnce(res(200, {}));
     const { result } = renderHook(() => useSaveName(), { wrapper });
@@ -142,6 +177,100 @@ describe('useSaveName (either shape of name input)', () => {
       ).rejects.toThrow('We couldn’t save your name. Try again.');
     });
     await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+describe('zoneToSave (the device’s zone, only for an account without one)', () => {
+  it.each([
+    ['has none', null],
+    ['has an empty one', ''],
+    ['still has the backend’s UTC default', 'UTC'],
+  ])('gives the device’s zone when the account %s', (_, accountZone) => {
+    expect(zoneToSave(accountZone)).toBe('America/New_York');
+  });
+
+  it('never overwrites a zone the account already has', () => {
+    expect(zoneToSave('Africa/Lagos')).toBeUndefined();
+  });
+
+  it.each([
+    ['empty', ''],
+    ['not a zone', 'Mars/Olympus_Mons'],
+  ])('gives nothing when the device’s is %s', (_, z) => {
+    zone = z;
+    expect(zoneToSave(null)).toBeUndefined();
+  });
+});
+
+describe('useSaveName (a refused timezone never stops the name)', () => {
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>
+  );
+  const save = (result: { current: ReturnType<typeof useSaveName> }) =>
+    result.current.mutateAsync({
+      userId: 'u1',
+      name: { fullName: 'Amara Okafor' },
+      timezone: 'America/New_York',
+    });
+  beforeEach(() => {
+    PATCH.mockReset();
+    GET.mockReset();
+  });
+
+  it.each([
+    ['on /timezone', { errors: [{ pointer: '/timezone', message: 'not a zone' }] }],
+    ['with no name pointer', { detail: 'Unprocessable' }],
+  ])('a 422 %s: the name goes once more without the zone', async (_, error) => {
+    PATCH.mockResolvedValueOnce(res(422, undefined, error)).mockResolvedValueOnce(res(200, {}));
+    const { result } = renderHook(() => useSaveName(), { wrapper });
+    await act(() => save(result));
+    expect(PATCH).toHaveBeenCalledTimes(2);
+    expect(PATCH.mock.calls[0]![1].body).toEqual({
+      full_name: 'Amara Okafor',
+      timezone: 'America/New_York',
+    });
+    expect(PATCH.mock.calls[1]![1].body).toEqual({ full_name: 'Amara Okafor' });
+  });
+
+  it('the name refused on the retry: its own words', async () => {
+    PATCH.mockResolvedValueOnce(
+      res(422, undefined, { errors: [{ pointer: '/timezone', message: 'not a zone' }] }),
+    ).mockResolvedValueOnce(
+      res(422, undefined, {
+        errors: [{ pointer: '/full_name', message: 'enter a first and a last name' }],
+      }),
+    );
+    const { result } = renderHook(() => useSaveName(), { wrapper });
+    await act(async () => {
+      await expect(save(result)).rejects.toThrow('Enter your first and last name.');
+    });
+  });
+
+  it('a 422 on a name field: the name’s words, and no retry without the zone', async () => {
+    PATCH.mockResolvedValueOnce(
+      res(422, undefined, {
+        errors: [
+          { pointer: '/timezone', message: 'not a zone' },
+          { pointer: '/full_name', message: 'enter a first and a last name' },
+        ],
+      }),
+    );
+    const { result } = renderHook(() => useSaveName(), { wrapper });
+    await act(async () => {
+      await expect(save(result)).rejects.toThrow('Enter your first and last name.');
+    });
+    expect(PATCH).toHaveBeenCalledOnce();
+  });
+
+  it('no zone sent: a 422 isn’t retried', async () => {
+    PATCH.mockResolvedValueOnce(res(422, undefined, { detail: 'Unprocessable' }));
+    const { result } = renderHook(() => useSaveName(), { wrapper });
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({ userId: 'u1', name: { fullName: 'Amara Okafor' } }),
+      ).rejects.toThrow('We couldn’t save your name. Try again.');
+    });
+    expect(PATCH).toHaveBeenCalledOnce();
   });
 });
 

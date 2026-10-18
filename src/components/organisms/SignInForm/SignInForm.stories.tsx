@@ -94,6 +94,19 @@ export const MentorCode: Story = { args: { ...code, role: 'mentor' } };
 // ---- finish, suspended, redirecting ----
 export const Finish: Story = { args: { ...filled, mode: 'login', step: 'finish', fullName: '' } };
 export const FinishFilled: Story = { args: { ...filled, mode: 'login', step: 'finish' } };
+/** A browser still holding a session with no account: "Use a different email" signs out first. */
+export const FinishSigningOut: Story = {
+  args: { ...filled, mode: 'signup', step: 'finish', fullName: '', signingOut: true },
+};
+export const FinishSignOutFailed: Story = {
+  args: {
+    ...filled,
+    mode: 'signup',
+    step: 'finish',
+    fullName: '',
+    signOutError: 'We couldn’t sign you out. Try again.',
+  },
+};
 export const Suspended: Story = { args: { ...filled, mode: 'login', step: 'suspended' } };
 export const Redirecting: Story = { args: { ...code, code: '482913', redirecting: true } };
 

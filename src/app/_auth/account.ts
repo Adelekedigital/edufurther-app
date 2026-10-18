@@ -24,5 +24,6 @@ export function toAccount(acct: Extract<SignInAccount, { kind: 'member' }>) {
     mentorApproved: acct.mentorApproved,
     onboardingComplete: acct.onboardingComplete,
     isNew: acct.firstName === null,
+    timezone: acct.timezone,
   };
 }

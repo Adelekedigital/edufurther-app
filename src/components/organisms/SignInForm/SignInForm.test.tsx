@@ -262,6 +262,79 @@ describe('SignInForm — finish and suspended', () => {
     expect(onFinish).toHaveBeenCalledOnce();
   });
 
+  it('offers a way out of the finish step: Use a different email', async () => {
+    const onUseDifferentEmail = vi.fn();
+    const onFinish = vi.fn();
+    render(
+      <Live
+        mode="signup"
+        step="finish"
+        email="amara@example.com"
+        onUseDifferentEmail={onUseDifferentEmail}
+        onFinish={onFinish}
+      />,
+    );
+    const create = screen.getByRole('button', { name: 'Create account' });
+    const other = screen.getByRole('button', { name: 'Use a different email' });
+    // Under Create account.
+    expect(create.compareDocumentPosition(other) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await userEvent.click(other);
+    expect(onUseDifferentEmail).toHaveBeenCalledOnce();
+    expect(onFinish).not.toHaveBeenCalled();
+  });
+
+  it('takes no press on the finish step while signing out, Enter included', async () => {
+    const onUseDifferentEmail = vi.fn();
+    const onFinish = vi.fn();
+    render(
+      <Live
+        mode="signup"
+        step="finish"
+        email="amara@example.com"
+        fullName="Amara Okafor"
+        signingOut
+        onUseDifferentEmail={onUseDifferentEmail}
+        onFinish={onFinish}
+      />,
+    );
+    const other = screen.getByRole('button', { name: 'Signing out…' });
+    expect(other).toHaveAttribute('aria-disabled', 'true');
+    expect(other).toHaveAttribute('aria-busy', 'true');
+    expect(screen.queryByRole('button', { name: 'Use a different email' })).toBeNull();
+    // Announced politely, beside the offline region.
+    expect(screen.getAllByRole('status').some((r) => r.textContent === 'Signing out…')).toBe(true);
+    expect(screen.getByRole('button', { name: 'Create account' })).toBeDisabled();
+    other.focus();
+    await userEvent.click(other);
+    expect(onUseDifferentEmail).not.toHaveBeenCalled();
+    // Still focusable and focused: aria-disabled, not disabled.
+    expect(other).toHaveFocus();
+    await userEvent.type(screen.getByLabelText('Full name'), '{Enter}');
+    expect(onFinish).not.toHaveBeenCalled();
+  });
+
+  it('goes back to its own label, and the status empties, once signing out is over', () => {
+    const p = props({ step: 'finish', email: 'amara@example.com', signingOut: true });
+    const { rerender } = render(<SignInForm {...p} />);
+    const other = screen.getByRole('button', { name: 'Signing out…' });
+    rerender(<SignInForm {...p} signingOut={false} />);
+    expect(other).toHaveAccessibleName('Use a different email');
+    expect(screen.getAllByRole('status').every((r) => r.textContent === '')).toBe(true);
+  });
+
+  it('says so when signing out didn’t work', () => {
+    render(
+      <SignInForm
+        {...props({
+          step: 'finish',
+          email: 'amara@example.com',
+          signOutError: 'We couldn’t sign you out. Try again.',
+        })}
+      />,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('We couldn’t sign you out. Try again.');
+  });
+
   it('offers support by email when the account is suspended', () => {
     render(
       <SignInForm {...props({ mode: 'login', step: 'suspended', email: 'amara@example.com' })} />,

@@ -1,11 +1,13 @@
 'use client';
 
 import { useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { hardNavigate } from '@/lib/utils/hardNavigate';
 import { releaseLeaveGuards } from '@/lib/utils/leaveGuard';
 import { normaliseEmail } from '@/lib/utils/emailTypo';
 import { safeReturnTo } from '@/lib/utils/safeReturnTo';
 import {
+  endSessionHere,
   sendEmailCode,
   signedInUser,
   signInWithGoogle,
@@ -74,4 +76,18 @@ export function useSignOut() {
     }
     hardNavigate('/login');
   }, []);
+}
+
+/**
+ * Sign out of this device and stay on the page: the sign-in screen's way out
+ * of a session that has no named account behind it. The cache goes with the
+ * session, as it was keyed by it. Resolves false when the session stayed.
+ */
+export function useSignOutHere() {
+  const qc = useQueryClient();
+  return useCallback(async () => {
+    const ended = await endSessionHere().catch(() => false);
+    if (ended) qc.clear();
+    return ended;
+  }, [qc]);
 }
