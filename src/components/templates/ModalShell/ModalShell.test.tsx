@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ModalShell } from './ModalShell';
@@ -144,5 +146,13 @@ describe('ModalShell mobile="sheet" (Modal.dc.html `mobile`)', () => {
     const dialog = screen.getByRole('dialog', { name: 'Plain' });
     expect(dialog.className).not.toMatch(/phoneSheet/);
     expect(dialog.querySelector('[class*="phoneGrabber"]')).toBeNull();
+  });
+});
+
+describe('ModalShell title (Modal.dc.html)', () => {
+  it('balances its lines, so no word sits alone on the second', () => {
+    const css = readFileSync(join(__dirname, 'ModalShell.module.css'), 'utf8');
+    const title = css.match(/(?:^|\n)\.title\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(title).toMatch(/text-wrap:\s*balance/);
   });
 });

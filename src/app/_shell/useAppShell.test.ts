@@ -56,6 +56,10 @@ describe('accountItems (AppShell.dc.html account menu)', () => {
       'Talk to our team',
       'Logout',
     ]);
+    // The design's support_agent glyph, opening the call in a new tab.
+    expect(
+      fresh(member({ isMentor: false, isApprovedMentor: false, isMentee: true }), vi.fn())[0],
+    ).toMatchObject({ icon: 'support_agent', href: 'https://cal.example/match', external: true });
     // Signed up, no goal yet and no mentor profile: still a would-be mentee.
     expect(labels(member({ isMentor: false, isApprovedMentor: false, isMentee: false }))).toContain(
       'Talk to our team',

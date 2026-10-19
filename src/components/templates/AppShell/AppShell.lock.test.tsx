@@ -107,6 +107,9 @@ describe('AppShell: the setup lock (AppShell.dc.html setupLock)', () => {
     expect(within(dialog).getByRole('button', { name: 'Not now' })).toBeInTheDocument();
     // The lock icon in the header.
     expect(dialog.querySelector('[class*="withIcon"] > span')).toHaveTextContent('lock');
+    // Modal md (480px), so the longest title fits one line on desktop (design size="md").
+    expect(dialog).toHaveClass('md');
+    expect(dialog).not.toHaveClass('sm');
     // Focus moved in.
     expect(dialog.contains(document.activeElement)).toBe(true);
     await user.keyboard('{Escape}');
@@ -152,7 +155,7 @@ describe('AppShell: the setup lock (AppShell.dc.html setupLock)', () => {
     await user.click(nav(0).getByRole('button', { name: 'Bookings, opens once you’re approved' }));
     const dialog = screen.getByRole('dialog', { name: 'Bookings opens once you’re approved' });
     expect(dialog).toHaveTextContent(
-      'We’re reviewing your application. You can set up your profile, sessions and hours while you wait.',
+      'We’re reviewing your application. You can set up your sessions and hours while you wait.',
     );
     expect(within(dialog).getByRole('link', { name: 'See application status' })).toHaveAttribute(
       'href',

@@ -21,7 +21,7 @@ const account = {
     {
       key: 'matches',
       label: 'Talk to our team',
-      icon: 'route' as const,
+      icon: 'support_agent' as const,
       href: '#',
       external: true,
     },

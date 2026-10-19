@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MonthPicker } from './MonthPicker';
@@ -82,5 +84,22 @@ describe('MonthPicker onMonthChange', () => {
     expect(onMonthChange).toHaveBeenLastCalledWith('2026-11-01');
     await user.click(screen.getByRole('button', { name: 'Previous month' }));
     expect(onMonthChange).toHaveBeenLastCalledWith('2026-10-01');
+  });
+});
+
+describe('MonthPicker past days (axe color-contrast on /calendar)', () => {
+  const css = readFileSync(join(__dirname, 'MonthPicker.module.css'), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    '',
+  );
+
+  it('read in --text-tertiary (4.9:1 on white), never --ink-300 (1.5:1)', () => {
+    const rule = css.match(/\.past[^{]*\{([^}]*)\}/);
+    expect(rule?.[1]).toMatch(/color:\s*var\(--text-tertiary\)/);
+    expect(css).not.toMatch(/\.past[^{]*\{[^}]*--ink-300/);
+  });
+
+  it('a past blocked day keeps the blue day’s white text', () => {
+    expect(css.match(/\.past([^{]*)\{/)?.[1]).toMatch(/:not\(\.selected, \.mid\)/);
   });
 });

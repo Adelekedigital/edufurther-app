@@ -335,7 +335,7 @@
   }
   .tab[aria-current='page'],
   .tab[data-current] {
-    color: var(--blue-700);
+    color: var(--blue-500);
   }
   .tab[aria-current='page'] .tabIcon,
   .tab[data-current] .tabIcon {
@@ -412,6 +412,7 @@
   .sheetDanger:hover {
     color: var(--text-danger);
   }
+  /* blue-700 on blue-50: blue-500 there is 4.28:1, under AA (design updated to match). */
   .sheetItem[aria-current='page'] {
     background: var(--blue-50);
     color: var(--blue-700);

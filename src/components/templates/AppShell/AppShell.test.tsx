@@ -144,7 +144,7 @@ describe('AppShell navigation', () => {
             {
               key: 'matches',
               label: 'Talk to our team',
-              icon: 'route',
+              icon: 'support_agent',
               href: 'https://x.test',
               external: true,
             },

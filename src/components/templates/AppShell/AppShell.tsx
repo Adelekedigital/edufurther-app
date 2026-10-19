@@ -276,6 +276,7 @@ export function AppShell({
               <AccountMenu
                 avatar={account.avatar}
                 items={account.items}
+                narrow={nav === 'mentor'}
                 credits={
                   credits && {
                     view: credits,
@@ -365,7 +366,8 @@ export function AppShell({
               className={styles.tab}
               aria-expanded={moreOpen}
               aria-controls="more-sheet"
-              data-current={moreActive || undefined}
+              // Lit while its sheet is open, as well as on one of its pages (design).
+              data-current={moreActive || moreOpen || undefined}
               onClick={() => setMoreOpen((o) => !o)}
             >
               <span className={styles.tabIcon}>
@@ -510,6 +512,7 @@ function RailList({
                 className={styles.railItem}
                 aria-current={n.label === active ? 'page' : undefined}
                 aria-label={n.name}
+                title={n.label}
                 aria-haspopup="dialog"
                 onClick={(e) => onLock(n.label, e.currentTarget)}
               >
@@ -522,6 +525,7 @@ function RailList({
                 className={styles.railItem}
                 aria-current={n.label === active ? 'page' : undefined}
                 aria-label={n.name}
+                title={n.label}
               >
                 {body}
               </Link>
