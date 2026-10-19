@@ -14,6 +14,8 @@ type Props = {
   seeking: boolean;
   /** Every offering loaded and none had the requested time. */
   missed: boolean;
+  /** The missed note's words, when the flow knows why (back from onboarding). */
+  missedNote?: string;
   noOpenDays: boolean;
   noTimes: ComponentProps<typeof NoTimes>;
   picker: ComponentProps<typeof DayTimePicker>;
@@ -27,7 +29,7 @@ export function TimeStep(p: Props) {
       {p.missed && !p.picker.time && !p.seeking && !p.slots.isLoading && !p.slots.error && (
         // Our copy, approved as built (design request #50, reply 2026-09-30).
         <p className={styles.missedNote} role="status">
-          That time was just taken. Here’s what’s open.
+          {p.missedNote ?? 'That time was just taken. Here’s what’s open.'}
         </p>
       )}
       {p.slots.isLoading || p.seeking ? (

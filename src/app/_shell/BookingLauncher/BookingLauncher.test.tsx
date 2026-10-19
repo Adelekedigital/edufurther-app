@@ -5,6 +5,11 @@ import { BookingLauncher } from './BookingLauncher';
 // BookingFlow is covered by its own tests; stub it to capture the props the
 // launcher wires, and avoid pulling the full flow (and the booking query hooks)
 // into this unit.
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+// A member who has finished onboarding: no setup box, no draft.
+vi.mock('@/app/_shell/useAppShell', () => ({
+  useAppShell: () => ({ viewer: { kind: 'member', id: 'u1', isMentor: false } }),
+}));
 vi.mock('@/components/organisms/BookingFlow/BookingFlow', () => ({
   BookingFlow: (p: {
     mentor: { name: string };
@@ -45,7 +50,11 @@ vi.mock('@/lib/api/data/booking', () => ({
   useUploadIntakeFile: () => vi.fn(),
 }));
 
-const mentor = { name: 'Mariam Alamata', id: 'm1' } as unknown as Mentor;
+const mentor = {
+  name: 'Mariam Alamata',
+  id: 'm1',
+  profileHref: '/mentors/mariam',
+} as unknown as Mentor;
 
 describe('BookingLauncher', () => {
   it('renders nothing when no mentor is set', () => {

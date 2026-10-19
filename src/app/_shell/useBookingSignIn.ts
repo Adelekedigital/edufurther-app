@@ -10,6 +10,7 @@ import { useSaveName, zoneToSave } from '@/lib/api/data/signIn';
 import { ONBOARDING_LIVE, newAccountDestination } from '@/lib/config/auth';
 import { rememberSignInMethod } from '@/lib/utils/lastUsed';
 import { useOnline } from '@/lib/utils/useOnline';
+import { profileHandle } from '@/lib/utils/guestBooking';
 
 /**
  * The profile's own "reopen the booking" link (useBookLink): Google leaves the
@@ -20,10 +21,8 @@ export function bookingReturnPath(profileHref: string, pick: GuestPick): string 
   return `${profileHref}?${q}`;
 }
 
-/** The mentor's handle, as the onboarding hand-off names them (`for`). */
-function handleOf(profileHref: string): string {
-  return decodeURIComponent(profileHref.split('/').filter(Boolean).pop() ?? '');
-}
+/** The mentor's handle, as the onboarding hand-off names them (`for`); shared with Finish setup. */
+const handleOf = (profileHref: string): string => profileHandle(profileHref) ?? '';
 
 /**
  * Signing in inside the booking modal (BookingModal.dc.html, guest step).

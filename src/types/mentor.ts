@@ -82,6 +82,11 @@ export type AppErrorKind =
   | 'bookingOverlap'
   | 'bookingWithMentorExists'
   | 'bookingLimitReached'
+  /**
+   * 409 `/problems/booking-needs-onboarding`: the mentee hasn't finished
+   * onboarding. The booking flow shows the finish-setup box, not an error.
+   */
+  | 'needsOnboarding'
   /** 429: the server is asking for a pause, and says how long (backend #358). */
   | 'rateLimited'
   | 'server'

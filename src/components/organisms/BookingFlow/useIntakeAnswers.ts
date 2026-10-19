@@ -15,11 +15,14 @@ export function isAnswered(a: IntakeAnswer | undefined): boolean {
 export function useIntakeAnswers({
   onUpload,
   requestError,
+  initial,
 }: {
   onUpload?: (file: File) => Promise<IntakeFile>;
   requestError: { questionId?: string; fileGone?: boolean } | null;
+  /** Answers given before the flow was put down (a booking draft), read once. */
+  initial?: Record<string, IntakeAnswer>;
 }) {
-  const [answers, setAnswers] = useState<Record<string, IntakeAnswer>>({});
+  const [answers, setAnswers] = useState<Record<string, IntakeAnswer>>(() => initial ?? {});
   const [uploads, setUploads] = useState<Record<string, Upload>>({});
   const answer = (id: string, a: IntakeAnswer) => setAnswers((x) => ({ ...x, [id]: a }));
   // The upload each question is waiting for. A result that isn't the latest for

@@ -69,7 +69,11 @@ export function OnboardingScreen() {
 
   let body;
   if (f.doneAtLoad) {
-    body = <Waiting text={FLOW_COPY.alreadySetUp} />;
+    body = (
+      <Waiting
+        text={f.guest?.after === 'booking' ? GUEST_COPY.alreadySetUp : FLOW_COPY.alreadySetUp}
+      />
+    );
   } else if (viewerError || f.loadError) {
     body = (
       <main className={styles.state}>
@@ -251,6 +255,12 @@ export function OnboardingScreen() {
               </p>
             )}
             {/* Always in the DOM, so the line is heard when it appears. */}
+            {n === 2 && f.guest?.after === 'booking' && f.guestMentor && (
+              <p className={styles.creditNote}>
+                <Icon name="redeem" size={16} />
+                {GUEST_COPY.creditNote(f.guestMentor.firstName)}
+              </p>
+            )}
             <p id={needId} aria-live="polite" className={styles.need}>
               {gaps.length ? FLOW_COPY.fillRequired : ''}
             </p>
@@ -263,7 +273,9 @@ export function OnboardingScreen() {
             >
               {n === 1
                 ? FLOW_COPY.continue
-                : f.guestMentor
+                : f.guest?.after === 'booking'
+                  ? GUEST_COPY.backToBooking
+                  : f.guestMentor
                   ? GUEST_COPY.continueToBook(f.guestMentor.firstName)
                   : FLOW_COPY.seeMatches}
             </Button>

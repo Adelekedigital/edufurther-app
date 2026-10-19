@@ -9,7 +9,13 @@ describe('parseGuestBooking', () => {
       handle: 'ada-obi',
       sid: 'st-1',
       time: '2026-10-20T10:00:00Z',
+      after: null,
     });
+  });
+
+  it('reads the booking path (after=booking) and nothing else as one', () => {
+    expect(parseGuestBooking(q('for=ada&sid=st-1&after=booking'))?.after).toBe('booking');
+    expect(parseGuestBooking(q('for=ada&sid=st-1&after=matches'))?.after).toBeNull();
   });
 
   it('is no guest booking when the handle or session is off', () => {
@@ -27,6 +33,11 @@ describe('parseGuestBooking', () => {
   it('reads every link the sign-in side mints, underscores and long fractions included', () => {
     expect(
       parseGuestBooking(q('for=ada_obi&sid=st_general&time=2026-10-20T10:00:00.1234567Z')),
-    ).toEqual({ handle: 'ada_obi', sid: 'st_general', time: '2026-10-20T10:00:00.1234567Z' });
+    ).toEqual({
+      handle: 'ada_obi',
+      sid: 'st_general',
+      time: '2026-10-20T10:00:00.1234567Z',
+      after: null,
+    });
   });
 });
