@@ -75,21 +75,43 @@ export function headlineFor(s: SchoolDraft | undefined): string {
 }
 
 /**
- * The backend's profile-link rule (edufurtherbe domain/social_links.py), so a
- * link that passes here is never a 422 on save: a 3–100 character slug of
- * A–Z a–z 0–9 _ - on linkedin.com or its www, m or two-letter country host.
- * Anything after the slug (…/details/experience) is dropped, as the backend
- * does. A bare handle isn't offered: the step asks for the profile link.
+ * The backend's profile-link rule (edufurtherbe domain/social_links.py, #496),
+ * so a link that passes here is never a 422 on save: linkedin.com or its www,
+ * m or two-letter country host, then /in/<handle>. Anything after the handle
+ * (…/details/experience) is dropped, as the backend does. A bare handle isn't
+ * offered: the step asks for the profile link.
  */
 const LINKEDIN =
-  /^(?:https?:\/\/)?(?:(?:www|m|[a-z]{2})\.)?linkedin\.com\/in\/([a-z0-9_-]{3,100})(?:\/[^?#\s]*)?(?:[?#].*)?$/i;
+  /^(?:https?:\/\/)?(?:(?:www|m|[a-z]{2})\.)?linkedin\.com\/in\/([^/?#\s]+)(?:\/[^?#\s]*)?(?:[?#].*)?$/i;
 
-export const isLinkedInProfile = (url: string) => LINKEDIN.test(url.trim());
+/** LinkedIn's own 3–100 characters: letters, digits, marks (not first), _ and -. */
+const HANDLE = /^(?!\p{M})[\p{L}\p{Nd}\p{Mn}\p{Mc}_-]{3,100}$/u;
 
-/** Saved in one form, so the reviewer's link always opens. */
+/**
+ * The handle as the backend reads it: percent-decoded once as UTF-8 (LinkedIn
+ * encodes accented names), then NFKC. Null when it isn't one.
+ */
+function linkedInHandle(url: string): string | null {
+  const raw = LINKEDIN.exec(url.trim())?.[1];
+  if (!raw) return null;
+  let handle: string;
+  try {
+    handle = decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+  // A % left after one decode was encoded twice: the backend refuses it.
+  if (handle.includes('%')) return null;
+  handle = handle.normalize('NFKC');
+  return HANDLE.test(handle) ? handle : null;
+}
+
+export const isLinkedInProfile = (url: string) => linkedInHandle(url) !== null;
+
+/** Saved as the backend stores it (UTF-8, uppercase hex), so the reviewer's link always opens. */
 export function normaliseLinkedIn(url: string): string {
-  const m = LINKEDIN.exec(url.trim());
-  return m ? `https://www.linkedin.com/in/${m[1]}` : url.trim();
+  const handle = linkedInHandle(url);
+  return handle ? `https://www.linkedin.com/in/${encodeURIComponent(handle)}` : url.trim();
 }
 
 export const currentSchool = (schools: SchoolDraft[]) =>
