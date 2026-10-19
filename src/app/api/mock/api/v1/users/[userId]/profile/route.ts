@@ -10,8 +10,8 @@ const invalid = (pointer: string) =>
 
 /**
  * MOCK of PATCH /api/v1/users/{user_id}/profile: cover, names, About and
- * where they're from (origin_country_id: a catalog id or null), and
- * primary_role (pending).
+ * where they're from (origin_country_id: a catalog id or null),
+ * full_name, and the pending current_country_id and primary_role.
  * Partial like the backend: only the fields sent are written. Names can't be
  * cleared (422) and are at most 100 characters; About at most 1500, blank is
  * null. ENABLE_MOCK_API=1 only.
@@ -39,6 +39,16 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ userId: strin
     if (typeof v !== 'string' || !v.trim() || v.trim().length > 100) return invalid(`/${k}`);
     text[k] = v.trim();
   }
+  // full_name splits on the first word, as the backend does; one word is a 422.
+  if ('full_name' in body) {
+    const v = body.full_name;
+    if (typeof v !== 'string' || !v.trim() || v.length > 1000) return invalid('/full_name');
+    const [first, ...rest] = v.trim().split(/\s+/);
+    if (!rest.length || first!.length > 100 || rest.join(' ').length > 100)
+      return invalid('/full_name');
+    text.first_name = first;
+    text.last_name = rest.join(' ');
+  }
   if ('about_me' in body) {
     const v = body.about_me;
     if (v !== null && (typeof v !== 'string' || v.length > 1500)) return invalid('/about_me');
@@ -51,6 +61,13 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ userId: strin
     const v = body.origin_country_id;
     if (v !== null && !MOCK_COUNTRIES.some((c) => c.id === v)) return invalid('/origin_country_id');
     setMockItems(userId, { origin_country_id: v as string | null });
+  }
+  // The country they live in (edufurtherbe #500).
+  if ('current_country_id' in body) {
+    const v = body.current_country_id;
+    if (v !== null && !MOCK_COUNTRIES.some((c) => c.id === v))
+      return invalid('/current_country_id');
+    setMockItems(userId, { current_country_id: v as string | null });
   }
   // PENDING BACKEND (Mentor Onboarding B3): "Continue as a mentee" writes the role.
   if ('primary_role' in body && body.primary_role !== 'mentee' && body.primary_role !== 'mentor')

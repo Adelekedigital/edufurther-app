@@ -1,0 +1,108 @@
+/* Mentee Settings.dc.html languages group. */
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  outline: none;
+}
+
+/* "Add another language": a dashed 40px chip in blue-700. */
+.add {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--button-h-medium);
+  padding: 0 var(--space-3);
+  border: var(--border-hairline) dashed var(--ink-300);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-medium);
+  color: var(--blue-700);
+}
+.add:hover {
+  background: var(--ink-50);
+}
+.add:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.adder {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.search {
+  position: relative;
+  flex: 1;
+  min-width: 160px;
+  max-width: 280px;
+}
+
+.input {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--button-h-medium);
+  padding: 0 var(--space-3);
+  border: var(--border-hairline) solid var(--ink-300);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  color: var(--ink-900);
+}
+.input:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 0;
+  border-color: var(--border-focus);
+}
+
+/* Ours: the catalog matches, in the menu card. */
+.list {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  right: 0;
+  z-index: 6;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  box-shadow:
+    var(--shadow-menu),
+    inset 0 0 0 1px var(--ink-200);
+}
+.option,
+.empty {
+  display: flex;
+  align-items: center;
+  min-height: var(--button-h-medium);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-p-sm);
+  color: var(--ink-900);
+}
+.option {
+  cursor: pointer;
+}
+.option:hover,
+.activeOption {
+  background: var(--ink-50);
+}
+.empty {
+  color: var(--ink-600);
+}
+
+/* Phones: 16px so iOS doesn't zoom into the field. */
+@media (max-width: 767px) {
+  .input {
+    font-size: var(--text-p-md);
+  }
+}

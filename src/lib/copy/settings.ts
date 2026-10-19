@@ -1,0 +1,70 @@
+/**
+ * Every word Settings shows, from Mentee Settings.dc.html and Settings
+ * handoff.md (PRD: Mentee Settings), reviewed with edufurther-ux-writer.
+ * Ours, where the design draws nothing: the load and save failures.
+ */
+
+export const SETTINGS_COPY = {
+  title: 'Settings',
+  sub: 'Your details, what you’re working toward, and how you sign in.',
+  tabsLabel: 'Settings',
+  loadError: 'We couldn’t load your settings.',
+  loadErrorBody: 'Check your connection and try again.',
+  retry: 'Try again',
+} as const;
+
+export type SettingsTab = 'profile' | 'goals' | 'education' | 'security';
+
+/** Tab order and names (design `tabItems`, menteeTabs=split). */
+export const TAB_LABELS: Record<SettingsTab, string> = {
+  profile: 'Profile',
+  goals: 'Goals',
+  education: 'Education',
+  security: 'Login and security',
+};
+
+export const PROFILE_COPY = {
+  photo: 'Profile photo',
+  photoHint: 'JPG or PNG, max 5 MB.',
+  photoLabel: 'Your profile photo',
+  section: 'About you',
+  name: 'Full name',
+  country: 'Country you live in',
+  countryHint: 'Helps us suggest mentors who made the same move.',
+  countryPlaceholder: 'Select a country',
+  languages: 'Languages you speak',
+  languagesHint: 'So you can have sessions in the language you’re most comfortable in.',
+  addLanguage: 'Add another language',
+  addLanguagePlaceholder: 'For example, Twi',
+  add: 'Add',
+  cancel: 'Cancel',
+  // Ours: the catalog search behind "Add another language".
+  searchingLanguages: 'Searching…',
+  languageSearchFailed: 'We couldn’t search languages. Try again.',
+  noLanguageMatch: (q: string) => `No languages match “${q}”.`,
+  bio: 'A few lines about you (optional)',
+  bioPlaceholder: 'Where you are now and where you’re headed',
+  bioHint: 'Mentors read this before your session.',
+  bioDraftNote: 'We drafted this from your profile information. Edit it in your own words.',
+} as const;
+
+/** Inline errors on Save with gaps (handoff: required fields, 19 Oct). */
+export const PROFILE_ERRORS = {
+  name: 'Add your full name.',
+  country: 'Select the country you live in.',
+  langs: 'Pick at least one language.',
+} as const;
+export type ProfileGap = keyof typeof PROFILE_ERRORS;
+
+export const SAVE_COPY = {
+  formError: 'Fill in the required fields to continue.',
+  profileBar: 'Unsaved changes to your profile',
+  barLabel: 'Unsaved changes',
+  discard: 'Discard',
+  save: 'Save changes',
+  saving: 'Saving…',
+  profileSaved: 'Profile saved',
+  profileFailed: 'We couldn’t save your profile. Your changes are still here. Try again.',
+  profileOffline: 'You’re offline. Your changes are still here. Try again when you’re connected.',
+  languagesFailed: 'Your details saved, but your languages didn’t. Try again.',
+} as const;

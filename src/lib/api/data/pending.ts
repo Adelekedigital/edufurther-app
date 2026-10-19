@@ -4,7 +4,8 @@
  * shipped here and `tsc` lists every call site to move onto the typed client.
  * The phase A mock answers these shapes (respond.ts `pendingOk`).
  *
- * Empty since B3 (edufurtherbe #493): the mentor application is on the typed client.
+ * Empty since Mentee Settings PR 1 (edufurtherbe #500): the country they live
+ * in and their own languages are on the typed client.
  */
 
 /** #3: the completion refusal names what is missing. */

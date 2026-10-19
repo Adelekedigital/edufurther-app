@@ -25,19 +25,21 @@ async function lookup(
   return data.data.map((l) => ({ id: l.id, label: l.display_name, code: l.code ?? undefined }));
 }
 
+/** Every country (shared, so a read that maps a country code to its id can reuse it). */
+export const countriesQuery = {
+  queryKey: keys.catalog.countries,
+  queryFn: ({ signal }: { signal: AbortSignal }) => lookup('countries', { limit: 300 }, signal),
+  // Reference data: it changes on deploys, not during a visit.
+  staleTime: HOUR,
+};
+
 /**
  * Every country, for the background selects. One page holds them all (the
  * backend pages at 300; there are about 250). Only fetched while `enabled`
  * (the editor is open).
  */
 export function useCountries(enabled: boolean) {
-  const query = useQuery({
-    queryKey: keys.catalog.countries,
-    queryFn: ({ signal }) => lookup('countries', { limit: 300 }, signal),
-    enabled,
-    // Reference data: it changes on deploys, not during a visit.
-    staleTime: HOUR,
-  });
+  const query = useQuery({ ...countriesQuery, enabled });
   // What's cached wins: a failed background refetch keeps the list (review of #85).
   const status: Status = query.data ? 'ready' : query.error ? 'error' : 'loading';
   return { countries: query.data ?? [], status, retry: () => void query.refetch() };

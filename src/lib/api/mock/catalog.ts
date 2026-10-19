@@ -54,6 +54,8 @@ export const countryName = (id: string | null) =>
 /** What the owner saved from the profile's editors; unset keys keep the fixture's. */
 export type MockItems = {
   origin_country_id?: string | null;
+  /** The country they live in (Settings › Profile). */
+  current_country_id?: string | null;
   primary_study_country_id?: string | null;
   language_ids?: string[];
   offering_ids?: string[];
