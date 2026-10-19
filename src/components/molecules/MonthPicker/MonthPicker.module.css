@@ -135,8 +135,8 @@ button.day:not(.selected, .mid, [aria-disabled='true']):hover {
   background: transparent;
   color: var(--blue-700);
 }
-/* Past days: --text-tertiary (4.9:1 on white), not the port's --ink-300
-   (1.5:1, axe serious). A past blocked day keeps the blue day's white. */
+/* Past days (design ink-500, 4.9:1 on white). A past blocked day keeps the
+   blue day's white. */
 .past:not(.selected, .mid) {
   color: var(--text-tertiary);
 }

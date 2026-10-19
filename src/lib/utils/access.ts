@@ -63,7 +63,7 @@ const LOCKS: Record<Exclude<AccessState, 'none'>, { items: NavKey[]; copy: LockC
     copy: {
       why: 'opens once you’re approved',
       title: (item) => `${item} opens once you’re approved`,
-      body: 'We’re reviewing your application. You can set up your profile, sessions and hours while you wait.',
+      body: 'We’re reviewing your application. You can set up your sessions and hours while you wait.',
       cta: 'See application status',
       href: APPLICATION,
     },

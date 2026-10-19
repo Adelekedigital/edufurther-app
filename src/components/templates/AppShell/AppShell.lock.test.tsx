@@ -155,7 +155,7 @@ describe('AppShell: the setup lock (AppShell.dc.html setupLock)', () => {
     await user.click(nav(0).getByRole('button', { name: 'Bookings, opens once you’re approved' }));
     const dialog = screen.getByRole('dialog', { name: 'Bookings opens once you’re approved' });
     expect(dialog).toHaveTextContent(
-      'We’re reviewing your application. You can set up your profile, sessions and hours while you wait.',
+      'We’re reviewing your application. You can set up your sessions and hours while you wait.',
     );
     expect(within(dialog).getByRole('link', { name: 'See application status' })).toHaveAttribute(
       'href',
