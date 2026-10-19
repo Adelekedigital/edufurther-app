@@ -157,6 +157,7 @@ export function useMentorOnboardingFlow() {
   const [tried, setTried] = useState(false);
   // Gaps the submit refusal named that the answers on screen can't show (e.g. a photo removed elsewhere).
   const [serverGaps, setServerGaps] = useState<MentorGap[]>([]);
+  const [leaving, setLeaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [drafting, setDrafting] = useState(false);
   const [draftFailed, setDraftFailed] = useState(false);
@@ -312,7 +313,7 @@ export function useMentorOnboardingFlow() {
   };
 
   const goNext = async () => {
-    if (!form || save.isPending || submit.isPending) return;
+    if (!form || save.isPending || submit.isPending || leaving) return;
     const standing = state ?? form.base;
     if (gaps.length || drafting) {
       setTried(true);
@@ -343,6 +344,8 @@ export function useMentorOnboardingFlow() {
     }
     try {
       await submit.submit();
+      // Locked until the page goes, so a second tap can't send it again.
+      setLeaving(true);
       // The status page, inside the app: its first arrival says it was sent.
       router.replace('/mentor-application?sent=1');
     } catch (e) {
@@ -379,7 +382,7 @@ export function useMentorOnboardingFlow() {
     saved: saved || !!form?.resumed,
     save,
     submit,
-    busy: save.isPending || submit.isPending,
+    busy: save.isPending || submit.isPending || leaving,
     photo,
     linkedinLooksWrong:
       !!answers && answers.linkedin.trim().length >= 6 && !isLinkedInProfile(answers.linkedin),

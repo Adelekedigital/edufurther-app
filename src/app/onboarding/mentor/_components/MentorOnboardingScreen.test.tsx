@@ -517,6 +517,19 @@ describe('MentorOnboardingScreen', () => {
     ).toBeInTheDocument();
   });
 
+  it('Submit stays locked once it succeeds, while the status page loads', async () => {
+    appState = stateWith({
+      lastStep: 'about',
+      hasProfile: true,
+      answers: answers({ helpIds: ['o-docs'], days: [0] }),
+    });
+    render(<MentorOnboardingScreen />);
+    const button = screen.getByRole('button', { name: 'Submit application' });
+    await userEvent.click(button);
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/mentor-application?sent=1'));
+    expect(button).toHaveAttribute('aria-busy', 'true');
+  });
+
   it('a decided application at submit goes to the status page, never "try again"', async () => {
     appState = stateWith({
       lastStep: 'about',

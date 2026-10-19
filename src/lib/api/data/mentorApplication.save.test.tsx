@@ -249,4 +249,25 @@ describe('useSubmitMentorApplication', () => {
     await result.current.submit();
     expect(qc.getQueryData(keys.viewer.mentorApplication('u1'))).toBeUndefined();
   });
+
+  it('drops the form’s own cached /me too, so "Edit my application" opens fresh from step 1', async () => {
+    POST.mockImplementation(() =>
+      ok(200, { submitted_at: '2026-10-18T10:00:00Z', approval_status: 'pending' }),
+    );
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    qc.setQueryData(keys.mentorApplication.me('u1'), { mentor_profile: { submitted_at: null } });
+    const { result } = renderHook(() => useSubmitMentorApplication(), {
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+      ),
+    });
+    await result.current.submit();
+    expect(qc.getQueryData(keys.mentorApplication.me('u1'))).toBeUndefined();
+  });
+
+  it('keeps the form’s cache apart from the status page’s: the two hold different shapes', () => {
+    expect(keys.mentorApplication.me('u1')).not.toEqual(keys.viewer.mentorApplication('u1'));
+    // Still under the viewer prefix, so a new photo refreshes the answers.
+    expect(keys.mentorApplication.me('u1')[0]).toBe('viewer');
+  });
 });

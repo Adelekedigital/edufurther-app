@@ -584,6 +584,8 @@ export function useSubmitMentorApplication() {
       // Dropped, not just marked stale: the status page opens next and must
       // never latch a cached "unsubmitted" (it would send them back here).
       qc.removeQueries({ queryKey: keys.viewer.mentorApplicationAll });
+      // And the form's own read: "Edit my application" must see it submitted.
+      qc.removeQueries({ queryKey: keys.mentorApplication.all });
       // Sign-in routing reads the application from /me too.
       void qc.invalidateQueries({ queryKey: keys.viewer.all });
     },
