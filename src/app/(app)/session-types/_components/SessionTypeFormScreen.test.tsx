@@ -2,6 +2,12 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Viewer } from '@/types/mentor';
 import { SessionTypeFormScreen } from './SessionTypeFormScreen';
+import {
+  expectLockedPage,
+  explainer,
+  resetFlags,
+  viewers,
+} from '@/app/_shell/lockedPage.harness';
 
 const push = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -20,15 +26,24 @@ const mentor: Viewer = {
   completedSessions: 0,
   credits: null,
 };
-vi.mock('@/app/_shell/useAppShell', () => ({
-  useAppShell: () => ({
-    viewer: mentor,
-    member: mentor,
-    chrome: 'member',
-    account: undefined,
-    nav: 'mentor',
-  }),
-}));
+let viewer: Viewer = mentor;
+// The setup lock's flags, switchable per test (lockedPage.harness).
+vi.mock('@/lib/config/auth', async (orig) =>
+  (await import('@/app/_shell/lockedPage.harness')).authFlags(await orig()),
+);
+vi.mock('@/app/_shell/useAppShell', async () => {
+  const { accessFor } = await import('@/lib/utils/access');
+  return {
+    useAppShell: () => ({
+      access: accessFor(viewer),
+      viewer,
+      member: viewer.kind === 'member' ? viewer : null,
+      chrome: 'member',
+      account: undefined,
+      nav: 'mentor',
+    }),
+  };
+});
 vi.mock('@/lib/api/data/mentors', () => ({
   useTopics: () => ({
     topics: [
@@ -104,6 +119,8 @@ vi.mock('@/lib/api/data/sessionTypeEdit', () => ({
 beforeEach(() => {
   push.mockReset();
   ownTypes = { data: [] };
+  viewer = mentor;
+  resetFlags();
   create.mockReset();
   createError = null;
   defaultsMock = READY;
@@ -603,5 +620,20 @@ describe('SessionTypeFormScreen — review of #60', () => {
       }),
     );
     expect(screen.queryByText('Check the stage.')).toBeNull();
+  });
+});
+
+describe('the setup lock: /session-types/new opened by URL (PRD "App shell and access")', () => {
+  it('a declined mentor gets the explainer as the page, not the wizard', () => {
+    viewer = viewers.mentorDeclined;
+    render(<SessionTypeFormScreen template="sop-review" />);
+    expectLockedPage(explainer.mentorNotApproved('Sessions'));
+    expect(screen.queryByRole('textbox', { name: 'Session name' })).toBeNull();
+  });
+
+  it('a mentor in review still creates session types (only Bookings locks)', () => {
+    viewer = viewers.mentorReview;
+    render(<SessionTypeFormScreen template="sop-review" />);
+    expect(screen.getByRole('textbox', { name: 'Session name' })).toBeInTheDocument();
   });
 });

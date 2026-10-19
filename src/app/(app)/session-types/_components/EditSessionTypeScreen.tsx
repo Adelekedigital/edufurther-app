@@ -9,7 +9,7 @@ import { toDraft, useSavedSessionType } from '@/lib/api/data/sessionTypeEdit';
 import { useMentorDefaults } from '@/lib/api/data/sessionTypes';
 import type { BookingDefaults } from '@/lib/utils/sessionTypeDraft';
 import { useAppShell } from '@/app/_shell/useAppShell';
-import { mentorGate, SESSION_TYPES_GATE } from '@/app/_shell/MentorGate';
+import { lockedPageGate, mentorGate, SESSION_TYPES_GATE } from '@/app/_shell/MentorGate';
 import { SessionTypeFormScreen } from './SessionTypeFormScreen';
 import styles from './SessionTypesScreen.module.css';
 
@@ -20,7 +20,7 @@ import styles from './SessionTypesScreen.module.css';
  * error with a retry, then the form.
  */
 export function EditSessionTypeScreen({ id }: { id: string }) {
-  const { viewer, member } = useAppShell();
+  const { viewer, member, access } = useAppShell();
   const isMentor = !!member?.isMentor;
   const saved = useSavedSessionType(id, isMentor);
   const defaults = useMentorDefaults(isMentor ? member!.id : null);
@@ -38,7 +38,11 @@ export function EditSessionTypeScreen({ id }: { id: string }) {
   if (saved.data && draft && !topics.isLoading)
     return <SessionTypeFormScreen template={null} edit={{ id, saved: saved.data, draft }} />;
 
-  const gate = mentorGate(viewer, isMentor, `/session-types/${id}/edit`, SESSION_TYPES_GATE);
+  // The shared gates first, then the setup lock (accessFor decides). Once the
+  // type has loaded, SessionTypeFormScreen applies the same two.
+  const gate =
+    mentorGate(viewer, isMentor, `/session-types/${id}/edit`, SESSION_TYPES_GATE) ??
+    lockedPageGate(access, 'Sessions');
   const shell = (body: ReactNode) => <>{gate ?? body}</>;
   if (saved.error?.kind === 'notFound')
     return shell(

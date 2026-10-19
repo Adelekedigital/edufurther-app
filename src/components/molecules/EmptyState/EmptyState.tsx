@@ -29,6 +29,7 @@ type EmptyStateProps = Art & {
   actions?: ReactNode;
   /** Title element level, so the state slots into the page outline. */
   headingLevel?: 1 | 2 | 3;
+  /** The illustration's px; ignored when `icon` is set (the disc is a fixed size). */
   size?: number;
 };
 

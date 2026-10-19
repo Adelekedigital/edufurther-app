@@ -2,6 +2,12 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Viewer } from '@/types/mentor';
 import { EditSessionTypeScreen } from './EditSessionTypeScreen';
+import {
+  expectLockedPage,
+  explainer,
+  resetFlags,
+  viewers,
+} from '@/app/_shell/lockedPage.harness';
 
 const push = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -20,15 +26,24 @@ const mentor: Viewer = {
   completedSessions: 0,
   credits: null,
 };
-vi.mock('@/app/_shell/useAppShell', () => ({
-  useAppShell: () => ({
-    viewer: mentor,
-    member: mentor,
-    chrome: 'member',
-    account: undefined,
-    nav: 'mentor',
-  }),
-}));
+let viewer: Viewer = mentor;
+// The setup lock's flags, switchable per test (lockedPage.harness).
+vi.mock('@/lib/config/auth', async (orig) =>
+  (await import('@/app/_shell/lockedPage.harness')).authFlags(await orig()),
+);
+vi.mock('@/app/_shell/useAppShell', async () => {
+  const { accessFor } = await import('@/lib/utils/access');
+  return {
+    useAppShell: () => ({
+      access: accessFor(viewer),
+      viewer,
+      member: viewer.kind === 'member' ? viewer : null,
+      chrome: 'member',
+      account: undefined,
+      nav: 'mentor',
+    }),
+  };
+});
 vi.mock('@/lib/api/data/mentors', () => ({
   useTopics: () => ({
     topics: [
@@ -105,6 +120,8 @@ const ready = (data = SAVED) => ({ data, isLoading: false, error: null, retry: v
 
 beforeEach(() => {
   push.mockReset();
+  viewer = mentor;
+  resetFlags();
   save.mockReset().mockResolvedValue({
     failed: [],
     newIds: {},
@@ -306,5 +323,36 @@ describe('EditSessionTypeScreen', () => {
         'Your changes are saved, except the intake questions. Save again to try those.',
       ),
     ).toBeInTheDocument();
+  });
+});
+
+describe('the setup lock: /session-types/<id>/edit opened by URL (PRD "App shell and access")', () => {
+  it('a declined mentor gets the explainer as the page, not the wizard', () => {
+    viewer = viewers.mentorDeclined;
+    render(<EditSessionTypeScreen id="st1" />);
+    expectLockedPage(explainer.mentorNotApproved('Sessions'));
+    expect(screen.queryByRole('textbox', { name: 'Session name' })).toBeNull();
+  });
+
+  it('a declined mentor is locked while the type is still loading, and when it’s gone', () => {
+    viewer = viewers.mentorDeclined;
+    savedMock = { data: null, isLoading: true, error: null, retry: vi.fn() };
+    const { unmount } = render(<EditSessionTypeScreen id="st1" />);
+    expectLockedPage(explainer.mentorNotApproved('Sessions'));
+    unmount();
+    savedMock = {
+      data: null,
+      isLoading: false,
+      error: { kind: 'notFound', message: 'gone' },
+      retry: vi.fn(),
+    };
+    render(<EditSessionTypeScreen id="st1" />);
+    expectLockedPage(explainer.mentorNotApproved('Sessions'));
+  });
+
+  it('a mentor in review still edits (only Bookings locks)', () => {
+    viewer = viewers.mentorReview;
+    render(<EditSessionTypeScreen id="st1" />);
+    expect(screen.getByRole('textbox', { name: 'Session name' })).toHaveValue('SOP review');
   });
 });
