@@ -15,6 +15,8 @@ export type ConfirmActionsProps = {
   pending?: boolean;
   /** Why it failed. Shown beside the buttons, which work again. */
   error?: string | null;
+  /** Confirm can't be pressed yet (a typed confirmation that doesn't match). */
+  confirmDisabled?: boolean;
 };
 
 /**
@@ -32,6 +34,7 @@ export function ConfirmActions({
   onConfirm,
   pending = false,
   error,
+  confirmDisabled = false,
 }: ConfirmActionsProps) {
   return (
     <div className={styles.root}>
@@ -57,6 +60,7 @@ export function ConfirmActions({
           variant={tone === 'danger' ? 'destructive' : 'primary'}
           fullWidth
           onClick={onConfirm}
+          disabled={confirmDisabled && !pending}
           busy={pending}
         >
           {pending && pendingLabel ? pendingLabel : confirmLabel}

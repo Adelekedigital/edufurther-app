@@ -26,10 +26,21 @@ type NoticeProps = {
    * regions saying one thing read it twice.
    */
   live?: boolean;
+  /** DS `show-icon`: false drops the warning / danger tones' trailing icon (SecuritySettings delete warning). */
+  showIcon?: boolean;
 };
 
 /** Inline status notice inside a page region. Announced politely; a danger one interrupts. */
-export function Notice({ tone, icon, title, children, onDismiss, id, live = true }: NoticeProps) {
+export function Notice({
+  tone,
+  icon,
+  title,
+  children,
+  onDismiss,
+  id,
+  live = true,
+  showIcon = true,
+}: NoticeProps) {
   const ds = tone === 'warning' || tone === 'danger';
   return (
     <div
@@ -41,7 +52,7 @@ export function Notice({ tone, icon, title, children, onDismiss, id, live = true
       <p className={styles.text}>
         {title && <strong>{title}</strong>} {children}
       </p>
-      {ds && <Icon name="error" size={24} className={styles.icon} />}
+      {ds && showIcon && <Icon name="error" size={24} className={styles.icon} />}
       {onDismiss && <IconButton icon="close" size="sm" aria-label="Dismiss" onClick={onDismiss} />}
     </div>
   );

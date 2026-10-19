@@ -97,6 +97,12 @@ describe('what the other party reads is not the chip they picked', () => {
     expect(reasonReads(null)).toBe(null);
     expect(reasonReads('scheduling_conflict')).toBe('A calendar clash.');
   });
+
+  it('a deleted account reads neutrally to the other party, and is never offered', () => {
+    expect(reasonReads('account_deleted')).toBe('The account was deleted.');
+    for (const side of ['mentor', 'mentee'] as const)
+      expect(reasonsFor(side).map((r) => r.value)).not.toContain('account_deleted');
+  });
 });
 
 describe('reasonError is the single definition of what blocks a submit', () => {
@@ -110,7 +116,9 @@ describe('reasonError is the single definition of what blocks a submit', () => {
   });
 
   it('Other with only whitespace still blocks', () => {
-    expect(reasonError({ reasonCode: 'other', text: '   \n ', required: true })?.field).toBe('note');
+    expect(reasonError({ reasonCode: 'other', text: '   \n ', required: true })?.field).toBe(
+      'note',
+    );
   });
 
   it('Other with any real text passes — no length floor', () => {
@@ -123,7 +131,9 @@ describe('reasonError is the single definition of what blocks a submit', () => {
   });
 
   it('a mentor offering another time is exempt', () => {
-    expect(reasonError({ reasonCode: null, text: '', required: true, suggesting: true })).toBe(null);
+    expect(reasonError({ reasonCode: null, text: '', required: true, suggesting: true })).toBe(
+      null,
+    );
   });
 
   it('nothing blocks when the reason is not required', () => {

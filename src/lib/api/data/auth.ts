@@ -19,7 +19,7 @@ import { beginSignOut } from './session';
 import { clearAllBookingDrafts } from '@/lib/utils/bookingDraft';
 
 export { authConfigured, signedInUser };
-export type { AuthFailure, SignedInUser } from '@/lib/vendor/supabase/browser';
+export type { AuthFailure, LoginProvider, SignedInUser } from '@/lib/vendor/supabase/browser';
 
 export type SignInMode = 'login' | 'signup';
 export type SignInRole = 'mentee' | 'mentor';
@@ -64,8 +64,10 @@ export function startGoogleSignIn(next: string | null, mode: SignInMode, role: S
  * - /login loads even if signing out fails or stalls (signOut clears this
  *   device's cookies itself when the SDK can't, or after 3 s).
  * - Forms' "Leave site?" prompt is released: the user already chose to leave.
+ * `to` is where it lands: /login, or a local path that names why (a deleted
+ * account's `/login?deleted=1`). Callers pass a constant, never user input.
  */
-export function useSignOut() {
+export function useSignOut(to: `/login${string}` = '/login') {
   return useCallback(async () => {
     beginSignOut();
     // Unsaved changes were confirmed away already (useAppShell asks first).
@@ -77,8 +79,8 @@ export function useSignOut() {
     }
     // A booking draft's answers can be personal: none stays in the tab.
     clearAllBookingDrafts();
-    hardNavigate('/login');
-  }, []);
+    hardNavigate(to);
+  }, [to]);
 }
 
 /**

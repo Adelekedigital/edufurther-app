@@ -10,10 +10,16 @@ import { api } from './http';
 import { keys } from './keys';
 import { aboutBody } from './profileEdit';
 
-/** What Settings › Profile opens with (GET /me). */
+/** What Settings opens with (GET /me): Profile's values, and Login and security's account facts. */
 export type MenteeProfile = MenteeProfileValues & {
   photoUrl: string | null;
   initial: string;
+  email: string;
+  emailVerified: boolean;
+  /** Confirmed sessions not yet started, on either side: what deleting the account cancels. */
+  upcomingCount: number;
+  /** Requests still awaiting an answer, sent or received: deleting withdraws or declines them. */
+  requestCount: number;
 };
 
 type Me = components['schemas']['UserRead'];
@@ -23,7 +29,16 @@ type Me = components['schemas']['UserRead'];
  * `countries` maps it to the catalog id the picker holds.
  */
 export function toMenteeProfile(
-  me: Pick<Me, 'first_name' | 'last_name' | 'email' | 'profile' | 'languages'>,
+  me: Pick<
+    Me,
+    | 'first_name'
+    | 'last_name'
+    | 'email'
+    | 'profile'
+    | 'languages'
+    | 'email_verified_at'
+    | 'booking_counts'
+  >,
   countries: CatalogOption[] = [],
 ): MenteeProfile {
   const name = [me.first_name, me.last_name].filter(Boolean).join(' ').trim();
@@ -36,10 +51,17 @@ export function toMenteeProfile(
     bioDrafted: !!me.profile?.about_me_drafted_at && !!me.profile?.about_me,
     photoUrl: me.profile?.avatar_url ?? null,
     initial: (name || me.email)[0]?.toUpperCase() ?? '?',
+    email: me.email,
+    emailVerified: !!me.email_verified_at,
+    upcomingCount:
+      (me.booking_counts?.as_mentee?.upcoming ?? 0) + (me.booking_counts?.as_mentor?.upcoming ?? 0),
+    requestCount:
+      (me.booking_counts?.as_mentee?.awaiting_mentor ?? 0) +
+      (me.booking_counts?.as_mentor?.awaiting_your_response ?? 0),
   };
 }
 
-/** The signed-in mentee's own details, for Settings › Profile. */
+/** The signed-in mentee's own details, for Settings › Profile and Login and security (one read of /me). */
 export function useMenteeProfile(userId: string | null) {
   const qc = useQueryClient();
   const query = useQuery({

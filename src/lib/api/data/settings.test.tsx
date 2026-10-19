@@ -69,6 +69,37 @@ describe('toMenteeProfile', () => {
     const p = toMenteeProfile({ email: 'zed@example.com', profile: null, languages: [] });
     expect(p).toMatchObject({ name: '', countryId: '', languages: [], bio: '', initial: 'Z' });
   });
+
+  it('Login and security: the email, whether it is verified, and upcoming sessions on both sides', () => {
+    expect(
+      toMenteeProfile({
+        email: 'amaka@example.com',
+        languages: [],
+        email_verified_at: '2026-10-01T00:00:00Z',
+        booking_counts: {
+          as_mentee: { upcoming: 2, awaiting_mentor: 1 },
+          as_mentor: { upcoming: 1, awaiting_your_response: 2 },
+        },
+      }),
+    ).toMatchObject({
+      email: 'amaka@example.com',
+      emailVerified: true,
+      upcomingCount: 3,
+      requestCount: 3,
+    });
+    expect(
+      toMenteeProfile({
+        email: 'zed@example.com',
+        languages: [],
+        email_verified_at: null,
+        booking_counts: { as_mentee: { upcoming: 1, awaiting_mentor: 0 }, as_mentor: null },
+      }),
+    ).toMatchObject({ emailVerified: false, upcomingCount: 1, requestCount: 0 });
+    expect(toMenteeProfile({ email: 'zed@example.com', languages: [] })).toMatchObject({
+      upcomingCount: 0,
+      requestCount: 0,
+    });
+  });
 });
 
 describe('useMenteeProfile', () => {
@@ -121,7 +152,15 @@ describe('profileBody', () => {
 });
 
 describe('useSaveMenteeProfile', () => {
-  const cached: MenteeProfile = { ...values, photoUrl: null, initial: 'A' };
+  const cached: MenteeProfile = {
+    ...values,
+    photoUrl: null,
+    initial: 'A',
+    email: 'amaka@example.com',
+    emailVerified: true,
+    upcomingCount: 0,
+    requestCount: 0,
+  };
   function setup() {
     const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
     qc.setQueryData(keys.viewer.settings('u1'), cached);

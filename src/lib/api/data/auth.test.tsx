@@ -43,6 +43,12 @@ describe('useSignOut (Logout)', () => {
     await act(() => result.current());
     expect(order).toEqual(['freeze', 'release', 'go /login']);
   });
+
+  it('lands where the caller says (a deleted account’s notice)', async () => {
+    const { result } = renderHook(() => useSignOut('/login?deleted=1'));
+    await act(() => result.current());
+    expect(order).toEqual(['freeze', 'release', 'signOut', 'go /login?deleted=1']);
+  });
 });
 
 describe('useSignOutHere (sign out, stay on the sign-in screen)', () => {

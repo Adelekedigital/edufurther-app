@@ -22,4 +22,11 @@ describe('authPageParams', () => {
     expect(authPageParams({ error: 'link' }, 'login').google).toBeUndefined();
     expect(authPageParams({ error: 'nonsense' }, 'login').google).toBeUndefined();
   });
+
+  it('a deleted account’s landing: ?deleted=1 on /login only', () => {
+    expect(authPageParams({ deleted: '1' }, 'login').deleted).toBe(true);
+    expect(authPageParams({ deleted: 'yes' }, 'login').deleted).toBe(false);
+    expect(authPageParams({ deleted: ['1', '1'] }, 'login').deleted).toBe(false);
+    expect(authPageParams({ deleted: '1' }, 'signup').deleted).toBe(false);
+  });
 });

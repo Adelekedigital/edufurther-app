@@ -6,6 +6,7 @@ import { SignInContext } from '@/components/molecules/SignInContext/SignInContex
 import { Toast } from '@/components/molecules/Toast/Toast';
 import { SignInForm } from '@/components/organisms/SignInForm';
 import { authConfigured, type SignInMode, type SignInRole } from '@/lib/api/data/auth';
+import { SECURITY_COPY } from '@/lib/copy/settings';
 import { useBookingContext } from './useBookingContext';
 import { useSignInFlow } from './useSignInFlow';
 import styles from './AuthScreen.module.css';
@@ -18,6 +19,8 @@ type AuthScreenProps = {
   next: string | null;
   /** Back from Google: with a session, finish here; without, say so. */
   google?: 'returned' | 'failed';
+  /** Just deleted their account (`/login?deleted=1`): say how to restore it. */
+  deleted?: boolean;
 };
 
 /** A link to another sign-in page that keeps `next`. */
@@ -31,7 +34,7 @@ function withNext(path: string, next: string | null) {
  * runs the flow; SignInForm draws it; the toast names the outcome before the
  * redirect (`afterAuth=toast`).
  */
-export function AuthScreen({ mode, role, next, google }: AuthScreenProps) {
+export function AuthScreen({ mode, role, next, google, deleted = false }: AuthScreenProps) {
   const booking = useBookingContext(next);
   const { form, toast } = useSignInFlow({
     mode,
@@ -52,7 +55,13 @@ export function AuthScreen({ mode, role, next, google }: AuthScreenProps) {
             roleHref={withNext(role === 'mentor' ? '/signup' : '/signup?role=mentor', next)}
             // The design shows it on the mentee pages only (`!mentor`).
             context={
-              booking && role !== 'mentor' ? (
+              // PROVISIONAL (not in a design file yet; listed for design): the
+              // notice pattern the page already uses, where the booking line sits.
+              deleted ? (
+                <Notice tone="neutral" icon="info">
+                  {SECURITY_COPY.deletedNotice}
+                </Notice>
+              ) : booking && role !== 'mentor' ? (
                 <SignInContext
                   initials={booking.initials}
                   tone={booking.tone}

@@ -17,7 +17,8 @@ export type ButtonVariant =
   | 'text-secondary'
   | 'text-destructive'
   | 'dark'
-  | 'destructive';
+  | 'destructive'
+  | 'destructive-outlined';
 /**
  * Sizes follow placement, variants follow importance (CTA Hierarchy.dc.html,
  * replacing the one-size #28 rule). Labels are DM Sans semibold (ADR 0002).

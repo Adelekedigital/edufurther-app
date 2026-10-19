@@ -8,3 +8,6 @@ export type MenteeProfileValues = {
   /** The bio is still an untouched AI draft. */
   bioDrafted: boolean;
 };
+
+/** How an account logs in, for Settings › Login and security (passwordless: the email code always works). */
+export type LoginProvider = 'google' | 'email';

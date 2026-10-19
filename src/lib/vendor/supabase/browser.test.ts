@@ -209,7 +209,11 @@ describe('signedInUser (Google names, and whether Google was just linked)', () =
       data: {
         user: {
           identities: [
-            { provider: 'google', created_at: ago(0), identity_data: { given_name: ' Tolu ', family_name: 'Adebayo' } },
+            {
+              provider: 'google',
+              created_at: ago(0),
+              identity_data: { given_name: ' Tolu ', family_name: 'Adebayo' },
+            },
           ],
         },
       },
@@ -220,6 +224,8 @@ describe('signedInUser (Google names, and whether Google was just linked)', () =
       familyName: 'Adebayo',
       fullName: null,
       googleJustLinked: false,
+      providers: ['google'],
+      loginProvider: 'google',
     });
   });
 
@@ -258,7 +264,12 @@ describe('signedInUser (Google names, and whether Google was just linked)', () =
 
   it('has no Google names for an email account, and is null when signed out', async () => {
     getUserCall.mockResolvedValueOnce({
-      data: { user: { identities: [{ provider: 'email' }], user_metadata: { given_name: 'X', full_name: 'X Y' } } },
+      data: {
+        user: {
+          identities: [{ provider: 'email' }],
+          user_metadata: { given_name: 'X', full_name: 'X Y' },
+        },
+      },
     });
     expect(await signedInUser(NOW)).toEqual({
       email: null,
@@ -266,8 +277,49 @@ describe('signedInUser (Google names, and whether Google was just linked)', () =
       familyName: null,
       fullName: null,
       googleJustLinked: false,
+      providers: ['email'],
+      loginProvider: 'email',
     });
     getUserCall.mockResolvedValueOnce({ data: { user: null } });
     expect(await signedInUser(NOW)).toBeNull();
+  });
+});
+
+describe('signedInUser: how they log in (Settings › Login and security)', () => {
+  const user = (u: object) => ({ data: { user: u } });
+
+  it('is the email code for an email-only account', async () => {
+    getUserCall.mockResolvedValueOnce(
+      user({
+        app_metadata: { provider: 'email', providers: ['email'] },
+        identities: [{ provider: 'email' }],
+      }),
+    );
+    expect(await signedInUser()).toMatchObject({ providers: ['email'], loginProvider: 'email' });
+  });
+
+  it('is Google when the account signed up with Google', async () => {
+    getUserCall.mockResolvedValueOnce(user({ app_metadata: { provider: 'google' } }));
+    expect((await signedInUser())?.loginProvider).toBe('google');
+  });
+
+  it('is Google once Google is linked to an email account', async () => {
+    getUserCall.mockResolvedValueOnce(
+      user({ app_metadata: { provider: 'email', providers: ['email', 'google'] }, identities: [] }),
+    );
+    expect(await signedInUser()).toMatchObject({
+      providers: ['email', 'google'],
+      loginProvider: 'google',
+    });
+  });
+
+  it('falls back to the identities when app_metadata has no list', async () => {
+    getUserCall.mockResolvedValueOnce(
+      user({ identities: [{ provider: 'email' }, { provider: 'google', identity_data: {} }] }),
+    );
+    expect(await signedInUser()).toMatchObject({
+      providers: ['email', 'google'],
+      loginProvider: 'google',
+    });
   });
 });

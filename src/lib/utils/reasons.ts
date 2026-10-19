@@ -28,7 +28,11 @@ import type { PickableReason } from '@/types/booking';
  */
 const REASONS: { value: PickableReason; label: string; reads: string | null }[] = [
   { value: 'scheduling_conflict', label: 'A clash in my calendar', reads: 'A calendar clash.' },
-  { value: 'mentor_unavailable', label: 'I’m no longer free', reads: 'No longer free at that time.' },
+  {
+    value: 'mentor_unavailable',
+    label: 'I’m no longer free',
+    reads: 'No longer free at that time.',
+  },
   {
     value: 'mentee_no_longer_needed',
     label: 'I no longer need it',
@@ -59,11 +63,16 @@ export function reasonsFor(side: 'mentor' | 'mentee') {
  * How a coded reason reads to the other party, or null when the code says
  * nothing on its own (`other`, whose note carries it instead).
  *
- * Null for an unknown code too: the enum holds five system-set members we never
+ * Null for an unknown code too: the enum holds system-set members we never
  * offer, and inventing a phrase for `admin_action` would be worse than silence.
+ * `account_deleted` is the exception: the person on the other side should
+ * know why their session went.
  */
 export function reasonReads(code: string | null | undefined): string | null {
   if (!code) return null;
+  // System-set, never offered: the other party's account was deleted, and the
+  // backend canceled the session (Mentee Settings, Login and security).
+  if (code === 'account_deleted') return 'The account was deleted.';
   return REASONS.find((r) => r.value === code)?.reads ?? null;
 }
 

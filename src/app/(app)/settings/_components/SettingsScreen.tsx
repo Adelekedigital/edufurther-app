@@ -12,6 +12,7 @@ import { memberGate, SETTINGS_GATE } from '@/app/_shell/MentorGate';
 import { BookingPanel } from './BookingPanel';
 import { EducationPanel } from './EducationPanel';
 import { ProfilePanel, type PanelHandle } from './ProfilePanel';
+import { SecurityPanel } from './SecurityPanel';
 import { DEFAULT_TAB, MENTEE_TABS, MENTOR_DEFAULT_TAB, MENTOR_TABS } from './tabs';
 import styles from './SettingsScreen.module.css';
 
@@ -100,6 +101,10 @@ export function SettingsScreen() {
           {/* Every change saves in its modal: nothing to keep while hidden. */}
           <TabPanel id={panelId('education')} active={tab === 'education'}>
             {member ? <EducationPanel userId={member.id} /> : null}
+          </TabPanel>
+          {/* Nothing to edit here (the confirm's word is meant to start empty): only while shown. */}
+          <TabPanel id={panelId('security')} active={tab === 'security'}>
+            {member ? <SecurityPanel userId={member.id} /> : null}
           </TabPanel>
         </>
       )}

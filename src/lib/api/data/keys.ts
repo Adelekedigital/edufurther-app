@@ -31,6 +31,8 @@ export const keys = {
     mentorApplicationAll: ['viewer', 'mentorApplication'] as const,
     /** Settings' read of /me (settings.ts), under the viewer prefix so a viewer refresh reaches it. */
     settings: (userId: string) => ['viewer', 'settings', userId] as const,
+    /** How the session logged in (Supabase identities), for Login and security. */
+    loginProvider: (userId: string) => ['viewer', 'loginProvider', userId] as const,
   },
   // `who` = the session identity (session.ts sessionKey): signed-in lists are
   // ordered by the viewer's goals and leave the viewer out, so they can't share

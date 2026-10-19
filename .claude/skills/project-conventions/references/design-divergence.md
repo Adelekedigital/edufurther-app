@@ -949,6 +949,17 @@ PRD: Mentee Onboarding v5 (deviation table, H8). Rows the PRD settles are produc
 | DS `text-secondary` button hover `--slate-400` | `--ink-700` | slate-400 is 4.48:1 on white (fails WCAG 1.4.3) | DS fixes the hover |
 | Save bar and toast centred 24px above the bottom at every width | On phones: full width less 16px a side, above the 56px tab bar | PRD: "a sticky save bar above the tab bar" on phones; the bar would cover the tab bar otherwise | design draws the phone bar |
 
+## Mentee Settings, Login and security (`SecuritySettings.dc.html`, auth=passwordless, route `/settings/security`, PR 7)
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| DS Button `sm` (32px, 12px label) for "Contact support", "Delete account" and the confirm's two buttons | Card actions `medium` (40px, 14px); the confirm's buttons `large` (48px), as every modal footer | CTA hierarchy: size by placement (card/section action medium, modal footer large); the DS's own sm is not used | design revises the hierarchy |
+| Confirm buttons in equal `1fr 1fr` columns | Columns follow the labels (about 167/176px at 400px wide) | A 48px button's "Delete my account" is wider than half the sm modal; equal columns would truncate it | design draws large buttons here |
+| DS `destructive` outlined hover (`--red-300` family) | Hover and pressed: `--red-50` ground, `--red-700` label and ring | `--red-300` text is 3.15:1 on white (fails WCAG 1.4.3); red-700 on red-50 is 7.8:1 | DS fixes the hover |
+| Delete warning names each session ("Ada, Nov 4") | Counts only: sessions not yet started and requests awaiting an answer; no session sentence at 0 | GET /me has `booking_counts`, not the sessions | /me or a sessions call gives names and dates |
+| No message after deleting | PROVISIONAL: `/login?deleted=1` shows "Your account is deleted. Contact support within 30 days to restore it." in the login card's notice | PRD wording; no design file has it (listed for design) | design draws it |
+| Password rows, the email-change modal, the in-component toast | Not built | Passwordless; email changes go through support (owner S5) | password sign-in ships |
+
 ## Mentor Settings (`Mentor Settings.dc.html`, route `/settings/[tab]`, PR 4: mentor tabs and Booking rules)
 
 | Design says | We do | Why | Revisit when |

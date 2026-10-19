@@ -19,12 +19,7 @@ function supabase(): SupabaseClient | null {
 }
 
 export type AuthFailure =
-  | 'rateLimited'
-  | 'invalidCode'
-  | 'banned'
-  | 'offline'
-  | 'unavailable'
-  | 'unknown';
+  'rateLimited' | 'invalidCode' | 'banned' | 'offline' | 'unavailable' | 'unknown';
 
 /**
  * `invalidCode` covers expired codes too: Supabase answers both with
@@ -130,7 +125,20 @@ export type SignedInUser = {
    * linked" toast. Read from the identities, as the backend can't see it.
    */
   googleJustLinked: boolean;
+  /**
+   * The ways in this account has (`app_metadata.providers`, else the
+   * identities), e.g. ['email', 'google'].
+   */
+  providers: string[];
+  /**
+   * How they log in, for Settings' "How you log in": Google when the account
+   * has a Google identity (it signed up with Google or linked it), else the
+   * email code. Passwordless, so the code always works too.
+   */
+  loginProvider: LoginProvider;
 };
+
+export type LoginProvider = 'google' | 'email';
 
 function text(v: unknown): string | null {
   return typeof v === 'string' && v.trim() ? v.trim() : null;
@@ -148,12 +156,20 @@ export async function signedInUser(now = Date.now()): Promise<SignedInUser | nul
   const others = ids.some((i) => i.provider !== 'google');
   const addedAt = google?.created_at ? Date.parse(google.created_at) : NaN;
   const meta = (google?.identity_data ?? user.user_metadata ?? {}) as Record<string, unknown>;
+  const app = (user.app_metadata ?? {}) as { provider?: unknown; providers?: unknown };
+  const listed = Array.isArray(app.providers)
+    ? app.providers.filter((p): p is string => typeof p === 'string')
+    : [];
+  const providers = listed.length ? listed : [...new Set(ids.map((i) => i.provider))];
+  const viaGoogle = !!google || app.provider === 'google' || providers.includes('google');
   return {
     email: user.email ?? null,
     givenName: google ? text(meta.given_name) : null,
     familyName: google ? text(meta.family_name) : null,
     fullName: google ? (text(meta.full_name) ?? text(meta.name)) : null,
     googleJustLinked: !!google && others && now - addedAt < JUST_LINKED_MS,
+    providers,
+    loginProvider: viaGoogle ? 'google' : 'email',
   };
 }
 

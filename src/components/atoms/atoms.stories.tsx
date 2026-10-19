@@ -45,6 +45,7 @@ export const Buttons: Story = {
         <Button variant="secondary-outlined">Book</Button>
         <Button variant="text">Show 4 more reviews</Button>
         <Button variant="dark">Continue with Google</Button>
+        <Button variant="destructive-outlined">Delete account</Button>
       </div>
       <div style={row}>
         <Button size="small" variant="secondary-outlined">
@@ -112,7 +113,13 @@ export const ProgressCircles: Story = {
       <ProgressCircle value={72} tone="primary" aria-label="Show-up rate" />
       <ProgressCircle value={48} tone="danger" aria-label="Show-up rate" />
       <ProgressCircle value={88} size="md" tone="primary" aria-label="Show-up rate" />
-      <ProgressCircle value={100} size="md" tone="success" showLabel={false} aria-label="Show-up rate" />
+      <ProgressCircle
+        value={100}
+        size="md"
+        tone="success"
+        showLabel={false}
+        aria-label="Show-up rate"
+      />
     </div>
   ),
 };

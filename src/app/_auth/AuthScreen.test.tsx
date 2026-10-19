@@ -55,3 +55,14 @@ describe('AuthScreen — booking context', () => {
     expect(screen.getByTestId('form')).toBeEmptyDOMElement();
   });
 });
+
+describe('AuthScreen — a deleted account', () => {
+  it('says the account is deleted and how to restore it, in place of a booking line', () => {
+    h.booking = gbenga('Eze');
+    render(<AuthScreen mode="login" role="mentee" next={null} deleted />);
+    expect(screen.getByTestId('form')).toHaveTextContent(
+      'Your account is deleted. Contact support within 30 days to restore it.',
+    );
+    expect(screen.getByTestId('form')).not.toHaveTextContent(/finish booking/);
+  });
+});
