@@ -1,3 +1,6 @@
+'use client';
+
+import { useLayoutEffect, useRef } from 'react';
 import Link from 'next/link';
 import { GoogleMark } from '@/components/atoms/GoogleMark/GoogleMark';
 import { Icon } from '@/components/atoms/Icon/Icon';
@@ -38,6 +41,16 @@ type ApprovedSummaryProps = {
 
 /** Approved.dc.html `single`: what was set up from the application, then Connect Google Calendar. */
 export function ApprovedSummary({ rows, calendar }: ApprovedSummaryProps) {
+  // When the Calendar button gives way to a status (or nothing), focus would
+  // fall to <body> and the next Tab would start at the top: keep it on the row.
+  const title = useRef<HTMLSpanElement>(null);
+  const kind = calendar.action.kind;
+  const wasButton = useRef(kind === 'button');
+  useLayoutEffect(() => {
+    const lost = wasButton.current && kind !== 'button' && document.activeElement === document.body;
+    if (lost) title.current?.focus();
+    wasButton.current = kind === 'button';
+  }, [kind]);
   return (
     <div className={styles.card}>
       <ul className={styles.rows}>
@@ -63,7 +76,7 @@ export function ApprovedSummary({ rows, calendar }: ApprovedSummaryProps) {
           <GoogleMark className={styles.mark} />
         </span>
         <span className={`${styles.text} ${styles.calendarText}`}>
-          <span className={styles.title}>
+          <span ref={title} tabIndex={-1} className={`${styles.title} ${styles.rowTitle}`}>
             {calendar.title}
             {calendar.optional && (
               <>

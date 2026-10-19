@@ -64,8 +64,13 @@ let connectState: { kind: string } = { kind: 'idle' };
 const connectFn = vi.fn();
 let onConnected: () => void = () => {};
 vi.mock('@/app/_shell/useCalendarConnect', () => ({
-  useCalendarConnect: (_id: unknown, _c: unknown, announce: () => void) => {
-    onConnected = announce;
+  useCalendarConnect: (
+    _id: unknown,
+    _c: unknown,
+    announce: (m: string) => void,
+    success: string,
+  ) => {
+    onConnected = () => announce(success);
     return { state: connectState, connect: connectFn, unavailable: false, dismiss: vi.fn() };
   },
 }));
@@ -144,6 +149,12 @@ describe('MentorApplicationScreen (PRD F3, "Where people land")', () => {
     rerender(<MentorApplicationScreen />);
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('You’re in, Gbenga.');
     expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('has one live region while loading (failure mode #53)', () => {
+    app = remote(null);
+    render(<MentorApplicationScreen />);
+    expect(screen.getAllByRole('status')).toHaveLength(1);
   });
 
   it('waits for a fresh read: a cached one may predate approved-seen', () => {
@@ -281,7 +292,10 @@ describe('calendarStateOf', () => {
     ...over,
   });
   const at = (data: unknown, isLoading: boolean, kind: string, unavailable = false) =>
-    calendarStateOf({ data: data as never, isLoading }, { state: { kind } as never, unavailable });
+    calendarStateOf(
+      { data: data as never, isLoading, error: null },
+      { state: { kind } as never, unavailable },
+    );
 
   it('busy wins, then loading, then a connection over any old notice', () => {
     expect(at(conn(), false, 'busy')).toBe('busy');
@@ -289,6 +303,15 @@ describe('calendarStateOf', () => {
     expect(at(conn(), false, 'blocked')).toBe('connected');
     expect(at(conn({ status: 'error', fault: 'revoked' }), false, 'idle')).toBe('revoked');
     expect(at(conn({ status: 'error', fault: 'unknown' }), false, 'idle')).toBe('broken');
+  });
+
+  it('a failed read is checkFailed, never Connect', () => {
+    expect(
+      calendarStateOf(
+        { data: null, isLoading: false, error: { kind: 'server' } as never },
+        { state: { kind: 'idle' } as never, unavailable: false },
+      ),
+    ).toBe('checkFailed');
   });
 
   it('with nothing connected: unavailable, the last attempt, or idle', () => {

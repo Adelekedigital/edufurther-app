@@ -168,8 +168,18 @@ describe('calendarRow: the Google Calendar row connects in place', () => {
 
   it('not set up here: explains, offers no control', () => {
     expect(row('unavailable')).toMatchObject({
-      body: 'Connecting a calendar isn’t available yet. You can connect it later in Integrations.',
+      body: 'Connecting a calendar isn’t available yet.',
       action: { kind: 'none' },
+    });
+  });
+
+  it('a failed read offers to check again, never Connect', () => {
+    const onRetryCheck = vi.fn();
+    const r = calendarRow({ state: 'checkFailed', onConnect: () => {}, onRetryCheck });
+    expect(r).toMatchObject({
+      body: 'We couldn’t check whether your calendar is connected.',
+      tone: 'warn',
+      action: { kind: 'button', label: 'Try again', onClick: onRetryCheck },
     });
   });
 });
@@ -196,6 +206,15 @@ describe('MentorApplicationStatus: the calendar action', () => {
     expect(busy).toHaveAttribute('aria-busy', 'true');
     await userEvent.click(busy);
     expect(onConnect).toHaveBeenCalledOnce();
+  });
+
+  it('keeps focus on the row when Connect gives way to Connected', async () => {
+    const { rerender } = render(approved('idle'));
+    screen.getByRole('button', { name: 'Connect' }).focus();
+    rerender(approved('busy'));
+    rerender(approved('connected'));
+    expect(document.activeElement).not.toBe(document.body);
+    expect(document.activeElement).toHaveTextContent('Google Calendar connected');
   });
 
   it('connected shows a status, not a button', () => {

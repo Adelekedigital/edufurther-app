@@ -42,13 +42,17 @@ export type CalendarConnectState =
   | 'nothingConnected'
   | 'offline'
   | 'failed'
-  | 'unavailable';
+  | 'unavailable'
+  /** The connection couldn't be read: never offer Connect to someone who may be connected. */
+  | 'checkFailed';
 
 export type CalendarConnect = {
   state: CalendarConnectState;
   /** The connected Google account, when Google gave one. */
   email?: string | null;
   onConnect: () => void;
+  /** Read the connection again (`checkFailed`). */
+  onRetryCheck?: () => void;
 };
 
 const NOTICES: Partial<Record<CalendarConnectState, string>> = {
@@ -61,7 +65,12 @@ const NOTICES: Partial<Record<CalendarConnectState, string>> = {
 };
 
 /** One state → the row's title, line and action. */
-export function calendarRow({ state, email, onConnect }: CalendarConnect): CalendarRow {
+export function calendarRow({
+  state,
+  email,
+  onConnect,
+  onRetryCheck,
+}: CalendarConnect): CalendarRow {
   const base = {
     title: APPROVED_COPY.calendarTitle,
     optional: APPROVED_COPY.calendarOptional,
@@ -95,6 +104,15 @@ export function calendarRow({ state, email, onConnect }: CalendarConnect): Calen
         body: NOTICES[state]!,
         tone: 'warn',
         action: button(CALENDAR_ROW_COPY.reconnect),
+      };
+    case 'checkFailed':
+      return {
+        ...base,
+        body: CALENDAR_ROW_COPY.checkFailed,
+        tone: 'warn',
+        action: onRetryCheck
+          ? { kind: 'button', label: CALENDAR_ROW_COPY.retry, onClick: onRetryCheck }
+          : { kind: 'none' },
       };
     case 'unavailable':
       return { ...base, body: CALENDAR_ROW_COPY.unavailable, action: { kind: 'none' } };

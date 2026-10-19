@@ -46,6 +46,8 @@ export function useCalendarConnect(
   userId: string | null,
   connection: CalendarConnection | null,
   announce: (message: string) => void,
+  /** What is read out once connected; each screen words it its own way. */
+  successMessage = 'Google Calendar connected. Your busy times are now hidden from your booking page.',
 ) {
   const start = useStartCalendarConnect();
   const refresh = useRefreshAfterConnect(userId);
@@ -100,9 +102,7 @@ export function useCalendarConnect(
         // a moment after we have just said it is connected.
         await refresh();
         setState({ kind: 'idle' });
-        announce(
-          'Google Calendar connected. Your busy times are now hidden from your booking page.',
-        );
+        announce(successMessage);
         return;
       }
       // Denying consent writes nothing, so there is no failure to report — the
@@ -118,7 +118,7 @@ export function useCalendarConnect(
     } finally {
       running.current = false;
     }
-  }, [announce, connection, refresh, start, unavailable]);
+  }, [announce, connection, refresh, start, successMessage, unavailable]);
 
   return {
     state,

@@ -74,8 +74,8 @@ export const CALENDAR_ROW_COPY = {
     'Nothing was connected. The window closed, or the calendar permission wasn’t ticked on Google’s second step.',
   offline: 'You’re offline. Reconnect to the internet, then try again.',
   failed: 'We couldn’t start connecting. Try again in a moment.',
-  unavailable:
-    'Connecting a calendar isn’t available yet. You can connect it later in Integrations.',
+  unavailable: 'Connecting a calendar isn’t available yet.',
+  checkFailed: 'We couldn’t check whether your calendar is connected.',
   revoked: 'Google Calendar needs reconnecting. Access was removed or has expired.',
   broken: 'Google Calendar needs reconnecting.',
   announceConnected:

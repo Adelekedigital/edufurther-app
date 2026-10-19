@@ -90,8 +90,8 @@ export function MentorApplicationScreen() {
   const connect = useCalendarConnect(
     approved ? userId : null,
     calendar.data,
-    // Ours says it in the row's words.
-    () => announce(CALENDAR_ROW_COPY.announceConnected),
+    announce,
+    CALENDAR_ROW_COPY.announceConnected,
   );
   const calendarState = calendarStateOf(calendar, connect);
   // A failure line is read out once, as it appears.
@@ -145,6 +145,7 @@ export function MentorApplicationScreen() {
               connect.dismiss();
               void connect.connect();
             },
+            onRetryCheck: calendar.retry,
           },
           dashboardHref: '/dashboard',
           celebrate: true,
@@ -193,7 +194,10 @@ export function MentorApplicationScreen() {
 
   return (
     <>
-      <LiveRegion message={message} />
+      {/* The calendar's region, only beside the approved screen: loading has its
+          own, and two live regions at once is failure mode #53. It mounts
+          before any calendar message can exist (they follow a click). */}
+      {props.state === 'approved' && <LiveRegion message={message} />}
       <MentorApplicationStatus {...props} />
     </>
   );
@@ -213,16 +217,19 @@ const NOTICE_STATES = new Set<CalendarConnectState>(
 /**
  * The connection and the last connect attempt → one row state. Busy wins (a
  * reconnect is busy too); a connection, once read, beats any earlier notice,
- * which a successful connect has made untrue. A failed read still offers
- * Connect: the attempt reads the connection again itself.
+ * which a successful connect has made untrue. A failed read offers to read
+ * again, never Connect.
  */
 export function calendarStateOf(
-  calendar: Pick<ReturnType<typeof useCalendarConnection>, 'data' | 'isLoading'>,
+  calendar: Pick<ReturnType<typeof useCalendarConnection>, 'data' | 'isLoading' | 'error'>,
   connect: Pick<ReturnType<typeof useCalendarConnect>, 'state' | 'unavailable'>,
 ): CalendarConnectState {
   if (connect.state.kind === 'busy') return 'busy';
   if (calendar.isLoading) return 'loading';
   const c = calendar.data;
+  // Unknown is not "not connected": Connect here could re-announce a grant
+  // that was there all along (the poll would see it as new).
+  if (!c && calendar.error) return 'checkFailed';
   if (c) return c.status === 'error' ? (c.fault === 'revoked' ? 'revoked' : 'broken') : 'connected';
   if (connect.unavailable) return 'unavailable';
   const k = connect.state.kind;
