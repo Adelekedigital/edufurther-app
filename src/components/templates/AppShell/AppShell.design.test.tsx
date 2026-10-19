@@ -40,12 +40,12 @@ const block = (src: string, selector: string) => {
 };
 
 describe('AppShell, as designed', () => {
-  it('the current phone tab and the current More item read blue-500 (design t.color, mi.color)', () => {
+  it('the current phone tab reads blue-500; the current More item blue-700 on blue-50 (contrast, design mi.color)', () => {
     const shell = css('AppShell.module.css');
     expect(block(shell, '.tab[data-current]')).toMatch(/color:\s*var\(--blue-500\)/);
     const item = block(shell, ".sheetItem[aria-current='page']");
     expect(item).toMatch(/background:\s*var\(--blue-50\)/);
-    expect(item).toMatch(/color:\s*var\(--blue-500\)/);
+    expect(item).toMatch(/color:\s*var\(--blue-700\)/);
   });
 
   it('More is lit while its sheet is open, not only on one of its pages (design moreOn || more)', async () => {
