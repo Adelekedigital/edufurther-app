@@ -26,7 +26,6 @@ describe('useSaveOnboarding: completion', () => {
       isMentor: false,
       completedSessions: 0,
       credits: null,
-      onboardingMissing: ['plans'],
       onboardingComplete: false,
     } as Viewer);
     const wrapper = ({ children }: { children: ReactNode }) => (
@@ -40,9 +39,6 @@ describe('useSaveOnboarding: completion', () => {
       needIds: ['o1'],
       plans: { originId: 'c-ng', degree: 'mba', field: 'Law', destinationId: NOT_SURE },
     });
-    expect(qc.getQueryData(ME)).toMatchObject({
-      onboardingMissing: [],
-      onboardingComplete: true,
-    });
+    expect(qc.getQueryData(ME)).toMatchObject({ onboardingComplete: true });
   });
 });

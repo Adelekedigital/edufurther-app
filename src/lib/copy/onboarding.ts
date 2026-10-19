@@ -2,7 +2,6 @@
  * Every word onboarding shows, from Mentee Onboarding v5.dc.html via the PRD's
  * H8 table, keyed by catalog slug or reason code so wording changes in one place.
  */
-import type { NudgePart } from '@/types/onboarding';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 
 export type HelpAreaCopy = {
@@ -174,29 +173,6 @@ export const GUEST_COPY = {
   unavailableTitle: 'Mentors who fit your goals',
   unavailableSub: 'Book one of these instead, or browse all mentors.',
 };
-
-/** OnboardingNudge.dc.html: title, body and button by what's missing. */
-export function nudgeCopy(parts: NudgePart[]): { title: string; body: string; cta: string } {
-  const help = parts.includes('help');
-  const plans = parts.includes('plans');
-  if (help && plans)
-    return {
-      title: 'Finish setting up',
-      body: 'Tell us what you need help with and what you want to study, and we’ll suggest mentors who’ve done it.',
-      cta: 'Finish setting up',
-    };
-  if (help)
-    return {
-      title: 'What do you need help with?',
-      body: 'Pick up to 3 areas, like scholarships or visas, so we can suggest the right mentors.',
-      cta: 'Pick help areas',
-    };
-  return {
-    title: 'Add your study plans',
-    body: 'Tell us what and where you want to study, and we’ll suggest mentors who studied there.',
-    cta: 'Add study plans',
-  };
-}
 
 export const MATCH_COPY = {
   title: (n: number) => (n === 1 ? 'Your top mentor match' : `Your top ${n} mentor matches`),

@@ -48,7 +48,7 @@ Mentee Onboarding v5.dc.html saved defaults, PRD "Mentee Onboarding v5" (rev 95)
 
 - **PR A (#279):** HelpAreaPicker, StudyPlansForm, MatchResults, MatchReason, TopicGroups; MentorCard `highlight` and "+N"; 48px `xl` fields.
 - **PR B:** `/onboarding` reads `/me` and redirects by role, keeping the query (mentors home until mentor onboarding ships); `/onboarding/mentee` runs help areas → study plans → matches. Answers resume from the server (`GET /me`), each Continue saves, step 2 completes (PRD B3). Book opens BookingLauncher in place; a sent request goes Home. Endpoints the backend hasn't shipped are typed mocks marked PENDING BACKEND (docs/handoff/onboarding-backend-request.md #1–6).
-- **Next:** the guest path (`for/sid/time`, "Your pick is saved"), the Home/Explore nudge and migrated-mentee routing (H5), AiField.
+- **Next:** the guest path (`for/sid/time`, "Your pick is saved"), migrated-mentee routing (H5); the onboarding nudge was retired 2026-10-18 for the setup lock (round 4), AiField.
 
 PR 4 (booking guest step): the booking modal's guest step signs people in for real (BookingModal.dc.html, `signupAt=afterTime`) — email → code → name, Google with a return to the reopened modal, PRD F3 copy (no hold claimed). The code logic is shared with the sign-in page (`useEmailCodeAuth`). PR 5: the sign-in page's booking context line and mentor-named toasts. Invites: #281; waitlist line: #282.
 
