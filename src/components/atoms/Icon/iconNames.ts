@@ -124,6 +124,7 @@ export const ICON_NAMES = [
   'smart_display',
   'star',
   'support_agent',
+  'sync',
   'task_alt',
   'timer',
   'timer_off',

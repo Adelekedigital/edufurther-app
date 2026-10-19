@@ -118,6 +118,7 @@
     "smart_display",
     "star",
     "support_agent",
+    "sync",
     "task_alt",
     "timer",
     "timer_off",
@@ -143,5 +144,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "3b8b4041f22fd41fa4ae03669b9952530ff25e35392fa936af595fab75366277"
+  "sha256": "fffc0cbf3a34399df383a762e59f63fc7aefced50ccc939131a949537a2b662f"
 }

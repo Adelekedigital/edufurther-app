@@ -1,0 +1,98 @@
+/* Mentor Settings.dc.html, `isBooking` (approvalLayout=focused, bookingLayout=defaults). */
+.stack {
+  max-width: 680px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+.card {
+  max-width: 680px;
+}
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+.headText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.title {
+  margin: 0;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+.desc {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-tertiary);
+}
+.rulesHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-5);
+}
+/* The footnote rows: the visibility note, the decline line, the sync note. */
+.line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3) var(--space-5);
+  border-top: var(--border-hairline) solid var(--border-muted);
+  font-size: var(--text-p-xs);
+  color: var(--text-secondary);
+}
+.lineIcon {
+  flex: none;
+  color: var(--text-tertiary);
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  border-top: var(--border-hairline) solid var(--border-muted);
+}
+.text {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.label {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-medium);
+}
+.hint {
+  font-size: var(--text-p-xs);
+  color: var(--text-tertiary);
+}
+.failed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+.failedText {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-secondary);
+}
+.failedIcon {
+  flex: none;
+  color: var(--text-danger);
+}

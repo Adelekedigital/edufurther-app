@@ -37,6 +37,7 @@ describe('toOwnSessionType', () => {
       noticeMin: 1440,
       isLive: true,
       usesOwnWindows: false,
+      usesDefaultRules: false,
       stages: [],
       customStage: null,
       topics: [{ code: 'document-preparation', label: 'Document preparation' }],
@@ -47,6 +48,29 @@ describe('toOwnSessionType', () => {
       pendingDeletion: null,
       booked: { count: 0, lastEndsAt: null },
     });
+  });
+
+  it('follows the booking rules only when length, notice, window and buffer are all inherited', () => {
+    const inherits = {
+      duration_inherited: true,
+      min_notice_inherited: true,
+      booking_window_days: null,
+      break_after_minutes: null,
+    };
+    expect(toOwnSessionType(own(inherits)).usesDefaultRules).toBe(true);
+    expect(toOwnSessionType(own({ ...inherits, duration_inherited: false })).usesDefaultRules).toBe(
+      false,
+    );
+    expect(toOwnSessionType(own({ ...inherits, booking_window_days: 14 })).usesDefaultRules).toBe(
+      false,
+    );
+    expect(toOwnSessionType(own({ ...inherits, break_after_minutes: 10 })).usesDefaultRules).toBe(
+      false,
+    );
+    // Approval isn't one of the four rows: a session with its own still counts.
+    expect(
+      toOwnSessionType(own({ ...inherits, requires_booking_confirmation: false })).usesDefaultRules,
+    ).toBe(true);
   });
 
   it('own windows: as the backend says; an older backend without the field follows the Calendar', () => {

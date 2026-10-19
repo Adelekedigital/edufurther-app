@@ -84,6 +84,11 @@ export function toOwnSessionType(r: OwnSessionTypeRead): OwnSessionType {
     noticeMin: r.min_notice_minutes,
     isLive: r.is_active,
     usesOwnWindows: r.uses_own_windows ?? false,
+    usesDefaultRules:
+      r.duration_inherited === true &&
+      r.min_notice_inherited === true &&
+      r.booking_window_days == null &&
+      r.break_after_minutes == null,
     stages: stagesOf(r),
     customStage: r.custom_stage_label?.trim() || null,
     topics,
@@ -138,6 +143,17 @@ export function useOwnSessionTypes(enabled: boolean): Remote<OwnSessionType[]> {
     error: query.error ? normaliseError(query.error) : null,
     retry: () => void query.refetch(),
   };
+}
+
+/**
+ * How many of the mentor's sessions follow their booking rules (Settings'
+ * "2 of your sessions use these rules"); null while loading or if it failed,
+ * and the note then leaves the count out. One being deleted doesn't count.
+ */
+export function useSessionsUsingRules(enabled: boolean): number | null {
+  const own = useOwnSessionTypes(enabled);
+  if (!own.data) return null;
+  return own.data.filter((s) => s.usesDefaultRules && !s.pendingDeletion).length;
 }
 
 /**
