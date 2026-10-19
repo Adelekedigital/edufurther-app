@@ -120,8 +120,6 @@ describe('LinkedIn', () => {
   it.each([
     'linkedin.com/in/ab',
     'linkedin.com/in/ada.obi',
-    'linkedin.com/in/jos%C3%A9-silva',
-    'linkedin.com/in/josé-silva',
     'https://abc.linkedin.com/in/jane',
     'https://x.linkedin.com/in/jane',
     `linkedin.com/in/${'a'.repeat(101)}`,
@@ -132,6 +130,44 @@ describe('LinkedIn', () => {
     'https://WWW.LinkedIn.com/in/Ada-Obi',
     'https://www.linkedin.com/in/ada-obi/details/experience/',
   ])('accepts %s, as the backend does', (u) => expect(isLinkedInProfile(u)).toBe(true));
+});
+
+describe('LinkedIn: accented and non-Latin handles (backend #496)', () => {
+  it.each([
+    ['linkedin.com/in/josé-silva-1a2b3c', 'https://www.linkedin.com/in/jos%C3%A9-silva-1a2b3c'],
+    [
+      'https://www.linkedin.com/in/jos%c3%a9-silva-1a2b3c/',
+      'https://www.linkedin.com/in/jos%C3%A9-silva-1a2b3c',
+    ],
+    ['linkedin.com/in/Ada-Obi', 'https://www.linkedin.com/in/Ada-Obi'],
+    [
+      'linkedin.com/in/नमस्ते-raj',
+      `https://www.linkedin.com/in/${encodeURIComponent('नमस्ते-raj')}`,
+    ],
+  ])('accepts %s and saves it as the backend stores it', (typed, saved) => {
+    expect(isLinkedInProfile(typed)).toBe(true);
+    expect(normaliseLinkedIn(typed)).toBe(saved);
+  });
+
+  it.each([
+    'linkedin.com/in/jos%25C3%25A9', // double-encoded
+    'linkedin.com/in/jos%E9-silva', // not UTF-8
+    'linkedin.com/in/ada😀obi', // emoji
+    'linkedin.com/in/ada.obi', // punctuation
+    'linkedin.com/in/́ada', // starts with a combining mark
+    'linkedin.com/in/jé', // under 3 after decoding
+  ])('refuses %s, as the backend does', (u) => expect(isLinkedInProfile(u)).toBe(false));
+});
+
+describe('LinkedIn: handle length counts characters, not UTF-16 units', () => {
+  // U+10400 is one letter but two UTF-16 units; the `u` flag counts it once, as the backend's len() does.
+  const astral = String.fromCodePoint(0x10400);
+  it('accepts 3 and 100 astral letters, and refuses 2 and 101', () => {
+    expect(isLinkedInProfile(`linkedin.com/in/${astral.repeat(3)}`)).toBe(true);
+    expect(isLinkedInProfile(`linkedin.com/in/${astral.repeat(100)}`)).toBe(true);
+    expect(isLinkedInProfile(`linkedin.com/in/${astral.repeat(2)}`)).toBe(false);
+    expect(isLinkedInProfile(`linkedin.com/in/${astral.repeat(101)}`)).toBe(false);
+  });
 });
 
 describe('gapsFor', () => {
