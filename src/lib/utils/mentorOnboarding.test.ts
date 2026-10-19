@@ -159,6 +159,17 @@ describe('LinkedIn: accented and non-Latin handles (backend #496)', () => {
   ])('refuses %s, as the backend does', (u) => expect(isLinkedInProfile(u)).toBe(false));
 });
 
+describe('LinkedIn: handle length counts characters, not UTF-16 units', () => {
+  // U+10400 is one letter but two UTF-16 units; the `u` flag counts it once, as the backend's len() does.
+  const astral = String.fromCodePoint(0x10400);
+  it('accepts 3 and 100 astral letters, and refuses 2 and 101', () => {
+    expect(isLinkedInProfile(`linkedin.com/in/${astral.repeat(3)}`)).toBe(true);
+    expect(isLinkedInProfile(`linkedin.com/in/${astral.repeat(100)}`)).toBe(true);
+    expect(isLinkedInProfile(`linkedin.com/in/${astral.repeat(2)}`)).toBe(false);
+    expect(isLinkedInProfile(`linkedin.com/in/${astral.repeat(101)}`)).toBe(false);
+  });
+});
+
 describe('gapsFor', () => {
   it('asks for a help area', () => {
     expect(gapsFor('help', answers())).toEqual(['help']);
