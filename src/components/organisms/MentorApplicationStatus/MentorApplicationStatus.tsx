@@ -141,7 +141,6 @@ export type MentorApplicationStatusProps =
   | {
       state: 'pending';
       email: string;
-      editHref: string;
       /** Straight from Submit: the heading says it was sent, once. */
       justSent?: boolean;
       firstName?: string;
@@ -226,9 +225,7 @@ export function MentorApplicationStatus(props: MentorApplicationStatusProps) {
             </p>
           </div>
           <NextSteps steps={NEXT_STEPS} />
-          <ButtonLink href={props.editHref} variant="secondary-outlined" size="large">
-            {IN_REVIEW_COPY.edit}
-          </ButtonLink>
+          <p className={styles.waitLine}>{IN_REVIEW_COPY.whileYouWait}</p>
         </div>
       );
     case 'approved':
