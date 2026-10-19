@@ -36,8 +36,13 @@ export function SaveBar({
 }: SaveBarProps) {
   return (
     <div role="region" aria-label={label} data-save-bar className={styles.bar}>
+      {/* Always in the bar, so the error is heard when it arrives: a region
+          inserted with its text already in it is often skipped. */}
+      <span role="alert" className="sr-only">
+        {error ?? ''}
+      </span>
       {error && (
-        <span role="alert" className={styles.error}>
+        <span aria-hidden className={styles.error}>
           {error}
         </span>
       )}
