@@ -38,16 +38,19 @@ type AccountMenuProps = {
    * Outside the role="menu" list: it's text and a link, not a menu item.
    */
   credits?: { view: CreditsView; onHowItWorks: () => void };
+  /** Mentors' menu: 136px, not 212px (AppShell.dc.html `menuW`, grouped rail). */
+  narrow?: boolean;
 };
 
 /**
  * Account avatar + menu at the foot of the side rail (AppShell.dc.html: 36px
- * circle on the viewer's colour, menu 212px wide, 36px items, Logout red after
- * a divider). The photo is ours: the design draws the initial only.
+ * circle on the viewer's colour, menu 212px wide or 136px for mentors, 36px
+ * items, Logout red after a divider). The photo is ours: the design draws the
+ * initial only.
  * WAI-ARIA menu button: arrows / Home / End move, Escape and Tab close, focus
  * returns to the button.
  */
-export function AccountMenu({ avatar, items, credits }: AccountMenuProps) {
+export function AccountMenu({ avatar, items, credits, narrow }: AccountMenuProps) {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
@@ -83,7 +86,7 @@ export function AccountMenu({ avatar, items, credits }: AccountMenuProps) {
     <div className={styles.root}>
       {open && <div className={styles.backdrop} aria-hidden onClick={() => close(false)} />}
       {open && (
-        <div className={styles.menu}>
+        <div className={cx(styles.menu, narrow && styles.narrow)}>
           <div id={menuId} role="menu" aria-label="Account" onKeyDown={onMenuKey}>
             {credits && (
               <CreditsSummary

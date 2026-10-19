@@ -37,6 +37,10 @@
     var(--shadow-menu),
     inset 0 0 0 var(--border-hairline) var(--ink-100);
 }
+/* Mentors (design `menuW`: 212px is for mentees, 136px for the grouped rail). */
+.narrow {
+  width: 136px;
+}
 .item {
   width: 100%;
   height: var(--menu-item-h);

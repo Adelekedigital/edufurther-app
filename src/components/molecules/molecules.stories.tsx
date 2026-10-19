@@ -225,7 +225,7 @@ export const AccountMenuRail: Story = {
           {
             key: 'matches',
             label: 'Talk to our team',
-            icon: 'route',
+            icon: 'support_agent',
             href: '#',
             external: true,
           },

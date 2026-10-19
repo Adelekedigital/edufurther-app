@@ -69,7 +69,7 @@ export function accountItems(member: Member | null, signOut: () => void): Accoun
           {
             key: 'matches',
             label: 'Talk to our team',
-            icon: 'route' as const,
+            icon: 'support_agent' as const,
             href: MATCH_CALL_URL,
             external: true,
           },

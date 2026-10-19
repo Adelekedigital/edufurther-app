@@ -14,12 +14,13 @@ type LockExplainerProps = {
 
 /**
  * Why a nav item is locked, and the way to unlock it (AppShell.dc.html lock
- * explainer: Modal size sm, icon lock, a sheet on phones). Focus, Escape and
- * focus back to the nav item are ModalShell's.
+ * explainer: Modal size md, so every lock title fits one line on desktop; icon
+ * lock, a sheet on phones). Focus, Escape and focus back to the nav item are
+ * ModalShell's.
  */
 export function LockExplainer({ item, copy, onClose }: LockExplainerProps) {
   return (
-    <ModalShell title={copy.title(item)} icon="lock" size="sm" mobile="sheet" onClose={onClose}>
+    <ModalShell title={copy.title(item)} icon="lock" size="md" mobile="sheet" onClose={onClose}>
       <p className={styles.body}>{copy.body}</p>
       <div className={styles.actions}>
         <Button variant="text" size="large" className={styles.action} onClick={onClose}>

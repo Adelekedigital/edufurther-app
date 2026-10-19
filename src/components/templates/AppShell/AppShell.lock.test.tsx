@@ -107,6 +107,9 @@ describe('AppShell: the setup lock (AppShell.dc.html setupLock)', () => {
     expect(within(dialog).getByRole('button', { name: 'Not now' })).toBeInTheDocument();
     // The lock icon in the header.
     expect(dialog.querySelector('[class*="withIcon"] > span')).toHaveTextContent('lock');
+    // Modal md (480px), so the longest title fits one line on desktop (design size="md").
+    expect(dialog).toHaveClass('md');
+    expect(dialog).not.toHaveClass('sm');
     // Focus moved in.
     expect(dialog.contains(document.activeElement)).toBe(true);
     await user.keyboard('{Escape}');
