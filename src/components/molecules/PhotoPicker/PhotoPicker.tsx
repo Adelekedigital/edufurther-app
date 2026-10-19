@@ -30,6 +30,11 @@ type PhotoPickerProps = {
   removing?: boolean;
   /** Moves when a removal lands: "Photo removed." shows under the photo. */
   removedStamp?: number;
+  /**
+   * A photo under 96px (ProfilePhoto.dc.html): a 22px badge flush with the
+   * corner and a 20px spinner, instead of 24px set 2px in and 28px.
+   */
+  compact?: boolean;
 };
 
 /** How long "Photo removed." stays, unless pointed at or focused (design: 6s). */
@@ -56,6 +61,7 @@ export function PhotoPicker({
   onRetryRemove,
   removing = false,
   removedStamp = 0,
+  compact = false,
 }: PhotoPickerProps) {
   const label = hasPhoto ? 'Change photo' : 'Add photo';
   const input = useRef<HTMLInputElement>(null);
@@ -141,7 +147,7 @@ export function PhotoPicker({
     <>
       {busy && (
         <span className={styles.busy} aria-hidden>
-          <Icon name="progress_activity" size={28} className={styles.spin} />
+          <Icon name="progress_activity" size={compact ? 20 : 28} className={styles.spin} />
         </span>
       )}
       {/* Always there, so uploading and a failed pick are heard (review of #99,
@@ -151,7 +157,7 @@ export function PhotoPicker({
       </span>
       {asMenu ? (
         <>
-          <span className={styles.badgeSpot}>
+          <span className={cx(styles.badgeSpot, compact && styles.compactSpot)}>
             <RowMenu
               label="Photo options"
               triggerRef={menuButton}
@@ -159,7 +165,7 @@ export function PhotoPicker({
               trigger={{
                 icon: 'photo_camera',
                 size: 14,
-                className: styles.badgeButton,
+                className: cx(styles.badgeButton, compact && styles.compactBadge),
                 align: 'start',
                 disabled: busy,
               }}
@@ -199,7 +205,15 @@ export function PhotoPicker({
           />
         </>
       ) : (
-        <label className={cx(styles.badge, busy && styles.disabled)} title={label}>
+        <label
+          className={cx(
+            styles.badge,
+            compact && styles.compactSpot,
+            compact && styles.compactBadge,
+            busy && styles.disabled,
+          )}
+          title={label}
+        >
           <Icon name="photo_camera" size={14} />
           <input
             ref={input}

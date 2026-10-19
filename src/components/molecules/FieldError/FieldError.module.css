@@ -8,3 +8,8 @@
   line-height: var(--lh-p);
   color: var(--red-600);
 }
+/* The icon on the first line's centre (design: 16px glyph on an 18px line). */
+.error > :first-child {
+  flex: none;
+  line-height: var(--lh-icon-inline);
+}

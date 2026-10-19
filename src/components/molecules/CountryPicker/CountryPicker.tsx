@@ -16,6 +16,8 @@ type CountryPickerProps = FieldControlProps & {
   placeholder?: string;
   /** xl: 48px flow-form field with a 24px chevron (Mentee Onboarding v5.dc.html). */
   size?: 'default' | 'xl';
+  /** `data-ff` key, so a required-field error can focus the field. */
+  focusKey?: string;
 };
 
 /** Case- and accent-insensitive, so "cote" finds Côte d’Ivoire. */
@@ -36,6 +38,7 @@ export function CountryPicker({
   onChange,
   placeholder = 'Search countries',
   size = 'default',
+  focusKey,
 }: CountryPickerProps) {
   const listId = useId();
   const chosen = options.find((o) => o.id === value)?.label ?? '';
@@ -89,6 +92,7 @@ export function CountryPicker({
     <div className={styles.wrap}>
       <input
         id={id}
+        data-ff={focusKey}
         role="combobox"
         aria-expanded={open}
         aria-controls={listId}

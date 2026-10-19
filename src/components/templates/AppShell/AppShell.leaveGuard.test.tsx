@@ -125,3 +125,153 @@ describe('the More sheet (phones) under the dialog', () => {
     expect(document.getElementById('more-sheet')).not.toBeNull();
   });
 });
+
+describe('a form that can save itself (Settings): "Save your changes?"', () => {
+  function SavingForm({ save }: { save: () => Promise<boolean> }) {
+    useLeaveGuard(true, 'Profile', save);
+    return null;
+  }
+  function SavingPage({ save }: { save: () => Promise<boolean> }) {
+    return (
+      <AppShell active="Settings" nav="mentee" chrome="member" offline={false}>
+        <SavingForm save={save} />
+        <a
+          href="/bookings"
+          onClick={(e) => {
+            e.preventDefault();
+            followed();
+          }}
+        >
+          Go on
+        </a>
+      </AppShell>
+    );
+  }
+  const saveDialog = () => screen.queryByRole('alertdialog', { name: 'Save your changes?' });
+
+  it('Save and continue saves, then follows the link', async () => {
+    const save = vi.fn(async () => true);
+    render(<SavingPage save={save} />);
+    await userEvent.click(goOn());
+    expect(saveDialog()).toHaveTextContent('Your changes on Profile haven’t been saved yet.');
+    await userEvent.click(screen.getByRole('button', { name: 'Save and continue' }));
+    expect(save).toHaveBeenCalledOnce();
+    expect(saveDialog()).toBeNull();
+    expect(followed).toHaveBeenCalledTimes(1);
+  });
+
+  it('a save that couldn’t go through (gaps, a failure) stays on the page', async () => {
+    render(<SavingPage save={async () => false} />);
+    await userEvent.click(goOn());
+    await userEvent.click(screen.getByRole('button', { name: 'Save and continue' }));
+    expect(saveDialog()).toBeNull();
+    expect(followed).not.toHaveBeenCalled();
+  });
+
+  it('Discard follows without saving; Keep editing stays', async () => {
+    const save = vi.fn(async () => true);
+    render(<SavingPage save={save} />);
+    await userEvent.click(goOn());
+    await userEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
+    expect(followed).not.toHaveBeenCalled();
+    await userEvent.click(goOn());
+    await userEvent.click(screen.getByRole('button', { name: 'Discard' }));
+    expect(save).not.toHaveBeenCalled();
+    expect(followed).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Save your changes? on Logout, and while saving', () => {
+  function SavingForm({ save }: { save: () => Promise<boolean> }) {
+    useLeaveGuard(true, 'Profile', save);
+    return null;
+  }
+
+  it('Escape mid-save keeps the dialog; the link is followed only once it saved', async () => {
+    let finish: (v: boolean) => void = () => {};
+    const save = vi.fn(() => new Promise<boolean>((r) => (finish = r)));
+    render(
+      <AppShell active="Settings" nav="mentee" chrome="member" offline={false}>
+        <SavingForm save={save} />
+        <a
+          href="/bookings"
+          onClick={(e) => {
+            e.preventDefault();
+            followed();
+          }}
+        >
+          Go on
+        </a>
+      </AppShell>,
+    );
+    await userEvent.click(goOn());
+    await userEvent.click(screen.getByRole('button', { name: 'Save and continue' }));
+    await userEvent.keyboard('{Escape}');
+    expect(screen.getByRole('alertdialog', { name: 'Save your changes?' })).toBeInTheDocument();
+    expect(followed).not.toHaveBeenCalled();
+    await act(async () => finish(true));
+    expect(followed).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Save your changes? on Logout, and while saving', () => {
+  function SavingForm({ save }: { save: () => Promise<boolean> }) {
+    useLeaveGuard(true, 'Profile', save);
+    return null;
+  }
+
+  it('Escape mid-save keeps the dialog; the link is followed only once it saved', async () => {
+    let finish: (v: boolean) => void = () => {};
+    const save = vi.fn(() => new Promise<boolean>((r) => (finish = r)));
+    render(
+      <AppShell active="Settings" nav="mentee" chrome="member" offline={false}>
+        <SavingForm save={save} />
+        <a
+          href="/bookings"
+          onClick={(e) => {
+            e.preventDefault();
+            followed();
+          }}
+        >
+          Go on
+        </a>
+      </AppShell>,
+    );
+    await userEvent.click(goOn());
+    await userEvent.click(screen.getByRole('button', { name: 'Save and continue' }));
+    await userEvent.keyboard('{Escape}');
+    expect(screen.getByRole('alertdialog', { name: 'Save your changes?' })).toBeInTheDocument();
+    expect(followed).not.toHaveBeenCalled();
+    await act(async () => finish(true));
+    expect(followed).toHaveBeenCalledTimes(1);
+  });
+
+  it('Logout: the choices say they log out; Save and log out saves first', async () => {
+    const save = vi.fn(async () => true);
+    const onKeep = vi.fn();
+    const onLogout = vi.fn();
+    // The dialog opens on a Logout click, once the form has registered.
+    const shell = (open: boolean) => (
+      <AppShell
+        active="Settings"
+        nav="mentee"
+        chrome="member"
+        offline={false}
+        account={{
+          avatar: { initial: 'A', cover: 'sky' },
+          items: [],
+          logoutConfirm: open ? { onKeep, onLogout } : undefined,
+        }}
+      >
+        <SavingForm save={save} />
+      </AppShell>
+    );
+    const { rerender } = render(shell(false));
+    rerender(shell(true));
+    const dialog = screen.getByRole('alertdialog', { name: 'Save your changes?' });
+    expect(within(dialog).getByRole('button', { name: 'Discard and log out' })).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save and log out' }));
+    expect(save).toHaveBeenCalledOnce();
+    expect(onLogout).toHaveBeenCalledOnce();
+  });
+});

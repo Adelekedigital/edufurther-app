@@ -266,6 +266,7 @@ Defined in `src/styles/tokens/ours.css`. A redesign must not silently drop them:
 | `--gold-subtle`                                                                                         | design literal `#fffbef` (award and mentoring-time icon tiles, Mentor Profile)               |
 | `--avatar-tone-1…6`                                                                                     | initials grounds, read off design samples                                                    |
 | `--button-h-large`, `--button-h-medium`, `--button-h-small`, `--button-compact-h`, `--touch-target-min` | CTA hierarchy heights (the DS button sizes differ), chip height, 44px targets                |
+| `--lh-icon-inline` | 18px: the line a field error's 16px icon sits on (every `.dc.html` field error) |
 | `--modal-icon-*` (bg/ring/ink × default, danger, success)                                               | Modal.dc.html `tone` literals (`#f5f9ff`, `#fff6f5`, `#f3fbf6` rings)                        |
 | `--step-dot-text`                                                                                       | Session Types wizard step number, literal 11px                                               |
 | `--swatch-edge`                                                                                         | Mentor Profile.dc.html cover swatch ring, `rgba(16,25,40,.08)`                               |
@@ -935,3 +936,14 @@ PRD: Mentee Onboarding v5 (deviation table, H8). Rows the PRD settles are produc
 | Photo initials `32px` | `--text-h3` (32px on desktop, smaller on the phone type scale) | Raw px fails `lint:css`; the phone scale shrinks it with the rest | — |
 | "See approval preview" on the Application sent screen | Not rendered | A prototype link to another design file | never |
 | "Add the country you studied in." for every school without a catalogue country | Only the current school, an unsaved school, or one with its picker open | The API keeps a typed school's country only as the current school's study country, so an older saved school can't hold one | backend stores a country per education entry |
+
+## Mentee Settings (`Mentee Settings.dc.html`, route `/settings/[tab]`, PR 4: frame and Profile)
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| "Country you live in" is a native select of 8 countries | `CountryPicker` (type to find) over the full catalog, drawn as the select | The country is saved by catalog id; about 250 is too long to scroll (existing CountryPicker divergence) | — |
+| "Add another language" takes free text | The same field searches the language catalog, matches listed under it | Languages are saved by catalog id; free text can't be saved | backend accepts unlisted languages |
+| Bio `max` 300 | 1,500 | `about_me` holds 1,500 for mentee bio and mentor About (owner, 2026-10-17; confirmed 2026-10-19) | — |
+| Save bar form error in `--red-600` on `--ink-900` | `--red-300` | red-600 is 3.1:1 on ink-900; red-300 is 5.6:1 (WCAG 1.4.3) | — |
+| DS `text-secondary` button hover `--slate-400` | `--ink-700` | slate-400 is 4.48:1 on white (fails WCAG 1.4.3) | DS fixes the hover |
+| Save bar and toast centred 24px above the bottom at every width | On phones: full width less 16px a side, above the 56px tab bar | PRD: "a sticky save bar above the tab bar" on phones; the bar would cover the tab bar otherwise | design draws the phone bar |

@@ -96,6 +96,8 @@ export function mockGoal(userId: string) {
         display_name: o.display_name,
       })),
     ),
+    // Goal schools (edufurtherbe #500): Settings › Goals writes them.
+    schools: [],
   };
 }
 

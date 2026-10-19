@@ -391,6 +391,7 @@ export function AppShell({
           logout
           onKeep={account.logoutConfirm.onKeep}
           onDiscard={account.logoutConfirm.onLogout}
+          onSaved={account.logoutConfirm.onLogout}
         />
       )}
       <LinkGuard />
@@ -624,23 +625,31 @@ function LinkGuard() {
     <UnsavedChangesDialog
       what={unsavedLabel()}
       onKeep={() => setHeld(null)}
-      onDiscard={() => {
-        const a = held;
-        setHeld(null);
-        discardUnsaved();
-        if (a.isConnected) {
-          // click() dispatches synchronously; the flag can't outlive it.
-          pass.current = true;
-          try {
-            a.click();
-          } finally {
-            pass.current = false;
-          }
-        } else if (new URL(a.href).origin === window.location.origin) {
-          // The link is gone (re-rendered): a full load instead, same site only.
-          fullNavigate(a.href);
-        }
-      }}
+      onDiscard={follow}
+      onSaved={follow}
     />
   );
+
+  /**
+   * Follow the held link, after Discard or once the form saved. Saved, the
+   * form is clean only once it re-renders, so it stands down now either way:
+   * the replayed click (or a full load) mustn't be held a second time.
+   */
+  function follow() {
+    const a = held!;
+    setHeld(null);
+    discardUnsaved();
+    if (a.isConnected) {
+      // click() dispatches synchronously; the flag can't outlive it.
+      pass.current = true;
+      try {
+        a.click();
+      } finally {
+        pass.current = false;
+      }
+    } else if (new URL(a.href).origin === window.location.origin) {
+      // The link is gone (re-rendered): a full load instead, same site only.
+      fullNavigate(a.href);
+    }
+  }
 }

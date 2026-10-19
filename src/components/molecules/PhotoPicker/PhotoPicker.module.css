@@ -59,6 +59,15 @@
     inset: -10px;
   }
 }
+/* Under 96px (ProfilePhoto.dc.html): 22px, flush with the corner. */
+.compactSpot {
+  right: 0;
+  bottom: 0;
+}
+.compactBadge {
+  width: 22px;
+  height: 22px;
+}
 /* Busy: the badge greys (ProfilePhoto.dc.html `badgeBusy`, ink-300). */
 .disabled,
 .disabled:hover,
