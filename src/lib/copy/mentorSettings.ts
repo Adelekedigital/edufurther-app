@@ -7,9 +7,14 @@ export const BOOKING_COPY = {
   approveTitle: 'Approve bookings',
   approveOn: 'You decide which requests to accept.',
   approveOff: 'Mentees book any available time and it’s confirmed straight away.',
-  /** Replaces the design's "If you don't respond in time" picker: decline only (founder, Oct 19). */
+  /**
+   * Replaces the design's "If you don't respond in time" picker (founder, Oct
+   * 19: no auto-confirm). The backend's RESPONSE_WINDOW (domain/sessions.py):
+   * an unanswered request expires 6 hours before the session, shown as
+   * Unconfirmed. The PRD's "12 hours, declined" was the reminder, not the rule.
+   */
   noResponse:
-    'If you don’t respond by 12 hours before the session, we decline the request and the mentee can rebook.',
+    'If you don’t respond by 6 hours before the session, the request expires and the mentee can book another time.',
   approveFootnote: 'Mentees see “Needs your approval” before they book.',
   rulesTitle: 'Booking rules',
   rulesSub:

@@ -23,25 +23,23 @@ const ready = (over: Partial<BookingSettingsValue> = {}, onChange = vi.fn()) =>
   );
 
 describe('BookingSettings', () => {
-  it('approval on: the switch is named by its heading, with the decline line and the footnote', () => {
+  it('approval on: the switch is named by its heading, with the no-response line and the footnote', () => {
     ready();
     const sw = screen.getByRole('switch', { name: 'Approve bookings' });
     expect(sw).toHaveAttribute('aria-checked', 'true');
     expect(sw).toHaveAccessibleDescription('You decide which requests to accept.');
-    expect(
-      screen.getByText(/we decline the request and the mentee can rebook/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/6 hours before the session, the request expires/)).toBeInTheDocument();
     expect(
       screen.getByText('Mentees see “Needs your approval” before they book.'),
     ).toBeInTheDocument();
   });
 
-  it('approval off: no decline line and no footnote', () => {
+  it('approval off: no no-response line and no footnote', () => {
     ready({ requiresApproval: false });
     expect(screen.getByRole('switch')).toHaveAccessibleDescription(
       'Mentees book any available time and it’s confirmed straight away.',
     );
-    expect(screen.queryByText(/we decline the request/)).toBeNull();
+    expect(screen.queryByText(/the request expires/)).toBeNull();
     expect(screen.queryByText(/Needs your approval/)).toBeNull();
   });
 
@@ -64,6 +62,12 @@ describe('BookingSettings', () => {
       expect(screen.getByRole('combobox', { name })).toBeInTheDocument();
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Session length' }), '90');
     expect(onChange).toHaveBeenCalledWith({ ...value, durationMin: 90 });
+  });
+
+  it('a value set elsewhere (21 days, 36 hours) stays selected, not the first choice', () => {
+    ready({ windowDays: 21, noticeHours: 36 });
+    expect(screen.getByRole('combobox', { name: 'Booking window' })).toHaveValue('21');
+    expect(screen.getByRole('combobox', { name: 'Minimum notice' })).toHaveValue('36');
   });
 
   it('disabled while saving', () => {

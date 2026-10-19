@@ -467,6 +467,23 @@ export const hoursLabel = (h: number) => String(Number(h.toFixed(1)));
 export const windowLabel = (days: number) =>
   days % 7 === 0 ? `${days / 7} week${days === 7 ? '' : 's'}` : `${days} days`;
 export const breakLabel = (m: number) => (m ? `${m} min` : 'None');
+
+/**
+ * The design's choices, plus the stored value when it isn't one of them (set
+ * elsewhere, e.g. 21 days): a native select would otherwise show its first
+ * option while keeping the real value (review of #60).
+ */
+const choices = (list: number[], label: (n: number) => string) => (current: number) =>
+  (list.includes(current) ? list : [...list, current].sort((a, b) => a - b)).map((n) => ({
+    value: String(n),
+    label: label(n),
+  }));
+export const durationOptions = choices(DURATIONS, (m) => `${m} min`);
+export const noticeOptions = choices(NOTICE_HOURS, (h) => `${hoursLabel(h)} hrs`);
+/** Choices under the platform's cap (the mentor's defaults carry it). */
+export const windowOptions = (current: number, max?: number) =>
+  choices(windowPresets(max), windowLabel)(current);
+export const breakOptions = choices(BREAKS, breakLabel);
 export const approvalLabel = (on: boolean) => (on ? 'Approve each request' : 'Confirm instantly');
 
 /** Design `sum`: "60 min sessions · at least 24 hours notice · bookable up to 2 weeks ahead · 15 min break · you approve each request". */

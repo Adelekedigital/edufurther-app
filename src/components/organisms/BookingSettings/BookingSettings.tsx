@@ -22,7 +22,10 @@ type BookingSettingsProps =
       state: 'ready';
       value: BookingSettingsValue;
       onChange: (next: BookingSettingsValue) => void;
-      /** The platform's longest window (it can change). */
+      /**
+       * The platform's longest window (it can change). The page clamps a saved
+       * window above it before passing `value`, as Calendar's form does.
+       */
       maxWindowDays?: number;
       /** Sessions that follow these rules; null when the count couldn't load. */
       sessionsUsingRules: number | null;
@@ -33,7 +36,7 @@ type BookingSettingsProps =
 /**
  * Mentor Settings' Booking tab (Mentor Settings.dc.html `isBooking`,
  * approvalLayout=focused, respondPick=hide, bookingLayout=defaults). The
- * design's "If you don't respond in time" picker is one decline line (PRD
+ * design's "If you don't respond in time" picker is one no-response line (PRD
  * deviation, founder Oct 19). Saving is the page's: it owns the save bar.
  */
 export function BookingSettings(props: BookingSettingsProps) {

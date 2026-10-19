@@ -5,7 +5,12 @@ import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Select } from '@/components/atoms/Select/Select';
 import { resolveDefaults, type BookingDefaults } from '@/lib/utils/sessionTypeDraft';
-import { breakOptions, durationOptions, noticeOptions, windowOptions } from './SchedulingStep';
+import {
+  breakOptions,
+  durationOptions,
+  noticeOptions,
+  windowOptions,
+} from '@/lib/utils/sessionTypeDraft';
 import styles from './SessionTypeWizard.module.css';
 
 type BookingPreferencesFormProps = {

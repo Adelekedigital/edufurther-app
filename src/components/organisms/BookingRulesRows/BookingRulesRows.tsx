@@ -1,13 +1,14 @@
 'use client';
 
+import { useId } from 'react';
 import { Select } from '@/components/atoms/Select/Select';
+import { noticeLabel } from '@/lib/utils/calendar';
 import {
+  NOTICE_HOURS,
   breakOptions,
   durationOptions,
   windowOptions,
-} from '@/components/organisms/SessionTypeWizard/SchedulingStep';
-import { noticeLabel } from '@/lib/utils/calendar';
-import { NOTICE_HOURS } from '@/lib/utils/sessionTypeDraft';
+} from '@/lib/utils/sessionTypeDraft';
 
 /** The four booking rules, every one resolved (the mentor's or the platform's). */
 export type BookingRules = {
@@ -35,7 +36,7 @@ type BookingRulesRowsProps = {
 };
 
 /** The backend's range (24 to 72 hours), with the stored value if it's another. */
-const noticeOptions = (current: number) =>
+const noticeHoursOptions = (current: number) =>
   (NOTICE_HOURS.includes(current)
     ? NOTICE_HOURS
     : [...NOTICE_HOURS, current].sort((a, b) => a - b)
@@ -56,9 +57,10 @@ export function BookingRulesRows({
   classes,
   selectWidth,
 }: BookingRulesRowsProps) {
+  const id = useId();
   const options: Record<BookingRuleKey, { value: string; label: string }[]> = {
     durationMin: durationOptions(value.durationMin),
-    noticeHours: noticeOptions(value.noticeHours),
+    noticeHours: noticeHoursOptions(value.noticeHours),
     windowDays: windowOptions(value.windowDays, maxWindowDays),
     breakMin: breakOptions(value.breakMin),
   };
@@ -68,10 +70,13 @@ export function BookingRulesRows({
         <div key={k} className={classes.row}>
           <span className={classes.text}>
             <span className={classes.label}>{copy[k].label}</span>
-            <span className={classes.hint}>{copy[k].hint}</span>
+            <span id={`${id}-${k}`} className={classes.hint}>
+              {copy[k].hint}
+            </span>
           </span>
           <Select
             aria-label={copy[k].label}
+            aria-describedby={`${id}-${k}`}
             width={selectWidth}
             options={options[k]}
             value={String(value[k])}
