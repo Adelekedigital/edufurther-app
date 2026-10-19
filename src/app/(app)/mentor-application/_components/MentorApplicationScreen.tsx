@@ -1,12 +1,15 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import type { SummaryRow } from '@/components/molecules/ApprovedSummary/ApprovedSummary';
 import {
   MentorApplicationStatus,
+  type CalendarConnectState,
   type MentorApplicationStatusProps,
 } from '@/components/organisms/MentorApplicationStatus/MentorApplicationStatus';
+import { useCalendarConnection } from '@/lib/api/data/calendarConnection';
 import {
   useContinueAsMentee,
   useMarkApprovedSeen,
@@ -15,10 +18,11 @@ import {
 } from '@/lib/api/data/mentorApplicationStatus';
 import { useOwnSessionTypes } from '@/lib/api/data/sessionTypes';
 import { useWeeklyHours } from '@/lib/api/data/weeklyHours';
-import { APPROVED_COPY, reapplyMailto } from '@/lib/copy/mentorApplication';
+import { APPROVED_COPY, CALENDAR_ROW_COPY, reapplyMailto } from '@/lib/copy/mentorApplication';
 import { NEW_MENTEE_HOME, ONBOARDING_LIVE } from '@/lib/config/auth';
 import { weeklyHoursSummary } from '@/lib/utils/weeklyHoursSummary';
 import { useAppShell } from '@/app/_shell/useAppShell';
+import { useCalendarConnect } from '@/app/_shell/useCalendarConnect';
 
 const SELF = '/mentor-application';
 const APPLY = '/onboarding/mentor';
@@ -75,6 +79,30 @@ export function MentorApplicationScreen() {
   const mentee = useContinueAsMentee(userId);
   const [menteeFailed, setMenteeFailed] = useState(false);
 
+  // Google Calendar connects in place (owner, 2026-10-18): the same popup flow
+  // as Integrations, so the approved screen stays where it is meanwhile.
+  const calendar = useCalendarConnection(approved ? userId : null);
+  const [message, setMessage] = useState<{ text: string; id: number } | null>(null);
+  const announce = useCallback(
+    (text: string) => setMessage((m) => ({ text, id: (m?.id ?? 0) + 1 })),
+    [],
+  );
+  const connect = useCalendarConnect(
+    approved ? userId : null,
+    calendar.data,
+    announce,
+    CALENDAR_ROW_COPY.announceConnected,
+  );
+  const calendarState = calendarStateOf(calendar, connect);
+  // A failure line is read out once, as it appears.
+  const lastNotice = useRef<CalendarConnectState | null>(null);
+  useEffect(() => {
+    const notice = NOTICE_STATES.has(calendarState) ? calendarState : null;
+    if (notice && notice !== lastNotice.current)
+      announce(NOTICE_TEXT[notice as keyof typeof NOTICE_TEXT]);
+    lastNotice.current = notice;
+  }, [calendarState, announce]);
+
   // A guest signs in and comes back (the approval email links here); an
   // account that can't be read as a member goes where `/` explains it.
   const to =
@@ -110,7 +138,16 @@ export function MentorApplicationScreen() {
           state: 'approved',
           firstName: shown.firstName,
           summary: summaryRows(hours.data, types.data),
-          integrationsHref: '/integrations',
+          calendar: {
+            state: calendarState,
+            email: calendar.data?.accountEmail ?? null,
+            onConnect: () => {
+              connect.dismiss();
+              void connect.connect();
+            },
+            onRetryCheck: calendar.retry,
+            retrying: calendar.retrying,
+          },
           dashboardHref: '/dashboard',
           celebrate: true,
         };
@@ -156,7 +193,48 @@ export function MentorApplicationScreen() {
     markSeen();
   }, [onScreen, markSeen]);
 
-  return <MentorApplicationStatus {...props} />;
+  return (
+    <>
+      {/* The calendar's region, only beside the approved screen: loading has its
+          own, and two live regions at once is failure mode #53. It mounts
+          before any calendar message can exist (they follow a click). */}
+      {props.state === 'approved' && <LiveRegion message={message} />}
+      <MentorApplicationStatus {...props} />
+    </>
+  );
+}
+
+const NOTICE_TEXT = {
+  blocked: CALENDAR_ROW_COPY.blocked,
+  nothingConnected: CALENDAR_ROW_COPY.nothingConnected,
+  offline: CALENDAR_ROW_COPY.offline,
+  failed: CALENDAR_ROW_COPY.failed,
+  unavailable: CALENDAR_ROW_COPY.unavailable,
+} as const;
+const NOTICE_STATES = new Set<CalendarConnectState>(
+  Object.keys(NOTICE_TEXT) as CalendarConnectState[],
+);
+
+/**
+ * The connection and the last connect attempt → one row state. Busy wins (a
+ * reconnect is busy too); a connection, once read, beats any earlier notice,
+ * which a successful connect has made untrue. A failed read offers to read
+ * again, never Connect.
+ */
+export function calendarStateOf(
+  calendar: Pick<ReturnType<typeof useCalendarConnection>, 'data' | 'isLoading' | 'error'>,
+  connect: Pick<ReturnType<typeof useCalendarConnect>, 'state' | 'unavailable'>,
+): CalendarConnectState {
+  if (connect.state.kind === 'busy') return 'busy';
+  if (calendar.isLoading) return 'loading';
+  const c = calendar.data;
+  // Unknown is not "not connected": Connect here could re-announce a grant
+  // that was there all along (the poll would see it as new).
+  if (!c && calendar.error) return 'checkFailed';
+  if (c) return c.status === 'error' ? (c.fault === 'revoked' ? 'revoked' : 'broken') : 'connected';
+  if (connect.unavailable) return 'unavailable';
+  const k = connect.state.kind;
+  return k === 'idle' ? 'idle' : k;
 }
 
 function summaryRows(

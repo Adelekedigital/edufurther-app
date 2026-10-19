@@ -24,22 +24,20 @@ export type ConnectState =
   | { kind: 'failed' };
 
 /** A fresh grant, rather than the one that was already there. */
-export function isNew(
-  before: CalendarConnection | null,
-  now: CalendarConnection | null,
-): boolean {
+export function isNew(before: CalendarConnection | null, now: CalendarConnection | null): boolean {
   if (!now) return false;
   if (!before) return true;
   // Reconnecting replaces the grant, so its timestamp moves; the status flip
   // covers a backend that reuses the row and only clears the fault.
   return (
-    now.connectedAt !== before.connectedAt ||
-    (before.status === 'error' && now.status === 'active')
+    now.connectedAt !== before.connectedAt || (before.status === 'error' && now.status === 'active')
   );
 }
 
 /**
- * Drives the consent popup (`connectPopup`) and reports where it ended.
+ * Drives the consent popup (`connectPopup`) and reports where it ended. Shared
+ * by Integrations and the approved mentor application's Calendar row: the
+ * popup keeps the page where it is, so either can connect in place.
  *
  * The popup is opened on the click, before asking for the URL — a window
  * opened after an await has lost the user gesture and is blocked.
@@ -48,6 +46,8 @@ export function useCalendarConnect(
   userId: string | null,
   connection: CalendarConnection | null,
   announce: (message: string) => void,
+  /** What is read out once connected; each screen words it its own way. */
+  successMessage = 'Google Calendar connected. Your busy times are now hidden from your booking page.',
 ) {
   const start = useStartCalendarConnect();
   const refresh = useRefreshAfterConnect(userId);
@@ -102,9 +102,7 @@ export function useCalendarConnect(
         // a moment after we have just said it is connected.
         await refresh();
         setState({ kind: 'idle' });
-        announce(
-          'Google Calendar connected. Your busy times are now hidden from your booking page.',
-        );
+        announce(successMessage);
         return;
       }
       // Denying consent writes nothing, so there is no failure to report — the
@@ -112,11 +110,7 @@ export function useCalendarConnect(
       // our own doing and belongs with the other "could not start" cases.
       setState({
         kind:
-          outcome === 'blocked'
-            ? 'blocked'
-            : outcome === 'refused'
-              ? 'failed'
-              : 'nothingConnected',
+          outcome === 'blocked' ? 'blocked' : outcome === 'refused' ? 'failed' : 'nothingConnected',
       });
     } catch {
       popup?.close();
@@ -124,7 +118,7 @@ export function useCalendarConnect(
     } finally {
       running.current = false;
     }
-  }, [announce, connection, refresh, start, unavailable]);
+  }, [announce, connection, refresh, start, successMessage, unavailable]);
 
   return {
     state,

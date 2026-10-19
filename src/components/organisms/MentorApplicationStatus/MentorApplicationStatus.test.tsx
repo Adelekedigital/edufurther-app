@@ -1,7 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { MentorApplicationStatus } from './MentorApplicationStatus';
+import {
+  MentorApplicationStatus,
+  calendarRow,
+  type CalendarConnectState,
+} from './MentorApplicationStatus';
 
 const declined = {
   state: 'declined' as const,
@@ -54,7 +58,7 @@ describe('MentorApplicationStatus', () => {
             body: 'Mentees can find and book you straight away.',
           },
         ]}
-        integrationsHref="/integrations"
+        calendar={{ state: 'idle', onConnect: () => {} }}
         dashboardHref="/dashboard"
         celebrate
       />,
@@ -63,7 +67,7 @@ describe('MentorApplicationStatus', () => {
       'You’re in, Gbenga. Let’s get you booked.',
     );
     expect(screen.getByRole('link', { name: 'Check hours' })).toHaveAttribute('href', '/calendar');
-    expect(screen.getByRole('link', { name: 'Connect' })).toHaveAttribute('href', '/integrations');
+    expect(screen.getByRole('button', { name: 'Connect' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Go to my dashboard' })).toHaveAttribute(
       'href',
       '/dashboard',
@@ -106,5 +110,122 @@ describe('MentorApplicationStatus', () => {
     rerender(<MentorApplicationStatus state="loading" />);
     expect(screen.getByRole('status')).toHaveTextContent('Loading your application…');
     expect(screen.queryByRole('heading')).toBeNull();
+  });
+});
+
+describe('calendarRow: the Google Calendar row connects in place', () => {
+  const row = (state: CalendarConnectState, email?: string | null) =>
+    calendarRow({ state, email, onConnect: () => {} });
+
+  it('offers nothing until the connection is read, then Connect', () => {
+    expect(row('loading').action).toEqual({ kind: 'none' });
+    expect(row('idle')).toMatchObject({
+      title: 'Connect Google Calendar',
+      optional: '(optional)',
+      action: { kind: 'button', label: 'Connect' },
+    });
+  });
+
+  it('says Connecting… while the popup is open, still a button in the tab order', () => {
+    expect(row('busy').action).toMatchObject({
+      kind: 'button',
+      busy: true,
+      busyLabel: 'Connecting…',
+    });
+  });
+
+  it('once connected: a new title, the account when known, and a status instead of a button', () => {
+    expect(row('connected', 'g@x.com')).toEqual({
+      title: 'Google Calendar connected',
+      body: 'Connected as g@x.com. We hide times you’re already busy.',
+      action: { kind: 'status', label: 'Connected' },
+    });
+    expect(row('connected', null).body).toBe(
+      'We hide times you’re already busy. Event details stay private.',
+    );
+    expect(row('connected').optional).toBeUndefined();
+  });
+
+  it('a broken grant asks to reconnect, in the warn tone', () => {
+    expect(row('revoked')).toMatchObject({
+      body: 'Google Calendar needs reconnecting. Access was removed or has expired.',
+      tone: 'warn',
+      action: { label: 'Reconnect' },
+    });
+    expect(row('broken').body).toBe('Google Calendar needs reconnecting.');
+  });
+
+  it.each([
+    ['blocked', 'Your browser blocked the pop-up.'],
+    ['nothingConnected', 'Nothing was connected.'],
+    ['offline', 'You’re offline.'],
+    ['failed', 'We couldn’t start connecting.'],
+  ] as const)('%s says what happened and offers Try again', (state, start) => {
+    const r = row(state);
+    expect(r.body.startsWith(start)).toBe(true);
+    expect(r).toMatchObject({ tone: 'warn', action: { kind: 'button', label: 'Try again' } });
+  });
+
+  it('not set up here: explains, offers no control', () => {
+    expect(row('unavailable')).toMatchObject({
+      body: 'Connecting a calendar isn’t available yet.',
+      action: { kind: 'none' },
+    });
+  });
+
+  it('a failed read offers to check again, never Connect', () => {
+    const onRetryCheck = vi.fn();
+    const r = calendarRow({ state: 'checkFailed', onConnect: () => {}, onRetryCheck });
+    expect(r).toMatchObject({
+      body: 'We couldn’t check whether your calendar is connected.',
+      tone: 'warn',
+      action: { kind: 'button', label: 'Try again', onClick: onRetryCheck },
+    });
+    // While that read runs again: busy, like Integrations' Try again.
+    expect(
+      calendarRow({ state: 'checkFailed', onConnect: () => {}, onRetryCheck, retrying: true })
+        .action,
+    ).toMatchObject({ busy: true, busyLabel: 'Checking…' });
+  });
+});
+
+describe('MentorApplicationStatus: the calendar action', () => {
+  const approved = (state: CalendarConnectState, onConnect = vi.fn()) => (
+    <MentorApplicationStatus
+      state="approved"
+      firstName="Gbenga"
+      summary={[]}
+      calendar={{ state, email: 'g@x.com', onConnect }}
+      dashboardHref="/dashboard"
+      celebrate={false}
+    />
+  );
+
+  it('Connect calls onConnect; busy does not call it twice', async () => {
+    const onConnect = vi.fn();
+    const { rerender } = render(approved('idle', onConnect));
+    await userEvent.click(screen.getByRole('button', { name: 'Connect' }));
+    expect(onConnect).toHaveBeenCalledOnce();
+    rerender(approved('busy', onConnect));
+    const busy = screen.getByRole('button', { name: 'Connecting…' });
+    expect(busy).toHaveAttribute('aria-busy', 'true');
+    await userEvent.click(busy);
+    expect(onConnect).toHaveBeenCalledOnce();
+  });
+
+  it('keeps focus on the row when Connect gives way to Connected', async () => {
+    const { rerender } = render(approved('idle'));
+    screen.getByRole('button', { name: 'Connect' }).focus();
+    rerender(approved('busy'));
+    rerender(approved('connected'));
+    expect(document.activeElement).not.toBe(document.body);
+    expect(document.activeElement).toHaveTextContent('Google Calendar connected');
+  });
+
+  it('connected shows a status, not a button', () => {
+    render(approved('connected'));
+    expect(screen.getByText('Google Calendar connected')).toBeInTheDocument();
+    expect(screen.getByText('Connected')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /connect/i })).toBeNull();
   });
 });

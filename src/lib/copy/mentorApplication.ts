@@ -52,8 +52,35 @@ export const APPROVED_COPY = {
   calendarTitle: 'Connect Google Calendar',
   calendarOptional: '(optional)',
   calendarBody: 'We hide times you’re already busy. Event details stay private.',
-  calendarLink: 'Connect',
   go: 'Go to my dashboard',
+} as const;
+
+/**
+ * The approved screen's Google Calendar row once it connects in place (owner,
+ * 2026-10-18; edufurther-ux-writer). Wording follows Integrations, which still
+ * manages the connection.
+ */
+export const CALENDAR_ROW_COPY = {
+  connectedTitle: 'Google Calendar connected',
+  connectedAs: (email: string) => `Connected as ${email}. We hide times you’re already busy.`,
+  connectedBody: 'We hide times you’re already busy. Event details stay private.',
+  connected: 'Connected',
+  connect: 'Connect',
+  connecting: 'Connecting…',
+  reconnect: 'Reconnect',
+  retry: 'Try again',
+  blocked: 'Your browser blocked the pop-up. Allow pop-ups for EduFurther, then try again.',
+  nothingConnected:
+    'Nothing was connected. The window closed, or the calendar permission wasn’t ticked on Google’s second step.',
+  offline: 'You’re offline. Reconnect to the internet, then try again.',
+  failed: 'We couldn’t start connecting. Try again in a moment.',
+  unavailable: 'Connecting a calendar isn’t available yet.',
+  checkFailed: 'We couldn’t check whether your calendar is connected.',
+  checking: 'Checking…',
+  revoked: 'Google Calendar needs reconnecting. Access was removed or has expired.',
+  broken: 'Google Calendar needs reconnecting.',
+  announceConnected:
+    'Google Calendar connected. Your busy times are now hidden from your booking page.',
 } as const;
 
 /** Mentor Dashboard v2.dc.html `?toast=approved`: the approved screen was already seen. */

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MentorApplication } from '@/lib/api/data/mentorApplicationStatus';
@@ -52,7 +52,30 @@ vi.mock('@/lib/api/data/sessionTypes', () => ({
   }),
 }));
 
-const { MentorApplicationScreen } = await import('./MentorApplicationScreen');
+let calendar: {
+  data: unknown;
+  isLoading: boolean;
+  error: unknown;
+  retry: () => void;
+  retrying: boolean;
+};
+vi.mock('@/lib/api/data/calendarConnection', () => ({ useCalendarConnection: () => calendar }));
+let connectState: { kind: string } = { kind: 'idle' };
+const connectFn = vi.fn();
+let onConnected: () => void = () => {};
+vi.mock('@/app/_shell/useCalendarConnect', () => ({
+  useCalendarConnect: (
+    _id: unknown,
+    _c: unknown,
+    announce: (m: string) => void,
+    success: string,
+  ) => {
+    onConnected = () => announce(success);
+    return { state: connectState, connect: connectFn, unavailable: false, dismiss: vi.fn() };
+  },
+}));
+
+const { MentorApplicationScreen, calendarStateOf } = await import('./MentorApplicationScreen');
 
 const person = { firstName: 'Gbenga', fullName: 'Gbenga Ekundayo', email: 'gbenga@example.com' };
 const remote = (data: MentorApplication | null, fresh = true) => ({
@@ -67,6 +90,9 @@ beforeEach(() => {
   viewer = { kind: 'member', id: 'u1' };
   search = '';
   hoursFail = false;
+  calendar = { data: null, isLoading: false, error: null, retry: vi.fn(), retrying: false };
+  connectState = { kind: 'idle' };
+  connectFn.mockReset();
   replace.mockReset();
   push.mockReset();
   markSeen.mockReset();
@@ -125,10 +151,16 @@ describe('MentorApplicationScreen (PRD F3, "Where people land")', () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
+  it('has one live region while loading (failure mode #53)', () => {
+    app = remote(null);
+    render(<MentorApplicationScreen />);
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+  });
+
   it('waits for a fresh read: a cached one may predate approved-seen', () => {
     app = remote({ stage: 'approved', seen: false, ...person }, false);
     const { rerender } = render(<MentorApplicationScreen />);
-    expect(screen.getByRole('status')).toHaveTextContent('Loading your application…');
+    expect(screen.getByText('Loading your application…')).toBeInTheDocument();
     expect(markSeen).not.toHaveBeenCalled();
     app = remote({ stage: 'approved', seen: true, ...person });
     rerender(<MentorApplicationScreen />);
@@ -204,5 +236,87 @@ describe('MentorApplicationScreen (PRD F3, "Where people land")', () => {
     await userEvent.click(screen.getByRole('link', { name: 'Continue as a mentee' }));
     expect(continueAsMentee).toHaveBeenCalledOnce();
     await waitFor(() => expect(push).toHaveBeenCalled());
+  });
+});
+
+describe('MentorApplicationScreen: Google Calendar connects in place', () => {
+  it('Connect starts the popup flow; success is announced in the row’s words', async () => {
+    app = remote({ stage: 'approved', seen: false, ...person });
+    render(<MentorApplicationScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Connect' }));
+    expect(connectFn).toHaveBeenCalledOnce();
+    act(() => onConnected());
+    expect(screen.getAllByRole('status')[0]).toHaveTextContent(
+      'Google Calendar connected. Your busy times are now hidden from your booking page.',
+    );
+  });
+
+  it('a mentor already connected sees Connected, never Connect', () => {
+    calendar = {
+      data: {
+        connectedAt: 'x',
+        status: 'active',
+        lastSyncedAt: null,
+        fault: null,
+        accountEmail: 'g@x.com',
+      },
+      isLoading: false,
+      error: null,
+      retry: vi.fn(),
+      retrying: false,
+    };
+    app = remote({ stage: 'approved', seen: false, ...person });
+    render(<MentorApplicationScreen />);
+    expect(
+      screen.getByText('Connected as g@x.com. We hide times you’re already busy.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Connect' })).toBeNull();
+  });
+
+  it('a failure line is announced as it appears', () => {
+    connectState = { kind: 'blocked' };
+    app = remote({ stage: 'approved', seen: false, ...person });
+    render(<MentorApplicationScreen />);
+    expect(screen.getAllByRole('status')[0]).toHaveTextContent('Your browser blocked the pop-up.');
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+  });
+});
+
+describe('calendarStateOf', () => {
+  const conn = (over: object = {}) => ({
+    connectedAt: 'x',
+    status: 'active' as const,
+    lastSyncedAt: null,
+    fault: null,
+    accountEmail: null,
+    ...over,
+  });
+  const at = (data: unknown, isLoading: boolean, kind: string, unavailable = false) =>
+    calendarStateOf(
+      { data: data as never, isLoading, error: null },
+      { state: { kind } as never, unavailable },
+    );
+
+  it('busy wins, then loading, then a connection over any old notice', () => {
+    expect(at(conn(), false, 'busy')).toBe('busy');
+    expect(at(null, true, 'idle')).toBe('loading');
+    expect(at(conn(), false, 'blocked')).toBe('connected');
+    expect(at(conn({ status: 'error', fault: 'revoked' }), false, 'idle')).toBe('revoked');
+    expect(at(conn({ status: 'error', fault: 'unknown' }), false, 'idle')).toBe('broken');
+  });
+
+  it('a failed read is checkFailed, never Connect', () => {
+    expect(
+      calendarStateOf(
+        { data: null, isLoading: false, error: { kind: 'server' } as never },
+        { state: { kind: 'idle' } as never, unavailable: false },
+      ),
+    ).toBe('checkFailed');
+  });
+
+  it('with nothing connected: unavailable, the last attempt, or idle', () => {
+    expect(at(null, false, 'idle', true)).toBe('unavailable');
+    expect(at(null, false, 'nothingConnected')).toBe('nothingConnected');
+    expect(at(null, false, 'idle')).toBe('idle');
   });
 });
