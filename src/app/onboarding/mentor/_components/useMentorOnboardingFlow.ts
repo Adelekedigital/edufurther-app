@@ -168,14 +168,15 @@ export function useMentorOnboardingFlow() {
   // A failed help-areas list is a load error, never a step 1 with no chips.
   const ready = !!state && !topics.isLoading && !topics.error;
   const decided = state?.approvalStatus === 'declined' || state?.approvalStatus === 'approved';
-  if (form === null && ready && !decided) {
+  // In review: the reviewed answers are frozen until the decision (owner, 18 Oct).
+  const inReview = state?.approvalStatus === 'pending' && state.submitted;
+  if (form === null && ready && !decided && !inReview) {
     const last = state.lastStep;
-    // A submitted applicant is here to edit ("Edit my application"): from the start.
-    const step = state.submitted || last === null ? 'help' : next(last);
+    const step = last === null ? 'help' : next(last);
     setForm({
       step,
       answers: state.answers,
-      resumed: last !== null && !state.submitted,
+      resumed: last !== null,
       base: state,
     });
     setBaseline(state.answers);
@@ -195,8 +196,8 @@ export function useMentorOnboardingFlow() {
     }
   }
 
-  // Not an applicant here: a guest signs up first; a declined one reads the review; an
-  // approved one sees the approved screen once, then has a dashboard (PRD "Where people land").
+  // Not an applicant here: a guest signs up first; one in review or declined reads the
+  // status page; an approved one sees the approved screen once, then has a dashboard.
   useEffect(() => {
     if (viewer.kind === 'guest')
       router.replace(`/signup?next=${encodeURIComponent('/onboarding/mentor')}`);
@@ -207,10 +208,10 @@ export function useMentorOnboardingFlow() {
   const seen = state?.approvedSeen;
   useEffect(() => {
     if (form !== null) return;
-    if (status === 'declined' || (status === 'approved' && !seen))
+    if (inReview || status === 'declined' || (status === 'approved' && !seen))
       router.replace('/mentor-application');
     else if (status === 'approved') router.replace('/dashboard');
-  }, [form, status, seen, router]);
+  }, [form, inReview, status, seen, router]);
 
   const step = form?.step ?? 'help';
   const answers = form?.answers ?? null;

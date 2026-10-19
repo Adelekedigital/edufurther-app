@@ -299,6 +299,29 @@ describe('MentorOnboardingScreen', () => {
     );
   });
 
+  it('an application in review stays on the status page: the reviewed answers are frozen', async () => {
+    appState = stateWith({ approvalStatus: 'pending', submitted: true, lastStep: 'hours' });
+    render(<MentorOnboardingScreen />);
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/mentor-application'));
+    expect(
+      screen.queryByRole('heading', { level: 1, name: 'What can you help mentees with?' }),
+    ).toBeNull();
+  });
+
+  it('an unsubmitted applicant still resumes on the steps', () => {
+    appState = stateWith({
+      approvalStatus: 'pending',
+      submitted: false,
+      lastStep: 'help',
+      hasProfile: true,
+    });
+    render(<MentorOnboardingScreen />);
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Where did you study?' }),
+    ).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
   it('a declined applicant goes to the status page', async () => {
     appState = stateWith({ approvalStatus: 'declined', submitted: true });
     render(<MentorOnboardingScreen />);
