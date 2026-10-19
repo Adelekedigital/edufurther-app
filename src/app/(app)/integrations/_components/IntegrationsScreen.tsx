@@ -23,7 +23,7 @@ import { useOnline } from '@/lib/utils/useOnline';
 import { lockedPageGate, mentorGate, type GateCopy } from '@/app/_shell/MentorGate';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { IntegrationsSkeleton } from './IntegrationsSkeleton';
-import { useCalendarConnect } from './useCalendarConnect';
+import { useCalendarConnect } from '@/app/_shell/useCalendarConnect';
 import styles from './IntegrationsScreen.module.css';
 
 /** PROVISIONAL — Integrations.dc.html draws no gate (docs/handoff/integrations-design-request.md). */
@@ -84,10 +84,7 @@ export function IntegrationsScreen() {
   const [recovered, setRecovered] = useState<string | null>(null);
   const savedLink = video.data?.customUrl ?? '';
   const link = draft ?? (savedLink || recovered) ?? '';
-  useLeaveGuard(
-    draft !== null && draft.trim() !== savedLink.trim(),
-    'your personal meeting link',
-  );
+  useLeaveGuard(draft !== null && draft.trim() !== savedLink.trim(), 'your personal meeting link');
 
   const [failedAction, setFailedAction] = useState<'pick' | 'link' | null>(null);
   const [announcement, setAnnouncement] = useState<{ text: string; id: number } | null>(null);
@@ -164,51 +161,54 @@ export function IntegrationsScreen() {
 
   const connected = calendar.data;
   const waiting = connectState.kind === 'busy';
-  const connectNotice: { title: string; body: string } | null = useMemo(() =>
-    // A connection arriving makes any of these untrue, so never show one
-    // 8px above a row that says "Connected".
-    connected
-      ? null
-      : connectState.kind === 'offline'
-        ? {
-            title: 'You’re offline.',
-            body: 'Connect to the internet, then try connecting Google Calendar again.',
-          }
-        : connectState.kind === 'unavailable'
-      ? {
-          title: 'Connecting a calendar isn’t available yet.',
-          body: 'We’re still setting this up. You’ll be able to connect Google Calendar here soon.',
-        }
-      : connectState.kind === 'blocked'
-        ? {
-            title: 'Your browser blocked the pop-up.',
-            body: 'Allow pop-ups for EduFurther, then try connecting again.',
-          }
-        : connectState.kind === 'nothingConnected'
+  const connectNotice: { title: string; body: string } | null = useMemo(
+    () =>
+      // A connection arriving makes any of these untrue, so never show one
+      // 8px above a row that says "Connected".
+      connected
+        ? null
+        : connectState.kind === 'offline'
           ? {
-              title: 'Nothing was connected.',
-              // Google puts calendar access behind its own checkbox a step
-              // after choosing an account, so clicking straight through grants
-              // sign-in only and the backend refuses it. We cannot tell that
-              // apart from a closed window, so the copy covers both.
-              body:
-                'The window closed, or the calendar permission wasn’t ticked — Google asks for ' +
-                'that on a separate step. You can try again.',
+              title: 'You’re offline.',
+              body: 'Connect to the internet, then try connecting Google Calendar again.',
             }
-          : connectState.kind === 'failed'
+          : connectState.kind === 'unavailable'
             ? {
-                title: 'We couldn’t start connecting.',
-                body: 'Something went wrong on our side. Try again in a moment.',
+                title: 'Connecting a calendar isn’t available yet.',
+                body: 'We’re still setting this up. You’ll be able to connect Google Calendar here soon.',
               }
-            : null,
-  [connectState.kind, connected]);
+            : connectState.kind === 'blocked'
+              ? {
+                  title: 'Your browser blocked the pop-up.',
+                  body: 'Allow pop-ups for EduFurther, then try connecting again.',
+                }
+              : connectState.kind === 'nothingConnected'
+                ? {
+                    title: 'Nothing was connected.',
+                    // Google puts calendar access behind its own checkbox a step
+                    // after choosing an account, so clicking straight through grants
+                    // sign-in only and the backend refuses it. We cannot tell that
+                    // apart from a closed window, so the copy covers both.
+                    body:
+                      'The window closed, or the calendar permission wasn’t ticked — Google asks for ' +
+                      'that on a separate step. You can try again.',
+                  }
+                : connectState.kind === 'failed'
+                  ? {
+                      title: 'We couldn’t start connecting.',
+                      body: 'Something went wrong on our side. Try again in a moment.',
+                    }
+                  : null,
+    [connectState.kind, connected],
+  );
 
   // Our own Notice is role="status" inserted with its text already in it,
   // which screen readers skip — the same trap the house LiveRegion exists for.
   const lastAnnounced = useRef<string | null>(null);
   useEffect(() => {
     const key = connectNotice ? connectNotice.title + connectNotice.body : null;
-    if (key && key !== lastAnnounced.current) announce(`${connectNotice!.title} ${connectNotice!.body}`);
+    if (key && key !== lastAnnounced.current)
+      announce(`${connectNotice!.title} ${connectNotice!.body}`);
     lastAnnounced.current = key;
   }, [connectNotice, announce]);
 
@@ -224,9 +224,7 @@ export function IntegrationsScreen() {
       // button: a disabled button leaves the tab order, so the one state it
       // reports is the one a keyboard or screen-reader user cannot reach. The
       // Calendars row above says "Connected" the same way.
-      status={
-        askedForPayments ? { tone: 'good', text: 'We’ll let you know' } : undefined
-      }
+      status={askedForPayments ? { tone: 'good', text: 'We’ll let you know' } : undefined}
       actions={
         // Only once the endpoint exists, and only until they have asked.
         interest.data?.available && !askedForPayments ? (

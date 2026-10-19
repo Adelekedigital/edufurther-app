@@ -9,6 +9,7 @@ import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import {
   ApprovedSummary,
+  type CalendarRow,
   type SummaryRow,
 } from '@/components/molecules/ApprovedSummary/ApprovedSummary';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
@@ -16,12 +17,96 @@ import { NextSteps } from '@/components/molecules/NextSteps/NextSteps';
 import { ReviewerNote } from '@/components/molecules/ReviewerNote/ReviewerNote';
 import {
   APPROVED_COPY,
+  CALENDAR_ROW_COPY,
   IN_REVIEW_COPY,
   NEXT_STEPS,
   NOT_APPROVED_COPY,
   STATUS_PAGE_COPY,
 } from '@/lib/copy/mentorApplication';
 import styles from './MentorApplicationStatus.module.css';
+
+/**
+ * Where the approved screen's Google Calendar connection stands. `loading`:
+ * not read yet, so no Connect that could flash for a connected mentor.
+ * `revoked` / `broken`: a grant that needs reconnecting. The rest are where a
+ * connect attempt ended (useCalendarConnect).
+ */
+export type CalendarConnectState =
+  | 'loading'
+  | 'idle'
+  | 'busy'
+  | 'connected'
+  | 'revoked'
+  | 'broken'
+  | 'blocked'
+  | 'nothingConnected'
+  | 'offline'
+  | 'failed'
+  | 'unavailable';
+
+export type CalendarConnect = {
+  state: CalendarConnectState;
+  /** The connected Google account, when Google gave one. */
+  email?: string | null;
+  onConnect: () => void;
+};
+
+const NOTICES: Partial<Record<CalendarConnectState, string>> = {
+  blocked: CALENDAR_ROW_COPY.blocked,
+  nothingConnected: CALENDAR_ROW_COPY.nothingConnected,
+  offline: CALENDAR_ROW_COPY.offline,
+  failed: CALENDAR_ROW_COPY.failed,
+  revoked: CALENDAR_ROW_COPY.revoked,
+  broken: CALENDAR_ROW_COPY.broken,
+};
+
+/** One state → the row's title, line and action. */
+export function calendarRow({ state, email, onConnect }: CalendarConnect): CalendarRow {
+  const base = {
+    title: APPROVED_COPY.calendarTitle,
+    optional: APPROVED_COPY.calendarOptional,
+    body: APPROVED_COPY.calendarBody,
+  };
+  const button = (label: string) => ({ kind: 'button' as const, label, onClick: onConnect });
+  switch (state) {
+    case 'loading':
+      return { ...base, action: { kind: 'none' } };
+    case 'idle':
+      return { ...base, action: button(CALENDAR_ROW_COPY.connect) };
+    case 'busy':
+      return {
+        ...base,
+        action: {
+          ...button(CALENDAR_ROW_COPY.connect),
+          busy: true,
+          busyLabel: CALENDAR_ROW_COPY.connecting,
+        },
+      };
+    case 'connected':
+      return {
+        title: CALENDAR_ROW_COPY.connectedTitle,
+        body: email ? CALENDAR_ROW_COPY.connectedAs(email) : CALENDAR_ROW_COPY.connectedBody,
+        action: { kind: 'status', label: CALENDAR_ROW_COPY.connected },
+      };
+    case 'revoked':
+    case 'broken':
+      return {
+        ...base,
+        body: NOTICES[state]!,
+        tone: 'warn',
+        action: button(CALENDAR_ROW_COPY.reconnect),
+      };
+    case 'unavailable':
+      return { ...base, body: CALENDAR_ROW_COPY.unavailable, action: { kind: 'none' } };
+    default:
+      return {
+        ...base,
+        body: NOTICES[state]!,
+        tone: 'warn',
+        action: button(CALENDAR_ROW_COPY.retry),
+      };
+  }
+}
 
 export type MentorApplicationStatusProps =
   | { state: 'loading' }
@@ -39,7 +124,8 @@ export type MentorApplicationStatusProps =
       firstName: string;
       /** Hours, Intro chat and Explore rows; a row with nothing real to say is left out. */
       summary: readonly SummaryRow[];
-      integrationsHref: string;
+      /** The Google Calendar row, connecting in place. */
+      calendar: CalendarConnect;
       dashboardHref: string;
       /** Once per account: false when the page is shown again in the same visit. */
       celebrate: boolean;
@@ -133,16 +219,7 @@ export function MentorApplicationStatus(props: MentorApplicationStatusProps) {
             </h1>
             <p className={`${styles.lead} ${styles.heroLead}`}>{APPROVED_COPY.body}</p>
           </div>
-          <ApprovedSummary
-            rows={props.summary}
-            calendar={{
-              title: APPROVED_COPY.calendarTitle,
-              optional: APPROVED_COPY.calendarOptional,
-              body: APPROVED_COPY.calendarBody,
-              label: APPROVED_COPY.calendarLink,
-              href: props.integrationsHref,
-            }}
-          />
+          <ApprovedSummary rows={props.summary} calendar={calendarRow(props.calendar)} />
           <div className={styles.actions}>
             <ButtonLink href={props.dashboardHref} size="large">
               {APPROVED_COPY.go}

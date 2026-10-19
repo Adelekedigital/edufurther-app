@@ -86,6 +86,42 @@
   text-decoration: none;
 }
 
+/* The Calendar action is a button drawn as the design's link. */
+button.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button.link[aria-busy='true'] {
+  cursor: progress;
+  color: var(--ink-600);
+}
+
+button.link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-sm);
+}
+
+.warn {
+  color: var(--warning-text);
+}
+
+/* Connected: a status, not a control (green, like Integrations' good tone). */
+.status {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--touch-target-min);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--green-700);
+}
+
 .link:hover {
   color: var(--blue-700);
 }

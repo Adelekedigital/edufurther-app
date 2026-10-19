@@ -68,7 +68,7 @@ vi.mock('@/lib/api/data/calendarConnection', () => ({
   }),
 }));
 let connectUnavailable = false;
-vi.mock('./useCalendarConnect', () => ({
+vi.mock('@/app/_shell/useCalendarConnect', () => ({
   useCalendarConnect: () => ({
     state: connectState,
     connect: connectFn,
@@ -154,7 +154,10 @@ describe('IntegrationsScreen', () => {
 
   it('shows the error state, not an empty one, when the setting fails to load', async () => {
     const retry = vi.fn();
-    video = remote<Conferencing>(null, { error: { kind: 'server', message: 'x' } as AppError, retry });
+    video = remote<Conferencing>(null, {
+      error: { kind: 'server', message: 'x' } as AppError,
+      retry,
+    });
     render(<IntegrationsScreen />);
     expect(screen.getByText('We couldn’t load your integrations')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
@@ -237,7 +240,11 @@ describe('IntegrationsScreen', () => {
 
   it('opens the panel by itself when a personal link is already the choice', () => {
     video = remote(
-      conferencing({ provider: 'custom', customUrl: 'https://meet.example.com/room', isDefault: false }),
+      conferencing({
+        provider: 'custom',
+        customUrl: 'https://meet.example.com/room',
+        isDefault: false,
+      }),
     );
     render(<IntegrationsScreen />);
     expect(screen.getByRole('textbox', { name: 'Personal meeting link' })).toHaveValue(
@@ -262,7 +269,11 @@ describe('IntegrationsScreen', () => {
   /** Review of PR 174: the saved link could be seen but never corrected. */
   it('lets a mentor change a personal link they already use', async () => {
     video = remote(
-      conferencing({ provider: 'custom', customUrl: 'https://old.example.com/room', isDefault: false }),
+      conferencing({
+        provider: 'custom',
+        customUrl: 'https://old.example.com/room',
+        isDefault: false,
+      }),
     );
     render(<IntegrationsScreen />);
     const field = screen.getByRole('textbox', { name: 'Personal meeting link' });
@@ -280,14 +291,18 @@ describe('IntegrationsScreen', () => {
 
   it('clicking the caption focuses the field', async () => {
     render(<IntegrationsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'Use a personal meeting link instead' }));
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Use a personal meeting link instead' }),
+    );
     await userEvent.click(screen.getByText('Personal meeting link'));
     expect(screen.getByRole('textbox', { name: 'Personal meeting link' })).toHaveFocus();
   });
 
   it('moves focus into the field when the panel opens, not to the body', async () => {
     render(<IntegrationsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'Use a personal meeting link instead' }));
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Use a personal meeting link instead' }),
+    );
     await waitFor(() =>
       expect(screen.getByRole('textbox', { name: 'Personal meeting link' })).toHaveFocus(),
     );
@@ -312,7 +327,10 @@ describe('IntegrationsScreen', () => {
   });
 
   it('announces a failed save, not just a red line', async () => {
-    saveVideo.mockRejectedValue({ kind: 'server', message: 'We couldn’t save your video setting. Try again.' });
+    saveVideo.mockRejectedValue({
+      kind: 'server',
+      message: 'We couldn’t save your video setting. Try again.',
+    });
     saveError = { kind: 'server', message: 'We couldn’t save your video setting. Try again.' };
     render(<IntegrationsScreen />);
     await userEvent.click(screen.getByRole('radio', { name: /Google Meet/ }));
@@ -327,7 +345,11 @@ describe('IntegrationsScreen', () => {
 
   it('keeps the old link in the field after switching away, so it can be put back', async () => {
     video = remote(
-      conferencing({ provider: 'custom', customUrl: 'https://old.example.com/room', isDefault: false }),
+      conferencing({
+        provider: 'custom',
+        customUrl: 'https://old.example.com/room',
+        isDefault: false,
+      }),
     );
     const { rerender } = render(<IntegrationsScreen />);
     await userEvent.click(screen.getByRole('radio', { name: /EduFurther video/ }));
@@ -345,7 +367,9 @@ describe('IntegrationsScreen', () => {
 
   it('does not leave the page dirty after a pick clears the draft', async () => {
     render(<IntegrationsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'Use a personal meeting link instead' }));
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Use a personal meeting link instead' }),
+    );
     await userEvent.type(
       screen.getByRole('textbox', { name: 'Personal meeting link' }),
       'https://typed.example.com/room',
@@ -396,7 +420,9 @@ describe('IntegrationsScreen', () => {
       interest = { data: { available: true, features: ['payments'] } };
       render(<IntegrationsScreen />);
       expect(screen.getByText('We’ll let you know')).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /Notify me|let you know/ })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /Notify me|let you know/ }),
+      ).not.toBeInTheDocument();
     });
 
     it('offers nothing to press if the endpoint goes away', () => {
@@ -632,9 +658,7 @@ describe('IntegrationsScreen', () => {
       await waitFor(() => expect(disconnectFn).toHaveBeenCalled());
       calendar = remote<CalendarConnection | null>(null);
       rerender(<IntegrationsScreen />);
-      await waitFor(() =>
-        expect(screen.getByRole('button', { name: 'Connect' })).toHaveFocus(),
-      );
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Connect' })).toHaveFocus());
     });
 
     /** One section failing must not hide the other's working controls. */

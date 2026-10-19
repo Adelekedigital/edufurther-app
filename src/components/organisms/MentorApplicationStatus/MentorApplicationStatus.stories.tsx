@@ -3,6 +3,7 @@ import { reapplyMailto } from '@/lib/copy/mentorApplication';
 import type { SummaryRow } from '@/components/molecules/ApprovedSummary/ApprovedSummary';
 import {
   MentorApplicationStatus,
+  type CalendarConnectState,
   type MentorApplicationStatusProps,
 } from './MentorApplicationStatus';
 
@@ -44,12 +45,30 @@ const approved: MentorApplicationStatusProps = {
   state: 'approved',
   firstName: 'Gbenga',
   celebrate: false,
-  integrationsHref: '/integrations',
+  calendar: { state: 'idle', onConnect: () => {} },
   dashboardHref: '/dashboard',
   summary,
 };
 
 export const Approved: Story = { args: approved };
+
+const withCalendar = (state: CalendarConnectState, email?: string): MentorApplicationStatusProps =>
+  ({
+    ...approved,
+    calendar: { state, email, onConnect: () => {} },
+  }) as MentorApplicationStatusProps;
+
+/** The Google Calendar row in each state it can be in. */
+export const CalendarChecking: Story = { args: withCalendar('loading') };
+export const CalendarConnecting: Story = { args: withCalendar('busy') };
+export const CalendarConnected: Story = { args: withCalendar('connected', 'gbenga@gmail.com') };
+export const CalendarConnectedNoEmail: Story = { args: withCalendar('connected') };
+export const CalendarRevoked: Story = { args: withCalendar('revoked') };
+export const CalendarBlocked: Story = { args: withCalendar('blocked') };
+export const CalendarNothingConnected: Story = { args: withCalendar('nothingConnected') };
+export const CalendarOffline: Story = { args: withCalendar('offline') };
+export const CalendarFailed: Story = { args: withCalendar('failed') };
+export const CalendarUnavailable: Story = { args: withCalendar('unavailable') };
 
 /** Hours and Intro chat couldn't be read: only what's true is said. */
 export const ApprovedListedOnly: Story = { args: { ...approved, summary: summary.slice(2) } };
