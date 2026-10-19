@@ -31,6 +31,8 @@ type LanguageChipsProps = {
   };
   /** `data-ff` key, so a required-field error can focus the group. */
   focusKey?: string;
+  /** The common languages didn't load: a line saying so, with Try again. */
+  commonFailed?: { text: string; retry: string; onRetry: () => void };
   describedBy?: string;
 };
 
@@ -56,6 +58,7 @@ export function LanguageChips({
   copy,
   focusKey,
   describedBy,
+  commonFailed,
 }: LanguageChipsProps) {
   const id = useId();
   const listId = `${id}-list`;
@@ -104,6 +107,14 @@ export function LanguageChips({
       aria-describedby={describedBy}
       className={styles.group}
     >
+      {commonFailed && (
+        <span role="alert" className={styles.failed}>
+          {commonFailed.text}
+          <button type="button" className={styles.retry} onClick={commonFailed.onRetry}>
+            {commonFailed.retry}
+          </button>
+        </span>
+      )}
       {chips.map((l) => (
         <Chip key={l.id} look="choice" pressed={isOn(l)} onClick={() => onToggle(l)}>
           {l.label}

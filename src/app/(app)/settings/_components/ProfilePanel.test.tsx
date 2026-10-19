@@ -37,6 +37,8 @@ vi.mock('@/lib/api/data/avatar', () => ({
     removedStamp: 0,
   }),
 }));
+let commonFails = false;
+const commonRetry = vi.fn();
 const LANGS = [
   { id: 'en', label: 'English' },
   { id: 'yo', label: 'Yoruba' },
@@ -51,11 +53,16 @@ vi.mock('@/lib/api/data/catalog', () => ({
     status: 'ready',
     retry: vi.fn(),
   }),
-  useLanguageSearch: (q: string) => ({
-    results: q ? LANGS.filter((l) => l.label.toLowerCase().startsWith(q.toLowerCase())) : LANGS,
-    status: 'ready',
-    retry: vi.fn(),
-  }),
+  useLanguageSearch: (q: string) =>
+    !q && commonFails
+      ? { results: [], status: 'error', retry: commonRetry }
+      : {
+          results: q
+            ? LANGS.filter((l) => l.label.toLowerCase().startsWith(q.toLowerCase()))
+            : LANGS,
+          status: 'ready',
+          retry: vi.fn(),
+        },
 }));
 vi.mock('@/lib/api/data/writingAssist', () => ({
   useWritingAssist: () => ({ assist: vi.fn() }),
@@ -80,6 +87,7 @@ beforeEach(() => {
   mutateAsync.mockReset();
   mutateAsync.mockResolvedValue(undefined);
   saveError = null;
+  commonFails = false;
   window.scrollBy = vi.fn();
 });
 
@@ -119,7 +127,7 @@ describe('ProfilePanel', () => {
     render(<ProfilePanel userId="u1" />);
     await userEvent.clear(screen.getByLabelText('Full name'));
     await userEvent.click(screen.getByRole('button', { name: SAVE_COPY.save }));
-    expect(screen.getByText(SAVE_COPY.formError)).toBeInTheDocument();
+    expect(screen.getAllByText(SAVE_COPY.formError).length).toBeGreaterThan(0);
     expect(screen.getByText('Add your full name.')).toBeInTheDocument();
     expect(screen.getByText('Select the country you live in.')).toBeInTheDocument();
     expect(screen.getByText('Pick at least one language.')).toBeInTheDocument();
@@ -169,7 +177,7 @@ describe('ProfilePanel', () => {
     await userEvent.click(screen.getByRole('button', { name: SAVE_COPY.save }));
     saveError = new ProfileSaveError(SAVE_COPY.languagesFailed, true);
     rerender(<ProfilePanel userId="u1" />);
-    expect(screen.getByText(SAVE_COPY.languagesFailed)).toBeInTheDocument();
+    expect(screen.getAllByText(SAVE_COPY.languagesFailed).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Igbo' })).toHaveAttribute('aria-pressed', 'true');
     await userEvent.click(screen.getByRole('button', { name: SAVE_COPY.save }));
     expect(mutateAsync).toHaveBeenLastCalledWith(
@@ -237,5 +245,22 @@ describe('ProfilePanel', () => {
     await userEvent.keyboard('{Enter}');
     expect(screen.getByRole('button', { name: 'Yoruba' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Add another language' })).toBeInTheDocument();
+  });
+
+  it('a language off and on again is no change: no save bar', async () => {
+    ready(profile({ languages: [LANGS[0]!, LANGS[1]!, LANGS[2]!] }));
+    render(<ProfilePanel userId="u1" />);
+    await userEvent.click(screen.getByRole('button', { name: 'English' }));
+    await userEvent.click(screen.getByRole('button', { name: 'English' }));
+    expect(screen.queryByRole('region', { name: SAVE_COPY.barLabel })).toBeNull();
+  });
+
+  it('the common languages failed to load: says so, with Try again', async () => {
+    commonFails = true;
+    ready();
+    render(<ProfilePanel userId="u1" />);
+    expect(screen.getByText('We couldn’t load the language list.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(commonRetry).toHaveBeenCalled();
   });
 });

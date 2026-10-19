@@ -24,13 +24,18 @@ const COMMON = ['English', 'French', 'Yoruba', 'Igbo', 'Hausa', 'Swahili', 'Arab
 /** How long "Profile saved" stays (the design's flash: 5s). */
 const TOAST_MS = 5000;
 
+// Languages are a set: off and on again is no change (the API keeps no order).
+const ids = (v: MenteeProfileValues) =>
+  v.languages
+    .map((l) => l.id)
+    .sort()
+    .join(',');
 const same = (a: MenteeProfileValues, b: MenteeProfileValues) =>
   a.name === b.name &&
   a.countryId === b.countryId &&
   a.bio === b.bio &&
   a.bioDrafted === b.bioDrafted &&
-  a.languages.length === b.languages.length &&
-  a.languages.every((l, i) => l.id === b.languages[i]!.id);
+  ids(a) === ids(b);
 
 // The name follows the app's one name rule (lib/utils/name): the backend
 // refuses a single word as `full_name`, so it's caught here, by the field.
@@ -197,6 +202,9 @@ export const ProfilePanel = forwardRef<PanelHandle, { userId: string }>(function
           onQueryChange: setQuery,
           results: search.results,
           status: search.status,
+          // The common chips failed to load: say so, with Try again, rather
+          // than show none as if there were none.
+          commonFailed: common.status === 'error' ? common.retry : undefined,
         }}
         onAssist={async (mode, text) => {
           const out = await assist(mode, text);

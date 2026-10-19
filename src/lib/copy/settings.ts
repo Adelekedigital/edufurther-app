@@ -42,6 +42,8 @@ export const PROFILE_COPY = {
   searchingLanguages: 'Searching…',
   languageSearchFailed: 'We couldn’t search languages. Try again.',
   noLanguageMatch: (q: string) => `No languages match “${q}”.`,
+  commonLanguagesFailed: 'We couldn’t load the language list.',
+  retry: 'Try again',
   bio: 'A few lines about you (optional)',
   bioPlaceholder: 'Where you are now and where you’re headed',
   bioHint: 'Mentors read this before your session.',

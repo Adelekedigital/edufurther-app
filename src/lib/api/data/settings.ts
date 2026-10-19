@@ -50,8 +50,12 @@ export function useMenteeProfile(userId: string | null) {
       const { data, error, response } = await api.GET('/api/v1/me', { signal });
       if (!data) throw apiError(response.status, error);
       const me = data;
-      // Only a saved country needs the catalog (cached for an hour, shared with the picker).
-      const countries = me.profile?.current_country ? await qc.fetchQuery(countriesQuery) : [];
+      // Only a saved country needs the catalog (cached for an hour, shared with
+      // the picker). A catalog failure mustn't hide a profile that loaded: the
+      // country shows empty until the catalog answers and /me is read again.
+      const countries = me.profile?.current_country
+        ? await qc.fetchQuery(countriesQuery).catch(() => [])
+        : [];
       return toMenteeProfile(me, countries);
     },
   });

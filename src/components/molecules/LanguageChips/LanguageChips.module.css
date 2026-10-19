@@ -6,6 +6,30 @@
   outline: none;
 }
 
+/* Ours: the common languages failed to load. */
+.failed {
+  display: flex;
+  flex-basis: 100%;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-p-xs);
+  color: var(--ink-700);
+}
+.retry {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-600);
+}
+.retry:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
 /* "Add another language": a dashed 40px chip in blue-700. */
 .add {
   display: flex;

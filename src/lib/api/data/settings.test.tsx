@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { SAVE_COPY } from '@/lib/copy/settings';
 import { keys } from './keys';
 import {
@@ -12,11 +12,13 @@ import {
 } from './settings';
 
 const PUT = vi.fn();
+const GET = vi.fn();
 const PATCH = vi.fn();
 vi.mock('./http', () => ({
   api: {
     PUT: (...a: unknown[]) => PUT(...a),
     PATCH: (...a: unknown[]) => PATCH(...a),
+    GET: (...a: unknown[]) => GET(...a),
   },
 }));
 
@@ -66,6 +68,30 @@ describe('toMenteeProfile', () => {
   it('nothing saved yet: blanks, and the email’s initial', () => {
     const p = toMenteeProfile({ email: 'zed@example.com', profile: null, languages: [] });
     expect(p).toMatchObject({ name: '', countryId: '', languages: [], bio: '', initial: 'Z' });
+  });
+});
+
+describe('useMenteeProfile', () => {
+  it('a catalog failure doesn’t hide a profile that loaded: the country is just empty', async () => {
+    const { useMenteeProfile } = await import('./settings');
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    vi.spyOn(qc, 'fetchQuery').mockRejectedValue(new Error('catalog down'));
+    GET.mockResolvedValue({
+      data: {
+        email: 'a@b.co',
+        first_name: 'Amaka',
+        last_name: 'Obi',
+        languages: [],
+        profile: { cover_art: 'none', current_country: { code: 'NG', display_name: 'Nigeria' } },
+      },
+      response: { ok: true, status: 200 },
+    });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useMenteeProfile('u1'), { wrapper });
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(result.current.profile).toMatchObject({ name: 'Amaka Obi', countryId: '' });
   });
 });
 
