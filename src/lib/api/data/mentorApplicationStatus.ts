@@ -6,6 +6,8 @@ import { ApiError, apiError, normaliseError, retryOnce } from './errors';
 import { keys } from './keys';
 import type { components } from '@/lib/api/generated/schema';
 import { api } from './http';
+import { patchViewer } from './viewer';
+import { mentorStageOf } from '@/lib/utils/access';
 
 type UserRead = components['schemas']['UserRead'];
 
@@ -41,16 +43,18 @@ export function toMentorApplication(me: UserRead): MentorApplication {
   const fullName =
     [me.first_name?.trim(), me.last_name?.trim()].filter(Boolean).join(' ') || firstName;
   const person = { firstName, fullName, email: me.email };
-  if (p.approval_status === 'approved')
+  // The stage rule is shared with the viewer and the setup lock (lib/utils/access).
+  const stage = mentorStageOf(p);
+  if (stage === 'approved')
     return { stage: 'approved', seen: p.approved_seen_at !== null, ...person };
-  if (p.approval_status === 'declined')
+  if (stage === 'declined')
     return {
       stage: 'declined',
       note: p.review_note?.trim() || null,
       reviewedAt: p.reviewed_at ?? null,
       ...person,
     };
-  if (p.submitted_at === null) return { stage: 'unsubmitted' };
+  if (stage === 'unsubmitted') return { stage: 'unsubmitted' };
   return { stage: 'pending', ...person };
 }
 
@@ -95,10 +99,13 @@ export function useMarkApprovedSeen(userId: string | null) {
       const { error, response } = await api.POST('/api/v1/me/mentor-application/approved-seen');
       if (!response.ok && response.status !== 409) throw apiError(response.status, error);
     },
-    onSuccess: () =>
+    onSuccess: () => {
       qc.setQueryData<MentorApplication>(keys.viewer.mentorApplication(userId ?? 'none'), (a) =>
         a?.stage === 'approved' ? { ...a, seen: true } : a,
-      ),
+      );
+      // And the viewer: Home stops sending them back here (and its toast).
+      patchViewer(qc, { mentorApprovedSeen: true });
+    },
   });
   return { markSeen: mutation.mutate, isPending: mutation.isPending };
 }

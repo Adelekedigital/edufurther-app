@@ -7,6 +7,7 @@ import type { components } from '@/lib/api/generated/schema';
 import { authConfigured } from '@/lib/vendor/supabase/config';
 import type { Viewer } from '@/types/mentor';
 import type { NudgePart } from '@/types/onboarding';
+import { mentorStageOf } from '@/lib/utils/access';
 import { coverKey } from '@/lib/utils/cover';
 import { ApiError } from './errors';
 import { api } from './http';
@@ -47,6 +48,10 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     isApprovedMentor: me.mentor_profile?.approval_status === 'approved',
     isMentor: mentor != null,
     mentorApprovedSeen: me.mentor_profile?.approved_seen_at !== null,
+    // Mentee-side (no profile, or declined and chose mentee) reads `none`.
+    mentorStage: mentorStageOf(mentor),
+    // Unknown (an older /me) is finished: nobody is locked on a guess.
+    onboardingComplete: me.onboarding?.complete ?? true,
     isListedMentor: me.mentor_profile?.listing_status === 'listed',
     timeZone: me.timezone || undefined,
     completedSessions: me.mentee_completed_sessions,
@@ -135,6 +140,8 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     isMentee: true,
     isApprovedMentor: false,
     isMentor: false,
+    mentorStage: 'none',
+    onboardingComplete: true,
     completedSessions: 0,
     credits: {
       balance: 4,
@@ -160,6 +167,8 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     isApprovedMentor: true,
     isMentor: true,
     isListedMentor: true,
+    mentorStage: 'approved',
+    onboardingComplete: true,
     completedSessions: 0,
     credits: null,
     // No photo, like the mock profile it owns: the initial on its cover tone.
@@ -191,6 +200,19 @@ MOCK_VIEWERS['mentor-applicant'] = {
 MOCK_VIEWERS['mentee-unfinished'] = {
   ...(MOCK_VIEWERS.mentee as Extract<Viewer, { kind: 'member' }>),
   onboardingMissing: ['plans'],
+  onboardingComplete: false,
+};
+
+// The setup lock's mentor states (lib/utils/access): in review, and declined.
+MOCK_VIEWERS['mentor-review'] = {
+  ...(MOCK_VIEWERS.mentor as Extract<Viewer, { kind: 'member' }>),
+  isApprovedMentor: false,
+  isListedMentor: false,
+  mentorStage: 'pending',
+};
+MOCK_VIEWERS['mentor-declined'] = {
+  ...(MOCK_VIEWERS['mentor-review'] as Extract<Viewer, { kind: 'member' }>),
+  mentorStage: 'declined',
 };
 
 const readMockParam = () => new URLSearchParams(window.location.search).get('mockViewer');
@@ -271,7 +293,17 @@ type Member = Extract<Viewer, { kind: 'member' }>;
  */
 export function patchViewer(
   qc: QueryClient,
-  patch: Partial<Pick<Member, 'avatarUrl' | 'avatarFocus' | 'coverKey' | 'onboardingMissing'>>,
+  patch: Partial<
+    Pick<
+      Member,
+      | 'avatarUrl'
+      | 'avatarFocus'
+      | 'coverKey'
+      | 'onboardingMissing'
+      | 'onboardingComplete'
+      | 'mentorApprovedSeen'
+    >
+  >,
 ) {
   qc.setQueriesData<unknown>({ queryKey: keys.viewer.all }, (v: unknown) =>
     typeof v === 'object' && v !== null && (v as Viewer).kind === 'member'

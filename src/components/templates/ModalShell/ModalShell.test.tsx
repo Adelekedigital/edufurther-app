@@ -121,3 +121,28 @@ describe('ModalShell', () => {
     });
   });
 });
+
+describe('ModalShell mobile="sheet" (Modal.dc.html `mobile`)', () => {
+  it('keeps the centred header and icon, and marks the dialog for the phone sheet', () => {
+    render(
+      <ModalShell title="Locked" icon="lock" size="sm" mobile="sheet" onClose={vi.fn()}>
+        <p>Body</p>
+      </ModalShell>,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Locked' });
+    expect(dialog.className).toMatch(/phoneSheet/);
+    expect(dialog.querySelector('[class*="withIcon"] > span')).toHaveTextContent('lock');
+    expect(dialog.querySelector('[class*="phoneGrabber"]')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('the default stays full screen on phones: no sheet class, no grabber', () => {
+    render(
+      <ModalShell title="Plain" onClose={vi.fn()}>
+        <p>Body</p>
+      </ModalShell>,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Plain' });
+    expect(dialog.className).not.toMatch(/phoneSheet/);
+    expect(dialog.querySelector('[class*="phoneGrabber"]')).toBeNull();
+  });
+});

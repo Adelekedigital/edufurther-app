@@ -439,3 +439,15 @@ _(real, 2026-10-17, sign-in PR 3.)_ `review-page.mjs` reported one focus stop on
 key, so it decided focus had wrapped after the first. A short focus order on a
 form with several same-styled fields is the tracer, not the page — trace it by
 hand (Tab and read `document.activeElement`) before believing either.
+
+### #67 — A popover inside a sticky container is trapped in its stacking context
+
+_(real, 2026-10-18, setup lock PR.)_ The desktop rail is `position: sticky` with
+no z-index, so it formed a stacking context in the auto layer. The account menu
+(z 21) and its backdrop (z 20) live inside it, so positioned page content later
+in the DOM (the dashboard chart's plot, the calendar Switch, Explore's search at
+1024px) painted over the open menu, and outside clicks could land on that content
+instead of the backdrop. A z-index inside a sticky or fixed container only ranks
+it against its siblings: **give the container itself a z-index**. The rail is
+35 (above in-page popovers at 30, under "Your credits" 40, modals 50, toasts
+100), guarded by `AppShell.layers.test.ts`.

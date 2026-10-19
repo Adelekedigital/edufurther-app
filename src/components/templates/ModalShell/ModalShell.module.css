@@ -299,9 +299,48 @@
     transform: translateY(100%);
   }
 }
-/* Scoped to the contained sheet: the centred modal's motion is not ours to change. */
+
+/* `mobile="sheet"` on the centred modal (Modal.dc.html `mobile=sheet`): on
+   phones a bottom sheet, as tall as its content, that keeps the modal's own
+   header and icon. Values from the design's markup; the scrim stays the
+   modal's. */
+.phoneGrabber {
+  display: none;
+}
+@media (max-width: 767px) {
+  .phoneSheetRoot {
+    align-items: flex-end;
+  }
+  .dialog.phoneSheet {
+    min-height: 0;
+    max-height: 92%;
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    padding: var(--space-8) var(--space-5) calc(var(--space-6) + env(safe-area-inset-bottom));
+    animation:
+      fade var(--duration-base) var(--ease-standard),
+      rise var(--duration-slow) var(--ease-standard);
+  }
+  .phoneSheet .close {
+    top: var(--space-3);
+    right: var(--space-3);
+  }
+  .phoneSheet .header {
+    padding-right: var(--space-8);
+  }
+  .phoneSheet .phoneGrabber {
+    display: block;
+    position: absolute;
+    top: var(--space-2);
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+  }
+}
+
+/* Scoped to the sheets: the centred modal's motion is not ours to change. */
 @media (prefers-reduced-motion: reduce) {
-  .sheet.contained {
+  .sheet.contained,
+  .dialog.phoneSheet {
     animation: none;
   }
 }

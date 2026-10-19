@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCountries, useDegreeLevels, useFieldsOfStudy } from '@/lib/api/data/catalog';
 import { useTopics } from '@/lib/api/data/mentors';
 import { useMentorMatches } from '@/lib/api/data/mentorMatches';
 import { useMentorProfile } from '@/lib/api/data/profile';
 import { useOnboarding, useSaveOnboarding, type OnboardingState } from '@/lib/api/data/onboarding';
-import { useViewer } from '@/lib/api/data/viewer';
+import { patchViewer, useViewer } from '@/lib/api/data/viewer';
 import { NEW_MENTOR_HOME } from '@/lib/config/auth';
 import { HELP_LIMIT, type MissingKey } from '@/lib/copy/onboarding';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
@@ -61,6 +62,7 @@ function startFrom(s: OnboardingState): Form {
 export function useOnboardingFlow() {
   const viewer = useViewer();
   const router = useRouter();
+  const qc = useQueryClient();
   const member = viewer.kind === 'member' && !viewer.isMentor ? viewer : null;
   const userId = member?.id ?? null;
   // A guest back from Book (PRD US-6), read once and checked before it's trusted.
@@ -108,9 +110,11 @@ export function useOnboardingFlow() {
 
   useEffect(() => {
     if (!doneAtLoad) return;
+    // A cached /me may still say unfinished: lift the setup lock, or /home sends them back here.
+    patchViewer(qc, { onboardingComplete: true });
     const t = setTimeout(() => router.replace('/home'), DONE_REDIRECT_MS);
     return () => clearTimeout(t);
-  }, [doneAtLoad, router]);
+  }, [doneAtLoad, router, qc]);
 
   const step = form?.step ?? 'help';
   const matches = useMentorMatches(userId, topics.topics, levels.levels, {

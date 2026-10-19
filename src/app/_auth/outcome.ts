@@ -1,24 +1,15 @@
 import type { IconName } from '@/components/atoms/Icon/iconNames';
-import {
-  MENTOR_ONBOARDING_LIVE,
-  MENTOR_REVIEW_HOME,
-  ONBOARDING_LIVE,
-  newAccountDestination,
-} from '@/lib/config/auth';
-import { homeFor } from '@/lib/api/data/home';
+import { MENTOR_ONBOARDING_LIVE, ONBOARDING_LIVE, newAccountDestination } from '@/lib/config/auth';
+import { memberHome } from '@/lib/utils/access';
 import { bookingFromNext, isOnboardingNext } from './booking';
 
-type Me = NonNullable<Parameters<typeof homeFor>[0]>;
-
 /**
- * The account's own home: `/`'s rule (homeFor), except that a mentor not yet
- * approved goes to their application review (PRD rev 9) once it exists, and a
- * mentee whose onboarding isn't finished (a migrated one, say) goes to it at
- * their first gap (PRD H5). Only an explicit `false` sends them: unknown is done.
- * An approved mentor who hasn't seen the approved screen yet goes to it once
- * (PRD "Where people land"); unknown (an older backend) is seen.
- * This is the sign-in rule only: `/` itself still sends every mentee Home, where
- * the onboarding nudge (PRD F4, with design) picks up the rest.
+ * The account's own home: `/`'s rule (homeFor and the shell's Home share
+ * memberHome). A mentor not yet approved goes to their application review
+ * (PRD rev 9) once it exists, and so does an approved one who hasn't seen the
+ * approved screen (PRD "Where people land"; unknown, an older backend, is
+ * seen); a mentee whose onboarding isn't finished goes to it (PRD H5). Only an
+ * explicit `false` sends them: unknown is done.
  */
 export function accountHome(a: {
   isAdmin: boolean;
@@ -27,13 +18,14 @@ export function accountHome(a: {
   mentorApprovedSeen?: boolean;
   onboardingComplete?: boolean | null;
 }): string {
-  // homeFor only asks whether a mentor profile exists, not what is in it.
-  const profile = (a.isMentor ? {} : null) as Me['mentor_profile'];
-  const home = homeFor({ is_admin: a.isAdmin, mentor_profile: profile });
-  if (home === '/home' && ONBOARDING_LIVE && a.onboardingComplete === false) return '/onboarding';
-  if (home !== '/dashboard') return home;
-  if (!a.mentorApproved) return MENTOR_REVIEW_HOME;
-  return MENTOR_ONBOARDING_LIVE && a.mentorApprovedSeen === false ? '/mentor-application' : home;
+  if (a.isAdmin) return '/admin';
+  return memberHome({
+    isMentor: a.isMentor,
+    // Sign-in knows approved or not; any other stage goes to the application.
+    mentorStage: a.mentorApproved ? 'approved' : 'pending',
+    mentorApprovedSeen: a.mentorApprovedSeen,
+    onboardingComplete: a.onboardingComplete,
+  });
 }
 
 /** What the toast says and where the page goes next (Sign In.dc.html TOAST / DEST). */

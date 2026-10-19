@@ -18,6 +18,8 @@ import { useOnline } from '@/lib/utils/useOnline';
 const ACTIVE_BY_SEGMENT: Record<string, string> = {
   dashboard: 'Home',
   home: 'Home',
+  // Home opens the application for a mentor in review, declined or newly approved.
+  'mentor-application': 'Home',
   bookings: 'Bookings',
   calendar: 'Calendar',
   explore: 'Explore',
@@ -44,7 +46,7 @@ export function activeFor(pathname: string): string {
  */
 export default function AppGroupLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { chrome, account, nav } = useAppShell();
+  const { chrome, account, nav, access } = useAppShell();
   const online = useOnline();
 
   return (
@@ -53,6 +55,7 @@ export default function AppGroupLayout({ children }: { children: ReactNode }) {
       nav={nav}
       chrome={chrome}
       account={account}
+      access={access}
       offline={!online}
     >
       {children}

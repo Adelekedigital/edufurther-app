@@ -14,7 +14,16 @@ vi.mock('next/navigation', () => ({
 }));
 
 let viewer: Viewer;
-vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => viewer }));
+const patchViewer = vi.fn();
+vi.mock('@/lib/api/data/viewer', () => ({
+  useViewer: () => viewer,
+  patchViewer: (...a: unknown[]) => patchViewer(...a),
+}));
+const qc = {};
+vi.mock('@tanstack/react-query', async (orig) => ({
+  ...(await orig<typeof import('@tanstack/react-query')>()),
+  useQueryClient: () => qc,
+}));
 
 const countries = [
   { id: 'c-gb', label: 'United Kingdom', code: 'GB' },
@@ -127,6 +136,7 @@ beforeEach(() => {
   pending = false;
   save.mockReset().mockResolvedValue(undefined);
   replace.mockReset();
+  patchViewer.mockReset();
   search = '';
   profileFails = false;
   matches = null;
@@ -280,6 +290,17 @@ describe('OnboardingScreen', () => {
     rerender(<OnboardingScreen />);
     expect(screen.getByRole('status')).toHaveTextContent('You’re already set up');
     expect(container.querySelector('main svg')).not.toBeNull();
+  });
+
+  it('done at load: the viewer is marked complete, so /home doesn’t bounce back here', () => {
+    state = { ...fresh, complete: true };
+    render(<OnboardingScreen />);
+    expect(patchViewer).toHaveBeenCalledWith(qc, { onboardingComplete: true });
+  });
+
+  it('not done at load: the viewer is left alone', () => {
+    render(<OnboardingScreen />);
+    expect(patchViewer).not.toHaveBeenCalled();
   });
 
   it('greets an onboarded mentee, then goes Home after 1.2 s', () => {

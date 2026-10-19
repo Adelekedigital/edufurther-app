@@ -239,8 +239,8 @@ export function useSaveOnboarding(
       // What's still owed changed: Home's nudge reads /me.
       void qc.invalidateQueries({ queryKey: keys.viewer.all });
       if (a.step !== 'plans') return;
-      // Done: no nudge on the way Home, before /me comes back.
-      patchViewer(qc, { onboardingMissing: [] });
+      // Done: no nudge and no setup lock on the way Home, before /me comes back.
+      patchViewer(qc, { onboardingMissing: [], onboardingComplete: true });
       // New answers, new ranking: never show the last answers' matches first.
       qc.removeQueries({ queryKey: keys.onboarding.matchesAll });
       // Completion pays the starter credit and the origin changed: Home refreshes too.

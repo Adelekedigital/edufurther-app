@@ -1,0 +1,27 @@
+/* AppShell.dc.html lock explainer, values from its markup. */
+.body {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+  text-wrap: pretty;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-3);
+  /* Stacked on phones, the primary on top. */
+  flex-wrap: wrap-reverse;
+}
+/* Both buttons as drawn: the design sets 48px and 16/24 padding on each, the
+   text one included, at every width. */
+.actions > .action {
+  height: var(--button-h-large);
+  padding: var(--space-4) var(--space-6);
+}
+@media (max-width: 767px) {
+  .actions > * {
+    width: 100%;
+  }
+}

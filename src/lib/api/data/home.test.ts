@@ -105,3 +105,52 @@ describe('homeFor: a declined applicant who chose mentee (owner, 2026-10-18)', (
     ).toBe('/dashboard');
   });
 });
+
+describe('homeFor: the setup detours, one rule with sign-in (memberHome)', () => {
+  async function load(onboarding: boolean, mentorOnboarding: boolean) {
+    vi.resetModules();
+    vi.stubEnv('NEXT_PUBLIC_ONBOARDING_ENABLED', onboarding ? 'true' : '');
+    vi.stubEnv('NEXT_PUBLIC_MENTOR_ONBOARDING_ENABLED', mentorOnboarding ? 'true' : '');
+    return (await import('./home')).homeFor;
+  }
+  afterEach(() => vi.unstubAllEnvs());
+  const unfinished = {
+    is_admin: false,
+    mentor_profile: null,
+    onboarding: { complete: false, missing: [] },
+  };
+  const mentorAt = (p: object) => ({ is_admin: false, mentor_profile: p }) as Me;
+
+  it('with the flags on: unfinished mentee → onboarding; a mentor not approved, or approved and unseen → the application', async () => {
+    const home = await load(true, true);
+    expect(home(unfinished as Me)).toBe('/onboarding');
+    expect(home(mentorAt({ approval_status: 'pending', submitted_at: '2026-10-01' }))).toBe(
+      '/mentor-application',
+    );
+    expect(home(mentorAt({ approval_status: 'declined' }))).toBe('/mentor-application');
+    // Never submitted: straight to mentor onboarding (owner, 2026-10-18).
+    expect(home(mentorAt({ approval_status: 'pending', submitted_at: null }))).toBe(
+      '/onboarding/mentor',
+    );
+    expect(home(mentorAt({ approval_status: 'approved', approved_seen_at: null }))).toBe(
+      '/mentor-application',
+    );
+    expect(home(mentorAt({ approval_status: 'approved', approved_seen_at: '2026-10-02' }))).toBe(
+      '/dashboard',
+    );
+    // Declined and chose mentee: the mentee home.
+    expect(
+      home({ ...mentorAt({ approval_status: 'declined' }), primary_role: 'mentee' } as Me),
+    ).toBe('/home');
+  });
+
+  it('with the flags off: nobody is sent to a page that 404s', async () => {
+    const home = await load(false, false);
+    expect(home(unfinished as Me)).toBe('/home');
+    expect(home(mentorAt({ approval_status: 'declined' }))).toBe('/dashboard');
+    expect(home(mentorAt({ approval_status: 'pending', submitted_at: null }))).toBe('/dashboard');
+    expect(home(mentorAt({ approval_status: 'approved', approved_seen_at: null }))).toBe(
+      '/dashboard',
+    );
+  });
+});

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { MenteeHomeScreen } from './_components/MenteeHomeScreen';
+import { MenteeHomeGate } from './_components/MenteeHomeGate';
 
 export const metadata: Metadata = {
   title: 'Home',
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function HomePage() {
-  return <MenteeHomeScreen />;
+  return <MenteeHomeGate />;
 }
