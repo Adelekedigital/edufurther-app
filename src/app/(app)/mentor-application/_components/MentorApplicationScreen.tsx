@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { SummaryRow } from '@/components/molecules/ApprovedSummary/ApprovedSummary';
 import {
   MentorApplicationStatus,
@@ -49,6 +49,18 @@ function redirectFor(app: MentorApplication): string | null {
  */
 export function MentorApplicationScreen() {
   const router = useRouter();
+  const path = usePathname();
+  const params = useSearchParams();
+  // Straight from Submit (?sent=1): read once and kept, so dropping the
+  // parameter below doesn't flip the heading back.
+  const [justSent] = useState(() => params.get('sent') === '1');
+  useEffect(() => {
+    if (params.get('sent') !== '1') return;
+    const rest = new URLSearchParams(params.toString());
+    rest.delete('sent');
+    const q = rest.toString();
+    router.replace(q ? `${path}?${q}` : path, { scroll: false });
+  }, [params, path, router]);
   const { viewer, member } = useAppShell();
   const userId = member?.id ?? null;
   const app = useMentorApplication(userId);
@@ -83,7 +95,13 @@ export function MentorApplicationScreen() {
     if (!shown || to) return { state: 'loading' };
     switch (shown.stage) {
       case 'pending':
-        return { state: 'pending', email: shown.email, editHref: APPLY };
+        return {
+          state: 'pending',
+          email: shown.email,
+          editHref: APPLY,
+          justSent,
+          firstName: shown.firstName,
+        };
       case 'approved': {
         // The rows say what's really set up, so they wait for it; a failed
         // read only leaves its row out.

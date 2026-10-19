@@ -30,6 +30,10 @@ export const NEXT_STEPS: readonly { icon: IconName; title: string; body: string 
 export const IN_REVIEW_COPY = {
   title: 'Your application is in review',
   body: (email: string) => `We’ll email you at ${email} when there’s an update.`,
+  /** The first arrival, straight from Submit (PRD "Sent"). */
+  sentTitle: (first: string) => (first ? `Application sent, ${first}` : 'Application sent'),
+  sentBody: (email: string) =>
+    `We’ll review your background and email you at ${email} when there’s an update.`,
   edit: 'Edit my application',
 } as const;
 

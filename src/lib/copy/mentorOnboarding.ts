@@ -134,13 +134,6 @@ export function introDescription(areas: string[]): string {
   return `A free first chat about ${list}. We’ll talk through your goals and plan your next steps.`;
 }
 
-export const SENT_COPY = {
-  title: (first: string) => (first ? `Application sent, ${first}` : 'Application sent'),
-  body: (email: string) =>
-    `We’ll review your background and email you at ${email} when there’s an update.`,
-  edit: 'Edit my application',
-} as const;
-
 /** The inline error under each missing field (fieldGuide=marked). */
 export const GAP_COPY: Record<MentorGap, string> = {
   help: 'Pick at least 1 area you can help with.',
