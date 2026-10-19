@@ -3,6 +3,9 @@ import userEvent from '@testing-library/user-event';
 import type { Mentor } from '@/types/mentor';
 import { ExploreScreen } from './ExploreScreen';
 
+// The booking modal's Finish setup navigates with the router.
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
+
 let canBook = true;
 vi.mock('@/app/_shell/useAppShell', () => ({
   MATCH_CALL_URL: '',
