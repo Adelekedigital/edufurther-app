@@ -1,4 +1,3 @@
-import type { NudgePart } from './onboarding';
 /** Domain types. Components are typed on these, never on the wire shape. */
 
 import type { CoverArt, CoverKey } from '@/lib/utils/cover';
@@ -224,11 +223,6 @@ export type Viewer =
       timeZone?: string;
       /** Sessions had as a mentee; drives the match prompt (≤ 2 → shown). */
       completedSessions: number;
-      /**
-       * The onboarding parts still owed (`/me onboarding.missing`, as the nudge
-       * groups them): origin, degree and field are all "plans". Absent: not known.
-       */
-      onboardingMissing?: NudgePart[];
       /** When the account was made (`/me` created_at). Absent: not known. */
       createdAt?: string;
       /** Null for users without a mentee goal (no credit block). */

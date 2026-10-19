@@ -1,21 +1,18 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { KpiCard } from '@/components/molecules/KpiCard/KpiCard';
 import { Notice } from '@/components/molecules/Notice/Notice';
-import { OnboardingNudge } from '@/components/molecules/OnboardingNudge/OnboardingNudge';
 import { BookingLauncher } from '@/app/_shell/BookingLauncher/BookingLauncher';
 import { FloatingHelp } from '@/components/organisms/FloatingHelp/FloatingHelp';
 import { useUpcomingBookings } from '@/lib/api/data/bookings';
 import { EMPTY_STATS, useMenteeStats } from '@/lib/api/data/menteeHome';
 import { toBookingMentor, useMetMentors, type MetMentor } from '@/lib/api/data/metMentors';
-import { ONBOARDING_LIVE } from '@/lib/config/auth';
 import { deviceTimeZone } from '@/lib/utils/format';
-import { useSessionFlag } from '@/lib/utils/useSessionFlag';
 import { MATCH_CALL_URL, useAppShell } from '@/app/_shell/useAppShell';
 import { MenteeEmptyCard } from './MenteeEmptyCard';
 import { MenteeFirstSession } from './MenteeFirstSession';
@@ -35,12 +32,6 @@ export function MenteeHomeScreen() {
   const router = useRouter();
   // deviceTimeZone is a lazy initializer; read it once (as the other screens do).
   const [browserZone] = useState(deviceTimeZone);
-  // "Hide for now" on the onboarding nudge: before any early return (hook order).
-  // Per account: another sign-in on the same tab gets its own nudge.
-  const [nudgeHidden, hideNudge] = useSessionFlag(
-    `ef-onboarding-nudge-hidden:${member?.id ?? 'none'}`,
-  );
-  const helloRef = useRef<HTMLHeadingElement>(null);
 
   // A minute tick so the next-session card's join state advances while the tab
   // stays open (as BookingsScreen does). Without it `now` is frozen at the
@@ -121,12 +112,7 @@ export function MenteeHomeScreen() {
   // (menteeSessions ≤ 2) — shown only to an early mentee: a brand-new one gets
   // the hero instead, and an experienced one (3+ sessions) doesn't need help
   // choosing a mentor.
-  // The onboarding nudge (OnboardingNudge.dc.html, PRD F4): a mentee still
-  // owing answers, until they hide it for this visit. While it shows, the
-  // team-call pill steps aside, as the design draws it.
-  const nudgeParts = member?.onboardingMissing ?? [];
-  const showNudge = ONBOARDING_LIVE && menteeSide && nudgeParts.length > 0 && !nudgeHidden;
-  const showHelp = !showNudge && !!MATCH_CALL_URL && !isNew && completed <= 2;
+  const showHelp = !!MATCH_CALL_URL && !isNew && completed <= 2;
   const openCall = () => {
     if (MATCH_CALL_URL) window.open(MATCH_CALL_URL, '_blank', 'noopener,noreferrer');
   };
@@ -160,23 +146,11 @@ export function MenteeHomeScreen() {
     // when the pill is shown).
     <div className={styles.page} data-help={showHelp ? '' : undefined}>
       <header className={styles.greeting}>
-        <h1 ref={helloRef} tabIndex={-1} className={styles.hello}>
+        <h1 className={styles.hello}>
           {greeting(member.firstName, member.createdAt, completed, now)}
         </h1>
         <p className={styles.subline}>{subline}</p>
       </header>
-
-      {showNudge && (
-        <OnboardingNudge
-          missing={nudgeParts}
-          href="/onboarding"
-          onDismiss={() => {
-            hideNudge();
-            // The nudge held focus and is gone: keep the reader's place at the top.
-            helloRef.current?.focus();
-          }}
-        />
-      )}
 
       {/* Progress — error checked before the figures (ui-states). */}
       {!isNew && stats.error ? (

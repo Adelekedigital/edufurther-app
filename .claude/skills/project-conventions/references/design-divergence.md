@@ -866,8 +866,6 @@ PRD: Mentee Onboarding v5 (deviation table, H8). Rows the PRD settles are produc
 | Book on the guest's match opens the modal at the start | Opens on the questions with their time and session (BookingFlow `startAfterTime`); the slot grid if that time is gone | PRD US-6: back where they left off | — |
 | A migrated mentee (`visitor=migrated`) is a known state | Read as "no `last_step` but holds answers" (the design's copy, blue resume banner, no Start over, first gap). Until the backend sends `last_step` on `/me` a migrated mentee sees the welcome-back line instead; and a new mentee whose step save failed after their answers saved would read as migrated | The API has no migrated marker | the backend marks migrated users explicitly |
 | Returning mentees always land on Home | A returning mentee whose `/me onboarding.complete` is false goes to `/onboarding` ("Opening your setup…") at sign-in; any return path (`next`) still wins, and `/` still opens Home | PRD H5 (migrated mentees fill their gaps); F4 (booking never gated) | — |
-| `OnboardingNudge` × hides it in place (component state) | "Hide for now" hides it for the visit (sessionStorage), so it stays hidden across in-app navigation and returns next visit | The design gives no rule past the click; "for now" says it comes back | design sets a longer rule |
-| PRD F4 names Home and Explore; the nudge is drawn on Home only | Built on Home only | Design is the build; Explore asked of design (request item 6b) | design draws it on Explore |
 
 ### Sign up and log in — the screen (PR 3, `/signup`, `/login`)
 

@@ -6,7 +6,6 @@ import { useQuery, type QueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { authConfigured } from '@/lib/vendor/supabase/config';
 import type { Viewer } from '@/types/mentor';
-import type { NudgePart } from '@/types/onboarding';
 import { mentorStageOf } from '@/lib/utils/access';
 import { coverKey } from '@/lib/utils/cover';
 import { ApiError } from './errors';
@@ -16,20 +15,6 @@ import { keys } from './keys';
 import { useSession } from './session';
 
 type UserRead = components['schemas']['UserRead'];
-
-const PLAN_CODES = new Set(['origin', 'degree', 'field']);
-
-/**
- * `/me onboarding.missing` → the nudge's two parts: help, and origin/degree/field
- * as plans. A code a later backend adds is ignored, never worded as plans.
- */
-export function nudgeParts(missing: readonly string[] | null | undefined): NudgePart[] {
-  if (!missing) return [];
-  const parts: NudgePart[] = [];
-  if (missing.includes('help')) parts.push('help');
-  if (missing.some((m) => PLAN_CODES.has(m))) parts.push('plans');
-  return parts;
-}
 
 /**
  * GET /api/v1/me → Viewer (backend auth reply #3). Roles come from rows, never
@@ -55,7 +40,6 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     isListedMentor: me.mentor_profile?.listing_status === 'listed',
     timeZone: me.timezone || undefined,
     completedSessions: me.mentee_completed_sessions,
-    onboardingMissing: nudgeParts(me.onboarding?.missing),
     createdAt: me.created_at,
     credits: me.credits
       ? {
@@ -196,10 +180,9 @@ MOCK_VIEWERS['mentor-applicant'] = {
   bookingCounts: { pending: 0, upcoming: 0 },
 };
 
-// The same mentee, still owing their study plans: the onboarding nudge on Home.
+// The same mentee, onboarding unfinished: the setup lock (Home → /onboarding).
 MOCK_VIEWERS['mentee-unfinished'] = {
   ...(MOCK_VIEWERS.mentee as Extract<Viewer, { kind: 'member' }>),
-  onboardingMissing: ['plans'],
   onboardingComplete: false,
 };
 
@@ -299,7 +282,6 @@ export function patchViewer(
       | 'avatarUrl'
       | 'avatarFocus'
       | 'coverKey'
-      | 'onboardingMissing'
       | 'onboardingComplete'
       | 'mentorApprovedSeen'
     >
