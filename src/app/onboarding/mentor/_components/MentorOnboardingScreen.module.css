@@ -151,7 +151,8 @@
 @media (max-width: 767px) {
   /* The design's phone padding; 120px under the pinned footer (`rootPadB`). */
   .flow {
-    padding: var(--space-6) var(--space-5) calc(var(--space-6) + 120px + env(safe-area-inset-bottom));
+    padding: var(--space-6) var(--space-5)
+      calc(var(--space-6) + 120px + env(safe-area-inset-bottom));
   }
   .state {
     padding: var(--space-6) var(--space-5);

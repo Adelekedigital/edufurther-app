@@ -26,7 +26,14 @@ import styles from './MentorApplicationStatus.module.css';
 export type MentorApplicationStatusProps =
   | { state: 'loading' }
   | { state: 'error'; onRetry: () => void; retrying?: boolean }
-  | { state: 'pending'; email: string; editHref: string }
+  | {
+      state: 'pending';
+      email: string;
+      editHref: string;
+      /** Straight from Submit: the heading says it was sent, once. */
+      justSent?: boolean;
+      firstName?: string;
+    }
   | {
       state: 'approved';
       firstName: string;
@@ -95,9 +102,15 @@ export function MentorApplicationStatus(props: MentorApplicationStatusProps) {
           <img src="/illustrations/forms.svg" alt="" className={styles.art} />
           <div className={styles.headingGroup}>
             <h1 ref={heading} tabIndex={-1} className={styles.title}>
-              {IN_REVIEW_COPY.title}
+              {props.justSent
+                ? IN_REVIEW_COPY.sentTitle(props.firstName ?? '')
+                : IN_REVIEW_COPY.title}
             </h1>
-            <p className={styles.lead}>{IN_REVIEW_COPY.body(props.email)}</p>
+            <p className={styles.lead}>
+              {props.justSent
+                ? IN_REVIEW_COPY.sentBody(props.email)
+                : IN_REVIEW_COPY.body(props.email)}
+            </p>
           </div>
           <NextSteps steps={NEXT_STEPS} />
           <ButtonLink href={props.editHref} variant="secondary-outlined" size="large">

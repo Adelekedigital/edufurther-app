@@ -13,7 +13,6 @@ import { AboutStep } from './AboutStep';
 import { EducationStep } from './EducationStep';
 import { HelpAreasStep } from './HelpAreasStep';
 import { HoursStep } from './HoursStep';
-import { SentScreen } from './SentScreen';
 import { useMentorOnboardingFlow } from './useMentorOnboardingFlow';
 import styles from './MentorOnboardingScreen.module.css';
 
@@ -49,15 +48,6 @@ export function MentorOnboardingScreen() {
     );
   } else if (!form) {
     body = <Waiting text={FLOW_COPY.loading} hidden />;
-  } else if (f.sent) {
-    body = (
-      <SentScreen
-        firstName={(f.state ?? form.base).firstName}
-        email={(f.state ?? form.base).email}
-        onEdit={f.edit}
-        headingRef={headingRef}
-      />
-    );
   } else {
     const a = form.answers;
     const n = STEP_ORDER.indexOf(form.step) + 1;
@@ -204,7 +194,7 @@ export function MentorOnboardingScreen() {
   }
 
   const status =
-    f.saved && form && !f.sent ? (
+    f.saved && form ? (
       <span role="status" className={styles.saved}>
         <Icon name="cloud_done" size={16} />
         {phone ? FLOW_COPY.savedShort : FLOW_COPY.saved}

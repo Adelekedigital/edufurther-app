@@ -581,7 +581,10 @@ export function useSubmitMentorApplication() {
       return { submittedAt: data?.submitted_at ?? null };
     },
     onSuccess: () => {
-      // Sign-in routing and the status page read the application from /me.
+      // Dropped, not just marked stale: the status page opens next and must
+      // never latch a cached "unsubmitted" (it would send them back here).
+      qc.removeQueries({ queryKey: keys.viewer.mentorApplicationAll });
+      // Sign-in routing reads the application from /me too.
       void qc.invalidateQueries({ queryKey: keys.viewer.all });
     },
   });

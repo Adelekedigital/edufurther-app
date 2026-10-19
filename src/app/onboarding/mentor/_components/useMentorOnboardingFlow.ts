@@ -158,7 +158,6 @@ export function useMentorOnboardingFlow() {
   // Gaps the submit refusal named that the answers on screen can't show (e.g. a photo removed elsewhere).
   const [serverGaps, setServerGaps] = useState<MentorGap[]>([]);
   const [saved, setSaved] = useState(false);
-  const [sent, setSent] = useState(false);
   const [drafting, setDrafting] = useState(false);
   const [draftFailed, setDraftFailed] = useState(false);
   const draftedOnce = useRef(false);
@@ -231,7 +230,7 @@ export function useMentorOnboardingFlow() {
   }, []);
   useEffect(() => {
     const f = latest.current;
-    if (step !== 'about' || !f || f.answers.about.trim() || draftedOnce.current || sent) return;
+    if (step !== 'about' || !f || f.answers.about.trim() || draftedOnce.current) return;
     draftedOnce.current = true;
     setDrafting(true);
     setDraftFailed(false);
@@ -258,12 +257,12 @@ export function useMentorOnboardingFlow() {
       })
       .catch(() => mounted.current && setDraftFailed(true))
       .finally(() => mounted.current && setDrafting(false));
-  }, [step, sent, hasForm]);
+  }, [step, hasForm]);
 
   // Focus moves to the step heading on every step change, never on the first render.
   const headingRef = useRef<HTMLHeadingElement>(null);
   const shown = useRef<string | null>(null);
-  const view = sent ? 'sent' : (form?.step ?? null);
+  const view = form?.step ?? null;
   useEffect(() => {
     if (!view) return;
     if (shown.current !== null && shown.current !== view) {
@@ -273,8 +272,7 @@ export function useMentorOnboardingFlow() {
     shown.current = view;
   }, [view]);
 
-  const dirty =
-    !!form && !sent && baseline !== null && snapshot(form.answers) !== snapshot(baseline);
+  const dirty = !!form && baseline !== null && snapshot(form.answers) !== snapshot(baseline);
   useLeaveGuard(dirty, FLOW_COPY.leaveLabel);
 
   const gaps = answers ? gapsFor(step, answers) : [];
@@ -345,7 +343,8 @@ export function useMentorOnboardingFlow() {
     }
     try {
       await submit.submit();
-      setSent(true);
+      // The status page, inside the app: its first arrival says it was sent.
+      router.replace('/mentor-application?sent=1');
     } catch (e) {
       const err = e as { status?: number; type?: string; missing?: string[] };
       if (err.type === DECIDED) router.replace('/mentor-application');
@@ -360,7 +359,6 @@ export function useMentorOnboardingFlow() {
   return {
     viewer,
     form,
-    sent,
     loadError,
     retryLoad: () => {
       app.retry();
@@ -419,11 +417,6 @@ export function useMentorOnboardingFlow() {
       setForm((f) =>
         f ? { ...f, step: 'help', answers: freshAnswers(f.answers), resumed: false } : f,
       );
-    },
-    edit: () => {
-      submit.reset();
-      setSent(false);
-      setForm((f) => (f ? { ...f, step: 'help', resumed: false } : f));
     },
   };
 }

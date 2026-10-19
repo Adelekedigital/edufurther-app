@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react';
+import { keys } from './keys';
 import type { MentorAnswers, MentorApplicationState, SchoolDraft } from '@/types/mentorOnboarding';
 import {
   DECIDED,
@@ -232,5 +233,20 @@ describe('useSubmitMentorApplication', () => {
     POST.mockImplementation(() => fail(409, { type: DECIDED }));
     const { result } = renderHook(() => useSubmitMentorApplication(), { wrapper });
     await expect(result.current.submit()).rejects.toMatchObject({ type: DECIDED });
+  });
+
+  it('drops the cached status read before it resolves, so the status page never reads "unsubmitted"', async () => {
+    POST.mockImplementation(() =>
+      ok(200, { submitted_at: '2026-10-18T10:00:00Z', approval_status: 'pending' }),
+    );
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    qc.setQueryData(keys.viewer.mentorApplication('u1'), { stage: 'unsubmitted' });
+    const { result } = renderHook(() => useSubmitMentorApplication(), {
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+      ),
+    });
+    await result.current.submit();
+    expect(qc.getQueryData(keys.viewer.mentorApplication('u1'))).toBeUndefined();
   });
 });

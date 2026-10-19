@@ -228,7 +228,7 @@ describe('MentorOnboardingScreen', () => {
     ).toBeInTheDocument();
   });
 
-  it('submit: a failure keeps the answers and Submit tries again; success shows Application sent', async () => {
+  it('submit: a failure keeps the answers and Submit tries again; success goes to the status page, in the app', async () => {
     appState = stateWith({
       lastStep: 'about',
       hasProfile: true,
@@ -253,10 +253,7 @@ describe('MentorOnboardingScreen', () => {
     expect(screen.getByRole('button', { name: 'Monday' })).toHaveAttribute('aria-pressed', 'true');
     submitError = null;
     await userEvent.click(screen.getByRole('button', { name: 'Submit application' }));
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Application sent, Gbenga' }),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/gbenga@example.com/)).toBeInTheDocument();
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/mentor-application?sent=1'));
   });
 
   it('about: drafts an empty About on arrival; a failed draft says so and leaves the field editable', async () => {

@@ -6,7 +6,12 @@ import { emptyWeek } from '@/lib/utils/sessionTypeDraft';
 
 const replace = vi.fn();
 const push = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, push }) }));
+let search = '';
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace, push }),
+  usePathname: () => '/mentor-application',
+  useSearchParams: () => new URLSearchParams(search),
+}));
 
 let viewer: { kind: string; id?: string; retry?: () => void };
 vi.mock('@/app/_shell/useAppShell', () => ({
@@ -60,6 +65,7 @@ const remote = (data: MentorApplication | null, fresh = true) => ({
 
 beforeEach(() => {
   viewer = { kind: 'member', id: 'u1' };
+  search = '';
   hoursFail = false;
   replace.mockReset();
   push.mockReset();
@@ -68,6 +74,33 @@ beforeEach(() => {
 });
 
 describe('MentorApplicationScreen (PRD F3, "Where people land")', () => {
+  it('straight after submit (?sent=1): "Application sent, {First}", then the address drops ?sent', async () => {
+    search = 'sent=1';
+    app = remote({ stage: 'pending', ...person });
+    render(<MentorApplicationScreen />);
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Application sent, Gbenga' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'We’ll review your background and email you at gbenga@example.com when there’s an update.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Edit my application' })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith('/mentor-application', { scroll: false }),
+    );
+  });
+
+  it('any later visit (no ?sent): "Your application is in review"', async () => {
+    app = remote({ stage: 'pending', ...person });
+    render(<MentorApplicationScreen />);
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Your application is in review' }),
+    ).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
   it('approved, not seen: the real hours and Intro chat, marked seen once', async () => {
     app = remote({ stage: 'approved', seen: false, ...person });
     const { rerender } = render(<MentorApplicationScreen />);

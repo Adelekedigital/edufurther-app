@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { MENTOR_ONBOARDING_LIVE } from '@/lib/config/auth';
@@ -11,5 +12,10 @@ export const metadata: Metadata = {
 /** /mentor-application (Mentor Onboarding PRD F3): on its flag, like /onboarding/mentor. */
 export default function MentorApplicationPage() {
   if (!MENTOR_ONBOARDING_LIVE) notFound();
-  return <MentorApplicationScreen />;
+  // It reads the query (?sent=1 from Submit): rendered inside a boundary.
+  return (
+    <Suspense>
+      <MentorApplicationScreen />
+    </Suspense>
+  );
 }
