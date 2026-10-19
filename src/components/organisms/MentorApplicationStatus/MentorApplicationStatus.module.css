@@ -54,6 +54,15 @@
   box-sizing: border-box;
 }
 
+/* In review: what stays open while the reviewed fields are frozen. */
+.waitLine {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+  text-wrap: pretty;
+}
+
 /* Approved. */
 .approved {
   max-width: 880px;

@@ -20,24 +20,19 @@ const declined = {
 };
 
 describe('MentorApplicationStatus', () => {
-  it('in review: the three steps and Edit, heading focused', () => {
-    render(
-      <MentorApplicationStatus
-        state="pending"
-        email="gbenga@example.com"
-        editHref="/onboarding/mentor"
-      />,
-    );
+  it('in review: the three steps and what stays open, heading focused', () => {
+    render(<MentorApplicationStatus state="pending" email="gbenga@example.com" />);
     const h1 = screen.getByRole('heading', { level: 1, name: 'Your application is in review' });
     expect(h1).toHaveFocus();
     expect(
       screen.getByText('We’ll email you at gbenga@example.com when there’s an update.'),
     ).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(3);
-    expect(screen.getByRole('link', { name: 'Edit my application' })).toHaveAttribute(
-      'href',
-      '/onboarding/mentor',
-    );
+    // The reviewed fields are frozen until the decision: nothing to edit here.
+    expect(screen.queryByRole('link', { name: 'Edit my application' })).toBeNull();
+    expect(
+      screen.getByText('While you wait, you can set up your sessions and hours.'),
+    ).toBeInTheDocument();
   });
 
   it('approved: the summary rows, Connect, one button, and confetti', () => {

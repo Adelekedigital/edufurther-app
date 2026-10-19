@@ -112,7 +112,7 @@ describe('MentorApplicationScreen (PRD F3, "Where people land")', () => {
         'We’ll review your background and email you at gbenga@example.com when there’s an update.',
       ),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Edit my application' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Edit my application' })).toBeNull();
     await waitFor(() =>
       expect(replace).toHaveBeenCalledWith('/mentor-application', { scroll: false }),
     );

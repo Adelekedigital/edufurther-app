@@ -34,7 +34,8 @@ export const IN_REVIEW_COPY = {
   sentTitle: (first: string) => (first ? `Application sent, ${first}` : 'Application sent'),
   sentBody: (email: string) =>
     `We’ll review your background and email you at ${email} when there’s an update.`,
-  edit: 'Edit my application',
+  /** The reviewed fields are frozen until the decision (owner, 18 Oct); setup isn't. */
+  whileYouWait: 'While you wait, you can set up your sessions and hours.',
 } as const;
 
 export const APPROVED_COPY = {

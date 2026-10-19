@@ -18,7 +18,7 @@ const note =
   'We couldn’t match the PhD on your application to your LinkedIn profile. Add it to LinkedIn, or check that the school and years match, then contact us to apply again.';
 
 export const InReview: Story = {
-  args: { state: 'pending', email: 'gbenga@example.com', editHref: '/onboarding/mentor' },
+  args: { state: 'pending', email: 'gbenga@example.com' },
 };
 
 const summary: SummaryRow[] = [

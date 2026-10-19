@@ -126,7 +126,6 @@ export function MentorApplicationScreen() {
         return {
           state: 'pending',
           email: shown.email,
-          editHref: APPLY,
           justSent,
           firstName: shown.firstName,
         };
