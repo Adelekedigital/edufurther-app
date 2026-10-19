@@ -118,6 +118,7 @@ export function useOwnEducation(userId: string | null, enabled: boolean) {
         dateStart: e.date_start ?? null,
         dateEnd: e.date_end ?? null,
         levelId: e.degree_level?.id ?? null,
+        levelName: e.degree_level?.display_name ?? null,
       }));
     },
     enabled: enabled && !!userId,
@@ -126,6 +127,7 @@ export function useOwnEducation(userId: string | null, enabled: boolean) {
   return {
     entries: query.data ?? [],
     status: status as 'ready' | 'error' | 'loading',
+    retrying: query.isFetching && !!query.error,
     retry: () => void query.refetch(),
   };
 }

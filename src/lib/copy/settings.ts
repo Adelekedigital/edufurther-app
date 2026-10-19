@@ -71,3 +71,21 @@ export const SAVE_COPY = {
   profileOffline: 'You’re offline. Your changes are still here. Try again when you’re connected.',
   languagesFailed: 'Your details saved, but your languages didn’t. Try again.',
 } as const;
+
+/** Settings › Education (design `isMEdu`, menteeTabs=split: the card's own header). */
+export const EDUCATION_COPY = {
+  title: 'Education',
+  sub: 'Where you’ve studied or are studying now.',
+  add: 'Add education',
+  emptyTitle: 'Add where you’ve studied',
+  emptyBody: 'Your degree and school help us match you with mentors who took the same path.',
+  loading: 'Loading your education',
+  edit: (title: string) => `Edit ${title}`,
+  remove: (title: string) => `Delete ${title}`,
+  /** The delete confirm's line (design `deleteAwardSub`, mentee). */
+  deleteSub: (title: string, where: string) =>
+    `“${title}” (${where}) will be removed. This can’t be undone.`,
+  added: 'Education added',
+  updated: 'Education updated',
+  deleted: 'Education deleted',
+} as const;

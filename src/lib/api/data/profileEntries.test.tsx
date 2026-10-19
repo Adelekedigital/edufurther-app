@@ -129,6 +129,7 @@ describe('education bodies', () => {
       dateStart: '2023-08-15',
       dateEnd: '2024-05-15',
       levelId: 'dl-masters',
+      levelName: 'Masters',
     };
     const before = educationBody(v, 'dl-masters', saved);
     const after = educationBody({ ...v, end: 2025, course: 'Epidemiology' }, 'dl-masters', saved);

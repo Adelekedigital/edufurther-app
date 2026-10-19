@@ -335,6 +335,8 @@ export type EducationEntry = {
   dateEnd: string | null;
   /** The saved level id, kept when the degree isn't changed. */
   levelId: string | null;
+  /** The saved level's name (Bachelor’s), for a degree saved without an abbreviation. */
+  levelName: string | null;
 };
 
 /** A Scholarships and awards row, with what the owner's editor starts from. */

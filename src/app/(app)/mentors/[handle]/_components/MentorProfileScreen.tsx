@@ -36,12 +36,12 @@ import type { CompletenessCode } from '@/types/mentor';
 import { useOnline } from '@/lib/utils/useOnline';
 import styles from './MentorProfileScreen.module.css';
 import {
+  OwnerEntryDelete,
   OwnerItemEditor,
   type ItemKind,
   type ItemOutcome,
   type ItemTarget,
 } from './OwnerItemEditor';
-import { DeleteEntryConfirm } from './DeleteEntryConfirm';
 import { RemovePhotoConfirm } from '@/components/templates/RemovePhotoConfirm/RemovePhotoConfirm';
 import {
   NotTakingEmpty,
@@ -695,9 +695,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
         />
       )}
       {isOwner && p && deleting && (
-        <DeleteEntryConfirm
-          kind={deleting.kind}
-          id={deleting.id}
+        <OwnerEntryDelete
+          target={deleting}
           userId={p.mentor.id}
           onClose={() => setDeleting(null)}
           onDeleted={() => {
