@@ -106,6 +106,7 @@ export const ICON_NAMES = [
   'radio_button_unchecked',
   'rate_review',
   'record_voice_over',
+  'redeem',
   'refresh',
   'replay',
   'route',

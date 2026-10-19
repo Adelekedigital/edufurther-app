@@ -12,7 +12,8 @@ import { patchViewer, useViewer } from '@/lib/api/data/viewer';
 import { NEW_MENTOR_HOME } from '@/lib/config/auth';
 import { HELP_LIMIT, type MissingKey } from '@/lib/copy/onboarding';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
-import { parseGuestBooking } from '@/lib/utils/guestBooking';
+import { markBookingDraftFinished } from '@/lib/utils/bookingDraft';
+import { parseGuestBooking, type GuestBooking } from '@/lib/utils/guestBooking';
 import { EMPTY_PLANS, missingHelp, missingPlans } from '@/lib/utils/onboardingAnswers';
 import type { PlanAnswers } from '@/types/onboarding';
 
@@ -59,6 +60,13 @@ function startFrom(s: OnboardingState): Form {
  * The onboarding flow's state: who is here, what they answered (from the
  * server, PRD F1), which step shows, and the two saves. The page renders it.
  */
+/** The mentor's page, reopening the booking that was put down (round 4, `after=booking`). */
+function bookingReturn(g: GuestBooking): string {
+  const q = new URLSearchParams({ book: g.sid });
+  if (g.time) q.set('at', g.time);
+  return `/mentors/${g.handle}?${q.toString()}`;
+}
+
 export function useOnboardingFlow() {
   const viewer = useViewer();
   const router = useRouter();
@@ -112,9 +120,11 @@ export function useOnboardingFlow() {
     if (!doneAtLoad) return;
     // A cached /me may still say unfinished: lift the setup lock, or /home sends them back here.
     patchViewer(qc, { onboardingComplete: true });
-    const t = setTimeout(() => router.replace('/home'), DONE_REDIRECT_MS);
+    // Sent here to finish setting up for a booking: back to it, not Home.
+    const to = guest?.after === 'booking' ? bookingReturn(guest) : '/home';
+    const t = setTimeout(() => router.replace(to), DONE_REDIRECT_MS);
     return () => clearTimeout(t);
-  }, [doneAtLoad, router, qc]);
+  }, [doneAtLoad, router, qc, guest]);
 
   const step = form?.step ?? 'help';
   const matches = useMentorMatches(userId, topics.topics, levels.levels, {
@@ -169,6 +179,13 @@ export function useOnboardingFlow() {
       else if (from === 'plans')
         await save.save({ step: 'plans', needIds: form.needIds, plans: form.plans });
       else return [];
+      // Finished for a booking (round 4): back to it, no matches. Saving the
+      // plans completed onboarding and paid the starter credit.
+      if (from === 'plans' && guest?.after === 'booking') {
+        if (userId) markBookingDraftFinished(userId, guest.handle);
+        router.replace(bookingReturn(guest));
+        return [];
+      }
       // Only if they're still where they saved from (Back can't be pressed mid-save, but stay safe).
       setForm((f) =>
         f && f.step === from

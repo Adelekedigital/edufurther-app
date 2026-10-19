@@ -11,6 +11,7 @@ import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type {
   AppError,
   BookingRequest,
+  IntakeAnswer,
   IntakeFile,
   Mentor,
   Remote,
@@ -19,6 +20,7 @@ import type {
 import type { SheetChrome } from '@/types/ui';
 import { BookingFlowDesktop } from './BookingFlowDesktop';
 import { PhoneBody, PhoneFooter, phoneChrome } from './BookingFlowPhone';
+import { FinishSetupBox } from './FinishSetupBox';
 import { FirstMenteesBox, PickedTime, SessionTypeSelect } from './FlowParts';
 import { FlowSkeleton, LoadError, NoTimes } from './FlowStates';
 import { SentState } from './SentState';
@@ -115,6 +117,22 @@ export type BookingFlowProps = {
    */
   firstReasons?: FirstReason[];
   /**
+   * A signed-in mentee who hasn't finished onboarding (the setup lock): the
+   * last step offers "Finish setup" in place of Request/Book (BookingModal.dc.html
+   * round 4). The backend's own refusal (`needsOnboarding`) shows it too.
+   */
+  setupUnfinished?: boolean;
+  /** "Finish setup": the page keeps what was chosen and goes to onboarding. */
+  onFinishSetup?: (draft: {
+    sessionTypeId: string;
+    time: string;
+    answers: Record<string, IntakeAnswer>;
+  }) => void;
+  /** Answers kept from before onboarding, filled back in. */
+  initialAnswers?: Record<string, IntakeAnswer>;
+  /** Back from onboarding: the missed-time note says the time went meanwhile. */
+  missedNote?: string;
+  /**
    * Hands the page what the modal shell needs. On phones `sheet` and `footer`
    * are set and the shell renders as a full-screen sheet; on wider screens
    * both are undefined and the footer is part of `body`.
@@ -126,6 +144,16 @@ export type BookingFlowProps = {
 };
 
 const PHONE = '(max-width: 767px)';
+
+/** "2026-10-19" → { month: "Oct", day: "19" }: read from the day, not from formatted text. */
+function dateTile(day: string): { month: string; day: string } {
+  const [y, mo, d] = day.split('-').map(Number);
+  const month = new Date(Date.UTC(y!, (mo ?? 1) - 1, d ?? 1)).toLocaleString('en-US', {
+    month: 'short',
+    timeZone: 'UTC',
+  });
+  return { month, day: String(d) };
+}
 
 /** The refusals a different time cannot fix (backend 342). */
 const BOOKING_LIMIT_KINDS: AppError['kind'][] = [
@@ -150,7 +178,11 @@ export function BookingFlow(p: BookingFlowProps) {
   const [stepIndex, setStepIndex] = useState(p.startAfterTime ? 1 : 0);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const isPhone = useMediaQuery(PHONE);
-  const intake = useIntakeAnswers({ onUpload: p.onUpload, requestError: p.requestError });
+  const intake = useIntakeAnswers({
+    onUpload: p.onUpload,
+    requestError: p.requestError,
+    initial: p.initialAnswers,
+  });
 
   const m = p.mentor;
   const types = p.sessionTypes.data ?? [];
@@ -197,8 +229,8 @@ export function BookingFlow(p: BookingFlowProps) {
   const step: Step = p.requestDone ? 'done' : steps[at]!;
   const isLast = after(at) >= steps.length;
 
-  // The sent state's date tile: "Oct", "19" in the viewer's zone.
-  const tileDate = time ? formatDay(dayKey(time, zone)).date.split(' ') : [];
+  // The sent state's date tile: "Oct", "19" in the viewer's zone, from the day itself.
+  const tileDate = time ? dateTile(dayKey(time, zone)) : null;
   const picked = time
     ? (() => {
         const f = formatDay(dayKey(time, zone));
@@ -225,16 +257,20 @@ export function BookingFlow(p: BookingFlowProps) {
   useEffect(() => {
     if (p.requestError) sent.current = false;
   }, [p.requestError]);
-  const submit = () => {
-    if (sent.current || !session || !time) return;
-    sent.current = true;
-    // Only the questions this session type asks now (the list can change under us).
-    const asked = Object.fromEntries(
-      session.questions.flatMap((q) =>
+  // Only the questions this session type asks now (the list can change under us).
+  const asked = () =>
+    Object.fromEntries(
+      (session?.questions ?? []).flatMap((q) =>
         intake.answers[q.id] ? [[q.id, intake.answers[q.id]!]] : [],
       ),
     );
-    p.onRequest({ mentorId: m.id, sessionTypeId: session.id, startsAt: time, answers: asked });
+  // The session as booked: the sent state keeps its name if the list reloads without it.
+  const [bookedName, setBookedName] = useState<string | null>(null);
+  const submit = () => {
+    if (sent.current || !session || !time) return;
+    sent.current = true;
+    setBookedName(session.name);
+    p.onRequest({ mentorId: m.id, sessionTypeId: session.id, startsAt: time, answers: asked() });
   };
   const pick = session && time ? { sessionTypeId: session.id, time } : null;
   const next = () => {
@@ -261,7 +297,9 @@ export function BookingFlow(p: BookingFlowProps) {
   };
   // Signed in where the guest step is the last one (no questions): the
   // request goes at once, as it did when the step was a formality.
-  const signedInLast = step === 'signup' && signedUp && isLast;
+  // Not for an account that still owes onboarding: it would be refused, so
+  // the finish-setup box stands there instead.
+  const signedInLast = step === 'signup' && signedUp && isLast && !p.setupUnfinished;
   useEffect(() => {
     if (signedInLast) submit();
     // `submit` reads the latest render; only the moment of signing in matters.
@@ -355,10 +393,10 @@ export function BookingFlow(p: BookingFlowProps) {
   ) : step === 'done' ? (
     <SentState
       mentor={m}
-      sessionName={session?.name ?? ''}
+      sessionName={bookedName ?? session?.name ?? ''}
       picked={picked}
-      month={tileDate[0] ?? ''}
-      day={tileDate[1] ?? ''}
+      month={tileDate?.month ?? ''}
+      day={tileDate?.day ?? ''}
       confirmed={!!p.requestConfirmed}
       answered={(session?.questions.length ?? 0) > 0}
     />
@@ -369,6 +407,21 @@ export function BookingFlow(p: BookingFlowProps) {
       <FirstMenteesBox firstName={m.firstName} reasons={p.firstReasons} />
     ) : null;
 
+  // Round 4: an unfinished mentee's last step offers Finish setup instead of
+  // Request/Book (once there's a time to keep). The backend's refusal says the same.
+  const gateOn =
+    (p.setupUnfinished || p.requestError?.kind === 'needsOnboarding') &&
+    isLast &&
+    step !== 'done' &&
+    // The guest step only once they're signed in (the account is what owes it).
+    !(step === 'signup' && !signedUp) &&
+    !!session &&
+    !!time &&
+    !!p.onFinishSetup;
+  const finishSetup = () => {
+    if (!session || !time) return;
+    p.onFinishSetup?.({ sessionTypeId: session.id, time, answers: asked() });
+  };
   const stepContent = session && (
     <>
       {firstBox}
@@ -380,6 +433,7 @@ export function BookingFlow(p: BookingFlowProps) {
           slots={p.slots}
           seeking={timeChoice.seeking}
           missed={timeChoice.initialMissed}
+          missedNote={p.missedNote}
           noOpenDays={timeChoice.days.length === 0}
           noTimes={noTimes}
           picker={{
@@ -433,7 +487,8 @@ export function BookingFlow(p: BookingFlowProps) {
       )}
 
       {/* An answer the server refused says so under its own question instead. */}
-      {p.requestError && !refusedOnScreen && (
+      {/* The finish-setup box says it when it can stand in for the refusal. */}
+      {p.requestError && !refusedOnScreen && !(gateOn && p.requestError.kind === 'needsOnboarding') && (
         <p role="alert" className={styles.error}>
           <Icon name="error" size={16} />
           {/* A booking limit is about what this mentee already has, not about
@@ -462,7 +517,9 @@ export function BookingFlow(p: BookingFlowProps) {
     step === 'signup' &&
     !signedUp &&
     (guest?.stage === 'name' ? guest.finishing : !!guest?.sending);
-  const nextButton = guestOwnsActions ? null : (
+  const nextButton = gateOn ? (
+    <FinishSetupBox firstName={m.firstName} onFinish={finishSetup} stacked={isPhone} />
+  ) : guestOwnsActions ? null : (
     <Button
       size="large"
       onClick={next}
@@ -491,7 +548,7 @@ export function BookingFlow(p: BookingFlowProps) {
     const footer = (
       <PhoneFooter
         done={step === 'done'}
-        timeNote={step === 'time' && time ? picked : null}
+        timeNote={step === 'time' && time && !gateOn ? picked : null}
         firstName={m.firstName}
         nextButton={nextButton}
         onClose={p.onClose}

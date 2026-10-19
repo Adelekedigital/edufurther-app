@@ -80,6 +80,14 @@ export function normaliseError(error: unknown): AppError {
     if (s === 403)
       return { kind: 'forbidden', message: 'You don’t have access to this.', status: s };
     if (s === 404) return { kind: 'notFound', message: 'We couldn’t find that.', status: s };
+    // Checked first by the backend (decision 272): nothing was stored, so the
+    // same request books once onboarding is finished.
+    if (s === 409 && error.type?.endsWith('/problems/booking-needs-onboarding'))
+      return {
+        kind: 'needsOnboarding',
+        message: 'Finish setting up your account before booking.',
+        status: s,
+      };
     if (s === 409 && error.type?.endsWith('/problems/insufficient-credit'))
       return { kind: 'noCredit', message: 'You’re out of credits.', status: s };
     // The mentee booking limits. Kept apart from plain `conflict` because the

@@ -16,6 +16,7 @@ import {
 } from '@/lib/vendor/supabase/browser';
 import { authConfigured } from '@/lib/vendor/supabase/config';
 import { beginSignOut } from './session';
+import { clearAllBookingDrafts } from '@/lib/utils/bookingDraft';
 
 export { authConfigured, signedInUser };
 export type { AuthFailure, SignedInUser } from '@/lib/vendor/supabase/browser';
@@ -74,6 +75,8 @@ export function useSignOut() {
     } catch {
       // signOut clears this device's cookies itself; nothing to add here.
     }
+    // A booking draft's answers can be personal: none stays in the tab.
+    clearAllBookingDrafts();
     hardNavigate('/login');
   }, []);
 }
@@ -87,7 +90,10 @@ export function useSignOutHere() {
   const qc = useQueryClient();
   return useCallback(async () => {
     const ended = await endSessionHere().catch(() => false);
-    if (ended) qc.clear();
+    if (ended) {
+      qc.clear();
+      clearAllBookingDrafts();
+    }
     return ended;
   }, [qc]);
 }

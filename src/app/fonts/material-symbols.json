@@ -100,6 +100,7 @@
     "radio_button_unchecked",
     "rate_review",
     "record_voice_over",
+    "redeem",
     "refresh",
     "replay",
     "route",
@@ -142,5 +143,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "d8e25ed13c59945a7e978b3f44d8b41bdab08f08ca21c2a020164170f879112b"
+  "sha256": "3b8b4041f22fd41fa4ae03669b9952530ff25e35392fa936af595fab75366277"
 }

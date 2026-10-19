@@ -154,6 +154,9 @@ export function bookingError(e: AppError): AppError {
       };
     case 'notFound':
       return { ...e, message: 'This session can’t be booked any more.' };
+    // The flow shows the finish-setup box for it; the words stay plain.
+    case 'needsOnboarding':
+      return e;
     default:
       return { ...e, message: `We couldn’t send your request. ${e.message} Try again.` };
   }

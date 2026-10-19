@@ -321,6 +321,22 @@ describe('OnboardingScreen', () => {
     }
   });
 
+  it('already finished and sent from a booking: says so, then back to the booking', () => {
+    vi.useFakeTimers();
+    try {
+      search = 'for=ada-obi&sid=st-1&time=2026-10-20T12:00:00Z&after=booking';
+      state = { ...fresh, complete: true };
+      render(<OnboardingScreen />);
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'You’re already set up. Taking you back to your booking…',
+      );
+      act(() => vi.advanceTimersByTime(1200));
+      expect(replace).toHaveBeenCalledWith('/mentors/ada-obi?book=st-1&at=2026-10-20T12%3A00%3A00Z');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('sends a guest to sign up, coming back here, and a mentor home', () => {
     viewer = { kind: 'guest' };
     const { rerender } = render(<OnboardingScreen />);
@@ -351,6 +367,36 @@ describe('OnboardingScreen', () => {
       // The banner stands in for the resume notice.
       expect(screen.queryByRole('button', { name: 'Start over' })).toBeNull();
       expect(screen.getByRole('button', { name: 'Continue to book Ada' })).toBeEnabled();
+    });
+
+    it('sent from a booking (after=booking): the credit line, then straight back to it', async () => {
+      search = 'for=ada-obi&sid=st-1&time=2026-10-20T12:00:00Z&after=booking';
+      state = planned;
+      window.sessionStorage.setItem(
+        'ef-booking-draft:u1',
+        JSON.stringify({
+          mentorId: 'm-ada',
+          handle: 'ada-obi',
+          sessionTypeId: 'st-1',
+          time: '2026-10-20T12:00:00Z',
+          answers: {},
+          savedAt: Date.now(),
+        }),
+      );
+      render(<OnboardingScreen />);
+      expect(
+        screen.getByText('Finish to book Ada and get 1 free session credit.'),
+      ).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Back to booking' }));
+      expect(save).toHaveBeenCalledWith(expect.objectContaining({ step: 'plans' }));
+      // No matches on this path: back to the mentor, the booking reopened.
+      expect(replace).toHaveBeenCalledWith('/mentors/ada-obi?book=st-1&at=2026-10-20T12%3A00%3A00Z');
+      expect(screen.queryByRole('heading', { name: /all set to book/ })).toBeNull();
+      // The booking will say the credit came.
+      expect(JSON.parse(window.sessionStorage.getItem('ef-booking-draft:u1')!)).toMatchObject({
+        finished: true,
+      });
+      window.sessionStorage.clear();
     });
 
     it('shows only their mentor, and Book reopens on the questions with their time', async () => {

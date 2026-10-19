@@ -186,6 +186,16 @@ export const RequestFailed: Story = {
 export const Sending: Story = { args: { requestPending: true } };
 // A request is always sent with a time: the sent state shows it.
 export const Sent: Story = { args: { requestDone: true, initialTime: slots[2] } };
+/** Round 4: an unfinished mentee's last step offers Finish setup (`setupState=unfinished`). */
+export const FinishSetup: Story = {
+  args: {
+    setupUnfinished: true,
+    onFinishSetup: () => {},
+    initialTime: slots[2],
+    startAfterTime: true,
+    initialAnswers: { q1: { text: 'Choosing between 3 schools for Fall 2027.' } },
+  },
+};
 export const SentConfirmed: Story = {
   args: { requestDone: true, requestConfirmed: true, initialTime: slots[2] },
 };
@@ -246,6 +256,16 @@ export const PhoneSingleType: Story = {
 export const PhoneOpenedOnType: Story = {
   ...phone,
   args: { renderShell: phoneShell, sessionTypeId: 'st2', hideProfileLink: true },
+};
+export const PhoneFinishSetup: Story = {
+  ...phone,
+  args: {
+    renderShell: phoneShell,
+    setupUnfinished: true,
+    onFinishSetup: () => {},
+    initialTime: slots[2],
+    startAfterTime: true,
+  },
 };
 export const PhoneLoading: Story = {
   ...phone,

@@ -158,6 +158,16 @@
 .need:empty {
   margin-bottom: calc(-1 * var(--space-2));
 }
+/* Mentee Onboarding v5.dc.html `creditNote` (round 4, `after=booking`). */
+.creditNote {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--green-700);
+}
 /* Mentee Onboarding v5.dc.html `saveErr`. */
 .saveError {
   display: flex;

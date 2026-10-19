@@ -165,6 +165,11 @@ export const GUEST_COPY = {
   // PRD US-6: nothing holds the time, so never "held".
   bannerSub: (first: string) => `Your pick is saved. We’ll take you back to book ${first}.`,
   continueToBook: (first: string) => `Continue to book ${first}`,
+  // `after=booking` (round 4): the last step's line and button.
+  creditNote: (first: string) => `Finish to book ${first} and get 1 free session credit.`,
+  backToBooking: 'Back to booking',
+  // Already finished, sent from a booking: back to it, as sign-in says it (ours).
+  alreadySetUp: 'You’re already set up. Taking you back to your booking…',
   matchTitle: (first: string) => `You’re all set to book ${first}`,
   matchSub: (first: string) =>
     `Your time and session are saved. Book now and ${first} will see your goals.`,
