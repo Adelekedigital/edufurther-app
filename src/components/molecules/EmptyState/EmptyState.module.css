@@ -8,6 +8,19 @@
 .art {
   display: block;
 }
+.icon {
+  /* The lock explainer's ringed disc (ModalShell `.icon`), at page scale. */
+  width: var(--space-16);
+  height: var(--space-16);
+  margin: var(--space-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--modal-icon-bg);
+  box-shadow: 0 0 0 var(--space-2) var(--modal-icon-ring);
+  color: var(--modal-icon-ink);
+}
 .copy {
   display: flex;
   flex-direction: column;

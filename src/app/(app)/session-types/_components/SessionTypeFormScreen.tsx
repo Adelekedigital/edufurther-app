@@ -26,7 +26,7 @@ import {
   type Draft,
 } from '@/lib/utils/sessionTypeDraft';
 import { useAppShell } from '@/app/_shell/useAppShell';
-import { mentorGate, SESSION_TYPES_GATE } from '@/app/_shell/MentorGate';
+import { lockedPageGate, mentorGate, SESSION_TYPES_GATE } from '@/app/_shell/MentorGate';
 import {
   DefaultsModal,
   PublishedModal,
@@ -62,7 +62,7 @@ export function SessionTypeFormScreen({
   edit?: EditTarget;
 }) {
   const router = useRouter();
-  const { viewer, member } = useAppShell();
+  const { viewer, member, access } = useAppShell();
   const isMentor = !!member?.isMentor;
   const { topics, isLoading: topicsLoading, error: topicsError, retry: retryTopics } = useTopics();
   const mentorId = isMentor ? member!.id : null;
@@ -116,12 +116,14 @@ export function SessionTypeFormScreen({
   const close = () => setModal(null);
   const toList = () => router.push(LIST);
 
-  const gate = mentorGate(
-    viewer,
-    isMentor,
-    edit ? `/session-types/${edit.id}/edit` : '/session-types/new',
-    SESSION_TYPES_GATE,
-  );
+  // The shared gates first, then the setup lock (accessFor decides).
+  const gate =
+    mentorGate(
+      viewer,
+      isMentor,
+      edit ? `/session-types/${edit.id}/edit` : '/session-types/new',
+      SESSION_TYPES_GATE,
+    ) ?? lockedPageGate(access, 'Sessions');
   const loading = viewer.kind === 'loading' || topicsLoading;
 
   return (

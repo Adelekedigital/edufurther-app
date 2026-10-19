@@ -24,7 +24,7 @@ import { useHydrated } from '@/lib/utils/useHydrated';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type { AnswerFile, Booking, BookingStatus } from '@/types/booking';
 import { canBookFor } from '@/app/_shell/bookBlocked';
-import { BOOKINGS_GATE, memberGate } from '@/app/_shell/MentorGate';
+import { BOOKINGS_GATE, lockedPageGate, memberGate } from '@/app/_shell/MentorGate';
 import { cx } from '@/lib/utils/cx';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { Button } from '@/components/atoms/Button/Button';
@@ -45,7 +45,7 @@ const PANEL_ID = 'booking-details';
 
 /** `/bookings` — the sessions a person has booked or been booked for (Bookings.dc.html). */
 export function BookingsScreen() {
-  const { viewer, member } = useAppShell();
+  const { viewer, member, access } = useAppShell();
   const { tab, setTab } = useBookingsTab();
   const userId = member?.id ?? null;
   const isMentor = !!member?.isMentor;
@@ -316,7 +316,9 @@ export function BookingsScreen() {
   // countdown, who is here and the join call itself live.
   const joinHref = (sessionId: string) => `/sessions/${encodeURIComponent(sessionId)}`;
 
-  const gate = memberGate(viewer, '/bookings', BOOKINGS_GATE);
+  // The shared gates first, then the setup lock (accessFor decides).
+  const gate =
+    memberGate(viewer, '/bookings', BOOKINGS_GATE) ?? lockedPageGate(access, 'Bookings');
   // Upcoming's first row is the hero; the list holds the rest.
   const all = upcoming.data ?? [];
   const [next, ...later] = all;

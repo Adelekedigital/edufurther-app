@@ -9,6 +9,7 @@
  * `beforeEach` puts it all back.
  */
 import type { BookingHistoryResult } from '@/lib/api/data/bookings';
+import { accessFor } from '@/lib/utils/access';
 import type { Booking, BookingAnswer, BookingParty } from '@/types/booking';
 import type { Remote, Viewer } from '@/types/mentor';
 
@@ -141,6 +142,7 @@ export const mocks = {
   }),
   appShell: () => ({
     useAppShell: () => ({
+      access: accessFor(h.viewer),
       viewer: h.viewer,
       member: h.viewer.kind === 'member' ? h.viewer : null,
       chrome: h.viewer.kind === 'guest' ? 'guest' : 'member',
