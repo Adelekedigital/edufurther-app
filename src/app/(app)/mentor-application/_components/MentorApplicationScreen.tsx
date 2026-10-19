@@ -146,6 +146,7 @@ export function MentorApplicationScreen() {
               void connect.connect();
             },
             onRetryCheck: calendar.retry,
+            retrying: calendar.retrying,
           },
           dashboardHref: '/dashboard',
           celebrate: true,

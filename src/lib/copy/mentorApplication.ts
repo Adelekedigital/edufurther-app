@@ -76,6 +76,7 @@ export const CALENDAR_ROW_COPY = {
   failed: 'We couldn’t start connecting. Try again in a moment.',
   unavailable: 'Connecting a calendar isn’t available yet.',
   checkFailed: 'We couldn’t check whether your calendar is connected.',
+  checking: 'Checking…',
   revoked: 'Google Calendar needs reconnecting. Access was removed or has expired.',
   broken: 'Google Calendar needs reconnecting.',
   announceConnected:

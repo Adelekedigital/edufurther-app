@@ -181,6 +181,11 @@ describe('calendarRow: the Google Calendar row connects in place', () => {
       tone: 'warn',
       action: { kind: 'button', label: 'Try again', onClick: onRetryCheck },
     });
+    // While that read runs again: busy, like Integrations' Try again.
+    expect(
+      calendarRow({ state: 'checkFailed', onConnect: () => {}, onRetryCheck, retrying: true })
+        .action,
+    ).toMatchObject({ busy: true, busyLabel: 'Checking…' });
   });
 });
 

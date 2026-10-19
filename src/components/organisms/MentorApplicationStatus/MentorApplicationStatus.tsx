@@ -53,6 +53,8 @@ export type CalendarConnect = {
   onConnect: () => void;
   /** Read the connection again (`checkFailed`). */
   onRetryCheck?: () => void;
+  /** That read is running again. */
+  retrying?: boolean;
 };
 
 const NOTICES: Partial<Record<CalendarConnectState, string>> = {
@@ -70,6 +72,7 @@ export function calendarRow({
   email,
   onConnect,
   onRetryCheck,
+  retrying,
 }: CalendarConnect): CalendarRow {
   const base = {
     title: APPROVED_COPY.calendarTitle,
@@ -111,7 +114,13 @@ export function calendarRow({
         body: CALENDAR_ROW_COPY.checkFailed,
         tone: 'warn',
         action: onRetryCheck
-          ? { kind: 'button', label: CALENDAR_ROW_COPY.retry, onClick: onRetryCheck }
+          ? {
+              kind: 'button',
+              label: CALENDAR_ROW_COPY.retry,
+              onClick: onRetryCheck,
+              busy: retrying,
+              busyLabel: CALENDAR_ROW_COPY.checking,
+            }
           : { kind: 'none' },
       };
     case 'unavailable':
