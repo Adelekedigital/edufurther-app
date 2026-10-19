@@ -3,6 +3,14 @@ import userEvent from '@testing-library/user-event';
 import type { AppError, Remote, Viewer } from '@/types/mentor';
 import type { DeleteError, OwnSessionType } from '@/types/sessionType';
 import { SessionTypesScreen } from './SessionTypesScreen';
+import {
+  expectLockedPage,
+  expectNoLock,
+  explainer,
+  flags,
+  resetFlags,
+  viewers,
+} from '@/app/_shell/lockedPage.harness';
 
 const push = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -22,15 +30,23 @@ vi.mock('@/lib/api/data/sessionTypeEdit', () => ({
 }));
 
 let viewer: Viewer;
-vi.mock('@/app/_shell/useAppShell', () => ({
-  useAppShell: () => ({
-    viewer,
-    member: viewer.kind === 'member' ? viewer : null,
-    chrome: viewer.kind === 'guest' ? 'guest' : 'member',
-    account: undefined,
-    nav: viewer.kind === 'member' && viewer.isMentor ? 'mentor' : 'unknown',
-  }),
-}));
+// The setup lock's flags, switchable per test (lockedPage.harness).
+vi.mock('@/lib/config/auth', async (orig) =>
+  (await import('@/app/_shell/lockedPage.harness')).authFlags(await orig()),
+);
+vi.mock('@/app/_shell/useAppShell', async () => {
+  const { accessFor } = await import('@/lib/utils/access');
+  return {
+    useAppShell: () => ({
+      access: accessFor(viewer),
+      viewer,
+      member: viewer.kind === 'member' ? viewer : null,
+      chrome: viewer.kind === 'guest' ? 'guest' : 'member',
+      account: undefined,
+      nav: viewer.kind === 'member' && viewer.isMentor ? 'mentor' : 'unknown',
+    }),
+  };
+});
 
 const TYPE: OwnSessionType = {
   id: 'a',
@@ -111,6 +127,7 @@ const idle = (over: Partial<Remote<OwnSessionType[]>> = {}): Remote<OwnSessionTy
 
 beforeEach(() => {
   list = idle({ data: [TYPE] });
+  resetFlags();
   deleteErr = null;
   deletePending = false;
   setLive.mockClear();
@@ -760,5 +777,51 @@ describe('SessionTypesScreen', () => {
     const failed = within(sop()).getByText(/Couldn’t hide it\./);
     // The error icon leads an error message; a note has none.
     expect(failed.textContent).toMatch(/^error/);
+  });
+});
+
+describe('the setup lock: /session-types opened by URL (PRD "App shell and access")', () => {
+  it('a declined mentor gets the explainer as the page, not their session types', () => {
+    viewer = viewers.mentorDeclined;
+    render(<SessionTypesScreen />);
+    expectLockedPage(explainer.mentorNotApproved('Sessions'));
+    expect(screen.queryByText('SOP draft review')).toBeNull();
+  });
+
+  it.each([
+    ['a mentor in review (only Bookings locks)', viewers.mentorReview],
+    ['an approved mentor', viewers.mentorApproved],
+    ['an approved mentor who hasn’t seen the approved screen', viewers.mentorApprovedUnseen],
+  ])('%s manages their session types', (_who, v) => {
+    viewer = v;
+    render(<SessionTypesScreen />);
+    expect(screen.getAllByText('SOP draft review').length).toBeGreaterThan(0);
+    expectNoLock();
+  });
+
+  it('a mentee, menteeByChoice included, keeps the non-mentor gate, never the declined lock', () => {
+    for (const v of [viewers.menteeUnfinished, viewers.menteeByChoice]) {
+      viewer = v;
+      const { unmount } = render(<SessionTypesScreen />);
+      expect(screen.getByRole('heading', { name: 'Session types are for mentors' })).toBeVisible();
+      expectNoLock();
+      unmount();
+    }
+  });
+
+  it('while /me loads: the page’s loading state, no explainer', () => {
+    viewer = { kind: 'loading', signedIn: true };
+    list = idle();
+    render(<SessionTypesScreen />);
+    expect(screen.getByRole('status', { name: 'Loading your session types' })).toBeInTheDocument();
+    expectNoLock();
+  });
+
+  it('mentor onboarding switched off: a declined mentor isn’t locked', () => {
+    flags.mentor = false;
+    viewer = viewers.mentorDeclined;
+    render(<SessionTypesScreen />);
+    expect(screen.getAllByText('SOP draft review').length).toBeGreaterThan(0);
+    expectNoLock();
   });
 });

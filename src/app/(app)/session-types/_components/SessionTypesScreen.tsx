@@ -26,7 +26,7 @@ import { useLatest } from '@/lib/utils/useLatest';
 import type { Remote } from '@/types/mentor';
 import type { DeleteError, OwnSessionType } from '@/types/sessionType';
 import { useAppShell } from '@/app/_shell/useAppShell';
-import { mentorGate, SESSION_TYPES_GATE } from '@/app/_shell/MentorGate';
+import { lockedPageGate, mentorGate, SESSION_TYPES_GATE } from '@/app/_shell/MentorGate';
 import styles from './SessionTypesScreen.module.css';
 
 const CREATE_HREF = '/session-types/new';
@@ -46,7 +46,7 @@ const confirmShell = (shell: ConfirmShell, body: ReactNode) => (
 
 /** /session-types — the mentor's own session types (Session Types.dc.html, List). */
 export function SessionTypesScreen() {
-  const { viewer, member } = useAppShell();
+  const { viewer, member, access } = useAppShell();
   const isMentor = !!member?.isMentor;
   const remote = useOwnSessionTypes(isMentor);
   // Until we know who this is, the list is loading — never "no session types".
@@ -298,7 +298,11 @@ export function SessionTypesScreen() {
     restore.restore(t.id);
   };
 
-  const body: ReactNode = mentorGate(viewer, isMentor, '/session-types', SESSION_TYPES_GATE) ?? (
+  // The shared gates first, then the setup lock (accessFor decides).
+  const gate =
+    mentorGate(viewer, isMentor, '/session-types', SESSION_TYPES_GATE) ??
+    lockedPageGate(access, 'Sessions');
+  const body: ReactNode = gate ?? (
     <SessionTypeManager
       list={list}
       messages={messages}

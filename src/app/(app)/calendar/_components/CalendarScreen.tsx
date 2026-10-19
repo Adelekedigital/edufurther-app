@@ -41,7 +41,7 @@ import { deviceTimeZone } from '@/lib/utils/format';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { useOnline } from '@/lib/utils/useOnline';
 import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
-import { mentorGate, type GateCopy } from '@/app/_shell/MentorGate';
+import { lockedPageGate, mentorGate, type GateCopy } from '@/app/_shell/MentorGate';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { CalendarSkeleton } from './CalendarSkeleton';
 import { SaveBar, type SaveProblem } from './SaveBar';
@@ -59,7 +59,7 @@ const CALENDAR_GATE: GateCopy = {
 
 /** /calendar — the mentor's availability (Calendar v2.dc.html, scene Available). */
 export function CalendarScreen() {
-  const { viewer, member } = useAppShell();
+  const { viewer, member, access } = useAppShell();
   const online = useOnline();
   const isMentor = !!member?.isMentor;
   const mentorId = isMentor ? member!.id : null;
@@ -324,8 +324,16 @@ export function CalendarScreen() {
       </Panel>
     );
 
+  // The setup lock after the shared states (guest, non-mentor, a failed /me),
+  // before this page's own loading and errors: a locked page never waits on
+  // or reports data it won't show.
+  const viewerPanel =
+    viewer.kind === 'guest' || viewer.kind === 'error' || (viewer.kind === 'member' && !isMentor);
+  const lock = accountGate || viewerPanel ? null : lockedPageGate(access, 'Calendar');
+
   let body: ReactNode;
   if (accountGate) body = accountGate;
+  else if (lock) body = lock;
   else if (panel || loading || !ready)
     body = (
       <>
@@ -560,7 +568,7 @@ export function CalendarScreen() {
 
   return (
     <>
-      <div className={styles.page} aria-busy={!panel && !accountGate && loading}>
+      <div className={styles.page} aria-busy={!panel && !accountGate && !lock && loading}>
         {body}
       </div>
       {windowOpen && defaults.data && (

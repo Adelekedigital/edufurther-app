@@ -205,3 +205,21 @@ describe('AppShell: the setup lock (AppShell.dc.html setupLock)', () => {
     }
   });
 });
+
+describe('AppShell: a locked page opened by URL keeps its nav item current', () => {
+  it.each([
+    ['Bookings', 'menteeSetup', SETUP, 'mentee', 'locked until you finish setting up'],
+    ['Bookings', 'mentorReview', REVIEW, 'mentor', 'opens once you’re approved'],
+    ['Bookings', 'mentorNotApproved', DECLINED, 'mentor', 'not available'],
+    ['Sessions', 'mentorNotApproved', DECLINED, 'mentor', 'not available'],
+    ['Calendar', 'mentorNotApproved', DECLINED, 'mentor', 'not available'],
+    ['Integration', 'mentorNotApproved', DECLINED, 'mentor', 'not available'],
+  ] as const)(
+    '%s (%s): the locked rail item is aria-current',
+    (item, _state, access, kind, why) => {
+      shell(access, kind, item);
+      const b = nav(0).getByRole('button', { name: `${item}, ${why}` });
+      expect(b).toHaveAttribute('aria-current', 'page');
+    },
+  );
+});

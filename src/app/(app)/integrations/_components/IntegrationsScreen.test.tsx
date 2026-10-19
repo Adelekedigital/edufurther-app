@@ -5,6 +5,14 @@ import type { Conferencing } from '@/lib/api/data/conferencing';
 import { hasUnsavedChanges } from '@/lib/utils/leaveGuard';
 import type { AppError, Remote, Viewer } from '@/types/mentor';
 import { IntegrationsScreen } from './IntegrationsScreen';
+import {
+  expectLockedPage,
+  expectNoLock,
+  explainer,
+  flags,
+  resetFlags,
+  viewers,
+} from '@/app/_shell/lockedPage.harness';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/integrations',
@@ -12,15 +20,23 @@ vi.mock('next/navigation', () => ({
 }));
 
 let viewer: Viewer;
-vi.mock('@/app/_shell/useAppShell', () => ({
-  useAppShell: () => ({
-    viewer,
-    member: viewer.kind === 'member' ? viewer : null,
-    chrome: viewer.kind === 'guest' ? 'guest' : 'member',
-    account: undefined,
-    nav: viewer.kind === 'member' && viewer.isMentor ? 'mentor' : 'unknown',
-  }),
-}));
+// The setup lock's flags, switchable per test (lockedPage.harness).
+vi.mock('@/lib/config/auth', async (orig) =>
+  (await import('@/app/_shell/lockedPage.harness')).authFlags(await orig()),
+);
+vi.mock('@/app/_shell/useAppShell', async () => {
+  const { accessFor } = await import('@/lib/utils/access');
+  return {
+    useAppShell: () => ({
+      access: accessFor(viewer),
+      viewer,
+      member: viewer.kind === 'member' ? viewer : null,
+      chrome: viewer.kind === 'guest' ? 'guest' : 'member',
+      account: undefined,
+      nav: viewer.kind === 'member' && viewer.isMentor ? 'mentor' : 'unknown',
+    }),
+  };
+});
 
 let video: Remote<Conferencing> & { retrying?: boolean };
 const saveVideo = vi.fn();
@@ -111,6 +127,7 @@ const conferencing = (over: Partial<Conferencing> = {}): Conferencing => ({
 beforeEach(() => {
   viewer = mentor();
   video = remote(conferencing());
+  resetFlags();
   saveVideo.mockReset().mockResolvedValue(undefined);
   savePending = false;
   saveError = null;
@@ -643,5 +660,47 @@ describe('IntegrationsScreen', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
       expect(retry).toHaveBeenCalled();
     });
+  });
+});
+
+describe('the setup lock: /integrations opened by URL (PRD "App shell and access")', () => {
+  it('a declined mentor gets the explainer as the page, not their integrations', () => {
+    viewer = viewers.mentorDeclined;
+    render(<IntegrationsScreen />);
+    expectLockedPage(explainer.mentorNotApproved('Integration'));
+    expect(screen.queryByRole('heading', { name: 'Integrations' })).toBeNull();
+  });
+
+  it.each([
+    ['a mentor in review (only Bookings locks)', viewers.mentorReview],
+    ['an approved mentor', viewers.mentorApproved],
+    ['an approved mentor who hasn’t seen the approved screen', viewers.mentorApprovedUnseen],
+  ])('%s sees their integrations', (_who, v) => {
+    viewer = v;
+    render(<IntegrationsScreen />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Integrations' })).toBeInTheDocument();
+    expectNoLock();
+  });
+
+  it('a declined applicant who chose mentee (menteeByChoice) gets the non-mentor gate, never the lock', () => {
+    viewer = viewers.menteeByChoice;
+    render(<IntegrationsScreen />);
+    expect(screen.queryByRole('heading', { level: 1, name: 'Integrations' })).toBeNull();
+    expectNoLock();
+  });
+
+  it('while /me loads: the page’s loading state, no explainer', () => {
+    viewer = { kind: 'loading', signedIn: true };
+    render(<IntegrationsScreen />);
+    expect(screen.getByRole('status', { name: 'Loading your integrations' })).toBeInTheDocument();
+    expectNoLock();
+  });
+
+  it('mentor onboarding switched off: a declined mentor isn’t locked', () => {
+    flags.mentor = false;
+    viewer = viewers.mentorDeclined;
+    render(<IntegrationsScreen />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Integrations' })).toBeInTheDocument();
+    expectNoLock();
   });
 });

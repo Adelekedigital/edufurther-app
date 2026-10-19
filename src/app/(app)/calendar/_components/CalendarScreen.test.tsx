@@ -9,6 +9,14 @@ import { emptyWeek } from '@/lib/utils/sessionTypeDraft';
 import { hasUnsavedChanges } from '@/lib/utils/leaveGuard';
 import type { AppError, Remote, Viewer } from '@/types/mentor';
 import { CalendarScreen } from './CalendarScreen';
+import {
+  expectLockedPage,
+  expectNoLock,
+  explainer,
+  flags,
+  resetFlags,
+  viewers,
+} from '@/app/_shell/lockedPage.harness';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/calendar',
@@ -16,15 +24,23 @@ vi.mock('next/navigation', () => ({
 }));
 
 let viewer: Viewer;
-vi.mock('@/app/_shell/useAppShell', () => ({
-  useAppShell: () => ({
-    viewer,
-    member: viewer.kind === 'member' ? viewer : null,
-    chrome: viewer.kind === 'guest' ? 'guest' : 'member',
-    account: undefined,
-    nav: viewer.kind === 'member' && viewer.isMentor ? 'mentor' : 'unknown',
-  }),
-}));
+// The setup lock's flags, switchable per test (lockedPage.harness).
+vi.mock('@/lib/config/auth', async (orig) =>
+  (await import('@/app/_shell/lockedPage.harness')).authFlags(await orig()),
+);
+vi.mock('@/app/_shell/useAppShell', async () => {
+  const { accessFor } = await import('@/lib/utils/access');
+  return {
+    useAppShell: () => ({
+      access: accessFor(viewer),
+      viewer,
+      member: viewer.kind === 'member' ? viewer : null,
+      chrome: viewer.kind === 'guest' ? 'guest' : 'member',
+      account: undefined,
+      nav: viewer.kind === 'member' && viewer.isMentor ? 'mentor' : 'unknown',
+    }),
+  };
+});
 
 const remote = <T,>(data: T | null, over: Partial<Remote<T>> = {}): Remote<T> => ({
   data,
@@ -153,6 +169,7 @@ const mentor = (over: Partial<Extract<Viewer, { kind: 'member' }>> = {}): Viewer
 beforeEach(() => {
   viewer = mentor();
   ownTypes = { data: [] };
+  resetFlags();
   weekly = remote(HOURS);
   defaults = { ...remote(DEFAULTS), refreshing: false };
   saveHours.mockReset().mockResolvedValue(undefined);
@@ -808,5 +825,68 @@ describe('CalendarScreen: busy and video', () => {
       new Date(),
     );
     expect(bookedRange!.from).toBe(kiritimati);
+  });
+});
+
+describe('the setup lock: /calendar opened by URL (PRD "App shell and access")', () => {
+  const declined = () => mentor({ isApprovedMentor: false, mentorStage: 'declined' });
+
+  it('a declined mentor gets the explainer as the page, not the calendar', () => {
+    viewer = declined();
+    render(<CalendarScreen />);
+    expectLockedPage(explainer.mentorNotApproved('Calendar'));
+    expect(screen.queryByRole('heading', { name: 'Your calendar' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Weekly hours' })).toBeNull();
+  });
+
+  it('a declined mentor is locked even while the hours are loading or have failed', () => {
+    viewer = declined();
+    weekly = remote<WeeklyHours>(null, { isLoading: true });
+    const { unmount } = render(<CalendarScreen />);
+    expectLockedPage(explainer.mentorNotApproved('Calendar'));
+    unmount();
+    weekly = remote<WeeklyHours>(null, { error: { kind: 'server', message: 'x' } as AppError });
+    render(<CalendarScreen />);
+    expectLockedPage(explainer.mentorNotApproved('Calendar'));
+  });
+
+  it.each([
+    ['a mentor in review (only Bookings locks)', { isApprovedMentor: false, mentorStage: 'pending' }],
+    ['an approved mentor', { mentorStage: 'approved', mentorApprovedSeen: true }],
+    [
+      'an approved mentor who hasn’t seen the approved screen',
+      { mentorStage: 'approved', mentorApprovedSeen: false },
+    ],
+  ] as const)('%s sets their hours', (_who, over) => {
+    viewer = mentor(over);
+    render(<CalendarScreen />);
+    expect(screen.getByRole('heading', { name: 'Weekly hours' })).toBeInTheDocument();
+    expectNoLock();
+  });
+
+  it('a mentee, menteeByChoice included, keeps the non-mentor panel, never the declined lock', () => {
+    for (const v of [viewers.menteeUnfinished, viewers.menteeByChoice]) {
+      viewer = v;
+      const { unmount } = render(<CalendarScreen />);
+      expect(screen.getByRole('heading', { name: 'Your calendar is for mentors' })).toBeVisible();
+      expectNoLock();
+      unmount();
+    }
+  });
+
+  it('while /me loads: the page’s loading state, no explainer', () => {
+    viewer = { kind: 'loading', signedIn: true };
+    render(<CalendarScreen />);
+    expect(screen.getByRole('status', { name: 'Loading your calendar' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Weekly hours' })).toBeNull();
+    expectNoLock();
+  });
+
+  it('mentor onboarding switched off: a declined mentor isn’t locked', () => {
+    flags.mentor = false;
+    viewer = declined();
+    render(<CalendarScreen />);
+    expect(screen.getByRole('heading', { name: 'Weekly hours' })).toBeInTheDocument();
+    expectNoLock();
   });
 });

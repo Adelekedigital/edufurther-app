@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import type { Illustration } from '@/components/molecules/EmptyState/EmptyState';
+import type { Access, NavKey } from '@/lib/utils/access';
 import type { Viewer } from '@/types/mentor';
 import styles from './MentorGate.module.css';
 
@@ -143,16 +144,45 @@ export function memberGate(viewer: Viewer, returnTo: string, copy: MemberGateCop
   return null;
 }
 
-function Gate(p: {
-  illustration: Illustration;
-  title: string;
-  description: string;
-  action: ReactNode;
-}) {
+/**
+ * A locked page opened by URL (PRD "App shell and access"): the lock
+ * explainer's words as the page body, inside the shell, with its one button.
+ * Run after memberGate/mentorGate, so a guest or a failed /me still gets those.
+ * Null means "not locked" (or /me still loading: accessFor locks nothing then),
+ * so the page renders and shows its own loading. Keyed by nav item, so
+ * Messages joins with one call when it ships.
+ */
+export function lockedPageGate(access: Access, key: NavKey): ReactNode {
+  const copy = access.copy;
+  if (!copy || !access.locked.has(key)) return null;
+  return (
+    <Gate
+      icon="lock"
+      title={copy.title(key)}
+      description={copy.body}
+      action={
+        <ButtonLink href={copy.href} size="large">
+          {copy.cta}
+        </ButtonLink>
+      }
+    />
+  );
+}
+
+type GateArt =
+  { illustration: Illustration; icon?: undefined } | { icon: 'lock'; illustration?: undefined };
+
+function Gate(
+  p: GateArt & {
+    title: string;
+    description: string;
+    action: ReactNode;
+  },
+) {
   return (
     <div className={styles.gate}>
       <EmptyState
-        illustration={p.illustration}
+        {...(p.icon ? { icon: p.icon } : { illustration: p.illustration })}
         size={120}
         title={p.title}
         description={p.description}

@@ -18,6 +18,14 @@ import {
   replace,
   resetHarness,
 } from './bookingsScreen.harness';
+import {
+  expectLockedPage,
+  expectNoLock,
+  explainer,
+  flags,
+  resetFlags,
+  viewers,
+} from '@/app/_shell/lockedPage.harness';
 
 // The data hooks, mocked. Hoisted above the imports, so each factory
 // reaches the harness through a dynamic import rather than a binding
@@ -50,8 +58,15 @@ vi.mock('@/lib/api/data/booking', async (orig) => ({
 vi.mock('@/lib/api/data/intakeFiles', async () =>
   (await import('./bookingsScreen.harness')).mocks.intakeFiles(),
 );
+// The setup lock's flags, switchable per test (lockedPage.harness).
+vi.mock('@/lib/config/auth', async (orig) =>
+  (await import('@/app/_shell/lockedPage.harness')).authFlags(await orig()),
+);
 
-beforeEach(resetHarness);
+beforeEach(() => {
+  resetHarness();
+  resetFlags();
+});
 afterEach(() => vi.useRealTimers());
 describe('the shell', () => {
   it('a guest is asked to log in, with no tabs behind it', () => {
@@ -708,5 +723,52 @@ describe('the desktop panel is not a keyboard dead end', () => {
     screen.getByRole('tab', { name: /Upcoming/ }).focus();
     await userEvent.keyboard('{Escape}');
     expect(replace).not.toHaveBeenCalled();
+  });
+});
+
+describe('the setup lock: /bookings opened by URL (PRD "App shell and access")', () => {
+  it.each([
+    ['an unfinished mentee', viewers.menteeUnfinished, explainer.menteeSetup('Bookings')],
+    ['a mentor in review', viewers.mentorReview, explainer.mentorReview('Bookings')],
+    ['a declined mentor', viewers.mentorDeclined, explainer.mentorNotApproved('Bookings')],
+  ])('%s gets the explainer as the page, not the bookings', (_who, v, e) => {
+    h.viewer = v;
+    h.upcoming = remote([booking()]);
+    render(<BookingsScreen />);
+    expectLockedPage(e);
+    expect(screen.queryByRole('tab')).toBeNull();
+    expect(screen.queryByText('School shortlist')).toBeNull();
+  });
+
+  it.each([
+    ['a finished mentee', viewers.menteeFinished],
+    ['an approved mentor', viewers.mentorApproved],
+    ['an approved mentor who hasn’t seen the approved screen', viewers.mentorApprovedUnseen],
+    ['a declined applicant who chose mentee (menteeByChoice)', viewers.menteeByChoice],
+  ])('%s sees their bookings', (_who, v) => {
+    h.viewer = v;
+    render(<BookingsScreen />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Bookings' })).toBeInTheDocument();
+    expectNoLock();
+  });
+
+  it('while /me loads: neither the bookings nor the explainer', () => {
+    h.viewer = { kind: 'loading', signedIn: true };
+    h.upcoming = remote<Booking[]>(null, { isLoading: true });
+    render(<BookingsScreen />);
+    expectNoLock();
+    expect(screen.queryByText('School shortlist')).toBeNull();
+  });
+
+  it('a state whose page is switched off locks nothing (no button to a 404)', () => {
+    flags.onboarding = false;
+    flags.mentor = false;
+    for (const v of [viewers.menteeUnfinished, viewers.mentorReview, viewers.mentorDeclined]) {
+      h.viewer = v;
+      const { unmount } = render(<BookingsScreen />);
+      expect(screen.getByRole('heading', { level: 1, name: 'Bookings' })).toBeInTheDocument();
+      expectNoLock();
+      unmount();
+    }
   });
 });

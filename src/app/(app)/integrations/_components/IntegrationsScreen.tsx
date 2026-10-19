@@ -20,7 +20,7 @@ import { useConferencing, useSaveConferencing } from '@/lib/api/data/conferencin
 import { useInterest, useRegisterInterest } from '@/lib/api/data/interest';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { useOnline } from '@/lib/utils/useOnline';
-import { mentorGate, type GateCopy } from '@/app/_shell/MentorGate';
+import { lockedPageGate, mentorGate, type GateCopy } from '@/app/_shell/MentorGate';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { IntegrationsSkeleton } from './IntegrationsSkeleton';
 import { useCalendarConnect } from './useCalendarConnect';
@@ -55,7 +55,7 @@ const NAMES: Record<Provider, string> = {
 
 /** /integrations — the mentor's connected tools (Integrations.dc.html, saved defaults). */
 export function IntegrationsScreen() {
-  const { viewer, member } = useAppShell();
+  const { viewer, member, access } = useAppShell();
   const online = useOnline();
   const isMentor = !!member?.isMentor;
   const mentorId = isMentor ? member!.id : null;
@@ -443,7 +443,11 @@ export function IntegrationsScreen() {
       </>
     );
 
-  const body: ReactNode = mentorGate(viewer, isMentor, '/integrations', INTEGRATIONS_GATE) ?? (
+  // The shared gates first, then the setup lock (accessFor decides).
+  const gate =
+    mentorGate(viewer, isMentor, '/integrations', INTEGRATIONS_GATE) ??
+    lockedPageGate(access, 'Integration');
+  const body: ReactNode = gate ?? (
     <div className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Integrations</h1>
