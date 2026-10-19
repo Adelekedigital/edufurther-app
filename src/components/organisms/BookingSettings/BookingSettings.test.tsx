@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { rulesNote } from '@/lib/copy/mentorSettings';
+import { noResponseLine, rulesNote } from '@/lib/copy/mentorSettings';
 import { BookingSettings, type BookingSettingsValue } from './BookingSettings';
 
 const value: BookingSettingsValue = {
@@ -18,6 +18,7 @@ const ready = (over: Partial<BookingSettingsValue> = {}, onChange = vi.fn()) =>
       value={{ ...value, ...over }}
       onChange={onChange}
       maxWindowDays={56}
+      responseWindowHours={12}
       sessionsUsingRules={2}
     />,
   );
@@ -28,7 +29,11 @@ describe('BookingSettings', () => {
     const sw = screen.getByRole('switch', { name: 'Approve bookings' });
     expect(sw).toHaveAttribute('aria-checked', 'true');
     expect(sw).toHaveAccessibleDescription('You decide which requests to accept.');
-    expect(screen.getByText(/6 hours before the session, the request expires/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /12 hours before the session, the request expires and the mentee will be informed/,
+      ),
+    ).toBeInTheDocument();
     expect(
       screen.getByText('Mentees see “Needs your approval” before they book.'),
     ).toBeInTheDocument();
@@ -76,6 +81,7 @@ describe('BookingSettings', () => {
         state="ready"
         value={value}
         onChange={vi.fn()}
+        responseWindowHours={12}
         sessionsUsingRules={0}
         disabled
       />,
@@ -109,5 +115,16 @@ describe('rulesNote', () => {
   it('leaves the count out at 0 or when it couldn’t load', () => {
     expect(rulesNote(0)).toBe(after);
     expect(rulesNote(null)).toBe(after);
+  });
+});
+
+describe('noResponseLine', () => {
+  it('says the platform’s hours, and no number without them', () => {
+    expect(noResponseLine(12)).toBe(
+      'If you don’t respond by 12 hours before the session, the request expires and the mentee will be informed.',
+    );
+    expect(noResponseLine(null)).toBe(
+      'If you don’t respond in time, the request expires and the mentee will be informed.',
+    );
   });
 });

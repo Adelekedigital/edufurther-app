@@ -19,7 +19,12 @@ let viewer: Viewer;
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => viewer }));
 
 // A second tab, so the tab-switch guard can be reached before Goals ships.
-vi.mock('./tabs', () => ({ MENTEE_TABS: ['profile', 'education'], DEFAULT_TAB: 'profile' }));
+vi.mock('./tabs', () => ({
+  MENTEE_TABS: ['profile', 'education'],
+  DEFAULT_TAB: 'profile',
+  MENTOR_TABS: ['booking'],
+  MENTOR_DEFAULT_TAB: 'booking',
+}));
 
 const panel = {
   dirty: true,
@@ -43,6 +48,11 @@ vi.mock('./ProfilePanel', async () => {
 vi.mock('./EducationPanel', () => ({
   EducationPanel: () => <div data-testid="education-panel" />,
 }));
+
+vi.mock('./BookingPanel', async () => {
+  const { forwardRef } = await import('react');
+  return { BookingPanel: forwardRef(() => <div data-testid="booking-panel" />) };
+});
 
 const member = (isMentor = false) => ({ kind: 'member', id: 'u1', isMentor }) as unknown as Viewer;
 const dialog = () => screen.queryByRole('alertdialog', { name: 'Save your changes?' });
@@ -82,9 +92,27 @@ describe('SettingsScreen', () => {
     expect(replace).toHaveBeenCalledWith('/settings/profile');
   });
 
-  it('a mentor: the 404 they get today, until Mentor Settings ships', () => {
+  it('a mentor: their subline, the Booking rules tab and its panel', () => {
     viewer = member(true);
-    expect(() => render(<SettingsScreen />)).toThrow('NEXT_NOT_FOUND');
+    segment = 'booking';
+    render(<SettingsScreen />);
+    expect(notFound).not.toHaveBeenCalled();
+    expect(
+      screen.getByText('Manage how mentees book you and what they see on your profile.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Booking rules' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByTestId('booking-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('profile-panel')).toBeNull();
+  });
+
+  it('a tab this mentor doesn’t have (e.g. /settings from the index) goes to Booking rules', () => {
+    viewer = member(true);
+    segment = 'profile';
+    render(<SettingsScreen />);
+    expect(replace).toHaveBeenCalledWith('/settings/booking');
   });
 
   it('a guest: asked to log in, and brought back to this tab', () => {

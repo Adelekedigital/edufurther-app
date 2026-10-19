@@ -595,6 +595,9 @@ export function useMentorDefaults(
         requiresApproval: data.requires_booking_confirmation,
         maxWindowDays: data.max_booking_window_days,
         platformWindowDays: data.default_booking_window_days,
+        // Not in the generated client until the backend's config PR ships.
+        responseWindowHours:
+          (data as { response_window_hours?: number | null }).response_window_hours ?? undefined,
       };
     },
     // Read fresh each time a form opens: the platform cap in it is a setting
@@ -649,6 +652,7 @@ export function useSaveMentorDefaults(userId: string | null) {
         ...saved,
         maxWindowDays: before?.maxWindowDays,
         platformWindowDays: before?.platformWindowDays,
+        responseWindowHours: before?.responseWindowHours,
       }));
       // Everything that follows the defaults: slots, the own list's lengths
       // ("Use my defaults" types), the profile's Sessions tab (review of #60).

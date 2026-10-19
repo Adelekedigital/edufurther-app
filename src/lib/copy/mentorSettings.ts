@@ -3,18 +3,13 @@
  * edufurther-ux-writer, 2026-10-19.
  */
 
+/** The screen's subline for a mentor (design `mentorView`). */
+export const MENTOR_SETTINGS_SUB = 'Manage how mentees book you and what they see on your profile.';
+
 export const BOOKING_COPY = {
   approveTitle: 'Approve bookings',
   approveOn: 'You decide which requests to accept.',
   approveOff: 'Mentees book any available time and it’s confirmed straight away.',
-  /**
-   * Replaces the design's "If you don't respond in time" picker (founder, Oct
-   * 19: no auto-confirm). The backend's RESPONSE_WINDOW (domain/sessions.py):
-   * an unanswered request expires 6 hours before the session, shown as
-   * Unconfirmed. The PRD's "12 hours, declined" was the reminder, not the rule.
-   */
-  noResponse:
-    'If you don’t respond by 6 hours before the session, the request expires and the mentee can book another time.',
   approveFootnote: 'Mentees see “Needs your approval” before they book.',
   rulesTitle: 'Booking rules',
   rulesSub:
@@ -31,7 +26,23 @@ export const BOOKING_COPY = {
   loadError: 'We couldn’t load your booking rules. Check your connection and try again.',
   retry: 'Try again',
   saveBar: 'Unsaved changes to booking rules',
+  saved: 'Changes saved',
+  /** Ours: the hook's own copy says "preferences", which isn't our word for these. */
+  saveFailed: 'Your booking rules didn’t save. Your changes are still here. Try again.',
+  saveOffline: 'You’re offline. Your changes are still here. Try again when you’re connected.',
 } as const;
+
+/**
+ * Replaces the design's "If you don't respond in time" picker (founder, Oct
+ * 19: no auto-confirm). An unanswered request expires `hours` before the
+ * session (the platform's RESPONSE_WINDOW_HOURS), shown as Unconfirmed, and
+ * both sides are notified (request_expired). Without the setting, no number.
+ */
+export function noResponseLine(hours: number | null): string {
+  return hours
+    ? `If you don’t respond by ${hours} hours before the session, the request expires and the mentee will be informed.`
+    : 'If you don’t respond in time, the request expires and the mentee will be informed.';
+}
 
 /** The note under the rules; the count is left out when it's 0 or couldn't load. */
 export function rulesNote(sessionsUsingRules: number | null): string {

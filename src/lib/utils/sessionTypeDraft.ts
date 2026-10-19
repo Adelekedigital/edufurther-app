@@ -449,6 +449,11 @@ export type BookingDefaults = {
   maxWindowDays?: number;
   /** The platform's window for a mentor who sets none; absent: 56. */
   platformWindowDays?: number;
+  /**
+   * Hours before a session an unanswered request expires: a platform setting
+   * (RESPONSE_WINDOW_HOURS). Absent until the backend sends it.
+   */
+  responseWindowHours?: number;
 };
 
 /** Every default resolved: the mentor's, else the platform's. */

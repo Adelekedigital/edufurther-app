@@ -24,6 +24,7 @@ function Live({ initial, count }: { initial: BookingSettingsValue; count: number
       value={v}
       onChange={setV}
       maxWindowDays={56}
+      responseWindowHours={12}
       sessionsUsingRules={count}
     />
   );
@@ -42,7 +43,14 @@ export const ValuesOutsideTheChoices: Story = {
 
 export const Saving: Story = {
   render: () => (
-    <BookingSettings state="ready" value={start} onChange={fn()} sessionsUsingRules={2} disabled />
+    <BookingSettings
+      state="ready"
+      value={start}
+      onChange={fn()}
+      responseWindowHours={12}
+      sessionsUsingRules={2}
+      disabled
+    />
   ),
 };
 

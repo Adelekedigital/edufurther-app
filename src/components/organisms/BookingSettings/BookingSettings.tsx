@@ -1,6 +1,6 @@
 'use client';
 
-import { useId } from 'react';
+import { useId, type Ref } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Card } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
@@ -10,7 +10,7 @@ import {
   BookingRulesRows,
   type BookingRules,
 } from '@/components/organisms/BookingRulesRows/BookingRulesRows';
-import { BOOKING_COPY, rulesNote } from '@/lib/copy/mentorSettings';
+import { BOOKING_COPY, noResponseLine, rulesNote } from '@/lib/copy/mentorSettings';
 import styles from './BookingSettings.module.css';
 
 export type BookingSettingsValue = BookingRules & { requiresApproval: boolean };
@@ -27,10 +27,14 @@ type BookingSettingsProps =
        * window above it before passing `value`, as Calendar's form does.
        */
       maxWindowDays?: number;
+      /** The platform's response window; null leaves the number out. */
+      responseWindowHours: number | null;
       /** Sessions that follow these rules; null when the count couldn't load. */
       sessionsUsingRules: number | null;
       /** While a save is on its way. */
       disabled?: boolean;
+      /** Where focus goes when the page's save bar leaves. */
+      headingRef?: Ref<HTMLHeadingElement>;
     };
 
 /**
@@ -60,14 +64,22 @@ export function BookingSettings(props: BookingSettingsProps) {
       </div>
     );
   }
-  const { value, onChange, maxWindowDays, sessionsUsingRules, disabled } = props;
+  const {
+    value,
+    onChange,
+    maxWindowDays,
+    responseWindowHours,
+    sessionsUsingRules,
+    disabled,
+    headingRef,
+  } = props;
   const on = value.requiresApproval;
   return (
     <div className={styles.stack}>
       <Card as="section" padding="none" className={styles.card} aria-labelledby={titleId}>
         <div className={styles.head}>
           <div className={styles.headText}>
-            <h2 id={titleId} className={styles.title}>
+            <h2 id={titleId} ref={headingRef} tabIndex={-1} className={styles.title}>
               {BOOKING_COPY.approveTitle}
             </h2>
             <span id={descId} className={styles.desc}>
@@ -86,7 +98,7 @@ export function BookingSettings(props: BookingSettingsProps) {
           <>
             <p className={styles.line}>
               <Icon name="schedule" size={16} className={styles.lineIcon} />
-              {BOOKING_COPY.noResponse}
+              {noResponseLine(responseWindowHours)}
             </p>
             <p className={styles.line}>
               <Icon name="visibility" size={16} className={styles.lineIcon} />
