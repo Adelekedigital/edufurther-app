@@ -297,7 +297,9 @@ export function BookingFlow(p: BookingFlowProps) {
   };
   // Signed in where the guest step is the last one (no questions): the
   // request goes at once, as it did when the step was a formality.
-  const signedInLast = step === 'signup' && signedUp && isLast;
+  // Not for an account that still owes onboarding: it would be refused, so
+  // the finish-setup box stands there instead.
+  const signedInLast = step === 'signup' && signedUp && isLast && !p.setupUnfinished;
   useEffect(() => {
     if (signedInLast) submit();
     // `submit` reads the latest render; only the moment of signing in matters.
@@ -411,7 +413,8 @@ export function BookingFlow(p: BookingFlowProps) {
     (p.setupUnfinished || p.requestError?.kind === 'needsOnboarding') &&
     isLast &&
     step !== 'done' &&
-    step !== 'signup' &&
+    // The guest step only once they're signed in (the account is what owes it).
+    !(step === 'signup' && !signedUp) &&
     !!session &&
     !!time &&
     !!p.onFinishSetup;

@@ -4,7 +4,15 @@ import userEvent from '@testing-library/user-event';
 import { apiError, normaliseError } from '@/lib/api/data/errors';
 import { bookingError } from '@/lib/api/data/booking';
 import { BookingFlow } from './BookingFlow';
-import { pinToday, props, remote, setPhone, slots } from './BookingFlow.testkit';
+import {
+  guestSignIn,
+  pinToday,
+  props,
+  remote,
+  setPhone,
+  signedIn,
+  slots,
+} from './BookingFlow.testkit';
 
 pinToday();
 
@@ -59,6 +67,32 @@ describe('BookingFlow: finish setup before booking', () => {
     await toQuestions();
     expect(screen.getByRole('region', { name: /Finish setting up/ })).toBeInTheDocument();
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('a guest signed in to an unfinished account on a session with no questions: the box, not a send', async () => {
+    const onRequest = vi.fn();
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <BookingFlow
+        {...props({ isGuest: true, guest: guestSignIn(), sessionTypeId: 'st2', onRequest })}
+      />,
+    );
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    rerender(
+      <BookingFlow
+        {...props({
+          isGuest: false,
+          guest: signedIn(),
+          sessionTypeId: 'st2',
+          onRequest,
+          setupUnfinished: true,
+          onFinishSetup: vi.fn(),
+        })}
+      />,
+    );
+    expect(onRequest).not.toHaveBeenCalled();
+    expect(screen.getByRole('region', { name: /Finish setting up/ })).toBeInTheDocument();
   });
 
   it('with no way to finish setup here, the refusal is still said', async () => {
