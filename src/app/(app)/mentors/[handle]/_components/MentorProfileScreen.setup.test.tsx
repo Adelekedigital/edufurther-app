@@ -59,6 +59,23 @@ describe('MentorProfileScreen: the owner in setup (owner, 2026-10-20)', () => {
     expect(screen.queryByRole('heading', { level: 1, name: own.mentor.name })).toBeNull();
   });
 
+  it('their own id in the URL detours at once: never the loading, not-found or error page', () => {
+    h.viewerIsMentor = true;
+    h.viewerExtra = unsubmitted;
+    for (const p of [
+      state({ isLoading: true }),
+      state({ notFound: true }),
+      state({ error: { kind: 'server', message: 'x' } }),
+    ]) {
+      replace.mockReset();
+      h.profile = p;
+      const { container, unmount } = render(<MentorProfileScreen handle="viewer-1" />);
+      expect(replace).toHaveBeenCalledWith('/onboarding/mentor');
+      expect(container).toBeEmptyDOMElement();
+      unmount();
+    }
+  });
+
   it('a visitor in setup still sees someone else’s profile', () => {
     h.viewerExtra = { onboardingComplete: false };
     h.profile = state({ data: fullProfile });
