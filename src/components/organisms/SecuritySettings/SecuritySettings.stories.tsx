@@ -10,6 +10,7 @@ const renderShell = (s: DeleteShell, body: ReactNode) => (
   <div
     role="alertdialog"
     aria-label={s.title}
+    aria-describedby={s.describedBy}
     style={{
       maxWidth: 400,
       marginTop: 24,

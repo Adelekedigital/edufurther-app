@@ -45,6 +45,12 @@ type ModalShellProps = {
    * modal's header, icon included. Centred modal only.
    */
   mobile?: 'full' | 'sheet';
+  /**
+   * Id of an element in the body that says what the dialog is about (a
+   * confirm's warning), for its accessible description. Centred modal only;
+   * with a subtitle, both are read, subtitle first.
+   */
+  describedBy?: string;
 };
 
 /**
@@ -68,6 +74,7 @@ export function ModalShell({
   alert = false,
   closeDisabled = false,
   mobile = 'full',
+  describedBy,
 }: ModalShellProps) {
   const titleId = useId();
   const subId = useId();
@@ -145,7 +152,9 @@ export function ModalShell({
         role={alert ? 'alertdialog' : 'dialog'}
         aria-modal="true"
         aria-labelledby={titleId}
-        aria-describedby={subtitle ? subId : undefined}
+        aria-describedby={
+          [subtitle ? subId : null, describedBy].filter(Boolean).join(' ') || undefined
+        }
         tabIndex={-1}
         className={cx(styles.dialog, styles[size], phoneSheet && styles.phoneSheet)}
       >

@@ -7,6 +7,7 @@ import { Button, ButtonAnchor } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { Input } from '@/components/atoms/Input/Input';
+import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { ConfirmActions, confirmClose } from '@/components/molecules/ConfirmActions/ConfirmActions';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { SECURITY_COPY as C, SUPPORT_EMAIL } from '@/lib/copy/settings';
@@ -22,6 +23,8 @@ export type DeleteShell = {
   /** A bottom sheet on phones (design `sheet`). */
   mobile: 'sheet';
   alert: true;
+  /** The warning's id: the dialog's accessible description. */
+  describedBy: string;
   onClose: () => void;
   closeDisabled: boolean;
 };
@@ -33,7 +36,8 @@ export type SecuritySettingsProps = {
   name: string;
   email: string;
   verified: boolean;
-  provider: LoginProvider;
+  /** Null while it's being read: only "How you log in" waits. */
+  provider: LoginProvider | null;
   /** Upcoming sessions deleting cancels (both sides). */
   upcomingCount: number;
   /** Requests awaiting an answer, sent or received, that deleting withdraws or declines. */
@@ -94,9 +98,15 @@ export function SecuritySettings(p: SecuritySettingsProps) {
           <Tile icon="key" />
           <div className={styles.text}>
             <span className={styles.rowTitle}>{C.howYouLogIn}</span>
-            <span className={styles.meta}>
-              {p.provider === 'google' ? C.viaGoogle(p.email) : C.viaCode(p.email)}
-            </span>
+            {p.provider === null ? (
+              <span className={styles.meta} aria-busy="true">
+                <Skeleton width="60%" height="12px" />
+              </span>
+            ) : (
+              <span className={styles.meta}>
+                {p.provider === 'google' ? C.viaGoogle(p.email) : C.viaCode(p.email)}
+              </span>
+            )}
             {p.provider === 'google' && <span className={styles.metaSoft}>{C.alsoCode}</span>}
           </div>
         </div>
@@ -147,6 +157,7 @@ function Tile({ icon }: { icon: IconName }) {
 function DeleteConfirm(p: SecuritySettingsProps & { mentor: boolean }) {
   const [typed, setTyped] = useState('');
   const inputId = useId();
+  const warnId = useId();
   // Trimmed, exact case: "delete" doesn't count.
   const ready = typed.trim() === C.confirmWord;
   const confirm = () => {
@@ -161,10 +172,11 @@ function DeleteConfirm(p: SecuritySettingsProps & { mentor: boolean }) {
       size: 'sm',
       mobile: 'sheet',
       alert: true,
+      describedBy: warnId,
       ...close,
     },
     <>
-      <Notice tone="danger" showIcon={false} live={false}>
+      <Notice id={warnId} tone="danger" showIcon={false} live={false}>
         <span className={styles.warn}>
           {C.deleteWarn(p.mentor, p.upcomingCount, p.requestCount)}
         </span>
@@ -181,7 +193,10 @@ function DeleteConfirm(p: SecuritySettingsProps & { mentor: boolean }) {
           autoComplete="off"
           autoCapitalize="characters"
           spellCheck={false}
-          disabled={p.deleting}
+          // Not `disabled`: Enter here starts the delete, and a disabled
+          // field drops focus to the page. Read-only keeps it in the dialog.
+          readOnly={p.deleting}
+          aria-disabled={p.deleting || undefined}
         />
       </label>
       <ConfirmActions

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { MenteeProfile } from '@/lib/api/data/settings';
@@ -14,9 +14,11 @@ let provider: 'email' | 'google' = 'email';
 const signOutTo: string[] = [];
 vi.mock('@/lib/api/data/auth', () => ({
   signedInUser: async () => ({ loginProvider: provider }),
-  useSignOut: (to: string) => {
+  markAccountDeleted: () => order.push('mark deleted'),
+  useSignOut: (to: string, beforeLeave?: () => void) => {
     signOutTo.push(to);
     return async () => {
+      beforeLeave?.();
       order.push(`signOut ${to}`);
     };
   },
@@ -92,20 +94,28 @@ describe('SecurityPanel', () => {
     setup();
     await typeAndDelete();
     await waitFor(() =>
-      expect(order).toEqual(['DELETE /api/v1/me {"confirm":"DELETE"}', 'signOut /login?deleted=1']),
+      expect(order).toEqual([
+        'DELETE /api/v1/me {"confirm":"DELETE"}',
+        'mark deleted',
+        'signOut /login?deleted=1',
+      ]),
     );
     expect(signOutTo.every((to) => to === '/login?deleted=1')).toBe(true);
     // Busy until the page leaves.
     expect(screen.getByRole('button', { name: 'Deleting…' })).toHaveAttribute('aria-busy', 'true');
   });
 
-  it('one request however fast the second press', async () => {
+  it('one request however fast the second press: two clicks in the same tick', async () => {
     let finish: (v: unknown) => void = () => {};
     del.mockReturnValue(new Promise((r) => (finish = r)));
     setup();
     await userEvent.click(await screen.findByRole('button', { name: 'Delete account' }));
-    const input = screen.getByLabelText('Type DELETE to confirm');
-    await userEvent.type(input, 'DELETE{Enter}{Enter}');
+    await userEvent.type(screen.getByLabelText('Type DELETE to confirm'), 'DELETE');
+    const confirm = screen.getByRole('button', { name: 'Delete my account' });
+    act(() => {
+      fireEvent.click(confirm);
+      fireEvent.click(confirm);
+    });
     finish({ response: new Response(null, { status: 204 }) });
     await waitFor(() => expect(order.filter((o) => o.startsWith('signOut'))).toHaveLength(1));
     expect(del).toHaveBeenCalledTimes(1);
@@ -118,12 +128,14 @@ describe('SecurityPanel', () => {
     });
     setup();
     await typeAndDelete();
-    expect(await screen.findByRole('alert')).toHaveTextContent(SECURITY_COPY.wrongWord);
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(SECURITY_COPY.wrongWord),
+    );
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
 
     del.mockResolvedValueOnce({ error: {}, response: new Response(null, { status: 500 }) });
     await userEvent.click(screen.getByRole('button', { name: 'Delete my account' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(SECURITY_COPY.failed);
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(SECURITY_COPY.failed));
     expect(order.some((o) => o.startsWith('signOut'))).toBe(false);
   });
 
@@ -146,9 +158,43 @@ describe('SecurityPanel', () => {
     del.mockResolvedValueOnce({ error: {}, response: new Response(null, { status: 500 }) });
     setup();
     await typeAndDelete();
-    await screen.findByRole('alert');
+    await waitFor(() => expect(screen.getByRole('alert')).not.toBeEmptyDOMElement());
     await userEvent.click(screen.getByRole('button', { name: 'Keep my account' }));
     await userEvent.click(screen.getByRole('button', { name: 'Delete account' }));
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByRole('alert')).toBeEmptyDOMElement();
+  });
+
+  it('Enter in the field: focus stays in the dialog through a failed delete', async () => {
+    del.mockResolvedValueOnce({ error: {}, response: new Response(null, { status: 500 }) });
+    setup();
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete account' }));
+    const input = screen.getByLabelText('Type DELETE to confirm');
+    await userEvent.type(input, 'DELETE{Enter}');
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(SECURITY_COPY.failed));
+    expect(input).toHaveFocus();
+    expect(screen.getByRole('alertdialog').contains(document.activeElement)).toBe(true);
+  });
+
+  it('a 404 (already gone, racing our own request) counts as deleted: signs out, no error', async () => {
+    del.mockResolvedValueOnce({ error: {}, response: new Response(null, { status: 404 }) });
+    setup();
+    await typeAndDelete();
+    await waitFor(() => expect(order.at(-1)).toBe('signOut /login?deleted=1'));
+    expect(screen.getByRole('alert')).toBeEmptyDOMElement();
+  });
+
+  it('the confirm is described by its warning (the real ModalShell)', async () => {
+    setup();
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete account' }));
+    expect(screen.getByRole('alertdialog')).toHaveAccessibleDescription(
+      expect.stringMatching(/^Your 1 upcoming session will be canceled/),
+    );
+  });
+
+  it('the cards show before Supabase answers how they log in', async () => {
+    provider = 'google';
+    setup();
+    expect(screen.getByRole('button', { name: 'Delete account' })).toBeInTheDocument();
+    expect(await screen.findByText('With Google (amara@example.com).')).toBeInTheDocument();
   });
 });

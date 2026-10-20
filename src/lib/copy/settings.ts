@@ -122,7 +122,8 @@ export const SECURITY_COPY = {
       '',
       'Thanks,',
       p.firstName,
-    ].join('\n'),
+      // CRLF: line breaks in a mailto body (RFC 6068).
+    ].join('\r\n'),
   howYouLogIn: 'How you log in',
   viaGoogle: (email: string) => `With Google (${email}).`,
   viaCode: (email: string) => `With a 6-digit code sent to ${email}.`,

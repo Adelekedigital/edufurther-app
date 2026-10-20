@@ -22,8 +22,22 @@ describe('useLoginProvider', () => {
     await waitFor(() => expect(result.current.provider).toBe('google'));
   });
 
-  it('signed out or unreadable: the email code', async () => {
+  it('signed out or unreadable: the email code, and not cached (asked again next time)', async () => {
+    const qc = new QueryClient();
+    const own = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    );
     user.mockRejectedValueOnce(new Error('network'));
+    const first = renderHook(() => useLoginProvider('u1'), { wrapper: own });
+    await waitFor(() => expect(first.result.current.provider).toBe('email'));
+    first.unmount();
+    user.mockResolvedValueOnce({ loginProvider: 'google' });
+    const again = renderHook(() => useLoginProvider('u1'), { wrapper: own });
+    await waitFor(() => expect(again.result.current.provider).toBe('google'));
+  });
+
+  it('no signed-in user: the email code', async () => {
+    user.mockResolvedValueOnce(null);
     const { result } = renderHook(() => useLoginProvider('u1'), { wrapper });
     await waitFor(() => expect(result.current.provider).toBe('email'));
   });

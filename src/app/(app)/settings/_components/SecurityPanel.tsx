@@ -7,7 +7,7 @@ import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { SecuritySettings } from '@/components/organisms/SecuritySettings/SecuritySettings';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useDeleteAccount, useLoginProvider } from '@/lib/api/data/account';
-import { useSignOut } from '@/lib/api/data/auth';
+import { markAccountDeleted, useSignOut } from '@/lib/api/data/auth';
 import { useMenteeProfile } from '@/lib/api/data/settings';
 import { SETTINGS_COPY } from '@/lib/copy/settings';
 import styles from './SecurityPanel.module.css';
@@ -22,7 +22,7 @@ export function SecurityPanel({ userId }: { userId: string }) {
   const { profile, status, retry, retrying } = useMenteeProfile(userId);
   const { provider } = useLoginProvider(userId);
   const deleting = useDeleteAccount();
-  const signOut = useSignOut('/login?deleted=1');
+  const signOut = useSignOut('/login?deleted=1', markAccountDeleted);
   const [open, setOpen] = useState(false);
   // One request, however fast the second press: state lands a render later.
   const inFlight = useRef(false);
@@ -41,7 +41,8 @@ export function SecurityPanel({ userId }: { userId: string }) {
         }
       />
     );
-  if (!profile || !provider) return <SecuritySkeleton />;
+  // The provider comes from Supabase, not /me: its row waits on its own.
+  if (!profile) return <SecuritySkeleton />;
 
   return (
     <SecuritySettings

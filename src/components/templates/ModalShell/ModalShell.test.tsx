@@ -156,3 +156,22 @@ describe('ModalShell title (Modal.dc.html)', () => {
     expect(title).toMatch(/text-wrap:\s*balance/);
   });
 });
+
+describe('ModalShell describedBy', () => {
+  it('describes the dialog by an element in its body, after the subtitle', () => {
+    const { rerender } = render(
+      <ModalShell title="Delete?" alert describedBy="warn" onClose={vi.fn()}>
+        <p id="warn">Everything goes.</p>
+      </ModalShell>,
+    );
+    expect(screen.getByRole('alertdialog')).toHaveAccessibleDescription('Everything goes.');
+    rerender(
+      <ModalShell title="Delete?" subtitle="Read this." alert describedBy="warn" onClose={vi.fn()}>
+        <p id="warn">Everything goes.</p>
+      </ModalShell>,
+    );
+    expect(screen.getByRole('alertdialog')).toHaveAccessibleDescription(
+      'Read this. Everything goes.',
+    );
+  });
+});

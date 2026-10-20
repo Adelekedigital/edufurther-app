@@ -1,11 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { useRef, useSyncExternalStore } from 'react';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { SignInContext } from '@/components/molecules/SignInContext/SignInContext';
 import { Toast } from '@/components/molecules/Toast/Toast';
 import { SignInForm } from '@/components/organisms/SignInForm';
-import { authConfigured, type SignInMode, type SignInRole } from '@/lib/api/data/auth';
+import {
+  authConfigured,
+  takeAccountDeleted,
+  type SignInMode,
+  type SignInRole,
+} from '@/lib/api/data/auth';
 import { SECURITY_COPY } from '@/lib/copy/settings';
 import { useBookingContext } from './useBookingContext';
 import { useSignInFlow } from './useSignInFlow';
@@ -19,9 +25,14 @@ type AuthScreenProps = {
   next: string | null;
   /** Back from Google: with a session, finish here; without, say so. */
   google?: 'returned' | 'failed';
-  /** Just deleted their account (`/login?deleted=1`): say how to restore it. */
+  /**
+   * `/login?deleted=1`: say how to restore the account, but only in the tab
+   * that deleted it (a one-shot flag), so a shared link can't claim it.
+   */
   deleted?: boolean;
 };
+
+const noSubscribe = () => () => {};
 
 /** A link to another sign-in page that keeps `next`. */
 function withNext(path: string, next: string | null) {
@@ -35,6 +46,14 @@ function withNext(path: string, next: string | null) {
  * redirect (`afterAuth=toast`).
  */
 export function AuthScreen({ mode, role, next, google, deleted = false }: AuthScreenProps) {
+  // The one-shot flag lives in sessionStorage: false on the server, read once
+  // on the client after hydration, and kept, since reading it clears it.
+  const taken = useRef<boolean | null>(null);
+  const deletedHere = useSyncExternalStore(
+    noSubscribe,
+    () => (taken.current ??= deleted && takeAccountDeleted()),
+    () => false,
+  );
   const booking = useBookingContext(next);
   const { form, toast } = useSignInFlow({
     mode,
@@ -57,7 +76,7 @@ export function AuthScreen({ mode, role, next, google, deleted = false }: AuthSc
             context={
               // PROVISIONAL (not in a design file yet; listed for design): the
               // notice pattern the page already uses, where the booking line sits.
-              deleted ? (
+              deletedHere ? (
                 <Notice tone="neutral" icon="info">
                   {SECURITY_COPY.deletedNotice}
                 </Notice>

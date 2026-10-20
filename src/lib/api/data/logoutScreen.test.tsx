@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { act, render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import type { SessionState } from '@/lib/vendor/supabase/browser';
 
@@ -47,7 +48,9 @@ function Screen() {
   );
 }
 const wrapper = ({ children }: { children: ReactNode }) => (
-  <SessionHintProvider hint={{ status: 'present', userId: 'u1' }}>{children}</SessionHintProvider>
+  <QueryClientProvider client={new QueryClient()}>
+    <SessionHintProvider hint={{ status: 'present', userId: 'u1' }}>{children}</SessionHintProvider>
+  </QueryClientProvider>
 );
 
 describe('Logout on a signed-in screen', () => {

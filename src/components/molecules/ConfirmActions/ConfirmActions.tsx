@@ -38,12 +38,16 @@ export function ConfirmActions({
 }: ConfirmActionsProps) {
   return (
     <div className={styles.root}>
-      {error && (
-        <p role="alert" className={styles.error}>
-          <Icon name="error" size={16} />
-          {error}
-        </p>
-      )}
+      {/* Always in the page, filled on failure: an alert inserted with its
+          text already in it is often not read out. */}
+      <p role="alert" className={styles.error}>
+        {error && (
+          <>
+            <Icon name="error" size={16} />
+            {error}
+          </>
+        )}
+      </p>
       <div className={styles.buttons}>
         <Button
           size="large"

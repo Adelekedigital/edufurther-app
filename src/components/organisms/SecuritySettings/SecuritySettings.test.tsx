@@ -19,6 +19,7 @@ const renderShell = (s: DeleteShell, body: ReactNode) => (
     data-tone={s.tone}
     data-icon={s.icon}
     data-mobile={s.mobile}
+    aria-describedby={s.describedBy}
   >
     <button type="button" onClick={s.onClose} disabled={s.closeDisabled}>
       Close
@@ -93,7 +94,7 @@ describe('SecuritySettings', () => {
         '',
         'Thanks,',
         'Amara',
-      ].join('\n'),
+      ].join('\r\n'),
     );
     // Encoded, not raw: spaces and line breaks can't break the link.
     expect(href).not.toMatch(/\s/);
@@ -162,6 +163,21 @@ describe('SecuritySettings', () => {
     expect(SECURITY_COPY.deleteWarn(true, 0)).not.toMatch(/credits|upcoming/);
   });
 
+  it('the confirm is described by its warning', async () => {
+    render(<Host upcomingCount={1} />);
+    await openDelete();
+    expect(screen.getByRole('alertdialog')).toHaveAccessibleDescription(
+      expect.stringMatching(/^Your 1 upcoming session will be canceled/),
+    );
+  });
+
+  it('while how they log in is read, only that line waits', () => {
+    render(<Host provider={null} />);
+    expect(screen.getByText('How you log in')).toBeInTheDocument();
+    expect(screen.queryByText(/6-digit code|With Google/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Delete account' })).toBeInTheDocument();
+  });
+
   it('Keep my account and close shut it, and the word starts empty next time', async () => {
     render(<Host />);
     await openDelete();
@@ -181,6 +197,10 @@ describe('SecuritySettings', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('We couldn’t delete your account.');
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     rerender(<Host open deleting />);
+    // Read-only, not disabled: a disabled field would drop focus to the page.
+    expect(field()).not.toBeDisabled();
+    expect(field()).toHaveAttribute('readonly');
+    expect(field()).toHaveAttribute('aria-disabled', 'true');
     expect(screen.getByRole('button', { name: 'Deleting…' })).toHaveAttribute('aria-busy', 'true');
     expect(screen.getByRole('button', { name: 'Close' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Keep my account' })).toBeDisabled();

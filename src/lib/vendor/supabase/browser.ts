@@ -1,5 +1,6 @@
 import { createBrowserClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { LoginProvider } from '@/types/settings';
 import { COOKIE_OPTIONS, SUPABASE_ANON_KEY, SUPABASE_URL, authConfigured } from './config';
 
 /**
@@ -137,8 +138,6 @@ export type SignedInUser = {
    */
   loginProvider: LoginProvider;
 };
-
-export type LoginProvider = 'google' | 'email';
 
 function text(v: unknown): string | null {
   return typeof v === 'string' && v.trim() ? v.trim() : null;

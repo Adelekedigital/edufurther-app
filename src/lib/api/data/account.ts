@@ -2,27 +2,32 @@
 
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { SECURITY_COPY } from '@/lib/copy/settings';
-import { signedInUser, type LoginProvider } from './auth';
+import type { LoginProvider } from '@/types/settings';
+import { signedInUser } from './auth';
 import { apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
 
 /**
  * How this session's account logs in (Supabase's identities, through the
- * vendor seam). Signed out or unreadable reads as the email code: the way in
- * every passwordless account has.
+ * vendor seam). Unreadable (signed out, Supabase unreachable) reads as the
+ * email code, the way in every passwordless account has, but only for now:
+ * the failure isn't cached, so the next visit asks again.
  */
 export function useLoginProvider(userId: string | null) {
   const query = useQuery({
     queryKey: keys.viewer.loginProvider(userId ?? 'none'),
     enabled: userId !== null,
     staleTime: Infinity,
+    retry: false,
     queryFn: async (): Promise<LoginProvider> => {
-      const user = await signedInUser().catch(() => null);
-      return user?.loginProvider ?? 'email';
+      const user = await signedInUser();
+      if (!user) throw new Error('no signed-in user to read');
+      return user.loginProvider;
     },
   });
-  return { provider: query.data ?? null, loading: query.isPending };
+  const provider: LoginProvider | null = query.data ?? (query.isError ? 'email' : null);
+  return { provider };
 }
 
 /** A failed delete, in our words. */
