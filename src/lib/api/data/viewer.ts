@@ -35,7 +35,8 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     isMentor: mentor != null,
     // Signed up as a mentor and hasn't started the application: the account
     // remembers it (primary_role), so onboarding continues as a mentor.
-    signedUpAsMentor: !me.mentor_profile && me.primary_role === 'mentor',
+    signedUpAsMentor: !me.mentor_profile && me.goal == null && me.primary_role === 'mentor',
+    hasMentorProfile: !!me.mentor_profile,
     mentorApprovedSeen: me.mentor_profile?.approved_seen_at !== null,
     // Mentee-side (no profile, or declined and chose mentee) reads `none`.
     mentorStage: mentorStageOf(mentor),

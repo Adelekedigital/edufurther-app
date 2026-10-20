@@ -26,8 +26,10 @@ export type SignInAccount =
       mentorApprovedSeen?: boolean;
       /** `/me` `onboarding.complete`; null when /me doesn't say (treated as done). */
       onboardingComplete: boolean | null;
-      /** Signed up as a mentor with no mentor profile yet (`primary_role` mentor). */
+      /** Signed up as a mentor with no mentor profile or goal yet (`primary_role` mentor). */
       signedUpAsMentor: boolean;
+      /** Any mentor profile row (a declined one a mentee-by-choice keeps, too). */
+      hasMentorProfile: boolean;
       /** `/me` `timezone`; null when /me doesn't say. `UTC` is the backend's default. */
       timezone: string | null;
     }
@@ -55,7 +57,8 @@ export async function fetchSignInAccount(): Promise<SignInAccount> {
       mentorApproved: data.mentor_profile?.approval_status === 'approved',
       mentorApprovedSeen: data.mentor_profile?.approved_seen_at !== null,
       onboardingComplete: data.onboarding?.complete ?? null,
-      signedUpAsMentor: !data.mentor_profile && data.primary_role === 'mentor',
+      signedUpAsMentor: !data.mentor_profile && data.goal == null && data.primary_role === 'mentor',
+      hasMentorProfile: !!data.mentor_profile,
       timezone: data.timezone || null,
     };
   } catch {

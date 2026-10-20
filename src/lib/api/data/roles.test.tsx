@@ -8,7 +8,15 @@ const PATCH = vi.fn();
 vi.mock('./http', () => ({ api: { PATCH: (...a: unknown[]) => PATCH(...a) } }));
 
 const member = (over: Partial<Extract<Viewer, { kind: 'member' }>> = {}) =>
-  ({ kind: 'member', id: 'u1', isMentor: false, signedUpAsMentor: false, ...over }) as Viewer;
+  ({
+    kind: 'member',
+    id: 'u1',
+    isMentor: false,
+    isMentee: false,
+    hasMentorProfile: false,
+    signedUpAsMentor: false,
+    ...over,
+  }) as Viewer;
 
 function setup(viewer: Viewer, hint: string | null) {
   const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
@@ -43,5 +51,18 @@ describe('useRememberMentorSignup', () => {
     setup({ kind: 'guest' }, 'mentor');
     setup(member(), 'mentee');
     expect(PATCH).not.toHaveBeenCalled();
+  });
+
+  it('never re-roles a settled account: a mentee, or a declined applicant who chose mentee', () => {
+    setup(member({ isMentee: true }), 'mentor');
+    setup(member({ hasMentorProfile: true }), 'mentor');
+    expect(PATCH).not.toHaveBeenCalled();
+  });
+
+  it('a failed save stops the wait, so the page routes on the query', async () => {
+    PATCH.mockRejectedValueOnce(new Error('offline'));
+    const { result } = setup(member(), 'mentor');
+    expect(result.current).toBe(true);
+    await waitFor(() => expect(result.current).toBe(false));
   });
 });

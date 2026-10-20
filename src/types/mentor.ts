@@ -210,6 +210,8 @@ export type Viewer =
        * yet: onboarding and Home continue as a mentor. Never a permission.
        */
       signedUpAsMentor?: boolean;
+      /** Any mentor profile row, including a declined one a mentee-by-choice keeps. */
+      hasMentorProfile?: boolean;
       /**
        * An approved mentor has been shown the approved screen (`/me`
        * `approved_seen_at`, PRD B2). Absent: not known, treated as seen.

@@ -39,6 +39,7 @@ describe('fetchSignInAccount (who just signed in)', () => {
       mentorApprovedSeen: true,
       onboardingComplete: null,
       signedUpAsMentor: false,
+      hasMentorProfile: false,
       timezone: null,
     });
   });

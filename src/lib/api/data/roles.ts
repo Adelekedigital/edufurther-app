@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AppError, Viewer } from '@/types/mentor';
 import { ApiError, normaliseError } from './errors';
@@ -56,14 +56,26 @@ export function useSetPrimaryRole(userId: string | null) {
  */
 export function useRememberMentorSignup(viewer: Viewer, roleHint: string | null): boolean {
   const member = viewer.kind === 'member' ? viewer : null;
-  const needed = !!member && roleHint === 'mentor' && !member.isMentor && !member.signedUpAsMentor;
-  const { setRole, isPending } = useSetPrimaryRole(member?.id ?? null);
+  // A fresh account only: no mentor profile and no mentee goal. A link never
+  // re-roles an account that has settled (one role per account), such as a
+  // mentee, or a declined applicant who chose "Continue as a mentee".
+  const needed =
+    !!member &&
+    roleHint === 'mentor' &&
+    !member.hasMentorProfile &&
+    !member.isMentee &&
+    !member.signedUpAsMentor;
+  const { setRole } = useSetPrimaryRole(member?.id ?? null);
   const sent = useRef(false);
+  const [settled, setSettled] = useState(false);
   useEffect(() => {
     if (!needed || sent.current) return;
     sent.current = true;
-    // A failure leaves the URL hint in charge for this visit; the next visit tries again.
-    setRole('mentor').catch(() => {});
+    // Either way the page goes on: a failure leaves this visit's query in
+    // charge, and the next visit with it tries again.
+    setRole('mentor')
+      .catch(() => {})
+      .finally(() => setSettled(true));
   }, [needed, setRole]);
-  return needed || isPending;
+  return needed && !settled;
 }
