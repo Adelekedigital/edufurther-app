@@ -73,6 +73,13 @@
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
 }
+/* Phones: a 44px target, like the field and the row buttons. */
+@media (max-width: 767px) {
+  .option {
+    height: auto;
+    min-height: var(--touch-target-min);
+  }
+}
 .optionOn {
   border-color: var(--blue-500);
   background: var(--blue-50);

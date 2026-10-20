@@ -141,11 +141,20 @@ describe('useSaveSocial', () => {
     [problem(409, '/problems/website-limit-reached'), 'website', 'You can add up to 3 websites.'],
     [problem(500), 'x', 'Your link didn’t save. Try again in a moment.'],
     [problem(404), 'x', 'That link was already removed. Your list is up to date.'],
+    [problem(404), 'linkedin', 'Your link didn’t save. Try again in a moment.'],
+    [
+      problem(409, '/problems/mentor-application-in-review'),
+      'linkedin',
+      'You can edit LinkedIn, but not remove it, while we review your application.',
+    ],
   ] as const)('a refusal is said in the page’s words (%#)', async (answer, kind, copy) => {
     POST.mockResolvedValue(answer);
+    PATCH.mockResolvedValue(answer);
     const { result } = renderHook(() => useSaveSocial('u1'), { wrapper: wrap() });
     await act(() =>
-      result.current.save({ kind, value: 'ada.dev', id: null }).catch(() => undefined),
+      result.current
+        .save({ kind, value: kind === 'linkedin' ? 'ada-obi' : 'ada.dev', id: null })
+        .catch(() => undefined),
     );
     await waitFor(() => expect(result.current.error).toBe(copy));
   });

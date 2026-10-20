@@ -254,7 +254,8 @@ export function SocialLinksCard({
                     e.preventDefault();
                     void submit();
                   }
-                  if (e.key === 'Escape') close();
+                  // Not while saving: a refusal can only be said in the form.
+                  if (e.key === 'Escape' && !saving) close();
                 }}
               />
               <span id={noteId} className={cx(styles.note, problem && styles.noteBad)}>

@@ -84,8 +84,11 @@ export function useMyLinks(userId: string | null) {
 function saveCopy(e: unknown, kind: SocialKind): string {
   const err = normaliseError(e);
   if (err.kind === 'offline') return SAVE_COPY.profileOffline;
+  // A stale page while the application is in review: the reason, not "try again".
+  if (err.kind === 'inReview' && kind === 'linkedin') return FREEZE_COPY.linkedinLock;
   if (e instanceof ApiError) {
-    if (e.status === 404) return C.gone;
+    // LinkedIn is the profile, never "removed elsewhere".
+    if (e.status === 404 && kind !== 'linkedin') return C.gone;
     if (e.status === 422) return kind === 'website' ? C.noteWebsite : C.noteHandle(markLabel(kind));
     if (e.status === 409 && e.type?.endsWith('/problems/website-limit-reached'))
       return C.websiteLimit;
@@ -151,10 +154,9 @@ export function useSaveSocial(userId: string | null) {
       // The public profile shows them.
       void qc.invalidateQueries({ queryKey: keys.mentors.all });
     },
-    // A refusal may mean the list is out of date (removed in another tab): re-read it.
-    onError: () => {
-      if (userId) void qc.invalidateQueries({ queryKey: keys.viewer.links(userId) });
-    },
+    // A refusal may mean the page is out of date (a link removed in another
+    // tab, the application gone into review): re-read the viewer and links.
+    onError: () => void qc.invalidateQueries({ queryKey: keys.viewer.all }),
   });
   return {
     save: mutation.mutateAsync,

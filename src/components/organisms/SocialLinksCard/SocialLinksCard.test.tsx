@@ -292,4 +292,29 @@ describe('SocialLinksCard', () => {
     // Editing still works.
     expect(screen.getByRole('button', { name: 'Edit X' })).toBeInTheDocument();
   });
+
+  it('Escape while a save runs keeps the form, so a refusal can still be said', async () => {
+    const user = userEvent.setup();
+    const props = {
+      status: 'ready' as const,
+      rows: [YOUTUBE],
+      onRetry: vi.fn(),
+      onSave: vi.fn(async () => false),
+      saveError: null,
+      onRemove: vi.fn(),
+    };
+    const { rerender } = render(<SocialLinksCard {...props} saving={false} />);
+    await user.click(screen.getByRole('button', { name: 'Edit YouTube' }));
+    rerender(<SocialLinksCard {...props} saving />);
+    await user.keyboard('{Escape}');
+    expect(screen.getByLabelText('YouTube handle')).toBeInTheDocument();
+    rerender(
+      <SocialLinksCard
+        {...props}
+        saving={false}
+        saveError="Your link didn’t save. Try again in a moment."
+      />,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('didn’t save');
+  });
 });
