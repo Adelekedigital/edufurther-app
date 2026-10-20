@@ -148,6 +148,11 @@
   .field input {
     font-size: var(--text-p-md);
   }
+  /* Phones: no "How mentees see you" (owner, 2026-10-20). Below the form it
+     only repeats it; the account menu's View profile opens the real page. */
+  .aside {
+    display: none;
+  }
 }
 /* Mentor Settings.dc.html review freeze: the photo card dims with the rest. */
 .frozen {

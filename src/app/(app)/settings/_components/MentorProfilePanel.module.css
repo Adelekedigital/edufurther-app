@@ -60,3 +60,9 @@
   flex-direction: column;
   gap: var(--space-3);
 }
+/* Phones: no preview (MentorProfileForm.module.css), so its skeleton goes too. */
+@media (max-width: 767px) {
+  .skeletonAside {
+    display: none;
+  }
+}
