@@ -117,6 +117,28 @@
   text-decoration: underline;
 }
 
+/* DS Button `text-secondary` (_ds_bundle.js TEXTS): a quiet text action
+   beside a filled one, like "Keep editing" or "Cancel". slate-500 is 5.16:1
+   on white. DIVERGENCE: the DS hover, slate-400, is 4.48:1 (fails WCAG
+   1.4.3), so ours darkens to --ink-700 instead. */
+.text-secondary {
+  background: transparent;
+  color: var(--slate-500);
+  padding: 0;
+  height: auto;
+  min-height: 0;
+}
+.text-secondary:hover {
+  color: var(--ink-700);
+}
+.text-secondary:active {
+  color: var(--ink-900);
+}
+.text-secondary:disabled {
+  color: var(--slate-400);
+  cursor: not-allowed;
+}
+
 /* DS Button `text-destructive`: a low-emphasis destructive action, where a
    filled one would shout. Used for Decline on a pending row.
    DIVERGENCE, the same one the filled `destructive` already carries: the DS

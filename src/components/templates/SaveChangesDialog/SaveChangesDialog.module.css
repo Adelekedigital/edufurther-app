@@ -1,0 +1,11 @@
+/* Mentee Settings.dc.html leave modal: two equal buttons, then Keep editing
+   centred under them, spaced by the modal's own gap. */
+.choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.keep {
+  display: flex;
+  justify-content: center;
+}

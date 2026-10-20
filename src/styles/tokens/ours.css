@@ -78,6 +78,8 @@
   --button-h-large: 48px;
   --button-h-medium: 40px;
   --button-h-small: 32px;
+  /* The inline error icon's line (a 16px glyph on an 18px line, every .dc.html field error). */
+  --lh-icon-inline: 18px;
 
   /* Profile cover colours (Mentor Profile.dc.html, 2026-09-27): a light banner
      and its paired dark colour for the photo circle. Picked per mentor by

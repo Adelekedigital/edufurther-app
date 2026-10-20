@@ -76,6 +76,8 @@ export async function GET(req: Request) {
     mentee_cancel_refund_hours: 12,
     goal: mockGoal(MOCK_VIEWER_ID),
     mentor_profile: mentorProfile(req),
+    // The mentee's own languages (edufurtherbe #500); Settings › Profile reads them.
+    languages: [],
     profile: {
       cover_art: 'none' as const,
       origin_country: originRef(mockItems(MOCK_VIEWER_ID).origin_country_id ?? null),

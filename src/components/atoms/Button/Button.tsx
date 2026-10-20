@@ -11,7 +11,13 @@ import type { IconName } from '../Icon/iconNames';
 import styles from './Button.module.css';
 
 export type ButtonVariant =
-  'primary' | 'secondary-outlined' | 'text' | 'text-destructive' | 'dark' | 'destructive';
+  | 'primary'
+  | 'secondary-outlined'
+  | 'text'
+  | 'text-secondary'
+  | 'text-destructive'
+  | 'dark'
+  | 'destructive';
 /**
  * Sizes follow placement, variants follow importance (CTA Hierarchy.dc.html,
  * replacing the one-size #28 rule). Labels are DM Sans semibold (ADR 0002).

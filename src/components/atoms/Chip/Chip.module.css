@@ -1,6 +1,7 @@
 .chip {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-1);
   height: var(--button-compact-h);
   padding: 0 var(--space-3);

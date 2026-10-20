@@ -42,7 +42,7 @@ import {
   type ItemTarget,
 } from './OwnerItemEditor';
 import { DeleteEntryConfirm } from './DeleteEntryConfirm';
-import { RemovePhotoConfirm } from './RemovePhotoConfirm';
+import { RemovePhotoConfirm } from '@/components/templates/RemovePhotoConfirm/RemovePhotoConfirm';
 import {
   NotTakingEmpty,
   NotTakingNote,

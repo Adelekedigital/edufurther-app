@@ -60,6 +60,36 @@ describe('useLeaveGuard', () => {
   });
 });
 
+describe('unsavedSave (a form that can save itself)', () => {
+  it('one dirty form with onSave: its latest save; without onSave, or clean: null', async () => {
+    const { useLeaveGuard, unsavedSave } = await load();
+    const first = vi.fn(async () => true);
+    const latest = vi.fn(async () => false);
+    const { rerender, unmount } = renderHook(
+      ({ dirty, save }) => useLeaveGuard(dirty, 'Profile', save),
+      { initialProps: { dirty: true, save: first } },
+    );
+    rerender({ dirty: true, save: latest });
+    await expect(unsavedSave()!()).resolves.toBe(false);
+    expect(latest).toHaveBeenCalledOnce();
+    expect(first).not.toHaveBeenCalled();
+    rerender({ dirty: false, save: latest });
+    expect(unsavedSave()).toBeNull();
+    unmount();
+    const plain = renderHook(() => useLeaveGuard(true, 'your intro'));
+    expect(unsavedSave()).toBeNull();
+    plain.unmount();
+  });
+
+  it('two dirty forms: null, so the dialog only offers Discard', async () => {
+    const { useLeaveGuard, unsavedSave } = await load();
+    const a = renderHook(() => useLeaveGuard(true, 'Profile', async () => true));
+    const b = renderHook(() => useLeaveGuard(true, 'your intro'));
+    expect(unsavedSave()).toBeNull();
+    [a, b].forEach((h) => h.unmount());
+  });
+});
+
 describe('discardUnsaved ("Discard" in the dialog)', () => {
   const fire = (type: string, target: Element = document.body) =>
     target.dispatchEvent(new Event(type, { bubbles: true }));

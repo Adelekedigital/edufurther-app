@@ -1,0 +1,29 @@
+/* The region holds the position; empty, it has no size. */
+.region {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-6);
+  z-index: 30;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - var(--space-8));
+}
+
+/* Mentee Settings.dc.html toast: ink-900, white p-xs, radius-lg. */
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--ink-900);
+  color: var(--white);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+}
+
+@media (max-width: 767px) {
+  .region {
+    bottom: calc(56px + env(safe-area-inset-bottom) + var(--space-3));
+  }
+}

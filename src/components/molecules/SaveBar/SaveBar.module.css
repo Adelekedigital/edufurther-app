@@ -1,0 +1,79 @@
+/* Mentee Settings.dc.html save bar: ink-900, centred 24px above the bottom,
+   the menu shadow. */
+.bar {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-6);
+  z-index: 30;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  box-sizing: border-box;
+  /* One line: a centred fixed box would otherwise shrink to half the screen. */
+  width: max-content;
+  max-width: calc(100% - var(--space-8));
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--ink-900);
+  color: var(--white);
+  font-family: var(--font-ui);
+  box-shadow: var(--shadow-menu);
+}
+
+/* DIVERGENCE: the design's red-600 is 3.1:1 on ink-900; red-300 is 5.6:1. */
+.error {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-medium);
+  color: var(--red-300);
+}
+
+.message {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-p-xs);
+}
+
+.discard {
+  border: none;
+  background: none;
+  padding: 0 var(--space-2);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--white);
+}
+.discard:hover {
+  text-decoration: underline;
+}
+.discard:focus-visible {
+  outline: var(--focus-ring-width) solid var(--white);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-xs);
+}
+.discard:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Phones: full width, above the 56px tab bar. */
+@media (max-width: 767px) {
+  .bar {
+    left: var(--space-4);
+    right: var(--space-4);
+    bottom: calc(56px + env(safe-area-inset-bottom) + var(--space-3));
+    transform: none;
+    width: auto;
+    max-width: none;
+    flex-wrap: wrap;
+  }
+  .message {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .error {
+    flex-basis: 100%;
+  }
+}
