@@ -34,6 +34,7 @@ export { ACCOUNT_RETRY_MS } from './account';
 
 // PROVISIONAL: ours, no design state; the finish step's "Use a different email" didn't sign out.
 export const SIGN_OUT_FAILED = 'We couldn’t sign you out. Try again.';
+export const ROLE_SAVE_FAILED = 'We couldn’t save that you’re joining as a mentor. Try again.';
 
 type Method = 'email' | 'google';
 type GoogleUser = Awaited<ReturnType<typeof signedInUser>>;
@@ -110,11 +111,15 @@ export function useSignInFlow({
     return () => clearTimeout(t);
   }, [googleReturn]);
   const [nameError, setNameError] = useState<string>();
+  // The mentor role didn't save: the finish step says so and retries it.
+  const [roleError, setRoleError] = useState<string>();
   const [outcome, setOutcome] = useState<Outcome | null>(null);
 
   // This screen is finishing a sign-in itself: the "already signed in" redirect stands aside.
   const handling = useRef(googleReturn);
   const account = useRef<Account | null>(null);
+  // The name is saved on the account: a role retry doesn't send it again.
+  const named = useRef(false);
   const method = useRef<Method>('email');
   const mounted = useRef(true);
   const redirectTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -171,7 +176,9 @@ export function useSignInFlow({
       const o = signInOutcome({
         method: method.current,
         mode,
-        role,
+        // The account's role, as saved, never the page's: the toast and the
+        // destination match what the account is.
+        role: a.signedUpAsMentor ? 'mentor' : 'mentee',
         isNew: a.isNew,
         firstName,
         isAdmin: a.isAdmin,
@@ -188,7 +195,51 @@ export function useSignInFlow({
       clearTimeout(redirectTimer.current);
       redirectTimer.current = setTimeout(() => router.replace(o.href), TOAST_MS);
     },
-    [mode, role, next, bookingWith, router],
+    [mode, next, bookingWith, router],
+  );
+
+  /**
+   * A mentor sign-up's role, saved on a brand-new account before anything
+   * routes (owner, 2026-10-20): the only place a role is set, so every later
+   * visit continues as a mentor and no URL changes it. A returning account on
+   * /signup?role=mentor keeps the role it settled (one role per account). A
+   * failure stops on the finish step with a retry: never routed as a mentee.
+   */
+  const saveRole = useCallback(
+    async (a: Account, onRefused?: () => void): Promise<boolean> => {
+      const needed =
+        mode === 'signup' &&
+        role === 'mentor' &&
+        a.isNew &&
+        !a.hasMentorProfile &&
+        !a.signedUpAsMentor;
+      if (!needed) return true;
+      try {
+        await savePrimaryRole(a.id, 'mentor');
+      } catch {
+        onRefused?.();
+        setRoleError(ROLE_SAVE_FAILED);
+        setStep('finish');
+        return false;
+      }
+      a.signedUpAsMentor = true;
+      setRoleError(undefined);
+      // The next page routes on the account alone, so a /me cached before the
+      // save must already say so; then refetch it.
+      patchViewer(qc, { signedUpAsMentor: true });
+      void qc.invalidateQueries({ queryKey: keys.viewer.all });
+      return true;
+    },
+    [mode, role, qc],
+  );
+
+  /** A new account, named: its role, then the toast and the redirect. */
+  const complete = useCallback(
+    async (a: Account, firstName: string, onRefused?: () => void) => {
+      if (!(await saveRole(a, onRefused)) || !mounted.current) return;
+      finish(a, firstName);
+    },
+    [saveRole, finish],
   );
 
   const name = useCallback(
@@ -199,6 +250,7 @@ export function useSignInFlow({
           name: toSave,
           timezone: zoneToSave(a.timezone),
         });
+        named.current = true;
         return true;
       } catch (e) {
         // The session stays: the finish step offers the retry (PRD). Its
@@ -224,31 +276,8 @@ export function useSignInFlow({
       if (acct.kind === 'noAccount') return router.replace('/');
       if (acct.kind === 'error') return router.replace(next ?? '/');
       const a = toAccount(acct);
-      // A mentor sign-up is remembered on the account before anything routes,
-      // so every later visit continues as a mentor (owner, 2026-10-20). This
-      // is the only place a role is set: no URL changes it afterwards.
-      // A brand-new account only: a returning one on /signup?role=mentor
-      // keeps the role it settled (one role per account).
-      if (
-        mode === 'signup' &&
-        role === 'mentor' &&
-        a.isNew &&
-        !a.hasMentorProfile &&
-        !a.signedUpAsMentor
-      ) {
-        try {
-          await savePrimaryRole(a.id, 'mentor');
-          a.signedUpAsMentor = true;
-          // The next page routes on the account alone (no URL role), so a /me
-          // cached before the save must already say so; then refetch it.
-          patchViewer(qc, { signedUpAsMentor: true });
-          void qc.invalidateQueries({ queryKey: keys.viewer.all });
-        } catch {
-          // Not retried by a page: the account stays a mentee (decided at sign-up).
-        }
-        if (!mounted.current) return;
-      }
       account.current = a;
+      named.current = false;
       if (!a.isNew) {
         const google = via === 'google' ? await signedInUser() : null;
         if (!mounted.current) return;
@@ -274,7 +303,7 @@ export function useSignInFlow({
           // A refused save shows the finish step with Google's name in it.
           const saved = await name(a, parts ?? { fullName: fromGoogle }, prefill);
           const first = parts?.firstName ?? splitFullName(fromGoogle).firstName;
-          if (saved && mounted.current) finish(a, first);
+          if (saved && mounted.current) await complete(a, first, prefill);
           return;
         }
         // One word, or none, from Google: ask once, under the same rule.
@@ -284,12 +313,12 @@ export function useSignInFlow({
       }
       if (mode === 'signup' && checkFullName(fullName) === null) {
         const saved = await name(a, { fullName });
-        if (saved && mounted.current) finish(a, splitFullName(fullName).firstName);
+        if (saved && mounted.current) await complete(a, splitFullName(fullName).firstName);
         return;
       }
       setStep('finish');
     },
-    [finish, fullName, mode, name, next, qc, role, router, setEmail],
+    [complete, finish, fullName, mode, name, next, router, setEmail],
   );
 
   /** Something threw after sign-in (storage, the SDK): go on rather than hang on "Checking...". */
@@ -351,10 +380,11 @@ export function useSignInFlow({
     if (!a || finishing || signingOut) return;
     setFinishing(true);
     setNameError(undefined);
-    const saved = await name(a, { fullName });
+    setRoleError(undefined);
+    const saved = named.current || (await name(a, { fullName }));
+    if (saved && mounted.current) await complete(a, splitFullName(fullName).firstName);
     if (!mounted.current) return;
     setFinishing(false);
-    if (saved) finish(a, splitFullName(fullName).firstName);
   };
 
   /**
@@ -383,6 +413,7 @@ export function useSignInFlow({
     auth.clearCode();
     setFullName('');
     setNameError(undefined);
+    setRoleError(undefined);
     setStartError(undefined);
     setStep('start');
   };
@@ -414,6 +445,7 @@ export function useSignInFlow({
       setStartError(undefined);
     },
     nameError,
+    roleError,
     sending: auth.sending,
     startError,
     googleBusy,

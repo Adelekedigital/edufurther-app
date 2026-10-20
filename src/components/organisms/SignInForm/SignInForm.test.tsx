@@ -335,6 +335,23 @@ describe('SignInForm — finish and suspended', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('We couldn’t sign you out. Try again.');
   });
 
+  it('says the mentor role didn’t save, under Create account, which retries it', () => {
+    render(
+      <SignInForm
+        {...props({
+          step: 'finish',
+          email: 'amara@example.com',
+          fullName: 'Gbenga Ekundayo',
+          roleError: 'We couldn’t save that you’re joining as a mentor. Try again.',
+        })}
+      />,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'We couldn’t save that you’re joining as a mentor. Try again.',
+    );
+    expect(screen.getByRole('button', { name: 'Create account' })).toBeEnabled();
+  });
+
   it('offers support by email when the account is suspended', () => {
     render(
       <SignInForm {...props({ mode: 'login', step: 'suspended', email: 'amara@example.com' })} />,
