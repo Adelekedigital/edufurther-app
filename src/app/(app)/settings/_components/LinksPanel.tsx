@@ -5,6 +5,7 @@ import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
 import { SocialLinksCard } from '@/components/organisms/SocialLinksCard/SocialLinksCard';
 import { ConfirmDialog } from '@/components/templates/ConfirmDialog/ConfirmDialog';
 import { useMyLinks, useRemoveSocial, useSaveSocial, type SocialRow } from '@/lib/api/data/links';
+import { FREEZE_COPY } from '@/lib/copy/mentorSettings';
 import { SOCIAL_LINKS_COPY as C } from '@/lib/copy/socialLinks';
 import { markLabel } from '@/lib/utils/socialLinks';
 
@@ -15,8 +16,10 @@ const TOAST_MS = 5000;
  * Settings › Social links for a mentor (Mentor Settings.dc.html `isSocial`,
  * linksScope=limited). Each link saves as it's added, changed or removed, so
  * there's never anything for the save bar (and no handle for the tab guard).
+ * While the application is in review (`frozen`), LinkedIn can be changed but
+ * not removed, and a change is said to reach the reviewer.
  */
-export function LinksPanel({ userId }: { userId: string }) {
+export function LinksPanel({ userId, frozen = false }: { userId: string; frozen?: boolean }) {
   const links = useMyLinks(userId);
   const saving = useSaveSocial(userId);
   const removing = useRemoveSocial(userId);
@@ -62,7 +65,13 @@ export function LinksPanel({ userId }: { userId: string }) {
             return false;
           }
           saving.reset();
-          say(s.id ? C.updated : C.added);
+          say(
+            frozen && s.kind === 'linkedin'
+              ? FREEZE_COPY.linkedinUpdated
+              : s.id
+                ? C.updated
+                : C.added,
+          );
           setRefocus((n) => n + 1);
           return true;
         }}
@@ -73,6 +82,7 @@ export function LinksPanel({ userId }: { userId: string }) {
         headingRef={heading}
         addRef={add}
         onFormChange={saving.reset}
+        linkedInLock={frozen ? FREEZE_COPY.linkedinLock : null}
       />
       {pending && (
         <ConfirmDialog

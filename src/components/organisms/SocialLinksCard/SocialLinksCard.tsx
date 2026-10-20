@@ -40,6 +40,11 @@ type SocialLinksCardProps = {
   addRef?: RefObject<HTMLButtonElement | null>;
   /** The form opened, closed or changed platform: an old save error no longer applies. */
   onFormChange?: () => void;
+  /**
+   * While the mentor application is in review, LinkedIn can be changed but not
+   * removed (backend #509): its Remove stays focusable and says why.
+   */
+  linkedInLock?: string | null;
 };
 
 type Form = { editId: string | null; kind: SocialKind | null; draft: string };
@@ -62,6 +67,7 @@ export function SocialLinksCard({
   headingRef,
   addRef,
   onFormChange,
+  linkedInLock,
 }: SocialLinksCardProps) {
   const headingId = useId();
   const fieldId = useId();
@@ -301,10 +307,16 @@ export function SocialLinksCard({
         <p className={styles.empty}>{C.empty}</p>
       ) : (
         <ul className={styles.list}>
+          {linkedInLock && (
+            <span id={`${fieldId}-lock`} hidden>
+              {linkedInLock}
+            </span>
+          )}
           {rows.map((r) => {
             const label = markLabel(r.mark);
             // Up to three websites: each control names which one.
             const name = r.kind === 'website' ? `${label}, ${displayUrl(r.url)}` : label;
+            const locked = r.kind === 'linkedin' && !!linkedInLock;
             return (
               <li key={r.id} className={styles.row}>
                 <span className={styles.disc}>
@@ -328,7 +340,11 @@ export function SocialLinksCard({
                   shape="square"
                   tone="danger"
                   aria-label={C.removeAria(name)}
-                  onClick={() => onRemove(r)}
+                  // Focusable, so the reason is heard; pressing it does nothing.
+                  aria-disabled={locked || undefined}
+                  aria-describedby={locked ? `${fieldId}-lock` : undefined}
+                  title={locked ? linkedInLock! : undefined}
+                  onClick={() => !locked && onRemove(r)}
                 />
               </li>
             );

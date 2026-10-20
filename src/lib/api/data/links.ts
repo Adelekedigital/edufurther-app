@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { SAVE_COPY } from '@/lib/copy/settings';
+import { FREEZE_COPY } from '@/lib/copy/mentorSettings';
 import { SOCIAL_LINKS_COPY as C } from '@/lib/copy/socialLinks';
 import { linkedInHandle, linkedInUrl, markLabel, markOf } from '@/lib/utils/socialLinks';
 import type { SocialKind } from '@/types/mentor';
@@ -185,8 +186,16 @@ export function useRemoveSocial(userId: string | null) {
         // Already gone is what was asked for.
         if (!response.ok && response.status !== 404) throw apiError(response.status, error);
       } catch (e) {
+        const frozen =
+          e instanceof ApiError &&
+          e.status === 409 &&
+          !!e.type?.endsWith('/problems/mentor-application-in-review');
         throw {
-          copy: normaliseError(e).kind === 'offline' ? SAVE_COPY.profileOffline : C.removeFailed,
+          copy: frozen
+            ? FREEZE_COPY.linkedinLock
+            : normaliseError(e).kind === 'offline'
+              ? SAVE_COPY.profileOffline
+              : C.removeFailed,
         };
       }
       return row.id;

@@ -159,7 +159,7 @@ export function SettingsScreen() {
             {member ? <SecurityPanel userId={member.id} role="mentor" /> : null}
           </TabPanel>
           <TabPanel id={panelId('links')} active={tab === 'links'}>
-            {member ? <LinksPanel userId={member.id} /> : null}
+            {member ? <LinksPanel userId={member.id} frozen={inReview} /> : null}
           </TabPanel>
         </>
       ) : (
