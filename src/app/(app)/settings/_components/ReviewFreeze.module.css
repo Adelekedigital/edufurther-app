@@ -4,3 +4,11 @@
   flex-direction: column;
   gap: var(--space-5);
 }
+/* Takes focus only when the freeze lands mid-edit; the Notice draws itself. */
+.banner {
+  border-radius: var(--radius-lg);
+}
+.banner:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+}

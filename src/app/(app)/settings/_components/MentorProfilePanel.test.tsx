@@ -100,7 +100,7 @@ beforeEach(() => {
 const preview = () => within(screen.getByRole('complementary', { name: 'How mentees see you' }));
 const bar = () => screen.queryByRole('region', { name: 'Unsaved changes' });
 const banner = () =>
-  screen.getAllByRole('status').find((s) => s.textContent?.includes('reviewing your application'));
+  screen.queryAllByText('We’re reviewing your application.')[0]?.closest('[class*="subtle"]');
 
 describe('MentorProfilePanel', () => {
   it('the preview shows the saved profile, with Open profile to the public page', () => {
