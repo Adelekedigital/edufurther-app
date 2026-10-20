@@ -76,6 +76,12 @@ describe('MentorProfileScreen: the owner in setup (owner, 2026-10-20)', () => {
     }
   });
 
+  it('a malformed handle (left undecoded by the page) never crashes the owner check', () => {
+    h.viewerExtra = unsubmitted;
+    h.profile = state({ notFound: true });
+    expect(() => render(<MentorProfileScreen handle="%E0" />)).not.toThrow();
+  });
+
   it('a visitor in setup still sees someone else’s profile', () => {
     h.viewerExtra = { onboardingComplete: false };
     h.profile = state({ data: fullProfile });

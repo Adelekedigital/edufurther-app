@@ -52,6 +52,12 @@ describe('useAppShell: the setup lock', () => {
     expect(result.current.account?.credits).toBeUndefined();
   });
 
+  it('a mentor sign-up is not offered the team call (it helps people find a mentor)', async () => {
+    const { isMenteeSide } = await import('./useAppShell');
+    expect(isMenteeSide(mentee({ signedUpAsMentor: true, onboardingComplete: false }))).toBe(false);
+    expect(isMenteeSide(mentee({}))).toBe(true);
+  });
+
   it('a mentor who never submitted gets the mentor nav, locked', () => {
     viewer = mentee({ isMentee: false, isMentor: true, mentorStage: 'unsubmitted' });
     const { result } = renderHook(() => useAppShell());

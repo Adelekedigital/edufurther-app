@@ -1,5 +1,6 @@
 'use client';
 
+import { MENTOR_ONBOARDING_LIVE } from '@/lib/config/auth';
 import { useState } from 'react';
 import type { AccountMenuItem } from '@/components/molecules/AccountMenu/AccountMenu';
 import { useSignOut } from '@/lib/api/data/auth';
@@ -43,7 +44,9 @@ type Member = Extract<Viewer, { kind: 'member' }>;
  * included, is a mentor: one role per account (product, 2026-09-29/30).
  */
 export function isMenteeSide(member: Member | null): member is Member {
-  return !!member && !member.isMentor;
+  // A mentor sign-up is becoming a mentor, not looking for one (while mentor
+  // onboarding is on; off, they're treated as a mentee).
+  return !!member && !member.isMentor && !(member.signedUpAsMentor && MENTOR_ONBOARDING_LIVE);
 }
 
 /**

@@ -122,7 +122,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // instead (the setup lock, owner 2026-10-20). Visitors are never detoured.
   // Their own id in the URL counts too ("View profile" links by id), so the
   // detour never waits on, or shows the failure of, a profile they can't use.
-  const ownUrl = !!member && decodeURIComponent(handle) === member.id;
+  // `handle` arrives decoded (page.tsx, safely): never decode it again.
+  const ownUrl = !!member && handle === member.id;
   const detour = useSetupDetour(viewer, isOwner || ownUrl);
   // "View as mentee" (Mentor Profile.dc.html `pvw`): the owner sees the page as
   // a mentee does, with Book drawn but off. Page state: a reload is back to editing.
