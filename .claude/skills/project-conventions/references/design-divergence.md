@@ -925,6 +925,7 @@ PRD: Mentee Onboarding v5 (deviation table, H8). Rows the PRD settles are produc
 
 | Design says | We do | Why | Revisit when |
 | --- | --- | --- | --- |
+| About step photo initials: bold `--text-h3` | Semibold, 0.02em letter-spacing (the shared `Avatar` 88 size) | Owner, 2026-10-20: one initials style at every size | — |
 | Each step's heading is an `h2` (h5 values) with no `h1` (`showPageHead` is off in steps mode) | The same values on an `h1` that takes focus on every step change | A page needs one `h1`, and the PRD moves focus to the step heading | — |
 | "All fields are required unless marked optional." under About you only | Under every step's heading | PRD: "Each step starts with" it | design draws it on every step |
 | "Where are you from?" and "Country of study" are native selects | `CountryPicker` (type to find), 48px like the drawn field | About 250 countries is too long to scroll (existing CountryPicker divergence) | — |

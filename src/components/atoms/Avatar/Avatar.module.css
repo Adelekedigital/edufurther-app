@@ -109,10 +109,12 @@
   font-size: var(--text-h5);
   letter-spacing: 0.02em;
 }
-/* Onboarding's About step (Mentor Onboarding.dc.html): bold h3 initials. */
+/* Onboarding's About step (Mentor Onboarding.dc.html): h3 initials. Semibold
+   and 0.02em like every other size (owner, 2026-10-20: one style; the
+   design drew bold). */
 .s88 {
   font-size: var(--text-h3);
-  font-weight: var(--weight-bold);
+  letter-spacing: 0.02em;
 }
 /* The profile header (Mentor Profile.dc.html): 112px, 72px on phones. */
 .s112 {
