@@ -8,6 +8,7 @@ import { authConfigured } from '@/lib/vendor/supabase/config';
 import type { Viewer } from '@/types/mentor';
 import { mentorStageOf } from '@/lib/utils/access';
 import { coverKey } from '@/lib/utils/cover';
+import { useHydrated } from '@/lib/utils/useHydrated';
 import { clampFocus, personInitials } from '@/lib/utils/person';
 import { ApiError } from './errors';
 import { api } from './http';
@@ -213,6 +214,9 @@ MOCK_VIEWERS['mentor-unsubmitted'] = {
   mentorStage: 'unsubmitted',
 };
 
+/** The mock viewer before hydration has read `?mockViewer=`. */
+const MOCK_PENDING: Viewer = { kind: 'loading', signedIn: true };
+
 const readMockParam = () => new URLSearchParams(window.location.search).get('mockViewer');
 const onPopState = (cb: () => void) => {
   window.addEventListener('popstate', cb);
@@ -242,12 +246,13 @@ export function keepMockViewer(href: string): string {
  * The mock viewer, or null when NEXT_PUBLIC_MOCK_VIEWER is unset (every real
  * deploy). While it is set (local dev, CI):
  * - mentor-only routes default to the mentor, so one CI build (mentee by
- *   default) reviews them as their real user. The path is known on the server
- *   too, so hydration matches and nothing flips (CLS);
+ *   default) reviews them as their real user;
  * - `?mockViewer=<key>` (any MOCK_VIEWERS key) overrides it for manual
- *   checks, the route default included. It is read through
- *   useSyncExternalStore (the server snapshot is null), so it applies right
- *   after hydration, and a role redirect keeps it (keepMockViewer).
+ *   checks, the route default included, and a role redirect keeps it
+ *   (keepMockViewer);
+ * - the server can't see the param, so the server render and the first paint
+ *   are `loading`, as a real viewer is before /me: no redirect or gate ever
+ *   acts on the default before the param applies, and the HTML matches.
  */
 function useMockViewer(): Viewer | null {
   const env = process.env.NEXT_PUBLIC_MOCK_VIEWER;
@@ -257,7 +262,9 @@ function useMockViewer(): Viewer | null {
     () => (env ? readMockParam() : null),
     () => null,
   );
+  const hydrated = useHydrated();
   if (!env) return null;
+  if (!hydrated) return MOCK_PENDING;
   const byRoute = MENTOR_ONLY_ROUTES.some((r) => path?.startsWith(r)) ? 'mentor' : env;
   const pick = param ?? byRoute;
   // Own keys only: `?mockViewer=constructor` must not reach Object.prototype.
