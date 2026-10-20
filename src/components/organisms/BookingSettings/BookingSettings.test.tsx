@@ -123,6 +123,9 @@ describe('noResponseLine', () => {
     expect(noResponseLine(12)).toBe(
       'If you don’t respond by 12 hours before the session, the request expires and the mentee will be informed.',
     );
+    expect(noResponseLine(1)).toBe(
+      'If you don’t respond by 1 hour before the session, the request expires and the mentee will be informed.',
+    );
     expect(noResponseLine(null)).toBe(
       'If you don’t respond in time, the request expires and the mentee will be informed.',
     );

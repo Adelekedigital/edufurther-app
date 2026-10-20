@@ -40,7 +40,7 @@ export const BOOKING_COPY = {
  */
 export function noResponseLine(hours: number | null): string {
   return hours
-    ? `If you don’t respond by ${hours} hours before the session, the request expires and the mentee will be informed.`
+    ? `If you don’t respond by ${hours} ${hours === 1 ? 'hour' : 'hours'} before the session, the request expires and the mentee will be informed.`
     : 'If you don’t respond in time, the request expires and the mentee will be informed.';
 }
 

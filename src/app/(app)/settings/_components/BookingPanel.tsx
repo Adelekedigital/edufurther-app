@@ -56,6 +56,10 @@ export const BookingPanel = forwardRef<PanelHandle, { userId: string }>(function
       setDraft(server);
     }
   }
+  // A cap lowered while editing (a refused save refetches it): the window comes
+  // down to it, as Calendar's form does, or every Save would be refused again.
+  const cap = defaults.data?.maxWindowDays;
+  if (draft && cap && draft.windowDays > cap) setDraft({ ...draft, windowDays: cap });
 
   const [toast, setToast] = useState<string | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);

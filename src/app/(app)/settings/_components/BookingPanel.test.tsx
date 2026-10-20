@@ -115,6 +115,28 @@ describe('BookingPanel', () => {
     expect(ok).toBe(true);
   });
 
+  it('a refetch while editing keeps the edit; a clean panel takes the new values', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<BookingPanel userId="u1" />);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Session length' }), '90');
+    defaults = { ...defaults, data: { ...stored, durationMin: 45 } };
+    rerender(<BookingPanel userId="u1" />);
+    expect(screen.getByRole('combobox', { name: 'Session length' })).toHaveValue('90');
+    await user.click(screen.getByRole('button', { name: 'Discard' }));
+    defaults = { ...defaults, data: { ...stored, durationMin: 30 } };
+    rerender(<BookingPanel userId="u1" />);
+    expect(screen.getByRole('combobox', { name: 'Session length' })).toHaveValue('30');
+  });
+
+  it('a cap lowered while editing brings the window down to it, as Calendar does', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<BookingPanel userId="u1" />);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Booking window' }), '56');
+    defaults = { ...defaults, data: { ...stored, maxWindowDays: 42 } };
+    rerender(<BookingPanel userId="u1" />);
+    expect(screen.getByRole('combobox', { name: 'Booking window' })).toHaveValue('42');
+  });
+
   it('error before content: a failed load offers Try again', async () => {
     defaults = { ...defaults, data: null, error: { kind: 'offline', message: 'x' } as AppError };
     render(<BookingPanel userId="u1" />);
