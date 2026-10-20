@@ -215,6 +215,20 @@ export function viewerRole(v: Member): RouteRole {
 }
 
 /**
+ * The other onboarding a member may switch to from step 1 of `from`'s, or
+ * null (owner, 2026-10-20): only a fresh account (no goal, no mentor profile,
+ * no step saved) on its own role's flow, and only while the other flow is on.
+ */
+export function roleSwitchFor(viewer: Viewer, from: RouteRole): RouteRole | null {
+  if (viewer.kind !== 'member') return null;
+  if (viewer.isMentor || viewer.hasMentorProfile || viewer.isMentee || viewer.onboardingStarted)
+    return null;
+  if (viewerRole(viewer) !== from) return null;
+  if (from === 'mentee') return MENTOR_ONBOARDING_LIVE ? 'mentor' : null;
+  return ONBOARDING_LIVE ? 'mentee' : null;
+}
+
+/**
  * Where a member on the other role's page goes, or null to stay: their own
  * home (memberHome), in one hop. A mentee to /home, or straight to /onboarding
  * while unfinished; a mentor to /dashboard, or their onboarding or application

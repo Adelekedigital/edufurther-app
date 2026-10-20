@@ -5,6 +5,16 @@ import type { MentorApplicationState, MentorAnswers } from '@/types/mentorOnboar
 import type { Viewer } from '@/types/mentor';
 import { MentorOnboardingScreen } from './MentorOnboardingScreen';
 
+// Both flows on, before access.ts reads them: step 1 may offer the mentee flow.
+vi.hoisted(() => {
+  process.env.NEXT_PUBLIC_ONBOARDING_ENABLED = 'true';
+  process.env.NEXT_PUBLIC_MENTOR_ONBOARDING_ENABLED = 'true';
+});
+const switchTo = vi.fn();
+vi.mock('@/lib/api/data/roleHooks', () => ({
+  useSwitchRole: () => ({ switchTo, isPending: false, error: null }),
+}));
+
 const replace = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace, push: vi.fn() }),
@@ -156,6 +166,7 @@ beforeEach(() => {
   avatar.uploadedStamp = 0;
   avatar.uploadedUrl = null;
   topicsError = null;
+  switchTo.mockReset().mockResolvedValue(undefined);
 });
 
 describe('MentorOnboardingScreen', () => {
@@ -641,5 +652,45 @@ describe('MentorOnboardingScreen', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
     await screen.findByRole('heading', { level: 1, name: 'About you' });
     await waitFor(() => expect(requestAssist).toHaveBeenCalledTimes(2));
+  });
+});
+
+describe('MentorOnboardingScreen: "Join as a mentee" on step 1 (owner, 2026-10-20)', () => {
+  const join = () => screen.queryByRole('button', { name: 'Join as a mentee' });
+  beforeEach(() => {
+    viewer = { ...viewer, signedUpAsMentor: true, onboardingStarted: false } as Viewer;
+  });
+
+  it('a fresh mentor sign-up sees it beside the counter; a click saves mentee once', async () => {
+    render(<MentorOnboardingScreen />);
+    expect(screen.getByText('Step 1 of 4')).not.toHaveClass('end');
+    expect(join()).toHaveClass('roleSwitch');
+    await userEvent.click(join()!);
+    expect(switchTo).toHaveBeenCalledTimes(1);
+    expect(switchTo).toHaveBeenCalledWith('mentee');
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('gone on step 2, and still gone back on step 1 once step 1 is saved', async () => {
+    render(<MentorOnboardingScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'School selection' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await screen.findByRole('heading', { level: 1, name: 'Where did you study?' });
+    expect(join()).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByText('Step 1 of 4')).toHaveClass('end');
+    expect(join()).toBeNull();
+  });
+
+  it('not for a returning applicant or an account with a step saved', () => {
+    appState = stateWith({ lastStep: 'help', hasProfile: true });
+    const { unmount } = render(<MentorOnboardingScreen />);
+    expect(join()).toBeNull();
+    unmount();
+    appState = stateWith();
+    viewer = { ...viewer, onboardingStarted: true } as Viewer;
+    render(<MentorOnboardingScreen />);
+    expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
+    expect(join()).toBeNull();
   });
 });

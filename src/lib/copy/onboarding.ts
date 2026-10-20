@@ -234,3 +234,10 @@ export const FLOW_COPY = {
   loadErrorBody: 'Check your connection and try again.',
   saveError: 'We couldn’t save your answers. Check your connection and try again.',
 };
+
+/** Step 1's switch to the other onboarding, for a fresh account (ours, owner 2026-10-20). */
+export const ROLE_SWITCH_COPY = {
+  mentor: 'Join as a mentor',
+  mentee: 'Join as a mentee',
+  error: 'Couldn’t switch. Try again.',
+};

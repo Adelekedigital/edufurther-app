@@ -937,6 +937,7 @@ PRD: Mentee Onboarding v5 (deviation table, H8). Rows the PRD settles are produc
 | Photo initials `32px` | `--text-h3` (32px on desktop, smaller on the phone type scale) | Raw px fails `lint:css`; the phone scale shrinks it with the rest | — |
 | "See approval preview" on the Application sent screen | Not rendered | A prototype link to another design file | never |
 | "Add the country you studied in." for every school without a catalogue country | Only the current school, an unsaved school, or one with its picker open | The API keeps a typed school's country only as the current school's study country, so an older saved school can't hold one | backend stores a country per education entry |
+| Both onboardings’ step 1: the "Step 1 of N" counter alone, on the right | Ours (owner, 2026-10-20), a design request for both onboarding designs: for a fresh account (no goal, no mentor profile, no step saved) step 1’s row puts the counter left and "Join as a mentor" (mentee flow) or "Join as a mentee" (mentor flow) right, the counter’s size in `--text-secondary`, underlined on hover and focus only, a 44px tap area; it saves the role (`useSwitchRole`) and the role redirect opens the other flow. From step 2, or once a step is saved, the row is as drawn (`StepCounterRow`) | A wrong pick at sign-up had no way across before anything is saved; low emphasis so it doesn’t steer the choice | design draws the switch |
 
 ## Mentee Settings (`Mentee Settings.dc.html`, route `/settings/[tab]`, PR 4: frame and Profile)
 

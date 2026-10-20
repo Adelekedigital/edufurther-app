@@ -9,6 +9,7 @@ import { FLOW_COPY, STEP_ORDER, stepLabel } from '@/lib/copy/mentorOnboarding';
 import { personCover } from '@/lib/utils/person';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { OnboardingFrame } from '../../_components/OnboardingFrame';
+import { StepCounterRow } from '../../_components/StepCounterRow';
 import { Waiting } from '../../_components/Waiting';
 import { AboutStep } from './AboutStep';
 import { EducationStep } from './EducationStep';
@@ -86,15 +87,21 @@ export function MentorOnboardingScreen() {
           )}
 
           <div className={styles.top}>
-            <div className={styles.topRow}>
-              {n > 1 && (
-                <button type="button" className={styles.back} onClick={f.back} disabled={f.busy}>
-                  <Icon name="arrow_back" size={20} />
-                  {FLOW_COPY.back}
-                </button>
-              )}
-              <span className={styles.stepLabel}>{label}</span>
-            </div>
+            <StepCounterRow
+              label={label}
+              from="mentor"
+              // `saved`: a step saved on this visit, or a resumed account.
+              canSwitch={n === 1 && !f.saved}
+              disabled={f.busy}
+              back={
+                n > 1 && (
+                  <button type="button" className={styles.back} onClick={f.back} disabled={f.busy}>
+                    <Icon name="arrow_back" size={20} />
+                    {FLOW_COPY.back}
+                  </button>
+                )
+              }
+            />
             <StepBars total={STEP_ORDER.length} current={n - 1} label={label} spaced />
           </div>
 

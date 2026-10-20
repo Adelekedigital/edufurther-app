@@ -29,6 +29,7 @@ import { cx } from '@/lib/utils/cx';
 import type { Mentor } from '@/types/mentor';
 import { GuestBanner } from './GuestBanner';
 import { OnboardingFrame } from './OnboardingFrame';
+import { StepCounterRow } from './StepCounterRow';
 import { TopicsSheet } from './TopicsSheet';
 import { Waiting } from './Waiting';
 import { useOnboardingFlow } from './useOnboardingFlow';
@@ -42,7 +43,9 @@ function focusField(id: string) {
   const el = document.getElementById(id);
   if (!el) return;
   el.focus({ preventScroll: true });
-  window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - FOCUS_OFFSET) });
+  window.scrollTo({
+    top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - FOCUS_OFFSET),
+  });
 }
 
 /**
@@ -164,20 +167,25 @@ export function OnboardingScreen() {
           }}
         >
           <div className={styles.top}>
-            <div className={styles.topRow}>
-              {n === 2 && (
-                <button
-                  type="button"
-                  className={styles.back}
-                  onClick={f.back}
-                  disabled={f.save.isPending}
-                >
-                  <Icon name="arrow_back" size={20} />
-                  {FLOW_COPY.back}
-                </button>
-              )}
-              <span className={styles.stepLabel}>{label}</span>
-            </div>
+            <StepCounterRow
+              label={label}
+              from="mentee"
+              canSwitch={n === 1 && f.nothingSaved}
+              disabled={f.save.isPending}
+              back={
+                n === 2 && (
+                  <button
+                    type="button"
+                    className={styles.back}
+                    onClick={f.back}
+                    disabled={f.save.isPending}
+                  >
+                    <Icon name="arrow_back" size={20} />
+                    {FLOW_COPY.back}
+                  </button>
+                )
+              }
+            />
             <StepBars total={2} current={n - 1} label={label} spaced />
           </div>
 
@@ -276,8 +284,8 @@ export function OnboardingScreen() {
                 : f.guest?.after === 'booking'
                   ? GUEST_COPY.backToBooking
                   : f.guestMentor
-                  ? GUEST_COPY.continueToBook(f.guestMentor.firstName)
-                  : FLOW_COPY.seeMatches}
+                    ? GUEST_COPY.continueToBook(f.guestMentor.firstName)
+                    : FLOW_COPY.seeMatches}
             </Button>
           </div>
         </form>
