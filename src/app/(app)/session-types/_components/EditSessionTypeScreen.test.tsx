@@ -345,6 +345,21 @@ describe('the setup lock: /session-types/<id>/edit opened by URL (PRD "App shell
     expectLockedPage(explainer.mentorNotApproved('Sessions'));
   });
 
+  it.each([
+    [
+      'a mentor who never sent their application',
+      viewers.mentorUnfinished,
+      explainer.mentorSetup('Sessions'),
+    ],
+    ['a mentor sign-up, not started', viewers.mentorSignup, explainer.mentorSetup('Sessions')],
+    ['an unfinished mentee', viewers.menteeUnfinished, explainer.menteeSetup('Sessions')],
+  ])('%s gets the setup explainer, never the wizard', (_who, v, e) => {
+    viewer = v;
+    render(<EditSessionTypeScreen id="st1" />);
+    expectLockedPage(e);
+    expect(screen.queryByRole('textbox', { name: 'Session name' })).toBeNull();
+  });
+
   it('a mentor in review still edits (only Bookings locks)', () => {
     viewer = viewers.mentorReview;
     render(<EditSessionTypeScreen id="st1" />);

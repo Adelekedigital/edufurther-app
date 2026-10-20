@@ -180,6 +180,9 @@ MOCK_VIEWERS['mentor-applicant'] = {
   firstName: 'Gbenga',
   initials: 'GE',
   isMentee: false,
+  // Remembered on the account at sign-up (#346): the setup lock applies.
+  signedUpAsMentor: true,
+  onboardingComplete: false,
   credits: null,
   avatarUrl: null,
   avatarFocus: null,
@@ -203,6 +206,11 @@ MOCK_VIEWERS['mentor-review'] = {
 MOCK_VIEWERS['mentor-declined'] = {
   ...(MOCK_VIEWERS['mentor-review'] as Extract<Viewer, { kind: 'member' }>),
   mentorStage: 'declined',
+};
+// A mentor profile that was never submitted: the mentor setup lock.
+MOCK_VIEWERS['mentor-unsubmitted'] = {
+  ...(MOCK_VIEWERS['mentor-review'] as Extract<Viewer, { kind: 'member' }>),
+  mentorStage: 'unsubmitted',
 };
 
 const readMockParam = () => new URLSearchParams(window.location.search).get('mockViewer');

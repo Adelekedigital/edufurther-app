@@ -66,6 +66,12 @@ const MOCK_ROLES: Record<string, Me | null> = {
     mentor_profile: { approval_status: 'pending', submitted_at: '2026-10-01T00:00:00Z' },
   },
   'mentor-declined': { is_admin: false, mentor_profile: { approval_status: 'declined' } },
+  // Signed up as a mentor, not started (viewer.ts's mentor-applicant).
+  'mentor-applicant': { is_admin: false, mentor_profile: null, primary_role: 'mentor' },
+  'mentor-unsubmitted': {
+    is_admin: false,
+    mentor_profile: { approval_status: 'pending', submitted_at: null },
+  },
 };
 
 /** Past this, `/` stops waiting and sends the viewer to Explore, which loads them itself. */

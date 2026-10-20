@@ -729,6 +729,8 @@ describe('the desktop panel is not a keyboard dead end', () => {
 describe('the setup lock: /bookings opened by URL (PRD "App shell and access")', () => {
   it.each([
     ['an unfinished mentee', viewers.menteeUnfinished, explainer.menteeSetup('Bookings')],
+    ['an unfinished mentor', viewers.mentorUnfinished, explainer.mentorSetup('Bookings')],
+    ['a mentor sign-up, not started', viewers.mentorSignup, explainer.mentorSetup('Bookings')],
     ['a mentor in review', viewers.mentorReview, explainer.mentorReview('Bookings')],
     ['a declined mentor', viewers.mentorDeclined, explainer.mentorNotApproved('Bookings')],
   ])('%s gets the explainer as the page, not the bookings', (_who, v, e) => {
@@ -763,7 +765,12 @@ describe('the setup lock: /bookings opened by URL (PRD "App shell and access")',
   it('a state whose page is switched off locks nothing (no button to a 404)', () => {
     flags.onboarding = false;
     flags.mentor = false;
-    for (const v of [viewers.menteeUnfinished, viewers.mentorReview, viewers.mentorDeclined]) {
+    for (const v of [
+      viewers.menteeUnfinished,
+      viewers.mentorUnfinished,
+      viewers.mentorReview,
+      viewers.mentorDeclined,
+    ]) {
       h.viewer = v;
       const { unmount } = render(<BookingsScreen />);
       expect(screen.getByRole('heading', { level: 1, name: 'Bookings' })).toBeInTheDocument();

@@ -48,7 +48,8 @@ const confirmShell = (shell: ConfirmShell, body: ReactNode) => (
 export function SessionTypesScreen() {
   const { viewer, member, access } = useAppShell();
   const isMentor = !!member?.isMentor;
-  const remote = useOwnSessionTypes(isMentor);
+  // A locked page (the setup lock) fetches nothing it won't show.
+  const remote = useOwnSessionTypes(isMentor && !access.locked.has('Sessions'));
   // Until we know who this is, the list is loading — never "no session types".
   const list: Remote<OwnSessionType[]> =
     viewer.kind === 'loading' ? { ...remote, isLoading: true } : remote;
@@ -298,10 +299,14 @@ export function SessionTypesScreen() {
     restore.restore(t.id);
   };
 
-  // The shared gates first, then the setup lock (accessFor decides).
-  const gate =
-    mentorGate(viewer, isMentor, '/session-types', SESSION_TYPES_GATE) ??
-    lockedPageGate(access, 'Sessions');
+  // The shared gates, then the setup lock (accessFor decides), then "for mentors".
+  const gate = mentorGate(
+    viewer,
+    isMentor,
+    '/session-types',
+    SESSION_TYPES_GATE,
+    lockedPageGate(access, 'Sessions'),
+  );
   const body: ReactNode = gate ?? (
     <SessionTypeManager
       list={list}

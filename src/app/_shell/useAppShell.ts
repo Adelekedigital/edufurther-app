@@ -1,10 +1,11 @@
 'use client';
 
+import { MENTOR_ONBOARDING_LIVE } from '@/lib/config/auth';
 import { useState } from 'react';
 import type { AccountMenuItem } from '@/components/molecules/AccountMenu/AccountMenu';
 import { useSignOut } from '@/lib/api/data/auth';
 import { useViewer } from '@/lib/api/data/viewer';
-import { accessFor, setupCredits } from '@/lib/utils/access';
+import { accessFor, inSetup, setupCredits, type Access } from '@/lib/utils/access';
 import { personCover } from '@/lib/utils/person';
 import { creditsView } from '@/lib/utils/credits';
 import { hasUnsavedChanges } from '@/lib/utils/leaveGuard';
@@ -43,7 +44,9 @@ type Member = Extract<Viewer, { kind: 'member' }>;
  * included, is a mentor: one role per account (product, 2026-09-29/30).
  */
 export function isMenteeSide(member: Member | null): member is Member {
-  return !!member && !member.isMentor;
+  // A mentor sign-up is becoming a mentor, not looking for one (while mentor
+  // onboarding is on; off, they're treated as a mentee).
+  return !!member && !member.isMentor && !(member.signedUpAsMentor && MENTOR_ONBOARDING_LIVE);
 }
 
 /**
@@ -52,9 +55,14 @@ export function isMenteeSide(member: Member | null): member is Member {
  * own Mentor Profile, so mentors only: mentees have no profile page yet (#50).
  * "Feedback" has no destination yet (#51).
  */
-export function accountItems(member: Member | null, signOut: () => void): AccountMenuItem[] {
+export function accountItems(
+  member: Member | null,
+  signOut: () => void,
+  /** In setup the profile isn't theirs to see yet (the setup lock): no "View profile". */
+  access?: Access,
+): AccountMenuItem[] {
   return [
-    ...(member?.isMentor
+    ...(member?.isMentor && !(access && inSetup(access))
       ? [
           {
             key: 'profile',
@@ -99,10 +107,14 @@ export function useAppShell() {
   const member = viewer.kind === 'member' ? viewer : null;
   // The setup lock: nav items held until onboarding or approval (lib/utils/access).
   const access = accessFor(viewer);
-  const items = accountItems(member, () => {
-    if (hasUnsavedChanges()) setConfirmingLogout(true);
-    else void signOut();
-  });
+  const items = accountItems(
+    member,
+    () => {
+      if (hasUnsavedChanges()) setConfirmingLogout(true);
+      else void signOut();
+    },
+    access,
+  );
   return {
     viewer,
     member,
@@ -130,16 +142,18 @@ export function useAppShell() {
             items,
             /** Mentees only: their monthly credits (AppShell.dc.html creditsIn=both). */
             // In setup the starter credit isn't paid yet (it is at completion): 0.
-            credits: isMenteeSide(member)
-              ? (creditsView(
-                  member.credits && access.state === 'menteeSetup'
-                    ? setupCredits(member.credits)
-                    : member.credits,
-                  undefined,
-                  member.menteeCancelRefundHours,
-                  member.completedSessions,
-                ) ?? undefined)
-              : undefined,
+            // A mentor sign-up in setup isn't a mentee: no mentee credits.
+            credits:
+              isMenteeSide(member) && access.state !== 'mentorSetup'
+                ? (creditsView(
+                    member.credits && access.state === 'menteeSetup'
+                      ? setupCredits(member.credits)
+                      : member.credits,
+                    undefined,
+                    member.menteeCancelRefundHours,
+                    member.completedSessions,
+                  ) ?? undefined)
+                : undefined,
             /** Bookings badge: requests awaiting a response (product, 2026-09-30). */
             counts: countsFor(member),
             logoutConfirm: confirmingLogout

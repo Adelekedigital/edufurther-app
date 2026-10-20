@@ -54,6 +54,8 @@ export const h = {
   viewerLoading: false,
   /** Signed in but blocked from booking (e.g. account setup): bookBlockedFor says why. */
   viewerUnlinked: false,
+  /** More about the signed-in member (e.g. a setup state); reset to none. */
+  viewerExtra: {} as Partial<Extract<Viewer, { kind: 'member' }>>,
   // The Reviews tab's list and the review note.
   reviewsRemote: reviewsState(),
   reviewPrompt: null as ReviewPrompt,
@@ -241,6 +243,7 @@ const appShellMock = () => ({
       isMentor: h.viewerIsMentor,
       completedSessions: 0,
       credits: null,
+      ...h.viewerExtra,
     } satisfies Extract<Viewer, { kind: 'member' }>;
     // canBookFor: mentors can't book.
     return {
@@ -518,6 +521,7 @@ beforeEach(() => {
   h.viewerIsMentor = false;
   h.viewerLoading = false;
   h.viewerUnlinked = false;
+  h.viewerExtra = {};
   h.reviewsRemote = reviewsState();
   h.reviewPrompt = null;
   reviewsArgs.mockReset();

@@ -3,6 +3,7 @@ import type { Viewer } from '@/types/mentor';
 
 vi.hoisted(() => {
   process.env.NEXT_PUBLIC_ONBOARDING_ENABLED = 'true';
+  process.env.NEXT_PUBLIC_MENTOR_ONBOARDING_ENABLED = 'true';
 });
 let viewer: Viewer = { kind: 'loading', signedIn: true };
 const replace = vi.fn();
@@ -32,6 +33,13 @@ describe('MenteeHomeGate: an unfinished mentee has no Home yet', () => {
     viewer = mentee({ onboardingComplete: false });
     render(<MenteeHomeGate />);
     expect(replace).toHaveBeenCalledWith('/onboarding');
+    expect(screen.queryByText('Mentee home')).toBeNull();
+  });
+
+  it('a mentor sign-up who hasn’t started goes to mentor onboarding', () => {
+    viewer = mentee({ signedUpAsMentor: true, onboardingComplete: false });
+    render(<MenteeHomeGate />);
+    expect(replace).toHaveBeenCalledWith('/onboarding/mentor');
     expect(screen.queryByText('Mentee home')).toBeNull();
   });
 

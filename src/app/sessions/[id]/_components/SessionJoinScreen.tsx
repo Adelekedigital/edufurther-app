@@ -27,7 +27,8 @@ import { ReviewDialog } from '@/app/_reviews/ReviewDialog';
 import { ConfirmActionDialog } from '@/app/_sessions/ConfirmActionDialog';
 import { IntakeFileViewer } from '@/app/_sessions/IntakeFileViewer';
 import { canBookFor } from '@/app/_shell/bookBlocked';
-import { memberGate, SESSION_GATE } from '@/app/_shell/MentorGate';
+import { lockedPageGate, memberGate, SESSION_GATE } from '@/app/_shell/MentorGate';
+import { accessFor } from '@/lib/utils/access';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
 import { useMyReviewableSessions } from '@/lib/api/data/reviewableSessions';
 import { useSendReview } from '@/lib/api/data/reviewWrite';
@@ -112,7 +113,10 @@ export function SessionJoinScreen({ id }: { id: string }) {
   const timeZone = member?.timeZone ?? deviceZone;
   const accountZone = member?.timeZone ?? deviceZone;
 
-  const room = useSessionRoom(id, userId);
+  // A session is a booking: the setup lock holds it as it holds Bookings, and
+  // a locked page doesn't fetch what it won't show.
+  const access = accessFor(viewer);
+  const room = useSessionRoom(id, access.locked.has('Bookings') ? null : userId);
   const data = room.data;
   // The clock stops once the outcome is final: nothing on a completed or
   // missed page changes with time. Known from the last render, adjusted while
@@ -227,7 +231,9 @@ export function SessionJoinScreen({ id }: { id: string }) {
     if (text) setSaid((last) => ({ text, id: (last?.id ?? 0) + 1 }));
   }
 
-  const gate = memberGate(viewer, `/sessions/${encodeURIComponent(id)}`, SESSION_GATE);
+  const gate =
+    memberGate(viewer, `/sessions/${encodeURIComponent(id)}`, SESSION_GATE) ??
+    lockedPageGate(access, 'Bookings');
 
   let body: ReactNode;
   // What getting ready shows (aside, phone buttons and sheets), while there is

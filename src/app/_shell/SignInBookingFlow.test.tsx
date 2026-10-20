@@ -25,6 +25,7 @@ vi.mock('./useAppShell', () => ({ useAppShell: () => ({ viewer }) }));
 vi.mock('@/lib/config/auth', async (orig) => ({
   ...(await orig<typeof import('@/lib/config/auth')>()),
   ONBOARDING_LIVE: true,
+  MENTOR_ONBOARDING_LIVE: true,
 }));
 
 const { SignInBookingFlow } = await import('./SignInBookingFlow');
@@ -98,6 +99,12 @@ describe('SignInBookingFlow', () => {
     expect(to).toBe('/onboarding?for=gbenga&sid=st1&time=2026-10-20T09%3A00%3A00Z&after=booking');
     // The answers never go in the URL.
     expect(to).not.toMatch(/Private/);
+  });
+
+  it('a mentor sign-up is never offered the mentee’s Finish setup (canBookFor keeps them out)', () => {
+    viewer = member({ signedUpAsMentor: true, onboardingComplete: false });
+    render(<SignInBookingFlow {...props(false)} />);
+    expect(screen.getByTestId('flow')).toHaveAttribute('data-setup', 'false');
   });
 
   it('back from onboarding: reopens on the confirm step with the answers, and says the credit came', async () => {

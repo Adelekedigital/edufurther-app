@@ -22,8 +22,10 @@ import styles from './SessionTypesScreen.module.css';
 export function EditSessionTypeScreen({ id }: { id: string }) {
   const { viewer, member, access } = useAppShell();
   const isMentor = !!member?.isMentor;
-  const saved = useSavedSessionType(id, isMentor);
-  const defaults = useMentorDefaults(isMentor ? member!.id : null);
+  // A locked page (the setup lock) fetches nothing it won't show.
+  const canFetch = isMentor && !access.locked.has('Sessions');
+  const saved = useSavedSessionType(id, canFetch);
+  const defaults = useMentorDefaults(canFetch ? member!.id : null);
   const topics = useTopics();
   // The defaults once known (or failed), kept: they only fill in inherited rules
   // for display, and a later refetch mustn't move the form's baseline.
@@ -38,11 +40,15 @@ export function EditSessionTypeScreen({ id }: { id: string }) {
   if (saved.data && draft && !topics.isLoading)
     return <SessionTypeFormScreen template={null} edit={{ id, saved: saved.data, draft }} />;
 
-  // The shared gates first, then the setup lock (accessFor decides). Once the
-  // type has loaded, SessionTypeFormScreen applies the same two.
-  const gate =
-    mentorGate(viewer, isMentor, `/session-types/${id}/edit`, SESSION_TYPES_GATE) ??
-    lockedPageGate(access, 'Sessions');
+  // The shared gates, then the setup lock (accessFor decides), then "for
+  // mentors". Once the type has loaded, SessionTypeFormScreen applies the same.
+  const gate = mentorGate(
+    viewer,
+    isMentor,
+    `/session-types/${id}/edit`,
+    SESSION_TYPES_GATE,
+    lockedPageGate(access, 'Sessions'),
+  );
   const shell = (body: ReactNode) => <>{gate ?? body}</>;
   if (saved.error?.kind === 'notFound')
     return shell(

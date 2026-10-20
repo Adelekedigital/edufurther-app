@@ -50,6 +50,10 @@ export const viewers = {
   menteeFinished: { ...base, isMentee: true, onboardingComplete: true },
   /** Declined, chose mentee: toViewer maps them to isMentor false, stage none. */
   menteeByChoice: { ...base, isMentee: true, mentorStage: 'none', onboardingComplete: true },
+  /** A mentor who never sent their application. */
+  mentorUnfinished: { ...base, isMentor: true, mentorStage: 'unsubmitted' },
+  /** Signed up as a mentor, not started: no mentor profile yet (`primary_role`). */
+  mentorSignup: { ...base, signedUpAsMentor: true, onboardingComplete: false },
   mentorReview: { ...base, isMentor: true, mentorStage: 'pending' },
   mentorDeclined: { ...base, isMentor: true, mentorStage: 'declined' },
   mentorApproved: {
@@ -75,6 +79,11 @@ export const explainer = {
     title: `Finish setting up to use ${item}`,
     cta: 'Continue setup',
     href: '/onboarding',
+  }),
+  mentorSetup: (item: string) => ({
+    title: `Finish setting up to use ${item}`,
+    cta: 'Continue setup',
+    href: '/onboarding/mentor',
   }),
   mentorReview: (item: string) => ({
     title: `${item} opens once you’re approved`,

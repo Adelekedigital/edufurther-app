@@ -24,6 +24,7 @@ import { TrackRecordCard } from '@/components/organisms/TrackRecordCard/TrackRec
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { bookBlockedFor } from '@/app/_shell/bookBlocked';
 import { useAppShell } from '@/app/_shell/useAppShell';
+import { useSetupDetour } from '@/app/_shell/useSetupDetour';
 import { useAvatarUpload } from '@/lib/api/data/avatar';
 import { BANNER_ACCEPT, useCoverEdit } from '@/lib/api/data/cover';
 import { useMentorProfile } from '@/lib/api/data/profile';
@@ -117,6 +118,13 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const hasSessions = (p?.sessionTypes.length ?? 0) > 0;
   const hasReviews = (p?.reviews.count ?? 0) > 0;
   const isOwner = !!p && (p.owner !== null || member?.id === p.mentor.id);
+  // The owner in setup can't see or edit their profile yet: their onboarding
+  // instead (the setup lock, owner 2026-10-20). Visitors are never detoured.
+  // Their own id in the URL counts too ("View profile" links by id), so the
+  // detour never waits on, or shows the failure of, a profile they can't use.
+  // `handle` arrives decoded (page.tsx, safely): never decode it again.
+  const ownUrl = !!member && handle === member.id;
+  const detour = useSetupDetour(viewer, isOwner || ownUrl);
   // "View as mentee" (Mentor Profile.dc.html `pvw`): the owner sees the page as
   // a mentee does, with Book drawn but off. Page state: a reload is back to editing.
   const [previewOn, setPreview] = useState(false);
@@ -365,6 +373,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
       ) : null
     ) : null;
 
+  if (detour) return null;
   return (
     <>
       <div className={styles.page}>
