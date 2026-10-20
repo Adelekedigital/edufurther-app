@@ -352,7 +352,6 @@ describe('the setup lock: /session-types/<id>/edit opened by URL (PRD "App shell
       explainer.mentorSetup('Sessions'),
     ],
     ['a mentor sign-up, not started', viewers.mentorSignup, explainer.mentorSetup('Sessions')],
-    ['an unfinished mentee', viewers.menteeUnfinished, explainer.menteeSetup('Sessions')],
   ])('%s gets the setup explainer, never the wizard', (_who, v, e) => {
     viewer = v;
     render(<EditSessionTypeScreen id="st1" />);

@@ -26,7 +26,7 @@ import {
   type Draft,
 } from '@/lib/utils/sessionTypeDraft';
 import { useAppShell } from '@/app/_shell/useAppShell';
-import { lockedPageGate, mentorGate, SESSION_TYPES_GATE } from '@/app/_shell/MentorGate';
+import { lockedPageGate, memberGate, SESSION_TYPES_GATE } from '@/app/_shell/MentorGate';
 import { DefaultsModal, PublishedModal, SavedModal, WeeklyModal } from './SessionTypeFormModals';
 import styles from './SessionTypesScreen.module.css';
 import { useLeaveGuard, useSessionTypeDraft, type EditTarget } from './useSessionTypeDraft';
@@ -113,14 +113,14 @@ export function SessionTypeFormScreen({
   const close = () => setModal(null);
   const toList = () => router.push(LIST);
 
-  // The shared gates, then the setup lock (accessFor decides), then "for mentors".
-  const gate = mentorGate(
-    viewer,
-    isMentor,
-    edit ? `/session-types/${edit.id}/edit` : '/session-types/new',
-    SESSION_TYPES_GATE,
-    lockedPageGate(access, 'Sessions'),
-  );
+  // The shared gates, then the setup lock (accessFor decides). A mentee never
+  // gets here: the page redirects (RoleRedirect).
+  const gate =
+    memberGate(
+      viewer,
+      edit ? `/session-types/${edit.id}/edit` : '/session-types/new',
+      SESSION_TYPES_GATE,
+    ) ?? lockedPageGate(access, 'Sessions');
   const loading = viewer.kind === 'loading' || topicsLoading;
 
   return (

@@ -581,14 +581,6 @@ describe('CalendarScreen', () => {
     expect(screen.getByRole('dialog', { name: 'Block out dates' })).toBeInTheDocument();
   });
 
-  it('a mentee is told the calendar is for mentors', () => {
-    viewer = mentor({ isMentor: false, isApprovedMentor: false, isMentee: true });
-    render(<CalendarScreen />);
-    expect(
-      screen.getByRole('heading', { name: 'Your calendar is for mentors' }),
-    ).toBeInTheDocument();
-  });
-
   it('a guest is asked to log in, coming back here', () => {
     viewer = { kind: 'guest' };
     render(<CalendarScreen />);
@@ -874,24 +866,18 @@ describe('the setup lock: /calendar opened by URL (PRD "App shell and access")',
     expectNoLock();
   });
 
+  // A mentee never reaches the screen: the layout redirects them (RoleRedirect.test).
   it.each([
     ['a mentor sign-up, not started', viewers.mentorSignup, explainer.mentorSetup('Calendar')],
-    ['an unfinished mentee', viewers.menteeUnfinished, explainer.menteeSetup('Calendar')],
-  ])('%s gets the setup explainer, not "for mentors"', (_who, v, e) => {
+    [
+      'a mentor who never sent their application',
+      viewers.mentorUnfinished,
+      explainer.mentorSetup('Calendar'),
+    ],
+  ])('%s gets the setup explainer', (_who, v, e) => {
     viewer = v;
     render(<CalendarScreen />);
     expectLockedPage(e);
-    expect(screen.queryByRole('heading', { name: 'Your calendar is for mentors' })).toBeNull();
-  });
-
-  it('a finished mentee, menteeByChoice included, keeps the non-mentor panel, never a lock', () => {
-    for (const v of [viewers.menteeFinished, viewers.menteeByChoice]) {
-      viewer = v;
-      const { unmount } = render(<CalendarScreen />);
-      expect(screen.getByRole('heading', { name: 'Your calendar is for mentors' })).toBeVisible();
-      expectNoLock();
-      unmount();
-    }
   });
 
   it('while /me loads: the page’s loading state, no explainer', () => {

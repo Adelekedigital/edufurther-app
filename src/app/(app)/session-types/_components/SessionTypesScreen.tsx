@@ -26,7 +26,7 @@ import { useLatest } from '@/lib/utils/useLatest';
 import type { Remote } from '@/types/mentor';
 import type { DeleteError, OwnSessionType } from '@/types/sessionType';
 import { useAppShell } from '@/app/_shell/useAppShell';
-import { lockedPageGate, mentorGate, SESSION_TYPES_GATE } from '@/app/_shell/MentorGate';
+import { lockedPageGate, memberGate, SESSION_TYPES_GATE } from '@/app/_shell/MentorGate';
 import styles from './SessionTypesScreen.module.css';
 
 const CREATE_HREF = '/session-types/new';
@@ -299,14 +299,10 @@ export function SessionTypesScreen() {
     restore.restore(t.id);
   };
 
-  // The shared gates, then the setup lock (accessFor decides), then "for mentors".
-  const gate = mentorGate(
-    viewer,
-    isMentor,
-    '/session-types',
-    SESSION_TYPES_GATE,
-    lockedPageGate(access, 'Sessions'),
-  );
+  // The shared gates, then the setup lock (accessFor decides). A mentee never
+  // gets here: the page redirects (RoleRedirect).
+  const gate =
+    memberGate(viewer, '/session-types', SESSION_TYPES_GATE) ?? lockedPageGate(access, 'Sessions');
   const body: ReactNode = gate ?? (
     <SessionTypeManager
       list={list}
