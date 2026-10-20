@@ -19,7 +19,7 @@ const groups = (i: 0 | 1) =>
         .map((a) => a.getAttribute('href')),
     );
 
-const AV = { initial: 'G', cover: 'sky' as const };
+const AV = { initials: 'G', cover: 'sky' as const };
 
 describe('AppShell navigation', () => {
   it('mentees get Home, Explore, Bookings | Settings (the default)', () => {

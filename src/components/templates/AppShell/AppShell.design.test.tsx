@@ -27,7 +27,7 @@ const REVIEW = accessFor({
   completedSessions: 0,
   credits: null,
 } as Extract<Viewer, { kind: 'member' }>);
-const AV = { initial: 'G', cover: 'sky' as const };
+const AV = { initials: 'G', cover: 'sky' as const };
 const ITEMS = [{ key: 'logout', label: 'Logout', icon: 'logout' as const, onSelect: () => {} }];
 
 const css = (file: string) =>

@@ -16,7 +16,7 @@ const Filler = () => (
 );
 
 const account = {
-  avatar: { initial: 'E', cover: 'lilac' as const },
+  avatar: { initials: 'E', cover: 'lilac' as const },
   items: [
     {
       key: 'matches',

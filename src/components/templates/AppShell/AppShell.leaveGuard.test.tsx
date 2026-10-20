@@ -109,7 +109,7 @@ describe('the More sheet (phones) under the dialog', () => {
         nav="mentor"
         chrome="member"
         offline={false}
-        account={{ avatar: { initial: 'G', cover: 'sky' }, items: [] }}
+        account={{ avatar: { initials: 'G', cover: 'sky' }, items: [] }}
       >
         <Form dirty />
       </AppShell>,
@@ -258,7 +258,7 @@ describe('Save your changes? on Logout, and while saving', () => {
         chrome="member"
         offline={false}
         account={{
-          avatar: { initial: 'A', cover: 'sky' },
+          avatar: { initials: 'A', cover: 'sky' },
           items: [],
           logoutConfirm: open ? { onKeep, onLogout } : undefined,
         }}

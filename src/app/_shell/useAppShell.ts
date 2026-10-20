@@ -121,7 +121,7 @@ export function useAppShell() {
       chrome === 'member'
         ? {
             avatar: {
-              initial: member?.initials ?? '',
+              initials: member?.initials ?? '',
               src: member?.avatarUrl ?? null,
               focus: member?.avatarFocus ?? null,
               // Same colour as their profile's banner and photo circle.

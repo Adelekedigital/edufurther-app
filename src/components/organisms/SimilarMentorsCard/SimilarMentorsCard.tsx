@@ -5,7 +5,6 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Star } from '@/components/atoms/Star/Star';
 import { formatFreeDay, formatRating, inSentence } from '@/lib/utils/format';
-import { personCover } from '@/lib/utils/person';
 import type { SimilarMentor } from '@/types/mentor';
 import styles from './SimilarMentorsCard.module.css';
 
@@ -66,7 +65,7 @@ export function SimilarMentorsCard({
               <div className={styles.top}>
                 <Avatar
                   size="md"
-                  tone={personCover(m.id)}
+                  tone={m.cover}
                   initials={m.initials}
                   src={m.photoUrl}
                   focus={m.photoFocus}

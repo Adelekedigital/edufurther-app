@@ -6,7 +6,7 @@ const setup = () => {
   const onLogout = vi.fn();
   render(
     <AccountMenu
-      avatar={{ initial: 'E', cover: 'lilac' }}
+      avatar={{ initials: 'E', cover: 'lilac' }}
       items={[
         { key: 'profile', label: 'View profile', icon: 'account_box', href: '/mentors/u1' },
         {
@@ -68,7 +68,7 @@ describe('AccountMenu', () => {
   it('shows the photo when there is one, else the initial on the cover’s deep tone', () => {
     const { rerender } = render(
       <AccountMenu
-        avatar={{ initial: 'E', cover: 'mint', src: '/p.webp', focus: { x: 0.5, y: 0.2 } }}
+        avatar={{ initials: 'E', cover: 'mint', src: '/p.webp', focus: { x: 0.5, y: 0.2 } }}
         items={[]}
       />,
     );
@@ -77,7 +77,7 @@ describe('AccountMenu', () => {
     expect(img).toHaveAttribute('src', '/p.webp');
     expect(img).toHaveAttribute('alt', '');
     expect(img.parentElement!.style.getPropertyValue('--avatar-y')).toBe('20.0%');
-    rerender(<AccountMenu avatar={{ initial: 'E', cover: 'mint' }} items={[]} />);
+    rerender(<AccountMenu avatar={{ initials: 'E', cover: 'mint' }} items={[]} />);
     expect(button.querySelector('img')).toBeNull();
     expect(button).toHaveTextContent('E');
     expect(button.firstElementChild!.getAttribute('style')).toContain('var(--cover-mint-ink)');
