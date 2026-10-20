@@ -60,7 +60,7 @@
     "declaration-property-value-disallowed-list": 1
   },
   "src/components/organisms/ProfileHeader/ProfileHeader.module.css": {
-    "declaration-property-value-disallowed-list": 7
+    "declaration-property-value-disallowed-list": 1
   },
   "src/components/organisms/ProfileOverview/ProfileOverview.module.css": {
     "declaration-property-value-disallowed-list": 1

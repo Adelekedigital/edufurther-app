@@ -1,10 +1,11 @@
-/* eslint-disable @next/next/no-img-element -- remote avatars and banners of unknown host/size; see performance notes in design-divergence.md */
-import type { CSSProperties, ReactNode, Ref } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Star } from '@/components/atoms/Star/Star';
 import { Tag } from '@/components/atoms/Tag/Tag';
+import { CoverBanner } from '@/components/molecules/CoverBanner/CoverBanner';
 import { ProfilePhoto, type PhotoUpload } from '@/components/molecules/ProfilePhoto/ProfilePhoto';
+import { CoverHeader } from '@/components/organisms/CoverHeader/CoverHeader';
 import { cx } from '@/lib/utils/cx';
 import { coverVars, topicIcon } from '@/lib/utils/cover';
 import { formatRating, sessionsLabel } from '@/lib/utils/format';
@@ -68,13 +69,10 @@ export function ProfileHeader({
 }: ProfileHeaderProps) {
   const m = profile.mentor;
   // Cover colour (Mentor Profile.dc.html): a light banner when there's no
-  // banner image, and its paired dark colour behind the initials.
+  // banner image, and its paired dark colour behind the initials. The cover
+  // art (faint icons for the first 3 topics, a dot pattern, or one large
+  // icon) is CoverBanner's, never over a photo.
   const coverKey = personCover(m.id, profile.cover.color);
-  const cover = coverVars(coverKey);
-  // Cover art (Mentor Profile.dc.html): faint icons for the first 3 topics, a
-  // dot pattern, or one large icon. Only on a colour banner, never over a photo.
-  const art = profile.bannerUrl ? 'none' : profile.cover.art;
-  const artIcons = m.topics.slice(0, 3).map((t) => topicIcon(t.label));
   const location = locationLine(profile.originCountry, profile.studyCountry);
 
   // Never an empty star rating (product rule): rating only with reviews. A new
@@ -104,130 +102,94 @@ export function ProfileHeader({
       <strong className={styles.strong}>No reviews yet</strong>
     ) : null;
 
+  // Topics sit before the actions in the DOM, so a stacked header (phones)
+  // reads name, topics, buttons; from 768px CSS order puts them on their own
+  // line under the row, as drawn.
+  const topics = (m.topics.length > 0 || onEditTopics) && (
+    <div className={styles.topics}>
+      {m.topics.length > 0 && (
+        <ul className={styles.topicList} aria-label="Helps with">
+          {m.topics.map((t) => (
+            <li key={t.slug}>
+              <Tag tone="topic">{t.label}</Tag>
+            </li>
+          ))}
+        </ul>
+      )}
+      {onEditTopics && (
+        <button
+          ref={editTopicsRef}
+          type="button"
+          className={styles.editTopics}
+          onClick={onEditTopics}
+        >
+          <Icon name="edit" size={16} />
+          Edit topics
+        </button>
+      )}
+    </div>
+  );
+
+  // The design's crop sits a quarter down unless the face is known.
+  const photo = photoEdit ? (
+    <ProfilePhoto
+      size={112}
+      ring="white"
+      objectY={0.25}
+      person={{
+        initials: m.initials,
+        cover: coverKey,
+        src: m.photoUrl,
+        focus: m.photoFocus,
+        name: m.name,
+      }}
+      upload={photoEdit.upload}
+      onRemove={photoEdit.onRemove}
+      inputId={photoEdit.inputId}
+    />
+  ) : (
+    <Avatar
+      size={112}
+      ring="white"
+      objectY={0.25}
+      initials={m.initials}
+      tone={coverKey}
+      src={m.photoUrl}
+      focus={m.photoFocus}
+      alt={m.name}
+    />
+  );
+
   return (
-    <section className={styles.card} aria-labelledby="profile-name">
-      <div
-        className={styles.banner}
-        style={{ '--cover-bg': cover.bg, '--cover-ink': cover.ink } as CSSProperties}
-      >
-        {profile.bannerUrl && <img src={profile.bannerUrl} alt="" className={styles.bannerImg} />}
-        {art === 'pattern' && <div className={styles.artPattern} aria-hidden />}
-        {art === 'single' && (
-          <div className={styles.artSingleWrap} aria-hidden>
-            <span className={styles.artSingle}>{artIcons[0] ?? 'school'}</span>
-          </div>
-        )}
-        {art === 'icons' && artIcons.length > 0 && (
-          <div className={styles.artIconsWrap} aria-hidden>
-            <div className={styles.artIcons}>
-              {artIcons.map((icon, i) => (
-                <span key={i} className={styles.artIcon} data-i={i}>
-                  {icon}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-      {bannerTools && <div className={styles.bannerTools}>{bannerTools}</div>}
-      <div className={styles.head}>
-        {/* The design's crop sits a quarter down unless the face is known. */}
-        {photoEdit ? (
-          <ProfilePhoto
-            className={styles.avatarWrap}
-            size={112}
-            ring="white"
-            objectY={0.25}
-            person={{
-              initials: m.initials,
-              cover: coverKey,
-              src: m.photoUrl,
-              focus: m.photoFocus,
-              name: m.name,
-            }}
-            upload={photoEdit.upload}
-            onRemove={photoEdit.onRemove}
-            inputId={photoEdit.inputId}
-          />
-        ) : (
-          <Avatar
-            className={styles.avatarWrap}
-            size={112}
-            ring="white"
-            objectY={0.25}
-            initials={m.initials}
-            tone={coverKey}
-            src={m.photoUrl}
-            focus={m.photoFocus}
-            alt={m.name}
-          />
-        )}
-        {introEditor ? (
-          <div className={cx(styles.intro, styles.introEdit)}>
-            {/* The page keeps its title while the form replaces it. */}
-            <h1 id="profile-name" className="sr-only">
-              {m.name}
-            </h1>
-            {introEditor}
-          </div>
-        ) : (
-          <div className={styles.intro}>
-            <h1 id="profile-name" className={styles.name}>
-              {m.name}
-            </h1>
-            {profile.headline && <p className={styles.headline}>{profile.headline}</p>}
-            <p className={styles.proof}>
-              {proof}
-              {proof ? (
-                <span className={styles.sep}>
-                  <span aria-hidden>·</span>
-                  <span>{sessionsLabel(m.completedSessions)}</span>
-                </span>
-              ) : (
-                <span>{sessionsLabel(m.completedSessions)}</span>
-              )}
-              {location && (
-                <span className={cx(styles.sep, styles.location)}>
-                  <span aria-hidden className={styles.dot}>
-                    ·
-                  </span>
-                  <span className={styles.item}>
-                    <Icon name="location_on" size={14} />
-                    {location}
-                  </span>
-                </span>
-              )}
-            </p>
-          </div>
-        )}
-        {/* Topics sit before the actions in the DOM, so a stacked header (phones)
-            reads name → topics → buttons; from 768px CSS order puts them on
-            their own line under the row, as drawn. */}
-        {(m.topics.length > 0 || onEditTopics) && (
-          <div className={styles.topics}>
-            {m.topics.length > 0 && (
-              <ul className={styles.topicList} aria-label="Helps with">
-                {m.topics.map((t) => (
-                  <li key={t.slug}>
-                    <Tag tone="topic">{t.label}</Tag>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {onEditTopics && (
-              <button
-                ref={editTopicsRef}
-                type="button"
-                className={styles.editTopics}
-                onClick={onEditTopics}
-              >
-                <Icon name="edit" size={16} />
-                Edit topics
-              </button>
-            )}
-          </div>
-        )}
-        {(actions || status) && (
+    <CoverHeader
+      as="section"
+      className={styles.card}
+      aria-labelledby="profile-name"
+      cover={
+        <CoverBanner
+          className={styles.banner}
+          tones={coverVars(coverKey)}
+          bannerUrl={profile.bannerUrl}
+          art={profile.cover.art}
+          icons={m.topics.slice(0, 3).map((t) => topicIcon(t.label))}
+          tools={bannerTools}
+        />
+      }
+      photo={photo}
+      // DIVERGENCE (product, design request #47): the photo is pinned 10px into
+      // the banner, where the design draws it at desktop; with the design's
+      // flex-end it slid below the banner whenever the intro ran to three lines.
+      // On phones the 72px photo rises 36px into the 96px banner.
+      overlap={10}
+      phoneOverlap={36}
+      layout="responsive"
+      // The intro starts at least 24px under the banner (the design's 72px
+      // padding less the 48px the row was pulled up by).
+      clearance={24}
+      bodyClassName={styles.head}
+      footer={topics}
+      aside={
+        (actions || status) && (
           <div className={styles.actions}>
             {status && (
               <p className={styles.status}>
@@ -237,8 +199,47 @@ export function ProfileHeader({
             )}
             {actions}
           </div>
-        )}
-      </div>
-    </section>
+        )
+      }
+    >
+      {introEditor ? (
+        <div className={cx(styles.intro, styles.introEdit)}>
+          {/* The page keeps its title while the form replaces it. */}
+          <h1 id="profile-name" className="sr-only">
+            {m.name}
+          </h1>
+          {introEditor}
+        </div>
+      ) : (
+        <div className={styles.intro}>
+          <h1 id="profile-name" className={styles.name}>
+            {m.name}
+          </h1>
+          {profile.headline && <p className={styles.headline}>{profile.headline}</p>}
+          <p className={styles.proof}>
+            {proof}
+            {proof ? (
+              <span className={styles.sep}>
+                <span aria-hidden>·</span>
+                <span>{sessionsLabel(m.completedSessions)}</span>
+              </span>
+            ) : (
+              <span>{sessionsLabel(m.completedSessions)}</span>
+            )}
+            {location && (
+              <span className={cx(styles.sep, styles.location)}>
+                <span aria-hidden className={styles.dot}>
+                  ·
+                </span>
+                <span className={styles.item}>
+                  <Icon name="location_on" size={14} />
+                  {location}
+                </span>
+              </span>
+            )}
+          </p>
+        </div>
+      )}
+    </CoverHeader>
   );
 }
