@@ -7,6 +7,8 @@ import type { ReactNode } from 'react';
 // in RouteFocusManager now (ADR 0007), tested there.
 const h = vi.hoisted(() => ({
   pathname: '/bookings',
+  replace: vi.fn(),
+  viewer: { kind: 'loading', signedIn: true } as unknown,
   online: true,
   shell: { chrome: 'member', nav: 'mentor', account: { items: [] } } as {
     chrome: string;
@@ -15,7 +17,14 @@ const h = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('next/navigation', () => ({ usePathname: () => h.pathname }));
+vi.mock('next/navigation', () => ({
+  usePathname: () => h.pathname,
+  useRouter: () => ({ replace: h.replace }),
+}));
+vi.mock('@/lib/api/data/viewer', () => ({
+  useViewer: () => h.viewer,
+  keepMockViewer: (href: string) => href,
+}));
 vi.mock('@/lib/utils/useOnline', () => ({ useOnline: () => h.online }));
 vi.mock('@/app/_shell/useAppShell', () => ({ useAppShell: () => h.shell }));
 vi.mock('@/components/templates/AppShell/AppShell', () => ({
@@ -44,6 +53,8 @@ import AppGroupLayout, { activeFor } from './layout';
 beforeEach(() => {
   h.pathname = '/bookings';
   h.online = true;
+  h.replace.mockClear();
+  h.viewer = { kind: 'loading', signedIn: true };
   h.shell = { chrome: 'member', nav: 'mentor', account: { items: [] } };
 });
 
@@ -96,6 +107,31 @@ describe('AppGroupLayout', () => {
     expect(shell).toHaveAttribute('data-chrome', 'guest');
     expect(shell).toHaveAttribute('data-nav', 'unknown');
     expect(shell).toHaveAttribute('data-offline', 'true');
+  });
+});
+
+describe('the role redirect (owner, 2026-10-20)', () => {
+  it('a mentee on a mentor page keeps the shell, sees nothing of the page, and goes to /home', () => {
+    h.pathname = '/calendar';
+    h.viewer = {
+      kind: 'member',
+      id: 'u1',
+      firstName: 'Ada',
+      initials: 'A',
+      isMentee: true,
+      isApprovedMentor: false,
+      isMentor: false,
+      completedSessions: 0,
+      credits: null,
+    };
+    render(
+      <AppGroupLayout>
+        <h1>Your calendar</h1>
+      </AppGroupLayout>,
+    );
+    expect(screen.getByTestId('app-shell')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Your calendar' })).toBeNull();
+    expect(h.replace).toHaveBeenCalledWith('/home');
   });
 });
 

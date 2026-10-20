@@ -1,4 +1,4 @@
-import { toViewer } from './viewer';
+import { keepMockViewer, toViewer } from './viewer';
 
 type Me = Parameters<typeof toViewer>[0];
 const me = (over: Partial<Me> = {}): Me =>
@@ -179,5 +179,29 @@ describe('toViewer: the setup lock fields (onboardingComplete, mentorStage)', ()
       me({ mentor_profile: profile({ approval_status: 'approved', approved_seen_at: null }) }),
     );
     expect(v).toMatchObject({ mentorStage: 'approved', mentorApprovedSeen: false });
+  });
+});
+
+describe('keepMockViewer: a role redirect keeps the dev mock viewer', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('carries ?mockViewer= onto the target in mock mode', () => {
+    vi.stubEnv('NEXT_PUBLIC_MOCK_VIEWER', 'mentee');
+    window.history.replaceState(null, '', '/home?mockViewer=mentor-review');
+    expect(keepMockViewer('/mentor-application')).toBe(
+      '/mentor-application?mockViewer=mentor-review',
+    );
+    expect(keepMockViewer('/x?a=1')).toBe('/x?a=1&mockViewer=mentor-review');
+  });
+
+  it('leaves the target alone with no param, and on every real deploy', () => {
+    vi.stubEnv('NEXT_PUBLIC_MOCK_VIEWER', 'mentee');
+    expect(keepMockViewer('/home')).toBe('/home');
+    vi.stubEnv('NEXT_PUBLIC_MOCK_VIEWER', '');
+    window.history.replaceState(null, '', '/home?mockViewer=mentor');
+    expect(keepMockViewer('/dashboard')).toBe('/dashboard');
   });
 });

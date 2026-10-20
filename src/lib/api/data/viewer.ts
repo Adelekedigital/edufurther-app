@@ -219,8 +219,24 @@ const onPopState = (cb: () => void) => {
   return () => window.removeEventListener('popstate', cb);
 };
 
-/** Screens only a mentor can use: in mock mode they default to the mentor viewer. */
+/**
+ * Dev and CI only: routes the mock defaults to the approved mentor on, so one
+ * mentee-default build reviews them as their real user. Not the role rule
+ * (that is ROUTE_ROLES): `?mockViewer=` wins here, so `?mockViewer=mentee` on
+ * /dashboard shows the role redirect in dev.
+ */
 const MENTOR_ONLY_ROUTES = ['/session-types', '/dashboard', '/mentor-application'];
+
+/**
+ * `href` with this page's `?mockViewer=` kept (mock mode only), so a redirect
+ * lands on the same mock viewer rather than the route's default.
+ */
+export function keepMockViewer(href: string): string {
+  if (!process.env.NEXT_PUBLIC_MOCK_VIEWER || typeof window === 'undefined') return href;
+  const mock = readMockParam();
+  if (!mock) return href;
+  return `${href}${href.includes('?') ? '&' : '?'}mockViewer=${encodeURIComponent(mock)}`;
+}
 
 /**
  * The mock viewer, or null when NEXT_PUBLIC_MOCK_VIEWER is unset (every real
@@ -228,9 +244,10 @@ const MENTOR_ONLY_ROUTES = ['/session-types', '/dashboard', '/mentor-application
  * - mentor-only routes default to the mentor, so one CI build (mentee by
  *   default) reviews them as their real user. The path is known on the server
  *   too, so hydration matches and nothing flips (CLS);
- * - `?mockViewer=mentor|mentee|guest` overrides it for manual checks. It is
- *   read through useSyncExternalStore (the server snapshot is null), so it
- *   applies right after hydration.
+ * - `?mockViewer=<key>` (any MOCK_VIEWERS key) overrides it for manual
+ *   checks, the route default included. It is read through
+ *   useSyncExternalStore (the server snapshot is null), so it applies right
+ *   after hydration, and a role redirect keeps it (keepMockViewer).
  */
 function useMockViewer(): Viewer | null {
   const env = process.env.NEXT_PUBLIC_MOCK_VIEWER;
@@ -294,7 +311,12 @@ export function patchViewer(
   patch: Partial<
     Pick<
       Member,
-      'avatarUrl' | 'avatarFocus' | 'coverKey' | 'onboardingComplete' | 'mentorApprovedSeen'
+      | 'avatarUrl'
+      | 'avatarFocus'
+      | 'coverKey'
+      | 'onboardingComplete'
+      | 'mentorApprovedSeen'
+      | 'signedUpAsMentor'
     >
   >,
 ) {

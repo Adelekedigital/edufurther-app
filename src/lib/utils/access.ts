@@ -153,6 +153,82 @@ export function memberHome(
   return ONBOARDING_LIVE && a.onboardingComplete === false ? ONBOARDING : '/home';
 }
 
+/** Which role a page is for. */
+export type RouteRole = 'mentor' | 'mentee';
+
+/**
+ * Every role's own pages (owner, 2026-10-20): a page for the other role never
+ * shows, it redirects (`wrongRoleHome`). A path covers its sub-routes. Every
+ * page is here or in SHARED_ROUTES (access.routes.test walks src/app), so a
+ * new page adds one line.
+ */
+export const ROUTE_ROLES: Readonly<Record<string, RouteRole>> = {
+  '/dashboard': 'mentor',
+  '/calendar': 'mentor',
+  '/integrations': 'mentor',
+  '/session-types': 'mentor',
+  '/mentor-application': 'mentor',
+  '/onboarding/mentor': 'mentor',
+  '/home': 'mentee',
+  '/onboarding/mentee': 'mentee',
+};
+
+/**
+ * Pages any role (or a guest) may open; never redirected by role. Settings
+ * picks its tabs per role itself; `/onboarding` is the entry router. `/`
+ * means the root only.
+ */
+export const SHARED_ROUTES: readonly string[] = [
+  '/',
+  '/explore',
+  '/mentors',
+  '/bookings',
+  '/settings',
+  '/sessions',
+  '/onboarding',
+  '/login',
+  '/signup',
+];
+
+/** `path` is `route` or one of its sub-routes; `/` matches the root only. */
+export function isUnder(path: string, route: string): boolean {
+  if (route === '/') return path === '/';
+  return path === route || path.startsWith(`${route}/`);
+}
+
+/** The role a page is for, or null for a shared (or unknown) one. */
+export function routeRole(pathname: string): RouteRole | null {
+  for (const [route, role] of Object.entries(ROUTE_ROLES))
+    if (isUnder(pathname, route)) return role;
+  return null;
+}
+
+type Member = Extract<Viewer, { kind: 'member' }>;
+
+/**
+ * A member's side. A mentor sign-up with no profile yet is mentor-side only
+ * while mentor onboarding is on (memberHome's rule); a declined applicant who
+ * chose mentee (menteeByChoice) has isMentor false and is a mentee.
+ */
+export function viewerRole(v: Member): RouteRole {
+  return v.isMentor || (MENTOR_ONBOARDING_LIVE && v.signedUpAsMentor) ? 'mentor' : 'mentee';
+}
+
+/**
+ * Where a member on the other role's page goes, or null to stay: a mentee to
+ * /home (Home forwards an unfinished one to onboarding), a mentor to their own
+ * home (memberHome). Null while /me loads and for anyone who isn't a member:
+ * their pages keep their own gates. The role is set at sign-up only, so a
+ * fresh mentee on /onboarding/mentor goes to /home too: a URL never makes
+ * anyone a mentor (owner, 2026-10-20).
+ */
+export function wrongRoleHome(viewer: Viewer, pathname: string | null): string | null {
+  if (viewer.kind !== 'member' || !pathname) return null;
+  const role = routeRole(pathname);
+  if (!role || role === viewerRole(viewer)) return null;
+  return role === 'mentee' ? memberHome(viewer) : '/home';
+}
+
 /**
  * What the viewer can't use yet. Loading, guests and every other non-member
  * get no locks: the nav shows nothing wrong before /me answers. A state whose

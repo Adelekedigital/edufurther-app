@@ -3,6 +3,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { keys } from '@/lib/api/data/keys';
 import { savePrimaryRole } from '@/lib/api/data/roles';
+import { patchViewer } from '@/lib/api/data/viewer';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SignInFormProps, SignInStep, StartError } from '@/components/organisms/SignInForm';
@@ -224,8 +225,8 @@ export function useSignInFlow({
       if (acct.kind === 'error') return router.replace(next ?? '/');
       const a = toAccount(acct);
       // A mentor sign-up is remembered on the account before anything routes,
-      // so a later visit without `role=mentor` still continues as a mentor
-      // (owner, 2026-10-20). A failure leaves this visit's query in charge.
+      // so every later visit continues as a mentor (owner, 2026-10-20). This
+      // is the only place a role is set: no URL changes it afterwards.
       // A brand-new account only: a returning one on /signup?role=mentor
       // keeps the role it settled (one role per account).
       if (
@@ -238,10 +239,12 @@ export function useSignInFlow({
         try {
           await savePrimaryRole(a.id, 'mentor');
           a.signedUpAsMentor = true;
-          // The next page reads a fresh /me, not one cached before the save.
+          // The next page routes on the account alone (no URL role), so a /me
+          // cached before the save must already say so; then refetch it.
+          patchViewer(qc, { signedUpAsMentor: true });
           void qc.invalidateQueries({ queryKey: keys.viewer.all });
         } catch {
-          // The onboarding entry tries again while the query is there.
+          // Not retried by a page: the account stays a mentee (decided at sign-up).
         }
         if (!mounted.current) return;
       }
