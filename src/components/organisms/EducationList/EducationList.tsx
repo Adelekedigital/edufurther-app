@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { EDUCATION_COPY, SETTINGS_COPY } from '@/lib/copy/settings';
 import { educationMeta, educationTitle, type EducationRow } from '@/lib/utils/educationLine';
 import styles from './EducationList.module.css';
+import { CardHeader } from '@/components/molecules/CardHeader/CardHeader';
 
 type Props = {
   status: 'loading' | 'error' | 'ready';
@@ -55,19 +56,20 @@ export function EducationList({
   return (
     <div className={styles.wrap}>
       <section className={styles.card} aria-labelledby={headingId}>
-        <div className={styles.head}>
-          <div className={styles.headText}>
-            <h2 id={headingId} ref={headingRef} tabIndex={-1} className={styles.title}>
-              {EDUCATION_COPY.title}
-            </h2>
-            <span className={styles.sub}>{words.sub}</span>
-          </div>
-          {filled && (
-            <Button ref={addRef} variant="text" size="small" icon="add" onClick={onAdd}>
-              {EDUCATION_COPY.add}
-            </Button>
-          )}
-        </div>
+        <CardHeader
+          className={styles.head}
+          id={headingId}
+          headingRef={headingRef}
+          title={EDUCATION_COPY.title}
+          sub={words.sub}
+          action={
+            filled && (
+              <Button ref={addRef} variant="text" size="small" icon="add" onClick={onAdd}>
+                {EDUCATION_COPY.add}
+              </Button>
+            )
+          }
+        />
         {/* Always in the page, so what lands in it is read out. */}
         <p role="status" className="sr-only">
           {status === 'loading' && EDUCATION_COPY.loading}

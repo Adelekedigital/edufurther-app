@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { MENTOR_EXPERTISE_COPY as C } from '@/lib/copy/mentorSettings';
 import { cx } from '@/lib/utils/cx';
 import styles from './MentorExpertise.module.css';
+import { CardHeader } from '@/components/molecules/CardHeader/CardHeader';
 
 type TopicsCardProps = {
   topics: { slug: string; label: string }[];
@@ -25,26 +26,25 @@ export function TopicsCard({ topics, onEdit, editRef }: TopicsCardProps) {
   const empty = topics.length === 0;
   return (
     <section className={cx(styles.card, styles.padded)} aria-labelledby={id}>
-      <div className={styles.head}>
-        <div className={styles.headText}>
-          <h2 id={id} className={styles.title}>
-            {C.topicsTitle}
-          </h2>
-          <span className={styles.sub}>{C.topicsSub}</span>
-        </div>
-        {!empty && (
-          <Button
-            ref={editRef}
-            variant="text"
-            size="small"
-            icon="edit"
-            aria-label={C.editTopicsLabel}
-            onClick={onEdit}
-          >
-            {C.editTopics}
-          </Button>
-        )}
-      </div>
+      <CardHeader
+        id={id}
+        title={C.topicsTitle}
+        sub={C.topicsSub}
+        action={
+          !empty && (
+            <Button
+              ref={editRef}
+              variant="text"
+              size="small"
+              icon="edit"
+              aria-label={C.editTopicsLabel}
+              onClick={onEdit}
+            >
+              {C.editTopics}
+            </Button>
+          )
+        }
+      />
       {empty ? (
         <div className={styles.topicsEmpty}>
           <EmptyState

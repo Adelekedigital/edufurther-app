@@ -21,6 +21,7 @@ import {
 import type { SocialKind } from '@/types/mentor';
 import type { SocialRow, SocialSave } from '@/types/mentorSettings';
 import styles from './SocialLinksCard.module.css';
+import { CardHeader } from '@/components/molecules/CardHeader/CardHeader';
 
 type SocialLinksCardProps = {
   status: 'loading' | 'error' | 'ready';
@@ -172,26 +173,30 @@ export function SocialLinksCard({
   const filled = status === 'ready';
   return (
     <section className={styles.card} aria-labelledby={headingId}>
-      <div className={styles.head}>
-        <div className={styles.headText}>
-          <h2 id={headingId} ref={heading} tabIndex={-1} className={styles.title}>
-            {C.title}
-          </h2>
-          <span className={styles.sub}>{C.sub}</span>
-        </div>
-        {/* Hidden while the form is open: its own button is the "Add link" then. */}
-        {/* Also gone once every platform is used: there'd be nothing to pick. */}
-        {filled && !form && open.length > 0 && (
-          <Button
-            ref={add}
-            variant="secondary-outlined"
-            size="medium"
-            onClick={() => openForm({ editId: null, kind: null, draft: '' })}
-          >
-            {C.add}
-          </Button>
-        )}
-      </div>
+      <CardHeader
+        className={styles.head}
+        id={headingId}
+        headingRef={heading}
+        title={C.title}
+        sub={C.sub}
+        action={
+          // Hidden while the form is open (its own button is "Add link" then),
+          // and once every platform is used (there'd be nothing to pick).
+          filled &&
+          !form &&
+          open.length > 0 && (
+            <Button
+              ref={add}
+              variant="text"
+              size="small"
+              icon="add"
+              onClick={() => openForm({ editId: null, kind: null, draft: '' })}
+            >
+              {C.add}
+            </Button>
+          )
+        }
+      />
 
       {form && filled && (
         <div className={styles.form}>
