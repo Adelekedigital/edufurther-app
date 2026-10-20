@@ -948,3 +948,11 @@ PRD: Mentee Onboarding v5 (deviation table, H8). Rows the PRD settles are produc
 | Save bar form error in `--red-600` on `--ink-900` | `--red-300` | red-600 is 3.1:1 on ink-900; red-300 is 5.6:1 (WCAG 1.4.3) | — |
 | DS `text-secondary` button hover `--slate-400` | `--ink-700` | slate-400 is 4.48:1 on white (fails WCAG 1.4.3) | DS fixes the hover |
 | Save bar and toast centred 24px above the bottom at every width | On phones: full width less 16px a side, above the 56px tab bar | PRD: "a sticky save bar above the tab bar" on phones; the bar would cover the tab bar otherwise | design draws the phone bar |
+
+## Mentor Settings (`Mentor Settings.dc.html`, route `/settings/[tab]`, PR 4: mentor tabs and Booking rules)
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| "Approve bookings": an "If you don't respond in time" picker (decline / confirm automatically), with a "Time to respond" picker behind `respondPick` | One line: "If you don't respond by {n} hours before the session, the request expires and the mentee will be informed." (`noResponseLine`); `{n}` is `response_window_hours` from the mentor profile, no number until the backend sends it | Founder, Oct 19: decline only, no auto-confirm. Owner, Oct 19: the window is a platform setting (`RESPONSE_WINDOW_HOURS`, default 12), not the mentor's. The PRD's "12 hours, declined" was the reminder, not the rule: an unanswered request expires (Unconfirmed) and both sides get `request_expired` | auto-confirm ships (PRD "Revisit after Nov 15") |
+| "Mentees see 'Needs your approval' before they book." under the card whatever the switch | Only while approval is on | With approval off nothing says "Needs your approval"; the line would be untrue | — |
+| Booking rules option lists: notice 6 / 24 / 48 / 72 h, window 1 / 2 / 4 / 8 weeks, buffer 0 / 10 / 15 / 30 | The app's builders (`lib/utils/sessionTypeDraft`): notice 24–72 h, window presets under the platform cap, plus a stored value that isn't in the list | The backend refuses notice under 24 h and a window above the cap (backend round 3, #309); the same lists as Calendar and Sessions | backend allows shorter notice |

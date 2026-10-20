@@ -37,6 +37,11 @@ export type OwnSessionType = {
    * (backend #329, `uses_own_windows`).
    */
   usesOwnWindows: boolean;
+  /**
+   * Follows all four of the mentor's booking rules (length, notice, window,
+   * buffer). Optional so hand-made fixtures needn't say; the list read always does.
+   */
+  usesDefaultRules?: boolean;
   /** The stages it's aimed at, in the mentor's order; empty = any stage. */
   stages: ApplicationStage[];
   /** The mentor's own words for the `other` stage, or null. */

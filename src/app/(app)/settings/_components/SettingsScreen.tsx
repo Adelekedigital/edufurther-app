@@ -1,16 +1,18 @@
 'use client';
 
-import { notFound, useRouter, useSelectedLayoutSegment } from 'next/navigation';
+import { useRouter, useSelectedLayoutSegment } from 'next/navigation';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Tabs, type TabItem } from '@/components/atoms/Tabs/Tabs';
 import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
 import { SaveChangesDialog } from '@/components/templates/SaveChangesDialog/SaveChangesDialog';
 import { useViewer } from '@/lib/api/data/viewer';
+import { MENTOR_SETTINGS_SUB } from '@/lib/copy/mentorSettings';
 import { SETTINGS_COPY, TAB_LABELS, type SettingsTab } from '@/lib/copy/settings';
 import { memberGate, SETTINGS_GATE } from '@/app/_shell/MentorGate';
+import { BookingPanel } from './BookingPanel';
 import { EducationPanel } from './EducationPanel';
 import { ProfilePanel, type PanelHandle } from './ProfilePanel';
-import { DEFAULT_TAB, MENTEE_TABS } from './tabs';
+import { DEFAULT_TAB, MENTEE_TABS, MENTOR_DEFAULT_TAB, MENTOR_TABS } from './tabs';
 import styles from './SettingsScreen.module.css';
 
 const panelId = (t: SettingsTab) => `settings-${t}`;
@@ -19,22 +21,26 @@ const panelId = (t: SettingsTab) => `settings-${t}`;
  * /settings/[tab] (Mentee Settings.dc.html). Lives in the settings layout, so
  * moving between tabs keeps the screen, and an edit, mounted. Leaving a tab
  * with unsaved changes asks "Save your changes?" first (owner, 2026-10-19).
- * Settings is never locked (PRD "App shell and access"). Mentor Settings is
- * its own PRD: until it ships a mentor gets the 404 they get today.
+ * Settings is never locked (PRD "App shell and access"). A mentor gets the
+ * mentor tabs (Mentor Settings.dc.html), as each one ships.
  */
 export function SettingsScreen() {
   const viewer = useViewer();
   const router = useRouter();
   const segment = useSelectedLayoutSegment();
   const member = viewer.kind === 'member' ? viewer : null;
-  const tabs = MENTEE_TABS;
+  const mentor = !!member?.isMentor;
+  const tabs = mentor ? MENTOR_TABS : MENTEE_TABS;
+  const first = mentor ? MENTOR_DEFAULT_TAB : DEFAULT_TAB;
   const known = tabs.find((t) => t === segment);
-  const tab = known ?? DEFAULT_TAB;
+  const tab = known ?? first;
   // One handle per tab with a form: the switch guard asks the one showing.
   // A tab's panel registers here; tabs with nothing to save leave theirs out.
   const profilePanel = useRef<PanelHandle>(null);
+  const bookingPanel = useRef<PanelHandle>(null);
   const panels: Partial<Record<SettingsTab, RefObject<PanelHandle | null>>> = {
     profile: profilePanel,
+    booking: bookingPanel,
   };
   const [leaveTo, setLeaveTo] = useState<SettingsTab | null>(null);
   const [leaving, setLeaving] = useState(false);
@@ -47,14 +53,13 @@ export function SettingsScreen() {
     };
   }, []);
 
-  // Any tab this role doesn't have (a mentor-only one, or one not built yet).
+  // Any tab this role doesn't have (the other role's, or one not built yet).
   useEffect(() => {
-    if (member && !member.isMentor && segment && !known) router.replace(`/settings/${DEFAULT_TAB}`);
-  }, [member, segment, known, router]);
+    if (member && segment && !known) router.replace(`/settings/${first}`);
+  }, [member, segment, known, first, router]);
 
-  const gate = memberGate(viewer, `/settings/${segment ?? DEFAULT_TAB}`, SETTINGS_GATE);
+  const gate = memberGate(viewer, `/settings/${segment ?? first}`, SETTINGS_GATE);
   if (gate) return gate;
-  if (member?.isMentor) notFound();
 
   const go = (t: SettingsTab) => router.push(`/settings/${t}`);
   const items: TabItem[] = tabs.map((t) => ({
@@ -67,7 +72,7 @@ export function SettingsScreen() {
     <div className={styles.screen}>
       <header className={styles.head}>
         <h1 className={styles.title}>{SETTINGS_COPY.title}</h1>
-        <p className={styles.sub}>{SETTINGS_COPY.sub}</p>
+        <p className={styles.sub}>{mentor ? MENTOR_SETTINGS_SUB : SETTINGS_COPY.sub}</p>
       </header>
       <div className={styles.tabs}>
         <Tabs
@@ -83,13 +88,21 @@ export function SettingsScreen() {
         />
       </div>
 
-      <TabPanel id={panelId('profile')} active={tab === 'profile'} keepMounted>
-        {member ? <ProfilePanel ref={profilePanel} userId={member.id} /> : null}
-      </TabPanel>
-      {/* Every change saves in its modal: nothing to keep while hidden. */}
-      <TabPanel id={panelId('education')} active={tab === 'education'}>
-        {member ? <EducationPanel userId={member.id} /> : null}
-      </TabPanel>
+      {mentor ? (
+        <TabPanel id={panelId('booking')} active={tab === 'booking'} keepMounted>
+          {member ? <BookingPanel ref={bookingPanel} userId={member.id} /> : null}
+        </TabPanel>
+      ) : (
+        <>
+          <TabPanel id={panelId('profile')} active={tab === 'profile'} keepMounted>
+            {member ? <ProfilePanel ref={profilePanel} userId={member.id} /> : null}
+          </TabPanel>
+          {/* Every change saves in its modal: nothing to keep while hidden. */}
+          <TabPanel id={panelId('education')} active={tab === 'education'}>
+            {member ? <EducationPanel userId={member.id} /> : null}
+          </TabPanel>
+        </>
+      )}
 
       {leaveTo && (
         <SaveChangesDialog

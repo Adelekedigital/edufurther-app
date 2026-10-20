@@ -3,12 +3,10 @@ import { Select } from '@/components/atoms/Select/Select';
 import { RadioCards } from '@/components/molecules/RadioCards/RadioCards';
 import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import {
-  BREAKS,
-  DURATIONS,
-  NOTICE_HOURS,
-  windowPresets,
-  breakLabel,
-  hoursLabel,
+  breakOptions,
+  durationOptions,
+  noticeOptions,
+  windowOptions,
   defaultsSummary,
   typeLength,
   windowLabel,
@@ -28,23 +26,6 @@ export type WeeklyStatus =
   | { status: 'loading' }
   | { status: 'failed' }
   | { status: 'ready'; summary: string | null; timeZone: string };
-
-/**
- * The design's choices, plus the stored value when it isn't one of them (set
- * elsewhere, e.g. 21 days): a native select would otherwise show its first
- * option while keeping the real value (review of #60).
- */
-const choices = (list: number[], label: (n: number) => string) => (current: number) =>
-  (list.includes(current) ? list : [...list, current].sort((a, b) => a - b)).map((n) => ({
-    value: String(n),
-    label: label(n),
-  }));
-export const durationOptions = choices(DURATIONS, (m) => `${m} min`);
-export const noticeOptions = choices(NOTICE_HOURS, (h) => `${hoursLabel(h)} hrs`);
-/** Choices under the platform's cap (the mentor's defaults carry it). */
-export const windowOptions = (current: number, max?: number) =>
-  choices(windowPresets(max), windowLabel)(current);
-export const breakOptions = choices(BREAKS, breakLabel);
 
 type SchedulingStepProps = {
   draft: Draft;
