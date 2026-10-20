@@ -39,7 +39,6 @@ export function FeaturedMentor({
         src={m.photoUrl}
         alt=""
         initials={m.initials}
-        // Until the mapper carries the mentor's chosen cover (PR A), the one their id gives.
         cover={m.cover}
         focus={m.photoFocus}
         size="lg"

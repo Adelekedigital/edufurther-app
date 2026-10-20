@@ -28,6 +28,7 @@ const party = (
   first_name: first,
   last_name: last,
   avatar_url: null,
+  cover_art: 'none' as const,
   avatar_focus: null,
   timezone: zone,
   joined_at: null,

@@ -37,6 +37,16 @@ describe('PhotoFrame', () => {
     expect(document.querySelector('img')).toHaveAttribute('src', '/fixed.jpg');
   });
 
+  it('a photo that broke before the page was interactive shows the initials too', () => {
+    const complete = vi.spyOn(HTMLImageElement.prototype, 'complete', 'get').mockReturnValue(true);
+    const width = vi.spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get').mockReturnValue(0);
+    render(<PhotoFrame src="/broken-early.jpg" alt="" initials="GE" cover="sky" />);
+    expect(document.querySelector('img')).toBeNull();
+    expect(screen.getByText('GE')).toBeInTheDocument();
+    complete.mockRestore();
+    width.mockRestore();
+  });
+
   it('the scrim is drawn only over a photo', () => {
     const { container, rerender } = render(
       <PhotoFrame src="/a.jpg" alt="" initials="GE" cover="sky" scrim />,

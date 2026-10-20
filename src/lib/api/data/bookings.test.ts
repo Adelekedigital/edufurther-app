@@ -11,6 +11,7 @@ const party = (id: string, first: string | null, last: string | null, deleted = 
   first_name: first,
   last_name: last,
   avatar_url: first ? 'https://img.test/a.webp' : null,
+  cover_art: 'none' as const,
   avatar_focus: { x: 0.5, y: 0.25 },
   joined_at: null,
   attendance_status: 'pending' as const,

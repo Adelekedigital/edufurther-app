@@ -2,7 +2,12 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { Tag } from '@/components/atoms/Tag/Tag';
 import { PhotoFrame } from './PhotoFrame';
 
-const PHOTO = 'https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=600';
+// An inline image, so the stories render without the network.
+const PHOTO =
+  'data:image/svg+xml,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="600" height="400" fill="slategray"/><circle cx="300" cy="150" r="70" fill="wheat"/><rect x="190" y="240" width="220" height="200" rx="100" fill="wheat"/></svg>',
+  );
 
 /**
  * The two callers' boxes, as their own CSS draws them: MentorCard 445 / 300 with
