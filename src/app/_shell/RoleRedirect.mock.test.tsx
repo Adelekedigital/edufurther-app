@@ -15,6 +15,7 @@ const { RoleRedirect } = await import('./RoleRedirect');
 const { useViewer } = await import('@/lib/api/data/viewer');
 
 const seen: string[] = [];
+let serverHtml = '';
 function Page() {
   const v = useViewer();
   seen.push(v.kind === 'member' ? `member:${v.id}` : v.kind);
@@ -33,7 +34,8 @@ async function hydrate(url: string) {
     </QueryClientProvider>
   );
   const container = document.createElement('div');
-  container.innerHTML = renderToString(tree);
+  serverHtml = renderToString(tree);
+  container.innerHTML = serverHtml;
   document.body.appendChild(container);
   await act(async () => {
     hydrateRoot(container, tree);
@@ -55,8 +57,10 @@ afterEach(() => {
 describe('RoleRedirect waits for the mock param (dev, CI)', () => {
   it('?mockViewer=mentor on /calendar: loading first, then the mentor, never a redirect', async () => {
     const page = await hydrate('/calendar?mockViewer=mentor');
-    expect(seen[0]).toBe('loading');
-    expect(seen.at(-1)).toBe('member:mock-mentor');
+    // Server and first paint: the neutral skeleton, no page under it.
+    expect(serverHtml).toContain('aria-label="Loading"');
+    expect(serverHtml).not.toContain('The page');
+    expect(seen).toEqual(['member:mock-mentor']);
     expect(h.replace).not.toHaveBeenCalled();
     expect(page.textContent).toContain('The page');
   });

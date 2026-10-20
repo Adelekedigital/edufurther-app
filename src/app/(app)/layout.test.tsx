@@ -23,7 +23,6 @@ vi.mock('next/navigation', () => ({
 }));
 vi.mock('@/lib/api/data/viewer', () => ({
   useViewer: () => h.viewer,
-  keepMockViewer: (href: string) => href,
 }));
 vi.mock('@/lib/utils/useOnline', () => ({ useOnline: () => h.online }));
 vi.mock('@/app/_shell/useAppShell', () => ({ useAppShell: () => h.shell }));
@@ -84,6 +83,18 @@ describe('activeFor', () => {
 describe('AppGroupLayout', () => {
   it('renders the shell once, with active derived from the pathname', () => {
     h.pathname = '/calendar';
+    h.viewer = {
+      kind: 'member',
+      id: 'm1',
+      firstName: 'Gbenga',
+      initials: 'GE',
+      isMentee: false,
+      isApprovedMentor: true,
+      isMentor: true,
+      mentorStage: 'approved',
+      completedSessions: 0,
+      credits: null,
+    };
     render(
       <AppGroupLayout>
         <h1>Your calendar</h1>

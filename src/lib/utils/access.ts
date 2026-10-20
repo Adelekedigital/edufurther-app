@@ -215,9 +215,10 @@ export function viewerRole(v: Member): RouteRole {
 }
 
 /**
- * Where a member on the other role's page goes, or null to stay: a mentee to
- * /home (Home forwards an unfinished one to onboarding), a mentor to their own
- * home (memberHome). Null while /me loads and for anyone who isn't a member:
+ * Where a member on the other role's page goes, or null to stay: their own
+ * home (memberHome), in one hop. A mentee to /home, or straight to /onboarding
+ * while unfinished; a mentor to /dashboard, or their onboarding or application
+ * while not approved. Null while /me loads and for anyone who isn't a member:
  * their pages keep their own gates. The role is set at sign-up only, so a
  * fresh mentee on /onboarding/mentor goes to /home too: a URL never makes
  * anyone a mentor (owner, 2026-10-20).
@@ -226,7 +227,7 @@ export function wrongRoleHome(viewer: Viewer, pathname: string | null): string |
   if (viewer.kind !== 'member' || !pathname) return null;
   const role = routeRole(pathname);
   if (!role || role === viewerRole(viewer)) return null;
-  return role === 'mentee' ? memberHome(viewer) : '/home';
+  return memberHome(viewer);
 }
 
 /**

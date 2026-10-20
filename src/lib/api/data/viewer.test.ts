@@ -1,4 +1,5 @@
-import { keepMockViewer, toViewer } from './viewer';
+import { keepMockViewer } from '@/lib/utils/mockViewerParam';
+import { toViewer } from './viewer';
 
 type Me = Parameters<typeof toViewer>[0];
 const me = (over: Partial<Me> = {}): Me =>

@@ -14,7 +14,6 @@ vi.mock('next/navigation', () => ({
 let viewer: Viewer = { kind: 'loading', signedIn: true };
 vi.mock('@/lib/api/data/viewer', () => ({
   useViewer: () => viewer,
-  keepMockViewer: (href: string) => href,
 }));
 // No PATCH may ever leave a role page a member was redirected from.
 const patch = vi.fn();
@@ -57,10 +56,15 @@ const MENTOR_PAGES = [
 ];
 
 describe('RoleRedirect: the other role’s page never shows (owner, 2026-10-20)', () => {
-  it.each(MENTOR_PAGES)('a mentee on %s goes to /home, with nothing of the page', (path) => {
-    for (const v of [viewers.menteeFinished, viewers.menteeUnfinished, viewers.menteeByChoice]) {
+  it.each(MENTOR_PAGES)('a mentee on %s goes to their home, with nothing of the page', (path) => {
+    const cases = [
+      [viewers.menteeFinished, '/home'],
+      [viewers.menteeUnfinished, '/onboarding'],
+      [viewers.menteeByChoice, '/home'],
+    ] as const;
+    for (const [v, home] of cases) {
       const { unmount } = page(path, v);
-      expect(h.replace).toHaveBeenLastCalledWith('/home');
+      expect(h.replace).toHaveBeenLastCalledWith(home);
       expect(screen.queryByRole('heading', { name: 'The page' })).toBeNull();
       unmount();
     }
@@ -102,11 +106,29 @@ describe('RoleRedirect: the other role’s page never shows (owner, 2026-10-20)'
     },
   );
 
-  it('while /me loads, and for a guest: no redirect, the page’s own gates', () => {
-    for (const v of [{ kind: 'loading', signedIn: true }, { kind: 'guest' }] as Viewer[]) {
-      const { unmount } = page('/calendar', v);
+  it('while /me loads on a role’s page: no redirect, and a neutral skeleton, not the page', () => {
+    for (const path of ['/calendar', '/home', '/onboarding/mentor']) {
+      for (const signedIn of [true, null]) {
+        const { unmount } = page(path, { kind: 'loading', signedIn });
+        expect(h.replace).not.toHaveBeenCalled();
+        expect(screen.getByRole('status', { name: 'Loading' })).toBeInTheDocument();
+        expect(screen.queryByRole('heading')).toBeNull();
+        unmount();
+      }
+    }
+  });
+
+  it('while /me loads on a shared page, and for a guest anywhere: the page as it is', () => {
+    const cases: [string, Viewer][] = [
+      ['/bookings', { kind: 'loading', signedIn: true }],
+      ['/calendar', { kind: 'guest' }],
+      ['/home', { kind: 'guest' }],
+    ];
+    for (const [path, v] of cases) {
+      const { unmount } = page(path, v);
       expect(h.replace).not.toHaveBeenCalled();
       expect(screen.getByRole('heading', { name: 'The page' })).toBeInTheDocument();
+      expect(screen.queryByRole('status', { name: 'Loading' })).toBeNull();
       unmount();
     }
   });
@@ -116,12 +138,12 @@ describe('the onboarding pages outside the shell', () => {
   /** A fresh sign-up: no goal, no mentor profile, nothing saved. */
   const fresh = { ...viewers.menteeUnfinished, isMentee: false, onboardingStarted: false };
 
-  it('a fresh mentee on /onboarding/mentor goes to /home (the query never counts); nothing is saved', async () => {
+  it('a fresh mentee on /onboarding/mentor goes to their onboarding (the query never counts); nothing is saved', async () => {
     const { default: MentorOnboardingPage } = await import('@/app/onboarding/mentor/page');
     h.pathname = '/onboarding/mentor';
     viewer = fresh;
     render(<MentorOnboardingPage />);
-    expect(h.replace).toHaveBeenLastCalledWith('/home');
+    expect(h.replace).toHaveBeenLastCalledWith('/onboarding');
     expect(screen.queryByRole('heading', { name: 'Mentor steps' })).toBeNull();
     expect(patch).not.toHaveBeenCalled();
   });

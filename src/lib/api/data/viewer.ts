@@ -6,8 +6,9 @@ import { useQuery, type QueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { authConfigured } from '@/lib/vendor/supabase/config';
 import type { Viewer } from '@/types/mentor';
-import { mentorStageOf } from '@/lib/utils/access';
+import { mentorStageOf, routeRole } from '@/lib/utils/access';
 import { coverKey } from '@/lib/utils/cover';
+import { readMockParam } from '@/lib/utils/mockViewerParam';
 import { useHydrated } from '@/lib/utils/useHydrated';
 import { clampFocus, personInitials } from '@/lib/utils/person';
 import { ApiError } from './errors';
@@ -217,36 +218,23 @@ MOCK_VIEWERS['mentor-unsubmitted'] = {
 /** The mock viewer before hydration has read `?mockViewer=`. */
 const MOCK_PENDING: Viewer = { kind: 'loading', signedIn: true };
 
-const readMockParam = () => new URLSearchParams(window.location.search).get('mockViewer');
 const onPopState = (cb: () => void) => {
   window.addEventListener('popstate', cb);
   return () => window.removeEventListener('popstate', cb);
 };
 
 /**
- * Dev and CI only: routes the mock defaults to the approved mentor on, so one
- * mentee-default build reviews them as their real user. Not the role rule
- * (that is ROUTE_ROLES): `?mockViewer=` wins here, so `?mockViewer=mentee` on
- * /dashboard shows the role redirect in dev.
+ * Dev and CI only: on a mentor page (ROUTE_ROLES) the mock defaults to the
+ * approved mentor, so one mentee-default build reviews it as its real user.
+ * `?mockViewer=` wins, so `?mockViewer=mentee` on /dashboard shows the role
+ * redirect in dev.
  */
-const MENTOR_ONLY_ROUTES = ['/session-types', '/dashboard', '/mentor-application'];
-
-/**
- * `href` with this page's `?mockViewer=` kept (mock mode only), so a redirect
- * lands on the same mock viewer rather than the route's default.
- */
-export function keepMockViewer(href: string): string {
-  if (!process.env.NEXT_PUBLIC_MOCK_VIEWER || typeof window === 'undefined') return href;
-  const mock = readMockParam();
-  if (!mock) return href;
-  return `${href}${href.includes('?') ? '&' : '?'}mockViewer=${encodeURIComponent(mock)}`;
-}
+const onMentorPage = (path: string | null) => !!path && routeRole(path) === 'mentor';
 
 /**
  * The mock viewer, or null when NEXT_PUBLIC_MOCK_VIEWER is unset (every real
  * deploy). While it is set (local dev, CI):
- * - mentor-only routes default to the mentor, so one CI build (mentee by
- *   default) reviews them as their real user;
+ * - mentor pages default to the mentor (onMentorPage);
  * - `?mockViewer=<key>` (any MOCK_VIEWERS key) overrides it for manual
  *   checks, the route default included, and a role redirect keeps it
  *   (keepMockViewer);
@@ -265,7 +253,7 @@ function useMockViewer(): Viewer | null {
   const hydrated = useHydrated();
   if (!env) return null;
   if (!hydrated) return MOCK_PENDING;
-  const byRoute = MENTOR_ONLY_ROUTES.some((r) => path?.startsWith(r)) ? 'mentor' : env;
+  const byRoute = onMentorPage(path) ? 'mentor' : env;
   const pick = param ?? byRoute;
   // Own keys only: `?mockViewer=constructor` must not reach Object.prototype.
   const key = Object.hasOwn(MOCK_VIEWERS, pick) ? pick : env;
@@ -324,6 +312,8 @@ export function patchViewer(
       | 'onboardingComplete'
       | 'mentorApprovedSeen'
       | 'signedUpAsMentor'
+      | 'isMentor'
+      | 'mentorStage'
     >
   >,
 ) {

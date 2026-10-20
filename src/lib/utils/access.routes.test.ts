@@ -1,12 +1,12 @@
-import { readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import type { Viewer } from '@/types/mentor';
-import { flags, resetFlags, viewers } from '@/app/_shell/lockedPage.harness';
+import { flags, resetFlags, viewers } from '@/test-utils/roles';
 import { isUnder, ROUTE_ROLES, routeRole, SHARED_ROUTES, wrongRoleHome } from './access';
 
-// The flags, switchable per test (lockedPage.harness).
+// The flags, switchable per test (test-utils/roles).
 vi.mock('@/lib/config/auth', async (orig) =>
-  (await import('@/app/_shell/lockedPage.harness')).authFlags(await orig()),
+  (await import('@/test-utils/roles')).authFlags(await orig()),
 );
 
 afterEach(resetFlags);
@@ -45,14 +45,14 @@ const SHARED_PAGES = [
 
 describe('wrongRoleHome: a page for the other role redirects (owner, 2026-10-20)', () => {
   const mentees = [
-    ['a finished mentee', viewers.menteeFinished],
-    ['an unfinished mentee', viewers.menteeUnfinished],
-    ['a declined applicant who chose mentee', viewers.menteeByChoice],
-    ['a fresh mentee (nothing saved yet)', freshMentee],
+    ['a finished mentee', viewers.menteeFinished, '/home'],
+    ['an unfinished mentee', viewers.menteeUnfinished, '/onboarding'],
+    ['a declined applicant who chose mentee', viewers.menteeByChoice, '/home'],
+    ['a fresh mentee (nothing saved yet)', freshMentee, '/onboarding'],
   ] as const;
 
-  it.each(mentees)('%s on any mentor page goes to /home', (_who, v) => {
-    for (const path of MENTOR_PAGES) expect(wrongRoleHome(v, path)).toBe('/home');
+  it.each(mentees)('%s on any mentor page goes to their home (%s)', (_who, v, home) => {
+    for (const path of MENTOR_PAGES) expect(wrongRoleHome(v, path)).toBe(home);
   });
 
   it.each(mentees)('%s stays on the mentee pages', (_who, v) => {
@@ -88,10 +88,13 @@ describe('wrongRoleHome: a page for the other role redirects (owner, 2026-10-20)
     flags.mentor = false;
     expect(wrongRoleHome(viewers.mentorSignup, '/home')).toBeNull();
     expect(wrongRoleHome(viewers.mentorSignup, '/calendar')).toBe('/home');
+    // Mentee onboarding off too: an unfinished mentee's home is /home.
+    flags.onboarding = false;
+    expect(wrongRoleHome(viewers.menteeUnfinished, '/calendar')).toBe('/home');
   });
 
-  it('a fresh mentee can’t become a mentor by URL: /onboarding/mentor goes to /home', () => {
-    expect(wrongRoleHome(freshMentee, '/onboarding/mentor')).toBe('/home');
+  it('a fresh mentee can’t become a mentor by URL: /onboarding/mentor goes to their onboarding', () => {
+    expect(wrongRoleHome(freshMentee, '/onboarding/mentor')).toBe('/onboarding');
   });
 
   it('shared pages and Explore are never redirected, for either role', () => {
@@ -161,6 +164,23 @@ describe('every page has a role (ROUTE_ROLES) or is shared (SHARED_ROUTES)', () 
     const shared = SHARED_ROUTES.some((r) => isUnder(path, r));
     // A role's entry wins over a shared parent (/onboarding/mentor under /onboarding).
     expect(roled || shared).toBe(true);
+  });
+
+  it('a role page outside the (app) layout wraps its screen in RoleRedirect', () => {
+    const outside = pages(appDir).filter(
+      (p) =>
+        routeRole(p) &&
+        !existsSync(join(appDir, '(app)', ...p.split('/').filter(Boolean), 'page.tsx')),
+    );
+    expect(outside).toEqual(['/onboarding/mentee', '/onboarding/mentor']);
+    for (const p of outside) {
+      const src = readFileSync(join(appDir, ...p.split('/').filter(Boolean), 'page.tsx'), 'utf8');
+      expect(src, p).toMatch(/<RoleRedirect>/);
+    }
+    // And the layout wraps every page inside it.
+    expect(readFileSync(join(appDir, '(app)', 'layout.tsx'), 'utf8')).toMatch(
+      /<RoleRedirect>\{children\}<\/RoleRedirect>/,
+    );
   });
 
   it('no listed route is stale', () => {
