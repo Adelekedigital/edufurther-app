@@ -1,7 +1,7 @@
-/* eslint-disable @next/next/no-img-element -- the mentor's own banner, of unknown host and size */
-import type { CSSProperties } from 'react';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { CoverBanner } from '@/components/molecules/CoverBanner/CoverBanner';
+import { CoverHeader } from '@/components/organisms/CoverHeader/CoverHeader';
 import { coverVars, type CoverIcon, type CoverKey } from '@/lib/utils/cover';
 import type { PhotoFocus } from '@/lib/utils/person';
 import { cx } from '@/lib/utils/cx';
@@ -56,25 +56,21 @@ export function MentorCoverCard({
   copy,
   showMessage = false,
 }: MentorCoverCardProps) {
-  const tones = coverVars(cover);
-  const vars = { '--cover-bg': tones.bg, '--cover-ink': tones.ink } as CSSProperties;
-  const art = bannerUrl ? [] : artIcons.slice(0, 3);
   return (
-    <div className={styles.card} style={vars}>
-      <div className={styles.cover}>
-        {bannerUrl && <img src={bannerUrl} alt="" className={styles.coverImg} />}
-        {art.length > 0 && (
-          <div className={styles.art} aria-hidden>
-            {art.map((icon, i) => (
-              <span key={i} className={styles.artIcon} data-i={i}>
-                {icon}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-      <div className={styles.body}>
-        {/* The name follows: the face needs none of its own. */}
+    <CoverHeader
+      className={styles.card}
+      cover={
+        <CoverBanner
+          height={64}
+          scale="sm"
+          tones={coverVars(cover)}
+          bannerUrl={bannerUrl}
+          art="icons"
+          icons={artIcons}
+        />
+      }
+      photo={
+        // The name follows: the face needs none of its own.
         <Avatar
           size={52}
           ring="white"
@@ -84,6 +80,12 @@ export function MentorCoverCard({
           focus={photoFocus}
           alt=""
         />
+      }
+      overlap={24}
+      layout="stack"
+      bodyClassName={styles.body}
+    >
+      <div className={styles.text}>
         <span className={styles.name}>{name}</span>
         {headline && <span className={styles.headline}>{headline}</span>}
         {(rating !== null || completedSessions > 0) && (
@@ -123,6 +125,6 @@ export function MentorCoverCard({
           {showMessage && <span className={styles.message}>{copy.message}</span>}
         </div>
       </div>
-    </div>
+    </CoverHeader>
   );
 }

@@ -5,52 +5,16 @@
   background: var(--surface-card);
   overflow: hidden;
 }
-.cover {
-  position: relative;
-  height: 64px;
-  background: var(--cover-bg);
-}
-.coverImg {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-/* The first three topics' icons, faint, in the cover's ink (design `pcArtIconsSm`). */
-.art {
-  position: absolute;
-  right: var(--space-3);
-  bottom: var(--space-2);
-  display: flex;
-  align-items: flex-end;
-  gap: var(--space-2);
-  pointer-events: none;
-  color: var(--cover-ink);
-  opacity: 0.16;
-}
-.artIcon {
-  --art-size: 32px;
-  font-family: var(--font-icon);
-  font-size: var(--art-size);
-  line-height: 1;
-  font-variation-settings:
-    'FILL' 0,
-    'wght' 300;
-}
-.artIcon[data-i='1'] {
-  --art-size: 26px;
-}
-.artIcon[data-i='2'] {
-  --art-size: 22px;
-}
+/* Under the 64px cover (CoverHeader's body): the photo 24px into it, then
+   name, headline, proof, place, topics and the buttons, 8px apart. */
 .body {
-  position: relative;
-  z-index: 1;
+  gap: var(--space-2);
+  padding: 0 var(--space-4) var(--space-4);
+}
+.text {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  margin-top: calc(var(--space-6) * -1);
-  padding: 0 var(--space-4) var(--space-4);
 }
 .name {
   display: flex;
