@@ -85,4 +85,15 @@ describe('StudyPlansForm', () => {
     render(<Harness fields={['Law', 'Data Science']} />);
     expect(options()).toEqual(['Law', 'Data Science']);
   });
+
+  it('the destination hint links "Settings" to Settings › Goals, in a new tab', () => {
+    render(<Harness />);
+    // jsdom's name calculation drops the space inside the sr-only span; a browser keeps it.
+    const link = screen.getByRole('link', { name: /^Settings ?\(opens in a new tab\)$/ });
+    expect(link).toHaveAttribute('href', '/settings/goals');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link.closest('p')).toHaveTextContent(
+      'Pick one for now. You can add more later in Settings (opens in a new tab).',
+    );
+  });
 });

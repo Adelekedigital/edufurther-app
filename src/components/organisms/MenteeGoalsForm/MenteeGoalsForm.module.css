@@ -1,0 +1,147 @@
+/* Mentee Settings.dc.html `isMGoals` (goalsLayout grouped, goalsCollapsed summary). */
+.goals {
+  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* "Your goals" and the collapse chevron (`goalsGroupHead`). */
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+.headText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.headTitle {
+  margin: 0;
+  /* A focus target only (tabindex -1), so no ring. */
+  outline: none;
+  font-size: var(--text-p-lg);
+  font-weight: var(--weight-semibold);
+}
+.headSub,
+.cardSub {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-500);
+}
+.chevron {
+  flex: none;
+  width: var(--space-10);
+  height: var(--space-10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-full);
+  background: var(--white);
+  cursor: pointer;
+  color: var(--ink-700);
+}
+.chevron:hover {
+  background: var(--ink-50);
+}
+.chevron:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.card,
+.helpCard {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-5);
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-xl);
+  background: var(--white);
+}
+.card {
+  gap: var(--space-5);
+}
+.helpCard {
+  gap: var(--space-4);
+}
+.cardHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.cardTitle {
+  margin: 0;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+
+/* Where you’re from sits in the design's two-up grid; with "When" hidden it spans the row. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: var(--space-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.labelPair,
+.labelPairTight {
+  display: flex;
+  flex-direction: column;
+}
+.labelPair {
+  gap: var(--space-1);
+}
+.labelPairTight {
+  gap: 2px;
+}
+.label {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-medium);
+}
+.hint,
+.hintSoft {
+  font-size: var(--text-p-xs);
+}
+.hint {
+  color: var(--ink-600);
+}
+.hintSoft {
+  color: var(--ink-500);
+}
+
+/* Cancel / Save goals, only while something is unsaved (`gFooter`). */
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-3);
+}
+.formError {
+  flex: 1 1 220px;
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-medium);
+  color: var(--red-600);
+}
+
+/* Phones: 16px fields, so iOS doesn't zoom in. */
+@media (max-width: 767px) {
+  .field input {
+    font-size: var(--text-p-md);
+  }
+}

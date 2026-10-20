@@ -7,6 +7,7 @@
 import type { WireMatches } from '@/lib/api/data/mentorMatches';
 import { mockAvailabilityState, mockNextAvailableAt } from './availability';
 import { MOCK_COUNTRIES, mockItems } from './catalog';
+import { mockInstitutionName } from './institutions';
 import { MOCK_DEGREE_LEVELS } from './entries';
 import { MENTORS, OFFERINGS, mockCountries } from './fixtures';
 
@@ -19,6 +20,7 @@ type Goal = {
   need_ids: string[];
   target_start_term: string | null;
   notes: string | null;
+  schools: { institution_id: string | null; school_name_raw: string }[];
 };
 
 /** The mock viewer's id (lib/api/data/viewer.ts): `/me` routes act for it. */
@@ -39,6 +41,7 @@ if (process.env.ENABLE_MOCK_API === '1' && process.env.MOCK_ONBOARDING === 'migr
     need_ids: OFFERINGS.slice(0, 4).map((o) => o.id),
     target_start_term: null,
     notes: null,
+    schools: [],
   });
 
 export const STEPS = ['help', 'plans'] as const;
@@ -96,8 +99,13 @@ export function mockGoal(userId: string) {
         display_name: o.display_name,
       })),
     ),
-    // Goal schools (edufurtherbe #500): Settings › Goals writes them.
-    schools: [],
+    schools: g.schools.map((s, i) => ({
+      id: `school-${userId}-${i + 1}`,
+      institution_id: s.institution_id,
+      institution_name: mockInstitutionName(s.institution_id),
+      school_name_raw: s.school_name_raw,
+      position: i + 1,
+    })),
   };
 }
 
@@ -116,6 +124,8 @@ export function setMockGoal(userId: string, body: Partial<Goal>) {
     need_ids: body.need_ids ?? before?.need_ids ?? [],
     target_start_term: body.target_start_term ?? null,
     notes: body.notes ?? null,
+    // Omitted or null leaves the list as it is; [] clears it (GoalWrite.schools).
+    schools: body.schools ?? before?.schools ?? [],
   });
 }
 

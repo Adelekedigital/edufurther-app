@@ -136,8 +136,15 @@ export const PLAN_HINTS = {
   origin: 'We look for mentors who made the same move.',
   degree: 'The next degree you want to study, not the one you have now.',
   field: 'Choose from the list, or type it if it’s not there.',
-  // Not "…later in Settings" until Settings › Goals ships (design, 2026-10-17; #284).
-  destination: 'Choose your top choice. You can add 2 more later.',
+  // Settings › Goals takes up to 3; "Settings" links there (design, 2026-10-17; #284).
+  destination: 'Pick one for now. You can add more later in Settings.',
+};
+
+/** The destination hint's link: the word it sits on, where it goes, and its new-tab note. */
+export const DESTINATION_LINK = {
+  text: 'Settings',
+  href: '/settings/goals',
+  newTab: '(opens in a new tab)',
 };
 
 export const PLAN_PLACEHOLDERS = {
