@@ -2,6 +2,7 @@
 import type { CSSProperties } from 'react';
 import { cx } from '@/lib/utils/cx';
 import type { CoverKey } from '@/lib/utils/cover';
+import { focusVars } from '@/lib/utils/person';
 import { Icon } from '../Icon/Icon';
 import styles from './Avatar.module.css';
 
@@ -37,13 +38,11 @@ export function Avatar({
   lazy,
 }: AvatarProps) {
   const plain = tone === 'plain';
-  const blank = plain && !src && !initials;
+  // No photo and no letters (a deleted user, a nameless party): the person glyph.
+  const blank = !src && !initials;
   const style = {
     ...(!plain && { '--avatar-bg': `var(--cover-${tone}-ink)` }),
-    ...(focus && {
-      '--avatar-x': `${(focus.x * 100).toFixed(1)}%`,
-      '--avatar-y': `${(focus.y * 100).toFixed(1)}%`,
-    }),
+    ...focusVars(focus),
   } as CSSProperties;
   return (
     <span

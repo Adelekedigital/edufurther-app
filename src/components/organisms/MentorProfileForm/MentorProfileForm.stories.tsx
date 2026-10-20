@@ -1,3 +1,4 @@
+import { personInitials } from '@/lib/utils/person';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useState } from 'react';
 import { fn } from 'storybook/test';
@@ -8,6 +9,11 @@ import type { MentorProfileValues } from '@/types/mentorSettings';
 import { MentorProfileForm } from './MentorProfileForm';
 
 /** Mentor Settings.dc.html, the Profile tab (`isProfile`, previewLayout=real). */
+const storyInitials = (name: string) => {
+  const [first = '', ...rest] = name.trim().split(/\s+/);
+  return personInitials(first, rest.at(-1), 'E');
+};
+
 const meta: Meta = { title: 'Settings/Mentor profile', parameters: { layout: 'padded' } };
 export default meta;
 type Story = StoryObj;
@@ -67,7 +73,7 @@ function Live({
         countries={{ origin: COUNTRIES, study: COUNTRIES }}
         photo={{
           url: photoUrl,
-          initial: (v.name || 'E')[0]!.toUpperCase(),
+          initial: storyInitials(v.name),
           name: v.name,
           accept: 'image/png',
           uploading: false,
@@ -92,7 +98,7 @@ function Live({
           <MentorCoverCard
             name={v.name || 'Your name'}
             headline={v.headline}
-            initials={(v.name || 'E')[0]!.toUpperCase()}
+            initials={storyInitials(v.name)}
             photoUrl={photoUrl}
             cover={{ bg, ink }}
             bannerUrl={null}

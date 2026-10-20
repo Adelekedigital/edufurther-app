@@ -1,5 +1,6 @@
 'use client';
 
+import { personInitials } from '@/lib/utils/person';
 import Link from 'next/link';
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
@@ -211,7 +212,10 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
       const hit = common.results.find((r) => r.label === name);
       return hit ? [{ id: hit.id, label: hit.label }] : [];
     });
-    const initial = (draft.name.trim() || profile.mentor.name)[0]?.toUpperCase() ?? '?';
+    // The draft name, so the circle follows typing; the one initials rule (lib/utils/person).
+    const [firstName = '', ...rest] = draft.name.trim().split(/\s+/);
+    const initial =
+      personInitials(firstName, rest.at(-1), profile.mentor.name) || profile.mentor.initials;
 
     return (
       <>

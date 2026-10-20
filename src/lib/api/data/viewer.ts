@@ -121,7 +121,7 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     kind: 'member',
     id: 'mock-viewer',
     firstName: 'Esther',
-    initials: 'E',
+    initials: 'EO',
     isMentee: true,
     isApprovedMentor: false,
     isMentor: false,
@@ -147,7 +147,7 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     kind: 'member',
     id: 'mock-mentor',
     firstName: 'Gbenga',
-    initials: 'G',
+    initials: 'GE',
     isMentee: false,
     isApprovedMentor: true,
     isMentor: true,
@@ -156,7 +156,7 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     onboardingComplete: true,
     completedSessions: 0,
     credits: null,
-    // No photo, like the mock profile it owns: the initial on its cover tone.
+    // No photo, like the mock profile it owns: the initials on its cover tone.
     avatarUrl: null,
     avatarFocus: null,
     coverKey: null,
@@ -172,7 +172,7 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
 MOCK_VIEWERS['mentor-applicant'] = {
   ...(MOCK_VIEWERS.mentee as Extract<Viewer, { kind: 'member' }>),
   firstName: 'Gbenga',
-  initials: 'G',
+  initials: 'GE',
   isMentee: false,
   credits: null,
   avatarUrl: null,
