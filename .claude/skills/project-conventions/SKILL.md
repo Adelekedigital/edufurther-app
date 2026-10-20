@@ -147,6 +147,14 @@ Prototype files (`support.js`, `image-slot.js`, `dc-import`, `sc-if`) are the pr
 
 ## House conventions
 
+**DRY: reuse before you build — non-negotiable (owner, 2026-10-20).** It saves build time and keeps the code maintainable and scalable.
+
+1. Before writing any UI piece, search `src/components` (and `lib/utils` for logic) for one that already does it. Extend it with a prop or variant; don't copy it.
+2. One component per concept, for every role and screen: a person's face is `Avatar`, a photo editor `ProfilePhoto`, a rectangular photo `PhotoFrame`, a cover `CoverBanner`, a cover with an overlapping photo `CoverHeader`, a tab row `Tabs`, unsaved changes `SaveBar`, a confirm `ConfirmDialog`. Add to this list when a new shared piece lands.
+3. A page or organism draws no look of its own that a shared piece already owns (no hand-drawn circles, covers, rings, tab lines). The look comes from the shared piece; the page only places it.
+4. Logic that more than one place needs lives once (`lib/utils/person`, `useImageFallback`, `useRequiredFields`, `useLeaveGuard`).
+5. A second implementation found in a build or review is a defect: consolidate it in the same PR, or, if it's large, a PR of its own planned right away. Never a divergence row.
+
 **Design conformance — non-negotiable (product, 2026-09-27).**
 
 1. The `.dc.html` markup is the spec. Read every value (size, radius, padding, colour,
