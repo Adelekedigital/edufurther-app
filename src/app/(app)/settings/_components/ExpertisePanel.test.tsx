@@ -320,9 +320,11 @@ describe('ExpertisePanel', () => {
       expect(screen.getByRole('link', { name: 'Contact us' })).toHaveAttribute('href');
     });
 
-    it('frozen with a failed read: the load error with a live Try again, not a frozen one', async () => {
+    it('frozen with one card’s read failed: the rest stays, that card’s Try again works', async () => {
       edu.status = 'error';
       render(<ExpertisePanel userId="u1" frozen />);
+      expect(screen.getByText('School selection')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Edit topics' })).toBeDisabled();
       const retry = screen.getByRole('button', { name: 'Try again' });
       expect(retry).toBeEnabled();
       await userEvent.click(retry);
