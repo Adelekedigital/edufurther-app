@@ -77,6 +77,10 @@ const profile = (over: Partial<MenteeProfile> = {}): MenteeProfile => ({
   bioDrafted: false,
   photoUrl: null,
   initial: 'A',
+  email: 'amaka@example.com',
+  emailVerified: true,
+  upcomingCount: 0,
+  requestCount: 0,
   ...over,
 });
 

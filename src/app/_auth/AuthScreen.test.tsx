@@ -5,7 +5,10 @@ vi.mock('./useBookingContext', () => ({ useBookingContext: () => h.booking }));
 vi.mock('./useSignInFlow', () => ({
   useSignInFlow: () => ({ form: {}, toast: null }),
 }));
-vi.mock('@/lib/api/data/auth', () => ({ authConfigured: true }));
+vi.mock('@/lib/api/data/auth', async (orig) => ({
+  authConfigured: true,
+  takeAccountDeleted: (await orig<typeof import('@/lib/api/data/auth')>()).takeAccountDeleted,
+}));
 // The form itself has its own tests: here, only what the screen hands it.
 vi.mock('@/components/organisms/SignInForm', () => ({
   SignInForm: (p: { context?: React.ReactNode }) => <div data-testid="form">{p.context}</div>,
@@ -53,5 +56,43 @@ describe('AuthScreen — booking context', () => {
   it('shows nothing without a booking', () => {
     render(<AuthScreen mode="login" role="mentee" next={null} />);
     expect(screen.getByTestId('form')).toBeEmptyDOMElement();
+  });
+});
+
+describe('AuthScreen — a deleted account', () => {
+  beforeEach(() => sessionStorage.clear());
+
+  it('a shared ?deleted=1 link, with no flag from this tab, says nothing', () => {
+    render(<AuthScreen mode="login" role="mentee" next={null} deleted />);
+    expect(screen.getByTestId('form')).toBeEmptyDOMElement();
+  });
+
+  it('once only: a reload of the same URL says nothing', () => {
+    sessionStorage.setItem('ef-account-deleted', '1');
+    const first = render(<AuthScreen mode="login" role="mentee" next={null} deleted />);
+    expect(screen.getByTestId('form')).toHaveTextContent('Your account is deleted.');
+    first.unmount();
+    render(<AuthScreen mode="login" role="mentee" next={null} deleted />);
+    expect(screen.getByTestId('form')).toBeEmptyDOMElement();
+  });
+
+  it('the notice is said into a status region that was there before its words', () => {
+    sessionStorage.setItem('ef-account-deleted', '1');
+    render(<AuthScreen mode="login" role="mentee" next={null} deleted />);
+    const region = screen
+      .getAllByRole('status')
+      .find((el) => el.textContent?.includes('Your account is deleted.'));
+    expect(region).toBeDefined();
+    expect(region!.tagName).toBe('P');
+  });
+
+  it('says the account is deleted and how to restore it, in place of a booking line', () => {
+    h.booking = gbenga('Eze');
+    sessionStorage.setItem('ef-account-deleted', '1');
+    render(<AuthScreen mode="login" role="mentee" next={null} deleted />);
+    expect(screen.getByTestId('form')).toHaveTextContent(
+      'Your account is deleted. Contact support within 30 days to restore it.',
+    );
+    expect(screen.getByTestId('form')).not.toHaveTextContent(/finish booking/);
   });
 });

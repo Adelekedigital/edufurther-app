@@ -20,7 +20,7 @@ vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => viewer }));
 
 // A second tab, so the tab-switch guard can be reached before Goals ships.
 vi.mock('./tabs', () => ({
-  MENTEE_TABS: ['profile', 'education'],
+  MENTEE_TABS: ['profile', 'education', 'security'],
   DEFAULT_TAB: 'profile',
   MENTOR_TABS: ['booking'],
   MENTOR_DEFAULT_TAB: 'booking',
@@ -47,6 +47,9 @@ vi.mock('./ProfilePanel', async () => {
 
 vi.mock('./EducationPanel', () => ({
   EducationPanel: () => <div data-testid="education-panel" />,
+}));
+vi.mock('./SecurityPanel', () => ({
+  SecurityPanel: () => <div data-testid="security-panel" />,
 }));
 
 vi.mock('./BookingPanel', async () => {
@@ -79,9 +82,29 @@ describe('SettingsScreen', () => {
     viewer = member();
     segment = 'education';
     render(<SettingsScreen />);
-    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Profile', 'Education']);
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual([
+      'Profile',
+      'Education',
+      'Login and security',
+    ]);
     expect(screen.getByRole('tab', { name: 'Education' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('education-panel')).toBeInTheDocument();
+  });
+
+  it('Login and security: its tab, after Profile, and its panel', () => {
+    viewer = member();
+    segment = 'security';
+    render(<SettingsScreen />);
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual([
+      'Profile',
+      'Education',
+      'Login and security',
+    ]);
+    expect(screen.getByRole('tab', { name: 'Login and security' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByTestId('security-panel')).toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();
   });
 
@@ -187,5 +210,12 @@ describe('SettingsScreen', () => {
       await act(async () => finish(true));
       expect(push).toHaveBeenCalledWith('/settings/education');
     });
+  });
+});
+
+describe('the mentee’s tabs as shipped', () => {
+  it('Login and security comes last: Profile, Education, Login and security', async () => {
+    const real = await vi.importActual<typeof import('./tabs')>('./tabs');
+    expect(real.MENTEE_TABS).toEqual(['profile', 'education', 'security']);
   });
 });

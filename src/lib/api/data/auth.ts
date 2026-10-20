@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { focusManager, onlineManager, useQueryClient } from '@tanstack/react-query';
 import { hardNavigate } from '@/lib/utils/hardNavigate';
 import { releaseLeaveGuards } from '@/lib/utils/leaveGuard';
 import { normaliseEmail } from '@/lib/utils/emailTypo';
@@ -64,12 +64,21 @@ export function startGoogleSignIn(next: string | null, mode: SignInMode, role: S
  * - /login loads even if signing out fails or stalls (signOut clears this
  *   device's cookies itself when the SDK can't, or after 3 s).
  * - Forms' "Leave site?" prompt is released: the user already chose to leave.
+ * `to` is where it lands: /login, or a local path that names why (a deleted
+ * account's `/login?deleted=1`). Callers pass a constant, never user input.
  */
-export function useSignOut() {
+export function useSignOut(to: `/login${string}` = '/login', beforeLeave?: () => void) {
+  const qc = useQueryClient();
   return useCallback(async () => {
     beginSignOut();
     // Unsaved changes were confirmed away already (useAppShell asks first).
     releaseLeaveGuards();
+    // Nothing refetches until /login replaces the page: a refetch now runs
+    // half signed out, and after a deleted account /me answers 404, which
+    // would redraw the page as an unlinked account. The full load resets both.
+    focusManager.setEventListener(() => () => {});
+    onlineManager.setEventListener(() => () => {});
+    void qc.cancelQueries();
     try {
       await signOut();
     } catch {
@@ -77,8 +86,35 @@ export function useSignOut() {
     }
     // A booking draft's answers can be personal: none stays in the tab.
     clearAllBookingDrafts();
-    hardNavigate('/login');
-  }, []);
+    beforeLeave?.();
+    hardNavigate(to);
+  }, [qc, to, beforeLeave]);
+}
+
+/** One-shot: the account was deleted in this tab, so /login?deleted=1 may say so. */
+const DELETED_KEY = 'ef-account-deleted';
+
+/** Set by the delete path just before it leaves for /login. */
+export function markAccountDeleted() {
+  try {
+    sessionStorage.setItem(DELETED_KEY, '1');
+  } catch {
+    // Storage off: /login just doesn't show the notice.
+  }
+}
+
+/**
+ * True once, in the tab that deleted the account: `/login?deleted=1` shows
+ * its notice only then, so a shared link can't claim an account is deleted.
+ */
+export function takeAccountDeleted(): boolean {
+  try {
+    const marked = sessionStorage.getItem(DELETED_KEY) === '1';
+    sessionStorage.removeItem(DELETED_KEY);
+    return marked;
+  } catch {
+    return false;
+  }
 }
 
 /**

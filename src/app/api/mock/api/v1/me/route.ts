@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { MOCK_COUNTRIES, MOCK_LANGUAGES, mockItems } from '@/lib/api/mock/catalog';
 import { mockPhotoUrl } from '@/lib/api/mock/photoStore';
 import { mockText } from '@/lib/api/mock/profileTextStore';
-import { ok } from '@/lib/api/mock/respond';
+import type { components } from '@/lib/api/generated/schema';
+import { ok, problem } from '@/lib/api/mock/respond';
 import {
   MOCK_VIEWER_ID,
   mockGoal,
@@ -78,6 +79,8 @@ export async function GET(req: Request) {
     awards: [],
     mentee_completed_sessions: 0,
     mentee_cancel_refund_hours: 12,
+    email_verified_at: '2026-10-17T09:05:00Z',
+    booking_counts: { as_mentee: { awaiting_mentor: 1, upcoming: 2 }, as_mentor: null },
     goal: mockGoal(MOCK_VIEWER_ID),
     mentor_profile: mentorProfile(req),
     profile: {
@@ -101,4 +104,20 @@ export async function GET(req: Request) {
     },
   };
   return ok('/api/v1/me', 'get', me);
+}
+
+/**
+ * MOCK of DELETE /api/v1/me (edufurtherbe #501): 204 when `confirm` is
+ * exactly "DELETE", else 422. Deletes nothing: the mock mentee stays, so a
+ * reload starts over. ENABLE_MOCK_API=1 only.
+ */
+export async function DELETE(req: Request) {
+  if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
+  await new Promise((r) => setTimeout(r, 400));
+  const body = (await req.json().catch(() => null)) as Partial<
+    components['schemas']['AccountDeletionWrite']
+  > | null;
+  if (body?.confirm !== 'DELETE')
+    return problem(422, { title: 'Unprocessable Entity', detail: 'confirm must be "DELETE".' });
+  return new NextResponse(null, { status: 204 });
 }

@@ -1,4 +1,5 @@
-import { confirmClose } from './ConfirmActions';
+import { render, screen } from '@testing-library/react';
+import { ConfirmActions, confirmClose } from './ConfirmActions';
 
 describe('confirmClose', () => {
   const keep = () => {};
@@ -13,5 +14,29 @@ describe('confirmClose', () => {
   });
   it('dismisses while the request runs, where the caller allows it', () => {
     expect(confirmClose(true, keep, dismiss)).toEqual({ onClose: dismiss, closeDisabled: false });
+  });
+});
+
+describe('ConfirmActions error', () => {
+  const props = {
+    keepLabel: 'Keep it',
+    confirmLabel: 'Delete',
+    onKeep: vi.fn(),
+    onConfirm: vi.fn(),
+  };
+  it('the alert region is there, empty, before any failure, and the failure fills it', () => {
+    const { rerender } = render(<ConfirmActions {...props} />);
+    const region = screen.getByRole('alert');
+    expect(region).toBeEmptyDOMElement();
+    rerender(<ConfirmActions {...props} error="We couldn’t delete it." />);
+    expect(screen.getByRole('alert')).toBe(region);
+    expect(region).toHaveTextContent('We couldn’t delete it.');
+  });
+
+  it('confirmDisabled turns confirm off, but not while it runs (busy stays focusable)', () => {
+    const { rerender } = render(<ConfirmActions {...props} confirmDisabled />);
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled();
+    rerender(<ConfirmActions {...props} confirmDisabled pending />);
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled();
   });
 });

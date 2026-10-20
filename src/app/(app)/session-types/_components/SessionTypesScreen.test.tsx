@@ -181,7 +181,9 @@ describe('SessionTypesScreen', () => {
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
-    expect(screen.getByRole('alertdialog', { name: 'Delete this session type?' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('alertdialog', { name: 'Delete this session type?' }),
+    ).toBeInTheDocument();
     expect(remove).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Delete' }));
     expect(remove).toHaveBeenCalledWith('a');
@@ -314,7 +316,9 @@ describe('SessionTypesScreen', () => {
     const { rerender } = render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
-    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
     deletePending = true;
     rerender(<SessionTypesScreen />);
     expect(screen.getByRole('button', { name: 'Keep it' })).toBeDisabled();
@@ -340,7 +344,9 @@ describe('SessionTypesScreen', () => {
     const { rerender } = render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
-    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
     deletePending = true;
     rerender(<SessionTypesScreen />);
     await user.keyboard('{Escape}');
@@ -352,7 +358,9 @@ describe('SessionTypesScreen', () => {
     // The first one's answer leaves the second confirm open.
     deletePending = false;
     await act(async () => finish({ kind: 'deleted' }));
-    expect(screen.getByRole('alertdialog', { name: 'Delete this session type?' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('alertdialog', { name: 'Delete this session type?' }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/“Visa prep” is removed/)).toBeInTheDocument();
     // Nor does it pull focus out of the open dialog onto a background row.
     expect(screen.getByRole('alertdialog')).toContainElement(document.activeElement as HTMLElement);
@@ -370,7 +378,9 @@ describe('SessionTypesScreen', () => {
       await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
     };
     await openDelete();
-    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
     await user.keyboard('{Escape}');
     deleteErr = {
       kind: 'server',
@@ -381,7 +391,8 @@ describe('SessionTypesScreen', () => {
     expect(sop()).toHaveTextContent('We couldn’t delete it.');
     await openDelete();
     const dialog = screen.getByRole('alertdialog', { name: 'Delete this session type?' });
-    expect(within(dialog).queryByRole('alert')).toBeNull();
+    // The alert region is always there (so a failure is heard); it says nothing.
+    expect(within(dialog).getByRole('alert')).toBeEmptyDOMElement();
     expect(within(dialog).getByRole('button', { name: 'Keep it' })).toBeEnabled();
     remove.mockResolvedValue({ kind: 'deleted' });
   });
@@ -395,7 +406,9 @@ describe('SessionTypesScreen', () => {
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
-    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
     await user.keyboard('{Escape}');
     await user.click(screen.getByRole('switch', { name: /Visa prep/ }));
     const visibility = screen.getByRole('alertdialog');
@@ -413,7 +426,9 @@ describe('SessionTypesScreen', () => {
     const { rerender } = render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
-    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
     await user.keyboard('{Escape}');
     // The same row's switch opens its visibility confirm; the delete then lands.
     await user.click(screen.getByRole('switch', { name: /SOP draft review/ }));
@@ -438,13 +453,17 @@ describe('SessionTypesScreen', () => {
       await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
     };
     await openDelete('SOP draft review');
-    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
     await user.keyboard('{Escape}'); // dismissed; its delete carries on
     await openDelete('Visa prep');
     await user.click(screen.getByRole('button', { name: 'Keep it' }));
     await openDelete('SOP draft review');
     expect(screen.getByRole('button', { name: 'Keep it' })).toBeDisabled();
-    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
     expect(remove).toHaveBeenCalledTimes(1); // no second DELETE for the same row
     remove.mockResolvedValue({ kind: 'deleted' });
   });
@@ -460,7 +479,9 @@ describe('SessionTypesScreen', () => {
       await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
     };
     await openDelete();
-    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
     await openDelete(); // reopened before the refetch lands
     list = idle({ data: [{ ...TYPE, id: 'b', name: 'Visa prep' }] });
@@ -477,7 +498,9 @@ describe('SessionTypesScreen', () => {
     const { rerender } = render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
-    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
     expect(announced()).toContain('We couldn’t confirm the delete. The list has been refreshed.');
     // The refetch shows it did go through.
@@ -502,7 +525,9 @@ describe('SessionTypesScreen', () => {
     await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
     const dialog = screen.getByRole('alertdialog', { name: 'Delete this session type?' });
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
-    expect(screen.getByRole('alertdialog', { name: 'Delete this session type?' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('alertdialog', { name: 'Delete this session type?' }),
+    ).toBeInTheDocument();
     expect(within(dialog).getByRole('alert')).toHaveTextContent(
       'We couldn’t delete it. Something went wrong. Try again.',
     );
@@ -521,7 +546,9 @@ describe('SessionTypesScreen', () => {
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
     expect(sop()).not.toHaveTextContent('Show it to mentees first');
-    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
     await waitFor(() =>
       expect(announced()).toContain('Deletion scheduled for Oct 14. Hidden from mentees now.'),
     );
@@ -539,7 +566,9 @@ describe('SessionTypesScreen', () => {
       list = idle({ data: [{ ...TYPE, id: 'b', name: 'Visa prep' }] });
       return { kind: 'deleted' };
     });
-    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
     rerender(<SessionTypesScreen />);
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'More actions for Visa prep' })).toHaveFocus(),
@@ -552,7 +581,9 @@ describe('SessionTypesScreen', () => {
     });
     await user.click(screen.getByRole('button', { name: 'More actions for Visa prep' }));
     await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
-    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
     rerender(<SessionTypesScreen />);
     await waitFor(() =>
       expect(screen.getAllByRole('link', { name: 'Create session type' })[0]).toHaveFocus(),
@@ -632,7 +663,9 @@ describe('SessionTypesScreen', () => {
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
-    expect(screen.getByRole('alertdialog', { name: 'Schedule deletion for Oct 14?' })).toHaveTextContent(
+    expect(
+      screen.getByRole('alertdialog', { name: 'Schedule deletion for Oct 14?' }),
+    ).toHaveTextContent(
       'Hidden from mentees now. The 2 booked sessions go ahead first. It also stops being featured.',
     );
   });

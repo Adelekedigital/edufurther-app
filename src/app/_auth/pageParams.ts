@@ -21,5 +21,7 @@ export function authPageParams(sp: SearchParams, mode: 'login' | 'signup') {
         : reason === 'google_cancelled' || reason === 'google_failed'
           ? ('failed' as const)
           : undefined,
+    // A deleted account's landing (Settings › Login and security): log-in only.
+    deleted: mode === 'login' && one(sp.deleted) === '1',
   };
 }

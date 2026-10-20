@@ -23,3 +23,7 @@
 .error > :first-child {
   flex: none;
 }
+/* Empty, it takes no room: the negative margin gives back the gap above the buttons. */
+.error:empty {
+  margin-bottom: calc(-1 * var(--space-3));
+}

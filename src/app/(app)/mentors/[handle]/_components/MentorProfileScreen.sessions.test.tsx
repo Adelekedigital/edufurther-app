@@ -494,11 +494,12 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
       h.deleteError = refusal;
       rerender(<MentorProfileScreen handle="gbenga" />);
       await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
+      // The alert region is always there (so a failure is heard); it says nothing.
       expect(
-        within(screen.getByRole('alertdialog', { name: 'Delete this session type?' })).queryByRole(
+        within(screen.getByRole('alertdialog', { name: 'Delete this session type?' })).getByRole(
           'alert',
         ),
-      ).toBeNull();
+      ).toBeEmptyDOMElement();
     });
 
     it('unconfirmed and gone while another dialog is open: focus stays in it', async () => {
