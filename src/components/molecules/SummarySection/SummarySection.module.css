@@ -14,27 +14,6 @@
   font-size: var(--text-p-sm);
   font-weight: var(--weight-semibold);
 }
-.edit {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--blue-500);
-  font-family: var(--font-ui);
-  font-size: var(--text-p-xs);
-  font-weight: var(--weight-semibold);
-  cursor: pointer;
-}
-.edit:hover {
-  color: var(--blue-700);
-}
-.edit:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
-  border-radius: var(--radius-xs);
-}
 .rows {
   margin: 0;
 }

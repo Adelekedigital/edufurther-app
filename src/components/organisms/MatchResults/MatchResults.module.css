@@ -33,26 +33,9 @@
   font-size: var(--text-p-xs);
   color: var(--ink-600);
 }
+/* The row's height as drawn (32px); the look and the phone tap area are Button's. */
 .edit {
-  position: relative;
   min-height: var(--button-h-small);
-  padding: 0 var(--space-1);
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-family: var(--font-ui);
-  font-size: var(--text-p-xs);
-  font-weight: var(--weight-semibold);
-  color: var(--blue-500);
-}
-.edit:hover {
-  color: var(--blue-700);
-}
-/* Ours: a 44px tap area around the 32px link-button. */
-.edit::after {
-  content: '';
-  position: absolute;
-  inset: -6px 0;
 }
 
 .grid {

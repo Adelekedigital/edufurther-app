@@ -93,9 +93,9 @@ export function MatchResults({ headingRef, ...p }: MatchResultsProps) {
 
       <div className={styles.basis}>
         <span>{basedOn}</span>
-        <button type="button" className={styles.edit} onClick={p.onEdit}>
+        <Button variant="text" size="small" className={styles.edit} onClick={p.onEdit}>
           {MATCH_COPY.edit}
-        </button>
+        </Button>
       </div>
 
       {unavailable && !p.isLoading && !p.error && matches.length > 0 && (

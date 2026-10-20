@@ -80,6 +80,7 @@ export function BlockedDatesPanel({
           ref={action}
           variant="text"
           size="small"
+          // blue-700 on the panel's blue-50 (blue-500 is under 4.5:1 there).
           className={styles.edit}
           aria-disabled={busy || undefined}
           onClick={edit}
