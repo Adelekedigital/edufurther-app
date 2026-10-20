@@ -140,7 +140,7 @@
   .retry::after {
     content: '';
     position: absolute;
-    inset: -14px -8px;
+    inset: calc(var(--space-4) * -1) calc(var(--space-2) * -1);
   }
   .option {
     min-height: var(--touch-target-min);
