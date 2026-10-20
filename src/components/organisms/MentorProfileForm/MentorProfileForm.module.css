@@ -35,72 +35,22 @@
   padding: var(--space-5);
 }
 
-/* The cover: the mentor's colour, their banner image, or faint topic icons. */
+/* The cover (CoverBanner, 120px): the mentor's colour, their banner image,
+   or faint topic icons. */
 .cover {
-  position: relative;
-  height: 120px;
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  background: var(--cover-bg);
+  --cover-radius: var(--radius-xl) var(--radius-xl) 0 0;
 }
-.coverImg {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-}
-.art {
-  position: absolute;
-  right: var(--space-8);
-  bottom: var(--space-3);
-  display: flex;
-  align-items: flex-end;
-  gap: var(--space-3);
-  pointer-events: none;
-  color: var(--cover-ink);
-  opacity: 0.16;
-}
-.artIcon {
-  --art-size: 72px;
-  font-family: var(--font-icon);
-  font-size: var(--art-size);
-  line-height: 1;
-  font-variation-settings:
-    'FILL' 0,
-    'wght' 300;
-}
-.artIcon[data-i='1'] {
-  --art-size: 56px;
-}
-.artIcon[data-i='2'] {
-  --art-size: 44px;
-}
-/* Over the cover, outside its clip, so the cover popover can overhang it. */
-.coverTools {
-  position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
-  z-index: 2;
-}
-
-/* Positioned, so it paints over the cover it overlaps: on phones the photo
-   text wraps and its title rises into the cover strip. */
+/* The photo row (CoverHeader's body): the photo 32px into the cover, the
+   title and hint beside it and always below the cover; on phones the hint
+   wraps and the card grows downwards. */
 .photoRow {
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
   gap: var(--space-4);
-  margin-top: calc(var(--space-8) * -1);
   padding: 0 var(--space-5) var(--space-5);
 }
 .photoText {
-  flex: 1;
-  min-width: 200px;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding-bottom: var(--space-1);
 }
 .photoTitle {
   font-size: var(--text-p-sm);
