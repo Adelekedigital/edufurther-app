@@ -112,6 +112,47 @@ describe('useCoverEdit', () => {
     expect(qc.getQueryData(keys.viewer.me('u1'))).toMatchObject({ coverKey: 'lilac' });
   });
 
+  it('the same profile cached under its other handle (id vs slug) is refreshed once saved', async () => {
+    const ok = { data: {}, error: undefined, response: new Response(null) };
+    PATCH.mockResolvedValue(ok);
+    POST.mockResolvedValue({
+      data: { banner_url: '/new.jpg' },
+      error: undefined,
+      response: new Response(null),
+    });
+    DELETE.mockResolvedValue({ ...ok, response: new Response(null, { status: 204 }) });
+    const { qc, wrapper } = setup();
+    // Settings reads it by id; the shell's View profile by slug (or the reverse).
+    const other = keys.mentors.profile('u1', 'm1');
+    const stale = () => qc.getQueryState(other)?.isInvalidated;
+    // The fixture is this mentor (id u1); another mentor's page is left alone.
+    const self = { ...fullProfile, mentor: { ...fullProfile.mentor, id: 'u1' } };
+    const reset = () => qc.setQueryData<MentorProfile>(other, self);
+    const someoneElse = keys.mentors.profile('bola', 'm1');
+    qc.setQueryData<MentorProfile>(someoneElse, {
+      ...fullProfile,
+      mentor: { ...fullProfile.mentor, id: 'u9' },
+    });
+    reset();
+    const { result } = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
+
+    act(() => result.current.save({ color: 'lilac' }));
+    await waitFor(() => expect(result.current.saveState).toBe('saved'));
+    expect(stale()).toBe(true);
+    // The entry being edited holds the result: never refetched mid-burst.
+    expect(qc.getQueryState(keys.mentors.profile('ada', 'm1'))?.isInvalidated).toBe(false);
+    expect(qc.getQueryState(someoneElse)?.isInvalidated).toBe(false);
+
+    reset();
+    act(() => result.current.upload(file('image/png', 10)));
+    await waitFor(() => expect(stale()).toBe(true));
+
+    reset();
+    act(() => result.current.removeImage());
+    await waitFor(() => expect(result.current.removedStamp).toBeGreaterThan(0));
+    expect(stale()).toBe(true);
+  });
+
   it('a failed save puts back what’s saved, says so, and refetches', async () => {
     PATCH.mockResolvedValue({
       data: undefined,
@@ -317,12 +358,20 @@ describe('useCoverEdit', () => {
     });
     const { wrapper, read, qc, key } = setup();
     qc.setQueryData<MentorProfile>(key, { ...fullProfile, bannerUrl: '/b.jpg' });
+    // This mentor under its other handle: the server may have removed it anyway.
+    const other = keys.mentors.profile('u1', 'm1');
+    qc.setQueryData<MentorProfile>(other, {
+      ...fullProfile,
+      bannerUrl: '/b.jpg',
+      mentor: { ...fullProfile.mentor, id: 'u1' },
+    });
     const { result } = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
     act(() => result.current.removeImage());
     await waitFor(() =>
       expect(result.current.imageError).toBe('The image wasn’t removed. Try again.'),
     );
     expect(read().bannerUrl).toBe('/b.jpg');
+    expect(qc.getQueryState(other)?.isInvalidated).toBe(true);
     act(() => result.current.clearMessages());
     expect(result.current.imageError).toBeNull();
   });
