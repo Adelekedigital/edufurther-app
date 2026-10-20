@@ -204,6 +204,33 @@ describe('MentorProfilePanel', () => {
     );
   });
 
+  it('newer values that arrive while editing show once the edit is discarded', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<MentorProfilePanel userId="u1" />);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Gender (optional)' }), 'Man');
+    settings = { ...settings, values: { ...values, headline: 'Edited on another device' } };
+    rerender(<MentorProfilePanel userId="u1" />);
+    expect(screen.getByRole('combobox', { name: 'Gender (optional)' })).toHaveValue('Man');
+    await user.click(screen.getByRole('button', { name: 'Discard' }));
+    expect(screen.getByRole('textbox', { name: 'Headline' })).toHaveValue(
+      'Edited on another device',
+    );
+  });
+
+  it('a saved country missing from the catalog still shows in the preview by its saved name', () => {
+    settings = {
+      ...settings,
+      values: { ...values, originId: 'old-id' },
+      profile: {
+        ...profile,
+        originCountry: 'Zaire',
+        studyCountry: 'United States',
+      } as MentorProfile,
+    };
+    render(<MentorProfilePanel userId="u1" />);
+    expect(preview().getByText('From Zaire, studied in the US')).toBeInTheDocument();
+  });
+
   it('error before content: a failed load offers Try again', async () => {
     settings = { ...settings, status: 'error', values: null, profile: null };
     render(<MentorProfilePanel userId="u1" />);
