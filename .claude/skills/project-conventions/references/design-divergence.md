@@ -1014,3 +1014,17 @@ The frozen state follows `viewer.mentorStage === 'pending'` (submitted, awaiting
 | --- | --- | --- | --- |
 | "Add education" / "Add award" are outlined buttons in the card header; "What you help with" has an outlined "Edit" | The profile page's controls: "+ Add education", "+ Add award" and a pencil "Edit" as small text actions in the top-right corner (`Button variant="text" size="small" icon`) | Owner: consistent with the Mentor Profile page and lighter; one shared control (the profile page uses the same Button now) | — |
 | Tab "Login and security" | "Login & security" | Owner, 2026-10-20 (sentence case, like every tab) | — |
+
+## Mentor Settings, PR 7: Social links tab (`Mentor Settings.dc.html` `isSocial`, linksScope=limited)
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| The header's "Add link" stays while the form is open | Hidden while the form is open | The form's own button is also "Add link": two identical buttons in one view (UX writer rule 6) and two same-named controls for a screen reader | design renames one |
+| Adding a link flashes nothing | "Link added" toast | A screen reader otherwise hears nothing when the row appears; editing and removing already flash | — |
+| Website can always be picked | Off once there are three websites | The backend refuses a fourth (`/problems/website-limit-reached`); a disabled option says so before typing | — |
+| A website draft that is a platform's link always saves as that platform | Only when adding and that platform is free; never when changing a link | A link's platform is fixed once it exists (PATCH takes a value only); a second X would be a 409 | — |
+| Remove subtitle "…from your profile and link page." | "…from your profile." | There is no link page (linksScope=limited; owner, 2026-10-20) | link page ships |
+| The field's focus ring is the input's own outline, inset | The ring goes round the whole field, prefix included | One visible ring around the control the label names (accessibility skill: the ring wraps the whole control) | — |
+| No handle rule beyond "no spaces or slashes" | Each platform's handle rule, said as "That handle won’t work on X. Check it and try again." | The backend's own rules (`domain.social_links`), so a 422 is rare; the design's note is kept for spaces and slashes | — |
+| Loading, a failed load and a refused save aren't drawn | Skeleton rows; "We couldn’t load your links. Check your connection and try again." with Try again; the refusal in the form (`role="alert"`) | All four states ship (ui-states); copy in `lib/copy/socialLinks.ts` | design draws them |
+| Gender select at `--text-p-sm` (already drawn) | Was `--text-p-xs`; now `Select text="sm"` | A fix, logged here: the shared Select's 12px default is the rule rows' size; form selects are 14px like the inputs (owner spotted it, 2026-10-20) | — |
