@@ -14,3 +14,22 @@ describe('Snackbar', () => {
     expect(region.firstElementChild).not.toBe(first);
   });
 });
+
+describe('Snackbar with two panels kept mounted', () => {
+  it('only the newest outcome shows, so toasts never stack', () => {
+    const { rerender } = render(
+      <>
+        <Snackbar message="Profile saved" stamp={1} />
+        <Snackbar message={null} />
+      </>,
+    );
+    rerender(
+      <>
+        <Snackbar message="Profile saved" stamp={1} />
+        <Snackbar message="Goals saved" stamp={1} />
+      </>,
+    );
+    expect(screen.queryByText('Profile saved')).toBeNull();
+    expect(screen.getByText('Goals saved')).toBeInTheDocument();
+  });
+});

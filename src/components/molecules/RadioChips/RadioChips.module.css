@@ -1,0 +1,6 @@
+/* Mentee Settings.dc.html `gTargets` group. */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

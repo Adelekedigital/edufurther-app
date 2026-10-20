@@ -1,18 +1,6 @@
 import { NextResponse } from 'next/server';
+import { MOCK_INSTITUTIONS } from '@/lib/api/mock/institutions';
 import { ok } from '@/lib/api/mock/respond';
-
-/** The design's suggestion list (Mentor Onboarding.dc.html `UNIS`), with ISO countries. */
-const INSTITUTIONS: [name: string, code: string, country: string][] = [
-  ['University of Lagos', 'NG', 'Nigeria'],
-  ['University of Ibadan', 'NG', 'Nigeria'],
-  ['Obafemi Awolowo University', 'NG', 'Nigeria'],
-  ['University of Ghana', 'GH', 'Ghana'],
-  ['University of Nairobi', 'KE', 'Kenya'],
-  ['Mississippi State University', 'US', 'United States'],
-  ['University of Toronto', 'CA', 'Canada'],
-  ['University College London', 'GB', 'United Kingdom'],
-  ['University of Oxford', 'GB', 'United Kingdom'],
-];
 
 /** MOCK of GET /api/v1/institutions?q= (names starting with, then containing). ENABLE_MOCK_API=1 only. */
 export async function GET(req: Request) {
@@ -21,11 +9,11 @@ export async function GET(req: Request) {
   const q = (url.searchParams.get('q') ?? '').trim().toLowerCase();
   const limit = Number(url.searchParams.get('limit')) || 10;
   await new Promise((r) => setTimeout(r, 150));
-  const rows = INSTITUTIONS.map(([name, code, display_name], i) => ({
-    id: `inst-${i + 1}`,
-    name,
+  const rows = MOCK_INSTITUTIONS.map((i) => ({
+    id: i.id,
+    name: i.name,
     web_page: null,
-    country: { code, display_name },
+    country: { code: i.code, display_name: i.country },
   }));
   const data = !q
     ? []
