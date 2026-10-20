@@ -92,8 +92,7 @@ describe('a file is previewable only when the browser can show it', () => {
       canPreview({
         id: 'f',
         filename: 'a.docx',
-        contentType:
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         size: 1,
         available: true,
       }),

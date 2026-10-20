@@ -10,6 +10,7 @@ import { useViewer } from '@/lib/api/data/viewer';
 import { MENTOR_SETTINGS_SUB } from '@/lib/copy/mentorSettings';
 import { SETTINGS_COPY, TAB_LABELS, type SettingsTab } from '@/lib/copy/settings';
 import { memberGate, SETTINGS_GATE } from '@/app/_shell/MentorGate';
+import { skipNextRouteFocus } from '@/app/_shell/RouteFocusManager';
 import { BookingPanel } from './BookingPanel';
 import { EducationPanel } from './EducationPanel';
 import { ExpertisePanel } from './ExpertisePanel';
@@ -65,7 +66,11 @@ export function SettingsScreen() {
   // /settings itself, or a tab this role doesn't have (the other role's, or
   // one not built yet): the role's first tab, once the role is known.
   useEffect(() => {
-    if (member && !known) router.replace(`/settings/${first}`);
+    if (member && !known) {
+      // A redirect, not a navigation: the heading doesn't take focus.
+      skipNextRouteFocus();
+      router.replace(`/settings/${first}`);
+    }
   }, [member, known, first, router]);
 
   const gate = memberGate(viewer, `/settings/${segment ?? first}`, SETTINGS_GATE);
@@ -75,13 +80,12 @@ export function SettingsScreen() {
   // so a mentor never sees the mentee's tabs flash first (owner, 2026-10-20).
   if (viewer.kind === 'loading')
     return (
-      <div
-        className={styles.screen}
-        role="status"
-        aria-busy="true"
-        aria-label={SETTINGS_COPY.loading}
-      >
-        <header className={styles.head}>
+      <div className={styles.screen}>
+        {/* Said once, beside the skeleton: the heading stays outside the live region. */}
+        <p role="status" className="sr-only">
+          {SETTINGS_COPY.loading}
+        </p>
+        <header className={styles.head} aria-busy="true">
           <h1 className={styles.title}>{SETTINGS_COPY.title}</h1>
           <Skeleton width="320px" height="18px" className={styles.skeletonSub} />
         </header>

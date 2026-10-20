@@ -279,11 +279,7 @@ export function patchViewer(
   patch: Partial<
     Pick<
       Member,
-      | 'avatarUrl'
-      | 'avatarFocus'
-      | 'coverKey'
-      | 'onboardingComplete'
-      | 'mentorApprovedSeen'
+      'avatarUrl' | 'avatarFocus' | 'coverKey' | 'onboardingComplete' | 'mentorApprovedSeen'
     >
   >,
 ) {

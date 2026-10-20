@@ -70,14 +70,19 @@ describe('toMetMentor', () => {
   });
 
   it('clamps a malformed avatar focus to null', () => {
-    expect(toMetMentor(row({ avatar_focus: { x: 2, y: Number.NaN } }) as never).avatarFocus).toBeNull();
+    expect(
+      toMetMentor(row({ avatar_focus: { x: 2, y: Number.NaN } }) as never).avatarFocus,
+    ).toBeNull();
   });
 });
 
 describe('useMetMentors', () => {
   it('returns the mapped list', async () => {
     get.mockResolvedValue(
-      resp(200, { data: [row(), row({ id: 'm2', bookability: 'has_upcoming' })], next_cursor: null }),
+      resp(200, {
+        data: [row(), row({ id: 'm2', bookability: 'has_upcoming' })],
+        next_cursor: null,
+      }),
     );
     const { result } = renderHook(() => useMetMentors(true), { wrapper });
     await waitFor(() => expect(result.current.data).not.toBeNull());

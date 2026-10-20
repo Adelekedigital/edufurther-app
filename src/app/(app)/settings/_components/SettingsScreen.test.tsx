@@ -15,6 +15,9 @@ vi.mock('next/navigation', () => ({
   notFound: () => notFound(),
 }));
 
+const skipFocus = vi.fn();
+vi.mock('@/app/_shell/RouteFocusManager', () => ({ skipNextRouteFocus: () => skipFocus() }));
+
 let viewer: Viewer;
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => viewer }));
 
@@ -90,6 +93,7 @@ const dialog = () => screen.queryByRole('alertdialog', { name: 'Save your change
 
 beforeEach(() => {
   replace.mockReset();
+  skipFocus.mockReset();
   push.mockReset();
   panel.save.mockReset();
   panel.discard.mockReset();
@@ -199,6 +203,19 @@ describe('SettingsScreen', () => {
     segment = null;
     render(<SettingsScreen />);
     expect(replace).toHaveBeenCalledWith('/settings/booking');
+    // A redirect, not a navigation: the heading doesn't take focus.
+    expect(skipFocus).toHaveBeenCalled();
+  });
+
+  it('a guest on /settings is asked to log in and brought back to Profile', () => {
+    viewer = { kind: 'guest' };
+    segment = null;
+    render(<SettingsScreen />);
+    expect(screen.getByRole('link', { name: 'Log in' })).toHaveAttribute(
+      'href',
+      `/login?next=${encodeURIComponent('/settings/profile')}`,
+    );
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('…and Profile for a mentee', () => {
@@ -217,7 +234,7 @@ describe('SettingsScreen', () => {
     expect(screen.queryByText(/Your details, what you’re working toward/)).toBeNull();
     expect(screen.queryByTestId('profile-panel')).toBeNull();
     expect(screen.queryByTestId('booking-panel')).toBeNull();
-    expect(screen.getByRole('status', { name: 'Loading your settings' })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Loading your settings');
     expect(replace).not.toHaveBeenCalled();
   });
 

@@ -86,7 +86,7 @@ describe('useMentorSettings', () => {
     expect(result.current.handle).toBe('ada-obi');
   });
 
-  it('Try again with no handle asks /me again, never /mentors/null', async () => {
+  it('Try again after /me failed asks /me again, never /mentors/null', async () => {
     GET.mockResolvedValue({ data: undefined, error: {}, response: { ok: false, status: 500 } });
     const { result } = renderHook(() => useMentorSettings('u1'), { wrapper: wrap() });
     // The read retries once on its own first (retryOnce).

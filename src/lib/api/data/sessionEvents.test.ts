@@ -45,12 +45,23 @@ describe('outcomeOf', () => {
 
   it('a sweep is nobody: null actor_id with a system type', () => {
     const b = sampleBookingFor({ status: 'expired' });
-    const e = ended({ to_status: 'expired', actor_id: null, actor_type: 'system', reason_text: null });
+    const e = ended({
+      to_status: 'expired',
+      actor_id: null,
+      actor_type: 'system',
+      reason_text: null,
+    });
     expect(outcomeOf([created, e], b, 'me')).toMatchObject({ by: 'system', reason: null });
   });
 
   it('says nothing for an outcome that needs no explaining', () => {
-    expect(outcomeOf([created, ended({ to_status: 'completed' })], sampleBookingFor({ status: 'completed' }), 'me')).toBeNull();
+    expect(
+      outcomeOf(
+        [created, ended({ to_status: 'completed' })],
+        sampleBookingFor({ status: 'completed' }),
+        'me',
+      ),
+    ).toBeNull();
     expect(outcomeOf([created], sampleBookingFor({ status: 'confirmed' }), 'me')).toBeNull();
   });
 

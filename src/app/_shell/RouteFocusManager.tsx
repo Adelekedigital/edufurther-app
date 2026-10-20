@@ -14,37 +14,36 @@ import { usePathname } from 'next/navigation';
  * silently falls to `<body>`), so focus is moved to the new page's `<h1>`, or
  * the `<main>` landmark while the heading is still loading.
  *
- * A route change before the person has clicked, tapped or pressed a key is a
- * redirect while the page loads (e.g. /settings to the role's first tab), so
- * it's treated as the initial load too: focus isn't moved, and no ring shows on
- * a heading nobody reached for.
- *
  * Keyed off the previous pathname, so React Strict Mode's dev-only double-invoke
  * (the pathname is equal across it) is a no-op and the initial load is never
  * mistaken for a navigation. Never scroll-jumps (`preventScroll`). A route with
  * no `#main` (e.g. the focused session view) is left to manage its own focus.
  */
+/** Set by a redirect that isn't a navigation; the next route change consumes it. */
+let skipNext = false;
+
+/**
+ * Call just before a redirect that happens as the page loads (e.g. /settings
+ * to the role's first tab): that route change keeps focus where it is, so no
+ * ring lands on a heading nobody reached for. Every other route change still
+ * moves focus, whatever started it (a screen reader's synthetic click too).
+ */
+export function skipNextRouteFocus() {
+  skipNext = true;
+}
+
 export function RouteFocusManager() {
   const pathname = usePathname();
   const prevPathname = useRef<string | null>(null);
-  const acted = useRef(false);
-  useEffect(() => {
-    const mark = () => {
-      acted.current = true;
-    };
-    document.addEventListener('pointerdown', mark, { capture: true, once: true });
-    document.addEventListener('keydown', mark, { capture: true, once: true });
-    return () => {
-      document.removeEventListener('pointerdown', mark, { capture: true });
-      document.removeEventListener('keydown', mark, { capture: true });
-    };
-  }, []);
   useEffect(() => {
     const prev = prevPathname.current;
     if (prev === pathname) return; // StrictMode double-invoke / same-path re-render
     prevPathname.current = pathname;
     if (prev === null) return; // initial document load — keep the browser's own focus
-    if (!acted.current) return; // a redirect during that load, not a navigation
+    if (skipNext) {
+      skipNext = false; // a load-time redirect, not a navigation
+      return;
+    }
     const main = document.getElementById('main');
     if (!main) return;
     const target = main.querySelector<HTMLElement>('h1') ?? main;

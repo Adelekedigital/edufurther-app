@@ -39,12 +39,16 @@ describe('deriveActivation', () => {
   });
 
   it('the sessions step points at Sessions when a type is missing, else Calendar', () => {
-    expect(deriveActivation(inputs({ missing: [], setupNeeded: ['session_type'] })).setup.next).toMatchObject({
+    expect(
+      deriveActivation(inputs({ missing: [], setupNeeded: ['session_type'] })).setup.next,
+    ).toMatchObject({
       key: 'sessions',
       title: 'Create your first session',
       action: { href: '/session-types' },
     });
-    expect(deriveActivation(inputs({ missing: [], setupNeeded: ['weekly_hours'] })).setup.next).toMatchObject({
+    expect(
+      deriveActivation(inputs({ missing: [], setupNeeded: ['weekly_hours'] })).setup.next,
+    ).toMatchObject({
       key: 'sessions',
       title: 'Open your weekly hours',
       action: { href: '/calendar' },
@@ -58,7 +62,9 @@ describe('deriveActivation', () => {
   });
 
   it('share is a copy intent, and finishing all four hides the banner', () => {
-    const shareNext = deriveActivation(inputs({ missing: [], setupNeeded: [], calendarConnected: true }));
+    const shareNext = deriveActivation(
+      inputs({ missing: [], setupNeeded: [], calendarConnected: true }),
+    );
     expect(shareNext.setup.next).toMatchObject({ key: 'share', action: { copy: true } });
     const allDone = deriveActivation(
       inputs({ missing: [], setupNeeded: [], calendarConnected: true, shared: true }),
@@ -100,7 +106,10 @@ describe('deriveKpis', () => {
 
   it('shows mentoring time in minutes, not rounded hours', () => {
     expect(deriveKpis(kpiInputs({ mentoringMinutes: 90 }))[1]!.value).toBe('90');
-    expect(deriveKpis(kpiInputs({ mentoringMinutes: 45 }))[1]).toMatchObject({ value: '45', unit: 'min' });
+    expect(deriveKpis(kpiInputs({ mentoringMinutes: 45 }))[1]).toMatchObject({
+      value: '45',
+      unit: 'min',
+    });
   });
 
   it('separates thousands in the minutes figure', () => {
@@ -187,7 +196,10 @@ describe('deriveKpiTrends', () => {
 
   it('separates thousands in a large minute delta', () => {
     const t = deriveKpiTrends({
-      monthly: { current: stat({ mentoringMinutes: 1500 }), previous: stat({ mentoringMinutes: 180 }) },
+      monthly: {
+        current: stat({ mentoringMinutes: 1500 }),
+        previous: stat({ mentoringMinutes: 180 }),
+      },
       quarterly: null,
     });
     expect(t.time?.text).toBe('+1,320 min this month');

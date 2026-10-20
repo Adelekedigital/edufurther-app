@@ -41,9 +41,8 @@ type BookingSettingsProps =
  * Mentor Settings' Booking tab (Mentor Settings.dc.html `isBooking`,
  * approvalPlace=rules, bookingLayout=defaults): one card, Booking rules, with
  * approval as its first row and the four rules under it. Unanswered requests
- * expire (the platform's response window, said in the approval line); the
- * design's "If you don't respond in time" picker isn't offered (founder Oct
- * 19). Saving is the page's: it owns the save bar.
+ * expire (the platform's response window, said in the approval line), which is
+ * all this layout draws. Saving is the page's: it owns the save bar.
  */
 export function BookingSettings(props: BookingSettingsProps) {
   const titleId = useId();
