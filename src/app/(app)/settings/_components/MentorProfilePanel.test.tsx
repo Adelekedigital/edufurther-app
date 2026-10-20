@@ -236,6 +236,20 @@ describe('MentorProfilePanel', () => {
     expect(preview().getByText('From Zaire, studied in the US')).toBeInTheDocument();
   });
 
+  it('…and the origin field shows that saved name too, not an empty box', () => {
+    settings = {
+      ...settings,
+      values: { ...values, originId: 'old-id' },
+      profile: {
+        ...profile,
+        originCountry: 'Zaire',
+        studyCountry: 'United States',
+      } as MentorProfile,
+    };
+    render(<MentorProfilePanel userId="u1" />);
+    expect(screen.getByRole('combobox', { name: 'Country of origin' })).toHaveValue('Zaire');
+  });
+
   it('after Save, a newer read is taken even if it equals what was there before', async () => {
     const user = userEvent.setup();
     const { rerender } = render(<MentorProfilePanel userId="u1" />);
