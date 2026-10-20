@@ -146,10 +146,12 @@ export const SECURITY_COPY = {
       ...(sessions > 0 ? [`${sessions} upcoming ${plural(sessions, 'session', 'sessions')}`] : []),
       ...(requests > 0 ? [`${requests} ${plural(requests, 'request', 'requests')}`] : []),
     ];
+    // One person or several is unknown (/me sends counts only): one booking
+    // names "your mentor"; several say "the mentor on each", true either way.
     const n = sessions + requests;
     const told = mentor
-      ? plural(n, 'the mentee', 'the mentees')
-      : plural(n, 'your mentor', 'your mentors');
+      ? plural(n, 'the mentee', 'the mentee on each')
+      : plural(n, 'your mentor', 'the mentor on each');
     const sessionLine = parts.length
       ? `Your ${parts.join(' and ')} will be canceled and ${told} told. `
       : '';

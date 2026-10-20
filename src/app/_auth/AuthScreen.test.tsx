@@ -76,6 +76,16 @@ describe('AuthScreen — a deleted account', () => {
     expect(screen.getByTestId('form')).toBeEmptyDOMElement();
   });
 
+  it('the notice is said into a status region that was there before its words', () => {
+    sessionStorage.setItem('ef-account-deleted', '1');
+    render(<AuthScreen mode="login" role="mentee" next={null} deleted />);
+    const region = screen
+      .getAllByRole('status')
+      .find((el) => el.textContent?.includes('Your account is deleted.'));
+    expect(region).toBeDefined();
+    expect(region!.tagName).toBe('P');
+  });
+
   it('says the account is deleted and how to restore it, in place of a booking line', () => {
     h.booking = gbenga('Eze');
     sessionStorage.setItem('ef-account-deleted', '1');

@@ -144,9 +144,9 @@ describe('SecuritySettings', () => {
   it.each([
     [0, 0, null],
     [1, 0, 'Your 1 upcoming session will be canceled and your mentor told.'],
-    [2, 0, 'Your 2 upcoming sessions will be canceled and your mentors told.'],
+    [2, 0, 'Your 2 upcoming sessions will be canceled and the mentor on each told.'],
     [0, 1, 'Your 1 request will be canceled and your mentor told.'],
-    [2, 1, 'Your 2 upcoming sessions and 1 request will be canceled and your mentors told.'],
+    [2, 1, 'Your 2 upcoming sessions and 1 request will be canceled and the mentor on each told.'],
   ])('warning with %i upcoming and %i requests', async (n, r, sentence) => {
     render(<Host upcomingCount={n} requestCount={r} />);
     await openDelete();

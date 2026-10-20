@@ -66,6 +66,11 @@ export function AuthScreen({ mode, role, next, google, deleted = false }: AuthSc
 
   return (
     <main className={styles.page}>
+      {/* Heard: the region is in the page from the first paint (empty on the
+          server), and the notice's words arrive once the tab's flag is read. */}
+      <p role="status" className="sr-only">
+        {deletedHere ? SECURITY_COPY.deletedNotice : ''}
+      </p>
       <div className={styles.wrap}>
         {authConfigured ? (
           <SignInForm
@@ -77,7 +82,7 @@ export function AuthScreen({ mode, role, next, google, deleted = false }: AuthSc
               // PROVISIONAL (not in a design file yet; listed for design): the
               // notice pattern the page already uses, where the booking line sits.
               deletedHere ? (
-                <Notice tone="neutral" icon="info">
+                <Notice tone="neutral" icon="info" live={false}>
                   {SECURITY_COPY.deletedNotice}
                 </Notice>
               ) : booking && role !== 'mentor' ? (
