@@ -125,4 +125,58 @@ describe('LanguageChips at its limit', () => {
     expect(screen.getByRole('button', { name: 'Add another country' })).toBeDisabled();
     await waitFor(() => expect(screen.getByRole('group', { name: 'Countries' })).toHaveFocus());
   });
+
+  describe('the "none" chip', () => {
+    const DE = { id: 'de', label: 'Germany' };
+    const CA = { id: 'ca', label: 'Canada' };
+    const SE = { id: 'se', label: 'Sweden' };
+    function Countries({ common, start }: { common: LanguageOption[]; start: LanguageOption[] }) {
+      const [selected, setSelected] = useState(start);
+      return (
+        <LanguageChips
+          label="Countries"
+          common={common}
+          selected={selected}
+          onToggle={(l) =>
+            setSelected((s) =>
+              s.some((x) => x.id === l.id) ? s.filter((x) => x.id !== l.id) : [...s, l],
+            )
+          }
+          full={selected.length >= 3}
+          query=""
+          onQueryChange={() => {}}
+          results={[]}
+          status="ready"
+          copy={copy}
+          none={{ label: 'Not sure yet', onPick: () => setSelected([]) }}
+        />
+      );
+    }
+    const names = () => screen.getAllByRole('button').map((b) => b.textContent);
+
+    it('comes after the common chips, is pressed while nothing is picked, and clears the picks', async () => {
+      render(<Countries common={[DE, CA]} start={[DE]} />);
+      expect(names().slice(0, 3)).toEqual(['Germany', 'Canada', 'Not sure yet']);
+      const notSure = screen.getByRole('button', { name: 'Not sure yet' });
+      expect(notSure).toHaveAttribute('aria-pressed', 'false');
+      await userEvent.click(notSure);
+      expect(notSure).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByRole('button', { name: 'Germany' })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Canada' }));
+      expect(notSure).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('stays usable at the limit', () => {
+      render(<Countries common={[DE, CA, SE]} start={[DE, CA, SE]} />);
+      expect(screen.getByRole('button', { name: 'Not sure yet' })).toBeEnabled();
+    });
+
+    it('with no common chips, comes first, before the custom picks', () => {
+      render(<Countries common={[]} start={[SE]} />);
+      expect(names()[0]).toBe('Not sure yet');
+    });
+  });
 });

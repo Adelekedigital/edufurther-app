@@ -4,6 +4,8 @@
  * Ours, where the design draws nothing: the load and save failures.
  */
 
+import { NOT_SURE_LABEL } from './onboarding';
+
 export const SETTINGS_COPY = {
   title: 'Settings',
   sub: 'Your details, what you’re working toward, and how you sign in.',
@@ -177,19 +179,10 @@ export const SECURITY_COPY = {
 
 /**
  * Settings › Goals (Mentee Settings.dc.html `isMGoals`, goalsModel=onboarding,
- * goalsWhen=hide). Ours: the load line, the schools search, the 10-school
- * cap, and the summary title when no degree is picked yet.
+ * goalsWhen=hide, goalsSave=bar). Ours: the load line, the schools search and
+ * the 10-school cap. "Not sure yet" in the countries is the owner's (2026-10-20).
  */
 export const GOALS_COPY = {
-  head: 'Your goals',
-  headSub: 'We use this to recommend mentors who fit your plans.',
-  collapse: 'Collapse goals',
-  /** "Master’s in Public health"; either half alone when the other is missing. */
-  title: (degree: string, field: string) =>
-    degree && field ? `${degree} in ${field}` : degree || field || 'No target yet',
-  schoolsCount: (n: number) => (n === 1 ? '1 school' : `${n} schools`),
-  helpCount: (n: number) => (n === 1 ? '1 help topic' : `${n} help topics`),
-  edit: 'Edit goals',
   workingToward: 'What you’re working toward',
   workingTowardSub: 'We use this to recommend mentors who fit your plans.',
   origin: 'Where you’re from',
@@ -199,7 +192,8 @@ export const GOALS_COPY = {
   field: 'Field of study',
   fieldPlaceholder: 'For example, Public health',
   countries: 'Countries you’re applying to',
-  countriesHint: 'Up to 3. Not listed? Add it.',
+  countriesHint: 'Up to 3, or Not sure yet. Not listed? Add it.',
+  notSure: NOT_SURE_LABEL,
   addCountry: 'Add another country',
   addCountryPlaceholder: 'For example, Sweden',
   add: 'Add',
@@ -216,20 +210,20 @@ export const GOALS_COPY = {
   schoolsFull: 'You’ve added 10 schools, the most you can add.',
   help: 'What you need help with',
   helpSub: 'So you get matched with mentors who can help with exactly this.',
-  save: 'Save goals',
-  saving: 'Saving…',
-  saved: 'Goals saved. Your Explore matches are updated.',
+  bar: 'Unsaved changes to your goals',
+  saved: 'Goals saved. Your mentor matches are updated.',
   saveFailed: 'We couldn’t save your goals. Your changes are still here. Try again.',
-  collapseSub: 'Your changes to your goals haven’t been saved yet.',
   loading: 'Loading your goals',
 } as const;
 
-/** Inline errors on Save with gaps, in the form's order (PRD: Mentee Settings, Goals). */
+/**
+ * Inline errors on Save with gaps, in the form's order (PRD: Mentee Settings,
+ * Goals). No countries is "Not sure yet", never a gap.
+ */
 export const GOALS_ERRORS = {
   origin: 'Select where you’re from.',
   degree: 'Pick what you’re applying for.',
   field: 'Add what you want to study.',
-  countries: 'Pick where you want to study.',
   help: 'Pick at least one area.',
 } as const;
 export type GoalsGap = keyof typeof GOALS_ERRORS;

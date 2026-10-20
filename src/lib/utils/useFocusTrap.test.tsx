@@ -4,7 +4,15 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { useFocusTrap } from './useFocusTrap';
 
-function Dialog({ name, onClose, children }: { name: string; onClose: () => void; children?: React.ReactNode }) {
+function Dialog({
+  name,
+  onClose,
+  children,
+}: {
+  name: string;
+  onClose: () => void;
+  children?: React.ReactNode;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   useFocusTrap(ref, onClose);
   return (
@@ -103,5 +111,15 @@ describe('first focus', () => {
     expect(screen.getByRole('button', { name: 'Keep it' })).toHaveFocus();
     rerender(<Host open={false} />);
     expect(screen.getByRole('button', { name: 'opener' })).toHaveFocus();
+  });
+});
+
+describe('opening focus', () => {
+  it('moves without scrolling, so a rising sheet doesn’t jump', () => {
+    const spy = vi.spyOn(HTMLElement.prototype, 'focus');
+    render(<Dialog name="sheet" onClose={() => {}} />);
+    expect(screen.getByRole('button', { name: 'sheet control' })).toHaveFocus();
+    expect(spy).toHaveBeenCalledWith({ preventScroll: true });
+    spy.mockRestore();
   });
 });

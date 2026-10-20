@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { Fragment, useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Chip } from '@/components/atoms/Chip/Chip';
 import { Icon } from '@/components/atoms/Icon/Icon';
@@ -36,6 +36,12 @@ type LanguageChipsProps = {
   describedBy?: string;
   /** At the limit: chips not picked and the adder are disabled (goal countries: 3). */
   full?: boolean;
+  /**
+   * A chip after the common ones that stands for "none of these" (goal
+   * countries' "Not sure yet"): pressed while nothing is picked, clears the
+   * picks, and never disabled by the limit.
+   */
+  none?: { label: string; onPick: () => void };
 };
 
 const MATCHES = 6;
@@ -62,6 +68,7 @@ export function LanguageChips({
   describedBy,
   commonFailed,
   full = false,
+  none,
 }: LanguageChipsProps) {
   const id = useId();
   const listId = `${id}-list`;
@@ -121,6 +128,11 @@ export function LanguageChips({
   };
 
   const showList = adding && typed !== '';
+  const noneChip = (n: NonNullable<typeof none>) => (
+    <Chip look="choice" pressed={selected.length === 0} onClick={n.onPick}>
+      {n.label}
+    </Chip>
+  );
   return (
     <div
       ref={group}
@@ -142,16 +154,19 @@ export function LanguageChips({
           </button>
         </span>
       )}
-      {chips.map((l) => (
-        <Chip
-          key={l.id}
-          look="choice"
-          pressed={isOn(l)}
-          disabled={full && !isOn(l)}
-          onClick={() => onToggle(l)}
-        >
-          {l.label}
-        </Chip>
+      {none && common.length === 0 && noneChip(none)}
+      {chips.map((l, i) => (
+        <Fragment key={l.id}>
+          <Chip
+            look="choice"
+            pressed={isOn(l)}
+            disabled={full && !isOn(l)}
+            onClick={() => onToggle(l)}
+          >
+            {l.label}
+          </Chip>
+          {none && i === common.length - 1 && noneChip(none)}
+        </Fragment>
       ))}
       {!adding ? (
         <button

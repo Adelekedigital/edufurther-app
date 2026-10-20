@@ -968,19 +968,18 @@ PRD: Mentee Onboarding v5 (deviation table, H8). Rows the PRD settles are produc
 | "Mentees see 'Needs your approval' before they book." under the card whatever the switch | Only while approval is on | With approval off nothing says "Needs your approval"; the line would be untrue | — |
 | Booking rules option lists: notice 6 / 24 / 48 / 72 h, window 1 / 2 / 4 / 8 weeks, buffer 0 / 10 / 15 / 30 | The app's builders (`lib/utils/sessionTypeDraft`): notice 24–72 h, window presets under the platform cap, plus a stored value that isn't in the list | The backend refuses notice under 24 h and a window above the cap (backend round 3, #309); the same lists as Calendar and Sessions | backend allows shorter notice |
 
-## Mentee Settings, PR 5: Goals tab (`isMGoals`, goalsModel=onboarding, goalsWhen=hide)
+## Mentee Settings, PR 5: Goals tab (`isMGoals`, goalsModel=onboarding, goalsWhen=hide, goalsSave=bar)
+
+Since 2026-10-20 (design `goalsSave` default `bar`): the split Goals tab is the two cards, always open, saved by the shared save bar ("Unsaved changes to your goals" / "Goals saved. Your mentor matches are updated."), as the design draws. The summary card, head and Cancel / Save goals footer are gone. "Not sure yet" is a countries chip (owner, 2026-10-20; pushed to the design): on while none is picked, clears the picks, never disabled at 3; no countries saves as `country_ids: []` and is never a gap (backend: matching reads it as Not sure yet, onboarding doesn't require countries).
 
 | Design says | We do | Why | Revisit when |
 | --- | --- | --- | --- |
-| The grouped head and summary card only when Goals and Education share a tab (`menteeTabs` not split) | Head ("Your goals", collapse chevron while open) and summary card on the split Goals tab; the card first when a goal is saved, the fields open when none is | Owner, 2026-10-19 (option a) | — |
 | "Applying for": chips, "Pick all that apply." | One choice (a radio group of chips, arrows move), "Pick one." | PRD: a goal has one degree; MBA saves as Master's with raw "MBA" (H8) | — |
 | "Where you’re from": a native select of 12 countries | `CountryPicker` over the catalog (padding-right 32px, not 40px) | Saved by catalog id (existing CountryPicker divergence) | — |
 | Countries: free-text "Add another country"; unpicked chips stay clickable at 3 | The adder searches the country catalog; at 3 the unpicked chips and the adder are disabled | Saved by catalog id; a click that does nothing reads as broken | — |
 | Schools: free text into a chip | Typing searches `GET /institutions` (listbox under the field); a typed name is kept when nothing fits; 120 characters, 10 at most ("You’ve added 10 schools, the most you can add.", ours) | PRD: catalogue link when there is one; the backend caps the list at 10 | — |
 | Help cards: `border` 1px ink-200 / 2px blue-500 | An inset shadow ring of the same widths and colours | Picking moves nothing (HelpAreaPicker's existing rule) | — |
 | Help card names from the design list ("Interview preparation") | Onboarding's names (`HELP_AREAS`, "Interview and visa preparation") | PRD S1: one wording for the six areas | — |
-| Summary title "No target yet in {field}" when no degree | "{degree} in {field}", either half alone, "No target yet" when neither | Copy fix (grammar) | — |
-| Summary meta "N help topics" always | Empty parts left out; "1 school", "1 help topic" singular | Copy fix | — |
 
 ## Mentor Settings, PR 5: Profile tab (`Mentor Settings.dc.html` `isProfile`)
 

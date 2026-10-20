@@ -56,8 +56,7 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>, onClose: () => 
         .reduce<RefObject<HTMLElement | null> | null>(
           (deepest, t) =>
             !deepest ||
-            deepest.current!.compareDocumentPosition(t.current!) &
-              Node.DOCUMENT_POSITION_FOLLOWING
+            deepest.current!.compareDocumentPosition(t.current!) & Node.DOCUMENT_POSITION_FOLLOWING
               ? t
               : deepest,
           null,
@@ -71,7 +70,9 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>, onClose: () => 
     const first =
       dialog?.querySelector<HTMLElement>('[data-autofocus]:not([disabled])') ??
       dialog?.querySelector<HTMLElement>(FOCUSABLE);
-    (first ?? dialog)?.focus();
+    // No scroll: a sheet is still below the screen while it rises, and
+    // scrolling its container to the button made it jump, then settle.
+    (first ?? dialog)?.focus({ preventScroll: true });
 
     // Only the outermost dialog takes the lock, and only it gives it back.
     if (traps.length === 1) {

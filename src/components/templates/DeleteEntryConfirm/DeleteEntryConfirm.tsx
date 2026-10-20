@@ -20,6 +20,7 @@ type Props = {
  * #59; Session Types' confirm): "Delete this award?" / "This can’t be
  * undone." / Keep it · Delete award, the filled destructive button last.
  * The page owns the request: the Mentor Profile and Settings › Education.
+ * On phones, a bottom sheet (Mentee Settings.dc.html `kind="confirm"`).
  */
 export function DeleteEntryConfirm({ kind, subtitle, pending, error, onKeep, onConfirm }: Props) {
   const noun = kind === 'award' ? 'award' : 'education';
@@ -28,6 +29,7 @@ export function DeleteEntryConfirm({ kind, subtitle, pending, error, onKeep, onC
       title={`Delete this ${noun}?`}
       subtitle={subtitle ?? 'This can’t be undone.'}
       icon="delete"
+      mobile="sheet"
       keepLabel="Keep it"
       confirmLabel={`Delete ${noun}`}
       pendingLabel="Deleting…"

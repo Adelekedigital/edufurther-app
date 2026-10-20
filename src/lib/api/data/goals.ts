@@ -1,7 +1,6 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { DEGREE_OPTIONS } from '@/lib/copy/onboarding';
 import { GOALS_COPY } from '@/lib/copy/settings';
 import type { components } from '@/lib/api/generated/schema';
 import type { GoalSchool, MenteeGoalValues } from '@/types/settings';
@@ -54,23 +53,6 @@ export function toGoalValues(read: GoalsRead, countries: CatalogOption[]): Mente
 /** The origin as saved (no prefill), so Save only writes it when it changes. */
 export const savedOriginId = (read: GoalsRead, countries: CatalogOption[]) =>
   idByCode(countries, read.originCode);
-
-/** Anything saved: the summary card shows first (owner, option a); none opens the fields. */
-export function hasGoal(read: GoalsRead): boolean {
-  const g = read.goal;
-  return (
-    !!g &&
-    (!!g.degree_goal ||
-      !!g.field_of_study?.trim() ||
-      g.countries.length > 0 ||
-      g.needs.length > 0 ||
-      (g.schools ?? []).length > 0)
-  );
-}
-
-/** The degree as the chip names it: "MBA", not the stored Master's. */
-export const degreeLabel = (degree: string) =>
-  DEGREE_OPTIONS.find((d) => d.value === degree)?.label ?? '';
 
 /** The signed-in mentee's goal, where they're from and where they live. */
 export function useMenteeGoals(userId: string | null) {
