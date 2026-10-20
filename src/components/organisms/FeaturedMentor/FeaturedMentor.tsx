@@ -1,9 +1,8 @@
-/* eslint-disable @next/next/no-img-element -- remote avatar host not yet fixed (Supabase storage); see design-divergence.md */
-import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { MentorProof } from '@/components/molecules/MentorProof/MentorProof';
+import { PhotoFrame } from '@/components/molecules/PhotoFrame/PhotoFrame';
 import { formatNextAvailable } from '@/lib/utils/format';
 import type { FeaturedMentor as Featured } from '@/types/mentor';
 import styles from './FeaturedMentor.module.css';
@@ -32,35 +31,24 @@ export function FeaturedMentor({
   bookBlocked = null,
   canBook = true,
 }: FeaturedMentorProps) {
-  // Face position anchors the crop (backend avatar_focus); CSS falls back to 50% 25%.
-  const tone = {
-    '--photo-bg': `var(--cover-${m.cover}-ink)`,
-    ...(m.photoFocus && {
-      '--photo-x': `${(m.photoFocus.x * 100).toFixed(1)}%`,
-      '--photo-y': `${(m.photoFocus.y * 100).toFixed(1)}%`,
-    }),
-  } as CSSProperties;
   return (
     <section aria-labelledby="featured-name" className={styles.card}>
-      {/* Off: Next cancels its own profile prefetches mid-stream (failure-modes #25). */}
-      <Link
+      <PhotoFrame
         href={m.profileHref}
-        prefetch={false}
         className={styles.photo}
-        style={tone}
-        tabIndex={-1}
-        aria-hidden
+        src={m.photoUrl}
+        alt=""
+        initials={m.initials}
+        // Until the mapper carries the mentor's chosen cover (PR A), the one their id gives.
+        cover={m.cover}
+        focus={m.photoFocus}
+        size="lg"
       >
-        {m.photoUrl ? (
-          <img src={m.photoUrl} alt="" className={styles.img} />
-        ) : (
-          <span className={styles.initials}>{m.initials}</span>
-        )}
         <span className={styles.tag}>
           <Icon name="star" size={14} filled />
           Featured this week
         </span>
-      </Link>
+      </PhotoFrame>
       {/* Groups (product, 2026-09-27): who → proof → bio → offer/availability → CTA,
           centred in the 315px card; design request #25. */}
       <div className={styles.body}>

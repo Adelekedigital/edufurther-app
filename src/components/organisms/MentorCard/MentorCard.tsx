@@ -1,5 +1,3 @@
-/* eslint-disable @next/next/no-img-element -- remote avatar host not yet fixed (Supabase storage); see design-divergence.md */
-import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
@@ -7,6 +5,7 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import { formatNextAvailable } from '@/lib/utils/format';
 import { Tag } from '@/components/atoms/Tag/Tag';
 import { MentorProof } from '@/components/molecules/MentorProof/MentorProof';
+import { PhotoFrame } from '@/components/molecules/PhotoFrame/PhotoFrame';
 import type { Mentor, MentorLabel } from '@/types/mentor';
 import { cx } from '@/lib/utils/cx';
 import { MoreTopics } from './MoreTopics';
@@ -87,45 +86,30 @@ export function MentorCard({
     (a, b) => Number(highlight.includes(b.slug)) - Number(highlight.includes(a.slug)),
   );
   const cut = topics.length > TOPICS_SHOWN;
-  // The face position (backend avatar_focus) drives the crop via CSS custom
-  // properties; without it the CSS falls back to the design's 50% 25%.
-  const tone = {
-    '--photo-bg': `var(--cover-${m.cover}-ink)`,
-    ...(m.photoFocus && {
-      '--photo-x': `${(m.photoFocus.x * 100).toFixed(1)}%`,
-      '--photo-y': `${(m.photoFocus.y * 100).toFixed(1)}%`,
-    }),
-  } as CSSProperties;
   const degree = [m.degreeLine, m.institution].filter(Boolean);
   return (
     <article
       className={cx(styles.card, compact && styles.compact)}
       aria-labelledby={`mentor-${m.id}`}
     >
-      {/* Off: Next cancels its own profile prefetches mid-stream (failure-modes #25). */}
       {!compact && (
-        <Link
+        <PhotoFrame
           href={m.profileHref}
-          prefetch={false}
           className={styles.photo}
-          style={tone}
-          tabIndex={-1}
-          aria-hidden
+          src={m.photoUrl}
+          alt=""
+          initials={m.initials}
+          cover={m.cover}
+          focus={m.photoFocus}
+          lazy
+          scrim
         >
-          {m.photoUrl ? (
-            <>
-              <img src={m.photoUrl} alt="" className={styles.img} loading="lazy" />
-              <span className={styles.scrim} />
-            </>
-          ) : (
-            <span className={styles.initials}>{m.initials}</span>
-          )}
           {m.label && (
             <Tag tone="on-photo" className={styles.label}>
               {LABEL_TEXT[m.label]}
             </Tag>
           )}
-        </Link>
+        </PhotoFrame>
       )}
 
       <div className={compact ? styles.compactHead : styles.whoWrap}>
