@@ -80,7 +80,6 @@ export function BlockedDatesPanel({
           ref={action}
           variant="text"
           size="small"
-          className={styles.edit}
           aria-disabled={busy || undefined}
           onClick={edit}
         >

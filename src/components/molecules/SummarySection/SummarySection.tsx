@@ -1,5 +1,5 @@
-import { Icon } from '@/components/atoms/Icon/Icon';
 import styles from './SummarySection.module.css';
+import { Button } from '@/components/atoms/Button/Button';
 
 type SummarySectionProps = {
   title: string;
@@ -17,10 +17,9 @@ export function SummarySection({ title, rows, onEdit }: SummarySectionProps) {
     <section className={styles.box} aria-label={title}>
       <div className={styles.head}>
         <h3 className={styles.title}>{title}</h3>
-        <button type="button" className={styles.edit} onClick={onEdit}>
-          <Icon name="edit" size={16} />
+        <Button variant="text" size="small" icon="edit" onClick={onEdit}>
           Edit<span className="sr-only"> {title.toLowerCase()}</span>
-        </button>
+        </Button>
       </div>
       <dl className={styles.rows}>
         {rows.map((r, i) => (
