@@ -171,7 +171,8 @@ export function SocialLinksCard({
           <span className={styles.sub}>{C.sub}</span>
         </div>
         {/* Hidden while the form is open: its own button is the "Add link" then. */}
-        {filled && !form && (
+        {/* Also gone once every platform is used: there'd be nothing to pick. */}
+        {filled && !form && open.length > 0 && (
           <Button
             ref={add}
             variant="secondary-outlined"

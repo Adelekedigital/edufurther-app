@@ -251,4 +251,30 @@ describe('SocialLinksCard', () => {
     await user.click(screen.getByRole('button', { name: 'Edit YouTube' }));
     expect(screen.getByLabelText('YouTube handle')).toHaveFocus();
   });
+
+  it('every platform used (and three websites): no Add link, nothing to pick', () => {
+    const k = (kind: SocialRow['kind'], id: string): SocialRow => ({
+      id,
+      kind,
+      value: 'ada',
+      url: `https://${id}.dev`,
+      mark: kind,
+    });
+    setup({
+      rows: [
+        LINKEDIN,
+        YOUTUBE,
+        k('x', 'x1'),
+        k('instagram', 'i1'),
+        k('facebook', 'f1'),
+        k('tiktok', 't1'),
+        site('w1', 'https://a.dev'),
+        site('w2', 'https://b.dev'),
+        site('w3', 'https://c.dev'),
+      ],
+    });
+    expect(screen.queryByRole('button', { name: 'Add link' })).toBeNull();
+    // Editing still works.
+    expect(screen.getByRole('button', { name: 'Edit X' })).toBeInTheDocument();
+  });
 });

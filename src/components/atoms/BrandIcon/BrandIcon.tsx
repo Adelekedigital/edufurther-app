@@ -41,6 +41,9 @@ const MARKS: Record<
   },
 };
 
+/** The `language` glyph's size beside a mark of `size` (the design's pairs). */
+const glyphSize = (size: number) => (size <= 13 ? 14 : size <= 14 ? 16 : 18);
+
 type BrandIconProps = {
   mark: SocialMark;
   /** px; the design draws 13 in a profile chip, 14 in the picker, 18 in a settings row. */
@@ -51,10 +54,12 @@ type BrandIconProps = {
 /**
  * A social platform's mark. Decorative: the platform's name is always written
  * beside it. A website has no mark, so it's the `language` glyph, as drawn.
+ * The design sizes that glyph on its own scale beside each mark size: 14 by a
+ * 13 mark (profile chip), 16 by a 14 (picker), 18 by an 18 (settings row).
  */
 export function BrandIcon({ mark, size, className }: BrandIconProps) {
   if (mark === 'website')
-    return <Icon name="language" size={size <= 14 ? 14 : 18} className={className} />;
+    return <Icon name="language" size={glyphSize(size)} className={className} />;
   const frame = {
     className,
     width: size,
@@ -75,7 +80,7 @@ export function BrandIcon({ mark, size, className }: BrandIconProps) {
     );
   const m = (MARKS as Partial<Record<string, (typeof MARKS)['x']>>)[mark];
   // A mark this build doesn't know (a newer backend platform): the website glyph.
-  if (!m) return <Icon name="language" size={size <= 14 ? 14 : 18} className={className} />;
+  if (!m) return <Icon name="language" size={glyphSize(size)} className={className} />;
   return (
     <svg {...frame}>
       <path d={m.d} transform={m.transform} fillRule={m.rule} />
