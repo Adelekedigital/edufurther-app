@@ -200,7 +200,7 @@ export const ProfilePanel = forwardRef<PanelHandle, { userId: string }>(function
         countries={countries}
         photo={{
           url: profile.photoUrl,
-          initial: profile.initial,
+          initial: profile.initials,
           name: profile.name,
           accept: avatar.accept,
           uploading: avatar.uploading,

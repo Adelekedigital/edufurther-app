@@ -22,7 +22,8 @@ import { ApiError, apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
 import { deriveLabel } from './labels';
-import { nextAvailableState, toFocus, toneFor } from './mentors';
+import { clampFocus, personCover, personInitials } from '@/lib/utils/person';
+import { nextAvailableState } from './mentors';
 import { sessionKey, useSession } from './session';
 import { stagesOf } from './sessionTypes';
 
@@ -100,8 +101,6 @@ export function toMentorProfile(r: MentorPublicRead): MentorProfile {
   const first = r.first_name?.trim() || '';
   const last = r.last_name?.trim() || '';
   const name = [first, last].filter(Boolean).join(' ') || 'EduFurther mentor';
-  const initials =
-    ((first[0] ?? '') + (last[0] ?? '')).toUpperCase() || name.slice(0, 1).toUpperCase();
   const latest = r.education?.[0];
   const reviewCount = r.reviews?.count ?? 0;
   const rating = r.reviews?.session_value ?? null;
@@ -111,10 +110,10 @@ export function toMentorProfile(r: MentorPublicRead): MentorProfile {
     profileHref: `/mentors/${encodeURIComponent(r.slug || r.id)}`,
     name,
     firstName: first || name.split(' ')[0] || name,
-    initials,
+    initials: personInitials(first, last, name),
     photoUrl: r.avatar_url ?? null,
-    photoFocus: toFocus(r.avatar_focus),
-    tone: toneFor(r.id),
+    photoFocus: clampFocus(r.avatar_focus),
+    cover: personCover(r.id, coverKey(r.cover_color)),
     degreeLine: [latest?.degree, latest?.study_course].filter(Boolean).join(', ') || null,
     institution: latest?.institution ?? null,
     completedSessions: r.completed_sessions,

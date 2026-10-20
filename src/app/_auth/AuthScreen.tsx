@@ -88,7 +88,7 @@ export function AuthScreen({ mode, role, next, google, deleted = false }: AuthSc
               ) : booking && role !== 'mentor' ? (
                 <SignInContext
                   initials={booking.initials}
-                  tone={booking.tone}
+                  tone={booking.cover}
                   photoUrl={booking.photoUrl}
                   photoFocus={booking.photoFocus}
                 >

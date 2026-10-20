@@ -444,7 +444,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
           mentorFirstName={data.booking.other.firstName}
           sessions={[reviewing]}
           editableUntil={sendReview.result?.editableUntil ?? null}
-          author={{ name: member.firstName, initials: member.initial, institution: null }}
+          author={{ name: member.firstName, initials: member.initials, institution: null }}
           timeZone={timeZone}
           onSend={(answers, sessionId) =>
             // As the profile does: a new review is always about a chosen session.

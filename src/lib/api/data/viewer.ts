@@ -8,6 +8,7 @@ import { authConfigured } from '@/lib/vendor/supabase/config';
 import type { Viewer } from '@/types/mentor';
 import { mentorStageOf } from '@/lib/utils/access';
 import { coverKey } from '@/lib/utils/cover';
+import { clampFocus, personInitials } from '@/lib/utils/person';
 import { ApiError } from './errors';
 import { api } from './http';
 import { menteeByChoice } from './roles';
@@ -28,7 +29,7 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     kind: 'member',
     id: me.id,
     firstName: name,
-    initial: (name[0] ?? '?').toUpperCase(),
+    initials: personInitials(me.first_name, me.last_name, me.email),
     isMentee: me.goal != null,
     isApprovedMentor: me.mentor_profile?.approval_status === 'approved',
     isMentor: mentor != null,
@@ -62,7 +63,7 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
         }
       : null,
     avatarUrl: me.profile?.avatar_url ?? null,
-    avatarFocus: me.profile?.avatar_focus ?? null,
+    avatarFocus: clampFocus(me.profile?.avatar_focus),
     coverKey: coverKey(me.profile?.cover_color),
     // The nav follows the mentor role whenever a mentor profile exists, so the
     // badge does too.
@@ -120,7 +121,7 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     kind: 'member',
     id: 'mock-viewer',
     firstName: 'Esther',
-    initial: 'E',
+    initials: 'E',
     isMentee: true,
     isApprovedMentor: false,
     isMentor: false,
@@ -146,7 +147,7 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     kind: 'member',
     id: 'mock-mentor',
     firstName: 'Gbenga',
-    initial: 'G',
+    initials: 'G',
     isMentee: false,
     isApprovedMentor: true,
     isMentor: true,
@@ -171,7 +172,7 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
 MOCK_VIEWERS['mentor-applicant'] = {
   ...(MOCK_VIEWERS.mentee as Extract<Viewer, { kind: 'member' }>),
   firstName: 'Gbenga',
-  initial: 'G',
+  initials: 'G',
   isMentee: false,
   credits: null,
   avatarUrl: null,
@@ -279,11 +280,7 @@ export function patchViewer(
   patch: Partial<
     Pick<
       Member,
-      | 'avatarUrl'
-      | 'avatarFocus'
-      | 'coverKey'
-      | 'onboardingComplete'
-      | 'mentorApprovedSeen'
+      'avatarUrl' | 'avatarFocus' | 'coverKey' | 'onboardingComplete' | 'mentorApprovedSeen'
     >
   >,
 ) {

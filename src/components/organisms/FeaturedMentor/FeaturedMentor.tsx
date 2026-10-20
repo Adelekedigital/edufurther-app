@@ -34,7 +34,7 @@ export function FeaturedMentor({
 }: FeaturedMentorProps) {
   // Face position anchors the crop (backend avatar_focus); CSS falls back to 50% 25%.
   const tone = {
-    '--photo-bg': `var(--avatar-tone-${m.tone})`,
+    '--photo-bg': `var(--cover-${m.cover}-ink)`,
     ...(m.photoFocus && {
       '--photo-x': `${(m.photoFocus.x * 100).toFixed(1)}%`,
       '--photo-y': `${(m.photoFocus.y * 100).toFixed(1)}%`,

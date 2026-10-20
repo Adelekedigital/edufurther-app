@@ -2,11 +2,12 @@
 
 import { useQuery } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
-import type { AvatarTone, Mentor, Remote } from '@/types/mentor';
+import type { CoverKey } from '@/lib/utils/cover';
+import type { Mentor, Remote } from '@/types/mentor';
 import { apiError, normaliseError, retryOnce } from './errors';
 import { api } from './http';
 import { keys } from './keys';
-import { toFocus, toneFor } from './mentors';
+import { clampFocus, personCover, personInitials } from '@/lib/utils/person';
 import { sessionKey, useSession } from './session';
 
 /**
@@ -26,7 +27,7 @@ export type MetMentor = {
   name: string;
   firstName: string;
   initials: string;
-  tone: AvatarTone;
+  cover: CoverKey;
   avatarUrl: string | null;
   avatarFocus: { x: number; y: number } | null;
   degree: string | null;
@@ -43,17 +44,16 @@ export function toMetMentor(r: MetMentorRead): MetMentor {
   const first = r.first_name?.trim() || '';
   const last = r.last_name?.trim() || '';
   const name = [first, last].filter(Boolean).join(' ') || 'Your mentor';
-  const initials =
-    ((first[0] ?? '') + (last[0] ?? '')).toUpperCase() || name.slice(0, 1).toUpperCase();
   return {
     id: r.id,
     slug: r.slug ?? null,
     name,
     firstName: first || name.split(' ')[0] || name,
-    initials,
-    tone: toneFor(r.id),
+    initials: personInitials(first, last, name),
+    // No cover_color on this read: the derived cover.
+    cover: personCover(r.id),
     avatarUrl: r.avatar_url ?? null,
-    avatarFocus: toFocus(r.avatar_focus),
+    avatarFocus: clampFocus(r.avatar_focus),
     degree: r.degree ?? null,
     institution: r.institution ?? null,
     sessionCount: r.session_count,
@@ -78,7 +78,7 @@ export function toBookingMentor(m: MetMentor): Mentor {
     initials: m.initials,
     photoUrl: m.avatarUrl,
     photoFocus: m.avatarFocus,
-    tone: m.tone,
+    cover: m.cover,
     degreeLine: m.degree,
     institution: m.institution,
     completedSessions: m.sessionCount,

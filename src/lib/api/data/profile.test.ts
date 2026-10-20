@@ -1,3 +1,4 @@
+import { coverFor } from '@/lib/utils/cover';
 import { stageLine, toMentorProfile } from './profile';
 
 const mine = { approval_status: 'approved' as const };
@@ -41,10 +42,22 @@ describe('toMentorProfile', () => {
       rating: 4.9,
       reviewCount: 7,
       nextAvailableState: 'open',
+      cover: coverFor('u1'),
     });
     expect(p.education).toEqual([
       { id: 'e1', title: 'PhD, Sociology', meta: 'Mississippi State University · 2023 – 2027' },
     ]);
+  });
+
+  it('the initials take the chosen cover; an unknown one falls back to the derived cover', () => {
+    expect(toMentorProfile(read({ cover_color: 'lilac' })).mentor.cover).toBe('lilac');
+    expect(toMentorProfile(read({ cover_color: 'red' as never })).mentor.cover).toBe(
+      coverFor('u1'),
+    );
+  });
+
+  it('one name: its first letter', () => {
+    expect(toMentorProfile(read({ last_name: null })).mentor.initials).toBe('G');
   });
 
   it('addresses a mentor without a slug by id', () => {

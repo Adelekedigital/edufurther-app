@@ -35,7 +35,7 @@ const base: Member = {
   kind: 'member',
   id: 'me',
   firstName: 'Ada',
-  initial: 'A',
+  initials: 'A',
   isMentee: false,
   isApprovedMentor: false,
   isMentor: false,

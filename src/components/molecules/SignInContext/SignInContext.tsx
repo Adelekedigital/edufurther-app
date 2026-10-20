@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
-import type { AvatarTone } from '@/types/mentor';
+import type { CoverKey } from '@/lib/utils/cover';
 import styles from './SignInContext.module.css';
 
 type SignInContextProps = {
   /** Whose booking this is: their face or initials, never named twice (the text names them). */
   initials: string;
-  tone: AvatarTone;
+  /** The mentor's colour (`personCover`). */
+  tone: CoverKey;
   photoUrl?: string | null;
   photoFocus?: { x: number; y: number } | null;
   children: ReactNode;

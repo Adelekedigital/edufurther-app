@@ -2,12 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Viewer } from '@/types/mentor';
 import { EditSessionTypeScreen } from './EditSessionTypeScreen';
-import {
-  expectLockedPage,
-  explainer,
-  resetFlags,
-  viewers,
-} from '@/app/_shell/lockedPage.harness';
+import { expectLockedPage, explainer, resetFlags, viewers } from '@/app/_shell/lockedPage.harness';
 
 const push = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -19,7 +14,7 @@ const mentor: Viewer = {
   kind: 'member',
   id: 'm1',
   firstName: 'Gbenga',
-  initial: 'G',
+  initials: 'G',
   isMentee: false,
   isApprovedMentor: true,
   isMentor: true,

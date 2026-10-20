@@ -71,7 +71,7 @@ function sentCopy(first: string, picked: string, confirmed: boolean, answered: b
 }
 
 type SentStateProps = {
-  mentor: Pick<Mentor, 'firstName' | 'initials' | 'tone' | 'photoUrl'>;
+  mentor: Pick<Mentor, 'firstName' | 'initials' | 'cover' | 'photoUrl'>;
   sessionName: string;
   /** "Mon, Oct 19 · 9:00 am" in the viewer's zone. */
   picked: string;
@@ -108,7 +108,7 @@ export function SentState({
         <Avatar
           size="xl"
           initials={mentor.initials}
-          tone={mentor.tone}
+          tone={mentor.cover}
           src={mentor.photoUrl}
           alt=""
         />

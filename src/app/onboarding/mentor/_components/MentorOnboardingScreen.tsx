@@ -126,7 +126,7 @@ export function MentorOnboardingScreen() {
             <AboutStep
               photo={{
                 url: a.photoUrl,
-                initial: f.viewer.kind === 'member' ? f.viewer.initial : '',
+                initial: f.viewer.kind === 'member' ? f.viewer.initials : '',
                 name,
                 accept: f.photo.accept,
                 uploading: f.photo.uploading,

@@ -13,9 +13,6 @@ export type Topic = {
 /** Max one per card, highest priority first. Rules: lib/api/data/labels.ts. */
 export type MentorLabel = 'top-rated' | 'experienced' | 'new';
 
-/** 1–6, an index into the --avatar-tone-* tokens. */
-export type AvatarTone = 1 | 2 | 3 | 4 | 5 | 6;
-
 export type Mentor = {
   id: string;
   /** Where the name and photo link to. */
@@ -29,7 +26,8 @@ export type Mentor = {
    * The crop is anchored on it (object-position); null → the design's 50% 25%.
    */
   photoFocus: { x: number; y: number } | null;
-  tone: AvatarTone;
+  /** Their colour (`personCover`): the initials and the photo ground take its deep tone. */
+  cover: CoverKey;
   /** "MSc, Computer Science" — null when the mentor has no degree on file. */
   degreeLine: string | null;
   institution: string | null;
@@ -194,7 +192,8 @@ export type Viewer =
       kind: 'member';
       id: string;
       firstName: string;
-      initial: string;
+      /** Two letters, first and last name (`personInitials`); the email's first letter with neither. */
+      initials: string;
       /** A goal row exists (backend: can book). Null goal = not onboarded yet. */
       isMentee: boolean;
       /** An approved mentor profile exists. `primary_role` is never used for this. */

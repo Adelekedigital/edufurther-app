@@ -19,7 +19,7 @@ const mentor = (over: Partial<MetMentor> = {}): MetMentor => ({
   name: `Mentor ${n}`,
   firstName: 'Mentor',
   initials: 'MN',
-  tone: 1,
+  cover: 'sky',
   avatarUrl: null,
   avatarFocus: null,
   degree: 'MSc, Public Health',

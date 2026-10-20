@@ -110,7 +110,7 @@ const mentor: Viewer = {
   kind: 'member',
   id: 'm1',
   firstName: 'Gbenga',
-  initial: 'G',
+  initials: 'G',
   isMentee: false,
   isApprovedMentor: false,
   isMentor: true,

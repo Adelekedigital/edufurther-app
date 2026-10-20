@@ -8,7 +8,8 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
-import type { AppError, AvatarTone, FeaturedMentor, Mentor, Topic } from '@/types/mentor';
+import { clampFocus, personCover, personInitials } from '@/lib/utils/person';
+import type { AppError, FeaturedMentor, Mentor, Topic } from '@/types/mentor';
 import { api } from './http';
 import { ApiError, normaliseError } from './errors';
 import { keys, type MentorFilters } from './keys';
@@ -25,19 +26,6 @@ type MentorSummaryRead = components['schemas']['MentorSummaryRead'];
 export const MENTOR_PAGE_SIZE = 10;
 
 // ---- mapping --------------------------------------------------------------
-
-export function toneFor(id: string): AvatarTone {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
-  return ((Math.abs(h) % 6) + 1) as AvatarTone;
-}
-
-/** avatar_focus → a clamped 0–1 point, or null when absent or malformed. */
-export function toFocus(f: { x: number; y: number } | null | undefined): Mentor['photoFocus'] {
-  if (!f || !Number.isFinite(f.x) || !Number.isFinite(f.y)) return null;
-  const clamp = (n: number) => Math.min(1, Math.max(0, n));
-  return { x: clamp(f.x), y: clamp(f.y) };
-}
 
 /**
  * Backend (reply round 3 #13): next_available_state says open / none / refreshing.
@@ -75,8 +63,6 @@ export function toMentor(r: MentorSummaryRead): Mentor {
   const first = r.first_name?.trim() || '';
   const last = r.last_name?.trim() || '';
   const name = [first, last].filter(Boolean).join(' ') || 'EduFurther mentor';
-  const initials =
-    ((first[0] ?? '') + (last[0] ?? '')).toUpperCase() || name.slice(0, 1).toUpperCase();
   const degreeLine = [r.degree, r.study_course].filter(Boolean).join(', ') || null;
   const rating = r.session_value ?? null;
   return {
@@ -84,10 +70,11 @@ export function toMentor(r: MentorSummaryRead): Mentor {
     profileHref: `/mentors/${encodeURIComponent(r.slug || r.id)}`,
     name,
     firstName: first || name.split(' ')[0] || name,
-    initials,
+    initials: personInitials(first, last, name),
     photoUrl: r.avatar_url ?? null,
-    photoFocus: toFocus(r.avatar_focus),
-    tone: toneFor(r.id),
+    photoFocus: clampFocus(r.avatar_focus),
+    // The summary has no cover_color yet (backend to add): the derived cover until then.
+    cover: personCover(r.id),
     degreeLine,
     institution: r.institution ?? null,
     completedSessions: r.completed_sessions,

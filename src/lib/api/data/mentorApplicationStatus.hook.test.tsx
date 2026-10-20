@@ -70,7 +70,7 @@ describe('useMarkApprovedSeen: the viewer follows', () => {
       kind: 'member',
       id: 'u1',
       firstName: 'Gbenga',
-      initial: 'G',
+      initials: 'G',
       isMentee: false,
       isApprovedMentor: true,
       isMentor: true,

@@ -8,7 +8,7 @@ const { useBookingContext } = await import('./useBookingContext');
 const loaded = (first: string, last: string) => ({
   data: {
     names: { first, last },
-    mentor: { initials: 'GE', tone: 3, photoUrl: null, photoFocus: null },
+    mentor: { initials: 'GE', cover: 'sand', photoUrl: null, photoFocus: null },
   },
 });
 
@@ -25,7 +25,7 @@ describe('useBookingContext', () => {
       mentorName: 'Gbenga E.',
       firstName: 'Gbenga',
       initials: 'GE',
-      tone: 3,
+      cover: 'sand',
       photoUrl: null,
       photoFocus: null,
     });

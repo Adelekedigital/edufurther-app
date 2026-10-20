@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { clampFocus } from '@/lib/utils/person';
 import type { AppError, MentorProfile } from '@/types/mentor';
 import { BANNER_ACCEPT, bannerProblem } from './cover';
 import { apiError, normaliseError } from './errors';
@@ -9,7 +10,6 @@ import { api } from './http';
 import { keys } from './keys';
 import { patchViewer } from './viewer';
 import type { MenteeProfile } from './settings';
-import { toFocus } from './mentors';
 import { sessionKey, useSession } from './session';
 
 /** What the photo upload accepts: the same as the banner (backend: JPEG, PNG or WebP, 5 MB). */
@@ -82,7 +82,7 @@ export function useAvatarUpload(handle: string, userId: string | null) {
               mentor: {
                 ...p.mentor,
                 photoUrl: data.avatar_url,
-                photoFocus: toFocus(data.avatar_focus),
+                photoFocus: clampFocus(data.avatar_focus),
               },
             }
           : p,
@@ -95,7 +95,7 @@ export function useAvatarUpload(handle: string, userId: string | null) {
       // The sidebar avatar reads /me: show the new photo now, and refetch.
       patchViewer(qc, {
         avatarUrl: data.avatar_url,
-        avatarFocus: toFocus(data.avatar_focus),
+        avatarFocus: clampFocus(data.avatar_focus),
       });
       setSettingsPhoto(data.avatar_url);
       void qc.invalidateQueries({ queryKey: keys.viewer.all });

@@ -97,6 +97,8 @@ describe('useCoverEdit', () => {
     const { result } = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
     act(() => result.current.save({ color: 'lilac' }));
     await waitFor(() => expect(read().cover.color).toBe('lilac'));
+    // The initials circle follows the cover at once.
+    expect(read().mentor.cover).toBe('lilac');
     expect(result.current.saveState).toBe('saving');
     expect(PATCH).toHaveBeenCalledWith('/api/v1/users/{user_id}/profile', {
       params: { path: { user_id: 'u1' } },

@@ -29,7 +29,7 @@ import { useAvatarUpload } from '@/lib/api/data/avatar';
 import { BANNER_ACCEPT, useCoverEdit } from '@/lib/api/data/cover';
 import { useMentorProfile } from '@/lib/api/data/profile';
 import { useSimilarMentors } from '@/lib/api/data/similar';
-import { coverFor } from '@/lib/utils/cover';
+import { personCover } from '@/lib/utils/person';
 import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type { CompletenessCode } from '@/types/mentor';
@@ -456,7 +456,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               bannerTools={
                 editing ? (
                   <CoverPicker
-                    color={p.cover.color ?? coverFor(p.mentor.id)}
+                    color={personCover(p.mentor.id, p.cover.color)}
                     artOn={p.cover.art !== 'none'}
                     onPickColor={coverEdit.pickColor}
                     onToggleArt={(on) => coverEdit.save({ art: on ? 'icons' : 'none' })}
@@ -792,7 +792,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           sessions={reviews.reviewable.data ?? []}
           initial={reviews.reviewing === 'edit' ? (reviews.editBase ?? undefined) : undefined}
           editableUntil={reviews.send.result?.editableUntil ?? reviews.mine?.editableUntil ?? null}
-          author={{ name: member.firstName, initials: member.initial, institution: null }}
+          author={{ name: member.firstName, initials: member.initials, institution: null }}
           timeZone={timeZone}
           onSend={(answers, sessionId) =>
             reviews.reviewing === 'edit' && reviews.mine

@@ -1,4 +1,5 @@
 import type { components } from '@/lib/api/generated/schema';
+import { coverFor } from '@/lib/utils/cover';
 import { toApiStatuses, toBooking } from './bookings';
 
 type SessionRead = components['schemas']['SessionRead'];
@@ -94,8 +95,19 @@ describe('toBooking', () => {
   });
 
   it('gives each party the same colour their profile uses', () => {
-    expect(toBooking(row(), 'me').other.cover).toBe(toBooking(row(), 'me').other.cover);
-    expect(toBooking(row(), 'me').other.cover).toEqual(expect.any(String));
+    expect(toBooking(row(), 'me').other.cover).toBe(coverFor('them'));
+  });
+
+  it('two-letter initials and a clamped photo focus', () => {
+    const b = toBooking(
+      row({ mentee: { ...party('them', 'amara', 'okafor'), avatar_focus: { x: 2, y: -1 } } }),
+      'me',
+    );
+    expect(b.other.initials).toBe('AO');
+    expect(b.other.avatarFocus).toEqual({ x: 1, y: 0 });
+    expect(toBooking(row({ mentee: party('them', null, 'Okafor') }), 'me').other.initials).toBe(
+      'O',
+    );
   });
 
   it('keeps a null attendance rate null — no data is not zero', () => {
@@ -164,10 +176,12 @@ describe('the suggestion a mentor offered (backend #339)', () => {
   });
 
   it('a booked offer names the session it became', () => {
-    expect(withSuggestion({ status: 'booked', booked_session_id: 'u-9' }).suggestion).toMatchObject({
-      status: 'booked',
-      bookedSessionId: 'u-9',
-    });
+    expect(withSuggestion({ status: 'booked', booked_session_id: 'u-9' }).suggestion).toMatchObject(
+      {
+        status: 'booked',
+        bookedSessionId: 'u-9',
+      },
+    );
   });
 
   it('no offer is null, not undefined', () => {
@@ -176,7 +190,15 @@ describe('the suggestion a mentor offered (backend #339)', () => {
 
   it('the offering comes through, so the suggest picker has something to ask for', () => {
     expect(toBooking(row({ session_type_id: 'st-cv' }), 'me').sessionTypeId).toBe('st-cv');
-    expect(toBooking(row({ session_type_id: null, session_type: { id: 'st-x', name: 'X' } } as Partial<SessionRead>), 'me').sessionTypeId).toBe('st-x');
+    expect(
+      toBooking(
+        row({
+          session_type_id: null,
+          session_type: { id: 'st-x', name: 'X' },
+        } as Partial<SessionRead>),
+        'me',
+      ).sessionTypeId,
+    ).toBe('st-x');
     expect(
       toBooking(row({ session_type_id: null, session_type: null } as Partial<SessionRead>), 'me')
         .sessionTypeId,

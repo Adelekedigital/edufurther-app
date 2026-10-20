@@ -1,5 +1,6 @@
 import { deriveLabel } from './labels';
-import { toFocus, joinPages, toMentor } from './mentors';
+import { coverFor } from '@/lib/utils/cover';
+import { joinPages, toMentor } from './mentors';
 
 const row = (over: Record<string, unknown> = {}) => ({
   id: 'abc',
@@ -46,13 +47,17 @@ describe('toMentor', () => {
     expect(m.degreeLine).toBe('MSc, Data Science');
     expect(m.profileHref).toBe('/mentors/ada-o');
     expect(m.label).toBe('new');
-    expect(m.tone).toBeGreaterThanOrEqual(1);
-    expect(m.tone).toBeLessThanOrEqual(6);
+    expect(m.cover).toBe(coverFor('abc'));
   });
   it('falls back to the id for the profile link and copes with missing names', () => {
     const m = toMentor(row({ slug: null, first_name: null, last_name: null }));
     expect(m.profileHref).toBe('/mentors/abc');
     expect(m.name).toBe('EduFurther mentor');
+    expect(m.initials).toBe('E');
+  });
+  it('one name: its first letter', () => {
+    expect(toMentor(row({ last_name: null })).initials).toBe('A');
+    expect(toMentor(row({ first_name: null })).initials).toBe('O');
   });
   it('carries whether anyone can book them; absent reads as bookable', () => {
     expect(toMentor(row({ taking_bookings: false })).takingBookings).toBe(false);
@@ -60,24 +65,14 @@ describe('toMentor', () => {
     const { taking_bookings: _dropped, ...absent } = row();
     expect(toMentor(absent as ReturnType<typeof row>).takingBookings).toBe(true);
   });
-  it('keeps the tone stable for an id', () => {
-    expect(toMentor(row()).tone).toBe(toMentor(row()).tone);
+  it('takes the cover derived from the id (the summary has no cover_color yet)', () => {
+    expect(toMentor(row({ id: 'x1' })).cover).toBe(coverFor('x1'));
   });
 });
 
-describe('toFocus (backend avatar_focus, #240)', () => {
-  it('passes a 0–1 point through', () => {
-    expect(toFocus({ x: 0.42, y: 0.3 })).toEqual({ x: 0.42, y: 0.3 });
-  });
-  it('clamps out-of-range values', () => {
-    expect(toFocus({ x: -0.2, y: 1.4 })).toEqual({ x: 0, y: 1 });
-  });
-  it('null, missing or malformed → null (CSS default crop)', () => {
-    expect(toFocus(null)).toBeNull();
-    expect(toFocus(undefined)).toBeNull();
-    expect(toFocus({ x: Number.NaN, y: 0.5 })).toBeNull();
-  });
-  it('toMentor carries it', () => {
+describe('avatar_focus (backend #240; the clamp is clampFocus)', () => {
+  it('toMentor carries it, clamped', () => {
+    expect(toMentor(row({ avatar_focus: { x: -0.2, y: 1.4 } })).photoFocus).toEqual({ x: 0, y: 1 });
     expect(toMentor(row({ avatar_focus: { x: 0.5, y: 0.2 } })).photoFocus).toEqual({
       x: 0.5,
       y: 0.2,

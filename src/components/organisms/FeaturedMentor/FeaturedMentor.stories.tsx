@@ -12,7 +12,7 @@ const featured: Featured = {
   initials: 'AO',
   photoUrl: null,
   photoFocus: null,
-  tone: 2,
+  cover: 'rose',
   degreeLine: 'MSc, Public Health',
   institution: 'University of London',
   completedSessions: 122,

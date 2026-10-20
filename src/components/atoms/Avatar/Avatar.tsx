@@ -2,7 +2,6 @@
 import type { CSSProperties } from 'react';
 import { cx } from '@/lib/utils/cx';
 import type { CoverKey } from '@/lib/utils/cover';
-import type { AvatarTone } from '@/types/mentor';
 import { Icon } from '../Icon/Icon';
 import styles from './Avatar.module.css';
 
@@ -12,12 +11,11 @@ type AvatarProps = {
   /** Empty with `tone="plain"`: the DS icon avatar (a person glyph), e.g. a deleted user. */
   initials: string;
   /**
-   * 1–6: white initials on an --avatar-tone-* colour (mentors).
+   * A cover key: white initials on that cover's deep tone, the person's own
+   * colour (`personCover`), as on their profile.
    * plain: the DS default, dark initials on blue-50 (review authors).
-   * A cover key: white initials on that cover's deep tone (the person's own
-   * colour, as on their profile).
    */
-  tone: AvatarTone | 'plain' | CoverKey;
+  tone: 'plain' | CoverKey;
   src?: string | null;
   /** The person's name. Pass "" when a visible name sits right next to it. */
   alt: string;
@@ -41,10 +39,7 @@ export function Avatar({
   const plain = tone === 'plain';
   const blank = plain && !src && !initials;
   const style = {
-    ...(!plain && {
-      '--avatar-bg':
-        typeof tone === 'number' ? `var(--avatar-tone-${tone})` : `var(--cover-${tone}-ink)`,
-    }),
+    ...(!plain && { '--avatar-bg': `var(--cover-${tone}-ink)` }),
     ...(focus && {
       '--avatar-x': `${(focus.x * 100).toFixed(1)}%`,
       '--avatar-y': `${(focus.y * 100).toFixed(1)}%`,

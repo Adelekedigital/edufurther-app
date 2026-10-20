@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import { SentState } from './SentState';
 
-const mentor = { firstName: 'Chidi', initials: 'CN', tone: 1 as const, photoUrl: null };
+const mentor = { firstName: 'Chidi', initials: 'CN', cover: 'sky' as const, photoUrl: null };
 const base = {
   mentor,
   sessionName: 'Build your university shortlist',
@@ -29,7 +29,9 @@ describe('SentState', () => {
     ]);
     // The acceptance email links to the session page; Messages isn't built.
     expect(
-      screen.getByText('Once it’s confirmed, join from Bookings or the link in your confirmation email.'),
+      screen.getByText(
+        'Once it’s confirmed, join from Bookings or the link in your confirmation email.',
+      ),
     ).toBeInTheDocument();
     expect(screen.queryByText(/message them/i)).toBeNull();
   });
@@ -45,7 +47,9 @@ describe('SentState', () => {
     expect(screen.getByText('Confirmed')).toBeInTheDocument();
     expect(screen.getByText('Prepare for your session')).toBeInTheDocument();
     // No email at booking time (it goes to the mentor): the reminders carry the link.
-    expect(screen.getByText('Join from Bookings or the link in your reminder emails.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Join from Bookings or the link in your reminder emails.'),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/accepts or declines/)).toBeNull();
   });
 

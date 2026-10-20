@@ -11,7 +11,7 @@ const mentor: Mentor = {
   initials: 'OS',
   photoUrl: null,
   photoFocus: null,
-  tone: 1,
+  cover: 'sky',
   degreeLine: 'MSc, Computer Science',
   institution: 'University of London',
   completedSessions: 23,

@@ -4,7 +4,7 @@ import { SignInContext } from './SignInContext';
 describe('SignInContext', () => {
   it('says why, with the mentor’s avatar hidden beside the words that name them', () => {
     const { container } = render(
-      <SignInContext initials="GE" tone={3}>
+      <SignInContext initials="GE" tone="sand">
         Log in or sign up to finish booking Gbenga E.
       </SignInContext>,
     );

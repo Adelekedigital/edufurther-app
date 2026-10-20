@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
+import { coverFor } from '@/lib/utils/cover';
 import { toMetMentor, useMetMentors } from './metMentors';
 
 const get = vi.fn();
@@ -55,8 +56,7 @@ describe('toMetMentor', () => {
       lastSessionAt: '2026-10-06T10:00:00Z',
       bookability: 'open',
     });
-    expect(m.tone).toBeGreaterThanOrEqual(1);
-    expect(m.tone).toBeLessThanOrEqual(6);
+    expect(m.cover).toBe(coverFor('m1'));
   });
 
   it('a null slug stays null (card renders but does not link)', () => {
@@ -69,15 +69,27 @@ describe('toMetMentor', () => {
     expect(m.initials).toBe('Y');
   });
 
+  it('clamps the avatar focus into 0–1', () => {
+    expect(toMetMentor(row({ avatar_focus: { x: 1.5, y: -1 } }) as never).avatarFocus).toEqual({
+      x: 1,
+      y: 0,
+    });
+  });
+
   it('clamps a malformed avatar focus to null', () => {
-    expect(toMetMentor(row({ avatar_focus: { x: 2, y: Number.NaN } }) as never).avatarFocus).toBeNull();
+    expect(
+      toMetMentor(row({ avatar_focus: { x: 2, y: Number.NaN } }) as never).avatarFocus,
+    ).toBeNull();
   });
 });
 
 describe('useMetMentors', () => {
   it('returns the mapped list', async () => {
     get.mockResolvedValue(
-      resp(200, { data: [row(), row({ id: 'm2', bookability: 'has_upcoming' })], next_cursor: null }),
+      resp(200, {
+        data: [row(), row({ id: 'm2', bookability: 'has_upcoming' })],
+        next_cursor: null,
+      }),
     );
     const { result } = renderHook(() => useMetMentors(true), { wrapper });
     await waitFor(() => expect(result.current.data).not.toBeNull());

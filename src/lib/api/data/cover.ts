@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import type { CoverArt, CoverKey } from '@/lib/utils/cover';
+import { personCover } from '@/lib/utils/person';
 import type { AppError, MentorProfile } from '@/types/mentor';
 import { apiError, normaliseError } from './errors';
 import { api } from './http';
@@ -61,6 +62,12 @@ const applyPatch = (cover: Cover, c: CoverPatch): Cover => ({
   color: c.color !== undefined ? c.color : cover.color,
   art: c.art ?? cover.art,
 });
+/** The cover and the avatar's colour move together: the initials sit on the cover's deep tone. */
+const withCover = (p: MentorProfile, cover: Cover): MentorProfile => ({
+  ...p,
+  cover,
+  mentor: { ...p.mentor, cover: personCover(p.mentor.id, cover.color) },
+});
 
 /**
  * The owner's cover: colour and art (PATCH /users/{id}/profile) and the banner
@@ -109,7 +116,7 @@ export function useCoverEdit(handle: string, userId: string | null) {
       const cover = qc.getQueryData<MentorProfile>(key)?.cover;
       if (!burst.current && cover) burst.current = { confirmed: cover, failed: false };
       setStatus({ state: 'saving', stamp: 0 });
-      update((p) => ({ ...p, cover: applyPatch(p.cover, c) }));
+      update((p) => withCover(p, applyPatch(p.cover, c)));
     },
     onSuccess: (_d, c) => {
       if (burst.current) burst.current.confirmed = applyPatch(burst.current.confirmed, c);
@@ -128,7 +135,7 @@ export function useCoverEdit(handle: string, userId: string | null) {
         setStatus({ state: error ? 'error' : 'saved', stamp: Date.now() });
         return;
       }
-      update((p) => ({ ...p, cover: b.confirmed }));
+      update((p) => withCover(p, b.confirmed));
       if (b.failed) void qc.invalidateQueries({ queryKey: key });
       // The sidebar avatar takes the cover's deep tone from /me: what's saved
       // (confirmed, even after a failed pick) now, and a refetch.

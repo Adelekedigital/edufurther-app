@@ -16,7 +16,12 @@ const me = (over: Partial<Me> = {}): Me =>
 describe('toViewer (backend auth reply #3)', () => {
   it('a goal makes a mentee; no mentor profile → not a mentor', () => {
     const v = toViewer(me({ goal: {} as Me['goal'] }));
-    expect(v).toMatchObject({ isMentee: true, isApprovedMentor: false, initial: 'E' });
+    expect(v).toMatchObject({ isMentee: true, isApprovedMentor: false, initials: 'E' });
+  });
+
+  it('two-letter initials from first and last name, as the profile header shows them', () => {
+    expect(toViewer(me({ last_name: 'Adeyemi' })).initials).toBe('EA');
+    expect(toViewer(me({ first_name: null, last_name: 'Adeyemi' })).initials).toBe('A');
   });
 
   it('only an approved mentor profile counts — never primary_role', () => {
@@ -40,7 +45,7 @@ describe('toViewer (backend auth reply #3)', () => {
   it('falls back to the email name when there is no first name', () => {
     expect(toViewer(me({ first_name: null }))).toMatchObject({
       firstName: 'esther.a',
-      initial: 'E',
+      initials: 'E',
     });
   });
 
@@ -86,6 +91,9 @@ describe('toViewer (backend auth reply #3)', () => {
       coverKey: 'mint',
     });
     expect(toViewer(me({ profile: null })).coverKey).toBeNull();
+    expect(
+      toViewer(me({ profile: { avatar_focus: { x: 1.2, y: 0.3 } } as Me['profile'] })).avatarFocus,
+    ).toEqual({ x: 1, y: 0.3 });
   });
 
   it('the Bookings count follows the nav role: a mentor profile uses the mentor count', () => {
