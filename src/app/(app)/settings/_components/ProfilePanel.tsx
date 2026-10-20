@@ -93,6 +93,7 @@ export const ProfilePanel = forwardRef<PanelHandle, { userId: string }>(function
   const [promptVersion, setPromptVersion] = useState<string | null>(null);
   const [assistBusy, setAssistBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [toastStamp, setToastStamp] = useState(0);
   // Moves on every Save that didn't go through, so its error is heard again.
   const [tries, setTries] = useState(0);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -142,6 +143,7 @@ export const ProfilePanel = forwardRef<PanelHandle, { userId: string }>(function
     setBase(after);
     setDraft(after);
     setToast(SAVE_COPY.profileSaved);
+    setToastStamp((n) => n + 1);
     return true;
   };
 
@@ -159,7 +161,7 @@ export const ProfilePanel = forwardRef<PanelHandle, { userId: string }>(function
         title={SETTINGS_COPY.loadError}
         description={SETTINGS_COPY.loadErrorBody}
         actions={
-          <Button variant="secondary-outlined" size="large" onClick={retry} disabled={retrying}>
+          <Button variant="secondary-outlined" size="large" onClick={retry} busy={retrying}>
             {SETTINGS_COPY.retry}
           </Button>
         }
@@ -233,7 +235,7 @@ export const ProfilePanel = forwardRef<PanelHandle, { userId: string }>(function
           onSave={() => void save()}
         />
       )}
-      <Snackbar message={toast} />
+      <Snackbar message={toast} stamp={toastStamp} />
       {confirmRemove && (
         <RemovePhotoConfirm
           onKeep={() => setConfirmRemove(false)}
