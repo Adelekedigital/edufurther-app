@@ -272,7 +272,7 @@ export function useSignInFlow({
       }
       setStep('finish');
     },
-    [finish, fullName, mode, name, next, router, setEmail],
+    [finish, fullName, mode, name, next, role, router, setEmail],
   );
 
   /** Something threw after sign-in (storage, the SDK): go on rather than hang on "Checking...". */
