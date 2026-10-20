@@ -306,3 +306,40 @@ describe('setupCredits', () => {
     });
   });
 });
+
+describe('roleSwitchFor: step 1’s switch, for a fresh account only (owner, 2026-10-20)', () => {
+  const freshMentee = () => member({ isMentee: false, onboardingComplete: false });
+  const freshMentor = () => member({ isMentee: false, signedUpAsMentor: true });
+
+  it('a fresh mentee may join as a mentor, a fresh mentor sign-up as a mentee', async () => {
+    const { roleSwitchFor } = await load();
+    expect(roleSwitchFor(freshMentee(), 'mentee')).toBe('mentor');
+    expect(roleSwitchFor(freshMentor(), 'mentor')).toBe('mentee');
+  });
+
+  it('nothing once anything is saved: a goal, a mentor profile, or a step', async () => {
+    const { roleSwitchFor } = await load();
+    expect(roleSwitchFor(member(), 'mentee')).toBeNull();
+    expect(
+      roleSwitchFor(member({ isMentee: false, onboardingStarted: true }), 'mentee'),
+    ).toBeNull();
+    expect(roleSwitchFor(member({ isMentee: false, hasMentorProfile: true }), 'mentee')).toBeNull();
+    expect(roleSwitchFor(mentor({ mentorStage: 'unsubmitted' }), 'mentor')).toBeNull();
+    expect(roleSwitchFor({ ...freshMentor(), onboardingStarted: true }, 'mentor')).toBeNull();
+  });
+
+  it('nothing for the other role’s flow, a guest, or while /me loads', async () => {
+    const { roleSwitchFor } = await load();
+    expect(roleSwitchFor(freshMentor(), 'mentee')).toBeNull();
+    expect(roleSwitchFor(freshMentee(), 'mentor')).toBeNull();
+    expect(roleSwitchFor({ kind: 'guest' }, 'mentee')).toBeNull();
+    expect(roleSwitchFor({ kind: 'loading', signedIn: true }, 'mentee')).toBeNull();
+  });
+
+  it('only while the other flow is on', async () => {
+    let { roleSwitchFor } = await load(true, false);
+    expect(roleSwitchFor(freshMentee(), 'mentee')).toBeNull();
+    ({ roleSwitchFor } = await load(false, true));
+    expect(roleSwitchFor(freshMentor(), 'mentor')).toBeNull();
+  });
+});

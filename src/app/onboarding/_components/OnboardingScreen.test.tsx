@@ -5,6 +5,18 @@ import { EMPTY_PLANS } from '@/lib/utils/onboardingAnswers';
 import type { Viewer } from '@/types/mentor';
 import { OnboardingScreen } from './OnboardingScreen';
 
+// Both flows on, before access.ts reads them: step 1 may offer the mentor flow.
+vi.hoisted(() => {
+  process.env.NEXT_PUBLIC_ONBOARDING_ENABLED = 'true';
+  process.env.NEXT_PUBLIC_MENTOR_ONBOARDING_ENABLED = 'true';
+});
+const switchTo = vi.fn();
+let switching = false;
+let switchError: unknown = null;
+vi.mock('@/lib/api/data/roleHooks', () => ({
+  useSwitchRole: () => ({ switchTo, isPending: switching, error: switchError }),
+}));
+
 const replace = vi.fn();
 const push = vi.fn();
 let search = '';
@@ -141,6 +153,9 @@ beforeEach(() => {
   profileFails = false;
   matches = null;
   launcher = {};
+  switchTo.mockReset().mockResolvedValue(undefined);
+  switching = false;
+  switchError = null;
 });
 
 describe('OnboardingScreen', () => {
@@ -542,5 +557,62 @@ describe('OnboardingScreen', () => {
       expect(screen.getByText(/Welcome back/)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Start over' })).toBeInTheDocument();
     });
+  });
+});
+
+describe('OnboardingScreen: "Join as a mentor" on step 1 (owner, 2026-10-20)', () => {
+  const join = () => screen.queryByRole('button', { name: 'Join as a mentor' });
+
+  it('a fresh account sees it beside the counter, with the 44px tap class', () => {
+    render(<OnboardingScreen />);
+    expect(screen.getByText('Step 1 of 2')).not.toHaveClass('end');
+    expect(join()).toHaveClass('roleSwitch');
+  });
+
+  it('a click saves mentor once, and the screen routes nowhere itself', async () => {
+    render(<OnboardingScreen />);
+    await userEvent.click(join()!);
+    expect(switchTo).toHaveBeenCalledTimes(1);
+    expect(switchTo).toHaveBeenCalledWith('mentor');
+    expect(replace).not.toHaveBeenCalled();
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('busy while it saves, and a failure says so on step 1', () => {
+    switching = true;
+    switchError = { kind: 'server', message: 'x' };
+    render(<OnboardingScreen />);
+    expect(join()).toHaveAttribute('aria-disabled', 'true');
+    expect(join()).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('alert')).toHaveTextContent('Couldn’t switch. Try again.');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/help/i);
+  });
+
+  it('gone on step 2, and still gone back on step 1 once step 1 is saved', async () => {
+    render(<OnboardingScreen />);
+    await userEvent.click(screen.getByRole('button', { name: /Find a program/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await screen.findByRole('heading', { name: 'Tell us about your study plans' });
+    expect(join()).toBeNull();
+    expect(screen.getByText('Step 2 of 2')).toHaveClass('end');
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByText('Step 1 of 2')).toBeInTheDocument();
+    expect(join()).toBeNull();
+  });
+
+  it('not for an account with a step saved, a goal, or a returning visit', () => {
+    viewer = { ...mentee, onboardingStarted: true } as Viewer;
+    const { unmount } = render(<OnboardingScreen />);
+    expect(join()).toBeNull();
+    unmount();
+    viewer = { ...mentee, isMentee: true } as Viewer;
+    const second = render(<OnboardingScreen />);
+    expect(join()).toBeNull();
+    second.unmount();
+    viewer = mentee;
+    state = { ...fresh, lastStep: 'help' };
+    render(<OnboardingScreen />);
+    expect(screen.getByText('Step 1 of 2')).toBeInTheDocument();
+    expect(join()).toBeNull();
   });
 });

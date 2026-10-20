@@ -22,13 +22,6 @@
   flex-direction: column;
   gap: var(--space-3);
 }
-.topRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  min-height: var(--touch-target-min);
-}
 .back {
   display: flex;
   align-items: center;
@@ -45,14 +38,6 @@
 }
 .back:hover {
   color: var(--blue-700);
-}
-.stepLabel {
-  margin-left: auto;
-  font-size: var(--text-caption-xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--ls-caption-xs);
-  text-transform: uppercase;
-  color: var(--ink-600);
 }
 
 .resume {

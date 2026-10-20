@@ -163,6 +163,8 @@ export function useOnboardingFlow() {
   // Continue was pressed with answers missing: their errors show, and clear
   // one by one as each is answered (design `fieldGuide=marked`).
   const [tried, setTried] = useState(false);
+  // A step saved on this visit (the cached /me may not say so yet).
+  const [savedHere, setSavedHere] = useState(false);
 
   /** Saves the step, or returns the gaps that stop it (the page moves focus to the first). */
   const next = async (): Promise<MissingKey[]> => {
@@ -178,6 +180,7 @@ export function useOnboardingFlow() {
       else if (from === 'plans')
         await save.save({ step: 'plans', needIds: form.needIds, plans: form.plans });
       else return [];
+      setSavedHere(true);
       // Finished for a booking (round 4): back to it, no matches. Saving the
       // plans completed onboarding and paid the starter credit.
       if (from === 'plans' && guest?.after === 'booking') {
@@ -229,6 +232,8 @@ export function useOnboardingFlow() {
     helpLimit: HELP_LIMIT,
     gaps,
     tried,
+    // Nothing saved yet, loaded or on this visit: step 1 may offer the mentor flow.
+    nothingSaved: !!form && !form.resumed && !form.migrated && !savedHere,
     save,
     matches,
     headingRef,
