@@ -8,6 +8,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
+import { coverKey } from '@/lib/utils/cover';
 import { clampFocus, personCover, personInitials } from '@/lib/utils/person';
 import type { AppError, FeaturedMentor, Mentor, Topic } from '@/types/mentor';
 import { api } from './http';
@@ -73,8 +74,8 @@ export function toMentor(r: MentorSummaryRead): Mentor {
     initials: personInitials(first, last, name),
     photoUrl: r.avatar_url ?? null,
     photoFocus: clampFocus(r.avatar_focus),
-    // The summary has no cover_color yet (backend to add): the derived cover until then.
-    cover: personCover(r.id),
+    // Their chosen cover (backend #511), else the one their id gives.
+    cover: personCover(r.id, coverKey(r.cover_color)),
     degreeLine,
     institution: r.institution ?? null,
     completedSessions: r.completed_sessions,

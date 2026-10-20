@@ -24,6 +24,7 @@ const party = (id: string, joinedAt: string | null = null) => ({
   first_name: id === 'me' ? 'Gbenga' : 'Amara',
   last_name: 'Okafor',
   avatar_url: null,
+  cover_art: 'none' as const,
   avatar_focus: null,
   timezone: 'Africa/Lagos',
   joined_at: joinedAt,

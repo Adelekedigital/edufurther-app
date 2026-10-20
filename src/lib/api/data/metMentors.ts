@@ -7,6 +7,7 @@ import type { Mentor, Remote } from '@/types/mentor';
 import { apiError, normaliseError, retryOnce } from './errors';
 import { api } from './http';
 import { keys } from './keys';
+import { coverKey } from '@/lib/utils/cover';
 import { clampFocus, personCover, personInitials } from '@/lib/utils/person';
 import { sessionKey, useSession } from './session';
 
@@ -50,8 +51,8 @@ export function toMetMentor(r: MetMentorRead): MetMentor {
     name,
     firstName: first || name.split(' ')[0] || name,
     initials: personInitials(first, last, name),
-    // No cover_color on this read: the derived cover.
-    cover: personCover(r.id),
+    // Their chosen cover (backend #511), else the one their id gives.
+    cover: personCover(r.id, coverKey(r.cover_color)),
     avatarUrl: r.avatar_url ?? null,
     avatarFocus: clampFocus(r.avatar_focus),
     degree: r.degree ?? null,

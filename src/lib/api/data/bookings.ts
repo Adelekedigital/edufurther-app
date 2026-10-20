@@ -11,6 +11,7 @@ import {
   respondDeadline,
   wantsLapsed,
 } from '@/lib/utils/bookings';
+import { coverKey } from '@/lib/utils/cover';
 import { clampFocus, personCover, personInitials } from '@/lib/utils/person';
 import { dayKey } from '@/lib/utils/slots';
 import type { Booking, BookingParty, BookingStatus } from '@/types/booking';
@@ -69,8 +70,9 @@ export function toParty(p: PartyRead): BookingParty {
     avatarFocus: p.deleted ? null : clampFocus(p.avatar_focus),
     deleted: p.deleted ?? false,
     timeZone: p.deleted ? null : (p.timezone ?? null),
-    // No cover_color on PartyRead yet (backend to add): the derived cover.
-    cover: personCover(p.id),
+    // Their chosen cover (backend #511), else the one their id gives.
+    // Redacted with the rest for a deleted account: the id's colour, never their chosen one.
+    cover: personCover(p.id, coverKey(p.deleted ? null : p.cover_color)),
     // Redacted here like the name and the avatar, not merely expected to
     // arrive null: every other identifying field on a deleted account is
     // dropped locally rather than trusted to the server.

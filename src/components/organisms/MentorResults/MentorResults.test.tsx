@@ -231,8 +231,8 @@ describe('MentorResults', () => {
       />,
     );
     const frame = container.querySelector('article a[aria-hidden]') as HTMLElement;
-    expect(frame.style.getPropertyValue('--photo-x')).toBe('42.0%');
-    expect(frame.style.getPropertyValue('--photo-y')).toBe('30.0%');
+    expect(frame.style.getPropertyValue('--avatar-x')).toBe('42.0%');
+    expect(frame.style.getPropertyValue('--avatar-y')).toBe('30.0%');
   });
 
   it('a mentor viewer gets View profile, never Book (product, 2026-09-29)', async () => {

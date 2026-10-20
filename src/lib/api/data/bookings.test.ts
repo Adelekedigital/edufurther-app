@@ -11,6 +11,7 @@ const party = (id: string, first: string | null, last: string | null, deleted = 
   first_name: first,
   last_name: last,
   avatar_url: first ? 'https://img.test/a.webp' : null,
+  cover_art: 'none' as const,
   avatar_focus: { x: 0.5, y: 0.25 },
   joined_at: null,
   attendance_status: 'pending' as const,
@@ -215,6 +216,7 @@ describe('a deleted account keeps nothing identifying (backend #409)', () => {
           deleted: true,
           degree: 'BSc',
           institution: 'FUTA',
+          cover_color: 'lilac',
         },
       } as Partial<SessionRead>),
       'me',
@@ -223,6 +225,8 @@ describe('a deleted account keeps nothing identifying (backend #409)', () => {
     // does not trust that for the name or the avatar, and should not here.
     expect(b.other.degree).toBe(null);
     expect(b.other.institution).toBe(null);
+    // Their chosen colour is theirs too: the id's colour instead.
+    expect(b.other.cover).toBe(coverFor('them'));
     expect(b.other.name).toBe('Deleted user');
   });
 

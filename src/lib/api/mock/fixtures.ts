@@ -61,6 +61,7 @@ const base = (
   taking_bookings: true,
   headline: null,
   avatar_url: avatar,
+  cover_art: 'none' as const,
   avatar_focus: focus,
   primary_study_country: null,
   origin_country: null,

@@ -7,6 +7,7 @@ describe('toSimilarMentor', () => {
       slug: 'ademola-daniels',
       first_name: 'Ademola',
       last_name: 'Daniels',
+      cover_art: 'none',
       degree: 'PhD',
       study_course: 'Sociology',
       institution: 'University of Toronto',

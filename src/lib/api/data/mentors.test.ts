@@ -12,6 +12,7 @@ const row = (over: Record<string, unknown> = {}) => ({
   study_course: 'Data Science',
   institution: 'University of Manchester',
   avatar_url: null,
+  cover_art: 'none' as const,
   completed_sessions: 0,
   review_count: 0,
   session_value: null,
@@ -65,8 +66,11 @@ describe('toMentor', () => {
     const { taking_bookings: _dropped, ...absent } = row();
     expect(toMentor(absent as ReturnType<typeof row>).takingBookings).toBe(true);
   });
-  it('takes the cover derived from the id (the summary has no cover_color yet)', () => {
-    expect(toMentor(row({ id: 'x1' })).cover).toBe(coverFor('x1'));
+  it('takes their chosen cover (backend #511), else the one the id gives', () => {
+    expect(toMentor(row({ id: 'x1', cover_color: 'lilac' })).cover).toBe('lilac');
+    expect(toMentor(row({ id: 'x1', cover_color: null })).cover).toBe(coverFor('x1'));
+    // A value we don't know is never used as a colour.
+    expect(toMentor(row({ id: 'x1', cover_color: 'red;}' })).cover).toBe(coverFor('x1'));
   });
 });
 

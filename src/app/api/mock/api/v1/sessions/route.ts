@@ -15,7 +15,8 @@ const DAY = 24 * 60 * 60 * 1000;
  */
 export async function POST(req: NextRequest) {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
-  if (!req.headers.get('idempotency-key')) return problem(422, { title: 'Idempotency-Key is required' });
+  if (!req.headers.get('idempotency-key'))
+    return problem(422, { title: 'Idempotency-Key is required' });
   const body = (await req.json().catch(() => null)) as {
     session_type_id?: string;
     starts_at?: string;
@@ -61,8 +62,7 @@ export async function POST(req: NextRequest) {
   for (const qn of questions)
     if (qn.is_required && !answers.some((a) => a.question_id === qn.id))
       errors.push({ pointer: '/answers', message: `question ${qn.id} is required` });
-  if (errors.length)
-    return problem(422, { title: 'Validation failed', errors });
+  if (errors.length) return problem(422, { title: 'Validation failed', errors });
   for (const a of answers)
     if (a.file_id && uploads.has(a.file_id)) uploads.get(a.file_id)!.used = true;
   await new Promise((r) => setTimeout(r, 600));
@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
   const party = (id: string): components['schemas']['PartyRead'] => ({
     id,
     deleted: false,
+    cover_art: 'none',
     attendance_status: 'pending',
   });
   return ok(

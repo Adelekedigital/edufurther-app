@@ -22,6 +22,7 @@ const party = (id: string, first: string, joinedAt: string | null = null) => ({
   first_name: first,
   last_name: 'Okafor',
   avatar_url: null,
+  cover_art: 'none' as const,
   avatar_focus: null,
   timezone: 'Africa/Lagos',
   joined_at: joinedAt,
