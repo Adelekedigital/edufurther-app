@@ -2,20 +2,20 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useViewer } from '@/lib/api/data/viewer';
 import { accessFor, inSetup } from '@/lib/utils/access';
+import type { Viewer } from '@/types/mentor';
 
 /**
- * A home page (/home, /dashboard) opened by an account in the setup lock: it
- * has no home yet, so it goes to its own onboarding (lib/utils/access), as
- * the nav's Home already does. Returns where it is going, or null; the page
+ * A page an account in the setup lock can't use yet (/home, /dashboard, its
+ * own profile): it goes to its own onboarding (lib/utils/access), as the
+ * nav's Home already does. Returns where it is going, or null; the page
  * renders nothing of its own meanwhile. While /me loads, null (no lock).
+ * `when` false (e.g. not the owner) never detours.
  */
-export function useSetupDetour(): string | null {
-  const viewer = useViewer();
+export function useSetupDetour(viewer: Viewer, when = true): string | null {
   const router = useRouter();
   const access = accessFor(viewer);
-  const to = inSetup(access) ? access.homeHref : null;
+  const to = when && inSetup(access) ? access.homeHref : null;
   useEffect(() => {
     if (to) router.replace(to);
   }, [to, router]);

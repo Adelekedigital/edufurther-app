@@ -204,11 +204,11 @@ function MentorHome({ member }: { member: Member }) {
  * + next-session card; the activation hero and metrics follow.
  */
 export function DashboardScreen() {
-  const { member, chrome } = useAppShell();
+  const { viewer, member, chrome } = useAppShell();
   const router = useRouter();
   // A mentor who never sent their application has no dashboard yet: mentor
   // onboarding instead (the setup lock), as the nav's Home already goes.
-  const detour = useSetupDetour();
+  const detour = useSetupDetour(viewer);
 
   // Viewer resolved (guest or member) but not a mentor → send them home.
   const resolved = chrome !== 'pending';

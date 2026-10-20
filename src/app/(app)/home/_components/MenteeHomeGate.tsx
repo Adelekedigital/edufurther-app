@@ -1,6 +1,7 @@
 'use client';
 
 import { useSetupDetour } from '@/app/_shell/useSetupDetour';
+import { useViewer } from '@/lib/api/data/viewer';
 import { MenteeHomeScreen } from './MenteeHomeScreen';
 
 /**
@@ -10,6 +11,6 @@ import { MenteeHomeScreen } from './MenteeHomeScreen';
  * says so; while it loads, Home shows its own skeleton.
  */
 export function MenteeHomeGate() {
-  if (useSetupDetour()) return null;
+  if (useSetupDetour(useViewer())) return null;
   return <MenteeHomeScreen />;
 }

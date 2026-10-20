@@ -10,9 +10,9 @@ vi.mock('@/lib/config/auth', async (orig) =>
   (await import('@/app/_shell/lockedPage.harness')).authFlags(await orig()),
 );
 let viewer: Viewer;
-vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => viewer }));
 vi.mock('@/app/_shell/useAppShell', () => ({
   useAppShell: () => ({
+    viewer,
     member: viewer.kind === 'member' ? viewer : null,
     chrome: viewer.kind === 'loading' ? 'pending' : 'member',
   }),
