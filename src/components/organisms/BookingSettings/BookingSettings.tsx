@@ -10,7 +10,7 @@ import {
   BookingRulesRows,
   type BookingRules,
 } from '@/components/organisms/BookingRulesRows/BookingRulesRows';
-import { BOOKING_COPY, noResponseLine, rulesNote } from '@/lib/copy/mentorSettings';
+import { BOOKING_COPY, approvalLine, rulesNote } from '@/lib/copy/mentorSettings';
 import styles from './BookingSettings.module.css';
 
 export type BookingSettingsValue = BookingRules & { requiresApproval: boolean };
@@ -39,13 +39,14 @@ type BookingSettingsProps =
 
 /**
  * Mentor Settings' Booking tab (Mentor Settings.dc.html `isBooking`,
- * approvalLayout=focused, respondPick=hide, bookingLayout=defaults). The
- * design's "If you don't respond in time" picker is one no-response line (PRD
- * deviation, founder Oct 19). Saving is the page's: it owns the save bar.
+ * approvalPlace=rules, bookingLayout=defaults): one card, Booking rules, with
+ * approval as its first row and the four rules under it. Unanswered requests
+ * expire (the platform's response window, said in the approval line), which is
+ * all this layout draws. Saving is the page's: it owns the save bar.
  */
 export function BookingSettings(props: BookingSettingsProps) {
   const titleId = useId();
-  const descId = useId();
+  const approveId = useId();
   if (props.state === 'loading') return <BookingSettingsSkeleton />;
   if (props.state === 'error') {
     return (
@@ -77,42 +78,29 @@ export function BookingSettings(props: BookingSettingsProps) {
   return (
     <div className={styles.stack}>
       <Card as="section" padding="none" className={styles.card} aria-labelledby={titleId}>
-        <div className={styles.head}>
-          <div className={styles.headText}>
-            <h2 id={titleId} ref={headingRef} tabIndex={-1} className={styles.title}>
-              {BOOKING_COPY.approveTitle}
-            </h2>
-            <span id={descId} className={styles.desc}>
-              {on ? BOOKING_COPY.approveOn : BOOKING_COPY.approveOff}
-            </span>
-          </div>
-          <Switch
-            checked={on}
-            disabled={disabled}
-            aria-labelledby={titleId}
-            aria-describedby={descId}
-            onChange={(next) => onChange({ ...value, requiresApproval: next })}
-          />
-        </div>
-        {on && (
-          <>
-            <p className={styles.line}>
-              <Icon name="schedule" size={16} className={styles.lineIcon} />
-              {noResponseLine(responseWindowHours)}
-            </p>
-            <p className={styles.line}>
-              <Icon name="visibility" size={16} className={styles.lineIcon} />
-              {BOOKING_COPY.approveFootnote}
-            </p>
-          </>
-        )}
-      </Card>
-      <Card as="section" padding="none" className={styles.card} aria-labelledby={`${titleId}-r`}>
         <div className={styles.rulesHead}>
-          <h2 id={`${titleId}-r`} className={styles.title}>
+          <h2 id={titleId} ref={headingRef} tabIndex={-1} className={styles.title}>
             {BOOKING_COPY.rulesTitle}
           </h2>
           <span className={styles.desc}>{BOOKING_COPY.rulesSub}</span>
+        </div>
+        {/* `apInRules`: approval is the card's first row. */}
+        <div className={styles.approval}>
+          <span className={styles.approvalText}>
+            <span id={`${approveId}-label`} className={styles.label}>
+              {BOOKING_COPY.approveTitle}
+            </span>
+            <span id={`${approveId}-line`} className={styles.approvalLine}>
+              {approvalLine(on, responseWindowHours)}
+            </span>
+          </span>
+          <Switch
+            checked={on}
+            disabled={disabled}
+            aria-labelledby={`${approveId}-label`}
+            aria-describedby={`${approveId}-line`}
+            onChange={(next) => onChange({ ...value, requiresApproval: next })}
+          />
         </div>
         <BookingRulesRows
           value={value}
@@ -132,23 +120,21 @@ export function BookingSettings(props: BookingSettingsProps) {
   );
 }
 
-/** The two cards' frames at their drawn sizes, so nothing moves when they fill. */
+/** The card's frame at its drawn size, so nothing moves when it fills. */
 function BookingSettingsSkeleton() {
   return (
     <div className={styles.stack} aria-busy="true">
       <Card as="section" padding="none" className={styles.card}>
-        <div className={styles.head}>
-          <div className={styles.headText}>
-            <Skeleton width="40%" height="24px" />
-            <Skeleton width="70%" height="18px" />
-          </div>
-          <Skeleton width="39px" height="24px" radius="full" />
-        </div>
-      </Card>
-      <Card as="section" padding="none" className={styles.card}>
         <div className={styles.rulesHead}>
           <Skeleton width="30%" height="24px" />
           <Skeleton width="80%" height="18px" />
+        </div>
+        <div className={styles.approval}>
+          <span className={styles.approvalText}>
+            <Skeleton width="35%" height="20px" />
+            <Skeleton width="85%" height="18px" />
+          </span>
+          <Skeleton width="39px" height="24px" radius="full" />
         </div>
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className={styles.row}>

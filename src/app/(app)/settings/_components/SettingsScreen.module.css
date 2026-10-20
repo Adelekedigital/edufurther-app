@@ -43,3 +43,22 @@
     padding-bottom: calc(var(--space-16) * 2);
   }
 }
+
+/* While the role is loading: the frame without either role's subline, tabs or panel. */
+.skeletonSub {
+  max-width: 100%;
+}
+.skeletonTabs {
+  display: flex;
+  gap: var(--space-6);
+  padding: var(--space-3) var(--space-4);
+}
+.skeletonCard {
+  max-width: 680px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+}

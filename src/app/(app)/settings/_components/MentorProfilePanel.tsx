@@ -69,10 +69,10 @@ const gapsOf = (v: MentorProfileValues, saved: MentorProfileValues): MentorProfi
  */
 export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
   function MentorProfilePanel({ userId }, ref) {
-    const { status, values, profile, slug, version, retry } = useMentorSettings(userId);
+    const { status, values, profile, handle, version, retry } = useMentorSettings(userId);
     const saving = useSaveMentorProfile(userId);
-    const avatar = useAvatarUpload(slug ?? '', slug ? userId : null);
-    const coverEdit = useCoverEdit(slug ?? '', slug ? userId : null);
+    const avatar = useAvatarUpload(handle ?? '', handle ? userId : null);
+    const coverEdit = useCoverEdit(handle ?? '', handle ? userId : null);
     const { countries } = useCountries(true);
     const common = useLanguageSearch('', true);
     const [query, setQuery] = useState('');
@@ -280,8 +280,12 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
             <>
               <div className={styles.previewHead}>
                 <span className={styles.previewLabel}>{C.preview}</span>
-                {slug && (
-                  <Link href={`/mentors/${slug}`} prefetch={false} className={styles.openProfile}>
+                {handle && (
+                  <Link
+                    href={`/mentors/${encodeURIComponent(handle)}`}
+                    prefetch={false}
+                    className={styles.openProfile}
+                  >
                     {C.openProfile}
                   </Link>
                 )}

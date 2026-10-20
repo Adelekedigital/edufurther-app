@@ -8,9 +8,6 @@ export const MENTOR_SETTINGS_SUB = 'Manage how mentees book you and what they se
 
 export const BOOKING_COPY = {
   approveTitle: 'Approve bookings',
-  approveOn: 'You decide which requests to accept.',
-  approveOff: 'Mentees book any available time and it’s confirmed straight away.',
-  approveFootnote: 'Mentees see “Needs your approval” before they book.',
   rulesTitle: 'Booking rules',
   rulesSub:
     'You control when mentees can book you. Change these for any single session in Sessions.',
@@ -33,15 +30,16 @@ export const BOOKING_COPY = {
 } as const;
 
 /**
- * Replaces the design's "If you don't respond in time" picker (founder, Oct
- * 19: no auto-confirm). An unanswered request expires `hours` before the
- * session (the platform's RESPONSE_WINDOW_HOURS), shown as Unconfirmed, and
- * both sides are notified (request_expired). Without the setting, no number.
+ * The approval row's line (Mentor Settings.dc.html `approvalLine`). An
+ * unanswered request expires `hours` before the session (the platform's
+ * RESPONSE_WINDOW_HOURS, backend #504), shown as Unconfirmed, and both sides
+ * are told (request_expired). Without the setting, no number.
  */
-export function noResponseLine(hours: number | null): string {
+export function approvalLine(on: boolean, hours: number | null): string {
+  if (!on) return 'Off: mentees book your open times and they’re confirmed straight away.';
   return hours
-    ? `If you don’t respond by ${hours} ${hours === 1 ? 'hour' : 'hours'} before the session, the request expires and the mentee will be informed.`
-    : 'If you don’t respond in time, the request expires and the mentee will be informed.';
+    ? `You accept each request first. If it’s still waiting ${hours} ${hours === 1 ? 'hour' : 'hours'} before the session, it expires and the mentee is told.`
+    : 'You accept each request first. If you don’t answer in time, it expires and the mentee is told.';
 }
 
 /** The note under the rules; the count is left out when it's 0 or couldn't load. */

@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { noResponseLine, rulesNote } from '@/lib/copy/mentorSettings';
+import { approvalLine, rulesNote } from '@/lib/copy/mentorSettings';
 import { BookingSettings, type BookingSettingsValue } from './BookingSettings';
 
 const value: BookingSettingsValue = {
@@ -24,28 +24,25 @@ const ready = (over: Partial<BookingSettingsValue> = {}, onChange = vi.fn()) =>
   );
 
 describe('BookingSettings', () => {
-  it('approval on: the switch is named by its heading, with the no-response line and the footnote', () => {
+  it('one card, Booking rules, with approval as its first row', () => {
     ready();
-    const sw = screen.getByRole('switch', { name: 'Approve bookings' });
+    const card = screen.getByRole('region', { name: 'Booking rules' });
+    const sw = within(card).getByRole('switch', { name: 'Approve bookings' });
     expect(sw).toHaveAttribute('aria-checked', 'true');
-    expect(sw).toHaveAccessibleDescription('You decide which requests to accept.');
-    expect(
-      screen.getByText(
-        /12 hours before the session, the request expires and the mentee will be informed/,
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText('Mentees see “Needs your approval” before they book.'),
-    ).toBeInTheDocument();
+    expect(sw).toHaveAccessibleDescription(
+      'You accept each request first. If it’s still waiting 12 hours before the session, it expires and the mentee is told.',
+    );
+    // The switch comes before the rules, as drawn.
+    const firstRule = within(card).getAllByRole('combobox')[0]!;
+    expect(sw.compareDocumentPosition(firstRule) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByText(/Needs your approval/)).toBeNull();
   });
 
-  it('approval off: no no-response line and no footnote', () => {
+  it('approval off: the line says bookings confirm straight away', () => {
     ready({ requiresApproval: false });
     expect(screen.getByRole('switch')).toHaveAccessibleDescription(
-      'Mentees book any available time and it’s confirmed straight away.',
+      'Off: mentees book your open times and they’re confirmed straight away.',
     );
-    expect(screen.queryByText(/the request expires/)).toBeNull();
-    expect(screen.queryByText(/Needs your approval/)).toBeNull();
   });
 
   it('the switch sends approval with the rules unchanged', async () => {
@@ -118,16 +115,21 @@ describe('rulesNote', () => {
   });
 });
 
-describe('noResponseLine', () => {
-  it('says the platform’s hours, and no number without them', () => {
-    expect(noResponseLine(12)).toBe(
-      'If you don’t respond by 12 hours before the session, the request expires and the mentee will be informed.',
+describe('approvalLine', () => {
+  it('on: the platform’s hours; one hour singular; no number without them', () => {
+    expect(approvalLine(true, 12)).toBe(
+      'You accept each request first. If it’s still waiting 12 hours before the session, it expires and the mentee is told.',
     );
-    expect(noResponseLine(1)).toBe(
-      'If you don’t respond by 1 hour before the session, the request expires and the mentee will be informed.',
+    expect(approvalLine(true, 1)).toBe(
+      'You accept each request first. If it’s still waiting 1 hour before the session, it expires and the mentee is told.',
     );
-    expect(noResponseLine(null)).toBe(
-      'If you don’t respond in time, the request expires and the mentee will be informed.',
+    expect(approvalLine(true, null)).toBe(
+      'You accept each request first. If you don’t answer in time, it expires and the mentee is told.',
+    );
+  });
+  it('off: confirmed straight away', () => {
+    expect(approvalLine(false, 12)).toBe(
+      'Off: mentees book your open times and they’re confirmed straight away.',
     );
   });
 });

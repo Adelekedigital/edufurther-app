@@ -4,7 +4,7 @@ import { StrictMode, type ReactNode } from 'react';
 const h = vi.hoisted(() => ({ pathname: '/bookings' }));
 vi.mock('next/navigation', () => ({ usePathname: () => h.pathname }));
 
-import { RouteFocusManager } from './RouteFocusManager';
+import { RouteFocusManager, skipNextRouteFocus } from './RouteFocusManager';
 
 // The manager focuses the current route's #main landmark, the way AppShell
 // provides one in the app. It is mounted once at the root and persists across
@@ -88,5 +88,30 @@ describe('RouteFocusManager', () => {
       </Shell>,
     );
     expect(screen.getByRole('heading', { name: 'Bookings' })).toHaveFocus();
+  });
+
+  it('a redirect that asked to be skipped leaves focus alone; the next navigation moves it', () => {
+    const { rerender } = render(
+      <Shell>
+        <h1>Settings</h1>
+      </Shell>,
+    );
+    // /settings sends the role to its first tab as the page loads.
+    skipNextRouteFocus();
+    h.pathname = '/settings/booking';
+    rerender(
+      <Shell>
+        <h1>Settings</h1>
+      </Shell>,
+    );
+    expect(screen.getByRole('heading', { name: 'Settings' })).not.toHaveFocus();
+
+    h.pathname = '/calendar';
+    rerender(
+      <Shell>
+        <h1>Your calendar</h1>
+      </Shell>,
+    );
+    expect(screen.getByRole('heading', { name: 'Your calendar' })).toHaveFocus();
   });
 });

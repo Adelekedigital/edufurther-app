@@ -964,8 +964,7 @@ PRD: Mentee Onboarding v5 (deviation table, H8). Rows the PRD settles are produc
 
 | Design says | We do | Why | Revisit when |
 | --- | --- | --- | --- |
-| "Approve bookings": an "If you don't respond in time" picker (decline / confirm automatically), with a "Time to respond" picker behind `respondPick` | One line: "If you don't respond by {n} hours before the session, the request expires and the mentee will be informed." (`noResponseLine`); `{n}` is `response_window_hours` from the mentor profile, no number until the backend sends it | Founder, Oct 19: decline only, no auto-confirm. Owner, Oct 19: the window is a platform setting (`RESPONSE_WINDOW_HOURS`, default 12), not the mentor's. The PRD's "12 hours, declined" was the reminder, not the rule: an unanswered request expires (Unconfirmed) and both sides get `request_expired` | auto-confirm ships (PRD "Revisit after Nov 15") |
-| "Mentees see 'Needs your approval' before they book." under the card whatever the switch | Only while approval is on | With approval off nothing says "Needs your approval"; the line would be untrue | — |
+| Approval line "…If it's still waiting 12 hours before the session…" (a literal) | The hours from `response_window_hours` (the platform's RESPONSE_WINDOW_HOURS, 12 today), no number if it's ever missing | The window is a platform setting (owner, 2026-10-19), so the copy can't fall out of step with it | — |
 | Booking rules option lists: notice 6 / 24 / 48 / 72 h, window 1 / 2 / 4 / 8 weeks, buffer 0 / 10 / 15 / 30 | The app's builders (`lib/utils/sessionTypeDraft`): notice 24–72 h, window presets under the platform cap, plus a stored value that isn't in the list | The backend refuses notice under 24 h and a window above the cap (backend round 3, #309); the same lists as Calendar and Sessions | backend allows shorter notice |
 
 ## Mentee Settings, PR 5: Goals tab (`isMGoals`, goalsModel=onboarding, goalsWhen=hide, goalsSave=bar)

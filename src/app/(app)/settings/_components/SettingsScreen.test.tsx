@@ -15,6 +15,9 @@ vi.mock('next/navigation', () => ({
   notFound: () => notFound(),
 }));
 
+const skipFocus = vi.fn();
+vi.mock('@/app/_shell/RouteFocusManager', () => ({ skipNextRouteFocus: () => skipFocus() }));
+
 let viewer: Viewer;
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => viewer }));
 
@@ -90,6 +93,7 @@ const dialog = () => screen.queryByRole('alertdialog', { name: 'Save your change
 
 beforeEach(() => {
   replace.mockReset();
+  skipFocus.mockReset();
   push.mockReset();
   panel.save.mockReset();
   panel.discard.mockReset();
@@ -192,6 +196,48 @@ describe('SettingsScreen', () => {
     segment = 'education';
     render(<SettingsScreen />);
     expect(replace).toHaveBeenCalledWith('/settings/booking');
+    // A link to that tab is a navigation: focus moves as usual.
+    expect(skipFocus).not.toHaveBeenCalled();
+  });
+
+  it('/settings itself opens the role’s first tab: Booking rules for a mentor', () => {
+    viewer = member(true);
+    segment = null;
+    render(<SettingsScreen />);
+    expect(replace).toHaveBeenCalledWith('/settings/booking');
+    // A redirect, not a navigation: the heading doesn't take focus.
+    expect(skipFocus).toHaveBeenCalled();
+  });
+
+  it('a guest on /settings is asked to log in and brought back to Profile', () => {
+    viewer = { kind: 'guest' };
+    segment = null;
+    render(<SettingsScreen />);
+    expect(screen.getByRole('link', { name: 'Log in' })).toHaveAttribute(
+      'href',
+      `/login?next=${encodeURIComponent('/settings/profile')}`,
+    );
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('…and Profile for a mentee', () => {
+    viewer = member();
+    segment = null;
+    render(<SettingsScreen />);
+    expect(replace).toHaveBeenCalledWith('/settings/profile');
+  });
+
+  it('while the account loads: the title and a neutral skeleton, no role’s tabs or panel', () => {
+    viewer = { kind: 'loading', signedIn: true } as Viewer;
+    render(<SettingsScreen />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument();
+    expect(screen.queryAllByRole('tab')).toHaveLength(0);
+    expect(screen.queryByText(/Manage how mentees book you/)).toBeNull();
+    expect(screen.queryByText(/Your details, what you’re working toward/)).toBeNull();
+    expect(screen.queryByTestId('profile-panel')).toBeNull();
+    expect(screen.queryByTestId('booking-panel')).toBeNull();
+    expect(screen.getByRole('status')).toHaveTextContent('Loading your settings');
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('a guest: asked to log in, and brought back to this tab', () => {

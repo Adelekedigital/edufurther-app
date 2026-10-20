@@ -57,7 +57,7 @@ describe('BookingPanel', () => {
     expect(screen.getByRole('combobox', { name: 'Session length' })).toHaveValue('60');
     expect(screen.getByRole('combobox', { name: 'Buffer between sessions' })).toHaveValue('0');
     expect(screen.getByText(/^2 of your sessions use these rules\./)).toBeInTheDocument();
-    expect(screen.getByText(/respond by 12 hours before the session/)).toBeInTheDocument();
+    expect(screen.getByText(/still waiting 12 hours before the session/)).toBeInTheDocument();
     expect(bar()).toBeNull();
   });
 
