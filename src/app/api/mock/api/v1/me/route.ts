@@ -72,9 +72,9 @@ export async function GET(req: Request) {
     first_name: text.first_name ?? 'Ada',
     last_name: text.last_name ?? 'Obi',
     primary_role: 'mentee' as const,
-    // The mock mentor viewer's own handle (mentors/[handle] answers `mock-mentor`
-    // as its owner), so Mentor Settings can read its profile locally.
-    slug: process.env.NEXT_PUBLIC_MOCK_VIEWER === 'mentor' ? 'mock-mentor' : null,
+    // No slug, like every account made in this app (only the old platform's
+    // import set one): Mentor Settings reads the profile by the user's id.
+    slug: null,
     // Social links (backend #507): none on the mock viewer.
     links: [],
     timezone: 'Africa/Lagos',

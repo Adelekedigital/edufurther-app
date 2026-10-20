@@ -23,6 +23,9 @@ beforeEach(() => {
   h.pathname = '/bookings';
 });
 
+/** A real navigation follows a click or a key: the manager waits for one. */
+const act = () => document.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+
 describe('RouteFocusManager', () => {
   it('moves focus to the new heading on route change, but not on first mount', () => {
     const { rerender } = render(
@@ -33,6 +36,7 @@ describe('RouteFocusManager', () => {
     // The initial document load keeps the browser's own focus.
     expect(screen.getByRole('heading', { name: 'Bookings' })).not.toHaveFocus();
 
+    act();
     h.pathname = '/calendar';
     rerender(
       <Shell>
@@ -61,6 +65,7 @@ describe('RouteFocusManager', () => {
         <h1>Bookings</h1>
       </Shell>,
     );
+    act();
     h.pathname = '/dashboard';
     rerender(
       <Shell>
@@ -75,12 +80,14 @@ describe('RouteFocusManager', () => {
     // route (e.g. a mentor profile) into a shell route. The manager has been
     // mounted the whole time, so this is a real route change — not a first
     // mount — and focus moves to the new heading instead of falling to <body>.
+    act();
     h.pathname = '/mentors/ada';
     const { rerender } = render(
       <Shell>
         <h1>Ada Lovelace</h1>
       </Shell>,
     );
+    act();
     h.pathname = '/bookings';
     rerender(
       <Shell>
@@ -88,5 +95,21 @@ describe('RouteFocusManager', () => {
       </Shell>,
     );
     expect(screen.getByRole('heading', { name: 'Bookings' })).toHaveFocus();
+  });
+
+  it('a redirect before the person has done anything keeps the browser’s focus (initial load)', () => {
+    const { rerender } = render(
+      <Shell>
+        <h1>Settings</h1>
+      </Shell>,
+    );
+    // /settings sends the role to its first tab as the page loads: no click yet.
+    h.pathname = '/settings/booking';
+    rerender(
+      <Shell>
+        <h1>Settings</h1>
+      </Shell>,
+    );
+    expect(screen.getByRole('heading', { name: 'Settings' })).not.toHaveFocus();
   });
 });

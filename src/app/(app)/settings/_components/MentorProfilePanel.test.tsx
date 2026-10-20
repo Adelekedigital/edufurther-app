@@ -34,7 +34,7 @@ let settings: {
   status: 'loading' | 'error' | 'ready';
   values: MentorProfileValues | null;
   profile: MentorProfile | null;
-  slug: string | null;
+  handle: string | null;
   version: string;
   retry: () => void;
 };
@@ -88,7 +88,7 @@ vi.mock('@/lib/api/data/catalog', () => ({
 vi.mock('@/lib/api/data/writingAssist', () => ({ useWritingAssist: () => ({ assist: vi.fn() }) }));
 
 beforeEach(() => {
-  settings = { status: 'ready', values, profile, slug: 'ada-obi', version: 'v1', retry: vi.fn() };
+  settings = { status: 'ready', values, profile, handle: 'ada-obi', version: 'v1', retry: vi.fn() };
   mutateAsync.mockReset();
   mutateAsync.mockResolvedValue(undefined);
   saveError = null;

@@ -22,15 +22,19 @@ vi.mock('./http', () => ({
   },
 }));
 const profileRetry = vi.fn();
+const askedFor = vi.fn();
 vi.mock('./profile', () => ({
-  useMentorProfile: (handle: string | null) => ({
-    data: null,
-    isLoading: handle !== null,
-    error: null,
-    notFound: false,
-    retry: profileRetry,
-    updatedAt: 0,
-  }),
+  useMentorProfile: (handle: string | null) => (
+    askedFor(handle),
+    {
+      data: null,
+      isLoading: handle !== null,
+      error: null,
+      notFound: false,
+      retry: profileRetry,
+      updatedAt: 0,
+    }
+  ),
 }));
 
 const wrap = () => {
@@ -58,16 +62,28 @@ beforeEach(() => {
   PATCH.mockReset();
   PUT.mockReset();
   profileRetry.mockReset();
+  askedFor.mockReset();
 });
 
 describe('useMentorSettings', () => {
-  it('a /me with no handle is an error to retry, not a skeleton forever', async () => {
+  it('a /me with no handle reads the profile by the user’s id (new accounts have no slug)', async () => {
     GET.mockResolvedValue({
       data: { slug: null, profile: null },
       response: { ok: true, status: 200 },
     });
     const { result } = renderHook(() => useMentorSettings('u1'), { wrapper: wrap() });
-    await waitFor(() => expect(result.current.status).toBe('error'));
+    await waitFor(() => expect(askedFor).toHaveBeenLastCalledWith('u1'));
+    expect(result.current.handle).toBe('u1');
+  });
+
+  it('with a slug, the profile is read by it', async () => {
+    GET.mockResolvedValue({
+      data: { slug: 'ada-obi', profile: null },
+      response: { ok: true, status: 200 },
+    });
+    const { result } = renderHook(() => useMentorSettings('u1'), { wrapper: wrap() });
+    await waitFor(() => expect(askedFor).toHaveBeenLastCalledWith('ada-obi'));
+    expect(result.current.handle).toBe('ada-obi');
   });
 
   it('Try again with no handle asks /me again, never /mentors/null', async () => {

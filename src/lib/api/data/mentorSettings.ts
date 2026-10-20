@@ -57,28 +57,28 @@ export function useMentorSettings(userId: string | null) {
       return { slug: data.slug ?? null, gender: data.profile?.gender ?? '' };
     },
   });
-  const profile = useMentorProfile(me.data?.slug ?? null);
+  // `/mentors/{handle}` takes a slug or the user's id. Accounts made in this
+  // app have no slug (only the old platform's import set one), so the id stands in.
+  const handle = me.data ? me.data.slug || userId : null;
+  const profile = useMentorProfile(handle);
   const values =
     profile.data && me.data ? toMentorProfileValues(profile.data, me.data.gender) : null;
-  // Error before content: a failed first read says so; a failed refetch keeps
-  // what's shown. A /me with no handle has no profile to read: an error too.
-  const noHandle = !!me.data && !me.data.slug;
+  // Error before content: a failed first read says so; a failed refetch keeps what's shown.
   const failed =
-    (!me.data && !!me.error) ||
-    noHandle ||
-    (!profile.data && (!!profile.error || profile.notFound));
+    (!me.data && !!me.error) || (!profile.data && (!!profile.error || profile.notFound));
   const status: 'loading' | 'error' | 'ready' = values ? 'ready' : failed ? 'error' : 'loading';
   return {
     status,
     values,
     profile: profile.data,
-    slug: me.data?.slug ?? null,
+    /** The slug, else the user's id: what `/mentors/{handle}` and the profile link take. */
+    handle,
     /** Moves each time either read lands, even with the same data. */
     version: `${me.dataUpdatedAt}:${profile.updatedAt}`,
     retry: () => {
-      if (me.error || noHandle) void me.refetch();
+      if (me.error) void me.refetch();
       // Only with a handle: a disabled query's refetch would ask for /mentors/null.
-      if (me.data?.slug) profile.retry();
+      if (handle) profile.retry();
     },
   };
 }
