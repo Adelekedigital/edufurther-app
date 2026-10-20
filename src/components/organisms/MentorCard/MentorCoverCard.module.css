@@ -52,24 +52,6 @@
   margin-top: calc(var(--space-6) * -1);
   padding: 0 var(--space-4) var(--space-4);
 }
-.avatar {
-  width: 52px;
-  height: 52px;
-  border-radius: var(--radius-full);
-  background: var(--cover-ink);
-  color: var(--white);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: var(--weight-semibold);
-  box-shadow: 0 0 0 3px var(--white);
-  overflow: hidden;
-}
-.avatarImg {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
 .name {
   display: flex;
   align-items: center;

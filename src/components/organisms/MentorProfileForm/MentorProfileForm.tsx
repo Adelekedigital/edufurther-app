@@ -11,7 +11,8 @@ import {
   LanguageChips,
   type LanguageOption,
 } from '@/components/molecules/LanguageChips/LanguageChips';
-import { PhotoPicker } from '@/components/molecules/PhotoPicker/PhotoPicker';
+import { Avatar } from '@/components/atoms/Avatar/Avatar';
+import { ProfilePhoto } from '@/components/molecules/ProfilePhoto/ProfilePhoto';
 import type {
   LanguageSearch,
   ProfilePhotoControl,
@@ -134,32 +135,26 @@ export function MentorProfileForm({
             {coverTools && !frozen && <div className={styles.coverTools}>{coverTools}</div>}
           </div>
           <div className={styles.photoRow}>
-            <div className={styles.photo}>
-              {photo.url ? (
-                // eslint-disable-next-line @next/next/no-img-element -- an uploaded photo of any size, from our API
-                <img src={photo.url} alt={C.photoLabel} className={styles.img} />
-              ) : (
-                <span role="img" aria-label={C.photoLabel} className={styles.initials}>
-                  {photo.initial}
-                </span>
-              )}
-              {!frozen && (
-                <PhotoPicker
-                  compact
-                  hasPhoto={!!photo.url}
-                  accept={photo.accept}
-                  uploading={photo.uploading}
-                  removing={photo.removing}
-                  onFile={photo.onFile}
-                  onRemove={photo.onRemove}
-                  onRetryRemove={photo.onRetryRemove}
-                  error={photo.error}
-                  errorFrom={photo.errorFrom}
-                  removedStamp={photo.removedStamp}
-                  onDismissError={photo.onDismissError}
-                />
-              )}
-            </div>
+            {frozen ? (
+              // Frozen while the application is in review: the photo, no editor.
+              <Avatar
+                size={72}
+                ring="white"
+                initials={photo.person.initials}
+                tone={photo.person.cover}
+                src={photo.person.src}
+                focus={photo.person.focus}
+                alt={C.photoLabel}
+              />
+            ) : (
+              <ProfilePhoto
+                size={72}
+                ring="white"
+                person={{ ...photo.person, name: C.photoLabel }}
+                upload={photo.upload}
+                onRemove={photo.onRemove}
+              />
+            )}
             <div className={styles.photoText}>
               <span className={styles.photoTitle}>{C.photoTitle}</span>
               <span className={styles.hint}>{C.photoHint}</span>

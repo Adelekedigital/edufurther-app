@@ -1,7 +1,9 @@
-/* eslint-disable @next/next/no-img-element -- the mentor's own banner and photo, of unknown host and size */
+/* eslint-disable @next/next/no-img-element -- the mentor's own banner, of unknown host and size */
 import type { CSSProperties } from 'react';
+import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Icon } from '@/components/atoms/Icon/Icon';
-import type { CoverIcon } from '@/lib/utils/cover';
+import { coverVars, type CoverIcon, type CoverKey } from '@/lib/utils/cover';
+import type { PhotoFocus } from '@/lib/utils/person';
 import { cx } from '@/lib/utils/cx';
 import styles from './MentorCoverCard.module.css';
 
@@ -10,8 +12,10 @@ type MentorCoverCardProps = {
   headline: string;
   initials: string;
   photoUrl: string | null;
-  /** The cover's light colour and its paired dark one (lib/utils/cover coverVars). */
-  cover: { bg: string; ink: string };
+  /** Where the face is in the photo: the crop keeps it. */
+  photoFocus?: PhotoFocus | null;
+  /** The cover colour: its light tone on the strip, its deep one behind the initials. */
+  cover: CoverKey;
   /** A banner image hides the colour and the art. */
   bannerUrl: string | null;
   /** Faint topic icons on a colour cover (cover art "icons"); empty for none. */
@@ -40,6 +44,7 @@ export function MentorCoverCard({
   headline,
   initials,
   photoUrl,
+  photoFocus,
   cover,
   bannerUrl,
   artIcons,
@@ -51,7 +56,8 @@ export function MentorCoverCard({
   copy,
   showMessage = false,
 }: MentorCoverCardProps) {
-  const vars = { '--cover-bg': cover.bg, '--cover-ink': cover.ink } as CSSProperties;
+  const tones = coverVars(cover);
+  const vars = { '--cover-bg': tones.bg, '--cover-ink': tones.ink } as CSSProperties;
   const art = bannerUrl ? [] : artIcons.slice(0, 3);
   return (
     <div className={styles.card} style={vars}>
@@ -68,9 +74,16 @@ export function MentorCoverCard({
         )}
       </div>
       <div className={styles.body}>
-        <div className={styles.avatar}>
-          {photoUrl ? <img src={photoUrl} alt="" className={styles.avatarImg} /> : initials}
-        </div>
+        {/* The name follows: the face needs none of its own. */}
+        <Avatar
+          size={52}
+          ring="white"
+          initials={initials}
+          tone={cover}
+          src={photoUrl}
+          focus={photoFocus}
+          alt=""
+        />
         <span className={styles.name}>{name}</span>
         {headline && <span className={styles.headline}>{headline}</span>}
         {(rating !== null || completedSessions > 0) && (
