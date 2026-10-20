@@ -10,6 +10,8 @@ type SaveBarProps = {
   label: string;
   /** "Fill in the required fields to continue.", while Save was tried with gaps. */
   error?: string | null;
+  /** Moves on every failed Save, so the same error is heard again. */
+  errorKey?: number;
   discardLabel: string;
   saveLabel: string;
   savingLabel: string;
@@ -27,6 +29,7 @@ export function SaveBar({
   message,
   label,
   error,
+  errorKey = 0,
   discardLabel,
   saveLabel,
   savingLabel,
@@ -39,7 +42,7 @@ export function SaveBar({
       {/* Always in the bar, so the error is heard when it arrives: a region
           inserted with its text already in it is often skipped. */}
       <span role="alert" className="sr-only">
-        {error ?? ''}
+        {error && <span key={errorKey}>{error}</span>}
       </span>
       {error && (
         <span aria-hidden className={styles.error}>

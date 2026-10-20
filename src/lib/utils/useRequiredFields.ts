@@ -13,6 +13,8 @@ import { useCallback, useState } from 'react';
  */
 export function useRequiredFields<K extends string>(gaps: readonly K[]) {
   const [tried, setTried] = useState(false);
+  // Counts tries with gaps, so the form line can be announced again.
+  const [attempt, setAttempt] = useState(0);
   const shown = tried ? gaps : [];
 
   /** True when nothing is missing; otherwise shows the errors and focuses the first gap. */
@@ -22,6 +24,7 @@ export function useRequiredFields<K extends string>(gaps: readonly K[]) {
       return true;
     }
     setTried(true);
+    setAttempt((n) => n + 1);
     focusGap(gaps[0]!);
     return false;
   };
@@ -34,6 +37,8 @@ export function useRequiredFields<K extends string>(gaps: readonly K[]) {
     has: (k: K) => shown.includes(k),
     /** The line by the Save button. */
     formError: shown.length > 0,
+    /** Moves on every Save tried with gaps (SaveBar `errorKey`). */
+    attempt,
     check,
     reset,
   };
