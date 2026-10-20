@@ -2,7 +2,7 @@ import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { CoverBanner } from '@/components/molecules/CoverBanner/CoverBanner';
 import { CoverHeader } from '@/components/organisms/CoverHeader/CoverHeader';
-import { coverVars, type CoverIcon, type CoverKey } from '@/lib/utils/cover';
+import { coverVars, type CoverArt, type CoverIcon, type CoverKey } from '@/lib/utils/cover';
 import type { PhotoFocus } from '@/lib/utils/person';
 import { cx } from '@/lib/utils/cx';
 import styles from './MentorCoverCard.module.css';
@@ -18,8 +18,10 @@ type MentorCoverCardProps = {
   cover: CoverKey;
   /** A banner image hides the colour and the art. */
   bannerUrl: string | null;
-  /** Faint topic icons on a colour cover (cover art "icons"); empty for none. */
+  /** The first topics' icons: three for "icons", the first for "single". */
   artIcons: CoverIcon[];
+  /** The cover art, as on the profile: icons, a dot pattern, one large icon, or none. */
+  art: CoverArt;
   rating: number | null;
   reviewCount: number;
   completedSessions: number;
@@ -48,6 +50,7 @@ export function MentorCoverCard({
   cover,
   bannerUrl,
   artIcons,
+  art,
   rating,
   reviewCount,
   completedSessions,
@@ -65,7 +68,7 @@ export function MentorCoverCard({
           scale="sm"
           tones={coverVars(cover)}
           bannerUrl={bannerUrl}
-          art="icons"
+          art={art}
           icons={artIcons}
         />
       }

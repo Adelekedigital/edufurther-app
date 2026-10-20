@@ -89,7 +89,7 @@ function Live({
           },
           onRemove: fn(),
         }}
-        cover={{ bg, ink, bannerUrl: null, artIcons: icons }}
+        cover={{ bg, ink, bannerUrl: null, art: 'icons', artIcons: icons }}
         languages={{
           common: COMMON,
           query: '',
@@ -106,6 +106,7 @@ function Live({
             cover="sky"
             bannerUrl={null}
             artIcons={icons}
+            art="icons"
             rating={4.9}
             reviewCount={7}
             completedSessions={51}

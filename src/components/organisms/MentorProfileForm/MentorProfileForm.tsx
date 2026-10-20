@@ -24,7 +24,7 @@ import {
   MENTOR_PROFILE_ERRORS as E,
   type MentorProfileGap,
 } from '@/lib/copy/mentorSettings';
-import type { CoverIcon } from '@/lib/utils/cover';
+import type { CoverArt, CoverIcon } from '@/lib/utils/cover';
 import { cx } from '@/lib/utils/cx';
 import { ABOUT_MAX } from '@/lib/utils/profileLimits';
 import type { MentorProfileValues } from '@/types/mentorSettings';
@@ -47,7 +47,14 @@ type MentorProfileFormProps = {
   /** Each picker's choices: the catalog, plus that field's own saved country if the catalog dropped it. */
   countries: { origin: { id: string; label: string }[]; study: { id: string; label: string }[] };
   photo: ProfilePhotoControl;
-  cover: { bg: string; ink: string; bannerUrl: string | null; artIcons: CoverIcon[] };
+  /** The mentor's cover as their profile draws it: colour, image, art and the topics' icons. */
+  cover: {
+    bg: string;
+    ink: string;
+    bannerUrl: string | null;
+    art: CoverArt;
+    artIcons: CoverIcon[];
+  };
   /** The "Change cover" control (CoverPicker), top right of the cover. */
   coverTools?: ReactNode;
   languages: LanguageSearch;
@@ -125,7 +132,7 @@ export function MentorProfileForm({
               scale="md"
               tones={{ bg: cover.bg, ink: cover.ink }}
               bannerUrl={cover.bannerUrl}
-              art="icons"
+              art={cover.art}
               icons={cover.artIcons}
               tools={frozen ? undefined : coverTools}
             />

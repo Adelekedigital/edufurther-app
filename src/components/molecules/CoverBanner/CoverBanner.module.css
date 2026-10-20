@@ -44,9 +44,10 @@
   --art-0: 72px;
   --art-1: 56px;
   --art-2: 44px;
-  /* Not drawn at this size: scaled from the header's 152 in 140. */
-  --art-single: 120px;
-  --art-single-right: var(--space-8);
+  /* Not drawn at this size: the header's 152 and 40px inset scaled as its
+     icons are (104 to 72), so 105 and 28 (design-divergence.md). */
+  --art-single: 105px;
+  --art-single-right: var(--space-7);
 }
 .sm {
   --art-right: var(--space-3);
@@ -56,8 +57,9 @@
   --art-0: 32px;
   --art-1: 26px;
   --art-2: 22px;
-  /* Not drawn at this size: scaled from the header's 152 in 140. */
-  --art-single: 64px;
+  /* Not drawn at this size: the header's 152 and 40px inset scaled as its
+     icons are (104 to 32), so 47 and 12 (design-divergence.md). */
+  --art-single: 47px;
   --art-single-right: var(--space-3);
 }
 
