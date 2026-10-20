@@ -16,7 +16,9 @@ vi.mock('next/navigation', () => ({
 }));
 
 const skipFocus = vi.fn();
-vi.mock('@/app/_shell/RouteFocusManager', () => ({ skipNextRouteFocus: () => skipFocus() }));
+vi.mock('@/app/_shell/RouteFocusManager', () => ({
+  skipNextRouteFocus: (path: string) => skipFocus(path),
+}));
 
 let viewer: Viewer;
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => viewer }));
@@ -113,6 +115,16 @@ describe('SettingsScreen', () => {
     expect(screen.getByTestId('profile-panel')).toBeInTheDocument();
   });
 
+  it('choosing a tab keeps focus on it: the URL changes, the heading doesn’t take focus', async () => {
+    viewer = member();
+    segment = 'profile';
+    panel.dirty = false;
+    render(<SettingsScreen />);
+    await userEvent.click(screen.getByRole('tab', { name: 'Education' }));
+    expect(push).toHaveBeenCalledWith('/settings/education');
+    expect(skipFocus).toHaveBeenCalledExactlyOnceWith('/settings/education');
+  });
+
   it('the Education tab shows its panel', () => {
     viewer = member();
     segment = 'education';
@@ -206,7 +218,7 @@ describe('SettingsScreen', () => {
     render(<SettingsScreen />);
     expect(replace).toHaveBeenCalledWith('/settings/booking');
     // A redirect, not a navigation: the heading doesn't take focus.
-    expect(skipFocus).toHaveBeenCalled();
+    expect(skipFocus).toHaveBeenCalledWith('/settings/booking');
   });
 
   it('a guest on /settings is asked to log in and brought back to Profile', () => {
@@ -279,6 +291,8 @@ describe('SettingsScreen', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Discard' }));
       expect(panel.discard).toHaveBeenCalledOnce();
       expect(push).toHaveBeenCalledWith('/settings/education');
+      // The tab switch through the dialog keeps focus on the tab too.
+      expect(skipFocus).toHaveBeenCalledWith('/settings/education');
     });
 
     it('Save and continue saves, then switches; a save that couldn’t go through stays', async () => {
@@ -291,6 +305,8 @@ describe('SettingsScreen', () => {
       await toEducation();
       await userEvent.click(screen.getByRole('button', { name: 'Save and continue' }));
       expect(push).toHaveBeenCalledWith('/settings/education');
+      // The tab switch through the dialog keeps focus on the tab too.
+      expect(skipFocus).toHaveBeenCalledWith('/settings/education');
     });
 
     it('from a tab with nothing to save, switching never asks', async () => {

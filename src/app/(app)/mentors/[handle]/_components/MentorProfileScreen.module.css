@@ -96,9 +96,6 @@
     transform: translateY(-50%);
   }
 }
-.tabsRow {
-  border-bottom: var(--border-hairline) solid var(--border-subtle);
-}
 .cols {
   display: flex;
   gap: var(--space-6) var(--space-14);
@@ -209,10 +206,6 @@
 }
 
 @media (max-width: 767px) {
-  .tabsRow {
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
   .cols {
     column-gap: var(--space-6);
   }

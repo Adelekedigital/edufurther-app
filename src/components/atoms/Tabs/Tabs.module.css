@@ -1,15 +1,24 @@
-/* DS Tabs line variant — values from _ds_bundle.js (Tabs.jsx). */
+/* DS Tabs line variant — values from _ds_bundle.js (Tabs.jsx). One row for
+   every page (owner, 2026-10-20): the atom draws the line and scrolls sideways
+   when the tabs don't fit, so no page wraps it in its own border or scroller. */
 .list {
   display: flex;
   align-items: stretch;
   box-shadow: inset 0 -1px 0 var(--border-subtle);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.list::-webkit-scrollbar {
+  display: none;
 }
 .tab {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
+  flex: none;
+  /* The selected line sits inside the tab, over the row's line: a scrolling
+     row would clip a line hung 1px below it. */
   padding: 16px 16px 15px 16px;
-  margin-bottom: -1px;
   border: none;
   border-bottom: var(--border-hairline) solid transparent;
   background: transparent;

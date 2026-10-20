@@ -508,37 +508,35 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               }
             />
 
-            <div className={styles.tabsRow}>
-              <Tabs
-                label="Profile"
-                value={tab}
-                onChange={setTab}
-                items={[
-                  { value: 'overview', label: 'Overview', panelId: 'panel-overview' },
-                  ...(hasSessions || notTakingTab || editing
-                    ? [
-                        {
-                          value: 'sessions',
-                          // Nothing to book counts as none (the design's visible count).
-                          label: `Sessions (${notTakingTab ? 0 : editing && ownActive !== null ? ownActive : p.sessionTypes.length})`,
-                          panelId: 'panel-sessions',
-                        },
-                      ]
-                    : []),
-                  ...(reviewsTab
-                    ? [
-                        {
-                          value: 'reviews',
-                          // No count until there is one to give: "Reviews (0)"
-                          // reads as a number we are asserting.
-                          label: hasReviews ? `Reviews (${p.reviews.count})` : 'Reviews',
-                          panelId: 'panel-reviews',
-                        },
-                      ]
-                    : []),
-                ]}
-              />
-            </div>
+            <Tabs
+              label="Profile"
+              value={tab}
+              onChange={setTab}
+              items={[
+                { value: 'overview', label: 'Overview', panelId: 'panel-overview' },
+                ...(hasSessions || notTakingTab || editing
+                  ? [
+                      {
+                        value: 'sessions',
+                        // Nothing to book counts as none (the design's visible count).
+                        label: `Sessions (${notTakingTab ? 0 : editing && ownActive !== null ? ownActive : p.sessionTypes.length})`,
+                        panelId: 'panel-sessions',
+                      },
+                    ]
+                  : []),
+                ...(reviewsTab
+                  ? [
+                      {
+                        value: 'reviews',
+                        // No count until there is one to give: "Reviews (0)"
+                        // reads as a number we are asserting.
+                        label: hasReviews ? `Reviews (${p.reviews.count})` : 'Reviews',
+                        panelId: 'panel-reviews',
+                      },
+                    ]
+                  : []),
+              ]}
+            />
 
             {isPhone && firstMentees}
 

@@ -69,7 +69,7 @@ export function SettingsScreen() {
     if (member && !known) {
       // Only /settings itself is a redirect as the page loads: its heading
       // doesn't take focus. A link to another role's tab is a navigation.
-      if (!segment) skipNextRouteFocus();
+      if (!segment) skipNextRouteFocus(`/settings/${first}`);
       router.replace(`/settings/${first}`);
     }
   }, [member, known, first, router, segment]);
@@ -90,7 +90,7 @@ export function SettingsScreen() {
           <h1 className={styles.title}>{SETTINGS_COPY.title}</h1>
           <Skeleton width="320px" height="18px" className={styles.skeletonSub} />
         </header>
-        <div className={styles.tabs}>
+        <div className={styles.skeletonRow}>
           <div className={styles.skeletonTabs} aria-hidden>
             {[0, 1, 2].map((i) => (
               <Skeleton key={i} width="88px" height="20px" />
@@ -106,7 +106,12 @@ export function SettingsScreen() {
       </div>
     );
 
-  const go = (t: SettingsTab) => router.push(`/settings/${t}`);
+  // A tab is its own URL, but choosing one keeps focus on the tab, as on every
+  // other tab row (WAI-ARIA tabs): no move to the h1 as for a new page.
+  const go = (t: SettingsTab) => {
+    skipNextRouteFocus(`/settings/${t}`);
+    router.push(`/settings/${t}`);
+  };
   const items: TabItem[] = tabs.map((t) => ({
     value: t,
     label: TAB_LABELS[t],
@@ -119,19 +124,17 @@ export function SettingsScreen() {
         <h1 className={styles.title}>{SETTINGS_COPY.title}</h1>
         <p className={styles.sub}>{mentor ? MENTOR_SETTINGS_SUB : SETTINGS_COPY.sub}</p>
       </header>
-      <div className={styles.tabs}>
-        <Tabs
-          label={SETTINGS_COPY.tabsLabel}
-          items={items}
-          value={tab}
-          onChange={(v) => {
-            const t = v as SettingsTab;
-            if (t === tab) return;
-            if (panels[tab]?.current?.dirty()) setLeaveTo(t);
-            else go(t);
-          }}
-        />
-      </div>
+      <Tabs
+        label={SETTINGS_COPY.tabsLabel}
+        items={items}
+        value={tab}
+        onChange={(v) => {
+          const t = v as SettingsTab;
+          if (t === tab) return;
+          if (panels[tab]?.current?.dirty()) setLeaveTo(t);
+          else go(t);
+        }}
+      />
 
       {mentor ? (
         <>

@@ -97,7 +97,7 @@ describe('RouteFocusManager', () => {
       </Shell>,
     );
     // /settings sends the role to its first tab as the page loads.
-    skipNextRouteFocus();
+    skipNextRouteFocus('/settings/booking');
     h.pathname = '/settings/booking';
     rerender(
       <Shell>
@@ -113,5 +113,30 @@ describe('RouteFocusManager', () => {
       </Shell>,
     );
     expect(screen.getByRole('heading', { name: 'Your calendar' })).toHaveFocus();
+  });
+
+  it('a skip is for its destination: if another navigation wins, focus still moves', () => {
+    const { rerender } = render(
+      <Shell>
+        <h1>Settings</h1>
+      </Shell>,
+    );
+    // A Settings tab was chosen, but a sidebar link won before it committed.
+    skipNextRouteFocus('/settings/goals');
+    h.pathname = '/calendar';
+    rerender(
+      <Shell>
+        <h1>Your calendar</h1>
+      </Shell>,
+    );
+    expect(screen.getByRole('heading', { name: 'Your calendar' })).toHaveFocus();
+    // And the stale skip is gone: a later visit to that tab is a navigation.
+    h.pathname = '/settings/goals';
+    rerender(
+      <Shell>
+        <h1>Settings</h1>
+      </Shell>,
+    );
+    expect(screen.getByRole('heading', { name: 'Settings' })).toHaveFocus();
   });
 });

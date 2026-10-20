@@ -28,13 +28,9 @@
 }
 
 /* The tab strip scrolls sideways on phones (`data-ef="scrollx"`). */
-.tabs {
-  border-bottom: var(--border-hairline) solid var(--ink-200);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.tabs::-webkit-scrollbar {
-  display: none;
+/* The loading row: the tab atom's line, without its tabs. */
+.skeletonRow {
+  box-shadow: inset 0 -1px 0 var(--border-subtle);
 }
 
 /* Phones: room under the form for the save bar, which sits above the tab bar. */
@@ -51,7 +47,8 @@
 .skeletonTabs {
   display: flex;
   gap: var(--space-6);
-  padding: var(--space-3) var(--space-4);
+  /* The tab row's height (16px + text + 15px + the line), so nothing moves when the tabs arrive. */
+  padding: var(--space-4) var(--space-4) calc(var(--space-4) - 1px + var(--border-hairline));
 }
 .skeletonCard {
   max-width: 680px;
