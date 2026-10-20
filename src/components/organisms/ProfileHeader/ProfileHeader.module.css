@@ -24,6 +24,8 @@
 .skPhoto {
   --sk-photo: 112px;
   box-shadow: 0 0 0 4px var(--white);
+  /* A shade darker than the banner, as the old skeleton drew it. */
+  background: var(--border-subtle);
 }
 .intro {
   display: flex;

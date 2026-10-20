@@ -272,7 +272,8 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string; froz
             coverTools={
               <CoverPicker
                 color={coverKey}
-                artOn={profile.cover.art !== 'none'}
+                // "Show topics" is on only when topics show: a pattern or single cover reads off.
+                artOn={profile.cover.art === 'icons'}
                 onPickColor={coverEdit.pickColor}
                 onToggleArt={(on) => coverEdit.save({ art: on ? 'icons' : 'none' })}
                 saveState={coverEdit.saveState}
