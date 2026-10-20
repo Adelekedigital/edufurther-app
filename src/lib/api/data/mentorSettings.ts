@@ -73,6 +73,8 @@ export function useMentorSettings(userId: string | null) {
     values,
     profile: profile.data,
     slug: me.data?.slug ?? null,
+    /** Moves each time either read lands, even with the same data. */
+    version: `${me.dataUpdatedAt}:${profile.updatedAt}`,
     retry: () => {
       if (me.error || noHandle) void me.refetch();
       // Only with a handle: a disabled query's refetch would ask for /mentors/null.

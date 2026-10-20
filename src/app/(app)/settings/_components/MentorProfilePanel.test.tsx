@@ -35,6 +35,7 @@ let settings: {
   values: MentorProfileValues | null;
   profile: MentorProfile | null;
   slug: string | null;
+  version: string;
   retry: () => void;
 };
 const mutateAsync = vi.fn();
@@ -87,7 +88,7 @@ vi.mock('@/lib/api/data/catalog', () => ({
 vi.mock('@/lib/api/data/writingAssist', () => ({ useWritingAssist: () => ({ assist: vi.fn() }) }));
 
 beforeEach(() => {
-  settings = { status: 'ready', values, profile, slug: 'ada-obi', retry: vi.fn() };
+  settings = { status: 'ready', values, profile, slug: 'ada-obi', version: 'v1', retry: vi.fn() };
   mutateAsync.mockReset();
   mutateAsync.mockResolvedValue(undefined);
   saveError = null;
@@ -208,7 +209,11 @@ describe('MentorProfilePanel', () => {
     const user = userEvent.setup();
     const { rerender } = render(<MentorProfilePanel userId="u1" />);
     await user.selectOptions(screen.getByRole('combobox', { name: 'Gender (optional)' }), 'Man');
-    settings = { ...settings, values: { ...values, headline: 'Edited on another device' } };
+    settings = {
+      ...settings,
+      values: { ...values, headline: 'Edited on another device' },
+      version: 'v2',
+    };
     rerender(<MentorProfilePanel userId="u1" />);
     expect(screen.getByRole('combobox', { name: 'Gender (optional)' })).toHaveValue('Man');
     await user.click(screen.getByRole('button', { name: 'Discard' }));
@@ -229,6 +234,18 @@ describe('MentorProfilePanel', () => {
     };
     render(<MentorProfilePanel userId="u1" />);
     expect(preview().getByText('From Zaire, studied in the US')).toBeInTheDocument();
+  });
+
+  it('after Save, a newer read is taken even if it equals what was there before', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<MentorProfilePanel userId="u1" />);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Gender (optional)' }), 'Woman');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    await screen.findByText('Profile saved');
+    // Another device put the old value back: a new read, with the old values.
+    settings = { ...settings, version: 'v2' };
+    rerender(<MentorProfilePanel userId="u1" />);
+    expect(screen.getByRole('combobox', { name: 'Gender (optional)' })).toHaveValue('');
   });
 
   it('error before content: a failed load offers Try again', async () => {

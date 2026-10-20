@@ -23,6 +23,7 @@ vi.mock('./profile', () => ({
     error: null,
     notFound: false,
     retry: profileRetry,
+    updatedAt: 0,
   }),
 }));
 

@@ -69,7 +69,7 @@ const gapsOf = (v: MentorProfileValues, saved: MentorProfileValues): MentorProfi
  */
 export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
   function MentorProfilePanel({ userId }, ref) {
-    const { status, values, profile, slug, retry } = useMentorSettings(userId);
+    const { status, values, profile, slug, version, retry } = useMentorSettings(userId);
     const saving = useSaveMentorProfile(userId);
     const avatar = useAvatarUpload(slug ?? '', slug ? userId : null);
     const coverEdit = useCoverEdit(slug ?? '', slug ? userId : null);
@@ -82,14 +82,16 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
     // `base` is what's saved; `draft` is the form. The server's values come in
     // whenever nothing is unsaved (a refetch must not wipe an edit), with one
     // exception: right after a save the read still holds the values from
-    // before it (`superseded`) until its refetch lands, and those mustn't
+    // before it (the read's `superseded` version) until its refetch lands, and those mustn't
     // replace what saved. Any other value (another tab, a refocus) comes in.
     const [base, setBase] = useState<MentorProfileValues | null>(null);
     const [draft, setDraft] = useState<MentorProfileValues | null>(null);
-    const [superseded, setSuperseded] = useState<MentorProfileValues | null>(null);
+    const [superseded, setSuperseded] = useState<string | null>(null);
     const dirty = !!base && !!draft && !same(base, draft);
-    const outdated = !!values && !!superseded && same(values, superseded);
-    if (superseded && values && !outdated) setSuperseded(null);
+    // The read that was current when the save landed; any read after it is new,
+    // even one that happens to hold the same values.
+    const outdated = superseded !== null && version === superseded;
+    if (superseded !== null && !outdated) setSuperseded(null);
     if (values && !outdated && (!base || (!dirty && !same(base, values)))) {
       setBase(values);
       setDraft(values);
@@ -149,14 +151,14 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
         // sent (tidied), so a retry doesn't send it again.
         if (e instanceof MentorProfileSaveError && e.saved.length) {
           setBase(withSaved(base, after, e.saved));
-          if (values) setSuperseded(values);
+          setSuperseded(version);
           setDraft((d) => (d ? { ...d, name: after.name } : d));
         }
         setTries((n) => n + 1);
         return false;
       }
       keepFocus();
-      if (values) setSuperseded(values);
+      setSuperseded(version);
       setBase(after);
       setDraft(after);
       setPromptVersion(null);
