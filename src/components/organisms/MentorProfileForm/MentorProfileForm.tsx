@@ -39,7 +39,8 @@ type MentorProfileFormProps = {
   headlineTooLong?: boolean;
   /** "About you", which takes focus when the save bar goes. */
   headingRef?: Ref<HTMLHeadingElement>;
-  countries: { id: string; label: string }[];
+  /** Each picker's choices: the catalog, plus that field's own saved country if the catalog dropped it. */
+  countries: { origin: { id: string; label: string }[]; study: { id: string; label: string }[] };
   photo: ProfilePhotoControl;
   cover: { bg: string; ink: string; bannerUrl: string | null; artIcons: CoverIcon[] };
   /** The "Change cover" control (CoverPicker), top right of the cover. */
@@ -230,7 +231,7 @@ export function MentorProfileForm({
                 <CountryPicker
                   id={ids(k).field}
                   focusKey={k}
-                  options={countries}
+                  options={countries[k]}
                   value={value}
                   onChange={(v) => onChange(k === 'origin' ? { originId: v } : { studyId: v })}
                   placeholder={C.countryPlaceholder}

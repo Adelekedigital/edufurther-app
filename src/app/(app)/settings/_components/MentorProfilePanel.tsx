@@ -193,24 +193,19 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
       profile.cover.art === 'icons'
         ? profile.mentor.topics.slice(0, 3).map((t) => topicIcon(t.label))
         : [];
-    // A saved country since retired from the catalog stays a choice, by the
-    // profile's own name, so its field isn't blank (as gender keeps a stored value).
-    const saved: [string, string | null][] = [
-      [base.originId, profile.originCountry],
-      [base.studyId, profile.studyCountry],
-    ];
-    const countryOptions = [
-      ...countries,
-      ...saved.flatMap(([id, label], i) =>
-        id &&
-        label &&
-        !countries.some((c) => c.id === id) &&
-        saved.findIndex(([x]) => x === id) === i
-          ? [{ id, label }]
-          : [],
-      ),
-    ];
-    const countryName = (id: string) => countryOptions.find((c) => c.id === id)?.label ?? null;
+    // A saved country since retired from the catalog stays a choice in its own
+    // field only, by the profile's own name, so the field isn't blank (as gender
+    // keeps a stored value) and the other picker doesn't offer it.
+    const keepSaved = (id: string, label: string | null) =>
+      id && label && !countries.some((c) => c.id === id)
+        ? [...countries, { id, label }]
+        : countries;
+    const countryOptions = {
+      origin: keepSaved(base.originId, profile.originCountry),
+      study: keepSaved(base.studyId, profile.studyCountry),
+    };
+    const countryName = (list: { id: string; label: string }[], id: string) =>
+      list.find((c) => c.id === id)?.label ?? null;
     const commonOptions = COMMON.flatMap((name) => {
       const hit = common.results.find((r) => r.label === name);
       return hit ? [{ id: hit.id, label: hit.label }] : [];
@@ -302,7 +297,10 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
                 rating={profile.mentor.rating}
                 reviewCount={profile.mentor.reviewCount}
                 completedSessions={profile.mentor.completedSessions}
-                place={previewPlace(countryName(draft.originId), countryName(draft.studyId))}
+                place={previewPlace(
+                  countryName(countryOptions.origin, draft.originId),
+                  countryName(countryOptions.study, draft.studyId),
+                )}
                 tags={profile.mentor.topics.slice(0, 3).map((t) => t.label)}
                 copy={{ book: C.book, message: C.message }}
               />

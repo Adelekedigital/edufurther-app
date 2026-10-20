@@ -250,6 +250,24 @@ describe('MentorProfilePanel', () => {
     expect(screen.getByRole('combobox', { name: 'Country of origin' })).toHaveValue('Zaire');
   });
 
+  it('…but the study picker doesn’t offer origin’s retired country', async () => {
+    const user = userEvent.setup();
+    settings = {
+      ...settings,
+      values: { ...values, originId: 'old-id' },
+      profile: {
+        ...profile,
+        originCountry: 'Zaire',
+        studyCountry: 'United States',
+      } as MentorProfile,
+    };
+    render(<MentorProfilePanel userId="u1" />);
+    const study = screen.getByRole('combobox', { name: 'Country you studied in' });
+    await user.clear(study);
+    await user.type(study, 'Zai');
+    expect(screen.queryByRole('option', { name: 'Zaire' })).toBeNull();
+  });
+
   it('after Save, a newer read is taken even if it equals what was there before', async () => {
     const user = userEvent.setup();
     const { rerender } = render(<MentorProfilePanel userId="u1" />);

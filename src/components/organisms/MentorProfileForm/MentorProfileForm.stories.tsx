@@ -64,7 +64,7 @@ function Live({
         onChange={(patch) => setV((x) => ({ ...x, ...patch }))}
         errors={errors}
         headlineTooLong={headlineTooLong}
-        countries={COUNTRIES}
+        countries={{ origin: COUNTRIES, study: COUNTRIES }}
         photo={{
           url: photoUrl,
           initial: (v.name || 'E')[0]!.toUpperCase(),
