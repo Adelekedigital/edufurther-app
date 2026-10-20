@@ -32,7 +32,7 @@ type LanguageChipsProps = {
   /** `data-ff` key, so a required-field error can focus the group. */
   focusKey?: string;
   /** The common languages didn't load: a line saying so, with Try again. */
-  commonFailed?: { text: string; retry: string; onRetry: () => void };
+  commonFailed?: { text: string; retry: string; onRetry: () => void; at?: number };
   describedBy?: string;
 };
 
@@ -67,12 +67,14 @@ export function LanguageChips({
   const addButton = useRef<HTMLButtonElement>(null);
   // The failure line, heard: put into the always-present region after it
   // mounts (a region that arrives with its text in it is often skipped).
+  // Keyed on when it failed, so the same failure after Try again is heard again.
   const failedText = commonFailed?.text ?? null;
-  const [heard, setHeard] = useState<string | null>(null);
+  const failedAt = commonFailed?.at ?? 0;
+  const [heard, setHeard] = useState<{ text: string; at: number } | null>(null);
   useEffect(() => {
-    const t = setTimeout(() => setHeard(failedText));
+    const t = setTimeout(() => setHeard(failedText ? { text: failedText, at: failedAt } : null));
     return () => clearTimeout(t);
-  }, [failedText]);
+  }, [failedText, failedAt]);
   const isOn = (l: LanguageOption) => selected.some((s) => s.id === l.id);
   const chips = [...common, ...selected.filter((s) => !common.some((c) => c.id === s.id))];
   const typed = query.trim();
@@ -119,7 +121,7 @@ export function LanguageChips({
       className={styles.group}
     >
       <span role="status" className="sr-only">
-        {heard}
+        {heard && <span key={heard.at}>{heard.text}</span>}
       </span>
       {commonFailed && (
         <span className={styles.failed}>

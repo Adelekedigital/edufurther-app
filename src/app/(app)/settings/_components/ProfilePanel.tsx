@@ -96,6 +96,7 @@ export const ProfilePanel = forwardRef<PanelHandle, { userId: string }>(function
   const [toastStamp, setToastStamp] = useState(0);
   // Moves on every Save that didn't go through, so its error is heard again.
   const [tries, setTries] = useState(0);
+  const [waitDraft, setWaitDraft] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const required = useRequiredFields(draft ? gapsOf(draft) : []);
@@ -123,7 +124,15 @@ export const ProfilePanel = forwardRef<PanelHandle, { userId: string }>(function
 
   const save = async (): Promise<boolean> => {
     // Not while an AI draft is being written: it would save the old bio.
-    if (!base || !draft || saving.isPending || assistBusy) return false;
+    if (!base || !draft || saving.isPending) return false;
+    // An AI draft is being written: saving now would keep the old bio. Say so
+    // by the Save button rather than do nothing.
+    if (assistBusy) {
+      setWaitDraft(true);
+      setTries((n) => n + 1);
+      return false;
+    }
+    setWaitDraft(false);
     if (!required.check()) {
       setTries((n) => n + 1);
       return false;
@@ -212,7 +221,8 @@ export const ProfilePanel = forwardRef<PanelHandle, { userId: string }>(function
           status: search.status,
           // The common chips failed to load: say so, with Try again, rather
           // than show none as if there were none.
-          commonFailed: common.status === 'error' ? common.retry : undefined,
+          commonFailed:
+            common.status === 'error' ? { retry: common.retry, at: common.failedAt } : undefined,
         }}
         onAssist={async (mode, text) => {
           const out = await assist(mode, text);
@@ -225,12 +235,18 @@ export const ProfilePanel = forwardRef<PanelHandle, { userId: string }>(function
         <SaveBar
           label={SAVE_COPY.barLabel}
           message={SAVE_COPY.profileBar}
-          error={required.formError ? SAVE_COPY.formError : (saving.error?.copy ?? null)}
+          error={
+            waitDraft && assistBusy
+              ? SAVE_COPY.waitForDraft
+              : required.formError
+                ? SAVE_COPY.formError
+                : (saving.error?.copy ?? null)
+          }
           errorKey={tries}
           discardLabel={SAVE_COPY.discard}
           saveLabel={SAVE_COPY.save}
           savingLabel={SAVE_COPY.saving}
-          saving={saving.isPending || assistBusy}
+          saving={saving.isPending}
           onDiscard={discard}
           onSave={() => void save()}
         />

@@ -73,7 +73,13 @@ export function useLanguageSearch(q: string, enabled: boolean) {
       : query.isFetching || term !== q.trim()
         ? 'loading'
         : 'ready';
-  return { results: query.data ?? [], status, retry: () => void query.refetch() };
+  return {
+    results: query.data ?? [],
+    status,
+    retry: () => void query.refetch(),
+    /** Moves with each failure, so a repeated one can be announced again. */
+    failedAt: query.errorUpdatedAt,
+  };
 }
 
 /** The catalog's degree levels ({id, code}), to send `degree_level_id`. */

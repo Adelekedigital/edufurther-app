@@ -65,6 +65,7 @@ export const SAVE_COPY = {
   discard: 'Discard',
   save: 'Save changes',
   saving: 'Saving…',
+  waitForDraft: 'Your draft is still being written. Save once it’s in.',
   profileSaved: 'Profile saved',
   profileFailed: 'We couldn’t save your profile. Your changes are still here. Try again.',
   profileOffline: 'You’re offline. Your changes are still here. Try again when you’re connected.',

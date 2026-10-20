@@ -41,8 +41,8 @@ export type LanguageSearch = {
   onQueryChange: (q: string) => void;
   results: LanguageOption[];
   status: 'loading' | 'error' | 'ready';
-  /** The common languages didn't load: Try again. */
-  commonFailed?: () => void;
+  /** The common languages didn't load: Try again (`at`: when, so a repeat is heard). */
+  commonFailed?: { retry: () => void; at: number };
 };
 
 type MenteeProfileFormProps = {
@@ -193,7 +193,8 @@ export function MenteeProfileForm({
               languages.commonFailed && {
                 text: C.commonLanguagesFailed,
                 retry: C.retry,
-                onRetry: languages.commonFailed,
+                onRetry: languages.commonFailed.retry,
+                at: languages.commonFailed.at,
               }
             }
             copy={{

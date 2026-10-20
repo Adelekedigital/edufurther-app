@@ -15,7 +15,7 @@ const copy = {
   noMatch: (q: string) => `No languages match “${q}”.`,
 };
 
-function Chips({ failed }: { failed?: boolean }) {
+function Chips({ failed, at = 1 }: { failed?: boolean; at?: number }) {
   const [selected, setSelected] = useState<LanguageOption[]>([EN]);
   const [query, setQuery] = useState('');
   return (
@@ -31,7 +31,12 @@ function Chips({ failed }: { failed?: boolean }) {
       copy={copy}
       commonFailed={
         failed
-          ? { text: 'We couldn’t load the language list.', retry: 'Try again', onRetry: () => {} }
+          ? {
+              text: 'We couldn’t load the language list.',
+              retry: 'Try again',
+              onRetry: () => {},
+              at,
+            }
           : undefined
       }
     />
@@ -59,6 +64,18 @@ describe('LanguageChips', () => {
     expect(region).toHaveTextContent('');
     act(() => vi.runAllTimers());
     expect(region).toHaveTextContent('We couldn’t load the language list.');
+    vi.useRealTimers();
+  });
+
+  it('the same failure after Try again is put in afresh, so it is heard again', () => {
+    vi.useFakeTimers();
+    const { rerender } = render(<Chips failed at={1} />);
+    act(() => vi.runAllTimers());
+    const first = screen.getByRole('status').firstElementChild;
+    rerender(<Chips failed at={2} />);
+    act(() => vi.runAllTimers());
+    expect(screen.getByRole('status').firstElementChild).not.toBe(first);
+    expect(screen.getByRole('status')).toHaveTextContent('We couldn’t load the language list.');
     vi.useRealTimers();
   });
 });

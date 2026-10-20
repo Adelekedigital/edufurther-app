@@ -38,6 +38,7 @@ vi.mock('@/lib/api/data/avatar', () => ({
   }),
 }));
 let commonFails = false;
+const assist = vi.fn();
 const commonRetry = vi.fn();
 const LANGS = [
   { id: 'en', label: 'English' },
@@ -65,7 +66,7 @@ vi.mock('@/lib/api/data/catalog', () => ({
         },
 }));
 vi.mock('@/lib/api/data/writingAssist', () => ({
-  useWritingAssist: () => ({ assist: vi.fn() }),
+  useWritingAssist: () => ({ assist: (...a: unknown[]) => assist(...a) }),
 }));
 
 const profile = (over: Partial<MenteeProfile> = {}): MenteeProfile => ({
@@ -262,5 +263,16 @@ describe('ProfilePanel', () => {
     expect(screen.getByText('We couldn’t load the language list.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(commonRetry).toHaveBeenCalled();
+  });
+
+  it('Save while an AI draft is being written says so, and saves nothing', async () => {
+    ready();
+    assist.mockReturnValue(new Promise(() => {}));
+    render(<ProfilePanel userId="u1" />);
+    await userEvent.click(screen.getByRole('button', { name: 'Igbo' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Write a draft' }));
+    await userEvent.click(screen.getByRole('button', { name: SAVE_COPY.save }));
+    expect(screen.getAllByText(SAVE_COPY.waitForDraft).length).toBeGreaterThan(0);
+    expect(mutateAsync).not.toHaveBeenCalled();
   });
 });
