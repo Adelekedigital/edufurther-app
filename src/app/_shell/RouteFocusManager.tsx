@@ -19,17 +19,18 @@ import { usePathname } from 'next/navigation';
  * mistaken for a navigation. Never scroll-jumps (`preventScroll`). A route with
  * no `#main` (e.g. the focused session view) is left to manage its own focus.
  */
-/** Set by a redirect that isn't a navigation; the next route change consumes it. */
-let skipNext = false;
+/** Where the next route change may keep focus; any route change clears it. */
+let skipFor: string | null = null;
 
 /**
- * Call just before a redirect that happens as the page loads (e.g. /settings
- * to the role's first tab): that route change keeps focus where it is, so no
- * ring lands on a heading nobody reached for. Every other route change still
- * moves focus, whatever started it (a screen reader's synthetic click too).
+ * Call just before a route change that isn't a new page for the person: a
+ * redirect as the page loads (/settings to the role's first tab), or a tab
+ * that is its own URL (Settings). Arriving at `path` keeps focus where it is,
+ * so no ring lands on a heading nobody reached for. Tied to the destination:
+ * if another navigation wins instead, that one still moves focus.
  */
-export function skipNextRouteFocus() {
-  skipNext = true;
+export function skipNextRouteFocus(path: string) {
+  skipFor = path;
 }
 
 export function RouteFocusManager() {
@@ -40,10 +41,9 @@ export function RouteFocusManager() {
     if (prev === pathname) return; // StrictMode double-invoke / same-path re-render
     prevPathname.current = pathname;
     if (prev === null) return; // initial document load — keep the browser's own focus
-    if (skipNext) {
-      skipNext = false; // a load-time redirect, not a navigation
-      return;
-    }
+    const skip = skipFor === pathname;
+    skipFor = null;
+    if (skip) return; // a redirect or a tab, not a new page
     const main = document.getElementById('main');
     if (!main) return;
     const target = main.querySelector<HTMLElement>('h1') ?? main;

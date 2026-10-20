@@ -69,7 +69,7 @@ export function SettingsScreen() {
     if (member && !known) {
       // Only /settings itself is a redirect as the page loads: its heading
       // doesn't take focus. A link to another role's tab is a navigation.
-      if (!segment) skipNextRouteFocus();
+      if (!segment) skipNextRouteFocus(`/settings/${first}`);
       router.replace(`/settings/${first}`);
     }
   }, [member, known, first, router, segment]);
@@ -109,7 +109,7 @@ export function SettingsScreen() {
   // A tab is its own URL, but choosing one keeps focus on the tab, as on every
   // other tab row (WAI-ARIA tabs): no move to the h1 as for a new page.
   const go = (t: SettingsTab) => {
-    skipNextRouteFocus();
+    skipNextRouteFocus(`/settings/${t}`);
     router.push(`/settings/${t}`);
   };
   const items: TabItem[] = tabs.map((t) => ({

@@ -47,7 +47,8 @@
 .skeletonTabs {
   display: flex;
   gap: var(--space-6);
-  padding: var(--space-3) var(--space-4);
+  /* The tab row's height (16px + text + 15px + the line), so nothing moves when the tabs arrive. */
+  padding: var(--space-4) var(--space-4) calc(var(--space-4) - 1px + var(--border-hairline));
 }
 .skeletonCard {
   max-width: 680px;
