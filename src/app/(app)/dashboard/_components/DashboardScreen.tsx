@@ -6,6 +6,7 @@ import { Button } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { useAppShell } from '@/app/_shell/useAppShell';
+import { useSetupDetour } from '@/app/_shell/useSetupDetour';
 import { useMentorDashboard, type SetupNext } from '@/lib/api/data/dashboard';
 import { deviceTimeZone, inSentence } from '@/lib/utils/format';
 import type { Viewer } from '@/types/mentor';
@@ -205,17 +206,20 @@ function MentorHome({ member }: { member: Member }) {
 export function DashboardScreen() {
   const { member, chrome } = useAppShell();
   const router = useRouter();
+  // A mentor who never sent their application has no dashboard yet: mentor
+  // onboarding instead (the setup lock), as the nav's Home already goes.
+  const detour = useSetupDetour();
 
   // Viewer resolved (guest or member) but not a mentor → send them home.
   const resolved = chrome !== 'pending';
   const isMentor = !!member?.isMentor;
   useEffect(() => {
-    if (resolved && !isMentor) router.replace('/');
-  }, [resolved, isMentor, router]);
+    if (resolved && !isMentor && !detour) router.replace('/');
+  }, [resolved, isMentor, detour, router]);
 
   return (
     <div className={styles.page}>
-      {member?.isMentor ? <MentorHome member={member} /> : <DashboardLoading />}
+      {member?.isMentor && !detour ? <MentorHome member={member} /> : <DashboardLoading />}
       {/* It reads the query: inside its own boundary. */}
       <Suspense>
         <ApprovedToast />

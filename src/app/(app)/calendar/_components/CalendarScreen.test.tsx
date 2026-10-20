@@ -839,6 +839,13 @@ describe('the setup lock: /calendar opened by URL (PRD "App shell and access")',
     expect(screen.queryByRole('heading', { name: 'Weekly hours' })).toBeNull();
   });
 
+  it('a mentor who never sent their application gets the setup explainer (owner, 2026-10-20)', () => {
+    viewer = viewers.mentorUnfinished;
+    render(<CalendarScreen />);
+    expectLockedPage(explainer.mentorSetup('Calendar'));
+    expect(screen.queryByRole('heading', { name: 'Weekly hours' })).toBeNull();
+  });
+
   it('a declined mentor is locked even while the hours are loading or have failed', () => {
     viewer = declined();
     weekly = remote<WeeklyHours>(null, { isLoading: true });
