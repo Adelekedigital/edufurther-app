@@ -20,6 +20,10 @@
   font-family: var(--font-ui);
   box-shadow: var(--shadow-menu);
 }
+/* The design hides the bar while a dialog is open (`showSaveBar` … `!leaveTo && !modal`). */
+:global(body:has([role='dialog'], [role='alertdialog'])) .bar {
+  display: none;
+}
 
 /* DIVERGENCE: the design's red-600 is 3.1:1 on ink-900; red-300 is 5.6:1. */
 .error {
