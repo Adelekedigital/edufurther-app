@@ -28,7 +28,7 @@ export const TAB_LABELS: Record<SettingsTab, string> = {
   expertise: 'Expertise',
   goals: 'Goals',
   education: 'Education',
-  security: 'Login and security',
+  security: 'Login & security',
 };
 
 export const PROFILE_COPY = {

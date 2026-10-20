@@ -54,9 +54,12 @@ function classes({
 function Content({
   icon,
   iconPosition = 'leading',
+  variant,
   children,
-}: Pick<Common, 'icon' | 'iconPosition' | 'children'>) {
-  const glyph = icon ? <Icon name={icon} size={18} /> : null;
+}: Pick<Common, 'icon' | 'iconPosition' | 'children' | 'variant'>) {
+  // A text action's glyph is 16 (Mentor Profile.dc.html "+ Add education" /
+  // pencil "Edit"); a filled or outlined button's is 18.
+  const glyph = icon ? <Icon name={icon} size={variant === 'text' ? 16 : 18} /> : null;
   return (
     <>
       {iconPosition === 'leading' && glyph}
@@ -100,7 +103,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       aria-busy={busy || undefined}
       onClick={busy ? (e) => e.preventDefault() : onClick}
     >
-      <Content icon={icon} iconPosition={iconPosition}>
+      <Content icon={icon} iconPosition={iconPosition} variant={variant}>
         {children}
       </Content>
     </button>
@@ -127,7 +130,7 @@ export const ButtonAnchor = forwardRef<HTMLAnchorElement, ButtonAnchorProps>(fun
 ) {
   return (
     <a ref={ref} className={classes({ variant, size, fullWidth, className })} {...rest}>
-      <Content icon={icon} iconPosition={iconPosition}>
+      <Content icon={icon} iconPosition={iconPosition} variant={variant}>
         {children}
       </Content>
     </a>
@@ -147,7 +150,7 @@ export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(functio
       className={classes({ variant, size, fullWidth, className })}
       {...rest}
     >
-      <Content icon={icon} iconPosition={iconPosition}>
+      <Content icon={icon} iconPosition={iconPosition} variant={variant}>
         {children}
       </Content>
     </Link>

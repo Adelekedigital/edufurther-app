@@ -35,8 +35,9 @@ export function TopicsCard({ topics, onEdit, editRef }: TopicsCardProps) {
         {!empty && (
           <Button
             ref={editRef}
-            variant="secondary-outlined"
-            size="medium"
+            variant="text"
+            size="small"
+            icon="edit"
             aria-label={C.editTopicsLabel}
             onClick={onEdit}
           >

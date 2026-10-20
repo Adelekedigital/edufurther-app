@@ -106,16 +106,16 @@ export function ProfileOverview({
               About
             </h2>
             {aboutEdit && !editing && (
-              <button
+              <Button
                 ref={editRef}
-                type="button"
-                className={styles.edit}
+                variant="text"
+                size="small"
+                icon="edit"
                 onClick={aboutEdit.onEdit}
                 aria-label="Edit About"
               >
-                <Icon name="edit" size={16} />
                 Edit
-              </button>
+              </Button>
             )}
           </div>
           {editing ? (
@@ -175,16 +175,16 @@ export function ProfileOverview({
               Background
             </h2>
             {onEditBackground && (
-              <button
+              <Button
                 ref={backgroundEditRef}
-                type="button"
-                className={styles.edit}
+                variant="text"
+                size="small"
+                icon={facts.length ? 'edit' : 'add'}
                 onClick={onEditBackground}
                 aria-label={facts.length ? 'Edit background' : 'Add background'}
               >
-                <Icon name={facts.length ? 'edit' : 'add'} size={16} />
                 {facts.length ? 'Edit' : 'Add'}
-              </button>
+              </Button>
             )}
           </div>
           {facts.length === 0 && onEditBackground && (
@@ -249,10 +249,9 @@ function EntrySection({
           {title}
         </h2>
         {edit && (
-          <button ref={addRef} type="button" className={styles.edit} onClick={edit.onAdd}>
-            <Icon name="add" size={16} />
+          <Button ref={addRef} variant="text" size="small" icon="add" onClick={edit.onAdd}>
             {add}
-          </button>
+          </Button>
         )}
       </div>
       {items.length === 0 && edit ? (
