@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { AssistMode } from '@/components/molecules/AiField/AiField';
 import { useAvatarUpload } from '@/lib/api/data/avatar';
-import { useRememberMentorSignup } from '@/lib/api/data/roles';
+import { useRememberMentorSignup } from '@/lib/api/data/roleHooks';
 import { useFieldsOfStudy } from '@/lib/api/data/catalog';
 import {
   DECIDED,

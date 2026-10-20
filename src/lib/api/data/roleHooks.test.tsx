@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { Viewer } from '@/types/mentor';
-import { useRememberMentorSignup } from './roles';
+import { useRememberMentorSignup } from './roleHooks';
 
 const PATCH = vi.fn();
 vi.mock('./http', () => ({ api: { PATCH: (...a: unknown[]) => PATCH(...a) } }));
@@ -14,6 +14,7 @@ const member = (over: Partial<Extract<Viewer, { kind: 'member' }>> = {}) =>
     isMentor: false,
     isMentee: false,
     hasMentorProfile: false,
+    onboardingStarted: false,
     signedUpAsMentor: false,
     ...over,
   }) as Viewer;
@@ -56,6 +57,8 @@ describe('useRememberMentorSignup', () => {
   it('never re-roles a settled account: a mentee, or a declined applicant who chose mentee', () => {
     setup(member({ isMentee: true }), 'mentor');
     setup(member({ hasMentorProfile: true }), 'mentor');
+    // Partway through mentee onboarding, before the goal is saved.
+    setup(member({ onboardingStarted: true }), 'mentor');
     expect(PATCH).not.toHaveBeenCalled();
   });
 

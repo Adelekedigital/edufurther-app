@@ -7,7 +7,7 @@ import { keys } from './keys';
 import type { components } from '@/lib/api/generated/schema';
 import { api } from './http';
 import { patchViewer } from './viewer';
-import { useSetPrimaryRole } from './roles';
+import { useSetPrimaryRole } from './roleHooks';
 import { mentorStageOf } from '@/lib/utils/access';
 
 type UserRead = components['schemas']['UserRead'];

@@ -13,8 +13,8 @@ vi.mock('next/navigation', () => ({
 
 let viewer: Viewer;
 const remember = vi.fn(() => false);
-vi.mock('@/lib/api/data/roles', async (orig) => ({
-  ...(await orig<typeof import('@/lib/api/data/roles')>()),
+vi.mock('@/lib/api/data/roleHooks', async (orig) => ({
+  ...(await orig<typeof import('@/lib/api/data/roleHooks')>()),
   useRememberMentorSignup: (...args: unknown[]) => remember(...(args as [])),
 }));
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => viewer }));
