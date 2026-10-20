@@ -128,6 +128,8 @@ export function useOwnEducation(userId: string | null, enabled: boolean) {
     entries: query.data ?? [],
     status: status as 'ready' | 'error' | 'loading',
     retrying: query.isFetching && !!query.error,
+    /** Counts failed loads, so each one can be announced. */
+    failures: query.errorUpdateCount,
     retry: () => void query.refetch(),
   };
 }

@@ -20,6 +20,7 @@ describe('educationLine', () => {
   it('leaves out what isn’t saved, with no stray separators', () => {
     expect(educationTitle(row({ course: '' }))).toBe('BSc');
     expect(educationTitle(row({ degree: null }))).toBe('Microbiology');
+    expect(educationTitle(row({ degree: null, course: '' }))).toBe('University of Lagos');
     expect(educationMeta(row({ end: null }))).toBe('University of Lagos · 2018');
     expect(educationMeta(row({ start: null, end: null }))).toBe('University of Lagos');
     expect(educationWhere(row({ end: null }))).toBe('University of Lagos');

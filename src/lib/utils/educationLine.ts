@@ -12,8 +12,8 @@ export type EducationRow = {
 
 const joined = (sep: string, ...parts: (string | null)[]) => parts.filter(Boolean).join(sep);
 
-/** "{degree}, {course}" (design `eduRows` title), without a dangling comma. */
-export const educationTitle = (r: EducationRow) => joined(', ', r.degree, r.course);
+/** "{degree}, {course}" (design `eduRows` title), without a dangling comma; else the school. */
+export const educationTitle = (r: EducationRow) => joined(', ', r.degree, r.course) || r.school;
 
 /** "{school} · {start} – {end}" (design `eduRows` meta). */
 export const educationMeta = (r: EducationRow) =>

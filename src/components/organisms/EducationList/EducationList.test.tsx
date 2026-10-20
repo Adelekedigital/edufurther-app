@@ -63,23 +63,42 @@ describe('EducationList', () => {
     expect(onAdd).toHaveBeenCalled();
   });
 
-  it('a failed load is an alert with Try again, never the empty state', async () => {
+  it('a failed load shows Try again, never the empty state', async () => {
     const { user, onRetry } = setup({ status: 'error', rows: [] });
-    expect(screen.getByRole('alert')).toHaveTextContent(SETTINGS_COPY.loadError);
+    expect(screen.getByRole('heading', { name: SETTINGS_COPY.loadError })).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.queryByText(EDUCATION_COPY.emptyTitle)).toBeNull();
     expect(screen.queryByRole('button', { name: EDUCATION_COPY.add })).toBeNull();
     await user.click(screen.getByRole('button', { name: SETTINGS_COPY.retry }));
     expect(onRetry).toHaveBeenCalled();
   });
 
-  it('Try again waits while a retry is out', () => {
+  it('Try again shows busy while a retry is out, and keeps focus', () => {
     setup({ status: 'error', rows: [], retrying: true });
-    expect(screen.getByRole('button', { name: SETTINGS_COPY.retry })).toBeDisabled();
+    const retry = screen.getByRole('button', { name: SETTINGS_COPY.retry });
+    expect(retry).toHaveAttribute('aria-busy', 'true');
+    expect(retry).toBeEnabled();
+  });
+
+  it('loading → error: the failure is put into a status region that was already there', () => {
+    const props = { onAdd: vi.fn(), onEdit: vi.fn(), onDelete: vi.fn(), onRetry: vi.fn() };
+    const { rerender } = render(<EducationList status="loading" rows={[]} {...props} />);
+    const region = screen.getByRole('status');
+    expect(region).toHaveTextContent(EDUCATION_COPY.loading);
+    rerender(<EducationList status="error" rows={[]} errorKey={1} {...props} />);
+    expect(screen.getByRole('status')).toBe(region);
+    expect(region).toHaveTextContent(SETTINGS_COPY.loadError);
+    const first = region.firstElementChild;
+    // Failing again re-mounts the message, so it is read out again.
+    rerender(<EducationList status="error" rows={[]} errorKey={2} {...props} />);
+    expect(region.firstElementChild).not.toBe(first);
+    expect(region).toHaveTextContent(SETTINGS_COPY.loadError);
   });
 
   it('loading: the rows’ shapes, announced busy, no Add yet', () => {
     setup({ status: 'loading', rows: [] });
-    expect(screen.getByLabelText(EDUCATION_COPY.loading)).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('status')).toHaveTextContent(EDUCATION_COPY.loading);
+    expect(document.querySelector('[aria-busy="true"]')).not.toBeNull();
     expect(screen.queryByRole('button', { name: EDUCATION_COPY.add })).toBeNull();
     expect(screen.queryByText(EDUCATION_COPY.emptyTitle)).toBeNull();
   });

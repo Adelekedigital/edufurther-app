@@ -167,6 +167,7 @@ function OwnEducationEditor({
     <EducationEditor
       userId={profile.mentor.id}
       id={id}
+      audience="mentor"
       onClose={onClose}
       onSaved={(outcome) => onSaved('education', outcome)}
     />

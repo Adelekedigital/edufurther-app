@@ -9,6 +9,7 @@ let read: {
   status: 'loading' | 'error' | 'ready';
   retry: () => void;
   retrying: boolean;
+  failures: number;
 };
 const addEducation = vi.fn();
 const editEducation = vi.fn();
@@ -72,8 +73,12 @@ const entry = (over: Partial<EducationEntry> = {}): EducationEntry => ({
   ...over,
 });
 
+/** The list's own status region (the Snackbar is another). */
+const listStatus = () =>
+  within(screen.getByRole('region', { name: EDUCATION_COPY.title })).getByRole('status');
+
 const ready = (entries = [entry()]) => {
-  read = { entries, status: 'ready', retry: vi.fn(), retrying: false };
+  read = { entries, status: 'ready', retry: vi.fn(), retrying: false, failures: 0 };
 };
 
 beforeEach(() => {
@@ -112,18 +117,18 @@ describe('EducationPanel', () => {
 
   it('a failed load says so (not the empty state), and Try again retries', async () => {
     const retry = vi.fn();
-    read = { entries: [], status: 'error', retry, retrying: false };
+    read = { entries: [], status: 'error', retry, retrying: false, failures: 1 };
     render(<EducationPanel userId="u1" />);
-    expect(screen.getByRole('alert')).toHaveTextContent(SETTINGS_COPY.loadError);
+    expect(listStatus()).toHaveTextContent(SETTINGS_COPY.loadError);
     expect(screen.queryByText(EDUCATION_COPY.emptyTitle)).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: SETTINGS_COPY.retry }));
     expect(retry).toHaveBeenCalled();
   });
 
   it('loading: announced busy', () => {
-    read = { entries: [], status: 'loading', retry: vi.fn(), retrying: false };
+    read = { entries: [], status: 'loading', retry: vi.fn(), retrying: false, failures: 0 };
     render(<EducationPanel userId="u1" />);
-    expect(screen.getByLabelText(EDUCATION_COPY.loading)).toHaveAttribute('aria-busy', 'true');
+    expect(listStatus()).toHaveTextContent(EDUCATION_COPY.loading);
   });
 
   it('Add opens the form; saving adds it and says "Education added"', async () => {
@@ -133,6 +138,12 @@ describe('EducationPanel', () => {
     landed = () => ready([entry({ id: 'e9' })]);
     await user.click(screen.getByRole('button', { name: EDUCATION_COPY.add }));
     const dialog = screen.getByRole('dialog', { name: 'Add education' });
+    // A mentee's form: the hint never mentions a mentor card.
+    expect(
+      within(dialog).getByRole('checkbox', { name: 'This is my current or most recent education' }),
+    ).toHaveAccessibleDescription(
+      'Marks the degree you’re studying now or finished most recently.',
+    );
     await user.type(within(dialog).getByRole('textbox', { name: 'School' }), 'UCL');
     await user.selectOptions(within(dialog).getByRole('combobox', { name: 'Degree' }), 'MSc');
     await user.type(within(dialog).getByRole('textbox', { name: 'Course of study' }), 'Data');
@@ -147,6 +158,10 @@ describe('EducationPanel', () => {
     );
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.getByText(EDUCATION_COPY.added)).toBeInTheDocument();
+    // The empty state's Add is gone: focus lands on the header's.
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: EDUCATION_COPY.add })).toHaveFocus(),
+    );
   });
 
   it('Escape closes the form without saving', async () => {
@@ -174,6 +189,25 @@ describe('EducationPanel', () => {
     expect(editEducation).toHaveBeenCalledWith('e1', { study_course: 'Biochemistry' });
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.getByText(EDUCATION_COPY.updated)).toBeInTheDocument();
+  });
+
+  it('the same toast twice is put in afresh, so it is read out again', async () => {
+    ready();
+    const user = userEvent.setup();
+    render(<EducationPanel userId="u1" />);
+    const edit = async (course: string) => {
+      await user.click(screen.getByRole('button', { name: 'Edit BSc, Microbiology' }));
+      const dialog = screen.getByRole('dialog', { name: 'Edit education' });
+      const field = within(dialog).getByRole('textbox', { name: 'Course of study' });
+      await user.clear(field);
+      await user.type(field, course);
+      await user.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+    };
+    await edit('Biochemistry');
+    const first = screen.getByText(EDUCATION_COPY.updated);
+    await edit('Biology');
+    const second = screen.getByText(EDUCATION_COPY.updated);
+    expect(second).not.toBe(first);
   });
 
   it('Delete asks first, naming the degree; Keep it keeps it', async () => {

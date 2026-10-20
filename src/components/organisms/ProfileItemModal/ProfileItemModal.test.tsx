@@ -362,6 +362,7 @@ describe('ProfileItemModal — education', () => {
   const education = (
     initial: Parameters<typeof ProfileItemModal>[0]['initial'] | null = null,
     hasOther = false,
+    audience: 'mentor' | 'mentee' = 'mentor',
   ) => {
     const onSave = vi.fn();
     const onClose = vi.fn();
@@ -372,6 +373,7 @@ describe('ProfileItemModal — education', () => {
         initial={initial as never}
         thisYear={2026}
         hasOther={hasOther}
+        audience={audience}
         saving={false}
         error={null}
         onSave={onSave}
@@ -429,6 +431,29 @@ describe('ProfileItemModal — education', () => {
     );
   });
 
+  it('a mentee’s hint never mentions a mentor card', async () => {
+    const { user } = education(null, true, 'mentee');
+    const current = screen.getByRole('checkbox', {
+      name: 'This is my current or most recent education',
+    });
+    expect(current).toHaveAccessibleDescription(
+      'Leave unticked for earlier degrees. They’ll still appear in your Education list.',
+    );
+    await user.click(current);
+    expect(current).toHaveAccessibleDescription(
+      'Marks the degree you’re studying now or finished most recently. Replaces the one currently marked.',
+    );
+  });
+
+  it('a mentee with no other current degree: the plain line', () => {
+    education(null, false, 'mentee');
+    expect(
+      screen.getByRole('checkbox', { name: 'This is my current or most recent education' }),
+    ).toHaveAccessibleDescription(
+      'Marks the degree you’re studying now or finished most recently.',
+    );
+  });
+
   it('says what’s missing, and an end before the start', async () => {
     const { user, onSave } = education({ ...saved, school: '', start: 2027, end: 2023 });
     await user.clear(screen.getByRole('textbox', { name: 'Course of study' }));
@@ -461,6 +486,7 @@ describe('ProfileItemModal — education', () => {
       initial: null,
       thisYear: 2026,
       hasOther: false,
+      audience: 'mentor' as const,
       catalog: { status: 'loading' as const, onRetry: vi.fn() },
       saving: false,
       error: null,
@@ -492,6 +518,7 @@ describe('ProfileItemModal — review of #93', () => {
       <ProfileItemModal
         {...base}
         kind="education"
+        audience="mentor"
         editing
         initial={{
           school: 'UNN',

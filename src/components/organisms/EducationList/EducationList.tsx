@@ -17,10 +17,14 @@ type Props = {
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onRetry: () => void;
-  /** A retry is out: Try again waits. */
+  /** A retry is out: Try again shows busy (and stays focusable). */
   retrying?: boolean;
+  /** Moves on each failed load, so a repeat failure is announced again. */
+  errorKey?: number;
   /** Where focus lands when the control that had it is gone (a deleted row). */
   headingRef?: RefObject<HTMLHeadingElement | null>;
+  /** The header's "Add education", for focus after the empty state's Add is gone. */
+  addRef?: RefObject<HTMLButtonElement | null>;
 };
 
 /**
@@ -38,7 +42,9 @@ export function EducationList({
   onDelete,
   onRetry,
   retrying = false,
+  errorKey = 0,
   headingRef,
+  addRef,
 }: Props) {
   const headingId = useId();
   const filled = status === 'ready' && rows.length > 0;
@@ -53,13 +59,22 @@ export function EducationList({
             <span className={styles.sub}>{EDUCATION_COPY.sub}</span>
           </div>
           {filled && (
-            <Button variant="secondary-outlined" size="medium" onClick={onAdd}>
+            <Button ref={addRef} variant="secondary-outlined" size="medium" onClick={onAdd}>
               {EDUCATION_COPY.add}
             </Button>
           )}
         </div>
+        {/* Always in the page, so what lands in it is read out. */}
+        <p role="status" className="sr-only">
+          {status === 'loading' && EDUCATION_COPY.loading}
+          {status === 'error' && (
+            <span key={errorKey}>
+              {SETTINGS_COPY.loadError} {SETTINGS_COPY.loadErrorBody}
+            </span>
+          )}
+        </p>
         {status === 'loading' ? (
-          <div aria-busy="true" aria-label={EDUCATION_COPY.loading} role="status">
+          <div aria-busy="true">
             {[0, 1].map((i) => (
               <div key={i} className={styles.row}>
                 <Skeleton width="40px" height="40px" radius="lg" />
@@ -72,7 +87,8 @@ export function EducationList({
           </div>
         ) : status === 'error' ? (
           // Error before empty: a failed load never reads as "nothing saved".
-          <div className={styles.state} role="alert">
+          // Announced by the status region above, not by this block.
+          <div className={styles.state}>
             <EmptyState
               illustration="forms"
               size={120}
@@ -80,12 +96,7 @@ export function EducationList({
               title={SETTINGS_COPY.loadError}
               description={SETTINGS_COPY.loadErrorBody}
             />
-            <Button
-              variant="secondary-outlined"
-              size="medium"
-              onClick={onRetry}
-              disabled={retrying}
-            >
+            <Button variant="secondary-outlined" size="medium" onClick={onRetry} busy={retrying}>
               {SETTINGS_COPY.retry}
             </Button>
           </div>

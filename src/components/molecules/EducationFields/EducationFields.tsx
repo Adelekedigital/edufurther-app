@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { Input } from '@/components/atoms/Input/Input';
 import { Select } from '@/components/atoms/Select/Select';
 import { FormField } from '@/components/molecules/FormField/FormField';
+import { EDUCATION_FIELD_COPY, type EducationAudience } from '@/lib/copy/education';
 import { DEGREES } from '@/lib/utils/degrees';
 import { cx } from '@/lib/utils/cx';
 import type { EducationValues } from '@/types/mentor';
@@ -17,6 +18,8 @@ type EducationFieldsProps = {
   thisYear: number;
   /** Another degree is marked current: ticking this one replaces it. */
   hasOther: boolean;
+  /** Who is editing: only a mentor has a mentor card to mention. */
+  audience: EducationAudience;
 };
 
 /**
@@ -30,6 +33,7 @@ export function EducationFields({
   errors = {},
   thisYear,
   hasOther,
+  audience,
 }: EducationFieldsProps) {
   const hintId = useId();
   // The design's 40 years, plus a saved year outside them (review of #93), newest first.
@@ -128,10 +132,9 @@ export function EducationFields({
           </span>
           <span id={hintId} className={styles.currentHint}>
             {cur
-              ? hasOther
-                ? 'Shown under your name and on your mentor card. Replaces the one currently marked.'
-                : 'Shown under your name and on your mentor card.'
-              : 'Leave unticked for earlier degrees. They’ll still appear in your Education list.'}
+              ? EDUCATION_FIELD_COPY.currentHint[audience] +
+                (hasOther ? EDUCATION_FIELD_COPY.replaces : '')
+              : EDUCATION_FIELD_COPY.unticked}
           </span>
         </span>
       </label>

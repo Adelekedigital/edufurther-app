@@ -13,6 +13,7 @@ import {
   useEducationEdit,
   useOwnEducation,
 } from '@/lib/api/data/profileEntries';
+import type { EducationAudience } from '@/lib/copy/education';
 import { levelCodeFor } from '@/lib/utils/degrees';
 
 /** The modal frame ProfileItemModal asks its page for. */
@@ -33,6 +34,8 @@ type Props = {
   onClose: () => void;
   /** After the save landed and the lists refetched. */
   onSaved: (outcome: 'saved' | 'added') => void;
+  /** Whose degrees: the form mentions a mentor card only to a mentor. */
+  audience: EducationAudience;
 };
 
 /**
@@ -40,7 +43,7 @@ type Props = {
  * `education`), wherever they're listed: the Mentor Profile and Settings ›
  * Education. Mounted only while open.
  */
-export function EducationEditor({ userId, id, onClose, onSaved }: Props) {
+export function EducationEditor({ userId, id, onClose, onSaved, audience }: Props) {
   const edu = useEducationEdit(userId);
   // The owner's own list carries what the form needs (backend reply).
   const own = useOwnEducation(userId, true);
@@ -74,6 +77,7 @@ export function EducationEditor({ userId, id, onClose, onSaved }: Props) {
       initial={entry?.values ?? null}
       thisYear={thisYear}
       hasOther={own.entries.some((e) => e.values.current && e.id !== id)}
+      audience={audience}
       catalog={{
         status,
         onRetry: () => {

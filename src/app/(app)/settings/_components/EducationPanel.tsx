@@ -39,7 +39,10 @@ export function EducationPanel({ userId }: { userId: string }) {
   const [deleting, setDeleting] = useState<EducationRow | null>(null);
   const [toast, setToast] = useState<{ text: string; at: number } | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
-  const [refocus, setRefocus] = useState(0);
+  const addButton = useRef<HTMLButtonElement>(null);
+  // Where focus goes if the control that had it is gone: after an add, the
+  // header's Add (the empty state's is gone); after a delete, the heading.
+  const [refocus, setRefocus] = useState<{ to: 'add' | 'heading'; at: number } | null>(null);
 
   useEffect(() => {
     if (!toast) return;
@@ -48,16 +51,21 @@ export function EducationPanel({ userId }: { userId: string }) {
   }, [toast]);
 
   // The control that opened the modal may be gone (a deleted row, the empty
-  // state's Add): focus the list's heading rather than nowhere.
+  // state's Add): focus something near it rather than nowhere.
   useEffect(() => {
     if (!refocus) return;
     const at = document.activeElement;
-    if (!at || at === document.body) focusIfShown(heading.current);
+    if (at && at !== document.body) return;
+    if (refocus.to === 'add' && focusIfShown(addButton.current)) return;
+    focusIfShown(heading.current);
   }, [refocus]);
 
-  const say = (text: string) => {
-    setToast({ text, at: Date.now() });
-    setRefocus((n) => n + 1);
+  // Counts toasts: the same words twice still re-mount, so they're read again.
+  const said = useRef(0);
+  const say = (text: string, to: 'add' | 'heading') => {
+    const at = ++said.current;
+    setToast({ text, at });
+    setRefocus({ to, at });
   };
 
   return (
@@ -73,16 +81,20 @@ export function EducationPanel({ userId }: { userId: string }) {
         }}
         onRetry={own.retry}
         retrying={own.retrying}
+        errorKey={own.failures}
         headingRef={heading}
+        addRef={addButton}
       />
       {editing && (
         <EducationEditor
           userId={userId}
           id={editing.id}
+          audience="mentee"
           onClose={() => setEditing(null)}
           onSaved={(outcome) => {
             setEditing(null);
-            say(outcome === 'added' ? EDUCATION_COPY.added : EDUCATION_COPY.updated);
+            if (outcome === 'added') say(EDUCATION_COPY.added, 'add');
+            else say(EDUCATION_COPY.updated, 'heading');
           }}
         />
       )}
@@ -99,12 +111,12 @@ export function EducationPanel({ userId }: { userId: string }) {
           onConfirm={() =>
             edu.removeEducation(deleting.id, () => {
               setDeleting(null);
-              say(EDUCATION_COPY.deleted);
+              say(EDUCATION_COPY.deleted, 'heading');
             })
           }
         />
       )}
-      <Snackbar message={toast?.text ?? null} />
+      <Snackbar message={toast?.text ?? null} stamp={toast?.at} />
     </>
   );
 }
