@@ -1,4 +1,11 @@
 import { bookBlockedFor, canBookFor } from './bookBlocked';
+import { flags, resetFlags, viewers } from './lockedPage.harness';
+
+// The setup lock's flags, switchable per test (lockedPage.harness).
+vi.mock('@/lib/config/auth', async (orig) =>
+  (await import('./lockedPage.harness')).authFlags(await orig()),
+);
+afterEach(resetFlags);
 
 describe('bookBlockedFor', () => {
   it('guests and members can book (guests sign up inside the flow)', () => {
@@ -53,5 +60,17 @@ describe('canBookFor (product, 2026-09-29: mentors can’t book)', () => {
     expect(canBookFor(member(false))).toBe(true);
     expect(canBookFor({ kind: 'guest' })).toBe(true);
     expect(canBookFor({ kind: 'loading', signedIn: true })).toBe(true);
+  });
+
+  it('a mentor sign-up who hasn’t applied can’t either: one role per account', () => {
+    expect(canBookFor(viewers.mentorSignup)).toBe(false);
+    expect(canBookFor(viewers.mentorUnfinished)).toBe(false);
+    // An unfinished mentee still can (the flow offers Finish setup).
+    expect(canBookFor(viewers.menteeUnfinished)).toBe(true);
+  });
+
+  it('with mentor onboarding off, a mentor sign-up books as a mentee (no lock, no dead end)', () => {
+    flags.mentor = false;
+    expect(canBookFor(viewers.mentorSignup)).toBe(true);
   });
 });

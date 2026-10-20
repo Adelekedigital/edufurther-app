@@ -188,10 +188,14 @@ describe('accessFor: a state whose page is switched off applies nothing (no 404s
     });
   });
 
-  it('mentor onboarding off: a mentor sign-up falls back to the mentee setup', async () => {
-    const { accessFor } = await load(true, false);
-    const a = accessFor(member({ signedUpAsMentor: true, onboardingComplete: false }));
-    expect(a).toMatchObject({ state: 'menteeSetup', homeHref: '/onboarding' });
+  it('mentor onboarding off: a mentor sign-up gets no lock and no detour (no /home ↔ /onboarding loop)', async () => {
+    const { accessFor, memberHome } = await load(true, false);
+    const v = member({ signedUpAsMentor: true, onboardingComplete: false });
+    const a = accessFor(v);
+    expect(a).toMatchObject({ state: 'none', homeHref: null, setupPill: false });
+    // The chain ends at /home: never the mentee onboarding, which would send
+    // a mentor sign-up back to /home (NEW_MENTOR_HOME).
+    expect(memberHome(v)).toBe('/home');
     const off = await load(false, false);
     expect(
       off.accessFor(member({ signedUpAsMentor: true, onboardingComplete: false })),

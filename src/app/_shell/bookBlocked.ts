@@ -1,3 +1,4 @@
+import { accessFor } from '@/lib/utils/access';
 import type { Viewer } from '@/types/mentor';
 
 /**
@@ -23,9 +24,11 @@ export function bookBlockedFor(viewer: Viewer): string | null {
 /**
  * Whether this viewer may book at all. Mentors can't — a viewer with a mentor
  * profile, in any state (product, 2026-09-29): Explore and profiles show them
- * "View profile" where Book would be. Guests and mentees can (bookBlockedFor
- * still says why a moment's state holds them back).
+ * "View profile" where Book would be. Nor can a mentor sign-up who hasn't
+ * applied yet (the mentor setup lock): one role per account. Guests and
+ * mentees can (bookBlockedFor still says why a moment's state holds them back).
  */
 export function canBookFor(viewer: Viewer): boolean {
-  return !(viewer.kind === 'member' && viewer.isMentor);
+  if (viewer.kind !== 'member') return true;
+  return !viewer.isMentor && accessFor(viewer).state !== 'mentorSetup';
 }

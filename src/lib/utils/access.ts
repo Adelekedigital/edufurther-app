@@ -147,7 +147,9 @@ export function memberHome(
   }
   // Signed up as a mentor and hasn't started: mentor onboarding, not the
   // mentee's (owner, 2026-10-20: the role lives on the account, not the URL).
-  if (a.signedUpAsMentor && MENTOR_ONBOARDING_LIVE) return MENTOR_ONBOARDING;
+  // With it switched off, /home: never the mentee's onboarding, which sends a
+  // mentor sign-up back to /home (NEW_MENTOR_HOME), a loop.
+  if (a.signedUpAsMentor) return MENTOR_ONBOARDING_LIVE ? MENTOR_ONBOARDING : '/home';
   return ONBOARDING_LIVE && a.onboardingComplete === false ? ONBOARDING : '/home';
 }
 
@@ -166,9 +168,10 @@ export function accessFor(viewer: Viewer): Access {
     // Mentor-side only: a declined applicant who chose to be a mentee
     // (menteeByChoice) has isMentor false and follows the mentee rules.
     if (MENTOR_ONBOARDING_LIVE) state = MENTOR_STATES[viewer.mentorStage ?? 'approved'] ?? 'none';
-  } else if (viewer.signedUpAsMentor && MENTOR_ONBOARDING_LIVE) {
-    // A mentor sign-up who hasn't started: the mentor's setup, as memberHome.
-    state = 'mentorSetup';
+  } else if (viewer.signedUpAsMentor) {
+    // A mentor sign-up who hasn't started: the mentor's setup, as memberHome;
+    // with mentor onboarding off, no lock and no detour (nowhere to send them).
+    if (MENTOR_ONBOARDING_LIVE) state = 'mentorSetup';
   } else if (ONBOARDING_LIVE && viewer.onboardingComplete === false) {
     state = 'menteeSetup';
   }
