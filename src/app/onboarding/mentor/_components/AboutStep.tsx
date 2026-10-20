@@ -8,7 +8,11 @@ import { AiField, type AssistMode } from '@/components/molecules/AiField/AiField
 import { CountryPicker } from '@/components/molecules/CountryPicker/CountryPicker';
 import { FieldError } from '@/components/molecules/FieldError/FieldError';
 import { Notice } from '@/components/molecules/Notice/Notice';
-import { PhotoPicker } from '@/components/molecules/PhotoPicker/PhotoPicker';
+import {
+  ProfilePhoto,
+  type PhotoPerson,
+  type PhotoUpload,
+} from '@/components/molecules/ProfilePhoto/ProfilePhoto';
 import type { CatalogOption } from '@/lib/api/data/catalog';
 import { ABOUT_COPY as C, GAP_COPY } from '@/lib/copy/mentorOnboarding';
 import type { MentorGap } from '@/types/mentorOnboarding';
@@ -26,16 +30,8 @@ export const ABOUT_IDS = {
   linkedin: 'mo-linkedin',
 } as const;
 
-export type AboutPhoto = {
-  url: string | null;
-  initial: string;
-  name: string;
-  accept: string;
-  uploading: boolean;
-  error: string | null;
-  onFile: (file: File) => void;
-  onDismissError: () => void;
-};
+/** Their photo and the upload: no remove here (a photo is required to apply). */
+export type AboutPhoto = { person: PhotoPerson; upload: PhotoUpload };
 
 type AboutStepProps = {
   photo: AboutPhoto;
@@ -84,25 +80,12 @@ export function AboutStep({
       <section className={step.section}>
         <StepTitles title={C.title} sub={C.sub} headingRef={headingRef} />
         <div className={styles.photoRow}>
-          <div className={styles.photo}>
-            {photo.url ? (
-              // eslint-disable-next-line @next/next/no-img-element -- an uploaded photo of any size, from our API
-              <img src={photo.url} alt={photo.name} className={styles.img} />
-            ) : (
-              <span role="img" aria-label={photo.name} className={styles.initials}>
-                {photo.initial}
-              </span>
-            )}
-            <PhotoPicker
-              inputId={ABOUT_IDS.photo}
-              hasPhoto={!!photo.url}
-              accept={photo.accept}
-              uploading={photo.uploading}
-              onFile={photo.onFile}
-              error={photo.error}
-              onDismissError={photo.onDismissError}
-            />
-          </div>
+          <ProfilePhoto
+            size={88}
+            inputId={ABOUT_IDS.photo}
+            person={photo.person}
+            upload={photo.upload}
+          />
           <span className={styles.photoText}>
             <span className={styles.photoTitle}>{C.photo}</span>
             <span className={step.hint}>{C.photoHint}</span>

@@ -6,6 +6,7 @@ import { StepBars } from '@/components/atoms/StepBars/StepBars';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { FLOW_COPY, STEP_ORDER, stepLabel } from '@/lib/copy/mentorOnboarding';
+import { clampFocus, personCover } from '@/lib/utils/person';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { OnboardingFrame } from '../../_components/OnboardingFrame';
 import { Waiting } from '../../_components/Waiting';
@@ -55,7 +56,8 @@ export function MentorOnboardingScreen() {
     const last = form.step === 'hours';
     const showNeed = f.tried && (f.gaps.length > 0 || f.drafting);
     const has = (g: (typeof f.gaps)[number]) => f.gaps.includes(g);
-    const name = f.viewer.kind === 'member' ? f.viewer.firstName : '';
+    const member = f.viewer.kind === 'member' ? f.viewer : null;
+    const name = member?.firstName ?? '';
     body = (
       <main className={styles.flow}>
         <form
@@ -125,14 +127,14 @@ export function MentorOnboardingScreen() {
           {form.step === 'about' && (
             <AboutStep
               photo={{
-                url: a.photoUrl,
-                initial: f.viewer.kind === 'member' ? f.viewer.initials : '',
-                name,
-                accept: f.photo.accept,
-                uploading: f.photo.uploading,
-                error: f.photo.error,
-                onFile: f.photo.upload,
-                onDismissError: f.photo.dismissError,
+                person: {
+                  initials: member?.initials ?? '',
+                  cover: personCover(member?.id ?? '', member?.coverKey),
+                  src: a.photoUrl,
+                  focus: clampFocus(member?.avatarFocus),
+                  name,
+                },
+                upload: f.photo,
               }}
               countries={f.countries}
               originId={a.originId}
