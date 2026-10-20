@@ -1,0 +1,127 @@
+/* A person's cover (Mentor Profile.dc.html banner). The caller sets the height
+   and the corner radius, by prop or by --cover-height / --cover-radius. */
+.root {
+  position: relative;
+  height: var(--cover-height, 120px);
+  border-radius: var(--cover-radius, 0);
+}
+/* The colour, the image and the art, clipped to the cover. The tools sit
+   outside it, so the cover popover can overhang. */
+.clip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  /* The person's cover colour (lib/utils/cover.ts); a banner image covers it. */
+  background: var(--cover-bg, var(--blue-500));
+}
+.img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Art scales, one per caller, values from each caller's design:
+   lg Mentor Profile.dc.html header, md Mentor Settings.dc.html photo card,
+   sm Mentor Settings.dc.html `pvReal` (`pcArtIconsSm`). */
+.lg {
+  --art-right: var(--space-8);
+  --art-bottom: calc(var(--space-4) * -1);
+  --art-gap: var(--space-4);
+  --art-opacity: 0.14;
+  --art-0: 104px;
+  --art-1: 80px;
+  --art-2: 64px;
+  --art-single: 152px;
+  --art-single-right: var(--space-10);
+}
+.md {
+  --art-right: var(--space-8);
+  --art-bottom: var(--space-3);
+  --art-gap: var(--space-3);
+  --art-opacity: 0.16;
+  --art-0: 72px;
+  --art-1: 56px;
+  --art-2: 44px;
+  /* Not drawn at this size: scaled from the header's 152 in 140. */
+  --art-single: 120px;
+  --art-single-right: var(--space-8);
+}
+.sm {
+  --art-right: var(--space-3);
+  --art-bottom: var(--space-2);
+  --art-gap: var(--space-2);
+  --art-opacity: 0.16;
+  --art-0: 32px;
+  --art-1: 26px;
+  --art-2: 22px;
+  /* Not drawn at this size: scaled from the header's 152 in 140. */
+  --art-single: 64px;
+  --art-single-right: var(--space-3);
+}
+
+/* Cover art (Mentor Profile.dc.html `artPattern` / `artSingle` / `hasCoverArt`),
+   in the cover's ink, faint. The glyphs are the icon font's ligatures. */
+.pattern {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.22;
+  background-image: radial-gradient(var(--cover-ink) 1.5px, transparent 1.7px);
+  background-size: 18px 18px;
+  /* A mask reads alpha only: any opaque token works (no raw hex). */
+  mask-image: linear-gradient(90deg, transparent 30%, var(--ink-900) 85%);
+}
+.artWrap {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.single {
+  position: absolute;
+  right: var(--art-single-right);
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-icon);
+  font-size: var(--art-single);
+  line-height: 1;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 200;
+  color: var(--cover-ink);
+  opacity: var(--art-opacity);
+}
+.icons {
+  position: absolute;
+  right: var(--art-right);
+  bottom: var(--art-bottom);
+  display: flex;
+  align-items: flex-end;
+  gap: var(--art-gap);
+  color: var(--cover-ink);
+  opacity: var(--art-opacity);
+}
+.icon {
+  font-family: var(--font-icon);
+  font-size: var(--art-0);
+  line-height: 1;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 300;
+}
+.icon[data-i='1'] {
+  font-size: var(--art-1);
+}
+.icon[data-i='2'] {
+  font-size: var(--art-2);
+}
+
+/* Over the cover, outside its clip, so the cover popover can overhang it. */
+.tools {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 2;
+}
