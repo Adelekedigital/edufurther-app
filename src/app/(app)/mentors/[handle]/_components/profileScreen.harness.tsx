@@ -235,7 +235,7 @@ const appShellMock = () => ({
       kind: 'member',
       id: 'viewer-1',
       firstName: 'Ebun',
-      initial: 'E',
+      initials: 'E',
       isMentee: !h.viewerIsMentor,
       isApprovedMentor: h.viewerIsMentor,
       isMentor: h.viewerIsMentor,

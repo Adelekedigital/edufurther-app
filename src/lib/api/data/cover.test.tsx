@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider, onlineManager, useQuery } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixture';
+import { personCover } from '@/lib/utils/person';
 import type { MentorProfile } from '@/types/mentor';
 import {
   bannerErrorCopy,
@@ -97,6 +98,8 @@ describe('useCoverEdit', () => {
     const { result } = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
     act(() => result.current.save({ color: 'lilac' }));
     await waitFor(() => expect(read().cover.color).toBe('lilac'));
+    // The initials circle follows the cover at once.
+    expect(read().mentor.cover).toBe('lilac');
     expect(result.current.saveState).toBe('saving');
     expect(PATCH).toHaveBeenCalledWith('/api/v1/users/{user_id}/profile', {
       params: { path: { user_id: 'u1' } },
@@ -121,6 +124,8 @@ describe('useCoverEdit', () => {
     act(() => result.current.save({ art: 'icons' }));
     await waitFor(() => expect(result.current.saveState).toBe('error'));
     expect(read().cover).toEqual(fullProfile.cover);
+    // The initials colour goes back with it.
+    expect(read().mentor.cover).toBe(personCover(fullProfile.mentor.id, fullProfile.cover.color));
     expect(spy).toHaveBeenCalledWith({ queryKey: key });
   });
 

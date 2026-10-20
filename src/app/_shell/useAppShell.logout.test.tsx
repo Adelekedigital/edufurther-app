@@ -10,7 +10,7 @@ vi.mock('@/lib/api/data/viewer', () => ({
     kind: 'member',
     id: 'u1',
     firstName: 'Gbenga',
-    initial: 'G',
+    initials: 'G',
     isMentee: false,
     isApprovedMentor: true,
     isMentor: true,

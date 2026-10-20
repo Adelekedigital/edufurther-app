@@ -10,7 +10,7 @@ const member = (over: Partial<Member> = {}): Member => ({
   kind: 'member',
   id: 'u1',
   firstName: 'Gbenga',
-  initial: 'G',
+  initials: 'G',
   isMentee: false,
   isApprovedMentor: true,
   isMentor: true,

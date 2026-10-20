@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
+import { personInitials } from '@/lib/utils/person';
 import type { AppError, Review, ReviewPrompt } from '@/types/mentor';
 import { ApiError, apiError, normaliseError } from './errors';
 import { api } from './http';
@@ -28,7 +29,7 @@ export function toReview(r: MentorReviewRead, guest = false): Review {
   return {
     id: r.id,
     author: deleted ? 'Deleted user' : last ? `${first} ${last}.` : first,
-    initials: deleted ? '' : (first[0]!.toUpperCase() + last).slice(0, 2),
+    initials: deleted ? '' : personInitials(first, last),
     institution: deleted ? null : r.author_institution?.trim() || null,
     createdAt: r.created_at,
     rating: Math.min(5, Math.max(1, Math.round(r.session_value))),

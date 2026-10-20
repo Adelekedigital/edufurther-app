@@ -11,7 +11,7 @@ import {
   respondDeadline,
   wantsLapsed,
 } from '@/lib/utils/bookings';
-import { coverFor } from '@/lib/utils/cover';
+import { clampFocus, personCover, personInitials } from '@/lib/utils/person';
 import { dayKey } from '@/lib/utils/slots';
 import type { Booking, BookingParty, BookingStatus } from '@/types/booking';
 import type { AppError, Remote } from '@/types/mentor';
@@ -64,12 +64,13 @@ export function toParty(p: PartyRead): BookingParty {
     // A live account with only a surname keeps it: the row says "Waiting for
     // Okafor to confirm", not "Waiting for Deleted user".
     firstName: p.deleted ? 'Deleted user' : first || name || 'Deleted user',
-    initials: p.deleted ? '' : `${first[0] ?? ''}${last[0] ?? ''}`.toUpperCase(),
+    initials: p.deleted ? '' : personInitials(first, last),
     avatarUrl: p.deleted ? null : (p.avatar_url ?? null),
-    avatarFocus: p.deleted ? null : (p.avatar_focus ?? null),
+    avatarFocus: p.deleted ? null : clampFocus(p.avatar_focus),
     deleted: p.deleted ?? false,
     timeZone: p.deleted ? null : (p.timezone ?? null),
-    cover: coverFor(p.id),
+    // No cover_color on PartyRead yet (backend to add): the derived cover.
+    cover: personCover(p.id),
     // Redacted here like the name and the avatar, not merely expected to
     // arrive null: every other identifying field on a deleted account is
     // dropped locally rather than trusted to the server.

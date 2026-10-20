@@ -38,7 +38,14 @@ export function MentorRow({ mentor: m, timeZone, onBook }: MentorRowProps) {
   return (
     <div className={styles.row}>
       <div className={styles.who}>
-        <Avatar size="lg" tone={m.tone} initials={m.initials} src={m.avatarUrl} focus={m.avatarFocus} alt="" />
+        <Avatar
+          size="lg"
+          tone={m.cover}
+          initials={m.initials}
+          src={m.avatarUrl}
+          focus={m.avatarFocus}
+          alt=""
+        />
         <span className={styles.lines}>
           <span className={styles.name}>{m.name}</span>
           {degreeLine && <span className={styles.sub}>{degreeLine}</span>}

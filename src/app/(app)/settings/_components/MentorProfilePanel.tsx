@@ -1,5 +1,6 @@
 'use client';
 
+import { personInitials } from '@/lib/utils/person';
 import Link from 'next/link';
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
@@ -28,7 +29,8 @@ import {
   type MentorProfileGap,
 } from '@/lib/copy/mentorSettings';
 import { SAVE_COPY } from '@/lib/copy/settings';
-import { coverFor, coverVars, topicIcon } from '@/lib/utils/cover';
+import { coverVars, topicIcon } from '@/lib/utils/cover';
+import { personCover } from '@/lib/utils/person';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { checkFullName, NAME_PROBLEM_COPY, tidyName } from '@/lib/utils/name';
 import { useRequiredFields } from '@/lib/utils/useRequiredFields';
@@ -187,7 +189,7 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
     if (status === 'loading' || !profile || !draft || !base) return <MentorProfileSkeleton />;
 
     const nameProblem = checkFullName(draft.name);
-    const coverKey = profile.cover.color ?? coverFor(profile.mentor.id);
+    const coverKey = personCover(profile.mentor.id, profile.cover.color);
     const { bg, ink } = coverVars(coverKey);
     const artIcons =
       profile.cover.art === 'icons'
@@ -210,7 +212,10 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
       const hit = common.results.find((r) => r.label === name);
       return hit ? [{ id: hit.id, label: hit.label }] : [];
     });
-    const initial = (draft.name.trim() || profile.mentor.name)[0]?.toUpperCase() ?? '?';
+    // The draft name, so the circle follows typing; the one initials rule (lib/utils/person).
+    const [firstName = '', ...rest] = draft.name.trim().split(/\s+/);
+    const initial =
+      personInitials(firstName, rest.at(-1), profile.mentor.name) || profile.mentor.initials;
 
     return (
       <>

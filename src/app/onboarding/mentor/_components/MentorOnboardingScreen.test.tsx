@@ -136,7 +136,7 @@ beforeEach(() => {
     kind: 'member',
     id: 'u1',
     firstName: 'Gbenga',
-    initial: 'G',
+    initials: 'G',
     isMentee: false,
     isApprovedMentor: false,
     isMentor: false,

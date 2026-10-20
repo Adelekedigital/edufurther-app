@@ -1,7 +1,7 @@
 'use client';
 
 import { useMentorProfile } from '@/lib/api/data/profile';
-import type { AvatarTone } from '@/types/mentor';
+import type { CoverKey } from '@/lib/utils/cover';
 import { bookingMentorHandle } from './booking';
 
 export type BookingContext = {
@@ -10,7 +10,7 @@ export type BookingContext = {
   /** "Gbenga": as the design's toast names them. */
   firstName: string;
   initials: string;
-  tone: AvatarTone;
+  cover: CoverKey;
   photoUrl: string | null;
   photoFocus: { x: number; y: number } | null;
 };
@@ -31,7 +31,7 @@ export function useBookingContext(next: string | null): BookingContext | null {
     mentorName: last ? `${first} ${last[0]!.toUpperCase()}.` : first,
     firstName: first,
     initials: mentor.initials,
-    tone: mentor.tone,
+    cover: mentor.cover,
     photoUrl: mentor.photoUrl,
     photoFocus: mentor.photoFocus,
   };

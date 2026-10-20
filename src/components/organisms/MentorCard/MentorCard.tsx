@@ -90,7 +90,7 @@ export function MentorCard({
   // The face position (backend avatar_focus) drives the crop via CSS custom
   // properties; without it the CSS falls back to the design's 50% 25%.
   const tone = {
-    '--photo-bg': `var(--avatar-tone-${m.tone})`,
+    '--photo-bg': `var(--cover-${m.cover}-ink)`,
     ...(m.photoFocus && {
       '--photo-x': `${(m.photoFocus.x * 100).toFixed(1)}%`,
       '--photo-y': `${(m.photoFocus.y * 100).toFixed(1)}%`,
@@ -132,7 +132,7 @@ export function MentorCard({
         {compact && (
           <Avatar
             size="xl"
-            tone={m.tone}
+            tone={m.cover}
             initials={m.initials}
             src={m.photoUrl}
             alt=""

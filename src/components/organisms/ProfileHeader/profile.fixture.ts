@@ -44,7 +44,7 @@ export const fullProfile: MentorProfile = {
     initials: 'GE',
     photoUrl: null,
     photoFocus: null,
-    tone: 2,
+    cover: 'rose',
     degreeLine: 'PhD, Sociology',
     institution: 'Mississippi State University',
     completedSessions: 51,

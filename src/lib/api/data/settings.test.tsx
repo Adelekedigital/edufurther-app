@@ -61,13 +61,13 @@ describe('toMenteeProfile', () => {
       languages: [{ id: 'en', label: 'English' }],
       bio: 'Hi',
       bioDrafted: true,
-      initial: 'A',
+      initials: 'AO',
     });
   });
 
   it('nothing saved yet: blanks, and the email’s initial', () => {
     const p = toMenteeProfile({ email: 'zed@example.com', profile: null, languages: [] });
-    expect(p).toMatchObject({ name: '', countryId: '', languages: [], bio: '', initial: 'Z' });
+    expect(p).toMatchObject({ name: '', countryId: '', languages: [], bio: '', initials: 'Z' });
   });
 
   it('Login and security: the email, whether it is verified, and upcoming sessions on both sides', () => {
@@ -155,7 +155,7 @@ describe('useSaveMenteeProfile', () => {
   const cached: MenteeProfile = {
     ...values,
     photoUrl: null,
-    initial: 'A',
+    initials: 'A',
     email: 'amaka@example.com',
     emailVerified: true,
     upcomingCount: 0,

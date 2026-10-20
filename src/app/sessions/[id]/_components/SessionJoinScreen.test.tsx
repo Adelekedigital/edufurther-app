@@ -105,7 +105,7 @@ const MEMBER: Extract<Viewer, { kind: 'member' }> = {
   kind: 'member',
   id: 'me',
   firstName: 'Gbenga',
-  initial: 'G',
+  initials: 'G',
   isMentee: false,
   isApprovedMentor: true,
   isMentor: true,

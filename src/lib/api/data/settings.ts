@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import type { MenteeProfileValues } from '@/types/settings';
 import { SAVE_COPY } from '@/lib/copy/settings';
+import { personInitials } from '@/lib/utils/person';
 import { countriesQuery, type CatalogOption } from './catalog';
 import { apiError, normaliseError, retryOnce } from './errors';
 import { api } from './http';
@@ -13,7 +14,8 @@ import { aboutBody } from './profileEdit';
 /** What Settings opens with (GET /me): Profile's values, and Login and security's account facts. */
 export type MenteeProfile = MenteeProfileValues & {
   photoUrl: string | null;
-  initial: string;
+  /** Two letters, first and last name; the email's first letter with neither. */
+  initials: string;
   email: string;
   emailVerified: boolean;
   /** Confirmed sessions not yet started, on either side: what deleting the account cancels. */
@@ -50,7 +52,7 @@ export function toMenteeProfile(
     bio: me.profile?.about_me ?? '',
     bioDrafted: !!me.profile?.about_me_drafted_at && !!me.profile?.about_me,
     photoUrl: me.profile?.avatar_url ?? null,
-    initial: (name || me.email)[0]?.toUpperCase() ?? '?',
+    initials: personInitials(me.first_name, me.last_name, me.email),
     email: me.email,
     emailVerified: !!me.email_verified_at,
     upcomingCount:

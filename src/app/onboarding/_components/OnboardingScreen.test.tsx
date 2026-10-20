@@ -49,7 +49,7 @@ const ada = {
   initials: 'AO',
   photoUrl: null,
   photoFocus: null,
-  tone: 1,
+  cover: 'sky',
   degreeLine: 'MSc, Law',
   institution: 'University of London',
   completedSessions: 5,
@@ -331,7 +331,9 @@ describe('OnboardingScreen', () => {
         'You’re already set up. Taking you back to your booking…',
       );
       act(() => vi.advanceTimersByTime(1200));
-      expect(replace).toHaveBeenCalledWith('/mentors/ada-obi?book=st-1&at=2026-10-20T12%3A00%3A00Z');
+      expect(replace).toHaveBeenCalledWith(
+        '/mentors/ada-obi?book=st-1&at=2026-10-20T12%3A00%3A00Z',
+      );
     } finally {
       vi.useRealTimers();
     }
@@ -390,7 +392,9 @@ describe('OnboardingScreen', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Back to booking' }));
       expect(save).toHaveBeenCalledWith(expect.objectContaining({ step: 'plans' }));
       // No matches on this path: back to the mentor, the booking reopened.
-      expect(replace).toHaveBeenCalledWith('/mentors/ada-obi?book=st-1&at=2026-10-20T12%3A00%3A00Z');
+      expect(replace).toHaveBeenCalledWith(
+        '/mentors/ada-obi?book=st-1&at=2026-10-20T12%3A00%3A00Z',
+      );
       expect(screen.queryByRole('heading', { name: /all set to book/ })).toBeNull();
       // The booking will say the credit came.
       expect(JSON.parse(window.sessionStorage.getItem('ef-booking-draft:u1')!)).toMatchObject({

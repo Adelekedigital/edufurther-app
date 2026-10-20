@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { COVER_KEYS } from '@/lib/utils/cover';
 import { Avatar } from './Avatar/Avatar';
 import { Badge } from './Badge/Badge';
 import { Button } from './Button/Button';
@@ -127,7 +128,7 @@ export const ProgressCircles: Story = {
 export const TagsAndIcons: Story = {
   render: () => (
     <div style={col}>
-      <div style={{ ...row, background: 'var(--avatar-tone-1)', padding: 16 }}>
+      <div style={{ ...row, background: 'var(--cover-sage-ink)', padding: 16 }}>
         <Tag tone="on-photo">Top-rated</Tag>
         <Tag tone="on-photo">New mentor</Tag>
       </div>
@@ -175,10 +176,10 @@ export const Stars: Story = {
 export const Avatars: Story = {
   render: () => (
     <div style={row}>
-      {([1, 2, 3, 4, 5, 6] as const).map((t) => (
+      {COVER_KEYS.map((t) => (
         <Avatar key={t} tone={t} initials="OS" alt="Olajuwon Samuel" size="xl" />
       ))}
-      <Avatar tone={1} initials="OS" alt="" size="sm" />
+      <Avatar tone="sky" initials="OS" alt="" size="sm" />
     </div>
   ),
 };

@@ -16,7 +16,7 @@ const mentee = (over: Partial<Member>): Member => ({
   kind: 'member',
   id: 'u1',
   firstName: 'Ada',
-  initial: 'A',
+  initials: 'A',
   isMentee: true,
   isApprovedMentor: false,
   isMentor: false,

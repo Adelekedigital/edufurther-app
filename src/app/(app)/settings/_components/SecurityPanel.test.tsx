@@ -40,7 +40,7 @@ const profile: MenteeProfile = {
   bio: '',
   bioDrafted: false,
   photoUrl: null,
-  initial: 'A',
+  initials: 'A',
   email: 'amara@example.com',
   emailVerified: true,
   upcomingCount: 1,

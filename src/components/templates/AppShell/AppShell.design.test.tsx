@@ -19,7 +19,7 @@ const REVIEW = accessFor({
   kind: 'member',
   id: 'u1',
   firstName: 'Ada',
-  initial: 'A',
+  initials: 'A',
   isMentee: false,
   isApprovedMentor: false,
   isMentor: true,

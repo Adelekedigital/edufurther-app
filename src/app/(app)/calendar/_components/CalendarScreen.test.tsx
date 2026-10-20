@@ -152,7 +152,7 @@ const mentor = (over: Partial<Extract<Viewer, { kind: 'member' }>> = {}): Viewer
   kind: 'member',
   id: 'm1',
   firstName: 'Gbenga',
-  initial: 'G',
+  initials: 'G',
   isMentee: false,
   isApprovedMentor: true,
   isMentor: true,
@@ -851,7 +851,10 @@ describe('the setup lock: /calendar opened by URL (PRD "App shell and access")',
   });
 
   it.each([
-    ['a mentor in review (only Bookings locks)', { isApprovedMentor: false, mentorStage: 'pending' }],
+    [
+      'a mentor in review (only Bookings locks)',
+      { isApprovedMentor: false, mentorStage: 'pending' },
+    ],
     ['an approved mentor', { mentorStage: 'approved', mentorApprovedSeen: true }],
     [
       'an approved mentor who hasn’t seen the approved screen',

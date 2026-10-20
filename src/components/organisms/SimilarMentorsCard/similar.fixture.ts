@@ -9,7 +9,7 @@ const base: Mentor = {
   initials: '',
   photoUrl: null,
   photoFocus: null,
-  tone: 1,
+  cover: 'sky',
   degreeLine: null,
   institution: null,
   completedSessions: 31,

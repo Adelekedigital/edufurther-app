@@ -5,7 +5,7 @@ import type { AccountMenuItem } from '@/components/molecules/AccountMenu/Account
 import { useSignOut } from '@/lib/api/data/auth';
 import { useViewer } from '@/lib/api/data/viewer';
 import { accessFor, setupCredits } from '@/lib/utils/access';
-import { coverFor } from '@/lib/utils/cover';
+import { personCover } from '@/lib/utils/person';
 import { creditsView } from '@/lib/utils/credits';
 import { hasUnsavedChanges } from '@/lib/utils/leaveGuard';
 import { canBookFor } from './bookBlocked';
@@ -121,11 +121,11 @@ export function useAppShell() {
       chrome === 'member'
         ? {
             avatar: {
-              initial: member?.initial ?? '',
+              initial: member?.initials ?? '',
               src: member?.avatarUrl ?? null,
               focus: member?.avatarFocus ?? null,
               // Same colour as their profile's banner and photo circle.
-              cover: member?.coverKey ?? coverFor(member?.id ?? ''),
+              cover: personCover(member?.id ?? '', member?.coverKey),
             },
             items,
             /** Mentees only: their monthly credits (AppShell.dc.html creditsIn=both). */

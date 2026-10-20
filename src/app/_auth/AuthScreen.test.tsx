@@ -20,7 +20,7 @@ const gbenga = (last: string) => ({
   mentorName: last ? `Gbenga ${last[0]}.` : 'Gbenga',
   firstName: 'Gbenga',
   initials: 'GE',
-  tone: 3,
+  cover: 'sand',
   photoUrl: null,
   photoFocus: null,
 });

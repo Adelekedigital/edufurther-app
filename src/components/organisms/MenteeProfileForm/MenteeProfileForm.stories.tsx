@@ -1,3 +1,4 @@
+import { personInitials } from '@/lib/utils/person';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
@@ -53,7 +54,8 @@ const FILLED: MenteeProfileValues = {
 
 const photo = (name: string) => ({
   url: null,
-  initial: name.trim().charAt(0).toUpperCase() || '?',
+  initial:
+    personInitials(name.trim().split(/\s+/)[0], name.trim().split(/\s+/).slice(1).at(-1)) || '?',
   name,
   accept: 'image/jpeg,image/png',
   uploading: false,

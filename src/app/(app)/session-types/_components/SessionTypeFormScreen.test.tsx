@@ -2,12 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Viewer } from '@/types/mentor';
 import { SessionTypeFormScreen } from './SessionTypeFormScreen';
-import {
-  expectLockedPage,
-  explainer,
-  resetFlags,
-  viewers,
-} from '@/app/_shell/lockedPage.harness';
+import { expectLockedPage, explainer, resetFlags, viewers } from '@/app/_shell/lockedPage.harness';
 
 const push = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -19,7 +14,7 @@ const mentor: Viewer = {
   kind: 'member',
   id: 'm1',
   firstName: 'Gbenga',
-  initial: 'G',
+  initials: 'G',
   isMentee: false,
   isApprovedMentor: true,
   isMentor: true,
@@ -230,7 +225,9 @@ describe('SessionTypeFormScreen', () => {
     await user.click(next(/Continue to intake questions/));
     await user.click(screen.getByRole('button', { name: 'Edit question 2' }));
     await user.click(screen.getByRole('button', { name: 'Delete question 1' }));
-    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
     const text = screen.getByRole('textbox', { name: 'Question' });
     await user.clear(text);
     await user.type(text, 'Upload your latest draft');
@@ -535,7 +532,9 @@ describe('SessionTypeFormScreen — review of #60', () => {
     await user.click(screen.getByRole('button', { name: 'Back to session types' }));
     // Still an unsaved change: it asks before leaving.
     expect(push).not.toHaveBeenCalled();
-    expect(screen.getByRole('alertdialog', { name: 'Discard this session type?' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('alertdialog', { name: 'Discard this session type?' }),
+    ).toBeInTheDocument();
   });
 
   it('new hours overlapping hours kept in another zone can’t be saved, and it says which zone', async () => {

@@ -99,7 +99,7 @@ export function PhoneBody(p: {
             aria-expanded={s.open}
             onClick={s.onToggle}
           >
-            <Avatar size="md" initials={m.initials} tone={m.tone} src={m.photoUrl} alt="" />
+            <Avatar size="md" initials={m.initials} tone={m.cover} src={m.photoUrl} alt="" />
             <span className={styles.summaryText}>
               <span className={styles.summaryName}>{s.session.name}</span>
               <span className={styles.summaryMeta}>

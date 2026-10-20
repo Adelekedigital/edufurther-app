@@ -62,15 +62,6 @@
   /* Rating star (design literal #f3a218; DS ships star.svg with no token). */
   --rating-star: #f3a218;
 
-  /* Initials placeholder grounds for mentors with no photo. Read off the
-     design's sample `tone` values; white initials pass 4.5:1 on each. */
-  --avatar-tone-1: #2f6f5e;
-  --avatar-tone-2: #7a2e3a;
-  --avatar-tone-3: #8a5a12;
-  --avatar-tone-4: #1f5c99;
-  --avatar-tone-5: #5b3a8c;
-  --avatar-tone-6: #0b6b2b;
-
   /* Topic chip height (the old compact button size; chips aren't buttons). */
   --button-compact-h: 32px;
   --touch-target-min: 44px;
