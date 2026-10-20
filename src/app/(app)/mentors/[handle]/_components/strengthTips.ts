@@ -1,6 +1,6 @@
 import type { StrengthTip } from '@/components/organisms/ProfileStrengthCard/ProfileStrengthCard';
 import type { CompletenessCode } from '@/types/mentor';
-import type { ItemTarget } from './OwnerItemEditor';
+import type { ItemTarget } from '@/app/_profile/OwnerItemEditor';
 
 type TipActions = {
   hoursHref: string;

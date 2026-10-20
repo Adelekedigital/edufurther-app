@@ -13,13 +13,15 @@ export const SETTINGS_COPY = {
   retry: 'Try again',
 } as const;
 
-export type SettingsTab = 'booking' | 'profile' | 'goals' | 'education' | 'security';
+export type SettingsTab = 'booking' | 'profile' | 'expertise' | 'goals' | 'education' | 'security';
 
 /** Tab order and names (design `tabItems`, menteeTabs=split). */
 export const TAB_LABELS: Record<SettingsTab, string> = {
   // Mentor only (Mentor Settings.dc.html `tabItems`).
   booking: 'Booking rules',
   profile: 'Profile',
+  // Mentor only.
+  expertise: 'Expertise',
   goals: 'Goals',
   education: 'Education',
   security: 'Login and security',

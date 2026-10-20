@@ -100,7 +100,8 @@ export function LanguageChips({
   };
   const pick = (l: LanguageOption | undefined) => {
     if (!l) return;
-    if (!isOn(l)) onToggle(l);
+    // At the limit (a chip filled it while the field was open): nothing more is added.
+    if (!isOn(l) && !full) onToggle(l);
     close();
   };
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {

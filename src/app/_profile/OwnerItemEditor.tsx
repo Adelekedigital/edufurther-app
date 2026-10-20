@@ -31,7 +31,8 @@ type Props = {
 type EditorProps = Omit<Props, 'target'>;
 
 /**
- * The owner's item editors (ProfileItemModal.dc.html), each with only the
+ * The owner's item editors (ProfileItemModal.dc.html), shared by the Mentor
+ * Profile and Settings › Expertise, each with only the
  * data it needs. Mounted only while open, so nothing is fetched until then.
  * The profile's values are taken when it opens: a refetch meanwhile can't
  * change what counts as "changed" (as for the intro, review of #78).

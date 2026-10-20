@@ -25,6 +25,8 @@ type Props = {
   headingRef?: RefObject<HTMLHeadingElement | null>;
   /** The header's "Add education", for focus after the empty state's Add is gone. */
   addRef?: RefObject<HTMLButtonElement | null>;
+  /** Whose list: a mentor's words differ (Mentor Settings.dc.html); a mentee's by default. */
+  copy?: Partial<Record<'sub' | 'emptyTitle' | 'emptyBody', string>>;
 };
 
 /**
@@ -45,7 +47,9 @@ export function EducationList({
   errorKey = 0,
   headingRef,
   addRef,
+  copy,
 }: Props) {
+  const words = { ...EDUCATION_COPY, ...copy };
   const headingId = useId();
   const filled = status === 'ready' && rows.length > 0;
   return (
@@ -56,7 +60,7 @@ export function EducationList({
             <h2 id={headingId} ref={headingRef} tabIndex={-1} className={styles.title}>
               {EDUCATION_COPY.title}
             </h2>
-            <span className={styles.sub}>{EDUCATION_COPY.sub}</span>
+            <span className={styles.sub}>{words.sub}</span>
           </div>
           {filled && (
             <Button ref={addRef} variant="secondary-outlined" size="medium" onClick={onAdd}>
@@ -106,8 +110,8 @@ export function EducationList({
               illustration="forms"
               size={120}
               headingLevel={3}
-              title={EDUCATION_COPY.emptyTitle}
-              description={EDUCATION_COPY.emptyBody}
+              title={words.emptyTitle}
+              description={words.emptyBody}
             />
             <Button variant="primary" size="medium" onClick={onAdd}>
               {EDUCATION_COPY.add}

@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixture';
 import { addAward } from './profileScreen.harness';
-import { OwnerItemEditor } from './OwnerItemEditor';
+import { OwnerItemEditor } from '@/app/_profile/OwnerItemEditor';
 
 vi.mock('@/lib/api/data/profileEntries', async () =>
   (await import('./profileScreen.harness')).mocks.profileEntries(),

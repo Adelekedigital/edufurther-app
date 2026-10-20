@@ -127,3 +127,50 @@ export function previewPlace(origin: string | null, study: string | null): strin
     .replace('studied in United States', 'studied in the US');
   return place || MENTOR_PROFILE_COPY.previewPlaceEmpty;
 }
+
+/** Settings › Expertise for a mentor (Mentor Settings.dc.html `isExpertise`, expertiseEdit=modal). */
+export const MENTOR_EXPERTISE_COPY = {
+  topicsTitle: 'What you help with',
+  topicsSub: 'Mentees search by these topics. Pick the ones you’d confidently run a session on.',
+  editTopics: 'Edit',
+  editTopicsLabel: 'Edit topics',
+  topicsEmptyTitle: 'Mentees can’t find you by topic yet',
+  topicsEmptyBody:
+    'Mentees search by what they need help with. Add at least one topic to show up in their results.',
+  chooseTopics: 'Choose topics',
+  topicsUpdated: 'Topics updated',
+  guideTitle: 'Where can you guide mentees to?',
+  guideSub: 'Places you studied, applied to or know the process for.',
+  /** The chip group's name: the card's heading already says the rest. */
+  guideGroupLabel: 'Countries',
+  addCountry: 'Add another country',
+  addCountryPlaceholder: 'For example, Japan',
+  add: 'Add',
+  cancel: 'Cancel',
+  searchingCountries: 'Searching…',
+  countrySearchFailed: 'We couldn’t load countries. Try again.',
+  noCountryMatch: (q: string) => `No countries match “${q}”.`,
+  guideSaveBar: 'Unsaved changes to your countries',
+  guideSaved: 'Countries saved',
+  guideSaveFailed: 'We couldn’t save your countries. Your changes are still here. Try again.',
+  educationSub:
+    'Degrees you’ve completed or are working on. Mentees filter by degree level and school.',
+  educationEmptyTitle: 'Add where you’ve studied',
+  educationEmptyBody:
+    'Mentees filter by degree level and school, so your degrees help them find you.',
+  awardsTitle: 'Scholarships and awards',
+  awardsSub: 'Funding you’ve won shows mentees you can help them win it too.',
+  addAward: 'Add award',
+  awardsEmptyTitle: 'Add the funding you’ve won',
+  awardsEmptyBody:
+    'Scholarships, assistantships and fellowships show mentees you’ve done what they’re trying to do.',
+  addFirstAward: 'Add your first award',
+  funding: { full: 'Fully funded', partial: 'Partial funding' },
+  editAward: (title: string) => `Edit ${title}`,
+  deleteAward: (title: string) => `Delete ${title}`,
+  awardAdded: 'Award added',
+  awardUpdated: 'Award updated',
+  awardDeleted: 'Award deleted',
+  loadError: 'We couldn’t load this. Check your connection and try again.',
+  retry: 'Try again',
+} as const;

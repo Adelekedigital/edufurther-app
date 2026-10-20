@@ -3,7 +3,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { SAVE_COPY } from '@/lib/copy/settings';
 import type { MentorProfileValues } from '@/types/mentorSettings';
-import { MentorProfileSaveError, useMentorSettings, useSaveMentorProfile } from './mentorSettings';
+import {
+  MentorProfileSaveError,
+  useGuideCountries,
+  useMentorSettings,
+  useSaveGuideCountries,
+  useSaveMentorProfile,
+} from './mentorSettings';
 
 const GET = vi.fn();
 const PATCH = vi.fn();
@@ -119,5 +125,57 @@ describe('useSaveMentorProfile', () => {
     });
     expect((caught as MentorProfileSaveError).saved).toEqual([]);
     expect((caught as MentorProfileSaveError).copy).toBe(SAVE_COPY.profileFailed);
+  });
+});
+
+describe('guide-to countries', () => {
+  it('reads them in the mentor’s order, by catalog id and name', async () => {
+    GET.mockResolvedValue({
+      data: {
+        guide_countries: [
+          { id: 'us', code: 'US', display_name: 'United States' },
+          { id: 'jp', code: 'JP', display_name: 'Japan' },
+        ],
+      },
+      response: { ok: true, status: 200 },
+    });
+    const { result } = renderHook(() => useGuideCountries('u1'), { wrapper: wrap() });
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(result.current.countries).toEqual([
+      { id: 'us', label: 'United States' },
+      { id: 'jp', label: 'Japan' },
+    ]);
+  });
+
+  it('none saved reads as an empty list', async () => {
+    GET.mockResolvedValue({ data: {}, response: { ok: true, status: 200 } });
+    const { result } = renderHook(() => useGuideCountries('u1'), { wrapper: wrap() });
+    await waitFor(() => expect(result.current.countries).toEqual([]));
+  });
+
+  it('saves the whole list as ids, in order', async () => {
+    PATCH.mockResolvedValue(ok);
+    const { result } = renderHook(() => useSaveGuideCountries('u1'), { wrapper: wrap() });
+    await act(() =>
+      result.current.mutateAsync([
+        { id: 'jp', label: 'Japan' },
+        { id: 'us', label: 'United States' },
+      ]),
+    );
+    expect(PATCH.mock.calls[0]![1]).toMatchObject({ body: { guide_country_ids: ['jp', 'us'] } });
+  });
+
+  it('a refused save is ours to word', async () => {
+    PATCH.mockResolvedValue(fail(422));
+    const { result } = renderHook(() => useSaveGuideCountries('u1'), { wrapper: wrap() });
+    let caught: unknown;
+    await act(async () => {
+      await result.current.mutateAsync([]).catch((e) => {
+        caught = e;
+      });
+    });
+    expect((caught as { copy: string }).copy).toBe(
+      'We couldn’t save your countries. Your changes are still here. Try again.',
+    );
   });
 });
