@@ -220,19 +220,19 @@
     width: var(--photo-size, 112px);
     height: var(--photo-size, 112px);
   }
-  /* A compact photo's wrapper is the photo itself (Settings' 72px): the badge
-     stays flush with its corner, not where a 112px photo's would be. */
+  /* A compact photo (under 96px): the badge flush with the photo's corner,
+     measured from its top-left like the large one, so a note under the photo
+     can widen the frame. 22px + 11px each way is the 44px target. */
   .compactSpot {
-    top: auto;
-    left: auto;
-    right: 0;
-    bottom: 0;
+    top: calc(var(--photo-size, 72px) - 22px);
+    left: calc(var(--photo-size, 72px) - 22px);
   }
   .compactBusy {
-    right: 0;
-    bottom: 0;
-    width: auto;
-    height: auto;
+    width: var(--photo-size, 72px);
+    height: var(--photo-size, 72px);
+  }
+  .compactBadge::after {
+    inset: -11px;
   }
 }
 

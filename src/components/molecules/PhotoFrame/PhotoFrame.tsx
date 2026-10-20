@@ -1,9 +1,10 @@
 'use client';
 /* eslint-disable @next/next/no-img-element -- remote avatar host not yet fixed (Supabase storage); see design-divergence.md */
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { type CSSProperties, type ReactNode } from 'react';
 import Link from 'next/link';
 import type { CoverKey } from '@/lib/utils/cover';
 import { cx } from '@/lib/utils/cx';
+import { useImageFallback } from '@/lib/utils/useImageFallback';
 import { focusVars, type PhotoFocus } from '@/lib/utils/person';
 import styles from './PhotoFrame.module.css';
 
@@ -52,9 +53,8 @@ export function PhotoFrame({
   className,
   children,
 }: PhotoFrameProps) {
-  // The src that failed, not a flag: a new src gets its own try without an effect.
-  const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  const photo = src && src !== failedSrc ? src : null;
+  // The one photo-fallback rule, as Avatar's.
+  const { photo, onError, ref } = useImageFallback(src);
   const style = { '--frame-bg': `var(--cover-${cover}-ink)`, ...focusVars(focus) } as CSSProperties;
   const inner = (
     <>
@@ -66,11 +66,8 @@ export function PhotoFrame({
             alt={alt}
             className={styles.img}
             loading={lazy ? 'lazy' : undefined}
-            onError={() => setFailedSrc(photo)}
-            // An image that broke before hydration fired its error before React listened.
-            ref={(el) => {
-              if (el?.complete && el.naturalWidth === 0) setFailedSrc(photo);
-            }}
+            onError={onError}
+            ref={ref}
           />
           {scrim && <span className={styles.scrim} />}
         </>

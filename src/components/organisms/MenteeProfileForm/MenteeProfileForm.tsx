@@ -9,7 +9,11 @@ import {
   LanguageChips,
   type LanguageOption,
 } from '@/components/molecules/LanguageChips/LanguageChips';
-import { PhotoPicker } from '@/components/molecules/PhotoPicker/PhotoPicker';
+import {
+  ProfilePhoto,
+  type PhotoPerson,
+  type PhotoUpload,
+} from '@/components/molecules/ProfilePhoto/ProfilePhoto';
 import { PROFILE_COPY as C, PROFILE_ERRORS, type ProfileGap } from '@/lib/copy/settings';
 import type { MenteeProfileValues } from '@/types/settings';
 import styles from './MenteeProfileForm.module.css';
@@ -19,20 +23,11 @@ export const BIO_MAX = 1500;
 
 export type { MenteeProfileValues };
 
+/** The photo card: whose photo (its name is the card's own label), the upload, and the page's remove confirm. */
 export type ProfilePhotoControl = {
-  url: string | null;
-  initial: string;
-  name: string;
-  accept: string;
-  uploading: boolean;
-  removing: boolean;
-  error: string | null;
-  errorFrom: 'upload' | 'remove' | null;
-  removedStamp: number;
-  onFile: (file: File) => void;
+  person: Omit<PhotoPerson, 'name'>;
+  upload: PhotoUpload;
   onRemove: () => void;
-  onRetryRemove: () => void;
-  onDismissError: () => void;
 };
 
 export type LanguageSearch = {
@@ -99,30 +94,12 @@ export function MenteeProfileForm({
   return (
     <div className={styles.form}>
       <section className={styles.photoCard}>
-        <div className={styles.photo}>
-          {photo.url ? (
-            // eslint-disable-next-line @next/next/no-img-element -- an uploaded photo of any size, from our API
-            <img src={photo.url} alt={C.photoLabel} className={styles.img} />
-          ) : (
-            <span role="img" aria-label={C.photoLabel} className={styles.initials}>
-              {photo.initial}
-            </span>
-          )}
-          <PhotoPicker
-            compact
-            hasPhoto={!!photo.url}
-            accept={photo.accept}
-            uploading={photo.uploading}
-            removing={photo.removing}
-            onFile={photo.onFile}
-            onRemove={photo.onRemove}
-            onRetryRemove={photo.onRetryRemove}
-            error={photo.error}
-            errorFrom={photo.errorFrom}
-            removedStamp={photo.removedStamp}
-            onDismissError={photo.onDismissError}
-          />
-        </div>
+        <ProfilePhoto
+          size={72}
+          person={{ ...photo.person, name: C.photoLabel }}
+          upload={photo.upload}
+          onRemove={photo.onRemove}
+        />
         <div className={styles.photoText}>
           <span className={styles.photoTitle}>{C.photo}</span>
           <span className={styles.photoHint}>{C.photoHint}</span>

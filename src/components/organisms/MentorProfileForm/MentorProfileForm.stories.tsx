@@ -75,19 +75,19 @@ function Live({
         headlineTooLong={headlineTooLong}
         countries={{ origin: COUNTRIES, study: COUNTRIES }}
         photo={{
-          url: photoUrl,
-          initial: storyInitials(v.name),
-          name: v.name,
-          accept: 'image/png',
-          uploading: false,
-          removing: false,
-          error: null,
-          errorFrom: null,
-          removedStamp: 0,
-          onFile: fn(),
+          person: { initials: storyInitials(v.name), cover: 'sky', src: photoUrl },
+          upload: {
+            accept: 'image/png',
+            upload: fn(),
+            uploading: false,
+            removing: false,
+            error: null,
+            errorFrom: null,
+            removedStamp: 0,
+            remove: fn(),
+            dismissError: fn(),
+          },
           onRemove: fn(),
-          onRetryRemove: fn(),
-          onDismissError: fn(),
         }}
         cover={{ bg, ink, bannerUrl: null, artIcons: icons }}
         languages={{
@@ -103,7 +103,7 @@ function Live({
             headline={v.headline}
             initials={storyInitials(v.name)}
             photoUrl={photoUrl}
-            cover={{ bg, ink }}
+            cover="sky"
             bannerUrl={null}
             artIcons={icons}
             rating={4.9}

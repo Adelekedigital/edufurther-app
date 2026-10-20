@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { CreditsView } from '@/lib/utils/credits';
 import { AppShell } from './AppShell';
 
-const AV = { initial: 'A', cover: 'sky' as const };
+const AV = { initials: 'A', cover: 'sky' as const };
 const shell = (credits?: CreditsView) =>
   render(
     <AppShell

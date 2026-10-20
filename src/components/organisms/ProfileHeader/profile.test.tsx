@@ -50,7 +50,7 @@ describe('ProfileHeader', () => {
     const key = coverFor(fullProfile.mentor.id);
     expect(banner.style.getPropertyValue('--cover-bg')).toBe(`var(--cover-${key}-bg)`);
     const circle = screen.getByRole('img', { name: fullProfile.mentor.name }).parentElement!;
-    expect(circle.style.getPropertyValue('--photo-bg')).toBe(`var(--cover-${key}-ink)`);
+    expect(circle.style.getPropertyValue('--avatar-bg')).toBe(`var(--cover-${key}-ink)`);
   });
 
   it('uses the mentor’s chosen cover colour over the automatic one', () => {

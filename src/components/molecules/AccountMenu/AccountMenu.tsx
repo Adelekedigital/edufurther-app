@@ -24,10 +24,10 @@ export type AccountMenuItem = {
 type AccountMenuProps = {
   /**
    * The viewer as the button shows them: their photo (cropped at `focus`), else
-   * their initial on their cover colour's deep tone, as on their profile.
+   * their initials on their cover colour's deep tone, as on their profile.
    */
   avatar: {
-    initial: string;
+    initials: string;
     src?: string | null;
     focus?: { x: number; y: number } | null;
     cover: CoverKey;
@@ -181,7 +181,7 @@ export function AccountMenu({ avatar, items, credits, narrow }: AccountMenuProps
       >
         <Avatar
           size="nav"
-          initials={avatar.initial}
+          initials={avatar.initials}
           tone={avatar.cover}
           src={avatar.src}
           focus={avatar.focus}

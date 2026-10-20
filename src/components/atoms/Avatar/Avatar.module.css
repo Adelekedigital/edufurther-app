@@ -49,6 +49,13 @@
   font-size: var(--text-p-lg);
 }
 
+/* Mentor Settings.dc.html `pvReal`: the card preview's photo. */
+.s52 {
+  width: 52px;
+  height: 52px;
+  font-size: var(--text-p-sm);
+}
+
 /* DS Avatar default (type="initials"): dark brand-font initials on blue-50,
    font size by size (sm 12 / md 16 / lg 18 / xl 20). */
 .plain {
@@ -79,4 +86,65 @@
 .blank {
   background: var(--ink-100);
   color: var(--text-tertiary);
+}
+
+/* Profile photos (ProfilePhoto.dc.html): brand-font initials, sized by
+   --photo-size, which PhotoPicker also reads on phones. */
+.v72 {
+  --photo-size: 72px;
+}
+.v88 {
+  --photo-size: 88px;
+}
+.v112 {
+  --photo-size: 112px;
+}
+.photo {
+  width: var(--photo-size);
+  height: var(--photo-size);
+  font-family: var(--font-brand);
+}
+/* Settings (Mentee Settings.dc.html): h5 initials. */
+.s72 {
+  font-size: var(--text-h5);
+  letter-spacing: 0.02em;
+}
+/* Onboarding's About step (Mentor Onboarding.dc.html): h3 initials. Semibold
+   and 0.02em like every other size (owner, 2026-10-20: one style; the
+   design drew bold). */
+.s88 {
+  font-size: var(--text-h3);
+  letter-spacing: 0.02em;
+}
+/* The profile header (Mentor Profile.dc.html): 112px, 72px on phones. */
+.s112 {
+  font-size: var(--text-avatar-profile);
+  letter-spacing: 0.02em;
+}
+@media (max-width: 767px) {
+  .v112 {
+    --photo-size: 72px;
+  }
+}
+.ringWhite {
+  box-shadow: 0 0 0 3px var(--white);
+}
+.ringWhite.s112 {
+  box-shadow: 0 0 0 4px var(--white);
+}
+.ringThin {
+  box-shadow: 0 0 0 2px var(--white);
+}
+
+/* With children: the circle in a positioned frame they're placed against,
+   unclipped so a menu or note can leave it. */
+.frame {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+}
+/* Block-level, so no line box adds a gap under the circle. */
+.frame > .avatar {
+  display: flex;
 }

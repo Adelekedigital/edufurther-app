@@ -71,7 +71,7 @@ function sentCopy(first: string, picked: string, confirmed: boolean, answered: b
 }
 
 type SentStateProps = {
-  mentor: Pick<Mentor, 'firstName' | 'initials' | 'cover' | 'photoUrl'>;
+  mentor: Pick<Mentor, 'firstName' | 'initials' | 'cover' | 'photoUrl' | 'photoFocus'>;
   sessionName: string;
   /** "Mon, Oct 19 · 9:00 am" in the viewer's zone. */
   picked: string;
@@ -110,6 +110,7 @@ export function SentState({
           initials={mentor.initials}
           tone={mentor.cover}
           src={mentor.photoUrl}
+          focus={mentor.photoFocus}
           alt=""
         />
         <span className={styles.check} aria-hidden>

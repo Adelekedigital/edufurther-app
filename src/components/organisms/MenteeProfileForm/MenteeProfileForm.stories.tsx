@@ -53,20 +53,24 @@ const FILLED: MenteeProfileValues = {
 };
 
 const photo = (name: string) => ({
-  url: null,
-  initial:
-    personInitials(name.trim().split(/\s+/)[0], name.trim().split(/\s+/).slice(1).at(-1)) || '?',
-  name,
-  accept: 'image/jpeg,image/png',
-  uploading: false,
-  removing: false,
-  error: null,
-  errorFrom: null,
-  removedStamp: 0,
-  onFile: fn(),
+  person: {
+    initials:
+      personInitials(name.trim().split(/\s+/)[0], name.trim().split(/\s+/).slice(1).at(-1)) || '?',
+    cover: 'sky' as const,
+    src: null,
+  },
+  upload: {
+    accept: 'image/jpeg,image/png',
+    upload: fn(),
+    uploading: false,
+    removing: false,
+    error: null,
+    errorFrom: null,
+    removedStamp: 0,
+    remove: fn(),
+    dismissError: fn(),
+  },
   onRemove: fn(),
-  onRetryRemove: fn(),
-  onDismissError: fn(),
 });
 
 /** Holds the values and the language query, as the page would. */

@@ -260,19 +260,14 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string; froz
             headingRef={heading}
             countries={countryOptions}
             photo={{
-              url: profile.mentor.photoUrl,
-              initial,
-              name: profile.mentor.name,
-              accept: avatar.accept,
-              uploading: avatar.uploading,
-              removing: avatar.removing,
-              error: avatar.error,
-              errorFrom: avatar.errorFrom,
-              removedStamp: avatar.removedStamp,
-              onFile: avatar.upload,
+              person: {
+                initials: initial,
+                cover: coverKey,
+                src: profile.mentor.photoUrl,
+                focus: profile.mentor.photoFocus,
+              },
+              upload: avatar,
               onRemove: () => setConfirmRemove(true),
-              onRetryRemove: avatar.remove,
-              onDismissError: avatar.dismissError,
             }}
             cover={{ bg, ink, bannerUrl: profile.bannerUrl, artIcons }}
             coverTools={
@@ -326,7 +321,8 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string; froz
                   headline={draft.headline.trim()}
                   initials={initial}
                   photoUrl={profile.mentor.photoUrl}
-                  cover={{ bg, ink }}
+                  photoFocus={profile.mentor.photoFocus}
+                  cover={coverKey}
                   bannerUrl={profile.bannerUrl}
                   artIcons={artIcons}
                   rating={profile.mentor.rating}

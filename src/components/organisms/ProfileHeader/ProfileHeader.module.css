@@ -96,42 +96,15 @@
   padding: 0 var(--space-6) var(--space-5);
   margin-top: -48px;
 }
-/* The photo and, for the owner, its camera badge (outside the clipped circle,
-   Mentor Profile.dc.html `avatar`). */
+/* The 112px photo (Avatar) and, for the owner, its camera badge (Mentor
+   Profile.dc.html `avatar`). */
 .avatarWrap {
-  position: relative;
-  flex: none;
   /* DIVERGENCE (product, design request #47): pinned 10px into the banner,
      where the design draws it at desktop. With the design's flex-end the
      photo slid below the banner whenever the intro ran to three lines. */
   align-self: flex-start;
   /* .head pulls the row up 48px; 38px down leaves the photo 10px into the banner. */
   margin-top: 38px;
-}
-.avatar {
-  width: 112px;
-  height: 112px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-full);
-  box-shadow: 0 0 0 4px var(--white);
-  background: var(--photo-bg);
-  overflow: hidden;
-}
-.photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  /* Crop anchored on the face (avatar_focus), design default otherwise. */
-  object-position: var(--photo-x, 50%) var(--photo-y, 25%);
-}
-.initials {
-  font-family: var(--font-brand);
-  font-size: 40px;
-  font-weight: var(--weight-semibold);
-  letter-spacing: 0.02em;
-  color: var(--white);
 }
 .intro {
   flex: 1 1 320px;
@@ -289,16 +262,6 @@
   .avatarWrap {
     align-self: auto;
     margin-top: 0;
-    /* The photo's size, for what's pinned to its corner (PhotoPicker's badge):
-       a note under the photo makes this wrapper taller on phones. */
-    --photo-size: 72px;
-  }
-  .avatar {
-    width: 72px;
-    height: 72px;
-  }
-  .initials {
-    font-size: 26px;
   }
   /* Always its own line under the avatar: the -36px pull only clears the
      banner while the name sits below it (failure-modes #26). */

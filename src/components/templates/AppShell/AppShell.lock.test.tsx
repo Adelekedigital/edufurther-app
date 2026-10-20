@@ -28,7 +28,7 @@ const SETUP = accessFor(member({ onboardingComplete: false }));
 const REVIEW = accessFor(member({ isMentor: true, mentorStage: 'pending' }));
 const DECLINED = accessFor(member({ isMentor: true, mentorStage: 'declined' }));
 
-const AV = { initial: 'A', cover: 'sky' as const };
+const AV = { initials: 'A', cover: 'sky' as const };
 const BOOKINGS = { Bookings: { count: 2, label: '2 requests awaiting the mentor' } };
 const shell = (
   access: Access,

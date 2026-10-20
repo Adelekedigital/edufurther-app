@@ -63,7 +63,14 @@ export function SimilarMentorsCard({
           {mentors!.map(({ mentor: m, meta, sharedTopic }) => (
             <li key={m.id} className={styles.row}>
               <div className={styles.top}>
-                <Avatar size="md" tone="plain" initials={m.initials} src={m.photoUrl} alt="" />
+                <Avatar
+                  size="md"
+                  tone={m.cover}
+                  initials={m.initials}
+                  src={m.photoUrl}
+                  focus={m.photoFocus}
+                  alt=""
+                />
                 <div className={styles.who}>
                   <span className={styles.name}>
                     <Link href={m.profileHref} prefetch={false} className={styles.nameLink}>

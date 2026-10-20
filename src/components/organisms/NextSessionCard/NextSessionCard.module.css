@@ -44,13 +44,9 @@
   gap: var(--space-4);
 }
 
-/* The design's white ring around the avatar, over the blue ground. */
+/* The design's white ring over the blue ground is Avatar's `thin` ring. */
 .avatar {
   flex: none;
-  display: flex;
-  border-radius: var(--radius-full);
-  background: var(--white);
-  box-shadow: 0 0 0 2px var(--white);
 }
 
 .info {

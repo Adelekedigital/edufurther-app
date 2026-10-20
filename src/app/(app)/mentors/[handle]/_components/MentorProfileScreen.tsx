@@ -10,7 +10,6 @@ import { AboutEditor } from '@/components/molecules/AboutEditor/AboutEditor';
 import { CoverPicker } from '@/components/molecules/CoverPicker/CoverPicker';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { IntroEditForm } from '@/components/molecules/IntroEditForm/IntroEditForm';
-import { PhotoPicker } from '@/components/molecules/PhotoPicker/PhotoPicker';
 import { ShareMenu } from '@/components/molecules/ShareMenu/ShareMenu';
 import { BookSessionCard } from '@/components/organisms/BookSessionCard/BookSessionCard';
 import { FirstMenteesCard } from '@/components/organisms/FirstMenteesCard/FirstMenteesCard';
@@ -422,23 +421,14 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               onShowReviews={hasReviews ? () => setTab('reviews') : undefined}
               onEditTopics={editing ? () => setItemOpen({ kind: 'topics' }) : undefined}
               editTopicsRef={editTopics}
-              photoTools={
-                editing ? (
-                  <PhotoPicker
-                    inputId={PHOTO_INPUT}
-                    hasPhoto={!!p.mentor.photoUrl}
-                    accept={photo.accept}
-                    uploading={photo.uploading}
-                    onFile={photo.upload}
-                    error={photo.error}
-                    errorFrom={photo.errorFrom}
-                    onDismissError={photo.dismissError}
-                    onRemove={() => setPhotoRemoving(true)}
-                    onRetryRemove={photo.remove}
-                    removing={photo.removing}
-                    removedStamp={photo.removedStamp}
-                  />
-                ) : undefined
+              photoEdit={
+                editing
+                  ? {
+                      upload: photo,
+                      onRemove: () => setPhotoRemoving(true),
+                      inputId: PHOTO_INPUT,
+                    }
+                  : undefined
               }
               // As drawn (design reply #58).
               status={asMentee && notTaking ? 'Not taking bookings' : undefined}
