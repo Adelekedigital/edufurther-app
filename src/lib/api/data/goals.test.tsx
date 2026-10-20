@@ -126,6 +126,17 @@ describe('goalsBody', () => {
       ],
     });
   });
+
+  it('"Not sure yet": no countries goes out as country_ids: [], not left out', () => {
+    const body = goalsBody({
+      after: { ...values, countryIds: [] },
+      savedOriginId: '',
+      goal: null,
+      levels,
+    });
+    expect(body).toHaveProperty('country_ids', []);
+    expect(body.need_ids).toEqual(['o1']);
+  });
 });
 
 describe('useSaveGoals', () => {

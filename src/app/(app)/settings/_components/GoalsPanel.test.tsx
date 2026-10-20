@@ -352,6 +352,37 @@ describe('GoalsPanel', () => {
     expect(mutateAsync).toHaveBeenCalledOnce();
   });
 
+  it('a save from the bar moves focus from the bar to the first card’s heading', async () => {
+    ready();
+    render(<GoalsPanel userId="u1" />);
+    await userEvent.click(screen.getByRole('radio', { name: 'PhD' }));
+    await userEvent.click(await saveButton());
+    expect(await screen.findByText(GOALS_COPY.saved)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: GOALS_COPY.workingToward })).toHaveFocus(),
+    );
+  });
+
+  it('a save asked for from outside (tab switch, leave guard) doesn’t move focus', async () => {
+    ready();
+    const ref = createRef<PanelHandle>();
+    render(<GoalsPanel ref={ref} userId="u1" />);
+    await userEvent.click(screen.getByRole('radio', { name: 'PhD' }));
+    (document.activeElement as HTMLElement).blur();
+    await act(async () => {
+      await ref.current!.save();
+    });
+    await act(() => new Promise((r) => setTimeout(r, 50)));
+    expect(screen.getByRole('heading', { name: GOALS_COPY.workingToward })).not.toHaveFocus();
+    await userEvent.click(screen.getByRole('radio', { name: 'MBA' }));
+    (document.activeElement as HTMLElement).blur();
+    await act(async () => {
+      await unsavedSave()!();
+    });
+    await act(() => new Promise((r) => setTimeout(r, 50)));
+    expect(screen.getByRole('heading', { name: GOALS_COPY.workingToward })).not.toHaveFocus();
+  });
+
   it('the degree levels fail after /me loaded: the error state with Try again, not a skeleton', () => {
     ready();
     levelsStatus = 'error';

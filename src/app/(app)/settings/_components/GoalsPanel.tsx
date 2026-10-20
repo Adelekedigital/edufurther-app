@@ -18,6 +18,7 @@ import {
   TAB_LABELS,
   type GoalsGap,
 } from '@/lib/copy/settings';
+import { focusIfShown } from '@/lib/utils/focus';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { fieldOk } from '@/lib/utils/onboardingAnswers';
 import { useRequiredFields } from '@/lib/utils/useRequiredFields';
@@ -116,7 +117,7 @@ export const GoalsPanel = forwardRef<PanelHandle, { userId: string }>(function G
   const keepFocus = () => {
     const at = document.activeElement;
     if (!at || at === document.body || at.closest('[data-save-bar]'))
-      requestAnimationFrame(() => heading.current?.focus());
+      requestAnimationFrame(() => focusIfShown(heading.current));
   };
 
   const discard = () => {
@@ -127,7 +128,11 @@ export const GoalsPanel = forwardRef<PanelHandle, { userId: string }>(function G
     keepFocus();
   };
 
-  const save = async (): Promise<boolean> => {
+  /**
+   * `focus` false for a save asked for from outside (the tab switch, the leave
+   * guard): the panel is going away, so focus stays where the dialog puts it.
+   */
+  const save = async ({ focus = true }: { focus?: boolean } = {}): Promise<boolean> => {
     if (!read || !base || !draft || saving.isPending) return false;
     if (!required.check()) {
       setTries((n) => n + 1);
@@ -150,7 +155,7 @@ export const GoalsPanel = forwardRef<PanelHandle, { userId: string }>(function G
       return false;
     }
     if (!alive.current) return true;
-    keepFocus();
+    if (focus) keepFocus();
     setBase(after);
     setDraft(after);
     setToast(GOALS_COPY.saved);
@@ -159,8 +164,9 @@ export const GoalsPanel = forwardRef<PanelHandle, { userId: string }>(function G
   };
 
   // The tab-switch guard reads these when asked: rebuilt each render, so current.
-  useImperativeHandle(ref, () => ({ dirty: () => dirty, save, discard }));
-  useLeaveGuard(dirty, TAB_LABELS.goals, save);
+  const saveQuietly = () => save({ focus: false });
+  useImperativeHandle(ref, () => ({ dirty: () => dirty, save: saveQuietly, discard }));
+  useLeaveGuard(dirty, TAB_LABELS.goals, saveQuietly);
 
   // Error before content, decided by what the view needs: a failed first read
   // of the goal or the countries, or lists the form can't work without (the

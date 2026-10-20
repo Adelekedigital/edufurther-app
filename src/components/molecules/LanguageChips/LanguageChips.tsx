@@ -154,6 +154,7 @@ export function LanguageChips({
           </button>
         </span>
       )}
+      {none && common.length === 0 && noneChip(none)}
       {chips.map((l, i) => (
         <Fragment key={l.id}>
           <Chip
@@ -167,7 +168,6 @@ export function LanguageChips({
           {none && i === common.length - 1 && noneChip(none)}
         </Fragment>
       ))}
-      {none && common.length === 0 && noneChip(none)}
       {!adding ? (
         <button
           ref={addButton}

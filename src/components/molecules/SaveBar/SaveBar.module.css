@@ -20,8 +20,9 @@
   font-family: var(--font-ui);
   box-shadow: var(--shadow-menu);
 }
-/* The design hides the bar while a dialog is open (`showSaveBar` … `!leaveTo && !modal`). */
-:global(body:has([role='dialog'], [role='alertdialog'])) .bar {
+/* The design hides the bar while a modal is open (`showSaveBar` … `!leaveTo && !modal`);
+   popovers (role=dialog, not aria-modal) leave it. */
+:global(body:has([aria-modal='true'])) .bar {
   display: none;
 }
 

@@ -38,24 +38,33 @@ export function SaveBar({
   saving = false,
 }: SaveBarProps) {
   return (
-    <div role="region" aria-label={label} data-save-bar className={styles.bar}>
-      {/* Always in the bar, so the error is heard when it arrives: a region
-          inserted with its text already in it is often skipped. */}
+    <>
+      {/* Outside the bar, which hides under a dialog: a failed "Save and
+          continue" is heard while the dialog is still up. Always present, so
+          the line is heard when it arrives. */}
       <span role="alert" className="sr-only">
         {error && <span key={errorKey}>{error}</span>}
       </span>
-      {error && (
-        <span aria-hidden className={styles.error}>
-          {error}
-        </span>
-      )}
-      <span className={styles.message}>{message}</span>
-      <button type="button" className={styles.discard} onClick={onDiscard} disabled={saving}>
-        {discardLabel}
-      </button>
-      <Button variant="primary" size="large" onClick={onSave} disabled={saving} aria-busy={saving}>
-        {saving ? savingLabel : saveLabel}
-      </Button>
-    </div>
+      <div role="region" aria-label={label} data-save-bar className={styles.bar}>
+        {error && (
+          <span aria-hidden className={styles.error}>
+            {error}
+          </span>
+        )}
+        <span className={styles.message}>{message}</span>
+        <button type="button" className={styles.discard} onClick={onDiscard} disabled={saving}>
+          {discardLabel}
+        </button>
+        <Button
+          variant="primary"
+          size="large"
+          onClick={onSave}
+          disabled={saving}
+          aria-busy={saving}
+        >
+          {saving ? savingLabel : saveLabel}
+        </Button>
+      </div>
+    </>
   );
 }
