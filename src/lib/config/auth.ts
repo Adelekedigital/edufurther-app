@@ -69,7 +69,7 @@ export function newAccountDestination({
     const query = q.toString();
     return query ? `/onboarding?${query}` : '/onboarding';
   }
-  // The query lets mentor onboarding remember the sign-up on the account.
+  // The role is already on the account (useSignInFlow); the query is a hint only.
   if (role === 'mentor')
     return MENTOR_ONBOARDING_LIVE ? '/onboarding/mentor?role=mentor' : NEW_MENTOR_HOME;
   return next ?? NEW_MENTEE_HOME;
