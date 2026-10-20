@@ -1,10 +1,11 @@
 'use client';
 
-import { useId, type CSSProperties, type ReactNode, type Ref } from 'react';
+import { useId, type ReactNode, type Ref } from 'react';
 import { FrozenGroup } from '@/components/atoms/FrozenGroup/FrozenGroup';
 import { Input } from '@/components/atoms/Input/Input';
 import { Select } from '@/components/atoms/Select/Select';
 import { AiField, type AssistMode } from '@/components/molecules/AiField/AiField';
+import { CoverBanner } from '@/components/molecules/CoverBanner/CoverBanner';
 import { CountryPicker } from '@/components/molecules/CountryPicker/CountryPicker';
 import { FieldError } from '@/components/molecules/FieldError/FieldError';
 import {
@@ -17,12 +18,13 @@ import type {
   LanguageSearch,
   ProfilePhotoControl,
 } from '@/components/organisms/MenteeProfileForm/MenteeProfileForm';
+import { CoverHeader } from '@/components/organisms/CoverHeader/CoverHeader';
 import {
   MENTOR_PROFILE_COPY as C,
   MENTOR_PROFILE_ERRORS as E,
   type MentorProfileGap,
 } from '@/lib/copy/mentorSettings';
-import type { CoverIcon } from '@/lib/utils/cover';
+import type { CoverArt, CoverIcon } from '@/lib/utils/cover';
 import { cx } from '@/lib/utils/cx';
 import { ABOUT_MAX } from '@/lib/utils/profileLimits';
 import type { MentorProfileValues } from '@/types/mentorSettings';
@@ -45,7 +47,14 @@ type MentorProfileFormProps = {
   /** Each picker's choices: the catalog, plus that field's own saved country if the catalog dropped it. */
   countries: { origin: { id: string; label: string }[]; study: { id: string; label: string }[] };
   photo: ProfilePhotoControl;
-  cover: { bg: string; ink: string; bannerUrl: string | null; artIcons: CoverIcon[] };
+  /** The mentor's cover as their profile draws it: colour, image, art and the topics' icons. */
+  cover: {
+    bg: string;
+    ink: string;
+    bannerUrl: string | null;
+    art: CoverArt;
+    artIcons: CoverIcon[];
+  };
   /** The "Change cover" control (CoverPicker), top right of the cover. */
   coverTools?: ReactNode;
   languages: LanguageSearch;
@@ -108,34 +117,28 @@ export function MentorProfileForm({
         ? values.languages.filter((x) => x.id !== l.id)
         : [...values.languages, l],
     });
-  const art = cover.bannerUrl ? [] : cover.artIcons.slice(0, 3);
 
   return (
     <div className={styles.layout}>
       <div className={styles.main}>
-        <section
+        <CoverHeader
+          as="section"
           // Frozen, its only controls (photo and cover) are gone: dimmed as drawn.
           className={cx(styles.photoCard, frozen && styles.frozen)}
-          style={{ '--cover-bg': cover.bg, '--cover-ink': cover.ink } as CSSProperties}
-        >
-          <div className={styles.cover}>
-            {cover.bannerUrl && (
-              // eslint-disable-next-line @next/next/no-img-element -- the mentor's own banner, of any size
-              <img src={cover.bannerUrl} alt="" className={styles.coverImg} />
-            )}
-            {art.length > 0 && (
-              <div className={styles.art} aria-hidden>
-                {art.map((icon, i) => (
-                  <span key={i} className={styles.artIcon} data-i={i}>
-                    {icon}
-                  </span>
-                ))}
-              </div>
-            )}
-            {coverTools && !frozen && <div className={styles.coverTools}>{coverTools}</div>}
-          </div>
-          <div className={styles.photoRow}>
-            {frozen ? (
+          cover={
+            <CoverBanner
+              className={styles.cover}
+              height={120}
+              scale="md"
+              tones={{ bg: cover.bg, ink: cover.ink }}
+              bannerUrl={cover.bannerUrl}
+              art={cover.art}
+              icons={cover.artIcons}
+              tools={frozen ? undefined : coverTools}
+            />
+          }
+          photo={
+            frozen ? (
               // Frozen while the application is in review: the photo, no editor.
               <Avatar
                 size={72}
@@ -154,13 +157,19 @@ export function MentorProfileForm({
                 upload={photo.upload}
                 onRemove={photo.onRemove}
               />
-            )}
-            <div className={styles.photoText}>
-              <span className={styles.photoTitle}>{C.photoTitle}</span>
-              <span className={styles.hint}>{C.photoHint}</span>
-            </div>
+            )
+          }
+          // The photo rises 32px into the cover; the title and hint sit beside
+          // it, below the cover, and wrap downwards on phones.
+          overlap={32}
+          contentBasis={200}
+          bodyClassName={styles.photoRow}
+        >
+          <div className={styles.photoText}>
+            <span className={styles.photoTitle}>{C.photoTitle}</span>
+            <span className={styles.hint}>{C.photoHint}</span>
           </div>
-        </section>
+        </CoverHeader>
 
         <section className={styles.card} aria-labelledby={`${id}-about`}>
           <h2 id={`${id}-about`} ref={headingRef} tabIndex={-1} className={styles.heading}>

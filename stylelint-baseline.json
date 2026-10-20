@@ -2,9 +2,6 @@
   "src/app/(app)/calendar/_components/CalendarScreen.module.css": {
     "declaration-property-value-disallowed-list": 2
   },
-  "src/app/(app)/mentors/[handle]/_components/MentorProfileScreen.module.css": {
-    "declaration-property-value-disallowed-list": 2
-  },
   "src/components/atoms/Avatar/Avatar.module.css": {
     "declaration-property-value-disallowed-list": 9
   },
@@ -60,7 +57,7 @@
     "declaration-property-value-disallowed-list": 1
   },
   "src/components/organisms/ProfileHeader/ProfileHeader.module.css": {
-    "declaration-property-value-disallowed-list": 7
+    "declaration-property-value-disallowed-list": 1
   },
   "src/components/organisms/ProfileOverview/ProfileOverview.module.css": {
     "declaration-property-value-disallowed-list": 1

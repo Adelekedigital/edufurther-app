@@ -5,8 +5,22 @@ import { FirstMenteesCard } from '../FirstMenteesCard/FirstMenteesCard';
 import { ProfileOverview } from '../ProfileOverview/ProfileOverview';
 import { TrackRecordCard } from '../TrackRecordCard/TrackRecordCard';
 import { coverFor } from '@/lib/utils/cover';
-import { ProfileHeader, locationLine } from './ProfileHeader';
+import { ProfileHeader, ProfileHeaderSkeleton, locationLine } from './ProfileHeader';
 import { fullProfile, newProfile, sessionTypes } from './profile.fixture';
+
+describe('ProfileHeaderSkeleton', () => {
+  it('has the header card shape: a grey cover, then the photo and lines below it', () => {
+    const { container } = render(<ProfileHeaderSkeleton />);
+    const [cover, body] = [...container.firstElementChild!.children];
+    expect((cover as HTMLElement).style.getPropertyValue('--cover-bg')).toBe(
+      'var(--skeleton-fill)',
+    );
+    expect(cover!.querySelector('[aria-hidden]')).toBeNull();
+    // The photo slot, then the three intro lines, all decorative.
+    expect(body!.querySelectorAll('[aria-hidden]')).toHaveLength(4);
+    expect((body as HTMLElement).style.getPropertyValue('--ch-overlap')).toBe('10px');
+  });
+});
 
 describe('ProfileHeader', () => {
   it('shows the rating only with reviews (product rule)', () => {

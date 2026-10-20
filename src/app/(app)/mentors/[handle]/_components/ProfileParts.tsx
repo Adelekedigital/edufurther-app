@@ -3,6 +3,7 @@ import { useId } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
+import { ProfileHeaderSkeleton } from '@/components/organisms/ProfileHeader/ProfileHeader';
 import type { MentorProfile } from '@/types/mentor';
 import styles from './MentorProfileScreen.module.css';
 
@@ -169,17 +170,7 @@ export function ProfileSkeleton() {
       <span className="sr-only" role="status">
         Loading profile
       </span>
-      <div className={styles.skHeader}>
-        <div className={styles.skBanner} />
-        <div className={styles.skHead}>
-          <span className={styles.skAvatar} />
-          <div className={styles.skLines}>
-            <Skeleton width="40%" height="24px" radius="md" />
-            <Skeleton width="60%" height="14px" radius="md" />
-            <Skeleton width="30%" height="14px" radius="md" />
-          </div>
-        </div>
-      </div>
+      <ProfileHeaderSkeleton />
       <div className={styles.cols}>
         <div className={styles.skMain}>
           <Skeleton width="30%" height="18px" radius="md" />

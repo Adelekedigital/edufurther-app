@@ -215,10 +215,9 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string; froz
     const nameProblem = checkFullName(draft.name);
     const coverKey = personCover(profile.mentor.id, profile.cover.color);
     const { bg, ink } = coverVars(coverKey);
-    const artIcons =
-      profile.cover.art === 'icons'
-        ? profile.mentor.topics.slice(0, 3).map((t) => topicIcon(t.label))
-        : [];
+    // The cover art as the profile draws it (CoverBanner picks what to show).
+    const art = profile.cover.art;
+    const artIcons = profile.mentor.topics.slice(0, 3).map((t) => topicIcon(t.label));
     // A saved country since retired from the catalog stays a choice in its own
     // field only, by the profile's own name, so the field isn't blank (as gender
     // keeps a stored value) and the other picker doesn't offer it.
@@ -269,11 +268,12 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string; froz
               upload: avatar,
               onRemove: () => setConfirmRemove(true),
             }}
-            cover={{ bg, ink, bannerUrl: profile.bannerUrl, artIcons }}
+            cover={{ bg, ink, bannerUrl: profile.bannerUrl, art, artIcons }}
             coverTools={
               <CoverPicker
                 color={coverKey}
-                artOn={profile.cover.art !== 'none'}
+                // "Show topics" is on only when topics show: a pattern or single cover reads off.
+                artOn={profile.cover.art === 'icons'}
                 onPickColor={coverEdit.pickColor}
                 onToggleArt={(on) => coverEdit.save({ art: on ? 'icons' : 'none' })}
                 saveState={coverEdit.saveState}
@@ -325,6 +325,7 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string; froz
                   cover={coverKey}
                   bannerUrl={profile.bannerUrl}
                   artIcons={artIcons}
+                  art={art}
                   rating={profile.mentor.rating}
                   reviewCount={profile.mentor.reviewCount}
                   completedSessions={profile.mentor.completedSessions}

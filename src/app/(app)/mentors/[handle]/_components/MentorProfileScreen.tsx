@@ -447,7 +447,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 editing ? (
                   <CoverPicker
                     color={personCover(p.mentor.id, p.cover.color)}
-                    artOn={p.cover.art !== 'none'}
+                    artOn={p.cover.art === 'icons'}
                     onPickColor={coverEdit.pickColor}
                     onToggleArt={(on) => coverEdit.save({ art: on ? 'icons' : 'none' })}
                     saveState={coverEdit.saveState}
