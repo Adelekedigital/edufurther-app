@@ -72,6 +72,27 @@ describe('useAvatarUpload', () => {
     expect(spy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: keys.mentors.all }));
   });
 
+  it('Settings’ own read shows the new photo at once, and none once removed', async () => {
+    POST.mockResolvedValue({
+      data: { avatar_url: 'https://cdn/new.webp', avatar_focus: null },
+      response: new Response(null),
+    });
+    DELETE.mockResolvedValue({ response: new Response(null, { status: 204 }) });
+    const { result, qc } = setup();
+    const settings = keys.viewer.settings('m1');
+    qc.setQueryData(settings, { name: 'A B', photoUrl: null });
+    act(() => result.current.upload(file('image/png', 10)));
+    await waitFor(() =>
+      expect(qc.getQueryData<{ photoUrl: string | null }>(settings)!.photoUrl).toBe(
+        'https://cdn/new.webp',
+      ),
+    );
+    act(() => result.current.remove());
+    await waitFor(() =>
+      expect(qc.getQueryData<{ photoUrl: string | null }>(settings)!.photoUrl).toBeNull(),
+    );
+  });
+
   it('a file we can tell is wrong is refused before sending, in our words', () => {
     const { result } = setup();
     act(() => result.current.upload(file('image/gif', 10)));

@@ -8,6 +8,7 @@ import { apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
 import { patchViewer } from './viewer';
+import type { MenteeProfile } from './settings';
 import { toFocus } from './mentors';
 import { sessionKey, useSession } from './session';
 
@@ -45,6 +46,13 @@ export function useAvatarUpload(handle: string, userId: string | null) {
   // Bumped when a photo is in, or gone, for the page to announce it.
   const [uploadedStamp, setUploadedStamp] = useState(0);
   const [removedStamp, setRemovedStamp] = useState(0);
+  // Settings shows the photo from its own /me read: the new one shows at once
+  // there too, with its note, not after the refetch.
+  const setSettingsPhoto = (photoUrl: string | null) =>
+    userId &&
+    qc.setQueryData<MenteeProfile>(keys.viewer.settings(userId), (p) =>
+      p ? { ...p, photoUrl } : p,
+    );
 
   const upload = useMutation({
     networkMode: 'always',
@@ -89,6 +97,7 @@ export function useAvatarUpload(handle: string, userId: string | null) {
         avatarUrl: data.avatar_url,
         avatarFocus: toFocus(data.avatar_focus),
       });
+      setSettingsPhoto(data.avatar_url);
       void qc.invalidateQueries({ queryKey: keys.viewer.all });
     },
   });
@@ -114,6 +123,7 @@ export function useAvatarUpload(handle: string, userId: string | null) {
       setRemovedStamp(Date.now());
       void qc.invalidateQueries({ queryKey: keys.mentors.all });
       patchViewer(qc, { avatarUrl: null, avatarFocus: null });
+      setSettingsPhoto(null);
       void qc.invalidateQueries({ queryKey: keys.viewer.all });
     },
     onError: () => void qc.invalidateQueries({ queryKey: key }),

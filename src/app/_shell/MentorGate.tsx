@@ -35,6 +35,13 @@ export const SESSION_GATE: MemberGateCopy = {
   guestDescription: 'Your session page has the countdown and the link to the call.',
 };
 
+/** Settings' copy (PROVISIONAL, undesigned: a guest never reaches Settings from the nav). */
+export const SETTINGS_GATE: MemberGateCopy = {
+  illustration: 'forms',
+  guestTitle: 'Log in to see your settings',
+  guestDescription: 'Your settings hold your profile, your goals and how you log in.',
+};
+
 /** Session Types' copy (confirmed by design, reply 2026-09-29, #3). */
 export const SESSION_TYPES_GATE: GateCopy = {
   illustration: 'task-templates',

@@ -1,0 +1,98 @@
+/* Mentee Settings.dc.html `isMProfile`. */
+.form {
+  max-width: 680px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.card,
+.photoCard {
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-xl);
+  background: var(--white);
+  padding: var(--space-5);
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.photoCard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/* ProfilePhoto size 72, ring 0, blue-700, initials at text-h5. The badge
+   (PhotoPicker) sits on this positioned circle. */
+.photo {
+  position: relative;
+  flex: none;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-full);
+  background: var(--blue-700);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.img {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+.initials {
+  font-family: var(--font-brand);
+  font-size: var(--text-h5);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.02em;
+  color: var(--white);
+}
+
+.photoText {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.photoTitle {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.photoHint {
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+
+.heading {
+  margin: 0;
+  outline: none;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.label {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-medium);
+}
+.hint {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-regular);
+  color: var(--ink-500);
+}
+
+/* Phones: 16px fields, so iOS doesn't zoom in. */
+@media (max-width: 767px) {
+  .field input {
+    font-size: var(--text-p-md);
+  }
+}

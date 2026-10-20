@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
-import { MOCK_COUNTRIES, mockItems } from '@/lib/api/mock/catalog';
+import { MOCK_COUNTRIES, MOCK_LANGUAGES, mockItems } from '@/lib/api/mock/catalog';
+import { mockPhotoUrl } from '@/lib/api/mock/photoStore';
+import { mockText } from '@/lib/api/mock/profileTextStore';
 import { ok } from '@/lib/api/mock/respond';
 import {
   MOCK_VIEWER_ID,
@@ -61,11 +63,13 @@ export async function GET(req: Request) {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
   await new Promise((r) => setTimeout(r, 200));
   const missing = mockMissing(MOCK_VIEWER_ID);
+  const items = mockItems(MOCK_VIEWER_ID);
+  const text = mockText(MOCK_VIEWER_ID);
   const me = {
     id: MOCK_VIEWER_ID,
     email: 'ada@example.com',
-    first_name: 'Ada',
-    last_name: 'Obi',
+    first_name: text.first_name ?? 'Ada',
+    last_name: text.last_name ?? 'Obi',
     primary_role: 'mentee' as const,
     timezone: 'Africa/Lagos',
     created_at: '2026-10-17T09:00:00Z',
@@ -76,12 +80,18 @@ export async function GET(req: Request) {
     mentee_cancel_refund_hours: 12,
     goal: mockGoal(MOCK_VIEWER_ID),
     mentor_profile: mentorProfile(req),
-    // The mentee's own languages (edufurtherbe #500); Settings › Profile reads them.
-    languages: [],
     profile: {
       cover_art: 'none' as const,
-      origin_country: originRef(mockItems(MOCK_VIEWER_ID).origin_country_id ?? null),
+      origin_country: originRef(items.origin_country_id ?? null),
+      about_me: text.about_me ?? null,
+      about_me_drafted_at: text.about_me_drafted_at ?? null,
+      avatar_url: mockPhotoUrl(MOCK_VIEWER_ID),
+      current_country: originRef(items.current_country_id ?? null),
     },
+    languages: (items.language_ids ?? []).flatMap((id) => {
+      const l = MOCK_LANGUAGES.find((x) => x.id === id);
+      return l ? [{ id: l.id, display_name: l.display_name, code: l.code }] : [];
+    }),
     // Complete once completion has run (PRD B3), not merely when nothing is missing.
     onboarding: {
       complete: !!mockProgress(MOCK_VIEWER_ID)?.completed_at,
