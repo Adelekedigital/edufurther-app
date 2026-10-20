@@ -11,6 +11,7 @@ import { SETTINGS_COPY, TAB_LABELS, type SettingsTab } from '@/lib/copy/settings
 import { memberGate, SETTINGS_GATE } from '@/app/_shell/MentorGate';
 import { BookingPanel } from './BookingPanel';
 import { EducationPanel } from './EducationPanel';
+import { ExpertisePanel } from './ExpertisePanel';
 import { GoalsPanel } from './GoalsPanel';
 import { MentorProfilePanel } from './MentorProfilePanel';
 import { ProfilePanel, type PanelHandle } from './ProfilePanel';
@@ -42,10 +43,12 @@ export function SettingsScreen() {
   const profilePanel = useRef<PanelHandle>(null);
   const bookingPanel = useRef<PanelHandle>(null);
   const goalsPanel = useRef<PanelHandle>(null);
+  const expertisePanel = useRef<PanelHandle>(null);
   const panels: Partial<Record<SettingsTab, RefObject<PanelHandle | null>>> = {
     profile: profilePanel,
     booking: bookingPanel,
     goals: goalsPanel,
+    expertise: expertisePanel,
   };
   const [leaveTo, setLeaveTo] = useState<SettingsTab | null>(null);
   const [leaving, setLeaving] = useState(false);
@@ -100,6 +103,9 @@ export function SettingsScreen() {
           </TabPanel>
           <TabPanel id={panelId('profile')} active={tab === 'profile'} keepMounted>
             {member ? <MentorProfilePanel ref={profilePanel} userId={member.id} /> : null}
+          </TabPanel>
+          <TabPanel id={panelId('expertise')} active={tab === 'expertise'} keepMounted>
+            {member ? <ExpertisePanel ref={expertisePanel} userId={member.id} /> : null}
           </TabPanel>
         </>
       ) : (

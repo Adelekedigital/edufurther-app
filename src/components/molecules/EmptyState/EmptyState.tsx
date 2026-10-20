@@ -17,7 +17,9 @@ export type Illustration =
   /** Integrations: connected tools. */
   | 'subscriptions'
   /** Mentor Dashboard: the performance chart with no sessions yet. */
-  | 'dashboard';
+  | 'dashboard'
+  /** Settings › Expertise: no scholarships or awards yet (Mentor Settings.dc.html). */
+  | 'favorites';
 
 /** Art: an illustration, or a glyph in a ringed disc (the setup lock's `lock`). */
 type Art = { illustration: Illustration; icon?: never } | { icon: IconName; illustration?: never };

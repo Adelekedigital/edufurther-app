@@ -22,7 +22,7 @@ vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => viewer }));
 vi.mock('./tabs', () => ({
   MENTEE_TABS: ['profile', 'goals', 'education', 'security'],
   DEFAULT_TAB: 'profile',
-  MENTOR_TABS: ['booking', 'profile'],
+  MENTOR_TABS: ['booking', 'profile', 'expertise'],
   MENTOR_DEFAULT_TAB: 'booking',
 }));
 
@@ -69,6 +69,11 @@ vi.mock('./EducationPanel', () => ({
 vi.mock('./SecurityPanel', () => ({
   SecurityPanel: () => <div data-testid="security-panel" />,
 }));
+
+vi.mock('./ExpertisePanel', async () => {
+  const { forwardRef } = await import('react');
+  return { ExpertisePanel: forwardRef(() => <div data-testid="expertise-panel" />) };
+});
 
 vi.mock('./MentorProfilePanel', async () => {
   const { forwardRef } = await import('react');
@@ -158,6 +163,19 @@ describe('SettingsScreen', () => {
     expect(screen.getByTestId('booking-panel')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Profile' })).toBeInTheDocument();
     expect(screen.queryByTestId('profile-panel')).toBeNull();
+  });
+
+  it('a mentor’s Expertise tab, after Profile', () => {
+    viewer = member(true);
+    segment = 'expertise';
+    render(<SettingsScreen />);
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual([
+      'Booking rules',
+      'Profile',
+      'Expertise',
+    ]);
+    expect(screen.getByRole('tab', { name: 'Expertise' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('expertise-panel')).toBeInTheDocument();
   });
 
   it('a mentor’s Profile tab is the mentor profile panel, not the mentee one', () => {

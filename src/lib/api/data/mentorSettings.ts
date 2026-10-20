@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SAVE_COPY } from '@/lib/copy/settings';
-import { MENTOR_PROFILE_COPY } from '@/lib/copy/mentorSettings';
+import { MENTOR_EXPERTISE_COPY, MENTOR_PROFILE_COPY } from '@/lib/copy/mentorSettings';
 import { tidyName } from '@/lib/utils/name';
 import type { MentorProfileValues } from '@/types/mentorSettings';
 import type { MentorProfile } from '@/types/mentor';
@@ -199,6 +199,80 @@ export function useSaveMentorProfile(userId: string | null) {
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: keys.mentors.all });
       void qc.invalidateQueries({ queryKey: keys.viewer.all });
+    },
+  });
+  return {
+    mutateAsync: mutation.mutateAsync,
+    isPending: mutation.isPending,
+    error: mutation.error,
+    reset: mutation.reset,
+  };
+}
+
+// ---- Settings › Expertise: "Where can you guide mentees to?" (backend #506) ----
+
+export type GuideCountry = { id: string; label: string };
+
+/** The most countries a mentor can name (backend: a 422 above it). */
+export const GUIDE_MAX = 8;
+
+/** GET /users/{id}/mentor-profile: the mentor's guide-to countries, in their order. */
+export function useGuideCountries(userId: string | null) {
+  const query = useQuery({
+    queryKey: keys.viewer.guideCountries(userId ?? 'none'),
+    enabled: userId !== null,
+    retry: retryOnce,
+    queryFn: async ({ signal }): Promise<GuideCountry[]> => {
+      const { data, error, response } = await api.GET('/api/v1/users/{user_id}/mentor-profile', {
+        params: { path: { user_id: userId! } },
+        signal,
+      });
+      if (!data) throw apiError(response.status, error);
+      return (data.guide_countries ?? []).map((c) => ({ id: c.id, label: c.display_name }));
+    },
+  });
+  // Error before content: a failed refetch of a loaded list keeps it.
+  const status: 'loading' | 'error' | 'ready' = query.data
+    ? 'ready'
+    : query.error
+      ? 'error'
+      : 'loading';
+  return {
+    countries: query.data ?? null,
+    status,
+    retry: () => void query.refetch(),
+    retrying: query.isFetching,
+  };
+}
+
+/** PATCH guide_country_ids: the whole list, in the mentor's order (it replaces the saved one). */
+export function useSaveGuideCountries(userId: string | null) {
+  const qc = useQueryClient();
+  const mutation = useMutation<GuideCountry[], { copy: string }, GuideCountry[]>({
+    networkMode: 'always',
+    mutationFn: async (next) => {
+      try {
+        if (!userId) throw new Error('no user');
+        const { error, response } = await api.PATCH('/api/v1/users/{user_id}/mentor-profile', {
+          params: { path: { user_id: userId } },
+          // A partial update: only the countries (the generated type lists every field).
+          body: { guide_country_ids: next.map((c) => c.id) } as never,
+        });
+        if (!response.ok) throw apiError(response.status, error);
+      } catch (e) {
+        throw {
+          copy:
+            normaliseError(e).kind === 'offline'
+              ? SAVE_COPY.profileOffline
+              : MENTOR_EXPERTISE_COPY.guideSaveFailed,
+        };
+      }
+      return next;
+    },
+    onSuccess: (saved) => {
+      // What saved shows straight away; a failed refetch can't put the old list back.
+      if (userId) qc.setQueryData(keys.viewer.guideCountries(userId), saved);
+      void qc.invalidateQueries({ queryKey: keys.mentors.all });
     },
   });
   return {
