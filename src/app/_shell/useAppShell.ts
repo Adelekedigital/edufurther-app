@@ -130,16 +130,18 @@ export function useAppShell() {
             items,
             /** Mentees only: their monthly credits (AppShell.dc.html creditsIn=both). */
             // In setup the starter credit isn't paid yet (it is at completion): 0.
-            credits: isMenteeSide(member)
-              ? (creditsView(
-                  member.credits && access.state === 'menteeSetup'
-                    ? setupCredits(member.credits)
-                    : member.credits,
-                  undefined,
-                  member.menteeCancelRefundHours,
-                  member.completedSessions,
-                ) ?? undefined)
-              : undefined,
+            // A mentor sign-up in setup isn't a mentee: no mentee credits.
+            credits:
+              isMenteeSide(member) && access.state !== 'mentorSetup'
+                ? (creditsView(
+                    member.credits && access.state === 'menteeSetup'
+                      ? setupCredits(member.credits)
+                      : member.credits,
+                    undefined,
+                    member.menteeCancelRefundHours,
+                    member.completedSessions,
+                  ) ?? undefined)
+                : undefined,
             /** Bookings badge: requests awaiting a response (product, 2026-09-30). */
             counts: countsFor(member),
             logoutConfirm: confirmingLogout

@@ -9,6 +9,14 @@ export const STEP_ORDER: MentorStep[] = ['help', 'education', 'about', 'hours'];
 
 export const stepLabel = (n: number, total = STEP_ORDER.length) => `Step ${n} of ${total}`;
 
+/**
+ * The setup lock's explainer for a mentor who hasn't sent their application
+ * (lib/utils/access): the mentee's words with this body. Ours, not designed.
+ */
+export const SETUP_LOCK_COPY = {
+  mentorBody: `Tell us how you can help mentees and when you’re free. It’s ${STEP_ORDER.length} short steps, then we review your application.`,
+} as const;
+
 export const FLOW_COPY = {
   requiredNote: 'All fields are required unless marked optional.',
   leaveLabel: 'your answers',

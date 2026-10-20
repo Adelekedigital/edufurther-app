@@ -30,11 +30,11 @@ afterEach(() => vi.unstubAllEnvs());
 const locked = (a: { locked: ReadonlySet<string> }) => [...a.locked].sort();
 
 describe('accessFor: who is locked (owner, 2026-10-18)', () => {
-  it('menteeSetup: an unfinished mentee loses Bookings (and Messages); Home goes to onboarding', async () => {
+  it('menteeSetup: an unfinished mentee loses every working page; Home goes to onboarding', async () => {
     const { accessFor } = await load();
     const a = accessFor(member({ onboardingComplete: false }));
     expect(a.state).toBe('menteeSetup');
-    expect(locked(a)).toEqual(['Bookings', 'Messages']);
+    expect(locked(a)).toEqual(['Bookings', 'Calendar', 'Integration', 'Messages', 'Sessions']);
     expect(a).toMatchObject({ homeHref: '/onboarding', setupPill: true });
     expect(a.copy).toMatchObject({
       why: 'locked until you finish setting up',
@@ -87,6 +87,8 @@ describe('accessFor: who is locked (owner, 2026-10-18)', () => {
     const { accessFor } = await load();
     for (const v of [
       member({ onboardingComplete: false }),
+      member({ signedUpAsMentor: true, onboardingComplete: false }),
+      mentor({ mentorStage: 'unsubmitted' }),
       mentor({ mentorStage: 'pending' }),
       mentor({ mentorStage: 'declined' }),
     ]) {
@@ -117,12 +119,39 @@ describe('accessFor: who is locked (owner, 2026-10-18)', () => {
     expect(accessFor(unfinished).state).toBe('menteeSetup');
   });
 
-  it('a mentor who never submitted: no lock, Home goes straight to mentor onboarding (owner, 2026-10-18)', async () => {
+  it('mentorSetup: a mentor who never submitted is locked like a mentee in setup (owner, 2026-10-20)', async () => {
     const { accessFor } = await load();
-    expect(accessFor(mentor({ mentorStage: 'unsubmitted' }))).toMatchObject({
-      state: 'none',
-      homeHref: '/onboarding/mentor',
+    const a = accessFor(mentor({ isApprovedMentor: false, mentorStage: 'unsubmitted' }));
+    expect(a.state).toBe('mentorSetup');
+    expect(locked(a)).toEqual(['Bookings', 'Calendar', 'Integration', 'Messages', 'Sessions']);
+    expect(a).toMatchObject({ homeHref: '/onboarding/mentor', setupPill: true });
+    // The mentee's words, the mentor's body, and the button to mentor onboarding.
+    expect(a.copy).toMatchObject({
+      why: 'locked until you finish setting up',
+      body: 'Tell us how you can help mentees and when you’re free. It’s 4 short steps, then we review your application.',
+      cta: 'Continue setup',
+      href: '/onboarding/mentor',
     });
+    expect(a.copy!.title('Calendar')).toBe('Finish setting up to use Calendar');
+    expect(a.copy!.body).not.toMatch(/—/);
+  });
+
+  it('mentorSetup: a mentor sign-up who hasn’t started (no mentor profile yet)', async () => {
+    const { accessFor, inSetup } = await load();
+    const a = accessFor(member({ signedUpAsMentor: true, onboardingComplete: false }));
+    expect(a.state).toBe('mentorSetup');
+    expect(locked(a)).toEqual(['Bookings', 'Calendar', 'Integration', 'Messages', 'Sessions']);
+    expect(a).toMatchObject({ homeHref: '/onboarding/mentor', setupPill: true });
+    expect(a.copy!.href).toBe('/onboarding/mentor');
+    expect(inSetup(a)).toBe(true);
+  });
+
+  it('inSetup: the two setup states only', async () => {
+    const { inSetup } = await load();
+    expect(inSetup('menteeSetup')).toBe(true);
+    expect(inSetup('mentorSetup')).toBe(true);
+    for (const s of ['none', 'mentorReview', 'mentorNotApproved'] as const)
+      expect(inSetup(s)).toBe(false);
   });
 
   it('a mentor whose mentee onboarding is unfinished is still judged as a mentor', async () => {
@@ -159,9 +188,19 @@ describe('accessFor: a state whose page is switched off applies nothing (no 404s
     });
   });
 
+  it('mentor onboarding off: a mentor sign-up falls back to the mentee setup', async () => {
+    const { accessFor } = await load(true, false);
+    const a = accessFor(member({ signedUpAsMentor: true, onboardingComplete: false }));
+    expect(a).toMatchObject({ state: 'menteeSetup', homeHref: '/onboarding' });
+    const off = await load(false, false);
+    expect(
+      off.accessFor(member({ signedUpAsMentor: true, onboardingComplete: false })),
+    ).toMatchObject({ state: 'none', homeHref: null, setupPill: false });
+  });
+
   it('mentor onboarding off: no mentor lock and Home stays /dashboard', async () => {
     const { accessFor } = await load(true, false);
-    for (const stage of ['pending', 'declined'] as const)
+    for (const stage of ['unsubmitted', 'pending', 'declined'] as const)
       expect(accessFor(mentor({ mentorStage: stage }))).toMatchObject({
         state: 'none',
         homeHref: null,

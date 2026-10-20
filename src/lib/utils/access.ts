@@ -1,4 +1,5 @@
 import { MENTOR_ONBOARDING_LIVE, ONBOARDING_LIVE } from '@/lib/config/auth';
+import { SETUP_LOCK_COPY } from '@/lib/copy/mentorOnboarding';
 import type { MentorStage, Viewer } from '@/types/mentor';
 
 /**
@@ -19,7 +20,8 @@ export type NavKey =
   | 'Integration'
   | 'Settings';
 
-export type AccessState = 'none' | 'menteeSetup' | 'mentorReview' | 'mentorNotApproved';
+export type AccessState =
+  'none' | 'menteeSetup' | 'mentorSetup' | 'mentorReview' | 'mentorNotApproved';
 
 /** The lock explainer's words and its button's target. */
 export type LockCopy = {
@@ -38,7 +40,7 @@ export type Access = {
   copy: LockCopy | null;
   /** Where Home goes instead of the role's home; null keeps it. */
   homeHref: string | null;
-  /** Home wears the "Set up" pill (menteeSetup only). */
+  /** Home wears the "Set up" pill: the setup lock (menteeSetup, mentorSetup). */
   setupPill: boolean;
 };
 
@@ -46,17 +48,28 @@ const ONBOARDING = '/onboarding';
 const APPLICATION = '/mentor-application';
 const MENTOR_ONBOARDING = '/onboarding/mentor';
 
-/** Copy from AppShell.dc.html `LK`, word for word. */
+/**
+ * The setup lock (owner, 2026-10-20): an account that hasn't finished its
+ * onboarding, mentee or mentor, reaches none of the working pages. Explore,
+ * Home ("Set up") and Settings stay; Settings then has Login and security only.
+ */
+const SETUP_ITEMS: NavKey[] = ['Bookings', 'Sessions', 'Calendar', 'Integration', 'Messages'];
+
+/** The mentee's setup copy (AppShell.dc.html `LK`); the mentor's swaps the body and target. */
+const SETUP_COPY: LockCopy = {
+  why: 'locked until you finish setting up',
+  title: (item) => `Finish setting up to use ${item}`,
+  body: 'Tell us what you need help with and your study plans. It’s 2 short steps, and your first session is free.',
+  cta: 'Continue setup',
+  href: ONBOARDING,
+};
+
+/** Copy from AppShell.dc.html `LK`, word for word (mentorSetup's body is ours). */
 const LOCKS: Record<Exclude<AccessState, 'none'>, { items: NavKey[]; copy: LockCopy }> = {
-  menteeSetup: {
-    items: ['Bookings', 'Messages'],
-    copy: {
-      why: 'locked until you finish setting up',
-      title: (item) => `Finish setting up to use ${item}`,
-      body: 'Tell us what you need help with and your study plans. It’s 2 short steps, and your first session is free.',
-      cta: 'Continue setup',
-      href: ONBOARDING,
-    },
+  menteeSetup: { items: SETUP_ITEMS, copy: SETUP_COPY },
+  mentorSetup: {
+    items: SETUP_ITEMS,
+    copy: { ...SETUP_COPY, body: SETUP_LOCK_COPY.mentorBody, href: MENTOR_ONBOARDING },
   },
   mentorReview: {
     items: ['Bookings', 'Messages'],
@@ -152,8 +165,10 @@ export function accessFor(viewer: Viewer): Access {
   if (viewer.isMentor) {
     // Mentor-side only: a declined applicant who chose to be a mentee
     // (menteeByChoice) has isMentor false and follows the mentee rules.
-    if (MENTOR_ONBOARDING_LIVE && viewer.mentorStage === 'pending') state = 'mentorReview';
-    if (MENTOR_ONBOARDING_LIVE && viewer.mentorStage === 'declined') state = 'mentorNotApproved';
+    if (MENTOR_ONBOARDING_LIVE) state = MENTOR_STATES[viewer.mentorStage ?? 'approved'] ?? 'none';
+  } else if (viewer.signedUpAsMentor && MENTOR_ONBOARDING_LIVE) {
+    // A mentor sign-up who hasn't started: the mentor's setup, as memberHome.
+    state = 'mentorSetup';
   } else if (ONBOARDING_LIVE && viewer.onboardingComplete === false) {
     state = 'menteeSetup';
   }
@@ -164,8 +179,21 @@ export function accessFor(viewer: Viewer): Access {
     locked: new Set(lock.items),
     copy: lock.copy,
     homeHref,
-    setupPill: state === 'menteeSetup',
+    setupPill: inSetup(state),
   };
+}
+
+/** A mentor's stage → their lock; approved (and none) have none. */
+const MENTOR_STATES: Partial<Record<MentorStage, AccessState>> = {
+  unsubmitted: 'mentorSetup',
+  pending: 'mentorReview',
+  declined: 'mentorNotApproved',
+};
+
+/** The setup lock, mentee or mentor: onboarding isn't finished. */
+export function inSetup(a: Access | AccessState): boolean {
+  const state = typeof a === 'string' ? a : a.state;
+  return state === 'menteeSetup' || state === 'mentorSetup';
 }
 
 /**

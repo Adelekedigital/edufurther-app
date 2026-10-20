@@ -45,6 +45,21 @@ describe('useAppShell: the setup lock', () => {
     expect(result.current.account?.credits).toMatchObject({ left: 4, monthlyLeft: 3 });
   });
 
+  it('a mentor sign-up in setup: the mentor setup lock and no mentee credits', () => {
+    viewer = mentee({ signedUpAsMentor: true, onboardingComplete: false });
+    const { result } = renderHook(() => useAppShell());
+    expect(result.current.access.state).toBe('mentorSetup');
+    expect(result.current.account?.credits).toBeUndefined();
+  });
+
+  it('a mentor who never submitted gets the mentor nav, locked', () => {
+    viewer = mentee({ isMentee: false, isMentor: true, mentorStage: 'unsubmitted' });
+    const { result } = renderHook(() => useAppShell());
+    expect(result.current.nav).toBe('mentor');
+    expect(result.current.access.state).toBe('mentorSetup');
+    expect(result.current.account?.credits).toBeUndefined();
+  });
+
   it('while /me loads: no locks, and the nav is unknown (no items, no counts)', () => {
     viewer = { kind: 'loading', signedIn: true };
     const { result } = renderHook(() => useAppShell());

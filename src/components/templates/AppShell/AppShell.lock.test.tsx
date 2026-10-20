@@ -27,6 +27,7 @@ const member = (over: Partial<Member>): Member => ({
 const SETUP = accessFor(member({ onboardingComplete: false }));
 const REVIEW = accessFor(member({ isMentor: true, mentorStage: 'pending' }));
 const DECLINED = accessFor(member({ isMentor: true, mentorStage: 'declined' }));
+const MENTOR_SETUP = accessFor(member({ isMentor: true, mentorStage: 'unsubmitted' }));
 
 const AV = { initials: 'A', cover: 'sky' as const };
 const BOOKINGS = { Bookings: { count: 2, label: '2 requests awaiting the mentor' } };
@@ -171,6 +172,28 @@ describe('AppShell: the setup lock (AppShell.dc.html setupLock)', () => {
     expect(nav(1).getByRole('button', { name: 'Calendar, not available' })).toBeInTheDocument();
   });
 
+  it('mentorSetup: the working pages locked, Home "Set up" to mentor onboarding (owner, 2026-10-20)', async () => {
+    shell(MENTOR_SETUP, 'mentor', 'Home');
+    const user = userEvent.setup();
+    for (const l of ['Sessions', 'Bookings', 'Calendar', 'Integration'])
+      expect(
+        nav(0).getByRole('button', { name: `${l}, locked until you finish setting up` }),
+      ).toBeInTheDocument();
+    expect(nav(0).getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/settings');
+    expect(nav(0).getByRole('link', { name: 'Home, finish setting up' })).toHaveAttribute(
+      'href',
+      '/onboarding/mentor',
+    );
+    await user.click(
+      nav(0).getByRole('button', { name: 'Calendar, locked until you finish setting up' }),
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Finish setting up to use Calendar' });
+    expect(within(dialog).getByRole('link', { name: 'Continue setup' })).toHaveAttribute(
+      'href',
+      '/onboarding/mentor',
+    );
+  });
+
   it('the More sheet: a locked item names its reason, trails a lock, and opens the explainer', async () => {
     shell(DECLINED, 'mentor', 'Home');
     const user = userEvent.setup();
@@ -202,7 +225,7 @@ describe('AppShell: the setup lock (AppShell.dc.html setupLock)', () => {
   });
 
   it('copy has no em dashes', () => {
-    for (const a of [SETUP, REVIEW, DECLINED]) {
+    for (const a of [SETUP, MENTOR_SETUP, REVIEW, DECLINED]) {
       const c = a.copy!;
       expect([c.why, c.title('Bookings'), c.body, c.cta].join(' ')).not.toMatch(/—/);
     }
