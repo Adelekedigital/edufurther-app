@@ -1,11 +1,14 @@
 /* eslint-disable @next/next/no-img-element -- remote avatars and banners of unknown host/size; see performance notes in design-divergence.md */
 import type { CSSProperties, ReactNode, Ref } from 'react';
+import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Star } from '@/components/atoms/Star/Star';
 import { Tag } from '@/components/atoms/Tag/Tag';
+import { ProfilePhoto, type PhotoUpload } from '@/components/molecules/ProfilePhoto/ProfilePhoto';
 import { cx } from '@/lib/utils/cx';
-import { coverFor, coverVars, topicIcon } from '@/lib/utils/cover';
+import { coverVars, topicIcon } from '@/lib/utils/cover';
 import { formatRating, sessionsLabel } from '@/lib/utils/format';
+import { personCover } from '@/lib/utils/person';
 import type { MentorProfile } from '@/types/mentor';
 import styles from './ProfileHeader.module.css';
 
@@ -28,8 +31,11 @@ type ProfileHeaderProps = {
    * broken).
    */
   status?: string;
-  /** The owner's camera badge on the photo (Mentor Profile.dc.html `canEdit`). */
-  photoTools?: ReactNode;
+  /**
+   * The owner's camera badge on the photo (Mentor Profile.dc.html `canEdit`):
+   * the upload, the page's remove confirm, and the file input's id.
+   */
+  photoEdit?: { upload: PhotoUpload; onRemove?: () => void; inputId?: string };
   /** Where focus returns after a topics save (a strength tip that opened it is gone). */
   editTopicsRef?: Ref<HTMLButtonElement>;
   /** The owner's "Edit topics", after the topic chips (Mentor Profile.dc.html `editTopics`). */
@@ -58,23 +64,17 @@ export function ProfileHeader({
   status,
   onEditTopics,
   editTopicsRef,
-  photoTools,
+  photoEdit,
 }: ProfileHeaderProps) {
   const m = profile.mentor;
   // Cover colour (Mentor Profile.dc.html): a light banner when there's no
   // banner image, and its paired dark colour behind the initials.
-  const cover = coverVars(profile.cover.color ?? coverFor(m.id));
+  const coverKey = personCover(m.id, profile.cover.color);
+  const cover = coverVars(coverKey);
   // Cover art (Mentor Profile.dc.html): faint icons for the first 3 topics, a
   // dot pattern, or one large icon. Only on a colour banner, never over a photo.
   const art = profile.bannerUrl ? 'none' : profile.cover.art;
   const artIcons = m.topics.slice(0, 3).map((t) => topicIcon(t.label));
-  const photoStyle = {
-    '--photo-bg': cover.ink,
-    ...(m.photoFocus && {
-      '--photo-x': `${(m.photoFocus.x * 100).toFixed(1)}%`,
-      '--photo-y': `${(m.photoFocus.y * 100).toFixed(1)}%`,
-    }),
-  } as CSSProperties;
   const location = locationLine(profile.originCountry, profile.studyCountry);
 
   // Never an empty star rating (product rule): rating only with reviews. A new
@@ -131,18 +131,37 @@ export function ProfileHeader({
       </div>
       {bannerTools && <div className={styles.bannerTools}>{bannerTools}</div>}
       <div className={styles.head}>
-        <div className={styles.avatarWrap}>
-          <div className={styles.avatar} style={photoStyle}>
-            {m.photoUrl ? (
-              <img src={m.photoUrl} alt={m.name} className={styles.photo} />
-            ) : (
-              <span role="img" aria-label={m.name} className={styles.initials}>
-                {m.initials}
-              </span>
-            )}
-          </div>
-          {photoTools}
-        </div>
+        {/* The design's crop sits a quarter down unless the face is known. */}
+        {photoEdit ? (
+          <ProfilePhoto
+            className={styles.avatarWrap}
+            size={112}
+            ring="white"
+            objectY={0.25}
+            person={{
+              initials: m.initials,
+              cover: coverKey,
+              src: m.photoUrl,
+              focus: m.photoFocus,
+              name: m.name,
+            }}
+            upload={photoEdit.upload}
+            onRemove={photoEdit.onRemove}
+            inputId={photoEdit.inputId}
+          />
+        ) : (
+          <Avatar
+            className={styles.avatarWrap}
+            size={112}
+            ring="white"
+            objectY={0.25}
+            initials={m.initials}
+            tone={coverKey}
+            src={m.photoUrl}
+            focus={m.photoFocus}
+            alt={m.name}
+          />
+        )}
         {introEditor ? (
           <div className={cx(styles.intro, styles.introEdit)}>
             {/* The page keeps its title while the form replaces it. */}
