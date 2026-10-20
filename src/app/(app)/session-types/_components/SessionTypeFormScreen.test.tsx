@@ -630,6 +630,21 @@ describe('the setup lock: /session-types/new opened by URL (PRD "App shell and a
     expect(screen.queryByRole('textbox', { name: 'Session name' })).toBeNull();
   });
 
+  it.each([
+    [
+      'a mentor who never sent their application',
+      viewers.mentorUnfinished,
+      explainer.mentorSetup('Sessions'),
+    ],
+    ['a mentor sign-up, not started', viewers.mentorSignup, explainer.mentorSetup('Sessions')],
+    ['an unfinished mentee', viewers.menteeUnfinished, explainer.menteeSetup('Sessions')],
+  ])('%s gets the setup explainer, never the wizard', (_who, v, e) => {
+    viewer = v;
+    render(<SessionTypeFormScreen template="sop-review" />);
+    expectLockedPage(e);
+    expect(screen.queryByRole('textbox', { name: 'Session name' })).toBeNull();
+  });
+
   it('a mentor in review still creates session types (only Bookings locks)', () => {
     viewer = viewers.mentorReview;
     render(<SessionTypeFormScreen template="sop-review" />);

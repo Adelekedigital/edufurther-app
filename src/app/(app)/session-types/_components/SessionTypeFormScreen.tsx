@@ -27,12 +27,7 @@ import {
 } from '@/lib/utils/sessionTypeDraft';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { lockedPageGate, mentorGate, SESSION_TYPES_GATE } from '@/app/_shell/MentorGate';
-import {
-  DefaultsModal,
-  PublishedModal,
-  SavedModal,
-  WeeklyModal,
-} from './SessionTypeFormModals';
+import { DefaultsModal, PublishedModal, SavedModal, WeeklyModal } from './SessionTypeFormModals';
 import styles from './SessionTypesScreen.module.css';
 import { useLeaveGuard, useSessionTypeDraft, type EditTarget } from './useSessionTypeDraft';
 import { useSessionTypeSubmit } from './useSessionTypeSubmit';
@@ -65,14 +60,16 @@ export function SessionTypeFormScreen({
   const { viewer, member, access } = useAppShell();
   const isMentor = !!member?.isMentor;
   const { topics, isLoading: topicsLoading, error: topicsError, retry: retryTopics } = useTopics();
-  const mentorId = isMentor ? member!.id : null;
+  // A locked page (the setup lock) fetches nothing it won't show.
+  const locked = access.locked.has('Sessions');
+  const mentorId = isMentor && !locked ? member!.id : null;
   const defaults = useMentorDefaults(mentorId);
   const saveDefaults = useSaveMentorDefaults(mentorId);
   const weekly = useWeeklyHours(mentorId);
   const saveWeekly = useSaveWeeklyHours(mentorId);
   const retry = useRetryWindows();
   // Calendar hours must fit the shortest session offered (product, 2026-10-01).
-  const own = useOwnSessionTypes(isMentor);
+  const own = useOwnSessionTypes(isMentor && !locked);
 
   const tmpl = edit ? null : (SESSION_TEMPLATES.find((x) => x.key === template) ?? null);
   const d = useSessionTypeDraft(edit, tmpl, defaults);
@@ -116,14 +113,14 @@ export function SessionTypeFormScreen({
   const close = () => setModal(null);
   const toList = () => router.push(LIST);
 
-  // The shared gates first, then the setup lock (accessFor decides).
-  const gate =
-    mentorGate(
-      viewer,
-      isMentor,
-      edit ? `/session-types/${edit.id}/edit` : '/session-types/new',
-      SESSION_TYPES_GATE,
-    ) ?? lockedPageGate(access, 'Sessions');
+  // The shared gates, then the setup lock (accessFor decides), then "for mentors".
+  const gate = mentorGate(
+    viewer,
+    isMentor,
+    edit ? `/session-types/${edit.id}/edit` : '/session-types/new',
+    SESSION_TYPES_GATE,
+    lockedPageGate(access, 'Sessions'),
+  );
   const loading = viewer.kind === 'loading' || topicsLoading;
 
   return (

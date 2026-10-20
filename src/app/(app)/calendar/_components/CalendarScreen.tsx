@@ -42,6 +42,7 @@ import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { useOnline } from '@/lib/utils/useOnline';
 import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import { lockedPageGate, mentorGate, type GateCopy } from '@/app/_shell/MentorGate';
+import { inSetup } from '@/lib/utils/access';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { CalendarSkeleton } from './CalendarSkeleton';
 import { SaveBar, type SaveProblem } from './SaveBar';
@@ -62,7 +63,9 @@ export function CalendarScreen() {
   const { viewer, member, access } = useAppShell();
   const online = useOnline();
   const isMentor = !!member?.isMentor;
-  const mentorId = isMentor ? member!.id : null;
+  // A locked page (the setup lock) fetches nothing it won't show.
+  const locked = access.locked.has('Calendar');
+  const mentorId = isMentor && !locked ? member!.id : null;
   const deviceZone = useMemo(() => deviceTimeZone(), []);
   const monthTitleId = useId();
 
@@ -72,7 +75,7 @@ export function CalendarScreen() {
   const saveDefaults = useSaveMentorDefaults(mentorId);
   // Hours must fit the shortest session offered (product, 2026-10-01). The page
   // waits for the types (#147); 0 (nothing enforced) only before it's ready.
-  const own = useOwnSessionTypes(isMentor);
+  const own = useOwnSessionTypes(isMentor && !locked);
   const minLength = shortestLength(defaults.data?.durationMin, own.data);
   const draft = useHoursDraft(weekly.data, deviceZone, minLength);
   // Days are counted in the zone the hours are saved in, until a new one is saved.
@@ -324,11 +327,14 @@ export function CalendarScreen() {
       </Panel>
     );
 
-  // The setup lock after the shared states (guest, non-mentor, a failed /me),
-  // before this page's own loading and errors: a locked page never waits on
-  // or reports data it won't show.
+  // The setup lock after the shared states (guest, a failed /me, a non-mentor
+  // who isn't in setup), before this page's own loading and errors: a locked
+  // page never waits on or reports data it won't show. A mentor sign-up has no
+  // mentor profile yet, so the setup lock wins over "for mentors".
   const viewerPanel =
-    viewer.kind === 'guest' || viewer.kind === 'error' || (viewer.kind === 'member' && !isMentor);
+    viewer.kind === 'guest' ||
+    viewer.kind === 'error' ||
+    (viewer.kind === 'member' && !isMentor && !inSetup(access));
   const lock = accountGate || viewerPanel ? null : lockedPageGate(access, 'Calendar');
 
   let body: ReactNode;

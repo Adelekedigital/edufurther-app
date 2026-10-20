@@ -832,14 +832,30 @@ describe('the setup lock: /session-types opened by URL (PRD "App shell and acces
     expectNoLock();
   });
 
-  it('a mentee, menteeByChoice included, keeps the non-mentor gate, never the declined lock', () => {
-    for (const v of [viewers.menteeUnfinished, viewers.menteeByChoice]) {
+  it('a finished mentee, menteeByChoice included, keeps the non-mentor gate, never a lock', () => {
+    for (const v of [viewers.menteeFinished, viewers.menteeByChoice]) {
       viewer = v;
       const { unmount } = render(<SessionTypesScreen />);
       expect(screen.getByRole('heading', { name: 'Session types are for mentors' })).toBeVisible();
       expectNoLock();
       unmount();
     }
+  });
+
+  // Setup wins over "for mentors": a sign-up has no mentor profile yet (owner, 2026-10-20).
+  it.each([
+    [
+      'a mentor who never sent their application',
+      viewers.mentorUnfinished,
+      explainer.mentorSetup('Sessions'),
+    ],
+    ['a mentor sign-up, not started', viewers.mentorSignup, explainer.mentorSetup('Sessions')],
+    ['an unfinished mentee', viewers.menteeUnfinished, explainer.menteeSetup('Sessions')],
+  ])('%s gets the setup explainer, not the list', (_who, v, e) => {
+    viewer = v;
+    render(<SessionTypesScreen />);
+    expectLockedPage(e);
+    expect(screen.queryByText('SOP draft review')).toBeNull();
   });
 
   it('while /me loads: the page’s loading state, no explainer', () => {

@@ -58,7 +58,8 @@ export function IntegrationsScreen() {
   const { viewer, member, access } = useAppShell();
   const online = useOnline();
   const isMentor = !!member?.isMentor;
-  const mentorId = isMentor ? member!.id : null;
+  // A locked page (the setup lock) fetches nothing it won't show.
+  const mentorId = isMentor && !access.locked.has('Integration') ? member!.id : null;
 
   const video = useConferencing(mentorId);
   const saveVideo = useSaveConferencing(mentorId);
@@ -441,10 +442,14 @@ export function IntegrationsScreen() {
       </>
     );
 
-  // The shared gates first, then the setup lock (accessFor decides).
-  const gate =
-    mentorGate(viewer, isMentor, '/integrations', INTEGRATIONS_GATE) ??
-    lockedPageGate(access, 'Integration');
+  // The shared gates, then the setup lock (accessFor decides), then "for mentors".
+  const gate = mentorGate(
+    viewer,
+    isMentor,
+    '/integrations',
+    INTEGRATIONS_GATE,
+    lockedPageGate(access, 'Integration'),
+  );
   const body: ReactNode = gate ?? (
     <div className={styles.page}>
       <div className={styles.header}>

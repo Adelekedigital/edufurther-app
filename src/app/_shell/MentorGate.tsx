@@ -56,16 +56,20 @@ export const SESSION_TYPES_GATE: GateCopy = {
  * Who may be on a mentor's own page (Session Types, Calendar): any mentor, in
  * any state (backend reply #6). Everyone else gets the page they need instead —
  * null means "a mentor, or not known yet": render the page (it shows its own
- * loading).
+ * loading). `lock` is the page's `lockedPageGate`: after the shared states,
+ * before "for mentors", so an unfinished account (a mentor sign-up has no
+ * mentor profile yet) meets the setup lock, not a dead end.
  */
 export function mentorGate(
   viewer: Viewer,
   isMentor: boolean,
   returnTo: string,
   copy: GateCopy,
+  lock: ReactNode = null,
 ): ReactNode {
   const shared = memberGate(viewer, returnTo, copy);
   if (shared) return shared;
+  if (lock) return lock;
   if (viewer.kind !== 'loading' && !isMentor)
     return (
       <Gate

@@ -874,8 +874,18 @@ describe('the setup lock: /calendar opened by URL (PRD "App shell and access")',
     expectNoLock();
   });
 
-  it('a mentee, menteeByChoice included, keeps the non-mentor panel, never the declined lock', () => {
-    for (const v of [viewers.menteeUnfinished, viewers.menteeByChoice]) {
+  it.each([
+    ['a mentor sign-up, not started', viewers.mentorSignup, explainer.mentorSetup('Calendar')],
+    ['an unfinished mentee', viewers.menteeUnfinished, explainer.menteeSetup('Calendar')],
+  ])('%s gets the setup explainer, not "for mentors"', (_who, v, e) => {
+    viewer = v;
+    render(<CalendarScreen />);
+    expectLockedPage(e);
+    expect(screen.queryByRole('heading', { name: 'Your calendar is for mentors' })).toBeNull();
+  });
+
+  it('a finished mentee, menteeByChoice included, keeps the non-mentor panel, never a lock', () => {
+    for (const v of [viewers.menteeFinished, viewers.menteeByChoice]) {
       viewer = v;
       const { unmount } = render(<CalendarScreen />);
       expect(screen.getByRole('heading', { name: 'Your calendar is for mentors' })).toBeVisible();

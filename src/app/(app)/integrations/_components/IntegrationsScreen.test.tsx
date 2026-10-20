@@ -695,6 +695,22 @@ describe('the setup lock: /integrations opened by URL (PRD "App shell and access
     expect(screen.queryByRole('heading', { name: 'Integrations' })).toBeNull();
   });
 
+  // Setup wins over "for mentors": a sign-up has no mentor profile yet (owner, 2026-10-20).
+  it.each([
+    [
+      'a mentor who never sent their application',
+      viewers.mentorUnfinished,
+      explainer.mentorSetup('Integration'),
+    ],
+    ['a mentor sign-up, not started', viewers.mentorSignup, explainer.mentorSetup('Integration')],
+    ['an unfinished mentee', viewers.menteeUnfinished, explainer.menteeSetup('Integration')],
+  ])('%s gets the setup explainer', (_who, v, e) => {
+    viewer = v;
+    render(<IntegrationsScreen />);
+    expectLockedPage(e);
+    expect(screen.queryByRole('heading', { name: 'Integrations are for mentors' })).toBeNull();
+  });
+
   it.each([
     ['a mentor in review (only Bookings locks)', viewers.mentorReview],
     ['an approved mentor', viewers.mentorApproved],

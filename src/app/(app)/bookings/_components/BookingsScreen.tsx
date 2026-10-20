@@ -30,7 +30,13 @@ import { useAppShell } from '@/app/_shell/useAppShell';
 import { Button } from '@/components/atoms/Button/Button';
 import { ConfirmActionDialog } from '@/app/_sessions/ConfirmActionDialog';
 import { IntakeFileViewer } from '@/app/_sessions/IntakeFileViewer';
-import { bookingHeading, canAccept, fullDate, HISTORY_FILTERS, overlapping } from '@/lib/utils/bookings';
+import {
+  bookingHeading,
+  canAccept,
+  fullDate,
+  HISTORY_FILTERS,
+  overlapping,
+} from '@/lib/utils/bookings';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
 import { useMyReviewableSessions } from '@/lib/api/data/reviewableSessions';
 import { BookingsPanel } from './BookingsPanel';
@@ -74,13 +80,15 @@ export function BookingsScreen() {
   // Fetched on Pending too: the clash check reads it, and Pending is where the
   // nav badge sends a mentor, so gating it on the Upcoming tab meant the one
   // warning that matters never appeared on the path that matters.
+  // A locked page (the setup lock) fetches nothing it won't show.
+  const fetchAs = access.locked.has('Bookings') ? null : userId;
   const upcoming = useUpcomingBookings(
-    userId,
+    fetchAs,
     accountZone,
     tab === 'upcoming' || tab === 'pending',
   );
-  const pending = usePendingBookings(userId, tab === 'pending');
-  const history = useBookingHistory(userId, filters, tab === 'history');
+  const pending = usePendingBookings(fetchAs, tab === 'pending');
+  const history = useBookingHistory(fetchAs, filters, tab === 'history');
 
   const { selected, select, toggle } = useSelectedBooking();
   const router = useRouter();
@@ -96,7 +104,7 @@ export function BookingsScreen() {
   const loaded = [...(upcoming.data ?? []), ...(pending.data ?? []), ...history.bookings].find(
     (b) => b.id === selected,
   );
-  const fetched = useBooking(selected, userId, !!selected && !loaded);
+  const fetched = useBooking(selected, fetchAs, !!selected && !loaded);
   const open = loaded ?? fetched.data;
   const outcome = useBookingOutcome(open ?? null, userId, !!open);
   // Only while the panel is open: a list of twenty rows must not make twenty
@@ -140,7 +148,9 @@ export function BookingsScreen() {
   // tab rather than on whether the query happens to hold data, so it does not
   // rest on what an idle query returns.
   const pendingCount =
-    tab === 'pending' ? (pending.data?.length ?? counts?.pending ?? null) : (counts?.pending ?? null);
+    tab === 'pending'
+      ? (pending.data?.length ?? counts?.pending ?? null)
+      : (counts?.pending ?? null);
   const items: TabItem[] = [
     {
       value: 'upcoming',
@@ -189,7 +199,7 @@ export function BookingsScreen() {
   // Which completed sessions this mentee can still review. The list is the
   // authority — it already applies "completed only", "not already reviewed" and
   // the 30-day interval per offering — so nothing here re-derives eligibility.
-  const reviewable = useMyReviewableSessions(tab === 'history');
+  const reviewable = useMyReviewableSessions(tab === 'history' && !access.locked.has('Bookings'));
   const canReview = (b: Booking) =>
     b.side === 'mentee' && (reviewable.data ?? []).some((r) => r.id === b.id);
   // While we do not know, offer neither. "Book again" standing in for a moment
@@ -211,7 +221,6 @@ export function BookingsScreen() {
    * exists, which is what that attribute is for.
    */
   const panelNotice = (b: Booking) => (open?.id === b.id ? null : rowNotice(b));
-
 
   /**
    * Full width under the row's detail, never in the button rail: a block in
@@ -317,8 +326,7 @@ export function BookingsScreen() {
   const joinHref = (sessionId: string) => `/sessions/${encodeURIComponent(sessionId)}`;
 
   // The shared gates first, then the setup lock (accessFor decides).
-  const gate =
-    memberGate(viewer, '/bookings', BOOKINGS_GATE) ?? lockedPageGate(access, 'Bookings');
+  const gate = memberGate(viewer, '/bookings', BOOKINGS_GATE) ?? lockedPageGate(access, 'Bookings');
   // Upcoming's first row is the hero; the list holds the rest.
   const all = upcoming.data ?? [];
   const [next, ...later] = all;
