@@ -90,7 +90,7 @@ export function ModalShell({
     mountedLayout.current = isSheet;
     const live = dialogRef.current;
     if (live && !live.contains(document.activeElement)) {
-      (live.querySelector<HTMLElement>(FOCUSABLE) ?? live).focus();
+      (live.querySelector<HTMLElement>(FOCUSABLE) ?? live).focus({ preventScroll: true });
     }
   }, [isSheet]);
 
