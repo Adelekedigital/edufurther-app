@@ -71,7 +71,8 @@ export function toParty(p: PartyRead): BookingParty {
     deleted: p.deleted ?? false,
     timeZone: p.deleted ? null : (p.timezone ?? null),
     // Their chosen cover (backend #511), else the one their id gives.
-    cover: personCover(p.id, coverKey(p.cover_color)),
+    // Redacted with the rest for a deleted account: the id's colour, never their chosen one.
+    cover: personCover(p.id, coverKey(p.deleted ? null : p.cover_color)),
     // Redacted here like the name and the avatar, not merely expected to
     // arrive null: every other identifying field on a deleted account is
     // dropped locally rather than trusted to the server.
