@@ -273,6 +273,7 @@ export function MentorProfileForm({
                   ...genders.map((g) => ({ value: g, label: g })),
                 ]}
                 value={values.gender}
+                text="sm"
                 aria-describedby={ids('gender').hint}
                 onChange={(e) => onChange({ gender: e.target.value })}
                 className={styles.fill}

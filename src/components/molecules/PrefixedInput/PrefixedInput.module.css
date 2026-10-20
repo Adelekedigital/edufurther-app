@@ -1,0 +1,56 @@
+/* Mentor Settings.dc.html: the social link field, every value from its inline styles. */
+.box {
+  display: flex;
+  height: var(--control-h-sm);
+  border: var(--border-hairline) solid var(--border-default);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface-card);
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+.box:hover {
+  border-color: var(--ink-400);
+}
+/* The ring goes round the whole field, prefix and all. */
+.box:focus-within {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 0;
+  border-color: var(--border-focus);
+}
+.invalid,
+.invalid:hover {
+  border-color: var(--border-danger);
+}
+.prefix {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-2) 0 var(--space-3);
+  background: var(--surface-subtle);
+  border-right: var(--border-hairline) solid var(--border-subtle);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-regular);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+.input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  padding: 0 var(--space-3);
+  background: transparent;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  color: var(--text-primary);
+  caret-color: var(--caret);
+}
+@media (max-width: 767px) {
+  /* Phones: 44px, and 16px text so iOS doesn't zoom (as the Input atom). */
+  .box {
+    height: auto;
+    min-height: var(--touch-target-min);
+  }
+  .input {
+    font-size: var(--text-p-md);
+  }
+}

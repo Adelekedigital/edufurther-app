@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { COVER_KEYS } from '@/lib/utils/cover';
 import { Avatar } from './Avatar/Avatar';
 import { Badge } from './Badge/Badge';
+import { BrandIcon } from './BrandIcon/BrandIcon';
 import { Button } from './Button/Button';
 import { Chip } from './Chip/Chip';
 import { Icon } from './Icon/Icon';
@@ -304,6 +305,44 @@ export const Selects: Story = {
           { value: '1200', label: '8:00 pm' },
         ]}
       />
+      <Select
+        aria-label="Form select, nothing picked (text sm)"
+        text="sm"
+        width={240}
+        value=""
+        onChange={() => {}}
+        options={[
+          { value: '', label: 'Select' },
+          { value: 'Woman', label: 'Woman' },
+        ]}
+      />
+    </div>
+  ),
+};
+
+/** Social platform marks (Mentor Settings.dc.html assets/icons + DS marks), at the drawn sizes. */
+export const BrandIcons: Story = {
+  render: () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {([13, 14, 18] as const).map((size) => (
+        <div key={size} style={row}>
+          {(
+            [
+              'linkedin',
+              'x',
+              'youtube',
+              'instagram',
+              'facebook',
+              'tiktok',
+              'medium',
+              'substack',
+              'website',
+            ] as const
+          ).map((m) => (
+            <BrandIcon key={m} mark={m} size={size} />
+          ))}
+        </div>
+      ))}
     </div>
   ),
 };

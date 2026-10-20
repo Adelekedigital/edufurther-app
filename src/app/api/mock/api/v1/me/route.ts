@@ -3,6 +3,7 @@ import { MOCK_COUNTRIES, MOCK_LANGUAGES, mockItems } from '@/lib/api/mock/catalo
 import { mockPhotoUrl } from '@/lib/api/mock/photoStore';
 import { mockText } from '@/lib/api/mock/profileTextStore';
 import type { components } from '@/lib/api/generated/schema';
+import { mockLinkedIn, mockLinks } from '@/lib/api/mock/linksStore';
 import { ok, problem } from '@/lib/api/mock/respond';
 import {
   MOCK_VIEWER_ID,
@@ -75,8 +76,8 @@ export async function GET(req: Request) {
     // No slug, like every account made in this app (only the old platform's
     // import set one): Mentor Settings reads the profile by the user's id.
     slug: null,
-    // Social links (backend #507): none on the mock viewer.
-    links: [],
+    // Social links (backend #507), from the mock store; LinkedIn is the profile's.
+    links: mockLinks(),
     timezone: 'Africa/Lagos',
     created_at: '2026-10-17T09:00:00Z',
     is_admin: false,
@@ -90,6 +91,7 @@ export async function GET(req: Request) {
     mentor_profile: mentorProfile(req),
     profile: {
       cover_art: 'none' as const,
+      social_linkedin: mockLinkedIn(),
       origin_country: originRef(items.origin_country_id ?? null),
       about_me: text.about_me ?? null,
       about_me_drafted_at: text.about_me_drafted_at ?? null,

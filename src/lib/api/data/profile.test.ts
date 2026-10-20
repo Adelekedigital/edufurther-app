@@ -81,15 +81,26 @@ describe('toMentorProfile', () => {
     ).toEqual(['session_type']);
   });
 
-  it('keeps only safe social links', () => {
+  it('keeps only safe social links: LinkedIn, then their links in order', () => {
     const p = toMentorProfile(
       read({
         social_linkedin: 'https://www.linkedin.com/in/gbenga',
-        social_twitter: 'javascript:alert(1)',
-        social_youtube: 'gbenga',
+        links: [
+          { platform: 'x', url: 'javascript:alert(1)' },
+          { platform: 'youtube', url: 'https://www.youtube.com/@gbenga' },
+          { platform: 'instagram', url: 'https://evil.io/gbenga' },
+          { platform: 'website', url: 'https://gbenga.substack.com' },
+          { platform: 'website', url: 'https://gbenga.dev/' },
+        ],
       }),
     );
-    expect(p.socials).toEqual([{ kind: 'linkedin', href: 'https://www.linkedin.com/in/gbenga' }]);
+    expect(p.socials).toEqual([
+      { mark: 'linkedin', href: 'https://www.linkedin.com/in/gbenga' },
+      { mark: 'youtube', href: 'https://www.youtube.com/@gbenga' },
+      // A website on Substack shows Substack's mark.
+      { mark: 'substack', href: 'https://gbenga.substack.com/' },
+      { mark: 'website', href: 'https://gbenga.dev/' },
+    ]);
   });
 
   it('labels the offering’s stage and venue, using the custom label for "other"', () => {

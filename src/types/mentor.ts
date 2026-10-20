@@ -281,7 +281,13 @@ export type CreditState = 'on_track' | 'moderate' | 'low' | 'exhausted';
 
 // ---- Mentor profile (GET /api/v1/mentors/{handle}) ----------------------------
 
-export type SocialKind = 'linkedin' | 'x' | 'youtube';
+/**
+ * Where a social link points: LinkedIn (`social_linkedin`), or one of the
+ * user's links (backend LinkPlatform, #507).
+ */
+export type SocialKind = 'linkedin' | 'x' | 'youtube' | 'instagram' | 'facebook' | 'tiktok' | 'website';
+/** The mark a link shows: a website on Medium or Substack shows theirs (the design's DETECT). */
+export type SocialMark = SocialKind | 'medium' | 'substack';
 
 /** A bookable offering as the profile shows it (category, stage, venue). */
 export type ProfileSessionType = SessionType & {
@@ -370,7 +376,7 @@ export type MentorProfile = {
     languages: { id: string; label: string }[];
   };
   /** Only links that passed lib/utils/socialUrl. */
-  socials: { kind: SocialKind; href: string }[];
+  socials: { mark: SocialMark; href: string }[];
   education: ProfileItem[];
   awards: AwardItem[];
   sessionTypes: ProfileSessionType[];

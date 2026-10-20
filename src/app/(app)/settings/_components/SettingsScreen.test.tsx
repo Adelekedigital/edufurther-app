@@ -27,7 +27,7 @@ vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => viewer }));
 vi.mock('./tabs', () => ({
   MENTEE_TABS: ['profile', 'goals', 'education', 'security'],
   DEFAULT_TAB: 'profile',
-  MENTOR_TABS: ['booking', 'profile', 'expertise', 'security'],
+  MENTOR_TABS: ['booking', 'profile', 'expertise', 'links', 'security'],
   MENTOR_DEFAULT_TAB: 'booking',
 }));
 
@@ -70,6 +70,9 @@ vi.mock('./GoalsPanel', async () => {
 
 vi.mock('./EducationPanel', () => ({
   EducationPanel: () => <div data-testid="education-panel" />,
+}));
+vi.mock('./LinksPanel', () => ({
+  LinksPanel: () => <div data-testid="links-panel" />,
 }));
 vi.mock('./SecurityPanel', () => ({
   SecurityPanel: ({ role = 'mentee' }: { role?: string }) => (
@@ -199,10 +202,22 @@ describe('SettingsScreen', () => {
       'Booking rules',
       'Profile',
       'Expertise',
+      'Social links',
       'Login & security',
     ]);
     expect(screen.getByRole('tab', { name: 'Expertise' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('expertise-panel')).toBeInTheDocument();
+  });
+
+  it('a mentor’s Social links tab, last, with its panel', () => {
+    viewer = member(true);
+    segment = 'links';
+    render(<SettingsScreen />);
+    expect(screen.getByRole('tab', { name: 'Social links' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByTestId('links-panel')).toBeInTheDocument();
   });
 
   it('a mentor’s Profile tab is the mentor profile panel, not the mentee one', () => {

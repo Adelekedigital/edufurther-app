@@ -3,6 +3,7 @@ import { MOCK_ARTS, setMockCover, type MockCover } from '@/lib/api/mock/coverSto
 import { MOCK_COUNTRIES, setMockItems } from '@/lib/api/mock/catalog';
 import { setMockText, type MockText } from '@/lib/api/mock/profileTextStore';
 import { COVER_KEYS } from '@/lib/utils/cover';
+import { setMockLinkedIn } from '@/lib/api/mock/linksStore';
 import { problem } from '@/lib/api/mock/respond';
 
 const invalid = (pointer: string) =>
@@ -11,7 +12,8 @@ const invalid = (pointer: string) =>
 /**
  * MOCK of PATCH /api/v1/users/{user_id}/profile: cover, names, About and
  * where they're from (origin_country_id: a catalog id or null),
- * full_name, and the pending current_country_id and primary_role.
+ * full_name, social_linkedin (a profile link, or null to clear), and the
+ * pending current_country_id and primary_role.
  * Partial like the backend: only the fields sent are written. Names can't be
  * cleared (422) and are at most 100 characters; About at most 1500, blank is
  * null. ENABLE_MOCK_API=1 only.
@@ -69,6 +71,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ userId: strin
       return invalid('/current_country_id');
     setMockItems(userId, { current_country_id: v as string | null });
   }
+  if ('social_linkedin' in body && !setMockLinkedIn(body.social_linkedin))
+    return invalid('/social_linkedin');
   // PENDING BACKEND (Mentor Onboarding B3): "Continue as a mentee" writes the role.
   if ('primary_role' in body && body.primary_role !== 'mentee' && body.primary_role !== 'mentor')
     return invalid('/primary_role');

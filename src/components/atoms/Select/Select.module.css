@@ -51,6 +51,14 @@
   padding: 0 var(--space-10) 0 var(--space-4);
   font-size: var(--text-p-sm);
 }
+.sm .select {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-regular);
+}
+/* The placeholder ("Select") until something is picked (the design's ink-500). */
+.empty .select {
+  color: var(--text-tertiary);
+}
 .xl .chevron {
   right: var(--space-3);
 }
@@ -60,7 +68,8 @@
     width: 100% !important;
   }
   .select,
-  .xl .select {
+  .xl .select,
+  .sm .select {
     min-height: var(--touch-target-min);
     font-size: var(--text-p-md);
   }
