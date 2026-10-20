@@ -24,6 +24,8 @@ export async function GET() {
     ...prefs,
     max_booking_window_days: MAX_WINDOW_DAYS,
     default_booking_window_days: DEFAULT_WINDOW_DAYS,
+    // The platform's response window (RESPONSE_WINDOW_HOURS, backend #504): 12 by default.
+    response_window_hours: 12,
     primary_study_program: null,
     primary_study_country: null,
     offerings: [],

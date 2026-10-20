@@ -12,6 +12,7 @@ import { memberGate, SETTINGS_GATE } from '@/app/_shell/MentorGate';
 import { BookingPanel } from './BookingPanel';
 import { EducationPanel } from './EducationPanel';
 import { GoalsPanel } from './GoalsPanel';
+import { MentorProfilePanel } from './MentorProfilePanel';
 import { ProfilePanel, type PanelHandle } from './ProfilePanel';
 import { SecurityPanel } from './SecurityPanel';
 import { DEFAULT_TAB, MENTEE_TABS, MENTOR_DEFAULT_TAB, MENTOR_TABS } from './tabs';
@@ -93,9 +94,14 @@ export function SettingsScreen() {
       </div>
 
       {mentor ? (
-        <TabPanel id={panelId('booking')} active={tab === 'booking'} keepMounted>
-          {member ? <BookingPanel ref={bookingPanel} userId={member.id} /> : null}
-        </TabPanel>
+        <>
+          <TabPanel id={panelId('booking')} active={tab === 'booking'} keepMounted>
+            {member ? <BookingPanel ref={bookingPanel} userId={member.id} /> : null}
+          </TabPanel>
+          <TabPanel id={panelId('profile')} active={tab === 'profile'} keepMounted>
+            {member ? <MentorProfilePanel ref={profilePanel} userId={member.id} /> : null}
+          </TabPanel>
+        </>
       ) : (
         <>
           <TabPanel id={panelId('profile')} active={tab === 'profile'} keepMounted>

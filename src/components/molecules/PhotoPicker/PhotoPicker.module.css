@@ -220,6 +220,20 @@
     width: var(--photo-size, 112px);
     height: var(--photo-size, 112px);
   }
+  /* A compact photo's wrapper is the photo itself (Settings' 72px): the badge
+     stays flush with its corner, not where a 112px photo's would be. */
+  .compactSpot {
+    top: auto;
+    left: auto;
+    right: 0;
+    bottom: 0;
+  }
+  .compactBusy {
+    right: 0;
+    bottom: 0;
+    width: auto;
+    height: auto;
+  }
 }
 
 /* ProfilePhoto.dc.html's menu, over the row menu's: 188px, under the photo

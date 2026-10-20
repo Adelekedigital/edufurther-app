@@ -981,3 +981,16 @@ PRD: Mentee Onboarding v5 (deviation table, H8). Rows the PRD settles are produc
 | Help card names from the design list ("Interview preparation") | Onboarding's names (`HELP_AREAS`, "Interview and visa preparation") | PRD S1: one wording for the six areas | — |
 | Summary title "No target yet in {field}" when no degree | "{degree} in {field}", either half alone, "No target yet" when neither | Copy fix (grammar) | — |
 | Summary meta "N help topics" always | Empty parts left out; "1 school", "1 help topic" singular | Copy fix | — |
+
+## Mentor Settings, PR 5: Profile tab (`Mentor Settings.dc.html` `isProfile`)
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| About `max` 600 | 1,500 (`ABOUT_MAX`) | `about_me` holds 1,500 for mentor About and mentee bio (owner, 2026-10-17; confirmed 2026-10-19), as on the profile page | — |
+| "Country of origin" and "Country you studied in" are native selects of 8 countries | `CountryPicker` (type to find) over the full catalog | Saved by catalog id; about 250 is too long to scroll (existing CountryPicker divergence, as Mentee Settings) | — |
+| Gender hint "Only used for mentee filters." | "Never shown on your profile." | Nothing filters on gender (the backend keeps it private, `schemas/mentors.py`); PRD: never shown publicly | mentee filters use gender |
+| Photo and cover hint "Photo: JPG or PNG, max 5 MB. Cover: at least 1440×180, max 1 MB." | "JPG, PNG or WebP, max 5 MB. Covers look best at 1440×180 or larger." | The uploads accept JPEG, PNG or WebP up to 5 MB each (`avatar.ts`, `cover.ts`) | — |
+| Preview: a verified tick after the name | Not drawn | Nothing verifies a degree (backend reply #8), as on the profile header | backend verifies degrees |
+| Preview: Book a session and Message, side by side | Book a session only, full width | Messaging isn't built; a button for it would promise a feature that doesn't exist | messaging ships |
+| Preview headline is the design's sample | The form's headline as typed | PRD US-2: the preview updates as I type, before I save | — |
+| "Add another language": `--radius-md`, `--blue-500` text | The shared LanguageChips adder: `--radius-lg`, `--blue-700` | One component across Settings: Mentee Settings.dc.html draws it blue-700; the two drafts disagree | design picks one look |

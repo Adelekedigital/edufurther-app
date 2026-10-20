@@ -146,7 +146,7 @@ export function PhotoPicker({
   return (
     <>
       {busy && (
-        <span className={styles.busy} aria-hidden>
+        <span className={cx(styles.busy, compact && styles.compactBusy)} aria-hidden>
           <Icon name="progress_activity" size={compact ? 20 : 28} className={styles.spin} />
         </span>
       )}

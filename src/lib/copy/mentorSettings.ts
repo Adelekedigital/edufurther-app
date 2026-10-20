@@ -55,3 +55,75 @@ export function rulesNote(sessionsUsingRules: number | null): string {
       : `${sessionsUsingRules} of your sessions use these rules.`;
   return `${count} ${after}`;
 }
+
+/** Settings › Profile for a mentor (Mentor Settings.dc.html `isProfile`). */
+export const MENTOR_PROFILE_COPY = {
+  photoTitle: 'Profile photo and cover',
+  // The uploads' real limits (avatar.ts, cover.ts), not the design draft's 1 MB.
+  photoHint: 'JPG, PNG or WebP, max 5 MB. Covers look best at 1440×180 or larger.',
+  photoLabel: 'Your profile photo',
+  aboutSection: 'About you',
+  name: 'Full name',
+  headline: 'Headline',
+  headlineHint: 'Shown under your name on Explore and your profile.',
+  about: 'About (optional)',
+  aboutHint:
+    'Lead with the path you’ve walked (for example “Fully funded PhD at Mississippi State”), then how you help.',
+  aboutDraftNote: 'We drafted this from your profile information. Edit it in your own words.',
+  background: 'Background',
+  backgroundSub: 'Mentees filter by these, so they help the right people find you.',
+  origin: 'Country of origin',
+  originHint: 'We use this to match you with mentees from the same country.',
+  study: 'Country you studied in',
+  studyHint: 'Shown as “Studied in …”.',
+  countryPlaceholder: 'Search countries',
+  gender: 'Gender (optional)',
+  // The design's "Only used for mentee filters" isn't true: nothing filters on it (PRD: never shown).
+  genderHint: 'Never shown on your profile.',
+  genderPlaceholder: 'Select',
+  genders: ['Woman', 'Man', 'Non-binary', 'Prefer not to say'],
+  languages: 'Languages you mentor in',
+  addLanguage: 'Add another language',
+  addLanguagePlaceholder: 'For example, Twi',
+  add: 'Add',
+  cancel: 'Cancel',
+  searchingLanguages: 'Searching…',
+  languageSearchFailed: 'We couldn’t search languages. Try again.',
+  noLanguageMatch: (q: string) => `No languages match “${q}”.`,
+  preview: 'How mentees see you',
+  openProfile: 'Open profile',
+  previewNameEmpty: 'Your name',
+  previewPlaceEmpty: 'Add where you’re from',
+  book: 'Book a session',
+  message: 'Message',
+  saveBar: 'Unsaved changes to your profile',
+  saved: 'Profile saved',
+  parts: {
+    details: 'your name, About, gender and origin',
+    listing: 'your headline and study country',
+    languages: 'your languages',
+  },
+  partlySaved: (what: string) => `Some changes saved, but ${what} didn’t. Try again.`,
+  loadError: 'We couldn’t load your profile. Check your connection and try again.',
+  retry: 'Try again',
+} as const;
+
+/** Inline errors on Save (PRD: Profile). */
+export const MENTOR_PROFILE_ERRORS = {
+  name: 'Add your full name.',
+  headline: 'Add a headline.',
+  headlineTooLong: 'Keep your headline to 80 characters.',
+  origin: 'Select your country of origin.',
+  study: 'Select the country you studied in.',
+  langs: 'Pick at least one language.',
+} as const;
+export type MentorProfileGap = 'name' | 'headline' | 'origin' | 'study' | 'langs';
+
+/** "From Nigeria, studied in the US" (design `previewPlace`). */
+export function previewPlace(origin: string | null, study: string | null): string {
+  const place = [origin && `From ${origin}`, study && `studied in ${study}`]
+    .filter(Boolean)
+    .join(', ')
+    .replace('studied in United States', 'studied in the US');
+  return place || MENTOR_PROFILE_COPY.previewPlaceEmpty;
+}

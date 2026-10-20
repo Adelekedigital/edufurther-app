@@ -246,7 +246,7 @@ export function toCompleteness(r: MentorPublicRead): Completeness | undefined {
  */
 export function useMentorProfile(
   handle: string | null,
-): Remote<MentorProfile> & { notFound: boolean } {
+): Remote<MentorProfile> & { notFound: boolean; updatedAt: number } {
   const session = useSession();
   const queryClient = useQueryClient();
   const query = useQuery({
@@ -280,5 +280,7 @@ export function useMentorProfile(
     error: notFound ? null : error,
     notFound,
     retry: () => void query.refetch(),
+    /** When the read last landed (0: never), so a caller can tell a refetch from the same data. */
+    updatedAt: query.dataUpdatedAt,
   };
 }

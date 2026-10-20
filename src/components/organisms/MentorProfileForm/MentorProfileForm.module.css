@@ -1,0 +1,177 @@
+/* Mentor Settings.dc.html `isProfile` (previewLayout=real). */
+.layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-6);
+}
+.main {
+  flex: 1 1 480px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+.aside {
+  position: sticky;
+  top: var(--space-6);
+  flex: 0 1 300px;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.photoCard,
+.card {
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+
+/* The cover: the mentor's colour, their banner image, or faint topic icons. */
+.cover {
+  position: relative;
+  height: 120px;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  background: var(--cover-bg);
+}
+.coverImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+.art {
+  position: absolute;
+  right: var(--space-8);
+  bottom: var(--space-3);
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+  pointer-events: none;
+  color: var(--cover-ink);
+  opacity: 0.16;
+}
+.artIcon {
+  --art-size: 72px;
+  font-family: var(--font-icon);
+  font-size: var(--art-size);
+  line-height: 1;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 300;
+}
+.artIcon[data-i='1'] {
+  --art-size: 56px;
+}
+.artIcon[data-i='2'] {
+  --art-size: 44px;
+}
+/* Over the cover, outside its clip, so the cover popover can overhang it. */
+.coverTools {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 2;
+}
+
+/* Positioned, so it paints over the cover it overlaps: on phones the photo
+   text wraps and its title rises into the cover strip. */
+.photoRow {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-4);
+  margin-top: calc(var(--space-8) * -1);
+  padding: 0 var(--space-5) var(--space-5);
+}
+/* ProfilePhoto size 72, ring 3, on the cover's dark colour. The badge
+   (PhotoPicker) sits on this positioned circle. */
+.photo {
+  position: relative;
+  flex: none;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-full);
+  background: var(--cover-ink);
+  box-shadow: 0 0 0 3px var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.img {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+.initials {
+  font-family: var(--font-brand);
+  font-size: var(--text-h5);
+  font-weight: var(--weight-semibold);
+  color: var(--white);
+}
+.photoText {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: var(--space-1);
+}
+.photoTitle {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.headingGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.heading {
+  margin: 0;
+  outline: none;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.label {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-medium);
+}
+.hint {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-regular);
+  color: var(--text-tertiary);
+}
+/* The gender select fills its column, as the design's selects do. */
+.fill {
+  width: 100%;
+}
+
+/* Phones: 16px fields, so iOS doesn't zoom in. */
+@media (max-width: 767px) {
+  .field input {
+    font-size: var(--text-p-md);
+  }
+}
