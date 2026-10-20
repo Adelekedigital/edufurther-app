@@ -101,6 +101,20 @@ describe('BookingPanel', () => {
     expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
   });
 
+  it('a second identical save failure is announced again', async () => {
+    const user = userEvent.setup();
+    saveError = { kind: 'server', message: 'x' } as AppError;
+    save.mockRejectedValue(saveError);
+    render(<BookingPanel userId="u1" />);
+    await user.click(screen.getByRole('switch'));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    const live = () => screen.getByRole('alert').firstElementChild;
+    const first = live();
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(live()).not.toBe(first);
+    expect(live()).not.toBeNull();
+  });
+
   it('the screen’s handle: dirty after an edit, and save() resolves true', async () => {
     const user = userEvent.setup();
     const ref = createRef<PanelHandle>();

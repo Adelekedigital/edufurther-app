@@ -70,6 +70,10 @@ export const ExpertisePanel = forwardRef<PanelHandle, { userId: string }>(functi
   const saving = useSaveGuideCountries(userId);
   const catalogRead = useCountries(true);
   const catalog = catalogRead.countries;
+  // Each Try again on the catalog: a failure after it is said again.
+  const [catalogTries, setCatalogTries] = useState(0);
+  // Each failed save: the same error twice is still said again (SaveBar errorKey).
+  const [saveTries, setSaveTries] = useState(0);
   const [query, setQuery] = useState('');
 
   // `base` is what's saved; `draft` is the chips. The server's list comes in
@@ -153,6 +157,7 @@ export const ExpertisePanel = forwardRef<PanelHandle, { userId: string }>(functi
     try {
       await saving.mutateAsync(sent);
     } catch {
+      setSaveTries((n) => n + 1);
       return false;
     }
     keepFocus();
@@ -245,7 +250,15 @@ export const ExpertisePanel = forwardRef<PanelHandle, { userId: string }>(functi
             status={catalogRead.status}
             full={(draft?.length ?? 0) >= GUIDE_MAX}
             catalogFailed={
-              catalogRead.status === 'error' ? { onRetry: catalogRead.retry } : undefined
+              catalogRead.status === 'error'
+                ? {
+                    onRetry: () => {
+                      setCatalogTries((n) => n + 1);
+                      catalogRead.retry();
+                    },
+                    at: catalogTries,
+                  }
+                : undefined
             }
             readFailed={!draft && guide.status === 'error' ? { onRetry: guide.retry } : undefined}
             loading={!draft && guide.status === 'loading'}
@@ -310,6 +323,7 @@ export const ExpertisePanel = forwardRef<PanelHandle, { userId: string }>(functi
           label={SAVE_COPY.barLabel}
           message={C.guideSaveBar}
           error={saving.error?.copy ?? null}
+          errorKey={saveTries}
           discardLabel={SAVE_COPY.discard}
           saveLabel={SAVE_COPY.save}
           savingLabel={SAVE_COPY.saving}

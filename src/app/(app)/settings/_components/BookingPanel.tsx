@@ -62,6 +62,8 @@ export const BookingPanel = forwardRef<PanelHandle, { userId: string }>(function
   if (draft && cap && draft.windowDays > cap) setDraft({ ...draft, windowDays: cap });
 
   const [toast, setToast] = useState<string | null>(null);
+  // Each failed save: the same error twice is still said again (SaveBar errorKey).
+  const [tries, setTries] = useState(0);
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     if (!toast) return;
@@ -92,6 +94,7 @@ export const BookingPanel = forwardRef<PanelHandle, { userId: string }>(function
         platformWindowDays: defaults.data.platformWindowDays,
       });
     } catch {
+      setTries((n) => n + 1);
       return false;
     }
     keepFocus();
@@ -135,6 +138,7 @@ export const BookingPanel = forwardRef<PanelHandle, { userId: string }>(function
           label={SAVE_COPY.barLabel}
           message={BOOKING_COPY.saveBar}
           error={failed}
+          errorKey={tries}
           discardLabel={SAVE_COPY.discard}
           saveLabel={SAVE_COPY.save}
           savingLabel={SAVE_COPY.saving}

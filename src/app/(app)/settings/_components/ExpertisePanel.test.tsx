@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { GuideCountry } from '@/lib/api/data/mentorSettings';
 import type { MentorProfile } from '@/types/mentor';
@@ -212,6 +212,34 @@ describe('ExpertisePanel', () => {
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     expect(screen.getByRole('alert')).toHaveTextContent('We couldn’t save your countries.');
     expect(bar()).not.toBeNull();
+  });
+
+  it('a second identical save failure is announced again', async () => {
+    const user = userEvent.setup();
+    saveError = {
+      copy: 'We couldn’t save your countries. Your changes are still here. Try again.',
+    };
+    saveGuide.mockRejectedValue(saveError);
+    render(<ExpertisePanel userId="u1" />);
+    await user.click(countries().getByRole('button', { name: 'Canada' }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    const live = () => screen.getByRole('alert').firstElementChild;
+    const first = live();
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(live()).not.toBe(first);
+    expect(live()).not.toBeNull();
+  });
+
+  it('a second catalog failure after Try again is announced again', async () => {
+    const user = userEvent.setup();
+    catalog = { countries: [], status: 'error', retry: vi.fn() };
+    render(<ExpertisePanel userId="u1" />);
+    const region = countries().getByRole('status');
+    await waitFor(() => expect(region).toHaveTextContent('We couldn’t load countries.'));
+    const first = region.firstElementChild;
+    await user.click(countries().getByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(region.firstElementChild).not.toBe(first));
+    expect(region).toHaveTextContent('We couldn’t load countries.');
   });
 
   it('a failed countries read stays in its card; topics and awards still show', async () => {
