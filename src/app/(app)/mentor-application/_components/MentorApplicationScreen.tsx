@@ -170,10 +170,8 @@ export function MentorApplicationScreen() {
           menteeFailed,
           onContinueAsMentee: () => {
             setMenteeFailed(false);
-            mentee.continueAsMentee().then(
-              () => router.push(MENTEE_HREF),
-              () => setMenteeFailed(true),
-            );
+            // On success the viewer is a mentee: the role redirect takes them home.
+            mentee.continueAsMentee().catch(() => setMenteeFailed(true));
           },
         };
       default:

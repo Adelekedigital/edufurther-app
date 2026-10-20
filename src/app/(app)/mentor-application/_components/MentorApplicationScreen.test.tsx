@@ -17,6 +17,10 @@ let viewer: { kind: string; id?: string; retry?: () => void };
 vi.mock('@/app/_shell/useAppShell', () => ({
   useAppShell: () => ({ viewer, member: viewer.kind === 'member' ? viewer : null }),
 }));
+// The page's role redirect reads the same viewer (RoleRedirect).
+vi.mock('@/lib/api/data/viewer', () => ({
+  useViewer: () => viewer,
+}));
 
 let app: {
   data: MentorApplication | null;
@@ -76,6 +80,7 @@ vi.mock('@/app/_shell/useCalendarConnect', () => ({
 }));
 
 const { MentorApplicationScreen, calendarStateOf } = await import('./MentorApplicationScreen');
+const { RoleRedirect } = await import('@/app/_shell/RoleRedirect');
 
 const person = { firstName: 'Gbenga', fullName: 'Gbenga Ekundayo', email: 'gbenga@example.com' };
 const remote = (data: MentorApplication | null, fresh = true) => ({
@@ -221,21 +226,40 @@ describe('MentorApplicationScreen (PRD F3, "Where people land")', () => {
     expect(app.retry).toHaveBeenCalled();
   });
 
-  it('declined: Continue as a mentee saves the role, then goes', async () => {
+  it('declined: Continue as a mentee saves the role; the role redirect alone takes them home', async () => {
     app = remote({
       stage: 'declined',
       note: 'Add the PhD.',
       reviewedAt: '2026-10-14T15:30:00Z',
       ...person,
     });
-    continueAsMentee.mockResolvedValue(undefined);
-    render(<MentorApplicationScreen />);
+    viewer = {
+      kind: 'member',
+      id: 'u1',
+      isMentor: true,
+      mentorStage: 'declined',
+      onboardingComplete: true,
+    } as typeof viewer;
+    const page = () => (
+      <RoleRedirect>
+        <MentorApplicationScreen />
+      </RoleRedirect>
+    );
+    // The save turns the cached viewer mentee-side (useContinueAsMentee).
+    continueAsMentee.mockImplementation(async () => {
+      viewer = { ...viewer, isMentor: false, mentorStage: 'none' } as typeof viewer;
+    });
+    const { rerender } = render(page());
     expect(screen.getByRole('link', { name: 'Contact us' }).getAttribute('href')).toContain(
       encodeURIComponent('(Gbenga Ekundayo)'),
     );
     await userEvent.click(screen.getByRole('link', { name: 'Continue as a mentee' }));
     expect(continueAsMentee).toHaveBeenCalledOnce();
-    await waitFor(() => expect(push).toHaveBeenCalled());
+    rerender(page());
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/home'));
+    // One navigation: the screen routes nowhere itself.
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.queryByRole('link', { name: 'Continue as a mentee' })).toBeNull();
   });
 });
 

@@ -113,9 +113,17 @@ export function useMarkApprovedSeen(userId: string | null) {
 
 /**
  * "Continue as a mentee": PATCH primary_role (PRD B3, decision #17: a
- * dashboard hint only). The application stays saved.
+ * dashboard hint only). The application stays saved. The cached viewer turns
+ * mentee-side at once (menteeByChoice, as /me will say), so the page's role
+ * redirect takes them to their home; the screen itself routes nowhere, which
+ * leaves one navigation and no race, even if the refetch fails.
  */
 export function useContinueAsMentee(userId: string | null) {
+  const qc = useQueryClient();
   const { setRole, isPending, error } = useSetPrimaryRole(userId);
-  return { continueAsMentee: () => setRole('mentee'), isPending, error };
+  const continueAsMentee = async () => {
+    await setRole('mentee');
+    patchViewer(qc, { isMentor: false, mentorStage: 'none' });
+  };
+  return { continueAsMentee, isPending, error };
 }
