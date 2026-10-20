@@ -42,11 +42,15 @@ vi.mock('@/lib/api/data/mentorSettings', async (orig) => ({
     reset: vi.fn(),
   }),
 }));
+vi.mock('@/lib/api/data/settings', () => ({
+  useMenteeProfile: () => ({ profile: { name: 'Ada Obi', email: 'ada@example.com' } }),
+}));
+const edu = vi.hoisted(() => ({ status: 'ready', retry: vi.fn() }));
 vi.mock('@/lib/api/data/profileEntries', () => ({
   useOwnEducation: () => ({
-    status: 'ready',
+    status: edu.status,
     entries: [],
-    retry: vi.fn(),
+    retry: edu.retry,
     retrying: false,
     failures: 0,
   }),
@@ -55,7 +59,7 @@ let catalog: { countries: typeof CATALOG; status: string; retry: () => void };
 vi.mock('@/lib/api/data/catalog', () => ({
   useCountries: () => catalog,
 }));
-let saveError: { copy: string } | null = null;
+let saveError: { copy: string; inReview?: boolean } | null = null;
 // The Mentor Profile's editors: stand-ins that report what opened and save at once.
 vi.mock('@/app/_profile/OwnerItemEditor', () => ({
   OwnerItemEditor: ({
@@ -94,6 +98,8 @@ beforeEach(() => {
   saveGuide.mockImplementation(async (v) => v);
   catalog = { countries: CATALOG, status: 'ready', retry: vi.fn() };
   saveError = null;
+  edu.status = 'ready';
+  edu.retry.mockReset();
 });
 
 const bar = () => screen.queryByRole('region', { name: 'Unsaved changes' });
@@ -297,5 +303,39 @@ describe('ExpertisePanel', () => {
     settings = { ...settings, status: 'loading', profile: null };
     render(<ExpertisePanel userId="u1" />);
     expect(screen.getByRole('status', { name: 'Loading your expertise' })).toBeInTheDocument();
+  });
+
+  describe('while the application is in review', () => {
+    const banner = () =>
+      screen.queryAllByText('We’re reviewing your application.')[0]?.closest('[class*="subtle"]');
+
+    it('the banner, and nothing on the tab can change', () => {
+      render(<ExpertisePanel userId="u1" frozen />);
+      expect(banner()).toHaveTextContent(
+        'We’re reviewing your application. You can edit these once it’s reviewed. Spotted a mistake? Contact us',
+      );
+      expect(screen.getByRole('button', { name: 'Edit topics' })).toBeDisabled();
+      expect(countries().getByRole('button', { name: 'Canada' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Add award' })).toBeDisabled();
+      expect(screen.getByRole('link', { name: 'Contact us' })).toHaveAttribute('href');
+    });
+
+    it('frozen with one card’s read failed: the rest stays, that card’s Try again works', async () => {
+      edu.status = 'error';
+      render(<ExpertisePanel userId="u1" frozen />);
+      expect(screen.getByText('School selection')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Edit topics' })).toBeDisabled();
+      const retry = screen.getByRole('button', { name: 'Try again' });
+      expect(retry).toBeEnabled();
+      await userEvent.click(retry);
+      expect(edu.retry).toHaveBeenCalled();
+    });
+
+    it('a countries save the freeze refuses shows the banner, not an error', () => {
+      saveError = { copy: 'We couldn’t save your countries.', inReview: true };
+      render(<ExpertisePanel userId="u1" />);
+      expect(banner()).toBeInTheDocument();
+      expect(screen.queryByText('We couldn’t save your countries.')).toBeNull();
+    });
   });
 });

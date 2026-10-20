@@ -52,7 +52,7 @@
   background: var(--ink-50);
 }
 /* Full (design addCountry.full): the label greys to ink-400. */
-.add:disabled {
+.add:disabled:not(fieldset:disabled *) {
   cursor: not-allowed;
   color: var(--ink-400);
 }

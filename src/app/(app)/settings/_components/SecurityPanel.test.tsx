@@ -47,11 +47,11 @@ const profile: MenteeProfile = {
   requestCount: 0,
 };
 
-function setup() {
+function setup(role?: 'mentee' | 'mentor') {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <SecurityPanel userId="u1" />
+      <SecurityPanel userId="u1" role={role} />
     </QueryClientProvider>,
   );
 }
@@ -196,5 +196,21 @@ describe('SecurityPanel', () => {
     setup();
     expect(screen.getByRole('button', { name: 'Delete account' })).toBeInTheDocument();
     expect(await screen.findByText('With Google (amara@example.com).')).toBeInTheDocument();
+  });
+
+  it('a mentor’s: the email request to support says Mentor', async () => {
+    setup('mentor');
+    const href = (await screen.findByRole('link', { name: 'Contact support' })).getAttribute(
+      'href',
+    )!;
+    expect(decodeURIComponent(href)).toContain('Role: Mentor');
+  });
+
+  it('a mentee’s by default', async () => {
+    setup();
+    const href = (await screen.findByRole('link', { name: 'Contact support' })).getAttribute(
+      'href',
+    )!;
+    expect(decodeURIComponent(href)).toContain('Role: Mentee');
   });
 });

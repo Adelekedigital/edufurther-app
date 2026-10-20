@@ -34,7 +34,7 @@
   background: var(--blue-50);
   color: var(--blue-700);
 }
-.chip:disabled {
+.chip:disabled:not(fieldset:disabled *) {
   cursor: not-allowed;
   color: var(--ink-500);
   background: var(--surface-subtle);
@@ -70,7 +70,7 @@
   color: var(--blue-700);
   box-shadow: inset 0 0 0 var(--border-hairline) var(--blue-500);
 }
-.choice:disabled {
+.choice:disabled:not(fieldset:disabled *) {
   background: var(--surface-card);
   color: var(--ink-400);
 }

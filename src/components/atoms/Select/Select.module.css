@@ -26,7 +26,7 @@
 .select[aria-invalid='true'] {
   border-color: var(--border-danger);
 }
-.select:disabled {
+.select:disabled:not(fieldset:disabled *) {
   background: var(--surface-subtle);
   color: var(--ink-500);
   cursor: not-allowed;

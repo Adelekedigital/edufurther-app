@@ -51,12 +51,24 @@ export type SecuritySettingsProps = {
   renderShell: (shell: DeleteShell, body: ReactNode) => ReactNode;
 };
 
-/** The design's request to support: subject and body prefilled (SecuritySettings.dc.html). */
-export function supportHref(p: { name: string; email: string; mentor: boolean }) {
+type SupportPerson = { name: string; firstName: string; email: string; mentor: boolean };
+
+/**
+ * A request to support, subject and body prefilled: the email change by
+ * default (SecuritySettings.dc.html), or another request's own words (the
+ * review freeze's "Contact us").
+ */
+export function supportHref(
+  p: { name: string; email: string; mentor: boolean },
+  request: { subject: (name: string) => string; body: (p: SupportPerson) => string } = {
+    subject: C.supportSubject,
+    body: C.supportBody,
+  },
+) {
   const name = p.name.trim() || p.email;
   const firstName = name.split(/\s+/)[0] ?? name;
-  return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(C.supportSubject(name))}&body=${encodeURIComponent(
-    C.supportBody({ name, firstName, email: p.email, mentor: p.mentor }),
+  return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(request.subject(name))}&body=${encodeURIComponent(
+    request.body({ name, firstName, email: p.email, mentor: p.mentor }),
   )}`;
 }
 

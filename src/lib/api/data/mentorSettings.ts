@@ -91,6 +91,8 @@ export class MentorProfileSaveError extends Error {
   constructor(
     readonly copy: string,
     readonly saved: Part[],
+    /** The review freeze refused it: the page shows the review banner. */
+    readonly inReview = false,
   ) {
     super(copy);
   }
@@ -190,7 +192,11 @@ export function useSaveMentorProfile(userId: string | null) {
           const { error, response } = await run();
           if (!response.ok) throw apiError(response.status, error);
         } catch (e) {
-          throw new MentorProfileSaveError(saveCopy(e, saved, part), saved);
+          throw new MentorProfileSaveError(
+            saveCopy(e, saved, part),
+            saved,
+            normaliseError(e).kind === 'inReview',
+          );
         }
         saved.push(part);
       }
@@ -248,7 +254,11 @@ export function useGuideCountries(userId: string | null) {
 /** PATCH guide_country_ids: the whole list, in the mentor's order (it replaces the saved one). */
 export function useSaveGuideCountries(userId: string | null) {
   const qc = useQueryClient();
-  const mutation = useMutation<GuideCountry[], { copy: string }, GuideCountry[]>({
+  const mutation = useMutation<
+    GuideCountry[],
+    { copy: string; inReview: boolean },
+    GuideCountry[]
+  >({
     networkMode: 'always',
     // A read already on its way would land after the save and put the old list back.
     onMutate: () =>
@@ -263,11 +273,11 @@ export function useSaveGuideCountries(userId: string | null) {
         });
         if (!response.ok) throw apiError(response.status, error);
       } catch (e) {
+        const kind = normaliseError(e).kind;
         throw {
           copy:
-            normaliseError(e).kind === 'offline'
-              ? SAVE_COPY.profileOffline
-              : MENTOR_EXPERTISE_COPY.guideSaveFailed,
+            kind === 'offline' ? SAVE_COPY.profileOffline : MENTOR_EXPERTISE_COPY.guideSaveFailed,
+          inReview: kind === 'inReview',
         };
       }
       return next;

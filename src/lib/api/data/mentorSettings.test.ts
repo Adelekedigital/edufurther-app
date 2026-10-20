@@ -81,3 +81,13 @@ describe('withSaved', () => {
     });
   });
 });
+
+describe('a save while the application is in review', () => {
+  it('sends only name and gender: nothing the review holds', () => {
+    const after = { ...saved, name: 'Ada Obi-Eze', gender: 'Female' };
+    const b = mentorProfileBodies({ before: saved, after, promptVersion: null });
+    expect(b.details).toEqual({ full_name: 'Ada Obi-Eze', gender: 'Female' });
+    expect(b.listing).toBeNull();
+    expect(b.languages).toBeNull();
+  });
+});

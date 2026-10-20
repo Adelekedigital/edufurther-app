@@ -1,0 +1,13 @@
+/* Mentor Settings.dc.html review freeze: `<fieldset disabled>` at 0.72, no
+   fieldset chrome. */
+.frozen {
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  opacity: 0.72;
+  /* Nothing in it takes input: no hover look on a control that can't act. */
+  pointer-events: none;
+}
+/* Its controls keep their own look under the 0.72: each atom's disabled
+   style skips a control a frozen group disabled (`:not(fieldset:disabled *)`). */

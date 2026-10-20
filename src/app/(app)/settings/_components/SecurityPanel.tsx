@@ -18,7 +18,14 @@ import styles from './SecurityPanel.module.css';
  * here and lands on /login with the notice (useSignOut freezes the screen
  * first, so it never redraws signed out).
  */
-export function SecurityPanel({ userId }: { userId: string }) {
+export function SecurityPanel({
+  userId,
+  role = 'mentee',
+}: {
+  userId: string;
+  /** A mentor's tab (Mentor Settings.dc.html `isSecurity`): the same, in mentor words. */
+  role?: 'mentee' | 'mentor';
+}) {
   const { profile, status, retry, retrying } = useMenteeProfile(userId);
   const { provider } = useLoginProvider(userId);
   const deleting = useDeleteAccount();
@@ -46,7 +53,7 @@ export function SecurityPanel({ userId }: { userId: string }) {
 
   return (
     <SecuritySettings
-      role="mentee"
+      role={role}
       name={profile.name}
       email={profile.email}
       verified={profile.emailVerified}

@@ -5,5 +5,5 @@ export const MENTEE_TABS: SettingsTab[] = ['profile', 'goals', 'education', 'sec
 export const DEFAULT_TAB: SettingsTab = 'profile';
 
 /** The mentor's tabs, as each one ships (PRD: Mentor Settings, PRs 4–8). */
-export const MENTOR_TABS: SettingsTab[] = ['booking', 'profile', 'expertise'];
+export const MENTOR_TABS: SettingsTab[] = ['booking', 'profile', 'expertise', 'security'];
 export const MENTOR_DEFAULT_TAB: SettingsTab = 'booking';

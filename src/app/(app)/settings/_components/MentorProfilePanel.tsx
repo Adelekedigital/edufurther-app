@@ -24,6 +24,7 @@ import {
 } from '@/lib/api/data/mentorSettings';
 import { useWritingAssist } from '@/lib/api/data/writingAssist';
 import {
+  FREEZE_COPY,
   MENTOR_PROFILE_COPY as C,
   previewPlace,
   type MentorProfileGap,
@@ -36,6 +37,7 @@ import { checkFullName, NAME_PROBLEM_COPY, tidyName } from '@/lib/utils/name';
 import { useRequiredFields } from '@/lib/utils/useRequiredFields';
 import type { MentorProfileValues } from '@/types/mentorSettings';
 import type { PanelHandle } from './ProfilePanel';
+import { ReviewFreeze } from './ReviewFreeze';
 import styles from './MentorProfilePanel.module.css';
 
 /** The design's eight languages, in its order (Mentor Settings.dc.html `languages`). */
@@ -54,9 +56,24 @@ const same = (a: MentorProfileValues, b: MentorProfileValues) =>
   a.languages.length === b.languages.length &&
   a.languages.every((l, i) => l.id === b.languages[i]!.id);
 
-// In the form's order, so the first gap is the first field to fix.
-const gapsOf = (v: MentorProfileValues, saved: MentorProfileValues): MentorProfileGap[] => [
+/** The fields the review freeze holds (decision 273, amended): all but name and gender. */
+const reviewed = (v: MentorProfileValues, saved: MentorProfileValues): MentorProfileValues => ({
+  ...saved,
+  name: v.name,
+  gender: v.gender,
+});
+
+// In the form's order, so the first gap is the first field to fix. Frozen,
+// only the name can be fixed: a reviewed field left empty can't block it.
+const gapsOf = (
+  v: MentorProfileValues,
+  saved: MentorProfileValues,
+  frozen: boolean,
+): MentorProfileGap[] => [
   ...(checkFullName(v.name) ? ['name' as const] : []),
+  ...(frozen ? [] : gapsOfReviewed(v, saved)),
+];
+const gapsOfReviewed = (v: MentorProfileValues, saved: MentorProfileValues): MentorProfileGap[] => [
   ...(headlineProblem(saved.headline, v.headline) ? ['headline' as const] : []),
   ...(v.originId ? [] : ['origin' as const]),
   ...(v.studyId ? [] : ['study' as const]),
@@ -67,10 +84,12 @@ const gapsOf = (v: MentorProfileValues, saved: MentorProfileValues): MentorProfi
  * Settings › Profile for a mentor (Mentor Settings.dc.html `isProfile`,
  * saveMode explicit): any change raises the save bar and updates the preview
  * before it's saved; Save writes only what changed. Photo and cover save on
- * their own, as on the profile page.
+ * their own, as on the profile page. `frozen`: the application is in review,
+ * so only name and gender change (owner, 2026-10-20); a save the freeze
+ * refuses (it began meanwhile) shows the same.
  */
-export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
-  function MentorProfilePanel({ userId }, ref) {
+export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string; frozen?: boolean }>(
+  function MentorProfilePanel({ userId, frozen: inReview = false }, ref) {
     const { status, values, profile, handle, version, retry } = useMentorSettings(userId);
     const saving = useSaveMentorProfile(userId);
     const avatar = useAvatarUpload(handle ?? '', handle ? userId : null);
@@ -107,7 +126,12 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
     const [toastStamp, setToastStamp] = useState(0);
     const [confirmRemove, setConfirmRemove] = useState(false);
     const heading = useRef<HTMLHeadingElement>(null);
-    const required = useRequiredFields(draft && base ? gapsOf(draft, base) : []);
+    const frozen = inReview || !!saving.error?.inReview;
+    // Frozen mid-edit: what the review holds goes back to what's saved, so the
+    // bar offers only what can still save.
+    if (frozen && draft && base && !same(draft, reviewed(draft, base)))
+      setDraft(reviewed(draft, base));
+    const required = useRequiredFields(draft && base ? gapsOf(draft, base, frozen) : []);
 
     useEffect(() => {
       if (!toast) return;
@@ -219,103 +243,106 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
 
     return (
       <>
-        <MentorProfileForm
-          values={draft}
-          onChange={(patch) => {
-            // A new edit after "Profile saved": the bar comes straight back.
-            setToast(null);
-            setDraft((d) => (d ? { ...d, ...patch } : d));
-          }}
-          errors={required.errors}
-          nameError={
-            nameProblem && nameProblem !== 'required' ? NAME_PROBLEM_COPY[nameProblem] : undefined
-          }
-          headlineTooLong={headlineProblem(base.headline, draft.headline) === 'tooLong'}
-          headingRef={heading}
-          countries={countryOptions}
-          photo={{
-            url: profile.mentor.photoUrl,
-            initial,
-            name: profile.mentor.name,
-            accept: avatar.accept,
-            uploading: avatar.uploading,
-            removing: avatar.removing,
-            error: avatar.error,
-            errorFrom: avatar.errorFrom,
-            removedStamp: avatar.removedStamp,
-            onFile: avatar.upload,
-            onRemove: () => setConfirmRemove(true),
-            onRetryRemove: avatar.remove,
-            onDismissError: avatar.dismissError,
-          }}
-          cover={{ bg, ink, bannerUrl: profile.bannerUrl, artIcons }}
-          coverTools={
-            <CoverPicker
-              color={coverKey}
-              artOn={profile.cover.art !== 'none'}
-              onPickColor={coverEdit.pickColor}
-              onToggleArt={(on) => coverEdit.save({ art: on ? 'icons' : 'none' })}
-              saveState={coverEdit.saveState}
-              savedStamp={coverEdit.savedStamp}
-              hasImage={!!profile.bannerUrl}
-              accept={BANNER_ACCEPT}
-              uploading={coverEdit.uploading}
-              onRemoveImage={coverEdit.removeImage}
-              removing={coverEdit.removing}
-              removedStamp={coverEdit.removedStamp}
-              imageError={coverEdit.imageError}
-              onFile={coverEdit.upload}
-              onClose={coverEdit.clearMessages}
-            />
-          }
-          languages={{
-            common: commonOptions,
-            query,
-            onQueryChange: setQuery,
-            results: search.results,
-            status: search.status,
-          }}
-          onAssist={async (mode, text) => {
-            const out = await assist(mode, text);
-            setPromptVersion(out.promptVersion);
-            return out.text;
-          }}
-          onAssistBusy={setAssistBusy}
-          preview={
-            <>
-              <div className={styles.previewHead}>
-                <span className={styles.previewLabel}>{C.preview}</span>
-                {handle && (
-                  <Link
-                    href={`/mentors/${encodeURIComponent(handle)}`}
-                    prefetch={false}
-                    className={styles.openProfile}
-                  >
-                    {C.openProfile}
-                  </Link>
-                )}
-              </div>
-              <MentorCoverCard
-                name={draft.name.trim() || C.previewNameEmpty}
-                headline={draft.headline.trim()}
-                initials={initial}
-                photoUrl={profile.mentor.photoUrl}
-                cover={{ bg, ink }}
-                bannerUrl={profile.bannerUrl}
-                artIcons={artIcons}
-                rating={profile.mentor.rating}
-                reviewCount={profile.mentor.reviewCount}
-                completedSessions={profile.mentor.completedSessions}
-                place={previewPlace(
-                  countryName(countryOptions.origin, draft.originId),
-                  countryName(countryOptions.study, draft.studyId),
-                )}
-                tags={profile.mentor.topics.slice(0, 3).map((t) => t.label)}
-                copy={{ book: C.book, message: C.message }}
+        <ReviewFreeze frozen={frozen} userId={userId} words={FREEZE_COPY.profile}>
+          <MentorProfileForm
+            frozen={frozen}
+            values={draft}
+            onChange={(patch) => {
+              // A new edit after "Profile saved": the bar comes straight back.
+              setToast(null);
+              setDraft((d) => (d ? { ...d, ...patch } : d));
+            }}
+            errors={required.errors}
+            nameError={
+              nameProblem && nameProblem !== 'required' ? NAME_PROBLEM_COPY[nameProblem] : undefined
+            }
+            headlineTooLong={headlineProblem(base.headline, draft.headline) === 'tooLong'}
+            headingRef={heading}
+            countries={countryOptions}
+            photo={{
+              url: profile.mentor.photoUrl,
+              initial,
+              name: profile.mentor.name,
+              accept: avatar.accept,
+              uploading: avatar.uploading,
+              removing: avatar.removing,
+              error: avatar.error,
+              errorFrom: avatar.errorFrom,
+              removedStamp: avatar.removedStamp,
+              onFile: avatar.upload,
+              onRemove: () => setConfirmRemove(true),
+              onRetryRemove: avatar.remove,
+              onDismissError: avatar.dismissError,
+            }}
+            cover={{ bg, ink, bannerUrl: profile.bannerUrl, artIcons }}
+            coverTools={
+              <CoverPicker
+                color={coverKey}
+                artOn={profile.cover.art !== 'none'}
+                onPickColor={coverEdit.pickColor}
+                onToggleArt={(on) => coverEdit.save({ art: on ? 'icons' : 'none' })}
+                saveState={coverEdit.saveState}
+                savedStamp={coverEdit.savedStamp}
+                hasImage={!!profile.bannerUrl}
+                accept={BANNER_ACCEPT}
+                uploading={coverEdit.uploading}
+                onRemoveImage={coverEdit.removeImage}
+                removing={coverEdit.removing}
+                removedStamp={coverEdit.removedStamp}
+                imageError={coverEdit.imageError}
+                onFile={coverEdit.upload}
+                onClose={coverEdit.clearMessages}
               />
-            </>
-          }
-        />
+            }
+            languages={{
+              common: commonOptions,
+              query,
+              onQueryChange: setQuery,
+              results: search.results,
+              status: search.status,
+            }}
+            onAssist={async (mode, text) => {
+              const out = await assist(mode, text);
+              setPromptVersion(out.promptVersion);
+              return out.text;
+            }}
+            onAssistBusy={setAssistBusy}
+            preview={
+              <>
+                <div className={styles.previewHead}>
+                  <span className={styles.previewLabel}>{C.preview}</span>
+                  {handle && (
+                    <Link
+                      href={`/mentors/${encodeURIComponent(handle)}`}
+                      prefetch={false}
+                      className={styles.openProfile}
+                    >
+                      {C.openProfile}
+                    </Link>
+                  )}
+                </div>
+                <MentorCoverCard
+                  name={draft.name.trim() || C.previewNameEmpty}
+                  headline={draft.headline.trim()}
+                  initials={initial}
+                  photoUrl={profile.mentor.photoUrl}
+                  cover={{ bg, ink }}
+                  bannerUrl={profile.bannerUrl}
+                  artIcons={artIcons}
+                  rating={profile.mentor.rating}
+                  reviewCount={profile.mentor.reviewCount}
+                  completedSessions={profile.mentor.completedSessions}
+                  place={previewPlace(
+                    countryName(countryOptions.origin, draft.originId),
+                    countryName(countryOptions.study, draft.studyId),
+                  )}
+                  tags={profile.mentor.topics.slice(0, 3).map((t) => t.label)}
+                  copy={{ book: C.book, message: C.message }}
+                />
+              </>
+            }
+          />
+        </ReviewFreeze>
         {dirty && (
           <SaveBar
             label={SAVE_COPY.barLabel}
@@ -325,7 +352,9 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
                 ? SAVE_COPY.waitForDraft
                 : required.formError
                   ? SAVE_COPY.formError
-                  : (saving.error?.copy ?? null)
+                  : saving.error?.inReview
+                    ? null
+                    : (saving.error?.copy ?? null)
             }
             errorKey={tries}
             discardLabel={SAVE_COPY.discard}

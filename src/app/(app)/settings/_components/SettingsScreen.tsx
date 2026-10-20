@@ -36,6 +36,8 @@ export function SettingsScreen() {
   const segment = useSelectedLayoutSegment();
   const member = viewer.kind === 'member' ? viewer : null;
   const mentor = !!member?.isMentor;
+  // Submitted and awaiting a decision: what's reviewed holds still (decision 273).
+  const inReview = member?.mentorStage === 'pending';
   const tabs = mentor ? MENTOR_TABS : MENTEE_TABS;
   const first = mentor ? MENTOR_DEFAULT_TAB : DEFAULT_TAB;
   const known = tabs.find((t) => t === segment);
@@ -142,10 +144,18 @@ export function SettingsScreen() {
             {member ? <BookingPanel ref={bookingPanel} userId={member.id} /> : null}
           </TabPanel>
           <TabPanel id={panelId('profile')} active={tab === 'profile'} keepMounted>
-            {member ? <MentorProfilePanel ref={profilePanel} userId={member.id} /> : null}
+            {member ? (
+              <MentorProfilePanel ref={profilePanel} userId={member.id} frozen={inReview} />
+            ) : null}
           </TabPanel>
           <TabPanel id={panelId('expertise')} active={tab === 'expertise'} keepMounted>
-            {member ? <ExpertisePanel ref={expertisePanel} userId={member.id} /> : null}
+            {member ? (
+              <ExpertisePanel ref={expertisePanel} userId={member.id} frozen={inReview} />
+            ) : null}
+          </TabPanel>
+          {/* Nothing to edit here: only while shown, as on the mentee's. */}
+          <TabPanel id={panelId('security')} active={tab === 'security'}>
+            {member ? <SecurityPanel userId={member.id} role="mentor" /> : null}
           </TabPanel>
         </>
       ) : (
