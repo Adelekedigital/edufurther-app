@@ -1,7 +1,7 @@
 'use client';
 
 import { notFound, useRouter, useSelectedLayoutSegment } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Tabs, type TabItem } from '@/components/atoms/Tabs/Tabs';
 import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
 import { SaveChangesDialog } from '@/components/templates/SaveChangesDialog/SaveChangesDialog';
@@ -29,7 +29,12 @@ export function SettingsScreen() {
   const tabs = MENTEE_TABS;
   const known = tabs.find((t) => t === segment);
   const tab = known ?? DEFAULT_TAB;
-  const panel = useRef<PanelHandle>(null);
+  // One handle per tab with a form: the switch guard asks the one showing.
+  // A tab's panel registers here; tabs with nothing to save leave theirs out.
+  const profilePanel = useRef<PanelHandle>(null);
+  const panels: Partial<Record<SettingsTab, RefObject<PanelHandle | null>>> = {
+    profile: profilePanel,
+  };
   const [leaveTo, setLeaveTo] = useState<SettingsTab | null>(null);
   const [leaving, setLeaving] = useState(false);
   // Gone before a save answered (the page moved on): nothing more to do.
@@ -71,14 +76,14 @@ export function SettingsScreen() {
           onChange={(v) => {
             const t = v as SettingsTab;
             if (t === tab) return;
-            if (panel.current?.dirty()) setLeaveTo(t);
+            if (panels[tab]?.current?.dirty()) setLeaveTo(t);
             else go(t);
           }}
         />
       </div>
 
       <TabPanel id={panelId('profile')} active={tab === 'profile'} keepMounted>
-        {member ? <ProfilePanel ref={panel} userId={member.id} /> : null}
+        {member ? <ProfilePanel ref={profilePanel} userId={member.id} /> : null}
       </TabPanel>
 
       {leaveTo && (
@@ -87,13 +92,13 @@ export function SettingsScreen() {
           saving={leaving}
           onKeep={() => setLeaveTo(null)}
           onDiscard={() => {
-            panel.current?.discard();
+            panels[tab]?.current?.discard();
             setLeaveTo(null);
             go(leaveTo);
           }}
           onSave={async () => {
             setLeaving(true);
-            const saved = (await panel.current?.save()) ?? false;
+            const saved = (await panels[tab]?.current?.save()) ?? false;
             if (!alive.current) return;
             setLeaving(false);
             setLeaveTo(null);

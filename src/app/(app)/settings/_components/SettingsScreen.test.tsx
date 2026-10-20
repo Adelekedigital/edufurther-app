@@ -126,6 +126,14 @@ describe('SettingsScreen', () => {
       expect(push).toHaveBeenCalledWith('/settings/education');
     });
 
+    it('from a tab with nothing to save, switching never asks', async () => {
+      segment = 'education';
+      render(<SettingsScreen />);
+      await userEvent.click(screen.getByRole('tab', { name: 'Profile' }));
+      expect(dialog()).toBeNull();
+      expect(push).toHaveBeenCalledWith('/settings/profile');
+    });
+
     it('Escape while the save runs doesn’t close it, so the switch can’t surprise anyone', async () => {
       let finish: (v: boolean) => void = () => {};
       panel.save.mockReturnValue(new Promise<boolean>((r) => (finish = r)));
