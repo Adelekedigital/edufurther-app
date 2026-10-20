@@ -45,6 +45,10 @@ const wrap = () => {
 };
 const ok = { response: { ok: true, status: 200 } };
 const fail = (status: number) => ({ response: { ok: false, status }, error: {} });
+const inReview = {
+  response: { ok: false, status: 409 },
+  error: { type: '/problems/mentor-application-in-review', fields: ['headline'] },
+};
 
 const before: MentorProfileValues = {
   name: 'Ada Obi',
@@ -142,6 +146,18 @@ describe('useSaveMentorProfile', () => {
     expect((caught as MentorProfileSaveError).saved).toEqual([]);
     expect((caught as MentorProfileSaveError).copy).toBe(SAVE_COPY.profileFailed);
   });
+
+  it('a change the review freeze refuses says so (the page shows the banner)', async () => {
+    PATCH.mockResolvedValue(inReview);
+    const { result } = renderHook(() => useSaveMentorProfile('u1'), { wrapper: wrap() });
+    let caught: unknown;
+    await act(async () => {
+      await result.current.mutateAsync({ before, after, promptVersion: null }).catch((e) => {
+        caught = e;
+      });
+    });
+    expect((caught as MentorProfileSaveError).inReview).toBe(true);
+  });
 });
 
 describe('guide-to countries', () => {
@@ -193,5 +209,17 @@ describe('guide-to countries', () => {
     expect((caught as { copy: string }).copy).toBe(
       'We couldn’t save your countries. Your changes are still here. Try again.',
     );
+  });
+
+  it('the review freeze refusing it says so', async () => {
+    PATCH.mockResolvedValue(inReview);
+    const { result } = renderHook(() => useSaveGuideCountries('u1'), { wrapper: wrap() });
+    let caught: unknown;
+    await act(async () => {
+      await result.current.mutateAsync([]).catch((e) => {
+        caught = e;
+      });
+    });
+    expect((caught as { inReview: boolean }).inReview).toBe(true);
   });
 });

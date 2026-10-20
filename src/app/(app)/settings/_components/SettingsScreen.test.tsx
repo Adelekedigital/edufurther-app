@@ -27,7 +27,7 @@ vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => viewer }));
 vi.mock('./tabs', () => ({
   MENTEE_TABS: ['profile', 'goals', 'education', 'security'],
   DEFAULT_TAB: 'profile',
-  MENTOR_TABS: ['booking', 'profile', 'expertise'],
+  MENTOR_TABS: ['booking', 'profile', 'expertise', 'security'],
   MENTOR_DEFAULT_TAB: 'booking',
 }));
 
@@ -72,17 +72,27 @@ vi.mock('./EducationPanel', () => ({
   EducationPanel: () => <div data-testid="education-panel" />,
 }));
 vi.mock('./SecurityPanel', () => ({
-  SecurityPanel: () => <div data-testid="security-panel" />,
+  SecurityPanel: ({ role = 'mentee' }: { role?: string }) => (
+    <div data-testid="security-panel" data-role={role} />
+  ),
 }));
 
 vi.mock('./ExpertisePanel', async () => {
   const { forwardRef } = await import('react');
-  return { ExpertisePanel: forwardRef(() => <div data-testid="expertise-panel" />) };
+  return {
+    ExpertisePanel: forwardRef(({ frozen }: { frozen?: boolean }, _ref) => (
+      <div data-testid="expertise-panel" data-frozen={String(!!frozen)} />
+    )),
+  };
 });
 
 vi.mock('./MentorProfilePanel', async () => {
   const { forwardRef } = await import('react');
-  return { MentorProfilePanel: forwardRef(() => <div data-testid="mentor-profile-panel" />) };
+  return {
+    MentorProfilePanel: forwardRef(({ frozen }: { frozen?: boolean }, _ref) => (
+      <div data-testid="mentor-profile-panel" data-frozen={String(!!frozen)} />
+    )),
+  };
 });
 
 vi.mock('./BookingPanel', async () => {
@@ -189,6 +199,7 @@ describe('SettingsScreen', () => {
       'Booking rules',
       'Profile',
       'Expertise',
+      'Login and security',
     ]);
     expect(screen.getByRole('tab', { name: 'Expertise' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('expertise-panel')).toBeInTheDocument();
@@ -372,5 +383,29 @@ describe('the mentee’s tabs as shipped', () => {
   it('the PRD order: Profile, Goals, Education, Login and security', async () => {
     const real = await vi.importActual<typeof import('./tabs')>('./tabs');
     expect(real.MENTEE_TABS).toEqual(['profile', 'goals', 'education', 'security']);
+  });
+
+  it('a mentor’s Login and security: the last tab, its panel in mentor words', () => {
+    viewer = member(true);
+    segment = 'security';
+    render(<SettingsScreen />);
+    expect(screen.getAllByRole('tab').at(-1)).toHaveTextContent('Login and security');
+    expect(screen.getByTestId('security-panel')).toHaveAttribute('data-role', 'mentor');
+  });
+
+  it('in review, Profile and Expertise are frozen; approved, declined or not sent, they aren’t', () => {
+    for (const [stage, frozen] of [
+      ['pending', 'true'],
+      ['approved', 'false'],
+      ['declined', 'false'],
+      ['unsubmitted', 'false'],
+    ] as const) {
+      viewer = { ...member(true), mentorStage: stage } as Viewer;
+      segment = 'profile';
+      const { unmount } = render(<SettingsScreen />);
+      expect(screen.getByTestId('mentor-profile-panel')).toHaveAttribute('data-frozen', frozen);
+      expect(screen.getByTestId('expertise-panel')).toHaveAttribute('data-frozen', frozen);
+      unmount();
+    }
   });
 });

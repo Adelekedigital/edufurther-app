@@ -26,8 +26,8 @@
 /* Off: a confirm's × while its request runs, a sheet's Back mid-submit. Not
    drawn by the DS. DIVERGENCE: --ink-500, not --text-disabled (ink-300,
    ~1.5:1), as the Button atom's disabled states; no hover. */
-.button:disabled,
-.button:disabled:hover {
+.button:disabled:not(fieldset:disabled *),
+.button:disabled:not(fieldset:disabled *):hover {
   background: transparent;
   color: var(--ink-500);
   cursor: not-allowed;

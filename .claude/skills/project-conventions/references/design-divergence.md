@@ -991,3 +991,14 @@ Since 2026-10-20 (design `goalsSave` default `bar`): the split Goals tab is the 
 | Preview: Book a session and Message, side by side | Book a session only, full width | Messaging isn't built; a button for it would promise a feature that doesn't exist | messaging ships |
 | Preview headline is the design's sample | The form's headline as typed | PRD US-2: the preview updates as I type, before I save | — |
 | "Add another language": `--radius-md`, `--blue-500` text | The shared LanguageChips adder: `--radius-lg`, `--blue-700` | One component across Settings: Mentee Settings.dc.html draws it blue-700; the two drafts disagree | design picks one look |
+
+## Mentor Settings, PR 8: review freeze (`reviewFreeze=on`, `reviewStatus=inReview`)
+
+The frozen state follows `viewer.mentorStage === 'pending'` (submitted, awaiting a decision: the backend's `application_in_review`). A declined, approved or unsubmitted mentor isn't frozen.
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| Profile: the whole tab in one `<fieldset disabled>` at 0.72 | Only what the backend freezes is disabled (photo and cover controls gone, headline, About, both countries, languages); Full name and Gender stay live, and the save bar saves them | Owner, 2026-10-20: name and gender are editable in review; the backend doesn't freeze them | — |
+| Profile banner "You can edit these once it’s reviewed." | "You can edit your name and gender now, and the rest once it’s reviewed." | The design's line says nothing on the tab is editable; ux-writer, 2026-10-20 | — |
+| Banner "Contact us": `--weight-semibold`, `--blue-500`, no underline | The shared Notice link: semibold, `--blue-700`, underlined | blue-500 on ink-50 is under 4.5:1 (axe), as every Notice link | — |
+| LinkedIn toast "We’ll pass the change to your reviewer." | "Your reviewer sees the new link." | Nothing passes a change on (no reviewer flag, PRD); the reviewer reads the current link | a reviewer flag ships |

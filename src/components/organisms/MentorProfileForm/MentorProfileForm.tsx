@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, type CSSProperties, type ReactNode, type Ref } from 'react';
+import { FrozenGroup } from '@/components/atoms/FrozenGroup/FrozenGroup';
 import { Input } from '@/components/atoms/Input/Input';
 import { Select } from '@/components/atoms/Select/Select';
 import { AiField, type AssistMode } from '@/components/molecules/AiField/AiField';
@@ -21,6 +22,7 @@ import {
   type MentorProfileGap,
 } from '@/lib/copy/mentorSettings';
 import type { CoverIcon } from '@/lib/utils/cover';
+import { cx } from '@/lib/utils/cx';
 import { ABOUT_MAX } from '@/lib/utils/profileLimits';
 import type { MentorProfileValues } from '@/types/mentorSettings';
 import styles from './MentorProfileForm.module.css';
@@ -50,6 +52,12 @@ type MentorProfileFormProps = {
   onAssistBusy?: (busy: boolean) => void;
   /** "How mentees see you": the preview column. */
   preview: ReactNode;
+  /**
+   * The application is in review: what the reviewer judges is read-only
+   * (photo, cover, headline, About, countries, languages). Name and gender
+   * stay editable (owner, 2026-10-20).
+   */
+  frozen?: boolean;
 };
 
 /**
@@ -74,6 +82,7 @@ export function MentorProfileForm({
   onAssist,
   onAssistBusy,
   preview,
+  frozen = false,
 }: MentorProfileFormProps) {
   const id = useId();
   const has = (g: MentorProfileGap) => errors.includes(g);
@@ -104,7 +113,8 @@ export function MentorProfileForm({
     <div className={styles.layout}>
       <div className={styles.main}>
         <section
-          className={styles.photoCard}
+          // Frozen, its only controls (photo and cover) are gone: dimmed as drawn.
+          className={cx(styles.photoCard, frozen && styles.frozen)}
           style={{ '--cover-bg': cover.bg, '--cover-ink': cover.ink } as CSSProperties}
         >
           <div className={styles.cover}>
@@ -121,7 +131,7 @@ export function MentorProfileForm({
                 ))}
               </div>
             )}
-            {coverTools && <div className={styles.coverTools}>{coverTools}</div>}
+            {coverTools && !frozen && <div className={styles.coverTools}>{coverTools}</div>}
           </div>
           <div className={styles.photoRow}>
             <div className={styles.photo}>
@@ -133,20 +143,22 @@ export function MentorProfileForm({
                   {photo.initial}
                 </span>
               )}
-              <PhotoPicker
-                compact
-                hasPhoto={!!photo.url}
-                accept={photo.accept}
-                uploading={photo.uploading}
-                removing={photo.removing}
-                onFile={photo.onFile}
-                onRemove={photo.onRemove}
-                onRetryRemove={photo.onRetryRemove}
-                error={photo.error}
-                errorFrom={photo.errorFrom}
-                removedStamp={photo.removedStamp}
-                onDismissError={photo.onDismissError}
-              />
+              {!frozen && (
+                <PhotoPicker
+                  compact
+                  hasPhoto={!!photo.url}
+                  accept={photo.accept}
+                  uploading={photo.uploading}
+                  removing={photo.removing}
+                  onFile={photo.onFile}
+                  onRemove={photo.onRemove}
+                  onRetryRemove={photo.onRetryRemove}
+                  error={photo.error}
+                  errorFrom={photo.errorFrom}
+                  removedStamp={photo.removedStamp}
+                  onDismissError={photo.onDismissError}
+                />
+              )}
             </div>
             <div className={styles.photoText}>
               <span className={styles.photoTitle}>{C.photoTitle}</span>
@@ -174,7 +186,7 @@ export function MentorProfileForm({
             />
             {has('name') && <FieldError id={ids('name').error}>{nameError ?? E.name}</FieldError>}
           </div>
-          <div className={styles.field}>
+          <FrozenGroup frozen={frozen} className={styles.field}>
             <label htmlFor={ids('headline').field} className={styles.label}>
               {C.headline}
             </label>
@@ -195,19 +207,21 @@ export function MentorProfileForm({
                 {headlineTooLong ? E.headlineTooLong : E.headline}
               </FieldError>
             )}
-          </div>
-          <AiField
-            label={C.about}
-            value={values.about}
-            drafted={values.aboutDrafted}
-            onChange={(about, meta) => onChange({ about, aboutDrafted: meta.drafted })}
-            draftNote={C.aboutDraftNote}
-            max={ABOUT_MAX}
-            rows={5}
-            hint={C.aboutHint}
-            onAssist={onAssist}
-            onBusyChange={onAssistBusy}
-          />
+          </FrozenGroup>
+          <FrozenGroup frozen={frozen}>
+            <AiField
+              label={C.about}
+              value={values.about}
+              drafted={values.aboutDrafted}
+              onChange={(about, meta) => onChange({ about, aboutDrafted: meta.drafted })}
+              draftNote={C.aboutDraftNote}
+              max={ABOUT_MAX}
+              rows={5}
+              hint={C.aboutHint}
+              onAssist={onAssist}
+              onBusyChange={onAssistBusy}
+            />
+          </FrozenGroup>
         </section>
 
         <section className={styles.card} aria-labelledby={`${id}-background`}>
@@ -224,7 +238,7 @@ export function MentorProfileForm({
                 ['study', C.study, C.studyHint, E.study, values.studyId],
               ] as const
             ).map(([k, label, hint, error, value]) => (
-              <div key={k} className={styles.field}>
+              <FrozenGroup key={k} frozen={frozen} className={styles.field}>
                 <label htmlFor={ids(k).field} className={styles.label}>
                   {label}
                 </label>
@@ -242,7 +256,7 @@ export function MentorProfileForm({
                   {hint}
                 </span>
                 {has(k) && <FieldError id={ids(k).error}>{error}</FieldError>}
-              </div>
+              </FrozenGroup>
             ))}
             <div className={styles.field}>
               <label htmlFor={ids('gender').field} className={styles.label}>
@@ -264,7 +278,7 @@ export function MentorProfileForm({
               </span>
             </div>
           </div>
-          <div className={styles.field}>
+          <FrozenGroup frozen={frozen} className={styles.field}>
             <span className={styles.label}>{C.languages}</span>
             <LanguageChips
               label={C.languages}
@@ -288,7 +302,7 @@ export function MentorProfileForm({
               }}
             />
             {has('langs') && <FieldError id={ids('langs').error}>{E.langs}</FieldError>}
-          </div>
+          </FrozenGroup>
         </section>
       </div>
       <aside className={styles.aside} aria-label={C.preview}>

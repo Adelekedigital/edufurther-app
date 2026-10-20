@@ -2,6 +2,7 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
+import { FrozenGroup } from '@/components/atoms/FrozenGroup/FrozenGroup';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { SaveBar } from '@/components/molecules/SaveBar/SaveBar';
@@ -26,11 +27,12 @@ import {
   type GuideCountry,
 } from '@/lib/api/data/mentorSettings';
 import { useOwnEducation } from '@/lib/api/data/profileEntries';
-import { MENTOR_EXPERTISE_COPY as C } from '@/lib/copy/mentorSettings';
+import { FREEZE_COPY, MENTOR_EXPERTISE_COPY as C } from '@/lib/copy/mentorSettings';
 import { EDUCATION_COPY, SAVE_COPY } from '@/lib/copy/settings';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { rowOf } from './EducationPanel';
 import type { PanelHandle } from './ProfilePanel';
+import { ReviewFreeze } from './ReviewFreeze';
 import styles from './ExpertisePanel.module.css';
 
 /** The design's countries, in its order (Mentor Settings.dc.html `guideTo`). */
@@ -58,10 +60,14 @@ const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCa
  * Settings › Expertise for a mentor (Mentor Settings.dc.html `isExpertise`,
  * expertiseEdit=modal): topics, education and awards save in their own
  * modals (the Mentor Profile's editors); "Where can you guide mentees to?"
- * saves with the save bar.
+ * saves with the save bar. `frozen`: the application is in review, and all
+ * of this is what's reviewed, so the tab is read-only under the banner; a
+ * countries save the freeze refuses (it began meanwhile) shows the same.
  */
-export const ExpertisePanel = forwardRef<PanelHandle, { userId: string }>(function ExpertisePanel(
-  { userId },
+type ExpertisePanelProps = { userId: string; frozen?: boolean };
+
+export const ExpertisePanel = forwardRef<PanelHandle, ExpertisePanelProps>(function ExpertisePanel(
+  { userId, frozen: inReview = false },
   ref,
 ) {
   const settings = useMentorSettings(userId);
@@ -81,6 +87,9 @@ export const ExpertisePanel = forwardRef<PanelHandle, { userId: string }>(functi
   // read can't put the old list back.
   const [base, setBase] = useState<GuideCountry[] | null>(null);
   const [draft, setDraft] = useState<GuideCountry[] | null>(null);
+  const frozen = inReview || !!saving.error?.inReview;
+  // Frozen mid-edit: the countries go back to what's saved.
+  if (frozen && base && draft && !same(base, draft)) setDraft(base);
   const dirty = !!base && !!draft && !same(base, draft);
   if (guide.countries && (!base || (!dirty && !same(base, guide.countries)))) {
     setBase(guide.countries);
@@ -183,15 +192,27 @@ export const ExpertisePanel = forwardRef<PanelHandle, { userId: string }>(functi
     }
   };
 
+  // Frozen, a card's own Try again would sit in the disabled group: a failed
+  // read (education, or the countries before they loaded) is the panel's.
+  const frozenReadFailed =
+    frozen && (own.status === 'error' || (!draft && guide.status === 'error'));
   // Error before content: a failed first read says so, with Try again. The
   // countries have their own read: its failure stays in its card.
-  if (settings.status === 'error')
+  if (settings.status === 'error' || frozenReadFailed)
     return (
       <EmptyState
         illustration="forms"
         title={C.loadError}
         actions={
-          <Button variant="secondary-outlined" size="large" onClick={settings.retry}>
+          <Button
+            variant="secondary-outlined"
+            size="large"
+            onClick={() => {
+              if (settings.status === 'error') settings.retry();
+              if (own.status === 'error') own.retry();
+              if (guide.status === 'error') guide.retry();
+            }}
+          >
             {C.retry}
           </Button>
         }
@@ -222,78 +243,81 @@ export const ExpertisePanel = forwardRef<PanelHandle, { userId: string }>(functi
 
   return (
     <>
-      <div className={styles.stack}>
-        <TopicsCard
-          topics={profile.mentor.topics}
-          onEdit={() => setItem({ kind: 'topics' })}
-          editRef={topicsEdit}
-        />
-        <div ref={guideHeading}>
-          <GuideCountriesCard
-            common={common}
-            selected={draft ?? []}
-            onToggle={(c) => {
-              setToast(null);
-              setDraft((d) =>
-                !d
-                  ? d
-                  : d.some((x) => x.id === c.id)
-                    ? d.filter((x) => x.id !== c.id)
-                    : d.length >= GUIDE_MAX
-                      ? d
-                      : [...d, c],
-              );
-            }}
-            query={query}
-            onQueryChange={setQuery}
-            results={results}
-            status={catalogRead.status}
-            full={(draft?.length ?? 0) >= GUIDE_MAX}
-            catalogFailed={
-              catalogRead.status === 'error'
-                ? {
-                    onRetry: () => {
-                      setCatalogTries((n) => n + 1);
-                      catalogRead.retry();
-                    },
-                    at: catalogTries,
-                  }
-                : undefined
-            }
-            readFailed={!draft && guide.status === 'error' ? { onRetry: guide.retry } : undefined}
-            loading={!draft && guide.status === 'loading'}
+      <ReviewFreeze frozen={frozen} userId={userId} words={FREEZE_COPY.expertise}>
+        <FrozenGroup frozen={frozen} className={styles.stack}>
+          <TopicsCard
+            topics={profile.mentor.topics}
+            onEdit={() => setItem({ kind: 'topics' })}
+            editRef={topicsEdit}
           />
-        </div>
-        <EducationList
-          status={own.status}
-          rows={own.entries.map(rowOf)}
-          onAdd={() => setItem({ kind: 'education', id: null })}
-          onEdit={(id) => setItem({ kind: 'education', id })}
-          onDelete={(id) => setDeleting({ kind: 'education', id })}
-          onRetry={own.retry}
-          retrying={own.retrying}
-          errorKey={own.failures}
-          headingRef={eduHeading}
-          addRef={eduAdd}
-          copy={{
-            sub: C.educationSub,
-            emptyTitle: C.educationEmptyTitle,
-            emptyBody: C.educationEmptyBody,
-          }}
-        />
-        {/* Awards come with the profile read: the panel shows only once it has
+          <div ref={guideHeading}>
+            <GuideCountriesCard
+              common={common}
+              selected={draft ?? []}
+              onToggle={(c) => {
+                setToast(null);
+                setDraft((d) =>
+                  !d
+                    ? d
+                    : d.some((x) => x.id === c.id)
+                      ? d.filter((x) => x.id !== c.id)
+                      : d.length >= GUIDE_MAX
+                        ? d
+                        : [...d, c],
+                );
+              }}
+              query={query}
+              onQueryChange={setQuery}
+              results={results}
+              status={catalogRead.status}
+              full={(draft?.length ?? 0) >= GUIDE_MAX}
+              // Frozen, nothing can be added: the catalog doesn't matter.
+              catalogFailed={
+                catalogRead.status === 'error' && !frozen
+                  ? {
+                      onRetry: () => {
+                        setCatalogTries((n) => n + 1);
+                        catalogRead.retry();
+                      },
+                      at: catalogTries,
+                    }
+                  : undefined
+              }
+              readFailed={!draft && guide.status === 'error' ? { onRetry: guide.retry } : undefined}
+              loading={!draft && guide.status === 'loading'}
+            />
+          </div>
+          <EducationList
+            status={own.status}
+            rows={own.entries.map(rowOf)}
+            onAdd={() => setItem({ kind: 'education', id: null })}
+            onEdit={(id) => setItem({ kind: 'education', id })}
+            onDelete={(id) => setDeleting({ kind: 'education', id })}
+            onRetry={own.retry}
+            retrying={own.retrying}
+            errorKey={own.failures}
+            headingRef={eduHeading}
+            addRef={eduAdd}
+            copy={{
+              sub: C.educationSub,
+              emptyTitle: C.educationEmptyTitle,
+              emptyBody: C.educationEmptyBody,
+            }}
+          />
+          {/* Awards come with the profile read: the panel shows only once it has
             landed, and a failed refetch keeps them, so the list is always ready. */}
-        <AwardList
-          status="ready"
-          rows={awards}
-          onAdd={() => setItem({ kind: 'award', id: null })}
-          onEdit={(id) => setItem({ kind: 'award', id })}
-          onDelete={(id) => setDeleting({ kind: 'award', id })}
-          onRetry={settings.retry}
-          headingRef={awardsHeading}
-          addRef={awardsAdd}
-        />
-      </div>
+          <AwardList
+            status="ready"
+            rows={awards}
+            onAdd={() => setItem({ kind: 'award', id: null })}
+            onEdit={(id) => setItem({ kind: 'award', id })}
+            onDelete={(id) => setDeleting({ kind: 'award', id })}
+            onRetry={settings.retry}
+            headingRef={awardsHeading}
+            addRef={awardsAdd}
+          />
+        </FrozenGroup>
+      </ReviewFreeze>
       {item && (
         <OwnerItemEditor
           target={item}
@@ -322,7 +346,7 @@ export const ExpertisePanel = forwardRef<PanelHandle, { userId: string }>(functi
         <SaveBar
           label={SAVE_COPY.barLabel}
           message={C.guideSaveBar}
-          error={saving.error?.copy ?? null}
+          error={saving.error && !saving.error.inReview ? saving.error.copy : null}
           errorKey={saveTries}
           discardLabel={SAVE_COPY.discard}
           saveLabel={SAVE_COPY.save}

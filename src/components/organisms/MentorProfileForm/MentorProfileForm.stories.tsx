@@ -53,11 +53,13 @@ function Live({
   errors = [],
   headlineTooLong = false,
   photoUrl = null,
+  frozen = false,
 }: {
   initial: MentorProfileValues;
   errors?: MentorProfileGap[];
   headlineTooLong?: boolean;
   photoUrl?: string | null;
+  frozen?: boolean;
 }) {
   const [v, setV] = useState(initial);
   const { bg, ink } = coverVars('sky');
@@ -66,6 +68,7 @@ function Live({
   return (
     <div style={{ maxWidth: 1040 }}>
       <MentorProfileForm
+        frozen={frozen}
         values={v}
         onChange={(patch) => setV((x) => ({ ...x, ...patch }))}
         errors={errors}
@@ -165,3 +168,6 @@ export const Phone: Story = {
   globals: { viewport: { value: 'mobile2', isRotated: false } },
   render: () => <Live initial={filled} />,
 };
+
+/** The application is in review: only name and gender can change. */
+export const InReview: Story = { render: () => <Live initial={filled} frozen /> };
