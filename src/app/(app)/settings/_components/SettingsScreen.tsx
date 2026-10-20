@@ -19,7 +19,7 @@ import { GoalsPanel } from './GoalsPanel';
 import { MentorProfilePanel } from './MentorProfilePanel';
 import { ProfilePanel, type PanelHandle } from './ProfilePanel';
 import { SecurityPanel } from './SecurityPanel';
-import { accessFor } from '@/lib/utils/access';
+import { accessFor, inSetup } from '@/lib/utils/access';
 import { settingsTabs } from './tabs';
 import styles from './SettingsScreen.module.css';
 
@@ -42,7 +42,9 @@ export function SettingsScreen() {
   const mentor = !!member?.isMentor;
   // Submitted and awaiting a decision: what's reviewed holds still (decision 273).
   const inReview = member?.mentorStage === 'pending';
-  const { tabs, first } = settingsTabs(mentor, accessFor(viewer));
+  const access = accessFor(viewer);
+  const { tabs, first } = settingsTabs(mentor, access);
+  const setup = inSetup(access);
   // A tab this viewer doesn't have isn't mounted: a hidden panel still fetches.
   const has = (t: SettingsTab) => tabs.includes(t);
   const known = tabs.find((t) => t === segment);
@@ -129,7 +131,9 @@ export function SettingsScreen() {
     <div className={styles.screen}>
       <header className={styles.head}>
         <h1 className={styles.title}>{SETTINGS_COPY.title}</h1>
-        <p className={styles.sub}>{mentor ? MENTOR_SETTINGS_SUB : SETTINGS_COPY.sub}</p>
+        <p className={styles.sub}>
+          {setup ? SETTINGS_COPY.setupSub : mentor ? MENTOR_SETTINGS_SUB : SETTINGS_COPY.sub}
+        </p>
       </header>
       <Tabs
         label={SETTINGS_COPY.tabsLabel}
@@ -201,7 +205,13 @@ export function SettingsScreen() {
           )}
           {/* Nothing to edit here (the confirm's word is meant to start empty): only while shown. */}
           <TabPanel id={panelId('security')} active={tab === 'security'}>
-            {member ? <SecurityPanel userId={member.id} /> : null}
+            {/* A mentor sign-up (no mentor profile yet) reads the mentor's words. */}
+            {member ? (
+              <SecurityPanel
+                userId={member.id}
+                role={access.state === 'mentorSetup' ? 'mentor' : 'mentee'}
+              />
+            ) : null}
           </TabPanel>
         </>
       )}

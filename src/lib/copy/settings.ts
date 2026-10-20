@@ -11,6 +11,8 @@ export const SETTINGS_COPY = {
   /** Named for the loading frame, before the role is known. */
   loading: 'Loading your settings',
   sub: 'Your details, what you’re working toward, and how you sign in.',
+  /** In the setup lock, when only Login and security is open. Ours, not designed. */
+  setupSub: 'Finish setting up to see the rest of your settings.',
   tabsLabel: 'Settings',
   loadError: 'We couldn’t load your settings.',
   loadErrorBody: 'Check your connection and try again.',

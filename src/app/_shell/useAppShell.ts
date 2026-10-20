@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { AccountMenuItem } from '@/components/molecules/AccountMenu/AccountMenu';
 import { useSignOut } from '@/lib/api/data/auth';
 import { useViewer } from '@/lib/api/data/viewer';
-import { accessFor, setupCredits } from '@/lib/utils/access';
+import { accessFor, inSetup, setupCredits, type Access } from '@/lib/utils/access';
 import { personCover } from '@/lib/utils/person';
 import { creditsView } from '@/lib/utils/credits';
 import { hasUnsavedChanges } from '@/lib/utils/leaveGuard';
@@ -52,9 +52,14 @@ export function isMenteeSide(member: Member | null): member is Member {
  * own Mentor Profile, so mentors only: mentees have no profile page yet (#50).
  * "Feedback" has no destination yet (#51).
  */
-export function accountItems(member: Member | null, signOut: () => void): AccountMenuItem[] {
+export function accountItems(
+  member: Member | null,
+  signOut: () => void,
+  /** In setup the profile isn't theirs to see yet (the setup lock): no "View profile". */
+  access?: Access,
+): AccountMenuItem[] {
   return [
-    ...(member?.isMentor
+    ...(member?.isMentor && !(access && inSetup(access))
       ? [
           {
             key: 'profile',
@@ -99,10 +104,14 @@ export function useAppShell() {
   const member = viewer.kind === 'member' ? viewer : null;
   // The setup lock: nav items held until onboarding or approval (lib/utils/access).
   const access = accessFor(viewer);
-  const items = accountItems(member, () => {
-    if (hasUnsavedChanges()) setConfirmingLogout(true);
-    else void signOut();
-  });
+  const items = accountItems(
+    member,
+    () => {
+      if (hasUnsavedChanges()) setConfirmingLogout(true);
+      else void signOut();
+    },
+    access,
+  );
   return {
     viewer,
     member,

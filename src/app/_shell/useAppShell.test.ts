@@ -29,6 +29,17 @@ describe('accountItems (AppShell.dc.html account menu)', () => {
     expect(items[0]).toMatchObject({ icon: 'account_box', href: '/mentors/u1' });
   });
 
+  it('a mentor in setup: no "View profile" (the setup lock)', () => {
+    const items = accountItems(member({ mentorStage: 'unsubmitted' }), vi.fn(), {
+      state: 'mentorSetup',
+      locked: new Set(),
+      copy: null,
+      homeHref: '/onboarding/mentor',
+      setupPill: true,
+    });
+    expect(items.map((i) => i.label)).toEqual(['Logout']);
+  });
+
   it('a mentee: no "View profile" (no mentee profile page yet, #50)', () => {
     const items = accountItems(
       member({ isMentor: false, isApprovedMentor: false, isMentee: true }),

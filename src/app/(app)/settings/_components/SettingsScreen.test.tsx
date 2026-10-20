@@ -443,13 +443,16 @@ describe('the setup lock in Settings (owner, 2026-10-20)', () => {
   it.each([
     ['an unfinished mentee', viewers.menteeUnfinished, 'mentee'],
     ['a mentor who never sent their application', viewers.mentorUnfinished, 'mentor'],
-    ['a mentor sign-up, not started', viewers.mentorSignup, 'mentee'],
+    ['a mentor sign-up, not started', viewers.mentorSignup, 'mentor'],
   ] as const)('%s: Login and security only, nothing else mounted', (_who, v, role) => {
     viewer = v;
     segment = 'security';
     render(<SettingsScreen />);
     expect(tabs()).toEqual(['settings-security']);
     expect(screen.getByTestId('security-panel')).toHaveAttribute('data-role', role);
+    expect(
+      screen.getByText('Finish setting up to see the rest of your settings.'),
+    ).toBeInTheDocument();
     for (const id of [
       'profile-panel',
       'goals-panel',
