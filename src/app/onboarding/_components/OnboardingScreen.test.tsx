@@ -582,7 +582,7 @@ describe('OnboardingScreen: "Join as a mentor" on step 1 (owner, 2026-10-20)', (
     switching = true;
     switchError = { kind: 'server', message: 'x' };
     render(<OnboardingScreen />);
-    expect(join()).toBeDisabled();
+    expect(join()).toHaveAttribute('aria-disabled', 'true');
     expect(join()).toHaveAttribute('aria-busy', 'true');
     expect(screen.getByRole('alert')).toHaveTextContent('Couldn’t switch. Try again.');
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/help/i);

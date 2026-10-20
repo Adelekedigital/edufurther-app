@@ -96,14 +96,17 @@ describe('StepCounterRow: switching onboardings (owner, 2026-10-20)', () => {
     expect(onboardingDestination(v, new URLSearchParams())).toBe('/onboarding/mentee');
   });
 
-  it('busy while saving: disabled and aria-busy, so a second tap saves nothing more', async () => {
+  it('busy while saving: aria-disabled and aria-busy, focus kept, a second tap saves nothing more', async () => {
     let resolve!: (v: unknown) => void;
     PATCH.mockReturnValue(new Promise((r) => (resolve = r)));
     setup(fresh(), 'mentee');
     const link = screen.getByRole('button', { name: 'Join as a mentor' });
     await userEvent.dblClick(link);
-    await waitFor(() => expect(link).toBeDisabled());
+    await waitFor(() => expect(link).toHaveAttribute('aria-disabled', 'true'));
     expect(link).toHaveAttribute('aria-busy', 'true');
+    // Never native disabled: the focused button stays in the focus order.
+    expect(link).not.toBeDisabled();
+    expect(link).toHaveFocus();
     expect(PATCH).toHaveBeenCalledTimes(1);
     resolve(ok());
   });
@@ -114,7 +117,9 @@ describe('StepCounterRow: switching onboardings (owner, 2026-10-20)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Join as a mentor' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Couldn’t switch. Try again.');
     expect(qc.getQueryData<Member>(ME)?.signedUpAsMentor).toBeUndefined();
-    expect(screen.getByRole('button', { name: 'Join as a mentor' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Join as a mentor' })).not.toHaveAttribute(
+      'aria-disabled',
+    );
   });
 
   it('no switch for an account with a step saved: the counter alone, on the right', () => {

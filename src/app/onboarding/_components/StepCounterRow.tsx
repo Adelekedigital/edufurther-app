@@ -37,8 +37,12 @@ export function StepCounterRow({
   // A second tap before the busy state renders.
   const running = useRef(false);
 
+  // aria-disabled, never native disabled: the focused button must stay in the
+  // focus order while it saves (the house rule; SignInForm does the same).
+  const off = !!disabled || isPending;
+
   const onSwitch = async () => {
-    if (!to || running.current) return;
+    if (!to || off || running.current) return;
     running.current = true;
     try {
       // On success the role redirect takes them to the other flow.
@@ -60,7 +64,7 @@ export function StepCounterRow({
             type="button"
             className={styles.roleSwitch}
             onClick={() => void onSwitch()}
-            disabled={disabled || isPending}
+            aria-disabled={off || undefined}
             aria-busy={isPending || undefined}
           >
             {ROLE_SWITCH_COPY[to]}
