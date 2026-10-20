@@ -160,14 +160,6 @@ describe('SessionTypesScreen', () => {
     );
   });
 
-  it('a member without a mentor profile is told this page is for mentors', () => {
-    viewer = { ...mentor, isMentor: false, isMentee: true } as Viewer;
-    render(<SessionTypesScreen />);
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Session types are for mentors' }),
-    ).toBeInTheDocument();
-  });
-
   it('any mentor state (here, not approved) manages session types', () => {
     viewer = mentor;
     render(<SessionTypesScreen />);
@@ -670,7 +662,7 @@ describe('SessionTypesScreen', () => {
     );
   });
 
-  it('signed in without a usable account: told why, never "for mentors"', () => {
+  it('signed in without a usable account: told why', () => {
     viewer = { kind: 'accountExists' };
     const { unmount } = render(<SessionTypesScreen />);
     expect(
@@ -679,7 +671,6 @@ describe('SessionTypesScreen', () => {
         name: 'This email already has an EduFurther account.',
       }),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/for mentors/)).toBeNull();
     unmount();
     viewer = { kind: 'unlinked' };
     render(<SessionTypesScreen />);
@@ -832,17 +823,7 @@ describe('the setup lock: /session-types opened by URL (PRD "App shell and acces
     expectNoLock();
   });
 
-  it('a finished mentee, menteeByChoice included, keeps the non-mentor gate, never a lock', () => {
-    for (const v of [viewers.menteeFinished, viewers.menteeByChoice]) {
-      viewer = v;
-      const { unmount } = render(<SessionTypesScreen />);
-      expect(screen.getByRole('heading', { name: 'Session types are for mentors' })).toBeVisible();
-      expectNoLock();
-      unmount();
-    }
-  });
-
-  // Setup wins over "for mentors": a sign-up has no mentor profile yet (owner, 2026-10-20).
+  // A mentee never reaches the screen: the layout redirects them (RoleRedirect.test).
   it.each([
     [
       'a mentor who never sent their application',
@@ -850,7 +831,6 @@ describe('the setup lock: /session-types opened by URL (PRD "App shell and acces
       explainer.mentorSetup('Sessions'),
     ],
     ['a mentor sign-up, not started', viewers.mentorSignup, explainer.mentorSetup('Sessions')],
-    ['an unfinished mentee', viewers.menteeUnfinished, explainer.menteeSetup('Sessions')],
   ])('%s gets the setup explainer, not the list', (_who, v, e) => {
     viewer = v;
     render(<SessionTypesScreen />);

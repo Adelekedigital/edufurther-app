@@ -6,8 +6,10 @@ import { useQuery, type QueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { authConfigured } from '@/lib/vendor/supabase/config';
 import type { Viewer } from '@/types/mentor';
-import { mentorStageOf } from '@/lib/utils/access';
+import { mentorStageOf, routeRole } from '@/lib/utils/access';
 import { coverKey } from '@/lib/utils/cover';
+import { readMockParam } from '@/lib/utils/mockViewerParam';
+import { useHydrated } from '@/lib/utils/useHydrated';
 import { clampFocus, personInitials } from '@/lib/utils/person';
 import { ApiError } from './errors';
 import { api } from './http';
@@ -213,24 +215,32 @@ MOCK_VIEWERS['mentor-unsubmitted'] = {
   mentorStage: 'unsubmitted',
 };
 
-const readMockParam = () => new URLSearchParams(window.location.search).get('mockViewer');
+/** The mock viewer before hydration has read `?mockViewer=`. */
+const MOCK_PENDING: Viewer = { kind: 'loading', signedIn: true };
+
 const onPopState = (cb: () => void) => {
   window.addEventListener('popstate', cb);
   return () => window.removeEventListener('popstate', cb);
 };
 
-/** Screens only a mentor can use: in mock mode they default to the mentor viewer. */
-const MENTOR_ONLY_ROUTES = ['/session-types', '/dashboard', '/mentor-application'];
+/**
+ * Dev and CI only: on a mentor page (ROUTE_ROLES) the mock defaults to the
+ * approved mentor, so one mentee-default build reviews it as its real user.
+ * `?mockViewer=` wins, so `?mockViewer=mentee` on /dashboard shows the role
+ * redirect in dev.
+ */
+const onMentorPage = (path: string | null) => !!path && routeRole(path) === 'mentor';
 
 /**
  * The mock viewer, or null when NEXT_PUBLIC_MOCK_VIEWER is unset (every real
  * deploy). While it is set (local dev, CI):
- * - mentor-only routes default to the mentor, so one CI build (mentee by
- *   default) reviews them as their real user. The path is known on the server
- *   too, so hydration matches and nothing flips (CLS);
- * - `?mockViewer=mentor|mentee|guest` overrides it for manual checks. It is
- *   read through useSyncExternalStore (the server snapshot is null), so it
- *   applies right after hydration.
+ * - mentor pages default to the mentor (onMentorPage);
+ * - `?mockViewer=<key>` (any MOCK_VIEWERS key) overrides it for manual
+ *   checks, the route default included, and a role redirect keeps it
+ *   (keepMockViewer);
+ * - the server can't see the param, so the server render and the first paint
+ *   are `loading`, as a real viewer is before /me: no redirect or gate ever
+ *   acts on the default before the param applies, and the HTML matches.
  */
 function useMockViewer(): Viewer | null {
   const env = process.env.NEXT_PUBLIC_MOCK_VIEWER;
@@ -240,8 +250,10 @@ function useMockViewer(): Viewer | null {
     () => (env ? readMockParam() : null),
     () => null,
   );
+  const hydrated = useHydrated();
   if (!env) return null;
-  const byRoute = MENTOR_ONLY_ROUTES.some((r) => path?.startsWith(r)) ? 'mentor' : env;
+  if (!hydrated) return MOCK_PENDING;
+  const byRoute = onMentorPage(path) ? 'mentor' : env;
   const pick = param ?? byRoute;
   // Own keys only: `?mockViewer=constructor` must not reach Object.prototype.
   const key = Object.hasOwn(MOCK_VIEWERS, pick) ? pick : env;
@@ -294,7 +306,14 @@ export function patchViewer(
   patch: Partial<
     Pick<
       Member,
-      'avatarUrl' | 'avatarFocus' | 'coverKey' | 'onboardingComplete' | 'mentorApprovedSeen'
+      | 'avatarUrl'
+      | 'avatarFocus'
+      | 'coverKey'
+      | 'onboardingComplete'
+      | 'mentorApprovedSeen'
+      | 'signedUpAsMentor'
+      | 'isMentor'
+      | 'mentorStage'
     >
   >,
 ) {

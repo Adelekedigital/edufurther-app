@@ -210,7 +210,8 @@ export function DashboardScreen() {
   // onboarding instead (the setup lock), as the nav's Home already goes.
   const detour = useSetupDetour(viewer);
 
-  // Viewer resolved (guest or member) but not a mentor → send them home.
+  // Resolved but not a mentor: a guest (or an unusable account) goes to '/'.
+  // A mentee member never gets here: the layout redirects them (RoleRedirect).
   const resolved = chrome !== 'pending';
   const isMentor = !!member?.isMentor;
   useEffect(() => {

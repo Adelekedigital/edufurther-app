@@ -11,7 +11,9 @@ import { exchangeCodeForSession } from '@/lib/vendor/supabase/server';
  * A Google sign-in goes back to the screen it started on (`auth=google`), so
  * the screen can name a new account, show the toast and pick the account's
  * home; `mode`, `role` and `next` come along. A refusal goes back there too,
- * with the reason. A magic link that worked goes straight to `next`.
+ * with the reason. A magic link that worked goes straight to `next`. That
+ * legacy path never saves a mentor role (only the sign-in screen does), so an
+ * old mentor link signs in as a mentee; left as is (owner, 2026-10-20).
  */
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;

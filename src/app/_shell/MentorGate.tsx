@@ -15,12 +15,6 @@ export type MemberGateCopy = {
   guestDescription: string;
 };
 
-/** What a mentor-only page says to someone who can't use it. */
-export type GateCopy = MemberGateCopy & {
-  nonMentorTitle: string;
-  nonMentorDescription: string;
-};
-
 /** Bookings' copy (PROVISIONAL — undesigned; docs/handoff/bookings-design-request.md). */
 export const BOOKINGS_GATE: MemberGateCopy = {
   illustration: 'calendar',
@@ -43,48 +37,11 @@ export const SETTINGS_GATE: MemberGateCopy = {
 };
 
 /** Session Types' copy (confirmed by design, reply 2026-09-29, #3). */
-export const SESSION_TYPES_GATE: GateCopy = {
+export const SESSION_TYPES_GATE: MemberGateCopy = {
   illustration: 'task-templates',
   guestTitle: 'Log in to manage your session types',
   guestDescription: 'Session types are what mentees can book with you.',
-  nonMentorTitle: 'Session types are for mentors',
-  nonMentorDescription:
-    'Once you’re a mentor, this is where you set up what mentees can book with you.',
 };
-
-/**
- * Who may be on a mentor's own page (Session Types, Calendar): any mentor, in
- * any state (backend reply #6). Everyone else gets the page they need instead —
- * null means "a mentor, or not known yet": render the page (it shows its own
- * loading). `lock` is the page's `lockedPageGate`: after the shared states,
- * before "for mentors", so an unfinished account (a mentor sign-up has no
- * mentor profile yet) meets the setup lock, not a dead end.
- */
-export function mentorGate(
-  viewer: Viewer,
-  isMentor: boolean,
-  returnTo: string,
-  copy: GateCopy,
-  lock: ReactNode = null,
-): ReactNode {
-  const shared = memberGate(viewer, returnTo, copy);
-  if (shared) return shared;
-  if (lock) return lock;
-  if (viewer.kind !== 'loading' && !isMentor)
-    return (
-      <Gate
-        illustration={copy.illustration}
-        title={copy.nonMentorTitle}
-        description={copy.nonMentorDescription}
-        action={
-          <ButtonLink href="/explore" size="large" variant="secondary-outlined">
-            Find a mentor
-          </ButtonLink>
-        }
-      />
-    );
-  return null;
-}
 
 /**
  * The branches every signed-in page shares: a guest, a `/me` that failed, and
@@ -158,7 +115,8 @@ export function memberGate(viewer: Viewer, returnTo: string, copy: MemberGateCop
 /**
  * A locked page opened by URL (PRD "App shell and access"): the lock
  * explainer's words as the page body, inside the shell, with its one button.
- * Run after memberGate/mentorGate, so a guest or a failed /me still gets those.
+ * Run after memberGate, so a guest or a failed /me still gets those. A
+ * wrong-role member never gets here: the page redirects (RoleRedirect).
  * Null means "not locked" (or /me still loading: accessFor locks nothing then),
  * so the page renders and shows its own loading. Keyed by nav item, so
  * Messages joins with one call when it ships.

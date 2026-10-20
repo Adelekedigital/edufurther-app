@@ -9,7 +9,6 @@ import { useMentorMatches } from '@/lib/api/data/mentorMatches';
 import { useMentorProfile } from '@/lib/api/data/profile';
 import { useOnboarding, useSaveOnboarding, type OnboardingState } from '@/lib/api/data/onboarding';
 import { patchViewer, useViewer } from '@/lib/api/data/viewer';
-import { NEW_MENTOR_HOME } from '@/lib/config/auth';
 import { HELP_LIMIT, type MissingKey } from '@/lib/copy/onboarding';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { markBookingDraftFinished } from '@/lib/utils/bookingDraft';
@@ -104,14 +103,14 @@ export function useOnboardingFlow() {
     else setForm(startFrom(ob.state));
   }
 
-  // Not a mentee here: a guest signs up first, a mentor has their own home.
+  // Not a mentee here: a guest signs up first. A mentor never gets here: the
+  // page redirects them to their own home (RoleRedirect).
   useEffect(() => {
     // Back here after sign-up, with a guest's for/sid/time kept.
     if (viewer.kind === 'guest')
       router.replace(
         `/signup?next=${encodeURIComponent(`/onboarding/mentee${window.location.search}`)}`,
       );
-    else if (viewer.kind === 'member' && viewer.isMentor) router.replace(NEW_MENTOR_HOME);
     else if (viewer.kind === 'unlinked' || viewer.kind === 'accountExists')
       router.replace('/explore');
   }, [viewer, router]);

@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { accessFor, inSetup } from '@/lib/utils/access';
 import type { Viewer } from '@/types/mentor';
+import { useReplaceTo } from './useReplaceTo';
 
 /**
  * A page an account in the setup lock can't use yet (/home, /dashboard, its
@@ -13,11 +12,8 @@ import type { Viewer } from '@/types/mentor';
  * `when` false (e.g. not the owner) never detours.
  */
 export function useSetupDetour(viewer: Viewer, when = true): string | null {
-  const router = useRouter();
   const access = accessFor(viewer);
   const to = when && inSetup(access) ? access.homeHref : null;
-  useEffect(() => {
-    if (to) router.replace(to);
-  }, [to, router]);
+  useReplaceTo(to);
   return to;
 }

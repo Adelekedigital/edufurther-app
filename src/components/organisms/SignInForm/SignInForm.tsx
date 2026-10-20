@@ -48,6 +48,8 @@ export type SignInFormProps = {
   onFullNameChange: (value: string) => void;
   /** A server refusal of the name, in our words. */
   nameError?: string;
+  /** Finish step: the mentor role didn't save; Create account tries again. */
+  roleError?: string;
 
   // Start step.
   sending?: boolean;
@@ -232,6 +234,7 @@ export function SignInForm(p: SignInFormProps) {
           onUseDifferentEmail={p.onUseDifferentEmail ?? noop}
           signingOut={p.signingOut}
           signOutError={p.signOutError}
+          roleError={p.roleError}
         />
       )}
       {step === 'suspended' && (

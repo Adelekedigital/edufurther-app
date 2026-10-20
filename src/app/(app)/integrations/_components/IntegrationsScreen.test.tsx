@@ -386,13 +386,6 @@ describe('IntegrationsScreen', () => {
     expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
   });
 
-  it('turns a signed-in non-mentor away', () => {
-    viewer = { kind: 'member', id: 'u1', isMentor: false } as Viewer;
-    render(<IntegrationsScreen />);
-    expect(screen.getByText('Integrations are for mentors')).toBeInTheDocument();
-    expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
-  });
-
   describe('Payments', () => {
     it('shows the coming-soon badge', () => {
       render(<IntegrationsScreen />);
@@ -695,7 +688,7 @@ describe('the setup lock: /integrations opened by URL (PRD "App shell and access
     expect(screen.queryByRole('heading', { name: 'Integrations' })).toBeNull();
   });
 
-  // Setup wins over "for mentors": a sign-up has no mentor profile yet (owner, 2026-10-20).
+  // A mentee never reaches the screen: the layout redirects them (RoleRedirect.test).
   it.each([
     [
       'a mentor who never sent their application',
@@ -703,12 +696,10 @@ describe('the setup lock: /integrations opened by URL (PRD "App shell and access
       explainer.mentorSetup('Integration'),
     ],
     ['a mentor sign-up, not started', viewers.mentorSignup, explainer.mentorSetup('Integration')],
-    ['an unfinished mentee', viewers.menteeUnfinished, explainer.menteeSetup('Integration')],
   ])('%s gets the setup explainer', (_who, v, e) => {
     viewer = v;
     render(<IntegrationsScreen />);
     expectLockedPage(e);
-    expect(screen.queryByRole('heading', { name: 'Integrations are for mentors' })).toBeNull();
   });
 
   it.each([
@@ -719,13 +710,6 @@ describe('the setup lock: /integrations opened by URL (PRD "App shell and access
     viewer = v;
     render(<IntegrationsScreen />);
     expect(screen.getByRole('heading', { level: 1, name: 'Integrations' })).toBeInTheDocument();
-    expectNoLock();
-  });
-
-  it('a declined applicant who chose mentee (menteeByChoice) gets the non-mentor gate, never the lock', () => {
-    viewer = viewers.menteeByChoice;
-    render(<IntegrationsScreen />);
-    expect(screen.queryByRole('heading', { level: 1, name: 'Integrations' })).toBeNull();
     expectNoLock();
   });
 

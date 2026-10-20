@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixture';
@@ -12,6 +13,10 @@ vi.mock('next/navigation', async () =>
 vi.mock('@/app/_shell/useAppShell', async () =>
   (await import('./profileScreen.harness')).mocks.appShell(),
 );
+// A profile is shared (no role redirect); the redirect has its own tests.
+vi.mock('@/app/_shell/RoleRedirect', () => ({
+  RoleRedirect: ({ children }: { children: ReactNode }) => children,
+}));
 vi.mock('@/lib/api/data/reviews', async () =>
   (await import('./profileScreen.harness')).mocks.reviews(),
 );

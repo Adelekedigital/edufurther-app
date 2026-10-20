@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { RoleRedirect } from '@/app/_shell/RoleRedirect';
 import { ONBOARDING_LIVE } from '@/lib/config/auth';
 import { OnboardingScreen } from '../_components/OnboardingScreen';
 
@@ -19,7 +20,10 @@ export default function OnboardingPage() {
   // It reads the query (a guest's for/sid/time): rendered inside a boundary.
   return (
     <Suspense>
-      <OnboardingScreen />
+      {/* The other role's flow never shows: it goes to its own home. */}
+      <RoleRedirect>
+        <OnboardingScreen />
+      </RoleRedirect>
     </Suspense>
   );
 }

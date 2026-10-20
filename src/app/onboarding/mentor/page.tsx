@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { RoleRedirect } from '@/app/_shell/RoleRedirect';
 import { MENTOR_ONBOARDING_LIVE } from '@/lib/config/auth';
 import { MentorOnboardingScreen } from './_components/MentorOnboardingScreen';
 
@@ -18,7 +19,10 @@ export default function MentorOnboardingPage() {
   if (!MENTOR_ONBOARDING_LIVE) notFound();
   return (
     <Suspense>
-      <MentorOnboardingScreen />
+      {/* The other role's flow never shows: it goes to its own home. */}
+      <RoleRedirect>
+        <MentorOnboardingScreen />
+      </RoleRedirect>
     </Suspense>
   );
 }

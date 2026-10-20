@@ -14,10 +14,14 @@ describe('onboardingDestination', () => {
     expect(onboardingDestination(member(false), q())).toBe('/onboarding/mentee');
   });
 
-  it('sends a mentor, or a new account marked role=mentor, home until mentor onboarding ships', () => {
+  it('sends a mentor home until mentor onboarding ships', () => {
     expect(onboardingDestination(member(true), q())).toBe('/home');
-    expect(onboardingDestination(member(false), q('role=mentor'))).toBe('/home');
-    // Only the literal value counts.
+  });
+
+  it('a member’s path is the account’s: role=mentor never makes a mentee a mentor', () => {
+    expect(onboardingDestination(member(false), q('role=mentor'))).toBe(
+      '/onboarding/mentee?role=mentor',
+    );
     expect(onboardingDestination(member(false), q('role=admin'))).toBe(
       '/onboarding/mentee?role=admin',
     );
@@ -26,6 +30,16 @@ describe('onboardingDestination', () => {
   it('asks a guest to sign up first, coming back here', () => {
     expect(onboardingDestination({ kind: 'guest' }, q('for=ada'))).toBe(
       '/signup?next=%2Fonboarding%3Ffor%3Dada',
+    );
+  });
+
+  it('a guest marked role=mentor signs up as a mentor (the sign-up flow sets the role)', () => {
+    expect(onboardingDestination({ kind: 'guest' }, q('role=mentor'))).toBe(
+      '/signup?role=mentor&next=%2Fonboarding%3Frole%3Dmentor',
+    );
+    // Only the literal value counts.
+    expect(onboardingDestination({ kind: 'guest' }, q('role=admin'))).toBe(
+      '/signup?next=%2Fonboarding%3Frole%3Dadmin',
     );
   });
 
@@ -41,18 +55,23 @@ describe('onboardingDestination — mentor onboarding on (PRD F4)', () => {
     return (await import('./OnboardingEntry')).onboardingDestination;
   }
 
-  it('sends a new mentor to the steps and an applicant to their application, keeping the query', async () => {
+  it('sends an applicant to their application, keeping the query', async () => {
     const dest = await load();
-    expect(dest(member(false), q('role=mentor'))).toBe('/onboarding/mentor?role=mentor');
     expect(dest(member(true), q('utm=email'))).toBe('/mentor-application?utm=email');
     expect(dest(member(true), q())).toBe('/mentor-application');
   });
 
-  it('a mentor sign-up remembered on the account continues as a mentor without the query', async () => {
+  it('a mentor sign-up remembered on the account continues as a mentor', async () => {
     const dest = await load();
     const signedUp = { ...member(false), signedUpAsMentor: true } as Viewer;
     expect(dest(signedUp, q())).toBe('/onboarding/mentor');
     expect(dest(signedUp, q('utm=email'))).toBe('/onboarding/mentor?utm=email');
+  });
+
+  it('a fresh mentee with role=mentor goes to mentee onboarding, never the mentor steps', async () => {
+    const dest = await load();
+    const fresh = { ...member(false), isMentee: false, onboardingStarted: false } as Viewer;
+    expect(dest(fresh, q('role=mentor'))).toBe('/onboarding/mentee?role=mentor');
   });
 
   it('sends an approved mentor to the dashboard, after the approved screen once', async () => {

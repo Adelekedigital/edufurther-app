@@ -153,7 +153,7 @@
   flex-direction: column;
   gap: var(--space-5);
 }
-/* Load failed / Not a mentor / Guest: one panel under the page header. */
+/* Load failed / Guest: one panel under the page header. */
 .panel {
   display: flex;
   flex-direction: column;

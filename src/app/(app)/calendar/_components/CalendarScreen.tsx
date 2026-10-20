@@ -41,21 +41,18 @@ import { deviceTimeZone } from '@/lib/utils/format';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { useOnline } from '@/lib/utils/useOnline';
 import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
-import { lockedPageGate, mentorGate, type GateCopy } from '@/app/_shell/MentorGate';
-import { inSetup } from '@/lib/utils/access';
+import { lockedPageGate, memberGate, type MemberGateCopy } from '@/app/_shell/MentorGate';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { CalendarSkeleton } from './CalendarSkeleton';
 import { SaveBar, type SaveProblem } from './SaveBar';
 import { useHoursDraft } from './useHoursDraft';
 import styles from './CalendarScreen.module.css';
 
-/** Copy confirmed by design (Calendar v2 scenes Guest / Not a mentor, 2026-10-01). */
-const CALENDAR_GATE: GateCopy = {
+/** Copy confirmed by design (Calendar v2 scene Guest, 2026-10-01). */
+const CALENDAR_GATE: MemberGateCopy = {
   illustration: 'calendar',
   guestTitle: 'Log in to manage your calendar',
   guestDescription: 'Your calendar is where you set when mentees can book you.',
-  nonMentorTitle: 'Your calendar is for mentors',
-  nonMentorDescription: 'Once you’re a mentor, this is where you set when mentees can book you.',
 };
 
 /** /calendar — the mentor's availability (Calendar v2.dc.html, scene Available). */
@@ -269,7 +266,7 @@ export function CalendarScreen() {
   // Calendar v2 panels under the page header.
   const accountGate =
     viewer.kind === 'unlinked' || viewer.kind === 'accountExists'
-      ? mentorGate(viewer, isMentor, '/calendar', CALENDAR_GATE)
+      ? memberGate(viewer, '/calendar', CALENDAR_GATE)
       : null;
   // The status decides between editing and the break card, so the page waits
   // for it too: a busy mentor must never see the editor (or no way back).
@@ -289,14 +286,6 @@ export function CalendarScreen() {
       <Panel title={CALENDAR_GATE.guestTitle} body={CALENDAR_GATE.guestDescription}>
         <ButtonLink href="/login?next=%2Fcalendar" prefetch={false} size="large">
           Log in
-        </ButtonLink>
-      </Panel>
-    );
-  else if (viewer.kind === 'member' && !isMentor)
-    panel = (
-      <Panel title={CALENDAR_GATE.nonMentorTitle} body={CALENDAR_GATE.nonMentorDescription}>
-        <ButtonLink href="/explore" size="large">
-          Find a mentor
         </ButtonLink>
       </Panel>
     );
@@ -327,14 +316,11 @@ export function CalendarScreen() {
       </Panel>
     );
 
-  // The setup lock after the shared states (guest, a failed /me, a non-mentor
-  // who isn't in setup), before this page's own loading and errors: a locked
-  // page never waits on or reports data it won't show. A mentor sign-up has no
-  // mentor profile yet, so the setup lock wins over "for mentors".
-  const viewerPanel =
-    viewer.kind === 'guest' ||
-    viewer.kind === 'error' ||
-    (viewer.kind === 'member' && !isMentor && !inSetup(access));
+  // The setup lock after the shared states (guest, a failed /me), before this
+  // page's own loading and errors: a locked page never waits on or reports
+  // data it won't show. A mentee never gets here: the page redirects
+  // (RoleRedirect); a mentor sign-up, with no profile yet, meets the lock.
+  const viewerPanel = viewer.kind === 'guest' || viewer.kind === 'error';
   const lock = accountGate || viewerPanel ? null : lockedPageGate(access, 'Calendar');
 
   let body: ReactNode;
@@ -719,7 +705,7 @@ function PageHeader({ children }: { children?: ReactNode }) {
   );
 }
 
-/** Load failed / Not a mentor / Guest: the grey calendar, the message and one action. */
+/** Load failed / Guest: the grey calendar, the message and one action. */
 function Panel({ title, body, children }: { title: string; body: string; children: ReactNode }) {
   return (
     <section className={styles.panel}>

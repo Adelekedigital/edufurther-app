@@ -339,13 +339,10 @@ describe('OnboardingScreen', () => {
     }
   });
 
-  it('sends a guest to sign up, coming back here, and a mentor home', () => {
+  it('sends a guest to sign up, coming back here', () => {
     viewer = { kind: 'guest' };
-    const { rerender } = render(<OnboardingScreen />);
+    render(<OnboardingScreen />);
     expect(replace).toHaveBeenCalledWith('/signup?next=%2Fonboarding%2Fmentee');
-    viewer = { kind: 'member', id: 'm1', isMentor: true } as Viewer;
-    rerender(<OnboardingScreen />);
-    expect(replace).toHaveBeenLastCalledWith('/home');
   });
 
   describe('a guest back from Book', () => {

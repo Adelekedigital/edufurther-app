@@ -22,6 +22,8 @@ export type FinishStepProps = {
   signingOut?: boolean;
   /** Signing out didn't work: said under the button that tried. */
   signOutError?: string;
+  /** The mentor role didn't save: said under Create account, which retries it. */
+  roleError?: string;
 };
 
 /**
@@ -38,6 +40,7 @@ export function FinishStep({
   onUseDifferentEmail,
   signingOut,
   signOutError,
+  roleError,
 }: FinishStepProps) {
   // aria-disabled, not disabled: the pressed button keeps focus while it works.
   const held = finishing || signingOut;
@@ -59,6 +62,7 @@ export function FinishStep({
       >
         Create account
       </Button>
+      {roleError && <FieldError>{roleError}</FieldError>}
       <button
         type="button"
         className={cx(styles.textButton, styles.centered)}

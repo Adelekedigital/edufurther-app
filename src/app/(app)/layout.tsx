@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
+import { RoleRedirect } from '@/app/_shell/RoleRedirect';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { useOnline } from '@/lib/utils/useOnline';
 
@@ -42,7 +43,8 @@ export function activeFor(pathname: string): string {
  * sidebar, header and account menu never unmount and the screen never blanks
  * (ADR 0007). Viewer-aware through `useAppShell` exactly as the per-screen
  * shell was: guest chrome for guests, member chrome for members, the mentor or
- * mentee nav, the account menu and credits.
+ * mentee nav, the account menu and credits. A page for the other role renders
+ * nothing and redirects (RoleRedirect, ROUTE_ROLES); the shell stays.
  */
 export default function AppGroupLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -58,7 +60,7 @@ export default function AppGroupLayout({ children }: { children: ReactNode }) {
       access={access}
       offline={!online}
     >
-      {children}
+      <RoleRedirect>{children}</RoleRedirect>
     </AppShell>
   );
 }

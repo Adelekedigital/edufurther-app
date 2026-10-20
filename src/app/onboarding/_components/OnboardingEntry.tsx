@@ -1,6 +1,5 @@
 'use client';
 
-import { useRememberMentorSignup } from '@/lib/api/data/roleHooks';
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useViewer } from '@/lib/api/data/viewer';
@@ -13,9 +12,10 @@ import { Waiting } from './Waiting';
 import styles from './OnboardingScreen.module.css';
 
 /**
- * Where `/onboarding` sends each viewer. A mentor is someone with a mentor
- * profile, or a brand-new account sign-in marks `role=mentor` (it has no
- * profile yet). The hint only picks the page; that page checks the account.
+ * Where `/onboarding` sends each viewer. A member goes by the account only: a
+ * mentor profile, or a mentor sign-up (`signedUpAsMentor`, set by the sign-up
+ * flow). `role=mentor` never changes a member's path (owner, 2026-10-20: the
+ * role is decided at sign-up and sticks); a guest carries it into sign-up.
  * Mentor onboarding has its own flag: off, mentors go to their home. On, a
  * new mentor applies; one with a profile goes to their application, which
  * sends an unfinished one back to the steps (PRD F4); an approved mentor has
@@ -31,9 +31,9 @@ export function onboardingDestination(
     case 'error':
       return null;
     case 'guest':
-      return `/signup?next=${encodeURIComponent(`/onboarding${keep ? `?${keep}` : ''}`)}`;
+      return `/signup?${query.get('role') === 'mentor' ? 'role=mentor&' : ''}next=${encodeURIComponent(`/onboarding${keep ? `?${keep}` : ''}`)}`;
     case 'member':
-      if (viewer.isMentor || viewer.signedUpAsMentor || query.get('role') === 'mentor') {
+      if (viewer.isMentor || viewer.signedUpAsMentor) {
         if (!MENTOR_ONBOARDING_LIVE) return NEW_MENTOR_HOME;
         // Approved: the approved screen once (sign-in's rule), then the dashboard.
         if (viewer.isApprovedMentor)
@@ -52,11 +52,9 @@ export function OnboardingEntry() {
   const query = useSearchParams();
   const router = useRouter();
   const to = onboardingDestination(viewer, new URLSearchParams(query.toString()));
-  // A mentor sign-up arriving here is remembered on the account first.
-  const remembering = useRememberMentorSignup(viewer, query.get('role'));
   useEffect(() => {
-    if (to && !remembering) router.replace(to);
-  }, [to, remembering, router]);
+    if (to) router.replace(to);
+  }, [to, router]);
   return (
     <OnboardingFrame>
       {viewer.kind === 'error' ? (

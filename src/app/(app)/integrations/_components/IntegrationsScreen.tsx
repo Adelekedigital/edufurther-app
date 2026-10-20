@@ -20,20 +20,17 @@ import { useConferencing, useSaveConferencing } from '@/lib/api/data/conferencin
 import { useInterest, useRegisterInterest } from '@/lib/api/data/interest';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { useOnline } from '@/lib/utils/useOnline';
-import { lockedPageGate, mentorGate, type GateCopy } from '@/app/_shell/MentorGate';
+import { lockedPageGate, memberGate, type MemberGateCopy } from '@/app/_shell/MentorGate';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { IntegrationsSkeleton } from './IntegrationsSkeleton';
 import { useCalendarConnect } from '@/app/_shell/useCalendarConnect';
 import styles from './IntegrationsScreen.module.css';
 
 /** PROVISIONAL — Integrations.dc.html draws no gate (docs/handoff/integrations-design-request.md). */
-const INTEGRATIONS_GATE: GateCopy = {
+const INTEGRATIONS_GATE: MemberGateCopy = {
   illustration: 'subscriptions',
   guestTitle: 'Log in to manage your integrations',
   guestDescription: 'Integrations are where you connect the tools your sessions run on.',
-  nonMentorTitle: 'Integrations are for mentors',
-  nonMentorDescription:
-    'Once you’re a mentor, this is where you choose where your sessions happen.',
 };
 
 /**
@@ -442,14 +439,10 @@ export function IntegrationsScreen() {
       </>
     );
 
-  // The shared gates, then the setup lock (accessFor decides), then "for mentors".
-  const gate = mentorGate(
-    viewer,
-    isMentor,
-    '/integrations',
-    INTEGRATIONS_GATE,
-    lockedPageGate(access, 'Integration'),
-  );
+  // The shared gates, then the setup lock (accessFor decides). A mentee never
+  // gets here: the page redirects (RoleRedirect).
+  const gate =
+    memberGate(viewer, '/integrations', INTEGRATIONS_GATE) ?? lockedPageGate(access, 'Integration');
   const body: ReactNode = gate ?? (
     <div className={styles.page}>
       <div className={styles.header}>
