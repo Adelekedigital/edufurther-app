@@ -38,17 +38,17 @@ describe('ReviewFreeze', () => {
     expect(screen.getByText('Topics')).toBeInTheDocument();
   });
 
-  it('on load the banner is page content: no announcement, focus left alone', () => {
+  it('on load the banner is page content: not a live region, focus left alone', () => {
     render(
       <ReviewFreeze frozen userId="u1" words="You can edit these once it’s reviewed.">
         <p>Topics</p>
       </ReviewFreeze>,
     );
-    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+    expect(screen.queryByRole('status')).toBeNull();
     expect(document.body).toHaveFocus();
   });
 
-  it('frozen while it’s showing (a refused save): said once, and focus moves to the banner', () => {
+  it('frozen while it’s showing (a refused save): focus moves to the banner, nothing else says it', () => {
     const { rerender } = render(
       <ReviewFreeze frozen={false} userId="u1" words="You can edit these once it’s reviewed.">
         <button>Save changes</button>
@@ -59,9 +59,7 @@ describe('ReviewFreeze', () => {
         <p>Topics</p>
       </ReviewFreeze>,
     );
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'We’re reviewing your application. You can edit these once it’s reviewed.',
-    );
+    expect(screen.queryByRole('status')).toBeNull();
     expect(document.activeElement).not.toBe(document.body);
     expect(document.activeElement).toHaveTextContent('Spotted a mistake?');
     expect(document.activeElement!.textContent!.includes('Topics')).toBe(false);

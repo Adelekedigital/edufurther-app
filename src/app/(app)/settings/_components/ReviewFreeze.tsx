@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { supportHref } from '@/components/organisms/SecuritySettings/SecuritySettings';
 import { useMenteeProfile } from '@/lib/api/data/settings';
@@ -14,10 +13,10 @@ import styles from './ReviewFreeze.module.css';
  * request to support with the account's name and email (the /me Settings
  * already reads). Not frozen, only the content.
  *
- * Frozen while the tab is showing (a save the freeze refused): the banner is
- * said through the always-present LiveRegion (a region inserted with its text
- * is often skipped) and takes focus, since the save bar that held it is gone.
- * On load it's just page content, read in order.
+ * Frozen while the tab is showing (a save the freeze refused): the save bar
+ * that held focus is gone, so focus moves to the banner, which is read as it
+ * lands (one voice: no live region saying it too). On load it's page
+ * content, read in order; the Notice is never a live region itself.
  */
 export function ReviewFreeze({
   frozen,
@@ -33,30 +32,18 @@ export function ReviewFreeze({
 }) {
   const { profile } = useMenteeProfile(frozen ? userId : null);
   const banner = useRef<HTMLDivElement>(null);
-  const [said, setSaid] = useState<{ text: string; id: number } | null>(null);
   const was = useRef(frozen);
   useEffect(() => {
-    if (frozen && !was.current) {
-      setSaid((s) => ({ text: `${C.lead} ${words}`, id: (s?.id ?? 0) + 1 }));
-      banner.current?.focus();
-    }
+    if (frozen && !was.current) banner.current?.focus();
     was.current = frozen;
-  }, [frozen, words]);
-  const region = <LiveRegion message={said} />;
-  if (!frozen)
-    return (
-      <>
-        {region}
-        {children}
-      </>
-    );
+  }, [frozen]);
+  if (!frozen) return <>{children}</>;
   const href = supportHref(
     { name: profile?.name ?? '', email: profile?.email ?? '', mentor: true },
     { subject: C.subject, body: C.body },
   );
   return (
     <div className={styles.stack}>
-      {region}
       <div ref={banner} tabIndex={-1} className={styles.banner}>
         <Notice tone="subtle" icon="lock" title={C.lead} live={false}>
           {words} {C.mistake} <a href={href}>{C.contact}</a>
