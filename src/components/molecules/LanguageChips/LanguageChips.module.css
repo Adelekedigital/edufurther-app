@@ -16,6 +16,7 @@
   color: var(--ink-700);
 }
 .retry {
+  position: relative;
   border: none;
   background: none;
   padding: 0;
@@ -32,6 +33,7 @@
 
 /* "Add another language": a dashed 40px chip in blue-700. */
 .add {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-1);
@@ -124,9 +126,23 @@
   color: var(--ink-600);
 }
 
-/* Phones: 16px so iOS doesn't zoom into the field. */
+/* Phones: 16px so iOS doesn't zoom into the field, and 44px targets: the
+   drawn sizes stay, with an invisible tap area around them. */
 @media (max-width: 767px) {
   .input {
     font-size: var(--text-p-md);
+  }
+  .add::after {
+    content: '';
+    position: absolute;
+    inset: -2px 0;
+  }
+  .retry::after {
+    content: '';
+    position: absolute;
+    inset: -14px -8px;
+  }
+  .option {
+    min-height: var(--touch-target-min);
   }
 }

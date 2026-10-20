@@ -84,8 +84,13 @@ export class ProfileSaveError extends Error {
 }
 
 const offline = (e: unknown) => normaliseError(e).kind === 'offline';
-const sameIds = (a: { id: string }[], b: { id: string }[]) =>
-  a.length === b.length && a.every((x, i) => x.id === b[i]!.id);
+// Languages are a set: the API keeps no order, so a reorder is no change.
+const idSet = (l: { id: string }[]) =>
+  l
+    .map((x) => x.id)
+    .sort()
+    .join(',');
+const sameIds = (a: { id: string }[], b: { id: string }[]) => idSet(a) === idSet(b);
 
 export type ProfileSave = {
   before: MenteeProfileValues;

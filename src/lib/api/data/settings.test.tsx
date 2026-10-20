@@ -160,6 +160,21 @@ describe('useSaveMenteeProfile', () => {
     expect(qc.getQueryData<MenteeProfile>(keys.viewer.settings('u1'))).toMatchObject(after);
   });
 
+  it('the same languages in another order: no languages write', async () => {
+    PATCH.mockResolvedValue(ok);
+    const { result } = setup();
+    const reordered = { ...values, name: 'Amaka N. Obi', languages: [...twoLangs].reverse() };
+    const before = { ...values, languages: twoLangs };
+    let error: unknown = null;
+    await act(async () => {
+      await result.current
+        .mutateAsync({ before, after: reordered, promptVersion: null })
+        .catch((e) => (error = e));
+    });
+    expect(error).toBeNull();
+    expect(PUT).not.toHaveBeenCalled();
+  });
+
   it('nothing but languages changed: no profile write', async () => {
     PUT.mockResolvedValue(ok);
     const { result } = setup();
