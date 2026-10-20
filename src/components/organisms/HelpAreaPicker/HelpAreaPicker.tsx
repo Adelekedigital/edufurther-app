@@ -10,8 +10,8 @@ type HelpAreaPickerProps = {
   /** Picked offering ids. */
   value: string[];
   onChange: (ids: string[]) => void;
-  /** Most that can be picked; the rest dim once it's reached. */
-  limit: number;
+  /** Most that can be picked; the rest dim once it's reached. None: no cap (Settings). */
+  limit?: number;
   /** The group's name, the step's question. */
   label: string;
   /** Id of the text that states the limit ("Choose up to 3 areas"), so dimmed cards say why. */
@@ -23,6 +23,14 @@ type HelpAreaPickerProps = {
    * described by it, so the card that takes focus says why.
    */
   errorId?: string;
+  /**
+   * card — onboarding's: icon in a tinted box, tick top right, text under it.
+   * row  — Settings › Goals (Mentee Settings.dc.html `gHelpCards`): bare icon,
+   *        text beside it, tick at the end.
+   */
+  look?: 'card' | 'row';
+  /** `data-ff` key, so a required-field error can focus the group. */
+  focusKey?: string;
 };
 
 /**
@@ -41,6 +49,8 @@ export function HelpAreaPicker({
   describedBy,
   firstId,
   errorId,
+  look = 'card',
+  focusKey,
 }: HelpAreaPickerProps) {
   const known = HELP_AREAS.flatMap((h) => {
     const o = options.find((x) => x.slug === h.slug);
@@ -50,10 +60,19 @@ export function HelpAreaPicker({
     .filter((o) => !HELP_AREAS.some((h) => h.slug === o.slug))
     .map((o) => ({ option: o, copy: null }));
   // Only ids still in the catalog count: a dropped offering can't be unpicked.
-  const full = value.filter((id) => options.some((o) => o.id === id)).length >= limit;
+  const full =
+    limit !== undefined && value.filter((id) => options.some((o) => o.id === id)).length >= limit;
+  const row = look === 'row';
 
   return (
-    <div role="group" aria-label={label} aria-describedby={describedBy} className={styles.grid}>
+    <div
+      role="group"
+      aria-label={label}
+      aria-describedby={describedBy}
+      data-ff={focusKey}
+      tabIndex={focusKey ? -1 : undefined}
+      className={cx(styles.grid, row && styles.rowGrid)}
+    >
       {[...known, ...unknown].map(({ option, copy }, i) => {
         const on = value.includes(option.id);
         const off = !on && full;
@@ -65,24 +84,41 @@ export function HelpAreaPicker({
             type="button"
             aria-pressed={on}
             aria-disabled={off || undefined}
-            className={cx(styles.card, on && styles.on, off && styles.off)}
+            className={cx(styles.card, row && styles.row, on && styles.on, off && styles.off)}
             onClick={() => {
               if (off) return;
               onChange(on ? value.filter((id) => id !== option.id) : [...value, option.id]);
             }}
           >
-            <span className={styles.top}>
-              <span className={styles.iconBox}>
-                <Icon name={copy?.icon ?? 'help'} size={20} />
-              </span>
-              <Icon
-                name={on ? 'check_circle' : 'radio_button_unchecked'}
-                size={20}
-                className={styles.tick}
-              />
-            </span>
-            <span className={styles.title}>{copy?.title ?? option.label}</span>
-            {copy && <span className={styles.body}>{copy.body}</span>}
+            {row ? (
+              <>
+                <Icon name={copy?.icon ?? 'help'} size={24} className={styles.rowIcon} />
+                <span className={styles.rowText}>
+                  <span className={styles.title}>{copy?.title ?? option.label}</span>
+                  {copy && <span className={styles.body}>{copy.body}</span>}
+                </span>
+                <Icon
+                  name={on ? 'check_circle' : 'radio_button_unchecked'}
+                  size={20}
+                  className={cx(styles.tick, styles.rowTick)}
+                />
+              </>
+            ) : (
+              <>
+                <span className={styles.top}>
+                  <span className={styles.iconBox}>
+                    <Icon name={copy?.icon ?? 'help'} size={20} />
+                  </span>
+                  <Icon
+                    name={on ? 'check_circle' : 'radio_button_unchecked'}
+                    size={20}
+                    className={styles.tick}
+                  />
+                </span>
+                <span className={styles.title}>{copy?.title ?? option.label}</span>
+                {copy && <span className={styles.body}>{copy.body}</span>}
+              </>
+            )}
           </button>
         );
       })}

@@ -26,6 +26,20 @@ describe('useRequiredFields', () => {
     expect(document.activeElement).toBe(document.querySelector('[data-ff="name"]'));
   });
 
+  it('with a root, the gap is looked for there, not in another panel kept in the page', () => {
+    vi.useFakeTimers();
+    document.body.innerHTML =
+      '<div hidden id="other"><input data-ff="name" /></div><div id="mine"><input data-ff="name" /></div>';
+    window.scrollBy = vi.fn();
+    const root = { current: document.getElementById('mine') };
+    const { result } = renderHook(() => useRequiredFields(['name'] as const, root));
+    act(() => {
+      result.current.check();
+    });
+    act(() => vi.runAllTimers());
+    expect(document.activeElement).toBe(document.querySelector('#mine input'));
+  });
+
   it('errors follow the fields as they are fixed; none left clears the form line', () => {
     const { result, rerender } = renderHook(({ gaps }) => useRequiredFields(gaps), {
       initialProps: { gaps: ['name', 'langs'] as string[] },

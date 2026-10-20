@@ -34,6 +34,8 @@ type LanguageChipsProps = {
   /** The common languages didn't load: a line saying so, with Try again. */
   commonFailed?: { text: string; retry: string; onRetry: () => void; at?: number };
   describedBy?: string;
+  /** At the limit: chips not picked and the adder are disabled (goal countries: 3). */
+  full?: boolean;
 };
 
 const MATCHES = 6;
@@ -59,12 +61,14 @@ export function LanguageChips({
   focusKey,
   describedBy,
   commonFailed,
+  full = false,
 }: LanguageChipsProps) {
   const id = useId();
   const listId = `${id}-list`;
   const [adding, setAdding] = useState(false);
   const [active, setActive] = useState(0);
   const addButton = useRef<HTMLButtonElement>(null);
+  const group = useRef<HTMLDivElement>(null);
   // The failure line, heard: put into the always-present region after it
   // mounts (a region that arrives with its text in it is often skipped).
   // Keyed on when it failed, so the same failure after Try again is heard again.
@@ -82,12 +86,17 @@ export function LanguageChips({
   const exact = matches.find((m) => same(m.label, typed));
   const chosen = matches[active] ?? exact;
 
-  // The field and its buttons go: focus returns to "Add another language".
+  // The field and its buttons go: focus returns to "Add another language",
+  // or to the group when that pick filled it and the button is now disabled.
   const close = () => {
     setAdding(false);
     setActive(0);
     onQueryChange('');
-    requestAnimationFrame(() => addButton.current?.focus());
+    requestAnimationFrame(() => {
+      const add = addButton.current;
+      if (add && !add.disabled) add.focus();
+      else group.current?.focus();
+    });
   };
   const pick = (l: LanguageOption | undefined) => {
     if (!l) return;
@@ -113,6 +122,7 @@ export function LanguageChips({
   const showList = adding && typed !== '';
   return (
     <div
+      ref={group}
       data-ff={focusKey}
       tabIndex={-1}
       role="group"
@@ -132,7 +142,13 @@ export function LanguageChips({
         </span>
       )}
       {chips.map((l) => (
-        <Chip key={l.id} look="choice" pressed={isOn(l)} onClick={() => onToggle(l)}>
+        <Chip
+          key={l.id}
+          look="choice"
+          pressed={isOn(l)}
+          disabled={full && !isOn(l)}
+          onClick={() => onToggle(l)}
+        >
           {l.label}
         </Chip>
       ))}
@@ -141,6 +157,7 @@ export function LanguageChips({
           ref={addButton}
           type="button"
           className={styles.add}
+          disabled={full}
           onClick={() => setAdding(true)}
         >
           <Icon name="add" size={18} />
