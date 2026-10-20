@@ -1,0 +1,219 @@
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type { MentorProfile } from '@/types/mentor';
+import type { MentorProfileValues } from '@/types/mentorSettings';
+import { MentorProfileSaveError } from '@/lib/api/data/mentorSettings';
+import { MentorProfilePanel } from './MentorProfilePanel';
+
+const values: MentorProfileValues = {
+  name: 'Ada Obi',
+  headline: 'PhD Sociology · Mississippi State University',
+  about: '',
+  aboutDrafted: false,
+  originId: 'ng',
+  studyId: 'us',
+  gender: '',
+  languages: [{ id: 'en', label: 'English' }],
+};
+
+const profile = {
+  mentor: {
+    id: 'm1',
+    name: 'Ada Obi',
+    photoUrl: null,
+    rating: 4.9,
+    reviewCount: 7,
+    completedSessions: 51,
+    topics: [{ slug: 'school-selection', label: 'School selection' }],
+  },
+  cover: { color: null, art: 'icons' },
+  bannerUrl: null,
+} as unknown as MentorProfile;
+
+let settings: {
+  status: 'loading' | 'error' | 'ready';
+  values: MentorProfileValues | null;
+  profile: MentorProfile | null;
+  slug: string | null;
+  retry: () => void;
+};
+const mutateAsync = vi.fn();
+let saveError: { copy: string } | null = null;
+
+vi.mock('@/lib/api/data/mentorSettings', async (orig) => ({
+  ...(await orig<typeof import('@/lib/api/data/mentorSettings')>()),
+  useMentorSettings: () => settings,
+  useSaveMentorProfile: () => ({ mutateAsync, isPending: false, error: saveError, reset: vi.fn() }),
+}));
+vi.mock('@/lib/api/data/avatar', () => ({
+  useAvatarUpload: () => ({
+    accept: 'image/png',
+    uploading: false,
+    removing: false,
+    error: null,
+    errorFrom: null,
+    removedStamp: 0,
+    upload: vi.fn(),
+    remove: vi.fn(),
+    dismissError: vi.fn(),
+  }),
+}));
+vi.mock('@/lib/api/data/cover', async (orig) => ({
+  ...(await orig<typeof import('@/lib/api/data/cover')>()),
+  useCoverEdit: () => ({
+    pickColor: vi.fn(),
+    save: vi.fn(),
+    saveState: 'idle',
+    savedStamp: 0,
+    uploading: false,
+    removeImage: vi.fn(),
+    removing: false,
+    removedStamp: 0,
+    imageError: null,
+    upload: vi.fn(),
+    clearMessages: vi.fn(),
+  }),
+}));
+vi.mock('@/lib/api/data/catalog', () => ({
+  useCountries: () => ({
+    countries: [
+      { id: 'ng', label: 'Nigeria' },
+      { id: 'us', label: 'United States' },
+      { id: 'gh', label: 'Ghana' },
+    ],
+  }),
+  useLanguageSearch: () => ({ results: [{ id: 'en', label: 'English' }], status: 'ready' }),
+}));
+vi.mock('@/lib/api/data/writingAssist', () => ({ useWritingAssist: () => ({ assist: vi.fn() }) }));
+
+beforeEach(() => {
+  settings = { status: 'ready', values, profile, slug: 'ada-obi', retry: vi.fn() };
+  mutateAsync.mockReset();
+  mutateAsync.mockResolvedValue(undefined);
+  saveError = null;
+});
+
+const preview = () => within(screen.getByRole('complementary', { name: 'How mentees see you' }));
+const bar = () => screen.queryByRole('region', { name: 'Unsaved changes' });
+
+describe('MentorProfilePanel', () => {
+  it('the preview shows the saved profile, with Open profile to the public page', () => {
+    render(<MentorProfilePanel userId="u1" />);
+    expect(preview().getByText('Ada Obi')).toBeInTheDocument();
+    expect(preview().getByText('From Nigeria, studied in the US')).toBeInTheDocument();
+    expect(preview().getByText('School selection')).toBeInTheDocument();
+    expect(preview().getByRole('link', { name: 'Open profile' })).toHaveAttribute(
+      'href',
+      '/mentors/ada-obi',
+    );
+    expect(bar()).toBeNull();
+  });
+
+  it('the preview follows the form before it’s saved', async () => {
+    const user = userEvent.setup();
+    render(<MentorProfilePanel userId="u1" />);
+    const headline = screen.getByRole('textbox', { name: 'Headline' });
+    await user.clear(headline);
+    await user.type(headline, 'MPH, Imperial College London');
+    expect(preview().getByText('MPH, Imperial College London')).toBeInTheDocument();
+    expect(bar()).toHaveTextContent('Unsaved changes to your profile');
+  });
+
+  it('Save with gaps: the form line, an error on each field, the first focused', async () => {
+    const user = userEvent.setup();
+    render(<MentorProfilePanel userId="u1" />);
+    await user.clear(screen.getByRole('textbox', { name: 'Headline' }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(bar()).toHaveTextContent('Fill in the required fields to continue.');
+    await waitFor(() => expect(screen.getByRole('textbox', { name: 'Headline' })).toHaveFocus());
+    expect(screen.getByText('Add a headline.')).toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('an unchanged older headline over 80 still saves with other changes', async () => {
+    const user = userEvent.setup();
+    const long = 'z'.repeat(100);
+    settings = { ...settings, values: { ...values, headline: long } };
+    render(<MentorProfilePanel userId="u1" />);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Gender (optional)' }), 'Woman');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(mutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        after: expect.objectContaining({ headline: long, gender: 'Woman' }),
+      }),
+    );
+    expect(await screen.findByText('Profile saved')).toBeInTheDocument();
+  });
+
+  it('an edited headline still over 80 says to keep it to 80', async () => {
+    const user = userEvent.setup();
+    const long = 'z'.repeat(100);
+    settings = { ...settings, values: { ...values, headline: long } };
+    render(<MentorProfilePanel userId="u1" />);
+    await user.type(screen.getByRole('textbox', { name: 'Headline' }), '{Backspace}');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(screen.getByText('Keep your headline to 80 characters.')).toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('a failed save keeps the edit and says why, in our words', async () => {
+    const user = userEvent.setup();
+    saveError = { copy: 'Some changes saved, but your languages didn’t. Try again.' };
+    mutateAsync.mockRejectedValue(new Error('x'));
+    render(<MentorProfilePanel userId="u1" />);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Gender (optional)' }), 'Man');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('your languages didn’t');
+    expect(screen.getByRole('combobox', { name: 'Gender (optional)' })).toHaveValue('Man');
+  });
+
+  it('after Save the form keeps the saved values while the refetch is on its way', async () => {
+    const user = userEvent.setup();
+    render(<MentorProfilePanel userId="u1" />);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Gender (optional)' }), 'Woman');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(await screen.findByText('Profile saved')).toBeInTheDocument();
+    // useMentorSettings still returns the values from before the save.
+    expect(screen.getByRole('combobox', { name: 'Gender (optional)' })).toHaveValue('Woman');
+    expect(bar()).toBeNull();
+  });
+
+  it('after a partial failure, Save again sends only what didn’t land', async () => {
+    const user = userEvent.setup();
+    mutateAsync.mockRejectedValueOnce(
+      new MentorProfileSaveError(
+        'Some changes saved, but your headline and study country didn’t. Try again.',
+        ['details'],
+      ),
+    );
+    render(<MentorProfilePanel userId="u1" />);
+    const name = screen.getByRole('textbox', { name: 'Full name' });
+    await user.clear(name);
+    await user.type(name, 'Ada  Eze');
+    const headline = screen.getByRole('textbox', { name: 'Headline' });
+    await user.clear(headline);
+    await user.type(headline, 'MPH, Imperial');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(mutateAsync).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        // The name landed (and is the tidied one); the headline is still to send.
+        before: expect.objectContaining({ name: 'Ada Eze', headline: values.headline }),
+        after: expect.objectContaining({ name: 'Ada Eze', headline: 'MPH, Imperial' }),
+      }),
+    );
+  });
+
+  it('error before content: a failed load offers Try again', async () => {
+    settings = { ...settings, status: 'error', values: null, profile: null };
+    render(<MentorProfilePanel userId="u1" />);
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(settings.retry).toHaveBeenCalled();
+  });
+
+  it('loading: the skeleton, announced', () => {
+    settings = { ...settings, status: 'loading', values: null, profile: null };
+    render(<MentorProfilePanel userId="u1" />);
+    expect(screen.getByRole('status', { name: 'Loading your profile' })).toBeInTheDocument();
+  });
+});

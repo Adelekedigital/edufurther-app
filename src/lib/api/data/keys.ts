@@ -35,6 +35,8 @@ export const keys = {
     loginProvider: (userId: string) => ['viewer', 'loginProvider', userId] as const,
     /** Settings › Goals' read of /me (goals.ts): the goal, origin and current country. */
     goals: (userId: string) => ['viewer', 'goals', userId] as const,
+    /** Mentor Settings' read of /me (mentorSettings.ts): the handle and gender. */
+    mentorSettings: (userId: string) => ['viewer', 'mentorSettings', userId] as const,
   },
   // `who` = the session identity (session.ts sessionKey): signed-in lists are
   // ordered by the viewer's goals and leave the viewer out, so they can't share

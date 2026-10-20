@@ -22,7 +22,7 @@ vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => viewer }));
 vi.mock('./tabs', () => ({
   MENTEE_TABS: ['profile', 'goals', 'education', 'security'],
   DEFAULT_TAB: 'profile',
-  MENTOR_TABS: ['booking'],
+  MENTOR_TABS: ['booking', 'profile'],
   MENTOR_DEFAULT_TAB: 'booking',
 }));
 
@@ -69,6 +69,11 @@ vi.mock('./EducationPanel', () => ({
 vi.mock('./SecurityPanel', () => ({
   SecurityPanel: () => <div data-testid="security-panel" />,
 }));
+
+vi.mock('./MentorProfilePanel', async () => {
+  const { forwardRef } = await import('react');
+  return { MentorProfilePanel: forwardRef(() => <div data-testid="mentor-profile-panel" />) };
+});
 
 vi.mock('./BookingPanel', async () => {
   const { forwardRef } = await import('react');
@@ -151,12 +156,22 @@ describe('SettingsScreen', () => {
       'true',
     );
     expect(screen.getByTestId('booking-panel')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Profile' })).toBeInTheDocument();
     expect(screen.queryByTestId('profile-panel')).toBeNull();
   });
 
-  it('a tab this mentor doesn’t have (e.g. /settings from the index) goes to Booking rules', () => {
+  it('a mentor’s Profile tab is the mentor profile panel, not the mentee one', () => {
     viewer = member(true);
     segment = 'profile';
+    render(<SettingsScreen />);
+    expect(screen.getByRole('tab', { name: 'Profile' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('mentor-profile-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('profile-panel')).toBeNull();
+  });
+
+  it('a tab this mentor doesn’t have (a mentee one) goes to Booking rules', () => {
+    viewer = member(true);
+    segment = 'education';
     render(<SettingsScreen />);
     expect(replace).toHaveBeenCalledWith('/settings/booking');
   });
