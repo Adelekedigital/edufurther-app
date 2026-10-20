@@ -12,34 +12,9 @@
 }
 
 /* `eduInnerHead` */
+/* The header's padding; its row is CardHeader's. */
 .head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--space-3);
-  flex-wrap: wrap;
   padding: var(--space-5);
-}
-.headText {
-  flex: 1;
-  min-width: 240px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-.title {
-  margin: 0;
-  font-size: var(--text-p-md);
-  font-weight: var(--weight-semibold);
-}
-.title:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
-}
-.sub {
-  font-size: var(--text-p-xs);
-  line-height: var(--lh-p);
-  color: var(--ink-500);
 }
 
 /* `eduRows` */

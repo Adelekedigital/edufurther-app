@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { MENTOR_EXPERTISE_COPY as C } from '@/lib/copy/mentorSettings';
 import type { AwardFunding } from '@/types/mentor';
 import styles from './MentorExpertise.module.css';
+import { CardHeader } from '@/components/molecules/CardHeader/CardHeader';
 
 export type AwardRow = {
   id: string;
@@ -53,19 +54,20 @@ export function AwardList({
   const filled = status === 'ready' && rows.length > 0;
   return (
     <section className={styles.card} aria-labelledby={headingId}>
-      <div className={`${styles.head} ${styles.headWrap}`}>
-        <div className={styles.headText}>
-          <h2 id={headingId} ref={headingRef} tabIndex={-1} className={styles.title}>
-            {C.awardsTitle}
-          </h2>
-          <span className={styles.sub}>{C.awardsSub}</span>
-        </div>
-        {filled && (
-          <Button ref={addRef} variant="text" size="small" icon="add" onClick={onAdd}>
-            {C.addAward}
-          </Button>
-        )}
-      </div>
+      <CardHeader
+        className={styles.headWrap}
+        id={headingId}
+        headingRef={headingRef}
+        title={C.awardsTitle}
+        sub={C.awardsSub}
+        action={
+          filled && (
+            <Button ref={addRef} variant="text" size="small" icon="add" onClick={onAdd}>
+              {C.addAward}
+            </Button>
+          )
+        }
+      />
       {status === 'loading' ? (
         <div aria-busy="true">
           {[0, 1].map((i) => (

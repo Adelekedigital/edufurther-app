@@ -21,18 +21,14 @@
   align-items: flex-start;
   gap: var(--space-3);
 }
+/* AwardList's header padding; its row is CardHeader's. */
 .headWrap {
-  flex-wrap: wrap;
   padding: var(--space-5);
 }
 .headText {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-}
-.headWrap .headText {
-  flex: 1;
-  min-width: 240px;
 }
 .title {
   margin: 0;
