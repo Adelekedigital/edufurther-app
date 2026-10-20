@@ -105,6 +105,8 @@
 }
 
 .text {
+  /* "+ Add education" / pencil "Edit" (Mentor Profile.dc.html): 4px to the glyph. */
+  gap: var(--space-1);
   background: transparent;
   color: var(--text-action);
   /* A text link, not a CTA: no padding on any side, whatever the size. */

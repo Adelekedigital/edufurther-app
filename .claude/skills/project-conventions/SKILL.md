@@ -147,6 +147,18 @@ Prototype files (`support.js`, `image-slot.js`, `dc-import`, `sc-if`) are the pr
 
 ## House conventions
 
+### PR lanes: pick one before starting, and say which (owner, 2026-10-20)
+
+"Basic non-breaking changes shouldn't be taking hours or days." The full cycle is for changes that can break something.
+
+| Lane | When | What runs |
+|---|---|---|
+| **Small** | Only how something looks or reads: swap a control for the shared one, copy, spacing, an icon, a CSS rule. No change to what a click does, data, API calls, routing, focus order or a11y semantics | Affected tests only; one browser check at 390 and 1440 against the reference; push → CI; **one** GitHub `/code-reviewer` pass. **No local review agents, no five-width fidelity sweep.** Merge when CI is green and the review is clean (trivial findings fixed in place) |
+| **Full** | New screens or components, behaviour, data/hooks/mutations, API contracts, auth, routing, focus management, anything touching URLs, HTML or storage | Checklist + DoD approved first; fidelity ≥98% measured; review-page; local code review + security review; GitHub reviewer until NO FINDINGS; CI |
+| **Docs** | `.md`, skills, comments only | CI only |
+
+Never run the full test suite locally in any lane: CI does it. If a "small" change turns out to touch behaviour, move it to the full lane and say so. DRY applies in every lane.
+
 **DRY: reuse before you build — non-negotiable (owner, 2026-10-20).** It saves build time and keeps the code maintainable and scalable.
 
 1. Before writing any UI piece, search `src/components` (and `lib/utils` for logic) for one that already does it. Extend it with a prop or variant; don't copy it.

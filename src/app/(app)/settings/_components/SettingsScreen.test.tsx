@@ -143,7 +143,7 @@ describe('SettingsScreen', () => {
       'Profile',
       'Goals',
       'Education',
-      'Login and security',
+      'Login & security',
     ]);
     expect(screen.getByRole('tab', { name: 'Education' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('education-panel')).toBeInTheDocument();
@@ -157,9 +157,9 @@ describe('SettingsScreen', () => {
       'Profile',
       'Goals',
       'Education',
-      'Login and security',
+      'Login & security',
     ]);
-    expect(screen.getByRole('tab', { name: 'Login and security' })).toHaveAttribute(
+    expect(screen.getByRole('tab', { name: 'Login & security' })).toHaveAttribute(
       'aria-selected',
       'true',
     );
@@ -199,7 +199,7 @@ describe('SettingsScreen', () => {
       'Booking rules',
       'Profile',
       'Expertise',
-      'Login and security',
+      'Login & security',
     ]);
     expect(screen.getByRole('tab', { name: 'Expertise' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('expertise-panel')).toBeInTheDocument();
@@ -389,7 +389,7 @@ describe('the mentee’s tabs as shipped', () => {
     viewer = member(true);
     segment = 'security';
     render(<SettingsScreen />);
-    expect(screen.getAllByRole('tab').at(-1)).toHaveTextContent('Login and security');
+    expect(screen.getAllByRole('tab').at(-1)).toHaveTextContent('Login & security');
     expect(screen.getByTestId('security-panel')).toHaveAttribute('data-role', 'mentor');
   });
 

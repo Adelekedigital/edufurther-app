@@ -1007,3 +1007,10 @@ The frozen state follows `viewer.mentorStage === 'pending'` (submitted, awaiting
 | Profile banner "You can edit these once it’s reviewed." | "You can edit your name and gender now, and the rest once it’s reviewed." | The design's line says nothing on the tab is editable; ux-writer, 2026-10-20 | — |
 | Banner "Contact us": `--weight-semibold`, `--blue-500`, no underline | The shared Notice link: semibold, `--blue-700`, underlined | blue-500 on ink-50 is under 4.5:1 (axe), as every Notice link | — |
 | LinkedIn toast "We’ll pass the change to your reviewer." | "Your reviewer sees the new link." | Nothing passes a change on (no reviewer flag, PRD); the reviewer reads the current link | a reviewer flag ships |
+
+## Mentor Settings, Expertise header actions (owner, 2026-10-20)
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| "Add education" / "Add award" are outlined buttons in the card header; "What you help with" has an outlined "Edit" | The profile page's controls: "+ Add education", "+ Add award" and a pencil "Edit" as small text actions in the top-right corner (`Button variant="text" size="small" icon`) | Owner: consistent with the Mentor Profile page and lighter; one shared control (the profile page uses the same Button now) | — |
+| Tab "Login and security" | "Login & security" | Owner, 2026-10-20 (sentence case, like every tab) | — |

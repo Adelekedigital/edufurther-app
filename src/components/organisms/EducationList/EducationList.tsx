@@ -63,7 +63,7 @@ export function EducationList({
             <span className={styles.sub}>{words.sub}</span>
           </div>
           {filled && (
-            <Button ref={addRef} variant="secondary-outlined" size="medium" onClick={onAdd}>
+            <Button ref={addRef} variant="text" size="small" icon="add" onClick={onAdd}>
               {EDUCATION_COPY.add}
             </Button>
           )}

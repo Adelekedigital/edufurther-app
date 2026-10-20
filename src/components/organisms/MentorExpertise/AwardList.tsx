@@ -61,7 +61,7 @@ export function AwardList({
           <span className={styles.sub}>{C.awardsSub}</span>
         </div>
         {filled && (
-          <Button ref={addRef} variant="secondary-outlined" size="medium" onClick={onAdd}>
+          <Button ref={addRef} variant="text" size="small" icon="add" onClick={onAdd}>
             {C.addAward}
           </Button>
         )}
