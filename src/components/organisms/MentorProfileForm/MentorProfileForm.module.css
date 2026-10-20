@@ -83,7 +83,10 @@
   z-index: 2;
 }
 
+/* Positioned, so it paints over the cover it overlaps: on phones the photo
+   text wraps and its title rises into the cover strip. */
 .photoRow {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;

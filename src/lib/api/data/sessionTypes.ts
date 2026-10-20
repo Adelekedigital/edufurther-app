@@ -595,9 +595,8 @@ export function useMentorDefaults(
         requiresApproval: data.requires_booking_confirmation,
         maxWindowDays: data.max_booking_window_days,
         platformWindowDays: data.default_booking_window_days,
-        // TODO(response-window PR): read data.response_window_hours once the client is regenerated.
-        responseWindowHours:
-          (data as { response_window_hours?: number | null }).response_window_hours ?? undefined,
+        // The platform's RESPONSE_WINDOW_HOURS (backend #504); optional in the spec.
+        responseWindowHours: data.response_window_hours ?? undefined,
       };
     },
     // Read fresh each time a form opens: the platform cap in it is a setting
