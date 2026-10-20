@@ -68,7 +68,8 @@ export const ExpertisePanel = forwardRef<PanelHandle, { userId: string }>(functi
   const own = useOwnEducation(userId, true);
   const guide = useGuideCountries(userId);
   const saving = useSaveGuideCountries(userId);
-  const { countries: catalog } = useCountries(true);
+  const catalogRead = useCountries(true);
+  const catalog = catalogRead.countries;
   const [query, setQuery] = useState('');
 
   // `base` is what's saved; `draft` is the chips. The server's list comes in
@@ -100,12 +101,27 @@ export const ExpertisePanel = forwardRef<PanelHandle, { userId: string }>(functi
   const eduHeading = useRef<HTMLHeadingElement>(null);
   const eduAdd = useRef<HTMLButtonElement>(null);
   const guideHeading = useRef<HTMLDivElement>(null);
-  // After a delete the row (and its button) is gone: its list's heading takes focus.
-  const [refocus, setRefocus] = useState<{ el: HTMLElement | null; at: number } | null>(null);
+  const topicsEdit = useRef<HTMLButtonElement>(null);
+  // The control that had focus may be gone (a deleted row; an empty state's
+  // Add once the list fills): focus its card's control, else its heading,
+  // rather than the page (WCAG 2.4.3), as Education does.
+  const [refocus, setRefocus] = useState<{
+    first: { current: HTMLElement | null };
+    then?: { current: HTMLElement | null };
+    at: number;
+  } | null>(null);
   useEffect(() => {
+    if (!refocus) return;
     const at = document.activeElement;
-    if (refocus?.el && (!at || at === document.body)) refocus.el.focus();
-  }, [refocus]);
+    if (at && at !== document.body) return;
+    for (const r of [refocus.first, refocus.then]) {
+      const el = r?.current;
+      if (el && el.isConnected && !(el as HTMLButtonElement).disabled) {
+        el.focus();
+        return;
+      }
+    }
+  });
 
   // The save bar goes when the chips are clean again: focus it held moves to
   // the countries card rather than falling to the page (WCAG 2.4.3).
@@ -115,6 +131,15 @@ export const ExpertisePanel = forwardRef<PanelHandle, { userId: string }>(functi
       requestAnimationFrame(() => guideHeading.current?.querySelector('h2')?.focus());
   };
 
+  const commonIds = COMMON.flatMap((label) => {
+    const hit = catalog.find((c) => c.label === label);
+    return hit ? [hit.id] : [];
+  });
+  const shownOrder = (list: GuideCountry[]) => [
+    ...commonIds.flatMap((id) => list.filter((c) => c.id === id)),
+    ...list.filter((c) => !commonIds.includes(c.id)),
+  ];
+
   const discard = () => {
     if (base) setDraft(base);
     saving.reset();
@@ -122,13 +147,17 @@ export const ExpertisePanel = forwardRef<PanelHandle, { userId: string }>(functi
   };
   const save = async (): Promise<boolean> => {
     if (!draft || saving.isPending) return false;
+    // In the order the chips show (the design's common ones first), so the
+    // public profile lists them as the mentor sees them here.
+    const sent = shownOrder(draft);
     try {
-      await saving.mutateAsync(draft);
+      await saving.mutateAsync(sent);
     } catch {
       return false;
     }
     keepFocus();
-    setBase(draft);
+    setBase(sent);
+    setDraft(sent);
     say(C.guideSaved);
     return true;
   };
@@ -137,34 +166,34 @@ export const ExpertisePanel = forwardRef<PanelHandle, { userId: string }>(functi
 
   const onSaved = (kind: ItemKind, outcome: ItemOutcome) => {
     setItem(null);
-    if (kind === 'topics') say(C.topicsUpdated);
-    else if (kind === 'award') say(outcome === 'added' ? C.awardAdded : C.awardUpdated);
-    else if (kind === 'education')
+    if (kind === 'topics') {
+      say(C.topicsUpdated);
+      setRefocus({ first: topicsEdit, at: said.current });
+    } else if (kind === 'award') {
+      say(outcome === 'added' ? C.awardAdded : C.awardUpdated);
+      setRefocus({ first: awardsAdd, then: awardsHeading, at: said.current });
+    } else if (kind === 'education') {
       say(outcome === 'added' ? EDUCATION_COPY.added : EDUCATION_COPY.updated);
+      setRefocus({ first: eduAdd, then: eduHeading, at: said.current });
+    }
   };
 
-  // Error before content: a failed first read says so, with Try again.
-  if (settings.status === 'error' || guide.status === 'error')
+  // Error before content: a failed first read says so, with Try again. The
+  // countries have their own read: its failure stays in its card.
+  if (settings.status === 'error')
     return (
       <EmptyState
         illustration="forms"
         title={C.loadError}
         actions={
-          <Button
-            variant="secondary-outlined"
-            size="large"
-            onClick={() => {
-              settings.retry();
-              guide.retry();
-            }}
-          >
+          <Button variant="secondary-outlined" size="large" onClick={settings.retry}>
             {C.retry}
           </Button>
         }
       />
     );
   const profile = settings.profile;
-  if (!profile || !draft) return <ExpertiseSkeleton />;
+  if (!profile) return <ExpertiseSkeleton />;
 
   const byLabel = (label: string) => catalog.find((c) => c.label === label);
   const common = COMMON.flatMap((label) => {
@@ -174,7 +203,7 @@ export const ExpertisePanel = forwardRef<PanelHandle, { userId: string }>(functi
   const q = norm(query.trim());
   const results = q
     ? catalog
-        .filter((c) => norm(c.label).includes(q) && !draft.some((d) => d.id === c.id))
+        .filter((c) => norm(c.label).includes(q) && !draft?.some((d) => d.id === c.id))
         .sort((a, b) => Number(!norm(a.label).startsWith(q)) - Number(!norm(b.label).startsWith(q)))
         .slice(0, MATCHES)
         .map((c) => ({ id: c.id, label: c.label }))
@@ -189,22 +218,37 @@ export const ExpertisePanel = forwardRef<PanelHandle, { userId: string }>(functi
   return (
     <>
       <div className={styles.stack}>
-        <TopicsCard topics={profile.mentor.topics} onEdit={() => setItem({ kind: 'topics' })} />
+        <TopicsCard
+          topics={profile.mentor.topics}
+          onEdit={() => setItem({ kind: 'topics' })}
+          editRef={topicsEdit}
+        />
         <div ref={guideHeading}>
           <GuideCountriesCard
             common={common}
-            selected={draft}
+            selected={draft ?? []}
             onToggle={(c) => {
               setToast(null);
               setDraft((d) =>
-                d ? (d.some((x) => x.id === c.id) ? d.filter((x) => x.id !== c.id) : [...d, c]) : d,
+                !d
+                  ? d
+                  : d.some((x) => x.id === c.id)
+                    ? d.filter((x) => x.id !== c.id)
+                    : d.length >= GUIDE_MAX
+                      ? d
+                      : [...d, c],
               );
             }}
             query={query}
             onQueryChange={setQuery}
             results={results}
-            status={catalog.length ? 'ready' : 'loading'}
-            full={draft.length >= GUIDE_MAX}
+            status={catalogRead.status}
+            full={(draft?.length ?? 0) >= GUIDE_MAX}
+            catalogFailed={
+              catalogRead.status === 'error' ? { onRetry: catalogRead.retry } : undefined
+            }
+            readFailed={!draft && guide.status === 'error' ? { onRetry: guide.retry } : undefined}
+            loading={!draft && guide.status === 'loading'}
           />
         </div>
         <EducationList
@@ -224,6 +268,8 @@ export const ExpertisePanel = forwardRef<PanelHandle, { userId: string }>(functi
             emptyBody: C.educationEmptyBody,
           }}
         />
+        {/* Awards come with the profile read: the panel shows only once it has
+            landed, and a failed refetch keeps them, so the list is always ready. */}
         <AwardList
           status="ready"
           rows={awards}
@@ -253,7 +299,7 @@ export const ExpertisePanel = forwardRef<PanelHandle, { userId: string }>(functi
             setDeleting(null);
             say(kind === 'award' ? C.awardDeleted : EDUCATION_COPY.deleted);
             setRefocus({
-              el: kind === 'award' ? awardsHeading.current : eduHeading.current,
+              first: kind === 'award' ? awardsHeading : eduHeading,
               at: said.current,
             });
           }}

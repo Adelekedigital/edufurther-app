@@ -141,7 +141,8 @@ export const MENTOR_EXPERTISE_COPY = {
   topicsUpdated: 'Topics updated',
   guideTitle: 'Where can you guide mentees to?',
   guideSub: 'Places you studied, applied to or know the process for.',
-  guideHint: 'Up to 8.',
+  /** The chip group's name: the card's heading already says the rest. */
+  guideGroupLabel: 'Countries',
   addCountry: 'Add another country',
   addCountryPlaceholder: 'For example, Japan',
   add: 'Add',

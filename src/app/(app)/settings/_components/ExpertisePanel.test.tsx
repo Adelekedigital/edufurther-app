@@ -38,7 +38,7 @@ vi.mock('@/lib/api/data/mentorSettings', async (orig) => ({
   useSaveGuideCountries: () => ({
     mutateAsync: saveGuide,
     isPending: false,
-    error: null,
+    error: saveError,
     reset: vi.fn(),
   }),
 }));
@@ -51,9 +51,11 @@ vi.mock('@/lib/api/data/profileEntries', () => ({
     failures: 0,
   }),
 }));
+let catalog: { countries: typeof CATALOG; status: string; retry: () => void };
 vi.mock('@/lib/api/data/catalog', () => ({
-  useCountries: () => ({ countries: CATALOG, status: 'ready', retry: vi.fn() }),
+  useCountries: () => catalog,
 }));
+let saveError: { copy: string } | null = null;
 // The Mentor Profile's editors: stand-ins that report what opened and save at once.
 vi.mock('@/app/_profile/OwnerItemEditor', () => ({
   OwnerItemEditor: ({
@@ -90,11 +92,12 @@ beforeEach(() => {
   guide = { countries: [us], status: 'ready', retry: vi.fn() };
   saveGuide.mockReset();
   saveGuide.mockImplementation(async (v) => v);
+  catalog = { countries: CATALOG, status: 'ready', retry: vi.fn() };
+  saveError = null;
 });
 
 const bar = () => screen.queryByRole('region', { name: 'Unsaved changes' });
-const countries = () =>
-  within(screen.getByRole('group', { name: 'Where can you guide mentees to?' }));
+const countries = () => within(screen.getByRole('group', { name: 'Countries' }));
 
 describe('ExpertisePanel', () => {
   it('topics as chips with Edit; Edit opens the topics editor and says "Topics updated"', async () => {
@@ -132,6 +135,107 @@ describe('ExpertisePanel', () => {
     guide = { ...guide, countries: CATALOG.slice(0, 8) };
     render(<ExpertisePanel userId="u1" />);
     expect(countries().getByRole('button', { name: 'Add another country' })).toBeDisabled();
+  });
+
+  it('the 8 limit holds while the adder is open, too', async () => {
+    const user = userEvent.setup();
+    guide = { ...guide, countries: CATALOG.slice(0, 7) };
+    render(<ExpertisePanel userId="u1" />);
+    await user.click(countries().getByRole('button', { name: 'Add another country' }));
+    await user.click(countries().getByRole('button', { name: 'France' }));
+    await user.type(screen.getByRole('combobox'), 'Jap{Enter}');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(saveGuide.mock.calls[0]![0]).toHaveLength(8);
+    expect(saveGuide.mock.calls[0]![0].map((c: GuideCountry) => c.label)).not.toContain('Japan');
+  });
+
+  it('saves in the order the chips show, so the profile matches', async () => {
+    const user = userEvent.setup();
+    guide = { ...guide, countries: [] };
+    render(<ExpertisePanel userId="u1" />);
+    await user.click(countries().getByRole('button', { name: 'Canada' }));
+    await user.click(countries().getByRole('button', { name: 'United States' }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(saveGuide.mock.calls[0]![0].map((c: GuideCountry) => c.label)).toEqual([
+      'United States',
+      'Canada',
+    ]);
+  });
+
+  it('search finds by part of a name, without the ones already picked', async () => {
+    const user = userEvent.setup();
+    render(<ExpertisePanel userId="u1" />);
+    await user.click(countries().getByRole('button', { name: 'Add another country' }));
+    await user.type(screen.getByRole('combobox'), 'unit');
+    const names = screen.getAllByRole('option').map((o) => o.textContent);
+    expect(names).toContain('United Kingdom');
+    expect(names).not.toContain('United States');
+  });
+
+  it('a failed country list says so and offers Try again', async () => {
+    catalog = { countries: [], status: 'error', retry: vi.fn() };
+    render(<ExpertisePanel userId="u1" />);
+    expect(screen.getAllByText('We couldn’t load countries. Try again.').length).toBeGreaterThan(0);
+    await userEvent.click(countries().getByRole('button', { name: 'Try again' }));
+    expect(catalog.retry).toHaveBeenCalled();
+  });
+
+  it('a refetch while editing keeps the edit; a clean card takes new values', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<ExpertisePanel userId="u1" />);
+    await user.click(countries().getByRole('button', { name: 'Canada' }));
+    guide = { ...guide, countries: [{ id: 'germany', label: 'Germany' }] };
+    rerender(<ExpertisePanel userId="u1" />);
+    expect(countries().getByRole('button', { name: 'Canada' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await user.click(screen.getByRole('button', { name: 'Discard' }));
+    expect(countries().getByRole('button', { name: 'Germany' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(countries().getByRole('button', { name: 'Canada' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+
+  it('a failed save keeps the edit and says why', async () => {
+    const user = userEvent.setup();
+    saveError = {
+      copy: 'We couldn’t save your countries. Your changes are still here. Try again.',
+    };
+    saveGuide.mockRejectedValue(saveError);
+    render(<ExpertisePanel userId="u1" />);
+    await user.click(countries().getByRole('button', { name: 'Canada' }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('We couldn’t save your countries.');
+    expect(bar()).not.toBeNull();
+  });
+
+  it('a failed countries read stays in its card; topics and awards still show', async () => {
+    guide = { countries: null, status: 'error', retry: vi.fn() };
+    render(<ExpertisePanel userId="u1" />);
+    expect(screen.getByText('School selection')).toBeInTheDocument();
+    expect(screen.getByText('Chevening')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(guide.retry).toHaveBeenCalled();
+  });
+
+  it('after the first award is added, focus lands on Add award, not the page', async () => {
+    const user = userEvent.setup();
+    settings = { ...settings, profile: { ...profile, awards: [] } as MentorProfile };
+    const { rerender } = render(<ExpertisePanel userId="u1" />);
+    await user.click(screen.getByRole('button', { name: 'Add your first award' }));
+    // The award lands (the list refetched before the editor reports it).
+    settings = { ...settings, profile };
+    const editor = screen.getByRole('button', { name: 'editor:award:new' });
+    rerender(<ExpertisePanel userId="u1" />);
+    await user.click(editor);
+    (document.activeElement as HTMLElement | null)?.blur();
+    rerender(<ExpertisePanel userId="u1" />);
+    expect(await screen.findByRole('button', { name: 'Add award' })).toHaveFocus();
   });
 
   it('awards: the row with its funding badge; Delete confirms, then says so', async () => {

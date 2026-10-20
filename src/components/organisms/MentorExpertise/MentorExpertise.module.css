@@ -50,6 +50,19 @@
   color: var(--text-tertiary);
 }
 
+/* The countries card while its list loads, or when it didn't. */
+.chipsLoading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.failedRead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
 /* `selectedTopics` */
 .topics {
   display: flex;

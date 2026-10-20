@@ -250,6 +250,9 @@ export function useSaveGuideCountries(userId: string | null) {
   const qc = useQueryClient();
   const mutation = useMutation<GuideCountry[], { copy: string }, GuideCountry[]>({
     networkMode: 'always',
+    // A read already on its way would land after the save and put the old list back.
+    onMutate: () =>
+      userId ? qc.cancelQueries({ queryKey: keys.viewer.guideCountries(userId) }) : undefined,
     mutationFn: async (next) => {
       try {
         if (!userId) throw new Error('no user');

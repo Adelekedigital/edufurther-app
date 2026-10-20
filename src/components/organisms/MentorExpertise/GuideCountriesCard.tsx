@@ -1,6 +1,8 @@
 'use client';
 
 import { useId } from 'react';
+import { Button } from '@/components/atoms/Button/Button';
+import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import {
   LanguageChips,
   type LanguageOption,
@@ -20,6 +22,12 @@ type GuideCountriesCardProps = {
   status: 'loading' | 'error' | 'ready';
   /** At the limit (8): unpicked chips and the adder are disabled. */
   full: boolean;
+  /** The country catalog didn't load: said in the group, with Try again. */
+  catalogFailed?: { onRetry: () => void; at?: number };
+  /** The saved countries didn't load: said in the card, with Try again. */
+  readFailed?: { onRetry: () => void };
+  /** The saved countries are on their way. */
+  loading?: boolean;
 };
 
 /**
@@ -36,6 +44,9 @@ export function GuideCountriesCard({
   results,
   status,
   full,
+  catalogFailed,
+  readFailed,
+  loading = false,
 }: GuideCountriesCardProps) {
   const id = useId();
   return (
@@ -48,28 +59,53 @@ export function GuideCountriesCard({
           {C.guideSub}
         </span>
       </span>
-      <LanguageChips
-        label={C.guideTitle}
-        focusKey="guide"
-        common={common}
-        selected={selected}
-        onToggle={onToggle}
-        query={query}
-        onQueryChange={onQueryChange}
-        results={results}
-        status={status}
-        full={full}
-        describedBy={`${id}-sub`}
-        copy={{
-          add: C.addCountry,
-          addButton: C.add,
-          cancel: C.cancel,
-          placeholder: C.addCountryPlaceholder,
-          searching: C.searchingCountries,
-          searchFailed: C.countrySearchFailed,
-          noMatch: C.noCountryMatch,
-        }}
-      />
+      {readFailed ? (
+        <div className={styles.failedRead} role="alert">
+          <span className={styles.sub}>{C.loadError}</span>
+          <Button variant="secondary-outlined" size="medium" onClick={readFailed.onRetry}>
+            {C.retry}
+          </Button>
+        </div>
+      ) : loading ? (
+        <div className={styles.chipsLoading} aria-hidden>
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} width="110px" height="40px" radius="md" />
+          ))}
+        </div>
+      ) : (
+        <LanguageChips
+          label={C.guideGroupLabel}
+          focusKey="guide"
+          common={common}
+          selected={selected}
+          onToggle={onToggle}
+          query={query}
+          onQueryChange={onQueryChange}
+          results={results}
+          status={status}
+          full={full}
+          describedBy={`${id}-sub`}
+          commonFailed={
+            catalogFailed
+              ? {
+                  text: C.countrySearchFailed,
+                  retry: C.retry,
+                  onRetry: catalogFailed.onRetry,
+                  at: catalogFailed.at,
+                }
+              : undefined
+          }
+          copy={{
+            add: C.addCountry,
+            addButton: C.add,
+            cancel: C.cancel,
+            placeholder: C.addCountryPlaceholder,
+            searching: C.searchingCountries,
+            searchFailed: C.countrySearchFailed,
+            noMatch: C.noCountryMatch,
+          }}
+        />
+      )}
     </section>
   );
 }
