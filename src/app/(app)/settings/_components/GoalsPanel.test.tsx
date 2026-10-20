@@ -96,6 +96,12 @@ const ready = (r: Partial<GoalsRead> = {}) => {
 };
 // The footer shows once the form is dirty: wait for it, the edit's render may land a tick later.
 const saveButton = () => screen.findByRole('button', { name: GOALS_COPY.save });
+// Edit goals moves focus to "Where you're from" a frame later: wait for it,
+// or typing can race the move on a slow runner (a CI flake).
+const openEdit = async () => {
+  await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.edit }));
+  await waitFor(() => expect(document.activeElement).toHaveAttribute('data-ff', 'origin'));
+};
 
 beforeEach(() => {
   mutateAsync.mockReset();
@@ -147,7 +153,7 @@ describe('GoalsPanel', () => {
   it('Edit goals opens the fields and focuses the first; Applying for is one choice', async () => {
     ready();
     render(<GoalsPanel userId="u1" />);
-    await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.edit }));
+    await openEdit();
     await waitFor(() => expect(screen.getByLabelText(GOALS_COPY.origin)).toHaveFocus());
     const group = screen.getByRole('radiogroup', { name: GOALS_COPY.applyingFor });
     expect(within(group).getByRole('radio', { name: 'Master’s' })).toHaveAttribute(
@@ -169,7 +175,7 @@ describe('GoalsPanel', () => {
   it('arrows move the choice and focus within the radio group', async () => {
     ready();
     render(<GoalsPanel userId="u1" />);
-    await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.edit }));
+    await openEdit();
     await waitFor(() => expect(screen.getByLabelText(GOALS_COPY.origin)).toHaveFocus());
     const masters = screen.getByRole('radio', { name: 'Master’s' });
     expect(masters).toHaveAttribute('tabindex', '0');
@@ -189,7 +195,7 @@ describe('GoalsPanel', () => {
   it('countries: at most 3, then the others and the adder are disabled', async () => {
     ready();
     render(<GoalsPanel userId="u1" />);
-    await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.edit }));
+    await openEdit();
     await userEvent.click(screen.getByRole('button', { name: 'United States' }));
     expect(screen.getByRole('button', { name: 'United States' })).toHaveAttribute(
       'aria-pressed',
@@ -208,7 +214,7 @@ describe('GoalsPanel', () => {
     ready({ goal: goal({ schools: [] }) });
     schoolResults = [{ id: 'inst-8', name: 'University College London' }];
     render(<GoalsPanel userId="u1" />);
-    await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.edit }));
+    await openEdit();
     const field = screen.getByRole('combobox', { name: GOALS_COPY.addSchool });
     expect(field).toHaveAttribute('maxLength', '120');
     await userEvent.type(field, 'Univ');
@@ -242,7 +248,7 @@ describe('GoalsPanel', () => {
   it('Save sends origin, MBA as Master’s + "MBA", the lists; then the toast and the card', async () => {
     ready({ originCode: null, currentCode: 'NG' });
     render(<GoalsPanel userId="u1" />);
-    await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.edit }));
+    await openEdit();
     await userEvent.click(screen.getByRole('radio', { name: 'MBA' }));
     await userEvent.click(await saveButton());
     expect(mutateAsync).toHaveBeenCalledWith(
@@ -274,7 +280,7 @@ describe('GoalsPanel', () => {
     ready();
     mutateAsync.mockRejectedValueOnce(new GoalsSaveError(GOALS_COPY.saveFailed));
     const { rerender } = render(<GoalsPanel userId="u1" />);
-    await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.edit }));
+    await openEdit();
     await userEvent.click(screen.getByRole('radio', { name: 'PhD' }));
     await userEvent.click(await saveButton());
     saveError = new GoalsSaveError(GOALS_COPY.saveFailed);
@@ -286,7 +292,7 @@ describe('GoalsPanel', () => {
   it('the footer’s alert region is there before its line, so the line is heard', async () => {
     ready();
     render(<GoalsPanel userId="u1" />);
-    await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.edit }));
+    await openEdit();
     await userEvent.clear(screen.getByLabelText(GOALS_COPY.field));
     const region = screen.getByRole('alert');
     expect(region).toBeEmptyDOMElement();
@@ -297,19 +303,19 @@ describe('GoalsPanel', () => {
   it('Cancel restores the saved goal and goes back to the card', async () => {
     ready();
     render(<GoalsPanel userId="u1" />);
-    await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.edit }));
+    await openEdit();
     await userEvent.clear(screen.getByLabelText(GOALS_COPY.field));
     await userEvent.type(screen.getByLabelText(GOALS_COPY.field), 'Law');
     await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.cancel }));
     expect(screen.getByText('Master’s in Public health')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.edit }));
+    await openEdit();
     expect(screen.getByLabelText(GOALS_COPY.field)).toHaveValue('Public health');
   });
 
   it('collapsing with unsaved changes asks first; Discard restores and collapses', async () => {
     ready();
     render(<GoalsPanel userId="u1" />);
-    await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.edit }));
+    await openEdit();
     await userEvent.click(screen.getByRole('radio', { name: 'PhD' }));
     await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.collapse }));
     const dialog = screen.getByRole('alertdialog');
@@ -321,7 +327,7 @@ describe('GoalsPanel', () => {
   it('collapsing with nothing changed just collapses', async () => {
     ready();
     render(<GoalsPanel userId="u1" />);
-    await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.edit }));
+    await openEdit();
     await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.collapse }));
     expect(screen.queryByRole('alertdialog')).toBeNull();
     expect(screen.getByRole('button', { name: GOALS_COPY.edit })).toBeInTheDocument();
@@ -330,7 +336,7 @@ describe('GoalsPanel', () => {
   it('an unsaved edit registers its own save with the leave guard', async () => {
     ready();
     render(<GoalsPanel userId="u1" />);
-    await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.edit }));
+    await openEdit();
     await userEvent.click(screen.getByRole('radio', { name: 'PhD' }));
     const save = unsavedSave();
     expect(save).not.toBeNull();
@@ -354,7 +360,7 @@ describe('GoalsPanel', () => {
     ready();
     mutateAsync.mockRejectedValueOnce(new GoalsSaveError(GOALS_COPY.saveFailed, true));
     const { rerender } = render(<GoalsPanel userId="u1" />);
-    await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.edit }));
+    await openEdit();
     const origin = screen.getByLabelText(GOALS_COPY.origin);
     await userEvent.clear(origin);
     await userEvent.type(origin, 'Canada{Enter}');
@@ -372,7 +378,7 @@ describe('GoalsPanel', () => {
     ready();
     const ref = createRef<PanelHandle>();
     render(<GoalsPanel ref={ref} userId="u1" />);
-    await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.edit }));
+    await openEdit();
     const phd = screen.getByRole('radio', { name: 'PhD' });
     await userEvent.click(phd);
     let saved = false;
@@ -382,7 +388,7 @@ describe('GoalsPanel', () => {
     expect(saved).toBe(true);
     await act(() => new Promise((r) => setTimeout(r, 50)));
     expect(screen.getByRole('button', { name: GOALS_COPY.edit })).not.toHaveFocus();
-    await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.edit }));
+    await openEdit();
     await userEvent.click(screen.getByRole('radio', { name: 'MBA' }));
     await act(async () => {
       await unsavedSave()!();
@@ -394,7 +400,7 @@ describe('GoalsPanel', () => {
   it('after a save, the refetched goal comes in', async () => {
     ready();
     const { rerender } = render(<GoalsPanel userId="u1" />);
-    await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.edit }));
+    await openEdit();
     await userEvent.click(screen.getByRole('radio', { name: 'PhD' }));
     await userEvent.click(await saveButton());
     expect(await screen.findByText('PhD in Public health')).toBeInTheDocument();
@@ -406,7 +412,7 @@ describe('GoalsPanel', () => {
   it('only the degree missing: Save focuses the first choice', async () => {
     ready({ goal: goal({ degree_goal: null }) });
     render(<GoalsPanel userId="u1" />);
-    await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.edit }));
+    await openEdit();
     await userEvent.type(screen.getByLabelText(GOALS_COPY.field), 's');
     await userEvent.click(await saveButton());
     await waitFor(() => expect(screen.getByRole('radio', { name: 'Bachelor’s' })).toHaveFocus());
@@ -419,7 +425,7 @@ describe('GoalsPanel', () => {
   it('the cards are h3s under "Your goals"', async () => {
     ready();
     render(<GoalsPanel userId="u1" />);
-    await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.edit }));
+    await openEdit();
     expect(screen.getByRole('heading', { level: 2, name: GOALS_COPY.head })).toBeInTheDocument();
     expect(
       screen.getByRole('heading', { level: 3, name: GOALS_COPY.workingToward }),
