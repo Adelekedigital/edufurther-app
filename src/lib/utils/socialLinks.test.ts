@@ -56,6 +56,9 @@ describe('draftProblem', () => {
     expect(draftProblem('website', 'ada.dev:8080')).toBe('website');
     expect(draftProblem('website', 'ada.dev/blog?x=1')).toBeNull();
     expect(draftProblem('website', 'https://ada.medium.com')).toBeNull();
+    // An internationalised name, as its IDNA form; an underscore isn't a host.
+    expect(draftProblem('website', 'café.fr')).toBeNull();
+    expect(draftProblem('website', 'my_site.example.com')).toBe('website');
   });
 
   it('nothing typed yet is no problem to show', () => expect(draftProblem('x', '  ')).toBeNull());

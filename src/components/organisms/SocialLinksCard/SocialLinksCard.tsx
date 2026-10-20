@@ -38,6 +38,8 @@ type SocialLinksCardProps = {
   headingRef?: RefObject<HTMLHeadingElement | null>;
   /** The header's "Add link". */
   addRef?: RefObject<HTMLButtonElement | null>;
+  /** The form opened, closed or changed platform: an old save error no longer applies. */
+  onFormChange?: () => void;
 };
 
 type Form = { editId: string | null; kind: SocialKind | null; draft: string };
@@ -59,6 +61,7 @@ export function SocialLinksCard({
   onRemove,
   headingRef,
   addRef,
+  onFormChange,
 }: SocialLinksCardProps) {
   const headingId = useId();
   const fieldId = useId();
@@ -66,17 +69,34 @@ export function SocialLinksCard({
   const [form, setForm] = useState<Form | null>(null);
   const firstRadio = useRef<HTMLButtonElement>(null);
   const input = useRef<HTMLInputElement>(null);
-  // A platform picked with the arrow keys keeps focus in the group.
-  const keyPick = useRef(false);
-
-  // Opening the form puts focus where the next step is: the picker when
-  // adding, the field once a platform is picked or a link is being changed.
-  const step = form ? (form.kind ? 'field' : 'pick') : null;
+  // The page may hold these refs; the card falls back to its own.
+  const ownAdd = useRef<HTMLButtonElement>(null);
+  const ownHeading = useRef<HTMLHeadingElement>(null);
+  const add = addRef ?? ownAdd;
+  const heading = headingRef ?? ownHeading;
+  // Where focus goes once the next render is on screen: the picker or the
+  // field as the form opens, and back to what opened it as it closes (the
+  // row's Edit, else "Add link"), never the page (WCAG 2.4.3). Asked for by
+  // the action itself, so arrowing through the picker keeps focus there.
+  const focusNext = useRef<string | null>(null);
   useEffect(() => {
-    if (step === 'pick') firstRadio.current?.focus();
-    if (step === 'field' && !keyPick.current) input.current?.focus();
-    keyPick.current = false;
-  }, [step, form?.editId]);
+    const want = focusNext.current;
+    if (!want) return;
+    focusNext.current = null;
+    if (want === 'pick') firstRadio.current?.focus();
+    else if (want === 'field') input.current?.focus();
+    else {
+      const edit = want.startsWith('edit:')
+        ? document.getElementById(`${fieldId}-edit-${want.slice(5)}`)
+        : null;
+      (edit ?? add.current ?? heading.current)?.focus();
+    }
+  });
+  const openForm = (next: Form) => {
+    onFormChange?.();
+    focusNext.current = next.kind ? 'field' : 'pick';
+    setForm(next);
+  };
 
   const websites = rows.filter((r) => r.kind === 'website').length;
   const taken = (k: SocialKind) =>
@@ -87,12 +107,22 @@ export function SocialLinksCard({
   const plat = form?.kind ? SOCIAL_PLATFORMS.find((p) => p.kind === form.kind)! : null;
   const draft = form?.draft ?? '';
   const problem = plat ? draftProblem(plat.kind, draft) : null;
-  // A website draft that is really a platform (the design's DETECT): it saves
-  // as that platform when adding and the platform is free, and a Medium or
-  // Substack site shows their mark.
+  // A website draft that is really a platform's profile (the design's
+  // DETECT): it saves as that platform when adding, the platform is free and
+  // the link names a handle it takes. Anything else on that host (a list, a
+  // post, a group) stays a website. Medium and Substack sites show their mark.
   const site = plat?.kind === 'website' && !problem ? detectSite(draft) : null;
+  const handle = site && site !== 'medium' && site !== 'substack' ? tidyDraft(site, draft) : '';
   const routeTo =
-    site && site !== 'medium' && site !== 'substack' && !form?.editId && !taken(site) ? site : null;
+    site &&
+    site !== 'medium' &&
+    site !== 'substack' &&
+    !form?.editId &&
+    !taken(site) &&
+    handle !== draft.trim() &&
+    draftProblem(site, handle) === null
+      ? site
+      : null;
   const looksLike = routeTo ?? (site === 'medium' || site === 'substack' ? site : null);
   const note = looksLike
     ? C.noteLooksLike(markLabel(looksLike))
@@ -104,11 +134,15 @@ export function SocialLinksCard({
           ? C.noteWebsite
           : C.noteDefault;
 
-  const close = () => setForm(null);
+  const close = () => {
+    onFormChange?.();
+    focusNext.current = form?.editId ? `edit:${form.editId}` : 'add';
+    setForm(null);
+  };
   const submit = async () => {
     if (!form || !plat || !draft.trim() || problem || saving) return;
     const kind = routeTo ?? plat.kind;
-    const value = routeTo ? tidyDraft(routeTo, draft) : draft.trim();
+    const value = routeTo ? handle : draft.trim();
     if (await onSave({ kind, value, id: form.editId })) close();
   };
 
@@ -120,7 +154,7 @@ export function SocialLinksCard({
     e.preventDefault();
     const at = open.findIndex((p) => p.kind === k);
     const next = open[(at + step + open.length) % open.length]!;
-    keyPick.current = true;
+    onFormChange?.();
     setForm((f) => (f ? { ...f, kind: next.kind, draft: '' } : f));
     document.getElementById(`${fieldId}-${next.kind}`)?.focus();
   };
@@ -131,7 +165,7 @@ export function SocialLinksCard({
     <section className={styles.card} aria-labelledby={headingId}>
       <div className={styles.head}>
         <div className={styles.headText}>
-          <h2 id={headingId} ref={headingRef} tabIndex={-1} className={styles.title}>
+          <h2 id={headingId} ref={heading} tabIndex={-1} className={styles.title}>
             {C.title}
           </h2>
           <span className={styles.sub}>{C.sub}</span>
@@ -139,10 +173,10 @@ export function SocialLinksCard({
         {/* Hidden while the form is open: its own button is the "Add link" then. */}
         {filled && !form && (
           <Button
-            ref={addRef}
+            ref={add}
             variant="secondary-outlined"
             size="medium"
-            onClick={() => setForm({ editId: null, kind: null, draft: '' })}
+            onClick={() => openForm({ editId: null, kind: null, draft: '' })}
           >
             {C.add}
           </Button>
@@ -175,7 +209,7 @@ export function SocialLinksCard({
                       disabled={off}
                       tabIndex={p.kind === tabStop ? 0 : -1}
                       className={cx(styles.option, on && styles.optionOn)}
-                      onClick={() => setForm((f) => (f ? { ...f, kind: p.kind, draft: '' } : f))}
+                      onClick={() => form && openForm({ ...form, kind: p.kind, draft: '' })}
                       onKeyDown={(e) => onRadioKey(e, p.kind)}
                     >
                       <BrandIcon mark={p.kind} size={14} />
@@ -280,11 +314,12 @@ export function SocialLinksCard({
                   <span className={styles.url}>{displayUrl(r.url)}</span>
                 </div>
                 <IconButton
+                  id={`${fieldId}-edit-${r.id}`}
                   icon="edit"
                   size="sm"
                   shape="square"
                   aria-label={C.editAria(name)}
-                  onClick={() => setForm({ editId: r.id, kind: r.kind, draft: r.value })}
+                  onClick={() => openForm({ editId: r.id, kind: r.kind, draft: r.value })}
                 />
                 <IconButton
                   icon="delete"

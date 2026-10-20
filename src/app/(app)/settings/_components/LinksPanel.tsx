@@ -72,6 +72,7 @@ export function LinksPanel({ userId }: { userId: string }) {
         }}
         headingRef={heading}
         addRef={add}
+        onFormChange={saving.reset}
       />
       {pending && (
         <ConfirmDialog

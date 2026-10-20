@@ -206,4 +206,49 @@ describe('SocialLinksCard', () => {
     );
     expect(screen.queryByRole('button', { name: 'Add link' })).toBeNull();
   });
+
+  it.each([
+    'x.com/i/lists/1',
+    'https://www.youtube.com/channel/UCabcdefghijklmnopqrstuv',
+    'instagram.com/p/abc',
+    'facebook.com/groups/foo',
+  ])('a website on a platform that names no handle (%s) stays a website', async (url) => {
+    const { onSave, user } = setup({ rows: [] });
+    await user.click(screen.getByRole('button', { name: 'Add link' }));
+    await user.click(screen.getByRole('radio', { name: 'Website' }));
+    await user.type(screen.getByLabelText('Website address'), url);
+    expect(screen.queryByText(/Looks like/)).toBeNull();
+    await user.keyboard('{Enter}');
+    expect(onSave).toHaveBeenCalledWith({ kind: 'website', value: url, id: null });
+  });
+
+  it('Cancel and Escape put focus back on what opened the form', async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: 'Add link' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByRole('button', { name: 'Add link' })).toHaveFocus();
+    await user.click(screen.getByRole('button', { name: 'Edit YouTube' }));
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('button', { name: 'Edit YouTube' })).toHaveFocus();
+  });
+
+  it('opening, closing or switching platform tells the page (an old error goes)', async () => {
+    const onFormChange = vi.fn();
+    const { user } = setup({ onFormChange });
+    await user.click(screen.getByRole('button', { name: 'Add link' }));
+    expect(onFormChange).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole('radio', { name: 'X' }));
+    expect(onFormChange).toHaveBeenCalledTimes(2);
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(onFormChange).toHaveBeenCalledTimes(3);
+  });
+
+  it('after arrowing through the picker, Edit still focuses its field', async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: 'Add link' }));
+    await user.keyboard('{ArrowRight}{ArrowRight}');
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'Edit YouTube' }));
+    expect(screen.getByLabelText('YouTube handle')).toHaveFocus();
+  });
 });

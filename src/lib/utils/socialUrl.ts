@@ -29,6 +29,9 @@ export function safeSocialUrl(kind: SocialKind, value: string | null | undefined
     return null;
   }
   if (url.protocol !== 'https:' || url.username || url.password) return null;
-  if (kind !== 'website' && !HOSTS[kind].includes(url.hostname.toLowerCase())) return null;
+  if (kind === 'website') return url.toString();
+  // A platform this build doesn't know yet (a newer backend) renders nothing, rather than throwing.
+  const hosts = (HOSTS as Partial<Record<string, readonly string[]>>)[kind];
+  if (!hosts?.includes(url.hostname.toLowerCase())) return null;
   return url.toString();
 }

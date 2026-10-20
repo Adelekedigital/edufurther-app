@@ -24,6 +24,8 @@ describe('safeSocialUrl', () => {
     expect(safeSocialUrl('website', 'http://ada.dev')).toBeNull();
     expect(safeSocialUrl('website', 'javascript:alert(1)')).toBeNull();
     expect(safeSocialUrl('website', 'https://u:p@ada.dev')).toBeNull();
+    // A platform a newer backend adds: skipped, never a crash.
+    expect(safeSocialUrl('threads' as never, 'https://www.threads.net/@ada')).toBeNull();
   });
 
   it('every links platform on its own host; a website anywhere, https only', () => {

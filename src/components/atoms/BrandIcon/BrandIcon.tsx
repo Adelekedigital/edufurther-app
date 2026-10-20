@@ -73,7 +73,9 @@ export function BrandIcon({ mark, size, className }: BrandIconProps) {
         <ellipse cx="22.6" cy="12" rx="1.2" ry="5.8" />
       </svg>
     );
-  const m = MARKS[mark];
+  const m = (MARKS as Partial<Record<string, (typeof MARKS)['x']>>)[mark];
+  // A mark this build doesn't know (a newer backend platform): the website glyph.
+  if (!m) return <Icon name="language" size={size <= 14 ? 14 : 18} className={className} />;
   return (
     <svg {...frame}>
       <path d={m.d} transform={m.transform} fillRule={m.rule} />

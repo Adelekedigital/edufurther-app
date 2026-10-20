@@ -178,7 +178,15 @@ export function draftProblem(
     const scheme = /^([a-z][a-z0-9+.-]*):\/\//i.exec(v)?.[1];
     if (scheme && !/^https?$/i.test(scheme)) return 'website';
     const host = v.replace(/^https?:\/\//i, '').split(/[/?#]/)[0]!;
-    return host.includes('@') || host.includes(':') || !HOST.test(host) ? 'website' : null;
+    if (host.includes('@') || host.includes(':')) return 'website';
+    // An internationalised name (café.fr) is checked as the backend does: its IDNA form.
+    let ascii = host;
+    try {
+      ascii = new URL(`https://${host}`).hostname;
+    } catch {
+      return 'website';
+    }
+    return HOST.test(ascii) ? null : 'website';
   }
   if (kind === 'linkedin') {
     if (/[\s/]/.test(v)) return 'shape';

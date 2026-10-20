@@ -15,6 +15,9 @@ type LinkRead = components['schemas']['LinkRead'];
 
 export const LINKEDIN_ROW = 'linkedin';
 
+/** The platforms this build knows; a newer backend's extra ones are skipped. */
+const KNOWN = new Set<string>(['x', 'youtube', 'instagram', 'facebook', 'tiktok', 'website']);
+
 const linkRow = (l: LinkRead): SocialRow => ({
   id: l.id,
   kind: l.platform,
@@ -28,9 +31,11 @@ const linkRow = (l: LinkRead): SocialRow => ({
  * order (backend #507: sorted by position, which can have gaps).
  */
 function rowsOf(linkedin: string | null | undefined, links: LinkRead[]): SocialRow[] {
-  const handle = linkedin ? linkedInHandle(linkedin) : null;
+  // A stored value that isn't an /in/ profile (older data) still shows, so it
+  // can be changed or removed; its field starts empty.
+  const handle = linkedin ? (linkedInHandle(linkedin) ?? '') : null;
   return [
-    ...(linkedin && handle
+    ...(linkedin && handle !== null
       ? [
           {
             id: LINKEDIN_ROW,
@@ -41,7 +46,10 @@ function rowsOf(linkedin: string | null | undefined, links: LinkRead[]): SocialR
           },
         ]
       : []),
-    ...[...links].sort((a, b) => a.position - b.position).map(linkRow),
+    ...links
+      .filter((l) => KNOWN.has(l.platform))
+      .sort((a, b) => a.position - b.position)
+      .map(linkRow),
   ];
 }
 
@@ -76,6 +84,7 @@ function saveCopy(e: unknown, kind: SocialKind): string {
   const err = normaliseError(e);
   if (err.kind === 'offline') return SAVE_COPY.profileOffline;
   if (e instanceof ApiError) {
+    if (e.status === 404) return C.gone;
     if (e.status === 422) return kind === 'website' ? C.noteWebsite : C.noteHandle(markLabel(kind));
     if (e.status === 409 && e.type?.endsWith('/problems/website-limit-reached'))
       return C.websiteLimit;
@@ -131,11 +140,19 @@ export function useSaveSocial(userId: string | null) {
           ? [row, ...rows.filter((r) => r.id !== LINKEDIN_ROW)]
           : id
             ? rows.map((r) => (r.id === id ? row : r))
-            : [...rows, row],
+            : // A read that landed meanwhile may hold it already.
+              [...rows.filter((r) => r.id !== row.id), row],
       );
-      void qc.invalidateQueries({ queryKey: keys.viewer.links(userId) });
+      // LinkedIn is on /me's profile, which other screens read too.
+      void qc.invalidateQueries({
+        queryKey: row.kind === 'linkedin' ? keys.viewer.all : keys.viewer.links(userId),
+      });
       // The public profile shows them.
       void qc.invalidateQueries({ queryKey: keys.mentors.all });
+    },
+    // A refusal may mean the list is out of date (removed in another tab): re-read it.
+    onError: () => {
+      if (userId) void qc.invalidateQueries({ queryKey: keys.viewer.links(userId) });
     },
   });
   return {
@@ -179,7 +196,9 @@ export function useRemoveSocial(userId: string | null) {
       qc.setQueryData<SocialRow[]>(keys.viewer.links(userId), (rows = []) =>
         rows.filter((r) => r.id !== gone),
       );
-      void qc.invalidateQueries({ queryKey: keys.viewer.links(userId) });
+      void qc.invalidateQueries({
+        queryKey: gone === LINKEDIN_ROW ? keys.viewer.all : keys.viewer.links(userId),
+      });
       void qc.invalidateQueries({ queryKey: keys.mentors.all });
     },
   });

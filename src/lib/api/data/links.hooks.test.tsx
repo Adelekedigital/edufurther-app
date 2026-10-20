@@ -74,6 +74,28 @@ describe('useMyLinks', () => {
     expect(result.current.rows).toEqual([]);
   });
 
+  it('a platform this build doesn’t know is skipped; an old LinkedIn value still shows', async () => {
+    GET.mockResolvedValue(
+      me('https://www.linkedin.com/company/acme', [
+        yt,
+        {
+          id: 'l9',
+          platform: 'threads',
+          value: 'ada',
+          url: 'https://www.threads.net/@ada',
+          position: 2,
+        },
+      ]),
+    );
+    const { result } = renderHook(() => useMyLinks('u1'), { wrapper: wrap() });
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(result.current.rows!.map((r) => [r.id, r.value])).toEqual([
+      // Shown so it can be changed or removed; its field starts empty.
+      ['linkedin', ''],
+      ['l1', 'gradpath'],
+    ]);
+  });
+
   it('a failed read is an error to retry', async () => {
     GET.mockResolvedValue(problem(500));
     const { result } = renderHook(() => useMyLinks('u1'), { wrapper: wrap() });
@@ -118,6 +140,7 @@ describe('useSaveSocial', () => {
     ],
     [problem(409, '/problems/website-limit-reached'), 'website', 'You can add up to 3 websites.'],
     [problem(500), 'x', 'Your link didn’t save. Try again in a moment.'],
+    [problem(404), 'x', 'That link was already removed. Your list is up to date.'],
   ] as const)('a refusal is said in the page’s words (%#)', async (answer, kind, copy) => {
     POST.mockResolvedValue(answer);
     const { result } = renderHook(() => useSaveSocial('u1'), { wrapper: wrap() });

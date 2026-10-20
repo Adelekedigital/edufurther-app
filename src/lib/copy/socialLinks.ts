@@ -43,5 +43,7 @@ export const SOCIAL_LINKS_COPY = {
   taken: (label: string) => `You’ve already added ${label}. Edit that one instead.`,
   websiteLimit: 'You can add up to 3 websites.',
   saveFailed: 'Your link didn’t save. Try again in a moment.',
+  /** Changed a link that was removed elsewhere (a 404). */
+  gone: 'That link was already removed. Your list is up to date.',
   removeFailed: 'That didn’t go through. Try again in a moment.',
 } as const;
