@@ -112,6 +112,10 @@
   --modal-icon-success-ring: #f3fbf6;
   --modal-icon-success-ink: var(--green-700);
 
+  /* The profile header photo's initials (Mentor Profile.dc.html literals:
+     40px on the 112px photo, 26px on the phones' 72px; no DS step). */
+  --text-avatar-profile: 40px;
+
   /* Wizard step number (Session Types.dc.html literal 11px; no DS step). */
   --step-dot-text: 11px;
 
@@ -122,6 +126,12 @@
   /* Breakpoint, for reference: CSS media queries cannot read a var, so the
      number 768px is repeated in modules. Keep them equal. */
   --bp-mobile-max: 767px;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --text-avatar-profile: 26px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

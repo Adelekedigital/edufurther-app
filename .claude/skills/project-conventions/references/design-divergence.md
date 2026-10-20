@@ -268,6 +268,7 @@ Defined in `src/styles/tokens/ours.css`. A redesign must not silently drop them:
 | `--lh-icon-inline` | 18px: the line a field error's 16px icon sits on (every `.dc.html` field error) |
 | `--modal-icon-*` (bg/ring/ink × default, danger, success)                                               | Modal.dc.html `tone` literals (`#f5f9ff`, `#fff6f5`, `#f3fbf6` rings)                        |
 | `--step-dot-text`                                                                                       | Session Types wizard step number, literal 11px                                               |
+| `--text-avatar-profile` | the profile header photo's initials: design literals 40px, 26px on phones; no DS step |
 | `--swatch-edge`                                                                                         | Mentor Profile.dc.html cover swatch ring, `rgba(16,25,40,.08)`                               |
 | reduced-motion durations                                                                                | not drawn                                                                                    |
 
