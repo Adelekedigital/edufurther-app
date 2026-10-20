@@ -96,3 +96,10 @@
   flex: none;
   color: var(--text-danger);
 }
+@media (max-width: 767px) {
+  /* The select it stands in for is full width and 44px on phones (Select's phone rule). */
+  .skelSelect {
+    width: 100% !important;
+    height: var(--touch-target-min) !important;
+  }
+}

@@ -156,7 +156,7 @@ function BookingSettingsSkeleton() {
               <Skeleton width="45%" height="20px" />
               <Skeleton width="70%" height="18px" />
             </span>
-            <Skeleton width="160px" height="37px" radius="md" />
+            <Skeleton width="160px" height="37px" radius="md" className={styles.skelSelect} />
           </div>
         ))}
       </Card>
