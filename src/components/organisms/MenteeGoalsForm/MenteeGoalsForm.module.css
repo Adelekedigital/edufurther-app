@@ -33,6 +33,7 @@
   color: var(--ink-500);
 }
 .chevron {
+  position: relative;
   flex: none;
   width: var(--space-10);
   height: var(--space-10);
@@ -139,9 +140,15 @@
   color: var(--red-600);
 }
 
-/* Phones: 16px fields, so iOS doesn't zoom in. */
+/* Phones: 16px fields, so iOS doesn't zoom in; the 40px chevron keeps its
+   drawn size with an invisible 44px tap area. */
 @media (max-width: 767px) {
   .field input {
     font-size: var(--text-p-md);
+  }
+  .chevron::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
   }
 }
