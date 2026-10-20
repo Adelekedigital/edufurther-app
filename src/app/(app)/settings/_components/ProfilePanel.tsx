@@ -93,6 +93,8 @@ export const ProfilePanel = forwardRef<PanelHandle, { userId: string }>(function
   const [promptVersion, setPromptVersion] = useState<string | null>(null);
   const [assistBusy, setAssistBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  // Moves on every Save that didn't go through, so its error is heard again.
+  const [tries, setTries] = useState(0);
   const heading = useRef<HTMLHeadingElement>(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const required = useRequiredFields(draft ? gapsOf(draft) : []);
@@ -121,7 +123,10 @@ export const ProfilePanel = forwardRef<PanelHandle, { userId: string }>(function
   const save = async (): Promise<boolean> => {
     // Not while an AI draft is being written: it would save the old bio.
     if (!base || !draft || saving.isPending || assistBusy) return false;
-    if (!required.check()) return false;
+    if (!required.check()) {
+      setTries((n) => n + 1);
+      return false;
+    }
     const after = { ...draft, name: tidyName(draft.name) };
     try {
       await saving.mutateAsync({ before: base, after, promptVersion });
@@ -130,6 +135,7 @@ export const ProfilePanel = forwardRef<PanelHandle, { userId: string }>(function
       // languages are still unsaved.
       if (e instanceof ProfileSaveError && e.profileSaved)
         setBase({ ...after, languages: base.languages });
+      setTries((n) => n + 1);
       return false;
     }
     keepFocus();
@@ -218,6 +224,7 @@ export const ProfilePanel = forwardRef<PanelHandle, { userId: string }>(function
           label={SAVE_COPY.barLabel}
           message={SAVE_COPY.profileBar}
           error={required.formError ? SAVE_COPY.formError : (saving.error?.copy ?? null)}
+          errorKey={tries}
           discardLabel={SAVE_COPY.discard}
           saveLabel={SAVE_COPY.save}
           savingLabel={SAVE_COPY.saving}

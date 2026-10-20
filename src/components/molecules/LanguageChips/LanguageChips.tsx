@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Chip } from '@/components/atoms/Chip/Chip';
 import { Icon } from '@/components/atoms/Icon/Icon';
@@ -64,6 +64,15 @@ export function LanguageChips({
   const listId = `${id}-list`;
   const [adding, setAdding] = useState(false);
   const [active, setActive] = useState(0);
+  const addButton = useRef<HTMLButtonElement>(null);
+  // The failure line, heard: put into the always-present region after it
+  // mounts (a region that arrives with its text in it is often skipped).
+  const failedText = commonFailed?.text ?? null;
+  const [heard, setHeard] = useState<string | null>(null);
+  useEffect(() => {
+    const t = setTimeout(() => setHeard(failedText));
+    return () => clearTimeout(t);
+  }, [failedText]);
   const isOn = (l: LanguageOption) => selected.some((s) => s.id === l.id);
   const chips = [...common, ...selected.filter((s) => !common.some((c) => c.id === s.id))];
   const typed = query.trim();
@@ -71,10 +80,12 @@ export function LanguageChips({
   const exact = matches.find((m) => same(m.label, typed));
   const chosen = matches[active] ?? exact;
 
+  // The field and its buttons go: focus returns to "Add another language".
   const close = () => {
     setAdding(false);
     setActive(0);
     onQueryChange('');
+    requestAnimationFrame(() => addButton.current?.focus());
   };
   const pick = (l: LanguageOption | undefined) => {
     if (!l) return;
@@ -107,8 +118,11 @@ export function LanguageChips({
       aria-describedby={describedBy}
       className={styles.group}
     >
+      <span role="status" className="sr-only">
+        {heard}
+      </span>
       {commonFailed && (
-        <span role="alert" className={styles.failed}>
+        <span className={styles.failed}>
           {commonFailed.text}
           <button type="button" className={styles.retry} onClick={commonFailed.onRetry}>
             {commonFailed.retry}
@@ -121,7 +135,12 @@ export function LanguageChips({
         </Chip>
       ))}
       {!adding ? (
-        <button type="button" className={styles.add} onClick={() => setAdding(true)}>
+        <button
+          ref={addButton}
+          type="button"
+          className={styles.add}
+          onClick={() => setAdding(true)}
+        >
           <Icon name="add" size={18} />
           {copy.add}
         </button>
