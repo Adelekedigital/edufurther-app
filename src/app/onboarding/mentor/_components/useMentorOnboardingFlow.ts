@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { AssistMode } from '@/components/molecules/AiField/AiField';
 import { useAvatarUpload } from '@/lib/api/data/avatar';
+import { useRememberMentorSignup } from '@/lib/api/data/roleHooks';
 import { useFieldsOfStudy } from '@/lib/api/data/catalog';
 import {
   DECIDED,
@@ -139,6 +140,8 @@ function freshAnswers(a: MentorAnswers): MentorAnswers {
 export function useMentorOnboardingFlow() {
   const viewer = useViewer();
   const router = useRouter();
+  // Arriving with `role=mentor` (a sign-up link): the account remembers it.
+  useRememberMentorSignup(viewer, useSearchParams().get('role'));
   // Approved mentors too: whether they've seen the approved screen decides where they go.
   const member = viewer.kind === 'member' ? viewer : null;
   const userId = member?.id ?? null;

@@ -19,7 +19,7 @@ export type Home =
 type Profile = components['schemas']['MentorProfileRead'];
 // What the router reads: who the member is, and how far their setup has got.
 type Me = Pick<components['schemas']['UserRead'], 'is_admin'> &
-  Partial<Pick<components['schemas']['UserRead'], 'primary_role' | 'onboarding'>> & {
+  Partial<Pick<components['schemas']['UserRead'], 'primary_role' | 'onboarding' | 'goal'>> & {
     mentor_profile?:
       | (Pick<Profile, 'approval_status'> &
           Partial<Pick<Profile, 'submitted_at' | 'approved_seen_at'>>)
@@ -46,6 +46,7 @@ export function homeFor(me: Me | null): Home {
     // Absent (an older backend): seen, as sign-in reads it.
     mentorApprovedSeen: p?.approved_seen_at === undefined ? undefined : p.approved_seen_at !== null,
     onboardingComplete: me.onboarding?.complete,
+    signedUpAsMentor: !p && me.goal == null && me.primary_role === 'mentor',
   });
 }
 

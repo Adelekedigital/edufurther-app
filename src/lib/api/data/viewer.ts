@@ -33,6 +33,12 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     isMentee: me.goal != null,
     isApprovedMentor: me.mentor_profile?.approval_status === 'approved',
     isMentor: mentor != null,
+    // Signed up as a mentor and hasn't started the application: the account
+    // remembers it (primary_role), so onboarding continues as a mentor.
+    signedUpAsMentor: !me.mentor_profile && me.goal == null && me.primary_role === 'mentor',
+    hasMentorProfile: !!me.mentor_profile,
+    // Any onboarding step saved (mentee or mentor): the account has settled a path.
+    onboardingStarted: !!me.onboarding?.last_step,
     mentorApprovedSeen: me.mentor_profile?.approved_seen_at !== null,
     // Mentee-side (no profile, or declined and chose mentee) reads `none`.
     mentorStage: mentorStageOf(mentor),

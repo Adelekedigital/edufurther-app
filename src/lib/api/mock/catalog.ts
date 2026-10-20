@@ -59,6 +59,8 @@ export type MockItems = {
   primary_study_country_id?: string | null;
   language_ids?: string[];
   offering_ids?: string[];
+  /** The role hint (PATCH primary_role): a mentor sign-up, or Continue as a mentee. */
+  primary_role?: 'mentee' | 'mentor';
 };
 const g = globalThis as typeof globalThis & { __mockItems?: Map<string, MockItems> };
 const store = (g.__mockItems ??= new Map());

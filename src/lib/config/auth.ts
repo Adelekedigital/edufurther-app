@@ -69,6 +69,8 @@ export function newAccountDestination({
     const query = q.toString();
     return query ? `/onboarding?${query}` : '/onboarding';
   }
-  if (role === 'mentor') return MENTOR_ONBOARDING_LIVE ? '/onboarding/mentor' : NEW_MENTOR_HOME;
+  // The query lets mentor onboarding remember the sign-up on the account.
+  if (role === 'mentor')
+    return MENTOR_ONBOARDING_LIVE ? '/onboarding/mentor?role=mentor' : NEW_MENTOR_HOME;
   return next ?? NEW_MENTEE_HOME;
 }

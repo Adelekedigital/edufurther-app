@@ -110,6 +110,8 @@ type HomeInput = {
   mentorApprovedSeen?: boolean;
   /** Absent or null: not known, treated as done. */
   onboardingComplete?: boolean | null;
+  /** Signed up as a mentor, no mentor profile yet (`primary_role`). */
+  signedUpAsMentor?: boolean;
 };
 
 /**
@@ -130,6 +132,9 @@ export function memberHome(
     if (stage !== 'approved') return APPLICATION;
     return a.mentorApprovedSeen === false ? APPLICATION : '/dashboard';
   }
+  // Signed up as a mentor and hasn't started: mentor onboarding, not the
+  // mentee's (owner, 2026-10-20: the role lives on the account, not the URL).
+  if (a.signedUpAsMentor && MENTOR_ONBOARDING_LIVE) return MENTOR_ONBOARDING;
   return ONBOARDING_LIVE && a.onboardingComplete === false ? ONBOARDING : '/home';
 }
 

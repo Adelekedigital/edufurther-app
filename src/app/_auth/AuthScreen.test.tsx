@@ -1,6 +1,11 @@
 import { render, screen } from '@testing-library/react';
 
 const h = vi.hoisted(() => ({ booking: null as unknown }));
+// The flow refreshes the cached viewer after a sign-up role save.
+vi.mock('@tanstack/react-query', async (orig) => ({
+  ...(await orig<typeof import('@tanstack/react-query')>()),
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+}));
 vi.mock('./useBookingContext', () => ({ useBookingContext: () => h.booking }));
 vi.mock('./useSignInFlow', () => ({
   useSignInFlow: () => ({ form: {}, toast: null }),

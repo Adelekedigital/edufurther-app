@@ -19,6 +19,26 @@ describe('homeFor: where / sends each viewer (product 2026-10-15; every non-ment
   });
 });
 
+describe('homeFor: a mentor sign-up remembered on the account', () => {
+  it('with mentor onboarding on, / opens mentor onboarding, not the mentee’s', async () => {
+    vi.resetModules();
+    vi.stubEnv('NEXT_PUBLIC_MENTOR_ONBOARDING_ENABLED', 'true');
+    const { homeFor: home } = await import('./home');
+    expect(home({ is_admin: false, mentor_profile: null, primary_role: 'mentor' } as Me)).toBe(
+      '/onboarding/mentor',
+    );
+    // Only without a mentor profile: an applicant follows their application.
+    expect(
+      home({
+        is_admin: false,
+        primary_role: 'mentor',
+        mentor_profile: { approval_status: 'pending', submitted_at: '2026-10-20T10:00:00Z' },
+      } as Me),
+    ).toBe('/mentor-application');
+    vi.unstubAllEnvs();
+  });
+});
+
 const json = (body: object) =>
   new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json' } });
 

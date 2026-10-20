@@ -1,6 +1,11 @@
 import { act, renderHook } from '@testing-library/react';
 
 const replace = vi.fn();
+// The flow refreshes the cached viewer after a sign-up role save.
+vi.mock('@tanstack/react-query', async (orig) => ({
+  ...(await orig<typeof import('@tanstack/react-query')>()),
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+}));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
 
 let session: { status: string; userId?: string } = { status: 'none' };

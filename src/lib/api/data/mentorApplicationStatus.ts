@@ -7,6 +7,7 @@ import { keys } from './keys';
 import type { components } from '@/lib/api/generated/schema';
 import { api } from './http';
 import { patchViewer } from './viewer';
+import { useSetPrimaryRole } from './roleHooks';
 import { mentorStageOf } from '@/lib/utils/access';
 
 type UserRead = components['schemas']['UserRead'];
@@ -115,25 +116,6 @@ export function useMarkApprovedSeen(userId: string | null) {
  * dashboard hint only). The application stays saved.
  */
 export function useContinueAsMentee(userId: string | null) {
-  const qc = useQueryClient();
-  const mutation = useMutation<void, AppError, void>({
-    mutationFn: async () => {
-      let r;
-      try {
-        r = await api.PATCH('/api/v1/users/{user_id}/profile', {
-          params: { path: { user_id: userId! } },
-          body: { primary_role: 'mentee' },
-        });
-      } catch (e) {
-        throw normaliseError(e);
-      }
-      if (!r.response.ok) throw normaliseError(new ApiError(r.response.status));
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.viewer.all }),
-  });
-  return {
-    continueAsMentee: mutation.mutateAsync,
-    isPending: mutation.isPending,
-    error: mutation.error,
-  };
+  const { setRole, isPending, error } = useSetPrimaryRole(userId);
+  return { continueAsMentee: () => setRole('mentee'), isPending, error };
 }

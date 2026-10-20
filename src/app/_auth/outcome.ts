@@ -17,10 +17,12 @@ export function accountHome(a: {
   mentorApproved: boolean;
   mentorApprovedSeen?: boolean;
   onboardingComplete?: boolean | null;
+  signedUpAsMentor?: boolean;
 }): string {
   if (a.isAdmin) return '/admin';
   return memberHome({
     isMentor: a.isMentor,
+    signedUpAsMentor: a.signedUpAsMentor,
     // Sign-in knows approved or not; any other stage goes to the application.
     mentorStage: a.mentorApproved ? 'approved' : 'pending',
     mentorApprovedSeen: a.mentorApprovedSeen,
@@ -42,6 +44,8 @@ export type OutcomeInput = {
   isAdmin: boolean;
   isMentor: boolean;
   mentorApproved: boolean;
+  /** Signed up as a mentor with no mentor profile yet: continues as a mentor. */
+  signedUpAsMentor?: boolean;
   /** The approved screen was already shown (absent: seen). */
   mentorApprovedSeen?: boolean;
   /** `/me` `onboarding.complete` (null: unknown, treated as done). */

@@ -74,8 +74,11 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ userId: strin
   if ('social_linkedin' in body && !setMockLinkedIn(body.social_linkedin))
     return invalid('/social_linkedin');
   // PENDING BACKEND (Mentor Onboarding B3): "Continue as a mentee" writes the role.
-  if ('primary_role' in body && body.primary_role !== 'mentee' && body.primary_role !== 'mentor')
-    return invalid('/primary_role');
+  if ('primary_role' in body) {
+    if (body.primary_role !== 'mentee' && body.primary_role !== 'mentor')
+      return invalid('/primary_role');
+    setMockItems(userId, { primary_role: body.primary_role });
+  }
   await new Promise((r) => setTimeout(r, 300));
   setMockText(userId, text);
   setMockCover(userId, next);

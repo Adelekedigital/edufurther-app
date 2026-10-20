@@ -1,5 +1,8 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
+import { keys } from '@/lib/api/data/keys';
+import { savePrimaryRole } from '@/lib/api/data/roles';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SignInFormProps, SignInStep, StartError } from '@/components/organisms/SignInForm';
@@ -47,6 +50,8 @@ type Account = {
   mentorApproved: boolean;
   mentorApprovedSeen?: boolean;
   onboardingComplete: boolean | null;
+  signedUpAsMentor: boolean;
+  hasMentorProfile: boolean;
   isNew: boolean;
   /** `/me` `timezone`: the device's goes with the name only while this is unset or UTC. */
   timezone: string | null;
@@ -79,6 +84,7 @@ export function useSignInFlow({
   googleFailed,
 }: SignInFlowOptions) {
   const router = useRouter();
+  const qc = useQueryClient();
   const session = useSession();
   const online = useOnline();
   const saveName = useSaveName();
@@ -172,6 +178,7 @@ export function useSignInFlow({
         mentorApproved: a.mentorApproved,
         mentorApprovedSeen: a.mentorApprovedSeen,
         onboardingComplete: a.onboardingComplete,
+        signedUpAsMentor: a.signedUpAsMentor,
         googleJustLinked,
         next,
         bookingWith,
@@ -216,6 +223,28 @@ export function useSignInFlow({
       if (acct.kind === 'noAccount') return router.replace('/');
       if (acct.kind === 'error') return router.replace(next ?? '/');
       const a = toAccount(acct);
+      // A mentor sign-up is remembered on the account before anything routes,
+      // so a later visit without `role=mentor` still continues as a mentor
+      // (owner, 2026-10-20). A failure leaves this visit's query in charge.
+      // A brand-new account only: a returning one on /signup?role=mentor
+      // keeps the role it settled (one role per account).
+      if (
+        mode === 'signup' &&
+        role === 'mentor' &&
+        a.isNew &&
+        !a.hasMentorProfile &&
+        !a.signedUpAsMentor
+      ) {
+        try {
+          await savePrimaryRole(a.id, 'mentor');
+          a.signedUpAsMentor = true;
+          // The next page reads a fresh /me, not one cached before the save.
+          void qc.invalidateQueries({ queryKey: keys.viewer.all });
+        } catch {
+          // The onboarding entry tries again while the query is there.
+        }
+        if (!mounted.current) return;
+      }
       account.current = a;
       if (!a.isNew) {
         const google = via === 'google' ? await signedInUser() : null;
@@ -257,7 +286,7 @@ export function useSignInFlow({
       }
       setStep('finish');
     },
-    [finish, fullName, mode, name, next, router, setEmail],
+    [finish, fullName, mode, name, next, qc, role, router, setEmail],
   );
 
   /** Something threw after sign-in (storage, the SDK): go on rather than hang on "Checking...". */

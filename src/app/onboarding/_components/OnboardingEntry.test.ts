@@ -48,6 +48,13 @@ describe('onboardingDestination — mentor onboarding on (PRD F4)', () => {
     expect(dest(member(true), q())).toBe('/mentor-application');
   });
 
+  it('a mentor sign-up remembered on the account continues as a mentor without the query', async () => {
+    const dest = await load();
+    const signedUp = { ...member(false), signedUpAsMentor: true } as Viewer;
+    expect(dest(signedUp, q())).toBe('/onboarding/mentor');
+    expect(dest(signedUp, q('utm=email'))).toBe('/onboarding/mentor?utm=email');
+  });
+
   it('sends an approved mentor to the dashboard, after the approved screen once', async () => {
     const dest = await load();
     expect(dest(member(true, true), q())).toBe('/dashboard');
