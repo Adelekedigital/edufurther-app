@@ -91,22 +91,10 @@ function buildNext(
       // session_type and weekly_hours are the two things that block bookings.
       // A missing type is fixed on Sessions; hours alone on Calendar.
       return setupNeeded.includes('session_type')
-        ? {
-            key,
-            title: 'Create your first session',
-            action: { label: 'Create session', href: '/session-types' },
-          }
-        : {
-            key,
-            title: 'Open your weekly hours',
-            action: { label: 'Set hours', href: '/calendar' },
-          };
+        ? { key, title: 'Create your first session', action: { label: 'Create session', href: '/session-types' } }
+        : { key, title: 'Open your weekly hours', action: { label: 'Set hours', href: '/calendar' } };
     case 'google':
-      return {
-        key,
-        title: 'Connect Google Calendar',
-        action: { label: 'Connect', href: '/integrations' },
-      };
+      return { key, title: 'Connect Google Calendar', action: { label: 'Connect', href: '/integrations' } };
     case 'share':
       return { key, title: 'Share your profile', action: { label: 'Copy link', copy: true } };
   }
@@ -233,11 +221,7 @@ function countTrend(delta: number, period: string, unit?: string): KpiTrend {
  * reviews in the window → no trend at all (the value shows "No data yet"); a
  * window with no previous rating to compare → the review count alone, no arrow.
  */
-function ratingTrend(
-  current: StatBlock,
-  previous: StatBlock,
-  period: string,
-): KpiTrend | undefined {
+function ratingTrend(current: StatBlock, previous: StatBlock, period: string): KpiTrend | undefined {
   const n = current.reviewCount;
   if (n <= 0) return undefined;
   const reviews = `${n} ${n === 1 ? 'review' : 'reviews'}`;
@@ -253,11 +237,7 @@ function ratingTrend(
   const magnitude = Math.abs(delta).toFixed(1);
   return delta > 0
     ? { text: `${reviews} · +${magnitude} ${period}`, icon: 'trending_up', tone: 'positive' }
-    : {
-        text: `${reviews} · ${MINUS}${magnitude} ${period}`,
-        icon: 'trending_down',
-        tone: 'negative',
-      };
+    : { text: `${reviews} · ${MINUS}${magnitude} ${period}`, icon: 'trending_down', tone: 'negative' };
 }
 
 /** The windowed stat blocks the KPI trends are derived from (primitives only). */
@@ -385,9 +365,7 @@ export function useMentorDashboard(
   // blip never holds up or blanks the figures above: a missing window just
   // means no trend line yet (KpiCard renders the value without one).
   const trends = deriveKpiTrends({
-    monthly: monthly.data
-      ? { current: monthly.data.current, previous: monthly.data.previous }
-      : null,
+    monthly: monthly.data ? { current: monthly.data.current, previous: monthly.data.previous } : null,
     quarterly: quarterly.data
       ? { current: quarterly.data.current, previous: quarterly.data.previous }
       : null,

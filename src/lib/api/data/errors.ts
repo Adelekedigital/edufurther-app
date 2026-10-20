@@ -45,11 +45,7 @@ export function apiError(status: number, body: unknown, response?: Response): Ap
  * and a link, which only it has.
  */
 const BOOKING_LIMITS: [string, AppErrorKind, string][] = [
-  [
-    '/problems/booking-overlap',
-    'bookingOverlap',
-    'This time overlaps with another session you have.',
-  ],
+  ['/problems/booking-overlap', 'bookingOverlap', 'This time overlaps with another session you have.'],
   [
     '/problems/booking-with-mentor-exists',
     'bookingWithMentorExists',

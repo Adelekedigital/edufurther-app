@@ -71,7 +71,9 @@ export function outcomeOf(
   if (!EXPLAINED.includes(booking.status)) return null;
   // Last first: a session can reach the same state more than once in theory,
   // and the most recent event is the one that explains where it sits now.
-  const event = [...events].reverse().find((e) => STATUS[e.to_status] === booking.status);
+  const event = [...events]
+    .reverse()
+    .find((e) => STATUS[e.to_status] === booking.status);
   if (!event) return null;
   const by =
     event.actor_type !== 'user' || !event.actor_id

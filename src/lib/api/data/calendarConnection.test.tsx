@@ -99,11 +99,7 @@ describe('useStartCalendarConnect', () => {
 
   /** 500 means this deployment has no Google client — not "try again". */
   it('reports a 500 as unconfigured, not a failure', async () => {
-    get.mockResolvedValue({
-      data: undefined,
-      error: undefined,
-      response: { ok: false, status: 500 },
-    });
+    get.mockResolvedValue({ data: undefined, error: undefined, response: { ok: false, status: 500 } });
     const { result } = renderHook(() => useStartCalendarConnect(), { wrapper });
     await expect(result.current.start()).resolves.toEqual({ ok: false, reason: 'unconfigured' });
   });

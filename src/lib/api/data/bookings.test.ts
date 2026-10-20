@@ -164,12 +164,10 @@ describe('the suggestion a mentor offered (backend #339)', () => {
   });
 
   it('a booked offer names the session it became', () => {
-    expect(withSuggestion({ status: 'booked', booked_session_id: 'u-9' }).suggestion).toMatchObject(
-      {
-        status: 'booked',
-        bookedSessionId: 'u-9',
-      },
-    );
+    expect(withSuggestion({ status: 'booked', booked_session_id: 'u-9' }).suggestion).toMatchObject({
+      status: 'booked',
+      bookedSessionId: 'u-9',
+    });
   });
 
   it('no offer is null, not undefined', () => {
@@ -178,15 +176,7 @@ describe('the suggestion a mentor offered (backend #339)', () => {
 
   it('the offering comes through, so the suggest picker has something to ask for', () => {
     expect(toBooking(row({ session_type_id: 'st-cv' }), 'me').sessionTypeId).toBe('st-cv');
-    expect(
-      toBooking(
-        row({
-          session_type_id: null,
-          session_type: { id: 'st-x', name: 'X' },
-        } as Partial<SessionRead>),
-        'me',
-      ).sessionTypeId,
-    ).toBe('st-x');
+    expect(toBooking(row({ session_type_id: null, session_type: { id: 'st-x', name: 'X' } } as Partial<SessionRead>), 'me').sessionTypeId).toBe('st-x');
     expect(
       toBooking(row({ session_type_id: null, session_type: null } as Partial<SessionRead>), 'me')
         .sessionTypeId,

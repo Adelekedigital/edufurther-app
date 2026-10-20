@@ -43,12 +43,9 @@ describe('the four actions go to their own endpoint', () => {
     post.mockResolvedValue(ok());
     const result = await run(action);
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(post).toHaveBeenCalledWith(
-      path,
-      expect.objectContaining({
-        params: { path: { session_id: 'b1' } },
-      }),
-    );
+    expect(post).toHaveBeenCalledWith(path, expect.objectContaining({
+      params: { path: { session_id: 'b1' } },
+    }));
   });
 });
 
@@ -128,13 +125,7 @@ describe('refusals say what happened, in our words', () => {
     // /me carries the tab counts, the nav badge and the credit balance; a
     // mentor's cancel can write an availability exception; and a freed hour
     // shows on the booking grid and the mentor cards.
-    for (const k of [
-      '["bookings"]',
-      '["viewer"]',
-      '["calendar"]',
-      '["mentors"]',
-      '["booking","slots"]',
-    ])
+    for (const k of ['["bookings"]', '["viewer"]', '["calendar"]', '["mentors"]', '["booking","slots"]'])
       expect(keys).toContain(k);
   });
 
@@ -159,9 +150,7 @@ describe('refusals say what happened, in our words', () => {
   });
 
   it('an expired session says to log in again, not that we broke', () => {
-    expect(actionError(normaliseError(apiError(401, {})), 'cancel').message).toMatch(
-      /Log in again/i,
-    );
+    expect(actionError(normaliseError(apiError(401, {})), 'cancel').message).toMatch(/Log in again/i);
   });
 
   it('does not retry: a 4xx here is the answer', async () => {

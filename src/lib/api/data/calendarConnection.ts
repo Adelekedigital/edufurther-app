@@ -100,7 +100,8 @@ export async function readCalendarConnection(
  * offering a Try again that can never succeed.
  */
 export type StartConnectResult =
-  { ok: true; consentUrl: string } | { ok: false; reason: 'unconfigured' | 'offline' | 'failed' };
+  | { ok: true; consentUrl: string }
+  | { ok: false; reason: 'unconfigured' | 'offline' | 'failed' };
 
 export function useStartCalendarConnect() {
   const mutation = useMutation<StartConnectResult, AppError, void>({

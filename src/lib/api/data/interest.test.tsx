@@ -29,10 +29,7 @@ describe('useInterest', () => {
 
   /** An account that has asked for nothing gets 200 and an empty list. */
   it('is available with nothing registered', async () => {
-    get.mockResolvedValue({
-      data: { data: [], next_cursor: null },
-      response: { status: 200, ok: true },
-    });
+    get.mockResolvedValue({ data: { data: [], next_cursor: null }, response: { status: 200, ok: true } });
     const { result } = renderHook(() => useInterest('m1'), { wrapper });
     await waitFor(() => expect(result.current.data).not.toBeNull());
     expect(result.current.data).toEqual({ available: true, features: [] });

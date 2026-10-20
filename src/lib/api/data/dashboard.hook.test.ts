@@ -31,25 +31,13 @@ const profile = (over: Record<string, unknown> = {}): ProfileRet =>
   }) as unknown as ProfileRet;
 
 const cal = (over: Record<string, unknown> = {}): CalRet =>
-  ({
-    data: null,
-    isLoading: false,
-    error: null,
-    retry: () => {},
-    retrying: false,
-    ...over,
-  }) as unknown as CalRet;
+  ({ data: null, isLoading: false, error: null, retry: () => {}, retrying: false, ...over }) as unknown as CalRet;
 
 const upc = (over: Record<string, unknown> = {}): UpcRet =>
   ({ data: [], isLoading: false, error: null, retry: () => {}, ...over }) as unknown as UpcRet;
 
 type StatsRet = ReturnType<typeof useMentorStats>;
-const noStats = {
-  data: null,
-  isLoading: false,
-  error: null,
-  retry: () => {},
-} as unknown as StatsRet;
+const noStats = { data: null, isLoading: false, error: null, retry: () => {} } as unknown as StatsRet;
 const statBlock = (over: Partial<StatBlock> = {}): StatBlock => ({
   since: '2026-09-14',
   until: '2026-10-14',
@@ -73,12 +61,7 @@ const windowStats = (current: Partial<StatBlock>, previous: Partial<StatBlock>):
     retry: () => {},
   }) as unknown as StatsRet;
 
-function run(
-  p: ProfileRet,
-  c: CalRet,
-  u: UpcRet,
-  stats?: { monthly: StatsRet; quarterly: StatsRet },
-) {
+function run(p: ProfileRet, c: CalRet, u: UpcRet, stats?: { monthly: StatsRet; quarterly: StatsRet }) {
   vi.mocked(useMentorProfile).mockReturnValue(p);
   vi.mocked(useCalendarConnection).mockReturnValue(c);
   vi.mocked(useUpcomingBookings).mockReturnValue(u);
@@ -95,12 +78,12 @@ function run(
 describe('useMentorDashboard', () => {
   it('counts only an active Google Calendar as done', () => {
     // profile + sessions done; a revoked/errored grant must still prompt a reconnect.
-    expect(
-      run(profile(), cal({ data: { status: 'error' } }), upc()).current.data?.setup.next?.key,
-    ).toBe('google');
-    expect(
-      run(profile(), cal({ data: { status: 'active' } }), upc()).current.data?.setup.next?.key,
-    ).toBe('share');
+    expect(run(profile(), cal({ data: { status: 'error' } }), upc()).current.data?.setup.next?.key).toBe(
+      'google',
+    );
+    expect(run(profile(), cal({ data: { status: 'active' } }), upc()).current.data?.setup.next?.key).toBe(
+      'share',
+    );
   });
 
   it('a settled-but-empty owner profile (404) yields no data, so the screen errors not crashes', () => {
@@ -165,10 +148,7 @@ describe('useMentorDashboard', () => {
       }),
       cal(),
       upc(),
-      {
-        monthly: windowStats({ completedSessions: 4 }, { completedSessions: 3 }),
-        quarterly: noStats,
-      },
+      { monthly: windowStats({ completedSessions: 4 }, { completedSessions: 3 }), quarterly: noStats },
     ).current;
     expect(r.metrics?.find((k) => k.key === 'sessions')?.trend).toEqual({
       text: '+1 this month',
