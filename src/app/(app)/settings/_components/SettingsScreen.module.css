@@ -28,13 +28,9 @@
 }
 
 /* The tab strip scrolls sideways on phones (`data-ef="scrollx"`). */
-.tabs {
-  border-bottom: var(--border-hairline) solid var(--ink-200);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.tabs::-webkit-scrollbar {
-  display: none;
+/* The loading row: the tab atom's line, without its tabs. */
+.skeletonRow {
+  box-shadow: inset 0 -1px 0 var(--border-subtle);
 }
 
 /* Phones: room under the form for the save bar, which sits above the tab bar. */

@@ -508,7 +508,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               }
             />
 
-            <div className={styles.tabsRow}>
+            <div>
               <Tabs
                 label="Profile"
                 value={tab}

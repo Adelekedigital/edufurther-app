@@ -113,6 +113,16 @@ describe('SettingsScreen', () => {
     expect(screen.getByTestId('profile-panel')).toBeInTheDocument();
   });
 
+  it('choosing a tab keeps focus on it: the URL changes, the heading doesn’t take focus', async () => {
+    viewer = member();
+    segment = 'profile';
+    panel.dirty = false;
+    render(<SettingsScreen />);
+    await userEvent.click(screen.getByRole('tab', { name: 'Education' }));
+    expect(push).toHaveBeenCalledWith('/settings/education');
+    expect(skipFocus).toHaveBeenCalledTimes(1);
+  });
+
   it('the Education tab shows its panel', () => {
     viewer = member();
     segment = 'education';
