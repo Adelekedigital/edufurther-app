@@ -125,13 +125,23 @@ describe('useCoverEdit', () => {
     // Settings reads it by id; the shell's View profile by slug (or the reverse).
     const other = keys.mentors.profile('u1', 'm1');
     const stale = () => qc.getQueryState(other)?.isInvalidated;
-    const reset = () => qc.setQueryData<MentorProfile>(other, fullProfile);
+    // The fixture is this mentor (id u1); another mentor's page is left alone.
+    const self = { ...fullProfile, mentor: { ...fullProfile.mentor, id: 'u1' } };
+    const reset = () => qc.setQueryData<MentorProfile>(other, self);
+    const someoneElse = keys.mentors.profile('bola', 'm1');
+    qc.setQueryData<MentorProfile>(someoneElse, {
+      ...fullProfile,
+      mentor: { ...fullProfile.mentor, id: 'u9' },
+    });
     reset();
     const { result } = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
 
     act(() => result.current.save({ color: 'lilac' }));
     await waitFor(() => expect(result.current.saveState).toBe('saved'));
     expect(stale()).toBe(true);
+    // The entry being edited holds the result: never refetched mid-burst.
+    expect(qc.getQueryState(keys.mentors.profile('ada', 'm1'))?.isInvalidated).toBe(false);
+    expect(qc.getQueryState(someoneElse)?.isInvalidated).toBe(false);
 
     reset();
     act(() => result.current.upload(file('image/png', 10)));

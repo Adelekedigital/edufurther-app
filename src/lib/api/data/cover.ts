@@ -94,10 +94,15 @@ export function useCoverEdit(handle: string, userId: string | null) {
   // The same profile is cached under its other handle too (Settings reads it
   // by id, the shell's View profile by slug): once a change is confirmed, those
   // are marked stale, so they don't show the old cover until their own refetch.
+  // Only this mentor's, and never the entry being edited (a refetch mid-burst
+  // would put an older cover back).
   const refreshOthers = () =>
     qc.invalidateQueries({
       predicate: (q) =>
-        q.queryKey[0] === 'mentors' && q.queryKey[1] === 'profile' && q.queryKey[2] !== handle,
+        q.queryKey[0] === 'mentors' &&
+        q.queryKey[1] === 'profile' &&
+        q.queryKey[2] !== handle &&
+        (q.state.data as MentorProfile | undefined)?.mentor.id === userId,
     });
 
   const burst = useRef<{ confirmed: Cover; failed: boolean } | null>(null);
@@ -220,6 +225,8 @@ export function useCoverEdit(handle: string, userId: string | null) {
       // which may have deleted it before the connection failed.
       if (ctx?.before) update((p) => (p.bannerUrl === null ? { ...p, bannerUrl: ctx.before } : p));
       void qc.invalidateQueries({ queryKey: key });
+      // The server may have removed it before the connection failed.
+      void refreshOthers();
     },
   });
   // One image change at a time, whoever calls (review of #70).
