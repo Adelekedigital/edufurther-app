@@ -91,6 +91,14 @@ export function useCoverEdit(handle: string, userId: string | null) {
   const mutationKey = ['cover', userId] as const;
   const update = (fn: (p: MentorProfile) => MentorProfile) =>
     qc.setQueryData<MentorProfile>(key, (p) => (p ? fn(p) : p));
+  // The same profile is cached under its other handle too (Settings reads it
+  // by id, the shell's View profile by slug): once a change is confirmed, those
+  // are marked stale, so they don't show the old cover until their own refetch.
+  const refreshOthers = () =>
+    qc.invalidateQueries({
+      predicate: (q) =>
+        q.queryKey[0] === 'mentors' && q.queryKey[1] === 'profile' && q.queryKey[2] !== handle,
+    });
 
   const burst = useRef<{ confirmed: Cover; failed: boolean } | null>(null);
   const [status, setStatus] = useState<{ state: CoverSaveState; stamp: number }>({
@@ -137,6 +145,7 @@ export function useCoverEdit(handle: string, userId: string | null) {
       }
       update((p) => withCover(p, b.confirmed));
       if (b.failed) void qc.invalidateQueries({ queryKey: key });
+      void refreshOthers();
       // The sidebar avatar takes the cover's deep tone from /me: what's saved
       // (confirmed, even after a failed pick) now, and a refetch.
       patchViewer(qc, { coverKey: b.confirmed.color });
@@ -175,6 +184,7 @@ export function useCoverEdit(handle: string, userId: string | null) {
       // Refetch what the cancel stopped (e.g. an intro save's); the server has
       // the new banner by now (review of #99).
       void qc.invalidateQueries({ queryKey: key });
+      void refreshOthers();
     },
   });
 
@@ -202,6 +212,7 @@ export function useCoverEdit(handle: string, userId: string | null) {
       // (review of #70): cancel it, then write the result.
       await qc.cancelQueries({ queryKey: key });
       update((p) => ({ ...p, bannerUrl: null }));
+      void refreshOthers();
       setRemovedStamp(Date.now());
     },
     onError: (_e, _v, ctx) => {
