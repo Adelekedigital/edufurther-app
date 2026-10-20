@@ -1,10 +1,11 @@
 'use client';
 
 /* eslint-disable @next/next/no-img-element -- remote avatars of unknown host/size; see performance notes in design-divergence.md */
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { type CSSProperties, type ReactNode } from 'react';
 import { cx } from '@/lib/utils/cx';
 import type { CoverKey } from '@/lib/utils/cover';
 import { focusVars, type PhotoFocus } from '@/lib/utils/person';
+import { useImageFallback } from '@/lib/utils/useImageFallback';
 import { Icon } from '../Icon/Icon';
 import styles from './Avatar.module.css';
 
@@ -38,8 +39,11 @@ type AvatarProps = {
   focus?: PhotoFocus | null;
   /** How far down (0–1) the crop sits when the face isn't known; centred by default. */
   objectY?: number;
-  /** A white ring over a cover: 3px, 4px at 112 (Mentor Profile.dc.html). */
-  ring?: 'none' | 'white';
+  /**
+   * A white ring: `white` 3px, 4px at 112 (Mentor Profile.dc.html, over a
+   * cover); `thin` 2px (the next-session card, over its blue ground).
+   */
+  ring?: 'none' | 'white' | 'thin';
   /** Below the fold: the browser loads it when it's near. */
   lazy?: boolean;
   /**
@@ -63,8 +67,7 @@ export function Avatar({
   children,
 }: AvatarProps) {
   // A photo that won't load shows the initials; a new src gets its own try.
-  const [failed, setFailed] = useState<string | null>(null);
-  const photo = src && failed !== src ? src : null;
+  const { photo, onError, ref } = useImageFallback(src);
   const plain = tone === 'plain';
   // No photo and no letters (a deleted user, a nameless party): the person glyph.
   const blank = !photo && !initials;
@@ -83,6 +86,7 @@ export function Avatar({
         plain && styles.plain,
         blank && styles.blank,
         ring === 'white' && styles.ringWhite,
+        ring === 'thin' && styles.ringThin,
         !framed && className,
       )}
       style={style}
@@ -93,7 +97,8 @@ export function Avatar({
           alt={alt}
           className={styles.img}
           loading={lazy ? 'lazy' : undefined}
-          onError={() => setFailed(photo)}
+          onError={onError}
+          ref={ref}
         />
       ) : (
         <span
@@ -108,14 +113,7 @@ export function Avatar({
   );
   if (!framed) return circle;
   return (
-    <div
-      className={cx(
-        styles.frame,
-        photoSize && styles[`v${size}`],
-        photoSize && styles[`f${size}`],
-        className,
-      )}
-    >
+    <div className={cx(styles.frame, photoSize && styles[`v${size}`], className)}>
       {circle}
       {children}
     </div>

@@ -48,7 +48,7 @@ export const WhiteRing: Story = {
   ),
 };
 /** The photo didn't load: the initials show instead. */
-export const BrokenImage: Story = { args: { size: 112, src: '/no-such-photo.webp' } };
+export const BrokenImage: Story = { args: { size: 112, src: 'data:image/png;base64,AA==' } };
 /** The profile header's crop: a quarter down unless the face is known. */
 export const DefaultCrop: Story = { args: { size: 112, src: PHOTO, objectY: 0.25 } };
 /** Children sit on the circle, in an unclipped frame (PhotoPicker's badge). */

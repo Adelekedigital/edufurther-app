@@ -17,7 +17,7 @@ import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { checkFullName, NAME_PROBLEM_COPY, tidyName } from '@/lib/utils/name';
 import { useRequiredFields } from '@/lib/utils/useRequiredFields';
 import type { CoverKey } from '@/lib/utils/cover';
-import { clampFocus, personCover } from '@/lib/utils/person';
+import { personCover, type PhotoFocus } from '@/lib/utils/person';
 import type { MenteeProfileValues } from '@/types/settings';
 import styles from './ProfilePanel.module.css';
 
@@ -64,7 +64,7 @@ type ProfilePanelProps = {
   userId: string;
   /** The viewer's saved cover and face position (/me), for their photo's colour and crop. */
   coverKey?: CoverKey | null;
-  photoFocus?: { x: number; y: number } | null;
+  photoFocus?: PhotoFocus | null;
 };
 
 export const ProfilePanel = forwardRef<PanelHandle, ProfilePanelProps>(function ProfilePanel(
@@ -212,7 +212,7 @@ export const ProfilePanel = forwardRef<PanelHandle, ProfilePanelProps>(function 
             initials: profile.initials,
             cover: personCover(userId, coverKey),
             src: profile.photoUrl,
-            focus: clampFocus(photoFocus),
+            focus: photoFocus,
           },
           upload: avatar,
           onRemove: () => setConfirmRemove(true),

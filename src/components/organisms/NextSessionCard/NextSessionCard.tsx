@@ -99,16 +99,16 @@ export function NextSessionCard({
       </div>
 
       <div className={styles.who}>
-        <span className={styles.avatar}>
-          <Avatar
-            size="lg"
-            initials={b.other.initials}
-            tone={b.other.deleted ? 'plain' : b.other.cover}
-            src={b.other.avatarUrl}
-            focus={b.other.avatarFocus}
-            alt=""
-          />
-        </span>
+        <Avatar
+          size="lg"
+          initials={b.other.initials}
+          tone={b.other.deleted ? 'plain' : b.other.cover}
+          src={b.other.avatarUrl}
+          focus={b.other.avatarFocus}
+          ring="thin"
+          className={styles.avatar}
+          alt=""
+        />
         <div className={styles.info}>
           <span className={styles.heading}>{bookingHeading(b)}</span>
           <span className={styles.meta}>
