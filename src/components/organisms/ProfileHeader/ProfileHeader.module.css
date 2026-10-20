@@ -20,6 +20,11 @@
   gap: var(--space-5);
   padding: 0 var(--space-6) var(--space-5);
 }
+/* The skeleton's photo: the Avatar's 112px (72 on phones) and white ring. */
+.skPhoto {
+  --sk-photo: 112px;
+  box-shadow: 0 0 0 4px var(--white);
+}
 .intro {
   display: flex;
   flex-direction: column;
@@ -160,6 +165,9 @@
 @media (max-width: 767px) {
   .banner {
     --cover-height: 96px;
+  }
+  .skPhoto {
+    --sk-photo: 72px;
   }
   /* Stacked (CoverHeader): photo, then name, topics and buttons, each on its
      own line (product, design request #46). */

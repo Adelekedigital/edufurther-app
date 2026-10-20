@@ -2,9 +2,6 @@
   "src/app/(app)/calendar/_components/CalendarScreen.module.css": {
     "declaration-property-value-disallowed-list": 2
   },
-  "src/app/(app)/mentors/[handle]/_components/MentorProfileScreen.module.css": {
-    "declaration-property-value-disallowed-list": 2
-  },
   "src/components/atoms/Avatar/Avatar.module.css": {
     "declaration-property-value-disallowed-list": 9
   },

@@ -1,6 +1,7 @@
 import type { ReactNode, Ref } from 'react';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Star } from '@/components/atoms/Star/Star';
 import { Tag } from '@/components/atoms/Tag/Tag';
 import { CoverBanner } from '@/components/molecules/CoverBanner/CoverBanner';
@@ -42,6 +43,25 @@ type ProfileHeaderProps = {
   /** The owner's "Edit topics", after the topic chips (Mentor Profile.dc.html `editTopics`). */
   onEditTopics?: () => void;
 };
+
+/**
+ * The header's shape, shared with its loading skeleton.
+ * DIVERGENCE (product, design request #47): the photo is pinned 10px into the
+ * banner, where the design draws it at desktop; with the design's flex-end it
+ * slid below the banner whenever the intro ran to three lines. On phones the
+ * 72px photo rises 36px into the 96px banner. The intro starts at least 24px
+ * under the banner (the design's 72px padding less the 48px the row was
+ * pulled up by).
+ */
+const GEOMETRY = {
+  as: 'section',
+  className: styles.card,
+  overlap: 10,
+  phoneOverlap: 36,
+  layout: 'responsive',
+  clearance: 24,
+  bodyClassName: styles.head,
+} as const;
 
 /** "From Nigeria, studied in United States", or whichever half is known. */
 export function locationLine(from: string | null, studiedIn: string | null): string | null {
@@ -162,8 +182,6 @@ export function ProfileHeader({
 
   return (
     <CoverHeader
-      as="section"
-      className={styles.card}
       aria-labelledby="profile-name"
       cover={
         <CoverBanner
@@ -176,17 +194,7 @@ export function ProfileHeader({
         />
       }
       photo={photo}
-      // DIVERGENCE (product, design request #47): the photo is pinned 10px into
-      // the banner, where the design draws it at desktop; with the design's
-      // flex-end it slid below the banner whenever the intro ran to three lines.
-      // On phones the 72px photo rises 36px into the 96px banner.
-      overlap={10}
-      phoneOverlap={36}
-      layout="responsive"
-      // The intro starts at least 24px under the banner (the design's 72px
-      // padding less the 48px the row was pulled up by).
-      clearance={24}
-      bodyClassName={styles.head}
+      {...GEOMETRY}
       footer={topics}
       aside={
         (actions || status) && (
@@ -240,6 +248,39 @@ export function ProfileHeader({
           </p>
         </div>
       )}
+    </CoverHeader>
+  );
+}
+
+/**
+ * Mentor Profile.dc.html `pageState=loading`: the header card's shape, with
+ * grey blocks for the banner, the photo and the intro lines.
+ */
+export function ProfileHeaderSkeleton() {
+  return (
+    <CoverHeader
+      {...GEOMETRY}
+      as="div"
+      cover={
+        <CoverBanner
+          className={styles.banner}
+          tones={{ bg: 'var(--skeleton-fill)', ink: 'var(--skeleton-fill)' }}
+        />
+      }
+      photo={
+        <Skeleton
+          width="var(--sk-photo)"
+          height="var(--sk-photo)"
+          radius="full"
+          className={styles.skPhoto}
+        />
+      }
+    >
+      <div className={styles.intro}>
+        <Skeleton width="40%" height="24px" radius="md" />
+        <Skeleton width="60%" height="14px" radius="md" />
+        <Skeleton width="30%" height="14px" radius="md" />
+      </div>
     </CoverHeader>
   );
 }
