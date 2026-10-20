@@ -11,6 +11,9 @@ import { ok, okStatus, problem } from '@/lib/api/mock/respond';
  * the booking defaults a type inherits (backend #13, #16, round 3 B).
  * ENABLE_MOCK_API=1 only.
  */
+/** The mock mentor's guide-to countries (backend #506): ids, in their order. */
+let guide: string[] = ['c-us', 'c-gb'];
+
 export async function GET() {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
   await new Promise((r) => setTimeout(r, 150));
@@ -26,6 +29,7 @@ export async function GET() {
     default_booking_window_days: DEFAULT_WINDOW_DAYS,
     // The platform's response window (RESPONSE_WINDOW_HOURS, backend #504): 12 by default.
     response_window_hours: 12,
+    guide_countries: guide.flatMap((id) => MOCK_COUNTRIES.filter((c) => c.id === id)),
     primary_study_program: null,
     primary_study_country: null,
     offerings: [],
@@ -40,6 +44,13 @@ const ALLOWED: Record<string, (v: unknown) => boolean> = {
   booking_window_days: (v) => windowOk(v, prefs.booking_window_days),
   break_after_minutes: (v) => v === null || (typeof v === 'number' && v >= 0 && v <= 120),
   requires_booking_confirmation: (v) => typeof v === 'boolean',
+  // Up to 8 known countries, none twice (backend #506); null leaves the list.
+  guide_country_ids: (v) =>
+    v === null ||
+    (Array.isArray(v) &&
+      v.length <= 8 &&
+      new Set(v).size === v.length &&
+      v.every((id) => MOCK_COUNTRIES.some((c) => c.id === id))),
   // The owner's headline (profile edit): null or blank clears it; 300 at most.
   headline: (v) => v === null || (typeof v === 'string' && v.trim().length <= 300),
 };
@@ -70,7 +81,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ userId: strin
         errors: [{ pointer: `/${k}`, message: 'Invalid' }],
       });
   }
-  for (const k of Object.keys(ALLOWED)) if (k in body) Object.assign(prefs, { [k]: body[k] });
+  for (const k of Object.keys(ALLOWED))
+    if (k in body && k !== 'guide_country_ids') Object.assign(prefs, { [k]: body[k] });
+  if (Array.isArray(body.guide_country_ids)) guide = body.guide_country_ids as string[];
   for (const k of Object.keys(ITEMS)) if (k in body) setMockItems(userId, { [k]: body[k] });
   return ok('/api/v1/users/{user_id}/mentor-profile', 'patch', { updated: true });
 }

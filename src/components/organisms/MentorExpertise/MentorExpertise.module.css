@@ -115,7 +115,8 @@
 .rowTitle {
   font-size: var(--text-p-sm);
   font-weight: var(--weight-semibold);
-  overflow-wrap: anywhere;
+  /* Words break only when one alone can't fit, never mid-word otherwise. */
+  overflow-wrap: break-word;
 }
 .meta {
   font-size: var(--text-p-xs);
@@ -125,6 +126,20 @@
 .actions {
   display: flex;
   gap: var(--space-1);
+}
+/* The funding badge: beside the text as drawn, under it on phones. */
+.badgeBelow {
+  display: none;
+  align-self: flex-start;
+  margin-top: var(--space-1);
+}
+@media (max-width: 767px) {
+  .badgeBeside {
+    display: none;
+  }
+  .badgeBelow {
+    display: inline-flex;
+  }
 }
 /* `noAwards`; a failed load takes the same place. */
 .state {

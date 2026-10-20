@@ -109,9 +109,15 @@ export function AwardList({
               <div className={styles.text}>
                 <span className={styles.rowTitle}>{r.title}</span>
                 {r.meta && <span className={styles.meta}>{r.meta}</span>}
+                {/* Phones: under the meta, so the title keeps its width (one badge shows at a time). */}
+                {r.funding && (
+                  <Badge type="accent" color="green" size="sm" className={styles.badgeBelow}>
+                    {C.funding[r.funding]}
+                  </Badge>
+                )}
               </div>
               {r.funding && (
-                <Badge type="accent" color="green" size="sm">
+                <Badge type="accent" color="green" size="sm" className={styles.badgeBeside}>
                   {C.funding[r.funding]}
                 </Badge>
               )}

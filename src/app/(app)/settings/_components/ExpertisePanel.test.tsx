@@ -138,7 +138,8 @@ describe('ExpertisePanel', () => {
     const user = userEvent.setup();
     render(<ExpertisePanel userId="u1" />);
     expect(screen.getByText('Chevening')).toBeInTheDocument();
-    expect(screen.getByText('Fully funded')).toBeInTheDocument();
+    // Two in the DOM (beside the text, and under it on phones); CSS shows one.
+    expect(screen.getAllByText('Fully funded').length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: 'Delete Chevening' }));
     await user.click(screen.getByRole('button', { name: 'confirm-delete:award:a1' }));
     expect(await screen.findByText('Award deleted')).toBeInTheDocument();
