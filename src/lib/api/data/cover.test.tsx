@@ -358,12 +358,20 @@ describe('useCoverEdit', () => {
     });
     const { wrapper, read, qc, key } = setup();
     qc.setQueryData<MentorProfile>(key, { ...fullProfile, bannerUrl: '/b.jpg' });
+    // This mentor under its other handle: the server may have removed it anyway.
+    const other = keys.mentors.profile('u1', 'm1');
+    qc.setQueryData<MentorProfile>(other, {
+      ...fullProfile,
+      bannerUrl: '/b.jpg',
+      mentor: { ...fullProfile.mentor, id: 'u1' },
+    });
     const { result } = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
     act(() => result.current.removeImage());
     await waitFor(() =>
       expect(result.current.imageError).toBe('The image wasn’t removed. Try again.'),
     );
     expect(read().bannerUrl).toBe('/b.jpg');
+    expect(qc.getQueryState(other)?.isInvalidated).toBe(true);
     act(() => result.current.clearMessages());
     expect(result.current.imageError).toBeNull();
   });
