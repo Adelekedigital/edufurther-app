@@ -194,6 +194,33 @@ describe('SettingsScreen', () => {
     expect(replace).toHaveBeenCalledWith('/settings/booking');
   });
 
+  it('/settings itself opens the role’s first tab: Booking rules for a mentor', () => {
+    viewer = member(true);
+    segment = null;
+    render(<SettingsScreen />);
+    expect(replace).toHaveBeenCalledWith('/settings/booking');
+  });
+
+  it('…and Profile for a mentee', () => {
+    viewer = member();
+    segment = null;
+    render(<SettingsScreen />);
+    expect(replace).toHaveBeenCalledWith('/settings/profile');
+  });
+
+  it('while the account loads: the title and a neutral skeleton, no role’s tabs or panel', () => {
+    viewer = { kind: 'loading', signedIn: true } as Viewer;
+    render(<SettingsScreen />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument();
+    expect(screen.queryAllByRole('tab')).toHaveLength(0);
+    expect(screen.queryByText(/Manage how mentees book you/)).toBeNull();
+    expect(screen.queryByText(/Your details, what you’re working toward/)).toBeNull();
+    expect(screen.queryByTestId('profile-panel')).toBeNull();
+    expect(screen.queryByTestId('booking-panel')).toBeNull();
+    expect(screen.getByRole('status', { name: 'Loading your settings' })).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
   it('a guest: asked to log in, and brought back to this tab', () => {
     viewer = { kind: 'guest' };
     render(<SettingsScreen />);

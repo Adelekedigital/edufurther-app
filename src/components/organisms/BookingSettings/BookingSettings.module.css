@@ -37,7 +37,7 @@
   gap: var(--space-1);
   padding: var(--space-5);
 }
-/* The footnote rows: the visibility note, the decline line, the sync note. */
+/* The note under the rules (the sessions that use them). */
 .line {
   display: flex;
   align-items: center;
@@ -51,6 +51,27 @@
 .lineIcon {
   flex: none;
   color: var(--text-tertiary);
+}
+/* `apInRules`: approval as the rules card's first row. */
+.approval {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  border-top: var(--border-hairline) solid var(--border-muted);
+}
+.approvalText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.approvalLine {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-tertiary);
+  text-wrap: pretty;
 }
 .row {
   display: flex;

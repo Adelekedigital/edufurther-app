@@ -2,6 +2,7 @@
 
 import { useRouter, useSelectedLayoutSegment } from 'next/navigation';
 import { useEffect, useRef, useState, type RefObject } from 'react';
+import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Tabs, type TabItem } from '@/components/atoms/Tabs/Tabs';
 import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
 import { SaveChangesDialog } from '@/components/templates/SaveChangesDialog/SaveChangesDialog';
@@ -61,13 +62,44 @@ export function SettingsScreen() {
     };
   }, []);
 
-  // Any tab this role doesn't have (the other role's, or one not built yet).
+  // /settings itself, or a tab this role doesn't have (the other role's, or
+  // one not built yet): the role's first tab, once the role is known.
   useEffect(() => {
-    if (member && segment && !known) router.replace(`/settings/${first}`);
-  }, [member, segment, known, first, router]);
+    if (member && !known) router.replace(`/settings/${first}`);
+  }, [member, known, first, router]);
 
   const gate = memberGate(viewer, `/settings/${segment ?? first}`, SETTINGS_GATE);
   if (gate) return gate;
+
+  // The role isn't known yet: nothing role-specific (subline, tabs, panel),
+  // so a mentor never sees the mentee's tabs flash first (owner, 2026-10-20).
+  if (viewer.kind === 'loading')
+    return (
+      <div
+        className={styles.screen}
+        role="status"
+        aria-busy="true"
+        aria-label={SETTINGS_COPY.loading}
+      >
+        <header className={styles.head}>
+          <h1 className={styles.title}>{SETTINGS_COPY.title}</h1>
+          <Skeleton width="320px" height="18px" className={styles.skeletonSub} />
+        </header>
+        <div className={styles.tabs}>
+          <div className={styles.skeletonTabs} aria-hidden>
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} width="88px" height="20px" />
+            ))}
+          </div>
+        </div>
+        <div className={styles.skeletonCard} aria-hidden>
+          <Skeleton width="30%" height="24px" />
+          <Skeleton width="70%" height="18px" />
+          <Skeleton height="40px" radius="md" />
+          <Skeleton height="40px" radius="md" />
+        </div>
+      </div>
+    );
 
   const go = (t: SettingsTab) => router.push(`/settings/${t}`);
   const items: TabItem[] = tabs.map((t) => ({

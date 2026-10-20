@@ -6,6 +6,8 @@
 
 export const SETTINGS_COPY = {
   title: 'Settings',
+  /** Named for the loading frame, before the role is known. */
+  loading: 'Loading your settings',
   sub: 'Your details, what you’re working toward, and how you sign in.',
   tabsLabel: 'Settings',
   loadError: 'We couldn’t load your settings.',
