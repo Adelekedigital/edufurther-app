@@ -993,6 +993,7 @@ Since 2026-10-20 (design `goalsSave` default `bar`): the split Goals tab is the 
 | Preview: Book a session and Message, side by side | Book a session only, full width | Messaging isn't built; a button for it would promise a feature that doesn't exist | messaging ships |
 | Preview headline is the design's sample | The form's headline as typed | PRD US-2: the preview updates as I type, before I save | — |
 | "Add another language": `--radius-md`, `--blue-500` text | The shared LanguageChips adder: `--radius-lg`, `--blue-700` | One component across Settings: Mentee Settings.dc.html draws it blue-700; the two drafts disagree | design picks one look |
+| "How mentees see you" shown on every width (below the form once it wraps) | Not shown under 768px | Owner, 2026-10-20: on a phone it only repeats the form below it. View profile (account menu) opens the real page | design draws a phone preview |
 
 ## Mentor Settings, PR 8: review freeze (`reviewFreeze=on`, `reviewStatus=inReview`)
 
