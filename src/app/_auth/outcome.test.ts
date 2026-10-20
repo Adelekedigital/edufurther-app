@@ -126,7 +126,7 @@ describe('signInOutcome — new accounts', () => {
   it('sends a new mentor to mentor onboarding once it is on', async () => {
     const out = await load(false, true);
     expect(out({ ...fresh, role: 'mentor', firstName: 'Gbenga' })).toMatchObject({
-      href: '/onboarding/mentor',
+      href: '/onboarding/mentor?role=mentor',
       body: 'Opening your mentor application…',
     });
   });

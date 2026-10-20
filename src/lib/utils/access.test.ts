@@ -215,8 +215,16 @@ describe('memberHome: one rule for /, sign-in and the nav', () => {
     );
   });
 
+  it('a mentor sign-up with no application yet goes to mentor onboarding, not the mentee’s', async () => {
+    const { memberHome } = await load();
+    expect(memberHome({ isMentor: false, signedUpAsMentor: true, onboardingComplete: false })).toBe(
+      '/onboarding/mentor',
+    );
+  });
+
   it('with the flags off, nobody is sent to a page that 404s', async () => {
     const { memberHome } = await load(false, false);
+    expect(memberHome({ isMentor: false, signedUpAsMentor: true })).toBe('/home');
     expect(memberHome({ isMentor: false, onboardingComplete: false })).toBe('/home');
     expect(memberHome({ isMentor: true, mentorStage: 'declined' })).toBe('/dashboard');
   });

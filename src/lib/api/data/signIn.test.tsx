@@ -38,6 +38,7 @@ describe('fetchSignInAccount (who just signed in)', () => {
       // No mentor profile: nothing to show.
       mentorApprovedSeen: true,
       onboardingComplete: null,
+      signedUpAsMentor: false,
       timezone: null,
     });
   });

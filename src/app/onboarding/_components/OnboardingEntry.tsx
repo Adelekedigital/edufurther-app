@@ -1,5 +1,6 @@
 'use client';
 
+import { useRememberMentorSignup } from '@/lib/api/data/roles';
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useViewer } from '@/lib/api/data/viewer';
@@ -32,7 +33,7 @@ export function onboardingDestination(
     case 'guest':
       return `/signup?next=${encodeURIComponent(`/onboarding${keep ? `?${keep}` : ''}`)}`;
     case 'member':
-      if (viewer.isMentor || query.get('role') === 'mentor') {
+      if (viewer.isMentor || viewer.signedUpAsMentor || query.get('role') === 'mentor') {
         if (!MENTOR_ONBOARDING_LIVE) return NEW_MENTOR_HOME;
         // Approved: the approved screen once (sign-in's rule), then the dashboard.
         if (viewer.isApprovedMentor)
@@ -51,9 +52,11 @@ export function OnboardingEntry() {
   const query = useSearchParams();
   const router = useRouter();
   const to = onboardingDestination(viewer, new URLSearchParams(query.toString()));
+  // A mentor sign-up arriving here is remembered on the account first.
+  const remembering = useRememberMentorSignup(viewer, query.get('role'));
   useEffect(() => {
-    if (to) router.replace(to);
-  }, [to, router]);
+    if (to && !remembering) router.replace(to);
+  }, [to, remembering, router]);
   return (
     <OnboardingFrame>
       {viewer.kind === 'error' ? (

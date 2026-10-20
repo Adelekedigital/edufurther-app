@@ -46,6 +46,7 @@ export function homeFor(me: Me | null): Home {
     // Absent (an older backend): seen, as sign-in reads it.
     mentorApprovedSeen: p?.approved_seen_at === undefined ? undefined : p.approved_seen_at !== null,
     onboardingComplete: me.onboarding?.complete,
+    signedUpAsMentor: !p && me.primary_role === 'mentor',
   });
 }
 

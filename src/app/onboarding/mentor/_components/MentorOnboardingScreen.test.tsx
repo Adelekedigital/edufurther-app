@@ -6,9 +6,17 @@ import type { Viewer } from '@/types/mentor';
 import { MentorOnboardingScreen } from './MentorOnboardingScreen';
 
 const replace = vi.fn();
-vi.mock('next/navigation', () => ({ useRouter: () => ({ replace, push: vi.fn() }) }));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace, push: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 let viewer: Viewer;
+const remember = vi.fn(() => false);
+vi.mock('@/lib/api/data/roles', async (orig) => ({
+  ...(await orig<typeof import('@/lib/api/data/roles')>()),
+  useRememberMentorSignup: (...args: unknown[]) => remember(...(args as [])),
+}));
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => viewer }));
 
 let dirty = false;

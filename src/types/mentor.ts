@@ -206,6 +206,11 @@ export type Viewer =
        */
       isMentor: boolean;
       /**
+       * Signed up as a mentor (`primary_role` mentor) with no mentor profile
+       * yet: onboarding and Home continue as a mentor. Never a permission.
+       */
+      signedUpAsMentor?: boolean;
+      /**
        * An approved mentor has been shown the approved screen (`/me`
        * `approved_seen_at`, PRD B2). Absent: not known, treated as seen.
        */

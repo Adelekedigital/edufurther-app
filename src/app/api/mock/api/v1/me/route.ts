@@ -71,7 +71,7 @@ export async function GET(req: Request) {
     email: 'ada@example.com',
     first_name: text.first_name ?? 'Ada',
     last_name: text.last_name ?? 'Obi',
-    primary_role: 'mentee' as const,
+    primary_role: items.primary_role ?? ('mentee' as const),
     // No slug, like every account made in this app (only the old platform's
     // import set one): Mentor Settings reads the profile by the user's id.
     slug: null,
