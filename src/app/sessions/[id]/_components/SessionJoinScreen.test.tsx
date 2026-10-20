@@ -3,7 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { sampleBookingFor, sampleParty } from '@/lib/utils/bookingTestFixtures';
 import type { BookingAnswer, SessionRoom } from '@/types/booking';
 import type { AppError, Remote, Viewer } from '@/types/mentor';
+import { explainer, viewers } from '@/app/_shell/lockedPage.harness';
 import { SessionJoinScreen } from './SessionJoinScreen';
+
+// The setup lock's flags, switchable per test (lockedPage.harness).
+vi.mock('@/lib/config/auth', async (orig) =>
+  (await import('@/app/_shell/lockedPage.harness')).authFlags(await orig()),
+);
 
 // What the entry route sent the page back with (`?enter=`), if anything. A
 // tiny store, so a replace() back to this page re-renders it without the
@@ -1088,5 +1094,24 @@ describe('what a screen reader hears', () => {
     act(() => void vi.advanceTimersByTime(3000));
     expect(status).toHaveTextContent('Join is open.');
     expect(status).not.toHaveTextContent(/\d\d:\d\d/);
+  });
+});
+
+describe('the setup lock: a session is a booking (owner, 2026-10-20)', () => {
+  it.each([
+    ['an unfinished mentee', viewers.menteeUnfinished, explainer.menteeSetup('Bookings')],
+    ['a mentor sign-up, not started', viewers.mentorSignup, explainer.mentorSetup('Bookings')],
+    [
+      'a mentor who never sent their application',
+      viewers.mentorUnfinished,
+      explainer.mentorSetup('Bookings'),
+    ],
+  ])('%s gets the explainer, not the session', (_who, v, e) => {
+    viewer = v;
+    room = remote<SessionRoom>(null);
+    renderAt('15:15:00');
+    // The page keeps its own frame (logo, back link): the explainer is its card.
+    expect(screen.getByRole('heading', { level: 1, name: e.title })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: e.cta })).toHaveAttribute('href', e.href);
   });
 });
