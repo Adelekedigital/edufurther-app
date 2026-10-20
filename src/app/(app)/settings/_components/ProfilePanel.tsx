@@ -16,6 +16,8 @@ import { SAVE_COPY, SETTINGS_COPY, type ProfileGap } from '@/lib/copy/settings';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { checkFullName, NAME_PROBLEM_COPY, tidyName } from '@/lib/utils/name';
 import { useRequiredFields } from '@/lib/utils/useRequiredFields';
+import type { CoverKey } from '@/lib/utils/cover';
+import { clampFocus, personCover } from '@/lib/utils/person';
 import type { MenteeProfileValues } from '@/types/settings';
 import styles from './ProfilePanel.module.css';
 
@@ -58,8 +60,15 @@ export type PanelHandle = {
  * explicit): any change raises the save bar; Discard restores what's saved;
  * Save writes it and says "Profile saved". The photo saves on its own.
  */
-export const ProfilePanel = forwardRef<PanelHandle, { userId: string }>(function ProfilePanel(
-  { userId },
+type ProfilePanelProps = {
+  userId: string;
+  /** The viewer's saved cover and face position (/me), for their photo's colour and crop. */
+  coverKey?: CoverKey | null;
+  photoFocus?: { x: number; y: number } | null;
+};
+
+export const ProfilePanel = forwardRef<PanelHandle, ProfilePanelProps>(function ProfilePanel(
+  { userId, coverKey, photoFocus },
   ref,
 ) {
   const { profile, status, retry, retrying } = useMenteeProfile(userId);
@@ -199,19 +208,14 @@ export const ProfilePanel = forwardRef<PanelHandle, { userId: string }>(function
         headingRef={heading}
         countries={countries}
         photo={{
-          url: profile.photoUrl,
-          initial: profile.initials,
-          name: profile.name,
-          accept: avatar.accept,
-          uploading: avatar.uploading,
-          removing: avatar.removing,
-          error: avatar.error,
-          errorFrom: avatar.errorFrom,
-          removedStamp: avatar.removedStamp,
-          onFile: avatar.upload,
+          person: {
+            initials: profile.initials,
+            cover: personCover(userId, coverKey),
+            src: profile.photoUrl,
+            focus: clampFocus(photoFocus),
+          },
+          upload: avatar,
           onRemove: () => setConfirmRemove(true),
-          onRetryRemove: avatar.remove,
-          onDismissError: avatar.dismissError,
         }}
         languages={{
           common: commonOptions,

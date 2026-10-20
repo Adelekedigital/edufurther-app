@@ -161,7 +161,14 @@ export function SettingsScreen() {
       ) : (
         <>
           <TabPanel id={panelId('profile')} active={tab === 'profile'} keepMounted>
-            {member ? <ProfilePanel ref={profilePanel} userId={member.id} /> : null}
+            {member ? (
+              <ProfilePanel
+                ref={profilePanel}
+                userId={member.id}
+                coverKey={member.coverKey}
+                photoFocus={member.avatarFocus}
+              />
+            ) : null}
           </TabPanel>
           <TabPanel id={panelId('goals')} active={tab === 'goals'} keepMounted>
             {member ? <GoalsPanel ref={goalsPanel} userId={member.id} /> : null}
