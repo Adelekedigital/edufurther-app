@@ -13,6 +13,12 @@ type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
    * xl: 48px flow-form field with a 24px chevron (Mentee Onboarding v5.dc.html).
    */
   density?: 'default' | 'compact' | 'xl';
+  /**
+   * sm: use in a form, beside text inputs: 14px like them (Mentor Settings.dc.html
+   * profile selects), grey while nothing is picked. Default xs: the 12px rule
+   * rows (Booking rules, Session Types, TimeSlots).
+   */
+  text?: 'xs' | 'sm';
 };
 
 /**
@@ -20,12 +26,18 @@ type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
  * Native on purpose: the OS picker is the accessible one on phones.
  */
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
-  { options, width, invalid, density = 'default', className, ...rest },
+  { options, width, invalid, density = 'default', text = 'xs', className, ...rest },
   ref,
 ) {
   return (
     <span
-      className={cx(styles.wrap, density !== 'default' && styles[density], className)}
+      className={cx(
+        styles.wrap,
+        density !== 'default' && styles[density],
+        text === 'sm' && styles.sm,
+        text === 'sm' && rest.value === '' && styles.empty,
+        className,
+      )}
       style={width ? { width } : undefined}
     >
       <select

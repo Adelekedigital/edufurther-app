@@ -17,7 +17,8 @@ export const SETTINGS_COPY = {
   retry: 'Try again',
 } as const;
 
-export type SettingsTab = 'booking' | 'profile' | 'expertise' | 'goals' | 'education' | 'security';
+export type SettingsTab =
+  'booking' | 'profile' | 'expertise' | 'links' | 'goals' | 'education' | 'security';
 
 /** Tab order and names (design `tabItems`, menteeTabs=split). */
 export const TAB_LABELS: Record<SettingsTab, string> = {
@@ -26,6 +27,8 @@ export const TAB_LABELS: Record<SettingsTab, string> = {
   profile: 'Profile',
   // Mentor only.
   expertise: 'Expertise',
+  // Mentor only (`tabItems`, linksScope=limited).
+  links: 'Social links',
   goals: 'Goals',
   education: 'Education',
   security: 'Login & security',

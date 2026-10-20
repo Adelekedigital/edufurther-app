@@ -26,6 +26,7 @@ import { mockText } from '@/lib/api/mock/profileTextStore';
 import { mockOwnSessionTypes } from '@/lib/api/mock/sessionTypes';
 import { mockReviewSummary } from '@/lib/api/mock/reviews';
 import { ok } from '@/lib/api/mock/respond';
+import { mockLinkedIn, mockLinks } from '@/lib/api/mock/linksStore';
 
 type MentorPublicRead = components['schemas']['MentorPublicRead'];
 
@@ -75,9 +76,13 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
     banner_url: mockBannerUrl(id),
     primary_study_program: m.study_course,
     ...mockCountries(m.id),
-    social_linkedin: sparse ? null : `https://www.linkedin.com/in/${m.slug}`,
-    social_twitter: null,
-    social_youtube: i % 4 === 0 ? `https://www.youtube.com/@${m.slug}` : null,
+    // The mock viewer's own profile shows what Settings › Social links saved.
+    social_linkedin: own ? mockLinkedIn() : sparse ? null : `https://www.linkedin.com/in/${m.slug}`,
+    links: own
+      ? mockLinks().map((l) => ({ platform: l.platform, url: l.url }))
+      : i % 4 === 0
+        ? [{ platform: 'youtube' as const, url: `https://www.youtube.com/@${m.slug}` }]
+        : [],
     offerings: m.offerings,
     session_types: MOCK_SESSION_TYPES.map((t, k) => ({
       ...t,

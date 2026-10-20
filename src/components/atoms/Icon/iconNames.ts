@@ -76,6 +76,7 @@ export const ICON_NAMES = [
   'join_inner',
   'key',
   'label',
+  'language',
   'lightbulb',
   'link',
   'link_off',

@@ -14,6 +14,7 @@ import { skipNextRouteFocus } from '@/app/_shell/RouteFocusManager';
 import { BookingPanel } from './BookingPanel';
 import { EducationPanel } from './EducationPanel';
 import { ExpertisePanel } from './ExpertisePanel';
+import { LinksPanel } from './LinksPanel';
 import { GoalsPanel } from './GoalsPanel';
 import { MentorProfilePanel } from './MentorProfilePanel';
 import { ProfilePanel, type PanelHandle } from './ProfilePanel';
@@ -156,6 +157,9 @@ export function SettingsScreen() {
           {/* Nothing to edit here: only while shown, as on the mentee's. */}
           <TabPanel id={panelId('security')} active={tab === 'security'}>
             {member ? <SecurityPanel userId={member.id} role="mentor" /> : null}
+          </TabPanel>
+          <TabPanel id={panelId('links')} active={tab === 'links'}>
+            {member ? <LinksPanel userId={member.id} frozen={inReview} /> : null}
           </TabPanel>
         </>
       ) : (

@@ -1,0 +1,177 @@
+/* Mentor Settings.dc.html `isSocial` (linksScope=limited), every value from
+   the markup's inline styles. */
+.card {
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-5);
+}
+.headText {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.title {
+  margin: 0;
+  outline: none;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+.title:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.sub {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-tertiary);
+}
+
+/* `addingSocial` */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-top: var(--border-hairline) solid var(--border-muted);
+}
+.label {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-medium);
+}
+/* `platformOpts` */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: var(--space-2);
+}
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-3);
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+.option:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+/* Phones: a 44px target, like the field and the row buttons. */
+@media (max-width: 767px) {
+  .option {
+    height: auto;
+    min-height: var(--touch-target-min);
+  }
+}
+.optionOn {
+  border-color: var(--blue-500);
+  background: var(--blue-50);
+}
+/* Taken (one per platform; three websites). */
+.option:disabled {
+  background: var(--surface-subtle);
+  color: var(--text-disabled);
+  cursor: not-allowed;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.note {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-regular);
+  color: var(--text-tertiary);
+}
+.noteBad {
+  color: var(--text-danger);
+}
+.error {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  color: var(--text-danger);
+}
+.actions {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+/* `socials` */
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-top: var(--border-hairline) solid var(--border-muted);
+}
+.disc {
+  width: var(--space-9);
+  height: var(--space-9);
+  flex: none;
+  border-radius: var(--radius-full);
+  background: var(--surface-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+}
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rowTitle {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.url {
+  font-size: var(--text-p-xs);
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* `noSocials` */
+.empty {
+  margin: 0;
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  border-top: var(--border-hairline) solid var(--border-muted);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-tertiary);
+}
+/* A failed load (ours: the design draws none), as Awards does. */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5) var(--space-8);
+  border-top: var(--border-hairline) solid var(--border-muted);
+}

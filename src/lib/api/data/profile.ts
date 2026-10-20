@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { coverArt, coverKey } from '@/lib/utils/cover';
 import { stageText } from '@/lib/utils/stageText';
+import { markOf } from '@/lib/utils/socialLinks';
 import { safeSocialUrl } from '@/lib/utils/socialUrl';
 import type {
   Completeness,
@@ -152,15 +153,16 @@ export function toMentorProfile(r: MentorPublicRead): MentorProfile {
     };
   });
 
+  // LinkedIn first (it stays `social_linkedin`), then their links in their
+  // order (backend #507: sorted by position). Each checked before it renders.
   const socials = (
-    [
-      ['linkedin', r.social_linkedin],
-      ['x', r.social_twitter],
-      ['youtube', r.social_youtube],
-    ] as [SocialKind, string | null | undefined][]
+    [['linkedin', r.social_linkedin], ...(r.links ?? []).map((l) => [l.platform, l.url])] as [
+      SocialKind,
+      string | null | undefined,
+    ][]
   ).flatMap(([kind, v]) => {
     const href = safeSocialUrl(kind, v);
-    return href ? [{ kind, href }] : [];
+    return href ? [{ mark: markOf(kind, href), href }] : [];
   });
 
   // approval_status / listing_status are *absent* for everyone but the owner

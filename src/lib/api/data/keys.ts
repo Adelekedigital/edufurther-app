@@ -39,6 +39,8 @@ export const keys = {
     mentorSettings: (userId: string) => ['viewer', 'mentorSettings', userId] as const,
     /** Settings › Expertise's guide-to countries (mentorSettings.ts), from the owner's mentor profile. */
     guideCountries: (userId: string) => ['viewer', 'guideCountries', userId] as const,
+    /** Settings › Social links: LinkedIn and the user's links, from /me. */
+    links: (userId: string) => ['viewer', 'links', userId] as const,
   },
   // `who` = the session identity (session.ts sessionKey): signed-in lists are
   // ordered by the viewer's goals and leave the viewer out, so they can't share

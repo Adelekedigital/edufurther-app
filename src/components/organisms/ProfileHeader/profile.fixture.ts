@@ -81,8 +81,8 @@ export const fullProfile: MentorProfile = {
     ],
   },
   socials: [
-    { kind: 'linkedin', href: 'https://www.linkedin.com/in/gbenga' },
-    { kind: 'youtube', href: 'https://www.youtube.com/@gbenga' },
+    { mark: 'linkedin', href: 'https://www.linkedin.com/in/gbenga' },
+    { mark: 'youtube', href: 'https://www.youtube.com/@gbenga' },
   ],
   education: [
     { id: 'e1', title: 'PhD, Sociology', meta: 'Mississippi State University · 2023 – 2027' },

@@ -70,6 +70,7 @@
     "join_inner",
     "key",
     "label",
+    "language",
     "lightbulb",
     "link",
     "link_off",
@@ -146,5 +147,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "6856ab010d971760e13b580d3e6038776f523da2ddcb8472f839e6b5094e1a4e"
+  "sha256": "ccfcabb6e059f5749befa198655c9a850f95a2caa72ee0eff31a148adececd48"
 }

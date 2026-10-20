@@ -131,7 +131,8 @@ export function ProfileOverview({
           {p.socials.length > 0 && (
             <div className={styles.socials}>
               {p.socials.map((s) => (
-                <SocialLink key={s.kind} kind={s.kind} href={s.href} />
+                // Keyed by link: someone may list up to three websites.
+                <SocialLink key={s.href} mark={s.mark} href={s.href} />
               ))}
             </div>
           )}
