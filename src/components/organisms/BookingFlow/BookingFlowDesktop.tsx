@@ -32,7 +32,14 @@ export function BookingFlowDesktop(p: Props) {
   return (
     <div className={styles.flow}>
       <div className={styles.mentor}>
-        <Avatar size="lg" initials={m.initials} tone={m.cover} src={m.photoUrl} alt="" />
+        <Avatar
+          size="lg"
+          initials={m.initials}
+          tone={m.cover}
+          src={m.photoUrl}
+          focus={m.photoFocus}
+          alt=""
+        />
         <div className={styles.mentorText}>
           <span className={styles.mentorName}>{m.name}</span>
           <span className={styles.mentorMeta}>{p.mentorMeta}</span>

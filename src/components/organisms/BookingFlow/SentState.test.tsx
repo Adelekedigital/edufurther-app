@@ -1,7 +1,13 @@
 import { render, screen, within } from '@testing-library/react';
 import { SentState } from './SentState';
 
-const mentor = { firstName: 'Chidi', initials: 'CN', cover: 'sky' as const, photoUrl: null };
+const mentor = {
+  firstName: 'Chidi',
+  initials: 'CN',
+  cover: 'sky' as const,
+  photoUrl: null,
+  photoFocus: null,
+};
 const base = {
   mentor,
   sessionName: 'Build your university shortlist',
