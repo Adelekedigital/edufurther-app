@@ -1,6 +1,7 @@
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Viewer } from '@/types/mentor';
+import { flags, viewers } from '@/app/_shell/lockedPage.harness';
 import { SettingsScreen } from './SettingsScreen';
 
 const replace = vi.fn();
@@ -23,13 +24,11 @@ vi.mock('@/app/_shell/RouteFocusManager', () => ({
 let viewer: Viewer;
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => viewer }));
 
-// The tabs as shipped.
-vi.mock('./tabs', () => ({
-  MENTEE_TABS: ['profile', 'goals', 'education', 'security'],
-  DEFAULT_TAB: 'profile',
-  MENTOR_TABS: ['booking', 'profile', 'expertise', 'links', 'security'],
-  MENTOR_DEFAULT_TAB: 'booking',
-}));
+// The setup lock's flags, switchable per test (lockedPage.harness). Off by
+// default here; the setup lock's tests switch them on.
+vi.mock('@/lib/config/auth', async (orig) =>
+  (await import('@/app/_shell/lockedPage.harness')).authFlags(await orig()),
+);
 
 const panel = {
   dirty: true,
@@ -119,6 +118,8 @@ beforeEach(() => {
   goals.discard.mockReset();
   goals.dirty = false;
   segment = 'profile';
+  flags.onboarding = false;
+  flags.mentor = false;
 });
 
 describe('SettingsScreen', () => {
@@ -429,5 +430,104 @@ describe('the mentee’s tabs as shipped', () => {
       expect(screen.getByTestId('links-panel')).toHaveAttribute('data-frozen', frozen);
       links.unmount();
     }
+  });
+});
+
+describe('the setup lock in Settings (owner, 2026-10-20)', () => {
+  beforeEach(() => {
+    flags.onboarding = true;
+    flags.mentor = true;
+  });
+  const tabs = () => screen.getAllByRole('tab').map((t) => t.getAttribute('aria-controls'));
+
+  it.each([
+    ['an unfinished mentee', viewers.menteeUnfinished, 'mentee'],
+    ['a mentor who never sent their application', viewers.mentorUnfinished, 'mentor'],
+    ['a mentor sign-up, not started', viewers.mentorSignup, 'mentee'],
+  ] as const)('%s: Login and security only, nothing else mounted', (_who, v, role) => {
+    viewer = v;
+    segment = 'security';
+    render(<SettingsScreen />);
+    expect(tabs()).toEqual(['settings-security']);
+    expect(screen.getByTestId('security-panel')).toHaveAttribute('data-role', role);
+    for (const id of [
+      'profile-panel',
+      'goals-panel',
+      'education-panel',
+      'mentor-profile-panel',
+      'expertise-panel',
+      'links-panel',
+      'booking-panel',
+    ])
+      expect(screen.queryByTestId(id)).toBeNull();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it.each([null, 'profile', 'booking', 'goals'])(
+    'an unfinished account opening %s goes to Login and security',
+    (seg) => {
+      for (const v of [viewers.menteeUnfinished, viewers.mentorUnfinished]) {
+        replace.mockReset();
+        viewer = v;
+        segment = seg;
+        const { unmount } = render(<SettingsScreen />);
+        expect(replace).toHaveBeenCalledWith('/settings/security');
+        unmount();
+      }
+    },
+  );
+
+  it('a declined mentor keeps Profile, Expertise, Social links, Login and security; no Booking rules', () => {
+    viewer = viewers.mentorDeclined;
+    segment = 'profile';
+    render(<SettingsScreen />);
+    expect(tabs()).toEqual([
+      'settings-profile',
+      'settings-expertise',
+      'settings-links',
+      'settings-security',
+    ]);
+    expect(screen.queryByTestId('booking-panel')).toBeNull();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('a declined mentor opening /settings or Booking rules lands on Profile', () => {
+    for (const seg of [null, 'booking']) {
+      replace.mockReset();
+      viewer = viewers.mentorDeclined;
+      segment = seg;
+      const { unmount } = render(<SettingsScreen />);
+      expect(replace).toHaveBeenCalledWith('/settings/profile');
+      unmount();
+    }
+  });
+
+  it.each([
+    ['a mentor in review', viewers.mentorReview],
+    ['an approved mentor', viewers.mentorApproved],
+  ])('%s keeps every mentor tab, Booking rules first', (_who, v) => {
+    viewer = v;
+    segment = null;
+    render(<SettingsScreen />);
+    expect(tabs()).toEqual([
+      'settings-booking',
+      'settings-profile',
+      'settings-expertise',
+      'settings-links',
+      'settings-security',
+    ]);
+    expect(replace).toHaveBeenCalledWith('/settings/booking');
+  });
+
+  it('a finished mentee keeps every mentee tab', () => {
+    viewer = viewers.menteeFinished;
+    render(<SettingsScreen />);
+    expect(tabs()).toEqual([
+      'settings-profile',
+      'settings-goals',
+      'settings-education',
+      'settings-security',
+    ]);
+    expect(replace).not.toHaveBeenCalled();
   });
 });

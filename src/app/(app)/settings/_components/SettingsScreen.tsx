@@ -19,7 +19,8 @@ import { GoalsPanel } from './GoalsPanel';
 import { MentorProfilePanel } from './MentorProfilePanel';
 import { ProfilePanel, type PanelHandle } from './ProfilePanel';
 import { SecurityPanel } from './SecurityPanel';
-import { DEFAULT_TAB, MENTEE_TABS, MENTOR_DEFAULT_TAB, MENTOR_TABS } from './tabs';
+import { accessFor } from '@/lib/utils/access';
+import { settingsTabs } from './tabs';
 import styles from './SettingsScreen.module.css';
 
 const panelId = (t: SettingsTab) => `settings-${t}`;
@@ -28,8 +29,10 @@ const panelId = (t: SettingsTab) => `settings-${t}`;
  * /settings/[tab] (Mentee Settings.dc.html). Lives in the settings layout, so
  * moving between tabs keeps the screen, and an edit, mounted. Leaving a tab
  * with unsaved changes asks "Save your changes?" first (owner, 2026-10-19).
- * Settings is never locked (PRD "App shell and access"). A mentor gets the
- * mentor tabs (Mentor Settings.dc.html), as each one ships.
+ * Settings stays in the nav (PRD "App shell and access"), but in the setup
+ * lock it has Login and security only, and a declined mentor has no Booking
+ * rules (settingsTabs). A mentor gets the mentor tabs (Mentor
+ * Settings.dc.html), as each one ships.
  */
 export function SettingsScreen() {
   const viewer = useViewer();
@@ -39,8 +42,9 @@ export function SettingsScreen() {
   const mentor = !!member?.isMentor;
   // Submitted and awaiting a decision: what's reviewed holds still (decision 273).
   const inReview = member?.mentorStage === 'pending';
-  const tabs = mentor ? MENTOR_TABS : MENTEE_TABS;
-  const first = mentor ? MENTOR_DEFAULT_TAB : DEFAULT_TAB;
+  const { tabs, first } = settingsTabs(mentor, accessFor(viewer));
+  // A tab this viewer doesn't have isn't mounted: a hidden panel still fetches.
+  const has = (t: SettingsTab) => tabs.includes(t);
   const known = tabs.find((t) => t === segment);
   const tab = known ?? first;
   // One handle per tab with a form: the switch guard asks the one showing.
@@ -141,46 +145,60 @@ export function SettingsScreen() {
 
       {mentor ? (
         <>
-          <TabPanel id={panelId('booking')} active={tab === 'booking'} keepMounted>
-            {member ? <BookingPanel ref={bookingPanel} userId={member.id} /> : null}
-          </TabPanel>
-          <TabPanel id={panelId('profile')} active={tab === 'profile'} keepMounted>
-            {member ? (
-              <MentorProfilePanel ref={profilePanel} userId={member.id} frozen={inReview} />
-            ) : null}
-          </TabPanel>
-          <TabPanel id={panelId('expertise')} active={tab === 'expertise'} keepMounted>
-            {member ? (
-              <ExpertisePanel ref={expertisePanel} userId={member.id} frozen={inReview} />
-            ) : null}
-          </TabPanel>
+          {has('booking') && (
+            <TabPanel id={panelId('booking')} active={tab === 'booking'} keepMounted>
+              {member ? <BookingPanel ref={bookingPanel} userId={member.id} /> : null}
+            </TabPanel>
+          )}
+          {has('profile') && (
+            <TabPanel id={panelId('profile')} active={tab === 'profile'} keepMounted>
+              {member ? (
+                <MentorProfilePanel ref={profilePanel} userId={member.id} frozen={inReview} />
+              ) : null}
+            </TabPanel>
+          )}
+          {has('expertise') && (
+            <TabPanel id={panelId('expertise')} active={tab === 'expertise'} keepMounted>
+              {member ? (
+                <ExpertisePanel ref={expertisePanel} userId={member.id} frozen={inReview} />
+              ) : null}
+            </TabPanel>
+          )}
           {/* Nothing to edit here: only while shown, as on the mentee's. */}
           <TabPanel id={panelId('security')} active={tab === 'security'}>
             {member ? <SecurityPanel userId={member.id} role="mentor" /> : null}
           </TabPanel>
-          <TabPanel id={panelId('links')} active={tab === 'links'}>
-            {member ? <LinksPanel userId={member.id} frozen={inReview} /> : null}
-          </TabPanel>
+          {has('links') && (
+            <TabPanel id={panelId('links')} active={tab === 'links'}>
+              {member ? <LinksPanel userId={member.id} frozen={inReview} /> : null}
+            </TabPanel>
+          )}
         </>
       ) : (
         <>
-          <TabPanel id={panelId('profile')} active={tab === 'profile'} keepMounted>
-            {member ? (
-              <ProfilePanel
-                ref={profilePanel}
-                userId={member.id}
-                coverKey={member.coverKey}
-                photoFocus={member.avatarFocus}
-              />
-            ) : null}
-          </TabPanel>
-          <TabPanel id={panelId('goals')} active={tab === 'goals'} keepMounted>
-            {member ? <GoalsPanel ref={goalsPanel} userId={member.id} /> : null}
-          </TabPanel>
+          {has('profile') && (
+            <TabPanel id={panelId('profile')} active={tab === 'profile'} keepMounted>
+              {member ? (
+                <ProfilePanel
+                  ref={profilePanel}
+                  userId={member.id}
+                  coverKey={member.coverKey}
+                  photoFocus={member.avatarFocus}
+                />
+              ) : null}
+            </TabPanel>
+          )}
+          {has('goals') && (
+            <TabPanel id={panelId('goals')} active={tab === 'goals'} keepMounted>
+              {member ? <GoalsPanel ref={goalsPanel} userId={member.id} /> : null}
+            </TabPanel>
+          )}
           {/* Every change saves in its modal: nothing to keep while hidden. */}
-          <TabPanel id={panelId('education')} active={tab === 'education'}>
-            {member ? <EducationPanel userId={member.id} /> : null}
-          </TabPanel>
+          {has('education') && (
+            <TabPanel id={panelId('education')} active={tab === 'education'}>
+              {member ? <EducationPanel userId={member.id} /> : null}
+            </TabPanel>
+          )}
           {/* Nothing to edit here (the confirm's word is meant to start empty): only while shown. */}
           <TabPanel id={panelId('security')} active={tab === 'security'}>
             {member ? <SecurityPanel userId={member.id} /> : null}
