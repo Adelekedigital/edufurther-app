@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react';
 import { GOALS_COPY } from '@/lib/copy/settings';
 import type { MenteeGoalValues } from '@/types/settings';
-import { goalsBody, hasGoal, toGoalValues, useSaveGoals, type GoalsRead } from './goals';
+import { goalsBody, toGoalValues, useSaveGoals, type GoalsRead } from './goals';
 import { keys } from './keys';
 
 const calls: { method: string; path: string; body: unknown }[] = [];
@@ -100,18 +100,6 @@ describe('toGoalValues', () => {
 
   it('no origin saved: prefilled from where they live (PRD S7)', () => {
     expect(toGoalValues(read(), countries).originId).toBe('c-ng');
-  });
-
-  it('hasGoal: a saved goal with anything in it', () => {
-    expect(hasGoal(read())).toBe(false);
-    const empty = {
-      id: 'g',
-      countries: [],
-      needs: [],
-      schools: [],
-    } as unknown as NonNullable<GoalsRead['goal']>;
-    expect(hasGoal(read(empty))).toBe(false);
-    expect(hasGoal(read({ ...empty, field_of_study: 'Law' }))).toBe(true);
   });
 });
 

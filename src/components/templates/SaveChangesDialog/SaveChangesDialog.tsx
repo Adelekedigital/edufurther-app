@@ -43,6 +43,8 @@ export function SaveChangesDialog({
       subtitle={subtitle ?? LEAVE_COPY.sub(where)}
       icon="edit_note"
       size="sm"
+      // A bottom sheet on phones (Mentee Settings.dc.html `kind="confirm"`).
+      mobile="sheet"
       alert
       onClose={onClose}
       closeDisabled={closeDisabled}

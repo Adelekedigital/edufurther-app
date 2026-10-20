@@ -1,4 +1,4 @@
-/* Mentee Settings.dc.html `isMGoals` (goalsLayout grouped, goalsCollapsed summary). */
+/* Mentee Settings.dc.html `isMGoals` (menteeTabs split: the two cards, always open). */
 .goals {
   max-width: 760px;
   display: flex;
@@ -6,53 +6,10 @@
   gap: var(--space-5);
 }
 
-/* "Your goals" and the collapse chevron (`goalsGroupHead`). */
-.head {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-}
-.headText {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-.headTitle {
-  margin: 0;
-  /* A focus target only (tabindex -1), so no ring. */
-  outline: none;
-  font-size: var(--text-p-lg);
-  font-weight: var(--weight-semibold);
-}
-.headSub,
 .cardSub {
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
   color: var(--ink-500);
-}
-.chevron {
-  position: relative;
-  flex: none;
-  width: var(--space-10);
-  height: var(--space-10);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: var(--border-hairline) solid var(--ink-200);
-  border-radius: var(--radius-full);
-  background: var(--white);
-  cursor: pointer;
-  color: var(--ink-700);
-}
-.chevron:hover {
-  background: var(--ink-50);
-}
-.chevron:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
 }
 
 .fields {
@@ -83,6 +40,8 @@
 }
 .cardTitle {
   margin: 0;
+  /* Also where focus goes when the save bar it was in goes (tabindex -1), so no ring. */
+  outline: none;
   font-size: var(--text-p-md);
   font-weight: var(--weight-semibold);
 }
@@ -125,30 +84,9 @@
   color: var(--ink-500);
 }
 
-/* Cancel / Save goals, only while something is unsaved (`gFooter`). */
-.footer {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
-  gap: var(--space-3);
-}
-.formError {
-  flex: 1 1 220px;
-  font-size: var(--text-p-xs);
-  font-weight: var(--weight-medium);
-  color: var(--red-600);
-}
-
-/* Phones: 16px fields, so iOS doesn't zoom in; the 40px chevron keeps its
-   drawn size with an invisible 44px tap area. */
+/* Phones: 16px fields, so iOS doesn't zoom in. */
 @media (max-width: 767px) {
   .field input {
     font-size: var(--text-p-md);
-  }
-  .chevron::after {
-    content: '';
-    position: absolute;
-    inset: -2px;
   }
 }

@@ -62,35 +62,12 @@ const FILLED: MenteeGoalValues = {
   needIds: ['document-preparation', 'school-selection'],
 };
 
-function Goals({
-  initial,
-  startOpen,
-  errors = [],
-  dirtyStart = false,
-  saving = false,
-  saveError = null,
-}: {
-  initial: MenteeGoalValues;
-  startOpen: boolean;
-  errors?: GoalsGap[];
-  dirtyStart?: boolean;
-  saving?: boolean;
-  saveError?: string | null;
-}) {
-  const [open, setOpen] = useState(startOpen);
+function Goals({ initial, errors = [] }: { initial: MenteeGoalValues; errors?: GoalsGap[] }) {
   const [values, setValues] = useState(initial);
   const [query, setQuery] = useState('');
-  const dirty = dirtyStart || JSON.stringify(values) !== JSON.stringify(initial);
   const q = query.trim().toLowerCase();
   return (
     <MenteeGoalsForm
-      open={open}
-      summary={{
-        title: 'Master’s in Public health',
-        meta: 'United Kingdom, Canada · 2 schools · 2 help topics',
-      }}
-      onEdit={() => setOpen(true)}
-      onCollapse={() => setOpen(false)}
       values={values}
       onChange={(patch) => setValues((v) => ({ ...v, ...patch }))}
       errors={errors}
@@ -102,52 +79,24 @@ function Goals({
         results: q.length >= 2 ? SCHOOLS.filter((s) => s.name.toLowerCase().includes(q)) : [],
         status: 'ready',
       }}
-      dirty={dirty}
-      saving={saving}
-      formError={errors.length > 0}
-      saveError={saveError}
-      onCancel={() => setValues(initial)}
-      onSave={() => setOpen(false)}
     />
   );
 }
 
-/** A saved goal: the summary card first (owner, option a). */
-export const Summary: Story = { render: () => <Goals initial={FILLED} startOpen={false} /> };
+/** A saved goal: the two cards, always open (the save bar is the page's). */
+export const Filled: Story = { render: () => <Goals initial={FILLED} /> };
 
-/** No goal yet: the fields are open, origin prefilled from where they live. */
-export const OpenEmpty: Story = { render: () => <Goals initial={EMPTY} startOpen /> };
+/** No goal yet, origin prefilled from where they live. "Not sure yet" is on: no countries. */
+export const Empty: Story = { render: () => <Goals initial={EMPTY} /> };
 
-export const OpenFilled: Story = { render: () => <Goals initial={FILLED} startOpen /> };
-
-/** Save with every gap: the form line and each field's error. */
+/** Save with every gap: each field's error (the form line is in the save bar). */
 export const Errors: Story = {
   render: () => (
-    <Goals
-      initial={{ ...EMPTY, originId: '' }}
-      startOpen
-      dirtyStart
-      errors={['origin', 'degree', 'field', 'countries', 'help']}
-    />
+    <Goals initial={{ ...EMPTY, originId: '' }} errors={['origin', 'degree', 'field', 'help']} />
   ),
 };
 
-export const Saving: Story = {
-  render: () => <Goals initial={FILLED} startOpen dirtyStart saving />,
-};
-
-export const SaveFailed: Story = {
-  render: () => (
-    <Goals
-      initial={FILLED}
-      startOpen
-      dirtyStart
-      saveError="We couldn’t save your goals. Your changes are still here. Try again."
-    />
-  ),
-};
-
-/** Three countries (the cap) and ten schools (the cap). */
+/** Three countries (the cap; "Not sure yet" stays usable) and ten schools (the cap). */
 export const Full: Story = {
   render: () => (
     <Goals
@@ -160,7 +109,6 @@ export const Full: Story = {
           label: `A school with quite a long typed name, number ${i + 1}`,
         })),
       }}
-      startOpen
     />
   ),
 };
