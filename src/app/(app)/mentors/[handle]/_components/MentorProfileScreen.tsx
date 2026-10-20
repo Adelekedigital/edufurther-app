@@ -41,7 +41,7 @@ import {
   type ItemKind,
   type ItemOutcome,
   type ItemTarget,
-} from './OwnerItemEditor';
+} from '@/app/_profile/OwnerItemEditor';
 import { RemovePhotoConfirm } from '@/components/templates/RemovePhotoConfirm/RemovePhotoConfirm';
 import {
   NotTakingEmpty,
