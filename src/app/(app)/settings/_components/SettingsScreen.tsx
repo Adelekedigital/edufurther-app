@@ -67,11 +67,12 @@ export function SettingsScreen() {
   // one not built yet): the role's first tab, once the role is known.
   useEffect(() => {
     if (member && !known) {
-      // A redirect, not a navigation: the heading doesn't take focus.
-      skipNextRouteFocus();
+      // Only /settings itself is a redirect as the page loads: its heading
+      // doesn't take focus. A link to another role's tab is a navigation.
+      if (!segment) skipNextRouteFocus();
       router.replace(`/settings/${first}`);
     }
-  }, [member, known, first, router]);
+  }, [member, known, first, router, segment]);
 
   const gate = memberGate(viewer, `/settings/${segment ?? first}`, SETTINGS_GATE);
   if (gate) return gate;

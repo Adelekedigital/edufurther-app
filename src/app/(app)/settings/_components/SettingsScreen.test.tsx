@@ -196,6 +196,8 @@ describe('SettingsScreen', () => {
     segment = 'education';
     render(<SettingsScreen />);
     expect(replace).toHaveBeenCalledWith('/settings/booking');
+    // A link to that tab is a navigation: focus moves as usual.
+    expect(skipFocus).not.toHaveBeenCalled();
   });
 
   it('/settings itself opens the role’s first tab: Booking rules for a mentor', () => {

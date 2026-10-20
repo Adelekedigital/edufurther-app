@@ -19,10 +19,13 @@ describe('/settings', () => {
     await expect(open('goals')).rejects.toThrow('NEXT_REDIRECT /settings/goals');
   });
 
+  it('a repeated ?tab= uses the first one', async () => {
+    await expect(open(['goals', 'profile'])).rejects.toThrow('NEXT_REDIRECT /settings/goals');
+  });
+
   it('no tab, or one that isn’t a tab: the screen picks the role’s first tab', async () => {
     await expect(open()).resolves.toBeNull();
     await expect(open('nope')).resolves.toBeNull();
-    await expect(open(['goals', 'profile'])).resolves.toBeNull();
     expect(h.redirect).not.toHaveBeenCalled();
   });
 });

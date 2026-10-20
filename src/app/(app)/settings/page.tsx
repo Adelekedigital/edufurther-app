@@ -12,7 +12,8 @@ export default async function SettingsIndex({
 }: {
   searchParams: Promise<{ tab?: string | string[] }>;
 }) {
-  const { tab } = await searchParams;
+  const { tab: raw } = await searchParams;
+  const tab = Array.isArray(raw) ? raw[0] : raw; // ?tab=a&tab=b: the first one
   const asked =
     typeof tab === 'string' && Object.hasOwn(TAB_LABELS, tab) ? (tab as SettingsTab) : null;
   if (asked) redirect(`/settings/${asked}`);
