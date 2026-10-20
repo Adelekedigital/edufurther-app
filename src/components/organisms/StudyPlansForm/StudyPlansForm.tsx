@@ -7,6 +7,7 @@ import { CountryPicker } from '@/components/molecules/CountryPicker/CountryPicke
 import { FieldError } from '@/components/molecules/FieldError/FieldError';
 import {
   DEGREE_OPTIONS,
+  DESTINATION_LINK,
   FIELD_MAX,
   FIELD_SUGGESTIONS,
   NOT_SURE,
@@ -55,7 +56,7 @@ function Field({
 }: {
   id: string;
   label: string;
-  hint: string;
+  hint: ReactNode;
   error?: string;
   /** The destination hint runs two lines on phones: the design gives it the paragraph leading. */
   wide?: boolean;
@@ -75,6 +76,25 @@ function Field({
       {/* Under the hint, as drawn (Mentee Onboarding v5.dc.html `errOrigin` and the rest). */}
       {error && <FieldError id={errorId}>{error}</FieldError>}
     </div>
+  );
+}
+
+/**
+ * "…later in Settings." with Settings a link to Settings › Goals. A new tab:
+ * onboarding sits outside the app shell, so leaving it here would drop the
+ * answers not yet saved.
+ */
+function DestinationHint() {
+  const [before, after] = PLAN_HINTS.destination.split(DESTINATION_LINK.text);
+  return (
+    <>
+      {before}
+      <a href={DESTINATION_LINK.href} target="_blank" rel="noopener" className={styles.hintLink}>
+        {DESTINATION_LINK.text}
+        <span className="sr-only"> {DESTINATION_LINK.newTab}</span>
+      </a>
+      {after}
+    </>
   );
 }
 
@@ -170,7 +190,7 @@ export function StudyPlansForm({
       <Field
         id={`${pre}-destination`}
         label={PLAN_LABELS.destination}
-        hint={PLAN_HINTS.destination}
+        hint={<DestinationHint />}
         error={errors.destination}
         wide
       >

@@ -21,6 +21,19 @@ export async function PUT(req: Request, ctx: { params: Promise<{ userId: string 
   const field = body.field_of_study;
   if (field != null && (typeof field !== 'string' || field.trim().length > 100))
     return problem(422, { title: 'Validation failed', errors: [{ pointer: '/field_of_study' }] });
+  const schools = body.schools as { school_name_raw?: unknown }[] | null | undefined;
+  if (
+    schools != null &&
+    (!Array.isArray(schools) ||
+      schools.length > 10 ||
+      schools.some(
+        (s) =>
+          typeof s?.school_name_raw !== 'string' ||
+          !s.school_name_raw.trim() ||
+          s.school_name_raw.length > 120,
+      ))
+  )
+    return problem(422, { title: 'Validation failed', errors: [{ pointer: '/schools' }] });
   await new Promise((r) => setTimeout(r, 250));
   setMockGoal(userId, body as Parameters<typeof setMockGoal>[1]);
   return ok('/api/v1/users/{user_id}/goal', 'put', mockGoal(userId)!);

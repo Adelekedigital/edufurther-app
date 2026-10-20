@@ -33,6 +33,8 @@ export const keys = {
     settings: (userId: string) => ['viewer', 'settings', userId] as const,
     /** How the session logged in (Supabase identities), for Login and security. */
     loginProvider: (userId: string) => ['viewer', 'loginProvider', userId] as const,
+    /** Settings › Goals' read of /me (goals.ts): the goal, origin and current country. */
+    goals: (userId: string) => ['viewer', 'goals', userId] as const,
   },
   // `who` = the session identity (session.ts sessionKey): signed-in lists are
   // ordered by the viewer's goals and leave the viewer out, so they can't share
@@ -54,6 +56,8 @@ export const keys = {
     /** Prefixes, for invalidating every variant after a review is sent. */
     reviewsAll: ['mentors', 'reviews'] as const,
     profilesAll: ['mentors', 'profile'] as const,
+    /** Every Explore list: signed-in lists are ordered by the viewer's goals. */
+    listAll: ['mentors', 'list'] as const,
     relationshipFor: (mentorId: string) => ['mentors', 'relationship', mentorId] as const,
     reviewableFor: (mentorId: string) => ['mentors', 'reviewable', mentorId] as const,
     myReviewFor: (mentorId: string) => ['mentors', 'myReview', mentorId] as const,

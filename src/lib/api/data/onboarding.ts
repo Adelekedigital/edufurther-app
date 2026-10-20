@@ -41,7 +41,7 @@ export type Saved = {
 };
 
 /** The stored goal level back to what the mentee picked: `masters` + raw "MBA" is MBA. */
-function degreeValue(goal: Saved['goal']): string {
+export function degreeValue(goal: Saved['goal']): string {
   const code = goal?.degree_goal?.code;
   if (!code) return '';
   const raw = goal?.degree_goal_raw?.trim().toUpperCase() ?? null;
@@ -148,6 +148,20 @@ type Answers = { needIds: string[]; plans?: PlanAnswers };
 export class LevelMissingError extends Error {}
 
 /**
+ * A picked degree as the goal stores it (PRD H8): MBA is the Master's level
+ * with raw "MBA". Throws when the catalogue has no such level.
+ */
+export function degreeWrite(
+  degree: string,
+  levels: { id: string; code: string }[],
+): Pick<GoalWrite, 'degree_goal_id' | 'degree_goal_raw'> {
+  const d = DEGREE_OPTIONS.find((o) => o.value === degree);
+  const levelId = d ? levels.find((l) => l.code === d.code)?.id : undefined;
+  if (d && !levelId) throw new LevelMissingError(d.code);
+  return { degree_goal_id: levelId ?? null, degree_goal_raw: d?.raw ?? null };
+}
+
+/**
  * The goal as PUT wants it. PUT replaces the goal, so every known answer goes
  * every time: step 1 carries the saved degree and countries forward, step 2
  * replaces the first country and keeps the others (Settings may hold up to 3).
@@ -175,11 +189,7 @@ export function goalBody(
     body.country_ids = savedCountryIds;
     return body;
   }
-  const d = DEGREE_OPTIONS.find((o) => o.value === a.plans!.degree);
-  const levelId = d ? levels.find((l) => l.code === d.code)?.id : undefined;
-  if (d && !levelId) throw new LevelMissingError(d.code);
-  body.degree_goal_id = levelId ?? null;
-  body.degree_goal_raw = d?.raw ?? null;
+  Object.assign(body, degreeWrite(a.plans.degree, levels));
   body.field_of_study = a.plans.field.trim();
   const rest = savedCountryIds.slice(1);
   const dest = a.plans.destinationId;
@@ -187,7 +197,7 @@ export function goalBody(
   return body;
 }
 
-async function putGoal(userId: string, body: GoalWrite) {
+export async function putGoal(userId: string, body: GoalWrite) {
   const { error, response } = await api.PUT('/api/v1/users/{user_id}/goal', {
     params: { path: { user_id: userId } },
     body,

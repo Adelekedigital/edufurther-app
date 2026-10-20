@@ -172,3 +172,67 @@ export const SECURITY_COPY = {
   // PROVISIONAL (PRD wording, not in a design file yet): /login?deleted=1.
   deletedNotice: 'Your account is deleted. Contact support within 30 days to restore it.',
 } as const;
+
+/**
+ * Settings › Goals (Mentee Settings.dc.html `isMGoals`, goalsModel=onboarding,
+ * goalsWhen=hide). Ours: the load line, the schools search, the 10-school
+ * cap, and the summary title when no degree is picked yet.
+ */
+export const GOALS_COPY = {
+  head: 'Your goals',
+  headSub: 'We use this to recommend mentors who fit your plans.',
+  collapse: 'Collapse goals',
+  /** "Master’s in Public health"; either half alone when the other is missing. */
+  title: (degree: string, field: string) =>
+    degree && field ? `${degree} in ${field}` : degree || field || 'No target yet',
+  schoolsCount: (n: number) => (n === 1 ? '1 school' : `${n} schools`),
+  helpCount: (n: number) => (n === 1 ? '1 help topic' : `${n} help topics`),
+  edit: 'Edit goals',
+  workingToward: 'What you’re working toward',
+  workingTowardSub: 'We use this to recommend mentors who fit your plans.',
+  origin: 'Where you’re from',
+  originPlaceholder: 'Select a country',
+  applyingFor: 'Applying for',
+  applyingForHint: 'Pick one.',
+  field: 'Field of study',
+  fieldPlaceholder: 'For example, Public health',
+  countries: 'Countries you’re applying to',
+  countriesHint: 'Up to 3. Not listed? Add it.',
+  addCountry: 'Add another country',
+  addCountryPlaceholder: 'For example, Sweden',
+  add: 'Add',
+  cancel: 'Cancel',
+  searchingCountries: 'Searching…',
+  countrySearchFailed: 'We couldn’t search countries. Try again.',
+  noCountryMatch: (q: string) => `No countries match “${q}”.`,
+  schools: 'Schools on your list (optional)',
+  schoolsHint: 'Meet mentors who studied there and know the school from the inside.',
+  addSchool: 'Add a school',
+  removeSchool: (name: string) => `Remove ${name}`,
+  searchingSchools: 'Searching…',
+  schoolSearchFailed: 'We couldn’t search schools. You can still add the name as you typed it.',
+  schoolsFull: 'You’ve added 10 schools, the most you can add.',
+  help: 'What you need help with',
+  helpSub: 'So you get matched with mentors who can help with exactly this.',
+  save: 'Save goals',
+  saving: 'Saving…',
+  saved: 'Goals saved. Your Explore matches are updated.',
+  saveFailed: 'We couldn’t save your goals. Your changes are still here. Try again.',
+  collapseSub: 'Your changes to your goals haven’t been saved yet.',
+  loading: 'Loading your goals',
+} as const;
+
+/** Inline errors on Save with gaps, in the form's order (PRD: Mentee Settings, Goals). */
+export const GOALS_ERRORS = {
+  origin: 'Select where you’re from.',
+  degree: 'Pick what you’re applying for.',
+  field: 'Add what you want to study.',
+  countries: 'Pick where you want to study.',
+  help: 'Pick at least one area.',
+} as const;
+export type GoalsGap = keyof typeof GOALS_ERRORS;
+
+/** At most 3 countries; up to 10 schools of 120 characters each (PRD). */
+export const GOAL_COUNTRY_MAX = 3;
+export const GOAL_SCHOOL_MAX = 10;
+export const GOAL_SCHOOL_CHARS = 120;

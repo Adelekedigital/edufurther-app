@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Viewer } from '@/types/mentor';
 import { SettingsScreen } from './SettingsScreen';
@@ -18,9 +18,9 @@ vi.mock('next/navigation', () => ({
 let viewer: Viewer;
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => viewer }));
 
-// A second tab, so the tab-switch guard can be reached before Goals ships.
+// The tabs as shipped.
 vi.mock('./tabs', () => ({
-  MENTEE_TABS: ['profile', 'education', 'security'],
+  MENTEE_TABS: ['profile', 'goals', 'education', 'security'],
   DEFAULT_TAB: 'profile',
   MENTOR_TABS: ['booking'],
   MENTOR_DEFAULT_TAB: 'booking',
@@ -41,6 +41,24 @@ vi.mock('./ProfilePanel', async () => {
         discard: () => panel.discard(),
       }));
       return <div data-testid="profile-panel" />;
+    }),
+  };
+});
+const goals = vi.hoisted(() => ({
+  dirty: false,
+  save: vi.fn<() => Promise<boolean>>(),
+  discard: vi.fn(),
+}));
+vi.mock('./GoalsPanel', async () => {
+  const { forwardRef, useImperativeHandle } = await import('react');
+  return {
+    GoalsPanel: forwardRef(function GoalsPanel(_props, ref) {
+      useImperativeHandle(ref, () => ({
+        dirty: () => goals.dirty,
+        save: () => goals.save(),
+        discard: () => goals.discard(),
+      }));
+      return <div data-testid="goals-panel" />;
     }),
   };
 });
@@ -66,6 +84,9 @@ beforeEach(() => {
   panel.save.mockReset();
   panel.discard.mockReset();
   panel.dirty = true;
+  goals.save.mockReset();
+  goals.discard.mockReset();
+  goals.dirty = false;
   segment = 'profile';
 });
 
@@ -84,6 +105,7 @@ describe('SettingsScreen', () => {
     render(<SettingsScreen />);
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual([
       'Profile',
+      'Goals',
       'Education',
       'Login and security',
     ]);
@@ -97,6 +119,7 @@ describe('SettingsScreen', () => {
     render(<SettingsScreen />);
     expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual([
       'Profile',
+      'Goals',
       'Education',
       'Login and security',
     ]);
@@ -211,11 +234,48 @@ describe('SettingsScreen', () => {
       expect(push).toHaveBeenCalledWith('/settings/education');
     });
   });
+
+  describe('the Goals tab', () => {
+    beforeEach(() => {
+      viewer = member();
+    });
+
+    it('sits after Profile, its panel kept in the page', () => {
+      panel.dirty = false;
+      render(<SettingsScreen />);
+      const names = screen.getAllByRole('tab').map((t) => t.textContent);
+      expect(names.slice(0, 2)).toEqual(['Profile', 'Goals']);
+      expect(screen.getByTestId('goals-panel')).toBeInTheDocument();
+    });
+
+    it('leaving Goals with unsaved changes asks about Goals, and saves that panel', async () => {
+      segment = 'goals';
+      goals.dirty = true;
+      goals.save.mockResolvedValue(true);
+      render(<SettingsScreen />);
+      await userEvent.click(screen.getByRole('tab', { name: 'Profile' }));
+      expect(dialog()).toHaveTextContent('Your changes on Goals haven’t been saved yet.');
+      await userEvent.click(within(dialog()!).getByRole('button', { name: 'Save and continue' }));
+      expect(goals.save).toHaveBeenCalledOnce();
+      expect(panel.save).not.toHaveBeenCalled();
+      expect(push).toHaveBeenCalledWith('/settings/profile');
+    });
+
+    it('an unsaved edit on a hidden tab doesn’t stop a switch from a clean one', async () => {
+      segment = 'goals';
+      goals.dirty = false;
+      panel.dirty = true;
+      render(<SettingsScreen />);
+      await userEvent.click(screen.getByRole('tab', { name: 'Education' }));
+      expect(dialog()).toBeNull();
+      expect(push).toHaveBeenCalledWith('/settings/education');
+    });
+  });
 });
 
 describe('the mentee’s tabs as shipped', () => {
-  it('Login and security comes last: Profile, Education, Login and security', async () => {
+  it('the PRD order: Profile, Goals, Education, Login and security', async () => {
     const real = await vi.importActual<typeof import('./tabs')>('./tabs');
-    expect(real.MENTEE_TABS).toEqual(['profile', 'education', 'security']);
+    expect(real.MENTEE_TABS).toEqual(['profile', 'goals', 'education', 'security']);
   });
 });

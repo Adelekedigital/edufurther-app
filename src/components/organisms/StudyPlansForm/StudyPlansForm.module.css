@@ -25,3 +25,14 @@
 .hintWide {
   line-height: var(--lh-p);
 }
+/* Ours: the design draws the hint as plain text; the link takes the text link's blue. */
+.hintLink {
+  color: var(--blue-700);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.hintLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-sm);
+}

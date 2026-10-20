@@ -11,6 +11,7 @@ import { SETTINGS_COPY, TAB_LABELS, type SettingsTab } from '@/lib/copy/settings
 import { memberGate, SETTINGS_GATE } from '@/app/_shell/MentorGate';
 import { BookingPanel } from './BookingPanel';
 import { EducationPanel } from './EducationPanel';
+import { GoalsPanel } from './GoalsPanel';
 import { ProfilePanel, type PanelHandle } from './ProfilePanel';
 import { SecurityPanel } from './SecurityPanel';
 import { DEFAULT_TAB, MENTEE_TABS, MENTOR_DEFAULT_TAB, MENTOR_TABS } from './tabs';
@@ -39,9 +40,11 @@ export function SettingsScreen() {
   // A tab's panel registers here; tabs with nothing to save leave theirs out.
   const profilePanel = useRef<PanelHandle>(null);
   const bookingPanel = useRef<PanelHandle>(null);
+  const goalsPanel = useRef<PanelHandle>(null);
   const panels: Partial<Record<SettingsTab, RefObject<PanelHandle | null>>> = {
     profile: profilePanel,
     booking: bookingPanel,
+    goals: goalsPanel,
   };
   const [leaveTo, setLeaveTo] = useState<SettingsTab | null>(null);
   const [leaving, setLeaving] = useState(false);
@@ -97,6 +100,9 @@ export function SettingsScreen() {
         <>
           <TabPanel id={panelId('profile')} active={tab === 'profile'} keepMounted>
             {member ? <ProfilePanel ref={profilePanel} userId={member.id} /> : null}
+          </TabPanel>
+          <TabPanel id={panelId('goals')} active={tab === 'goals'} keepMounted>
+            {member ? <GoalsPanel ref={goalsPanel} userId={member.id} /> : null}
           </TabPanel>
           {/* Every change saves in its modal: nothing to keep while hidden. */}
           <TabPanel id={panelId('education')} active={tab === 'education'}>
