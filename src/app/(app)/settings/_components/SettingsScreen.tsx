@@ -8,6 +8,7 @@ import { SaveChangesDialog } from '@/components/templates/SaveChangesDialog/Save
 import { useViewer } from '@/lib/api/data/viewer';
 import { SETTINGS_COPY, TAB_LABELS, type SettingsTab } from '@/lib/copy/settings';
 import { memberGate, SETTINGS_GATE } from '@/app/_shell/MentorGate';
+import { EducationPanel } from './EducationPanel';
 import { ProfilePanel, type PanelHandle } from './ProfilePanel';
 import { DEFAULT_TAB, MENTEE_TABS } from './tabs';
 import styles from './SettingsScreen.module.css';
@@ -84,6 +85,10 @@ export function SettingsScreen() {
 
       <TabPanel id={panelId('profile')} active={tab === 'profile'} keepMounted>
         {member ? <ProfilePanel ref={profilePanel} userId={member.id} /> : null}
+      </TabPanel>
+      {/* Every change saves in its modal: nothing to keep while hidden. */}
+      <TabPanel id={panelId('education')} active={tab === 'education'}>
+        {member ? <EducationPanel userId={member.id} /> : null}
       </TabPanel>
 
       {leaveTo && (

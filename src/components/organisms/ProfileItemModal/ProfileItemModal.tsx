@@ -16,6 +16,7 @@ import {
 } from '@/components/molecules/EducationFields/EducationFields';
 import type { LanguageOption } from '@/components/molecules/LanguagePicker/LanguagePicker';
 import { TopicPicker } from '@/components/molecules/TopicPicker/TopicPicker';
+import type { EducationAudience } from '@/lib/copy/education';
 import type { TopicGroup } from '@/lib/utils/topicGroups';
 import type { AwardValues, EducationValues } from '@/types/mentor';
 import styles from './ProfileItemModal.module.css';
@@ -75,6 +76,8 @@ type EducationProps = Common & {
   thisYear: number;
   /** Another degree is marked current (a new one defaults to current without one). */
   hasOther: boolean;
+  /** Who is editing: the hint mentions a mentor card only to a mentor. */
+  audience: EducationAudience;
   onSave: (values: EducationValues) => void;
 };
 
@@ -274,6 +277,7 @@ export function ProfileItemModal(props: ProfileItemModalProps) {
         errors={problems}
         thisYear={props.thisYear}
         hasOther={props.hasOther}
+        audience={props.audience}
       />
     ) : props.kind === 'award' ? (
       <AwardFields

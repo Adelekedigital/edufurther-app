@@ -40,6 +40,10 @@ vi.mock('./ProfilePanel', async () => {
   };
 });
 
+vi.mock('./EducationPanel', () => ({
+  EducationPanel: () => <div data-testid="education-panel" />,
+}));
+
 const member = (isMentor = false) => ({ kind: 'member', id: 'u1', isMentor }) as unknown as Viewer;
 const dialog = () => screen.queryByRole('alertdialog', { name: 'Save your changes?' });
 
@@ -59,6 +63,16 @@ describe('SettingsScreen', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Profile' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('profile-panel')).toBeInTheDocument();
+  });
+
+  it('the Education tab shows its panel', () => {
+    viewer = member();
+    segment = 'education';
+    render(<SettingsScreen />);
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Profile', 'Education']);
+    expect(screen.getByRole('tab', { name: 'Education' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('education-panel')).toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
   });
 
   it('a tab this mentee doesn’t have goes to Profile', () => {

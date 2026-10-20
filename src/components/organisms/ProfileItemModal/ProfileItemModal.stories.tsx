@@ -214,6 +214,7 @@ const education = (over: Partial<ProfileItemModalProps> = {}) => (
     initial={null}
     thisYear={2026}
     hasOther={false}
+    audience="mentor"
     saving={false}
     error={null}
     onSave={fn()}
@@ -235,6 +236,10 @@ export const EducationAdd: Story = { render: () => education() };
 /** Another degree is current: a new one isn't, and ticking it says it replaces that one. */
 export const EducationAddWithCurrent: Story = {
   render: () => education({ hasOther: true } as Partial<ProfileItemModalProps>),
+};
+/** A mentee's degrees (Settings › Education): no mentor card in the hint. */
+export const EducationAddMentee: Story = {
+  render: () => education({ audience: 'mentee' } as Partial<ProfileItemModalProps>),
 };
 export const EducationEdit: Story = {
   render: () =>

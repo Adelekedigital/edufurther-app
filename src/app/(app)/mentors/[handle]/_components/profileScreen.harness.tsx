@@ -165,6 +165,7 @@ export const ownEducation = [
     dateStart: '2023-08-15',
     dateEnd: '2027-05-15',
     levelId: 'dl-phd',
+    levelName: 'PhD',
   },
   {
     id: 'e2',
@@ -179,6 +180,7 @@ export const ownEducation = [
     dateStart: '2021-08-15',
     dateEnd: '2023-05-15',
     levelId: 'dl-masters',
+    levelName: 'Masters',
   },
 ];
 export const saveBackground = vi.fn();

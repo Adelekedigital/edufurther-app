@@ -3,10 +3,26 @@ import {
   educationProblem,
   educationRead,
   mockEducation,
+  seedEducation,
   setEducation,
   type MockEducation,
 } from '@/lib/api/mock/entries';
+import { MOCK_VIEWER_ID } from '@/lib/api/mock/onboardingStore';
 import { ok, problem } from '@/lib/api/mock/respond';
+
+/** The mock mentee's one degree (Mentee Settings.dc.html `medu`), for Settings › Education. */
+const VIEWER_EDUCATION: MockEducation[] = [
+  {
+    id: 'ed-viewer-1',
+    school_name_raw: 'University of Lagos',
+    degree_abbreviation: 'BSc',
+    degree_level_id: 'dl-undergraduate',
+    study_course: 'Microbiology',
+    date_start: '2018-09-01',
+    date_end: '2022-07-01',
+    is_most_recent: true,
+  },
+];
 
 const invalid = (pointer: string) =>
   problem(422, { title: 'Validation failed', errors: [{ pointer }] });
@@ -22,7 +38,10 @@ export async function GET(_req: Request, ctx: Ctx) {
   const { userId } = await ctx.params;
   await new Promise((r) => setTimeout(r, 200));
   return ok('/api/v1/users/{user_id}/education', 'get', {
-    data: (mockEducation(userId) ?? []).map(educationRead),
+    data: (
+      mockEducation(userId) ??
+      (userId === MOCK_VIEWER_ID ? seedEducation(userId, VIEWER_EDUCATION) : [])
+    ).map(educationRead),
     next_cursor: null,
   });
 }
