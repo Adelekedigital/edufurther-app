@@ -188,6 +188,27 @@ describe('useRemoveSocial', () => {
     });
   });
 
+  it('in review, LinkedIn can’t be cleared: the lock is said, and the viewer re-read', async () => {
+    PATCH.mockResolvedValue(problem(409, '/problems/mentor-application-in-review'));
+    DELETE.mockResolvedValue(problem(409, '/problems/mentor-application-in-review'));
+    const { result } = renderHook(() => useRemoveSocial('u1'), { wrapper: wrap() });
+    await act(() =>
+      result.current
+        .remove({ ...row, id: 'linkedin', kind: 'linkedin', mark: 'linkedin' })
+        .catch(() => undefined),
+    );
+    await waitFor(() =>
+      expect(result.current.error).toBe(
+        'You can edit LinkedIn, but not remove it, while we review your application.',
+      ),
+    );
+    // Only LinkedIn's refusal is worded as its lock.
+    await act(() => result.current.remove(row).catch(() => undefined));
+    await waitFor(() =>
+      expect(result.current.error).toBe('That didn’t go through. Try again in a moment.'),
+    );
+  });
+
   it('already gone (404) is what was asked for; a failure says so', async () => {
     DELETE.mockResolvedValueOnce(problem(404)).mockResolvedValueOnce(problem(500));
     const { result } = renderHook(() => useRemoveSocial('u1'), { wrapper: wrap() });

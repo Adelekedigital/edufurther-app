@@ -45,6 +45,8 @@ type SocialLinksCardProps = {
    * removed (backend #509): its Remove stays focusable and says why.
    */
   linkedInLock?: string | null;
+  /** The locked Remove was pressed: the page says why (a title never shows on touch). */
+  onLocked?: () => void;
 };
 
 type Form = { editId: string | null; kind: SocialKind | null; draft: string };
@@ -68,6 +70,7 @@ export function SocialLinksCard({
   addRef,
   onFormChange,
   linkedInLock,
+  onLocked,
 }: SocialLinksCardProps) {
   const headingId = useId();
   const fieldId = useId();
@@ -306,50 +309,52 @@ export function SocialLinksCard({
       ) : rows.length === 0 ? (
         <p className={styles.empty}>{C.empty}</p>
       ) : (
-        <ul className={styles.list}>
+        <>
           {linkedInLock && (
             <span id={`${fieldId}-lock`} hidden>
               {linkedInLock}
             </span>
           )}
-          {rows.map((r) => {
-            const label = markLabel(r.mark);
-            // Up to three websites: each control names which one.
-            const name = r.kind === 'website' ? `${label}, ${displayUrl(r.url)}` : label;
-            const locked = r.kind === 'linkedin' && !!linkedInLock;
-            return (
-              <li key={r.id} className={styles.row}>
-                <span className={styles.disc}>
-                  <BrandIcon mark={r.mark} size={18} />
-                </span>
-                <div className={styles.text}>
-                  <span className={styles.rowTitle}>{label}</span>
-                  <span className={styles.url}>{displayUrl(r.url)}</span>
-                </div>
-                <IconButton
-                  id={`${fieldId}-edit-${r.id}`}
-                  icon="edit"
-                  size="sm"
-                  shape="square"
-                  aria-label={C.editAria(name)}
-                  onClick={() => openForm({ editId: r.id, kind: r.kind, draft: r.value })}
-                />
-                <IconButton
-                  icon="delete"
-                  size="sm"
-                  shape="square"
-                  tone="danger"
-                  aria-label={C.removeAria(name)}
-                  // Focusable, so the reason is heard; pressing it does nothing.
-                  aria-disabled={locked || undefined}
-                  aria-describedby={locked ? `${fieldId}-lock` : undefined}
-                  title={locked ? linkedInLock! : undefined}
-                  onClick={() => !locked && onRemove(r)}
-                />
-              </li>
-            );
-          })}
-        </ul>
+          <ul className={styles.list}>
+            {rows.map((r) => {
+              const label = markLabel(r.mark);
+              // Up to three websites: each control names which one.
+              const name = r.kind === 'website' ? `${label}, ${displayUrl(r.url)}` : label;
+              const locked = r.kind === 'linkedin' && !!linkedInLock;
+              return (
+                <li key={r.id} className={styles.row}>
+                  <span className={styles.disc}>
+                    <BrandIcon mark={r.mark} size={18} />
+                  </span>
+                  <div className={styles.text}>
+                    <span className={styles.rowTitle}>{label}</span>
+                    <span className={styles.url}>{displayUrl(r.url)}</span>
+                  </div>
+                  <IconButton
+                    id={`${fieldId}-edit-${r.id}`}
+                    icon="edit"
+                    size="sm"
+                    shape="square"
+                    aria-label={C.editAria(name)}
+                    onClick={() => openForm({ editId: r.id, kind: r.kind, draft: r.value })}
+                  />
+                  <IconButton
+                    icon="delete"
+                    size="sm"
+                    shape="square"
+                    tone="danger"
+                    aria-label={C.removeAria(name)}
+                    // Focusable, so the reason is heard; pressing it does nothing.
+                    aria-disabled={locked || undefined}
+                    aria-describedby={locked ? `${fieldId}-lock` : undefined}
+                    title={locked ? linkedInLock! : undefined}
+                    onClick={() => (locked ? onLocked?.() : onRemove(r))}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
     </section>
   );

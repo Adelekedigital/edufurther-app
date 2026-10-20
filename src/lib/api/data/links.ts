@@ -186,16 +186,14 @@ export function useRemoveSocial(userId: string | null) {
         // Already gone is what was asked for.
         if (!response.ok && response.status !== 404) throw apiError(response.status, error);
       } catch (e) {
-        const frozen =
-          e instanceof ApiError &&
-          e.status === 409 &&
-          !!e.type?.endsWith('/problems/mentor-application-in-review');
+        const kind = normaliseError(e).kind;
         throw {
-          copy: frozen
-            ? FREEZE_COPY.linkedinLock
-            : normaliseError(e).kind === 'offline'
-              ? SAVE_COPY.profileOffline
-              : C.removeFailed,
+          copy:
+            kind === 'inReview' && row.id === LINKEDIN_ROW
+              ? FREEZE_COPY.linkedinLock
+              : kind === 'offline'
+                ? SAVE_COPY.profileOffline
+                : C.removeFailed,
         };
       }
       return row.id;
@@ -210,6 +208,9 @@ export function useRemoveSocial(userId: string | null) {
       });
       void qc.invalidateQueries({ queryKey: keys.mentors.all });
     },
+    // A refusal may mean the page is stale (the application went into review
+    // elsewhere): re-read the viewer, so LinkedIn locks and the banner shows.
+    onError: () => void qc.invalidateQueries({ queryKey: keys.viewer.all }),
   });
   return {
     remove: mutation.mutateAsync,

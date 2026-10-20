@@ -83,6 +83,7 @@ export function LinksPanel({ userId, frozen = false }: { userId: string; frozen?
         addRef={add}
         onFormChange={saving.reset}
         linkedInLock={frozen ? FREEZE_COPY.linkedinLock : null}
+        onLocked={() => say(FREEZE_COPY.linkedinLock)}
       />
       {pending && (
         <ConfirmDialog

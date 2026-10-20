@@ -72,7 +72,9 @@ vi.mock('./EducationPanel', () => ({
   EducationPanel: () => <div data-testid="education-panel" />,
 }));
 vi.mock('./LinksPanel', () => ({
-  LinksPanel: () => <div data-testid="links-panel" />,
+  LinksPanel: ({ frozen }: { frozen?: boolean }) => (
+    <div data-testid="links-panel" data-frozen={String(!!frozen)} />
+  ),
 }));
 vi.mock('./SecurityPanel', () => ({
   SecurityPanel: ({ role = 'mentee' }: { role?: string }) => (
@@ -209,7 +211,7 @@ describe('SettingsScreen', () => {
     expect(screen.getByTestId('expertise-panel')).toBeInTheDocument();
   });
 
-  it('a mentor’s Social links tab, last, with its panel', () => {
+  it('a mentor’s Social links tab, after Expertise, with its panel', () => {
     viewer = member(true);
     segment = 'links';
     render(<SettingsScreen />);
@@ -421,6 +423,11 @@ describe('the mentee’s tabs as shipped', () => {
       expect(screen.getByTestId('mentor-profile-panel')).toHaveAttribute('data-frozen', frozen);
       expect(screen.getByTestId('expertise-panel')).toHaveAttribute('data-frozen', frozen);
       unmount();
+      // Social links: LinkedIn locks the same way.
+      segment = 'links';
+      const links = render(<SettingsScreen />);
+      expect(screen.getByTestId('links-panel')).toHaveAttribute('data-frozen', frozen);
+      links.unmount();
     }
   });
 });

@@ -9,6 +9,13 @@ const YOUTUBE: SocialRow = {
   url: 'https://www.youtube.com/@gradpath',
   mark: 'youtube',
 };
+const LINKEDIN: SocialRow = {
+  id: 'linkedin',
+  kind: 'linkedin',
+  value: 'ada-obi',
+  url: 'https://www.linkedin.com/in/ada-obi',
+  mark: 'linkedin',
+};
 const h = vi.hoisted(() => ({
   rows: [] as unknown[],
   save: vi.fn(),
@@ -66,6 +73,35 @@ describe('LinksPanel', () => {
     await user.click(screen.getByRole('button', { name: 'Save link' }));
     expect(screen.getByLabelText('YouTube handle')).toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent('already added X');
+  });
+
+  it('in review: a LinkedIn change says it reaches the reviewer; a locked Remove says why', async () => {
+    h.rows = [LINKEDIN, YOUTUBE];
+    h.save.mockResolvedValue(LINKEDIN);
+    const user = userEvent.setup();
+    render(<LinksPanel userId="u1" frozen />);
+    await user.click(screen.getByRole('button', { name: 'Edit LinkedIn' }));
+    await user.click(screen.getByRole('button', { name: 'Save link' }));
+    expect(
+      await screen.findByText('LinkedIn updated. Your reviewer sees the new link.'),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Remove LinkedIn' }));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(
+      await screen.findByText(
+        'You can edit LinkedIn, but not remove it, while we review your application.',
+        { selector: ':not([hidden])' },
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('in review, other links change as usual', async () => {
+    h.save.mockResolvedValue(YOUTUBE);
+    const user = userEvent.setup();
+    render(<LinksPanel userId="u1" frozen />);
+    await user.click(screen.getByRole('button', { name: 'Edit YouTube' }));
+    await user.click(screen.getByRole('button', { name: 'Save link' }));
+    expect(await screen.findByText('Link updated')).toBeInTheDocument();
   });
 
   it('Remove asks first: “Remove this profile?”, Keep it keeps it', async () => {
