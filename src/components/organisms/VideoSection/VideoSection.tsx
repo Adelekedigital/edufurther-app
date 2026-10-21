@@ -19,6 +19,8 @@ type VideoSectionProps = {
   onPick: (provider: 'daily' | 'google_meet') => void;
   /** Shown read-only when the account is on a personal link. */
   customUrl: string | null;
+  /** Off inside a modal, whose own title and subtitle say the same (Calendar). */
+  heading?: boolean;
 };
 
 /**
@@ -36,15 +38,17 @@ type VideoSectionProps = {
  * The personal meeting link is absent because the page no longer offers one
  * (PRD decision 1); `custom` is reachable only through support.
  */
-export function VideoSection({ provider, onPick, customUrl }: VideoSectionProps) {
+export function VideoSection({ provider, onPick, customUrl, heading = true }: VideoSectionProps) {
   const group = useId();
   const usingCustom = provider === 'custom';
   return (
     <section className={styles.section}>
-      <div className={styles.heading}>
-        <h2 className={styles.title}>{VIDEO_COPY.title}</h2>
-        <span className={styles.subtitle}>{VIDEO_COPY.sub}</span>
-      </div>
+      {heading && (
+        <div className={styles.heading}>
+          <h2 className={styles.title}>{VIDEO_COPY.title}</h2>
+          <span className={styles.subtitle}>{VIDEO_COPY.sub}</span>
+        </div>
+      )}
       <div role="radiogroup" aria-label={VIDEO_COPY.groupLabel} className={styles.group}>
         <VideoProviderCard
           name={group}

@@ -14,9 +14,10 @@ import { StatusPill } from '@/components/molecules/StatusPill/StatusPill';
 import { BlockOutForm } from '@/components/organisms/BlockOutForm/BlockOutForm';
 import { ReturnDateForm } from '@/components/organisms/ReturnDateForm/ReturnDateForm';
 import { BookingRulesForm } from '@/components/organisms/BookingRulesForm/BookingRulesForm';
-import { VideoProviderForm } from '@/components/organisms/VideoProviderForm/VideoProviderForm';
+import { VideoSection } from '@/components/organisms/VideoSection/VideoSection';
 import { WeeklyHoursCard } from '@/components/organisms/WeeklyHoursCard/WeeklyHoursCard';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
+import { VideoSwitchConfirm } from '@/components/templates/VideoSwitchConfirm/VideoSwitchConfirm';
 import { useBlockedDays, useBookedDays, useSaveBlockedDays } from '@/lib/api/data/calendar';
 import { useConferencing, useSaveConferencing } from '@/lib/api/data/conferencing';
 import { useMentorStatus, usePause, useResume } from '@/lib/api/data/mentorStatus';
@@ -37,7 +38,12 @@ import {
   shortDay,
   todayIn,
 } from '@/lib/utils/calendar';
-import { BOOKING_RULES_COPY, UNLISTED_COPY } from '@/lib/copy/calendar';
+import {
+  BOOKING_RULES_COPY,
+  UNLISTED_COPY,
+  VIDEO_ROW_COPY,
+  videoRowTitle,
+} from '@/lib/copy/calendar';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { supportMailto } from '@/lib/utils/mailto';
@@ -112,6 +118,9 @@ export function CalendarScreen() {
   // "Availability updated": the return date just set (null = no date), or closed.
   const [done, setDone] = useState<{ back: string | null } | null>(null);
   const [videoOpen, setVideoOpen] = useState(false);
+  // A pick closes the picker and asks here first (PRD decision 2, as Integrations).
+  const [switchTo, setSwitchTo] = useState<'daily' | 'google_meet' | null>(null);
+  const videoAction = useRef<HTMLButtonElement>(null);
   const statusSwitch = useRef<HTMLButtonElement>(null);
   const saveHoursBtn = useRef<HTMLButtonElement>(null);
   // Going busy waited on unsaved hours: the bar says so until they're saved or discarded.
@@ -258,8 +267,31 @@ export function CalendarScreen() {
       },
     );
   };
-  const closeVideo = () => {
-    if (!saveVideo.isPending) setVideoOpen(false);
+  const closeVideo = () => setVideoOpen(false);
+  // The confirm opened from a radio that's gone, so focus comes back here by hand.
+  const focusVideoAction = () => requestAnimationFrame(() => videoAction.current?.focus());
+  const pickVideo = (next: 'daily' | 'google_meet') => {
+    if (video.data?.provider === next) return;
+    saveVideo.reset();
+    setVideoOpen(false);
+    setSwitchTo(next);
+  };
+  const keepVideo = () => {
+    if (saveVideo.isPending) return;
+    setSwitchTo(null);
+    focusVideoAction();
+  };
+  const confirmVideo = async (next: 'daily' | 'google_meet') => {
+    try {
+      // Resolves once the setting is read back, so the row already shows it.
+      await saveVideo.save({ provider: next, customUrl: null });
+      setSwitchTo(null);
+      announce(VIDEO_ROW_COPY.saved);
+      focusVideoAction();
+    } catch (e) {
+      // The confirm stays open with the error beside its button; said aloud too.
+      announce((e as { message?: string })?.message ?? VIDEO_ROW_COPY.saveFailed);
+    }
   };
 
   // A failed save's message belongs to that draft: once the hours match what's
@@ -442,19 +474,15 @@ export function CalendarScreen() {
               )}
               {video.data && (
                 <SettingSummaryRow
+                  ref={videoAction}
                   icon="video_chat"
-                  title={
-                    video.data.provider === 'custom'
-                      ? 'Sessions run on your personal meeting link'
-                      : `Sessions run on ${video.data.provider === 'google_meet' ? 'Google Meet' : 'EduFurther video'}`
-                  }
+                  title={videoRowTitle(video.data.provider)}
                   summary={
                     video.data.provider === 'custom'
-                      ? // PROVISIONAL (calendar design request, PR 3).
-                        'The same link is reused for every mentee.'
-                      : 'A private link is created for every booking. Nothing to paste.'
+                      ? VIDEO_ROW_COPY.customSummary
+                      : VIDEO_ROW_COPY.summary
                   }
-                  actionLabel="Change video for sessions"
+                  actionLabel={VIDEO_ROW_COPY.editLabel}
                   onChange={() => {
                     saveVideo.reset();
                     setVideoOpen(true);
@@ -688,29 +716,30 @@ export function CalendarScreen() {
       )}
       {videoOpen && video.data && (
         <ModalShell
-          title="Video for sessions"
-          subtitle="We create a private link for each booking and add it to your invite and your mentee’s."
+          title={VIDEO_ROW_COPY.modalTitle}
+          subtitle={VIDEO_ROW_COPY.modalSub}
           icon="video_chat"
           size="lg"
+          mobile="sheet"
           onClose={closeVideo}
         >
-          <VideoProviderForm
-            initial={video.data.provider}
+          <VideoSection
+            provider={video.data.provider}
             customUrl={video.data.customUrl}
-            saving={saveVideo.isPending}
-            error={saveVideo.error?.message ?? null}
-            onCancel={closeVideo}
-            onSave={(provider) =>
-              saveVideo.save({ provider, customUrl: video.data?.customUrl ?? null }).then(
-                () => {
-                  setVideoOpen(false);
-                  announce('Your video setting is saved.');
-                },
-                (e: { message: string }) => announce(e.message),
-              )
-            }
+            onPick={pickVideo}
+            heading={false}
           />
         </ModalShell>
+      )}
+      {switchTo && video.data && (
+        <VideoSwitchConfirm
+          from={video.data.provider}
+          to={switchTo}
+          pending={saveVideo.isPending}
+          error={saveVideo.error?.message ?? null}
+          onKeep={keepVideo}
+          onConfirm={() => void confirmVideo(switchTo)}
+        />
       )}
       <LiveRegion message={announcement} />
     </>
