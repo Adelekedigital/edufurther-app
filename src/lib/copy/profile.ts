@@ -12,6 +12,24 @@ export const SHARE_NOTE = {
   hidden: 'Only you can see this page. Others see “This mentor profile isn’t available”.',
 } as const;
 
+/**
+ * "Update your review" (Mentor Profile.dc.html reviewState `again`). The
+ * design's "3 more sessions" has no count behind it (the API says only "2 or
+ * more since"), so the title doesn't name one.
+ */
+export const REVIEW_COPY = {
+  againTitle: 'You’ve had more sessions since your last review',
+  againBody: (firstName: string, lastReviewedAt: string, now = new Date()) => {
+    const at = new Date(lastReviewedAt);
+    const month = at.toLocaleString('en-US', {
+      month: 'long',
+      ...(at.getFullYear() !== now.getFullYear() && { year: 'numeric' }),
+    });
+    return `You last reviewed ${firstName} in ${month}. An update shows mentees how the mentoring has gone over time.`;
+  },
+  againAction: 'Update your review',
+} as const;
+
 export const INTRO_ERRORS = {
   firstName: 'Add your first name.',
   lastName: 'Add your last name.',

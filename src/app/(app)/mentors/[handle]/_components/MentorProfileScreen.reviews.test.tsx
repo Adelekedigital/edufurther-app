@@ -5,11 +5,12 @@ import type { MyReview } from '@/types/mentor';
 import {
   h,
   remote,
-  reviewsState,
-  state,
   replace,
+  reviewableArgs,
   reviewsArgs,
+  reviewsState,
   sendReview,
+  state,
 } from './profileScreen.harness';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
@@ -448,5 +449,44 @@ describe('MentorProfileScreen — editing a review (review of #59)', () => {
     expect(screen.queryByText('Thanks, your review is live')).not.toBeInTheDocument();
     expect(screen.queryByText(/^Editable until/)).not.toBeInTheDocument();
     expect(screen.getByText('Your review')).toBeInTheDocument();
+  });
+});
+
+describe('MentorProfileScreen — "Update your review" (P6, owner 21 Oct)', () => {
+  // "In July" vs "in November 2025" reads from today's year: pin it.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-21T12:00:00Z'));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('an update due: the note says when, and the button writes a new review (same flow)', async () => {
+    const user = userEvent.setup();
+    h.search = new URLSearchParams('tab=reviews');
+    h.profile = state({ data: fullProfile });
+    h.reviewPrompt = { kind: 'again', lastReviewedAt: '2026-07-10T12:00:00Z' };
+    h.reviewableRemote = remote([
+      { id: 's1', startsAt: '2026-09-19T15:00:00Z', typeName: 'SOP draft review' },
+    ]);
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByText('You’ve had more sessions since your last review')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'You last reviewed Gbenga in July. An update shows mentees how the mentoring has gone over time.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Write a review' })).toBeNull();
+    // The page asks for the reviewable sessions for an update too.
+    expect(reviewableArgs).toHaveBeenLastCalledWith(expect.anything(), true);
+    await user.click(screen.getByRole('button', { name: 'Update your review' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('a last review from an earlier year names the year', () => {
+    h.search = new URLSearchParams('tab=reviews');
+    h.profile = state({ data: fullProfile });
+    h.reviewPrompt = { kind: 'again', lastReviewedAt: '2025-11-02T12:00:00Z' };
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByText(/You last reviewed Gbenga in November 2025\./)).toBeInTheDocument();
   });
 });

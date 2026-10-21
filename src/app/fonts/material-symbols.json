@@ -135,6 +135,7 @@
     "trending_up",
     "tune",
     "undo",
+    "update",
     "upload",
     "upload_file",
     "verified",
@@ -150,5 +151,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "65341da86f201b57831f2115fd4a681cc191f28fe7ec8d28c39937fc91fb398b"
+  "sha256": "c6c3f081945098961e2dc673f1a5b8045fc59187f5b447d32f4a7f72b2411f94"
 }

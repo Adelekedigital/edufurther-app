@@ -80,21 +80,21 @@ export function mockReviewSummary(mentorId: string): ReviewSummaryRead {
 
 /**
  * The mock viewer's relationship: by mentor index, no session together (0),
- * a review due (1), or reviewed already (2).
+ * a review due (1), reviewed already (2), or an update due (3: reviewed in
+ * July, 2+ sessions since).
  */
 export function mockRelationship(mentorId: string): MentorRelationshipRead {
   const { i } = mockProfileIndex(mentorId);
-  const k = Math.max(0, i) % 3;
-  const lastReviewedAt = k === 2 ? '2026-07-10T12:00:00Z' : null;
-  const reviewDue = k === 1;
+  const k = Math.max(0, i) % 4;
+  const lastReviewedAt = k >= 2 ? '2026-07-10T12:00:00Z' : null;
+  const reviewDue = k === 1 || k === 3;
   return {
-    completed_sessions_with_mentor: k === 0 ? 0 : 2,
+    completed_sessions_with_mentor: k === 0 ? 0 : k === 3 ? 4 : 2,
     last_reviewed_at: lastReviewedAt,
     review_due: reviewDue,
-    // Contract: it implies `review_due` and is false when they have never
-    // reviewed. No mock state satisfies both today (the one with a review has
-    // nothing due), so this is always false here. Derived rather than
-    // hardcoded so it stays right if a fourth state is added.
+    // Contract (backend #518): it implies `review_due` and is false when they
+    // have never reviewed; state 3 (reviewed in July, 2+ sessions since) is
+    // the one that satisfies both.
     review_update_due: reviewDue && lastReviewedAt !== null,
   };
 }

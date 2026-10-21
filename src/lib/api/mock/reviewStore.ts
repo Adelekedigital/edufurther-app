@@ -9,6 +9,7 @@
 import type { components } from '@/lib/api/generated/schema';
 import { MOCK_SESSION_TYPES } from './availability';
 import { mockProfileIndex } from './fixtures';
+import { mockRelationship } from './reviews';
 
 type MentorRating = components['schemas']['MentorRating'];
 const SCALE: readonly MentorRating[] = ['poor', 'okay', 'great'];
@@ -75,17 +76,19 @@ export function mineFor(mentorId: string): MockReview | null {
 }
 
 /**
- * Sessions the mock viewer can review with a mentor: those whose relationship
- * says a review is due (index % 3 === 1). Every sixth has two, so the
- * "Which session?" choice has data. A reviewed session drops out.
+ * Sessions the mock viewer can review with a mentor: exactly those whose
+ * relationship says a review is due (backend: the same query), a first one or
+ * an update. An update means 2+ sessions since the last review, so it lists
+ * at least two. A reviewed session drops out.
  */
 export function mockReviewable(mentorId: string) {
+  const rel = mockRelationship(mentorId);
+  if (!rel.review_due) return [];
   const { i } = mockProfileIndex(mentorId);
-  if (i < 0 || i % 3 !== 1) return [];
   const DAY = 86_400_000;
   const base = Date.parse('2026-09-19T15:00:00Z');
   // One mentor with five, so the picker's "Show N more" has something to show.
-  const count = i === 1 ? 5 : i % 6 === 1 ? 2 : 1;
+  const count = i === 1 ? 5 : rel.review_update_due || i % 6 === 1 ? 2 : 1;
   return Array.from({ length: count }, (_, k) => {
     const t = MOCK_SESSION_TYPES[k % MOCK_SESSION_TYPES.length]!;
     return {
