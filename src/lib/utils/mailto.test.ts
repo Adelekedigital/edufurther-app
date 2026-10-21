@@ -1,9 +1,17 @@
-import { SUPPORT_EMAIL } from '@/lib/config/support';
+import { DEFAULT_SUPPORT_EMAIL } from '@/lib/config/support';
 import { supportMailto } from './mailto';
 
 describe('supportMailto', () => {
-  it('goes to the one support address', () => {
-    expect(SUPPORT_EMAIL).toBe('support@edufurther.org');
+  afterEach(() => vi.unstubAllEnvs());
+  it('goes to the configured support address', () => {
+    vi.stubEnv('NEXT_PUBLIC_SUPPORT_EMAIL', ' help@example.org ');
+    expect(supportMailto()).toBe('mailto:help@example.org');
+  });
+  it('falls back to the default when the config is unset or not an address', () => {
+    expect(DEFAULT_SUPPORT_EMAIL).toBe('support@edufurther.org');
+    vi.stubEnv('NEXT_PUBLIC_SUPPORT_EMAIL', '');
+    expect(supportMailto()).toBe('mailto:support@edufurther.org');
+    vi.stubEnv('NEXT_PUBLIC_SUPPORT_EMAIL', 'not an address');
     expect(supportMailto()).toBe('mailto:support@edufurther.org');
   });
   it('prefills the subject and body, encoded', () => {
