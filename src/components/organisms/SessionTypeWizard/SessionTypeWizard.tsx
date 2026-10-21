@@ -5,6 +5,7 @@ import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { IconPicker } from '@/components/molecules/IconPicker/IconPicker';
 import { WizardSteps } from '@/components/molecules/WizardSteps/WizardSteps';
+import { SESSIONS_COPY, STEP_COPY, WIZARD_COPY } from '@/lib/copy/sessionTypes';
 import type { Draft, FieldErrors } from '@/lib/utils/sessionTypeDraft';
 import type { Topic } from '@/types/mentor';
 import type { SessionIcon } from '@/types/sessionType';
@@ -21,24 +22,8 @@ import styles from './SessionTypeWizard.module.css';
 
 export type Step = 1 | 2 | 3 | 4;
 
-/** Session Types.dc.html `stepDefs`. */
-export const STEPS: { title: string; description: string }[] = [
-  {
-    title: 'Core details',
-    description:
-      'Give your session a clear identity. This is what mentees read when deciding whether to book.',
-  },
-  {
-    title: 'Intake questions',
-    description: 'Collect what you need to prepare. Mentees answer these when they book.',
-  },
-  {
-    title: 'Scheduling',
-    description:
-      'Set the length and booking rules for this session. Anything you don’t change uses your defaults.',
-  },
-  { title: 'Review', description: 'Check everything before it goes live on your profile.' },
-];
+/** Session Types.dc.html `stepDefs` (copy research). */
+export const STEPS = STEP_COPY;
 
 type SessionTypeWizardProps = {
   title: string;
@@ -78,7 +63,7 @@ type SessionTypeWizardProps = {
 export function SessionTypeWizard(p: SessionTypeWizardProps) {
   const headingId = useId();
   const def = STEPS[p.step - 1]!;
-  const next = p.step < 4 ? `Continue to ${STEPS[p.step]!.title.toLowerCase()}` : p.finishLabel;
+  const next = p.step < 4 ? WIZARD_COPY.continue : p.finishLabel;
   return (
     <div className={styles.page}>
       <div className={styles.bar}>
@@ -86,16 +71,14 @@ export function SessionTypeWizard(p: SessionTypeWizardProps) {
           <button
             type="button"
             className={styles.back}
-            aria-label={p.step === 1 ? 'Back to session types' : 'Back'}
+            aria-label={p.step === 1 ? SESSIONS_COPY.backToList : WIZARD_COPY.back}
             onClick={p.onBack}
           >
             <Icon name="arrow_back" size={20} />
           </button>
           <div className={styles.barTitles}>
             <h1 className={styles.title}>{p.title}</h1>
-            <span className={styles.stepLine}>
-              Step {p.step} of 4 · {def.title}
-            </span>
+            <span className={styles.stepLine}>{WIZARD_COPY.stepLine(p.step, def.title)}</span>
           </div>
         </div>
         <Button size="large" onClick={p.onNext} busy={p.busy}>

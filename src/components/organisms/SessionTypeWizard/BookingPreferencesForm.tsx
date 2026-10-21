@@ -3,14 +3,9 @@
 import { useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
-import { Select } from '@/components/atoms/Select/Select';
+import { BookingRulesRows } from '@/components/organisms/BookingRulesRows/BookingRulesRows';
+import { BOOKING_COPY } from '@/lib/copy/mentorSettings';
 import { resolveDefaults, type BookingDefaults } from '@/lib/utils/sessionTypeDraft';
-import {
-  breakOptions,
-  durationOptions,
-  noticeOptions,
-  windowOptions,
-} from '@/lib/utils/sessionTypeDraft';
 import styles from './SessionTypeWizard.module.css';
 
 type BookingPreferencesFormProps = {
@@ -23,9 +18,9 @@ type BookingPreferencesFormProps = {
 };
 
 /**
- * The Booking preferences modal's body (Session Types.dc.html `defaultsOpen`,
- * rulesNaming=settings): the five defaults every "Use my defaults" type
- * follows, then Cancel / Save defaults.
+ * The Booking rules modal's body (Session Types.dc.html `defaultsOpen`,
+ * rulesNaming=settings): the defaults every "Use my defaults" session follows,
+ * drawn with Settings' rows (approval first), then Cancel / Save defaults.
  */
 export function BookingPreferencesForm({
   initial,
@@ -39,68 +34,27 @@ export function BookingPreferencesForm({
   // reloads it) brings the window within it; the other choices stay.
   const cap = initial.maxWindowDays;
   if (cap && v.windowDays > cap) setV({ ...v, windowDays: cap });
-  const row = (
-    label: string,
-    hint: string,
-    value: string,
-    options: { value: string; label: string }[],
-    set: (value: string) => void,
-  ) => (
-    <div className={styles.ruleRow}>
-      <span className={styles.prefText}>
-        <span className={styles.ruleLabel}>{label}</span>
-        <span className={styles.ruleHint}>{hint}</span>
-      </span>
-      <Select
-        aria-label={label}
-        width={180}
-        options={options}
-        value={value}
-        onChange={(e) => set(e.target.value)}
-      />
-    </div>
-  );
   return (
     <div className={styles.modalBody}>
       <div className={styles.rules}>
-        {row(
-          'Session length',
-          'How long each booking lasts.',
-          String(v.durationMin),
-          durationOptions(v.durationMin),
-          (x) => setV({ ...v, durationMin: Number(x) }),
-        )}
-        {row(
-          'Minimum notice',
-          'Mentees can’t book with less notice.',
-          String(v.noticeHours),
-          noticeOptions(v.noticeHours),
-          (x) => setV({ ...v, noticeHours: Number(x) }),
-        )}
-        {row(
-          'Bookable up to',
-          'How far ahead mentees can book.',
-          String(v.windowDays),
-          windowOptions(v.windowDays, initial.maxWindowDays),
-          (x) => setV({ ...v, windowDays: Number(x) }),
-        )}
-        {row(
-          'Break after each session',
-          'Time kept free between bookings.',
-          String(v.breakMin),
-          breakOptions(v.breakMin),
-          (x) => setV({ ...v, breakMin: Number(x) }),
-        )}
-        {row(
-          'Approve each booking',
-          'You review each request before it’s booked.',
-          v.requiresApproval ? 'on' : 'off',
-          [
-            { value: 'on', label: 'Approve each request' },
-            { value: 'off', label: 'Confirm instantly' },
-          ],
-          (x) => setV({ ...v, requiresApproval: x === 'on' }),
-        )}
+        <BookingRulesRows
+          value={v}
+          approval={{
+            on: v.requiresApproval,
+            responseWindowHours: initial.responseWindowHours ?? null,
+            onChange: (on) => setV({ ...v, requiresApproval: on }),
+          }}
+          maxWindowDays={cap}
+          copy={BOOKING_COPY.rules}
+          onChange={(rules) => setV({ ...v, ...rules })}
+          classes={{
+            row: styles.ruleRow,
+            text: styles.prefText,
+            label: styles.ruleLabel,
+            hint: styles.ruleHint,
+          }}
+          selectWidth={180}
+        />
       </div>
       {error && (
         <p role="alert" className={styles.modalError}>

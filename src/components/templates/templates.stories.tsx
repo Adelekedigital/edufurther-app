@@ -199,7 +199,7 @@ export const ModalSheet: Story = {
 export const ModalSuccess: Story = {
   render: () => (
     <ModalShell
-      title="Session type published"
+      title="Session published"
       subtitle="“SOP draft review” is live on your profile. Mentees can book it in your open hours."
       icon="check_circle"
       tone="success"
@@ -222,8 +222,8 @@ export const ModalSuccess: Story = {
 export const ModalDanger: Story = {
   render: () => (
     <ModalShell
-      title="Delete this session type?"
-      subtitle="“SOP draft review” will be removed from your profile."
+      title="Delete this session?"
+      subtitle="“SOP draft review” is removed from your profile and Sessions. This can’t be undone."
       icon="delete"
       tone="danger"
       size="sm"

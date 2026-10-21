@@ -74,17 +74,17 @@ const setup = (list: Remote<OwnSessionType[]>, messages = {}) => {
 describe('SessionTypeManager — the four states', () => {
   it('loading announces itself and shows no empty state', () => {
     setup(remote({ isLoading: true }));
-    expect(screen.getByRole('status', { name: 'Loading your session types' })).toBeInTheDocument();
-    expect(screen.queryByText('Create your first session type')).toBeNull();
+    expect(screen.getByRole('status', { name: 'Loading your sessions' })).toBeInTheDocument();
+    expect(screen.queryByText('Add a session so mentees can book you')).toBeNull();
   });
 
   it('error is checked before empty, and Try again retries', async () => {
     const list = remote({ data: [], error: { kind: 'server', message: 'x' } });
     setup(list);
     expect(
-      screen.getByRole('heading', { name: 'We couldn’t load your session types' }),
+      screen.getByRole('heading', { name: 'We couldn’t load your sessions' }),
     ).toBeInTheDocument();
-    expect(screen.queryByText('Create your first session type')).toBeNull();
+    expect(screen.queryByText('Add a session so mentees can book you')).toBeNull();
     await userEvent.setup().click(screen.getByRole('button', { name: 'Try again' }));
     expect(list.retry).toHaveBeenCalled();
   });
@@ -92,9 +92,9 @@ describe('SessionTypeManager — the four states', () => {
   it('empty offers a way forward: create, and the templates', () => {
     setup(remote({ data: [] }));
     expect(
-      screen.getByRole('heading', { name: 'Create your first session type' }),
+      screen.getByRole('heading', { name: 'Add a session so mentees can book you' }),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole('link', { name: 'Create session type' })).toHaveLength(2);
+    expect(screen.getAllByRole('link', { name: 'Create session' })).toHaveLength(2);
     expect(screen.getByRole('link', { name: /SOP draft review/ })).toHaveAttribute(
       'href',
       '/session-types/new?template=sop',
@@ -219,7 +219,7 @@ describe('SessionTypeManager — the four states', () => {
     await user.click(screen.getByRole('button', { name: 'Keep it: SOP draft review' }));
     rerenderWith(remote({ data: [pending] }), ['a']);
     rerenderWith(remote({ data: [pending] }), []);
-    await user.click(screen.getByRole('link', { name: 'Create session type' }));
+    await user.click(screen.getByRole('link', { name: 'Create session' }));
     relist(remote({ data: [{ ...pending, pendingDeletion: null }] }));
     expect(
       screen.getByRole('switch', { name: 'Visible to mentees: SOP draft review' }),

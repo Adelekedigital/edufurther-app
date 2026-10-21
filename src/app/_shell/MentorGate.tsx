@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import type { Illustration } from '@/components/molecules/EmptyState/EmptyState';
+import { SESSIONS_COPY } from '@/lib/copy/sessionTypes';
 import type { Access, NavKey } from '@/lib/utils/access';
 import type { Viewer } from '@/types/mentor';
 import styles from './MentorGate.module.css';
@@ -39,8 +40,8 @@ export const SETTINGS_GATE: MemberGateCopy = {
 /** Session Types' copy (confirmed by design, reply 2026-09-29, #3). */
 export const SESSION_TYPES_GATE: MemberGateCopy = {
   illustration: 'task-templates',
-  guestTitle: 'Log in to manage your session types',
-  guestDescription: 'Session types are what mentees can book with you.',
+  guestTitle: SESSIONS_COPY.guestTitle,
+  guestDescription: SESSIONS_COPY.guestBody,
 };
 
 /**

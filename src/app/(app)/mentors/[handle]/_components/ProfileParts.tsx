@@ -51,7 +51,7 @@ const OWNER_COPY = {
     'We’re reviewing your application. You can edit your name and sessions now, and the rest once it’s reviewed.',
   unlisted: 'Your profile is unlisted. Only you can see it.',
   noTypes:
-    'Mentees see “Not taking bookings” on your profile. Turn on a session type to take bookings again.',
+    'Mentees see “Not taking bookings” on your profile. Turn on a session to take bookings again.',
   preview: 'This is how mentees see your profile.',
   previewUnapproved:
     'Only you can see your profile. This is how it will look to mentees once it’s approved.',

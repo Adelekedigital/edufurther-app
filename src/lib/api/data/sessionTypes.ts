@@ -9,6 +9,7 @@ import {
   type QueryClient,
 } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
+import { SESSIONS_COPY } from '@/lib/copy/sessionTypes';
 import type { AppError, Remote } from '@/types/mentor';
 import type {
   ApplicationStage,
@@ -460,7 +461,7 @@ export function createError(
       return { ...e, fields, message: 'Still publishing. Give it a moment, then try again.' };
     return {
       ...e,
-      fields: { name: 'You already have a session type with this name.' },
+      fields: { name: SESSIONS_COPY.nameTaken },
       // The field says what; the banner says where to look (not the same sentence twice).
       message: 'Some details need another look.',
     };
@@ -616,7 +617,7 @@ export function useMentorDefaults(
 }
 
 /**
- * PATCH /users/{id}/mentor-profile — the Booking preferences modal. Saves every
+ * PATCH /users/{id}/mentor-profile — the Booking rules modal. Saves every
  * value it shows (resolved), so what the mentor saw is what is stored.
  */
 export function useSaveMentorDefaults(userId: string | null) {

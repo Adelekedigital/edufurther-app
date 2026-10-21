@@ -132,9 +132,12 @@ describe('SessionTypeFormScreen', () => {
     render(<SessionTypeFormScreen template="sop-review" />);
     expect(screen.getByRole('textbox', { name: 'Session name' })).toHaveValue('SOP draft review');
     expect(
-      within(screen.getByRole('group', { name: 'Topics' })).getByRole('button', {
-        name: 'Document preparation',
-      }),
+      within(screen.getByRole('group', { name: 'What does this session help with?' })).getByRole(
+        'button',
+        {
+          name: 'Document preparation',
+        },
+      ),
     ).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: /^Review/ })).toBeDisabled();
   });
@@ -142,28 +145,28 @@ describe('SessionTypeFormScreen', () => {
   it('Continue checks the step: errors on the fields, and it stays', async () => {
     const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template={null} />);
-    await user.click(next(/Continue to intake questions/));
+    await user.click(next(/^Continue$/));
     expect(screen.getByText('Give your session a name.')).toBeInTheDocument();
     expect(screen.getByText('Pick at least one topic.')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Session name' })).toHaveAttribute(
       'aria-invalid',
       'true',
     );
-    expect(screen.getByText('Step 1 of 4 · Core details')).toBeInTheDocument();
+    expect(screen.getByText('Step 1 of 4 · Define your session')).toBeInTheDocument();
   });
 
   it('leaving step 1 with changes asks first; without changes it just goes', async () => {
     const user = userEvent.setup({ delay: null });
     const { unmount } = render(<SessionTypeFormScreen template={null} />);
-    await user.click(screen.getByRole('button', { name: 'Back to session types' }));
+    await user.click(screen.getByRole('button', { name: 'Back to sessions' }));
     expect(push).toHaveBeenCalledWith('/session-types');
     unmount();
     push.mockReset();
     render(<SessionTypeFormScreen template={null} />);
     await user.type(screen.getByRole('textbox', { name: 'Session name' }), 'Mock');
-    await user.click(screen.getByRole('button', { name: 'Back to session types' }));
+    await user.click(screen.getByRole('button', { name: 'Back to sessions' }));
     expect(push).not.toHaveBeenCalled();
-    const dialog = screen.getByRole('alertdialog', { name: 'Discard this session type?' });
+    const dialog = screen.getByRole('alertdialog', { name: 'Discard this session?' });
     await user.click(within(dialog).getByRole('button', { name: 'Keep editing' }));
     expect(screen.queryByRole('alertdialog')).toBeNull();
   });
@@ -172,16 +175,16 @@ describe('SessionTypeFormScreen', () => {
     const user = userEvent.setup({ delay: null });
     create.mockImplementation((_v, opts) => opts.onSuccess({ id: 'new', failedWindows: [] }));
     render(<SessionTypeFormScreen template="sop-review" />);
-    await user.click(next(/Continue to intake questions/));
-    await user.click(next(/Continue to scheduling/));
-    await user.click(next(/Continue to review/));
+    await user.click(next(/^Continue$/));
+    await user.click(next(/^Continue$/));
+    await user.click(next(/^Continue$/));
     await user.click(next(/Publish session/));
     expect(create).toHaveBeenCalledTimes(1);
     const { body, windows } = create.mock.calls[0]![0];
     expect(body).toMatchObject({ name: 'SOP draft review', service_offering_ids: ['o4'] });
     expect(body.questions).toHaveLength(2);
     expect(windows).toEqual([]);
-    expect(screen.getByRole('dialog', { name: 'Session type published' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Session published' })).toBeInTheDocument();
   });
 
   it('a name the server refuses sends the mentor back to step 1, on the field', async () => {
@@ -190,25 +193,20 @@ describe('SessionTypeFormScreen', () => {
       opts.onError({
         kind: 'conflict',
         message: 'Some details need another look.',
-        fields: { name: 'You already have a session type with this name.' },
+        fields: { name: 'You already have a session with this name.' },
       }),
     );
     render(<SessionTypeFormScreen template="sop-review" />);
-    for (const n of [
-      /Continue to intake/,
-      /Continue to scheduling/,
-      /Continue to review/,
-      /Publish session/,
-    ])
+    for (const n of [/^Continue$/, /^Continue$/, /^Continue$/, /Publish session/])
       await user.click(next(n));
-    expect(screen.getByText('Step 1 of 4 · Core details')).toBeInTheDocument();
-    expect(screen.getByText('You already have a session type with this name.')).toBeInTheDocument();
+    expect(screen.getByText('Step 1 of 4 · Define your session')).toBeInTheDocument();
+    expect(screen.getByText('You already have a session with this name.')).toBeInTheDocument();
   });
 
   it('delete a question confirms first', async () => {
     const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
-    await user.click(next(/Continue to intake questions/));
+    await user.click(next(/^Continue$/));
     await user.click(screen.getByRole('button', { name: 'Delete question 1' }));
     const dialog = screen.getByRole('alertdialog', { name: 'Delete this question?' });
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
@@ -222,7 +220,7 @@ describe('SessionTypeFormScreen', () => {
   it('editing a question, then deleting one above it, saves the right question (review of #49)', async () => {
     const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
-    await user.click(next(/Continue to intake questions/));
+    await user.click(next(/^Continue$/));
     await user.click(screen.getByRole('button', { name: 'Edit question 2' }));
     await user.click(screen.getByRole('button', { name: 'Delete question 1' }));
     await user.click(
@@ -249,14 +247,9 @@ describe('SessionTypeFormScreen', () => {
       }),
     );
     render(<SessionTypeFormScreen template="sop-review" />);
-    for (const n of [
-      /Continue to intake/,
-      /Continue to scheduling/,
-      /Continue to review/,
-      /Publish session/,
-    ])
+    for (const n of [/^Continue$/, /^Continue$/, /^Continue$/, /Publish session/])
       await user.click(next(n));
-    expect(screen.getByText('Step 2 of 4 · Intake questions')).toBeInTheDocument();
+    expect(screen.getByText('Step 2 of 4 · Prepare for session')).toBeInTheDocument();
     const rows = within(screen.getByRole('list', { name: 'Intake questions' })).getAllByRole(
       'listitem',
     );
@@ -270,11 +263,10 @@ describe('SessionTypeFormScreen', () => {
         fields: { rules: 'Check the length and booking rules.' },
       }),
     );
-    for (const n of [/Continue to scheduling/, /Continue to review/, /Publish session/])
-      await user.click(next(n));
+    for (const n of [/^Continue$/, /^Continue$/, /Publish session/]) await user.click(next(n));
     // Shown with "Use my defaults" too (the server can refuse inherited rules).
     expect(screen.getByText('Check the length and booking rules.')).toBeInTheDocument();
-    await user.click(screen.getByRole('radio', { name: /Set rules for this session/ }));
+    await user.click(screen.getByRole('radio', { name: /Customize for this session/ }));
     expect(screen.queryByText('Check the length and booking rules.')).toBeNull();
   });
 
@@ -282,37 +274,52 @@ describe('SessionTypeFormScreen', () => {
     const user = userEvent.setup({ delay: null });
     defaultsMock = { data: null, isLoading: true, error: null, retry: vi.fn() };
     const { unmount } = render(<SessionTypeFormScreen template="sop-review" />);
-    await user.click(next(/Continue to intake/));
-    await user.click(next(/Continue to scheduling/));
+    await user.click(next(/^Continue$/));
+    await user.click(next(/^Continue$/));
     expect(screen.getByText('Loading your defaults…')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Edit defaults' })).toBeDisabled();
-    await user.click(next(/Continue to review/));
+    await user.click(next(/^Continue$/));
     expect(screen.queryByText(/confirm instantly/i)).toBeNull();
     unmount();
     const retry = vi.fn();
     defaultsMock = { data: null, isLoading: false, error: { kind: 'server', message: 'x' }, retry };
     render(<SessionTypeFormScreen template="sop-review" />);
-    await user.click(next(/Continue to intake/));
-    await user.click(next(/Continue to scheduling/));
+    await user.click(next(/^Continue$/));
+    await user.click(next(/^Continue$/));
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(retry).toHaveBeenCalled();
+  });
+
+  // A rule change used to patch the whole draft, which cleared every error.
+  it('changing a booking rule keeps the hours error on screen', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<SessionTypeFormScreen template="sop-review" />);
+    await user.click(next(/^Continue$/));
+    await user.click(next(/^Continue$/));
+    await user.click(screen.getByRole('radio', { name: /Set availability for this session/ }));
+    await user.click(next(/^Continue$/));
+    const error = 'Turn on at least one day, or use your weekly availability.';
+    expect(screen.getByText(error)).toBeInTheDocument();
+    await user.click(screen.getByRole('radio', { name: /Customize for this session/ }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Minimum notice' }), '72');
+    expect(screen.getByText(error)).toBeInTheDocument();
   });
 
   it('"Use my defaults" sends nothing of its own; custom rules send all five', async () => {
     const user = userEvent.setup({ delay: null });
     const toStep3 = async () => {
-      await user.click(next(/Continue to intake/));
-      await user.click(next(/Continue to scheduling/));
+      await user.click(next(/^Continue$/));
+      await user.click(next(/^Continue$/));
     };
     const publish = async () => {
-      await user.click(next(/Continue to review/));
+      await user.click(next(/^Continue$/));
       await user.click(next(/Publish session/));
     };
     const { unmount } = render(<SessionTypeFormScreen template="sop-review" />);
     await toStep3();
     expect(
       screen.getByText(
-        '60 min sessions · at least 48 hours notice · bookable up to 4 weeks ahead · 15 min buffer · you approve each request',
+        'You approve each booking · 60 min · 2 days notice · 4 weeks ahead · 15 min buffer',
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: 'Session length' })).toBeNull();
@@ -329,10 +336,10 @@ describe('SessionTypeFormScreen', () => {
     create.mockReset();
     render(<SessionTypeFormScreen template="sop-review" />);
     await toStep3();
-    await user.click(screen.getByRole('radio', { name: /Set rules for this session/ }));
+    await user.click(screen.getByRole('radio', { name: /Customize for this session/ }));
     await user.selectOptions(screen.getByRole('combobox', { name: 'Session length' }), '90');
     await user.selectOptions(screen.getByRole('combobox', { name: 'Minimum notice' }), '72');
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Booking approval' }), 'off');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Approve bookings' }), 'off');
     await publish();
     expect(create.mock.calls[0]![0].body).toMatchObject({
       duration_minutes: 90,
@@ -341,13 +348,13 @@ describe('SessionTypeFormScreen', () => {
     });
   });
 
-  it('Edit defaults opens Booking preferences; Save sends every value, Cancel nothing', async () => {
+  it('Edit defaults opens Booking rules; Save sends every value, Cancel nothing', async () => {
     const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
-    await user.click(next(/Continue to intake/));
-    await user.click(next(/Continue to scheduling/));
+    await user.click(next(/^Continue$/));
+    await user.click(next(/^Continue$/));
     await user.click(screen.getByRole('button', { name: 'Edit defaults' }));
-    let dialog = screen.getByRole('dialog', { name: 'Booking preferences' });
+    let dialog = screen.getByRole('dialog', { name: 'Booking rules' });
     // The mentor's own values, not the platform's.
     expect(within(dialog).getByRole('combobox', { name: 'Session length' })).toHaveValue('60');
     await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
@@ -355,22 +362,19 @@ describe('SessionTypeFormScreen', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'Edit defaults' }));
-    dialog = screen.getByRole('dialog', { name: 'Booking preferences' });
+    dialog = screen.getByRole('dialog', { name: 'Booking rules' });
     // No 6-hour notice: the platform minimum is 24 hours (backend round 3).
     expect(
       within(within(dialog).getByRole('combobox', { name: 'Minimum notice' })).queryByRole(
         'option',
-        { name: '6 hrs' },
+        { name: '6 hours' },
       ),
     ).toBeNull();
     await user.selectOptions(
       within(dialog).getByRole('combobox', { name: 'Session length' }),
       '30',
     );
-    await user.selectOptions(
-      within(dialog).getByRole('combobox', { name: 'Approve each booking' }),
-      'off',
-    );
+    await user.click(within(dialog).getByRole('switch', { name: 'Approve bookings' }));
     await user.click(within(dialog).getByRole('button', { name: 'Save defaults' }));
     expect(saveDefaults).toHaveBeenCalledWith({
       durationMin: 30,
@@ -382,12 +386,12 @@ describe('SessionTypeFormScreen', () => {
     await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
-  it('Edit weekly hours: a shorter live session type lowers where end times start', async () => {
+  it('Edit weekly hours: a shorter live session lowers where end times start', async () => {
     ownTypes = { data: [{ durationMin: 30, isLive: true, usesOwnWindows: false }] };
     const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
-    await user.click(next(/Continue to intake/));
-    await user.click(next(/Continue to scheduling/));
+    await user.click(next(/^Continue$/));
+    await user.click(next(/^Continue$/));
     await user.click(screen.getByRole('button', { name: 'Edit weekly hours' }));
     const dialog = screen.getByRole('dialog', { name: 'Your weekly hours' });
     const end = within(dialog).getByRole('combobox', { name: 'Monday end time' });
@@ -397,8 +401,8 @@ describe('SessionTypeFormScreen', () => {
   it('Edit weekly hours shows the Calendar hours and saves them; bad hours block the save', async () => {
     const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
-    await user.click(next(/Continue to intake/));
-    await user.click(next(/Continue to scheduling/));
+    await user.click(next(/^Continue$/));
+    await user.click(next(/^Continue$/));
     // The zone is named with the times (product rule).
     expect(
       screen.getByText('Mon 5 pm–8 pm · Sat 9 am–1 pm · Lagos (WAT) time'),
@@ -436,11 +440,11 @@ describe('SessionTypeFormScreen', () => {
 describe('SessionTypeFormScreen — review of #60', () => {
   const toStep3 = async (user: ReturnType<typeof userEvent.setup>, template = 'sop-review') => {
     render(<SessionTypeFormScreen template={template} />);
-    await user.click(next(/Continue to intake/));
-    await user.click(next(/Continue to scheduling/));
+    await user.click(next(/^Continue$/));
+    await user.click(next(/^Continue$/));
   };
 
-  it('a failed save keeps Booking preferences open and says so; reopening starts clean', async () => {
+  it('a failed save keeps Booking rules open and says so; reopening starts clean', async () => {
     const user = userEvent.setup({ delay: null });
     saveDefaults.mockRejectedValue({ kind: 'server', message: 'x' });
     defaultsSaveError = {
@@ -450,16 +454,16 @@ describe('SessionTypeFormScreen — review of #60', () => {
     await toStep3(user);
     await user.click(screen.getByRole('button', { name: 'Edit defaults' }));
     expect(resetDefaults).toHaveBeenCalledTimes(1);
-    const dialog = screen.getByRole('dialog', { name: 'Booking preferences' });
+    const dialog = screen.getByRole('dialog', { name: 'Booking rules' });
     await user.click(within(dialog).getByRole('button', { name: 'Save defaults' }));
-    expect(screen.getByRole('dialog', { name: 'Booking preferences' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Booking rules' })).toBeInTheDocument();
     expect(within(dialog).getByRole('alert')).toHaveTextContent('Your preferences didn’t save.');
   });
 
-  it('"Set rules for this session" starts from the mentor’s own values', async () => {
+  it('"Customize for this session" starts from the mentor’s own values', async () => {
     const user = userEvent.setup({ delay: null });
     await toStep3(user);
-    await user.click(screen.getByRole('radio', { name: /Set rules for this session/ }));
+    await user.click(screen.getByRole('radio', { name: /Customize for this session/ }));
     // READY: 60 min, 48 hrs, 28 days, 15 min — not the blank draft's 24 hrs notice.
     expect(screen.getByRole('combobox', { name: 'Session length' })).toHaveValue('60');
     expect(screen.getByRole('combobox', { name: 'Minimum notice' })).toHaveValue('48');
@@ -478,8 +482,8 @@ describe('SessionTypeFormScreen — review of #60', () => {
     defaultsMock = { ...READY, data: { ...READY.data, windowDays: 20 } };
     await toStep3(user);
     await user.click(screen.getByRole('button', { name: 'Edit defaults' }));
-    const dialog = screen.getByRole('dialog', { name: 'Booking preferences' });
-    const select = within(dialog).getByRole('combobox', { name: 'Bookable up to' });
+    const dialog = screen.getByRole('dialog', { name: 'Booking rules' });
+    const select = within(dialog).getByRole('combobox', { name: 'Booking window' });
     expect(select).toHaveValue('20');
     expect(within(select).getByRole('option', { name: '20 days' })).toBeInTheDocument();
   });
@@ -491,24 +495,24 @@ describe('SessionTypeFormScreen — review of #60', () => {
     await toStep3(user);
     await user.click(screen.getByRole('button', { name: 'Edit defaults' }));
     expect(retry).toHaveBeenCalled();
-    expect(screen.queryByRole('dialog', { name: 'Booking preferences' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Booking rules' })).toBeNull();
   });
 
-  it('"Bookable up to" offers only what the platform maximum allows, in the form and in Booking preferences', async () => {
+  it('"Booking window" offers only what the platform maximum allows, in the form and in Booking rules', async () => {
     const user = userEvent.setup({ delay: null });
     defaultsMock = { ...READY, data: { ...READY.data, windowDays: 14, maxWindowDays: 14 } };
     await toStep3(user);
     await user.click(screen.getByRole('button', { name: 'Edit defaults' }));
-    const dialog = screen.getByRole('dialog', { name: 'Booking preferences' });
-    const prefs = within(dialog).getByRole('combobox', { name: 'Bookable up to' });
+    const dialog = screen.getByRole('dialog', { name: 'Booking rules' });
+    const prefs = within(dialog).getByRole('combobox', { name: 'Booking window' });
     expect(
       within(prefs)
         .getAllByRole('option')
         .map((o) => o.textContent),
     ).toEqual(['1 week', '2 weeks']);
     await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
-    await user.click(screen.getByRole('radio', { name: /Set rules for this session/ }));
-    const own = screen.getByRole('combobox', { name: 'Bookable up to' });
+    await user.click(screen.getByRole('radio', { name: /Customize for this session/ }));
+    const own = screen.getByRole('combobox', { name: 'Booking window' });
     expect(
       within(own)
         .getAllByRole('option')
@@ -529,12 +533,10 @@ describe('SessionTypeFormScreen — review of #60', () => {
       retry: vi.fn(),
     };
     rerender(<SessionTypeFormScreen template="mock-visa-interview" />);
-    await user.click(screen.getByRole('button', { name: 'Back to session types' }));
+    await user.click(screen.getByRole('button', { name: 'Back to sessions' }));
     // Still an unsaved change: it asks before leaving.
     expect(push).not.toHaveBeenCalled();
-    expect(
-      screen.getByRole('alertdialog', { name: 'Discard this session type?' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog', { name: 'Discard this session?' })).toBeInTheDocument();
   });
 
   it('new hours overlapping hours kept in another zone can’t be saved, and it says which zone', async () => {
@@ -557,7 +559,9 @@ describe('SessionTypeFormScreen — review of #60', () => {
     const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
     const group = screen.getByRole('group', { name: 'Best for mentees who are' });
-    expect(screen.getByText('Pick all that apply. Leave empty for any stage.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Choose the stages this session is most useful for.'),
+    ).toBeInTheDocument();
     await user.click(within(group).getByRole('button', { name: 'Drafting' }));
     await user.click(within(group).getByRole('button', { name: 'Revising' }));
     await user.type(screen.getByRole('textbox', { name: 'Another stage' }), 'Deferred');
@@ -569,12 +573,7 @@ describe('SessionTypeFormScreen — review of #60', () => {
       );
     // Unpicking one keeps the others.
     await user.click(within(group).getByRole('button', { name: 'Revising' }));
-    for (const n of [
-      /Continue to intake/,
-      /Continue to scheduling/,
-      /Continue to review/,
-      /Publish session/,
-    ])
+    for (const n of [/^Continue$/, /^Continue$/, /^Continue$/, /Publish session/])
       await user.click(next(n));
     expect(create.mock.calls[0]![0].body).toMatchObject({
       application_stages: ['drafting_stage', 'other'],
@@ -605,12 +604,7 @@ describe('SessionTypeFormScreen — review of #60', () => {
     create.mockImplementationOnce((_v, opts) =>
       opts.onError({ kind: 'validation', message: 'x', fields: { stage: 'Check the stage.' } }),
     );
-    for (const n of [
-      /Continue to intake/,
-      /Continue to scheduling/,
-      /Continue to review/,
-      /Publish session/,
-    ])
+    for (const n of [/^Continue$/, /^Continue$/, /^Continue$/, /Publish session/])
       await user.click(next(n));
     expect(screen.getByText('Check the stage.')).toBeInTheDocument();
     await user.click(
@@ -644,7 +638,7 @@ describe('the setup lock: /session-types/new opened by URL (PRD "App shell and a
     expect(screen.queryByRole('textbox', { name: 'Session name' })).toBeNull();
   });
 
-  it('a mentor in review still creates session types (only Bookings locks)', () => {
+  it('a mentor in review still creates sessions (only Bookings locks)', () => {
     viewer = viewers.mentorReview;
     render(<SessionTypeFormScreen template="sop-review" />);
     expect(screen.getByRole('textbox', { name: 'Session name' })).toBeInTheDocument();

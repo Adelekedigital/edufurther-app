@@ -4,7 +4,6 @@ import {
   DAY_NAMES,
   QUESTION_KIND_LABELS,
   stagesLabel,
-  approvalLabel,
   breakLabel,
   hoursLabel,
   resolveDefaults,
@@ -12,13 +11,15 @@ import {
   windowLabel,
   type Draft,
 } from '@/lib/utils/sessionTypeDraft';
+import { BOOKING_COPY, approvalShort } from '@/lib/copy/mentorSettings';
+import { REVIEW_COPY } from '@/lib/copy/sessionTypes';
 import type { Topic } from '@/types/mentor';
 import type { Defaults } from './SchedulingStep';
 import styles from './SessionTypeWizard.module.css';
 
 /** "Wed 5:00 pm–8:00 pm; Sat 9:00 am–10:00 am". */
 export function hoursSummary(d: Draft): string {
-  if (d.hours === 'default') return 'Your Calendar availability';
+  if (d.hours === 'default') return REVIEW_COPY.weekly;
   const parts = d.days.flatMap((day, i) =>
     day.on
       ? [
@@ -56,9 +57,9 @@ export function ReviewStep({ draft: d, topics, defaults, onEdit }: ReviewStepPro
   const breakText = custom ? breakLabel(d.breakMin) : inherited((r) => breakLabel(r.breakMin));
   const approval =
     custom && d.approval !== 'inherit'
-      ? approvalLabel(d.approval === 'on')
+      ? approvalShort(d.approval === 'on')
       : mine
-        ? `My default (${approvalLabel(mine.requiresApproval).toLowerCase()})`
+        ? `My default (${approvalShort(mine.requiresApproval).toLowerCase()})`
         : 'My default';
   // The card shows the length mentees will book; unknown until the defaults load.
   const length = custom ? d.durationMin : mine?.durationMin;
@@ -66,17 +67,20 @@ export function ReviewStep({ draft: d, topics, defaults, onEdit }: ReviewStepPro
     <div className={styles.body4}>
       <div className={styles.summaries}>
         <SummarySection
-          title="Core details"
+          title={REVIEW_COPY.details}
           onEdit={() => onEdit(1)}
           rows={[
             { k: 'Name', v: d.name },
             { k: 'What mentees get', v: d.description },
-            { k: topicLabels.length > 1 ? 'Topics' : 'Topic', v: topicLabels.join(', ') || '—' },
+            {
+              k: topicLabels.length > 1 ? 'Topics' : 'Topic',
+              v: topicLabels.join(', ') || REVIEW_COPY.none,
+            },
             { k: 'Best for', v: stage },
           ]}
         />
         <SummarySection
-          title="Intake questions"
+          title={REVIEW_COPY.questions}
           onEdit={() => onEdit(2)}
           rows={
             d.questions.length
@@ -84,19 +88,19 @@ export function ReviewStep({ draft: d, topics, defaults, onEdit }: ReviewStepPro
                   k: `${i + 1}. ${QUESTION_KIND_LABELS[q.kind]}`,
                   v: `${q.text}${q.required ? '' : ' (optional)'}${q.options.length ? ` · ${q.options.join(', ')}` : ''}`,
                 }))
-              : [{ k: 'Questions', v: 'None' }]
+              : [{ k: 'Questions', v: REVIEW_COPY.none }]
           }
         />
         <SummarySection
-          title="Scheduling"
+          title={REVIEW_COPY.rules}
           onEdit={() => onEdit(3)}
           rows={[
-            { k: 'Length', v: lengthText },
+            { k: REVIEW_COPY.length, v: lengthText },
             { k: 'Minimum notice', v: noticeText },
-            { k: 'Bookable up to', v: windowText },
-            { k: 'Break after', v: breakText },
-            { k: 'Hours', v: hoursSummary(d) },
-            { k: 'Approval', v: approval },
+            { k: BOOKING_COPY.rules.windowDays.label, v: windowText },
+            { k: BOOKING_COPY.rules.breakMin.label, v: breakText },
+            { k: REVIEW_COPY.hours, v: hoursSummary(d) },
+            { k: BOOKING_COPY.approveTitle, v: approval },
           ]}
         />
       </div>

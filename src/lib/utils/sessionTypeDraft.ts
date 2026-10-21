@@ -3,6 +3,7 @@
  * data with pure functions: validation per step, the create body, the weekly
  * hours → per-type windows, and 422 pointers → the field and step that own them.
  */
+import { DETAILS_COPY } from '@/lib/copy/sessionTypes';
 import type { ApplicationStage, SessionIcon } from '@/types/sessionType';
 import type { SessionTemplate } from './sessionTemplates';
 
@@ -297,7 +298,7 @@ export function validateStep(d: Draft, step: 1 | 2 | 3, minLength = 0): FieldErr
   }
   if (step === 3 && d.hours === 'custom') {
     const on = d.days.filter((x) => x.on);
-    if (on.length === 0) e.hours = 'Turn on at least one day, or use your Calendar availability.';
+    if (on.length === 0) e.hours = 'Turn on at least one day, or use your weekly availability.';
     d.days.forEach((day, i) => {
       if (!day.on) return;
       day.slots.forEach((_, k) => {
@@ -484,25 +485,10 @@ const choices = (list: number[], label: (n: number) => string) => (current: numb
     label: label(n),
   }));
 export const durationOptions = choices(DURATIONS, (m) => `${m} min`);
-export const noticeOptions = choices(NOTICE_HOURS, (h) => `${hoursLabel(h)} hrs`);
 /** Choices under the platform's cap (the mentor's defaults carry it). */
 export const windowOptions = (current: number, max?: number) =>
   choices(windowPresets(max), windowLabel)(current);
 export const breakOptions = choices(BREAKS, breakLabel);
-export const approvalLabel = (on: boolean) => (on ? 'Approve each request' : 'Confirm instantly');
-
-/** Design `sum`: "60 min sessions · at least 24 hours notice · bookable up to 2 weeks ahead · 15 min buffer · you approve each request" (buffer, as Settings and Calendar say it). */
-export function defaultsSummary(d: BookingDefaults): string {
-  const r = resolveDefaults(d);
-  return [
-    `${r.durationMin} min sessions`,
-    `at least ${hoursLabel(r.noticeHours)} hours notice`,
-    `bookable up to ${windowLabel(r.windowDays)} ahead`,
-    r.breakMin ? `${r.breakMin} min buffer` : 'no buffer',
-    r.requiresApproval ? 'you approve each request' : 'instant confirm',
-  ].join(' · ');
-}
-
 /** Design `t`: "5 pm", "5:30 pm". */
 export function shortTime(m: number): string {
   const h = Math.floor(m / 60) % 24;
@@ -561,8 +547,8 @@ export function applyTemplateLength(
   return { ...d, ...customFrom(defaults), rules: 'custom', durationMin: templateMin };
 }
 
-/** "Exploring, Drafting" (the mentor's own for `other`), or "Any stage". */
+/** "Exploring, Drafting" (the mentor's own for `other`), or "All stages". */
 export function stagesLabel(d: Pick<Draft, 'stages' | 'customStage'>): string {
   const labels = d.stages.map((s) => (s === 'other' ? d.customStage.trim() : STAGE_LABELS[s]));
-  return labels.filter(Boolean).join(', ') || 'Any stage';
+  return labels.filter(Boolean).join(', ') || DETAILS_COPY.anyStage;
 }
