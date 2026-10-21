@@ -292,7 +292,7 @@ describe('summaries (Session Types.dc.html, rulesFlow=inline)', () => {
         requiresApproval: true,
       }),
     ).toBe(
-      '60 min sessions · at least 24 hours notice · bookable up to 2 weeks ahead · 15 min break · you approve each request',
+      '60 min sessions · at least 24 hours notice · bookable up to 2 weeks ahead · 15 min buffer · you approve each request',
     );
     expect(
       defaultsSummary({
@@ -303,7 +303,7 @@ describe('summaries (Session Types.dc.html, rulesFlow=inline)', () => {
         requiresApproval: false,
       }),
     ).toBe(
-      '60 min sessions · at least 24 hours notice · bookable up to 8 weeks ahead · no break · instant confirm',
+      '60 min sessions · at least 24 hours notice · bookable up to 8 weeks ahead · no buffer · instant confirm',
     );
     // Notice that isn't whole hours (a stored 2000 min) reads "33.3", not the float.
     expect(

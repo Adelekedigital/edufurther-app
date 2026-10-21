@@ -312,7 +312,7 @@ describe('SessionTypeFormScreen', () => {
     await toStep3();
     expect(
       screen.getByText(
-        '60 min sessions · at least 48 hours notice · bookable up to 4 weeks ahead · 15 min break · you approve each request',
+        '60 min sessions · at least 48 hours notice · bookable up to 4 weeks ahead · 15 min buffer · you approve each request',
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: 'Session length' })).toBeNull();
