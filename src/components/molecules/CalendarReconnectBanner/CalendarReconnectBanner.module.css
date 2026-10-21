@@ -1,44 +1,34 @@
-/* Drawn on SetupBanner (Mentor Dashboard v2), in the warning tone: this one
-   reports something already going wrong rather than a step still to do. */
+/* Calendar v2.dc.html `calendarSync=needsReconnect` (gcalBroken). */
 .banner {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-3);
   flex-wrap: wrap;
   padding: var(--space-3) var(--space-4);
-  border: var(--border-hairline) solid var(--gold-300);
-  border-radius: var(--radius-xl);
+  border: var(--border-hairline) solid var(--yellow-900);
+  border-radius: var(--radius-lg);
   background: var(--gold-subtle);
 }
 .icon {
   flex: none;
   color: var(--yellow-900);
 }
-.body {
-  flex: 1 1 260px;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-.line {
-  margin: 0;
-  font-size: var(--text-p-xs);
+.text {
+  flex: 1 1 240px;
+  font-size: var(--text-p-sm);
   line-height: var(--lh-p);
-  color: var(--text-secondary);
+  color: var(--ink-900);
 }
-.lead {
-  color: var(--text-primary);
-  font-weight: var(--weight-semibold);
-}
+/* Ours, not drawn: takes its own row so the drawn one keeps its measurements. */
 .note {
+  flex-basis: 100%;
   display: flex;
   align-items: flex-start;
   gap: var(--space-1);
   margin: 0;
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
-  color: var(--text-secondary);
+  color: var(--ink-900);
 }
 .note > :first-child {
   flex: none;

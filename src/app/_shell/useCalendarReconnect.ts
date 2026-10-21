@@ -1,12 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import { useCalendarConnection } from '@/lib/api/data/calendarConnection';
-import {
-  RECONNECT_COPY,
-  RECONNECT_FAILURES,
-  type ReconnectFailure,
-} from '@/lib/copy/integrations';
+import { RECONNECT_COPY, RECONNECT_FAILURES, type ReconnectFailure } from '@/lib/copy/integrations';
 import { useCalendarConnect } from './useCalendarConnect';
 
 export type CalendarReconnect = {
@@ -42,6 +37,8 @@ export function useCalendarReconnect(
   // banner that cried wolf on a network blip would be ignored when it mattered.
   const broken = !!connection && connection.status === 'error';
 
+  // `announce` is still the screen's live region, for SUCCESS only: the banner
+  // unmounts the moment it reconnects, so its own alert region cannot say so.
   const { state, connect, unavailable } = useCalendarConnect(
     userId,
     connection,
@@ -50,16 +47,12 @@ export function useCalendarReconnect(
   );
 
   const kind = state.kind;
+  // Every non-idle, non-busy outcome has copy; `?? null` only guards a state
+  // added to ConnectState later without a line here.
   const failure: string | null =
-    kind === 'busy' || kind === 'idle' ? null : (RECONNECT_FAILURES[kind as ReconnectFailure] ?? null);
-
-  // A failure that is only drawn is neither seen nor heard by a screen reader
-  // whose focus is on the Reconnect button, which merely stops being busy.
-  const lastSaid = useRef<string | null>(null);
-  useEffect(() => {
-    if (failure && failure !== lastSaid.current) announce(failure);
-    lastSaid.current = failure;
-  }, [failure, announce]);
+    kind === 'busy' || kind === 'idle'
+      ? null
+      : (RECONNECT_FAILURES[kind as ReconnectFailure] ?? null);
 
   return {
     show: broken,

@@ -123,6 +123,7 @@
     "support_agent",
     "swap_horiz",
     "sync",
+    "sync_problem",
     "task_alt",
     "timer",
     "timer_off",
@@ -149,5 +150,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "e2300cba867bc0d0b6867c579e9bd732e7078f5a447e5648c93aa12c25687c98"
+  "sha256": "65341da86f201b57831f2115fd4a681cc191f28fe7ec8d28c39937fc91fb398b"
 }

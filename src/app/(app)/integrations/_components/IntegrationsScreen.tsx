@@ -45,7 +45,7 @@ const INTEGRATIONS_GATE: MemberGateCopy = {
  * rather than rendering nothing.
  */
 const FAULTS: Record<ConnectionFault, string> = {
-  revoked: 'Google Calendar needs reconnecting — access was removed or has expired.',
+  revoked: 'Google Calendar needs reconnecting. Access was removed or has expired.',
   unreadable: 'Google Calendar needs reconnecting.',
   unknown: 'Google Calendar needs reconnecting.',
 };
@@ -128,7 +128,7 @@ export function IntegrationsScreen() {
         // caused it, not under a radio group the dialog is covering. Said out
         // loud too, because focus is on a button that merely stops being busy.
         const message = (e as { message?: string })?.message;
-        announce(message ?? 'We couldn’t save your video setting. Try again.');
+        announce(message ?? VIDEO_COPY.saveFailed);
       }
     },
     [announce, saveFn],
@@ -165,8 +165,8 @@ export function IntegrationsScreen() {
                     // sign-in only and the backend refuses it. We cannot tell that
                     // apart from a closed window, so the copy covers both.
                     body:
-                      'The window closed, or the calendar permission wasn’t ticked — Google asks for ' +
-                      'that on a separate step. You can try again.',
+                      'The window closed, or the calendar permission wasn’t ticked. Google asks ' +
+                      'for that on a separate step. You can try again.',
                   }
                 : connectState.kind === 'failed'
                   ? {
@@ -406,7 +406,11 @@ export function IntegrationsScreen() {
   return (
     <>
       {body}
-      {switchTo && video.data && (
+      {/* `switchTo !== provider`: a refetch while this is open can move the
+          server's value onto the one being offered, leaving a dialog that asks
+          to switch Google Meet to Google Meet and a confirm that PATCHes a
+          no-op (edufurtherfe-f5, 2026-10-21). */}
+      {switchTo && video.data && switchTo !== video.data.provider && (
         <VideoSwitchConfirm
           from={video.data.provider}
           to={switchTo}

@@ -15,10 +15,18 @@ export const INTEGRATIONS_COPY = {
   sub: 'Choose your video for sessions and connect your calendar to avoid double-bookings.',
 } as const;
 
+/**
+ * What EduFurther does with the choice, on its own so Calendar's booking modal
+ * can say it without repeating it. The subtitle below is built from it and is
+ * byte-identical to what it was.
+ */
+export const VIDEO_LINK_LINE =
+  'We create a private link for each booking and add it to your invite and your mentee’s.';
+
 /** "Video for sessions" (design `secPlain`). */
 export const VIDEO_COPY = {
   title: 'Video for sessions',
-  sub: 'Pick where your sessions happen. We create a private link for each booking and add it to your invite and your mentee’s.',
+  sub: `Pick where your sessions happen. ${VIDEO_LINK_LINE}`,
   groupLabel: 'Video provider',
   /** Above the alternatives, under the recommended card (design `vlPrimary`). */
   otherOption: 'Other option',
@@ -27,6 +35,12 @@ export const VIDEO_COPY = {
   /** "Where your sessions run" is the banned shape for this concept (ux-writer §6). */
   loadError: 'We couldn’t load your video for sessions.',
   retry: 'Try again',
+  /**
+   * Said out loud when a save fails and the mutation gave us no message of its
+   * own. Exported because Calendar's booking modal saves the same setting and
+   * must fail in the same words.
+   */
+  saveFailed: 'We couldn’t save your video setting. Try again.',
 } as const;
 
 /**
@@ -166,25 +180,17 @@ export const PAYMENTS_COPY = {
  */
 export const RECONNECT_COPY = {
   /**
-   * Two sentences on purpose: what is wrong, then what it is costing. A mentor
-   * whose grant lapsed is quietly losing the one thing they connected it for,
-   * and that cost is the reason to press the button.
+   * One line, as drawn: what is wrong, then what it is costing. A mentor whose
+   * grant lapsed is quietly losing the one thing they connected it for, and
+   * that cost is the reason to press the button.
    */
-  title: 'Google Calendar needs reconnecting.',
-  body: 'Until then, times you’re busy can still be booked.',
+  line: 'Google Calendar needs reconnecting. Until then, times you’re busy can still be booked.',
   action: 'Reconnect',
   /** Integrations says "connected"; this one is about repair. */
-  reconnected: 'Google Calendar reconnected. Your busy times are hidden again.',
+  reconnected: 'Google Calendar reconnected. Your busy times are hidden from your booking page.',
   busy: 'Waiting for Google… finish in the window that opened, or close it to stop.',
 } as const;
 
-/**
- * Why a reconnect did not happen. Every one leaves the banner on screen,
- * because the connection is still broken.
- *
- * Worded as Integrations words them (one label per concept), except each says
- * "reconnect": a mentor reading this has connected before.
- */
 export const RECONNECT_FAILURES = {
   blocked: 'Your browser blocked the pop-up. Allow pop-ups for EduFurther, then try again.',
   /**
@@ -195,10 +201,16 @@ export const RECONNECT_FAILURES = {
    */
   nothingConnected:
     'Nothing was reconnected. The window closed, or the calendar permission wasn’t ticked. Google asks for that on a separate step.',
-  offline: 'You’re offline. Try reconnecting once you’re back on the internet.',
+  // Not the house's "try again when you reconnect": on this screen "reconnect"
+  // means the calendar, so using it for the internet is genuinely ambiguous.
+  offline: 'You’re offline. Try reconnecting when you’re back online.',
   failed: 'We couldn’t start reconnecting. Try again in a moment.',
-  /** No Google client on this deployment, so the button can never work. */
-  unavailable: 'Reconnecting isn’t available just now. We’re looking into it.',
+  /**
+   * No Google client on this deployment, so the button can never work. We do
+   * not say we are looking into it: nobody has promised that, and a banner is
+   * not the place to invent reassurance (ux-writer §3.5).
+   */
+  unavailable: 'Reconnecting isn’t available right now. Try again later.',
 } as const;
 
 export type ReconnectFailure = keyof typeof RECONNECT_FAILURES;

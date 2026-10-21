@@ -4,8 +4,10 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
+import { CalendarReconnectBanner } from '@/components/molecules/CalendarReconnectBanner/CalendarReconnectBanner';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { useAppShell } from '@/app/_shell/useAppShell';
+import { useCalendarReconnect } from '@/app/_shell/useCalendarReconnect';
 import { useSetupDetour } from '@/app/_shell/useSetupDetour';
 import { useMentorDashboard, type SetupNext } from '@/lib/api/data/dashboard';
 import { deviceTimeZone, inSentence } from '@/lib/utils/format';
@@ -87,6 +89,9 @@ function MentorHome({ member }: { member: Member }) {
   // The chart reports its range here; the session-quality card follows it.
   const [chartRange, setChartRange] = useState('6m');
   const say = (text: string) => setAnnounce((a) => ({ text, id: (a?.id ?? 0) + 1 }));
+  // A broken Google grant is costing them bookings right now, so Home says so
+  // too rather than leaving it on Integrations, a page they rarely open.
+  const reconnect = useCalendarReconnect(member.id, say);
   const dash = useMentorDashboard(member, accountZone, shared);
   // A minute tick, as on the mentee Home: without it `now` is frozen at the
   // last render, so the next-session card never turns to Join on its own.
@@ -148,6 +153,14 @@ function MentorHome({ member }: { member: Member }) {
         shareUrl={d.shareUrl}
         shareName={d.shareName}
       />
+      {reconnect.show && (
+        <CalendarReconnectBanner
+          busy={reconnect.busy}
+          unavailable={reconnect.unavailable}
+          failure={reconnect.failure}
+          onReconnect={reconnect.reconnect}
+        />
+      )}
       {d.isNew && d.setup.next ? (
         <SetupBanner
           doneCount={d.setup.doneCount}
