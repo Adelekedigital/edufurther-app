@@ -339,4 +339,14 @@ describe('MentorProfilePanel', () => {
       expect(screen.getByRole('textbox', { name: 'Headline' })).toBeDisabled();
     });
   });
+
+  it('languages are optional: none saves, and the label says so (founder, 21 Oct)', async () => {
+    const user = userEvent.setup();
+    render(<MentorProfilePanel userId="u1" />);
+    expect(screen.getAllByText('Languages you mentor in (optional)').length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('button', { name: /Remove English|English/ }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(screen.queryByText('Fill in the required fields to continue.')).toBeNull();
+    expect(mutateAsync).toHaveBeenCalled();
+  });
 });

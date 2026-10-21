@@ -295,7 +295,6 @@ export function MentorProfileForm({
               onQueryChange={languages.onQueryChange}
               results={languages.results}
               status={languages.status}
-              describedBy={described('langs', false, has('langs'))}
               copy={{
                 add: C.addLanguage,
                 addButton: C.add,
@@ -306,7 +305,6 @@ export function MentorProfileForm({
                 noMatch: C.noLanguageMatch,
               }}
             />
-            {has('langs') && <FieldError id={ids('langs').error}>{E.langs}</FieldError>}
           </FrozenGroup>
         </section>
       </div>

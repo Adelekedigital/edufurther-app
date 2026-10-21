@@ -39,7 +39,7 @@ describe('introProblems', () => {
       firstName: 'Add your first name.',
     });
     expect(introProblems(before, { ...before, lastName: '' })).toEqual({
-      lastName: 'Your last name can’t be empty.',
+      lastName: 'Add your last name.',
     });
     expect(introProblems({ ...before, lastName: '' }, { ...before, lastName: '' })).toEqual({});
   });
@@ -91,7 +91,7 @@ describe('useProfileEdit', () => {
     const { result } = setup();
     act(() => result.current.saveIntro(before, { ...before, headline: 'too long' }, vi.fn()));
     await waitFor(() =>
-      expect(result.current.introErrors.headline).toBe('Keep your headline under 300 characters.'),
+      expect(result.current.introErrors.headline).toBe('Keep your headline to 80 characters.'),
     );
     expect(result.current.introErrors.general).toBeUndefined();
   });

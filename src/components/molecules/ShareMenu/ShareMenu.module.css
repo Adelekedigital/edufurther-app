@@ -35,7 +35,8 @@
   /* 8px below the 48px row (request #44). */
   top: calc(100% + var(--space-2));
   z-index: 5;
-  width: 220px;
+  /* Mentor Profile.dc.html share panel: 260px. */
+  width: 260px;
   padding: var(--space-1);
   border-radius: var(--radius-lg);
   background: var(--surface-card);
@@ -81,4 +82,14 @@
   .item {
     height: var(--touch-target-min);
   }
+}
+
+/* Mentor Profile.dc.html `shareNote`: 12px ink-700 over a hairline, above the options. */
+.note {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-hairline) solid var(--ink-100);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
 }

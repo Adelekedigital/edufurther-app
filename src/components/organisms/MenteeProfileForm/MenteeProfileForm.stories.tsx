@@ -109,7 +109,7 @@ export const Filled: Story = { render: () => <Form initial={FILLED} /> };
 export const Empty: Story = { render: () => <Form initial={EMPTY} /> };
 /** Save was tried with every required field blank. */
 export const WithErrors: Story = {
-  render: () => <Form initial={EMPTY} errors={['name', 'country', 'langs']} />,
+  render: () => <Form initial={EMPTY} errors={['name', 'country']} />,
 };
 /** The bio is still the untouched AI draft. */
 export const DraftedBio: Story = {

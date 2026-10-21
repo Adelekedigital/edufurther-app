@@ -125,4 +125,21 @@ describe('ShareMenu', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Copy profile link' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Couldn’t copy the link');
   });
+
+  it('a note sits above the options and describes the menu, which still works', async () => {
+    const user = userEvent.setup();
+    render(
+      <ShareMenu
+        url="https://edufurther.com/mentors/g"
+        name="Gbenga E"
+        note="Only you can see this page."
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Share profile' }));
+    const menu = screen.getByRole('menu', { name: 'Share' });
+    expect(menu).toHaveAccessibleDescription('Only you can see this page.');
+    // Not one of the menu's items: only actions are.
+    expect(menu).not.toHaveTextContent('Only you can see this page.');
+    expect(screen.getByRole('menuitem', { name: 'Copy profile link' })).toHaveFocus();
+  });
 });

@@ -135,20 +135,19 @@ describe('ProfilePanel', () => {
     expect(screen.getAllByText(SAVE_COPY.formError).length).toBeGreaterThan(0);
     expect(screen.getByText('Add your full name.')).toBeInTheDocument();
     expect(screen.getByText('Select the country you live in.')).toBeInTheDocument();
-    expect(screen.getByText('Pick at least one language.')).toBeInTheDocument();
     expect(screen.getByLabelText('Full name')).toHaveAttribute('aria-invalid', 'true');
     await waitFor(() => expect(screen.getByLabelText('Full name')).toHaveFocus());
     expect(mutateAsync).not.toHaveBeenCalled();
   });
 
-  it('errors follow the fields as they’re fixed', async () => {
+  it('languages are optional: none saves, with no language error (founder, 21 Oct)', async () => {
     ready(profile({ languages: [] }));
     render(<ProfilePanel userId="u1" />);
+    expect(screen.getByText('Languages you speak (optional)')).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText('Full name'), 'x');
     await userEvent.click(screen.getByRole('button', { name: SAVE_COPY.save }));
-    expect(screen.getByText('Pick at least one language.')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Yoruba' }));
-    expect(screen.queryByText('Pick at least one language.')).toBeNull();
+    expect(screen.queryByText(SAVE_COPY.formError)).toBeNull();
+    expect(mutateAsync).toHaveBeenCalled();
   });
 
   it('Save sends the change and says "Profile saved"; the bar goes', async () => {

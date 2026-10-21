@@ -2,6 +2,7 @@
 
 import type { components } from '@/lib/api/generated/schema';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { INTRO_ERRORS } from '@/lib/copy/profile';
 import { ApiError, apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
@@ -17,9 +18,9 @@ const FIELD: Record<string, IntroField | 'about'> = {
   '/about_me': 'about',
 };
 const COPY: Record<IntroField | 'about', string> = {
-  firstName: 'Add your first name.',
-  lastName: 'Your last name can’t be empty.',
-  headline: 'Keep your headline under 300 characters.',
+  firstName: INTRO_ERRORS.firstName,
+  lastName: INTRO_ERRORS.lastName,
+  headline: INTRO_ERRORS.headlineTooLong,
   about: 'That About couldn’t be saved. Shorten it and try again.',
 };
 

@@ -18,6 +18,12 @@ type ShareMenuProps = {
    * button. The menu and its a11y are unchanged.
    */
   triggerLabel?: string;
+  /**
+   * A line above the options (Mentor Profile.dc.html `shareNote`): who can see
+   * the page, for an owner whose profile isn't public. It describes the menu,
+   * which is still fully usable.
+   */
+  note?: string;
 } & (
   | {
       /**
@@ -45,6 +51,7 @@ export function ShareMenu({
   url,
   name,
   triggerLabel,
+  note,
   open: openProp,
   onOpenChange,
 }: ShareMenuProps) {
@@ -59,6 +66,7 @@ export function ShareMenu({
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
+  const noteId = useId();
 
   // Where focus goes back to on close: the control that opened the menu (the
   // header icon, or a button elsewhere that opened it from outside).
@@ -174,55 +182,63 @@ export function ShareMenu({
       )}
       {open && <div className={styles.backdrop} aria-hidden onClick={() => close(false)} />}
       {open && (
-        <div
-          id={menuId}
-          ref={menuRef}
-          role="menu"
-          aria-label="Share"
-          className={styles.menu}
-          onKeyDown={onMenuKey}
-        >
-          {items.map((it, k) => {
-            const ref = (el: HTMLElement | null) => {
-              itemRefs.current[k] = el;
-            };
-            const body = (
-              <>
-                <Icon name={it.icon} size={18} className={styles.itemIcon} />
-                {it.label}
-              </>
-            );
-            return it.href !== undefined ? (
-              <ExternalLink
-                key={it.key}
-                ref={ref}
-                role="menuitem"
-                tabIndex={-1}
-                className={styles.item}
-                href={it.href}
-                label={it.label}
-                newTab={it.key === 'linkedin'}
-                onClick={() => close(false)}
-              >
-                {body}
-              </ExternalLink>
-            ) : (
-              <button
-                key={it.key}
-                ref={ref}
-                type="button"
-                role="menuitem"
-                tabIndex={-1}
-                className={styles.item}
-                onClick={() => {
-                  close(true);
-                  it.onSelect();
-                }}
-              >
-                {body}
-              </button>
-            );
-          })}
+        // The panel holds the note and the menu: a menu's children can only be
+        // its items, so the note sits before it and describes it.
+        <div ref={menuRef} className={styles.menu}>
+          {note && (
+            <p id={noteId} className={styles.note}>
+              {note}
+            </p>
+          )}
+          <div
+            id={menuId}
+            role="menu"
+            aria-label="Share"
+            aria-describedby={note ? noteId : undefined}
+            onKeyDown={onMenuKey}
+          >
+            {items.map((it, k) => {
+              const ref = (el: HTMLElement | null) => {
+                itemRefs.current[k] = el;
+              };
+              const body = (
+                <>
+                  <Icon name={it.icon} size={18} className={styles.itemIcon} />
+                  {it.label}
+                </>
+              );
+              return it.href !== undefined ? (
+                <ExternalLink
+                  key={it.key}
+                  ref={ref}
+                  role="menuitem"
+                  tabIndex={-1}
+                  className={styles.item}
+                  href={it.href}
+                  label={it.label}
+                  newTab={it.key === 'linkedin'}
+                  onClick={() => close(false)}
+                >
+                  {body}
+                </ExternalLink>
+              ) : (
+                <button
+                  key={it.key}
+                  ref={ref}
+                  type="button"
+                  role="menuitem"
+                  tabIndex={-1}
+                  className={styles.item}
+                  onClick={() => {
+                    close(true);
+                    it.onSelect();
+                  }}
+                >
+                  {body}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
       <span role="status" className="sr-only">

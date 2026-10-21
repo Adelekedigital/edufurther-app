@@ -126,7 +126,7 @@ export const SavedWithGaps: Story = {
   render: () => (
     <Live
       initial={{ ...filled, headline: '', originId: '', studyId: '', languages: [] }}
-      errors={['headline', 'origin', 'study', 'langs']}
+      errors={['headline', 'origin', 'study']}
     />
   ),
 };
