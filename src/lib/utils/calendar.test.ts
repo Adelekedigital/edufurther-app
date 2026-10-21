@@ -56,6 +56,7 @@ describe('noticeLabel and bookingRulesSummary', () => {
     expect(noticeLabel(48)).toBe('2 days');
     expect(noticeLabel(72)).toBe('3 days');
     expect(noticeLabel(30)).toBe('30 hours');
+    expect(noticeLabel(61 / 60)).toBe('1 hour');
   });
   it('summarises the rules, approval first, falling back to the platform’s values, capped', () => {
     expect(
@@ -90,6 +91,9 @@ describe('noticeLabel and bookingRulesSummary', () => {
     expect(at(36)).toBe('36 hrs notice');
     expect(at(1)).toBe('1 hr notice');
     expect(at(72)).toBe('3 days notice');
+    // Minutes stored elsewhere: judged on the number shown.
+    expect(at(61 / 60)).toBe('1 hr notice');
+    expect(at(1.5)).toBe('1.5 hrs notice');
   });
 });
 

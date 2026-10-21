@@ -33,12 +33,12 @@
 }
 .hint {
   font-size: var(--text-p-xs);
-  color: var(--ink-500);
+  color: var(--text-tertiary);
 }
 .fit {
   margin: 0;
   font-size: var(--text-p-xs);
-  color: var(--ink-500);
+  color: var(--text-tertiary);
 }
 .error {
   display: flex;
@@ -69,11 +69,11 @@
   background: var(--ink-50);
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
-  color: var(--ink-700);
+  color: var(--text-secondary);
 }
 .settingsIcon {
   flex: none;
-  color: var(--ink-500);
+  color: var(--text-tertiary);
 }
 .settingsLink {
   font-weight: var(--weight-semibold);

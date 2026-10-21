@@ -30,16 +30,16 @@ export function slotCount(days: DayHours[], durationMin: number): number {
 }
 
 /** Calendar v2 notice labels: "24 hours", "2 days". */
-export const noticeLabel = (hours: number) =>
-  hours >= 48 && hours % 24 === 0
-    ? `${hours / 24} days`
-    : `${Number(hours.toFixed(1))} hour${hours === 1 ? '' : 's'}`;
+export const noticeLabel = (hours: number) => {
+  if (hours >= 48 && hours % 24 === 0) return `${hours / 24} days`;
+  // Judged on the shown number: 61 minutes reads "1 hour", not "1 hours".
+  const n = Number(hours.toFixed(1));
+  return `${n} hour${n === 1 ? '' : 's'}`;
+};
 
 /** The summary's short notice: "24 hrs", "1 hr", "2 days". */
 const noticeShort = (hours: number) =>
-  hours >= 48 && hours % 24 === 0
-    ? `${hours / 24} days`
-    : `${Number(hours.toFixed(1))} ${hours === 1 ? 'hr' : 'hrs'}`;
+  noticeLabel(hours).replace(/ hours?$/, (u) => (u === ' hour' ? ' hr' : ' hrs'));
 
 /**
  * Calendar v2 `windowSummary` (copy research), approval first as in the modal:
