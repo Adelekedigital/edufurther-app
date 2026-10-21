@@ -474,3 +474,31 @@ it to a user. The same applies to what the frontend then infers — "sessions
 already booked keep their link" was also wrong, because a meeting link is written
 at confirmation, not at request, so a mentor who approves by hand has pending
 requests that take the new provider.
+
+### #69 — CI fails in a file nobody touched, because the spec moved
+
+_(real, 2026-10-21, em-dash sweep.)_ `page-review` failed on a copy-only PR with
+four type errors in `lib/api/mock/reviews.ts` and `lib/api/data/reviews.test.ts`,
+neither of which the branch went near. The backend had published
+`review_update_due` as a **required** field on the mentor relationship, and both
+`verify` and `page-review` run `spec:pull` + `gen:api`, so they type-check
+against whatever the backend published **at the moment they ran**. Every open PR
+in every session was failing, each for a reason invisible in its own diff.
+
+Two things this teaches:
+
+**A green `verify` is not evidence the spec is unchanged.** On that PR `verify`
+passed and `page-review` failed in the same run, because they regenerate types
+minutes apart and the spec moved between them. Treat the newest job as the
+truth, not the friendliest one.
+
+**Check the spec before you check your diff.** The diagnosis is one command:
+`git checkout main && pnpm spec:pull && pnpm gen:api && npx tsc --noEmit`. If
+clean `main` fails too, it is not your branch, and the fix belongs in its own PR
+that unblocks everyone rather than buried in yours.
+
+Fix it by the contract, not by the compiler. The field's description said it
+implies `review_due` and is false when the mentee has never reviewed, so the
+mock derives it rather than hardcoding `false`. That mattered within the hour:
+another session added a fourth mock state where it must be true, and a hardcoded
+`false` would have silently swallowed their feature.
