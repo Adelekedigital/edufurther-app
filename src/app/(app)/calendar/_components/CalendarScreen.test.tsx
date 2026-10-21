@@ -57,17 +57,14 @@ vi.mock('@/lib/api/data/calendarConnection', async () =>
 beforeEach(resetCalendar);
 
 // The header status pill's label; the month legend says "Available" too.
-const pillLabel = () =>
-  screen
-    .queryByRole('switch', { name: /Available|Busy/ })
-    ?.closest('div')
-    ?.querySelector('[class*="label"]') ?? null;
+/** The header status switch; its description is the pill's label and hint. */
+const pillSwitch = () => screen.queryByRole('switch', { name: 'Available for new bookings' });
 
 describe('CalendarScreen', () => {
   it('shows the hours, the booking rules summary and the listed mentor as available', () => {
     render(<CalendarScreen />);
     expect(screen.getByRole('heading', { level: 1, name: 'Your calendar' })).toBeInTheDocument();
-    expect(pillLabel()).toHaveTextContent('Available');
+    expect(pillSwitch()).toHaveAccessibleDescription('Available Mentees can book you');
     expect(screen.getByText('Mentees can book you')).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -308,7 +305,7 @@ describe('CalendarScreen', () => {
         'Your availability isn’t set yet. Add your weekly hours so mentees can find and book you.',
       ),
     ).toBeInTheDocument();
-    expect(pillLabel()).toBeNull();
+    expect(pillSwitch()).toBeNull();
   });
 
   it('an admin-unlisted mentor sees no status, and the notice says why with Contact support', () => {
@@ -319,7 +316,7 @@ describe('CalendarScreen', () => {
       returnOn: null,
     });
     render(<CalendarScreen />);
-    expect(pillLabel()).toBeNull();
+    expect(pillSwitch()).toBeNull();
     expect(screen.queryByRole('switch', { name: /Available|Busy/ })).toBeNull();
     const notice = screen.getByText('Unlisted by EduFurther').closest('p')!;
     expect(notice).toHaveTextContent(
@@ -374,6 +371,19 @@ describe('CalendarScreen', () => {
       screen.getByText('You’re offline. Your hours will load when you reconnect.'),
     ).toBeInTheDocument();
     expect(screen.queryByRole('status', { name: 'Loading your calendar' })).toBeNull();
+    nav.mockRestore();
+  });
+
+  // No role UI until the role is known (owner, 2026-10-20): offline before /me
+  // answers, a visitor who may not be a mentor sees the neutral skeleton.
+  it('offline while the viewer itself is still loading, shows no calendar message', () => {
+    const nav = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    h.viewer = { kind: 'loading', signedIn: null };
+    render(<CalendarScreen />);
+    expect(screen.queryByText('We couldn’t load your calendar')).toBeNull();
+    expect(
+      screen.queryByText('You’re offline. Your hours will load when you reconnect.'),
+    ).toBeNull();
     nav.mockRestore();
   });
 
@@ -466,6 +476,54 @@ describe('CalendarScreen', () => {
     expect(saveBlocked.mock.calls[0]![0].timeZone).toBe('Africa/Lagos');
     expect(await screen.findByText('Blocked dates saved.')).toBeInTheDocument();
     expect(screen.queryByRole('dialog', { name: 'Block dates' })).toBeNull();
+  });
+
+  // The panel swaps its action (Block dates ↔ Edit dates) as days come and go,
+  // so the modal's remembered opener can be gone when it closes.
+  it('after a first block, focus lands on the panel’s Edit dates', async () => {
+    saveBlocked.mockImplementation(async () => {
+      h.blocked = remote<Blocked>({ days: ['2099-10-12'], exceptions: [] });
+    });
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    await user.click(screen.getByRole('button', { name: 'Block dates' }));
+    const dialog = screen.getByRole('dialog', { name: 'Block dates' });
+    await user.click(within(dialog).getByRole('button', { name: 'Next month' }));
+    await user.click(within(dialog).getAllByRole('button', { name: /^\w+, \w+ 12(,|$)/ })[0]!);
+    await user.click(within(dialog).getByRole('button', { name: 'Block 1 date' }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Edit dates' })),
+    );
+  });
+
+  it('after clearing every block, focus lands on the panel’s Block dates', async () => {
+    // Next month's 12th, whatever today is: always in the future and one Next away.
+    const now = new Date();
+    const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 12));
+    h.blocked = remote<Blocked>({ days: [next.toISOString().slice(0, 10)], exceptions: [] });
+    saveBlocked.mockImplementation(async () => {
+      h.blocked = remote<Blocked>({ days: [], exceptions: [] });
+    });
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    await user.click(screen.getByRole('button', { name: 'Edit dates' }));
+    const dialog = screen.getByRole('dialog', { name: 'Block dates' });
+    await user.click(within(dialog).getByRole('button', { name: 'Next month' }));
+    await user.click(within(dialog).getAllByRole('button', { name: /^\w+, \w+ 12(,|$)/ })[0]!);
+    await user.click(within(dialog).getByRole('button', { name: 'Save blocked dates' }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Block dates' })),
+    );
+  });
+
+  it('closing the block modal without saving returns focus to its opener', async () => {
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    await user.click(screen.getByRole('button', { name: 'Block dates' }));
+    await user.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Block dates' })),
+    );
   });
 
   it('the block modal is a phone sheet that tints the available days and keys them', async () => {

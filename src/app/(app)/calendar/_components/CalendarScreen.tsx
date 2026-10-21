@@ -48,6 +48,7 @@ import {
   videoRowTitle,
 } from '@/lib/copy/calendar';
 import { deviceTimeZone } from '@/lib/utils/format';
+import { focusIfShown } from '@/lib/utils/focus';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { supportMailto } from '@/lib/utils/mailto';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
@@ -126,6 +127,7 @@ export function CalendarScreen() {
   const [switchTo, setSwitchTo] = useState<'daily' | 'google_meet' | null>(null);
   const videoAction = useRef<HTMLButtonElement>(null);
   const statusSwitch = useRef<HTMLButtonElement>(null);
+  const blockAction = useRef<HTMLButtonElement>(null);
   const saveHoursBtn = useRef<HTMLButtonElement>(null);
   // Going busy waited on unsaved hours: the bar says so until they're saved or discarded.
   const [holdForHours, setHoldForHours] = useState(false);
@@ -215,8 +217,13 @@ export function CalendarScreen() {
     setUnblockError(null);
     setBlockOpen(true);
   };
+  // The panel's action swaps (Block dates / Edit dates) as days come and go, so
+  // the modal's remembered opener may be gone: focus whichever is there now.
+  const focusBlockAction = () => requestAnimationFrame(() => focusIfShown(blockAction.current));
   const closeBlockOut = () => {
-    if (!saveBlocked.isPending) setBlockOpen(false);
+    if (saveBlocked.isPending) return;
+    setBlockOpen(false);
+    focusBlockAction();
   };
   // A chip's ×: no confirm (one tap puts it back), the result is read out.
   const unblock = (day: string) => {
@@ -351,8 +358,13 @@ export function CalendarScreen() {
       </Panel>
     );
   // Error before empty: a failed load never reads as "no hours". Offline, a
-  // first load waits (paused) for a reconnect, so it says so, not a skeleton.
-  else if (viewer.kind === 'error' || (failed && !ready) || (!online && loading && !ready))
+  // mentor's first load waits (paused) for a reconnect, so it says so, not a
+  // skeleton. Only once they're known to be a mentor: no role UI before /me.
+  else if (
+    viewer.kind === 'error' ||
+    (failed && !ready) ||
+    (!online && isMentor && loading && !ready)
+  )
     panel = (
       <Panel
         title="We couldn’t load your calendar"
@@ -599,6 +611,9 @@ export function CalendarScreen() {
                     onUnblock={unblock}
                     busy={blockBusy}
                     error={unblockError}
+                    actionRef={(el) => {
+                      blockAction.current = el;
+                    }}
                   />
                 )}
               </section>
@@ -689,6 +704,7 @@ export function CalendarScreen() {
               saveBlocks(days).then(
                 () => {
                   setBlockOpen(false);
+                  focusBlockAction();
                   announce('Blocked dates saved.');
                 },
                 (e: { message: string }) => announce(e.message),

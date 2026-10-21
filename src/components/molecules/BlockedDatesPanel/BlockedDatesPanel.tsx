@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type RefCallback } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { shortDay } from '@/lib/utils/calendar';
@@ -17,6 +17,11 @@ type BlockedDatesPanelProps = {
   busy?: boolean;
   /** Why the last unblock failed; shown under the chips (the page reads it out). */
   error?: string | null;
+  /**
+   * The current action, "Block dates" or "Edit dates". The two swap as days
+   * come and go, so the page focuses this after the block-out modal closes.
+   */
+  actionRef?: RefCallback<HTMLButtonElement>;
 };
 
 /**
@@ -30,9 +35,16 @@ export function BlockedDatesPanel({
   onUnblock,
   busy = false,
   error = null,
+  actionRef,
 }: BlockedDatesPanelProps) {
   const chips = useRef(new Map<string, HTMLButtonElement>());
   const action = useRef<HTMLButtonElement>(null);
+  const empty = !days.length;
+  // Both trees' actions pass through here, so the page's ref follows the swap.
+  const setAction = (el: HTMLButtonElement | null) => {
+    action.current = el;
+    actionRef?.(el);
+  };
   // The day whose chip was removed with focus on it: focus goes next once it's gone.
   const leaving = useRef<string | null>(null);
   useEffect(() => {
@@ -51,7 +63,7 @@ export function BlockedDatesPanel({
     if (!busy) onEdit();
   };
 
-  if (!days.length)
+  if (empty)
     return (
       <div className={styles.empty}>
         <span className={styles.title}>
@@ -63,7 +75,7 @@ export function BlockedDatesPanel({
           Block holidays or busy weeks so mentees can’t book them.
         </span>
         {/* Calendar v2 draws this one 32px (btnEditBlock with nothing blocked). */}
-        <Button ref={action} size="small" aria-disabled={busy || undefined} onClick={edit}>
+        <Button ref={setAction} size="small" aria-disabled={busy || undefined} onClick={edit}>
           Block dates
         </Button>
       </div>
@@ -78,7 +90,7 @@ export function BlockedDatesPanel({
           Blocked dates · {days.length}
         </span>
         <Button
-          ref={action}
+          ref={setAction}
           variant="text"
           size="small"
           // blue-700 on the panel's blue-50 (blue-500 is under 4.5:1 there).

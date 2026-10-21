@@ -124,6 +124,37 @@ describe('MonthPicker, pickable', () => {
     expect(dot?.className).toMatch(/dotOnBlue/);
   });
 
+  it('a booked day that is also blocked, in grey, keeps the gold dot (never white)', () => {
+    render(
+      <MonthPicker
+        today="2026-10-01"
+        selected={['2026-10-12']}
+        booked={['2026-10-12']}
+        selectedKind="blocked"
+        onPick={vi.fn()}
+      />,
+    );
+    const day = screen.getByRole('button', { name: /October 12/ });
+    expect(day.className).toMatch(/selectedGrey/);
+    const dot = day.querySelector('[class*="dot"]');
+    expect(dot).not.toBeNull();
+    expect(dot?.className).not.toMatch(/dotOnBlue/);
+  });
+
+  it('today keeps its ring when it is a grey pick', () => {
+    render(
+      <MonthPicker
+        today="2026-10-12"
+        selected={['2026-10-12']}
+        selectedKind="blocked"
+        onPick={vi.fn()}
+      />,
+    );
+    const day = screen.getByRole('button', { name: /October 12/ });
+    expect(day.className).toMatch(/selectedGrey/);
+    expect(day.className).toMatch(/today/);
+  });
+
   it('marks blocked days pressed', () => {
     render(<MonthPicker today="2026-10-01" selected={['2026-10-12']} onPick={vi.fn()} />);
     expect(screen.getByRole('button', { name: /October 12, blocked/ })).toHaveAttribute(
@@ -162,6 +193,12 @@ describe('MonthPicker past days (axe color-contrast on /calendar)', () => {
     expect(css.match(/\.past([^{]*)\{/)?.[1]).toMatch(
       /:not\(\.selected, \.mid, \.selectedGrey, \.midGrey, \.booked\)/,
     );
+  });
+
+  it('hovering a booked day keeps its amber: neither hover rule repaints .booked', () => {
+    const hovers = [...css.matchAll(/([^{}]*button\.day:not\(([^)]*)\):hover)\s*\{/g)];
+    expect(hovers.length).toBe(2);
+    for (const [, , excluded] of hovers) expect(excluded).toMatch(/\.booked/);
   });
 
   it('booked days are drawn soft (amber fill), with no gold ring left', () => {

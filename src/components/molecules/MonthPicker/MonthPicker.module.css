@@ -121,11 +121,12 @@ button.day {
 button.day[aria-disabled='true'] {
   cursor: not-allowed;
 }
-button.day:not(.selected, .mid, .selectedGrey, .midGrey, [aria-disabled='true']):hover {
+/* A booked day keeps its amber on hover (design: hover only where there's no fill). */
+button.day:not(.selected, .mid, .selectedGrey, .midGrey, .booked, [aria-disabled='true']):hover {
   background: var(--ink-100);
 }
 /* Blocking (design `roBlocked`): a lighter hover, so the grey pick reads as the pick. */
-.pickerGrey button.day:not(.selectedGrey, .midGrey, [aria-disabled='true']):hover {
+.pickerGrey button.day:not(.selectedGrey, .midGrey, .booked, [aria-disabled='true']):hover {
   background: var(--ink-50);
 }
 /* Open: the green tint only (design `soft`: no green edge). */
