@@ -3,7 +3,6 @@ import {
   blankDraft,
   applyTemplateLength,
   copyForField,
-  defaultsSummary,
   draftFromTemplate,
   hasSlotErrors,
   emptyWeek,
@@ -193,7 +192,7 @@ describe('toCreateBody', () => {
     expect(stagesLabel({ stages: ['drafting_stage', 'other'], customStage: 'Deferred' })).toBe(
       'Drafting, Deferred',
     );
-    expect(stagesLabel({ stages: [], customStage: '' })).toBe('Any stage');
+    expect(stagesLabel({ stages: [], customStage: '' })).toBe('All stages');
   });
 });
 
@@ -282,41 +281,6 @@ describe('templates', () => {
 });
 
 describe('summaries (Session Types.dc.html, rulesFlow=inline)', () => {
-  it('the defaults line: the mentor’s values, the platform’s where unset', () => {
-    expect(
-      defaultsSummary({
-        durationMin: 60,
-        noticeHours: 24,
-        windowDays: 14,
-        breakMin: 15,
-        requiresApproval: true,
-      }),
-    ).toBe(
-      '60 min sessions · at least 24 hours notice · bookable up to 2 weeks ahead · 15 min buffer · you approve each request',
-    );
-    expect(
-      defaultsSummary({
-        durationMin: null,
-        noticeHours: null,
-        windowDays: null,
-        breakMin: null,
-        requiresApproval: false,
-      }),
-    ).toBe(
-      '60 min sessions · at least 24 hours notice · bookable up to 8 weeks ahead · no buffer · instant confirm',
-    );
-    // Notice that isn't whole hours (a stored 2000 min) reads "33.3", not the float.
-    expect(
-      defaultsSummary({
-        durationMin: 60,
-        noticeHours: 2000 / 60,
-        windowDays: 14,
-        breakMin: 0,
-        requiresApproval: true,
-      }),
-    ).toContain('at least 33.3 hours notice');
-  });
-
   it('notice that isn’t a whole number of hours is sent as whole minutes (review r2 of #60)', () => {
     const d = { ...blankDraft(), rules: 'custom' as const, noticeHours: 2000 / 60 };
     expect(toCreateBody(d, {}).min_notice_minutes).toBe(2000);

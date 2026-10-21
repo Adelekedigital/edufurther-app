@@ -161,7 +161,7 @@ describe('SessionQuality', () => {
     // The count links to the profile's Reviews tab. The visible "(14)" is in the
     // accessible name (Label-in-Name), scoped so it never reads as an all-time total.
     const reviewsLink = screen.getByRole('link', {
-      name: 'See all reviews — 14 in the last 3 months',
+      name: 'See all reviews, 14 in the last 3 months',
     });
     expect(reviewsLink).toHaveAttribute('href', '/mentors/gbenga?tab=reviews');
     expect(reviewsLink).toHaveTextContent('(14)');
@@ -326,7 +326,9 @@ describe('SessionQuality', () => {
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
     expect(screen.queryByText(/Your next session is/)).not.toBeInTheDocument();
-    expect(screen.getByText(/Keep it going\./)).toBeInTheDocument();
+    // A streak with nothing next leaves the title alone: no sign-off to fill
+    // the space with (owner, 2026-10-21).
+    expect(screen.getByText(/in a row completed/)).toBeInTheDocument();
   });
 
   // ---- the streak -----------------------------------------------------------
@@ -335,7 +337,7 @@ describe('SessionQuality', () => {
     data = windowStats({ attendanceRate: 90 }, {}, { currentStreak: 0 });
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
-    expect(screen.getByText(/keep it up/)).toBeInTheDocument();
+    expect(screen.getByText(/You’re holding your sessions\./)).toBeInTheDocument();
     expect(screen.queryByText(/in a row/)).not.toBeInTheDocument();
   });
 

@@ -18,7 +18,8 @@
     "check:private": "node scripts/check-private-paths.mjs",
     "spec:pull": "node scripts/pull-spec.mjs",
     "icons:pull": "node scripts/fonts/pull-icons.mjs",
-    "check:icons": "node scripts/check-icons.mjs"
+    "check:icons": "node scripts/check-icons.mjs",
+    "check:copy": "node scripts/check-copy.mjs"
   },
   "checkBoundaries": {
     "root": "src",

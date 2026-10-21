@@ -224,7 +224,7 @@ describe('MentorProfileScreen — not taking bookings (design reply #58, live de
     expect(screen.queryByText(body)).toBeNull();
     expect(
       screen.getByText(
-        'Mentees see “Not taking bookings” on your profile. Turn on a session type to take bookings again.',
+        'Mentees see “Not taking bookings” on your profile. Turn on a session to take bookings again.',
       ),
     ).toBeInTheDocument();
   });

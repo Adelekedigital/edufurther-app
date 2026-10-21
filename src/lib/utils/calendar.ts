@@ -1,3 +1,4 @@
+import { approvalShort } from '@/lib/copy/mentorSettings';
 import { addDays } from './slots';
 import {
   DAY_NAMES,
@@ -85,7 +86,7 @@ export function bookingRulesSummary(d: BookingDefaults): string {
   const r = resolveDefaults(d);
   const windowDays = d.maxWindowDays ? Math.min(r.windowDays, d.maxWindowDays) : r.windowDays;
   return [
-    r.requiresApproval ? 'You approve each booking' : 'Confirmed straight away',
+    approvalShort(r.requiresApproval),
     `${r.durationMin} min`,
     `${noticeShort(r.noticeHours)} notice`,
     `${windowLabel(windowDays)} ahead`,

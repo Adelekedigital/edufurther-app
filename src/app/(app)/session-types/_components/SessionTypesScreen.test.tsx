@@ -141,12 +141,12 @@ beforeEach(() => {
 });
 
 describe('SessionTypesScreen', () => {
-  it('while the viewer is unknown the list is loading — never "no session types"', () => {
+  it('while the viewer is unknown the list is loading — never "no sessions"', () => {
     viewer = { kind: 'loading', signedIn: true };
     list = idle(); // the query is disabled until we know it's a mentor: no data, not loading
     render(<SessionTypesScreen />);
-    expect(screen.getByRole('status', { name: 'Loading your session types' })).toBeInTheDocument();
-    expect(screen.queryByText('Create your first session type')).toBeNull();
+    expect(screen.getByRole('status', { name: 'Loading your sessions' })).toBeInTheDocument();
+    expect(screen.queryByText('Add a session so mentees can book you')).toBeNull();
   });
 
   it('a guest is asked to log in and comes back here', () => {
@@ -160,10 +160,10 @@ describe('SessionTypesScreen', () => {
     );
   });
 
-  it('any mentor state (here, not approved) manages session types', () => {
+  it('any mentor state (here, not approved) manages sessions', () => {
     viewer = mentor;
     render(<SessionTypesScreen />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Session types' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Sessions' })).toBeInTheDocument();
     expect(screen.getByRole('article', { name: 'SOP draft review' })).toBeInTheDocument();
   });
 
@@ -173,9 +173,7 @@ describe('SessionTypesScreen', () => {
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
-    expect(
-      screen.getByRole('alertdialog', { name: 'Delete this session type?' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog', { name: 'Delete this session?' })).toBeInTheDocument();
     expect(remove).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Delete' }));
     expect(remove).toHaveBeenCalledWith('a');
@@ -206,7 +204,7 @@ describe('SessionTypesScreen', () => {
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
-    const dialog = screen.getByRole('alertdialog', { name: 'Delete this session type?' });
+    const dialog = screen.getByRole('alertdialog', { name: 'Delete this session?' });
     expect(dialog).toHaveTextContent('This can’t be undone.');
     expect(dialog).not.toHaveTextContent(/booked/);
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
@@ -289,7 +287,7 @@ describe('SessionTypesScreen', () => {
     render(<SessionTypesScreen />);
     const cases: [AppError['kind'], boolean, string][] = [
       ['offline', true, 'Couldn’t feature it. Check your connection and try again.'],
-      ['validation', true, 'Show it to mentees first: a hidden session type can’t be featured.'],
+      ['validation', true, 'Show it to mentees first: a hidden session can’t be featured.'],
       ['server', true, 'Couldn’t feature it. Try again in a moment.'],
       ['server', false, 'Couldn’t remove it from featured. Try again in a moment.'],
     ];
@@ -345,14 +343,12 @@ describe('SessionTypesScreen', () => {
     // Another row's delete, while the first is still out.
     await user.click(screen.getByRole('button', { name: 'More actions for Visa prep' }));
     await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
-    const second = screen.getByRole('alertdialog', { name: 'Delete this session type?' });
+    const second = screen.getByRole('alertdialog', { name: 'Delete this session?' });
     expect(within(second).getByRole('button', { name: 'Keep it' })).toBeEnabled();
     // The first one's answer leaves the second confirm open.
     deletePending = false;
     await act(async () => finish({ kind: 'deleted' }));
-    expect(
-      screen.getByRole('alertdialog', { name: 'Delete this session type?' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog', { name: 'Delete this session?' })).toBeInTheDocument();
     expect(screen.getByText(/“Visa prep” is removed/)).toBeInTheDocument();
     // Nor does it pull focus out of the open dialog onto a background row.
     expect(screen.getByRole('alertdialog')).toContainElement(document.activeElement as HTMLElement);
@@ -382,7 +378,7 @@ describe('SessionTypesScreen', () => {
     rerender(<SessionTypesScreen />);
     expect(sop()).toHaveTextContent('We couldn’t delete it.');
     await openDelete();
-    const dialog = screen.getByRole('alertdialog', { name: 'Delete this session type?' });
+    const dialog = screen.getByRole('alertdialog', { name: 'Delete this session?' });
     // The alert region is always there (so a failure is heard); it says nothing.
     expect(within(dialog).getByRole('alert')).toBeEmptyDOMElement();
     expect(within(dialog).getByRole('button', { name: 'Keep it' })).toBeEnabled();
@@ -515,11 +511,9 @@ describe('SessionTypesScreen', () => {
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('button', { name: 'More actions for SOP draft review' }));
     await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
-    const dialog = screen.getByRole('alertdialog', { name: 'Delete this session type?' });
+    const dialog = screen.getByRole('alertdialog', { name: 'Delete this session?' });
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
-    expect(
-      screen.getByRole('alertdialog', { name: 'Delete this session type?' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog', { name: 'Delete this session?' })).toBeInTheDocument();
     expect(within(dialog).getByRole('alert')).toHaveTextContent(
       'We couldn’t delete it. Something went wrong. Try again.',
     );
@@ -578,7 +572,7 @@ describe('SessionTypesScreen', () => {
     );
     rerender(<SessionTypesScreen />);
     await waitFor(() =>
-      expect(screen.getAllByRole('link', { name: 'Create session type' })[0]).toHaveFocus(),
+      expect(screen.getAllByRole('link', { name: 'Create session' })[0]).toHaveFocus(),
     );
   });
 
@@ -686,7 +680,7 @@ describe('SessionTypesScreen', () => {
     render(<SessionTypesScreen />);
     await user.click(screen.getByRole('switch', { name: 'Visible to mentees: SOP draft review' }));
     // The only visible one: hiding it says what that means for the profile.
-    let dialog = screen.getByRole('alertdialog', { name: 'Hide your last session type?' });
+    let dialog = screen.getByRole('alertdialog', { name: 'Hide your last session?' });
     expect(dialog).toHaveTextContent('Your profile will show “Not taking bookings”');
     await user.click(within(dialog).getByRole('button', { name: 'Keep visible' }));
     expect(screen.queryByRole('alertdialog')).toBeNull();
@@ -805,7 +799,7 @@ describe('SessionTypesScreen', () => {
 });
 
 describe('the setup lock: /session-types opened by URL (PRD "App shell and access")', () => {
-  it('a declined mentor gets the explainer as the page, not their session types', () => {
+  it('a declined mentor gets the explainer as the page, not their sessions', () => {
     viewer = viewers.mentorDeclined;
     render(<SessionTypesScreen />);
     expectLockedPage(explainer.mentorNotApproved('Sessions'));
@@ -816,7 +810,7 @@ describe('the setup lock: /session-types opened by URL (PRD "App shell and acces
     ['a mentor in review (only Bookings locks)', viewers.mentorReview],
     ['an approved mentor', viewers.mentorApproved],
     ['an approved mentor who hasn’t seen the approved screen', viewers.mentorApprovedUnseen],
-  ])('%s manages their session types', (_who, v) => {
+  ])('%s manages their sessions', (_who, v) => {
     viewer = v;
     render(<SessionTypesScreen />);
     expect(screen.getAllByText('SOP draft review').length).toBeGreaterThan(0);
@@ -842,7 +836,7 @@ describe('the setup lock: /session-types opened by URL (PRD "App shell and acces
     viewer = { kind: 'loading', signedIn: true };
     list = idle();
     render(<SessionTypesScreen />);
-    expect(screen.getByRole('status', { name: 'Loading your session types' })).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Loading your sessions' })).toBeInTheDocument();
     expectNoLock();
   });
 

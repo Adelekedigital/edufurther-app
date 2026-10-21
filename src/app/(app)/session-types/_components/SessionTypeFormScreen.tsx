@@ -17,6 +17,7 @@ import {
   type Created,
 } from '@/lib/api/data/sessionTypes';
 import { useSaveWeeklyHours, useWeeklyHours } from '@/lib/api/data/weeklyHours';
+import { SESSIONS_COPY, WIZARD_COPY } from '@/lib/copy/sessionTypes';
 import { SESSION_TEMPLATES } from '@/lib/utils/sessionTemplates';
 import {
   shortestLength,
@@ -94,7 +95,7 @@ export function SessionTypeFormScreen({
   });
   const published = modal?.kind === 'published' || modal?.kind === 'saved';
   const dirty = !published && JSON.stringify(d.draft) !== JSON.stringify(d.initial);
-  useLeaveGuard(dirty, edit ? 'this session type' : 'this new session type');
+  useLeaveGuard(dirty, edit ? WIZARD_COPY.leaveEdit : WIZARD_COPY.leaveNew);
 
   const update = (patch: Partial<Draft>) => {
     const next = d.seedCustom(patch);
@@ -154,7 +155,7 @@ export function SessionTypeFormScreen({
           </div>
         ) : (
           <SessionTypeWizard
-            title={edit ? 'Edit session type' : 'Create a session type'}
+            title={edit ? SESSIONS_COPY.editTitle : SESSIONS_COPY.createTitle}
             step={steps.step}
             reached={steps.reached}
             draft={d.draft}
@@ -200,11 +201,9 @@ export function SessionTypeFormScreen({
       {modal?.kind === 'discard' && (
         // Copy confirmed by design (reply 2026-09-29, #5).
         <ConfirmDialog
-          title={edit ? 'Discard your changes?' : 'Discard this session type?'}
+          title={edit ? 'Discard your changes?' : WIZARD_COPY.discardNew}
           subtitle={
-            edit
-              ? 'Your changes to this session type won’t be saved.'
-              : 'What you’ve entered so far won’t be saved.'
+            edit ? WIZARD_COPY.discardEditBody : 'What you’ve entered so far won’t be saved.'
           }
           icon="delete"
           keepLabel="Keep editing"
@@ -216,7 +215,7 @@ export function SessionTypeFormScreen({
       {modal?.kind === 'deleteQuestion' && (
         <ConfirmDialog
           title="Delete this question?"
-          subtitle={`“${d.draft.questions[modal.index]?.text ?? ''}” will be removed from this session type.`}
+          subtitle={WIZARD_COPY.questionRemoved(d.draft.questions[modal.index]?.text ?? '')}
           icon="delete"
           keepLabel="Keep it"
           confirmLabel="Delete"

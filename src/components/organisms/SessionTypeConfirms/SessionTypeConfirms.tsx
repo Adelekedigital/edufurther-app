@@ -43,7 +43,7 @@ export function DeleteConfirm(
   const { count, lastEndsAt } = p.type.booked;
   const scheduled = count > 0;
   const title = !scheduled
-    ? 'Delete this session type?'
+    ? 'Delete this session?'
     : lastEndsAt
       ? `Schedule deletion for ${formatShortDate(lastEndsAt)}?`
       : 'Schedule deletion?';
@@ -52,7 +52,7 @@ export function DeleteConfirm(
         // Design reply 2026-09-29, #10: scheduling un-features it, so the confirm says so.
         p.type.isFeatured ? ' It also stops being featured.' : ''
       }`
-    : `“${p.type.name}” is removed from your profile and Session types. This can’t be undone.`;
+    : `“${p.type.name}” is removed from your profile and Sessions. This can’t be undone.`;
   return (
     <>
       {p.renderShell(
@@ -95,7 +95,7 @@ export function FeatureConfirm(
       {p.renderShell(
         {
           title: `Feature “${p.type.name}” instead?`,
-          subtitle: `It moves to the top of your profile. “${p.current.name}” will no longer be featured. You can feature one session type at a time.`,
+          subtitle: `It moves to the top of your profile. “${p.current.name}” will no longer be featured. You can feature one session at a time.`,
           icon: 'star',
           alert: true,
           ...confirmClose(false, p.onCancel),
@@ -131,15 +131,15 @@ export function VisibilityConfirm(
   const title = p.show
     ? `Show “${p.type.name}” to mentees?`
     : p.last
-      ? 'Hide your last session type?'
+      ? 'Hide your last session?'
       : `Hide “${p.type.name}” from mentees?`;
   const subtitle =
     p.subtitle ??
     (p.show
       ? 'It appears on your profile and Explore, and mentees can book it in your open hours.'
       : p.last
-        ? 'Your profile will show “Not taking bookings” until a session type is visible again. Booked sessions go ahead.'
-        : 'Mentees can’t see or book it. Booked sessions go ahead, and you can show it again anytime.');
+        ? 'Your profile will show “Not taking bookings” until a session is visible again. Bookings already made go ahead.'
+        : 'Mentees can’t see or book it. Bookings already made go ahead, and you can show it again anytime.');
   return (
     <>
       {p.renderShell(

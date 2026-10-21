@@ -242,7 +242,7 @@ describe('MenteeHomeScreen', () => {
     expect(screen.getByText('Waiting on your mentor')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View your request' })).toBeInTheDocument();
     expect(
-      screen.getByText('Your request is with your mentor — we’ll let you know.'),
+      screen.getByText('Your request is with your mentor. We’ll let you know.'),
     ).toBeInTheDocument();
     expect(screen.queryByText('Nothing booked yet')).not.toBeInTheDocument();
   });

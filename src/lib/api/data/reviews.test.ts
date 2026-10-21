@@ -53,18 +53,26 @@ describe('toReviewPrompt', () => {
       toReviewPrompt({
         completed_sessions_with_mentor: 2,
         review_due: true,
+        review_update_due: false,
         last_reviewed_at: null,
       }),
     ).toBe('due');
   });
   it('says when they can review before a first session', () => {
-    expect(toReviewPrompt({ completed_sessions_with_mentor: 0, review_due: false })).toBe('none');
+    expect(
+      toReviewPrompt({
+        completed_sessions_with_mentor: 0,
+        review_due: false,
+        review_update_due: false,
+      }),
+    ).toBe('none');
   });
   it('says nothing once they have reviewed', () => {
     expect(
       toReviewPrompt({
         completed_sessions_with_mentor: 3,
         review_due: false,
+        review_update_due: false,
         last_reviewed_at: '2026-07-01T00:00:00Z',
       }),
     ).toBeNull();

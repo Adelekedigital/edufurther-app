@@ -10,6 +10,7 @@ import { Switch } from '@/components/atoms/Switch/Switch';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { QuestionRow } from '@/components/molecules/QuestionRow/QuestionRow';
 import { SegmentedControl } from '@/components/molecules/SegmentedControl/SegmentedControl';
+import { QUESTIONS_COPY } from '@/lib/copy/sessionTypes';
 import { cx } from '@/lib/utils/cx';
 import {
   MAX_QUESTIONS,
@@ -174,11 +175,7 @@ export function IntakeQuestionsStep({
           ))}
         </ol>
       )}
-      {qs.length === 0 && (
-        <span className={styles.noQuestions}>
-          No questions yet. That’s fine — fewer questions means more bookings.
-        </span>
-      )}
+      {qs.length === 0 && <span className={styles.noQuestions}>{QUESTIONS_COPY.none}</span>}
       {errors.questions && <p className={styles.fieldError}>{errors.questions}</p>}
 
       {showEditor && (

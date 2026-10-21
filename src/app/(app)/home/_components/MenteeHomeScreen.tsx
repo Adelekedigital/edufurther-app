@@ -135,7 +135,7 @@ export function MenteeHomeScreen() {
   const subline = isNew
     ? 'Let’s find the right mentor for your goal.'
     : hasPending
-      ? 'Your request is with your mentor — we’ll let you know.'
+      ? 'Your request is with your mentor. We’ll let you know.'
       : noUpcoming
         ? 'No session booked right now. Pick up where you left off.'
         : 'Here’s what’s next on your journey.';
@@ -189,7 +189,7 @@ export function MenteeHomeScreen() {
         <EmptyState
           illustration="forms"
           title="We couldn’t load your next session."
-          description="Your bookings are safe — this is just the view."
+          description="Your bookings are safe. This is just the view."
           actions={
             <Button variant="secondary-outlined" size="large" onClick={upcoming.retry}>
               Try again
@@ -202,7 +202,7 @@ export function MenteeHomeScreen() {
         <MenteeEmptyCard
           illustration="calendar-grey"
           title="Waiting on your mentor"
-          body="You’ve sent a session request — we’ll let you know as soon as they respond."
+          body="You’ve sent a session request. We’ll let you know as soon as they respond."
           action={
             <ButtonLink
               href="/bookings?tab=pending"

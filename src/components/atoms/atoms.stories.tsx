@@ -282,11 +282,11 @@ export const Selects: Story = {
         options={[30, 45, 60, 90].map((m) => ({ value: String(m), label: `${m} min` }))}
       />
       <Select
-        aria-label="Booking approval"
+        aria-label="Approve bookings"
         width={240}
         options={[
           { value: 'inherit', label: 'Use my default' },
-          { value: 'on', label: 'Approve each request' },
+          { value: 'on', label: 'You approve each booking' },
         ]}
       />
       <Select

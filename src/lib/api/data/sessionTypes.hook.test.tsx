@@ -612,9 +612,7 @@ describe('useCreateSessionType', () => {
     POST.mockResolvedValueOnce(fail(409));
     act(() => result.current.create({ body: { name: 'Taken' } as never, windows: [] }));
     await waitFor(() => expect(result.current.error!.fields.name).toBeTruthy());
-    expect(result.current.error!.fields.name).toBe(
-      'You already have a session type with this name.',
-    );
+    expect(result.current.error!.fields.name).toBe('You already have a session with this name.');
   });
 
   it('the type is created even when some dedicated hours fail; those come back to retry', async () => {

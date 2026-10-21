@@ -23,7 +23,7 @@ import styles from './MentorProfileScreen.module.css';
 
 const NEW_HREF = '/session-types/new';
 /** Where a hidden type comes back, said wherever the profile hides one. */
-const SHOW_AGAIN = 'To show it again, turn it on in Session types.';
+const SHOW_AGAIN = 'To show it again, turn it on in Sessions.';
 
 const confirmShell = (shell: ConfirmShell, body: ReactNode) => (
   <ModalShell {...shell} size="sm">
@@ -111,7 +111,7 @@ export function OwnerSessionTypes({ shown, onActiveCount, onSay: say }: Props) {
     say(text);
   };
   const hiddenNow = (t: OwnSessionType) =>
-    `“${t.name}” is hidden. You can show it again in Session types.`;
+    `“${t.name}” is hidden. You can show it again in Sessions.`;
 
   // The switch: optimistic; a refusal brings the card back and says which.
   const setLive = useSetLive((id, live) =>
@@ -225,7 +225,7 @@ export function OwnerSessionTypes({ shown, onActiveCount, onSay: say }: Props) {
         const when = r.deletesAfter
           ? `Deletion scheduled for ${formatShortDate(r.deletesAfter)}.`
           : 'Deletion scheduled.';
-        move(`${when} Hidden from mentees now. Manage it in Session types.`);
+        move(`${when} Hidden from mentees now. Manage it in Sessions.`);
       })
       .catch((e: DeleteError) => {
         settleDelete(t.id);
@@ -245,7 +245,7 @@ export function OwnerSessionTypes({ shown, onActiveCount, onSay: say }: Props) {
     <>
       {own.error && (
         <Notice tone="neutral" icon="error">
-          We couldn’t load your session types for editing.{' '}
+          We couldn’t load your sessions for editing.{' '}
           <Button variant="text" onClick={own.retry}>
             Try again
           </Button>
@@ -256,7 +256,7 @@ export function OwnerSessionTypes({ shown, onActiveCount, onSay: say }: Props) {
         // pop in over the mentee view (review of PR 119).
         <ul className={styles.ownerLoading} aria-busy>
           <span className="sr-only" role="status">
-            Loading your session types
+            Loading your sessions
           </span>
           {Array.from({ length: Math.max(1, shown.length) }, (_, i) => (
             <li key={i}>
@@ -323,8 +323,8 @@ export function OwnerSessionTypes({ shown, onActiveCount, onSay: say }: Props) {
           last={liveCount === 1}
           subtitle={
             liveCount === 1
-              ? `Your profile will show “Not taking bookings” until one is visible again. Booked sessions go ahead. ${SHOW_AGAIN}`
-              : `It leaves your profile and Explore, and mentees can’t book it. Booked sessions go ahead. ${SHOW_AGAIN}`
+              ? `Your profile will show “Not taking bookings” until one is visible again. Bookings already made go ahead. ${SHOW_AGAIN}`
+              : `It leaves your profile and Explore, and mentees can’t book it. Bookings already made go ahead. ${SHOW_AGAIN}`
           }
           onCancel={() => {
             const { type, then } = hiding;

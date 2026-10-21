@@ -5,6 +5,7 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { SessionTypeRow } from '@/components/molecules/SessionTypeRow/SessionTypeRow';
 import { TemplateCard } from '@/components/molecules/TemplateCard/TemplateCard';
+import { SESSIONS_COPY } from '@/lib/copy/sessionTypes';
 import type { Remote } from '@/types/mentor';
 import type { OwnSessionType } from '@/types/sessionType';
 import styles from './SessionTypeManager.module.css';
@@ -53,14 +54,11 @@ export function SessionTypeManager(p: SessionTypeManagerProps) {
     <div className={styles.page}>
       <div className={styles.header} ref={header}>
         <div className={styles.intro}>
-          <h1 className={styles.title}>Session types</h1>
-          <p className={styles.lede}>
-            What mentees can book with you. Each type has its own description, questions and booking
-            rules.
-          </p>
+          <h1 className={styles.title}>{SESSIONS_COPY.title}</h1>
+          <p className={styles.lede}>{SESSIONS_COPY.lede}</p>
         </div>
         <ButtonLink href={p.createHref} prefetch={false} size="large">
-          Create session type
+          {SESSIONS_COPY.create}
         </ButtonLink>
       </div>
 
@@ -107,7 +105,7 @@ function List({
 }: SessionTypeManagerProps) {
   if (list.isLoading) {
     return (
-      <div className={styles.list} role="status" aria-label="Loading your session types">
+      <div className={styles.list} role="status" aria-label={SESSIONS_COPY.loading}>
         {[0, 1].map((i) => (
           // Same boxes and wrapping as SessionTypeRow, so nothing moves when rows arrive.
           <div key={i} className={styles.skeletonRow}>
@@ -135,7 +133,7 @@ function List({
         <EmptyState
           illustration="forms"
           size={120}
-          title="We couldn’t load your session types"
+          title={SESSIONS_COPY.loadError}
           description={
             offline
               ? // Copy confirmed by design (reply 2026-09-29, #2).
@@ -159,11 +157,11 @@ function List({
         <EmptyState
           illustration="task-templates"
           size={120}
-          title="Create your first session type"
-          description="Mentees can’t book you until you offer at least one session. Start from a template or build your own."
+          title={SESSIONS_COPY.emptyTitle}
+          description={SESSIONS_COPY.emptyBody}
           actions={
             <ButtonLink href={createHref} prefetch={false} size="large">
-              Create session type
+              {SESSIONS_COPY.create}
             </ButtonLink>
           }
         />

@@ -15,7 +15,7 @@ type TipActions = {
 
 /** Our copy for each step (the design draws two sample tips only). */
 const LABEL: Record<CompletenessCode, string> = {
-  session_type: 'Turn on a session type',
+  session_type: 'Turn on a session',
   weekly_hours: 'Set your weekly hours',
   photo: 'Add a profile photo',
   headline: 'Add a headline',
