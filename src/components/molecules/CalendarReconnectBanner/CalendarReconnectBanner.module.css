@@ -1,0 +1,61 @@
+/* Drawn on SetupBanner (Mentor Dashboard v2), in the warning tone: this one
+   reports something already going wrong rather than a step still to do. */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-hairline) solid var(--gold-300);
+  border-radius: var(--radius-xl);
+  background: var(--gold-subtle);
+}
+.icon {
+  flex: none;
+  color: var(--yellow-900);
+}
+.body {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.line {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-secondary);
+}
+.lead {
+  color: var(--text-primary);
+  font-weight: var(--weight-semibold);
+}
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-secondary);
+}
+.note > :first-child {
+  flex: none;
+}
+.failIcon {
+  color: var(--text-danger);
+}
+.spin {
+  animation: spin 900ms linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}

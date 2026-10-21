@@ -156,3 +156,49 @@ export const PAYMENTS_COPY = {
   label: 'Get paid for sessions',
   cardDesc: 'Charge for your sessions and get paid in your local currency.',
 } as const;
+
+/**
+ * A Google Calendar connection that has broken, wherever a mentor meets it
+ * (PRD: Integrations, 21 Oct, decision 5). Lives here rather than in
+ * `calendar.ts` because this is the calendar-connection vocabulary, next to
+ * CALENDARS_COPY, and the banner shows on Calendar and Mentor Home as well as
+ * here.
+ */
+export const RECONNECT_COPY = {
+  /**
+   * Two sentences on purpose: what is wrong, then what it is costing. A mentor
+   * whose grant lapsed is quietly losing the one thing they connected it for,
+   * and that cost is the reason to press the button.
+   */
+  title: 'Google Calendar needs reconnecting.',
+  body: 'Until then, times you’re busy can still be booked.',
+  action: 'Reconnect',
+  /** Integrations says "connected"; this one is about repair. */
+  reconnected: 'Google Calendar reconnected. Your busy times are hidden again.',
+  busy: 'Waiting for Google… finish in the window that opened, or close it to stop.',
+} as const;
+
+/**
+ * Why a reconnect did not happen. Every one leaves the banner on screen,
+ * because the connection is still broken.
+ *
+ * Worded as Integrations words them (one label per concept), except each says
+ * "reconnect": a mentor reading this has connected before.
+ */
+export const RECONNECT_FAILURES = {
+  blocked: 'Your browser blocked the pop-up. Allow pop-ups for EduFurther, then try again.',
+  /**
+   * Google puts calendar access behind its own checkbox a step after choosing
+   * an account, so clicking straight through grants sign-in only and the
+   * backend refuses it. We cannot tell that from a closed window, so this
+   * covers both, and it is not phrased as an error: nothing broke.
+   */
+  nothingConnected:
+    'Nothing was reconnected. The window closed, or the calendar permission wasn’t ticked. Google asks for that on a separate step.',
+  offline: 'You’re offline. Try reconnecting once you’re back on the internet.',
+  failed: 'We couldn’t start reconnecting. Try again in a moment.',
+  /** No Google client on this deployment, so the button can never work. */
+  unavailable: 'Reconnecting isn’t available just now. We’re looking into it.',
+} as const;
+
+export type ReconnectFailure = keyof typeof RECONNECT_FAILURES;
