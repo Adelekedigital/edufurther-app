@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useCalendarConnection } from '@/lib/api/data/calendarConnection';
+import { useMentorStatus } from '@/lib/api/data/mentorStatus';
 import { RECONNECT_COPY, RECONNECT_FAILURES, type ReconnectFailure } from '@/lib/copy/integrations';
 import { focusPageHeading } from './RouteFocusManager';
 import { useCalendarConnect, type ConnectState } from './useCalendarConnect';
@@ -38,6 +39,21 @@ export function useCalendarReconnect(
   // deliberately disconnected, and a failed load all leave the page alone: a
   // banner that cried wolf on a network blip would be ignored when it mattered.
   const broken = !!connection && connection.status === 'error';
+
+  /**
+   * The banner's second sentence is "times you're busy can still be booked",
+   * and that is only true where bookings can actually happen. A paused mentor
+   * takes none at all; an unlisted one cannot be found. Unknown counts as not
+   * bookable, so a failed status load stays quiet rather than risk the claim.
+   *
+   * This lives in the hook, not in the screens: the same banner is mounted
+   * twice, and a guard written per screen gets applied to one of them and
+   * forgotten on the other, which is exactly what happened here (review of
+   * #357). React Query serves Calendar's existing status query, so only
+   * Mentor Home gains a request.
+   */
+  const status = useMentorStatus(userId);
+  const bookable = !!status.data && status.data.listed && !status.data.pausedByMentor;
 
   // `announce` is still the screen's live region, for SUCCESS only: the banner
   // unmounts the moment it reconnects, so its own alert region cannot say so.
@@ -76,7 +92,7 @@ export function useCalendarReconnect(
   }, [broken]);
 
   return {
-    show: broken,
+    show: broken && bookable,
     busy: kind === 'busy',
     unavailable,
     failure,

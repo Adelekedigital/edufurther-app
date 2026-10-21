@@ -12,6 +12,11 @@ vi.mock('@/lib/api/data/calendarConnection', () => ({
 const focusPageHeading = vi.fn();
 vi.mock('./RouteFocusManager', () => ({ focusPageHeading: () => focusPageHeading() }));
 
+let status: { data: { approved: boolean; listed: boolean; pausedByMentor: boolean } | null };
+vi.mock('@/lib/api/data/mentorStatus', () => ({
+  useMentorStatus: () => status,
+}));
+
 const connectFn = vi.fn();
 const connectHook = vi.fn();
 let connectState: { kind: string } = { kind: 'idle' };
@@ -50,6 +55,7 @@ const announce = vi.fn();
 
 beforeEach(() => {
   connection = remote(conn({ status: 'error', fault: 'revoked' }));
+  status = { data: { approved: true, listed: true, pausedByMentor: false } };
   connectState = { kind: 'idle' };
   unavailable = false;
   connectFn.mockReset();
@@ -91,6 +97,31 @@ describe('useCalendarReconnect', () => {
   it('stays away from someone who is not a mentor', () => {
     connection = remote(null);
     const { result } = renderHook(() => useCalendarReconnect(null, announce));
+    expect(result.current.show).toBe(false);
+  });
+
+  /**
+   * "Times you're busy can still be booked" is false while paused: nothing can
+   * be booked at all. The rule lives here rather than in each screen, because
+   * the banner is mounted twice and a per-screen guard got applied to one and
+   * forgotten on the other (review of #357).
+   */
+  it('stays away while the mentor is paused', () => {
+    status = { data: { approved: true, listed: true, pausedByMentor: true } };
+    const { result } = renderHook(() => useCalendarReconnect('m1', announce));
+    expect(result.current.show).toBe(false);
+  });
+
+  it('stays away while EduFurther has unlisted them', () => {
+    status = { data: { approved: true, listed: false, pausedByMentor: false } };
+    const { result } = renderHook(() => useCalendarReconnect('m1', announce));
+    expect(result.current.show).toBe(false);
+  });
+
+  /** Unknown is not bookable: better quiet than a claim we cannot stand behind. */
+  it('stays away while the booking state is unknown', () => {
+    status = { data: null };
+    const { result } = renderHook(() => useCalendarReconnect('m1', announce));
     expect(result.current.show).toBe(false);
   });
 

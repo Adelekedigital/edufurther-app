@@ -436,11 +436,9 @@ export function CalendarScreen() {
           </Notice>
         )}
 
-        {/* Only where the second sentence is true. Paused, nothing can be
-            booked at all; unlisted, mentees cannot find them. The banner
-            returns by itself the moment either ends, which is exactly when the
-            cost becomes real (review of #357). */}
-        {reconnect.show && !busy && !unlisted && (
+        {/* `show` already accounts for paused and unlisted: the rule lives in
+            useCalendarReconnect so both mounts get it. */}
+        {reconnect.show && (
           <CalendarReconnectBanner
             busy={reconnect.busy}
             unavailable={reconnect.unavailable}
