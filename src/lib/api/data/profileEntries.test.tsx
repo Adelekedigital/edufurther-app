@@ -208,13 +208,13 @@ describe('awards and education — refused for the review (409 in review)', () =
     POST.mockResolvedValue(refused({ ...IN_REVIEW, fields: ['awards'] }));
     const { result } = withFreeze(() => useAwardEdit('u1'));
     act(() => result.current.hook.addAward(award, vi.fn()));
-    await waitFor(() => expect(result.current.refused).toBe(true));
+    await waitFor(() => expect(result.current.refused).not.toBeNull());
   });
 
   it('removing a degree: the page sees the refusal', async () => {
     DELETE.mockResolvedValue(refused({ ...IN_REVIEW, fields: ['education'] }));
     const { result } = withFreeze(() => useEducationEdit('u1'));
     act(() => result.current.hook.removeEducation('e1', vi.fn()));
-    await waitFor(() => expect(result.current.refused).toBe(true));
+    await waitFor(() => expect(result.current.refused).not.toBeNull());
   });
 });

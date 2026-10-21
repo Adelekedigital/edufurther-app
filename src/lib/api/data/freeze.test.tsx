@@ -28,11 +28,11 @@ describe('useInReviewRefusal', () => {
       }),
       { wrapper },
     );
-    expect(result.current.refused).toBe(false);
+    expect(result.current.refused).toBeNull();
     await act(async () => {
       await result.current.save.mutateAsync().catch(() => undefined);
     });
-    await waitFor(() => expect(result.current.refused).toBe(true));
+    await waitFor(() => expect(result.current.refused).toEqual(expect.any(Number)));
   });
 
   it('any other failure: false', async () => {
@@ -47,7 +47,7 @@ describe('useInReviewRefusal', () => {
     await act(async () => {
       await result.current.save.mutateAsync().catch(() => undefined);
     });
-    expect(result.current.refused).toBe(false);
+    expect(result.current.refused).toBeNull();
   });
 
   it('a refusal from before the page opened (the decision may have come since): false', async () => {
@@ -60,6 +60,6 @@ describe('useInReviewRefusal', () => {
       .catch(() => undefined);
     await new Promise((r) => setTimeout(r, 5));
     const { result } = renderHook(() => useInReviewRefusal(), { wrapper });
-    expect(result.current).toBe(false);
+    expect(result.current).toBeNull();
   });
 });

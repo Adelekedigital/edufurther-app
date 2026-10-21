@@ -151,6 +151,26 @@ describe('MentorProfileScreen — the review freeze (Mentor Settings PR 2)', () 
     expect(screen.getByText(REVIEW_LINE).closest('[tabindex="-1"]')).not.toHaveFocus();
   });
 
+  it('a refusal lets go once the decision comes (GitHub review of PR 359)', async () => {
+    h.viewerIsMentor = true;
+    h.viewerExtra = { mentorStage: 'approved' };
+    h.profile = state({ data: { ...own, owner: { approval: 'approved', listed: true } } });
+    const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+    // A save refused (the cached stage was stale): frozen.
+    h.inReviewRefusal = true;
+    rerender(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByText(REVIEW_LINE)).toBeInTheDocument();
+    // /me catches up: in review.
+    h.viewerExtra = { mentorStage: 'pending' };
+    rerender(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByText(REVIEW_LINE)).toBeInTheDocument();
+    // Then approved, the old refusal still in the cache: every control is back.
+    h.viewerExtra = { mentorStage: 'approved' };
+    rerender(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByText(REVIEW_LINE)).toBeNull();
+    expect(reviewedControls().length).toBeGreaterThanOrEqual(REVIEWED.length);
+  });
+
   it('"View as mentee" shows the preview line, not the review one', async () => {
     inReview();
     const user = userEvent.setup();

@@ -179,7 +179,7 @@ describe('useProfileEdit — refused for the review (409 in review)', () => {
     PATCH.mockResolvedValue(refused());
     const { result } = withFreeze();
     act(() => result.current.edit.saveIntro(before, { ...before, headline: 'New' }, vi.fn()));
-    await waitFor(() => expect(result.current.refused).toBe(true));
+    await waitFor(() => expect(result.current.refused).not.toBeNull());
     expect(result.current.edit.introErrors.general).toBeUndefined();
   });
 
@@ -193,7 +193,7 @@ describe('useProfileEdit — refused for the review (409 in review)', () => {
         vi.fn(),
       ),
     );
-    await waitFor(() => expect(result.current.refused).toBe(true));
+    await waitFor(() => expect(result.current.refused).not.toBeNull());
     expect(result.current.edit.introErrors.general).toBeUndefined();
   });
 
@@ -201,6 +201,6 @@ describe('useProfileEdit — refused for the review (409 in review)', () => {
     PATCH.mockResolvedValue(refused({ ...IN_REVIEW, fields: ['about_me'] }));
     const { result } = withFreeze();
     act(() => result.current.edit.saveAbout('Changed', vi.fn()));
-    await waitFor(() => expect(result.current.refused).toBe(true));
+    await waitFor(() => expect(result.current.refused).not.toBeNull());
   });
 });

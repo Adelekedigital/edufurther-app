@@ -283,7 +283,8 @@ const similarMock = () => ({
 });
 
 const profileMock = () => ({ useMentorProfile: () => h.profile });
-const freezeMock = () => ({ useInReviewRefusal: () => h.inReviewRefusal });
+// As the hook reports it: when the latest refusal happened, or null.
+const freezeMock = () => ({ useInReviewRefusal: () => (h.inReviewRefusal ? 1 : null) });
 
 const coverMock = () => ({
   BANNER_ACCEPT: 'image/jpeg,image/png,image/webp',

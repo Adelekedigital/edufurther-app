@@ -173,13 +173,13 @@ describe('useProfileItems — refused for the review (409 in review)', () => {
     PATCH.mockResolvedValue(refused({ ...IN_REVIEW, fields: ['offering_ids'] }));
     const { result } = withFreeze();
     act(() => result.current.items.saveTopics(['o1'], vi.fn()));
-    await waitFor(() => expect(result.current.refused).toBe(true));
+    await waitFor(() => expect(result.current.refused).not.toBeNull());
   });
 
   it('background: the page sees the refusal', async () => {
     PATCH.mockResolvedValue(refused({ ...IN_REVIEW, fields: ['origin_country_id'] }));
     const { result } = withFreeze();
     act(() => result.current.items.saveBackground(before, { ...before, originId: 'gh' }, vi.fn()));
-    await waitFor(() => expect(result.current.refused).toBe(true));
+    await waitFor(() => expect(result.current.refused).not.toBeNull());
   });
 });

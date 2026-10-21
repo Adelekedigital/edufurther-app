@@ -139,10 +139,25 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // from submit to decision what's reviewed holds still. In review as Settings
   // reads it, or a save here just refused for it (it began meanwhile); the
   // refusal holds, so clearing an editor's error can't unfreeze the page.
-  const refused = useInReviewRefusal();
-  const [heldRefusal, setHeldRefusal] = useState(false);
-  if (refused && !heldRefusal) setHeldRefusal(true);
-  const inReview = isOwner && (member?.mentorStage === 'pending' || heldRefusal);
+  // A refusal holds until the account's stage moves on to a decision (it was
+  // stale, or the decision came since): then it's let go, and only a newer
+  // refusal freezes the page again (GitHub review of PR 359).
+  const refusedAt = useInReviewRefusal();
+  const stage = member?.mentorStage;
+  const [held, setHeld] = useState<{ at: number; stage: typeof stage; sawReview: boolean } | null>(
+    null,
+  );
+  const [letGo, setLetGo] = useState(0);
+  if (refusedAt !== null && refusedAt > letGo && held?.at !== refusedAt)
+    setHeld({ at: refusedAt, stage, sawReview: stage === 'pending' });
+  // Seen in review since: the next decision is a new one, even the same word.
+  if (held && stage === 'pending' && !held.sawReview) setHeld({ ...held, sawReview: true });
+  const decided = stage !== undefined && stage !== 'pending';
+  if (held && decided && (held.sawReview || stage !== held.stage)) {
+    setHeld(null);
+    setLetGo(held.at);
+  }
+  const inReview = isOwner && (stage === 'pending' || !!held);
   // Until /me answers the stage isn't known: no reviewed controls yet, so none
   // flash and vanish for an owner in review (no role UI before the role).
   const stageKnown = viewer.kind !== 'loading';
