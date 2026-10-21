@@ -417,6 +417,23 @@ export function SessionQuality({
       : 'See what’s pulling this down';
   const toggleVariant = isOpen ? 'text' : 'secondary-outlined';
 
+  /**
+   * The on-track banner's body: what is true, and what is next. No sign-off.
+   * "Keep it going." and "Keep it up." added nothing a mentor could act on,
+   * which is the ux-writer spec's empty-sign-off rule, and the streak title
+   * above already carries the good news (owner, 2026-10-21). Built as a list
+   * so the banner simply has no body when neither sentence applies, rather
+   * than an empty paragraph or a stray leading space.
+   */
+  const goodBannerText = [
+    currentStreak > 0 ? null : 'You’re holding your sessions.',
+    nextSession
+      ? `Your next session is ${nextSession.dayLabel} with ${nextSession.firstName}.`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <section className={cx(styles.card, !onTrack && styles.cardRisk)} aria-labelledby={headingId}>
       <header className={styles.header}>
@@ -475,14 +492,7 @@ export function SessionQuality({
                   {currentStreak > 0 && (
                     <p className={styles.bannerGoodTitle}>{streakLine(currentStreak)}</p>
                   )}
-                  <p className={styles.bannerGoodText}>
-                    {currentStreak > 0
-                      ? 'Keep it going.'
-                      : 'You’re holding your sessions. Keep it up.'}
-                    {nextSession
-                      ? ` Your next session is ${nextSession.dayLabel} with ${nextSession.firstName}.`
-                      : ''}
-                  </p>
+                  {goodBannerText && <p className={styles.bannerGoodText}>{goodBannerText}</p>}
                 </div>
               </div>
             ) : (

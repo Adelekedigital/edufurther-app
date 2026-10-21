@@ -326,7 +326,9 @@ describe('SessionQuality', () => {
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
     expect(screen.queryByText(/Your next session is/)).not.toBeInTheDocument();
-    expect(screen.getByText(/Keep it going\./)).toBeInTheDocument();
+    // A streak with nothing next leaves the title alone: no sign-off to fill
+    // the space with (owner, 2026-10-21).
+    expect(screen.getByText(/in a row completed/)).toBeInTheDocument();
   });
 
   // ---- the streak -----------------------------------------------------------
@@ -335,7 +337,7 @@ describe('SessionQuality', () => {
     data = windowStats({ attendanceRate: 90 }, {}, { currentStreak: 0 });
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
-    expect(screen.getByText(/Keep it up/)).toBeInTheDocument();
+    expect(screen.getByText(/You’re holding your sessions\./)).toBeInTheDocument();
     expect(screen.queryByText(/in a row/)).not.toBeInTheDocument();
   });
 
