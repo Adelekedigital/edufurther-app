@@ -7,7 +7,7 @@ import { LegalLine } from '@/components/molecules/LegalLine/LegalLine';
 import { CodeStep } from '@/components/organisms/SignInForm';
 import { FieldError } from '@/components/molecules/FieldError/FieldError';
 import { FullNameField } from '@/components/molecules/FullNameField/FullNameField';
-import { SUPPORT_EMAIL } from '@/lib/config/auth';
+import { supportMailto } from '@/lib/utils/mailto';
 import { isEmail } from '@/lib/utils/emailTypo';
 import { checkFullName } from '@/lib/utils/name';
 import type { GuestPick, GuestSignIn } from './types';
@@ -146,7 +146,7 @@ export function SignupStep({ guest: g, pick, firstName }: Props) {
       )}
 
       {g.stage === 'suspended' && (
-        <ButtonLink href={`mailto:${SUPPORT_EMAIL}`} size="large" fullWidth>
+        <ButtonLink href={supportMailto()} size="large" fullWidth>
           Contact support
         </ButtonLink>
       )}

@@ -39,6 +39,17 @@ describe('statusError', () => {
       'We couldn’t set you as available. Try again.',
     );
   });
+
+  it('offline names what didn’t happen: busy or available', () => {
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    expect(statusError(new TypeError('Failed to fetch'), true).message).toBe(
+      'You’re offline, so we couldn’t set you as busy. Try again when you reconnect.',
+    );
+    expect(statusError(new TypeError('Failed to fetch'), false).message).toBe(
+      'You’re offline, so we couldn’t set you as available. Try again when you reconnect.',
+    );
+    online.mockRestore();
+  });
 });
 
 describe('usePause', () => {

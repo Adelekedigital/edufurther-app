@@ -433,10 +433,32 @@ describe('CalendarScreen', () => {
     expect(screen.queryByText('Available')).toBeNull();
   });
 
-  it('an admin-unlisted mentor sees no status (they can’t change it)', () => {
+  it('an admin-unlisted mentor sees no status, and the notice says why with Contact support', () => {
     status = remote<MentorStatus>({ listed: false, pausedByMentor: false, returnOn: null });
     render(<CalendarScreen />);
     expect(screen.queryByText('Available')).toBeNull();
+    expect(screen.queryByRole('switch', { name: /Available|Busy/ })).toBeNull();
+    const notice = screen.getByText('Unlisted by EduFurther').closest('p')!;
+    expect(notice).toHaveTextContent(
+      'Unlisted by EduFurther EduFurther has taken your profile off the listing for now, so mentees can’t find or book you, and you can’t switch to available or busy yourself. Contact support if you have questions.',
+    );
+    const href = within(notice)
+      .getByRole('link', { name: 'Contact support' })
+      .getAttribute('href')!;
+    const url = new URL(href);
+    expect(url.protocol).toBe('mailto:');
+    expect(url.pathname).toBe('support@edufurther.org');
+    expect(url.searchParams.get('subject')).toBe('My profile was unlisted (Gbenga)');
+    expect(url.searchParams.get('body')).toContain('taken off the listing');
+  });
+
+  it('no unlisted notice for a listed mentor, or one who paused themselves', () => {
+    const { unmount } = render(<CalendarScreen />);
+    expect(screen.queryByText('Unlisted by EduFurther')).toBeNull();
+    unmount();
+    status = remote<MentorStatus>({ listed: false, pausedByMentor: true, returnOn: null });
+    render(<CalendarScreen />);
+    expect(screen.queryByText('Unlisted by EduFurther')).toBeNull();
   });
 
   it('loads with a skeleton, never "no hours"', () => {

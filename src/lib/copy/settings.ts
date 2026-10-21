@@ -109,7 +109,6 @@ export const EDUCATION_COPY = {
  * dates), and leaves the session sentence out at 0. Ours: the failed delete.
  * PROVISIONAL, for design: the /login notice after a deletion.
  */
-export const SUPPORT_EMAIL = 'support@edufurther.org';
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
 export const SECURITY_COPY = {

@@ -1,5 +1,5 @@
 import type { IconName } from '@/components/atoms/Icon/iconNames';
-import { SUPPORT_EMAIL } from '@/lib/config/auth';
+import { supportMailto } from '@/lib/utils/mailto';
 
 /**
  * /mentor-application, word for word from the Mentor Onboarding PRD ("Flow
@@ -140,5 +140,5 @@ export function reapplyMailto(a: {
     'Thanks,',
     a.first,
   ].join('\n');
-  return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  return supportMailto(subject, body);
 }

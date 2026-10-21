@@ -10,7 +10,8 @@ import { Input } from '@/components/atoms/Input/Input';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { ConfirmActions, confirmClose } from '@/components/molecules/ConfirmActions/ConfirmActions';
 import { Notice } from '@/components/molecules/Notice/Notice';
-import { SECURITY_COPY as C, SUPPORT_EMAIL } from '@/lib/copy/settings';
+import { SECURITY_COPY as C } from '@/lib/copy/settings';
+import { supportMailto } from '@/lib/utils/mailto';
 import type { LoginProvider } from '@/types/settings';
 import styles from './SecuritySettings.module.css';
 
@@ -67,9 +68,10 @@ export function supportHref(
 ) {
   const name = p.name.trim() || p.email;
   const firstName = name.split(/\s+/)[0] ?? name;
-  return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(request.subject(name))}&body=${encodeURIComponent(
+  return supportMailto(
+    request.subject(name),
     request.body({ name, firstName, email: p.email, mentor: p.mentor }),
-  )}`;
+  );
 }
 
 /**

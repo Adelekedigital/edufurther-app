@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
+import { statusOffline } from '@/lib/copy/calendar';
 import type { AppError, Remote } from '@/types/mentor';
 import { apiError, normaliseError } from './errors';
 import { api } from './http';
@@ -58,7 +59,7 @@ export function statusError(error: unknown, pausing: boolean): AppError {
   const e = normaliseError(error);
   const message =
     e.kind === 'offline'
-      ? 'You’re offline, so we couldn’t change your availability. Try again when you reconnect.'
+      ? statusOffline(pausing)
       : e.status === 409
         ? // An admin unlisted this mentor: only an admin can relist them (calendar reply #1).
           'Your profile was taken off the listing by EduFurther, so you can’t change this yourself. Contact support.'
