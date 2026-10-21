@@ -2,6 +2,7 @@
  * Calendar v2.dc.html (copy research, PRD Calendar 21 Oct). Copy reviewed with
  * edufurther-ux-writer, 2026-10-21.
  */
+import { CUSTOM_COPY, DAILY_COPY, MEET_COPY, VIDEO_COPY, type VideoChoice } from './integrations';
 export const BOOKING_RULES_COPY = {
   title: 'Booking rules',
   sub: 'Your default rules for every session. You can customize them for a single session.',
@@ -48,3 +49,20 @@ export const UNLISTED_COPY = {
 /** Going busy or back while offline (PRD Calendar, Busy and back errors). */
 export const statusOffline = (pausing: boolean) =>
   `You’re offline, so we couldn’t set you as ${pausing ? 'busy' : 'available'}. Try again when you reconnect.`;
+
+/** Calendar v2 video row and picker (copy research: "Video for sessions: …"). */
+export const VIDEO_ROW_COPY = {
+  modalTitle: VIDEO_COPY.title,
+  // Swap for VIDEO_LINK_LINE / VIDEO_COPY.saveFailed once #357 merges.
+  modalSub:
+    'We create a private link for each booking and add it to your invite and your mentee’s.',
+  editLabel: 'Change video for sessions',
+  summary: 'A private link is created for every booking. Nothing to paste.',
+  customSummary: 'The same link is reused for every mentee.',
+  saved: 'Your video setting is saved.',
+  saveFailed: 'We couldn’t save your video setting. Try again.',
+} as const;
+
+/** "Video for sessions: Google Meet", in Integrations' names for each provider. */
+export const videoRowTitle = (provider: VideoChoice) =>
+  `${VIDEO_COPY.title}: ${{ daily: DAILY_COPY.label, google_meet: MEET_COPY.label, custom: CUSTOM_COPY.label }[provider]}`;

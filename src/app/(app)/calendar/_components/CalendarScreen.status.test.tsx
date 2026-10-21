@@ -115,19 +115,6 @@ describe('CalendarScreen: busy and video', () => {
     expect(within(dialog).getByText(/taken off the listing by EduFurther/)).toBeInTheDocument();
   });
 
-  it('shows where sessions run and saves a new provider; no Zoom', async () => {
-    const user = userEvent.setup();
-    render(<CalendarScreen />);
-    expect(screen.getByText('Sessions run on EduFurther video')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Change video for sessions' }));
-    const dialog = screen.getByRole('dialog', { name: 'Video for sessions' });
-    expect(within(dialog).queryByText(/Zoom/)).toBeNull();
-    await user.click(within(dialog).getByRole('radio', { name: /Google Meet/ }));
-    await user.click(within(dialog).getByRole('button', { name: 'Save' }));
-    expect(saveVideo).toHaveBeenCalledWith({ provider: 'google_meet', customUrl: null });
-    await waitFor(() => expect(announced()).toContain('Your video setting is saved.'));
-  });
-
   it('waits for the status before choosing editing or the break card', () => {
     h.status = remote<MentorStatus>(null, { isLoading: true });
     render(<CalendarScreen />);

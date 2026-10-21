@@ -56,8 +56,8 @@ export const DAILY_COPY = {
  * `by` and `desc` are NOT rendered on /integrations and that is deliberate:
  * the drawn `primary` row carries one line under its label, and the note is
  * the line a mentor is choosing on. They are here, not deleted, because the
- * same provider is drawn as a full card elsewhere (Calendar's booking modal,
- * VideoProviderForm) and that layout has a slot for both. `by` in particular
+ * same provider may be drawn as a full card elsewhere, and that layout has a
+ * slot for both (Calendar's picker reuses VideoSection as is). `by` in particular
  * replaces the old "Uses your Google account", which was false.
  */
 export const MEET_COPY = {

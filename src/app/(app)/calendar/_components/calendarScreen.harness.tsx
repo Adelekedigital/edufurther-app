@@ -110,6 +110,7 @@ const fresh = () => ({
   }) as Remote<Conferencing> & {
     retrying?: boolean;
   },
+  saveVideoError: null as AppError | null,
   booked: remote<BookedDay[]>([]),
   /** What the screen last asked the booked-days hook for. */
   bookedRange: null as { from: string; to: string } | null,
@@ -187,7 +188,12 @@ export const mocks = {
   }),
   conferencing: () => ({
     useConferencing: () => h.video,
-    useSaveConferencing: () => ({ save: saveVideo, isPending: false, error: null, reset: vi.fn() }),
+    useSaveConferencing: () => ({
+      save: saveVideo,
+      isPending: false,
+      error: h.saveVideoError,
+      reset: vi.fn(),
+    }),
   }),
   calendar: () => ({
     useBookedDays: (...a: unknown[]) => {
