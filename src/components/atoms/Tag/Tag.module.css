@@ -123,3 +123,11 @@
   color: var(--ink-700);
   line-height: inherit;
 }
+
+/* CollapsibleSection.dc.html chip: the status tones' colours, as a rounded
+   rectangle. The markup sets no line-height. */
+.rect {
+  border-radius: var(--radius-md);
+  font-weight: var(--weight-semibold);
+  line-height: inherit;
+}

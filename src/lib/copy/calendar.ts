@@ -13,6 +13,17 @@ export const BOOKING_RULES_COPY = {
   settingsHref: '/settings/booking',
 } as const;
 
+/** Weekly availability (Calendar v2 `hoursTitle`, `hoursSummary`, `hoursChip`). */
+export const HOURS_COPY = {
+  title: 'Weekly availability',
+  noHours: 'Add the days and times mentees can book you',
+  tapToView: 'Tap to view',
+  chipInvalid: 'Fix hours',
+  chipUnsaved: 'Unsaved',
+  chipNotSet: 'Not set',
+  chipTotal: (hours: number) => `${hours} hrs a week`,
+} as const;
+
 /** The status a mentor can't change: an admin unlisted them (PRD Calendar, "Unlisted by EduFurther"). */
 export const UNLISTED_COPY = {
   title: 'Unlisted by EduFurther',

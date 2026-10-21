@@ -504,7 +504,7 @@ export function defaultsSummary(d: BookingDefaults): string {
 }
 
 /** Design `t`: "5 pm", "5:30 pm". */
-function shortTime(m: number): string {
+export function shortTime(m: number): string {
   const h = Math.floor(m / 60) % 24;
   const mm = m % 60;
   const ap = h >= 12 ? 'pm' : 'am';
@@ -512,12 +512,17 @@ function shortTime(m: number): string {
   return mm ? `${h12}:${String(mm).padStart(2, '0')} ${ap}` : `${h12} ${ap}`;
 }
 
+/** A day mentees can book: on, with at least one range. */
+export const isOpenDay = (d: DayHours | undefined): d is DayHours => !!d?.on && d.slots.length > 0;
+
+/** The week as summaries read it, Monday first (day indexes, Sunday = 0). */
+export const MONDAY_FIRST = [1, 2, 3, 4, 5, 6, 0] as const;
+
 /** Design `wk`, Monday first: "Mon 5 pm–8 pm · Sat 9 am–1 pm"; null when there are none. */
 export function weeklySummary(days: DayHours[]): string | null {
-  const mondayFirst = [1, 2, 3, 4, 5, 6, 0];
-  const parts = mondayFirst.flatMap((i) => {
+  const parts = MONDAY_FIRST.flatMap((i) => {
     const day = days[i];
-    if (!day?.on || !day.slots.length) return [];
+    if (!isOpenDay(day)) return [];
     const times = day.slots.map(([a, b]) => `${shortTime(a)}–${shortTime(b)}`).join(', ');
     return [`${DAY_NAMES[i]!.slice(0, 3)} ${times}`];
   });

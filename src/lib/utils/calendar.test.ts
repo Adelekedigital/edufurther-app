@@ -1,5 +1,6 @@
 import { emptyWeek } from './sessionTypeDraft';
 import {
+  availabilitySummary,
   bookableRange,
   monthCells,
   runsOf,
@@ -28,6 +29,49 @@ describe('weeklyTotal', () => {
   });
   it('ignores a slot that ends before it starts', () => {
     expect(weeklyTotal(week({ 1: [[600, 540]] }))).toBe('0 hrs a week · 1 day');
+  });
+});
+
+describe('availabilitySummary', () => {
+  const nineToFive: [number, number][] = [[540, 1020]];
+  it('names a run of three or more days as a range, and one shared time', () => {
+    expect(
+      availabilitySummary(
+        week({ 1: nineToFive, 2: nineToFive, 3: nineToFive, 4: nineToFive, 5: nineToFive }),
+      ),
+    ).toBe('Mon–Fri · 9 am–5 pm');
+  });
+  it('lists two days, gaps and single days, Monday first like the week summary', () => {
+    expect(
+      availabilitySummary(week({ 0: nineToFive, 1: nineToFive, 3: nineToFive, 6: nineToFive })),
+    ).toBe('Mon, Wed, Sat, Sun · 9 am–5 pm');
+  });
+  it('reads a weekend as a run, not split around the week', () => {
+    expect(availabilitySummary(week({ 5: nineToFive, 6: nineToFive, 0: nineToFive }))).toBe(
+      'Fri–Sun · 9 am–5 pm',
+    );
+    expect(availabilitySummary(week({ 6: nineToFive, 0: nineToFive }))).toBe(
+      'Sat, Sun · 9 am–5 pm',
+    );
+  });
+  it('says the times vary when days differ or a day has two ranges', () => {
+    expect(availabilitySummary(week({ 1: nineToFive, 2: [[600, 660]] }))).toBe(
+      'Mon, Tue · times vary by day',
+    );
+    expect(
+      availabilitySummary(
+        week({
+          1: [
+            [540, 600],
+            [780, 870],
+          ],
+        }),
+      ),
+    ).toBe('Mon · times vary by day');
+  });
+  it('keeps half hours, and is null with no hours', () => {
+    expect(availabilitySummary(week({ 2: [[570, 1050]] }))).toBe('Tue · 9:30 am–5:30 pm');
+    expect(availabilitySummary(emptyWeek())).toBeNull();
   });
 });
 

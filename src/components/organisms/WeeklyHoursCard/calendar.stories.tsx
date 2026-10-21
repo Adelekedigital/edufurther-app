@@ -98,6 +98,26 @@ export const WeeklyHours: Story = {
   },
 };
 
+/** Phones (`mobileCollapse=on`): a summary and the total until tapped open. */
+export const WeeklyHoursPhone: Story = {
+  render: function Render() {
+    const [days, setDays] = useState(sample);
+    return (
+      <div style={{ width: 358 }}>
+        <WeeklyHoursCard
+          days={days}
+          onDays={setDays}
+          timeZone="Africa/Lagos"
+          onTimeZone={fn()}
+          deviceZone="Africa/Lagos"
+          collapsible
+          dirty={JSON.stringify(days) !== JSON.stringify(sample())}
+        />
+      </div>
+    );
+  },
+};
+
 export const WeeklyHoursEmptyAndOtherZone: Story = {
   render: function Render() {
     const [days, setDays] = useState(emptyWeek);

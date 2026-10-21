@@ -41,6 +41,7 @@ import { BOOKING_RULES_COPY, UNLISTED_COPY } from '@/lib/copy/calendar';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { supportMailto } from '@/lib/utils/mailto';
+import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import { lockedPageGate, memberGate, type MemberGateCopy } from '@/app/_shell/MentorGate';
@@ -126,6 +127,8 @@ export function CalendarScreen() {
 
   const hoursTitle = useRef<HTMLHeadingElement>(null);
   const invalid = draft.slotErrors || !!draft.clash;
+  // `mobileCollapse=on`: weekly availability collapses on phones only.
+  const isPhone = useMediaQuery('(max-width: 767px)');
   // The Session Types modal's copy (confirmed by design, reply 2026-09-29, #7).
   const invalidReason =
     draft.clash && !draft.slotErrors
@@ -468,6 +471,9 @@ export function CalendarScreen() {
                 timeZone={draft.timeZone}
                 onTimeZone={draft.setTimeZone}
                 titleRef={hoursTitle}
+                collapsible={isPhone}
+                invalid={invalid}
+                dirty={draft.dirty}
                 deviceZone={deviceZone}
                 otherZones={weekly.data!.otherZones}
                 minLength={minLength}
