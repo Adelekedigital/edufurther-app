@@ -9,8 +9,9 @@ import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { IntegrationRow } from '@/components/molecules/IntegrationRow/IntegrationRow';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { IntegrationGroup } from '@/components/organisms/IntegrationGroup/IntegrationGroup';
-import { VideoSection, type Provider } from '@/components/organisms/VideoSection/VideoSection';
+import { VideoSection } from '@/components/organisms/VideoSection/VideoSection';
 import { ConfirmDialog } from '@/components/templates/ConfirmDialog/ConfirmDialog';
+import { VideoSwitchConfirm } from '@/components/templates/VideoSwitchConfirm/VideoSwitchConfirm';
 import {
   useCalendarConnection,
   useDisconnectCalendar,
@@ -18,7 +19,12 @@ import {
 } from '@/lib/api/data/calendarConnection';
 import { useConferencing, useSaveConferencing } from '@/lib/api/data/conferencing';
 import { useInterest, useRegisterInterest } from '@/lib/api/data/interest';
-import { useLeaveGuard } from '@/lib/utils/leaveGuard';
+import {
+  CALENDARS_COPY,
+  INTEGRATIONS_COPY,
+  PAYMENTS_COPY,
+  VIDEO_COPY,
+} from '@/lib/copy/integrations';
 import { useOnline } from '@/lib/utils/useOnline';
 import { lockedPageGate, memberGate, type MemberGateCopy } from '@/app/_shell/MentorGate';
 import { useAppShell } from '@/app/_shell/useAppShell';
@@ -44,10 +50,10 @@ const FAULTS: Record<ConnectionFault, string> = {
   unknown: 'Google Calendar needs reconnecting.',
 };
 
-const NAMES: Record<Provider, string> = {
+/** For the announcement after a switch. `custom` is unreachable from here. */
+const NAMES: Record<'daily' | 'google_meet', string> = {
   daily: 'EduFurther video',
   google_meet: 'Google Meet',
-  custom: 'your personal meeting link',
 };
 
 /** /integrations — the mentor's connected tools (Integrations.dc.html, saved defaults). */
@@ -68,23 +74,13 @@ export function IntegrationsScreen() {
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const disconnectButton = useRef<HTMLButtonElement>(null);
 
-  // The choice shown while the server catches up. A radio that doesn't move when
-  // you click it reads as broken, so the pick lands first and a failure puts it
-  // back — loudly (ux-patterns: a silent rollback reads as ignored). Cleared
-  // either way, so it is only ever set mid-flight.
-  const [pending, setPending] = useState<Provider | null>(null);
+  // What the mentor picked, pending their answer to the switch confirm. The
+  // radio does NOT move to it: nothing is saved until the dialog is answered
+  // (PRD decision 2), so the group keeps showing what the server holds. That is
+  // also what stops an arrow-key traversal from firing a save per keystroke —
+  // a pick only opens a dialog, and opening one takes focus out of the group.
+  const [switchTo, setSwitchTo] = useState<'daily' | 'google_meet' | null>(null);
 
-  // null until edited, so the field follows the server without an effect.
-  const [draft, setDraft] = useState<string | null>(null);
-  // Switching provider makes the backend drop custom_url. Keeping the old link
-  // in the field turns that from data loss into one click to put it back — and
-  // it is deliberately NOT the draft, so it never makes the page look dirty.
-  const [recovered, setRecovered] = useState<string | null>(null);
-  const savedLink = video.data?.customUrl ?? '';
-  const link = draft ?? (savedLink || recovered) ?? '';
-  useLeaveGuard(draft !== null && draft.trim() !== savedLink.trim(), 'your personal meeting link');
-
-  const [failedAction, setFailedAction] = useState<'pick' | 'link' | null>(null);
   const [announcement, setAnnouncement] = useState<{ text: string; id: number } | null>(null);
   const announce = useCallback(
     (text: string) => setAnnouncement((a) => ({ text, id: (a?.id ?? 0) + 1 })),
@@ -108,54 +104,35 @@ export function IntegrationsScreen() {
   }, [calendar.data]);
 
   const { save: saveFn, reset: resetSave } = saveVideo;
-  const save = useCallback(
-    async (next: Provider, customUrl: string | null, action: 'pick' | 'link') => {
-      setFailedAction(null);
+
+  /** Opens the confirm. A provider already in use has nothing to ask about. */
+  const pick = useCallback(
+    (next: 'daily' | 'google_meet') => {
+      if (video.data?.provider === next) return;
       resetSave();
-      setPending(next);
-      const wasLink = savedLink;
+      setSwitchTo(next);
+    },
+    [resetSave, video.data?.provider],
+  );
+
+  const confirmSwitch = useCallback(
+    async (next: 'daily' | 'google_meet') => {
       try {
         // Resolves after the mutation has invalidated and refetched, so the
-        // server's value is already on screen when the pick is cleared.
-        await saveFn({ provider: next, customUrl });
-        // Always: a draft left behind would keep the leave guard dirty for a
-        // field that is no longer on screen.
-        setDraft(null);
-        setRecovered(next === 'custom' ? null : wasLink || null);
+        // server's value is already on screen when the dialog closes.
+        await saveFn({ provider: next, customUrl: null });
+        setSwitchTo(null);
         announce(`Saved. Sessions now run on ${NAMES[next]}.`);
       } catch (e) {
-        // The error itself is on saveVideo; this says which control owns it.
-        setFailedAction(action);
-        // A visual-only failure is neither seen nor heard by a screen reader
-        // while focus sits in the radio group (project-conventions).
+        // The dialog stays open: the error belongs beside the button that
+        // caused it, not under a radio group the dialog is covering. Said out
+        // loud too, because focus is on a button that merely stops being busy.
         const message = (e as { message?: string })?.message;
         announce(message ?? 'We couldn’t save your video setting. Try again.');
-      } finally {
-        setPending(null);
       }
     },
-    [announce, saveFn, resetSave, savedLink],
+    [announce, saveFn],
   );
-
-  /**
-   * Native radios select on arrow-key focus, so traversing the group would fire
-   * one PATCH per keystroke — and from a personal link, the first press would
-   * delete it. The pick lands at once; the write waits for the mentor to settle.
-   */
-  const pickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => void (pickTimer.current && clearTimeout(pickTimer.current)), []);
-  const pick = useCallback(
-    (next: Provider) => {
-      setPending(next);
-      setFailedAction(null);
-      resetSave();
-      if (pickTimer.current) clearTimeout(pickTimer.current);
-      pickTimer.current = setTimeout(() => void save(next, null, 'pick'), 350);
-    },
-    [resetSave, save],
-  );
-
-  const errorText = saveVideo.error?.message ?? null;
 
   const connected = calendar.data;
   const waiting = connectState.kind === 'busy';
@@ -215,9 +192,9 @@ export function IntegrationsScreen() {
     <IntegrationRow
       icon="payments"
       tone="green"
-      label="Get paid for sessions"
+      label={PAYMENTS_COPY.label}
       badge="Coming soon"
-      description="Your experience is worth paying for. Start charging for your sessions."
+      description={PAYMENTS_COPY.cardDesc}
       // Once they have asked, the confirmation is a status line, not a disabled
       // button: a disabled button leaves the tab order, so the one state it
       // reports is the one a keyboard or screen-reader user cannot reach. The
@@ -387,53 +364,26 @@ export function IntegrationsScreen() {
       <>
         {video.data ? (
           <VideoSection
-            provider={pending ?? video.data.provider}
+            provider={video.data.provider}
             onPick={pick}
-            saving={saveVideo.isPending && pending !== 'custom'}
-            error={failedAction === 'pick' ? errorText : null}
-            link={link}
-            savedLink={savedLink}
-            onLinkChange={(v) => {
-              setDraft(v);
-              // A failure about the request before this one must not stay
-              // attached to the field while they type the fix.
-              if (failedAction === 'link') {
-                setFailedAction(null);
-                saveVideo.reset();
-              }
-            }}
-            savingLink={saveVideo.isPending && pending === 'custom'}
-            linkError={failedAction === 'link' ? errorText : null}
-            onUseLink={(url) => void save('custom', url, 'link')}
-            onKeepAutomatic={() => {
-              setDraft(null);
-              // The mentor pressed this inside the panel, so a failure belongs
-              // there rather than under the provider cards.
-              if (video.data?.provider === 'custom') void save('daily', null, 'link');
-            }}
+            customUrl={video.data.customUrl}
           />
         ) : (
           <section className={cardClass({ padding: 'md', className: styles.sectionError })}>
-            <h2 className={styles.sectionErrorTitle}>Video for sessions</h2>
+            <h2 className={styles.sectionErrorTitle}>{VIDEO_COPY.title}</h2>
             <p className={styles.sectionErrorBody}>
               <Icon name="error" size={16} />
-              We couldn’t load where your sessions run.
+              {VIDEO_COPY.loadError}
             </p>
             <Button variant="secondary-outlined" busy={video.retrying} onClick={video.retry}>
-              Try again
+              {VIDEO_COPY.retry}
             </Button>
           </section>
         )}
-        <IntegrationGroup
-          title="Calendars"
-          description="Stop double-bookings and see sessions next to the rest of your week."
-        >
+        <IntegrationGroup title={CALENDARS_COPY.title} description={CALENDARS_COPY.desc}>
           {calendarRow}
         </IntegrationGroup>
-        <IntegrationGroup
-          title="Payments"
-          description="Charge for sessions and get paid straight to your account."
-        >
+        <IntegrationGroup title={PAYMENTS_COPY.title} description={PAYMENTS_COPY.desc}>
           {paymentsRow}
         </IntegrationGroup>
       </>
@@ -446,11 +396,8 @@ export function IntegrationsScreen() {
   const body: ReactNode = gate ?? (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Integrations</h1>
-        <p className={styles.subtitle}>
-          Connect the tools you already use. Sessions, invites and payments then look after
-          themselves.
-        </p>
+        <h1 className={styles.title}>{INTEGRATIONS_COPY.title}</h1>
+        <p className={styles.subtitle}>{INTEGRATIONS_COPY.sub}</p>
       </div>
       {content}
     </div>
@@ -459,6 +406,16 @@ export function IntegrationsScreen() {
   return (
     <>
       {body}
+      {switchTo && video.data && (
+        <VideoSwitchConfirm
+          from={video.data.provider}
+          to={switchTo}
+          pending={saveVideo.isPending}
+          error={saveVideo.error?.message ?? null}
+          onKeep={() => setSwitchTo(null)}
+          onConfirm={() => void confirmSwitch(switchTo)}
+        />
+      )}
       {confirmDisconnect && (
         <ConfirmDialog
           title="Disconnect Google Calendar?"

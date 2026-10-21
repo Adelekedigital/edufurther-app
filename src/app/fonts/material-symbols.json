@@ -83,6 +83,7 @@
     "mail",
     "menu",
     "menu_book",
+    "monitoring",
     "more_horiz",
     "my_location",
     "new_releases",
@@ -120,6 +121,7 @@
     "smart_display",
     "star",
     "support_agent",
+    "swap_horiz",
     "sync",
     "task_alt",
     "timer",
@@ -147,5 +149,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "ccfcabb6e059f5749befa198655c9a850f95a2caa72ee0eff31a148adececd48"
+  "sha256": "e2300cba867bc0d0b6867c579e9bd732e7078f5a447e5648c93aa12c25687c98"
 }

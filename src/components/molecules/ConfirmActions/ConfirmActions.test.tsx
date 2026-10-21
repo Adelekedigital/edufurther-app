@@ -40,3 +40,33 @@ describe('ConfirmActions error', () => {
     expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled();
   });
 });
+
+describe('ConfirmActions layout', () => {
+  const props = {
+    keepLabel: 'Keep Google Meet',
+    confirmLabel: 'Switch to EduFurther video',
+    onKeep: vi.fn(),
+    onConfirm: vi.fn(),
+  };
+
+  /** Safe choice first, which is also the drawn order (Modal.dc.html). */
+  it('puts keep before confirm by default', () => {
+    render(<ConfirmActions {...props} />);
+    const [first, second] = screen.getAllByRole('button');
+    expect(first).toHaveAccessibleName('Keep Google Meet');
+    expect(second).toHaveAccessibleName('Switch to EduFurther video');
+  });
+
+  /**
+   * Stacked, the action is on top. Reading order and focus order must agree,
+   * so the DOM order flips with the drawn order rather than only the CSS
+   * (WCAG 1.3.2, 2.4.3). The dialog still opens focused on Keep.
+   */
+  it('puts the action on top when stacked, and keeps initial focus on Keep', () => {
+    render(<ConfirmActions {...props} layout="stack" />);
+    const [first, second] = screen.getAllByRole('button');
+    expect(first).toHaveAccessibleName('Switch to EduFurther video');
+    expect(second).toHaveAccessibleName('Keep Google Meet');
+    expect(second).toHaveAttribute('data-autofocus');
+  });
+});

@@ -7,18 +7,7 @@ const meta: Meta = { title: 'Integrations/Video section', parameters: { layout: 
 export default meta;
 type Story = StoryObj;
 
-const base = {
-  onPick: fn(),
-  saving: false,
-  error: null,
-  link: '',
-  savedLink: '',
-  onLinkChange: fn(),
-  savingLink: false,
-  linkError: null,
-  onUseLink: fn(),
-  onKeepAutomatic: fn(),
-};
+const base = { onPick: fn(), customUrl: null };
 
 export const EduFurtherVideo: Story = {
   render: () => (
@@ -28,6 +17,7 @@ export const EduFurtherVideo: Story = {
   ),
 };
 
+/** The recommended card keeps its size when it is not the choice. */
 export const GoogleMeetChosen: Story = {
   render: () => (
     <div style={{ maxWidth: 880 }}>
@@ -36,46 +26,18 @@ export const GoogleMeetChosen: Story = {
   ),
 };
 
-/** The panel opens by itself when a personal link is already the choice. */
+/**
+ * Support can still put an account on a personal link. It shows read-only, the
+ * label above the alternatives turns plural, and switching away is one-way.
+ */
 export const PersonalLinkInUse: Story = {
   render: () => (
     <div style={{ maxWidth: 880 }}>
       <VideoSection
         {...base}
         provider="custom"
-        link="https://meet.example.com/a-very-long-personal-room-name-that-wraps-on-a-phone"
-        savedLink="https://meet.example.com/a-very-long-personal-room-name-that-wraps-on-a-phone"
+        customUrl="https://meet.example.com/a-very-long-personal-room-name-that-wraps-on-a-phone"
       />
-    </div>
-  ),
-};
-
-/** A link that is not https: the button stays off and says why (ours, not drawn). */
-export const PersonalLinkInvalid: Story = {
-  render: () => (
-    <div style={{ maxWidth: 880 }}>
-      <VideoSection {...base} provider="daily" link="http://meet.example.com/room" />
-    </div>
-  ),
-};
-
-/** A failed save puts the card back and says so, rather than rolling back silently. */
-export const SaveFailed: Story = {
-  render: () => (
-    <div style={{ maxWidth: 880 }}>
-      <VideoSection
-        {...base}
-        provider="daily"
-        error="We couldn’t save your video setting. Try again."
-      />
-    </div>
-  ),
-};
-
-export const Saving: Story = {
-  render: () => (
-    <div style={{ maxWidth: 880 }}>
-      <VideoSection {...base} provider="google_meet" saving />
     </div>
   ),
 };

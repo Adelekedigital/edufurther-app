@@ -1,83 +1,51 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
-import { Icon } from '@/components/atoms/Icon/Icon';
-import { PersonalLinkPanel } from '@/components/molecules/PersonalLinkPanel/PersonalLinkPanel';
+import { useId } from 'react';
 import { VideoProviderCard } from '@/components/molecules/VideoProviderCard/VideoProviderCard';
+import { VideoProviderRow } from '@/components/molecules/VideoProviderRow/VideoProviderRow';
+import {
+  CUSTOM_COPY,
+  DAILY_COPY,
+  MEET_COPY,
+  VIDEO_COPY,
+  type VideoChoice,
+} from '@/lib/copy/integrations';
 import styles from './VideoSection.module.css';
 
-/** Mirrors ConferencingProvider; the section never imports the generated client. */
-export type Provider = 'daily' | 'google_meet' | 'custom';
-
 type VideoSectionProps = {
-  provider: Provider;
+  /** What the server holds. Picking does not move it; confirming does. */
+  provider: VideoChoice;
+  /** Opens the switch confirm. Nothing is saved here (PRD decision 2). */
   onPick: (provider: 'daily' | 'google_meet') => void;
-  saving: boolean;
-  /** Our copy for a failed card save; shown under the group. */
-  error: string | null;
-  link: string;
-  /** What the server holds, so the panel knows a re-save is a no-op. */
-  savedLink: string;
-  onLinkChange: (value: string) => void;
-  savingLink: boolean;
-  /** Our copy for a failed "Use this link". */
-  linkError: string | null;
-  onUseLink: (url: string) => void;
-  /** Back to automatic links. The screen decides what that does to the provider. */
-  onKeepAutomatic: () => void;
+  /** Shown read-only when the account is on a personal link. */
+  customUrl: string | null;
 };
 
 /**
- * "Video for sessions" (Integrations.dc.html, `zoomCard=none`): two provider
- * cards and the personal-link escape hatch. No Save button — the design has
- * none and this is one field, so picking saves. The screen announces it.
+ * "Video for sessions" (Integrations.dc.html, `videoLayout=primary`): the
+ * recommended provider drawn large, then its alternatives as compact rows. The
+ * layout is the recommendation, which is why the two are different shapes.
+ *
+ * No Save button and no optimistic selection: a pick opens the switch confirm
+ * and the radio stays on the saved provider until the PATCH lands. Arrow keys
+ * move through a native radio group, so this is also what stops a traversal
+ * from firing one save per keystroke.
  *
  * Zoom is absent because the saved default drops it, and because the enum has
  * no `zoom` to send (backend calendar reply #2; more providers are #143).
+ * The personal meeting link is absent because the page no longer offers one
+ * (PRD decision 1); `custom` is reachable only through support.
  */
-export function VideoSection({
-  provider,
-  onPick,
-  saving,
-  error,
-  link,
-  savedLink,
-  onLinkChange,
-  savingLink,
-  linkError,
-  onUseLink,
-  onKeepAutomatic,
-}: VideoSectionProps) {
+export function VideoSection({ provider, onPick, customUrl }: VideoSectionProps) {
   const group = useId();
-  const errorId = useId();
-  const [panelOpen, setPanelOpen] = useState(false);
-  const field = useRef<HTMLInputElement>(null);
-  const disclosure = useRef<HTMLButtonElement>(null);
-  // Both controls remove themselves when pressed, which drops focus to <body>.
-  // Put it where the mentor was going instead.
-  const moveFocus = useRef<'intoPanel' | 'toDisclosure' | null>(null);
-  useEffect(() => {
-    if (moveFocus.current === 'intoPanel') field.current?.focus();
-    if (moveFocus.current === 'toDisclosure') disclosure.current?.focus();
-    moveFocus.current = null;
-  });
-  const usingOwn = provider === 'custom';
-  const showPanel = panelOpen || usingOwn;
+  const usingCustom = provider === 'custom';
   return (
     <section className={styles.section}>
       <div className={styles.heading}>
-        <h2 className={styles.title}>Video for sessions</h2>
-        <span className={styles.subtitle}>
-          Pick where your sessions happen. We create a private link for each booking and add it
-          to your invite and your mentee’s.
-        </span>
+        <h2 className={styles.title}>{VIDEO_COPY.title}</h2>
+        <span className={styles.subtitle}>{VIDEO_COPY.sub}</span>
       </div>
-      <div
-        role="radiogroup"
-        aria-label="Video provider"
-        aria-describedby={error ? errorId : undefined}
-        className={styles.grid}
-      >
+      <div role="radiogroup" aria-label={VIDEO_COPY.groupLabel} className={styles.group}>
         <VideoProviderCard
           name={group}
           value="daily"
@@ -85,69 +53,43 @@ export function VideoSection({
           onChange={() => onPick('daily')}
           icon="video_chat"
           tone="blue"
-          label="EduFurther video"
-          by="Built in · powered by Daily"
-          description="A private room for each session. Mentees join from the browser with no account or download."
-          benefit="Attendance is tracked, so every session counts in your session analytics."
-          idleStatus="Ready to use"
+          label={DAILY_COPY.label}
+          by={DAILY_COPY.by}
+          description={DAILY_COPY.desc}
+          benefit={DAILY_COPY.benefit}
           recommended
         />
-        <VideoProviderCard
+        <span className={styles.otherLabel}>
+          {usingCustom ? VIDEO_COPY.otherOptions : VIDEO_COPY.otherOption}
+        </span>
+        {/* The by-line ("Hosted by EduFurther · no Google account needed") is
+            deliberately not here: the drawn row has one line under its label,
+            and the booked-length note is the one a mentor is choosing on. */}
+        <VideoProviderRow
           name={group}
           value="google_meet"
           checked={provider === 'google_meet'}
           onChange={() => onPick('google_meet')}
           icon="videocam"
           tone="green"
-          label="Google Meet"
-          by="Uses your Google account"
-          description="A new Meet link for each booking, added to your invite and your mentee’s."
-          note="Attendance isn’t tracked, so these sessions won’t count in your session analytics."
-          idleStatus="Ready to use"
+          label={MEET_COPY.label}
+          note={MEET_COPY.note}
         />
+        {/* PROVISIONAL — undrawn (PRD: "for the designer"). Read-only, and with
+            no handler, because there is no route back to it from this page. */}
+        {usingCustom && (
+          <VideoProviderCard
+            name={group}
+            value="custom"
+            checked
+            icon="link"
+            tone="blue"
+            label={CUSTOM_COPY.label}
+            by={customUrl ?? undefined}
+            description={CUSTOM_COPY.note}
+          />
+        )}
       </div>
-      {error && (
-        <p id={errorId} className={styles.error}>
-          <Icon name="error" size={16} />
-          {error}
-        </p>
-      )}
-      {saving && (
-        <span className={styles.saving}>
-          <Icon name="progress_activity" size={16} className={styles.spin} />
-          Saving…
-        </span>
-      )}
-      {!showPanel && (
-        <button
-          ref={disclosure}
-          type="button"
-          className={styles.disclosure}
-          onClick={() => {
-            moveFocus.current = 'intoPanel';
-            setPanelOpen(true);
-          }}
-        >
-          Use a personal meeting link instead
-        </button>
-      )}
-      {showPanel && (
-        <PersonalLinkPanel
-          value={link}
-          savedValue={savedLink}
-          onChange={onLinkChange}
-          usingOwn={usingOwn}
-          saving={savingLink}
-          error={linkError}
-          onUse={onUseLink}
-          onKeepAutomatic={() => {
-            moveFocus.current = 'toDisclosure';
-            setPanelOpen(false);
-            onKeepAutomatic();
-          }}
-          fieldRef={field}
-        />
-      )}
     </section>
   );
 }
