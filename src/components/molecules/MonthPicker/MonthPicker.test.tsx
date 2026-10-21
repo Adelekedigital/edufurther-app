@@ -19,11 +19,38 @@ describe('MonthPicker, read-only (Month at a glance)', () => {
     expect(screen.getByRole('table', { name: 'October 2026' })).toBeInTheDocument();
     expect(screen.getByText('Monday, October 12, blocked')).toBeInTheDocument();
     expect(screen.getByText('Sunday, October 4, session booked')).toBeInTheDocument();
-    expect(screen.getByText('Monday, October 5, open for bookings')).toBeInTheDocument();
+    expect(screen.getByText('Monday, October 5, available')).toBeInTheDocument();
     // Nothing to pick: no day is a button.
     expect(screen.queryByRole('button', { name: /October 12/ })).toBeNull();
-    expect(screen.getByText('Open')).toBeInTheDocument();
-    expect(screen.getByText('Booked')).toBeInTheDocument();
+  });
+
+  it('the legend reads Available, Booked, Blocked, in the design’s order', () => {
+    const { container } = render(
+      <MonthPicker readOnly today="2026-10-01" available={[1]} showLegend />,
+    );
+    const keys = [...container.querySelectorAll('[class*="key"]')].map((k) => k.textContent);
+    expect(keys).toEqual(['Available', 'Booked', 'Blocked']);
+    expect(screen.queryByText('Open')).toBeNull();
+  });
+
+  it('read-only, blocked days and their swatch are grey; booked days are amber with a dot', () => {
+    const { container } = render(
+      <MonthPicker
+        readOnly
+        today="2026-10-01"
+        selected={['2026-10-12', '2026-10-13', '2026-10-14']}
+        booked={['2026-10-04']}
+        showLegend
+      />,
+    );
+    const day = (n: string) => screen.getByText(n, { selector: '[aria-hidden]' }).parentElement!;
+    expect(day('12').className).toMatch(/selectedGrey/);
+    expect(day('13').className).toMatch(/midGrey/);
+    expect(day('12').parentElement!.className).toMatch(/bandGrey/);
+    expect(day('12').className).not.toMatch(/(^|\s)\S*selected(?!Grey)/);
+    expect(day('4').className).toMatch(/booked/);
+    expect(day('4').querySelector('[class*="dot"]')).not.toBeNull();
+    expect(container.querySelector('[class*="swatchBlockedGrey"]')).not.toBeNull();
   });
 
   it('pages forward and back, never before this month', async () => {
@@ -65,6 +92,38 @@ describe('MonthPicker, pickable', () => {
     expect(onPick).not.toHaveBeenCalled();
   });
 
+  it('a pick stays blue; blocking (selectedKind="blocked") draws grey', () => {
+    const { rerender } = render(
+      <MonthPicker today="2026-10-01" selected={['2026-10-12']} onPick={vi.fn()} showLegend />,
+    );
+    const btn = () => screen.getByRole('button', { name: /October 12/ });
+    expect(btn().className).toMatch(/selected/);
+    expect(btn().className).not.toMatch(/selectedGrey/);
+    rerender(
+      <MonthPicker
+        today="2026-10-01"
+        selected={['2026-10-12']}
+        selectedKind="blocked"
+        onPick={vi.fn()}
+        showLegend
+      />,
+    );
+    expect(btn().className).toMatch(/selectedGrey/);
+  });
+
+  it('a booked day on a blue pick keeps a white dot', () => {
+    render(
+      <MonthPicker
+        today="2026-10-01"
+        selected={['2026-10-12']}
+        booked={['2026-10-12']}
+        onPick={vi.fn()}
+      />,
+    );
+    const dot = screen.getByRole('button', { name: /October 12/ }).querySelector('[class*="dot"]');
+    expect(dot?.className).toMatch(/dotOnBlue/);
+  });
+
   it('marks blocked days pressed', () => {
     render(<MonthPicker today="2026-10-01" selected={['2026-10-12']} onPick={vi.fn()} />);
     expect(screen.getByRole('button', { name: /October 12, blocked/ })).toHaveAttribute(
@@ -99,7 +158,14 @@ describe('MonthPicker past days (axe color-contrast on /calendar)', () => {
     expect(css).not.toMatch(/\.past[^{]*\{[^}]*--ink-300/);
   });
 
-  it('a past blocked day keeps the blue day’s white text', () => {
-    expect(css.match(/\.past([^{]*)\{/)?.[1]).toMatch(/:not\(\.selected, \.mid\)/);
+  it('a past blocked or booked day keeps its own text colour', () => {
+    expect(css.match(/\.past([^{]*)\{/)?.[1]).toMatch(
+      /:not\(\.selected, \.mid, \.selectedGrey, \.midGrey, \.booked\)/,
+    );
+  });
+
+  it('booked days are drawn soft (amber fill), with no gold ring left', () => {
+    expect(css).toMatch(/\.booked\s*\{[^}]*background:\s*var\(--calendar-booked-bg\)/);
+    expect(css).not.toMatch(/calendar-booked-ring|box-shadow:\s*inset 0 0 0 2px/);
   });
 });

@@ -65,6 +65,7 @@ export function BlockOutForm({
         today={today}
         min={today}
         selected={draft}
+        selectedKind="blocked"
         booked={booked.map((b) => b.day)}
         onPick={toggle}
         onMonthChange={onMonthChange}

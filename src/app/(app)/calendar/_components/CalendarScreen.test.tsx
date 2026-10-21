@@ -56,11 +56,18 @@ vi.mock('@/lib/api/data/calendarConnection', async () =>
 
 beforeEach(resetCalendar);
 
+// The header status pill's label; the month legend says "Available" too.
+const pillLabel = () =>
+  screen
+    .queryByRole('switch', { name: /Available|Busy/ })
+    ?.closest('div')
+    ?.querySelector('[class*="label"]') ?? null;
+
 describe('CalendarScreen', () => {
   it('shows the hours, the booking rules summary and the listed mentor as available', () => {
     render(<CalendarScreen />);
     expect(screen.getByRole('heading', { level: 1, name: 'Your calendar' })).toBeInTheDocument();
-    expect(screen.getByText('Available')).toBeInTheDocument();
+    expect(pillLabel()).toHaveTextContent('Available');
     expect(
       screen.getByText(
         'You approve each booking · 60 min · 24 hrs notice · 8 weeks ahead · 15 min buffer',
@@ -295,7 +302,7 @@ describe('CalendarScreen', () => {
         'Your availability isn’t set yet. Add your weekly hours so mentees can find and book you.',
       ),
     ).toBeInTheDocument();
-    expect(screen.queryByText('Available')).toBeNull();
+    expect(pillLabel()).toBeNull();
   });
 
   it('an admin-unlisted mentor sees no status, and the notice says why with Contact support', () => {
@@ -306,7 +313,7 @@ describe('CalendarScreen', () => {
       returnOn: null,
     });
     render(<CalendarScreen />);
-    expect(screen.queryByText('Available')).toBeNull();
+    expect(pillLabel()).toBeNull();
     expect(screen.queryByRole('switch', { name: /Available|Busy/ })).toBeNull();
     const notice = screen.getByText('Unlisted by EduFurther').closest('p')!;
     expect(notice).toHaveTextContent(
