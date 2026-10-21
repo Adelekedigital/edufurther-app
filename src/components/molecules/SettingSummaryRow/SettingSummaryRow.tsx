@@ -10,7 +10,7 @@ type SettingSummaryRowProps = {
   summary: string;
   /** "Change" opens the setting's modal; the ref takes focus back when it closes. */
   onChange: () => void;
-  /** Names what "Change" changes, e.g. "Change scheduling window". */
+  /** Names what "Change" changes, e.g. "Edit booking rules". */
   actionLabel: string;
   /** The button's text; "Change" unless the row offers something else ("Try again"). */
   actionText?: string;

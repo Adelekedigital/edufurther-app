@@ -7,7 +7,7 @@ import { Notice } from '@/components/molecules/Notice/Notice';
 import { SettingSummaryRow } from '@/components/molecules/SettingSummaryRow/SettingSummaryRow';
 import { StatusPill } from '@/components/molecules/StatusPill/StatusPill';
 import { BlockOutForm } from '@/components/organisms/BlockOutForm/BlockOutForm';
-import { SchedulingWindowForm } from '@/components/organisms/SchedulingWindowForm/SchedulingWindowForm';
+import { BookingRulesForm } from '@/components/organisms/BookingRulesForm/BookingRulesForm';
 import { emptyWeek, type DayHours } from '@/lib/utils/sessionTypeDraft';
 import { WeeklyHoursCard } from './WeeklyHoursCard';
 
@@ -71,9 +71,9 @@ export const SettingRow: Story = {
     <div style={{ maxWidth: 1000 }}>
       <SettingSummaryRow
         icon="date_range"
-        title="Scheduling window"
-        summary="60 min sessions · at least 24 hours notice · up to 8 weeks ahead · 15 min break"
-        actionLabel="Change scheduling window"
+        title="Booking rules"
+        summary="Confirmed straight away · 60 min · 24 hrs notice · 4 weeks ahead · 15 min buffer"
+        actionLabel="Edit booking rules"
         onChange={fn()}
       />
     </div>
@@ -187,10 +187,10 @@ const DEFAULTS = {
   maxWindowDays: 56,
 };
 
-export const SchedulingWindow: Story = {
+export const BookingRules: Story = {
   render: () => (
     <div style={{ maxWidth: 480 }}>
-      <SchedulingWindowForm
+      <BookingRulesForm
         initial={DEFAULTS}
         days={sample()}
         saving={false}
@@ -202,10 +202,10 @@ export const SchedulingWindow: Story = {
   ),
 };
 
-export const SchedulingWindowTooShortAndFailed: Story = {
+export const BookingRulesTooShortAndFailed: Story = {
   render: () => (
     <div style={{ maxWidth: 480 }}>
-      <SchedulingWindowForm
+      <BookingRulesForm
         initial={{ ...DEFAULTS, durationMin: 90, noticeHours: 30, maxWindowDays: 21 }}
         days={sample()}
         saving={false}

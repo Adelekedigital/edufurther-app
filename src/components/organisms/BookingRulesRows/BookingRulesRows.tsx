@@ -2,6 +2,8 @@
 
 import { useId } from 'react';
 import { Select } from '@/components/atoms/Select/Select';
+import { Switch } from '@/components/atoms/Switch/Switch';
+import { BOOKING_COPY, approvalLine } from '@/lib/copy/mentorSettings';
 import { noticeLabel } from '@/lib/utils/calendar';
 import {
   NOTICE_HOURS,
@@ -23,15 +25,33 @@ export type BookingRuleKey = keyof BookingRules;
 /** Each screen draws its own words for the same four rows. */
 export type BookingRulesCopy = Record<BookingRuleKey, { label: string; hint: string }>;
 
+/** Approve bookings, drawn as the first row where a screen asks for it. */
+type ApprovalRow = {
+  on: boolean;
+  /** The platform's response window; null leaves the number out. */
+  responseWindowHours: number | null;
+  onChange: (on: boolean) => void;
+};
+
 type BookingRulesRowsProps = {
   value: BookingRules;
+  approval?: ApprovalRow;
   /** The platform's longest window: no choice above it is offered. */
   maxWindowDays?: number;
   copy: BookingRulesCopy;
   onChange: (next: BookingRules) => void;
   disabled?: boolean;
   /** The caller lays the rows out; this only fills them. */
-  classes: { row?: string; text?: string; label?: string; hint?: string };
+  classes: {
+    row?: string;
+    text?: string;
+    label?: string;
+    hint?: string;
+    /** The approval row's own layout, where it differs from the selects'. */
+    approvalRow?: string;
+    approvalText?: string;
+    approvalHint?: string;
+  };
   selectWidth: number;
 };
 
@@ -45,11 +65,13 @@ const noticeHoursOptions = (current: number) =>
 const ORDER: BookingRuleKey[] = ['durationMin', 'noticeHours', 'windowDays', 'breakMin'];
 
 /**
- * Length, notice, window and buffer as label-and-select rows: Calendar's
- * Scheduling window modal and Settings' Booking rules card draw the same four.
+ * Approve bookings, then length, notice, window and buffer as label-and-select
+ * rows: Calendar's Booking rules modal and Settings' Booking rules card draw
+ * the same rows with the same words.
  */
 export function BookingRulesRows({
   value,
+  approval,
   maxWindowDays,
   copy,
   onChange,
@@ -66,6 +88,25 @@ export function BookingRulesRows({
   };
   return (
     <>
+      {approval && (
+        <div className={classes.approvalRow ?? classes.row}>
+          <span className={classes.approvalText ?? classes.text}>
+            <span id={`${id}-approval-label`} className={classes.label}>
+              {BOOKING_COPY.approveTitle}
+            </span>
+            <span id={`${id}-approval`} className={classes.approvalHint ?? classes.hint}>
+              {approvalLine(approval.on, approval.responseWindowHours)}
+            </span>
+          </span>
+          <Switch
+            checked={approval.on}
+            disabled={disabled}
+            aria-labelledby={`${id}-approval-label`}
+            aria-describedby={`${id}-approval`}
+            onChange={approval.onChange}
+          />
+        </div>
+      )}
       {ORDER.map((k) => (
         <div key={k} className={classes.row}>
           <span className={classes.text}>

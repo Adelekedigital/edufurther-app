@@ -13,7 +13,7 @@ import { SettingSummaryRow } from '@/components/molecules/SettingSummaryRow/Sett
 import { StatusPill } from '@/components/molecules/StatusPill/StatusPill';
 import { BlockOutForm } from '@/components/organisms/BlockOutForm/BlockOutForm';
 import { ReturnDateForm } from '@/components/organisms/ReturnDateForm/ReturnDateForm';
-import { SchedulingWindowForm } from '@/components/organisms/SchedulingWindowForm/SchedulingWindowForm';
+import { BookingRulesForm } from '@/components/organisms/BookingRulesForm/BookingRulesForm';
 import { VideoProviderForm } from '@/components/organisms/VideoProviderForm/VideoProviderForm';
 import { WeeklyHoursCard } from '@/components/organisms/WeeklyHoursCard/WeeklyHoursCard';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
@@ -30,13 +30,14 @@ import { shortestLength } from '@/lib/utils/sessionTypeDraft';
 import {
   bookableRange,
   bookedRange,
+  bookingRulesSummary,
   busyBody,
   busyHint,
   doneBody,
   shortDay,
   todayIn,
-  windowSummary,
 } from '@/lib/utils/calendar';
+import { BOOKING_RULES_COPY } from '@/lib/copy/calendar';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { useOnline } from '@/lib/utils/useOnline';
@@ -396,9 +397,9 @@ export function CalendarScreen() {
             >
               <SettingSummaryRow
                 icon="date_range"
-                title="Scheduling window"
-                summary={windowSummary(defaults.data!)}
-                actionLabel="Change scheduling window"
+                title={BOOKING_RULES_COPY.title}
+                summary={bookingRulesSummary(defaults.data!)}
+                actionLabel={BOOKING_RULES_COPY.editLabel}
                 onChange={() => {
                   saveDefaults.reset();
                   setWindowOpen(true);
@@ -565,13 +566,13 @@ export function CalendarScreen() {
       </div>
       {windowOpen && defaults.data && (
         <ModalShell
-          title="Scheduling window"
-          subtitle="When mentees can book you and how long sessions last. Applies to every session type."
+          title={BOOKING_RULES_COPY.title}
+          subtitle={BOOKING_RULES_COPY.sub}
           icon="date_range"
           size="md"
           onClose={closeWindow}
         >
-          <SchedulingWindowForm
+          <BookingRulesForm
             initial={defaults.data}
             days={draft.days}
             saving={saveDefaults.isPending}
@@ -581,7 +582,7 @@ export function CalendarScreen() {
               saveDefaults.save(next).then(
                 () => {
                   setWindowOpen(false);
-                  announce('Your scheduling window is saved.');
+                  announce(BOOKING_RULES_COPY.saved);
                 },
                 (e: { message: string }) => announce(e.message),
               )

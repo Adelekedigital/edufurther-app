@@ -5,12 +5,11 @@ import { Button } from '@/components/atoms/Button/Button';
 import { Card } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
-import { Switch } from '@/components/atoms/Switch/Switch';
 import {
   BookingRulesRows,
   type BookingRules,
 } from '@/components/organisms/BookingRulesRows/BookingRulesRows';
-import { BOOKING_COPY, approvalLine, rulesNote } from '@/lib/copy/mentorSettings';
+import { BOOKING_COPY, rulesNote } from '@/lib/copy/mentorSettings';
 import styles from './BookingSettings.module.css';
 
 export type BookingSettingsValue = BookingRules & { requiresApproval: boolean };
@@ -46,7 +45,6 @@ type BookingSettingsProps =
  */
 export function BookingSettings(props: BookingSettingsProps) {
   const titleId = useId();
-  const approveId = useId();
   if (props.state === 'loading') return <BookingSettingsSkeleton />;
   if (props.state === 'error') {
     return (
@@ -74,7 +72,6 @@ export function BookingSettings(props: BookingSettingsProps) {
     disabled,
     headingRef,
   } = props;
-  const on = value.requiresApproval;
   return (
     <div className={styles.stack}>
       <Card as="section" padding="none" className={styles.card} aria-labelledby={titleId}>
@@ -84,31 +81,27 @@ export function BookingSettings(props: BookingSettingsProps) {
           </h2>
           <span className={styles.desc}>{BOOKING_COPY.rulesSub}</span>
         </div>
-        {/* `apInRules`: approval is the card's first row. */}
-        <div className={styles.approval}>
-          <span className={styles.approvalText}>
-            <span id={`${approveId}-label`} className={styles.label}>
-              {BOOKING_COPY.approveTitle}
-            </span>
-            <span id={`${approveId}-line`} className={styles.approvalLine}>
-              {approvalLine(on, responseWindowHours)}
-            </span>
-          </span>
-          <Switch
-            checked={on}
-            disabled={disabled}
-            aria-labelledby={`${approveId}-label`}
-            aria-describedby={`${approveId}-line`}
-            onChange={(next) => onChange({ ...value, requiresApproval: next })}
-          />
-        </div>
         <BookingRulesRows
           value={value}
+          // `apInRules`: approval is the card's first row.
+          approval={{
+            on: value.requiresApproval,
+            responseWindowHours,
+            onChange: (next) => onChange({ ...value, requiresApproval: next }),
+          }}
           maxWindowDays={maxWindowDays}
           copy={BOOKING_COPY.rules}
           disabled={disabled}
           onChange={(rules) => onChange({ ...value, ...rules })}
-          classes={{ row: styles.row, text: styles.text, label: styles.label, hint: styles.hint }}
+          classes={{
+            row: styles.row,
+            text: styles.text,
+            label: styles.label,
+            hint: styles.hint,
+            approvalRow: styles.approval,
+            approvalText: styles.approvalText,
+            approvalHint: styles.approvalLine,
+          }}
           selectWidth={160}
         />
         <p className={styles.line}>

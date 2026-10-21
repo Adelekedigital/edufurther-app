@@ -9,7 +9,7 @@ import {
   slotCount,
   todayIn,
   weeklyTotal,
-  windowSummary,
+  bookingRulesSummary,
   type MonthCell,
 } from './calendar';
 
@@ -50,25 +50,25 @@ describe('slotCount', () => {
   });
 });
 
-describe('noticeLabel and windowSummary', () => {
+describe('noticeLabel and bookingRulesSummary', () => {
   it('names notice as the design does', () => {
     expect(noticeLabel(24)).toBe('24 hours');
     expect(noticeLabel(48)).toBe('2 days');
     expect(noticeLabel(72)).toBe('3 days');
     expect(noticeLabel(30)).toBe('30 hours');
   });
-  it('summarises the window, falling back to the platform’s values, capped', () => {
+  it('summarises the rules, approval first, falling back to the platform’s values, capped', () => {
     expect(
-      windowSummary({
+      bookingRulesSummary({
         durationMin: 45,
         noticeHours: 48,
         windowDays: 14,
         breakMin: 15,
         requiresApproval: true,
       }),
-    ).toBe('45 min sessions · at least 2 days notice · up to 2 weeks ahead · 15 min break');
+    ).toBe('You approve each booking · 45 min · 2 days notice · 2 weeks ahead · 15 min buffer');
     expect(
-      windowSummary({
+      bookingRulesSummary({
         durationMin: null,
         noticeHours: null,
         windowDays: 56,
@@ -76,7 +76,20 @@ describe('noticeLabel and windowSummary', () => {
         requiresApproval: false,
         maxWindowDays: 28,
       }),
-    ).toBe('60 min sessions · at least 24 hours notice · up to 4 weeks ahead · no break');
+    ).toBe('Confirmed straight away · 60 min · 24 hrs notice · 4 weeks ahead · No buffer');
+  });
+  it('shortens notice in hours, and says one hour as one', () => {
+    const at = (noticeHours: number) =>
+      bookingRulesSummary({
+        durationMin: 60,
+        noticeHours,
+        windowDays: 28,
+        breakMin: 15,
+        requiresApproval: false,
+      }).split(' · ')[2];
+    expect(at(36)).toBe('36 hrs notice');
+    expect(at(1)).toBe('1 hr notice');
+    expect(at(72)).toBe('3 days notice');
   });
 });
 
