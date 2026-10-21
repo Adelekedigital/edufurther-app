@@ -56,6 +56,7 @@ Vercel preview pattern `https://*-<team>.vercel.app/**`. The magic link lands on
 |---|---|---|---|
 | `BACKEND_URL` | prod backend | `https://edufurtherbe-dev.up.railway.app` | server-only; the build fails without it on Vercel. Previews never use prod |
 | `NEXT_PUBLIC_MATCH_CALL_URL` | Cal link | Cal link | empty hides "Find my mentor matches" |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | support address | support address | where every "Contact support" goes; empty or not a plain address uses support@edufurther.org. A change needs a redeploy |
 | `NEXT_PUBLIC_SUPABASE_URL` | prod project URL | dev project URL | public; empty turns sign-in off |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | prod publishable key | dev publishable key | public by design |
 | `NEXT_PUBLIC_API_BASE_URL` | *unset* | *unset* | unset = same-origin proxy |
