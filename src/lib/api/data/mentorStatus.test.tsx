@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react';
 import { ApiError } from './errors';
 import { statusError, toMentorStatus, usePause, useResume } from './mentorStatus';
@@ -14,17 +14,23 @@ describe('toMentorStatus', () => {
   it('busy only when the mentor paused themselves', () => {
     expect(
       toMentorStatus({
+        approval_status: 'approved',
         listing_status: 'unlisted',
         paused_by_mentor: true,
         return_on: '2026-10-16',
       }),
-    ).toEqual({ listed: false, pausedByMentor: true, returnOn: '2026-10-16' });
+    ).toEqual({ approved: true, listed: false, pausedByMentor: true, returnOn: '2026-10-16' });
     // An admin unlisting: not busy, and no fields yet (before backend #324) read as false/null.
-    expect(toMentorStatus({ listing_status: 'unlisted' })).toEqual({
+    expect(toMentorStatus({ approval_status: 'approved', listing_status: 'unlisted' })).toEqual({
+      approved: true,
       listed: false,
       pausedByMentor: false,
       returnOn: null,
     });
+  });
+  it('an applicant in review or declined is not approved', () => {
+    for (const approval_status of ['pending', 'declined'] as const)
+      expect(toMentorStatus({ approval_status, listing_status: 'unlisted' }).approved).toBe(false);
   });
 });
 
@@ -38,6 +44,17 @@ describe('statusError', () => {
     expect(statusError(new ApiError(500), false).message).toBe(
       'We couldn’t set you as available. Try again.',
     );
+  });
+
+  it('offline names what didn’t happen: busy or available', () => {
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    expect(statusError(new TypeError('Failed to fetch'), true).message).toBe(
+      'You’re offline, so we couldn’t set you as busy. Try again when you reconnect.',
+    );
+    expect(statusError(new TypeError('Failed to fetch'), false).message).toBe(
+      'You’re offline, so we couldn’t set you as available. Try again when you reconnect.',
+    );
+    online.mockRestore();
   });
 });
 
@@ -89,6 +106,31 @@ describe('useResume', () => {
     const { result } = renderHook(() => useResume('m1'), { wrapper });
     await expect(result.current.resume()).rejects.toMatchObject({
       message: 'We couldn’t set you as available. Try again.',
+    });
+  });
+});
+
+describe('offline', () => {
+  beforeEach(() => {
+    POST.mockReset().mockRejectedValue(new TypeError('Failed to fetch'));
+    onlineManager.setOnline(false);
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+  });
+  afterEach(() => {
+    onlineManager.setOnline(true);
+    vi.restoreAllMocks();
+  });
+  // A paused mutation never settles, so the offline copy could never show.
+  it('going busy fails at once with the offline copy, rather than waiting to reconnect', async () => {
+    const { result } = renderHook(() => usePause('m1'), { wrapper });
+    await expect(result.current.pause({ returnOn: null })).rejects.toMatchObject({
+      message: 'You’re offline, so we couldn’t set you as busy. Try again when you reconnect.',
+    });
+  });
+  it('going back fails at once with the offline copy', async () => {
+    const { result } = renderHook(() => useResume('m1'), { wrapper });
+    await expect(result.current.resume()).rejects.toMatchObject({
+      message: 'You’re offline, so we couldn’t set you as available. Try again when you reconnect.',
     });
   });
 });

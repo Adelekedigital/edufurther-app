@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, type ReactNode } from 'react';
+import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import { Input } from '@/components/atoms/Input/Input';
 import { Select } from '@/components/atoms/Select/Select';
 import { CountryPicker } from '@/components/molecules/CountryPicker/CountryPicker';
@@ -89,10 +90,11 @@ function DestinationHint() {
   return (
     <>
       {before}
-      <a href={DESTINATION_LINK.href} target="_blank" rel="noopener" className={styles.hintLink}>
-        {DESTINATION_LINK.text}
-        <span className="sr-only"> {DESTINATION_LINK.newTab}</span>
-      </a>
+      <ExternalLink
+        href={DESTINATION_LINK.href}
+        label={DESTINATION_LINK.text}
+        className={styles.hintLink}
+      />
       {after}
     </>
   );

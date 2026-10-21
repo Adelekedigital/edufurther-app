@@ -10,9 +10,6 @@ export const LEGAL_LINKS = {
   communityGuide: 'https://edufurther.org/terms',
 } as const;
 
-/** The suspended screen's Contact support (PRD Q1: use it unless told otherwise). */
-export const SUPPORT_EMAIL = 'support@edufurther.org';
-
 /**
  * Where a new mentee goes after creating an account while onboarding is off
  * (owner, 2026-10-17). With it on, see `newAccountDestination`.

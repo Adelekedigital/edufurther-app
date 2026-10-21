@@ -84,7 +84,6 @@ export const ABOUT_COPY = {
   linkedinHint: 'We use it to confirm your background.',
   linkedinLink: 'Get your LinkedIn link',
   linkedinUrl: 'https://www.linkedin.com/in/me/',
-  linkedinLinkLabel: 'Get your LinkedIn link (opens in a new tab)',
   aboutLabel: 'About (optional)',
   aboutHint: 'Tip: Lead with the path you’ve walked.',
   aboutPlaceholder: 'Your path, what you studied and what you can help with.',

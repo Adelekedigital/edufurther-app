@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { BookingRulesRows } from '@/components/organisms/BookingRulesRows/BookingRulesRows';
@@ -61,15 +62,13 @@ export function BookingRulesForm({
         <span>
           {C.settingsLead}{' '}
           {/* A new tab, as drawn: following it here would drop the rules being edited. */}
-          <a
+          <ExternalLink
             href={C.settingsHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`${C.settingsLink} (opens in a new tab)`}
+            label={C.settingsLink}
             className={styles.settingsLink}
           >
             {C.settingsLink} ↗
-          </a>
+          </ExternalLink>
         </span>
       </p>
       {error && (

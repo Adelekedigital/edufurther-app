@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, type Ref } from 'react';
+import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Input } from '@/components/atoms/Input/Input';
 import { Spinner } from '@/components/atoms/Spinner/Spinner';
@@ -131,16 +132,10 @@ export function AboutStep({
           />
           <span id={`${id}-linkedin`} className={styles.linkedinHint}>
             <span>{C.linkedinHint}</span>
-            <a
-              href={C.linkedinUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.link}
-              aria-label={C.linkedinLinkLabel}
-            >
+            <ExternalLink href={C.linkedinUrl} label={C.linkedinLink} className={styles.link}>
               {C.linkedinLink}
               <Icon name="open_in_new" size={14} />
-            </a>
+            </ExternalLink>
           </span>
           {has('linkedin') && <FieldError>{GAP_COPY.linkedin}</FieldError>}
           {linkedinWrong && <FieldError>{GAP_COPY.linkedinFormat}</FieldError>}

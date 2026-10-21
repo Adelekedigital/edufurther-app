@@ -158,7 +158,9 @@ describe('AppShell navigation', () => {
     const profile = screen.getAllByRole('link', { name: /View profile/ }).at(-1)!;
     expect(profile).toHaveAttribute('href', '/mentors/u1');
     expect(profile).not.toHaveAttribute('target');
-    const matches = screen.getAllByRole('link', { name: /Talk to our team/ }).at(-1)!;
+    const matches = screen
+      .getAllByRole('link', { name: 'Talk to our team (opens in a new tab)' })
+      .at(-1)!;
     expect(matches).toHaveAttribute('target', '_blank');
   });
 

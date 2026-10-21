@@ -451,3 +451,26 @@ instead of the backdrop. A z-index inside a sticky or fixed container only ranks
 it against its siblings: **give the container itself a z-index**. The rail is
 35 (above in-page popovers at 30, under "Your credits" 40, modals 50, toasts
 100), guarded by `AppShell.layers.test.ts`.
+
+### #68 — A code comment asserting backend behaviour, believed for a whole feature
+
+_(real, 2026-10-21, Integrations PR 3.)_ `IntegrationsScreen` carried the comment
+"Switching provider makes the backend drop custom_url", and a whole piece of
+state (`recovered`) existed to soften that loss: it kept the old personal link
+in the field so one click could put it back. Asked directly, the backend showed
+the opposite — each `(user_id, provider)` pair has its own row and a CHECK
+constraint `(provider = 'custom') = (custom_url IS NOT NULL)` means the custom
+row cannot even hold a null. The URL is retained. What is true is narrower and
+was never written down: `GET /me/conferencing` returns only the **default** row,
+and a PATCH back to `custom` is a 422 without a URL in the body, so the mentor
+cannot reach it and support is the route back.
+
+Nothing broke, because the workaround was harmless. The cost was a feature
+designed around a loss that never happened, and a confirm dialog that would have
+told mentors the wrong thing. **A comment about another service's behaviour is a
+claim with no test behind it and no one to fail when it drifts.** Treat one as
+hearsay: ask the service, or read its source, before building on it or repeating
+it to a user. The same applies to what the frontend then infers — "sessions
+already booked keep their link" was also wrong, because a meeting link is written
+at confirmation, not at request, so a mentor who approves by hand has pending
+requests that take the new provider.

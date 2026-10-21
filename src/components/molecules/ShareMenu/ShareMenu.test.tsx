@@ -13,7 +13,9 @@ describe('ShareMenu', () => {
     expect(button).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('menuitem', { name: 'Copy profile link' })).toHaveFocus();
     await user.keyboard('{ArrowDown}');
-    expect(screen.getByRole('menuitem', { name: 'Share on LinkedIn' })).toHaveFocus();
+    expect(
+      screen.getByRole('menuitem', { name: 'Share on LinkedIn (opens in a new tab)' }),
+    ).toHaveFocus();
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     expect(button).toHaveFocus();
@@ -104,7 +106,9 @@ describe('ShareMenu', () => {
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
     render(<ShareMenu url="https://edufurther.com/mentors/g?x=1" name="Gbenga E" />);
     await user.click(screen.getByRole('button', { name: 'Share profile' }));
-    expect(screen.getByRole('menuitem', { name: 'Share on LinkedIn' })).toHaveAttribute(
+    expect(
+      screen.getByRole('menuitem', { name: 'Share on LinkedIn (opens in a new tab)' }),
+    ).toHaveAttribute(
       'href',
       'https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fedufurther.com%2Fmentors%2Fg%3Fx%3D1',
     );

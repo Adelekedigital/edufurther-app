@@ -4,21 +4,12 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { ProfileHeaderSkeleton } from '@/components/organisms/ProfileHeader/ProfileHeader';
+import { supportMailto } from '@/lib/utils/mailto';
 import type { MentorProfile } from '@/types/mentor';
 import styles from './MentorProfileScreen.module.css';
 
 /** The "View as mentee" toggle, where focus goes when the strength card is done. */
 export const PREVIEW_TOGGLE_ID = 'profile-preview-toggle';
-
-/**
- * Where "Contact support" goes for a declined mentor (design reply #42 links
- * it). Config, since there's no support page yet; unset, the words stay plain.
- * Read at render so tests can set it; Next inlines it at build.
- */
-function supportEmail(): string | null {
-  const v = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim();
-  return v && /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(v) ? v : null;
-}
 
 /** What the owner bar says, most important first (see OwnerBar). */
 export function ownerBarState(
@@ -51,9 +42,6 @@ export function ownerBarState(
 }
 
 const OWNER_COPY = {
-  // Design's answer to request #42.
-  declined:
-    'Your profile wasn’t approved, so only you can see it. Contact support to find out what to change.',
   pending: 'Only you can see this until your profile is approved.',
   unlisted: 'Your profile is unlisted. Only you can see it.',
   noTypes:
@@ -118,10 +106,10 @@ export function OwnerBar({
                 : styles.ownerIconLock
           }
         />
-        {state === 'declined' && supportEmail() ? (
+        {state === 'declined' ? (
           <span>
             Your profile wasn’t approved, so only you can see it.{' '}
-            <a href={`mailto:${supportEmail()}`} className={styles.ownerLink}>
+            <a href={supportMailto()} className={styles.ownerLink}>
               Contact support
             </a>{' '}
             to find out what to change.
