@@ -24,6 +24,7 @@ import {
   INTEGRATIONS_COPY,
   PAYMENTS_COPY,
   VIDEO_COPY,
+  type VideoChoice,
 } from '@/lib/copy/integrations';
 import { useOnline } from '@/lib/utils/useOnline';
 import { lockedPageGate, memberGate, type MemberGateCopy } from '@/app/_shell/MentorGate';
@@ -45,7 +46,7 @@ const INTEGRATIONS_GATE: MemberGateCopy = {
  * rather than rendering nothing.
  */
 const FAULTS: Record<ConnectionFault, string> = {
-  revoked: 'Google Calendar needs reconnecting — access was removed or has expired.',
+  revoked: 'Google Calendar needs reconnecting. Access was removed or has expired.',
   unreadable: 'Google Calendar needs reconnecting.',
   unknown: 'Google Calendar needs reconnecting.',
 };
@@ -79,7 +80,14 @@ export function IntegrationsScreen() {
   // (PRD decision 2), so the group keeps showing what the server holds. That is
   // also what stops an arrow-key traversal from firing a save per keystroke —
   // a pick only opens a dialog, and opening one takes focus out of the group.
-  const [switchTo, setSwitchTo] = useState<'daily' | 'google_meet' | null>(null);
+  // `from` is captured when they pick, not read at render. The dialog shows
+  // only while the server still holds what they are leaving, so a refetch that
+  // moves the provider closes it AND cannot resurrect it: `from` will never
+  // match again (review of #357).
+  const [switchTo, setSwitchTo] = useState<{
+    to: 'daily' | 'google_meet';
+    from: VideoChoice;
+  } | null>(null);
 
   const [announcement, setAnnouncement] = useState<{ text: string; id: number } | null>(null);
   const announce = useCallback(
@@ -105,12 +113,27 @@ export function IntegrationsScreen() {
 
   const { save: saveFn, reset: resetSave } = saveVideo;
 
+  /**
+   * Any move by the server kills a pending intent: it was formed against a
+   * value that no longer holds. Adjusting state during render rather than in
+   * an effect is React's own answer for this, and it matters that it is
+   * one-way — comparing against the captured `from` instead let the dialog
+   * come back if the provider returned to where it started (review of #357).
+   */
+  const provider = video.data?.provider;
+  const [seenProvider, setSeenProvider] = useState(provider);
+  if (provider !== seenProvider) {
+    setSeenProvider(provider);
+    if (switchTo) setSwitchTo(null);
+  }
+
   /** Opens the confirm. A provider already in use has nothing to ask about. */
   const pick = useCallback(
     (next: 'daily' | 'google_meet') => {
-      if (video.data?.provider === next) return;
+      const from = video.data?.provider;
+      if (!from || from === next) return;
       resetSave();
-      setSwitchTo(next);
+      setSwitchTo({ to: next, from });
     },
     [resetSave, video.data?.provider],
   );
@@ -128,7 +151,7 @@ export function IntegrationsScreen() {
         // caused it, not under a radio group the dialog is covering. Said out
         // loud too, because focus is on a button that merely stops being busy.
         const message = (e as { message?: string })?.message;
-        announce(message ?? 'We couldn’t save your video setting. Try again.');
+        announce(message ?? VIDEO_COPY.saveFailed);
       }
     },
     [announce, saveFn],
@@ -165,8 +188,8 @@ export function IntegrationsScreen() {
                     // sign-in only and the backend refuses it. We cannot tell that
                     // apart from a closed window, so the copy covers both.
                     body:
-                      'The window closed, or the calendar permission wasn’t ticked — Google asks for ' +
-                      'that on a separate step. You can try again.',
+                      'The window closed, or the calendar permission wasn’t ticked. Google asks ' +
+                      'for that on a separate step. You can try again.',
                   }
                 : connectState.kind === 'failed'
                   ? {
@@ -406,14 +429,17 @@ export function IntegrationsScreen() {
   return (
     <>
       {body}
-      {switchTo && video.data && (
+      {/* Cleared above the moment the server moves, so this never asks to
+          switch Google Meet to Google Meet, and never PATCHes a no-op
+          (edufurtherfe-f5, 2026-10-21). */}
+      {switchTo && (
         <VideoSwitchConfirm
-          from={video.data.provider}
-          to={switchTo}
+          from={switchTo.from}
+          to={switchTo.to}
           pending={saveVideo.isPending}
           error={saveVideo.error?.message ?? null}
           onKeep={() => setSwitchTo(null)}
-          onConfirm={() => void confirmSwitch(switchTo)}
+          onConfirm={() => void confirmSwitch(switchTo.to)}
         />
       )}
       {confirmDisconnect && (

@@ -272,6 +272,41 @@ describe('IntegrationsScreen', () => {
     );
   });
 
+  /**
+   * A refetch while the confirm is open can move the server's value onto the
+   * provider being offered (another tab, or support). Without the guard the
+   * dialog reads "Switch to Google Meet?" from Google Meet, and confirming
+   * PATCHes a no-op (edufurtherfe-f5, 2026-10-21).
+   */
+  it('closes the confirm when the server lands on the provider it was offering', async () => {
+    const { rerender } = render(<IntegrationsScreen />);
+    await userEvent.click(screen.getByRole('radio', { name: /Google Meet/ }));
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    // A refetch finds the account already on Meet (another tab, or support).
+    video = remote(conferencing({ provider: 'google_meet', isDefault: false }));
+    rerender(<IntegrationsScreen />);
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(saveVideo).not.toHaveBeenCalled();
+  });
+
+  /**
+   * The intent is tied to what they were LEAVING, so it cannot come back. A
+   * guard that only compared against the target let the next refetch make the
+   * condition true again and reopened the dialog with no user action, with the
+   * focus trap pulling focus into it (review of #357).
+   */
+  it('does not reopen the confirm when the server moves again', async () => {
+    const { rerender } = render(<IntegrationsScreen />);
+    await userEvent.click(screen.getByRole('radio', { name: /Google Meet/ }));
+    video = remote(conferencing({ provider: 'google_meet', isDefault: false }));
+    rerender(<IntegrationsScreen />);
+    // Back to where they started: the old intent must stay dead.
+    video = remote(conferencing({ provider: 'daily', isDefault: true }));
+    rerender(<IntegrationsScreen />);
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(saveVideo).not.toHaveBeenCalled();
+  });
+
   /** PRD decision 1: the page no longer offers a personal meeting link. */
   it('offers no way to set a personal meeting link', () => {
     render(<IntegrationsScreen />);
@@ -406,7 +441,7 @@ describe('IntegrationsScreen', () => {
         connection({ status: 'error', fault: 'revoked' }),
       );
       render(<IntegrationsScreen />);
-      expect(screen.getByText(/access was removed or has expired/)).toBeInTheDocument();
+      expect(screen.getByText(/Access was removed or has expired/)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Reconnect' })).toBeInTheDocument();
     });
 

@@ -76,7 +76,7 @@ export const Broken: Story = {
           description={DESC}
           status={{
             tone: 'warn',
-            text: 'Google Calendar needs reconnecting — access was removed or has expired.',
+            text: 'Google Calendar needs reconnecting. Access was removed or has expired.',
           }}
           actions={
             <>

@@ -6,6 +6,7 @@ import type { MentorDefaults } from '@/lib/api/data/sessionTypes';
 import { CalendarScreen } from './CalendarScreen';
 import {
   announced,
+  brokenGrant,
   h,
   HOURS,
   mentor,
@@ -43,6 +44,10 @@ vi.mock('@/lib/api/data/conferencing', async () =>
 );
 vi.mock('@/lib/api/data/calendar', async () =>
   (await import('./calendarScreen.harness')).mocks.calendar(),
+);
+
+vi.mock('@/lib/api/data/calendarConnection', async () =>
+  (await import('./calendarScreen.harness')).mocks.calendarConnection(),
 );
 
 beforeEach(resetCalendar);
@@ -306,5 +311,63 @@ describe('CalendarScreen: busy and video', () => {
       new Date(),
     );
     expect(h.bookedRange!.from).toBe(kiritimati);
+  });
+});
+
+/**
+ * The reconnect banner's mount (PRD decision 5). Nothing else in these files
+ * renders it, so without these the banner could be moved into the wrong
+ * branch, or deleted from this screen, and every test would still pass.
+ */
+describe('CalendarScreen: the Google reconnect banner', () => {
+  const reconnect = () => screen.queryByRole('button', { name: 'Reconnect' });
+
+  it('appears for a grant the backend marked broken', () => {
+    h.viewer = mentor();
+    h.connection = remote(brokenGrant());
+    render(<CalendarScreen />);
+    expect(reconnect()).toBeInTheDocument();
+    expect(
+      screen.getByText(/needs reconnecting. Until then, times you’re busy can still be booked/),
+    ).toBeInTheDocument();
+  });
+
+  it('stays away from a working connection', () => {
+    h.viewer = mentor();
+    h.connection = remote(brokenGrant({ status: 'active' }));
+    render(<CalendarScreen />);
+    expect(reconnect()).not.toBeInTheDocument();
+  });
+
+  /**
+   * "Times you're busy can still be booked" is false while paused: nothing can
+   * be booked at all. The banner comes back by itself when they return, which
+   * is exactly when the cost becomes real.
+   */
+  it('stays away while the mentor is paused, where its second sentence is false', () => {
+    h.viewer = mentor();
+    h.connection = remote(brokenGrant());
+    h.status = remote<MentorStatus>({
+      approved: true,
+      listed: true,
+      pausedByMentor: true,
+      returnOn: null,
+    });
+    render(<CalendarScreen />);
+    expect(reconnect()).not.toBeInTheDocument();
+  });
+
+  /** Same reason: an admin-unlisted mentor cannot be found or booked. */
+  it('stays away while EduFurther has unlisted them', () => {
+    h.viewer = mentor();
+    h.connection = remote(brokenGrant());
+    h.status = remote<MentorStatus>({
+      approved: true,
+      listed: false,
+      pausedByMentor: false,
+      returnOn: null,
+    });
+    render(<CalendarScreen />);
+    expect(reconnect()).not.toBeInTheDocument();
   });
 });

@@ -129,6 +129,7 @@ export const ICON_NAMES = [
   'support_agent',
   'swap_horiz',
   'sync',
+  'sync_problem',
   'task_alt',
   'timer',
   'timer_off',

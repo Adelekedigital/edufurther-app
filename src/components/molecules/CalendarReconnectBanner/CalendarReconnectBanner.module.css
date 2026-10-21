@@ -1,0 +1,51 @@
+/* Calendar v2.dc.html `calendarSync=needsReconnect` (gcalBroken). */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-hairline) solid var(--yellow-900);
+  border-radius: var(--radius-lg);
+  background: var(--gold-subtle);
+}
+.icon {
+  flex: none;
+  color: var(--yellow-900);
+}
+.text {
+  flex: 1 1 240px;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--ink-900);
+}
+/* Ours, not drawn: takes its own row so the drawn one keeps its measurements. */
+.note {
+  flex-basis: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-900);
+}
+.note > :first-child {
+  flex: none;
+}
+.failIcon {
+  color: var(--text-danger);
+}
+.spin {
+  animation: spin 900ms linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}

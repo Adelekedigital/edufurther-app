@@ -6,6 +6,7 @@ import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { BlockedDatesPanel } from '@/components/molecules/BlockedDatesPanel/BlockedDatesPanel';
+import { CalendarReconnectBanner } from '@/components/molecules/CalendarReconnectBanner/CalendarReconnectBanner';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { MonthPicker } from '@/components/molecules/MonthPicker/MonthPicker';
 import { Notice } from '@/components/molecules/Notice/Notice';
@@ -52,6 +53,7 @@ import { useOnline } from '@/lib/utils/useOnline';
 import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import { lockedPageGate, memberGate, type MemberGateCopy } from '@/app/_shell/MentorGate';
 import { useAppShell } from '@/app/_shell/useAppShell';
+import { useCalendarReconnect } from '@/app/_shell/useCalendarReconnect';
 import { CalendarSkeleton } from './CalendarSkeleton';
 import { SaveBar, type SaveProblem } from './SaveBar';
 import { useHoursDraft } from './useHoursDraft';
@@ -133,6 +135,10 @@ export function CalendarScreen() {
     (text: string) => setAnnouncement((a) => ({ text, id: (a?.id ?? 0) + 1 })),
     [],
   );
+
+  // A broken Google grant is costing them bookings right now, so it is said
+  // here rather than only on Integrations, a page they have no reason to open.
+  const reconnect = useCalendarReconnect(mentorId, announce);
 
   const hoursTitle = useRef<HTMLHeadingElement>(null);
   const invalid = draft.slotErrors || !!draft.clash;
@@ -428,6 +434,17 @@ export function CalendarScreen() {
             </a>{' '}
             {UNLISTED_COPY.after}
           </Notice>
+        )}
+
+        {/* `show` already accounts for paused and unlisted: the rule lives in
+            useCalendarReconnect so both mounts get it. */}
+        {reconnect.show && (
+          <CalendarReconnectBanner
+            busy={reconnect.busy}
+            unavailable={reconnect.unavailable}
+            failure={reconnect.failure}
+            onReconnect={reconnect.reconnect}
+          />
         )}
 
         {busy && (

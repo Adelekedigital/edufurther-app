@@ -21,6 +21,32 @@ vi.mock('@/app/_shell/useAppShell', () => ({
 // (it then shows its own loading).
 const dashboard = vi.fn(() => ({ error: null, isLoading: true, data: null, retry: vi.fn() }));
 vi.mock('@/lib/api/data/dashboard', () => ({ useMentorDashboard: () => dashboard() }));
+// The reconnect banner fetches the calendar connection (PRD decision 5).
+// Mocked at the data layer, as this file mocks every other one, so the
+// screen's own wiring of the banner stays under test.
+// The banner also asks whether bookings are possible at all, so it never
+// claims "times you're busy can still be booked" to a paused or unlisted
+// mentor. Listed and not paused here: these tests are about the gate.
+vi.mock('@/lib/api/data/mentorStatus', () => ({
+  useMentorStatus: () => ({
+    data: { approved: true, listed: true, pausedByMentor: false, returnOn: null },
+    isLoading: false,
+    error: null,
+    retry: vi.fn(),
+  }),
+}));
+vi.mock('@/lib/api/data/calendarConnection', () => ({
+  useCalendarConnection: () => ({ data: null, isLoading: false, error: null, retry: vi.fn() }),
+  readCalendarConnection: vi.fn(),
+  useStartCalendarConnect: () => ({ start: vi.fn() }),
+  useDisconnectCalendar: () => ({
+    disconnect: vi.fn(),
+    isPending: false,
+    error: null,
+    reset: vi.fn(),
+  }),
+  useRefreshAfterConnect: () => vi.fn(),
+}));
 vi.mock('./ApprovedToast', () => ({ ApprovedToast: () => null }));
 
 beforeEach(() => {
