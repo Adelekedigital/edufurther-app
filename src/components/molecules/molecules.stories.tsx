@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { addDays } from '@/lib/utils/slots';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
+import { CUSTOM_COPY, DAILY_COPY, MEET_COPY } from '@/lib/copy/integrations';
 import type { BookingStatus, PickableReason } from '@/types/booking';
 import { AccountMenu } from './AccountMenu/AccountMenu';
 import { AnswerItem } from './AnswerItem/AnswerItem';
@@ -18,8 +19,8 @@ import { CopyLinkButton } from './CopyLinkButton/CopyLinkButton';
 import { DayHoursRow } from './DayHoursRow/DayHoursRow';
 import { RowMenu } from './RowMenu/RowMenu';
 import { FileField } from './FileField/FileField';
-import { PersonalLinkPanel } from './PersonalLinkPanel/PersonalLinkPanel';
 import { VideoProviderCard } from './VideoProviderCard/VideoProviderCard';
+import { VideoProviderRow } from './VideoProviderRow/VideoProviderRow';
 import { IconPicker } from './IconPicker/IconPicker';
 import { QuestionRow } from './QuestionRow/QuestionRow';
 import { SessionTypeOwnerFooter } from './SessionTypeOwnerFooter/SessionTypeOwnerFooter';
@@ -1001,7 +1002,7 @@ export const HoldCountdown: Story = {
   ),
 };
 
-/** Integrations video cards: chosen, unchosen, and each kind of supporting line. */
+/** The recommended provider card: chosen, unchosen, and the read-only one. */
 export const VideoProviderCards: Story = {
   render: () => (
     <div style={{ display: 'grid', gap: 12, maxWidth: 560 }}>
@@ -1012,63 +1013,63 @@ export const VideoProviderCards: Story = {
         onChange={fn()}
         icon="video_chat"
         tone="blue"
-        label="EduFurther video"
-        by="Built in · powered by Daily"
-        description="A private room for each session. Mentees join from the browser with no account or download."
-        benefit="Attendance is tracked, so every session counts in your session analytics."
-        idleStatus="Ready to use"
+        label={DAILY_COPY.label}
+        by={DAILY_COPY.by}
+        description={DAILY_COPY.desc}
+        benefit={DAILY_COPY.benefit}
         recommended
       />
       <VideoProviderCard
-        name="story"
-        value="google_meet"
+        name="story-off"
+        value="daily"
         checked={false}
         onChange={fn()}
-        icon="videocam"
-        tone="green"
-        label="Google Meet"
-        by="Uses your Google account"
-        description="A new Meet link for each booking, added to your invite and your mentee’s."
-        note="Attendance isn’t tracked, so these sessions won’t count in your session analytics."
-        idleStatus="Ready to use"
+        icon="video_chat"
+        tone="blue"
+        label={DAILY_COPY.label}
+        by={DAILY_COPY.by}
+        description={DAILY_COPY.desc}
+        benefit={DAILY_COPY.benefit}
+        recommended
+      />
+      {/* No handler: the account is on a personal link and there is no way back. */}
+      <VideoProviderCard
+        name="story-custom"
+        value="custom"
+        checked
+        icon="link"
+        tone="blue"
+        label={CUSTOM_COPY.label}
+        by="https://meet.example.com/a-very-long-personal-room-name-that-wraps"
+        description={CUSTOM_COPY.note}
       />
     </div>
   ),
 };
 
-/** Personal meeting link: empty, in use, and a link that is not https. */
-export const PersonalLinkPanels: Story = {
+/** The compact alternative row, chosen and unchosen. */
+export const VideoProviderRows: Story = {
   render: () => (
-    <div style={{ display: 'grid', gap: 24, maxWidth: 560 }}>
-      <PersonalLinkPanel
-        value=""
-        savedValue=""
+    <div style={{ display: 'grid', gap: 12, maxWidth: 560 }}>
+      <VideoProviderRow
+        name="rows"
+        value="google_meet"
+        checked
         onChange={fn()}
-        usingOwn={false}
-        saving={false}
-        error={null}
-        onUse={fn()}
-        onKeepAutomatic={fn()}
+        icon="videocam"
+        tone="green"
+        label={MEET_COPY.label}
+        note={MEET_COPY.note}
       />
-      <PersonalLinkPanel
-        value="https://meet.example.com/a-very-long-personal-room-name-that-wraps"
-        savedValue="https://meet.example.com/a-very-long-personal-room-name-that-wraps"
+      <VideoProviderRow
+        name="rows-off"
+        value="google_meet"
+        checked={false}
         onChange={fn()}
-        usingOwn
-        saving={false}
-        error={null}
-        onUse={fn()}
-        onKeepAutomatic={fn()}
-      />
-      <PersonalLinkPanel
-        value="http://meet.example.com/room"
-        savedValue=""
-        onChange={fn()}
-        usingOwn={false}
-        saving={false}
-        error={null}
-        onUse={fn()}
-        onKeepAutomatic={fn()}
+        icon="videocam"
+        tone="green"
+        label={MEET_COPY.label}
+        note={MEET_COPY.note}
       />
     </div>
   ),

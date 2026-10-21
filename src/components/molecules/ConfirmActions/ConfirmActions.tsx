@@ -17,6 +17,14 @@ export type ConfirmActionsProps = {
   error?: string | null;
   /** Confirm can't be pressed yet (a typed confirmation that doesn't match). */
   confirmDisabled?: boolean;
+  /**
+   * `split` — two equal buttons side by side, safe choice first (the default,
+   * and every confirm drawn in Modal.dc.html).
+   * `stack` — full width, one above the other, the action on top
+   * (Integrations.dc.html `switchOpen`). Used where neither answer is
+   * destructive and both labels are long enough to need the room.
+   */
+  layout?: 'split' | 'stack';
 };
 
 /**
@@ -35,7 +43,32 @@ export function ConfirmActions({
   pending = false,
   error,
   confirmDisabled = false,
+  layout = 'split',
 }: ConfirmActionsProps) {
+  const keep = (
+    <Button
+      size="large"
+      variant="secondary-outlined"
+      fullWidth
+      onClick={onKeep}
+      disabled={pending}
+      data-autofocus
+    >
+      {keepLabel}
+    </Button>
+  );
+  const confirm = (
+    <Button
+      size="large"
+      variant={tone === 'danger' ? 'destructive' : 'primary'}
+      fullWidth
+      onClick={onConfirm}
+      disabled={confirmDisabled && !pending}
+      busy={pending}
+    >
+      {pending && pendingLabel ? pendingLabel : confirmLabel}
+    </Button>
+  );
   return (
     <div className={styles.root}>
       {/* Always in the page, filled on failure: an alert inserted with its
@@ -48,27 +81,21 @@ export function ConfirmActions({
           </>
         )}
       </p>
-      <div className={styles.buttons}>
-        <Button
-          size="large"
-          variant="secondary-outlined"
-          fullWidth
-          onClick={onKeep}
-          disabled={pending}
-          data-autofocus
-        >
-          {keepLabel}
-        </Button>
-        <Button
-          size="large"
-          variant={tone === 'danger' ? 'destructive' : 'primary'}
-          fullWidth
-          onClick={onConfirm}
-          disabled={confirmDisabled && !pending}
-          busy={pending}
-        >
-          {pending && pendingLabel ? pendingLabel : confirmLabel}
-        </Button>
+      {/* Tab order follows what is drawn, in both layouts: reading order and
+          focus order must not disagree (WCAG 1.3.2, 2.4.3). Initial focus is
+          on Keep either way, so the dialog still opens on the safe answer. */}
+      <div className={layout === 'stack' ? styles.stack : styles.buttons}>
+        {layout === 'stack' ? (
+          <>
+            {confirm}
+            {keep}
+          </>
+        ) : (
+          <>
+            {keep}
+            {confirm}
+          </>
+        )}
       </div>
     </div>
   );

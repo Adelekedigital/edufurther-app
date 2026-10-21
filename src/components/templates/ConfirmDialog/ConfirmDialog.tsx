@@ -1,5 +1,6 @@
 'use client';
 
+import { useId } from 'react';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import {
   ConfirmActions,
@@ -7,10 +8,19 @@ import {
   type ConfirmActionsProps,
 } from '@/components/molecules/ConfirmActions/ConfirmActions';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
+import styles from './ConfirmDialog.module.css';
 
 type ConfirmDialogProps = ConfirmActionsProps & {
   title: string;
-  subtitle: string;
+  /** What happens, under the title in the header (Modal.dc.html `subtitle`). */
+  subtitle?: string;
+  /**
+   * What happens, as a paragraph in the body instead: darker and below the
+   * header (Integrations.dc.html `switchOpen`). For a confirm whose
+   * explanation is more than an aside, which the header's tertiary ink
+   * undersells. One of `subtitle` or `body`, not both.
+   */
+  body?: string;
   /** Header glyph; red for a danger confirm, blue otherwise. */
   icon: IconName;
   /** Closing while the request runs dismisses it and lets the request carry on. */
@@ -30,11 +40,13 @@ type ConfirmDialogProps = ConfirmActionsProps & {
 export function ConfirmDialog({
   title,
   subtitle,
+  body,
   icon,
   onDismissWhilePending,
   mobile,
   ...actions
 }: ConfirmDialogProps) {
+  const bodyId = useId();
   const { onClose, closeDisabled } = confirmClose(
     !!actions.pending,
     actions.onKeep,
@@ -49,9 +61,15 @@ export function ConfirmDialog({
       size="sm"
       mobile={mobile}
       alert
+      describedBy={body ? bodyId : undefined}
       onClose={onClose}
       closeDisabled={closeDisabled}
     >
+      {body && (
+        <p id={bodyId} className={styles.body}>
+          {body}
+        </p>
+      )}
       <ConfirmActions {...actions} />
     </ModalShell>
   );

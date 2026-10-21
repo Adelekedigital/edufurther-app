@@ -41,13 +41,34 @@
   max-width: 320px;
   border-radius: var(--radius-md);
 }
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+/* The radiogroup's own shape: recommended card, label, alternative row. */
+.group {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-3);
 }
-.blockCard {
-  height: 208px;
+/* Measured on the built page at 1440 and at 390 (VideoSection, primary). */
+.blockHero {
+  height: 157px;
+}
+.blockOther {
+  height: 17px;
+  max-width: 88px;
+  border-radius: var(--radius-md);
+  /* Matches the label's own margin-top above the alternatives. */
+  margin-top: var(--space-2);
+}
+.blockProvider {
+  height: 66px;
+  border-radius: var(--radius-lg);
+}
+@media (max-width: 767px) {
+  .blockHero {
+    height: 189px;
+  }
+  .blockProvider {
+    height: 100px;
+  }
 }
 
 /* One section failed while the rest of the page loaded (ours; not drawn). */

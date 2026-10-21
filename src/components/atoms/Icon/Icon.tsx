@@ -5,8 +5,11 @@ import styles from './Icon.module.css';
 
 type IconProps = {
   name: IconName;
-  /** px. DS sizes: 14–16 inline, 18 in chips, 20 in buttons, 24 standalone. */
-  size?: 10 | 12 | 14 | 16 | 18 | 20 | 22 | 24 | 28;
+  /**
+   * px. DS sizes: 14–16 inline, 18 in chips, 20 in buttons, 24 standalone.
+   * 26 is Integrations.dc.html's recommended-provider tile, and only that.
+   */
+  size?: 10 | 12 | 14 | 16 | 18 | 20 | 22 | 24 | 26 | 28;
   filled?: boolean;
   /**
    * Omit for a decorative icon (the default: hidden from assistive tech).
