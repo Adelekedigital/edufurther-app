@@ -323,7 +323,7 @@ describe('CalendarScreen', () => {
     expect(screen.queryByRole('switch', { name: /Available|Busy/ })).toBeNull();
     const notice = screen.getByText('Unlisted by EduFurther').closest('p')!;
     expect(notice).toHaveTextContent(
-      'Unlisted by EduFurther EduFurther has taken your profile off the listing for now, so mentees can’t find or book you, and you can’t switch to available or busy yourself. Contact support if you have questions.',
+      'Unlisted by EduFurther EduFurther has taken your profile off the listing, so mentees can’t find or book you, and you can’t switch to available or busy yourself. Contact support if you have questions.',
     );
     const href = within(notice)
       .getByRole('link', { name: 'Contact support' })
