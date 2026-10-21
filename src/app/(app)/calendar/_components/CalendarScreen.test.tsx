@@ -956,6 +956,44 @@ describe('CalendarScreen: weekly availability on a phone (mobileCollapse=on)', (
     expect(screen.getByText('Fix hours')).toBeInTheDocument();
   });
 
+  it('opened by itself with no hours, it stays open as the first day goes on', async () => {
+    weekly = remote({ ...HOURS, days: emptyWeek() });
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    const mondaySwitch = screen.getByRole('switch', { name: 'Monday' });
+    await user.click(mondaySwitch);
+    expect(header()).toHaveAttribute('aria-expanded', 'true');
+    expect(mondaySwitch).toHaveFocus();
+  });
+
+  it('opened by itself for invalid hours, it stays open once they’re fixed', async () => {
+    const days = monday();
+    days[2] = { on: true, slots: [[1200, 1020]] };
+    weekly = remote({ ...HOURS, days });
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    expect(header()).toHaveAttribute('aria-expanded', 'true');
+    await user.click(tuesdaySwitch());
+    expect(screen.queryByText('Fix hours')).toBeNull();
+    expect(header()).toHaveAttribute('aria-expanded', 'true');
+    expect(tuesdaySwitch()).toHaveFocus();
+  });
+
+  it('closed while the hours need fixing, going busy opens it to show them', async () => {
+    weekly = remote({ ...HOURS, days: shortMonday() });
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    await user.click(tuesdaySwitch());
+    await user.click(header());
+    expect(header()).toHaveAttribute('aria-expanded', 'false');
+    await user.click(screen.getByRole('switch', { name: 'Available for new bookings' }));
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Weekly availability' })).toHaveFocus(),
+    );
+    expect(header()).toHaveAttribute('aria-expanded', 'true');
+    expect(tuesdaySwitch()).toBeVisible();
+  });
+
   it('the settings rows show an edit icon, named for what it edits', () => {
     render(<CalendarScreen />);
     expect(screen.getByRole('button', { name: 'Edit booking rules' })).not.toHaveTextContent(

@@ -41,10 +41,18 @@ describe('availabilitySummary', () => {
       ),
     ).toBe('Mon–Fri · 9 am–5 pm');
   });
-  it('lists two days, gaps and single days, Sunday first like the hours list', () => {
+  it('lists two days, gaps and single days, Monday first like the week summary', () => {
     expect(
       availabilitySummary(week({ 0: nineToFive, 1: nineToFive, 3: nineToFive, 6: nineToFive })),
-    ).toBe('Sun, Mon, Wed, Sat · 9 am–5 pm');
+    ).toBe('Mon, Wed, Sat, Sun · 9 am–5 pm');
+  });
+  it('reads a weekend as a run, not split around the week', () => {
+    expect(availabilitySummary(week({ 5: nineToFive, 6: nineToFive, 0: nineToFive }))).toBe(
+      'Fri–Sun · 9 am–5 pm',
+    );
+    expect(availabilitySummary(week({ 6: nineToFive, 0: nineToFive }))).toBe(
+      'Sat, Sun · 9 am–5 pm',
+    );
   });
   it('says the times vary when days differ or a day has two ranges', () => {
     expect(availabilitySummary(week({ 1: nineToFive, 2: [[600, 660]] }))).toBe(

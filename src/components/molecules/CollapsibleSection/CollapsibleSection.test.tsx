@@ -48,6 +48,47 @@ describe('CollapsibleSection', () => {
     );
   });
 
+  it('never closes by itself when defaultOpen turns off', () => {
+    const { rerender } = render(section({ defaultOpen: true }));
+    rerender(section({ defaultOpen: false }));
+    expect(screen.getByRole('button', { name: 'Weekly availability' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+  });
+
+  it('with openOnFocus, focusing the heading opens it', async () => {
+    let heading: HTMLHeadingElement | null = null;
+    render(
+      section({
+        openOnFocus: true,
+        headingRef: (el) => {
+          heading = el;
+        },
+      }),
+    );
+    heading!.focus();
+    expect(
+      await screen.findByRole('button', { name: 'Weekly availability', expanded: true }),
+    ).toBeInTheDocument();
+  });
+
+  it('without openOnFocus, focusing the heading leaves it as it is', () => {
+    let heading: HTMLHeadingElement | null = null;
+    render(
+      section({
+        headingRef: (el) => {
+          heading = el;
+        },
+      }),
+    );
+    heading!.focus();
+    expect(screen.getByRole('button', { name: 'Weekly availability' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
   it('draws the chip in its tone as a rounded rectangle', () => {
     render(section({ chip: 'Fix hours', chipTone: 'danger' }));
     expect(screen.getByText('Fix hours')).toHaveClass('danger', 'rect');

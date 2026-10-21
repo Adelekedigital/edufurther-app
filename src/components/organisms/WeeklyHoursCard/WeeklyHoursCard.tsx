@@ -7,9 +7,9 @@ import {
 import { TimezonePicker, zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import { WeeklyHoursEditor } from '@/components/organisms/SessionTypeWizard/WeeklyHoursEditor';
 import { HOURS_COPY } from '@/lib/copy/calendar';
-import { availabilitySummary, weeklyTotal } from '@/lib/utils/calendar';
+import { availabilitySummary, weeklyHours, weeklyTotal } from '@/lib/utils/calendar';
 import { cx } from '@/lib/utils/cx';
-import type { DayHours } from '@/lib/utils/sessionTypeDraft';
+import { isOpenDay, type DayHours } from '@/lib/utils/sessionTypeDraft';
 import styles from './WeeklyHoursCard.module.css';
 
 type WeeklyHoursCardProps = {
@@ -44,8 +44,8 @@ function hoursChip(
 ): [string, CollapsibleChipTone] {
   if (invalid) return [HOURS_COPY.chipInvalid, 'danger'];
   if (dirty) return [HOURS_COPY.chipUnsaved, 'warning'];
-  if (!days.some((d) => d.on)) return [HOURS_COPY.chipNotSet, 'warning'];
-  return [weeklyTotal(days).split(' · ')[0]!, 'neutral'];
+  if (!days.some(isOpenDay)) return [HOURS_COPY.chipNotSet, 'warning'];
+  return [HOURS_COPY.chipTotal(weeklyHours(days)), 'neutral'];
 }
 
 /**
@@ -80,9 +80,10 @@ export function WeeklyHoursCard({
   );
   const editor = <WeeklyHoursEditor days={days} onChange={onDays} minLength={minLength} />;
 
+  // A breakpoint change swaps trees and remounts the editor; the draft lives in the page.
   if (collapsible) {
     const [chip, tone] = hoursChip(days, invalid, dirty);
-    const hasHours = days.some((d) => d.on);
+    const needsAttention = invalid || !days.some(isOpenDay);
     return (
       <CollapsibleSection
         className={className}
@@ -90,7 +91,9 @@ export function WeeklyHoursCard({
         summary={`${availabilitySummary(days) ?? HOURS_COPY.noHours}. ${HOURS_COPY.tapToView}`}
         chip={chip}
         chipTone={tone}
-        defaultOpen={invalid || !hasHours}
+        defaultOpen={needsAttention}
+        // The page sends focus here to point at hours to fix: they must show.
+        openOnFocus={needsAttention}
         headingRef={titleRef}
       >
         <TimezonePicker value={timeZone} onChange={onTimeZone} deviceZone={deviceZone} />

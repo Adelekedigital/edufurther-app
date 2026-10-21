@@ -54,4 +54,12 @@ describe('SettingSummaryRow', () => {
       screen.getByRole('button', { name: 'Try loading your video setting again' }),
     ).toHaveTextContent('Try again');
   });
+
+  it('phones: a busy edit icon says so and takes no second tap', () => {
+    phone(true);
+    render(row({ busy: true }));
+    const edit = screen.getByRole('button', { name: 'Edit booking rules' });
+    expect(edit).toBeDisabled();
+    expect(edit).toHaveAttribute('aria-busy', 'true');
+  });
 });

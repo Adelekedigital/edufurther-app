@@ -21,4 +21,5 @@ export const HOURS_COPY = {
   chipInvalid: 'Fix hours',
   chipUnsaved: 'Unsaved',
   chipNotSet: 'Not set',
+  chipTotal: (hours: number) => `${hours} hrs a week`,
 } as const;

@@ -1,6 +1,8 @@
 import { addDays } from './slots';
 import {
   DAY_NAMES,
+  MONDAY_FIRST,
+  isOpenDay,
   resolveDefaults,
   shortTime,
   windowLabel,
@@ -15,39 +17,39 @@ export function weeklyMinutes(days: DayHours[]): number {
   return total;
 }
 
+/** Open hours across the week, to one decimal: 7.5. */
+export const weeklyHours = (days: DayHours[]) => Math.round(weeklyMinutes(days) / 6) / 10;
+
 /** Calendar v2 `weeklySummary`: "7.5 hrs a week · 3 days", or "No hours set". */
 export function weeklyTotal(days: DayHours[]): string {
   const open = days.filter((d) => d.on).length;
   if (!open) return 'No hours set';
-  const hours = Math.round(weeklyMinutes(days) / 6) / 10;
+  const hours = weeklyHours(days);
   return `${hours} hrs a week · ${open} day${open > 1 ? 's' : ''}`;
 }
 
 /**
- * Calendar v2 `hoursSummary`, Sunday first as the hours list: "Mon–Fri · 9 am–5 pm",
- * "Mon, Sat · times vary by day"; null with no hours.
+ * Calendar v2 `hoursSummary`, Monday first as `weeklySummary`: "Mon–Fri · 9 am–5 pm",
+ * "Sat, Sun · times vary by day"; null with no hours.
  */
 export function availabilitySummary(days: DayHours[]): string | null {
-  const on = days.flatMap((d, i) => (d.on && d.slots.length ? [i] : []));
+  // Position in the Monday-first week, so a weekend reads Fri–Sun.
+  const on = MONDAY_FIRST.flatMap((day, pos) => (isOpenDay(days[day]) ? [{ day, pos }] : []));
   if (!on.length) return null;
-  const runs: { start: number; end: number }[] = [];
-  for (const i of on) {
+  const runs: (typeof on)[] = [];
+  for (const d of on) {
     const last = runs[runs.length - 1];
-    if (last && last.end === i - 1) last.end = i;
-    else runs.push({ start: i, end: i });
+    if (last && last[last.length - 1]!.pos === d.pos - 1) last.push(d);
+    else runs.push([d]);
   }
-  const name = (i: number) => DAY_NAMES[i]!.slice(0, 3);
+  const name = (d: { day: number }) => DAY_NAMES[d.day]!.slice(0, 3);
   const dayStr = runs
     .map((r) =>
-      r.end - r.start >= 2
-        ? `${name(r.start)}–${name(r.end)}`
-        : r.end > r.start
-          ? `${name(r.start)}, ${name(r.end)}`
-          : name(r.start),
+      r.length >= 3 ? `${name(r[0]!)}–${name(r[r.length - 1]!)}` : r.map(name).join(', '),
     )
     .join(', ');
-  const first = days[on[0]!]!.slots;
-  const same = on.every((i) => JSON.stringify(days[i]!.slots) === JSON.stringify(first));
+  const first = days[on[0]!.day]!.slots;
+  const same = on.every(({ day }) => JSON.stringify(days[day]!.slots) === JSON.stringify(first));
   const timeStr =
     same && first.length === 1
       ? `${shortTime(first[0]![0])}–${shortTime(first[0]![1])}`

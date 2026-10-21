@@ -14,8 +14,10 @@ type CollapsibleSectionProps = {
   summary?: string;
   chip?: string;
   chipTone?: CollapsibleChipTone;
-  /** Where it starts; a change (hours turning invalid, say) applies again. */
+  /** Where it starts; turning on later (hours turning invalid, say) opens it again. */
   defaultOpen?: boolean;
+  /** Focusing the heading (a page sending the user to it) opens the section. */
+  openOnFocus?: boolean;
   /** Takes focus when a control that had it goes away (a page's save bar). */
   headingRef?: Ref<HTMLHeadingElement>;
   className?: string;
@@ -33,20 +35,29 @@ export function CollapsibleSection({
   chip,
   chipTone = 'neutral',
   defaultOpen = false,
+  openOnFocus = false,
   headingRef,
   className,
   children,
 }: CollapsibleSectionProps) {
   const id = useId();
   const [state, setState] = useState({ open: defaultOpen, from: defaultOpen });
-  // The design resets to `defaultOpen` whenever it changes (`componentDidUpdate`).
-  if (state.from !== defaultOpen) setState({ open: defaultOpen, from: defaultOpen });
+  // Only ever opens by itself: closing mid-edit would hide the control in use.
+  if (state.from !== defaultOpen) setState({ open: state.open || defaultOpen, from: defaultOpen });
   const { open } = state;
   const showSummary = !open && !!summary;
 
   return (
     <section aria-labelledby={`${id}-title`} className={cx(styles.section, className)}>
-      <h2 ref={headingRef} tabIndex={-1} className={styles.heading}>
+      <h2
+        ref={headingRef}
+        tabIndex={-1}
+        className={styles.heading}
+        onFocus={(e) => {
+          if (openOnFocus && !open && e.target === e.currentTarget)
+            setState({ ...state, open: true });
+        }}
+      >
         <button
           type="button"
           aria-expanded={open}

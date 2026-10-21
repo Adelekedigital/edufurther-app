@@ -50,6 +50,8 @@ export const SettingSummaryRow = forwardRef<HTMLButtonElement, SettingSummaryRow
             size="sm"
             shape="square"
             aria-label={actionLabel}
+            aria-busy={busy || undefined}
+            disabled={busy}
             onClick={onChange}
           />
         ) : (
