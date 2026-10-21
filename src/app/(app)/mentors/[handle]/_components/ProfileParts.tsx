@@ -78,6 +78,7 @@ export function OwnerBar({
   hoursHref,
   previewBlocked,
   inReview = false,
+  reviewKnown = true,
 }: {
   profile: MentorProfile;
   preview: boolean;
@@ -88,17 +89,21 @@ export function OwnerBar({
   previewBlocked: string | null;
   /** The application is in review: the review freeze's line. */
   inReview?: boolean;
+  /** Whether the account's stage is known yet (/me answered). */
+  reviewKnown?: boolean;
 }) {
   const state = ownerBarState(profile, preview, inReview);
   // Frozen while the owner is here (a save the freeze refused): the editor
   // that held focus is gone, so focus moves to the line saying why, which is
   // read as it lands (as Settings' ReviewFreeze). On load it's page content.
   const line = useRef<HTMLSpanElement>(null);
-  const was = useRef(inReview);
+  // The first known value is how the page loaded, not a change.
+  const was = useRef<boolean | null>(null);
   useEffect(() => {
-    if (inReview && !was.current) line.current?.focus();
+    if (!reviewKnown) return;
+    if (inReview && was.current === false) line.current?.focus();
     was.current = inReview;
-  }, [inReview]);
+  }, [inReview, reviewKnown]);
   const whyId = useId();
   const icon =
     state === 'preview'

@@ -82,7 +82,6 @@ export function MenteeProfileForm({
     countryError: `${id}-country-error`,
     nameError: `${id}-name-error`,
     langsHint: `${id}-langs-hint`,
-    langsError: `${id}-langs-error`,
   };
   const toggle = (l: LanguageOption) =>
     onChange({

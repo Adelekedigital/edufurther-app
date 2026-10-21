@@ -143,8 +143,11 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const [heldRefusal, setHeldRefusal] = useState(false);
   if (refused && !heldRefusal) setHeldRefusal(true);
   const inReview = isOwner && (member?.mentorStage === 'pending' || heldRefusal);
+  // Until /me answers the stage isn't known: no reviewed controls yet, so none
+  // flash and vanish for an owner in review (no role UI before the role).
+  const stageKnown = viewer.kind !== 'loading';
   // The owner's reviewed content: names and sessions stay open (owner, 21 Oct).
-  const editingReviewed = editing && !inReview;
+  const editingReviewed = editing && stageKnown && !inReview;
   // Mentors can't book (product 2026-09-29, canBookFor): on another mentor's
   // profile every Book control goes away, as for the owner on their own.
   const canBookHere = !isOwner && canBook;
@@ -338,10 +341,12 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // The toggle waits while an inline edit is open, so a draft is never dropped
   // (review of PR 106). Its pressed state says the rest; no extra announcement.
   // On another tab, About's editor is out of view: say where it is.
+  // About counts only while its editor is there (the freeze takes it away).
+  const aboutShown = owner.aboutOpen && editingReviewed;
   const previewBlocked =
-    owner.aboutOpen && tab !== 'overview'
+    aboutShown && tab !== 'overview'
       ? 'Save or cancel your About edit on Overview to preview.'
-      : owner.introOpen || owner.aboutOpen
+      : owner.introOpen || aboutShown
         ? 'Save or cancel your edit to preview.'
         : null;
 
@@ -434,6 +439,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 hoursHref={HOURS_HREF}
                 previewBlocked={previewBlocked}
                 inReview={inReview}
+                reviewKnown={stageKnown}
               />
             )}
             {droppedText && (

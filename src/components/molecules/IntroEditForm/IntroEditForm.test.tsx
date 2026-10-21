@@ -29,7 +29,7 @@ describe('IntroEditForm', () => {
     expect(first).toHaveValue('Gbenga');
     expect(first).toHaveAttribute('maxLength', '100');
     expect(screen.getByRole('textbox', { name: 'Last name' })).toHaveAttribute('maxLength', '100');
-    expect(screen.getByRole('textbox', { name: 'Headline' })).toHaveAttribute('maxLength', '300');
+    expect(screen.getByRole('textbox', { name: 'Headline' })).toHaveAttribute('maxLength', '80');
   });
 
   it('saves what was typed', async () => {
@@ -80,11 +80,12 @@ describe('IntroEditForm', () => {
       expect(onSave).toHaveBeenCalledWith({ ...initial, lastName: 'Ade' });
     });
 
-    it('a new or edited headline: 80 characters at most', async () => {
-      const { user, onSave } = setup();
+    it('an older headline over 80, edited and still over: says to keep it to 80', async () => {
+      const { user, onSave } = setup({ initial: { ...initial, headline: 'y'.repeat(120) } });
       const headline = screen.getByRole('textbox', { name: 'Headline' });
-      await user.clear(headline);
-      await user.type(headline, 'x'.repeat(81));
+      // The input stops new typing at 80; an older, longer one can still be edited.
+      expect(headline).toHaveAttribute('maxLength', '80');
+      await user.type(headline, '{Backspace}');
       await user.click(screen.getByRole('button', { name: 'Save' }));
       expect(onSave).not.toHaveBeenCalled();
       expect(headline).toHaveAccessibleDescription('Keep your headline to 80 characters.');
@@ -100,6 +101,20 @@ describe('IntroEditForm', () => {
   });
 
   describe('in review: the headline holds still (owner, 21 Oct)', () => {
+    it('frozen while open: an edited headline goes back to the saved one, which is what saves', async () => {
+      const onSave = vi.fn();
+      const user = userEvent.setup();
+      const props = { initial, onSave, onCancel: vi.fn(), saving: false };
+      const { rerender } = render(<IntroEditForm {...props} />);
+      const headline = screen.getByRole('textbox', { name: 'Headline' });
+      await user.clear(headline);
+      await user.type(headline, 'Edited');
+      rerender(<IntroEditForm {...props} headlineFrozen />);
+      expect(screen.getByRole('textbox', { name: 'Headline' })).toHaveValue(initial.headline);
+      await user.click(screen.getByRole('button', { name: 'Save' }));
+      expect(onSave).toHaveBeenCalledWith(initial);
+    });
+
     it('the headline can’t be changed or block the save; the names save', async () => {
       const { user, onSave } = setup({
         headlineFrozen: true,

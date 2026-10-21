@@ -127,10 +127,28 @@ describe('MentorProfileScreen — the review freeze (Mentor Settings PR 2)', () 
     expect(screen.queryByRole('textbox', { name: 'About' })).toBeNull();
     const line = screen.getByText(REVIEW_LINE);
     expect(line.closest('[tabindex="-1"]')).toHaveFocus();
+    // The closed editor no longer holds "View as mentee" (review of PR 3).
+    expect(screen.getByRole('button', { name: 'View as mentee' })).not.toHaveAttribute(
+      'aria-disabled',
+    );
     // Still frozen when the editor's error is cleared.
     h.inReviewRefusal = false;
     rerender(<MentorProfileScreen handle="gbenga" />);
     expect(screen.getByText(REVIEW_LINE)).toBeInTheDocument();
+  });
+
+  it('before /me answers: no reviewed controls; then in review, the line, and focus stays put', () => {
+    h.viewerLoading = true;
+    h.profile = state({ data: own });
+    const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+    expect(reviewedControls()).toEqual([]);
+    h.viewerLoading = false;
+    h.viewerExtra = { mentorStage: 'pending' };
+    h.viewerIsMentor = true;
+    rerender(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByText(REVIEW_LINE)).toBeInTheDocument();
+    // How the page loaded, not a change: focus isn't moved on load.
+    expect(screen.getByText(REVIEW_LINE).closest('[tabindex="-1"]')).not.toHaveFocus();
   });
 
   it('"View as mentee" shows the preview line, not the review one', async () => {

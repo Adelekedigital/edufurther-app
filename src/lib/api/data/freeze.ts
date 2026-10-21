@@ -11,12 +11,21 @@ import { normaliseError } from './errors';
  * About, topics, background, education, awards), so one watch covers all of
  * them. Earlier refusals don't count: the decision may have come since.
  */
+/**
+ * The error, or the failure it carries as its `cause` (a save's own error
+ * type keeps the API's one there), is the freeze's 409.
+ */
+export function refusedForReview(error: unknown): boolean {
+  if (normaliseError(error).kind === 'inReview') return true;
+  const cause = error instanceof Error ? error.cause : undefined;
+  return cause !== undefined && normaliseError(cause).kind === 'inReview';
+}
+
 export function useInReviewRefusal(): boolean {
   const [since] = useState(() => Date.now());
   const refused = useMutationState({
     filters: { status: 'error' },
-    select: (m) =>
-      m.state.submittedAt >= since && normaliseError(m.state.error).kind === 'inReview',
+    select: (m) => m.state.submittedAt >= since && refusedForReview(m.state.error),
   });
   return refused.some(Boolean);
 }

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { useInReviewRefusal } from './freeze';
 import { useProfileItems, type BackgroundSave } from './profileItems';
 import { keys } from './keys';
 
@@ -142,5 +143,43 @@ describe('useProfileItems — background', () => {
         'You’re offline. Your changes are still here; try again when you’re connected.',
       ),
     );
+  });
+});
+const IN_REVIEW = {
+  type: '/problems/mentor-application-in-review',
+  title: 'MentorApplicationInReviewError',
+  status: 409,
+  detail: 'Your application is in review, so these can’t change until it is decided.',
+  fields: ['headline'],
+};
+const refused = (error: unknown = IN_REVIEW) => ({
+  data: undefined,
+  error,
+  response: new Response(null, { status: 409 }),
+});
+
+describe('useProfileItems — refused for the review (409 in review)', () => {
+  function withFreeze() {
+    const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    );
+    return renderHook(() => ({ items: useProfileItems('u1'), refused: useInReviewRefusal() }), {
+      wrapper,
+    });
+  }
+
+  it('topics: the page sees the refusal', async () => {
+    PATCH.mockResolvedValue(refused({ ...IN_REVIEW, fields: ['offering_ids'] }));
+    const { result } = withFreeze();
+    act(() => result.current.items.saveTopics(['o1'], vi.fn()));
+    await waitFor(() => expect(result.current.refused).toBe(true));
+  });
+
+  it('background: the page sees the refusal', async () => {
+    PATCH.mockResolvedValue(refused({ ...IN_REVIEW, fields: ['origin_country_id'] }));
+    const { result } = withFreeze();
+    act(() => result.current.items.saveBackground(before, { ...before, originId: 'gh' }, vi.fn()));
+    await waitFor(() => expect(result.current.refused).toBe(true));
   });
 });

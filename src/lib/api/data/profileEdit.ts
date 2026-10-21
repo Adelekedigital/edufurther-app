@@ -20,14 +20,18 @@ const FIELD: Record<string, IntroField | 'about'> = {
 const COPY: Record<IntroField | 'about', string> = {
   firstName: INTRO_ERRORS.firstName,
   lastName: INTRO_ERRORS.lastName,
-  headline: INTRO_ERRORS.headlineTooLong,
+  headline: 'Keep your headline under 300 characters.',
   about: 'That About couldn’t be saved. Shorten it and try again.',
 };
 
 /** A failure as the forms show it: our copy per field, else one general line. */
 export class EditError extends Error {
-  constructor(readonly errors: IntroEditErrors & { about?: string }) {
-    super('edit failed');
+  /** `cause`: the failure itself, so the review freeze's refusal is still seen (freeze.ts). */
+  constructor(
+    readonly errors: IntroEditErrors & { about?: string },
+    cause?: unknown,
+  ) {
+    super('edit failed', { cause });
   }
 }
 
@@ -40,15 +44,21 @@ function toEditError(error: unknown, body: unknown): EditError {
         const f = FIELD[(it as { pointer?: unknown })?.pointer as string];
         if (f && !out[f]) out[f] = COPY[f];
       }
-    if (Object.keys(out).length) return new EditError(out);
+    if (Object.keys(out).length) return new EditError(out, error);
   }
   const e = normaliseError(error);
-  return new EditError({
-    general:
-      e.kind === 'offline'
-        ? 'You’re offline. Your changes are still here; try again when you’re connected.'
-        : 'That didn’t save. Try again.',
-  });
+  // Refused for the review: the page freezes and its bar says why, so no
+  // "try again" here (it can't succeed until the decision).
+  if (e.kind === 'inReview') return new EditError({}, error);
+  return new EditError(
+    {
+      general:
+        e.kind === 'offline'
+          ? 'You’re offline. Your changes are still here; try again when you’re connected.'
+          : 'That didn’t save. Try again.',
+    },
+    error,
+  );
 }
 
 /** The general line when the names saved but the headline didn't. */
@@ -58,11 +68,11 @@ function partialCopy(general: string): string {
     : 'Your name saved. The headline didn’t: try again.';
 }
 
-/** What can be caught before sending: a name can't be emptied. */
-export function introProblems(before: IntroEdit, after: IntroEdit): IntroEditErrors {
+/** What can be caught before sending: both names are required (the form rule). */
+export function introProblems(after: IntroEdit): IntroEditErrors {
   const out: IntroEditErrors = {};
   if (!after.firstName.trim()) out.firstName = COPY.firstName;
-  if (!after.lastName.trim() && before.lastName.trim()) out.lastName = COPY.lastName;
+  if (!after.lastName.trim()) out.lastName = COPY.lastName;
   return out;
 }
 
@@ -117,14 +127,14 @@ export function useProfileEdit(userId: string | null) {
     networkMode: 'always',
     mutationFn: async ({ before, after }) => {
       if (!userId) throw new EditError({ general: 'That didn’t save. Try again.' });
-      const early = introProblems(before, after);
+      const early = introProblems(after);
       if (Object.keys(early).length) throw new EditError(early);
       const first = after.firstName.trim();
       const last = after.lastName.trim();
       const headline = after.headline.trim();
       const names = {
         ...(first !== before.firstName.trim() && { first_name: first }),
-        ...(last && last !== before.lastName.trim() && { last_name: last }),
+        ...(last !== before.lastName.trim() && { last_name: last }),
       };
       let namesSaved = false;
       try {
@@ -148,7 +158,10 @@ export function useProfileEdit(userId: string | null) {
         const err = e instanceof EditError ? e : toEditError(e, null);
         // The names landed and the headline didn't: say so, not "didn't save".
         if (namesSaved && err.errors.general)
-          throw new EditError({ ...err.errors, general: partialCopy(err.errors.general) });
+          throw new EditError(
+            { ...err.errors, general: partialCopy(err.errors.general) },
+            err.cause,
+          );
         throw err;
       }
     },

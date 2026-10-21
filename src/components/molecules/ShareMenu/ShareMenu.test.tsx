@@ -142,4 +142,14 @@ describe('ShareMenu', () => {
     expect(menu).not.toHaveTextContent('Only you can see this page.');
     expect(screen.getByRole('menuitem', { name: 'Copy profile link' })).toHaveFocus();
   });
+
+  it('clicking the note keeps focus in the menu, so the keys still work', async () => {
+    const user = userEvent.setup();
+    render(<ShareMenu url="https://edufurther.com/mentors/g" name="Gbenga E" note="Only you." />);
+    await user.click(screen.getByRole('button', { name: 'Share profile' }));
+    await user.click(screen.getByText('Only you.'));
+    expect(screen.getByRole('menuitem', { name: 'Copy profile link' })).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
 });

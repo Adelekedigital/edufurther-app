@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { useInReviewRefusal } from './freeze';
 import { introProblems, useProfileEdit, type IntroEdit } from './profileEdit';
 import { keys } from './keys';
 
@@ -34,14 +35,14 @@ afterEach(() => {
 });
 
 describe('introProblems', () => {
-  it('a first name is required; a last name can’t be emptied once set', () => {
-    expect(introProblems(before, { ...before, firstName: '  ' })).toEqual({
+  it('both names are required (the form rule)', () => {
+    expect(introProblems({ ...before, firstName: '  ' })).toEqual({
       firstName: 'Add your first name.',
     });
-    expect(introProblems(before, { ...before, lastName: '' })).toEqual({
+    expect(introProblems({ ...before, lastName: '' })).toEqual({
       lastName: 'Add your last name.',
     });
-    expect(introProblems({ ...before, lastName: '' }, { ...before, lastName: '' })).toEqual({});
+    expect(introProblems(before)).toEqual({});
   });
 });
 
@@ -91,7 +92,7 @@ describe('useProfileEdit', () => {
     const { result } = setup();
     act(() => result.current.saveIntro(before, { ...before, headline: 'too long' }, vi.fn()));
     await waitFor(() =>
-      expect(result.current.introErrors.headline).toBe('Keep your headline to 80 characters.'),
+      expect(result.current.introErrors.headline).toBe('Keep your headline under 300 characters.'),
     );
     expect(result.current.introErrors.general).toBeUndefined();
   });
@@ -148,5 +149,58 @@ describe('useProfileEdit', () => {
     act(() => result.current.saveAbout('   ', vi.fn()));
     await waitFor(() => expect(result.current.aboutError).toBe('That didn’t save. Try again.'));
     expect(PATCH.mock.calls[1]![1].body).toEqual({ about_me: null });
+  });
+});
+const IN_REVIEW = {
+  type: '/problems/mentor-application-in-review',
+  title: 'MentorApplicationInReviewError',
+  status: 409,
+  detail: 'Your application is in review, so these can’t change until it is decided.',
+  fields: ['headline'],
+};
+const refused = (error: unknown = IN_REVIEW) => ({
+  data: undefined,
+  error,
+  response: new Response(null, { status: 409 }),
+});
+
+describe('useProfileEdit — refused for the review (409 in review)', () => {
+  function withFreeze() {
+    const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    );
+    return renderHook(() => ({ edit: useProfileEdit('u1'), refused: useInReviewRefusal() }), {
+      wrapper,
+    });
+  }
+
+  it('the headline: the page sees the refusal, and the form says no “try again”', async () => {
+    PATCH.mockResolvedValue(refused());
+    const { result } = withFreeze();
+    act(() => result.current.edit.saveIntro(before, { ...before, headline: 'New' }, vi.fn()));
+    await waitFor(() => expect(result.current.refused).toBe(true));
+    expect(result.current.edit.introErrors.general).toBeUndefined();
+  });
+
+  it('the names saved, the headline refused: still seen, still no “try again”', async () => {
+    PATCH.mockResolvedValueOnce(ok).mockResolvedValueOnce(refused());
+    const { result } = withFreeze();
+    act(() =>
+      result.current.edit.saveIntro(
+        before,
+        { ...before, firstName: 'Ade', headline: 'New' },
+        vi.fn(),
+      ),
+    );
+    await waitFor(() => expect(result.current.refused).toBe(true));
+    expect(result.current.edit.introErrors.general).toBeUndefined();
+  });
+
+  it('About: the page sees the refusal', async () => {
+    PATCH.mockResolvedValue(refused({ ...IN_REVIEW, fields: ['about_me'] }));
+    const { result } = withFreeze();
+    act(() => result.current.edit.saveAbout('Changed', vi.fn()));
+    await waitFor(() => expect(result.current.refused).toBe(true));
   });
 });

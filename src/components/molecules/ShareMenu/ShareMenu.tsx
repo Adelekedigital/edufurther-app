@@ -184,7 +184,15 @@ export function ShareMenu({
       {open && (
         // The panel holds the note and the menu: a menu's children can only be
         // its items, so the note sits before it and describes it.
-        <div ref={menuRef} className={styles.menu}>
+        <div
+          ref={menuRef}
+          className={styles.menu}
+          // A click off the items (the note, the padding) keeps focus on them,
+          // so the keys still work.
+          onMouseDown={(e) => {
+            if (!(e.target as HTMLElement).closest('[role="menuitem"]')) e.preventDefault();
+          }}
+        >
           {note && (
             <p id={noteId} className={styles.note}>
               {note}

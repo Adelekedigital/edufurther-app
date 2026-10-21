@@ -48,6 +48,12 @@ export function IntroEditForm({
   headlineFrozen = false,
 }: IntroEditFormProps) {
   const [v, setV] = useState(initial);
+  // Frozen while open: the field shows what will save (adjusted during render).
+  const [wasFrozen, setWasFrozen] = useState(headlineFrozen);
+  if (headlineFrozen !== wasFrozen) {
+    setWasFrozen(headlineFrozen);
+    if (headlineFrozen) setV((x) => ({ ...x, headline: initial.headline }));
+  }
   const headline = headlineFrozen ? null : headlineProblem(initial.headline, v.headline);
   const gaps: Gap[] = [
     ...(v.firstName.trim() ? [] : ['firstName' as const]),
