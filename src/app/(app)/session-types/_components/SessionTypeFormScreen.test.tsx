@@ -145,7 +145,7 @@ describe('SessionTypeFormScreen', () => {
   it('Continue checks the step: errors on the fields, and it stays', async () => {
     const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template={null} />);
-    await user.click(next(/Continue/));
+    await user.click(next(/^Continue$/));
     expect(screen.getByText('Give your session a name.')).toBeInTheDocument();
     expect(screen.getByText('Pick at least one topic.')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Session name' })).toHaveAttribute(
@@ -175,7 +175,7 @@ describe('SessionTypeFormScreen', () => {
     const user = userEvent.setup({ delay: null });
     create.mockImplementation((_v, opts) => opts.onSuccess({ id: 'new', failedWindows: [] }));
     render(<SessionTypeFormScreen template="sop-review" />);
-    await user.click(next(/Continue/));
+    await user.click(next(/^Continue$/));
     await user.click(next(/^Continue$/));
     await user.click(next(/^Continue$/));
     await user.click(next(/Publish session/));
@@ -206,7 +206,7 @@ describe('SessionTypeFormScreen', () => {
   it('delete a question confirms first', async () => {
     const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
-    await user.click(next(/Continue/));
+    await user.click(next(/^Continue$/));
     await user.click(screen.getByRole('button', { name: 'Delete question 1' }));
     const dialog = screen.getByRole('alertdialog', { name: 'Delete this question?' });
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
@@ -220,7 +220,7 @@ describe('SessionTypeFormScreen', () => {
   it('editing a question, then deleting one above it, saves the right question (review of #49)', async () => {
     const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
-    await user.click(next(/Continue/));
+    await user.click(next(/^Continue$/));
     await user.click(screen.getByRole('button', { name: 'Edit question 2' }));
     await user.click(screen.getByRole('button', { name: 'Delete question 1' }));
     await user.click(
@@ -290,6 +290,21 @@ describe('SessionTypeFormScreen', () => {
     expect(retry).toHaveBeenCalled();
   });
 
+  // A rule change used to patch the whole draft, which cleared every error.
+  it('changing a booking rule keeps the hours error on screen', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<SessionTypeFormScreen template="sop-review" />);
+    await user.click(next(/^Continue$/));
+    await user.click(next(/^Continue$/));
+    await user.click(screen.getByRole('radio', { name: /Set availability for this session/ }));
+    await user.click(next(/^Continue$/));
+    const error = 'Turn on at least one day, or use your weekly availability.';
+    expect(screen.getByText(error)).toBeInTheDocument();
+    await user.click(screen.getByRole('radio', { name: /Customize for this session/ }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Minimum notice' }), '72');
+    expect(screen.getByText(error)).toBeInTheDocument();
+  });
+
   it('"Use my defaults" sends nothing of its own; custom rules send all five', async () => {
     const user = userEvent.setup({ delay: null });
     const toStep3 = async () => {
@@ -333,7 +348,7 @@ describe('SessionTypeFormScreen', () => {
     });
   });
 
-  it('Edit defaults opens Booking preferences; Save sends every value, Cancel nothing', async () => {
+  it('Edit defaults opens Booking rules; Save sends every value, Cancel nothing', async () => {
     const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
     await user.click(next(/^Continue$/));
@@ -429,7 +444,7 @@ describe('SessionTypeFormScreen — review of #60', () => {
     await user.click(next(/^Continue$/));
   };
 
-  it('a failed save keeps Booking preferences open and says so; reopening starts clean', async () => {
+  it('a failed save keeps Booking rules open and says so; reopening starts clean', async () => {
     const user = userEvent.setup({ delay: null });
     saveDefaults.mockRejectedValue({ kind: 'server', message: 'x' });
     defaultsSaveError = {
@@ -483,7 +498,7 @@ describe('SessionTypeFormScreen — review of #60', () => {
     expect(screen.queryByRole('dialog', { name: 'Booking rules' })).toBeNull();
   });
 
-  it('"Booking window" offers only what the platform maximum allows, in the form and in Booking preferences', async () => {
+  it('"Booking window" offers only what the platform maximum allows, in the form and in Booking rules', async () => {
     const user = userEvent.setup({ delay: null });
     defaultsMock = { ...READY, data: { ...READY.data, windowDays: 14, maxWindowDays: 14 } };
     await toStep3(user);

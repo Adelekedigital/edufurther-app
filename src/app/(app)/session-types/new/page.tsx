@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import { SessionTypeFormScreen } from '../_components/SessionTypeFormScreen';
 import { SESSIONS_COPY } from '@/lib/copy/sessionTypes';
+import { SessionTypeFormScreen } from '../_components/SessionTypeFormScreen';
 
 export const metadata: Metadata = {
   title: SESSIONS_COPY.createTitle,

@@ -17,6 +17,7 @@ import {
   type Created,
 } from '@/lib/api/data/sessionTypes';
 import { useSaveWeeklyHours, useWeeklyHours } from '@/lib/api/data/weeklyHours';
+import { SESSIONS_COPY, WIZARD_COPY } from '@/lib/copy/sessionTypes';
 import { SESSION_TEMPLATES } from '@/lib/utils/sessionTemplates';
 import {
   shortestLength,
@@ -32,7 +33,6 @@ import styles from './SessionTypesScreen.module.css';
 import { useLeaveGuard, useSessionTypeDraft, type EditTarget } from './useSessionTypeDraft';
 import { useSessionTypeSubmit } from './useSessionTypeSubmit';
 import { useWizardSteps } from './useWizardSteps';
-import { SESSIONS_COPY, WIZARD_COPY } from '@/lib/copy/sessionTypes';
 
 export type { EditTarget } from './useSessionTypeDraft';
 

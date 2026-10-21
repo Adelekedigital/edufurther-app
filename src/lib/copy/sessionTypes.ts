@@ -22,6 +22,8 @@ export const SESSIONS_COPY = {
   loadOneError: 'We couldn’t load this session',
   guestTitle: 'Log in to manage your sessions',
   guestBody: 'Sessions are what mentees can book with you.',
+  /** A 409 on create or rename: the name is already one of theirs. */
+  nameTaken: 'You already have a session with this name.',
 } as const;
 
 /** The wizard's steps (design `stepDefs`, research names). */

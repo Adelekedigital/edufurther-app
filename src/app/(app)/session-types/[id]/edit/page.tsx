@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import { EditSessionTypeScreen } from '../../_components/EditSessionTypeScreen';
 import { SESSIONS_COPY } from '@/lib/copy/sessionTypes';
+import { EditSessionTypeScreen } from '../../_components/EditSessionTypeScreen';
 
 export const metadata: Metadata = {
   title: SESSIONS_COPY.editTitle,

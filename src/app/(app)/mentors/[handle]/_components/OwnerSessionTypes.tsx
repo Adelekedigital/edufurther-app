@@ -323,8 +323,8 @@ export function OwnerSessionTypes({ shown, onActiveCount, onSay: say }: Props) {
           last={liveCount === 1}
           subtitle={
             liveCount === 1
-              ? `Your profile will show “Not taking bookings” until one is visible again. Booked sessions go ahead. ${SHOW_AGAIN}`
-              : `It leaves your profile and Explore, and mentees can’t book it. Booked sessions go ahead. ${SHOW_AGAIN}`
+              ? `Your profile will show “Not taking bookings” until one is visible again. Bookings already made go ahead. ${SHOW_AGAIN}`
+              : `It leaves your profile and Explore, and mentees can’t book it. Bookings already made go ahead. ${SHOW_AGAIN}`
           }
           onCancel={() => {
             const { type, then } = hiding;

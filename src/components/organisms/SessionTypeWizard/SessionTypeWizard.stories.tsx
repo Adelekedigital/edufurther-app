@@ -61,7 +61,7 @@ function Harness({
   const [s, setS] = useState<Step>(step);
   return (
     <SessionTypeWizard
-      title={editing ? 'Edit session type' : 'Create a session type'}
+      title={editing ? 'Edit session' : 'Create a session'}
       step={s}
       reached={4}
       draft={d}

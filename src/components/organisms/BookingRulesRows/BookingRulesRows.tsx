@@ -80,6 +80,14 @@ export function BookingRulesRows({
   selectWidth,
 }: BookingRulesRowsProps) {
   const id = useId();
+  // Only the four rules go back: a caller may pass a wider object (the session
+  // wizard passes its draft), and echoing the rest would overwrite it.
+  const rules: BookingRules = {
+    durationMin: value.durationMin,
+    noticeHours: value.noticeHours,
+    windowDays: value.windowDays,
+    breakMin: value.breakMin,
+  };
   const options: Record<BookingRuleKey, { value: string; label: string }[]> = {
     durationMin: durationOptions(value.durationMin),
     noticeHours: noticeHoursOptions(value.noticeHours),
@@ -122,7 +130,7 @@ export function BookingRulesRows({
             options={options[k]}
             value={String(value[k])}
             disabled={disabled}
-            onChange={(e) => onChange({ ...value, [k]: Number(e.target.value) })}
+            onChange={(e) => onChange({ ...rules, [k]: Number(e.target.value) })}
           />
         </div>
       ))}

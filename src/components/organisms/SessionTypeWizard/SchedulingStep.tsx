@@ -34,7 +34,7 @@ type SchedulingStepProps = {
   defaults: Defaults | null;
   defaultsStatus: DefaultsStatus;
   onRetryDefaults: () => void;
-  /** Opens the Booking preferences modal. */
+  /** Opens the Booking rules modal. */
   onEditDefaults: () => void;
   weekly: WeeklyStatus;
   onRetryWeekly: () => void;

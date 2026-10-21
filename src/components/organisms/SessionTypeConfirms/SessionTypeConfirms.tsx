@@ -138,8 +138,8 @@ export function VisibilityConfirm(
     (p.show
       ? 'It appears on your profile and Explore, and mentees can book it in your open hours.'
       : p.last
-        ? 'Your profile will show “Not taking bookings” until a session is visible again. Booked sessions go ahead.'
-        : 'Mentees can’t see or book it. Booked sessions go ahead, and you can show it again anytime.');
+        ? 'Your profile will show “Not taking bookings” until a session is visible again. Bookings already made go ahead.'
+        : 'Mentees can’t see or book it. Bookings already made go ahead, and you can show it again anytime.');
   return (
     <>
       {p.renderShell(

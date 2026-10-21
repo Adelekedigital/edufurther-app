@@ -298,7 +298,7 @@ export function validateStep(d: Draft, step: 1 | 2 | 3, minLength = 0): FieldErr
   }
   if (step === 3 && d.hours === 'custom') {
     const on = d.days.filter((x) => x.on);
-    if (on.length === 0) e.hours = 'Turn on at least one day, or use your Calendar availability.';
+    if (on.length === 0) e.hours = 'Turn on at least one day, or use your weekly availability.';
     d.days.forEach((day, i) => {
       if (!day.on) return;
       day.slots.forEach((_, k) => {

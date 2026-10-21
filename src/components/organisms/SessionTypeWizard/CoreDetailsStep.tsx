@@ -5,6 +5,7 @@ import { Button } from '@/components/atoms/Button/Button';
 import { Input, Textarea } from '@/components/atoms/Input/Input';
 import { ChoiceChips } from '@/components/molecules/ChoiceChips/ChoiceChips';
 import { FormField } from '@/components/molecules/FormField/FormField';
+import { DETAILS_COPY } from '@/lib/copy/sessionTypes';
 import {
   DESCRIPTION_MAX,
   MAX_TOPICS,
@@ -14,7 +15,6 @@ import {
   type Stage,
 } from '@/lib/utils/sessionTypeDraft';
 import type { Topic } from '@/types/mentor';
-import { DETAILS_COPY } from '@/lib/copy/sessionTypes';
 import styles from './SessionTypeWizard.module.css';
 
 type CoreDetailsStepProps = {

@@ -14,7 +14,7 @@ export type SessionTypeOwnerActions = {
   onHide: (id: string) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
-  /** Where "New session type" goes. */
+  /** Where "New session" goes. */
   newHref: string;
 };
 

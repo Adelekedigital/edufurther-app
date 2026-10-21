@@ -6,9 +6,9 @@ import { WeeklyHoursForm } from '@/components/organisms/SessionTypeWizard/Weekly
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import type { Created, MentorDefaults } from '@/lib/api/data/sessionTypes';
 import type { useWeeklyHours } from '@/lib/api/data/weeklyHours';
+import { PUBLISHED_TITLE, RULES_COPY } from '@/lib/copy/sessionTypes';
 import type { DayHours } from '@/lib/utils/sessionTypeDraft';
 import styles from './SessionTypesScreen.module.css';
-import { PUBLISHED_TITLE, RULES_COPY } from '@/lib/copy/sessionTypes';
 
 export function DefaultsModal(p: {
   defaults: MentorDefaults;

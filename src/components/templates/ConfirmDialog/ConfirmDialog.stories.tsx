@@ -32,7 +32,7 @@ export const NotDestructive: Story = {
   args: {
     title: 'Feature “Mock visa interview” instead?',
     subtitle:
-      'It moves to the top of your profile. “SOP draft review” will no longer be featured. You can feature one session type at a time.',
+      'It moves to the top of your profile. “SOP draft review” will no longer be featured. You can feature one session at a time.',
     icon: 'star',
     tone: 'default',
     keepLabel: 'Cancel',

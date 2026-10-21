@@ -4,10 +4,10 @@ import type { ReactNode } from 'react';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import type { Illustration } from '@/components/molecules/EmptyState/EmptyState';
+import { SESSIONS_COPY } from '@/lib/copy/sessionTypes';
 import type { Access, NavKey } from '@/lib/utils/access';
 import type { Viewer } from '@/types/mentor';
 import styles from './MentorGate.module.css';
-import { SESSIONS_COPY } from '@/lib/copy/sessionTypes';
 
 /** What any signed-in page says to someone who isn't signed in — or can't be. */
 export type MemberGateCopy = {

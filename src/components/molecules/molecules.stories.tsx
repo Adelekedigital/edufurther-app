@@ -408,7 +408,12 @@ export const RadioCardGroup: Story = {
   },
 };
 
-const WIZARD = ['Core details', 'Intake questions', 'Scheduling', 'Review'];
+const WIZARD = [
+  'Define your session',
+  'Prepare for session',
+  'Set booking rules',
+  'Review and publish',
+];
 /** Create: on step 2 of a fresh flow — 3 and 4 locked. */
 export const Steps: Story = {
   render: function Render() {
@@ -416,19 +421,13 @@ export const Steps: Story = {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 880 }}>
         <WizardSteps
-          label="Create a session type"
+          label="Create a session"
           steps={WIZARD}
           current={cur}
           reached={2}
           onSelect={setCur}
         />
-        <WizardSteps
-          label="Edit session type"
-          steps={WIZARD}
-          current={4}
-          reached={4}
-          onSelect={fn()}
-        />
+        <WizardSteps label="Edit session" steps={WIZARD} current={4} reached={4} onSelect={fn()} />
         <WizardSteps
           label="Revisiting step 1"
           steps={WIZARD}

@@ -7,12 +7,12 @@ import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { useTopics } from '@/lib/api/data/mentors';
 import { toDraft, useSavedSessionType } from '@/lib/api/data/sessionTypeEdit';
 import { useMentorDefaults } from '@/lib/api/data/sessionTypes';
+import { SESSIONS_COPY } from '@/lib/copy/sessionTypes';
 import type { BookingDefaults } from '@/lib/utils/sessionTypeDraft';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { lockedPageGate, memberGate, SESSION_TYPES_GATE } from '@/app/_shell/MentorGate';
 import { SessionTypeFormScreen } from './SessionTypeFormScreen';
 import styles from './SessionTypesScreen.module.css';
-import { SESSIONS_COPY } from '@/lib/copy/sessionTypes';
 
 /**
  * /session-types/[id]/edit: loads the type as saved (with its questions and

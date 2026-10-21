@@ -78,7 +78,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     expect(screen.queryByRole('heading', { name: 'Mock visa interview' })).toBeNull();
     expect(screen.queryByRole('heading', { name: 'Program shortlist' })).toBeNull();
     expect(screen.queryByText(/Hidden|Scheduled for deletion|Keep it/)).toBeNull();
-    expect(screen.getByRole('link', { name: /New session/ })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /^New session ?Opens Sessions/ })).toHaveAttribute(
       'href',
       '/session-types/new',
     );
@@ -94,7 +94,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
       'true',
     );
     expect(screen.queryByRole('switch')).toBeNull();
-    expect(screen.getByRole('link', { name: /New session/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^New session ?Opens Sessions/ })).toBeInTheDocument();
   });
 
   it('the switch asks first, says where it comes back, then hides; focus moves on', async () => {
@@ -330,7 +330,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
         'Deletion scheduled for Oct 14. Hidden from mentees now. Manage it in Sessions.',
       ),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /New session/ })).toHaveFocus();
+    expect(screen.getByRole('link', { name: /^New session ?Opens Sessions/ })).toHaveFocus();
   });
 
   it('a type not yet on the public profile reads its stages from Session types', () => {
@@ -355,7 +355,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('button', { name: 'View as mentee' }));
     expect(screen.queryByRole('switch', { name: /Visible to mentees/ })).toBeNull();
-    expect(screen.queryByRole('link', { name: /New session/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /^New session ?Opens Sessions/ })).toBeNull();
   });
 
   it('while their own list fails, the public list shows with a retry', async () => {

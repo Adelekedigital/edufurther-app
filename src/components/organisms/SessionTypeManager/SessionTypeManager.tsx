@@ -5,10 +5,10 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { SessionTypeRow } from '@/components/molecules/SessionTypeRow/SessionTypeRow';
 import { TemplateCard } from '@/components/molecules/TemplateCard/TemplateCard';
+import { SESSIONS_COPY } from '@/lib/copy/sessionTypes';
 import type { Remote } from '@/types/mentor';
 import type { OwnSessionType } from '@/types/sessionType';
 import styles from './SessionTypeManager.module.css';
-import { SESSIONS_COPY } from '@/lib/copy/sessionTypes';
 
 type SessionTypeManagerProps = {
   list: Remote<OwnSessionType[]>;
