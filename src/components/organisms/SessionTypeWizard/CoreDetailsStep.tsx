@@ -14,6 +14,7 @@ import {
   type Stage,
 } from '@/lib/utils/sessionTypeDraft';
 import type { Topic } from '@/types/mentor';
+import { DETAILS_COPY } from '@/lib/copy/sessionTypes';
 import styles from './SessionTypeWizard.module.css';
 
 type CoreDetailsStepProps = {
@@ -45,11 +46,7 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
   };
   return (
     <div className={styles.body1}>
-      <FormField
-        label="Session name"
-        hint="Be specific. Mentees scan this when comparing sessions."
-        error={errors.name}
-      >
+      <FormField label="Session name" hint={DETAILS_COPY.nameHint} error={errors.name}>
         {(f) => (
           <Input
             {...f}
@@ -64,7 +61,7 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
       <FormField
         label="What mentees get"
         counter={`${d.description.length} / ${DESCRIPTION_MAX}`}
-        hint="Say what they’ll leave with. Aim for 3–5 sentences."
+        hint={DETAILS_COPY.descriptionHint}
         error={errors.description}
       >
         {(f) => (
@@ -82,14 +79,14 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
       <div className={styles.group3}>
         <span className={styles.groupHead}>
           <span id={`${id}-topics`} className={styles.groupLabel}>
-            Topics
+            {DETAILS_COPY.topicsLabel}
           </span>
           <span id={`${id}-topics-hint`} className={styles.groupHint}>
             Pick up to {MAX_TOPICS}. Mentees filter by these on Explore.
           </span>
         </span>
         <ChoiceChips
-          label="Topics"
+          label={DETAILS_COPY.topicsLabel}
           options={topics.map((t) => ({ value: t.slug, label: t.label }))}
           selected={d.topics}
           max={MAX_TOPICS}
@@ -152,7 +149,7 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
         </div>
         {errors.stage && <p className={styles.fieldError}>{errors.stage}</p>}
         <span id={`${id}-stage-hint`} className={styles.groupHint}>
-          Pick all that apply. Leave empty for any stage.
+          {DETAILS_COPY.stagesHint}
         </span>
       </div>
     </div>

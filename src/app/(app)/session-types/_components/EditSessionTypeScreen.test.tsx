@@ -130,9 +130,7 @@ beforeEach(() => {
 describe('EditSessionTypeScreen', () => {
   it('opens on step 1 with the saved type, every step open, "Save changes"', () => {
     render(<EditSessionTypeScreen id="st1" />);
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Edit session type' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Edit session' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Session name' })).toHaveValue('SOP review');
     // Every step reachable (the design's maxStep 4).
     expect(screen.getByRole('button', { name: /^Review/ })).toBeEnabled();
@@ -197,7 +195,7 @@ describe('EditSessionTypeScreen', () => {
     const user = userEvent.setup({ delay: null });
     render(<EditSessionTypeScreen id="st1" />);
     await user.type(screen.getByRole('textbox', { name: 'Session name' }), '!');
-    await user.click(screen.getByRole('button', { name: 'Back to session types' }));
+    await user.click(screen.getByRole('button', { name: 'Back to sessions' }));
     expect(screen.getByRole('alertdialog', { name: 'Discard your changes?' })).toBeInTheDocument();
     expect(push).not.toHaveBeenCalled();
   });
@@ -211,9 +209,9 @@ describe('EditSessionTypeScreen', () => {
     };
     render(<EditSessionTypeScreen id="gone" />);
     expect(
-      screen.getByRole('heading', { name: 'This session type isn’t available' }),
+      screen.getByRole('heading', { name: 'This session isn’t available' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Back to session types' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Back to sessions' })).toHaveAttribute(
       'href',
       '/session-types',
     );
@@ -225,7 +223,7 @@ describe('EditSessionTypeScreen', () => {
     savedMock = { data: null, isLoading: false, error: { kind: 'server', message: 'x' }, retry };
     const { unmount } = render(<EditSessionTypeScreen id="st1" />);
     expect(
-      screen.getByRole('heading', { name: 'We couldn’t load this session type' }),
+      screen.getByRole('heading', { name: 'We couldn’t load this session' }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(retry).toHaveBeenCalled();
@@ -291,7 +289,7 @@ describe('EditSessionTypeScreen', () => {
       await screen.findByText('Your changes are saved, except the intake questions marked below.'),
     ).toBeInTheDocument();
     // Taken to the question.
-    expect(screen.getByText('Step 2 of 4 · Intake questions')).toBeInTheDocument();
+    expect(screen.getByText('Step 2 of 4 · Prepare for session')).toBeInTheDocument();
     expect(
       screen.getByText(
         'A booking already chose an option you removed or changed. Keep it, then save again.',

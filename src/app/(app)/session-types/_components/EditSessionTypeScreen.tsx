@@ -12,6 +12,7 @@ import { useAppShell } from '@/app/_shell/useAppShell';
 import { lockedPageGate, memberGate, SESSION_TYPES_GATE } from '@/app/_shell/MentorGate';
 import { SessionTypeFormScreen } from './SessionTypeFormScreen';
 import styles from './SessionTypesScreen.module.css';
+import { SESSIONS_COPY } from '@/lib/copy/sessionTypes';
 
 /**
  * /session-types/[id]/edit: loads the type as saved (with its questions and
@@ -54,11 +55,11 @@ export function EditSessionTypeScreen({ id }: { id: string }) {
           illustration="forms"
           size={120}
           headingLevel={1}
-          title="This session type isn’t available"
-          description="It may have been deleted. Your other session types are on the list."
+          title={SESSIONS_COPY.notFoundTitle}
+          description={SESSIONS_COPY.notFoundBody}
           actions={
             <ButtonLink href="/session-types" size="large">
-              Back to session types
+              {SESSIONS_COPY.backToList}
             </ButtonLink>
           }
         />
@@ -71,7 +72,7 @@ export function EditSessionTypeScreen({ id }: { id: string }) {
           illustration="forms"
           size={120}
           headingLevel={1}
-          title="We couldn’t load this session type"
+          title={SESSIONS_COPY.loadOneError}
           description={
             saved.error.kind === 'offline'
               ? 'You’re offline. Try again when you reconnect.'

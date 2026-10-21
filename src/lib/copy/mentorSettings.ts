@@ -42,6 +42,10 @@ export function approvalLine(on: boolean, hours: number | null): string {
     : 'You accept each request first. If you don’t answer in time, it expires and the mentee is told.';
 }
 
+/** Approval as a summary token: Settings' words on every screen (owner, 2026-10-21). */
+export const approvalShort = (on: boolean) =>
+  on ? 'You approve each booking' : 'Confirmed straight away';
+
 /** The note under the rules; the count is left out when it's 0 or couldn't load. */
 export function rulesNote(sessionsUsingRules: number | null): string {
   const after =

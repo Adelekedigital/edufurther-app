@@ -25,7 +25,7 @@ describe('SessionTypeQuickEdit', () => {
     const vis = screen.getByRole('switch', { name: 'Visible to mentees' });
     expect(vis).toBeChecked();
     expect(vis).toHaveAccessibleDescription(
-      'Hidden types stay in Session types. Sessions already booked go ahead.',
+      'Hidden sessions stay in Sessions. Bookings already made go ahead.',
     );
     expect(screen.getByRole('link', { name: /Open full editor/ })).toHaveAttribute(
       'href',

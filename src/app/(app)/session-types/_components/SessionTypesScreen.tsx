@@ -248,7 +248,7 @@ export function SessionTypesScreen() {
   // Copy confirmed by design throughout (reply 2026-09-29, #10). A hidden type
   // isn't offered "Mark as featured"; the server still refuses one hidden
   // elsewhere meanwhile, and that refusal says why.
-  const HIDDEN_FEATURE = 'Show it to mentees first: a hidden session type can’t be featured.';
+  const HIDDEN_FEATURE = 'Show it to mentees first: a hidden session can’t be featured.';
   const setFeatured = useSetFeatured((id, featured, e) =>
     say(
       id,

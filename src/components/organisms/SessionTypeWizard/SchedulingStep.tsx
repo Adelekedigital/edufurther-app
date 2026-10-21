@@ -1,15 +1,15 @@
+import { useId } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Select } from '@/components/atoms/Select/Select';
 import { RadioCards } from '@/components/molecules/RadioCards/RadioCards';
 import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
+import { BookingRulesRows } from '@/components/organisms/BookingRulesRows/BookingRulesRows';
+import { BOOKING_COPY, approvalLine, approvalShort } from '@/lib/copy/mentorSettings';
+import { RULES_COPY } from '@/lib/copy/sessionTypes';
+import { bookingRulesSummary } from '@/lib/utils/calendar';
 import {
-  breakOptions,
-  durationOptions,
-  noticeOptions,
-  windowOptions,
-  defaultsSummary,
+  resolveDefaults,
   typeLength,
-  windowLabel,
   type BookingDefaults,
   type Draft,
   type FieldErrors,
@@ -61,52 +61,34 @@ export function SchedulingStep({
   onRetryWeekly,
   onEditWeekly,
 }: SchedulingStepProps) {
-  const rule = (
-    label: string,
-    hint: string,
-    value: number,
-    options: (current: number) => { value: string; label: string }[],
-    set: (v: number) => void,
-  ) => (
-    <div className={styles.ruleRow}>
-      <span className={styles.ruleText}>
-        <span className={styles.ruleLabel}>{label}</span>
-        <span className={styles.ruleHint}>{hint}</span>
-      </span>
-      <Select
-        aria-label={label}
-        width={160}
-        options={options(value)}
-        value={String(value)}
-        onChange={(e) => set(Number(e.target.value))}
-      />
-    </div>
-  );
-
+  // What "Use my default" resolves to, for the approval line; unknown until the defaults load.
+  const approvalOn =
+    d.approval === 'inherit'
+      ? defaults
+        ? resolveDefaults(defaults).requiresApproval
+        : null
+      : d.approval === 'on';
+  const approvalId = useId();
   return (
     <div className={styles.body3}>
       <div className={styles.section}>
         <span className={styles.titleGroup}>
-          <span className={styles.sectionTitle}>Approval and scheduling window</span>
-          <span className={styles.sectionSub}>
-            Same settings as Settings › Booking preferences.
-          </span>
+          <span className={styles.sectionTitle}>{RULES_COPY.sectionTitle}</span>
         </span>
         <RadioCards
-          label="Booking rules for this session"
+          label={RULES_COPY.groupLabel}
           value={d.rules}
           onChange={(rules) => update({ rules })}
           options={[
             {
               value: 'default',
-              label: 'Use my defaults',
-              description:
-                'Follows your Booking preferences in Settings. Changes there apply here too.',
+              label: RULES_COPY.useDefaults,
+              description: RULES_COPY.useDefaultsBody,
             },
             {
               value: 'custom',
-              label: 'Set rules for this session',
-              description: 'Its own length, notice, booking window and break.',
+              label: RULES_COPY.custom,
+              description: RULES_COPY.customBody,
             },
           ]}
         />
@@ -119,7 +101,7 @@ export function SchedulingStep({
                 : defaultsStatus === 'failed' || !defaults
                   ? // Copy confirmed by design (reply 2026-09-29, #5).
                     'We couldn’t load your defaults. This session still follows them.'
-                  : defaultsSummary(defaults)}
+                  : bookingRulesSummary(defaults)}
             </span>
             {defaultsStatus === 'failed' ? (
               <button type="button" className={styles.inlineAction} onClick={onRetryDefaults}>
@@ -142,49 +124,40 @@ export function SchedulingStep({
       {d.rules === 'custom' && (
         <div className={styles.customRules}>
           <div className={styles.rules}>
-            {rule(
-              'Session length',
-              'Mentees book slots of this length.',
-              d.durationMin,
-              durationOptions,
-              (durationMin) => update({ durationMin }),
-            )}
-            {rule(
-              'Minimum notice',
-              'Mentees can’t book with less notice than this.',
-              d.noticeHours,
-              noticeOptions,
-              (noticeHours) => update({ noticeHours }),
-            )}
-            {rule(
-              'Bookable up to',
-              'How far ahead mentees can book. Your profile shows this range.',
-              d.windowDays,
-              (v) => windowOptions(v, defaults?.maxWindowDays),
-              (windowDays) => update({ windowDays }),
-            )}
-            {rule(
-              'Break after each session',
-              'Keeps time free between back-to-back bookings.',
-              d.breakMin,
-              breakOptions,
-              (breakMin) => update({ breakMin }),
-            )}
+            <BookingRulesRows
+              value={d}
+              maxWindowDays={defaults?.maxWindowDays}
+              copy={BOOKING_COPY.rules}
+              onChange={(rules) => update(rules)}
+              classes={{
+                row: styles.ruleRow,
+                text: styles.ruleText,
+                label: styles.ruleLabel,
+                hint: styles.ruleHint,
+              }}
+              selectWidth={160}
+            />
           </div>
+          {/* Three ways, not Settings' switch: a session can also follow the default. */}
           <div className={styles.approvalRow}>
             <span className={styles.ruleText}>
-              <span className={styles.ruleLabel}>Approve each booking</span>
-              <span className={styles.ruleHint}>You review each request before it’s booked.</span>
+              <span className={styles.ruleLabel}>{BOOKING_COPY.approveTitle}</span>
+              {approvalOn !== null && (
+                <span id={approvalId} className={styles.ruleHint}>
+                  {approvalLine(approvalOn, defaults?.responseWindowHours ?? null)}
+                </span>
+              )}
             </span>
             <Select
-              aria-label="Booking approval"
+              aria-label={BOOKING_COPY.approveTitle}
+              aria-describedby={approvalOn !== null ? approvalId : undefined}
               width={200}
               value={d.approval}
               onChange={(e) => update({ approval: e.target.value as Draft['approval'] })}
               options={[
-                { value: 'inherit', label: 'Use my default' },
-                { value: 'on', label: 'Approve each request' },
-                { value: 'off', label: 'Confirm instantly' },
+                { value: 'inherit', label: RULES_COPY.inheritApproval },
+                { value: 'on', label: approvalShort(true) },
+                { value: 'off', label: approvalShort(false) },
               ]}
             />
           </div>
@@ -193,23 +166,21 @@ export function SchedulingStep({
       {errors.rules && <p className={styles.fieldError}>{errors.rules}</p>}
 
       <div className={styles.sectionRuled}>
-        <span className={styles.sectionTitle}>When can mentees book this?</span>
+        <span className={styles.sectionTitle}>{RULES_COPY.hoursTitle}</span>
         <RadioCards
-          label="Hours for this session"
+          label={RULES_COPY.hoursGroupLabel}
           value={d.hours}
           onChange={(hours) => update({ hours })}
           options={[
             {
               value: 'default',
-              label: 'Use my Calendar availability',
-              description:
-                'Mentees book this session in the weekly hours you set in Calendar. Changes there apply here too.',
+              label: RULES_COPY.useWeekly,
+              description: RULES_COPY.useWeeklyBody,
             },
             {
               value: 'custom',
-              label: 'Set dedicated hours',
-              description:
-                'Offer this session only at its own times, e.g. evenings for visa prep. Your Calendar hours stay as they are.',
+              label: RULES_COPY.ownHours,
+              description: RULES_COPY.ownHoursBody,
             },
           ]}
         />

@@ -50,16 +50,14 @@ describe('DeleteConfirm', () => {
     const { rerender } = render(<DeleteConfirm {...props} renderShell={spy} type={T()} busy />);
     expect(shells.at(-1)).toMatchObject({ alert: true, closeDisabled: true });
     expect(screen.getByRole('button', { name: 'Close' })).toBeDisabled();
-    rerender(
-      <DeleteConfirm {...props} renderShell={spy} type={T()} busy onDismiss={onDismiss} />,
-    );
+    rerender(<DeleteConfirm {...props} renderShell={spy} type={T()} busy onDismiss={onDismiss} />);
     expect(shells.at(-1)).toMatchObject({ closeDisabled: false, onClose: onDismiss });
   });
 
   it('deletes outright when nothing is booked', async () => {
     const onDelete = vi.fn();
     render(<DeleteConfirm {...props} type={T()} onDelete={onDelete} />);
-    expect(screen.getByRole('alertdialog', { name: 'Delete this session type?' })).toBeInTheDocument();
+    expect(screen.getByRole('alertdialog', { name: 'Delete this session?' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
     expect(onDelete).toHaveBeenCalledOnce();
   });
@@ -204,7 +202,7 @@ describe('VisibilityConfirm', () => {
     unmount();
     render(<VisibilityConfirm {...props} show={false} last />);
     expect(
-      screen.getByRole('alertdialog', { name: 'Hide your last session type?' }),
+      screen.getByRole('alertdialog', { name: 'Hide your last session?' }),
     ).toBeInTheDocument();
     expect(screen.getByText(/“Not taking bookings”/)).toBeInTheDocument();
   });

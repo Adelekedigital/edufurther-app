@@ -96,9 +96,9 @@ export function SessionTypeList(p: SessionTypeListProps) {
           {/* Not prefetched: an aborted prefetch reads as a failed request (failure-modes #25). */}
           <Link href={owner.newHref} prefetch={false} className={styles.newTile}>
             <Icon name="add" size={24} className={styles.newIcon} />
-            <span className={styles.newTitle}>New session type</span>
+            <span className={styles.newTitle}>New session</span>
             <span className={styles.newHint}>
-              Opens Session types, where you set questions and booking rules.
+              Opens Sessions, where you set questions and booking rules.
             </span>
           </Link>
         </li>

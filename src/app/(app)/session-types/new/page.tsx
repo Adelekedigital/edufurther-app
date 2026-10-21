@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { SessionTypeFormScreen } from '../_components/SessionTypeFormScreen';
+import { SESSIONS_COPY } from '@/lib/copy/sessionTypes';
 
 export const metadata: Metadata = {
-  title: 'Create a session type',
+  title: SESSIONS_COPY.createTitle,
   description: 'Set up a session mentees can book with you.',
 };
 

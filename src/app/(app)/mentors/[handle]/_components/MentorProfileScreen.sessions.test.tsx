@@ -61,7 +61,7 @@ function onSessions(types = [ownType(), cv, hidden, pending]) {
   h.ownTypes = remote(types);
 }
 const card = (name: string) => screen.getByRole('heading', { level: 3, name }).closest('li')!;
-const SHOW_AGAIN = 'To show it again, turn it on in Session types.';
+const SHOW_AGAIN = 'To show it again, turn it on in Sessions.';
 
 describe('MentorProfileScreen — the owner’s session types (active only)', () => {
   it('shows only active types, each with its controls; hidden and scheduled ones aren’t here', () => {
@@ -78,14 +78,14 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     expect(screen.queryByRole('heading', { name: 'Mock visa interview' })).toBeNull();
     expect(screen.queryByRole('heading', { name: 'Program shortlist' })).toBeNull();
     expect(screen.queryByText(/Hidden|Scheduled for deletion|Keep it/)).toBeNull();
-    expect(screen.getByRole('link', { name: /New session type/ })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /New session/ })).toHaveAttribute(
       'href',
       '/session-types/new',
     );
     expect(screen.queryByRole('button', { name: /Book session/ })).toBeNull();
   });
 
-  it('no active type: the tab stays, with "New session type"', () => {
+  it('no active type: the tab stays, with "New session"', () => {
     onSessions([hidden]);
     h.profile = state({ data: { ...own, sessionTypes: [] } });
     render(<MentorProfileScreen handle="gbenga" />);
@@ -94,7 +94,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
       'true',
     );
     expect(screen.queryByRole('switch')).toBeNull();
-    expect(screen.getByRole('link', { name: /New session type/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /New session/ })).toBeInTheDocument();
   });
 
   it('the switch asks first, says where it comes back, then hides; focus moves on', async () => {
@@ -111,7 +111,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     await user.click(within(confirm).getByRole('button', { name: 'Hide it' }));
     expect(setLive).toHaveBeenCalledWith('st1', false);
     expect(
-      screen.getByText('“SOP draft review” is hidden. You can show it again in Session types.'),
+      screen.getByText('“SOP draft review” is hidden. You can show it again in Sessions.'),
     ).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'SOP draft review' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Edit CV review' })).toHaveFocus();
@@ -132,7 +132,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('switch', { name: 'Visible to mentees: SOP draft review' }));
-    const confirm = screen.getByRole('alertdialog', { name: 'Hide your last session type?' });
+    const confirm = screen.getByRole('alertdialog', { name: 'Hide your last session?' });
     expect(confirm).toHaveTextContent('Your profile will show “Not taking bookings”');
     expect(confirm).toHaveTextContent(SHOW_AGAIN);
   });
@@ -183,7 +183,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     await user.click(within(confirm).getByRole('button', { name: 'Hide it' }));
     expect(quickEdit).toHaveBeenCalledWith({ id: 'st1', durationMin: undefined, live: false });
     expect(
-      screen.getByText('“SOP draft review” is hidden. You can show it again in Session types.'),
+      screen.getByText('“SOP draft review” is hidden. You can show it again in Sessions.'),
     ).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'SOP draft review' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Edit CV review' })).toHaveFocus();
@@ -240,7 +240,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     onSessions();
     h.ownTypes = { data: null, isLoading: true, error: null, retry: vi.fn() };
     render(<MentorProfileScreen handle="gbenga" />);
-    expect(screen.getByText('Loading your session types')).toBeInTheDocument();
+    expect(screen.getByText('Loading your sessions')).toBeInTheDocument();
     expect(screen.queryByRole('switch')).toBeNull();
   });
 
@@ -291,7 +291,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
-    const confirm = screen.getByRole('alertdialog', { name: 'Delete this session type?' });
+    const confirm = screen.getByRole('alertdialog', { name: 'Delete this session?' });
     await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
     expect(removeType).toHaveBeenCalledWith('st1');
     expect(await screen.findByText('“SOP draft review” was deleted.')).toBeInTheDocument();
@@ -304,7 +304,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
-    const confirm = screen.getByRole('alertdialog', { name: 'Delete this session type?' });
+    const confirm = screen.getByRole('alertdialog', { name: 'Delete this session?' });
     await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
     expect(removeType).toHaveBeenCalledWith('st1');
     expect(
@@ -327,10 +327,10 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     await user.click(within(confirm).getByRole('button', { name: 'Schedule deletion' }));
     expect(
       await screen.findByText(
-        'Deletion scheduled for Oct 14. Hidden from mentees now. Manage it in Session types.',
+        'Deletion scheduled for Oct 14. Hidden from mentees now. Manage it in Sessions.',
       ),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /New session type/ })).toHaveFocus();
+    expect(screen.getByRole('link', { name: /New session/ })).toHaveFocus();
   });
 
   it('a type not yet on the public profile reads its stages from Session types', () => {
@@ -355,7 +355,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('button', { name: 'View as mentee' }));
     expect(screen.queryByRole('switch', { name: /Visible to mentees/ })).toBeNull();
-    expect(screen.queryByRole('link', { name: /New session type/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /New session/ })).toBeNull();
   });
 
   it('while their own list fails, the public list shows with a retry', async () => {
@@ -364,7 +364,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     h.ownTypes = { data: null, isLoading: false, error: { message: 'x' } as never, retry };
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
-    expect(screen.getByText(/We couldn’t load your session types for editing/)).toBeInTheDocument();
+    expect(screen.getByText(/We couldn’t load your sessions for editing/)).toBeInTheDocument();
     expect(card('SOP draft review')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(retry).toHaveBeenCalled();
@@ -378,7 +378,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     };
     const startDelete = async (user: ReturnType<typeof userEvent.setup>) => {
       await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
-      const confirm = screen.getByRole('alertdialog', { name: 'Delete this session type?' });
+      const confirm = screen.getByRole('alertdialog', { name: 'Delete this session?' });
       await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
       return confirm;
     };
@@ -443,7 +443,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     const user = userEvent.setup();
     const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
-    const confirm = screen.getByRole('alertdialog', { name: 'Delete this session type?' });
+    const confirm = screen.getByRole('alertdialog', { name: 'Delete this session?' });
     await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
     await screen.findByText('We couldn’t confirm the delete. The list has been refreshed.');
     // The refetch: it was deleted after all.
@@ -460,7 +460,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     };
     const dismissDelete = async (user: ReturnType<typeof userEvent.setup>) => {
       await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
-      const confirm = screen.getByRole('alertdialog', { name: 'Delete this session type?' });
+      const confirm = screen.getByRole('alertdialog', { name: 'Delete this session?' });
       await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
       await user.click(within(confirm).getByRole('button', { name: 'Close' }));
     };
@@ -499,7 +499,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
       await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
       // The alert region is always there (so a failure is heard); it says nothing.
       expect(
-        within(screen.getByRole('alertdialog', { name: 'Delete this session type?' })).getByRole(
+        within(screen.getByRole('alertdialog', { name: 'Delete this session?' })).getByRole(
           'alert',
         ),
       ).toBeEmptyDOMElement();
@@ -511,7 +511,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
       const user = userEvent.setup();
       const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
       await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
-      const confirm = screen.getByRole('alertdialog', { name: 'Delete this session type?' });
+      const confirm = screen.getByRole('alertdialog', { name: 'Delete this session?' });
       await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
       await screen.findByText('We couldn’t confirm the delete. The list has been refreshed.');
       await user.click(screen.getByRole('button', { name: 'Edit CV review' }));
@@ -531,7 +531,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     };
     const dismissDelete = async (user: ReturnType<typeof userEvent.setup>) => {
       await user.click(screen.getByRole('button', { name: 'Delete SOP draft review' }));
-      const confirm = screen.getByRole('alertdialog', { name: 'Delete this session type?' });
+      const confirm = screen.getByRole('alertdialog', { name: 'Delete this session?' });
       await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
       await user.click(within(confirm).getByRole('button', { name: 'Close' }));
     };

@@ -8,6 +8,7 @@ import type { Created, MentorDefaults } from '@/lib/api/data/sessionTypes';
 import type { useWeeklyHours } from '@/lib/api/data/weeklyHours';
 import type { DayHours } from '@/lib/utils/sessionTypeDraft';
 import styles from './SessionTypesScreen.module.css';
+import { PUBLISHED_TITLE, RULES_COPY } from '@/lib/copy/sessionTypes';
 
 export function DefaultsModal(p: {
   defaults: MentorDefaults;
@@ -18,8 +19,8 @@ export function DefaultsModal(p: {
 }) {
   return (
     <ModalShell
-      title="Booking preferences"
-      subtitle="Used by every session type set to “Use my defaults”. Changes apply right away."
+      title={RULES_COPY.defaultsModalTitle}
+      subtitle={RULES_COPY.defaultsModalSub}
       icon="tune"
       size="md"
       onClose={p.onClose}
@@ -47,7 +48,7 @@ export function WeeklyModal(p: {
   return (
     <ModalShell
       title="Your weekly hours"
-      subtitle="Shared by every session type set to “Use my Calendar availability”. Changes apply right away."
+      subtitle={RULES_COPY.hoursModalSub}
       icon="calendar_month"
       size="lg"
       onClose={p.onClose}
@@ -119,7 +120,7 @@ export function PublishedModal(p: {
   const failed = p.created.failedWindows.length > 0;
   return (
     <ModalShell
-      title="Session type published"
+      title={PUBLISHED_TITLE}
       subtitle={
         failed
           ? // Copy confirmed by design (reply 2026-09-29, #5).

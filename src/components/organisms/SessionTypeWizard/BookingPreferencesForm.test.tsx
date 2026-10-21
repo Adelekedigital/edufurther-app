@@ -25,7 +25,7 @@ describe('BookingPreferencesForm: the platform cap', () => {
   it('a lower cap arriving while it’s open brings the window within it and keeps the other choices', () => {
     const { rerender } = render(el(initial()));
     rerender(el(initial({ maxWindowDays: 14 })));
-    const window = screen.getByRole('combobox', { name: 'Bookable up to' });
+    const window = screen.getByRole('combobox', { name: 'Booking window' });
     expect(window).toHaveValue('14');
     expect(
       within(window)

@@ -75,7 +75,7 @@ export function SessionTypeQuickEdit({
             Visible to mentees
           </span>
           <span id={`${id}-vis-d`} className={styles.toggleDesc}>
-            Hidden types stay in Session types. Sessions already booked go ahead.
+            Hidden sessions stay in Sessions. Bookings already made go ahead.
           </span>
         </span>
         <Switch

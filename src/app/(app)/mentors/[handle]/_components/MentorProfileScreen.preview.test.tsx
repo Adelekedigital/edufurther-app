@@ -254,7 +254,7 @@ describe('MentorProfileScreen — the owner bar', () => {
     );
     says(
       { setupNeeded: ['session_type', 'weekly_hours'] },
-      /^Mentees see “Not taking bookings” on your profile\. Turn on a session type/,
+      /^Mentees see “Not taking bookings” on your profile\. Turn on a session/,
     );
   });
 });

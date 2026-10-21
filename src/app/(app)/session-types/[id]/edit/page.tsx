@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { EditSessionTypeScreen } from '../../_components/EditSessionTypeScreen';
+import { SESSIONS_COPY } from '@/lib/copy/sessionTypes';
 
 export const metadata: Metadata = {
-  title: 'Edit session type',
+  title: SESSIONS_COPY.editTitle,
   description: 'Change a session mentees can book with you.',
 };
 
