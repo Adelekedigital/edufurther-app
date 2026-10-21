@@ -221,6 +221,8 @@ export function useSaveBlockedDays(userId: string | null) {
       const failed = results.filter((x) => !x).length;
       if (failed) throw blockError(failed === results.length);
     },
+    // Offline, fail now with our copy rather than wait, paused, for a reconnect.
+    networkMode: 'always',
     // Resolves once the days are read back, so the page shows what was saved.
     onSettled: async () => {
       // Slots, the profile's "Book {next open time}", cards' "Free {day}".

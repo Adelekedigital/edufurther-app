@@ -350,8 +350,9 @@ export function CalendarScreen() {
         </ButtonLink>
       </Panel>
     );
-  // Error before empty: a failed load never reads as "no hours".
-  else if (viewer.kind === 'error' || (failed && !ready))
+  // Error before empty: a failed load never reads as "no hours". Offline, a
+  // first load waits (paused) for a reconnect, so it says so, not a skeleton.
+  else if (viewer.kind === 'error' || (failed && !ready) || (!online && loading && !ready))
     panel = (
       <Panel
         title="We couldn’t load your calendar"

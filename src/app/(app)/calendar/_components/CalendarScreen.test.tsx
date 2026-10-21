@@ -365,6 +365,18 @@ describe('CalendarScreen', () => {
     expect(screen.queryByText('Unlisted by EduFurther')).toBeNull();
   });
 
+  // Offline, the first load waits (paused) for a reconnect: say so, not an endless skeleton.
+  it('offline while the page is still loading, says the hours load on reconnect', () => {
+    const nav = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    h.weekly = remote<WeeklyHours>(null, { isLoading: true });
+    render(<CalendarScreen />);
+    expect(
+      screen.getByText('You’re offline. Your hours will load when you reconnect.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('status', { name: 'Loading your calendar' })).toBeNull();
+    nav.mockRestore();
+  });
+
   it('loads with a skeleton, never "no hours"', () => {
     h.weekly = remote<WeeklyHours>(null, { isLoading: true });
     render(<CalendarScreen />);

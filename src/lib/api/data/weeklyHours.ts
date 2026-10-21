@@ -183,6 +183,8 @@ export function useSaveWeeklyHours(userId: string | null) {
         throw hoursError(failed === results.length);
       }
     },
+    // Offline, fail now with our copy rather than wait, paused, for a reconnect.
+    networkMode: 'always',
     // The save resolves once the hours are read back, so a screen holding a
     // draft can drop it without the old hours showing in between.
     onSettled: async () => {
