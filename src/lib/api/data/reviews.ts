@@ -39,6 +39,10 @@ export function toReview(r: MentorReviewRead, guest = false): Review {
 }
 
 export function toReviewPrompt(r: MentorRelationshipRead): ReviewPrompt {
+  // An update is a new review (owner, 21 Oct), so it wins over plain "due",
+  // which it implies (backend #518).
+  if (r.review_update_due && r.last_reviewed_at)
+    return { kind: 'again', lastReviewedAt: r.last_reviewed_at };
   if (r.review_due) return 'due';
   if (r.completed_sessions_with_mentor === 0) return 'none';
   return null;

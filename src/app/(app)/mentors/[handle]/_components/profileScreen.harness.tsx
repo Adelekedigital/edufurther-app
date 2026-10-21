@@ -114,6 +114,7 @@ export const reviewsArgs = vi.fn();
 export const sendReview = vi.fn();
 export const similarArgs = vi.fn();
 export const sessionTypesArgs = vi.fn();
+export const reviewableArgs = vi.fn();
 export const coverSave = vi.fn();
 export const coverUpload = vi.fn();
 export const coverRemove = vi.fn();
@@ -271,7 +272,11 @@ const reviewsMock = () => ({
 const reviewWriteMock = () => ({
   useMyReview: () => h.myReviewRemote,
   useAuthoredReview: () => h.authoredRemote,
-  useReviewableSessions: () => h.reviewableRemote,
+  // Records whether the fetch is on: the page asks only when a review is due.
+  useReviewableSessions: (id: string | null, enabled: boolean) => {
+    reviewableArgs(id, enabled);
+    return h.reviewableRemote;
+  },
   useSendReview: () => ({ send: sendReview, reset: vi.fn(), ...h.sendState }),
 });
 

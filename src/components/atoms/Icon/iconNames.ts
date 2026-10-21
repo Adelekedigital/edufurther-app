@@ -141,6 +141,7 @@ export const ICON_NAMES = [
   'trending_up',
   'tune',
   'undo',
+  'update',
   'upload',
   'upload_file',
   'verified',

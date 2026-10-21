@@ -1,5 +1,6 @@
 'use client';
 
+import { promptWrites } from '@/types/mentor';
 import { useEffect, useState } from 'react';
 import { useMentorReviews, useReviewPrompt } from '@/lib/api/data/reviews';
 import {
@@ -47,7 +48,7 @@ export function useProfileReviewing({
   const asMember = tab === 'reviews' && viewerKind === 'member' && !isOwner && canBook;
   const prompt = useReviewPrompt(mentorId, asMember);
   const myReview = useMyReview(mentorId, asMember);
-  const reviewable = useReviewableSessions(mentorId, asMember && prompt === 'due');
+  const reviewable = useReviewableSessions(mentorId, asMember && promptWrites(prompt));
   const send = useSendReview();
   const [reviewing, setReviewing] = useState<'new' | 'edit' | null>(null);
   const mine = myReview.data;
@@ -97,7 +98,7 @@ export function useProfileReviewing({
     mine,
     mineOpen,
     mineUntil,
-    canWrite: !mineOpen && prompt === 'due' && !!reviewable.data?.length,
+    canWrite: !mineOpen && promptWrites(prompt) && !!reviewable.data?.length,
     reviewable,
     send,
     /** The modal: 'new', 'edit', or closed. */

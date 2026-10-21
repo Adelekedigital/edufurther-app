@@ -1,3 +1,4 @@
+import { REVIEW_COPY } from '@/lib/copy/profile';
 import { Button } from '@/components/atoms/Button/Button';
 import { ReviewNote } from '@/components/molecules/ReviewNote/ReviewNote';
 import { ReviewsList } from '@/components/organisms/ReviewsList/ReviewsList';
@@ -61,6 +62,22 @@ export function ReviewsTab({ profile: p, reviews: r, offerBook, onBook }: Review
             offerBook ? (
               <Button variant="secondary-outlined" size="medium" onClick={onBook}>
                 Book a session
+              </Button>
+            ) : undefined
+          }
+        />
+      ) : r.prompt !== null && typeof r.prompt === 'object' ? (
+        // Mentor Profile.dc.html reviewState `again`: a new review, through the
+        // same flow as a first one; both stay listed (owner, 21 Oct).
+        <ReviewNote
+          tone="info"
+          icon="update"
+          title={REVIEW_COPY.againTitle}
+          body={REVIEW_COPY.againBody(p.mentor.firstName, r.prompt.lastReviewedAt)}
+          action={
+            r.canWrite ? (
+              <Button size="medium" onClick={() => r.open('new')}>
+                {REVIEW_COPY.againAction}
               </Button>
             ) : undefined
           }

@@ -294,7 +294,8 @@ export type CreditState = 'on_track' | 'moderate' | 'low' | 'exhausted';
  * Where a social link points: LinkedIn (`social_linkedin`), or one of the
  * user's links (backend LinkPlatform, #507).
  */
-export type SocialKind = 'linkedin' | 'x' | 'youtube' | 'instagram' | 'facebook' | 'tiktok' | 'website';
+export type SocialKind =
+  'linkedin' | 'x' | 'youtube' | 'instagram' | 'facebook' | 'tiktok' | 'website';
 /** The mark a link shows: a website on Medium or Substack shows theirs (the design's DETECT). */
 export type SocialMark = SocialKind | 'medium' | 'substack';
 
@@ -450,7 +451,16 @@ export type SimilarMentor = {
  * What the viewer can do about reviewing this mentor (GET /me/mentors/{id}/relationship).
  * none: no session together yet. due: a review is owed. Null: nothing to say.
  */
-export type ReviewPrompt = 'none' | 'due' | null;
+/**
+ * The review note on a mentor's Reviews tab: none yet (no session), due
+ * ("Write a review"), or an update due (a new review, P6: 60+ days and 2+
+ * sessions since the last one), with when that last one was. Null: nothing.
+ */
+export type ReviewPrompt = 'none' | 'due' | { kind: 'again'; lastReviewedAt: string } | null;
+
+/** A prompt that leads to writing a review (a first one, or an update). */
+export const promptWrites = (p: ReviewPrompt): boolean =>
+  p === 'due' || (p !== null && typeof p === 'object');
 
 // ---- Writing a review (POST /reviews, PATCH /reviews/{id}) -------------------
 

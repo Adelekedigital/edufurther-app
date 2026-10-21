@@ -77,6 +77,26 @@ describe('toReviewPrompt', () => {
       }),
     ).toBeNull();
   });
+  it('an update due (P6) wins over plain "due", with when the last review was (#518)', () => {
+    expect(
+      toReviewPrompt({
+        completed_sessions_with_mentor: 4,
+        review_due: true,
+        review_update_due: true,
+        last_reviewed_at: '2026-07-10T12:00:00Z',
+      }),
+    ).toEqual({ kind: 'again', lastReviewedAt: '2026-07-10T12:00:00Z' });
+  });
+  it('an update flagged with no review date falls back to "due" (same flow, first-review words)', () => {
+    expect(
+      toReviewPrompt({
+        completed_sessions_with_mentor: 4,
+        review_due: true,
+        review_update_due: true,
+        last_reviewed_at: null,
+      }),
+    ).toBe('due');
+  });
 });
 
 describe('toReviewSummary', () => {
