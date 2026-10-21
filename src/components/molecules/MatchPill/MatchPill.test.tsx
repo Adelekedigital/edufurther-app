@@ -23,6 +23,13 @@ describe('MatchPill', () => {
     expect(onMinimise).toHaveBeenCalled();
   });
 
+  it('with external unset, an in-app link: same tab, plain name', () => {
+    const { external: _, ...inApp } = base;
+    render(<MatchPill {...inApp} href="/explore" size="full" miniAction="restore" />);
+    const link = screen.getByRole('link', { name: 'Book a free call' });
+    expect(link).not.toHaveAttribute('target');
+  });
+
   it('desktop: the round icon after × restores the pill', async () => {
     const onRestore = vi.fn();
     render(<MatchPill {...base} size="mini" miniAction="restore" onRestore={onRestore} />);

@@ -115,7 +115,7 @@ export function MatchPill({
           <ExternalLink
             href={href}
             label="Book a free call"
-            newTab={external}
+            newTab={!!external}
             className={styles.cta}
           >
             Book a free call
@@ -168,7 +168,7 @@ export function MatchPill({
               <ExternalLink
                 href={href}
                 label="Book a free call"
-                newTab={external}
+                newTab={!!external}
                 className={styles.popoverCta}
               >
                 Book a free call

@@ -26,7 +26,7 @@ export function MatchPrompt({ body, href, external }: MatchPromptProps) {
         </h2>
         <p className={styles.body}>{body}</p>
       </div>
-      <ExternalLink href={href} label="Book a free call" newTab={external} className={styles.cta}>
+      <ExternalLink href={href} label="Book a free call" newTab={!!external} className={styles.cta}>
         Book a free call
         <Icon name={external ? 'open_in_new' : 'arrow_forward'} size={16} />
       </ExternalLink>
