@@ -18,6 +18,9 @@ export const BOOKING_RULES_COPY = {
 export const HOURS_COPY = {
   title: 'Weekly availability',
   noHours: 'Add the days and times mentees can book you',
+  /** The notice above an empty week (Calendar v2 `noHours`, copy research). */
+  noHoursNotice:
+    'Your availability isn’t set yet. Add your weekly hours so mentees can find and book you.',
   tapToView: 'Tap to view',
   chipInvalid: 'Fix hours',
   chipUnsaved: 'Unsaved',
