@@ -1,6 +1,8 @@
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile, sessionTypes } from '@/components/organisms/ProfileHeader/profile.fixture';
+import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
+import { deviceTimeZone } from '@/lib/utils/format';
 import { h, remote, replace, state } from './profileScreen.harness';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
@@ -172,8 +174,9 @@ describe('MentorProfileScreen — ?book= links, gated like Book (review of #81)'
 });
 
 describe('MentorProfileScreen — not taking bookings (design reply #58, live design)', () => {
-  // No promise of messaging: it isn't built (Codex on PR 102).
-  const body = `${profile.mentor.firstName} isn’t taking bookings right now. You can still explore similar mentors.`;
+  // Mentor Profile.dc.html `notTakingBody`: off the Sessions tab it points below.
+  const said = `${profile.mentor.firstName} isn’t taking bookings right now.`;
+  const body = `${said} Explore similar mentors below.`;
 
   it('the header says so, the aside has the note, and nothing offers Book', () => {
     h.profile = state({ data: { ...profile, takingBookings: false } });
@@ -196,7 +199,9 @@ describe('MentorProfileScreen — not taking bookings (design reply #58, live de
     expect(screen.getByRole('tab', { name: 'Sessions (0)' })).toBeInTheDocument();
     const panel = screen.getByRole('tabpanel');
     expect(within(panel).getByRole('heading', { name: 'Not taking bookings' })).toBeInTheDocument();
-    expect(within(panel).getByText(body)).toBeInTheDocument();
+    // On the Sessions tab there's nothing below to point to.
+    expect(within(panel).getByText(said)).toBeInTheDocument();
+    expect(within(panel).queryByText(/Explore similar mentors/)).toBeNull();
     expect(within(panel).queryByText(second.name)).toBeNull();
   });
 
@@ -284,5 +289,21 @@ describe('MentorProfileScreen — ?at= rides with ?book=', () => {
     h.profile = state({ data: profile });
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('MentorProfileScreen — the booking card names the zone (Mentor Profile.dc.html `sessionsSub`)', () => {
+  it('times are in the account’s zone, else the device’s', () => {
+    const two = { ...fullProfile, sessionTypes: sessionTypes.slice(0, 2) };
+    h.profile = state({ data: two });
+    h.viewerExtra = { timeZone: 'America/New_York' };
+    const { unmount } = render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByText('2 sessions · times in New York (ET)')).toBeInTheDocument();
+    unmount();
+    h.viewerExtra = {};
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(
+      screen.getByText(`2 sessions · times in ${zoneLabel(deviceTimeZone())}`),
+    ).toBeInTheDocument();
   });
 });

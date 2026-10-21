@@ -51,3 +51,19 @@ export const INTRO_ERRORS = {
   headline: MENTOR_PROFILE_ERRORS.headline,
   headlineTooLong: MENTOR_PROFILE_ERRORS.headlineTooLong,
 } as const;
+
+/** A mentor who can't be booked now: the profile, Explore, Similar mentors and Home all say it. */
+export const NOT_TAKING_TITLE = 'Not taking bookings';
+
+/**
+ * How booking a session works (Mentor Profile.dc.html `cfLabel`, `cfAria`): the
+ * label, then what it means, read after it by screen readers.
+ */
+export const BOOKING_MODE = {
+  instant: { label: 'Instant booking', detail: 'confirmed right away' },
+  request: { label: 'Request to book', detail: 'the mentor approves each booking' },
+} as const;
+
+/** The booking card's subtitle with several sessions (Mentor Profile.dc.html `sessionsSub`). */
+export const bookSessionsSub = (count: number, zone: string) =>
+  `${count} sessions · times in ${zone}`;

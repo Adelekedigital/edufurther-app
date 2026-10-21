@@ -2,7 +2,9 @@ import Link from 'next/link';
 import { Button } from '@/components/atoms/Button/Button';
 import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Tag } from '@/components/atoms/Tag/Tag';
+import { BookingModeLabel } from '@/components/molecules/BookingModeLabel/BookingModeLabel';
 import { SessionTypeOwnerFooter } from '@/components/molecules/SessionTypeOwnerFooter/SessionTypeOwnerFooter';
 import type { ProfileSessionType } from '@/types/mentor';
 import styles from './SessionTypeList.module.css';
@@ -66,6 +68,9 @@ export function SessionTypeList(p: SessionTypeListProps) {
                 {s.stage}
               </span>
             )}
+            {s.requiresConfirmation !== undefined && (
+              <BookingModeLabel requiresConfirmation={s.requiresConfirmation} />
+            )}
           </div>
           {owner ? (
             <SessionTypeOwnerFooter
@@ -104,5 +109,23 @@ export function SessionTypeList(p: SessionTypeListProps) {
         </li>
       )}
     </ul>
+  );
+}
+
+/** The list while it loads: card-sized blocks in the list's own grid. */
+export function SessionTypeListSkeleton({ count, label }: { count: number; label: string }) {
+  return (
+    <div aria-busy>
+      <span className="sr-only" role="status">
+        {label}
+      </span>
+      <ul className={styles.grid}>
+        {Array.from({ length: Math.max(1, count) }, (_, i) => (
+          <li key={i}>
+            <Skeleton width="100%" height="240px" radius="xl" />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

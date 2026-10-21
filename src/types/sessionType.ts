@@ -54,6 +54,11 @@ export type OwnSessionType = {
   iconChoice: SessionIcon | null;
   /** Intake questions on the form; null when the count couldn't be loaded. */
   questionCount: number | null;
+  /**
+   * Bookings wait for the mentor's approval (true) or confirm at once (false);
+   * null follows the mentor's own setting. Optional so hand-made fixtures needn't say.
+   */
+  requiresApproval?: boolean | null;
   /** Shown first on the profile; one per mentor (backend round 4). */
   isFeatured: boolean;
   /** Deleted after its last booked session; hidden meanwhile (backend round 4). */

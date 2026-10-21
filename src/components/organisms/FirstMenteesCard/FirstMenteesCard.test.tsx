@@ -29,4 +29,19 @@ describe('FirstMenteesCard (mentee)', () => {
     render(<FirstMenteesCard {...mentee} bookDisabled />);
     expect(screen.getByRole('button', { name: /^Book/ })).toBeDisabled();
   });
+
+  it('the award fact says ", fully funded" only when it was', () => {
+    const award = (funding: 'full' | 'partial' | null, title = 'Chevening Scholarship') => {
+      const { unmount } = render(<FirstMenteesCard {...mentee} award={{ title, funding }} />);
+      const v = screen.getByText('Got funded.').parentElement?.textContent;
+      unmount();
+      return v?.replace('Got funded. ', '');
+    };
+    expect(award('full')).toBe('Chevening Scholarship, fully funded.');
+    expect(award('partial')).toBe('Chevening Scholarship.');
+    expect(award(null)).toBe('Chevening Scholarship.');
+    // A title that ends its own sentence isn't stopped twice.
+    expect(award(null, 'Best thesis award!')).toBe('Best thesis award!');
+    expect(award('full', 'Fulbright.')).toBe('Fulbright, fully funded.');
+  });
 });

@@ -103,7 +103,7 @@ describe('toMentorProfile', () => {
     ]);
   });
 
-  it('labels the offering’s stage and venue, using the custom label for "other"', () => {
+  it('labels the offering’s stage, using the custom label for "other"', () => {
     const p = toMentorProfile(
       read({
         session_types: [
@@ -132,7 +132,6 @@ describe('toMentorProfile', () => {
     );
     expect(p.sessionTypes[0]).toMatchObject({
       stage: 'Drafting',
-      venue: 'Google Meet',
       category: 'Application documents',
       questions: [],
     });

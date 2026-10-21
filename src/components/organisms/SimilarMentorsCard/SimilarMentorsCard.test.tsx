@@ -123,6 +123,10 @@ describe('inSentence', () => {
     expect(screen.queryByText(/Also helps with/)).toBeNull();
     const link = screen.getByRole('link', { name: `View profile: ${m.name}` });
     expect(link).toHaveAttribute('href', m.profileHref);
+    // 44px at every width, as "See all" (the rule lives on `.link`).
+    expect(link).toHaveClass('link', 'profileLink');
+    expect(link).not.toHaveClass('tapLink');
+    expect(screen.getByRole('link', { name: /^See all/ })).toHaveClass('link');
     if (m.nextAvailableAt)
       expect(screen.queryByText(formatFreeDay(m.nextAvailableAt, 'UTC'))).toBeNull();
   });

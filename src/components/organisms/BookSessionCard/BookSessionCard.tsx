@@ -1,14 +1,18 @@
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Tag } from '@/components/atoms/Tag/Tag';
+import { BookingModeLabel } from '@/components/molecules/BookingModeLabel/BookingModeLabel';
+import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
+import { bookSessionsSub } from '@/lib/copy/profile';
 import type { ProfileSessionType } from '@/types/mentor';
 import styles from './BookSessionCard.module.css';
 
 type BookSessionCardProps = {
   sessionTypes: ProfileSessionType[];
+  /** The zone the booking times show in, named in the subtitle. */
+  timeZone: string;
   /** Opens the shared booking modal, on that offering when one is given. */
   onBook: (sessionTypeId?: string) => void;
-  /** Switches to the Sessions tab. */
   /** Opens the Sessions tab; without one (under 3 sessions) there's no link. */
   onCompare?: () => void;
   bookBlocked: string | null;
@@ -25,6 +29,7 @@ type BookSessionCardProps = {
  */
 export function BookSessionCard({
   sessionTypes,
+  timeZone,
   onBook,
   onCompare,
   bookBlocked,
@@ -47,10 +52,7 @@ export function BookSessionCard({
                   <Icon name="schedule" size={14} />
                   {s.durationMin} min
                 </span>
-                <span className={styles.metaItem}>
-                  <Icon name="videocam" size={14} />
-                  {s.venue}
-                </span>
+                <BookingModeLabel requiresConfirmation={s.requiresConfirmation !== false} />
               </span>
             </div>
             <Tag tone="free">Free</Tag>
@@ -76,7 +78,9 @@ export function BookSessionCard({
         <h2 id="book-h" className={styles.h2}>
           Book a session
         </h2>
-        <span className={styles.sub}>{sessionTypes.length} session types</span>
+        <span className={styles.sub}>
+          {bookSessionsSub(sessionTypes.length, zoneLabel(timeZone))}
+        </span>
       </div>
       <ul className={styles.rows}>
         {sessionTypes.slice(0, 2).map((s) => (
@@ -87,9 +91,12 @@ export function BookSessionCard({
             </div>
             {s.description && <p className={styles.rowDesc}>{s.description}</p>}
             <div className={styles.rowFoot}>
-              <span className={styles.metaItem}>
-                <Icon name="schedule" size={14} />
-                {s.durationMin} min
+              <span className={styles.rowMeta}>
+                <span className={styles.metaItem}>
+                  <Icon name="schedule" size={14} />
+                  {s.durationMin} min
+                </span>
+                <BookingModeLabel requiresConfirmation={s.requiresConfirmation !== false} />
               </span>
               <Button
                 variant="secondary-outlined"

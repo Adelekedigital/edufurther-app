@@ -2,6 +2,7 @@ import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixture';
 import { h, ownType, quickEdit, remote, removeType, setLive, state } from './profileScreen.harness';
+import type { MentorDefaults } from '@/lib/api/data/sessionTypes';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
@@ -64,6 +65,31 @@ const card = (name: string) => screen.getByRole('heading', { level: 3, name }).c
 const SHOW_AGAIN = 'To show it again, turn it on in Sessions.';
 
 describe('MentorProfileScreen — the owner’s session types (active only)', () => {
+  it('each card says how it books: its own setting, else the mentor’s default, else the profile’s', () => {
+    onSessions([
+      ownType({ id: 'st1', name: 'Own request', requiresApproval: true }),
+      ownType({ id: 'st2', name: 'Own instant', requiresApproval: false }),
+      ownType({ id: 'st3', name: 'Follows default', requiresApproval: null }),
+    ]);
+    h.mentorDefaults = remote({
+      durationMin: null,
+      noticeHours: null,
+      windowDays: null,
+      breakMin: null,
+      requiresApproval: false,
+    });
+    const { unmount } = render(<MentorProfileScreen handle="gbenga" />);
+    expect(card('Own request')).toHaveTextContent('Request to book');
+    expect(card('Own instant')).toHaveTextContent('Instant booking');
+    expect(card('Follows default')).toHaveTextContent('Instant booking');
+    unmount();
+    // Defaults not in yet: the public profile's resolved value (st1 there is a request).
+    onSessions([ownType({ id: 'st1', name: 'Follows default', requiresApproval: null })]);
+    h.mentorDefaults = { ...remote(null as unknown as MentorDefaults), isLoading: true };
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(card('Follows default')).toHaveTextContent('Request to book');
+  });
+
   it('shows only active types, each with its controls; hidden and scheduled ones aren’t here', () => {
     onSessions();
     render(<MentorProfileScreen handle="gbenga" />);

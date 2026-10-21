@@ -222,6 +222,7 @@ export const BookCardOneOffering: Story = {
   render: () => (
     <div style={side}>
       <BookSessionCard
+        timeZone="Africa/Lagos"
         sessionTypes={[sessionTypes[0]!]}
         onBook={fn()}
         onCompare={fn()}
@@ -234,6 +235,7 @@ export const BookCardSeveral: Story = {
   render: () => (
     <div style={side}>
       <BookSessionCard
+        timeZone="Africa/Lagos"
         sessionTypes={sessionTypes}
         onBook={fn()}
         onCompare={fn()}
@@ -246,6 +248,7 @@ export const BookCardBlocked: Story = {
   render: () => (
     <div style={side}>
       <BookSessionCard
+        timeZone="Africa/Lagos"
         sessionTypes={[sessionTypes[0]!]}
         onBook={fn()}
         onCompare={fn()}
@@ -299,7 +302,7 @@ export const FirstMentees: Story = {
         nextTime={next}
         timeZone="America/New_York"
         move={{ from: 'Nigeria', to: 'the United Kingdom' }}
-        award="Commonwealth Scholarship"
+        award={{ title: 'Commonwealth Scholarship', funding: 'full' }}
         onBook={fn()}
       />
     </div>

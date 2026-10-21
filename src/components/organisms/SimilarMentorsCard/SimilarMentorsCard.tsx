@@ -4,6 +4,7 @@ import { Badge } from '@/components/atoms/Badge/Badge';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Star } from '@/components/atoms/Star/Star';
+import { NOT_TAKING_TITLE } from '@/lib/copy/profile';
 import { formatFreeDay, formatRating, inSentence } from '@/lib/utils/format';
 import type { Mentor, SimilarMentor } from '@/types/mentor';
 import styles from './SimilarMentorsCard.module.css';
@@ -109,12 +110,12 @@ export function SimilarMentorsCard({
                   <>
                     <span className={styles.overlap}>
                       <Icon name="event_busy" size={14} className={styles.notTakingIcon} />
-                      Not taking bookings
+                      {NOT_TAKING_TITLE}
                     </span>
                     <Link
                       href={m.profileHref}
                       prefetch={false}
-                      className={`${styles.link} ${styles.tapLink}`}
+                      className={`${styles.link} ${styles.profileLink}`}
                       aria-label={`View profile: ${m.name}`}
                     >
                       View profile

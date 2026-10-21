@@ -4,6 +4,7 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { ProfileHeaderSkeleton } from '@/components/organisms/ProfileHeader/ProfileHeader';
+import { NOT_TAKING_TITLE } from '@/lib/copy/profile';
 import { supportMailto } from '@/lib/utils/mailto';
 import type { MentorProfile } from '@/types/mentor';
 import styles from './MentorProfileScreen.module.css';
@@ -188,19 +189,20 @@ export function ProfileSkeleton() {
           <Skeleton height="14px" radius="md" />
           <Skeleton height="14px" radius="md" />
           <Skeleton width="70%" height="14px" radius="md" />
-          <Skeleton height="160px" radius="lg" className={styles.skBlock} />
+          <Skeleton height="160px" radius="xl" className={styles.skBlock} />
         </div>
-        <Skeleton height="220px" radius="lg" className={styles.skAside} />
+        <Skeleton height="220px" radius="xl" className={styles.skAside} />
       </div>
     </div>
   );
 }
 
-/** "{First} isn’t taking bookings right now…" (Mentor Profile.dc.html `notTakingBody`). */
-const notTakingBody = (first: string) =>
-  // The design adds "You can still message {First}": messaging isn't built, so
-  // it isn't promised (Codex on PR 102; design-divergence.md).
-  `${first} isn’t taking bookings right now. You can still explore similar mentors.`;
+/**
+ * "{First} isn’t taking bookings right now." (Mentor Profile.dc.html
+ * `notTakingBody`): off the Sessions tab it points to similar mentors below.
+ */
+const notTakingBody = (first: string, onSessionsTab: boolean) =>
+  `${first} isn’t taking bookings right now.${onSessionsTab ? '' : ' Explore similar mentors below.'}`;
 
 /**
  * Where Book would be, for a mentor who isn't taking bookings (Mentor
@@ -211,9 +213,9 @@ export function NotTakingNote({ firstName }: { firstName: string }) {
     <section className={styles.notTaking} aria-labelledby="not-taking-h">
       <h2 id="not-taking-h" className={styles.notTakingTitle}>
         <Icon name="event_busy" size={20} className={styles.notTakingIcon} />
-        Not taking bookings
+        {NOT_TAKING_TITLE}
       </h2>
-      <p className={styles.notTakingBody}>{notTakingBody(firstName)}</p>
+      <p className={styles.notTakingBody}>{notTakingBody(firstName, false)}</p>
     </section>
   );
 }
@@ -225,8 +227,8 @@ export function NotTakingEmpty({ firstName }: { firstName: string }) {
       <EmptyState
         illustration="calendar-grey"
         size={96}
-        title="Not taking bookings"
-        description={notTakingBody(firstName)}
+        title={NOT_TAKING_TITLE}
+        description={notTakingBody(firstName, true)}
       />
     </div>
   );

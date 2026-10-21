@@ -329,6 +329,8 @@ describe('MentorProfileScreen — new mentors (design reply #45)', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Made the move you’re planning.')).toBeInTheDocument();
     expect(screen.getByText('Got funded.')).toBeInTheDocument();
+    // The first award's funding is said (fixture: fully funded).
+    expect(screen.getByText('Graduate Teaching Assistantship, fully funded.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Book .* · / })).toBeInTheDocument();
     unmount();
     h.profile = state({ data: newMentor(3) });
