@@ -13,7 +13,13 @@ export async function GET(_req: Request, ctx: { params: Promise<{ mentor_id: str
     '/api/v1/me/mentors/{mentor_id}/relationship',
     'get',
     mine
-      ? { ...mockRelationship(mentor_id), review_due: false, last_reviewed_at: mine.created_at }
+      ? {
+          ...mockRelationship(mentor_id),
+          review_due: false,
+          // Implies review_due, so it cannot survive forcing that false.
+          review_update_due: false,
+          last_reviewed_at: mine.created_at,
+        }
       : mockRelationship(mentor_id),
   );
 }
