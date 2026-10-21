@@ -85,9 +85,16 @@ export function mockReviewSummary(mentorId: string): ReviewSummaryRead {
 export function mockRelationship(mentorId: string): MentorRelationshipRead {
   const { i } = mockProfileIndex(mentorId);
   const k = Math.max(0, i) % 3;
+  const lastReviewedAt = k === 2 ? '2026-07-10T12:00:00Z' : null;
+  const reviewDue = k === 1;
   return {
     completed_sessions_with_mentor: k === 0 ? 0 : 2,
-    last_reviewed_at: k === 2 ? '2026-07-10T12:00:00Z' : null,
-    review_due: k === 1,
+    last_reviewed_at: lastReviewedAt,
+    review_due: reviewDue,
+    // Contract: it implies `review_due` and is false when they have never
+    // reviewed. No mock state satisfies both today (the one with a review has
+    // nothing due), so this is always false here. Derived rather than
+    // hardcoded so it stays right if a fourth state is added.
+    review_update_due: reviewDue && lastReviewedAt !== null,
   };
 }
