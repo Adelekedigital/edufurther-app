@@ -19,6 +19,10 @@
   border-radius: var(--radius-lg);
   background: var(--surface-subtle);
 }
+/* Focused only by the page (the freeze arriving), never by Tab: no ring. */
+.ownerText:focus {
+  outline: none;
+}
 .ownerText {
   display: flex;
   align-items: center;

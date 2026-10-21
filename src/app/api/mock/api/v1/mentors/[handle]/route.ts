@@ -43,7 +43,7 @@ type MentorPublicRead = components['schemas']['MentorPublicRead'];
 /** The mock mentor viewer's id (viewer.ts MOCK_VIEWERS.mentor). */
 const OWNER_ID = 'mock-mentor';
 
-export async function GET(_req: Request, ctx: { params: Promise<{ handle: string }> }) {
+export async function GET(req: Request, ctx: { params: Promise<{ handle: string }> }) {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
   const { handle } = await ctx.params;
   const all = [FEATURED, ...MENTORS];
@@ -159,9 +159,18 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
       ...(mockOwnSessionTypes().some((t) => t.is_active) ? [] : ['session_type']),
       ...(rules.length ? [] : ['weekly_hours']),
     ];
+    // The page's ?mockViewer= picks the owner's application state, as /me
+    // does: in review or declined, the profile is theirs alone (unlisted).
+    let asked: string | null = null;
+    try {
+      const referer = req.headers.get('referer');
+      if (referer) asked = new URL(referer).searchParams.get('mockViewer');
+    } catch {}
+    const approval =
+      asked === 'mentor-review' ? 'pending' : asked === 'mentor-declined' ? 'declined' : 'approved';
     Object.assign(body, {
-      approval_status: 'approved',
-      listing_status: 'listed',
+      approval_status: approval,
+      listing_status: approval === 'approved' ? 'listed' : 'unlisted',
       setup_needed: setupNeeded,
     });
     // The real API lists active types only (Codex on PR 106).

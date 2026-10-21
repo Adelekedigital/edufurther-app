@@ -26,12 +26,11 @@ import {
 } from '@/lib/copy/mentorSettings';
 import type { CoverArt, CoverIcon } from '@/lib/utils/cover';
 import { cx } from '@/lib/utils/cx';
-import { ABOUT_MAX } from '@/lib/utils/profileLimits';
+import { ABOUT_MAX, HEADLINE_MAX } from '@/lib/utils/profileLimits';
 import type { MentorProfileValues } from '@/types/mentorSettings';
 import styles from './MentorProfileForm.module.css';
 
 /** The headline's input limit (PRD: 80 for new or edited headlines). */
-const HEADLINE_INPUT_MAX = 80;
 
 type MentorProfileFormProps = {
   values: MentorProfileValues;
@@ -198,7 +197,7 @@ export function MentorProfileForm({
               id={ids('headline').field}
               data-ff="headline"
               value={values.headline}
-              maxLength={HEADLINE_INPUT_MAX}
+              maxLength={HEADLINE_MAX}
               invalid={headlineBad}
               aria-describedby={described('headline', true, headlineBad)}
               onChange={(e) => onChange({ headline: e.target.value })}
@@ -295,7 +294,6 @@ export function MentorProfileForm({
               onQueryChange={languages.onQueryChange}
               results={languages.results}
               status={languages.status}
-              describedBy={described('langs', false, has('langs'))}
               copy={{
                 add: C.addLanguage,
                 addButton: C.add,
@@ -306,7 +304,6 @@ export function MentorProfileForm({
                 noMatch: C.noLanguageMatch,
               }}
             />
-            {has('langs') && <FieldError id={ids('langs').error}>{E.langs}</FieldError>}
           </FrozenGroup>
         </section>
       </div>

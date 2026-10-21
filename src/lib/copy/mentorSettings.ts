@@ -80,7 +80,8 @@ export const MENTOR_PROFILE_COPY = {
   genderHint: 'Never shown on your profile.',
   genderPlaceholder: 'Select',
   genders: ['Woman', 'Man', 'Non-binary', 'Prefer not to say'],
-  languages: 'Languages you mentor in',
+  // Optional (founder, 21 Oct): onboarding never asks, most mentors have none.
+  languages: 'Languages you mentor in (optional)',
   addLanguage: 'Add another language',
   addLanguagePlaceholder: 'For example, Twi',
   add: 'Add',
@@ -113,9 +114,8 @@ export const MENTOR_PROFILE_ERRORS = {
   headlineTooLong: 'Keep your headline to 80 characters.',
   origin: 'Select your country of origin.',
   study: 'Select the country you studied in.',
-  langs: 'Pick at least one language.',
 } as const;
-export type MentorProfileGap = 'name' | 'headline' | 'origin' | 'study' | 'langs';
+export type MentorProfileGap = 'name' | 'headline' | 'origin' | 'study';
 
 /** "From Nigeria, studied in the US" (design `previewPlace`). */
 export function previewPlace(origin: string | null, study: string | null): string {

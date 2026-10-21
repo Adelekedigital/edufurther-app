@@ -20,6 +20,13 @@
   gap: var(--space-3);
   align-items: center;
 }
+/* Mentor Profile.dc.html `introFormMsg`: by Save, 12px medium, red-600. */
+.formError {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-medium);
+  line-height: var(--lh-p);
+  color: var(--red-600);
+}
 .general {
   margin: 0;
   font-size: var(--text-p-xs);

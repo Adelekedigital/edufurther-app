@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SAVE_COPY } from '@/lib/copy/settings';
 import { MENTOR_EXPERTISE_COPY, MENTOR_PROFILE_COPY } from '@/lib/copy/mentorSettings';
 import { tidyName } from '@/lib/utils/name';
+import { HEADLINE_MAX } from '@/lib/utils/profileLimits';
 import type { MentorProfileValues } from '@/types/mentorSettings';
 import type { MentorProfile } from '@/types/mentor';
 import { apiError, normaliseError, retryOnce } from './errors';
@@ -11,9 +12,6 @@ import { api } from './http';
 import { keys } from './keys';
 import { useMentorProfile } from './profile';
 import { aboutBody } from './profileEdit';
-
-/** The headline's limit for a new or edited one (the API allows 300; PRD 19 Oct). */
-export const HEADLINE_MAX = 80;
 
 export type HeadlineProblem = 'required' | 'tooLong';
 
@@ -254,40 +252,38 @@ export function useGuideCountries(userId: string | null) {
 /** PATCH guide_country_ids: the whole list, in the mentor's order (it replaces the saved one). */
 export function useSaveGuideCountries(userId: string | null) {
   const qc = useQueryClient();
-  const mutation = useMutation<
-    GuideCountry[],
-    { copy: string; inReview: boolean },
-    GuideCountry[]
-  >({
-    networkMode: 'always',
-    // A read already on its way would land after the save and put the old list back.
-    onMutate: () =>
-      userId ? qc.cancelQueries({ queryKey: keys.viewer.guideCountries(userId) }) : undefined,
-    mutationFn: async (next) => {
-      try {
-        if (!userId) throw new Error('no user');
-        const { error, response } = await api.PATCH('/api/v1/users/{user_id}/mentor-profile', {
-          params: { path: { user_id: userId } },
-          // A partial update: only the countries (the generated type lists every field).
-          body: { guide_country_ids: next.map((c) => c.id) } as never,
-        });
-        if (!response.ok) throw apiError(response.status, error);
-      } catch (e) {
-        const kind = normaliseError(e).kind;
-        throw {
-          copy:
-            kind === 'offline' ? SAVE_COPY.profileOffline : MENTOR_EXPERTISE_COPY.guideSaveFailed,
-          inReview: kind === 'inReview',
-        };
-      }
-      return next;
+  const mutation = useMutation<GuideCountry[], { copy: string; inReview: boolean }, GuideCountry[]>(
+    {
+      networkMode: 'always',
+      // A read already on its way would land after the save and put the old list back.
+      onMutate: () =>
+        userId ? qc.cancelQueries({ queryKey: keys.viewer.guideCountries(userId) }) : undefined,
+      mutationFn: async (next) => {
+        try {
+          if (!userId) throw new Error('no user');
+          const { error, response } = await api.PATCH('/api/v1/users/{user_id}/mentor-profile', {
+            params: { path: { user_id: userId } },
+            // A partial update: only the countries (the generated type lists every field).
+            body: { guide_country_ids: next.map((c) => c.id) } as never,
+          });
+          if (!response.ok) throw apiError(response.status, error);
+        } catch (e) {
+          const kind = normaliseError(e).kind;
+          throw {
+            copy:
+              kind === 'offline' ? SAVE_COPY.profileOffline : MENTOR_EXPERTISE_COPY.guideSaveFailed,
+            inReview: kind === 'inReview',
+          };
+        }
+        return next;
+      },
+      onSuccess: (saved) => {
+        // What saved shows straight away; a failed refetch can't put the old list back.
+        if (userId) qc.setQueryData(keys.viewer.guideCountries(userId), saved);
+        void qc.invalidateQueries({ queryKey: keys.mentors.all });
+      },
     },
-    onSuccess: (saved) => {
-      // What saved shows straight away; a failed refetch can't put the old list back.
-      if (userId) qc.setQueryData(keys.viewer.guideCountries(userId), saved);
-      void qc.invalidateQueries({ queryKey: keys.mentors.all });
-    },
-  });
+  );
   return {
     mutateAsync: mutation.mutateAsync,
     isPending: mutation.isPending,

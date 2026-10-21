@@ -67,7 +67,7 @@ export function useAwardEdit(userId: string | null) {
           throw apiError(res.response.status, res.error);
       } catch (e) {
         if (e instanceof ItemSaveError) throw e;
-        throw new ItemSaveError(save.op === 'remove' ? removeCopy(e) : generalCopy(e));
+        throw new ItemSaveError(save.op === 'remove' ? removeCopy(e) : generalCopy(e), e);
       }
     },
     onSettled: () => qc.invalidateQueries({ queryKey: keys.mentors.all }),
@@ -208,7 +208,7 @@ export function useEducationEdit(userId: string | null) {
           throw apiError(res.response.status, res.error);
       } catch (e) {
         if (e instanceof ItemSaveError) throw e;
-        throw new ItemSaveError(save.op === 'remove' ? removeCopy(e) : generalCopy(e));
+        throw new ItemSaveError(save.op === 'remove' ? removeCopy(e) : generalCopy(e), e);
       }
     },
     onSettled: () =>

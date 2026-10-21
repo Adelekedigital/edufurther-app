@@ -238,7 +238,7 @@ describe('ProfileItemModal — background', () => {
     const { user, onSave } = background();
     expect(screen.getByRole('combobox', { name: 'From' })).toHaveValue('Nigeria');
     expect(screen.getByRole('combobox', { name: 'Studied in' })).toHaveValue('United States');
-    const group = screen.getByRole('group', { name: 'Languages you mentor in' });
+    const group = screen.getByRole('group', { name: 'Languages you mentor in (optional)' });
     expect(within(group).getByRole('button', { name: 'Remove English' })).toBeInTheDocument();
     await user.click(within(group).getByRole('button', { name: 'Yoruba' }));
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
@@ -259,9 +259,20 @@ describe('ProfileItemModal — background', () => {
     const from = screen.getByRole('combobox', { name: 'From' });
     expect(from).toHaveAccessibleDescription('Pick where you’re from.');
     expect(from).toHaveFocus();
+  });
+
+  it('languages are optional: none, with both countries, saves (founder, 21 Oct)', async () => {
+    const { user, onSave } = background({
+      originId: 'ng',
+      studyId: 'us',
+      languages: [langs.results[1]!],
+    });
+    await user.click(screen.getByRole('button', { name: 'Remove Yoruba' }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ languages: [] }));
     expect(
-      screen.getByRole('group', { name: 'Languages you mentor in' }),
-    ).toHaveAccessibleDescription('Add a language you mentor in.');
+      screen.getByRole('group', { name: 'Languages you mentor in (optional)' }),
+    ).not.toHaveAccessibleDescription();
   });
 
   it('removing a language pill takes it out', async () => {

@@ -82,7 +82,6 @@ export function MenteeProfileForm({
     countryError: `${id}-country-error`,
     nameError: `${id}-name-error`,
     langsHint: `${id}-langs-hint`,
-    langsError: `${id}-langs-error`,
   };
   const toggle = (l: LanguageOption) =>
     onChange({
@@ -165,7 +164,7 @@ export function MenteeProfileForm({
             onQueryChange={languages.onQueryChange}
             results={languages.results}
             status={languages.status}
-            describedBy={has('langs') ? `${ids.langsHint} ${ids.langsError}` : ids.langsHint}
+            describedBy={ids.langsHint}
             commonFailed={
               languages.commonFailed && {
                 text: C.commonLanguagesFailed,
@@ -187,7 +186,6 @@ export function MenteeProfileForm({
           <span id={ids.langsHint} className={styles.hint}>
             {C.languagesHint}
           </span>
-          {has('langs') && <FieldError id={ids.langsError}>{PROFILE_ERRORS.langs}</FieldError>}
         </div>
 
         <AiField

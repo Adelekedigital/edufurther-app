@@ -9,8 +9,12 @@ export type BackgroundSave = { originId: string; studyId: string; languageIds: s
 
 /** A failed save, in our words. */
 export class ItemSaveError extends Error {
-  constructor(readonly copy: string) {
-    super('item save failed');
+  /** `cause`: the failure itself, so the review freeze's refusal is still seen (freeze.ts). */
+  constructor(
+    readonly copy: string,
+    cause?: unknown,
+  ) {
+    super('item save failed', { cause });
   }
 }
 
@@ -63,7 +67,7 @@ export function useProfileItems(userId: string | null) {
         });
         if (!response.ok) throw apiError(response.status, error);
       } catch (e) {
-        throw new ItemSaveError(generalCopy(e));
+        throw new ItemSaveError(generalCopy(e), e);
       }
     },
     onSettled: () => refresh(),
@@ -112,7 +116,7 @@ export function useProfileItems(userId: string | null) {
           const { error, response } = await run();
           if (!response.ok) throw apiError(response.status, error);
         } catch (e) {
-          throw new ItemSaveError(saved.length ? partialCopy(saved, part, e) : generalCopy(e));
+          throw new ItemSaveError(saved.length ? partialCopy(saved, part, e) : generalCopy(e), e);
         }
         saved.push(part);
       }

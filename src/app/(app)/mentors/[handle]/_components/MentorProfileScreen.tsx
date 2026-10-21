@@ -27,7 +27,9 @@ import { useAppShell } from '@/app/_shell/useAppShell';
 import { useSetupDetour } from '@/app/_shell/useSetupDetour';
 import { useAvatarUpload } from '@/lib/api/data/avatar';
 import { BANNER_ACCEPT, useCoverEdit } from '@/lib/api/data/cover';
+import { useInReviewRefusal } from '@/lib/api/data/freeze';
 import { useMentorProfile } from '@/lib/api/data/profile';
+import { SHARE_NOTE } from '@/lib/copy/profile';
 import { useSimilarMentors } from '@/lib/api/data/similar';
 import { personCover } from '@/lib/utils/person';
 import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
@@ -133,6 +135,34 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const [ownActive, setOwnActive] = useState<number | null>(null);
   const viewing = isOwner && previewOn;
   const editing = isOwner && !previewOn;
+  // The review freeze (Mentor Profile.dc.html `frozen`; Mentor Settings PR 2):
+  // from submit to decision what's reviewed holds still. In review as Settings
+  // reads it, or a save here just refused for it (it began meanwhile); the
+  // refusal holds, so clearing an editor's error can't unfreeze the page.
+  // A refusal holds until the account's stage moves on to a decision (it was
+  // stale, or the decision came since): then it's let go, and only a newer
+  // refusal freezes the page again (GitHub review of PR 359).
+  const refusedAt = useInReviewRefusal();
+  const stage = member?.mentorStage;
+  const [held, setHeld] = useState<{ at: number; stage: typeof stage; sawReview: boolean } | null>(
+    null,
+  );
+  const [letGo, setLetGo] = useState(0);
+  if (refusedAt !== null && refusedAt > letGo && held?.at !== refusedAt)
+    setHeld({ at: refusedAt, stage, sawReview: stage === 'pending' });
+  // Seen in review since: the next decision is a new one, even the same word.
+  if (held && stage === 'pending' && !held.sawReview) setHeld({ ...held, sawReview: true });
+  const decided = stage !== undefined && stage !== 'pending';
+  if (held && decided && (held.sawReview || stage !== held.stage)) {
+    setHeld(null);
+    setLetGo(held.at);
+  }
+  const inReview = isOwner && (stage === 'pending' || !!held);
+  // Until /me answers the stage isn't known: no reviewed controls yet, so none
+  // flash and vanish for an owner in review (no role UI before the role).
+  const stageKnown = viewer.kind !== 'loading';
+  // The owner's reviewed content: names and sessions stay open (owner, 21 Oct).
+  const editingReviewed = editing && stageKnown && !inReview;
   // Mentors can't book (product 2026-09-29, canBookFor): on another mentor's
   // profile every Book control goes away, as for the owner on their own.
   const canBookHere = !isOwner && canBook;
@@ -157,6 +187,16 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const [timeZone] = useState(deviceTimeZone);
   // The profile only exists after a client fetch, so `window` is there by then.
   const shareUrl = p ? `${window.location.origin}${p.mentor.profileHref}` : '';
+  // An owner whose profile isn't public hears who can see it before sharing
+  // (Mentor Profile.dc.html `shareNote`): until approved, or not at all.
+  const o = isOwner ? p?.owner : null;
+  const shareNote = !o
+    ? undefined
+    : o.approval !== 'approved' && o.approval !== 'declined'
+      ? SHARE_NOTE.pending
+      : o.approval === 'declined' || !o.listed
+        ? SHARE_NOTE.hidden
+        : undefined;
   // The owner's "Share your profile" opens the header's share menu.
   const [shareOpen, setShareOpen] = useState(false);
   const isPhone = useMediaQuery('(max-width: 767px)');
@@ -291,7 +331,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // owner, editing, on the tabs that have an aside; gone at 100%.
   const completeness = p?.owner?.completeness ?? null;
   const strengthShown =
-    editing && tab !== 'sessions' && !!completeness && completeness.percent < 100;
+    editingReviewed && tab !== 'sessions' && !!completeness && completeness.percent < 100;
   // The aside's name lists what it holds for this viewer on this tab; with
   // only the first-mentees card it's "About this mentor".
   const asideLabel =
@@ -316,10 +356,12 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // The toggle waits while an inline edit is open, so a draft is never dropped
   // (review of PR 106). Its pressed state says the rest; no extra announcement.
   // On another tab, About's editor is out of view: say where it is.
+  // About counts only while its editor is there (the freeze takes it away).
+  const aboutShown = owner.aboutOpen && editingReviewed;
   const previewBlocked =
-    owner.aboutOpen && tab !== 'overview'
+    aboutShown && tab !== 'overview'
       ? 'Save or cancel your About edit on Overview to preview.'
-      : owner.introOpen || owner.aboutOpen
+      : owner.introOpen || aboutShown
         ? 'Save or cancel your edit to preview.'
         : null;
 
@@ -411,6 +453,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 onTogglePreview={() => setPreview(!previewOn)}
                 hoursHref={HOURS_HREF}
                 previewBlocked={previewBlocked}
+                inReview={inReview}
+                reviewKnown={stageKnown}
               />
             )}
             {droppedText && (
@@ -428,10 +472,10 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
             <ProfileHeader
               profile={p}
               onShowReviews={hasReviews ? () => setTab('reviews') : undefined}
-              onEditTopics={editing ? () => setItemOpen({ kind: 'topics' }) : undefined}
+              onEditTopics={editingReviewed ? () => setItemOpen({ kind: 'topics' }) : undefined}
               editTopicsRef={editTopics}
               photoEdit={
-                editing
+                editingReviewed
                   ? {
                       upload: photo,
                       onRemove: () => setPhotoRemoving(true),
@@ -449,11 +493,12 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                     onCancel={owner.closeIntro}
                     saving={owner.introSaving}
                     errors={owner.introErrors}
+                    headlineFrozen={inReview}
                   />
                 ) : undefined
               }
               bannerTools={
-                editing ? (
+                editingReviewed ? (
                   <CoverPicker
                     color={personCover(p.mentor.id, p.cover.color)}
                     artOn={p.cover.art === 'icons'}
@@ -499,6 +544,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                     <ShareMenu
                       url={shareUrl}
                       name={p.mentor.name}
+                      note={shareNote}
                       open={shareOpen}
                       onOpenChange={setShareOpen}
                     />
@@ -551,10 +597,12 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               >
                 <ProfileOverview
                   profile={p}
-                  onEditBackground={editing ? () => setItemOpen({ kind: 'background' }) : undefined}
+                  onEditBackground={
+                    editingReviewed ? () => setItemOpen({ kind: 'background' }) : undefined
+                  }
                   backgroundEditRef={backgroundEdit}
                   awardsEdit={
-                    editing
+                    editingReviewed
                       ? {
                           onAdd: () => setItemOpen({ kind: 'award', id: null }),
                           onEdit: (id) => setItemOpen({ kind: 'award', id }),
@@ -564,7 +612,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                   }
                   awardsAddRef={awardsAdd}
                   educationEdit={
-                    editing
+                    editingReviewed
                       ? {
                           onAdd: () => setItemOpen({ kind: 'education', id: null }),
                           onEdit: (id) => setItemOpen({ kind: 'education', id }),
@@ -574,7 +622,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                   }
                   educationAddRef={educationAdd}
                   aboutEdit={
-                    editing
+                    editingReviewed
                       ? {
                           onEdit: owner.openAbout,
                           editor: owner.aboutOpen ? (
@@ -680,7 +728,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
         )}
       </div>
 
-      {isOwner && p && itemOpen && (
+      {editingReviewed && p && itemOpen && (
         <OwnerItemEditor
           target={itemOpen}
           profile={p}
@@ -691,7 +739,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           }}
         />
       )}
-      {isOwner && p && deleting && (
+      {editingReviewed && p && deleting && (
         <OwnerEntryDelete
           target={deleting}
           userId={p.mentor.id}
@@ -710,7 +758,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
       {/* Always there while it's the owner, so a screen reader hears each save. */}
       {isOwner && <LiveRegion message={itemSaved} />}
       {isOwner && <LiveRegion message={ownerSaid} />}
-      {editing && photoRemoving && (
+      {editingReviewed && photoRemoving && (
         <RemovePhotoConfirm
           onKeep={() => setPhotoRemoving(false)}
           onRemove={() => {

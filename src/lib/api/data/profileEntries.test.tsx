@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { useInReviewRefusal } from './freeze';
 import { educationBody, educationPatch, useAwardEdit, useEducationEdit } from './profileEntries';
 import { keys } from './keys';
 
@@ -179,5 +180,41 @@ describe('useEducationEdit', () => {
     await waitFor(() => expect(done).toHaveBeenCalledTimes(3));
     expect(spy).toHaveBeenCalledWith({ queryKey: keys.mentors.all });
     expect(spy).toHaveBeenCalledWith({ queryKey: keys.education('u1') });
+  });
+});
+const IN_REVIEW = {
+  type: '/problems/mentor-application-in-review',
+  title: 'MentorApplicationInReviewError',
+  status: 409,
+  detail: 'Your application is in review, so these can’t change until it is decided.',
+  fields: ['headline'],
+};
+const refused = (error: unknown = IN_REVIEW) => ({
+  data: undefined,
+  error,
+  response: new Response(null, { status: 409 }),
+});
+
+describe('awards and education — refused for the review (409 in review)', () => {
+  function withFreeze<T>(hook: () => T) {
+    const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    );
+    return renderHook(() => ({ hook: hook(), refused: useInReviewRefusal() }), { wrapper });
+  }
+
+  it('adding an award: the page sees the refusal', async () => {
+    POST.mockResolvedValue(refused({ ...IN_REVIEW, fields: ['awards'] }));
+    const { result } = withFreeze(() => useAwardEdit('u1'));
+    act(() => result.current.hook.addAward(award, vi.fn()));
+    await waitFor(() => expect(result.current.refused).not.toBeNull());
+  });
+
+  it('removing a degree: the page sees the refusal', async () => {
+    DELETE.mockResolvedValue(refused({ ...IN_REVIEW, fields: ['education'] }));
+    const { result } = withFreeze(() => useEducationEdit('u1'));
+    act(() => result.current.hook.removeEducation('e1', vi.fn()));
+    await waitFor(() => expect(result.current.refused).not.toBeNull());
   });
 });

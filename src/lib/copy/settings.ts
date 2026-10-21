@@ -45,7 +45,8 @@ export const PROFILE_COPY = {
   country: 'Country you live in',
   countryHint: 'Helps us suggest mentors who made the same move.',
   countryPlaceholder: 'Select a country',
-  languages: 'Languages you speak',
+  // Optional (founder, 21 Oct): onboarding never asks, most accounts have none.
+  languages: 'Languages you speak (optional)',
   languagesHint: 'So you can have sessions in the language you’re most comfortable in.',
   addLanguage: 'Add another language',
   addLanguagePlaceholder: 'For example, Twi',
@@ -67,7 +68,6 @@ export const PROFILE_COPY = {
 export const PROFILE_ERRORS = {
   name: 'Add your full name.',
   country: 'Select the country you live in.',
-  langs: 'Pick at least one language.',
 } as const;
 export type ProfileGap = keyof typeof PROFILE_ERRORS;
 

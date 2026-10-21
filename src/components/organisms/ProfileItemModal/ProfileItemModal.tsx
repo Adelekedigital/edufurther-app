@@ -200,7 +200,6 @@ export function ProfileItemModal(props: ProfileItemModalProps) {
     const next: BackgroundErrors = {
       ...(!bg.originId && { origin: 'Pick where you’re from.' }),
       ...(!bg.studyId && { study: 'Pick where you studied.' }),
-      ...(bg.languages.length === 0 && { languages: 'Add a language you mentor in.' }),
     };
     setProblems(next);
     if (Object.keys(next).length) return;

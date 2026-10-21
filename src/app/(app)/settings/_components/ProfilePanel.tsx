@@ -44,7 +44,6 @@ const same = (a: MenteeProfileValues, b: MenteeProfileValues) =>
 const gapsOf = (v: MenteeProfileValues): ProfileGap[] => [
   ...(checkFullName(v.name) ? ['name' as const] : []),
   ...(v.countryId ? [] : ['country' as const]),
-  ...(v.languages.length ? [] : ['langs' as const]),
 ];
 
 /** What the screen needs to guard a tab switch. */

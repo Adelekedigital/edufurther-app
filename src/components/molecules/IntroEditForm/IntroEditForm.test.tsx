@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { hasUnsavedChanges, unsavedLabel } from '@/lib/utils/leaveGuard';
 import { IntroEditForm } from './IntroEditForm';
@@ -29,7 +29,7 @@ describe('IntroEditForm', () => {
     expect(first).toHaveValue('Gbenga');
     expect(first).toHaveAttribute('maxLength', '100');
     expect(screen.getByRole('textbox', { name: 'Last name' })).toHaveAttribute('maxLength', '100');
-    expect(screen.getByRole('textbox', { name: 'Headline' })).toHaveAttribute('maxLength', '300');
+    expect(screen.getByRole('textbox', { name: 'Headline' })).toHaveAttribute('maxLength', '80');
   });
 
   it('saves what was typed', async () => {
@@ -41,11 +41,90 @@ describe('IntroEditForm', () => {
     expect(onSave).toHaveBeenCalledWith({ ...initial, headline: 'MSc Public Health' });
   });
 
-  it('a blank first name still saves: the save says why it can’t (review of #78)', async () => {
-    const { user, onSave } = setup();
-    await user.clear(screen.getByRole('textbox', { name: 'First name' }));
-    await user.click(screen.getByRole('button', { name: 'Save' }));
-    expect(onSave).toHaveBeenCalledWith({ ...initial, firstName: '' });
+  describe('the shared form rule (Settings, PR 325)', () => {
+    it('Save with gaps: the line by Save, an error on each field, focus on the first, nothing sent', async () => {
+      const { user, onSave } = setup();
+      for (const name of ['First name', 'Last name', 'Headline'])
+        await user.clear(screen.getByRole('textbox', { name }));
+      const save = screen.getByRole('button', { name: 'Save' });
+      expect(save).not.toHaveAttribute('aria-disabled');
+      await user.click(save);
+      expect(onSave).not.toHaveBeenCalled();
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Fill in the required fields to continue.',
+      );
+      expect(screen.getByRole('textbox', { name: 'First name' })).toHaveAccessibleDescription(
+        'Add your first name.',
+      );
+      expect(screen.getByRole('textbox', { name: 'Last name' })).toHaveAccessibleDescription(
+        'Add your last name.',
+      );
+      expect(screen.getByRole('textbox', { name: 'Headline' })).toHaveAccessibleDescription(
+        'Add a headline.',
+      );
+      await waitFor(() =>
+        expect(screen.getByRole('textbox', { name: 'First name' })).toHaveFocus(),
+      );
+    });
+
+    it('errors follow the fields as they’re fixed, then it saves', async () => {
+      const { user, onSave } = setup();
+      const last = screen.getByRole('textbox', { name: 'Last name' });
+      await user.clear(last);
+      await user.click(screen.getByRole('button', { name: 'Save' }));
+      expect(last).toHaveAccessibleDescription('Add your last name.');
+      await user.type(last, 'Ade');
+      expect(last).not.toHaveAccessibleDescription();
+      expect(screen.queryByRole('alert')).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Save' }));
+      expect(onSave).toHaveBeenCalledWith({ ...initial, lastName: 'Ade' });
+    });
+
+    it('an older headline over 80, edited and still over: says to keep it to 80', async () => {
+      const { user, onSave } = setup({ initial: { ...initial, headline: 'y'.repeat(120) } });
+      const headline = screen.getByRole('textbox', { name: 'Headline' });
+      // The input stops new typing at 80; an older, longer one can still be edited.
+      expect(headline).toHaveAttribute('maxLength', '80');
+      await user.type(headline, '{Backspace}');
+      await user.click(screen.getByRole('button', { name: 'Save' }));
+      expect(onSave).not.toHaveBeenCalled();
+      expect(headline).toHaveAccessibleDescription('Keep your headline to 80 characters.');
+    });
+
+    it('an unchanged older headline over 80 still saves', async () => {
+      const long = 'y'.repeat(120);
+      const { user, onSave } = setup({ initial: { ...initial, headline: long } });
+      await user.type(screen.getByRole('textbox', { name: 'Last name' }), 'x');
+      await user.click(screen.getByRole('button', { name: 'Save' }));
+      expect(onSave).toHaveBeenCalledWith({ ...initial, lastName: 'Elufisanx', headline: long });
+    });
+  });
+
+  describe('in review: the headline holds still (owner, 21 Oct)', () => {
+    it('frozen while open: an edited headline goes back to the saved one, which is what saves', async () => {
+      const onSave = vi.fn();
+      const user = userEvent.setup();
+      const props = { initial, onSave, onCancel: vi.fn(), saving: false };
+      const { rerender } = render(<IntroEditForm {...props} />);
+      const headline = screen.getByRole('textbox', { name: 'Headline' });
+      await user.clear(headline);
+      await user.type(headline, 'Edited');
+      rerender(<IntroEditForm {...props} headlineFrozen />);
+      expect(screen.getByRole('textbox', { name: 'Headline' })).toHaveValue(initial.headline);
+      await user.click(screen.getByRole('button', { name: 'Save' }));
+      expect(onSave).toHaveBeenCalledWith(initial);
+    });
+
+    it('the headline can’t be changed or block the save; the names save', async () => {
+      const { user, onSave } = setup({
+        headlineFrozen: true,
+        initial: { ...initial, headline: '' },
+      });
+      expect(screen.getByRole('textbox', { name: 'Headline' })).toBeDisabled();
+      await user.type(screen.getByRole('textbox', { name: 'Last name' }), 'x');
+      await user.click(screen.getByRole('button', { name: 'Save' }));
+      expect(onSave).toHaveBeenCalledWith({ ...initial, lastName: 'Elufisanx', headline: '' });
+    });
   });
 
   it('a failed save puts focus on the first field it names; typing elsewhere keeps focus', async () => {

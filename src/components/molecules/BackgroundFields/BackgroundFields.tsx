@@ -4,6 +4,7 @@ import {
   LanguagePicker,
   type LanguageOption,
 } from '@/components/molecules/LanguagePicker/LanguagePicker';
+import { MENTOR_PROFILE_COPY } from '@/lib/copy/mentorSettings';
 import styles from './BackgroundFields.module.css';
 
 export type BackgroundValues = {
@@ -11,7 +12,7 @@ export type BackgroundValues = {
   studyId: string;
   languages: LanguageOption[];
 };
-export type BackgroundErrors = Partial<Record<'origin' | 'study' | 'languages', string>>;
+export type BackgroundErrors = Partial<Record<'origin' | 'study', string>>;
 
 type BackgroundFieldsProps = {
   values: BackgroundValues;
@@ -71,10 +72,9 @@ export function BackgroundFields({
         </FormField>
       </div>
       <LanguagePicker
-        label="Languages you mentor in"
+        label={MENTOR_PROFILE_COPY.languages}
         selected={values.languages}
         onToggle={toggle}
-        error={errors.languages}
         {...languages}
       />
     </>

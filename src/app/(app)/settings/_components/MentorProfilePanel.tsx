@@ -77,7 +77,6 @@ const gapsOfReviewed = (v: MentorProfileValues, saved: MentorProfileValues): Men
   ...(headlineProblem(saved.headline, v.headline) ? ['headline' as const] : []),
   ...(v.originId ? [] : ['origin' as const]),
   ...(v.studyId ? [] : ['study' as const]),
-  ...(v.languages.length ? [] : ['langs' as const]),
 ];
 
 /**
