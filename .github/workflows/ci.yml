@@ -50,6 +50,12 @@ jobs:
       - name: Icon font matches iconNames.ts
         run: pnpm check:icons
 
+      # Hard rule 1 of the ux-writer spec: no em dash in a string a user reads.
+      # Cheap and early, before the spec pull and the build, because a copy
+      # defect should not wait behind a six-minute type-check to be reported.
+      - name: No em dashes in product copy
+        run: pnpm check:copy
+
       # The spec comes from the backend: its CI publishes openapi.json on every
       # merge to main (release "openapi-latest"; the backend repo is public, so no
       # token, no secret; fork PRs run the same as ours).

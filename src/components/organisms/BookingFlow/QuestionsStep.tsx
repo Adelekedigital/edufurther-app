@@ -92,7 +92,7 @@ export function QuestionsStep(p: Props) {
                 {req}
               </span>
               <ChoiceChips
-                label={`${q.label}${q.required ? ' (required)' : ''} — pick any that apply`}
+                label={`${q.label}${q.required ? ' (required)' : ''}, pick any that apply`}
                 options={q.options.map((o) => ({ value: o.id, label: o.label }))}
                 selected={picked}
                 onToggle={(id) =>

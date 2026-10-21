@@ -503,7 +503,7 @@ export function ConfirmActionDialog({
 
         {tooLate && (
           <p role="alert" className={styles.confirmError}>
-            This session starts in less than ten minutes, so it can’t be called off now — nobody
+            This session starts in less than ten minutes, so it can’t be called off now. Nobody
             would get the message in time.
           </p>
         )}
