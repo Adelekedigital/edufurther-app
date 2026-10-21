@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Notice } from '@/components/molecules/Notice/Notice';
-import { supportHref } from '@/components/organisms/SecuritySettings/SecuritySettings';
+import { supportHref } from '@/lib/utils/mailto';
 import { useMenteeProfile } from '@/lib/api/data/settings';
 import { FREEZE_COPY as C } from '@/lib/copy/mentorSettings';
 import styles from './ReviewFreeze.module.css';

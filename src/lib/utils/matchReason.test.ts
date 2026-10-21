@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { basedOnLine, countryInSentence, joinAnd, reasonLine } from './matchReason';
+import { countryInSentence } from './format';
+import { basedOnLine, joinAnd, reasonLine } from './matchReason';
 
 const uk = { id: 'gb', label: 'United Kingdom' };
 const gh = { id: 'gh', label: 'Ghana' };
@@ -7,8 +8,8 @@ const none = { level: null, studyCountry: null };
 
 describe('countryInSentence', () => {
   it('names the three countries that take "the"', () => {
-    expect(countryInSentence('United Kingdom')).toBe('the UK');
-    expect(countryInSentence('United States')).toBe('the US');
+    expect(countryInSentence('United Kingdom')).toBe('the United Kingdom');
+    expect(countryInSentence('United States')).toBe('the United States');
     expect(countryInSentence('Netherlands')).toBe('the Netherlands');
     expect(countryInSentence('Canada')).toBe('Canada');
   });
@@ -35,7 +36,7 @@ describe('reasonLine', () => {
       none,
     );
     expect(line).toEqual({
-      lead: 'Studied in the UK',
+      lead: 'Studied in the United Kingdom',
       // Help areas follow the cards' order, not the server's.
       rest: ' · Master’s · Helps with your documents and choosing a school · Computer Science · Also from Ghana',
       matched: true,
@@ -56,7 +57,7 @@ describe('reasonLine', () => {
 
   it('falls back to "{level} · {country}" with no reason', () => {
     expect(reasonLine([], { level: 'PhD', studyCountry: 'United States' })).toEqual({
-      lead: 'PhD · the US',
+      lead: 'PhD · the United States',
       rest: '',
       matched: false,
     });
@@ -67,7 +68,7 @@ describe('basedOnLine', () => {
   it('reads as the design draws it', () => {
     expect(
       basedOnLine({ degree: 'MBA', field: 'Law', country: 'United Kingdom', origin: 'Nigeria' }),
-    ).toBe('Based on: MBA Law in the UK · from Nigeria');
+    ).toBe('Based on: MBA Law in the United Kingdom · from Nigeria');
   });
 
   it('leaves out "Not sure yet"', () => {
@@ -82,7 +83,7 @@ describe('basedOnLine', () => {
     );
     expect(
       basedOnLine({ degree: null, field: null, country: 'United Kingdom', origin: null }),
-    ).toBe('Based on: in the UK');
+    ).toBe('Based on: in the United Kingdom');
   });
 
   it('is null with nothing to say', () => {

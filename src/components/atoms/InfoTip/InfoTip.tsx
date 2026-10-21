@@ -1,13 +1,10 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { cx } from '@/lib/utils/cx';
+import { useEdgeFlip } from '@/lib/utils/useEdgeFlip';
 import styles from './InfoTip.module.css';
-
-// useLayoutEffect measures before paint (no flip flicker); fall back to
-// useEffect on the server so SSR doesn't warn.
-const useIsoLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 type InfoTipProps = {
   /**
@@ -34,7 +31,6 @@ type InfoTipProps = {
  */
 export function InfoTip({ label, className }: InfoTipProps) {
   const [open, setOpen] = useState(false);
-  const [flipped, setFlipped] = useState(false);
   // Hover (mouse) and focus (keyboard + tap) each hold the bubble open on their
   // own. Blur clears both, so a tap — which some mobile browsers answer with a
   // synthetic mouseenter but no matching mouseout — can't leave `hovering` stuck
@@ -44,14 +40,7 @@ export function InfoTip({ label, className }: InfoTipProps) {
   const bubbleRef = useRef<HTMLSpanElement>(null);
   const sync = () => setOpen(hovering.current || focused.current);
 
-  useIsoLayoutEffect(() => {
-    if (!open) {
-      setFlipped(false);
-      return;
-    }
-    const r = bubbleRef.current?.getBoundingClientRect();
-    if (r && r.left < 4) setFlipped(true);
-  }, [open]);
+  const flipped = useEdgeFlip(open, bubbleRef);
 
   return (
     <span className={cx(styles.wrap, className)}>
@@ -92,7 +81,11 @@ export function InfoTip({ label, className }: InfoTipProps) {
         <Icon name="info" size={16} />
       </button>
       {open && (
-        <span ref={bubbleRef} aria-hidden="true" className={cx(styles.bubble, flipped && styles.flipped)}>
+        <span
+          ref={bubbleRef}
+          aria-hidden="true"
+          className={cx(styles.bubble, flipped && styles.flipped)}
+        >
           {label}
         </span>
       )}

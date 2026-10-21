@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { ConfirmActions, confirmClose } from '@/components/molecules/ConfirmActions/ConfirmActions';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { SECURITY_COPY as C } from '@/lib/copy/settings';
-import { supportMailto } from '@/lib/utils/mailto';
+import { supportHref } from '@/lib/utils/mailto';
 import type { LoginProvider } from '@/types/settings';
 import styles from './SecuritySettings.module.css';
 
@@ -52,28 +52,6 @@ export type SecuritySettingsProps = {
   renderShell: (shell: DeleteShell, body: ReactNode) => ReactNode;
 };
 
-type SupportPerson = { name: string; firstName: string; email: string; mentor: boolean };
-
-/**
- * A request to support, subject and body prefilled: the email change by
- * default (SecuritySettings.dc.html), or another request's own words (the
- * review freeze's "Contact us").
- */
-export function supportHref(
-  p: { name: string; email: string; mentor: boolean },
-  request: { subject: (name: string) => string; body: (p: SupportPerson) => string } = {
-    subject: C.supportSubject,
-    body: C.supportBody,
-  },
-) {
-  const name = p.name.trim() || p.email;
-  const firstName = name.split(/\s+/)[0] ?? name;
-  return supportMailto(
-    request.subject(name),
-    request.body({ name, firstName, email: p.email, mentor: p.mentor }),
-  );
-}
-
 /**
  * Settings › Login and security (SecuritySettings.dc.html, auth=passwordless):
  * the email (changed through support) and how they log in, then Delete
@@ -103,7 +81,10 @@ export function SecuritySettings(p: SecuritySettingsProps) {
           <ButtonAnchor
             variant="secondary-outlined"
             size="medium"
-            href={supportHref({ name: p.name, email: p.email, mentor })}
+            href={supportHref(
+              { name: p.name, email: p.email, mentor },
+              { subject: C.supportSubject, body: C.supportBody },
+            )}
           >
             {C.contactSupport}
           </ButtonAnchor>

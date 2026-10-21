@@ -216,9 +216,8 @@ describe('MentorProfileScreen — the owner bar', () => {
   it('declined: "Contact support" mails the one support address', () => {
     h.profile = state({ data: mine({ approval: 'declined' }) });
     render(<MentorProfileScreen handle="gbenga" />);
-    expect(screen.getByRole('link', { name: 'Contact support' })).toHaveAttribute(
-      'href',
-      'mailto:support@edufurther.org',
+    expect(screen.getByRole('link', { name: 'Contact support' }).getAttribute('href')).toMatch(
+      /^mailto:support@edufurther\.org\?subject=/,
     );
   });
 

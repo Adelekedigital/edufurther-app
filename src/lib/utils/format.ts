@@ -137,13 +137,27 @@ export function deviceTimeZone(): string {
 }
 
 /**
- * A country as it reads after "to": "the United Kingdom", "Canada". The same
- * rule as MentorCard.dc.html / Mentor Profile.dc.html.
+ * A country as it reads in a sentence: "the United Kingdom", "Canada". The one
+ * rule for every surface (owner, 21 Oct 2026: full names, never "the UK"):
+ * the profile header, Settings' preview, Explore cards, match reasons.
  */
 export function countryInSentence(country: string): string {
   return /^(United |UK$|UAE$|Netherlands|Philippines|Czech Republic|Bahamas|Gambia)/.test(country)
     ? `the ${country}`
     : country;
+}
+
+/**
+ * "From Nigeria, studied in the United States", or whichever half is known
+ * (Mentor Profile.dc.html header, Mentor Settings.dc.html `previewPlace`).
+ */
+export function locationLine(from: string | null, studiedIn: string | null): string | null {
+  const f = from && countryInSentence(from);
+  const s = studiedIn && countryInSentence(studiedIn);
+  if (f && s) return `From ${f}, studied in ${s}`;
+  if (f) return `From ${f}`;
+  if (s) return `Studied in ${s}`;
+  return null;
 }
 
 /** The move line's pair, when both ends are known and differ; else null. */

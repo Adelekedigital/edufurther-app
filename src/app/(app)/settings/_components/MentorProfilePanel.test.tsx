@@ -106,7 +106,7 @@ describe('MentorProfilePanel', () => {
   it('the preview shows the saved profile, with Open profile to the public page', () => {
     render(<MentorProfilePanel userId="u1" />);
     expect(preview().getByText('Ada Obi')).toBeInTheDocument();
-    expect(preview().getByText('From Nigeria, studied in the US')).toBeInTheDocument();
+    expect(preview().getByText('From Nigeria, studied in the United States')).toBeInTheDocument();
     expect(preview().getByText('School selection')).toBeInTheDocument();
     expect(preview().getByRole('link', { name: 'Open profile' })).toHaveAttribute(
       'href',
@@ -238,7 +238,7 @@ describe('MentorProfilePanel', () => {
       } as MentorProfile,
     };
     render(<MentorProfilePanel userId="u1" />);
-    expect(preview().getByText('From Zaire, studied in the US')).toBeInTheDocument();
+    expect(preview().getByText('From Zaire, studied in the United States')).toBeInTheDocument();
   });
 
   it('…and the origin field shows that saved name too, not an empty box', () => {

@@ -182,6 +182,11 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // A mentor not taking bookings keeps it at 3+, saying so ("Sessions (0)"):
   // as built and as drawn (PRD: not taking bookings, no change).
   const sessionsTab = editing || (p?.sessionTypes.length ?? 0) >= SESSIONS_TAB_FROM;
+  const sessionCount = notTakingTab
+    ? 0
+    : editing && ownActive !== null
+      ? ownActive
+      : (p?.sessionTypes.length ?? 0);
   // The owner, editing, always has the tab: "New session type" is there.
   // The Reviews tab opens for any signed-in non-owner, not only once reviews
   // exist. Bookings links a mentee here to write the first one, and gating the
@@ -554,6 +559,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                       url={shareUrl}
                       name={p.mentor.name}
                       note={shareNote}
+                      anchor="row"
                       open={shareOpen}
                       onOpenChange={setShareOpen}
                     />
@@ -566,14 +572,16 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               label="Profile"
               value={tab}
               onChange={setTab}
+              countStyle="text"
               items={[
                 { value: 'overview', label: 'Overview', panelId: 'panel-overview' },
                 ...(sessionsTab
                   ? [
                       {
                         value: 'sessions',
+                        label: 'Sessions',
                         // Nothing to book counts as none (the design's visible count).
-                        label: `Sessions (${notTakingTab ? 0 : editing && ownActive !== null ? ownActive : p.sessionTypes.length})`,
+                        count: sessionCount,
                         panelId: 'panel-sessions',
                       },
                     ]
@@ -582,9 +590,10 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                   ? [
                       {
                         value: 'reviews',
-                        // No count until there is one to give: "Reviews (0)"
-                        // reads as a number we are asserting.
-                        label: hasReviews ? `Reviews (${p.reviews.count})` : 'Reviews',
+                        label: 'Reviews',
+                        // A known count shows, 0 included, as Sessions (0) does
+                        // (one tab-count rule, owner 21 Oct 2026).
+                        count: p.reviews.count,
                         panelId: 'panel-reviews',
                       },
                     ]

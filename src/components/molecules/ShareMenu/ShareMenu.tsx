@@ -5,6 +5,8 @@ import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
+import { cx } from '@/lib/utils/cx';
+import { useEdgeFlip } from '@/lib/utils/useEdgeFlip';
 import styles from './ShareMenu.module.css';
 
 type ShareMenuProps = {
@@ -24,6 +26,13 @@ type ShareMenuProps = {
    * which is still fully usable.
    */
   note?: string;
+  /**
+   * What the panel hangs from. 'self' (default): the button. 'row': the
+   * nearest positioned ancestor, the CTA row it sits in, as Mentor
+   * Profile.dc.html draws it; on a phone that row is full width, so the panel
+   * fits however the buttons wrap.
+   */
+  anchor?: 'self' | 'row';
 } & (
   | {
       /**
@@ -52,6 +61,7 @@ export function ShareMenu({
   name,
   triggerLabel,
   note,
+  anchor = 'self',
   open: openProp,
   onOpenChange,
 }: ShareMenuProps) {
@@ -65,6 +75,10 @@ export function ShareMenu({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
+  // Drawn from the anchor's right edge; when that would cross the left of the
+  // screen (a short row at the start of the line: a guest at 768px), drawn
+  // from its left edge instead.
+  const flipped = useEdgeFlip(open, menuRef);
   const menuId = useId();
   const noteId = useId();
 
@@ -151,7 +165,7 @@ export function ShareMenu({
   };
 
   return (
-    <div className={styles.root}>
+    <div className={anchor === 'self' ? styles.root : undefined}>
       {triggerLabel ? (
         <Button
           ref={buttonRef}
@@ -186,7 +200,7 @@ export function ShareMenu({
         // its items, so the note sits before it and describes it.
         <div
           ref={menuRef}
-          className={styles.menu}
+          className={cx(styles.menu, flipped && styles.menuStart)}
           // A click off the items (the note, the padding) keeps focus on them,
           // so the keys still work.
           onMouseDown={(e) => {

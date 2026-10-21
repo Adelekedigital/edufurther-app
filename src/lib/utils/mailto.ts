@@ -8,3 +8,22 @@ export function supportMailto(subject?: string, body?: string): string {
   ].filter(Boolean);
   return `mailto:${supportEmail()}${q.length ? `?${q.join('&')}` : ''}`;
 }
+
+export type SupportPerson = { name: string; firstName: string; email: string; mentor: boolean };
+
+/**
+ * A request to support from a signed-in person, subject and body prefilled in
+ * the request's own words (Settings' email change, the review freeze's
+ * "Contact us"). Falls back to the email when there's no name.
+ */
+export function supportHref(
+  p: { name: string; email: string; mentor: boolean },
+  request: { subject: (name: string) => string; body: (p: SupportPerson) => string },
+): string {
+  const name = p.name.trim() || p.email;
+  const firstName = name.split(/\s+/)[0] ?? name;
+  return supportMailto(
+    request.subject(name),
+    request.body({ name, firstName, email: p.email, mentor: p.mentor }),
+  );
+}

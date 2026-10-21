@@ -152,4 +152,28 @@ describe('ShareMenu', () => {
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('menu')).toBeNull();
   });
+
+  it('opens from the left edge when the right-edge panel would cross the screen (audit: clipped on phones)', async () => {
+    const user = userEvent.setup();
+    const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      left: -65,
+      right: 195,
+      top: 0,
+      bottom: 0,
+      width: 260,
+      height: 0,
+    } as DOMRect);
+    render(<ShareMenu url="https://x.test/m" name="G E" />);
+    await user.click(screen.getByRole('button', { name: 'Share profile' }));
+    const panel = screen.getByRole('menu').parentElement!;
+    expect(panel.className).toMatch(/menuStart/);
+    rect.mockRestore();
+  });
+
+  it('anchor="row" drops its own positioning, so the panel hangs from the CTA row', () => {
+    const { container, rerender } = render(<ShareMenu url="https://x.test/m" name="G E" />);
+    expect((container.firstElementChild as HTMLElement).className).not.toBe('');
+    rerender(<ShareMenu url="https://x.test/m" name="G E" anchor="row" />);
+    expect((container.firstElementChild as HTMLElement).className).toBe('');
+  });
 });
