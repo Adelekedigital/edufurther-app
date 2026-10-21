@@ -53,6 +53,7 @@ export const statusOffline = (pausing: boolean) =>
 /** Calendar v2 video row and picker (copy research: "Video for sessions: …"). */
 export const VIDEO_ROW_COPY = {
   modalTitle: VIDEO_COPY.title,
+  // Swap for VIDEO_LINK_LINE / VIDEO_COPY.saveFailed once #357 merges.
   modalSub:
     'We create a private link for each booking and add it to your invite and your mentee’s.',
   editLabel: 'Change video for sessions',

@@ -276,6 +276,16 @@ export function CalendarScreen() {
     setVideoOpen(false);
     setSwitchTo(next);
   };
+  // A refetch landed the saved provider on the pick (another tab, a refocus):
+  // nothing is left to ask, so the pick is dropped here and focus comes back.
+  const [refocusVideo, setRefocusVideo] = useState(0);
+  if (switchTo && switchTo === video.data?.provider && !saveVideo.isPending) {
+    setSwitchTo(null);
+    setRefocusVideo((n) => n + 1);
+  }
+  useEffect(() => {
+    if (refocusVideo) focusVideoAction();
+  }, [refocusVideo]);
   const keepVideo = () => {
     if (saveVideo.isPending) return;
     setSwitchTo(null);
