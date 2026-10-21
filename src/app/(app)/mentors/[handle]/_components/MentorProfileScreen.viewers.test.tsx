@@ -1,6 +1,10 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { fullProfile, reviews } from '@/components/organisms/ProfileHeader/profile.fixture';
+import {
+  fullProfile,
+  reviews,
+  sessionTypes,
+} from '@/components/organisms/ProfileHeader/profile.fixture';
 import { h, state, similarArgs } from './profileScreen.harness';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
@@ -137,9 +141,9 @@ describe('MentorProfileScreen â€” a mentor viewing another mentor (mentors canâ€
   it('no Book on the Sessions tab', () => {
     h.viewerIsMentor = true;
     h.search = new URLSearchParams('tab=sessions');
-    h.profile = state({ data: fullProfile });
+    h.profile = state({ data: { ...fullProfile, sessionTypes } });
     render(<MentorProfileScreen handle="gbenga" />);
-    expect(screen.getByRole('tab', { name: 'Sessions (1)' })).toHaveAttribute(
+    expect(screen.getByRole('tab', { name: 'Sessions (3)' })).toHaveAttribute(
       'aria-selected',
       'true',
     );

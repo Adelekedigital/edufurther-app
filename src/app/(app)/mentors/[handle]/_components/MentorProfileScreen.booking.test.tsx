@@ -181,7 +181,11 @@ describe('MentorProfileScreen — not taking bookings (design reply #58, live de
     const aside = screen.getByRole('complementary');
     const note = within(aside).getByRole('region', { name: 'Not taking bookings' });
     expect(note).toHaveTextContent(body);
-    expect(screen.queryByRole('button', { name: /Book/ })).toBeNull();
+    // This mentor offers nothing to book; the similar mentors still can be.
+    const similar = screen.getByRole('region', { name: 'Similar mentors' });
+    expect(
+      screen.queryAllByRole('button', { name: /Book/ }).filter((b) => !similar.contains(b)),
+    ).toEqual([]);
     expect(screen.queryByRole('heading', { name: 'Book a session' })).toBeNull();
   });
 
@@ -196,11 +200,16 @@ describe('MentorProfileScreen — not taking bookings (design reply #58, live de
     expect(within(panel).queryByText(second.name)).toBeNull();
   });
 
-  it('with no visible types the tab is still there, saying so', () => {
+  it('with no visible types there’s no Sessions tab; the aside says so (PRD, 21 Oct)', () => {
     withLink('tab=sessions');
     h.profile = state({ data: { ...profile, takingBookings: false, sessionTypes: [] } });
     render(<MentorProfileScreen handle="gbenga" />);
-    expect(within(screen.getByRole('tabpanel')).getByText(body)).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /Sessions/ })).toBeNull();
+    expect(
+      within(screen.getByRole('complementary')).getByRole('region', {
+        name: 'Not taking bookings',
+      }),
+    ).toHaveTextContent(body);
   });
 
   it('the owner sees none of that; with no visible type their bar says what mentees see', () => {

@@ -126,4 +126,39 @@ describe('inSentence', () => {
     if (m.nextAvailableAt)
       expect(screen.queryByText(formatFreeDay(m.nextAvailableAt, 'UTC'))).toBeNull();
   });
+
+  describe('booking from the next free time (Mentor Profile.dc.html `sm.book`)', () => {
+    it('with onBook: the time is a button that books that mentor', async () => {
+      vi.useRealTimers();
+      const onBook = vi.fn();
+      const { default: userEvent } = await import('@testing-library/user-event');
+      const user = userEvent.setup();
+      render(
+        <SimilarMentorsCard
+          mentors={similarMentors}
+          isLoading={false}
+          timeZone="UTC"
+          seeAllHref="/explore"
+          onBook={onBook}
+        />,
+      );
+      const book = screen.getByRole('button', { name: /^Book Oluwakemi Olayinka, / });
+      await user.click(book);
+      expect(onBook).toHaveBeenCalledWith(similarMentors[0]!.mentor);
+      // The name still opens the profile.
+      expect(screen.getByRole('link', { name: 'Oluwakemi Olayinka' })).toBeInTheDocument();
+    });
+
+    it('without onBook: the time links to the profile, as before', () => {
+      render(
+        <SimilarMentorsCard
+          mentors={similarMentors}
+          isLoading={false}
+          timeZone="UTC"
+          seeAllHref="/explore"
+        />,
+      );
+      expect(screen.queryByRole('button', { name: /^Book / })).toBeNull();
+    });
+  });
 });

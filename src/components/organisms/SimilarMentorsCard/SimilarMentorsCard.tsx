@@ -5,7 +5,7 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Star } from '@/components/atoms/Star/Star';
 import { formatFreeDay, formatRating, inSentence } from '@/lib/utils/format';
-import type { SimilarMentor } from '@/types/mentor';
+import type { Mentor, SimilarMentor } from '@/types/mentor';
 import styles from './SimilarMentorsCard.module.css';
 
 type SimilarMentorsCardProps = {
@@ -14,6 +14,13 @@ type SimilarMentorsCardProps = {
   /** The viewer's zone, for "Free {day}". */
   timeZone: string;
   seeAllHref: string;
+  /**
+   * Opens booking for that mentor (their first session), from their next free
+   * time. Without it the time links to their profile.
+   */
+  onBook?: (mentor: Mentor) => void;
+  /** Drawn but off: the owner previewing as a mentee (as every Book there). */
+  bookDisabled?: boolean;
 };
 
 /**
@@ -26,6 +33,8 @@ export function SimilarMentorsCard({
   isLoading,
   timeZone,
   seeAllHref,
+  onBook,
+  bookDisabled = false,
 }: SimilarMentorsCardProps) {
   if (!isLoading && !mentors?.length) return null;
   return (
@@ -119,12 +128,23 @@ export function SimilarMentorsCard({
                 )}
                 {m.takingBookings !== false &&
                   m.nextAvailableState === 'open' &&
-                  m.nextAvailableAt && (
+                  m.nextAvailableAt &&
+                  (onBook ? (
+                    <button
+                      type="button"
+                      className={styles.book}
+                      disabled={bookDisabled}
+                      aria-label={`Book ${m.name}, ${formatFreeDay(m.nextAvailableAt, timeZone)}`}
+                      onClick={() => onBook(m)}
+                    >
+                      {formatFreeDay(m.nextAvailableAt, timeZone)}
+                    </button>
+                  ) : (
                     <Link href={m.profileHref} prefetch={false} className={styles.link}>
                       {formatFreeDay(m.nextAvailableAt, timeZone)}
                       <span className="sr-only"> with {m.name}</span>
                     </Link>
-                  )}
+                  ))}
               </div>
             </li>
           ))}

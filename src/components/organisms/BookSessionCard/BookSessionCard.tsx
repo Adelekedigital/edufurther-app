@@ -9,7 +9,8 @@ type BookSessionCardProps = {
   /** Opens the shared booking modal, on that offering when one is given. */
   onBook: (sessionTypeId?: string) => void;
   /** Switches to the Sessions tab. */
-  onCompare: () => void;
+  /** Opens the Sessions tab; without one (under 3 sessions) there's no link. */
+  onCompare?: () => void;
   bookBlocked: string | null;
   /** Drawn, but can't be used (the owner's "View as mentee"). */
   bookDisabled?: boolean;
@@ -102,10 +103,12 @@ export function BookSessionCard({
           </li>
         ))}
       </ul>
-      <button type="button" className={styles.compare} onClick={onCompare}>
-        {sessionTypes.length > 2 ? `See all ${sessionTypes.length} sessions` : 'Compare sessions'}
-        <Icon name="arrow_forward" size={16} />
-      </button>
+      {onCompare && (
+        <button type="button" className={styles.compare} onClick={onCompare}>
+          {sessionTypes.length > 2 ? `See all ${sessionTypes.length} sessions` : 'Compare sessions'}
+          <Icon name="arrow_forward" size={16} />
+        </button>
+      )}
     </section>
   );
 }
