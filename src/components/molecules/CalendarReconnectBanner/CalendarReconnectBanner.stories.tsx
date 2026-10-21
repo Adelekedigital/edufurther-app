@@ -3,10 +3,6 @@ import { fn } from 'storybook/test';
 import { RECONNECT_FAILURES } from '@/lib/copy/integrations';
 import { CalendarReconnectBanner } from './CalendarReconnectBanner';
 
-/**
- * Its own file rather than molecules.stories.tsx: that one is already near the
- * 1000-line cap, and adding four states to it put it over.
- */
 const meta: Meta<typeof CalendarReconnectBanner> = {
   title: 'Integrations/Calendar reconnect banner',
   component: CalendarReconnectBanner,
