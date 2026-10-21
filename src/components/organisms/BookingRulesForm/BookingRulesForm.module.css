@@ -1,4 +1,4 @@
-/* Calendar v2, Scheduling window modal (`windowOpen`). */
+/* Calendar v2, Booking rules modal (`windowOpen`). */
 .body {
   display: flex;
   flex-direction: column;
@@ -33,12 +33,12 @@
 }
 .hint {
   font-size: var(--text-p-xs);
-  color: var(--ink-500);
+  color: var(--text-tertiary);
 }
 .fit {
   margin: 0;
   font-size: var(--text-p-xs);
-  color: var(--ink-500);
+  color: var(--text-tertiary);
 }
 .error {
   display: flex;
@@ -57,4 +57,24 @@
   .row {
     padding: var(--space-2) var(--space-3);
   }
+}
+/* The Settings line under the rules. */
+.settings {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--ink-50);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-secondary);
+}
+.settingsIcon {
+  flex: none;
+  color: var(--text-tertiary);
+}
+.settingsLink {
+  font-weight: var(--weight-semibold);
 }

@@ -200,13 +200,13 @@ const announced = () =>
     .join(' | ');
 
 describe('CalendarScreen', () => {
-  it('shows the hours, the window summary and the listed mentor as available', () => {
+  it('shows the hours, the booking rules summary and the listed mentor as available', () => {
     render(<CalendarScreen />);
     expect(screen.getByRole('heading', { level: 1, name: 'Your calendar' })).toBeInTheDocument();
     expect(screen.getByText('Available')).toBeInTheDocument();
     expect(
       screen.getByText(
-        '60 min sessions · at least 24 hours notice · up to 8 weeks ahead · 15 min break',
+        'You approve each booking · 60 min · 24 hrs notice · 8 weeks ahead · 15 min buffer',
       ),
     ).toBeInTheDocument();
     expect(screen.getByText('3 hrs a week · 1 day')).toBeInTheDocument();
@@ -376,45 +376,51 @@ describe('CalendarScreen', () => {
     expect(tuesdaySwitch()).toHaveAttribute('aria-checked', 'true');
   });
 
-  it('opens the scheduling window, saves it with approval unchanged', async () => {
+  it('opens Booking rules and saves the rules with approval as set there', async () => {
     const user = userEvent.setup();
     render(<CalendarScreen />);
-    await user.click(screen.getByRole('button', { name: 'Change scheduling window' }));
-    const dialog = screen.getByRole('dialog', { name: 'Scheduling window' });
+    await user.click(screen.getByRole('button', { name: 'Edit booking rules' }));
+    const dialog = screen.getByRole('dialog', { name: 'Booking rules' });
+    expect(dialog).toHaveAccessibleDescription(
+      'Your default rules for every session. You can customize them for a single session.',
+    );
+    const approve = within(dialog).getByRole('switch', { name: 'Approve bookings' });
+    expect(approve).toBeChecked();
+    await user.click(approve);
     await user.selectOptions(
       within(dialog).getByRole('combobox', { name: 'Minimum notice' }),
       '48',
     );
     await user.click(within(dialog).getByRole('button', { name: 'Save' }));
     expect(saveDefaults).toHaveBeenCalledWith(
-      expect.objectContaining({ noticeHours: 48, requiresApproval: true }),
+      expect.objectContaining({ noticeHours: 48, requiresApproval: false }),
     );
-    expect(await screen.findByText('Your scheduling window is saved.')).toBeInTheDocument();
+    expect(await screen.findByText('Your booking rules are saved.')).toBeInTheDocument();
   });
 
-  it('a failed scheduling window save is read out', async () => {
+  it('a failed booking rules save is read out', async () => {
     saveDefaults.mockRejectedValue({
       message: 'Your preferences didn’t save. Try again in a moment.',
     });
     const user = userEvent.setup();
     render(<CalendarScreen />);
-    await user.click(screen.getByRole('button', { name: 'Change scheduling window' }));
+    await user.click(screen.getByRole('button', { name: 'Edit booking rules' }));
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() =>
       expect(announced()).toContain('Your preferences didn’t save. Try again in a moment.'),
     );
   });
 
-  it('the scheduling window can’t be closed while its save is on its way', async () => {
+  it('Booking rules can’t be closed while its save is on its way', async () => {
     const user = userEvent.setup();
     const { rerender } = render(<CalendarScreen />);
-    await user.click(screen.getByRole('button', { name: 'Change scheduling window' }));
+    await user.click(screen.getByRole('button', { name: 'Edit booking rules' }));
     defaultsPending = true;
     rerender(<CalendarScreen />);
-    const dialog = screen.getByRole('dialog', { name: 'Scheduling window' });
+    const dialog = screen.getByRole('dialog', { name: 'Booking rules' });
     expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeDisabled();
     await user.keyboard('{Escape}');
-    expect(screen.getByRole('dialog', { name: 'Scheduling window' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Booking rules' })).toBeInTheDocument();
   });
 
   it('with no hours yet, says what setting them does and isn’t "Available"', () => {
@@ -482,7 +488,7 @@ describe('CalendarScreen', () => {
     expect(retry).toHaveBeenCalled();
   });
 
-  it('a failed scheduling window load is an error too, not an endless skeleton', () => {
+  it('a failed booking rules load is an error too, not an endless skeleton', () => {
     defaults = {
       ...remote<MentorDefaults>(null, { error: { kind: 'server', message: 'x' } }),
       refreshing: false,

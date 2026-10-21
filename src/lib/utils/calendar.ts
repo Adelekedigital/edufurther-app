@@ -30,20 +30,30 @@ export function slotCount(days: DayHours[], durationMin: number): number {
 }
 
 /** Calendar v2 notice labels: "24 hours", "2 days". */
-export const noticeLabel = (hours: number) =>
-  hours >= 48 && hours % 24 === 0
-    ? `${hours / 24} days`
-    : `${Number(hours.toFixed(1))} hour${hours === 1 ? '' : 's'}`;
+export const noticeLabel = (hours: number) => {
+  if (hours >= 48 && hours % 24 === 0) return `${hours / 24} days`;
+  // Judged on the shown number: 61 minutes reads "1 hour", not "1 hours".
+  const n = Number(hours.toFixed(1));
+  return `${n} hour${n === 1 ? '' : 's'}`;
+};
 
-/** Calendar v2 `windowSummary`: "60 min sessions · at least 24 hours notice · up to 8 weeks ahead · 15 min break". */
-export function windowSummary(d: BookingDefaults): string {
+/** The summary's short notice: "24 hrs", "1 hr", "2 days". */
+const noticeShort = (hours: number) =>
+  noticeLabel(hours).replace(/ hours?$/, (u) => (u === ' hour' ? ' hr' : ' hrs'));
+
+/**
+ * Calendar v2 `windowSummary` (copy research), approval first as in the modal:
+ * "Confirmed straight away · 60 min · 24 hrs notice · 4 weeks ahead · 15 min buffer".
+ */
+export function bookingRulesSummary(d: BookingDefaults): string {
   const r = resolveDefaults(d);
   const windowDays = d.maxWindowDays ? Math.min(r.windowDays, d.maxWindowDays) : r.windowDays;
   return [
-    `${r.durationMin} min sessions`,
-    `at least ${noticeLabel(r.noticeHours)} notice`,
-    `up to ${windowLabel(windowDays)} ahead`,
-    r.breakMin ? `${r.breakMin} min break` : 'no break',
+    r.requiresApproval ? 'You approve each booking' : 'Confirmed straight away',
+    `${r.durationMin} min`,
+    `${noticeShort(r.noticeHours)} notice`,
+    `${windowLabel(windowDays)} ahead`,
+    r.breakMin ? `${r.breakMin} min buffer` : 'No buffer',
   ].join(' · ');
 }
 
