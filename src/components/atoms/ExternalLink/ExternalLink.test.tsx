@@ -1,4 +1,6 @@
+import { createRef } from 'react';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { ExternalLink } from './ExternalLink';
 
 describe('ExternalLink', () => {
@@ -27,5 +29,14 @@ describe('ExternalLink', () => {
     const link = screen.getByRole('link', { name: 'Home' });
     expect(link).not.toHaveAttribute('target');
     expect(link).not.toHaveAttribute('rel');
+  });
+
+  it('passes the ref and click handler through: menus move focus and close with them', async () => {
+    const ref = createRef<HTMLAnchorElement>();
+    const onClick = vi.fn((e: { preventDefault: () => void }) => e.preventDefault());
+    render(<ExternalLink ref={ref} href="https://example.org" label="Help" onClick={onClick} />);
+    expect(ref.current).toBe(screen.getByRole('link'));
+    await userEvent.click(screen.getByRole('link'));
+    expect(onClick).toHaveBeenCalledOnce();
   });
 });
