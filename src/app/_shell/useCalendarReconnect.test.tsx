@@ -1,5 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import type { CalendarConnection } from '@/lib/api/data/calendarConnection';
+import { RECONNECT_COPY } from '@/lib/copy/integrations';
 import type { AppError, Remote } from '@/types/mentor';
 import { useCalendarReconnect } from './useCalendarReconnect';
 
@@ -8,22 +9,33 @@ vi.mock('@/lib/api/data/calendarConnection', () => ({
   useCalendarConnection: () => connection,
 }));
 
+const focusPageHeading = vi.fn();
+vi.mock('./RouteFocusManager', () => ({ focusPageHeading: () => focusPageHeading() }));
+
 const connectFn = vi.fn();
+const connectHook = vi.fn();
 let connectState: { kind: string } = { kind: 'idle' };
 let unavailable = false;
 vi.mock('./useCalendarConnect', () => ({
-  useCalendarConnect: () => ({
-    state: connectState,
-    connect: connectFn,
-    unavailable,
-    dismiss: vi.fn(),
-  }),
+  useCalendarConnect: (...args: unknown[]) => (
+    connectHook(...args),
+    {
+      state: connectState,
+      connect: connectFn,
+      unavailable,
+      dismiss: vi.fn(),
+    }
+  ),
 }));
 
 const remote = (data: CalendarConnection | null, over: Partial<Remote<unknown>> = {}) =>
-  ({ data, isLoading: false, error: null, retry: vi.fn(), ...over }) as Remote<
-    CalendarConnection | null
-  >;
+  ({
+    data,
+    isLoading: false,
+    error: null,
+    retry: vi.fn(),
+    ...over,
+  }) as Remote<CalendarConnection | null>;
 
 const conn = (over: Partial<CalendarConnection> = {}): CalendarConnection => ({
   connectedAt: '2026-10-01T09:00:00Z',
@@ -41,6 +53,8 @@ beforeEach(() => {
   connectState = { kind: 'idle' };
   unavailable = false;
   connectFn.mockReset();
+  connectHook.mockReset();
+  focusPageHeading.mockReset();
   announce.mockReset();
 });
 
@@ -118,9 +132,46 @@ describe('useCalendarReconnect', () => {
     expect(result.current.unavailable).toBe(true);
   });
 
+  /**
+   * Without this, dropping the 4th argument silently reverts the success line
+   * to Integrations' "Google Calendar connected…" on a screen where the mentor
+   * was reconnecting, and no test fails.
+   */
+  it('asks for the reconnect wording, not the first-time-setup wording', () => {
+    renderHook(() => useCalendarReconnect('m1', announce));
+    expect(connectHook).toHaveBeenCalledWith(
+      'm1',
+      connection.data,
+      announce,
+      RECONNECT_COPY.reconnected,
+    );
+  });
+
   it('runs the same consent the Integrations page runs', () => {
     const { result } = renderHook(() => useCalendarReconnect('m1', announce));
     result.current.reconnect();
     expect(connectFn).toHaveBeenCalled();
+  });
+
+  /**
+   * The banner unmounts on repair, taking the focused Reconnect button with
+   * it, and focus falls to <body>: the next Tab starts from the top of the
+   * page. IntegrationsScreen already treats that as a bug and takes focus
+   * back; this does the same (review of #357).
+   */
+  it('puts focus back on the page when the grant is repaired', () => {
+    const { result, rerender } = renderHook(() => useCalendarReconnect('m1', announce));
+    result.current.reconnect();
+    connection = remote(conn({ status: 'active' }));
+    rerender();
+    expect(focusPageHeading).toHaveBeenCalled();
+  });
+
+  /** A grant repaired in another tab must not move focus under the reader. */
+  it('leaves focus alone when the repair was not theirs', () => {
+    const { rerender } = renderHook(() => useCalendarReconnect('m1', announce));
+    connection = remote(conn({ status: 'active' }));
+    rerender();
+    expect(focusPageHeading).not.toHaveBeenCalled();
   });
 });

@@ -282,7 +282,26 @@ describe('IntegrationsScreen', () => {
     const { rerender } = render(<IntegrationsScreen />);
     await userEvent.click(screen.getByRole('radio', { name: /Google Meet/ }));
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    // A refetch finds the account already on Meet (another tab, or support).
     video = remote(conferencing({ provider: 'google_meet', isDefault: false }));
+    rerender(<IntegrationsScreen />);
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(saveVideo).not.toHaveBeenCalled();
+  });
+
+  /**
+   * The intent is tied to what they were LEAVING, so it cannot come back. A
+   * guard that only compared against the target let the next refetch make the
+   * condition true again and reopened the dialog with no user action, with the
+   * focus trap pulling focus into it (review of #357).
+   */
+  it('does not reopen the confirm when the server moves again', async () => {
+    const { rerender } = render(<IntegrationsScreen />);
+    await userEvent.click(screen.getByRole('radio', { name: /Google Meet/ }));
+    video = remote(conferencing({ provider: 'google_meet', isDefault: false }));
+    rerender(<IntegrationsScreen />);
+    // Back to where they started: the old intent must stay dead.
+    video = remote(conferencing({ provider: 'daily', isDefault: true }));
     rerender(<IntegrationsScreen />);
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(saveVideo).not.toHaveBeenCalled();

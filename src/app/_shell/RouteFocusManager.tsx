@@ -33,6 +33,20 @@ export function skipNextRouteFocus(path: string) {
   skipFor = path;
 }
 
+/**
+ * Put focus on the page's heading, or the `<main>` landmark while the heading
+ * is still loading. Shared with anything that removes the control a person was
+ * focused on: without it focus falls to `<body>` and the next Tab starts from
+ * the top of the page.
+ */
+export function focusPageHeading() {
+  const main = document.getElementById('main');
+  if (!main) return;
+  const target = main.querySelector<HTMLElement>('h1') ?? main;
+  if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+  target.focus({ preventScroll: true });
+}
+
 export function RouteFocusManager() {
   const pathname = usePathname();
   const prevPathname = useRef<string | null>(null);
@@ -44,11 +58,7 @@ export function RouteFocusManager() {
     const skip = skipFor === pathname;
     skipFor = null;
     if (skip) return; // a redirect or a tab, not a new page
-    const main = document.getElementById('main');
-    if (!main) return;
-    const target = main.querySelector<HTMLElement>('h1') ?? main;
-    if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
-    target.focus({ preventScroll: true });
+    focusPageHeading();
   }, [pathname]);
   return null;
 }

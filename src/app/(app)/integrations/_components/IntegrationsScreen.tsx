@@ -24,6 +24,7 @@ import {
   INTEGRATIONS_COPY,
   PAYMENTS_COPY,
   VIDEO_COPY,
+  type VideoChoice,
 } from '@/lib/copy/integrations';
 import { useOnline } from '@/lib/utils/useOnline';
 import { lockedPageGate, memberGate, type MemberGateCopy } from '@/app/_shell/MentorGate';
@@ -79,7 +80,14 @@ export function IntegrationsScreen() {
   // (PRD decision 2), so the group keeps showing what the server holds. That is
   // also what stops an arrow-key traversal from firing a save per keystroke —
   // a pick only opens a dialog, and opening one takes focus out of the group.
-  const [switchTo, setSwitchTo] = useState<'daily' | 'google_meet' | null>(null);
+  // `from` is captured when they pick, not read at render. The dialog shows
+  // only while the server still holds what they are leaving, so a refetch that
+  // moves the provider closes it AND cannot resurrect it: `from` will never
+  // match again (review of #357).
+  const [switchTo, setSwitchTo] = useState<{
+    to: 'daily' | 'google_meet';
+    from: VideoChoice;
+  } | null>(null);
 
   const [announcement, setAnnouncement] = useState<{ text: string; id: number } | null>(null);
   const announce = useCallback(
@@ -105,12 +113,27 @@ export function IntegrationsScreen() {
 
   const { save: saveFn, reset: resetSave } = saveVideo;
 
+  /**
+   * Any move by the server kills a pending intent: it was formed against a
+   * value that no longer holds. Adjusting state during render rather than in
+   * an effect is React's own answer for this, and it matters that it is
+   * one-way — comparing against the captured `from` instead let the dialog
+   * come back if the provider returned to where it started (review of #357).
+   */
+  const provider = video.data?.provider;
+  const [seenProvider, setSeenProvider] = useState(provider);
+  if (provider !== seenProvider) {
+    setSeenProvider(provider);
+    if (switchTo) setSwitchTo(null);
+  }
+
   /** Opens the confirm. A provider already in use has nothing to ask about. */
   const pick = useCallback(
     (next: 'daily' | 'google_meet') => {
-      if (video.data?.provider === next) return;
+      const from = video.data?.provider;
+      if (!from || from === next) return;
       resetSave();
-      setSwitchTo(next);
+      setSwitchTo({ to: next, from });
     },
     [resetSave, video.data?.provider],
   );
@@ -406,18 +429,17 @@ export function IntegrationsScreen() {
   return (
     <>
       {body}
-      {/* `switchTo !== provider`: a refetch while this is open can move the
-          server's value onto the one being offered, leaving a dialog that asks
-          to switch Google Meet to Google Meet and a confirm that PATCHes a
-          no-op (edufurtherfe-f5, 2026-10-21). */}
-      {switchTo && video.data && switchTo !== video.data.provider && (
+      {/* Cleared above the moment the server moves, so this never asks to
+          switch Google Meet to Google Meet, and never PATCHes a no-op
+          (edufurtherfe-f5, 2026-10-21). */}
+      {switchTo && (
         <VideoSwitchConfirm
-          from={video.data.provider}
-          to={switchTo}
+          from={switchTo.from}
+          to={switchTo.to}
           pending={saveVideo.isPending}
           error={saveVideo.error?.message ?? null}
           onKeep={() => setSwitchTo(null)}
-          onConfirm={() => void confirmSwitch(switchTo)}
+          onConfirm={() => void confirmSwitch(switchTo.to)}
         />
       )}
       {confirmDisconnect && (

@@ -39,6 +39,10 @@ vi.mock('@/lib/api/data/calendar', async () =>
   (await import('./calendarScreen.harness')).mocks.calendar(),
 );
 
+vi.mock('@/lib/api/data/calendarConnection', async () =>
+  (await import('./calendarScreen.harness')).mocks.calendarConnection(),
+);
+
 beforeEach(resetCalendar);
 
 describe('CalendarScreen: weekly availability on a phone (mobileCollapse=on)', () => {

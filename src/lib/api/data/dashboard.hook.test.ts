@@ -31,13 +31,25 @@ const profile = (over: Record<string, unknown> = {}): ProfileRet =>
   }) as unknown as ProfileRet;
 
 const cal = (over: Record<string, unknown> = {}): CalRet =>
-  ({ data: null, isLoading: false, error: null, retry: () => {}, retrying: false, ...over }) as unknown as CalRet;
+  ({
+    data: null,
+    isLoading: false,
+    error: null,
+    retry: () => {},
+    retrying: false,
+    ...over,
+  }) as unknown as CalRet;
 
 const upc = (over: Record<string, unknown> = {}): UpcRet =>
   ({ data: [], isLoading: false, error: null, retry: () => {}, ...over }) as unknown as UpcRet;
 
 type StatsRet = ReturnType<typeof useMentorStats>;
-const noStats = { data: null, isLoading: false, error: null, retry: () => {} } as unknown as StatsRet;
+const noStats = {
+  data: null,
+  isLoading: false,
+  error: null,
+  retry: () => {},
+} as unknown as StatsRet;
 const statBlock = (over: Partial<StatBlock> = {}): StatBlock => ({
   since: '2026-09-14',
   until: '2026-10-14',
@@ -61,7 +73,12 @@ const windowStats = (current: Partial<StatBlock>, previous: Partial<StatBlock>):
     retry: () => {},
   }) as unknown as StatsRet;
 
-function run(p: ProfileRet, c: CalRet, u: UpcRet, stats?: { monthly: StatsRet; quarterly: StatsRet }) {
+function run(
+  p: ProfileRet,
+  c: CalRet,
+  u: UpcRet,
+  stats?: { monthly: StatsRet; quarterly: StatsRet },
+) {
   vi.mocked(useMentorProfile).mockReturnValue(p);
   vi.mocked(useCalendarConnection).mockReturnValue(c);
   vi.mocked(useUpcomingBookings).mockReturnValue(u);
@@ -76,14 +93,21 @@ function run(p: ProfileRet, c: CalRet, u: UpcRet, stats?: { monthly: StatsRet; q
 }
 
 describe('useMentorDashboard', () => {
-  it('counts only an active Google Calendar as done', () => {
-    // profile + sessions done; a revoked/errored grant must still prompt a reconnect.
-    expect(run(profile(), cal({ data: { status: 'error' } }), upc()).current.data?.setup.next?.key).toBe(
-      'google',
-    );
-    expect(run(profile(), cal({ data: { status: 'active' } }), upc()).current.data?.setup.next?.key).toBe(
-      'share',
-    );
+  it('counts a Google Calendar that exists as done, working or broken', () => {
+    // A broken grant still prompts a reconnect, as it always did, but the
+    // prompt is now CalendarReconnectBanner on this same screen rather than
+    // this step: it repairs in place and says "needs reconnecting", where the
+    // step navigates to /integrations and says "Connect Google Calendar" to a
+    // mentor who did connect. Two prompts, one of them wrong (review of #357).
+    expect(
+      run(profile(), cal({ data: { status: 'error' } }), upc()).current.data?.setup.next?.key,
+    ).toBe('share');
+    expect(
+      run(profile(), cal({ data: { status: 'active' } }), upc()).current.data?.setup.next?.key,
+    ).toBe('share');
+    // Never connected: no banner exists for this mentor, so the step is the
+    // only prompt there is and it stays.
+    expect(run(profile(), cal(), upc()).current.data?.setup.next?.key).toBe('google');
   });
 
   it('a settled-but-empty owner profile (404) yields no data, so the screen errors not crashes', () => {
@@ -148,7 +172,10 @@ describe('useMentorDashboard', () => {
       }),
       cal(),
       upc(),
-      { monthly: windowStats({ completedSessions: 4 }, { completedSessions: 3 }), quarterly: noStats },
+      {
+        monthly: windowStats({ completedSessions: 4 }, { completedSessions: 3 }),
+        quarterly: noStats,
+      },
     ).current;
     expect(r.metrics?.find((k) => k.key === 'sessions')?.trend).toEqual({
       text: '+1 this month',

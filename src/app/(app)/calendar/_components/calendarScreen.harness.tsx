@@ -8,6 +8,7 @@
  */
 import { screen } from '@testing-library/react';
 import type { Blocked, BookedDay } from '@/lib/api/data/calendar';
+import type { CalendarConnection } from '@/lib/api/data/calendarConnection';
 import type { Conferencing } from '@/lib/api/data/conferencing';
 import type { MentorStatus } from '@/lib/api/data/mentorStatus';
 import type { MentorDefaults } from '@/lib/api/data/sessionTypes';
@@ -115,12 +116,28 @@ const fresh = () => ({
   /** What the screen last asked the booked-days hook for. */
   bookedRange: null as { from: string; to: string } | null,
   bookedUser: null as string | null,
+  /**
+   * The Google grant behind the reconnect banner. Null by default, so the
+   * banner stays out of every test that isn't about it; set
+   * `h.connection = remote(brokenGrant())` to bring it on.
+   */
+  connection: remote<CalendarConnection | null>(null),
   blocked: remote<Blocked>({ days: [], exceptions: [] }),
   blockedPending: false,
   blockedError: null as AppError | null,
 });
 
 /** What the mocked hooks return in the current test. */
+/** A grant the backend has marked broken: the only state the banner shows for. */
+export const brokenGrant = (over: Partial<CalendarConnection> = {}): CalendarConnection => ({
+  connectedAt: '2026-10-01T09:00:00Z',
+  status: 'error',
+  lastSyncedAt: null,
+  fault: 'revoked',
+  accountEmail: 'team@edufurther.com',
+  ...over,
+});
+
 export const h = fresh();
 
 export function resetCalendar() {
@@ -180,6 +197,23 @@ export const mocks = {
       error: null,
       reset: vi.fn(),
     }),
+  }),
+  /**
+   * The banner's fetch. Without it every file that renders the screen throws
+   * "No QueryClient set", because this is the screen's only real React Query
+   * hook; the rest of the data layer is mocked here.
+   */
+  calendarConnection: () => ({
+    useCalendarConnection: () => h.connection,
+    readCalendarConnection: vi.fn(),
+    useStartCalendarConnect: () => ({ start: vi.fn() }),
+    useDisconnectCalendar: () => ({
+      disconnect: vi.fn(),
+      isPending: false,
+      error: null,
+      reset: vi.fn(),
+    }),
+    useRefreshAfterConnect: () => vi.fn(),
   }),
   mentorStatus: () => ({
     useMentorStatus: () => h.status,

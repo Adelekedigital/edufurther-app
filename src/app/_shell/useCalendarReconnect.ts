@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { useCalendarConnection } from '@/lib/api/data/calendarConnection';
 import { RECONNECT_COPY, RECONNECT_FAILURES, type ReconnectFailure } from '@/lib/copy/integrations';
-import { useCalendarConnect } from './useCalendarConnect';
+import { focusPageHeading } from './RouteFocusManager';
+import { useCalendarConnect, type ConnectState } from './useCalendarConnect';
 
 export type CalendarReconnect = {
   /** Only a connection the backend has marked broken puts this on screen. */
@@ -47,18 +49,40 @@ export function useCalendarReconnect(
   );
 
   const kind = state.kind;
-  // Every non-idle, non-busy outcome has copy; `?? null` only guards a state
-  // added to ConnectState later without a line here.
-  const failure: string | null =
-    kind === 'busy' || kind === 'idle'
-      ? null
-      : (RECONNECT_FAILURES[kind as ReconnectFailure] ?? null);
+  // Typed so a kind added to ConnectState without a line here is a compile
+  // error. Falling back to null would stop the spinner, say nothing, and leave
+  // a button that looks like it did nothing, which is the one thing
+  // ConnectState promises never to do.
+  const failures: Record<
+    Exclude<ConnectState['kind'], 'idle' | 'busy'>,
+    string
+  > = RECONNECT_FAILURES;
+  const failure = kind === 'busy' || kind === 'idle' ? null : failures[kind];
+
+  /**
+   * The banner unmounts the moment the grant is repaired, taking the focused
+   * Reconnect button with it, and focus falls to <body>. Only after an attempt
+   * of their own: a connection repaired in another tab must not move focus
+   * out from under someone reading this page (review of #357).
+   */
+  const attempted = useRef(false);
+  const wasShowing = useRef(broken);
+  useEffect(() => {
+    if (wasShowing.current && !broken && attempted.current) {
+      attempted.current = false;
+      focusPageHeading();
+    }
+    wasShowing.current = broken;
+  }, [broken]);
 
   return {
     show: broken,
     busy: kind === 'busy',
     unavailable,
     failure,
-    reconnect: () => void connect(),
+    reconnect: () => {
+      attempted.current = true;
+      void connect();
+    },
   };
 }
