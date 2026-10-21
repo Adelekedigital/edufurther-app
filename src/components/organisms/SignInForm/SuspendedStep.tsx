@@ -1,5 +1,5 @@
 import { ButtonLink } from '@/components/atoms/Button/Button';
-import { SUPPORT_EMAIL } from '@/lib/config/auth';
+import { supportMailto } from '@/lib/utils/mailto';
 import { cx } from '@/lib/utils/cx';
 import styles from './SignInForm.module.css';
 
@@ -7,7 +7,7 @@ import styles from './SignInForm.module.css';
 export function SuspendedStep({ onUseDifferentEmail }: { onUseDifferentEmail: () => void }) {
   return (
     <div className={styles.step}>
-      <ButtonLink href={`mailto:${SUPPORT_EMAIL}`} size="large" fullWidth>
+      <ButtonLink href={supportMailto()} size="large" fullWidth>
         Contact support
       </ButtonLink>
       <button

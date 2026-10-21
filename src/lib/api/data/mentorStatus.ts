@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
+import { statusOffline } from '@/lib/copy/calendar';
 import type { AppError, Remote } from '@/types/mentor';
 import { apiError, normaliseError } from './errors';
 import { api } from './http';
@@ -9,6 +10,8 @@ import { keys } from './keys';
 
 /** The mentor's listing as Calendar shows it (the header pill and the busy card). */
 export type MentorStatus = {
+  /** The application was approved: off the listing then means paused or unlisted by EduFurther. */
+  approved: boolean;
   /** Listed in search: open for new bookings. */
   listed: boolean;
   /** Paused by the mentor ("Busy"). False when an admin unlisted them: no Busy UI. */
@@ -21,10 +24,11 @@ type MentorProfileRead = components['schemas']['MentorProfileRead'];
 
 /** Busy only when the mentor paused themselves (backend #324); an admin unlisting isn't busy. */
 export function toMentorStatus(
-  p: Pick<MentorProfileRead, 'listing_status'> &
+  p: Pick<MentorProfileRead, 'listing_status' | 'approval_status'> &
     Partial<Pick<MentorProfileRead, 'paused_by_mentor' | 'return_on'>>,
 ): MentorStatus {
   return {
+    approved: p.approval_status === 'approved',
     listed: p.listing_status === 'listed',
     pausedByMentor: !!p.paused_by_mentor,
     returnOn: p.return_on ?? null,
@@ -58,7 +62,7 @@ export function statusError(error: unknown, pausing: boolean): AppError {
   const e = normaliseError(error);
   const message =
     e.kind === 'offline'
-      ? 'You’re offline, so we couldn’t change your availability. Try again when you reconnect.'
+      ? statusOffline(pausing)
       : e.status === 409
         ? // An admin unlisted this mentor: only an admin can relist them (calendar reply #1).
           'Your profile was taken off the listing by EduFurther, so you can’t change this yourself. Contact support.'
@@ -101,6 +105,8 @@ export function usePause(userId: string | null) {
       }
       if (!r.response.ok) throw statusError(apiError(r.response.status, r.error), true);
     },
+    // Offline, fail now with our copy rather than wait, paused, for a reconnect.
+    networkMode: 'always',
     onSettled: refresh,
   });
   return {
@@ -126,6 +132,8 @@ export function useResume(userId: string | null) {
       }
       if (!r.response.ok) throw statusError(apiError(r.response.status, r.error), false);
     },
+    // Offline, fail now with our copy rather than wait, paused, for a reconnect.
+    networkMode: 'always',
     onSettled: refresh,
   });
   return {

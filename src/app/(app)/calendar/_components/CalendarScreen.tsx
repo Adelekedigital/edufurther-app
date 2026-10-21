@@ -37,9 +37,10 @@ import {
   shortDay,
   todayIn,
 } from '@/lib/utils/calendar';
-import { BOOKING_RULES_COPY } from '@/lib/copy/calendar';
+import { BOOKING_RULES_COPY, UNLISTED_COPY } from '@/lib/copy/calendar';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
+import { supportMailto } from '@/lib/utils/mailto';
 import { useOnline } from '@/lib/utils/useOnline';
 import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import { lockedPageGate, memberGate, type MemberGateCopy } from '@/app/_shell/MentorGate';
@@ -210,6 +211,9 @@ export function CalendarScreen() {
   // Busy: a pause with an optional return date (a reminder, never an automatic
   // switch back). The pill's switch and "Change return date" open the modal.
   const busy = !!status.data?.pausedByMentor;
+  // Approved, off the listing, and not by their own pause: only an admin can
+  // relist them. Applicants in review or declined are off the listing too.
+  const unlisted = !!status.data?.approved && !status.data.listed && !status.data.pausedByMentor;
   const focusSwitch = () => requestAnimationFrame(() => statusSwitch.current?.focus());
   const openReturn = () => {
     if (resume.isPending) return;
@@ -364,6 +368,22 @@ export function CalendarScreen() {
             )
           )}
         </PageHeader>
+
+        {unlisted && (
+          // Page content, not a change: not a live region.
+          <Notice tone="info" icon="info" title={UNLISTED_COPY.title} live={false}>
+            {UNLISTED_COPY.body}{' '}
+            <a
+              href={supportMailto(
+                UNLISTED_COPY.subject(member!.firstName),
+                UNLISTED_COPY.mailBody(member!.firstName),
+              )}
+            >
+              {UNLISTED_COPY.contact}
+            </a>{' '}
+            {UNLISTED_COPY.after}
+          </Notice>
+        )}
 
         {busy && (
           <section className={styles.busy}>
