@@ -9,6 +9,7 @@ import { WeeklyHoursEditor } from '@/components/organisms/SessionTypeWizard/Week
 import { HOURS_COPY } from '@/lib/copy/calendar';
 import { availabilitySummary, weeklyHours, weeklyTotal } from '@/lib/utils/calendar';
 import { cx } from '@/lib/utils/cx';
+import { useFocusAcrossLayouts } from '@/lib/utils/focus';
 import { isOpenDay, type DayHours } from '@/lib/utils/sessionTypeDraft';
 import styles from './WeeklyHoursCard.module.css';
 
@@ -70,6 +71,11 @@ export function WeeklyHoursCard({
   className,
 }: WeeklyHoursCardProps) {
   const titleId = useId();
+  // Phone and desktop are two trees: crossing the breakpoint keeps focus on the card.
+  const swapRef = useFocusAcrossLayouts<HTMLElement>(
+    collapsible,
+    (root) => root.querySelector<HTMLElement>('h2 > button') ?? root.querySelector('h2'),
+  );
   const zoneNote = otherZones.length > 0 && (
     <p className={styles.zoneNote}>
       <Icon name="schedule" size={16} />
@@ -80,12 +86,13 @@ export function WeeklyHoursCard({
   );
   const editor = <WeeklyHoursEditor days={days} onChange={onDays} minLength={minLength} />;
 
-  // A breakpoint change swaps trees and remounts the editor; the draft lives in the page.
+  // The editor remounts across the breakpoint; the draft lives in the page.
   if (collapsible) {
     const [chip, tone] = hoursChip(days, invalid, dirty);
     const needsAttention = invalid || !days.some(isOpenDay);
     return (
       <CollapsibleSection
+        ref={swapRef}
         className={className}
         title={HOURS_COPY.title}
         summary={`${availabilitySummary(days) ?? HOURS_COPY.noHours}. ${HOURS_COPY.tapToView}`}
@@ -105,7 +112,7 @@ export function WeeklyHoursCard({
   }
 
   return (
-    <section aria-labelledby={titleId} className={cx(styles.card, className)}>
+    <section ref={swapRef} aria-labelledby={titleId} className={cx(styles.card, className)}>
       <div className={styles.head}>
         <div className={styles.titles}>
           <h2 id={titleId} ref={titleRef} tabIndex={-1} className={styles.title}>

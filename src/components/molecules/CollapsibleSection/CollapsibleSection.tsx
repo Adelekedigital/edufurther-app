@@ -20,6 +20,8 @@ type CollapsibleSectionProps = {
   openOnFocus?: boolean;
   /** Takes focus when a control that had it goes away (a page's save bar). */
   headingRef?: Ref<HTMLHeadingElement>;
+  /** The section element (a caller that swaps it for another layout follows focus with it). */
+  ref?: Ref<HTMLElement>;
   className?: string;
   children: ReactNode;
 };
@@ -37,6 +39,7 @@ export function CollapsibleSection({
   defaultOpen = false,
   openOnFocus = false,
   headingRef,
+  ref,
   className,
   children,
 }: CollapsibleSectionProps) {
@@ -48,7 +51,7 @@ export function CollapsibleSection({
   const showSummary = !open && !!summary;
 
   return (
-    <section aria-labelledby={`${id}-title`} className={cx(styles.section, className)}>
+    <section ref={ref} aria-labelledby={`${id}-title`} className={cx(styles.section, className)}>
       <h2
         ref={headingRef}
         tabIndex={-1}

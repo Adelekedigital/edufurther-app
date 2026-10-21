@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createRef } from 'react';
 import { SettingSummaryRow } from './SettingSummaryRow';
@@ -61,5 +61,32 @@ describe('SettingSummaryRow', () => {
     const edit = screen.getByRole('button', { name: 'Edit booking rules' });
     expect(edit).toBeDisabled();
     expect(edit).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('crossing the breakpoint with the action focused keeps focus on the action', () => {
+    let on = false;
+    const listeners = new Set<() => void>();
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query: string) =>
+        ({
+          media: query,
+          get matches() {
+            return on && query === '(max-width: 767px)';
+          },
+          addEventListener: (_: string, cb: () => void) => listeners.add(cb),
+          removeEventListener: (_: string, cb: () => void) => listeners.delete(cb),
+        }) as unknown as MediaQueryList,
+    );
+    const ref = createRef<HTMLButtonElement>();
+    render(<SettingSummaryRow {...row().props} ref={ref} />);
+    screen.getByRole('button', { name: 'Edit booking rules' }).focus();
+    act(() => {
+      on = true;
+      listeners.forEach((cb) => cb());
+    });
+    const edit = screen.getByRole('button', { name: 'Edit booking rules' });
+    expect(edit).not.toHaveTextContent('Change');
+    expect(edit).toHaveFocus();
+    expect(ref.current).toBe(edit);
   });
 });

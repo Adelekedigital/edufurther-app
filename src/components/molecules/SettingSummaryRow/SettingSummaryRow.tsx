@@ -1,10 +1,11 @@
 'use client';
 
-import { forwardRef } from 'react';
+import { forwardRef, useCallback } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { IconButton } from '@/components/atoms/IconButton/IconButton';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
+import { useFocusAcrossLayouts } from '@/lib/utils/focus';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import styles from './SettingSummaryRow.module.css';
 
@@ -34,6 +35,16 @@ export const SettingSummaryRow = forwardRef<HTMLButtonElement, SettingSummaryRow
   ) {
     // One control at a time, so the ref (focus on close) is always the shown one.
     const editIcon = useMediaQuery('(max-width: 767px)') && !actionText;
+    // Crossing the breakpoint swaps the control: focus follows it to the new one.
+    const swapRef = useFocusAcrossLayouts<HTMLButtonElement>(editIcon);
+    const actionRef = useCallback(
+      (el: HTMLButtonElement | null) => {
+        swapRef(el);
+        if (typeof ref === 'function') ref(el);
+        else if (ref) ref.current = el;
+      },
+      [ref, swapRef],
+    );
     return (
       <div className={styles.row}>
         <span aria-hidden className={styles.tile}>
@@ -45,7 +56,7 @@ export const SettingSummaryRow = forwardRef<HTMLButtonElement, SettingSummaryRow
         </div>
         {editIcon ? (
           <IconButton
-            ref={ref}
+            ref={actionRef}
             icon="edit"
             size="sm"
             shape="square"
@@ -56,7 +67,7 @@ export const SettingSummaryRow = forwardRef<HTMLButtonElement, SettingSummaryRow
           />
         ) : (
           <Button
-            ref={ref}
+            ref={actionRef}
             // A section action: medium (CTA hierarchy; the design script draws it 40px).
             variant="secondary-outlined"
             aria-label={actionLabel}
