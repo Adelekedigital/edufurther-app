@@ -12,3 +12,13 @@ export const BOOKING_RULES_COPY = {
   settingsLink: 'Settings › Booking rules',
   settingsHref: '/settings/booking',
 } as const;
+
+/** Weekly availability (Calendar v2 `hoursTitle`, `hoursSummary`, `hoursChip`). */
+export const HOURS_COPY = {
+  title: 'Weekly availability',
+  noHours: 'Add the days and times mentees can book you',
+  tapToView: 'Tap to view',
+  chipInvalid: 'Fix hours',
+  chipUnsaved: 'Unsaved',
+  chipNotSet: 'Not set',
+} as const;

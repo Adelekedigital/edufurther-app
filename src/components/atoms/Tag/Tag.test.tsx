@@ -17,4 +17,13 @@ describe('Tag', () => {
     render(<Tag tone="pending">Respond within 6h</Tag>);
     expect(screen.getByText('Respond within 6h').tagName).toBe('SPAN');
   });
+
+  it('draws a status tone as a rounded rectangle when asked', () => {
+    render(
+      <Tag tone="warning" shape="rect">
+        Unsaved
+      </Tag>,
+    );
+    expect(screen.getByText('Unsaved')).toHaveClass('tag', 'warning', 'rect');
+  });
 });

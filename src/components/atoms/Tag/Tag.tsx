@@ -32,6 +32,11 @@ type TagProps = {
     | 'danger'
     | 'pending'
     | 'fact';
+  /**
+   * rect — the status chip as a rounded rectangle, semibold
+   * (CollapsibleSection.dc.html chip): neutral / success / warning / danger.
+   */
+  shape?: 'rect';
   /** li when the tag is an item of a list. */
   as?: 'span' | 'li';
   children: ReactNode;
@@ -39,6 +44,8 @@ type TagProps = {
 };
 
 /** A non-interactive label. */
-export function Tag({ tone, as: El = 'span', children, className }: TagProps) {
-  return <El className={cx(styles.tag, styles[tone], className)}>{children}</El>;
+export function Tag({ tone, shape, as: El = 'span', children, className }: TagProps) {
+  return (
+    <El className={cx(styles.tag, styles[tone], shape && styles[shape], className)}>{children}</El>
+  );
 }

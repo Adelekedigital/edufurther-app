@@ -1,6 +1,8 @@
 import { addDays } from './slots';
 import {
+  DAY_NAMES,
   resolveDefaults,
+  shortTime,
   windowLabel,
   type BookingDefaults,
   type DayHours,
@@ -19,6 +21,38 @@ export function weeklyTotal(days: DayHours[]): string {
   if (!open) return 'No hours set';
   const hours = Math.round(weeklyMinutes(days) / 6) / 10;
   return `${hours} hrs a week · ${open} day${open > 1 ? 's' : ''}`;
+}
+
+/**
+ * Calendar v2 `hoursSummary`, Sunday first as the hours list: "Mon–Fri · 9 am–5 pm",
+ * "Mon, Sat · times vary by day"; null with no hours.
+ */
+export function availabilitySummary(days: DayHours[]): string | null {
+  const on = days.flatMap((d, i) => (d.on && d.slots.length ? [i] : []));
+  if (!on.length) return null;
+  const runs: { start: number; end: number }[] = [];
+  for (const i of on) {
+    const last = runs[runs.length - 1];
+    if (last && last.end === i - 1) last.end = i;
+    else runs.push({ start: i, end: i });
+  }
+  const name = (i: number) => DAY_NAMES[i]!.slice(0, 3);
+  const dayStr = runs
+    .map((r) =>
+      r.end - r.start >= 2
+        ? `${name(r.start)}–${name(r.end)}`
+        : r.end > r.start
+          ? `${name(r.start)}, ${name(r.end)}`
+          : name(r.start),
+    )
+    .join(', ');
+  const first = days[on[0]!]!.slots;
+  const same = on.every((i) => JSON.stringify(days[i]!.slots) === JSON.stringify(first));
+  const timeStr =
+    same && first.length === 1
+      ? `${shortTime(first[0]![0])}–${shortTime(first[0]![1])}`
+      : 'times vary by day';
+  return `${dayStr} · ${timeStr}`;
 }
 
 /** How many sessions of `durationMin` the week's hours fit, slot by slot (a session can't span two). */

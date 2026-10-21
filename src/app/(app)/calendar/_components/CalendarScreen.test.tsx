@@ -248,7 +248,7 @@ describe('CalendarScreen', () => {
     expect(screen.queryByRole('region', { name: 'Unsaved changes' })).toBeNull();
     expect(hasUnsavedChanges()).toBe(false);
     // The bar's button went: focus is on the hours, not lost to the page.
-    expect(screen.getByRole('heading', { name: 'Weekly hours' })).toHaveFocus();
+    expect(screen.getByRole('heading', { name: 'Weekly availability' })).toHaveFocus();
   });
 
   it('Discard moves focus to the hours before the bar goes', async () => {
@@ -256,7 +256,7 @@ describe('CalendarScreen', () => {
     render(<CalendarScreen />);
     await user.click(tuesdaySwitch());
     await user.click(screen.getByRole('button', { name: 'Discard' }));
-    expect(screen.getByRole('heading', { name: 'Weekly hours' })).toHaveFocus();
+    expect(screen.getByRole('heading', { name: 'Weekly availability' })).toHaveFocus();
   });
 
   it('an edit made while the save is on its way stays (with the bar)', async () => {
@@ -624,7 +624,7 @@ describe('CalendarScreen: busy and video', () => {
     expect(
       screen.getByText(/We’ll remind you on Fri, Oct 16 to switch back\./),
     ).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Weekly hours' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Weekly availability' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'I’m back, set me available' }));
     expect(resume).toHaveBeenCalled();
     await waitFor(() => expect(announced()).toContain('You’re available again.'));
@@ -671,7 +671,7 @@ describe('CalendarScreen: busy and video', () => {
     status = remote<MentorStatus>(null, { isLoading: true });
     render(<CalendarScreen />);
     expect(screen.getByRole('status', { name: 'Loading your calendar' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Weekly hours' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Weekly availability' })).toBeNull();
   });
 
   it('a status that fails to load is a page error, never the editor', async () => {
@@ -682,7 +682,7 @@ describe('CalendarScreen: busy and video', () => {
     expect(
       screen.getByRole('heading', { name: 'We couldn’t load your calendar' }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Weekly hours' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Weekly availability' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(retry).toHaveBeenCalled();
   });
@@ -773,7 +773,7 @@ describe('CalendarScreen: busy and video', () => {
       'Fix the hours marked in red, then save before setting yourself as busy.',
     );
     await waitFor(() =>
-      expect(screen.getByRole('heading', { name: 'Weekly hours' })).toHaveFocus(),
+      expect(screen.getByRole('heading', { name: 'Weekly availability' })).toHaveFocus(),
     );
   });
 
@@ -834,14 +834,14 @@ describe('the setup lock: /calendar opened by URL (PRD "App shell and access")',
     render(<CalendarScreen />);
     expectLockedPage(explainer.mentorNotApproved('Calendar'));
     expect(screen.queryByRole('heading', { name: 'Your calendar' })).toBeNull();
-    expect(screen.queryByRole('heading', { name: 'Weekly hours' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Weekly availability' })).toBeNull();
   });
 
   it('a mentor who never sent their application gets the setup explainer (owner, 2026-10-20)', () => {
     viewer = viewers.mentorUnfinished;
     render(<CalendarScreen />);
     expectLockedPage(explainer.mentorSetup('Calendar'));
-    expect(screen.queryByRole('heading', { name: 'Weekly hours' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Weekly availability' })).toBeNull();
   });
 
   it('a declined mentor is locked even while the hours are loading or have failed', () => {
@@ -868,7 +868,7 @@ describe('the setup lock: /calendar opened by URL (PRD "App shell and access")',
   ] as const)('%s sets their hours', (_who, over) => {
     viewer = mentor(over);
     render(<CalendarScreen />);
-    expect(screen.getByRole('heading', { name: 'Weekly hours' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Weekly availability' })).toBeInTheDocument();
     expectNoLock();
   });
 
@@ -890,7 +890,7 @@ describe('the setup lock: /calendar opened by URL (PRD "App shell and access")',
     viewer = { kind: 'loading', signedIn: true };
     render(<CalendarScreen />);
     expect(screen.getByRole('status', { name: 'Loading your calendar' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Weekly hours' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Weekly availability' })).toBeNull();
     expectNoLock();
   });
 
@@ -898,7 +898,81 @@ describe('the setup lock: /calendar opened by URL (PRD "App shell and access")',
     flags.mentor = false;
     viewer = declined();
     render(<CalendarScreen />);
-    expect(screen.getByRole('heading', { name: 'Weekly hours' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Weekly availability' })).toBeInTheDocument();
     expectNoLock();
+  });
+});
+
+describe('CalendarScreen: weekly availability on a phone (mobileCollapse=on)', () => {
+  beforeEach(() => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      (query: string) =>
+        ({
+          media: query,
+          matches: query === '(max-width: 767px)',
+          addEventListener: () => {},
+          removeEventListener: () => {},
+        }) as unknown as MediaQueryList,
+    );
+  });
+  afterEach(() => vi.restoreAllMocks());
+
+  const header = () => screen.getByRole('button', { name: 'Weekly availability' });
+
+  it('starts closed with the summary and the weekly total, and opens on a tap', async () => {
+    render(<CalendarScreen />);
+    expect(header()).toHaveAttribute('aria-expanded', 'false');
+    expect(header()).toHaveAccessibleDescription('3 hrs a week Mon · 5 pm–8 pm. Tap to view');
+    expect(screen.queryByRole('switch', { name: 'Tuesday' })).toBeNull();
+    await userEvent.click(header());
+    expect(header()).toHaveAttribute('aria-expanded', 'true');
+    expect(tuesdaySwitch()).toBeVisible();
+  });
+
+  it('an edit turns the chip to Unsaved, and the save bar stays while it’s closed', async () => {
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    await user.click(header());
+    await user.click(tuesdaySwitch());
+    expect(screen.getByText('Unsaved')).toBeInTheDocument();
+    await user.click(header());
+    expect(header()).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('region', { name: 'Unsaved changes' })).toBeInTheDocument();
+  });
+
+  it('opens by itself with no hours, chip Not set', () => {
+    weekly = remote({ ...HOURS, days: emptyWeek() });
+    render(<CalendarScreen />);
+    expect(header()).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Not set')).toBeInTheDocument();
+  });
+
+  it('opens by itself when the hours are invalid, chip Fix hours', () => {
+    const days = emptyWeek();
+    days[1] = { on: true, slots: [[1200, 1020]] };
+    weekly = remote({ ...HOURS, days });
+    render(<CalendarScreen />);
+    expect(header()).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Fix hours')).toBeInTheDocument();
+  });
+
+  it('the settings rows show an edit icon, named for what it edits', () => {
+    render(<CalendarScreen />);
+    expect(screen.getByRole('button', { name: 'Edit booking rules' })).not.toHaveTextContent(
+      'Change',
+    );
+    expect(screen.getByRole('button', { name: 'Change video for sessions' })).not.toHaveTextContent(
+      'Change',
+    );
+  });
+});
+
+describe('CalendarScreen: weekly availability on desktop', () => {
+  it('never collapses', () => {
+    render(<CalendarScreen />);
+    expect(screen.queryByRole('button', { name: 'Weekly availability' })).toBeNull();
+    expect(screen.getByRole('heading', { level: 2, name: 'Weekly availability' })).toBeVisible();
+    expect(tuesdaySwitch()).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Edit booking rules' })).toHaveTextContent('Change');
   });
 });

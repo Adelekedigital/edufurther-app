@@ -1,0 +1,79 @@
+/* CollapsibleSection.dc.html. */
+.section {
+  min-width: 0;
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  color: var(--ink-900);
+}
+.heading {
+  margin: 0;
+  font: inherit;
+}
+.heading:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.header {
+  width: 100%;
+  min-height: var(--touch-target-min);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border: none;
+  border-radius: var(--radius-xl);
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-ui);
+  color: inherit;
+}
+.header:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: calc(-1 * var(--focus-ring-width));
+}
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.title {
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+.chip {
+  display: inline-flex;
+}
+.summary {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+.chevron {
+  flex: none;
+  color: var(--ink-500);
+  /* Reduced motion zeroes --duration-base (ours.css). */
+  transition: transform var(--duration-base) var(--ease-standard);
+}
+.chevronOpen {
+  transform: rotate(180deg);
+}
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  border-top: var(--border-hairline) solid var(--border-muted);
+}
+.body[hidden] {
+  display: none;
+}

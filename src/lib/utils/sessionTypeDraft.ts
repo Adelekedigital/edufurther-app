@@ -504,7 +504,7 @@ export function defaultsSummary(d: BookingDefaults): string {
 }
 
 /** Design `t`: "5 pm", "5:30 pm". */
-function shortTime(m: number): string {
+export function shortTime(m: number): string {
   const h = Math.floor(m / 60) % 24;
   const mm = m % 60;
   const ap = h >= 12 ? 'pm' : 'am';
