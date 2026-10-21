@@ -6,7 +6,7 @@ export function OfflineBanner() {
   return (
     <div role="status" className={styles.banner}>
       <Icon name="cloud_off" size={16} />
-      You’re offline. Showing what was last loaded; changes will sync when you’re back.
+      You’re offline. Showing what was last loaded. Changes won’t save until you reconnect.
     </div>
   );
 }
