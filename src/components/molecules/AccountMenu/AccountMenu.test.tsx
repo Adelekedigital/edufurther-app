@@ -45,10 +45,9 @@ describe('AccountMenu', () => {
   it('Logout runs and closes; the external link opens in a new tab', async () => {
     const { button, onLogout } = setup();
     await userEvent.click(button);
-    expect(screen.getByRole('menuitem', { name: /Talk to our team/ })).toHaveAttribute(
-      'target',
-      '_blank',
-    );
+    expect(
+      screen.getByRole('menuitem', { name: 'Talk to our team (opens in a new tab)' }),
+    ).toHaveAttribute('target', '_blank');
     await userEvent.click(screen.getByRole('menuitem', { name: /Logout/ }));
     expect(onLogout).toHaveBeenCalledOnce();
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();

@@ -31,7 +31,7 @@ describe('when Join goes away under the keyboard', () => {
         }}
       />,
     );
-    screen.getByRole('link', { name: 'Join now' }).focus();
+    screen.getByRole('link', { name: 'Join now (opens in a new tab)' }).focus();
     rerender(
       <SessionLobby {...base} note="Joining closed at 6:15 pm, 15 minutes after the start." />,
     );
@@ -50,7 +50,7 @@ describe('when Join goes away under the keyboard', () => {
         }}
       />,
     );
-    screen.getByRole('link', { name: 'Rejoin session' }).focus();
+    screen.getByRole('link', { name: 'Rejoin session (opens in a new tab)' }).focus();
     rerender(<SessionLobby {...base} />);
     expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
   });
@@ -92,12 +92,14 @@ describe('Join as a link to the entry route (issue 207)', () => {
 
   it('is a plain anchor opening a new tab, named as the button was', () => {
     render(<SessionLobby {...base} join={join()} />);
-    const a = screen.getByRole('link', { name: 'Join now' });
+    const a = screen.getByRole('link', { name: 'Join now (opens in a new tab)' });
     expect(a.tagName).toBe('A');
     expect(a).toHaveAttribute('href', '/sessions/b1/enter');
     expect(a).toHaveAttribute('target', '_blank');
     expect(a).toHaveAttribute('rel', 'noopener noreferrer');
-    expect(screen.queryByRole('button', { name: 'Join now' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Join now (opens in a new tab)' }),
+    ).not.toBeInTheDocument();
   });
 
   it('is not next/link, so nothing prefetches a route that records an arrival', async () => {
@@ -107,7 +109,7 @@ describe('Join as a link to the entry route (issue 207)', () => {
     const { SessionLobby: Fresh } = await import('./SessionLobby');
     render(<Fresh {...base} join={join()} />);
     expect(link).not.toHaveBeenCalled();
-    expect(screen.getByRole('link', { name: 'Join now' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Join now (opens in a new tab)' })).toBeInTheDocument();
     vi.doUnmock('next/link');
   });
 
@@ -125,7 +127,7 @@ describe('Join as a link to the entry route (issue 207)', () => {
   it('tells the page when Join is followed, by click or middle-click, not by right-click', () => {
     const onFollow = vi.fn();
     render(<SessionLobby {...base} join={join({ onFollow })} />);
-    const a = screen.getByRole('link', { name: 'Join now' });
+    const a = screen.getByRole('link', { name: 'Join now (opens in a new tab)' });
     a.addEventListener('click', (e) => e.preventDefault());
     fireEvent.click(a);
     expect(onFollow).toHaveBeenCalledTimes(1);

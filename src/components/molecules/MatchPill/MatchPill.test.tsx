@@ -16,11 +16,18 @@ describe('MatchPill', () => {
   it('full pill: link opens in a new tab and × minimises', async () => {
     const onMinimise = vi.fn();
     render(<MatchPill {...base} size="full" miniAction="restore" onMinimise={onMinimise} />);
-    const link = screen.getByRole('link', { name: /Book a free call/ });
+    const link = screen.getByRole('link', { name: 'Book a free call (opens in a new tab)' });
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     await userEvent.click(screen.getByRole('button', { name: 'Minimise' }));
     expect(onMinimise).toHaveBeenCalled();
+  });
+
+  it('with external unset, an in-app link: same tab, plain name', () => {
+    const { external: _, ...inApp } = base;
+    render(<MatchPill {...inApp} href="/explore" size="full" miniAction="restore" />);
+    const link = screen.getByRole('link', { name: 'Book a free call' });
+    expect(link).not.toHaveAttribute('target');
   });
 
   it('desktop: the round icon after × restores the pill', async () => {
@@ -39,10 +46,9 @@ describe('MatchPill', () => {
     await userEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText(base.body)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Book a free call/ })).toHaveAttribute(
-      'target',
-      '_blank',
-    );
+    expect(
+      screen.getByRole('link', { name: 'Book a free call (opens in a new tab)' }),
+    ).toHaveAttribute('target', '_blank');
 
     await userEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'false');

@@ -133,6 +133,8 @@ export function SessionLobby({
               href={join.href}
               target="_blank"
               rel="noopener noreferrer"
+              // One string, as ExternalLink names its links (failure log #51).
+              aria-label={`${join.label} (opens in a new tab)`}
               size="large"
               fullWidth
               onClick={join.onFollow}

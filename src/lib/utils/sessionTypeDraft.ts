@@ -491,14 +491,14 @@ export const windowOptions = (current: number, max?: number) =>
 export const breakOptions = choices(BREAKS, breakLabel);
 export const approvalLabel = (on: boolean) => (on ? 'Approve each request' : 'Confirm instantly');
 
-/** Design `sum`: "60 min sessions · at least 24 hours notice · bookable up to 2 weeks ahead · 15 min break · you approve each request". */
+/** Design `sum`: "60 min sessions · at least 24 hours notice · bookable up to 2 weeks ahead · 15 min buffer · you approve each request" (buffer, as Settings and Calendar say it). */
 export function defaultsSummary(d: BookingDefaults): string {
   const r = resolveDefaults(d);
   return [
     `${r.durationMin} min sessions`,
     `at least ${hoursLabel(r.noticeHours)} hours notice`,
     `bookable up to ${windowLabel(r.windowDays)} ahead`,
-    r.breakMin ? `${r.breakMin} min break` : 'no break',
+    r.breakMin ? `${r.breakMin} min buffer` : 'no buffer',
     r.requiresApproval ? 'you approve each request' : 'instant confirm',
   ].join(' · ');
 }

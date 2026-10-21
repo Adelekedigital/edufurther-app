@@ -561,7 +561,7 @@ describe('the window is open', () => {
   it('Join is pressable with the venue’s hint, on a blue ground', () => {
     renderAt('16:56:00');
     expect(screen.getByText('Starting soon')).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Join session' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Join session (opens in a new tab)' })).toBeVisible();
     expect(screen.getByText('Opens in your browser. No download needed.')).toBeVisible();
     expect(screen.getByText('Ready when you are')).toBeVisible();
   });
@@ -605,14 +605,14 @@ describe('the window is open', () => {
   it('Rejoin still follows the Join press, even before Daily has seen you', () => {
     room = remote(sessionRoom({}, { joinedAt: '2026-10-04T17:01:00Z' }));
     renderAt('17:20:00');
-    expect(screen.getByRole('link', { name: 'Rejoin session' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Rejoin session (opens in a new tab)' })).toBeVisible();
     expect(screen.getByText('Joining…')).toBeVisible();
   });
 
   it('Join is a new-tab link to our entry route, which records the arrival (#207)', async () => {
     const open = vi.spyOn(window, 'open');
     renderAt('16:56:00');
-    const join = screen.getByRole('link', { name: 'Join session' });
+    const join = screen.getByRole('link', { name: 'Join session (opens in a new tab)' });
     expect(join).toHaveAttribute('href', '/sessions/b1/enter');
     expect(join).toHaveAttribute('target', '_blank');
     expect(join).toHaveAttribute('rel', 'noopener noreferrer');
@@ -725,7 +725,7 @@ describe('back from the entry route (?enter=)', () => {
   it('following Join drops the line', () => {
     search = new URLSearchParams('enter=notopen');
     renderAt('16:56:00');
-    const join = screen.getByRole('link', { name: 'Join session' });
+    const join = screen.getByRole('link', { name: 'Join session (opens in a new tab)' });
     join.addEventListener('click', (e) => e.preventDefault());
     act(() => join.click());
     expect(
@@ -741,7 +741,7 @@ describe('back from the entry route (?enter=)', () => {
     expect(visible('This session isn’t open to join right now.')).toBeVisible();
     // Starting soon → in progress: the Join on screen is a different one now.
     act(() => void vi.advanceTimersByTime(3000));
-    expect(screen.getByRole('link', { name: 'Join now' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Join now (opens in a new tab)' })).toBeVisible();
     expect(
       screen.queryByText('This session isn’t open to join right now.', {
         selector: 'p:not(.sr-only)',
@@ -773,7 +773,7 @@ describe('during the call', () => {
     expect(screen.getByText('In progress')).toBeVisible();
     expect(screen.queryByText('In session')).not.toBeInTheDocument();
     expect(screen.queryByText(/min left/)).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Join now' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Join now (opens in a new tab)' })).toBeVisible();
   });
 
   it('no Add to calendar once it has started', () => {
@@ -783,7 +783,7 @@ describe('during the call', () => {
 
   it('a first arrival: Join now links to the entry route', () => {
     renderAt('17:12:00');
-    expect(screen.getByRole('link', { name: 'Join now' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Join now (opens in a new tab)' })).toHaveAttribute(
       'href',
       '/sessions/b1/enter',
     );
@@ -792,25 +792,23 @@ describe('during the call', () => {
   it('someone who has been in: Rejoin links to the same route, which uses the door', () => {
     room = remote(sessionRoom({}, { joinedAt: '2026-10-04T17:01:00Z' }));
     renderAt('17:12:00');
-    expect(screen.getByRole('link', { name: 'Rejoin session' })).toHaveAttribute(
-      'href',
-      '/sessions/b1/enter',
-    );
+    expect(
+      screen.getByRole('link', { name: 'Rejoin session (opens in a new tab)' }),
+    ).toHaveAttribute('href', '/sessions/b1/enter');
   });
 
   it('after the window, someone who has been in can still rejoin until the end (#379)', () => {
     room = remote(sessionRoom({}, { joinedAt: '2026-10-04T17:01:00Z' }));
     renderAt('17:25:00');
-    expect(screen.getByRole('link', { name: 'Rejoin session' })).toHaveAttribute(
-      'href',
-      '/sessions/b1/enter',
-    );
+    expect(
+      screen.getByRole('link', { name: 'Rejoin session (opens in a new tab)' }),
+    ).toHaveAttribute('href', '/sessions/b1/enter');
   });
 
   it('the session id is encoded in the link', () => {
     vi.setSystemTime(at('17:12:00'));
     render(<SessionJoinScreen id="b 1/x" />);
-    expect(screen.getByRole('link', { name: 'Join now' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Join now (opens in a new tab)' })).toHaveAttribute(
       'href',
       '/sessions/b%201%2Fx/enter',
     );
@@ -820,7 +818,7 @@ describe('during the call', () => {
     room = remote(sessionRoom({ status: 'completed' }, { joinedAt: '2026-10-04T17:01:00Z' }));
     renderAt('17:20:00');
     expect(replace).not.toHaveBeenCalled();
-    expect(screen.getByRole('link', { name: 'Rejoin session' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Rejoin session (opens in a new tab)' })).toBeVisible();
   });
 
   it('after the window, a first-timer is not let in (product, 2026-10-08)', () => {
