@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { CreditsSummary } from '@/components/molecules/CreditsSummary/CreditsSummary';
@@ -130,19 +131,18 @@ export function AccountMenu({ avatar, items, credits, narrow }: AccountMenuProps
                   {body}
                 </Link>
               ) : it.href !== undefined ? (
-                <a
+                <ExternalLink
                   key={it.key}
                   ref={ref}
                   role="menuitem"
                   tabIndex={-1}
                   className={cls}
                   href={it.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  label={it.label}
                   onClick={() => close(false)}
                 >
                   {body}
-                </a>
+                </ExternalLink>
               ) : (
                 <button
                   key={it.key}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
@@ -192,18 +193,19 @@ export function ShareMenu({
               </>
             );
             return it.href !== undefined ? (
-              <a
+              <ExternalLink
                 key={it.key}
                 ref={ref}
                 role="menuitem"
                 tabIndex={-1}
                 className={styles.item}
                 href={it.href}
-                {...(it.key === 'linkedin' ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                label={it.label}
+                newTab={it.key === 'linkedin'}
                 onClick={() => close(false)}
               >
                 {body}
-              </a>
+              </ExternalLink>
             ) : (
               <button
                 key={it.key}

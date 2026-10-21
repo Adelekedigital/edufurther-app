@@ -1,4 +1,5 @@
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import styles from './MatchPrompt.module.css';
 
 type MatchPromptProps = {
@@ -25,15 +26,10 @@ export function MatchPrompt({ body, href, external }: MatchPromptProps) {
         </h2>
         <p className={styles.body}>{body}</p>
       </div>
-      <a
-        href={href}
-        className={styles.cta}
-        {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-      >
+      <ExternalLink href={href} label="Book a free call" newTab={external} className={styles.cta}>
         Book a free call
         <Icon name={external ? 'open_in_new' : 'arrow_forward'} size={16} />
-        {external && <span className="sr-only"> (opens in a new tab)</span>}
-      </a>
+      </ExternalLink>
     </section>
   );
 }

@@ -140,11 +140,10 @@ export const PLAN_HINTS = {
   destination: 'Pick one for now. You can add more later in Settings.',
 };
 
-/** The destination hint's link: the word it sits on, where it goes, and its new-tab note. */
+/** The destination hint's link: the word it sits on and where it goes (a new tab). */
 export const DESTINATION_LINK = {
   text: 'Settings',
   href: '/settings/goals',
-  newTab: '(opens in a new tab)',
 };
 
 export const PLAN_PLACEHOLDERS = {

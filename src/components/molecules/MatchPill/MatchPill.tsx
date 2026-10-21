@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import { cx } from '@/lib/utils/cx';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import styles from './MatchPill.module.css';
@@ -46,7 +47,6 @@ export function MatchPill({
   onMinimise,
   onRestore,
 }: MatchPillProps) {
-  const linkProps = external ? { target: '_blank', rel: 'noopener noreferrer' } : {};
   const style = { '--pill-bottom': bottom } as CSSProperties;
 
   // Full ↔ mini swaps the focused element out of the DOM (× , restore, or the
@@ -112,11 +112,15 @@ export function MatchPill({
         <>
           <Icon name="route" size={20} className={styles.route} />
           <span className={styles.label}>Not sure where to start?</span>
-          <a href={href} className={styles.cta} {...linkProps}>
+          <ExternalLink
+            href={href}
+            label="Book a free call"
+            newTab={external}
+            className={styles.cta}
+          >
             Book a free call
             <Icon name={external ? 'open_in_new' : 'arrow_forward'} size={16} />
-            {external && <span className="sr-only"> (opens in a new tab)</span>}
-          </a>
+          </ExternalLink>
           <button
             type="button"
             className={styles.minimise}
@@ -161,11 +165,15 @@ export function MatchPill({
                 Not sure where to start?
               </p>
               <p className={styles.popoverBody}>{body}</p>
-              <a href={href} className={styles.popoverCta} {...linkProps}>
+              <ExternalLink
+                href={href}
+                label="Book a free call"
+                newTab={external}
+                className={styles.popoverCta}
+              >
                 Book a free call
                 <Icon name={external ? 'open_in_new' : 'arrow_forward'} size={16} />
-                {external && <span className="sr-only"> (opens in a new tab)</span>}
-              </a>
+              </ExternalLink>
             </div>
           )}
         </>

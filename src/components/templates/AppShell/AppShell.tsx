@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState, type ComponentProps, type ReactNode } from 'react';
+import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -449,16 +450,15 @@ export function AppShell({
                       {it.label}
                     </Link>
                   ) : it.href !== undefined ? (
-                    <a
+                    <ExternalLink
                       href={it.href}
+                      label={it.label}
                       className={cx(styles.sheetItem, it.danger && styles.sheetDanger)}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       onClick={() => setMoreOpen(false)}
                     >
                       <Icon name={it.icon} size={20} />
                       {it.label}
-                    </a>
+                    </ExternalLink>
                   ) : (
                     <button
                       type="button"
