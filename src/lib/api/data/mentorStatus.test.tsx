@@ -14,17 +14,23 @@ describe('toMentorStatus', () => {
   it('busy only when the mentor paused themselves', () => {
     expect(
       toMentorStatus({
+        approval_status: 'approved',
         listing_status: 'unlisted',
         paused_by_mentor: true,
         return_on: '2026-10-16',
       }),
-    ).toEqual({ listed: false, pausedByMentor: true, returnOn: '2026-10-16' });
+    ).toEqual({ approved: true, listed: false, pausedByMentor: true, returnOn: '2026-10-16' });
     // An admin unlisting: not busy, and no fields yet (before backend #324) read as false/null.
-    expect(toMentorStatus({ listing_status: 'unlisted' })).toEqual({
+    expect(toMentorStatus({ approval_status: 'approved', listing_status: 'unlisted' })).toEqual({
+      approved: true,
       listed: false,
       pausedByMentor: false,
       returnOn: null,
     });
+  });
+  it('an applicant in review or declined is not approved', () => {
+    for (const approval_status of ['pending', 'declined'] as const)
+      expect(toMentorStatus({ approval_status, listing_status: 'unlisted' }).approved).toBe(false);
   });
 });
 

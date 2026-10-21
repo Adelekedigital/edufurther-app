@@ -182,7 +182,12 @@ beforeEach(() => {
   saveBlocked.mockReset().mockResolvedValue(undefined);
   blockedPending = false;
   blockedError = null;
-  status = remote<MentorStatus>({ listed: true, pausedByMentor: false, returnOn: null });
+  status = remote<MentorStatus>({
+    approved: true,
+    listed: true,
+    pausedByMentor: false,
+    returnOn: null,
+  });
   pause.mockReset().mockResolvedValue(undefined);
   resume.mockReset().mockResolvedValue(undefined);
   pauseError = null;
@@ -434,7 +439,12 @@ describe('CalendarScreen', () => {
   });
 
   it('an admin-unlisted mentor sees no status, and the notice says why with Contact support', () => {
-    status = remote<MentorStatus>({ listed: false, pausedByMentor: false, returnOn: null });
+    status = remote<MentorStatus>({
+      approved: true,
+      listed: false,
+      pausedByMentor: false,
+      returnOn: null,
+    });
     render(<CalendarScreen />);
     expect(screen.queryByText('Available')).toBeNull();
     expect(screen.queryByRole('switch', { name: /Available|Busy/ })).toBeNull();
@@ -452,11 +462,32 @@ describe('CalendarScreen', () => {
     expect(url.searchParams.get('body')).toContain('taken off the listing');
   });
 
+  // Pending and declined applicants are off the listing too (backend: approval_status
+  // decides it), and must never read as unlisted by an admin.
+  it('no unlisted notice for an applicant still in review or declined', () => {
+    for (const approved of [false]) {
+      status = remote<MentorStatus>({
+        approved,
+        listed: false,
+        pausedByMentor: false,
+        returnOn: null,
+      });
+      const { unmount } = render(<CalendarScreen />);
+      expect(screen.queryByText('Unlisted by EduFurther')).toBeNull();
+      unmount();
+    }
+  });
+
   it('no unlisted notice for a listed mentor, or one who paused themselves', () => {
     const { unmount } = render(<CalendarScreen />);
     expect(screen.queryByText('Unlisted by EduFurther')).toBeNull();
     unmount();
-    status = remote<MentorStatus>({ listed: false, pausedByMentor: true, returnOn: null });
+    status = remote<MentorStatus>({
+      approved: true,
+      listed: false,
+      pausedByMentor: true,
+      returnOn: null,
+    });
     render(<CalendarScreen />);
     expect(screen.queryByText('Unlisted by EduFurther')).toBeNull();
   });
@@ -637,7 +668,12 @@ describe('CalendarScreen: busy and video', () => {
   });
 
   it('while busy: the break card replaces the editing; I’m back resumes', async () => {
-    status = remote<MentorStatus>({ listed: false, pausedByMentor: true, returnOn: '2099-10-16' });
+    status = remote<MentorStatus>({
+      approved: true,
+      listed: false,
+      pausedByMentor: true,
+      returnOn: '2099-10-16',
+    });
     const user = userEvent.setup();
     render(<CalendarScreen />);
     expect(screen.getByText('Busy')).toBeInTheDocument();
@@ -653,7 +689,12 @@ describe('CalendarScreen: busy and video', () => {
   });
 
   it('Change return date opens the modal again', async () => {
-    status = remote<MentorStatus>({ listed: false, pausedByMentor: true, returnOn: null });
+    status = remote<MentorStatus>({
+      approved: true,
+      listed: false,
+      pausedByMentor: true,
+      returnOn: null,
+    });
     const user = userEvent.setup();
     render(<CalendarScreen />);
     expect(screen.getByText('No return date')).toBeInTheDocument();
@@ -725,7 +766,12 @@ describe('CalendarScreen: busy and video', () => {
   });
 
   it('a failed I’m back says why on screen', async () => {
-    status = remote<MentorStatus>({ listed: false, pausedByMentor: true, returnOn: null });
+    status = remote<MentorStatus>({
+      approved: true,
+      listed: false,
+      pausedByMentor: true,
+      returnOn: null,
+    });
     resume.mockRejectedValue({ message: 'We couldn’t set you as available. Try again.' });
     const user = userEvent.setup();
     render(<CalendarScreen />);
@@ -736,14 +782,24 @@ describe('CalendarScreen: busy and video', () => {
   });
 
   it('Change return date waits while I’m back is saving', () => {
-    status = remote<MentorStatus>({ listed: false, pausedByMentor: true, returnOn: null });
+    status = remote<MentorStatus>({
+      approved: true,
+      listed: false,
+      pausedByMentor: true,
+      returnOn: null,
+    });
     resumePending = true;
     render(<CalendarScreen />);
     expect(screen.getByRole('button', { name: 'Change return date' })).toBeDisabled();
   });
 
   it('a passed return date is said as passed, not as a reminder to come', () => {
-    status = remote<MentorStatus>({ listed: false, pausedByMentor: true, returnOn: '2000-01-03' });
+    status = remote<MentorStatus>({
+      approved: true,
+      listed: false,
+      pausedByMentor: true,
+      returnOn: '2000-01-03',
+    });
     render(<CalendarScreen />);
     expect(screen.getByText('Return date passed')).toBeInTheDocument();
     expect(screen.getByText(/Your return date, Mon, Jan 3, has passed\./)).toBeInTheDocument();
@@ -765,7 +821,12 @@ describe('CalendarScreen: busy and video', () => {
     await user.click(screen.getByRole('switch', { name: 'Available for new bookings' }));
     await user.click(screen.getByRole('radio', { name: 'Not sure yet' }));
     await user.click(screen.getByRole('button', { name: 'Set as busy' }));
-    status = remote<MentorStatus>({ listed: false, pausedByMentor: true, returnOn: null });
+    status = remote<MentorStatus>({
+      approved: true,
+      listed: false,
+      pausedByMentor: true,
+      returnOn: null,
+    });
     rerender(<CalendarScreen />);
     await user.click(await screen.findByRole('button', { name: 'Done' }));
     await waitFor(() =>
@@ -778,7 +839,12 @@ describe('CalendarScreen: busy and video', () => {
     const { rerender } = render(<CalendarScreen />);
     await user.click(screen.getByRole('switch', { name: 'Tuesday' }));
     // Paused from another tab: the status refetches while the draft stays.
-    status = remote<MentorStatus>({ listed: false, pausedByMentor: true, returnOn: null });
+    status = remote<MentorStatus>({
+      approved: true,
+      listed: false,
+      pausedByMentor: true,
+      returnOn: null,
+    });
     rerender(<CalendarScreen />);
     await user.click(screen.getByRole('button', { name: 'Change return date' }));
     expect(screen.getByRole('dialog', { name: 'When will you be back?' })).toBeInTheDocument();
@@ -800,7 +866,12 @@ describe('CalendarScreen: busy and video', () => {
   });
 
   it('a failed I’m back message goes when the return modal opens', async () => {
-    status = remote<MentorStatus>({ listed: false, pausedByMentor: true, returnOn: null });
+    status = remote<MentorStatus>({
+      approved: true,
+      listed: false,
+      pausedByMentor: true,
+      returnOn: null,
+    });
     resume.mockRejectedValue({ message: 'We couldn’t set you as available. Try again.' });
     const user = userEvent.setup();
     render(<CalendarScreen />);
@@ -814,7 +885,12 @@ describe('CalendarScreen: busy and video', () => {
 
   it('an account zone the browser can’t read falls back, no crash', () => {
     viewer = mentor({ timeZone: 'Not/AZone' });
-    status = remote<MentorStatus>({ listed: false, pausedByMentor: true, returnOn: '2099-10-16' });
+    status = remote<MentorStatus>({
+      approved: true,
+      listed: false,
+      pausedByMentor: true,
+      returnOn: '2099-10-16',
+    });
     render(<CalendarScreen />);
     expect(screen.getByText('Back Fri, Oct 16')).toBeInTheDocument();
   });

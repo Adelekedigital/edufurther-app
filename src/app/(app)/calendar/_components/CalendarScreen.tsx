@@ -211,8 +211,9 @@ export function CalendarScreen() {
   // Busy: a pause with an optional return date (a reminder, never an automatic
   // switch back). The pill's switch and "Change return date" open the modal.
   const busy = !!status.data?.pausedByMentor;
-  // Off the listing, and not by their own pause: only an admin can relist them.
-  const unlisted = !!status.data && !status.data.listed && !status.data.pausedByMentor;
+  // Approved, off the listing, and not by their own pause: only an admin can
+  // relist them. Applicants in review or declined are off the listing too.
+  const unlisted = !!status.data?.approved && !status.data.listed && !status.data.pausedByMentor;
   const focusSwitch = () => requestAnimationFrame(() => statusSwitch.current?.focus());
   const openReturn = () => {
     if (resume.isPending) return;
@@ -369,7 +370,8 @@ export function CalendarScreen() {
         </PageHeader>
 
         {unlisted && (
-          <Notice tone="info" icon="info" title={UNLISTED_COPY.title}>
+          // Page content, not a change: not a live region.
+          <Notice tone="info" icon="info" title={UNLISTED_COPY.title} live={false}>
             {UNLISTED_COPY.body}{' '}
             <a
               href={supportMailto(

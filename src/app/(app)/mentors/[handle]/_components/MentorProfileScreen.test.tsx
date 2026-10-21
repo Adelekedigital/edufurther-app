@@ -244,11 +244,11 @@ describe('MentorProfileScreen — the mentor on their own page', () => {
   it('tells a declined mentor their profile wasn’t approved (review of #21; design reply #42)', () => {
     h.profile = state({ data: { ...fullProfile, owner: { approval: 'declined', listed: true } } });
     render(<MentorProfileScreen handle="gbenga" />);
-    expect(
-      screen.getByText(
-        'Your profile wasn’t approved, so only you can see it. Contact support to find out what to change.',
-      ),
-    ).toBeInTheDocument();
+    const link = screen.getByRole('link', { name: 'Contact support' });
+    expect(link).toHaveAttribute('href', 'mailto:support@edufurther.org');
+    expect(link.parentElement).toHaveTextContent(
+      'Your profile wasn’t approved, so only you can see it. Contact support to find out what to change.',
+    );
   });
 
   it('says an unlisted profile is hidden', () => {

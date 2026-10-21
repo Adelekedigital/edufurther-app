@@ -20,7 +20,8 @@ export const UNLISTED_COPY = {
   contact: 'Contact support',
   after: 'if you have questions.',
   /** The prefilled mail; support sees the sender's address, so the name signs it. */
-  subject: (firstName: string) => `My profile was unlisted (${firstName})`,
+  subject: (firstName: string) =>
+    firstName ? `My profile was unlisted (${firstName})` : 'My profile was unlisted',
   mailBody: (firstName: string) =>
     [
       'Hi EduFurther team,',

@@ -42,9 +42,6 @@ export function ownerBarState(
 }
 
 const OWNER_COPY = {
-  // Design's answer to request #42.
-  declined:
-    'Your profile wasn’t approved, so only you can see it. Contact support to find out what to change.',
   pending: 'Only you can see this until your profile is approved.',
   unlisted: 'Your profile is unlisted. Only you can see it.',
   noTypes:

@@ -10,6 +10,8 @@ import { keys } from './keys';
 
 /** The mentor's listing as Calendar shows it (the header pill and the busy card). */
 export type MentorStatus = {
+  /** The application was approved: off the listing then means paused or unlisted by EduFurther. */
+  approved: boolean;
   /** Listed in search: open for new bookings. */
   listed: boolean;
   /** Paused by the mentor ("Busy"). False when an admin unlisted them: no Busy UI. */
@@ -22,10 +24,11 @@ type MentorProfileRead = components['schemas']['MentorProfileRead'];
 
 /** Busy only when the mentor paused themselves (backend #324); an admin unlisting isn't busy. */
 export function toMentorStatus(
-  p: Pick<MentorProfileRead, 'listing_status'> &
+  p: Pick<MentorProfileRead, 'listing_status' | 'approval_status'> &
     Partial<Pick<MentorProfileRead, 'paused_by_mentor' | 'return_on'>>,
 ): MentorStatus {
   return {
+    approved: p.approval_status === 'approved',
     listed: p.listing_status === 'listed',
     pausedByMentor: !!p.paused_by_mentor,
     returnOn: p.return_on ?? null,
