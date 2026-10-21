@@ -236,7 +236,7 @@ describe('IntegrationsScreen', () => {
     render(<IntegrationsScreen />);
     await userEvent.click(screen.getByRole('radio', { name: /EduFurther video/ }));
     const dialog = screen.getByRole('alertdialog', { name: 'Switch to EduFurther video?' });
-    expect(dialog).toHaveTextContent('Sessions already booked keep their Google Meet link.');
+    expect(dialog).toHaveTextContent('Sessions already confirmed keep their Google Meet link.');
     await userEvent.click(screen.getByRole('button', { name: 'Switch to EduFurther video' }));
     expect(saveVideo).toHaveBeenCalledWith({ provider: 'daily', customUrl: null });
   });
@@ -310,7 +310,11 @@ describe('IntegrationsScreen', () => {
     await userEvent.click(screen.getByRole('radio', { name: /EduFurther video/ }));
     // Not "their Google Meet link": this mentor has never been on Meet.
     expect(screen.getByRole('alertdialog')).toHaveTextContent(
-      'Sessions already booked keep your personal meeting link.',
+      'Sessions already confirmed keep your personal meeting link.',
+    );
+    // Switching away is the one thing on this screen a mentor cannot undo.
+    expect(screen.getByRole('alertdialog')).toHaveTextContent(
+      'You won’t be able to choose it again here, so ask support if you need it back.',
     );
     await userEvent.click(screen.getByRole('button', { name: 'Keep personal meeting link' }));
     expect(saveVideo).not.toHaveBeenCalled();

@@ -50,7 +50,16 @@ export const DAILY_COPY = {
   benefit: 'Attendance is tracked, so every session counts toward your session analytics.',
 } as const;
 
-/** The alternative (design `vOthers`). */
+/**
+ * The alternative (design `vOthers`).
+ *
+ * `by` and `desc` are NOT rendered on /integrations and that is deliberate:
+ * the drawn `primary` row carries one line under its label, and the note is
+ * the line a mentor is choosing on. They are here, not deleted, because the
+ * same provider is drawn as a full card elsewhere (Calendar's booking modal,
+ * VideoProviderForm) and that layout has a slot for both. `by` in particular
+ * replaces the old "Uses your Google account", which was false.
+ */
 export const MEET_COPY = {
   label: 'Google Meet',
   /** Links are minted on EduFurther's calendar, not the mentor's (backend reply #2). */
@@ -77,15 +86,29 @@ export const SWITCHING = 'Switching…';
 /** Mirrors ConferencingProvider; copy never imports the generated client. */
 export type VideoChoice = 'daily' | 'google_meet' | 'custom';
 
-/** What a provider is called when a sentence is about leaving it. */
-const LEAVING: Record<VideoChoice, { booked: string; keep: string }> = {
+/**
+ * What a provider is called when a sentence is about leaving it, and what else
+ * the mentor needs to know before they go.
+ *
+ * `oneWay` is only on `custom`, and it is the one sentence on this screen a
+ * mentor cannot undo by pressing the other card. The backend keeps the URL on
+ * its own row (a CHECK constraint won't let it be null), but `GET
+ * /me/conferencing` returns only the default row and a PATCH back to `custom`
+ * is a 422 without a URL in the body. So it is not deleted, and it is also not
+ * reachable from here: support is the route back (backend reply, 2026-10-21).
+ */
+const LEAVING: Record<VideoChoice, { booked: string; keep: string; oneWay?: string }> = {
   daily: { booked: 'their EduFurther video link', keep: 'Keep EduFurther video' },
   google_meet: { booked: 'their Google Meet link', keep: 'Keep Google Meet' },
   // PROVISIONAL, like the card itself: the PRD specifies only the two
   // directions between EduFurther video and Meet, because those are the only
   // two the page can reach. Support can still put an account on a personal
   // link, and "keep their Google Meet link" would be a lie to that mentor.
-  custom: { booked: 'your personal meeting link', keep: 'Keep personal meeting link' },
+  custom: {
+    booked: 'your personal meeting link',
+    keep: 'Keep personal meeting link',
+    oneWay: 'You won’t be able to choose it again here, so ask support if you need it back.',
+  },
 };
 
 /**
@@ -96,17 +119,26 @@ const LEAVING: Record<VideoChoice, { booked: string; keep: string }> = {
  */
 export function switchCopy(from: VideoChoice, to: 'daily' | 'google_meet') {
   const leaving = LEAVING[from];
-  const booked = `Sessions already booked keep ${leaving.booked}.`;
+  /**
+   * "confirmed", not the PRD's "booked". A meeting link is written when a
+   * session is confirmed, not when it is requested, so a mentor who approves
+   * bookings by hand has pending requests that will take the NEW provider the
+   * moment they accept them (backend reply, 2026-10-21). "Sessions already
+   * booked keep their X link" promises those mentors something untrue; one
+   * word makes it true for both booking modes without a second sentence.
+   */
+  const kept = `Sessions already confirmed keep ${leaving.booked}.`;
+  const after = leaving.oneWay ? `${kept} ${leaving.oneWay}` : kept;
   return to === 'google_meet'
     ? {
         title: 'Switch to Google Meet?',
-        body: `New bookings will use Google Meet. ${booked} ${MEET_COUNTS_AT_BOOKED}`,
+        body: `New bookings will use Google Meet. ${after} ${MEET_COUNTS_AT_BOOKED}`,
         confirm: 'Switch to Google Meet',
         keep: leaving.keep,
       }
     : {
         title: 'Switch to EduFurther video?',
-        body: `New bookings will use EduFurther video, and their attendance counts toward your session analytics. ${booked}`,
+        body: `New bookings will use EduFurther video, and their attendance counts toward your session analytics. ${after}`,
         confirm: 'Switch to EduFurther video',
         keep: leaving.keep,
       };

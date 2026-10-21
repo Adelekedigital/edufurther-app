@@ -9,14 +9,16 @@
   border-color: var(--border-default);
 }
 /* 2px, as drawn: the selected card's weight is part of what marks it. The
-   extra pixel comes out of the content box, exactly as in the design. */
-.on {
+   extra pixel comes out of the content box, exactly as in the design.
+   Qualified by .card so it outranks Card.module.css's own `border` shorthand
+   whatever order the two stylesheets land in. */
+.card.on {
   border-width: 2px;
   border-color: var(--blue-500);
   background: var(--blue-50);
 }
 /* Nothing to choose here, so it isn't dressed as a choice. */
-.readOnly {
+.card.readOnly {
   cursor: default;
 }
 /* The radio carries focus; ring the card so it reads as the control. */

@@ -22,7 +22,9 @@ export type ConfirmActionsProps = {
    * and every confirm drawn in Modal.dc.html).
    * `stack` — full width, one above the other, the action on top
    * (Integrations.dc.html `switchOpen`). Used where neither answer is
-   * destructive and both labels are long enough to need the room.
+   * destructive and both labels are long enough to need the room. Keep it
+   * that way: stacked, the action is also the FIRST tab stop, so pairing
+   * `stack` with `tone="danger"` would put the destructive button there.
    */
   layout?: 'split' | 'stack';
 };
