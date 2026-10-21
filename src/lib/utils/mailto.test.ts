@@ -13,6 +13,11 @@ describe('supportMailto', () => {
     expect(supportMailto()).toBe('mailto:support@edufurther.org');
     vi.stubEnv('NEXT_PUBLIC_SUPPORT_EMAIL', 'not an address');
     expect(supportMailto()).toBe('mailto:support@edufurther.org');
+    // Anything that would add a header or a second recipient to the mailto.
+    for (const v of ['a@b.co?cc=x@y.zz', 'a@b.co&bcc=x', 'a@b.co#x', 'a,e@x.yz', 'a%40@b.co'])
+      expect((vi.stubEnv('NEXT_PUBLIC_SUPPORT_EMAIL', v), supportMailto())).toBe(
+        'mailto:support@edufurther.org',
+      );
   });
   it('prefills the subject and body, encoded', () => {
     expect(supportMailto('A & B', 'Hi,\nthanks')).toBe(
