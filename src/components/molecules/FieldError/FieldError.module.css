@@ -6,7 +6,8 @@
   margin: 0;
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
-  color: var(--red-600);
+  font-weight: var(--weight-regular);
+  color: var(--text-field-error);
 }
 /* The icon on the first line's centre (design: 16px glyph on an 18px line). */
 .error > :first-child {

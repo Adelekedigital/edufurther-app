@@ -1,0 +1,12 @@
+/* Fields or cards side by side, wrapping below 200px each (Mentor Profile.dc.html
+   `editingIntro`, Session Types.dc.html templates, Mentor Settings background). */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+.gap3 {
+  gap: var(--space-3);
+}
+.gap4 {
+  gap: var(--space-4);
+}

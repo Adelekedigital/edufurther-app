@@ -68,11 +68,6 @@
   font-size: var(--text-p-md);
   font-weight: var(--weight-semibold);
 }
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--space-4);
-}
 .field {
   display: flex;
   flex-direction: column;

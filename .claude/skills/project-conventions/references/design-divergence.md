@@ -272,6 +272,7 @@ Defined in `src/styles/tokens/ours.css`. A redesign must not silently drop them:
 | `--gold-subtle`                                                                                         | design literal `#fffbef` (award and mentoring-time icon tiles, Mentor Profile)               |
 | `--button-h-large`, `--button-h-medium`, `--button-h-small`, `--button-compact-h`, `--touch-target-min` | CTA hierarchy heights (the DS button sizes differ), chip height, 44px targets                |
 | `--lh-icon-inline` | 18px: the line a field error's 16px icon sits on (every `.dc.html` field error) |
+| `--text-field-error` | a field's error line, `--red-600` (every `.dc.html` field error); `--text-danger` is red-500 |
 | `--modal-icon-*` (bg/ring/ink × default, danger, success)                                               | Modal.dc.html `tone` literals (`#f5f9ff`, `#fff6f5`, `#f3fbf6` rings)                        |
 | `--step-dot-text`                                                                                       | Session Types wizard step number, literal 11px                                               |
 | `--text-avatar-profile` | the profile header photo's initials: design literals 40px, 26px on phones; no DS step |
@@ -1036,3 +1037,14 @@ The frozen state follows `viewer.mentorStage === 'pending'` (submitted, awaiting
 | Loading, a failed load and a refused save aren't drawn | Skeleton rows; "We couldn’t load your links. Check your connection and try again." with Try again; the refusal in the form (`role="alert"`) | All four states ship (ui-states); copy in `lib/copy/socialLinks.ts` | design draws them |
 | Gender select at `--text-p-sm` (already drawn) | Was `--text-p-xs`; now `Select text="sm"` | A fix, logged here: the shared Select's 12px default is the rule rows' size; form selects are 14px like the inputs (owner spotted it, 2026-10-20) | — |
 | `Calendar v2.dc.html` `gcalBroken` is a `<div role="alert">` | No live role on the wrapper; `role="status"` on the second line only (`CalendarReconnectBanner`) | `role="alert"` implies `aria-atomic`, so every change re-read the WHOLE banner assertively: pressing Reconnect read the two sentences plus the button plus "Waiting for Google…", and a failure read it all again. It was also least reliable at insertion, because a live region inserted with its text already in it is often not announced — the reason `Notice` has a `live` prop and CalendarScreen passes `live={false}`. A `.dc.html`'s runtime semantics are mockup-only ([[dc-html-prototype-signals]]). | — (settled in #357; a fidelity audit by `edufurtherfe-f5` nearly flagged it back, 2026-10-21) |
+
+## Forms: one field error line (`FormField` uses `FieldError`, 2026-10-21)
+
+Every field error in the app is `FieldError`: a 16px error icon on an 18px line, `--space-2` to the words, 12px regular in `--text-field-error`, under the hint, `role="alert"`. The field's label, control, hint and error sit `--space-2` apart. This is the majority of the designs and Sign In.dc.html. The design files that draw it otherwise are being brought in line, not kept as divergences:
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| Mentor Profile.dc.html `editingIntro`: label 4px above the field, icon 4px from the words, icon not red | 8px and 8px, icon in `--red-600` | One error line for every form (DRY); the design file is being updated to match | — |
+| Mentee Onboarding v5.dc.html `saveErr`: icon 4px from the words | 8px | As above | — |
+| SecuritySettings, Mentee Settings and Mentor Settings password error, ProfileItemModal `hasError`: no icon | The 16px error icon, red-600 | As above | — |
+| FormField's own error line: above the hint, 12px medium, `--text-danger` (red-500), icon 4px | `FieldError` under the hint | Ours, now the shared line; the description still reads the error before the hint | — |

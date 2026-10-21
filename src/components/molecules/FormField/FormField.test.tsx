@@ -24,4 +24,16 @@ describe('FormField', () => {
     expect(input).toHaveAttribute('aria-invalid', 'true');
     expect(input).toHaveAccessibleDescription('Give your session a name. Be specific.');
   });
+
+  it('shows the error under the hint, as the shared announced FieldError line', () => {
+    render(
+      <FormField label="Session name" hint="Be specific." error="Give your session a name.">
+        {(f) => <Input {...f} />}
+      </FormField>,
+    );
+    const error = screen.getByRole('alert');
+    expect(error).toHaveTextContent('Give your session a name.');
+    const hint = screen.getByText('Be specific.');
+    expect(hint.compareDocumentPosition(error) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 });

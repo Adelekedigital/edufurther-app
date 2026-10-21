@@ -1,5 +1,5 @@
 import { useId, type ReactNode } from 'react';
-import { Icon } from '@/components/atoms/Icon/Icon';
+import { FieldError } from '@/components/molecules/FieldError/FieldError';
 import styles from './FormField.module.css';
 
 /** What the control needs to be labelled and described by the field (Input, Textarea, Select). */
@@ -28,7 +28,8 @@ type FormFieldProps = {
 
 /**
  * Label, control, hint (Session Types.dc.html "Session name", "What mentees
- * get"). The error line is ours: the design draws no invalid state.
+ * get"), then the app's one error line, FieldError, under the hint. The
+ * description still reads the error first.
  */
 export function FormField({ label, hint, counter, error, compact, children }: FormFieldProps) {
   const id = useId();
@@ -51,17 +52,12 @@ export function FormField({ label, hint, counter, error, compact, children }: Fo
         'aria-describedby': describedBy,
         invalid: !!error,
       })}
-      {error && (
-        <p id={errorId} className={styles.error}>
-          <Icon name="error" size={16} />
-          {error}
-        </p>
-      )}
       {hint && (
         <p id={hintId} className={styles.hint}>
           {hint}
         </p>
       )}
+      {error && <FieldError id={errorId}>{error}</FieldError>}
     </div>
   );
 }
