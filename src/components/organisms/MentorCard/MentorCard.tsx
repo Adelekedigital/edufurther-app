@@ -9,13 +9,8 @@ import { PhotoFrame } from '@/components/molecules/PhotoFrame/PhotoFrame';
 import type { Mentor, MentorLabel } from '@/types/mentor';
 import { cx } from '@/lib/utils/cx';
 import { MoreTopics } from './MoreTopics';
+import { LABEL_TEXT } from '@/lib/api/data/labels';
 import styles from './MentorCard.module.css';
-
-const LABEL_TEXT: Record<MentorLabel, string> = {
-  'top-rated': 'Top-rated',
-  experienced: 'Experienced mentor',
-  new: 'New mentor',
-};
 
 type MentorCardProps = {
   mentor: Mentor;

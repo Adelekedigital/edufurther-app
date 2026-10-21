@@ -131,13 +131,15 @@ describe('MentorProfileScreen — "View as mentee"', () => {
 
   it('the Sessions tab: Book drawn but off', async () => {
     h.search = new URLSearchParams('tab=sessions');
-    h.profile = state({ data: mine() });
+    // The tab shows from 3 sessions in the preview too (PRD, 21 Oct).
+    h.profile = state({ data: mine({}, { sessionTypes }) });
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.queryByRole('button', { name: /Book session/ })).toBeNull();
     await user.click(bar());
     const panel = screen.getByRole('tabpanel');
-    expect(within(panel).getByRole('button', { name: 'Book session' })).toBeDisabled();
+    for (const b of within(panel).getAllByRole('button', { name: 'Book session' }))
+      expect(b).toBeDisabled();
   });
 
   it('not taking bookings: shows what mentees see (review of PR 106)', async () => {
@@ -146,8 +148,13 @@ describe('MentorProfileScreen — "View as mentee"', () => {
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(bar());
     expect(screen.getAllByText('Not taking bookings').length).toBeGreaterThan(0);
-    expect(screen.getByRole('tab', { name: 'Sessions (0)' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Book/ })).toBeNull();
+    // One session: no Sessions tab for mentees (PRD, 21 Oct).
+    expect(screen.queryByRole('tab', { name: /Sessions/ })).toBeNull();
+    // Nothing of this mentor's to book; the similar mentors' Book is drawn, off.
+    const similar = screen.getByRole('region', { name: 'Similar mentors' });
+    expect(
+      screen.queryAllByRole('button', { name: /Book/ }).filter((b) => !similar.contains(b)),
+    ).toEqual([]);
   });
 
   it('a new mentor: the first-mentees card’s Book is drawn but off too (Codex on PR 106)', async () => {
@@ -435,5 +442,13 @@ describe('MentorProfileScreen — Profile strength', () => {
           ),
       ).toBe(true);
     });
+  });
+
+  it('a similar mentor’s time is drawn as Book, off (review of PR 4)', async () => {
+    h.profile = state({ data: mine() });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(bar());
+    expect(screen.getByRole('button', { name: /^Book Oluwakemi Olayinka/ })).toBeDisabled();
   });
 });

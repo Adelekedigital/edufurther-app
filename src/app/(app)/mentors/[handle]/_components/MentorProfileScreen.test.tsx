@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixture';
+import { fullProfile, sessionTypes } from '@/components/organisms/ProfileHeader/profile.fixture';
 import { similarMentors } from '@/components/organisms/SimilarMentorsCard/similar.fixture';
 import type { MentorProfile } from '@/types/mentor';
 import {
@@ -179,20 +179,22 @@ describe('MentorProfileScreen — the four states', () => {
 
   it('content: header, Book, and the tab in the URL', async () => {
     const user = userEvent.setup();
-    h.profile = state({ data: fullProfile });
+    // The tab shows from 3 sessions (PRD, 21 Oct).
+    h.profile = state({ data: { ...fullProfile, sessionTypes } });
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.getByRole('heading', { level: 1, name: 'Gbenga Elufisan' })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Book a session' }).length).toBeGreaterThan(0);
-    await user.click(screen.getByRole('tab', { name: 'Sessions (1)' }));
+    await user.click(screen.getByRole('tab', { name: 'Sessions (3)' }));
     expect(replace).toHaveBeenCalledWith('/mentors/gbenga?tab=sessions', { scroll: false });
   });
 
   it('keeps a shared link’s other parameters when the tab changes (review of #21)', async () => {
     const user = userEvent.setup();
     h.search = new URLSearchParams('utm_source=linkedin');
-    h.profile = state({ data: fullProfile });
+    // The tab shows from 3 sessions (PRD, 21 Oct).
+    h.profile = state({ data: { ...fullProfile, sessionTypes } });
     render(<MentorProfileScreen handle="gbenga" />);
-    await user.click(screen.getByRole('tab', { name: 'Sessions (1)' }));
+    await user.click(screen.getByRole('tab', { name: 'Sessions (3)' }));
     expect(replace).toHaveBeenCalledWith('/mentors/gbenga?utm_source=linkedin&tab=sessions', {
       scroll: false,
     });
@@ -200,13 +202,14 @@ describe('MentorProfileScreen — the four states', () => {
 
   it('opens on the Sessions tab from ?tab=sessions', () => {
     h.search = new URLSearchParams('tab=sessions');
-    h.profile = state({ data: fullProfile });
+    // The tab shows from 3 sessions (PRD, 21 Oct).
+    h.profile = state({ data: { ...fullProfile, sessionTypes } });
     render(<MentorProfileScreen handle="gbenga" />);
-    expect(screen.getByRole('tab', { name: 'Sessions (1)' })).toHaveAttribute(
+    expect(screen.getByRole('tab', { name: 'Sessions (3)' })).toHaveAttribute(
       'aria-selected',
       'true',
     );
-    expect(screen.getByRole('button', { name: 'Book session' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Book session' })).toHaveLength(3);
   });
 });
 
@@ -387,5 +390,47 @@ describe('suggestionsLine', () => {
       { ...similarMentors[1]!, sharedTopic: 'Statement of purpose' },
     ];
     expect(suggestionsLine(twice)).toBe('They help with statement of purpose.');
+  });
+
+  describe('the Sessions tab shows from 3 sessions (PRD, 21 Oct)', () => {
+    it('2 sessions: no tab, both in the side card, no link to a tab', () => {
+      h.profile = state({ data: { ...fullProfile, sessionTypes: sessionTypes.slice(0, 2) } });
+      render(<MentorProfileScreen handle="gbenga" />);
+      expect(screen.queryByRole('tab', { name: /Sessions/ })).toBeNull();
+      expect(screen.queryByRole('button', { name: /Compare sessions|See all/ })).toBeNull();
+    });
+
+    it('3 sessions: "Sessions (3)", and the side card links to it', () => {
+      h.profile = state({ data: { ...fullProfile, sessionTypes } });
+      render(<MentorProfileScreen handle="gbenga" />);
+      expect(screen.getByRole('tab', { name: 'Sessions (3)' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /See all 3 sessions/ })).toBeInTheDocument();
+    });
+
+    it('the owner, editing, keeps the tab for the session controls', () => {
+      h.viewerIsMentor = true;
+      h.profile = state({
+        data: { ...fullProfile, owner: { approval: 'approved', listed: true, setupNeeded: [] } },
+      });
+      render(<MentorProfileScreen handle="gbenga" />);
+      expect(screen.getByRole('tab', { name: /Sessions/ })).toBeInTheDocument();
+    });
+  });
+
+  it('a similar mentor’s next free time opens booking for that mentor', async () => {
+    const user = userEvent.setup();
+    h.profile = state({ data: fullProfile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: /^Book Oluwakemi Olayinka/ }));
+    expect(screen.getByRole('dialog')).toHaveTextContent('Oluwakemi Olayinka');
+    // That mentor's sessions, not this profile's.
+    expect(sessionTypesArgs).toHaveBeenLastCalledWith('s1');
+  });
+
+  it('a viewer held back from booking gets the profile link, not a Book (review of PR 4)', () => {
+    h.viewerUnlinked = true;
+    h.profile = state({ data: fullProfile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('button', { name: /^Book Oluwakemi Olayinka/ })).toBeNull();
   });
 });

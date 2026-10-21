@@ -1,8 +1,10 @@
+import { Badge } from '@/components/atoms/Badge/Badge';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Star } from '@/components/atoms/Star/Star';
 import { StatTile } from '@/components/molecules/StatTile/StatTile';
 import { cx } from '@/lib/utils/cx';
 import { formatRating } from '@/lib/utils/format';
+import { LABEL_TEXT, isTopRated } from '@/lib/api/data/labels';
 import type { MentorProfile } from '@/types/mentor';
 import styles from './TrackRecordCard.module.css';
 
@@ -19,9 +21,9 @@ const BAND_FROM = 3;
  * back" on blue (from 3 sessions), then plain-worded stats (BFM: give numbers
  * context). Nothing at 0 sessions: the page shows FirstMenteesCard.
  *
- * Not built: the "Top-rated" badge (no product rule yet, design #33). The
- * "keep coming back" line only appears when it is true — more than one
- * session per mentee on average.
+ * "Top-rated" (the band's badge) follows MentorCard's rule, so both always
+ * agree (P7: 4.8+ from 10+ reviews). The "keep coming back" line only
+ * appears when it is true: more than one session per mentee on average.
  */
 export function TrackRecordCard({ profile }: TrackRecordCardProps) {
   const m = profile.mentor;
@@ -34,6 +36,7 @@ export function TrackRecordCard({ profile }: TrackRecordCardProps) {
   const repeat = Math.round(perMentee * 10) / 10 > 1;
   const rated = m.reviewCount > 0 && m.rating !== null;
   const filled = rated ? Math.round(m.rating!) : 0;
+  const topRated = isTopRated(m);
 
   const stats = [
     {
@@ -89,12 +92,21 @@ export function TrackRecordCard({ profile }: TrackRecordCardProps) {
               </span>
             </div>
           )}
-          {repeat && (
+          {(repeat || topRated) && (
             <div className={styles.bandText}>
-              <span className={styles.bandTitle}>Mentees keep coming back</span>
-              <span className={styles.body}>
-                On average each mentee books {perMentee.toFixed(1)} sessions with {m.firstName}.
-              </span>
+              {topRated && (
+                <Badge type="filled" color="primary" size="sm">
+                  {LABEL_TEXT['top-rated']}
+                </Badge>
+              )}
+              {repeat && (
+                <>
+                  <span className={styles.bandTitle}>Mentees keep coming back</span>
+                  <span className={styles.body}>
+                    On average each mentee books {perMentee.toFixed(1)} sessions with {m.firstName}.
+                  </span>
+                </>
+              )}
             </div>
           )}
         </div>

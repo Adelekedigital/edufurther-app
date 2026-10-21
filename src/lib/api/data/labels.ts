@@ -15,18 +15,26 @@ export const LABEL_RULES = {
   new: { maxSessions: 2 },
 } as const;
 
+/** What each label says, wherever it shows (MentorCard, the profile's track record). */
+export const LABEL_TEXT: Record<MentorLabel, string> = {
+  'top-rated': 'Top-rated',
+  experienced: 'Experienced mentor',
+  new: 'New mentor',
+};
+
+/** 4.8 or higher from at least 10 reviews (P7, owner 19 Oct). */
+export function isTopRated(m: { rating: number | null; reviewCount: number }): boolean {
+  const r = LABEL_RULES.topRated;
+  return m.rating !== null && m.rating >= r.minRating && m.reviewCount >= r.minReviews;
+}
+
 export function deriveLabel(m: {
   rating: number | null;
   reviewCount: number;
   completedSessions: number;
 }): MentorLabel | null {
   const r = LABEL_RULES;
-  if (
-    m.rating !== null &&
-    m.rating >= r.topRated.minRating &&
-    m.reviewCount >= r.topRated.minReviews
-  )
-    return 'top-rated';
+  if (isTopRated(m)) return 'top-rated';
   if (m.completedSessions >= r.experienced.minSessions) return 'experienced';
   if (m.completedSessions <= r.new.maxSessions && m.reviewCount === 0) return 'new';
   return null;

@@ -102,6 +102,8 @@ function refocusAfterTip() {
   (next ?? document.getElementById(PREVIEW_TOGGLE_ID))?.focus();
 }
 
+/** The Sessions (N) tab shows from this many visible sessions (PRD, 21 Oct). */
+const SESSIONS_TAB_FROM = 3;
 /** Below this many completed sessions a mentor is "new" (design reply #45). */
 const NEW_MENTOR_UNDER = 3;
 
@@ -175,6 +177,11 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // Profile.dc.html `notTaking`); a mentor viewing keeps the read-only list
   // (review of PR 102).
   const notTakingTab = asMentee && notTaking;
+  // The Sessions (N) tab only at 3 or more: with 1 or 2 the side card lists
+  // them (PRD, 21 Oct). The owner, editing, always has it for the controls.
+  // A mentor not taking bookings keeps it at 3+, saying so ("Sessions (0)"):
+  // as built and as drawn (PRD: not taking bookings, no change).
+  const sessionsTab = editing || (p?.sessionTypes.length ?? 0) >= SESSIONS_TAB_FROM;
   // The owner, editing, always has the tab: "New session type" is there.
   // The Reviews tab opens for any signed-in non-owner, not only once reviews
   // exist. Bookings links a mentee here to write the first one, and gating the
@@ -182,7 +189,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // to reach the form — silently. The tab's own empty state covers the rest.
   const reviewsTab =
     hasReviews || (viewer.kind !== 'guest' && viewer.kind !== 'loading' && !isOwner);
-  const { tab, setTab } = useProfileTab(hasSessions || notTakingTab || editing, reviewsTab);
+  const { tab, setTab } = useProfileTab(sessionsTab, reviewsTab);
   // Cards only render after a client fetch, so reading the device zone here is safe.
   const [timeZone] = useState(deviceTimeZone);
   // The profile only exists after a client fetch, so `window` is there by then.
@@ -559,7 +566,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               onChange={setTab}
               items={[
                 { value: 'overview', label: 'Overview', panelId: 'panel-overview' },
-                ...(hasSessions || notTakingTab || editing
+                ...(sessionsTab
                   ? [
                       {
                         value: 'sessions',
@@ -687,7 +694,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                           <BookSessionCard
                             sessionTypes={p.sessionTypes}
                             onBook={booking.open}
-                            onCompare={() => setTab('sessions')}
+                            onCompare={sessionsTab ? () => setTab('sessions') : undefined}
                             bookBlocked={shownBlock}
                             bookDisabled={viewing}
                           />
@@ -719,6 +726,12 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                         isLoading={similar.isLoading}
                         timeZone={timeZone}
                         seeAllHref="/explore"
+                        // Their next free time books them here, held back as every
+                        // Book on the page is (offline, account setup): then it's
+                        // the profile link. Mentors can't book; the owner's
+                        // preview draws it, off (review of PR 4).
+                        onBook={viewing || (canBook && !bookBlocked) ? booking.openFor : undefined}
+                        bookDisabled={viewing}
                       />
                     )}
                   </aside>
