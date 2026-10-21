@@ -79,9 +79,9 @@ export const MonthBlocking: Story = {
 export const Status: Story = {
   render: () => (
     <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-      <StatusPill tone="available" label="Available" hint="Open for new bookings" />
-      <StatusPill tone="available" label="Available" hint="Open for new bookings" onChange={fn()} />
-      <StatusPill tone="busy" label="Busy" hint="Back Sat, Oct 3" onChange={fn()} />
+      <StatusPill tone="available" label="Available" hint="Mentees can book you" />
+      <StatusPill tone="available" label="Available" hint="Mentees can book you" onChange={fn()} />
+      <StatusPill tone="busy" label="Busy" hint="Reminder Sat, Oct 3" onChange={fn()} />
     </div>
   ),
 };

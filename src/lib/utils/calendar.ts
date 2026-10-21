@@ -254,9 +254,9 @@ export const busyBody = (back: string | null, today: string) =>
       ? `Mentees can’t find or book you right now. We’ll remind you on ${shortDay(back)} to switch back. Sessions you already have stay booked.`
       : 'Mentees can’t find or book you right now. Sessions you already have stay booked. Switch back whenever you’re ready.';
 
-/** The busy pill's hint: "Back Thu, Oct 8", "Return date passed", "No return date". */
+/** The busy pill's hint (Calendar v2 `status.hint`): "Reminder Thu, Oct 8", "Return date passed", "No return date". */
 export const busyHint = (back: string | null, today: string) =>
-  !back ? 'No return date' : back < today ? 'Return date passed' : `Back ${shortDay(back)}`;
+  !back ? 'No return date' : back < today ? 'Return date passed' : `Reminder ${shortDay(back)}`;
 
 /** Calendar v2 `doneBody`. */
 export const doneBody = (back: string | null) =>

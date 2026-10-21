@@ -15,6 +15,11 @@ type BlockOutFormProps = {
   today: string;
   /** The days blocked now, from today on. */
   initial: string[];
+  /** Weekdays the hours open (0 = Sunday): tinted Available, with the legend key. */
+  available?: number[];
+  /** Where a mentee could book: only these available days are tinted. */
+  openFrom?: string;
+  openUntil?: string;
   /** Days with a session booked, and who with (the first name, if known). */
   booked: { day: string; mentee: string | null }[];
   saving: boolean;
@@ -35,7 +40,7 @@ export function saveBlockLabel(initial: readonly string[], draft: readonly strin
 }
 
 /**
- * The "Block out dates" modal body (Calendar v2 `blockoutOpen`): the month to
+ * The "Block dates" modal body (Calendar v2 `blockoutOpen`): the month to
  * tap days on, a note when a picked day has a session (blocking won't cancel
  * it), then the save. The draft lives here: closing the modal drops it.
  */
@@ -43,6 +48,9 @@ export function BlockOutForm({
   today,
   initial,
   booked,
+  available,
+  openFrom,
+  openUntil,
   saving,
   error,
   onEdit,
@@ -67,6 +75,9 @@ export function BlockOutForm({
         selected={draft}
         selectedKind="blocked"
         booked={booked.map((b) => b.day)}
+        available={available}
+        openFrom={openFrom}
+        openUntil={openUntil}
         onPick={toggle}
         onMonthChange={onMonthChange}
         showLegend

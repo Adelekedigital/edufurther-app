@@ -7,7 +7,7 @@ type StatusPillProps = {
   tone: 'available' | 'busy';
   /** "Available", "Busy". */
   label: string;
-  /** "Open for new bookings", "Back Sat, Oct 3". */
+  /** "Mentees can book you", "Reminder Sat, Oct 3". */
   hint: string;
   /** With a handler, the pill carries the design's switch (on = available). */
   onChange?: (available: boolean) => void;

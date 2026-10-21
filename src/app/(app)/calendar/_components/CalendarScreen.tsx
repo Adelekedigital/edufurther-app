@@ -41,6 +41,7 @@ import {
 } from '@/lib/utils/calendar';
 import {
   BOOKING_RULES_COPY,
+  CALENDAR_PAGE_COPY,
   HOURS_COPY,
   UNLISTED_COPY,
   VIDEO_ROW_COPY,
@@ -198,6 +199,9 @@ export function CalendarScreen() {
   // One blocked-dates save at a time: each plans from the days as last read.
   const blockBusy = saveBlocked.isPending;
   const upcomingBlocked = (blocked.data?.days ?? []).filter((d) => d >= blockToday);
+  // The weekdays the hours open, and where a mentee could book: the month and the block modal tint the same days.
+  const openWeekdays = draft.days.flatMap((d, i) => (d.on ? [i] : []));
+  const blockRange = defaults.data ? bookableRange(blockToday, defaults.data) : null;
   const saveBlocks = (wanted: string[]) =>
     saveBlocked.save({
       exceptions: blocked.data?.exceptions ?? [],
@@ -413,7 +417,7 @@ export function CalendarScreen() {
               <StatusPill
                 tone="available"
                 label="Available"
-                hint="Open for new bookings"
+                hint={CALENDAR_PAGE_COPY.availableHint}
                 switchRef={statusSwitch}
                 onChange={(on) => !on && openReturn()}
               />
@@ -551,24 +555,13 @@ export function CalendarScreen() {
                   <h2 id={monthTitleId} className={styles.cardTitle}>
                     Month at a glance
                   </h2>
-                  <button
-                    type="button"
-                    className={styles.blockedBtn}
-                    aria-disabled={blockBusy || undefined}
-                    onClick={openBlockOut}
-                  >
-                    <Icon name="event_busy" size={16} className={styles.blockedBtnIcon} />
-                    {upcomingBlocked.length
-                      ? `Blocked dates (${upcomingBlocked.length})`
-                      : 'Blocked dates'}
-                  </button>
                 </div>
                 <MonthPicker
                   readOnly
                   today={today}
                   selected={blocked.data?.days ?? []}
                   booked={(booked.data ?? []).map((b) => b.day)}
-                  available={draft.days.flatMap((d, i) => (d.on ? [i] : []))}
+                  available={openWeekdays}
                   // Open only where a mentee could book: past the notice, within the window.
                   openFrom={range.from}
                   openUntil={range.until}
@@ -674,15 +667,19 @@ export function CalendarScreen() {
       )}
       {blockOpen && blocked.data && (
         <ModalShell
-          title="Block out dates"
+          title={CALENDAR_PAGE_COPY.blockTitle}
           subtitle="Tap the days you’re away. Mentees won’t be able to book them."
           size="md"
+          mobile="sheet"
           onClose={closeBlockOut}
         >
           <BlockOutForm
             today={blockToday}
             initial={upcomingBlocked}
             booked={(booked.data ?? []).filter((b) => b.day >= blockToday)}
+            available={openWeekdays}
+            openFrom={blockRange?.from}
+            openUntil={blockRange?.until}
             saving={saveBlocked.isPending}
             error={saveBlocked.error?.message ?? null}
             onEdit={() => saveBlocked.error && saveBlocked.reset()}
@@ -700,7 +697,7 @@ export function CalendarScreen() {
         </ModalShell>
       )}
       {returnOpen && (
-        <ModalShell title="When will you be back?" size="md" onClose={closeReturn}>
+        <ModalShell title="When will you be back?" size="md" mobile="sheet" onClose={closeReturn}>
           <ReturnDateForm
             today={accountToday}
             booked={booked.data ?? []}
@@ -717,6 +714,7 @@ export function CalendarScreen() {
         <ModalShell
           title="Availability updated"
           size="sm"
+          mobile="sheet"
           onClose={() => {
             setDone(null);
             focusSwitch();
@@ -780,9 +778,7 @@ function PageHeader({ children }: { children?: ReactNode }) {
     <header className={styles.header}>
       <div className={styles.intro}>
         <h1 className={styles.title}>Your calendar</h1>
-        <p className={styles.lede}>
-          Set when mentees can book you, block the days you’re away, and choose how sessions run.
-        </p>
+        <p className={styles.lede}>{CALENDAR_PAGE_COPY.lede}</p>
       </div>
       {children}
     </header>

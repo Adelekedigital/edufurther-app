@@ -250,9 +250,9 @@ describe('busy copy once the return date has passed', () => {
   it('says passed, not "we\u2019ll remind you"', async () => {
     const { busyBody, busyHint } = await import('./calendar');
     expect(busyHint('2026-10-08', '2026-10-12')).toBe('Return date passed');
-    expect(busyHint('2026-10-08', '2026-10-01')).toBe('Back Thu, Oct 8');
+    expect(busyHint('2026-10-08', '2026-10-01')).toBe('Reminder Thu, Oct 8');
     // On the day itself (the reminder's day) it hasn't passed yet.
-    expect(busyHint('2026-10-08', '2026-10-08')).toBe('Back Thu, Oct 8');
+    expect(busyHint('2026-10-08', '2026-10-08')).toBe('Reminder Thu, Oct 8');
     expect(busyBody('2026-10-08', '2026-10-08')).toContain('We’ll remind you on Thu, Oct 8');
     expect(busyHint(null, '2026-10-01')).toBe('No return date');
     expect(busyBody('2026-10-08', '2026-10-12')).toContain(

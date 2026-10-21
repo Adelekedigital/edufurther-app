@@ -9,7 +9,7 @@ import styles from './BlockedDatesPanel.module.css';
 type BlockedDatesPanelProps = {
   /** Blocked days from today on (YYYY-MM-DD), sorted. */
   days: string[];
-  /** Opens the block-out modal ("Edit", "Block dates"). */
+  /** Opens the block-out modal ("Edit dates", "Block dates"). */
   onEdit: () => void;
   /** A chip's ×: unblock that day. */
   onUnblock: (iso: string) => void;
@@ -74,7 +74,8 @@ export function BlockedDatesPanel({
       <div className={styles.head}>
         <span className={styles.title}>
           <Icon name="event_busy" size={20} className={styles.icon} />
-          {days.length} blocked date{days.length === 1 ? '' : 's'}
+          {/* Calendar v2 `blockedTitle` (copy research). */}
+          Blocked dates · {days.length}
         </span>
         <Button
           ref={action}
@@ -85,7 +86,7 @@ export function BlockedDatesPanel({
           aria-disabled={busy || undefined}
           onClick={edit}
         >
-          Edit
+          Edit dates
         </Button>
       </div>
       <ul className={styles.chips}>

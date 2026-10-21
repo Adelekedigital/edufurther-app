@@ -68,6 +68,12 @@ describe('CalendarScreen', () => {
     render(<CalendarScreen />);
     expect(screen.getByRole('heading', { level: 1, name: 'Your calendar' })).toBeInTheDocument();
     expect(pillLabel()).toHaveTextContent('Available');
+    expect(screen.getByText('Mentees can book you')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Set your availability, manage days off and choose how you’ll meet with mentees.',
+      ),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(
         'You approve each booking · 60 min · 24 hrs notice · 8 weeks ahead · 15 min buffer',
@@ -436,7 +442,7 @@ describe('CalendarScreen', () => {
     render(<CalendarScreen />);
     expect(screen.getByText('Away on some days?')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Block dates' }));
-    const dialog = screen.getByRole('dialog', { name: 'Block out dates' });
+    const dialog = screen.getByRole('dialog', { name: 'Block dates' });
     const save = within(dialog).getByRole('button', { name: 'Select dates to block' });
     expect(save).toBeDisabled();
     // Next month's 12th, whatever today is: always in the future.
@@ -447,15 +453,27 @@ describe('CalendarScreen', () => {
     expect(saveBlocked.mock.calls[0]![0].wanted).toHaveLength(1);
     expect(saveBlocked.mock.calls[0]![0].timeZone).toBe('Africa/Lagos');
     expect(await screen.findByText('Blocked dates saved.')).toBeInTheDocument();
-    expect(screen.queryByRole('dialog', { name: 'Block out dates' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Block dates' })).toBeNull();
+  });
+
+  it('the block modal is a phone sheet that tints the available days and keys them', async () => {
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    await user.click(screen.getByRole('button', { name: 'Block dates' }));
+    const dialog = screen.getByRole('dialog', { name: 'Block dates' });
+    expect(dialog.className).toMatch(/phoneSheet/);
+    expect(within(dialog).getByText('Available')).toBeInTheDocument();
+    // Pickable days carry their state in the button's name.
+    expect(dialog.querySelectorAll('[aria-label$=", available"]').length).toBeGreaterThan(0);
   });
 
   it('lists blocked days as chips; × unblocks one with no confirm and says so', async () => {
     h.blocked = remote<Blocked>({ days: ['2099-10-12', '2099-10-13'], exceptions: [] });
     const user = userEvent.setup();
     render(<CalendarScreen />);
-    expect(screen.getByText('2 blocked dates')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Blocked dates (2)' })).toBeInTheDocument();
+    expect(screen.getByText('Blocked dates · 2')).toBeInTheDocument();
+    // The research copy draws no "Blocked dates (N)" button by the month: the panel's Edit dates opens it.
+    expect(screen.queryByRole('button', { name: /^Blocked dates/ })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Unblock Mon, Oct 12' }));
     expect(saveBlocked.mock.calls[0]![0].wanted).toEqual(['2099-10-13']);
     await waitFor(() => expect(announced()).toContain('Mon, Oct 12 is open again.'));
@@ -480,9 +498,9 @@ describe('CalendarScreen', () => {
     const user = userEvent.setup();
     render(<CalendarScreen />);
     await user.click(screen.getByRole('button', { name: 'Unblock Tue, Oct 13' }));
-    await user.click(screen.getByRole('button', { name: 'Blocked dates (2)' }));
+    await user.click(screen.getByRole('button', { name: 'Edit dates' }));
     expect(saveBlocked).not.toHaveBeenCalled();
-    expect(screen.queryByRole('dialog', { name: 'Block out dates' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Block dates' })).toBeNull();
   });
 
   it('a failed modal save keeps the modal open and says why', async () => {
@@ -490,8 +508,8 @@ describe('CalendarScreen', () => {
     saveBlocked.mockRejectedValue(h.blockedError);
     const user = userEvent.setup();
     render(<CalendarScreen />);
-    await user.click(screen.getByRole('button', { name: 'Blocked dates' }));
-    const dialog = screen.getByRole('dialog', { name: 'Block out dates' });
+    await user.click(screen.getByRole('button', { name: 'Block dates' }));
+    const dialog = screen.getByRole('dialog', { name: 'Block dates' });
     expect(
       within(dialog).getByText('We couldn’t save your blocked dates. Try again.'),
     ).toBeInTheDocument();
@@ -500,11 +518,11 @@ describe('CalendarScreen', () => {
   it('the block-out modal can’t be closed while its save is on its way', async () => {
     const user = userEvent.setup();
     const { rerender } = render(<CalendarScreen />);
-    await user.click(screen.getByRole('button', { name: 'Blocked dates' }));
+    await user.click(screen.getByRole('button', { name: 'Block dates' }));
     h.blockedPending = true;
     rerender(<CalendarScreen />);
     await user.keyboard('{Escape}');
-    expect(screen.getByRole('dialog', { name: 'Block out dates' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Block dates' })).toBeInTheDocument();
   });
 
   it('a guest is asked to log in, coming back here', () => {

@@ -10,6 +10,14 @@ import {
   VIDEO_LINK_LINE,
   type VideoChoice,
 } from './integrations';
+/** The page header (Calendar v2 `copy` research). */
+export const CALENDAR_PAGE_COPY = {
+  lede: 'Set your availability, manage days off and choose how you’ll meet with mentees.',
+  /** The status pill's hint while available (busy hints: `busyHint`). */
+  availableHint: 'Mentees can book you',
+  blockTitle: 'Block dates',
+} as const;
+
 export const BOOKING_RULES_COPY = {
   title: 'Booking rules',
   sub: 'Your default rules for every session. You can customize them for a single session.',

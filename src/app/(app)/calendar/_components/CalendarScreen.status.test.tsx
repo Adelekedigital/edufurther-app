@@ -58,10 +58,14 @@ describe('CalendarScreen: busy and video', () => {
     render(<CalendarScreen />);
     await user.click(screen.getByRole('switch', { name: 'Available for new bookings' }));
     const dialog = screen.getByRole('dialog', { name: 'When will you be back?' });
+    expect(dialog.className).toMatch(/phoneSheet/);
     expect(within(dialog).getByRole('button', { name: 'Set as busy' })).toBeDisabled();
     await user.click(within(dialog).getByRole('radio', { name: 'Not sure yet' }));
     await user.click(within(dialog).getByRole('button', { name: 'Set as busy' }));
     expect(pause).toHaveBeenCalledWith({ returnOn: null });
+    expect((await screen.findByRole('dialog', { name: 'Availability updated' })).className).toMatch(
+      /phoneSheet/,
+    );
     expect(await screen.findByRole('dialog', { name: 'Availability updated' })).toHaveTextContent(
       'See you soon, Gbenga',
     );
@@ -80,7 +84,7 @@ describe('CalendarScreen: busy and video', () => {
     const user = userEvent.setup();
     render(<CalendarScreen />);
     expect(screen.getByText('Busy')).toBeInTheDocument();
-    expect(screen.getByText('Back Fri, Oct 16')).toBeInTheDocument();
+    expect(screen.getByText('Reminder Fri, Oct 16')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'You’re taking a break' })).toBeInTheDocument();
     expect(
       screen.getByText(/We’ll remind you on Fri, Oct 16 to switch back\./),
@@ -282,7 +286,7 @@ describe('CalendarScreen: busy and video', () => {
       returnOn: '2099-10-16',
     });
     render(<CalendarScreen />);
-    expect(screen.getByText('Back Fri, Oct 16')).toBeInTheDocument();
+    expect(screen.getByText('Reminder Fri, Oct 16')).toBeInTheDocument();
   });
 
   it('booked days load from today, and paging the month further widens the range', async () => {
