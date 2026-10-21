@@ -130,7 +130,7 @@ export function SuggestionNotice({
 
       <p className={styles.body}>
         {state === 'active' &&
-          'This time is held for you alone — nobody else can book it until the hold runs out.'}
+          'This time is held for you alone. Nobody else can book it until the hold runs out.'}
         {state === 'booked' && 'It is in your bookings now.'}
         {/* An expired hold does not mean the time is gone, only that it is no
             longer kept for this mentee (backend: re-read /slots). Promising it

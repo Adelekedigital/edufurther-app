@@ -82,17 +82,17 @@ function rateContext(
   if (onTrack) {
     if (rose) return `Up from ${prev}% over ${priorLabel}. Mentees can count on you.`;
     return missed === 0
-      ? `No sessions missed — mentees can count on you.`
+      ? `No sessions missed. Mentees can count on you.`
       : `Mentees can count on you.`;
   }
   // At risk: name the misses when there are any; otherwise speak to the rate —
   // never a "0 missed" count. A rise is progress, not yet reassurance.
   if (missed > 0) {
     const misses = `${missed} missed session${missed === 1 ? '' : 's'} recently.`;
-    return rose ? `Up from ${prev}% over ${priorLabel} — ${misses}` : misses;
+    return rose ? `Up from ${prev}% over ${priorLabel}. ${misses}` : misses;
   }
   return rose
-    ? `Up from ${prev}% over ${priorLabel} — still below your usual.`
+    ? `Up from ${prev}% over ${priorLabel}, still below your usual.`
     : `Below your usual show-up rate.`;
 }
 
@@ -242,7 +242,7 @@ function RatingGroup({
         href={`${profileHref}?tab=reviews`}
         prefetch={false}
         className={styles.reviewCountLink}
-        aria-label={`See all reviews — ${reviewCount} ${periodPhrase}`}
+        aria-label={`See all reviews, ${reviewCount} ${periodPhrase}`}
       >
         ({reviewCount})
       </Link>
@@ -478,7 +478,7 @@ export function SessionQuality({
                   <p className={styles.bannerGoodText}>
                     {currentStreak > 0
                       ? 'Keep it going.'
-                      : 'You’re holding your sessions — keep it up.'}
+                      : 'You’re holding your sessions. Keep it up.'}
                     {nextSession
                       ? ` Your next session is ${nextSession.dayLabel} with ${nextSession.firstName}.`
                       : ''}

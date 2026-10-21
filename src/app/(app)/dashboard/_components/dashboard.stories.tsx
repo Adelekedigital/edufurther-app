@@ -109,7 +109,7 @@ export const NextSession: Story = {
 
 const activeKpis: Kpi[] = [
   { key: 'sessions', label: 'Sessions completed', value: '2', info: 'Sessions marked complete since you joined' },
-  { key: 'time', label: 'Mentoring time', value: '120', unit: 'min', info: '≈ 2 hours in total — shown in minutes for precision' },
+  { key: 'time', label: 'Mentoring time', value: '120', unit: 'min', info: '≈ 2 hours in total, shown in minutes for precision' },
   { key: 'mentees', label: 'Mentees mentored', value: '1', info: 'Unique mentees with a completed session' },
   { key: 'rating', label: 'Average rating', value: '4.8', unit: '/ 5', info: 'Average of mentee reviews after completed sessions' },
 ];

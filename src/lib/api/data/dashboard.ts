@@ -189,7 +189,7 @@ export function deriveKpis(i: KpiInputs): Kpi[] {
       unit: 'min',
       // Singular off the displayed figure, not the raw float: 59 min rounds to
       // "1" and must read "1 hour", never "1 hours".
-      info: `≈ ${hoursText} ${hoursText === '1' ? 'hour' : 'hours'} in total — shown in minutes for precision`,
+      info: `≈ ${hoursText} ${hoursText === '1' ? 'hour' : 'hours'} in total, shown in minutes for precision`,
     },
     {
       key: 'mentees',

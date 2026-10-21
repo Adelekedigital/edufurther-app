@@ -35,7 +35,7 @@ export function AnswerItem({ answer: a, onOpenFile }: AnswerItemProps) {
             <span className={styles.filename} dir="ltr">
               {a.file.filename}
             </span>{' '}
-            — no longer available
+            (no longer available)
           </p>
         ) : onOpenFile ? (
           <button
