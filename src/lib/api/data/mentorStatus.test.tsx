@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react';
 import { ApiError } from './errors';
 import { statusError, toMentorStatus, usePause, useResume } from './mentorStatus';
@@ -100,6 +100,31 @@ describe('useResume', () => {
     const { result } = renderHook(() => useResume('m1'), { wrapper });
     await expect(result.current.resume()).rejects.toMatchObject({
       message: 'We couldn’t set you as available. Try again.',
+    });
+  });
+});
+
+describe('offline', () => {
+  beforeEach(() => {
+    POST.mockReset().mockRejectedValue(new TypeError('Failed to fetch'));
+    onlineManager.setOnline(false);
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+  });
+  afterEach(() => {
+    onlineManager.setOnline(true);
+    vi.restoreAllMocks();
+  });
+  // A paused mutation never settles, so the offline copy could never show.
+  it('going busy fails at once with the offline copy, rather than waiting to reconnect', async () => {
+    const { result } = renderHook(() => usePause('m1'), { wrapper });
+    await expect(result.current.pause({ returnOn: null })).rejects.toMatchObject({
+      message: 'You’re offline, so we couldn’t set you as busy. Try again when you reconnect.',
+    });
+  });
+  it('going back fails at once with the offline copy', async () => {
+    const { result } = renderHook(() => useResume('m1'), { wrapper });
+    await expect(result.current.resume()).rejects.toMatchObject({
+      message: 'You’re offline, so we couldn’t set you as available. Try again when you reconnect.',
     });
   });
 });

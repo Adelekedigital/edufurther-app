@@ -102,6 +102,8 @@ export function usePause(userId: string | null) {
       }
       if (!r.response.ok) throw statusError(apiError(r.response.status, r.error), true);
     },
+    // Offline, fail now with our copy rather than wait, paused, for a reconnect.
+    networkMode: 'always',
     onSettled: refresh,
   });
   return {
@@ -127,6 +129,8 @@ export function useResume(userId: string | null) {
       }
       if (!r.response.ok) throw statusError(apiError(r.response.status, r.error), false);
     },
+    // Offline, fail now with our copy rather than wait, paused, for a reconnect.
+    networkMode: 'always',
     onSettled: refresh,
   });
   return {
