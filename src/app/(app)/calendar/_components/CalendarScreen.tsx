@@ -41,6 +41,7 @@ import {
 } from '@/lib/utils/calendar';
 import {
   BOOKING_RULES_COPY,
+  HOURS_COPY,
   UNLISTED_COPY,
   VIDEO_ROW_COPY,
   videoRowTitle,
@@ -536,7 +537,7 @@ export function CalendarScreen() {
                   !hasHours && (
                     <div className={styles.note}>
                       <Notice tone="info" icon="info">
-                        Mentees can find and book you once you set your weekly hours.
+                        {HOURS_COPY.noHoursNotice}
                       </Notice>
                     </div>
                   )

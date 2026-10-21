@@ -291,7 +291,9 @@ describe('CalendarScreen', () => {
     render(<CalendarScreen />);
     expect(screen.getByText('No hours set')).toBeInTheDocument();
     expect(
-      screen.getByText('Mentees can find and book you once you set your weekly hours.'),
+      screen.getByText(
+        'Your availability isn’t set yet. Add your weekly hours so mentees can find and book you.',
+      ),
     ).toBeInTheDocument();
     expect(screen.queryByText('Available')).toBeNull();
   });

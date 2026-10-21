@@ -133,7 +133,8 @@ export const WeeklyHoursEmptyAndOtherZone: Story = {
           note={
             <div style={{ marginTop: 8 }}>
               <Notice tone="info" icon="calendar_month">
-                Mentees can find and book you once you set your weekly hours.
+                Your availability isn’t set yet. Add your weekly hours so mentees can find and book
+                you.
               </Notice>
             </div>
           }
