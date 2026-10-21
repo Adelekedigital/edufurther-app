@@ -147,7 +147,14 @@ describe('SessionTypeFormScreen', () => {
     render(<SessionTypeFormScreen template={null} />);
     await user.click(next(/^Continue$/));
     expect(screen.getByText('Give your session a name.')).toBeInTheDocument();
-    expect(screen.getByText('Pick at least one topic.')).toBeInTheDocument();
+    // The shared FieldError line: announced, and describing the topic chips.
+    expect(screen.getByText('Pick at least one topic.').closest('p')).toHaveAttribute(
+      'role',
+      'alert',
+    );
+    expect(
+      screen.getByRole('group', { name: 'What does this session help with?' }),
+    ).toHaveAccessibleDescription(/Pick at least one topic/);
     expect(screen.getByRole('textbox', { name: 'Session name' })).toHaveAttribute(
       'aria-invalid',
       'true',
@@ -606,7 +613,16 @@ describe('SessionTypeFormScreen — review of #60', () => {
     );
     for (const n of [/^Continue$/, /^Continue$/, /^Continue$/, /Publish session/])
       await user.click(next(n));
-    expect(screen.getByText('Check the stage.')).toBeInTheDocument();
+    const stageError = screen.getByText('Check the stage.').closest('p');
+    expect(stageError).toHaveAttribute('role', 'alert');
+    expect(
+      screen.getByRole('group', { name: 'Best for mentees who are' }),
+    ).toHaveAccessibleDescription(/Check the stage\./);
+    // Under the hint, as every field error.
+    const stageHint = screen.getByText('Choose the stages this session is most useful for.');
+    expect(
+      stageHint.compareDocumentPosition(stageError!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     await user.click(
       within(screen.getByRole('group', { name: 'Best for mentees who are' })).getByRole('button', {
         name: 'Drafting',
