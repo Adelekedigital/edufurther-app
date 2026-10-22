@@ -6,6 +6,7 @@ import type { WeeklyHours } from '@/lib/api/data/weeklyHours';
 import type { MentorDefaults } from '@/lib/api/data/sessionTypes';
 import { emptyWeek } from '@/lib/utils/sessionTypeDraft';
 import { hasUnsavedChanges } from '@/lib/utils/leaveGuard';
+import type { AppError } from '@/types/mentor';
 import { CalendarScreen } from './CalendarScreen';
 import {
   announced,
@@ -493,6 +494,27 @@ describe('CalendarScreen', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Block 1 date' }));
     await waitFor(() =>
       expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Edit dates' })),
+    );
+  });
+
+  // The save worked but the refetch after it failed: the panel gives way to
+  // the inline error, so focus goes to its Try again, never to <body>.
+  it('after a save whose refetch fails, focus lands on Try again', async () => {
+    saveBlocked.mockImplementation(async () => {
+      h.blocked = remote<Blocked>(
+        { days: [], exceptions: [] },
+        { error: { kind: 'server', message: 'x' } as AppError },
+      );
+    });
+    const user = userEvent.setup();
+    render(<CalendarScreen />);
+    await user.click(screen.getByRole('button', { name: 'Block dates' }));
+    const dialog = screen.getByRole('dialog', { name: 'Block dates' });
+    await user.click(within(dialog).getByRole('button', { name: 'Next month' }));
+    await user.click(within(dialog).getAllByRole('button', { name: /^\w+, \w+ 12(,|$)/ })[0]!);
+    await user.click(within(dialog).getByRole('button', { name: 'Block 1 date' }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Try again' })),
     );
   });
 

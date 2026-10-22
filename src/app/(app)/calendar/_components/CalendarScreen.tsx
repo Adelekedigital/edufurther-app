@@ -128,6 +128,7 @@ export function CalendarScreen() {
   const videoAction = useRef<HTMLButtonElement>(null);
   const statusSwitch = useRef<HTMLButtonElement>(null);
   const blockAction = useRef<HTMLButtonElement>(null);
+  const partialRetry = useRef<HTMLButtonElement>(null);
   const saveHoursBtn = useRef<HTMLButtonElement>(null);
   // Going busy waited on unsaved hours: the bar says so until they're saved or discarded.
   const [holdForHours, setHoldForHours] = useState(false);
@@ -218,8 +219,13 @@ export function CalendarScreen() {
     setBlockOpen(true);
   };
   // The panel's action swaps (Block dates / Edit dates) as days come and go, so
-  // the modal's remembered opener may be gone: focus whichever is there now.
-  const focusBlockAction = () => requestAnimationFrame(() => focusIfShown(blockAction.current));
+  // the modal's remembered opener may be gone: focus whichever is there now. If
+  // the refetch after a save failed, the panel gave way to the inline error:
+  // its Try again takes focus instead.
+  const focusBlockAction = () =>
+    requestAnimationFrame(
+      () => focusIfShown(blockAction.current) || focusIfShown(partialRetry.current),
+    );
   const closeBlockOut = () => {
     if (saveBlocked.isPending) return;
     setBlockOpen(false);
@@ -592,6 +598,7 @@ export function CalendarScreen() {
                           : 'We couldn’t load your blocked dates.'}
                     </span>
                     <Button
+                      ref={partialRetry}
                       variant="text"
                       size="small"
                       onClick={() => {
