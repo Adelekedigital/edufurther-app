@@ -44,7 +44,8 @@
 }
 
 @media (max-width: 767px) {
-  .responsive .photo {
+  /* Any layout: a photo that shrinks on phones rises less. */
+  .photo {
     margin-top: calc(var(--ch-overlap-phone, var(--ch-overlap)) * -1);
   }
   .responsive .content,

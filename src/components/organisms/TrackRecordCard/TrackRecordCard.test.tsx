@@ -25,3 +25,22 @@ describe('TrackRecordCard — Top-rated (P7: 4.8+ from 10+ reviews)', () => {
     expect(screen.queryByText('Top-rated')).toBeNull();
   });
 });
+
+describe('TrackRecordCard: count labels (Mentor Profile.dc.html stats)', () => {
+  it('one session, one mentee: the singular', () => {
+    const one = {
+      ...fullProfile,
+      menteesMentored: 1,
+      mentor: { ...fullProfile.mentor, completedSessions: 1 },
+    };
+    render(<TrackRecordCard profile={one} />);
+    expect(screen.getByText('session completed')).toBeInTheDocument();
+    expect(screen.getByText('mentee mentored')).toBeInTheDocument();
+  });
+
+  it('more than one: the plural', () => {
+    render(<TrackRecordCard profile={fullProfile} />);
+    expect(screen.getByText('sessions completed')).toBeInTheDocument();
+    expect(screen.getByText('mentees mentored')).toBeInTheDocument();
+  });
+});

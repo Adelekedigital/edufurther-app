@@ -60,15 +60,12 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
 }
+/* Every cell has its top rule, band above or not (the design's stat cell). */
 .cell {
   border-top: var(--border-hairline) solid var(--border-muted);
 }
 .right {
   border-left: var(--border-hairline) solid var(--border-muted);
-}
-/* No band above: the grid's first row needs no top rule. */
-.card > .grid:first-of-type .cell:nth-child(-n + 2) {
-  border-top: none;
 }
 
 @media (max-width: 767px) {

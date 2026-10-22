@@ -72,15 +72,17 @@
 .itemIcon {
   color: var(--text-tertiary);
 }
-/* Phones: 44px targets (ours). */
+/* Phones: 44px targets (ours), and the shell's phone padding. */
 @media (max-width: 767px) {
   /* Clear of the bottom tab bar / guest bar when scrolled into view: the
      design's phone bottom offset is 72px (Explore.dc.html). */
   .menu {
     scroll-margin-bottom: calc(72px + env(safe-area-inset-bottom));
   }
+  /* AppShell.dc.html phone rule: `padding: 0 var(--space-3)` becomes space-2. */
   .item {
     height: var(--touch-target-min);
+    padding: 0 var(--space-2);
   }
 }
 

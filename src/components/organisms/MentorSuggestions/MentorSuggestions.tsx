@@ -55,8 +55,8 @@ export function MentorSuggestions({
           </h2>
           {!loading && <p className={styles.sub}>{subtitle}</p>}
         </div>
-        {/* A section's action (CTA hierarchy medium; the design's 40px). */}
-        <ButtonLink href={exploreHref} size="medium" variant="secondary-outlined">
+        {/* Large, as drawn: the design's 48px list (`btnExplore` in its LG). */}
+        <ButtonLink href={exploreHref} size="large" variant="secondary-outlined">
           Explore all mentors
         </ButtonLink>
       </div>

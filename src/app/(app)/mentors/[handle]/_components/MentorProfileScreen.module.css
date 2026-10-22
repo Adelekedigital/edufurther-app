@@ -167,8 +167,9 @@
 }
 
 @media (max-width: 767px) {
+  /* AppShell.dc.html phone rule: a space-6 gap becomes space-4 once stacked. */
   .cols {
-    column-gap: var(--space-6);
+    gap: var(--space-4) var(--space-6);
   }
   .main {
     flex-basis: 100%;
@@ -213,6 +214,12 @@
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
   color: var(--ink-700);
+}
+/* AppShell.dc.html phone rule: `padding: var(--space-5)` becomes space-4. */
+@media (max-width: 767px) {
+  .notTaking {
+    padding: var(--space-4);
+  }
 }
 .notTakingEmpty {
   padding: var(--space-10) var(--space-5);

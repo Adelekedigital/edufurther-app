@@ -5,6 +5,7 @@ import { StatTile } from '@/components/molecules/StatTile/StatTile';
 import { cx } from '@/lib/utils/cx';
 import { formatRating } from '@/lib/utils/format';
 import { LABEL_TEXT, isTopRated } from '@/lib/api/data/labels';
+import { TRACK_STAT_LABELS } from '@/lib/copy/profile';
 import type { MentorProfile } from '@/types/mentor';
 import styles from './TrackRecordCard.module.css';
 
@@ -49,13 +50,13 @@ export function TrackRecordCard({ profile }: TrackRecordCardProps) {
       icon: 'event_available' as const,
       tone: 'blue' as const,
       value: n.format(m.completedSessions),
-      label: 'sessions completed',
+      label: TRACK_STAT_LABELS.sessions(m.completedSessions),
     },
     {
       icon: 'groups' as const,
       tone: 'green' as const,
       value: n.format(profile.menteesMentored),
-      label: 'mentees mentored',
+      label: TRACK_STAT_LABELS.mentees(profile.menteesMentored),
     },
     // Always four tiles: attendance is null (never 0) until a session has
     // settled (backend), and a missing tile left a hole in the grid.
