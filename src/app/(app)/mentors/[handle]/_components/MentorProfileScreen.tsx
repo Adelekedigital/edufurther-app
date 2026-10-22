@@ -250,6 +250,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
     isOwner,
     canBook,
     timeZone,
+    topics: p?.reviews.topics ?? null,
   });
   // The owner's cover (Mentor Profile.dc.html "Change cover"): colour and art
   // save as picked; an image replaces them.

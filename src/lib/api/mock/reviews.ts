@@ -9,6 +9,8 @@ import { FEATURED, MENTORS, mockProfileIndex } from './fixtures';
 type MentorReviewRead = components['schemas']['MentorReviewRead'];
 type ReviewSummaryRead = components['schemas']['ReviewSummaryRead'];
 type MentorRelationshipRead = components['schemas']['MentorRelationshipRead'];
+type ServiceOfferingRead = components['schemas']['ServiceOfferingRead'];
+type ReviewOfferingCountRead = components['schemas']['ReviewOfferingCountRead'];
 
 const AUTHORS: [string, string, string][] = [
   ['Aladi', 'P', 'Kaduna State University'],
@@ -29,6 +31,42 @@ const TEXTS = [
   'Helped me cut a list of 14 programs to 6 that actually fit my research and fund internationals.',
   'Practical, direct feedback on my draft. Would have loved a bit more time, but it was worth it.',
 ];
+
+/**
+ * What review `k` was about, from the mentor's own offerings (catalog slugs,
+ * so `?offering=` accepts every one), in the mentor's order. Every fourth
+ * review is migrated (none), every fourth is about the first two, and the
+ * first offering leads, so one topic has more than a page of reviews.
+ */
+export function mockReviewOfferings(mentorId: string, k: number): ServiceOfferingRead[] {
+  const m = [FEATURED, ...MENTORS].find((x) => x.id === mentorId);
+  const offers = (m?.offerings ?? []).map((o) => ({ slug: o.slug, display_name: o.display_name }));
+  if (offers.length === 0 || k % 4 === 3) return [];
+  if (k % 4 === 1) return offers.slice(0, 2);
+  if (k % 4 === 0) return [offers[0]!];
+  const { i } = mockProfileIndex(mentorId);
+  return [offers[(i + k / 2) % offers.length]!];
+}
+
+/**
+ * `review_topics` from the reviews the list pages through: per slug, how many
+ * name it (a review with two topics counts under both), most reviewed first,
+ * then by name. Only topics with a review.
+ */
+export function mockReviewTopics(
+  rows: Pick<MentorReviewRead, 'service_offerings'>[],
+): ReviewOfferingCountRead[] {
+  const by = new Map<string, ReviewOfferingCountRead>();
+  for (const r of rows)
+    for (const o of r.service_offerings ?? []) {
+      const t = by.get(o.slug) ?? { ...o, count: 0 };
+      t.count += 1;
+      by.set(o.slug, t);
+    }
+  return [...by.values()].sort(
+    (a, b) => b.count - a.count || a.display_name.localeCompare(b.display_name),
+  );
+}
 
 const DAY = 86_400_000;
 const NEWEST = Date.parse('2026-09-20T12:00:00Z');
@@ -52,12 +90,20 @@ export function mockReviews(mentorId: string): MentorReviewRead[] {
       author_institution: deleted ? null : school,
       author_deleted: deleted,
       session_type: { id: type.id, name: type.name },
+      service_offerings: mockReviewOfferings(mentorId, k),
     };
   });
 }
 
-/** The profile's summary. Every fourth reviewed mentor has no n-in-10 yet (the box hides). */
-export function mockReviewSummary(mentorId: string): ReviewSummaryRead {
+/**
+ * The profile's summary. Every fourth reviewed mentor has no n-in-10 yet (the
+ * box hides). `rows`: what the reviews route lists, so each topic's count is
+ * what its filter pages through.
+ */
+export function mockReviewSummary(
+  mentorId: string,
+  rows: Pick<MentorReviewRead, 'service_offerings'>[] = mockReviews(mentorId),
+): ReviewSummaryRead {
   const m = [FEATURED, ...MENTORS].find((x) => x.id === mentorId)!;
   const { i } = mockProfileIndex(mentorId);
   const n = m.review_count;
@@ -67,6 +113,7 @@ export function mockReviewSummary(mentorId: string): ReviewSummaryRead {
     session_value: m.session_value,
     recommended_percent: n ? 90 : null,
     would_recommend_in_10: n && i % 4 !== 3 ? 8 + (i % 3) : null,
+    review_topics: mockReviewTopics(rows),
     ...(n
       ? {
           communication_rating: rate(80 + (i % 9)),

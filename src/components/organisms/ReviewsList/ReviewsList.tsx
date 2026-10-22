@@ -37,15 +37,16 @@ type ReviewsListProps = {
   loadMoreError: AppError | null;
   onLoadMore: () => void;
   /**
-   * Every review there is, when known (the unfiltered list): "Show 2 more
-   * reviews" and "Showing 5 of 7". Null under a filter: a full page, no caption.
+   * Every review there is under the filter, when known (all of them, or the
+   * topic's count): "Show 2 more reviews" and "Showing 5 of 7". Null: a full
+   * page, no caption.
    */
   total: number | null;
   /** How many one click loads. */
   pageSize: number;
-  /** Session types to filter by. Fewer than two: no chips. */
+  /** Topics to filter by (`id` is the offering slug). Fewer than two: no chips. */
   filters: { id: string; label: string }[];
-  /** The chosen session type; null = All. */
+  /** The chosen topic; null = All. */
   filter: string | null;
   onFilter: (id: string | null) => void;
   /**
@@ -72,7 +73,7 @@ export function ReviewsList(p: ReviewsListProps) {
       {!none && (
         <div className={styles.bar}>
           {p.filters.length > 1 && (
-            <div className={styles.chips} role="group" aria-label="Filter reviews by session">
+            <div className={styles.chips} role="group" aria-label="Filter reviews by topic">
               <Chip look="pill" pressed={p.filter === null} onClick={() => p.onFilter(null)}>
                 All
               </Chip>

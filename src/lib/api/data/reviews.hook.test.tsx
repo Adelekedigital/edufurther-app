@@ -51,13 +51,50 @@ describe('useMentorReviews', () => {
   it('a member gets five a page with the text, and pages on', async () => {
     GET.mockResolvedValue(page(['r1', 'r2'], 'cursor-2'));
     const { result } = renderHook(
-      () => useMentorReviews('gbenga', 'st1', { guest: false, active: true, ready: true }),
+      () => useMentorReviews('gbenga', null, { guest: false, active: true, ready: true }),
       { wrapper },
     );
     await waitFor(() => expect(result.current.reviews).toHaveLength(2));
-    expect(GET.mock.calls[0]![1].params.query).toMatchObject({ limit: 5, session_type: 'st1' });
+    const query = GET.mock.calls[0]![1].params.query;
+    expect(query).toMatchObject({ limit: 5 });
+    // All: no filter at all.
+    expect(query.offering).toBeUndefined();
+    expect(query.session_type).toBeUndefined();
     expect(result.current.reviews[0]!.text).toBe('Review r1: the full text.');
     expect(result.current.hasMore).toBe(true);
+  });
+
+  it('a topic chip filters by its offering slug, never by session type (#522)', async () => {
+    GET.mockResolvedValue(page(['r1'], null));
+    const { result } = renderHook(
+      () =>
+        useMentorReviews('gbenga', 'document-preparation', {
+          guest: false,
+          active: true,
+          ready: true,
+        }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.reviews).toHaveLength(1));
+    const query = GET.mock.calls[0]![1].params.query;
+    expect(query).toMatchObject({ offering: ['document-preparation'], limit: 5 });
+    expect(query.session_type).toBeUndefined();
+  });
+
+  it('each topic is its own cache entry: switching chips fetches, switching back does not', async () => {
+    GET.mockResolvedValue(page(['r1'], null));
+    const { result, rerender } = renderHook(
+      ({ offering }: { offering: string | null }) =>
+        useMentorReviews('gbenga', offering, { guest: false, active: true, ready: true }),
+      { wrapper, initialProps: { offering: null as string | null } },
+    );
+    await waitFor(() => expect(result.current.reviews).toHaveLength(1));
+    rerender({ offering: 'program-selection' });
+    await waitFor(() => expect(GET).toHaveBeenCalledTimes(2));
+    expect(GET.mock.calls[1]![1].params.query.offering).toEqual(['program-selection']);
+    rerender({ offering: null });
+    await waitFor(() => expect(result.current.reviews).toHaveLength(1));
+    expect(GET).toHaveBeenCalledTimes(2);
   });
 
   it('reads as loading, not empty, while who is looking is unknown', () => {

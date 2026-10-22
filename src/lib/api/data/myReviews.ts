@@ -25,7 +25,7 @@ const MAX_PAGES = 25;
 /**
  * The attribution line: first name + initial exactly as the public page shows
  * it (the surname is never exposed), "Deleted user" when the author is gone, and
- * the offering appended when the review records one. Mirrors `toReview`'s naming.
+ * the session type appended when the review records one. Mirrors `toReview`'s author naming.
  */
 function quoteBy(r: OwnReviewRead): string {
   const first = r.author_first_name?.trim() || '';

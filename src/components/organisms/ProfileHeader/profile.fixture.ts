@@ -112,6 +112,13 @@ export const fullProfile: MentorProfile = {
     rating: 4.9,
     wouldRecommendIn10: 9,
     attributes: { communication: 86, knowledge: 96, support: 91, practicality: 91 },
+    // A review about two topics counts under both: these add up to more than 7.
+    topics: [
+      { slug: 'document-preparation', name: 'Document preparation', count: 4 },
+      { slug: 'program-selection', name: 'Program selection', count: 3 },
+      { slug: 'interview-preparation', name: 'Interview preparation', count: 1 },
+      { slug: 'scholarships-financial-aid', name: 'Scholarships & financial aid', count: 1 },
+    ],
   },
   owner: null,
 };
@@ -151,6 +158,7 @@ export const newProfile: MentorProfile = {
     rating: null,
     wouldRecommendIn10: null,
     attributes: { communication: null, knowledge: null, support: null, practicality: null },
+    topics: [],
   },
 };
 
@@ -163,7 +171,8 @@ export const reviews: Review[] = [
     institution: 'University of Cape Town',
     createdAt: '2026-04-19T12:00:00Z',
     rating: 4,
-    topic: 'SOP draft review',
+    topics: [{ slug: 'document-preparation', name: 'Document preparation' }],
+    sessionType: 'SOP draft review',
     text: 'Practical, direct feedback on my SOP draft. Would have loved a bit more time, but it was worth it.',
   },
   {
@@ -173,7 +182,11 @@ export const reviews: Review[] = [
     institution: 'Obafemi Awolowo University',
     createdAt: '2026-03-02T12:00:00Z',
     rating: 5,
-    topic: 'Program shortlist',
+    topics: [
+      { slug: 'program-selection', name: 'Program selection' },
+      { slug: 'scholarships-financial-aid', name: 'Scholarships & financial aid' },
+    ],
+    sessionType: 'Program shortlist',
     text: 'Helped me cut a list of 14 programs to 6 that actually fit my research and fund internationals.',
   },
   {
@@ -183,7 +196,8 @@ export const reviews: Review[] = [
     institution: 'University of Lagos',
     createdAt: '2026-02-04T12:00:00Z',
     rating: 5,
-    topic: 'SOP draft review',
+    topics: [{ slug: 'document-preparation', name: 'Document preparation' }],
+    sessionType: 'SOP draft review',
     text: 'He related to my situation coming from a less common course of study and explained how to frame it as a strength.',
   },
   {
@@ -193,7 +207,9 @@ export const reviews: Review[] = [
     institution: null,
     createdAt: '2025-11-16T12:00:00Z',
     rating: 5,
-    topic: null,
+    // Migrated, with no session type either: no tag.
+    topics: [],
+    sessionType: null,
     text: 'Glad I found this platform and my mentor. He showed me how to approach professors about assistantships.',
   },
   {
@@ -203,7 +219,9 @@ export const reviews: Review[] = [
     institution: 'Federal University Oye-Ekiti',
     createdAt: '2025-09-28T12:00:00Z',
     rating: 4,
-    topic: 'Mock visa interview',
+    // Migrated: no topics, so its session type is the tag.
+    topics: [],
+    sessionType: 'Mock visa interview',
     text: 'Ran a mock visa interview with me and gave clear notes on what to tighten. Ready for the real one now.',
   },
 ];
