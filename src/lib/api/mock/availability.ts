@@ -53,7 +53,13 @@ function gridOrigin(mentorId: string): number | null {
   // times" and the one state worth reviewing — times to choose from — is still
   // unreachable in the mock and in CI.
   const offsetHours =
-    mentorId === MOCK_MENTOR_VIEWER ? 6 : mentorId === FEATURED.id ? 30 : i >= 0 ? 2 + ((i * 11) % 70) : null;
+    mentorId === MOCK_MENTOR_VIEWER
+      ? 6
+      : mentorId === FEATURED.id
+        ? 30
+        : i >= 0
+          ? 2 + ((i * 11) % 70)
+          : null;
   return offsetHours === null ? null : EPOCH + offsetHours * HOUR;
 }
 
@@ -71,6 +77,9 @@ export function mockNextAvailableAt(mentorId: string, now = Date.now()): string 
 // (#9) and `questions[]` (backend PR #268, the live intake form). Spread from a
 // variable so the mock compiles against the spec before and after each ships.
 const NO_TOPICS = { service_offerings: [], questions: [], is_featured: false };
+// Backend #526: each type's own next free time, required on SessionTypeRead.
+// The spec's defaults (not computed yet) until the profile mock fills them in.
+const NOT_REFRESHED = { next_available_at: null, next_available_state: 'refreshing' as const };
 
 const q = (
   id: string,
@@ -120,6 +129,7 @@ export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
     booking_window_days: Math.min(14, MAX_WINDOW_DAYS),
     requires_booking_confirmation: true,
     ...NO_TOPICS,
+    ...NOT_REFRESHED,
     application_stage: null,
     custom_stage_label: null,
     meeting_venue: 'google_meet',
@@ -134,6 +144,7 @@ export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
     booking_window_days: DEFAULT_WINDOW_DAYS,
     requires_booking_confirmation: true,
     ...NO_TOPICS,
+    ...NOT_REFRESHED,
     // Every question kind the booking step renders (backend #268, #12, #282).
     questions: CV_QUESTIONS,
     application_stage: null,
