@@ -1,5 +1,4 @@
-/* Share button and its menu (260px). With anchor="row" the root isn't
-   positioned, so the menu hangs from the CTA row instead of the button. The button is a 48px square: CTA
+/* Share button and its menu (260px), slid to stay on screen (useClampIntoView). The button is a 48px square: CTA
    Hierarchy.dc.html ("Header: Share (icon, 48×48 square)", rule 4: an icon
    button in a CTA row matches the row's height). Mentor Profile.dc.html still
    draws 32px (design request #46). */
@@ -44,11 +43,6 @@
   box-shadow:
     var(--shadow-menu),
     inset 0 0 0 1px var(--border-subtle);
-}
-/* Would cross the left of the screen from the right edge (useEdgeFlip). */
-.menuStart {
-  right: auto;
-  left: 0;
 }
 .item {
   width: 100%;

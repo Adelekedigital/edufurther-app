@@ -559,7 +559,6 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                       url={shareUrl}
                       name={p.mentor.name}
                       note={shareNote}
-                      anchor="row"
                       open={shareOpen}
                       onOpenChange={setShareOpen}
                     />

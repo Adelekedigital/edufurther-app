@@ -1067,7 +1067,10 @@ verified 21 Oct).
 - **Countries in a sentence:** full names with "the" where English needs it
   ("the United States", "the United Kingdom"), from one `countryInSentence` /
   `locationLine` in `lib/utils/format.ts`, on every surface.
-- **Popover menus near an edge:** drawn from the trigger's (or its row's) right
-  edge, and from its left edge when that would cross the screen
-  (`useEdgeFlip`, shared by InfoTip and ShareMenu).
+- **Popover menus near an edge:** a menu hangs from its own trigger and slides
+  just enough to stay 16px inside the screen (`useClampIntoView`, ShareMenu);
+  a tooltip flips to the other side (`useEdgeFlip`, InfoTip). Both live in
+  `lib/utils/useEdgeFlip.ts`. (The design hangs the share panel from the CTA
+  row; on a full-width phone row that opens it away from its button, so ours
+  keeps it under the button.)
 
