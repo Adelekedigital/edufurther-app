@@ -430,7 +430,17 @@ export type ReviewSummary = {
   wouldRecommendIn10: number | null;
   /** Whole-number percentages per attribute; null when not rated yet. */
   attributes: Record<ReviewAttribute, number | null>;
+  /**
+   * What the reviews were about (backend `review_topics`), most reviewed first.
+   * `count` is what the topic's filter pages through; a review about two topics
+   * counts under both, so these never read as shares of `count`.
+   */
+  topics: ReviewTopicCount[];
 };
+
+/** A service offering a review was about (backend `service_offerings`). */
+export type ReviewTopic = { slug: string; name: string };
+export type ReviewTopicCount = ReviewTopic & { count: number };
 
 export type Review = {
   id: string;
@@ -441,8 +451,10 @@ export type Review = {
   createdAt: string;
   /** 1..5. */
   rating: number;
-  /** The session type it was for, when known. */
-  topic: string | null;
+  /** What it was about, in the mentor's order; empty for a migrated review. */
+  topics: ReviewTopic[];
+  /** The session type it was for, when known: the tag when there are no topics. */
+  sessionType: string | null;
   text: string;
 };
 

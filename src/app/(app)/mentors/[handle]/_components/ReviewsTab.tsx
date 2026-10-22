@@ -53,6 +53,12 @@ export function ReviewsTab({
   const google = useGoogleSignUp();
   // The session a new review starts on: ReviewFlow's pick, the newest.
   const dueSession = newestFirst(r.reviewable.data ?? [])[0] ?? null;
+  // Every review there is under the chosen chip: all of them, or the topic's
+  // own count (backend #522), which is exactly what its filter pages through.
+  const total =
+    r.filter === null
+      ? p.reviews.count
+      : (p.reviews.topics.find((t) => t.slug === r.filter)?.count ?? null);
   return (
     <>
       {/* No reviews yet: nothing to summarise (Mentor Profile.dc.html `zeroReviews`). */}
@@ -123,10 +129,10 @@ export function ReviewsTab({
         isLoadingMore={r.list.isLoadingMore}
         loadMoreError={r.list.loadMoreError}
         onLoadMore={r.list.loadMore}
-        // The unfiltered total; a filter's own total isn't known.
-        total={r.filter === null ? p.reviews.count : null}
+        total={total}
         pageSize={REVIEW_PAGE_SIZE}
-        filters={p.sessionTypes.map((t) => ({ id: t.id, label: t.name }))}
+        // Chips by topic, without counts (Mentor Profile.dc.html draws none).
+        filters={p.reviews.topics.map((t) => ({ id: t.slug, label: t.name }))}
         filter={r.filter}
         onFilter={r.setFilter}
         mine={
@@ -141,8 +147,8 @@ export function ReviewsTab({
           r.isGuest
             ? {
                 firstName: p.mentor.firstName,
-                // Filtered, the total isn't known: no "+N more" count.
-                total: r.filter === null ? p.reviews.count : r.list.reviews.length,
+                // A topic the profile no longer lists: no "+N more" count.
+                total: total ?? r.list.reviews.length,
                 signupHref: `/signup?next=${encodeURIComponent(reviewsHref)}`,
                 loginHref: `/login?next=${encodeURIComponent(reviewsHref)}`,
                 onGoogle: () => google.start(reviewsHref),

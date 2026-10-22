@@ -53,12 +53,13 @@ export const keys = {
     profile: (handle: string, who: string) => ['mentors', 'profile', handle, who] as const,
     list: (f: MentorFilters, who: string) =>
       ['mentors', 'list', who, { q: f.q, offerings: [...f.offerings].sort() }] as const,
-    // `sessionTypeId`: the filter chip ('all' = none). `who`: guests fetch one.
-    reviews: (handle: string, sessionTypeId: string, who: string) =>
-      ['mentors', 'reviews', handle, sessionTypeId, who] as const,
+    // `offering`: the topic chip's slug (null = all). `who`: guests fetch one.
+    reviews: (handle: string, offering: string | null, who: string) =>
+      ['mentors', 'reviews', handle, offering, who] as const,
     relationship: (mentorId: string, who: string) =>
       ['mentors', 'relationship', mentorId, who] as const,
     similar: (handle: string, who: string) => ['mentors', 'similar', handle, who] as const,
+    freeSoon: (days: number, who: string) => ['mentors', 'freeSoon', days, who] as const,
     /** Prefixes, for invalidating every variant after a review is sent. */
     reviewsAll: ['mentors', 'reviews'] as const,
     profilesAll: ['mentors', 'profile'] as const,

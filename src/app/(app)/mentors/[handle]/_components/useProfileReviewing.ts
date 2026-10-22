@@ -14,6 +14,8 @@ import type { ReviewAnswers, Viewer } from '@/types/mentor';
 import type { ProfileTab } from './useProfileTab';
 
 type Options = {
+  /** The profile's review topics; null while it loads. */
+  topics: { slug: string }[] | null;
   handle: string;
   mentorId: string | null;
   tab: ProfileTab;
@@ -35,9 +37,15 @@ export function useProfileReviewing({
   isOwner,
   canBook,
   timeZone,
+  topics,
 }: Options) {
   const isGuest = viewerKind === 'guest';
-  const [filter, setFilter] = useState<string | null>(null);
+  const [chosen, setFilter] = useState<string | null>(null);
+  // A topic the profile no longer lists (its last review went, or the session
+  // type's offerings changed): back to All, so a chip is always pressed and the
+  // list is never filtered by a topic nobody can see.
+  const filter =
+    chosen !== null && topics !== null && !topics.some((t) => t.slug === chosen) ? null : chosen;
   const list = useMentorReviews(handle, filter, {
     guest: isGuest,
     active: tab === 'reviews',

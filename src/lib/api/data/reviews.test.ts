@@ -12,11 +12,15 @@ const read = (over: Partial<Read> = {}): Read => ({
   author_institution: 'Kaduna State University',
   author_deleted: false,
   session_type: { id: 'st1', name: 'SOP draft review' },
+  service_offerings: [
+    { slug: 'document-preparation', display_name: 'Document preparation' },
+    { slug: 'interview-preparation', display_name: 'Interview preparation' },
+  ],
   ...over,
 });
 
 describe('toReview', () => {
-  it('maps the author as "First L." with initials, the topic and the text', () => {
+  it('maps the author as "First L." with initials, the topics, the session type and the text', () => {
     expect(toReview(read())).toEqual({
       id: 'r1',
       author: 'Aladi P.',
@@ -24,7 +28,11 @@ describe('toReview', () => {
       institution: 'Kaduna State University',
       createdAt: '2025-09-08T12:00:00Z',
       rating: 5,
-      topic: 'SOP draft review',
+      topics: [
+        { slug: 'document-preparation', name: 'Document preparation' },
+        { slug: 'interview-preparation', name: 'Interview preparation' },
+      ],
+      sessionType: 'SOP draft review',
       text: 'We worked on a strong statement of purpose.',
     });
   });
@@ -38,11 +46,11 @@ describe('toReview', () => {
     expect(toReview(read(), true).text).toBe('');
   });
 
-  it('keeps the rating within 1–5 and tolerates a missing topic', () => {
-    expect(toReview(read({ session_value: 9, session_type: null }))).toMatchObject({
-      rating: 5,
-      topic: null,
-    });
+  it('keeps the rating within 1–5 and tolerates no topics or session type (migrated)', () => {
+    expect(
+      toReview(read({ session_value: 9, session_type: null, service_offerings: undefined })),
+    ).toMatchObject({ rating: 5, topics: [], sessionType: null });
+    expect(toReview(read({ service_offerings: [] })).topics).toEqual([]);
     expect(toReview(read({ session_value: 0 })).rating).toBe(1);
   });
 });
@@ -115,6 +123,7 @@ describe('toReviewSummary', () => {
       rating: 4.9,
       wouldRecommendIn10: 9,
       attributes: { communication: 86, knowledge: 96, support: null, practicality: null },
+      topics: [],
     });
   });
 
@@ -123,7 +132,24 @@ describe('toReviewSummary', () => {
       count: 0,
       rating: null,
       wouldRecommendIn10: null,
+      topics: [],
     });
+  });
+
+  it('maps review_topics in the API order, with the count each filter pages through (#522)', () => {
+    const s = toReviewSummary({
+      count: 3,
+      review_topics: [
+        { slug: 'document-preparation', display_name: 'Document preparation', count: 3 },
+        { slug: 'interview-preparation', display_name: 'Interview preparation', count: 2 },
+        { slug: 'test-preparation', display_name: 'Test preparation', count: 0 },
+      ],
+    });
+    // A review about both counts under both (5 > 3); a topic with none is no chip.
+    expect(s.topics).toEqual([
+      { slug: 'document-preparation', name: 'Document preparation', count: 3 },
+      { slug: 'interview-preparation', name: 'Interview preparation', count: 2 },
+    ]);
   });
 
   it('keeps n in 10 within 0–10', () => {

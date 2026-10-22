@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
 import type { components } from '@/lib/api/generated/schema';
-import { FEATURED, MENTORS } from '@/lib/api/mock/fixtures';
-import { MOCK_SESSION_TYPES } from '@/lib/api/mock/availability';
-import { mockReviews } from '@/lib/api/mock/reviews';
-import { mineFor } from '@/lib/api/mock/reviewStore';
-import { ok } from '@/lib/api/mock/respond';
+import { FEATURED, MENTORS, OFFERINGS } from '@/lib/api/mock/fixtures';
+import { mockMentorReviewList } from '@/lib/api/mock/reviewList';
+import { ok, problem } from '@/lib/api/mock/respond';
 
 type Page = components['schemas']['Page_MentorReviewRead_'];
 
 /**
  * MOCK of GET /api/v1/mentors/{handle}/reviews → Page[MentorReviewRead], newest
- * first. `session_type` filters; `cursor` is an offset. ENABLE_MOCK_API=1 only.
+ * first. `offering` filters, repeatable and ANY-of, at most 10; an unknown slug
+ * is a 422 and a blank one no filter (backend #522). `session_type` narrows
+ * too (both must hold). `cursor` is an offset. ENABLE_MOCK_API=1 only.
  */
 export async function GET(req: Request, ctx: { params: Promise<{ handle: string }> }) {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
@@ -20,32 +20,21 @@ export async function GET(req: Request, ctx: { params: Promise<{ handle: string 
   await new Promise((r) => setTimeout(r, 250));
 
   const q = new URL(req.url).searchParams;
+  const invalid = (detail: string) => problem(422, { title: 'Unprocessable Content', detail });
+  const offerings = q.getAll('offering').filter((o) => o.trim());
+  if (offerings.length > 10) return invalid('At most 10 offerings.');
+  if (offerings.some((o) => !OFFERINGS.some((x) => x.code === o)))
+    return invalid('Unknown offering.');
   const type = q.get('session_type');
   const limit = Math.min(50, Math.max(1, Number(q.get('limit')) || 10));
   const from = Number(q.get('cursor') ?? 0);
   if (!Number.isInteger(from) || from < 0) return new NextResponse(null, { status: 422 });
-  // The viewer's own review (written through the mock) leads the list.
-  const own = mineFor(m.id);
-  const ownType = own
-    ? MOCK_SESSION_TYPES[Number(own.session_id.split('-s').pop()) % MOCK_SESSION_TYPES.length]!
-    : null;
-  const mine = own
-    ? [
-        {
-          id: own.id,
-          created_at: own.created_at,
-          public_review: own.public_review,
-          session_value: own.overall_rating,
-          overall_rating: own.overall_rating,
-          author_first_name: 'Esther',
-          author_last_initial: 'M',
-          author_institution: 'University of Lagos',
-          author_deleted: false,
-          session_type: ownType ? { id: ownType.id, name: ownType.name } : null,
-        },
-      ]
-    : [];
-  const all = [...mine, ...mockReviews(m.id)].filter((r) => !type || r.session_type?.id === type);
+  const all = mockMentorReviewList(m.id).filter(
+    (r) =>
+      (!type || r.session_type?.id === type) &&
+      (offerings.length === 0 ||
+        (r.service_offerings ?? []).some((o) => offerings.includes(o.slug))),
+  );
   const body: Page = {
     data: all.slice(from, from + limit),
     next_cursor: from + limit < all.length ? String(from + limit) : null,

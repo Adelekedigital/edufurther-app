@@ -35,6 +35,9 @@ vi.mock('@/lib/api/data/auth', async (importOriginal) => ({
 vi.mock('@/lib/api/data/similar', async () =>
   (await import('./profileScreen.harness')).mocks.similar(),
 );
+vi.mock('@/lib/api/data/freeSoon', async () =>
+  (await import('./profileScreen.harness')).mocks.freeSoon(),
+);
 vi.mock('@/lib/api/data/profile', async () =>
   (await import('./profileScreen.harness')).mocks.profile(),
 );
@@ -121,12 +124,13 @@ describe('MentorProfileScreen — Reviews tab', () => {
     );
   });
 
-  it('filters by session type', async () => {
+  it('filters by topic: chips from review_topics, by slug, without counts (#522)', async () => {
     const user = userEvent.setup();
     h.search = new URLSearchParams('tab=reviews');
     h.profile = state({
       data: {
         ...fullProfile,
+        // Session types no longer make chips.
         sessionTypes: [
           fullProfile.sessionTypes[0]!,
           { ...fullProfile.sessionTypes[0]!, id: 'st9', name: 'Visa prep' },
@@ -135,13 +139,91 @@ describe('MentorProfileScreen — Reviews tab', () => {
     });
     h.reviewsRemote = reviewsState({ reviews });
     render(<MentorProfileScreen handle="gbenga" />);
-    const group = screen.getByRole('group', { name: 'Filter reviews by session' });
+    const group = screen.getByRole('group', { name: 'Filter reviews by topic' });
+    expect(
+      within(group)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual([
+      'All',
+      'Document preparation',
+      'Program selection',
+      'Interview preparation',
+      'Scholarships & financial aid',
+    ]);
     expect(within(group).getByRole('button', { name: 'All' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
-    await user.click(within(group).getByRole('button', { name: 'Visa prep' }));
-    expect(reviewsArgs).toHaveBeenLastCalledWith('gbenga', 'st9', expect.anything());
+    await user.click(within(group).getByRole('button', { name: 'Program selection' }));
+    expect(reviewsArgs).toHaveBeenLastCalledWith('gbenga', 'program-selection', expect.anything());
+    expect(within(group).getByRole('button', { name: 'Program selection' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('under a topic the caption and "Show N more" use the topic count, not the profile total', async () => {
+    const user = userEvent.setup();
+    h.search = new URLSearchParams('tab=reviews');
+    h.profile = state({ data: fullProfile });
+    h.reviewsRemote = reviewsState({ reviews: reviews.slice(0, 2), hasMore: true });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByText('Showing 2 of 7')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Document preparation' }));
+    expect(screen.getByText('Showing 2 of 4')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show 2 more reviews' })).toBeInTheDocument();
+  });
+
+  it('a chosen topic the profile stops listing falls back to All (local review of PR 380)', async () => {
+    const user = userEvent.setup();
+    h.search = new URLSearchParams('tab=reviews');
+    h.profile = state({ data: fullProfile });
+    h.reviewsRemote = reviewsState({ reviews });
+    const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+    const group = () => screen.getByRole('group', { name: 'Filter reviews by topic' });
+    await user.click(within(group()).getByRole('button', { name: 'Program selection' }));
+    // The profile refetches without that topic (its last review went).
+    h.profile = state({
+      data: {
+        ...fullProfile,
+        reviews: {
+          ...fullProfile.reviews,
+          topics: fullProfile.reviews.topics.filter((t) => t.name !== 'Program selection'),
+        },
+      },
+    });
+    rerender(<MentorProfileScreen handle="gbenga" />);
+    expect(within(group()).getByRole('button', { name: 'All' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(reviewsArgs).toHaveBeenLastCalledWith('gbenga', null, expect.anything());
+  });
+
+  it('one topic or none: no chips', () => {
+    h.search = new URLSearchParams('tab=reviews');
+    h.profile = state({
+      data: {
+        ...fullProfile,
+        reviews: { ...fullProfile.reviews, topics: fullProfile.reviews.topics.slice(0, 1) },
+      },
+    });
+    h.reviewsRemote = reviewsState({ reviews });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('group', { name: 'Filter reviews by topic' })).toBeNull();
+  });
+
+  it('a guest under a topic: the gate counts the rest of that topic', async () => {
+    const user = userEvent.setup();
+    h.isGuest = true;
+    h.search = new URLSearchParams('tab=reviews');
+    h.profile = state({ data: fullProfile });
+    h.reviewsRemote = reviewsState({ reviews: [{ ...reviews[0]!, text: '' }] });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByText('+6 more reviews from mentees')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Program selection' }));
+    expect(screen.getByText('+2 more reviews from mentees')).toBeInTheDocument();
   });
 
   it('a guest sees one review without its text, then the sign-up card', () => {
@@ -232,7 +314,7 @@ describe('MentorProfileScreen — Reviews tab', () => {
     h.reviewsRemote = reviewsState({ error: { kind: 'server', message: 'x' }, retry });
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.getByText('We couldn’t load reviews')).toBeInTheDocument();
-    expect(screen.queryByText('No reviews for this session yet.')).not.toBeInTheDocument();
+    expect(screen.queryByText('No reviews about this topic yet.')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(retry).toHaveBeenCalled();
   });
