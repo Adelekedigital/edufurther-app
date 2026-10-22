@@ -27,6 +27,9 @@ Sources, so the next sync can diff against them: the design project's
 | Decision | Reason | Would reopen if |
 | --- | --- | --- |
 | Next.js App Router, React, TypeScript | Handoff target (`HANDOFF_PLAN.md`) | — |
+| No approval wait: a written confidence check (A: confidence against code and docs, expected bugs and regressions; B: proceed if confident, checklist guarding each risk, stress-test while building). Ask the owner only when not confident or the call is theirs (CLAUDE.md #4) | Owner, 2026-10-21 | — |
+| A decision put to the owner is framed and recommended by what builds for today while building the product right and the right product, scales for the future, is secure, and meets industry standards | Owner, 2026-10-21 (standing, every session) | — |
+| Push clean: before the first push, a local review hunts what `/code-reviewer` flags (stale docs, conventions or divergence rows; tests pinning old behaviour; a11y-name anti-patterns; contract or mock gaps; other consumers of shared code) and everything it finds is fixed. The GitHub review still runs until NO FINDINGS | Owner, 21–22 Oct 2026: review tokens; "ensure before we push all concerning issues GitHub code review would call out are already addressed" | — |
 | Vercel deploys `main` only: PR branches get no preview deploy (`git.deploymentEnabled`), and a push that only changes tests, stories, docs, `.claude/`, CI or the check scripts skips the build (`scripts/vercel-ignore.mjs`). PR review rounds go out as one push | Product, 2026-10-01: the Hobby plan allows 100 deployments a day across every session, and the limit was hit. CI doesn't use previews (page-review builds its own) | **On a paid Vercel plan, turn PR preview deploys back on** (drop `git.deploymentEnabled`); keep the ignore step |
 | Build order: DS tokens → DS atoms → shared components → screens | Handoff README §1; `design-sync` | — |
 | Build the **chosen default** of every design tweak; alternatives are "to test" and not built unless product asks | Handoff README §9 | product requests an A/B |
@@ -156,7 +159,7 @@ Prototype files (`support.js`, `image-slot.js`, `dc-import`, `sc-if`) are the pr
 | Lane | When | What runs |
 |---|---|---|
 | **Small** | Only how something looks or reads: swap a control for the shared one, copy, spacing, an icon, a CSS rule. No change to what a click does, data, API calls, routing, focus order or a11y semantics | Affected tests only; one browser check at 390 and 1440 against the reference; push → CI; **one** GitHub `/code-reviewer` pass. **No local review agents, no five-width fidelity sweep.** Merge when CI is green and the review is clean (trivial findings fixed in place) |
-| **Full** | New screens or components, behaviour, data/hooks/mutations, API contracts, auth, routing, focus management, anything touching URLs, HTML or storage | Checklist + DoD approved first; fidelity ≥98% measured; review-page; local code review + security review; GitHub reviewer until NO FINDINGS; CI |
+| **Full** | New screens or components, behaviour, data/hooks/mutations, API contracts, auth, routing, focus management, anything touching URLs, HTML or storage | Checklist + DoD and the confidence check written first (CLAUDE.md #4); fidelity ≥98% measured; review-page; local code review + security review; GitHub reviewer until NO FINDINGS; CI |
 | **Docs** | `.md`, skills, comments only | CI only |
 
 Never run the full test suite locally in any lane: CI does it. If a "small" change turns out to touch behaviour, move it to the full lane and say so. DRY applies in every lane.
@@ -205,6 +208,8 @@ Never run the full test suite locally in any lane: CI does it. If a "small" chan
 **Two reviews on every code PR (owner, 2026-10-12, the backend's rule too).**
 1. **Local, before pushing:** `/code-review` at medium effort (low for a mechanical
    change), plus `/security-review` when auth, input or personal data is touched.
+   This is the push-clean pass (settled decisions): it hunts what `/code-reviewer`
+   flags, and everything it finds is fixed before the first push.
 2. **GitHub, after pushing:** the builder comments `/code-reviewer` and runs the loop
    until NO FINDINGS. Docs-only and CI-only PRs skip it.
 
@@ -224,7 +229,7 @@ reply comment. Which reviewer, its keys and variables, and the seven-step loop:
 - A finished slice ships as its own PR straight away, not held for a slower sibling.
 - Scope the next PR (read-only) while the current one is in review.
 - Local review agents run alongside the GitHub `/code-reviewer`, not as a serial step.
-- Several PRs' checklists may be presented and approved together (owner, 2026-10-12); each is still approved before its build starts (non-negotiable 4).
+- Several PRs' checklists may be presented together; each PR's confidence check is written before its build starts (non-negotiable 4).
 - No long verification crawls: diff review, targeted checks, then CI. Driving the page (`review-page.mjs`, non-negotiable 9) and the page-review gate still apply.
 - The merge gates don't change: two reviews, CI green on the exact head commit, Definition of Done. Speed comes from parallelism, never from skipping a gate or a best practice (owner, 2026-10-12).
 

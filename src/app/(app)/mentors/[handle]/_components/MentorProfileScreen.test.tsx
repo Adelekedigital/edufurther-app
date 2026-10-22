@@ -4,15 +4,16 @@ import { fullProfile, sessionTypes } from '@/components/organisms/ProfileHeader/
 import { similarMentors } from '@/components/organisms/SimilarMentorsCard/similar.fixture';
 import type { MentorProfile } from '@/types/mentor';
 import {
-  h,
-  state,
-  replace,
-  similarArgs,
-  sessionTypesArgs,
+  coverPick,
   coverSave,
   coverUpload,
-  coverPick,
+  freeSoonArgs,
+  h,
   idle,
+  replace,
+  sessionTypesArgs,
+  similarArgs,
+  state,
 } from './profileScreen.harness';
 import { MentorProfileScreen, suggestionsLine } from './MentorProfileScreen';
 
@@ -31,6 +32,9 @@ vi.mock('@/lib/api/data/reviewWrite', async () =>
 );
 vi.mock('@/lib/api/data/similar', async () =>
   (await import('./profileScreen.harness')).mocks.similar(),
+);
+vi.mock('@/lib/api/data/freeSoon', async () =>
+  (await import('./profileScreen.harness')).mocks.freeSoon(),
 );
 vi.mock('@/lib/api/data/profile', async () =>
   (await import('./profileScreen.harness')).mocks.profile(),
@@ -71,6 +75,7 @@ describe('MentorProfileScreen — the four states', () => {
   it('not found with nobody to suggest sends people back to Explore', () => {
     h.profile = state({ notFound: true });
     h.similarRemote = { data: [], isLoading: false, error: null, retry: vi.fn() };
+    h.freeSoonRemote = { data: [], isLoading: false, error: null, retry: vi.fn() };
     render(<MentorProfileScreen handle="nobody" />);
     expect(
       screen.getByRole('heading', { level: 1, name: 'This mentor profile isn’t available' }),
@@ -82,6 +87,66 @@ describe('MentorProfileScreen — the four states', () => {
     expect(screen.queryByRole('heading', { name: 'Mentors with similar expertise' })).toBeNull();
   });
 
+  it('an unknown address: mentors you can book this week (backend #521, design notFound)', () => {
+    h.profile = state({ notFound: true });
+    h.similarRemote = { data: [], isLoading: false, error: null, retry: vi.fn() };
+    render(<MentorProfileScreen handle="nobody" />);
+    // Asked for only once the similar list is known to be empty.
+    expect(freeSoonArgs).toHaveBeenLastCalledWith(true);
+    const section = screen.getByRole('region', { name: 'Mentors you can book this week' });
+    expect(section).toHaveTextContent('All have open times in the next 7 days.');
+    expect(within(section).getAllByRole('article')).toHaveLength(similarMentors.length);
+    expect(screen.queryByRole('link', { name: 'Explore mentors' })).toBeNull();
+  });
+
+  it('the similar list failed: this week fills in (the gate covers failed, not only empty)', () => {
+    h.profile = state({ notFound: true });
+    h.similarRemote = {
+      data: null,
+      isLoading: false,
+      error: { kind: 'server', message: 'x' },
+      retry: vi.fn(),
+    };
+    render(<MentorProfileScreen handle="hidden-mentor" />);
+    expect(freeSoonArgs).toHaveBeenLastCalledWith(true);
+    expect(
+      screen.getByRole('region', { name: 'Mentors you can book this week' }),
+    ).toBeInTheDocument();
+  });
+
+  it('a hidden mentor keeps the similar list and never asks for this week', () => {
+    h.profile = state({ notFound: true });
+    render(<MentorProfileScreen handle="hidden-mentor" />);
+    expect(
+      screen.getByRole('region', { name: 'Mentors with similar expertise' }),
+    ).toBeInTheDocument();
+    expect(freeSoonArgs).toHaveBeenLastCalledWith(false);
+  });
+
+  it('this week loading holds the place; failed falls back to Explore mentors', () => {
+    h.profile = state({ notFound: true });
+    h.similarRemote = { data: [], isLoading: false, error: null, retry: vi.fn() };
+    h.freeSoonRemote = { data: null, isLoading: true, error: null, retry: vi.fn() };
+    const { unmount } = render(<MentorProfileScreen handle="nobody" />);
+    expect(screen.getByRole('region', { name: 'Mentors you can book this week' })).toHaveAttribute(
+      'aria-busy',
+      'true',
+    );
+    unmount();
+    h.freeSoonRemote = {
+      data: null,
+      isLoading: false,
+      error: { kind: 'server', message: 'x' },
+      retry: vi.fn(),
+    };
+    render(<MentorProfileScreen handle="nobody" />);
+    expect(screen.queryByRole('region', { name: 'Mentors you can book this week' })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Explore mentors' })).toHaveAttribute(
+      'href',
+      '/explore',
+    );
+  });
+
   it('not found, and the suggestions failed: the same way back, no section', () => {
     h.profile = state({ notFound: true });
     h.similarRemote = {
@@ -90,6 +155,7 @@ describe('MentorProfileScreen — the four states', () => {
       error: { kind: 'server', message: 'x' },
       retry: vi.fn(),
     };
+    h.freeSoonRemote = { data: [], isLoading: false, error: null, retry: vi.fn() };
     render(<MentorProfileScreen handle="nobody" />);
     expect(screen.getByRole('link', { name: 'Explore mentors' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Mentors with similar expertise' })).toBeNull();

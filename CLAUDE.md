@@ -59,8 +59,11 @@ node scripts/review-page.mjs /           # needs the app running
 2. **No component imports the generated API client.** Only the page fetches.
    Enforced by `scripts/check-boundaries.mjs`. Do not weaken the config to pass.
 3. **Imports never point upward** — atom → molecule → organism → template → page.
-4. **The checklist and Definition of Done are approved before implementation** —
-   as text, with no tool calls in the same response.
+4. **A confidence check precedes implementation** (owner, 2026-10-21): write the
+   checklist and DoD, then (A) how confident we are against the codebase and docs,
+   and the bugs and regressions to watch; (B) proceed if confident, the checklist
+   guarding each risk, stress-testing as you build. Ask the owner only when not
+   confident or the call is theirs.
 5. **UX is grounded in a cited pattern**, queried at step 1–2, not after.
 6. **All four states ship** — loading, empty, error, content. Error is checked
    *before* empty.

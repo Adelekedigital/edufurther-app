@@ -30,6 +30,7 @@ import { BANNER_ACCEPT, useCoverEdit } from '@/lib/api/data/cover';
 import { useInReviewRefusal } from '@/lib/api/data/freeze';
 import { useMentorProfile } from '@/lib/api/data/profile';
 import { NOT_TAKING_TITLE, SHARE_NOTE } from '@/lib/copy/profile';
+import { useMentorsFreeSoon } from '@/lib/api/data/freeSoon';
 import { SIMILAR_SHOWN, useSimilarMentors } from '@/lib/api/data/similar';
 import { personCover } from '@/lib/utils/person';
 import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
@@ -341,6 +342,12 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // notFound; mentors see "View profile" on the cards). The endpoint answers
   // for hidden and unknown handles alike (#38).
   const similar = useSimilarMentors(handle, showSimilar || profile.notFound);
+  // When the similar list is empty or failed (an unknown address, or a mentor
+  // with none like them): mentors free this week
+  // (Mentor Profile.dc.html notFound, backend #521).
+  const freeSoon = useMentorsFreeSoon(
+    profile.notFound && !similar.isLoading && !similar.data?.length,
+  );
   // The card hides itself when the list is empty or failed.
   const similarShown = showSimilar && (similar.isLoading || !!similar.data?.length);
   // Profile strength (Mentor Profile.dc.html `canEdit` aside, FE #40): the
@@ -457,6 +464,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
         ) : profile.notFound || !p ? (
           <ProfileMissing
             similar={similar}
+            freeSoon={freeSoon}
             onBook={booking.openFor}
             timeZone={timeZone}
             offline={!online}
