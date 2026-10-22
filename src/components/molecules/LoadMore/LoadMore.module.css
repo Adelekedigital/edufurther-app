@@ -1,0 +1,26 @@
+/* Explore.dc.html pager: a centred column, gap space-2; the caption p-xs
+   ink-500; the error row an 18px red `error` icon beside p-xs words. */
+.more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.caption {
+  font-size: var(--text-p-xs);
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-p-xs);
+}
+
+.errorIcon {
+  flex: none;
+  color: var(--red-500);
+}

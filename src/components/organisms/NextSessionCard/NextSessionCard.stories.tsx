@@ -102,7 +102,7 @@ export const WithTheListBelow: Story = {
       <BookingList
         label="Later"
         heading="Later"
-        more={{ label: 'Show 5 more', caption: 'Showing 2 of 7', onClick: fn() }}
+        more={{ label: 'Show 5 more', caption: 'Showing 2 of 7', onLoadMore: fn() }}
       >
         <BookingRow
           booking={sampleBooking({ id: 'a', title: 'Visa interview practice' })}

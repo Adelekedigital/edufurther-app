@@ -11,8 +11,12 @@ import { sessionKey, useSession } from './session';
 
 type SimilarMentorRead = components['schemas']['SimilarMentorRead'];
 
-/** Mentor Profile.dc.html draws three. */
-export const SIMILAR_SHOWN = 3;
+/**
+ * How many suggestions each place draws (Mentor Profile.dc.html): three rows
+ * in the Overview aside, four cards on the "isn't available" page. The list is
+ * fetched once (up to five) and each place takes its own.
+ */
+export const SIMILAR_SHOWN = { aside: 3, missing: 4 } as const;
 
 /** The card-shaped mentor plus the design's row extras. Same rules as Explore's cards. */
 export function toSimilarMentor(r: SimilarMentorRead): SimilarMentor {
@@ -40,7 +44,7 @@ export function useSimilarMentors(handle: string, enabled: boolean): Remote<Simi
         signal,
       });
       if (!data) throw apiError(response.status, error);
-      return data.data.slice(0, SIMILAR_SHOWN).map(toSimilarMentor);
+      return data.data.map(toSimilarMentor);
     },
     staleTime: 5 * 60 * 1000,
     retry: false,

@@ -16,9 +16,17 @@ export function formatCount(n: number): string {
   return Math.round(n).toLocaleString('en-US');
 }
 
-/** An instant as "Oct 12", in the viewer's zone: a deletion date, said the same on the row, the confirm and the announcement. */
-export function formatShortDate(isoInstant: string): string {
-  return new Date(isoInstant).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+/**
+ * An instant as "Oct 12": a deletion date, a session's day in the review flow
+ * and the review note, a mentor's last session. In `timeZone` (the page's
+ * zone) when given, else this device's.
+ */
+export function formatShortDate(isoInstant: string, timeZone?: string): string {
+  return new Date(isoInstant).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone,
+  });
 }
 
 /**

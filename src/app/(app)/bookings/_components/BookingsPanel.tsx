@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { BookingList } from '@/components/organisms/BookingList/BookingList';
 import { BookingRow } from '@/components/organisms/BookingRow/BookingRow';
+import { LOAD_MORE_COPY, showMoreLabel, showingCaption } from '@/lib/copy/loadMore';
 import type { AppError } from '@/types/mentor';
 import type { Booking, BookingTab } from '@/types/booking';
 import { emptyFor } from './empties';
@@ -138,7 +139,6 @@ export function BookingsPanel({
   const visible = bookings.slice(0, shown);
   // More to reveal here, or another page waiting on the server.
   const more = bookings.length > shown || !!hasMore;
-  const left = total != null ? total - shown : null;
 
   return (
     <>
@@ -151,17 +151,17 @@ export function BookingsPanel({
           more={
             more
               ? {
-                  label: `Show ${left != null ? Math.min(PAGE_SIZE, left) : PAGE_SIZE} more`,
+                  label: showMoreLabel(PAGE_SIZE, total != null ? total - shown : null),
                   caption:
                     total != null
-                      ? `Showing ${Math.min(shown, total)} of ${total}`
-                      : `Showing ${visible.length}`,
-                  onClick: showMore,
+                      ? showingCaption(shown, total)
+                      : showingCaption(visible.length, null),
+                  onLoadMore: showMore,
                   busy: isLoadingMore,
                   error: loadMoreError
                     ? loadMoreError.kind === 'offline'
-                      ? 'You’re offline. Try again when you reconnect.'
-                      : 'We couldn’t load more. Try again.'
+                      ? LOAD_MORE_COPY.bookings.offline
+                      : LOAD_MORE_COPY.bookings.failed
                     : undefined,
                 }
               : undefined

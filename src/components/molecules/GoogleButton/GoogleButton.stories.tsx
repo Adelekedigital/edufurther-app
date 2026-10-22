@@ -15,6 +15,9 @@ export const Default: Story = {};
 /** Log-in, when this device last signed in with Google. */
 export const LastUsed: Story = { args: { lastUsed: true } };
 
+/** Beside a medium Button (the profile's review gate): 40px, as wide as its words. */
+export const Medium: Story = { args: { size: 'medium' } };
+
 /** Held from the click until the browser leaves for Google's consent screen. */
 export const Busy: Story = { args: { busy: true } };
 

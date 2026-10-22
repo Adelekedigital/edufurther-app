@@ -1,6 +1,7 @@
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import type { MetMentor } from '@/lib/api/data/metMentors';
+import { formatShortDate } from '@/lib/utils/format';
 import styles from './MentorRow.module.css';
 
 type MentorRowProps = {
@@ -10,19 +11,13 @@ type MentorRowProps = {
   onBook: (mentor: MetMentor) => void;
 };
 
-function shortDate(iso: string, timeZone: string): string {
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone }).format(
-    new Date(iso),
-  );
-}
-
 /** The history line under the name — what happened last, by bookability. */
 function history(m: MetMentor, timeZone: string): string {
   const n = m.sessionCount;
   const sessions = `${n} session${n === 1 ? '' : 's'}`;
   if (m.bookability === 'has_upcoming') return `${sessions} · Upcoming session`;
   if (m.bookability === 'pending') return `${sessions} · Request pending`;
-  return `${sessions} · Last met ${shortDate(m.lastSessionAt, timeZone)}`;
+  return `${sessions} · Last met ${formatShortDate(m.lastSessionAt, timeZone)}`;
 }
 
 /**

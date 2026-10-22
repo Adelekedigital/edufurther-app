@@ -3,6 +3,7 @@ import { Button } from '@/components/atoms/Button/Button';
 import { Input } from '@/components/atoms/Input/Input';
 import { GoogleButton } from '@/components/molecules/GoogleButton/GoogleButton';
 import { LegalLine } from '@/components/molecules/LegalLine/LegalLine';
+import { GOOGLE_SIGN_IN_FAILED } from '@/lib/copy/auth';
 import { emailTypoFix } from '@/lib/utils/emailTypo';
 import { cx } from '@/lib/utils/cx';
 import { FieldError } from '@/components/molecules/FieldError/FieldError';
@@ -13,7 +14,7 @@ import styles from './SignInForm.module.css';
 const START_ERROR: Record<StartError, string> = {
   sendFailed: 'We couldn’t send your code. Check your connection and try again.',
   sendUnavailable: 'We couldn’t send your code right now. Try again in a few minutes.',
-  googleError: 'Google sign-in didn’t finish. Try again, or use your email.',
+  googleError: GOOGLE_SIGN_IN_FAILED,
 };
 
 export type StartStepProps = {

@@ -8,6 +8,12 @@ type GoogleButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children
   busy?: boolean;
   /** This device last signed in with Google (Sign In.dc.html `lastUsed`, log-in only). */
   lastUsed?: boolean;
+  /**
+   * `large` (default): the sign-in screens' full-width 48px button. `medium`:
+   * 40px and as wide as its words, beside another medium action (the profile's
+   * review gate, next to "Continue with email").
+   */
+  size?: 'large' | 'medium';
 };
 
 /**
@@ -19,7 +25,7 @@ type GoogleButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children
  * offline while the button has focus must not throw that focus to <body>.
  */
 export const GoogleButton = forwardRef<HTMLButtonElement, GoogleButtonProps>(function GoogleButton(
-  { busy, lastUsed, disabled, className, onClick, ...rest },
+  { busy, lastUsed, size = 'large', disabled, className, onClick, ...rest },
   ref,
 ) {
   return (
@@ -27,7 +33,12 @@ export const GoogleButton = forwardRef<HTMLButtonElement, GoogleButtonProps>(fun
       {...rest}
       ref={ref}
       type="button"
-      className={cx(styles.button, lastUsed && !busy && styles.withBadge, className)}
+      className={cx(
+        styles.button,
+        size === 'medium' && styles.medium,
+        lastUsed && !busy && styles.withBadge,
+        className,
+      )}
       // After ...rest, like the Button atom: busy wins whatever the caller passes.
       aria-busy={busy || undefined}
       aria-disabled={disabled || undefined}

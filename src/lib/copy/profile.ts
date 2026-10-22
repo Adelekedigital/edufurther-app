@@ -1,3 +1,4 @@
+import { formatShortDate } from '@/lib/utils/format';
 import { MENTOR_PROFILE_ERRORS } from './mentorSettings';
 
 /**
@@ -13,11 +14,25 @@ export const SHARE_NOTE = {
 } as const;
 
 /**
- * "Update your review" (Mentor Profile.dc.html reviewState `again`). The
- * design's "3 more sessions" has no count behind it (the API says only "2 or
- * more since"), so the title doesn't name one.
+ * The Reviews tab's note (Mentor Profile.dc.html reviewState). `due` names the
+ * session a new review starts on ("Your review on Sep 19 (SOP review) helps
+ * …"), in the profile's zone; brackets only with a session name, and the
+ * plain line while no session is known yet. `again`: the design's "3 more
+ * sessions" has no count behind it (the API says only "2 or more since"), so
+ * the title doesn't name one.
  */
 export const REVIEW_COPY = {
+  dueTitle: (firstName: string) => `How was your session with ${firstName}?`,
+  dueBody: (
+    session: { startsAt: string; typeName: string | null } | null,
+    timeZone: string,
+  ): string => {
+    if (!session) return 'Your review helps other mentees choose, and takes about a minute.';
+    const day = formatShortDate(session.startsAt, timeZone);
+    const name = session.typeName?.trim();
+    return `Your review on ${day}${name ? ` (${name})` : ''} helps other mentees choose, and takes about a minute.`;
+  },
+  dueAction: 'Write a review',
   againTitle: 'You’ve had more sessions since your last review',
   againBody: (firstName: string, lastReviewedAt: string, now = new Date()) => {
     const at = new Date(lastReviewedAt);

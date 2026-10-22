@@ -355,7 +355,8 @@ const list = {
   isLoadingMore: false,
   loadMoreError: null,
   onLoadMore: fn(),
-  remaining: 2,
+  total: 7,
+  pageSize: 5,
   filters: sessionTypes.map((t) => ({ id: t.id, label: t.name })),
   filter: null,
   onFilter: fn(),
@@ -417,7 +418,15 @@ export const ReviewsGuest: Story = {
       <ReviewsList
         {...list}
         reviews={[{ ...reviews[0]!, text: '' }]}
-        gate={{ firstName: 'Gbenga', total: 7, signupHref: '/signup', loginHref: '/login' }}
+        gate={{
+          firstName: 'Gbenga',
+          total: 7,
+          signupHref: '/signup',
+          loginHref: '/login',
+          onGoogle: fn(),
+          googleBusy: false,
+          googleFailed: false,
+        }}
       />
     </div>
   ),

@@ -30,7 +30,7 @@ import { BANNER_ACCEPT, useCoverEdit } from '@/lib/api/data/cover';
 import { useInReviewRefusal } from '@/lib/api/data/freeze';
 import { useMentorProfile } from '@/lib/api/data/profile';
 import { SHARE_NOTE } from '@/lib/copy/profile';
-import { useSimilarMentors } from '@/lib/api/data/similar';
+import { SIMILAR_SHOWN, useSimilarMentors } from '@/lib/api/data/similar';
 import { personCover } from '@/lib/utils/person';
 import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
@@ -656,6 +656,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                       reviews={reviews}
                       offerBook={canStartBooking}
                       onBook={scrollToBook}
+                      timeZone={timeZone}
                     />
                   ) : notTakingTab ? (
                     <NotTakingEmpty firstName={p.mentor.firstName} />
@@ -722,7 +723,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                     {tab === 'overview' && <TrackRecordCard profile={p} />}
                     {similarShown && (
                       <SimilarMentorsCard
-                        mentors={similar.data}
+                        mentors={similar.data?.slice(0, SIMILAR_SHOWN.aside) ?? null}
                         isLoading={similar.isLoading}
                         timeZone={timeZone}
                         seeAllHref="/explore"

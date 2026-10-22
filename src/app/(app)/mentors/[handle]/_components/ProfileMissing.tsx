@@ -1,6 +1,7 @@
 import { ButtonLink } from '@/components/atoms/Button/Button';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { MentorSuggestions } from '@/components/organisms/MentorSuggestions/MentorSuggestions';
+import { SIMILAR_SHOWN } from '@/lib/api/data/similar';
 import type { Mentor, Remote, SimilarMentor } from '@/types/mentor';
 import styles from './MentorProfileScreen.module.css';
 import { suggestionsLine } from './suggestions';
@@ -32,6 +33,7 @@ export function ProfileMissing({
   // loading or failed profile has its own state), so `similar` is this
   // handle's list, asked for because of the 404.
   const suggest = similar.isLoading || !!similar.data?.length;
+  const shown = similar.data?.slice(0, SIMILAR_SHOWN.missing) ?? [];
   return suggest ? (
     <div className={styles.missing}>
       <EmptyState
@@ -43,9 +45,10 @@ export function ProfileMissing({
       />
       <MentorSuggestions
         title="Mentors with similar expertise"
-        subtitle={suggestionsLine(similar.data ?? [])}
-        mentors={similar.data?.map((x) => x.mentor) ?? null}
+        subtitle={suggestionsLine(shown)}
+        mentors={similar.data ? shown.map((x) => x.mentor) : null}
         loading={similar.isLoading}
+        expected={SIMILAR_SHOWN.missing}
         exploreHref="/explore"
         onBook={onBook}
         timeZone={timeZone}

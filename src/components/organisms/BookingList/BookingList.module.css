@@ -30,20 +30,5 @@
 }
 
 .more {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
   padding-top: var(--space-1);
-}
-
-.count {
-  font-size: var(--text-p-xs);
-  color: var(--ink-600);
-}
-
-/* A "Show more" that failed. Ours: the design never drew the case. */
-.error {
-  font-size: var(--text-p-xs);
-  color: var(--text-danger);
 }
