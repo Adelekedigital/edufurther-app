@@ -1,3 +1,4 @@
+/* TimezonePicker.dc.html, `editStyle` text. */
 .wrap {
   position: relative;
   display: inline-flex;
@@ -7,10 +8,12 @@
   font-size: var(--text-p-xs);
   color: var(--text-tertiary);
 }
+.zone {
+  color: var(--text-secondary);
+}
 .trigger {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
   padding: 0;
   border: none;
   background: none;
@@ -28,12 +31,18 @@
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
 }
+/* Clicking away closes it (design: a fixed, invisible layer under the panel). */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 59;
+}
 .panel {
   position: absolute;
   top: calc(100% + var(--space-1));
   left: 0;
   z-index: 60;
-  width: min(280px, calc(100vw - var(--space-8)));
+  width: min(320px, calc(100vw - var(--space-8)));
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -58,15 +67,21 @@
   font-weight: var(--weight-semibold);
   text-align: left;
 }
+.head {
+  padding: 0 var(--space-2);
+  font-size: var(--text-p-xs);
+  color: var(--text-tertiary);
+}
 .list {
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 220px;
+  max-height: 260px;
   overflow: auto;
 }
 .option {
   width: 100%;
+  min-height: var(--button-h-medium);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -81,6 +96,20 @@
   font-size: var(--text-p-xs);
   text-align: left;
 }
+.optionText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.region,
+.offset {
+  color: var(--text-tertiary);
+}
+.offset {
+  flex: none;
+  white-space: nowrap;
+}
 .option:hover {
   background: var(--surface-subtle);
 }
@@ -93,6 +122,7 @@
   outline-offset: -2px;
 }
 .none {
+  margin: 0;
   padding: var(--space-2);
   font-size: var(--text-p-xs);
   color: var(--text-tertiary);
@@ -102,5 +132,24 @@
   .option,
   .device {
     min-height: var(--touch-target-min);
+  }
+  /* Phones: a bottom sheet over a scrim (handoff). */
+  .backdrop {
+    background: var(--overlay-scrim-sheet);
+  }
+  .panel {
+    position: fixed;
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 80vh;
+    padding: var(--space-4);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+  .list {
+    max-height: none;
+    flex: 1;
   }
 }
