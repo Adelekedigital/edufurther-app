@@ -327,12 +327,13 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
     refocusAfterTip();
   }, [itemSaved]);
 
-  // Similar mentors: the Overview aside, for mentees and guests. Not the mentor
+  // Similar mentors: the aside beside Overview and Reviews (Mentor Profile.dc.html
+  // `showSimilar`, its default reviewsLayout=full), for mentees and guests. Not the mentor
   // themselves, and not other mentors (product 2026-09-28: it's a mentee-facing
   // suggestion, and mentors' nav has no Explore). Waits for who is looking.
   const showSimilar =
     !!p &&
-    tab === 'overview' &&
+    tab !== 'sessions' &&
     viewer.kind !== 'loading' &&
     (viewing || (!isOwner && !member?.isMentor));
   // The "isn't available" page offers them to everyone (Mentor Profile.dc.html
@@ -346,6 +347,9 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const completeness = p?.owner?.completeness ?? null;
   const strengthShown =
     editingReviewed && tab !== 'sessions' && !!completeness && completeness.percent < 100;
+  // The track record beside Overview and Reviews, once there's a session to
+  // count (Mentor Profile.dc.html `showStats: done > 0 && !focus`, default full).
+  const track = !!p && tab !== 'sessions' && p.mentor.completedSessions > 0;
   // The aside's name lists what it holds for this viewer on this tab; with
   // only the first-mentees card it's "About this mentor".
   const asideLabel =
@@ -354,7 +358,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
       // Neutral when it only says bookings are closed (review of #81, #102).
       asMentee && (notTaking ? 'availability' : 'booking'),
       strengthShown && 'profile strength',
-      tab === 'overview' && 'track record',
+      track && 'track record',
       similarShown && 'similar mentors',
     ]) ?? 'About this mentor';
 
@@ -692,10 +696,9 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 // Never an empty named landmark (the owner's Reviews tab can hold nothing).
                 (asMentee ||
                   tab === 'overview' ||
+                  track ||
                   strengthShown ||
                   (!isPhone && !!firstMentees)) && (
-                  // Reviews tab: the design's default `reviewsLayout=focus` drops
-                  // the track record (and Similar mentors) from the aside.
                   <aside className={styles.aside} aria-label={asideLabel}>
                     {!isPhone && firstMentees}
                     {asMentee &&
@@ -732,7 +735,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                         })}
                       />
                     )}
-                    {tab === 'overview' && <TrackRecordCard profile={p} />}
+                    {track && <TrackRecordCard profile={p} />}
                     {similarShown && (
                       <SimilarMentorsCard
                         mentors={similar.data?.slice(0, SIMILAR_SHOWN.aside) ?? null}
