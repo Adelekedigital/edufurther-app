@@ -148,8 +148,10 @@ export function TimezonePicker({
       </button>
       {open && (
         <>
-          <span className={styles.backdrop} aria-hidden onClick={() => close(!isPhone)} />
-          <Panel id={panelId} sheet={isPhone} onClose={() => close(false)} onKeyDown={onListKey}>
+          {/* Focus goes back to Change from here, not from the trap: it records
+              the search field (focused first) as the opener. */}
+          <span className={styles.backdrop} aria-hidden onClick={() => close()} />
+          <Panel id={panelId} sheet={isPhone} onClose={() => close()} onKeyDown={onListKey}>
             <Input
               ref={searchRef}
               autoFocus
