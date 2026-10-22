@@ -29,7 +29,7 @@ import { useAvatarUpload } from '@/lib/api/data/avatar';
 import { BANNER_ACCEPT, useCoverEdit } from '@/lib/api/data/cover';
 import { useInReviewRefusal } from '@/lib/api/data/freeze';
 import { useMentorProfile } from '@/lib/api/data/profile';
-import { SHARE_NOTE } from '@/lib/copy/profile';
+import { NOT_TAKING_TITLE, SHARE_NOTE } from '@/lib/copy/profile';
 import { SIMILAR_SHOWN, useSimilarMentors } from '@/lib/api/data/similar';
 import { personCover } from '@/lib/utils/person';
 import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
@@ -498,7 +498,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                   : undefined
               }
               // As drawn (design reply #58).
-              status={asMentee && notTaking ? 'Not taking bookings' : undefined}
+              status={asMentee && notTaking ? NOT_TAKING_TITLE : undefined}
               introEditor={
                 editing && owner.introOpen ? (
                   <IntroEditForm
