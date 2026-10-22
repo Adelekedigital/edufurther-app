@@ -42,9 +42,38 @@ describe('ReviewsList', () => {
     expect(screen.queryByRole('article')).not.toBeInTheDocument();
   });
 
-  it('empty: a filter with no reviews says so', () => {
-    render(<ReviewsList {...props({ reviews: [] })} />);
+  it('empty: no reviews yet says so, with no chips or order to offer (design `zeroReviews`)', () => {
+    render(
+      <ReviewsList
+        {...props({
+          reviews: [],
+          filters: [
+            { id: 'a', label: 'A' },
+            { id: 'b', label: 'B' },
+          ],
+        })}
+      />,
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('No reviews yet.');
+    expect(screen.queryByRole('group', { name: 'Filter reviews by session' })).toBeNull();
+    expect(screen.queryByText('Most recent first')).toBeNull();
+  });
+
+  it('empty: a filter with no reviews says so, and keeps the chips to switch back', () => {
+    render(
+      <ReviewsList
+        {...props({
+          reviews: [],
+          filter: 'a',
+          filters: [
+            { id: 'a', label: 'A' },
+            { id: 'b', label: 'B' },
+          ],
+        })}
+      />,
+    );
     expect(screen.getByRole('status')).toHaveTextContent('No reviews for this session yet.');
+    expect(screen.getByRole('group', { name: 'Filter reviews by session' })).toBeInTheDocument();
   });
 
   it('content: each review with its stars, date and topic; a deleted author', () => {

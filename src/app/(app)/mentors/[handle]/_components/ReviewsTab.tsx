@@ -55,7 +55,8 @@ export function ReviewsTab({
   const dueSession = newestFirst(r.reviewable.data ?? [])[0] ?? null;
   return (
     <>
-      <ReviewsSummary summary={p.reviews} firstName={p.mentor.firstName} />
+      {/* No reviews yet: nothing to summarise (Mentor Profile.dc.html `zeroReviews`). */}
+      {p.reviews.count > 0 && <ReviewsSummary summary={p.reviews} firstName={p.mentor.firstName} />}
       {r.mineOpen ? (
         <ReviewNote
           tone="success"

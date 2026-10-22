@@ -112,7 +112,8 @@ describe('MentorProfileScreen — Reviews tab', () => {
     h.reviewsRemote = reviewsState({ reviews, hasMore: true });
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.getByRole('button', { name: 'Show 5 more reviews' })).toBeInTheDocument();
-    expect(screen.queryByText('Track record')).not.toBeInTheDocument();
+    // The design's default layout keeps the track record beside Reviews.
+    expect(screen.getByRole('complementary')).toHaveAccessibleName(/track record/);
     expect(reviewsArgs).toHaveBeenLastCalledWith(
       'gbenga',
       null,

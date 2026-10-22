@@ -52,11 +52,24 @@ describe('MentorProfileScreen — Similar mentors', () => {
     expect(similarArgs).toHaveBeenLastCalledWith('gbenga', true);
   });
 
-  it('not on the Reviews tab (the design’s focus layout)', () => {
+  it('beside Reviews too (the design’s default reviewsLayout=full)', () => {
     h.search = new URLSearchParams('tab=reviews');
     h.profile = state({ data: fullProfile });
     render(<MentorProfileScreen handle="gbenga" />);
-    expect(screen.queryByRole('heading', { name: 'Similar mentors' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Similar mentors' })).toBeInTheDocument();
+    expect(similarArgs).toHaveBeenLastCalledWith('gbenga', true);
+  });
+
+  it('not beside Sessions, which has no aside', () => {
+    h.search = new URLSearchParams('tab=sessions');
+    h.profile = state({
+      data: {
+        ...fullProfile,
+        sessionTypes: [0, 1, 2].map((i) => ({ ...fullProfile.sessionTypes[0]!, id: `st${i}` })),
+      },
+    });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
     expect(similarArgs).toHaveBeenLastCalledWith('gbenga', false);
   });
 
@@ -102,9 +115,23 @@ describe('MentorProfileScreen — Similar mentors', () => {
     expect(screen.getByRole('complementary', { name: 'Track record' })).toBeInTheDocument();
   });
 
-  it('the owner’s Reviews tab with nothing for the aside has no aside (review r3 of #31)', () => {
+  it('the owner’s Reviews tab keeps the track record beside it', () => {
     h.search = new URLSearchParams('tab=reviews');
     h.profile = state({ data: { ...fullProfile, owner: { approval: 'approved', listed: true } } });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('complementary')).toHaveAccessibleName('Track record');
+  });
+
+  it('the owner’s Reviews tab with nothing for the aside has no aside (review r3 of #31)', () => {
+    h.search = new URLSearchParams('tab=reviews');
+    h.profile = state({
+      data: {
+        ...fullProfile,
+        mentor: { ...fullProfile.mentor, completedSessions: 0 },
+        // Unlisted: no share invite (first-mentees card) either.
+        owner: { approval: 'approved', listed: false },
+      },
+    });
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
   });

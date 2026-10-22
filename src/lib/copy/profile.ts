@@ -71,3 +71,9 @@ export const bookSessionsSub = (count: number, zone: string) =>
 /** The declined owner bar's "Contact support": the mail's subject. */
 export const OWNER_SUPPORT_SUBJECT = (name: string) =>
   `My mentor profile wasn’t approved (${name})`;
+
+/** The Reviews tab with nothing to list (Mentor Profile.dc.html `emptyText`). */
+export const REVIEWS_EMPTY = {
+  all: 'No reviews yet.',
+  filtered: 'No reviews for this session yet.',
+} as const;

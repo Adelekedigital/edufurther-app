@@ -11,6 +11,7 @@ import { ReviewItem } from '@/components/molecules/ReviewItem/ReviewItem';
 import { GOOGLE_SIGN_IN_FAILED } from '@/lib/copy/auth';
 import { LOAD_MORE_COPY, showMoreLabel, showingCaption } from '@/lib/copy/loadMore';
 import type { AppError, Review } from '@/types/mentor';
+import { REVIEWS_EMPTY } from '@/lib/copy/profile';
 import styles from './ReviewsList.module.css';
 
 type Gate = {
@@ -58,32 +59,38 @@ type ReviewsListProps = {
 
 /**
  * Mentor Profile.dc.html Reviews tab, below the summary: the filter chips and
- * the list, newest first. Four states: loading, error, empty (for a filter), content.
+ * the list, newest first. Four states: loading, error, empty (none yet, or none
+ * for a filter), content.
  */
 export function ReviewsList(p: ReviewsListProps) {
   const guest = p.gate !== null;
+  // No reviews at all (Mentor Profile.dc.html `zeroReviews`): no chips or order
+  // to offer, only the line saying so.
+  const none = !p.isLoading && !p.error && p.filter === null && p.reviews.length === 0;
   return (
     <div className={styles.wrap}>
-      <div className={styles.bar}>
-        {p.filters.length > 1 && (
-          <div className={styles.chips} role="group" aria-label="Filter reviews by session">
-            <Chip look="pill" pressed={p.filter === null} onClick={() => p.onFilter(null)}>
-              All
-            </Chip>
-            {p.filters.map((f) => (
-              <Chip
-                key={f.id}
-                look="pill"
-                pressed={p.filter === f.id}
-                onClick={() => p.onFilter(f.id)}
-              >
-                {f.label}
+      {!none && (
+        <div className={styles.bar}>
+          {p.filters.length > 1 && (
+            <div className={styles.chips} role="group" aria-label="Filter reviews by session">
+              <Chip look="pill" pressed={p.filter === null} onClick={() => p.onFilter(null)}>
+                All
               </Chip>
-            ))}
-          </div>
-        )}
-        <span className={styles.order}>Most recent first</span>
-      </div>
+              {p.filters.map((f) => (
+                <Chip
+                  key={f.id}
+                  look="pill"
+                  pressed={p.filter === f.id}
+                  onClick={() => p.onFilter(f.id)}
+                >
+                  {f.label}
+                </Chip>
+              ))}
+            </div>
+          )}
+          <span className={styles.order}>Most recent first</span>
+        </div>
+      )}
 
       {p.isLoading ? (
         <div className={styles.list} aria-busy>
@@ -116,7 +123,7 @@ export function ReviewsList(p: ReviewsListProps) {
         </Notice>
       ) : p.reviews.length === 0 ? (
         <p className={styles.empty} role="status">
-          No reviews for this session yet.
+          {p.filter === null ? REVIEWS_EMPTY.all : REVIEWS_EMPTY.filtered}
         </p>
       ) : (
         <div className={styles.list}>
