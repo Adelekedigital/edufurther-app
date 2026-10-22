@@ -138,6 +138,12 @@ describe('TimezonePicker', () => {
     expect(screen.getByRole('dialog', { name: 'Time zone' })).toHaveAttribute('aria-modal', 'true');
     await userEvent.keyboard('{Escape}');
     await waitFor(() => expect(document.activeElement).toBe(change));
+    // A tap on the scrim closes it too, and focus still comes back to Change.
+    await userEvent.click(change);
+    const scrim = document.querySelector<HTMLElement>('[class*="backdrop"]')!;
+    await userEvent.click(scrim);
+    expect(screen.queryByRole('dialog', { name: 'Time zone' })).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(change));
     mq.mockRestore();
   });
 });
