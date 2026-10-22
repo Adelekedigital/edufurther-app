@@ -46,8 +46,8 @@ describe('BookSessionCard', () => {
     expect(rows[1]).toHaveTextContent('45 minboltInstant booking');
   });
 
-  it('a zone without a short name shows its IANA name', () => {
+  it('a zone without a short name shows its city', () => {
     render(<BookSessionCard {...props} timeZone="America/Sao_Paulo" sessionTypes={sessionTypes} />);
-    expect(screen.getByText('3 sessions · times in America/Sao Paulo')).toBeInTheDocument();
+    expect(screen.getByText('3 sessions · times in Sao Paulo')).toBeInTheDocument();
   });
 });

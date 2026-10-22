@@ -110,6 +110,9 @@ describe('toSessionType', () => {
       booking_window_days: 56,
       // Defaulted in the spec, so the server always sends it (backend #409).
       requires_booking_confirmation: true,
+      // Backend #526: required, defaulted to "not computed yet".
+      next_available_at: null,
+      next_available_state: 'refreshing' as const,
     };
     const t = toSessionType({
       id: 'st',
@@ -161,6 +164,8 @@ describe('intake questions (backend #268, #12, #282)', () => {
       min_notice_minutes: 1440,
       meeting_venue: 'google_meet',
       service_offerings: [],
+      next_available_at: null,
+      next_available_state: 'refreshing',
       questions: [
         question('d', 3, 'multi_choice', true),
         question('a', 0, 'file_upload'),
