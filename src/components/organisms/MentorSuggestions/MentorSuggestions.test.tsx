@@ -17,10 +17,10 @@ describe('MentorSuggestions', () => {
     const section = screen.getByRole('region', { name: props.title });
     expect(section).toHaveTextContent(props.subtitle);
     expect(within(section).getAllByRole('article')).toHaveLength(sampleMentors.length);
-    expect(within(section).getByRole('link', { name: 'Explore all mentors' })).toHaveAttribute(
-      'href',
-      '/explore',
-    );
+    const explore = within(section).getByRole('link', { name: 'Explore all mentors' });
+    expect(explore).toHaveAttribute('href', '/explore');
+    // The design's 48px button (`btnExplore` is in its large list).
+    expect(explore).toHaveClass('large');
   });
 
   it('compact card: a round photo beside the name, the label next to the name, one name link', () => {

@@ -15,17 +15,30 @@
 /* The row under the banner (CoverHeader's body): the photo 48px into the
    banner, the intro at least 24px below it, the actions in the row and the
    topics on a line of their own (20px below the row, 20px above the card
-   edge: the gap and padding). */
+   edge: the gap and padding). --sk-photo: the skeleton's photo size, the
+   Avatar's 112px (72 on phones), read by its photo and the lines beside it. */
 .head {
+  --sk-photo: 112px;
   gap: var(--space-5);
   padding: 0 var(--space-6) var(--space-5);
 }
-/* The skeleton's photo: the Avatar's 112px (72 on phones) and white ring. */
+/* The skeleton's photo: its white ring. */
 .skPhoto {
-  --sk-photo: 112px;
   box-shadow: 0 0 0 4px var(--white);
   /* A shade darker than the banner, as the old skeleton drew it. */
   background: var(--border-subtle);
+}
+/* The skeleton's lines: as tall as the photo below the cover's edge (the
+   overlap is CoverHeader's, from GEOMETRY), the lines at its bottom, so they
+   rise beside the photo as the design's do (Mentor Profile.dc.html loading:
+   lines flex-end in the -48px head). */
+.skIntro {
+  height: calc(var(--sk-photo) - var(--ch-overlap));
+  justify-content: flex-end;
+}
+/* The lines keep their heights; they overflow the box upwards. */
+.skIntro > * {
+  flex: none;
 }
 .intro {
   display: flex;
@@ -77,7 +90,7 @@
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
 }
-/* A separator travels with the item after it, so a wrap never leaves "·" dangling. */
+/* The rating's separator travels with the sessions count after it. */
 .sep {
   display: flex;
   align-items: center;
@@ -145,6 +158,12 @@
   outline-offset: var(--focus-ring-offset);
 }
 @media (max-width: 767px) {
+  /* Mentor Profile.dc.html `proftopics-m`: blue-600, and the AppShell.dc.html
+     phone rule: `padding: 0 var(--space-3)` becomes space-2. */
+  .editTopics {
+    padding: 0 var(--space-2);
+    color: var(--blue-600);
+  }
   /* Drawn 28px; an invisible area makes the tap target 44px. */
   .editTopics::after {
     content: '';
@@ -153,13 +172,14 @@
   }
 }
 
-/* Under 1024px the location gets its own line with no "·": on a wrap the dot
-   was left leading the new line (product, 2026-09-27). */
+/* The location's "·" is an item of its own (Mentor Profile.dc.html
+   `proofsep`), so a wrap starts the new line with "From…". Under 1024px the
+   location gets its own line and the dot goes (product, 2026-09-27). */
 @media (max-width: 1023px) {
   .location {
     flex-basis: 100%;
   }
-  .location .dot {
+  .dot {
     display: none;
   }
 }
@@ -168,12 +188,13 @@
   .banner {
     --cover-height: 96px;
   }
-  .skPhoto {
-    --sk-photo: 72px;
+  .skIntro {
+    height: calc(var(--sk-photo) - var(--ch-overlap-phone));
   }
   /* Stacked (CoverHeader): photo, then name, topics and buttons, each on its
      own line (product, design request #46). */
   .head {
+    --sk-photo: 72px;
     gap: var(--space-3);
     padding: 0 var(--space-4) var(--space-4);
   }
@@ -183,9 +204,5 @@
   }
   .actions {
     width: 100%;
-  }
-  /* The chips keep 16px to the buttons, as they had below them. */
-  .topics {
-    margin-bottom: var(--space-1);
   }
 }

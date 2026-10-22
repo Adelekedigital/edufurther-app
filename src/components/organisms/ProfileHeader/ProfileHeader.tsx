@@ -228,15 +228,15 @@ export function ProfileHeader({
               <span>{sessionsLabel(m.completedSessions)}</span>
             )}
             {location && (
-              <span className={cx(styles.sep, styles.location)}>
+              <>
                 <span aria-hidden className={styles.dot}>
                   ·
                 </span>
-                <span className={styles.item}>
+                <span className={cx(styles.item, styles.location)}>
                   <Icon name="location_on" size={14} />
                   {location}
                 </span>
-              </span>
+              </>
             )}
           </p>
         </div>
@@ -247,13 +247,18 @@ export function ProfileHeader({
 
 /**
  * Mentor Profile.dc.html `pageState=loading`: the header card's shape, with
- * grey blocks for the banner, the photo and the intro lines.
+ * grey blocks for the banner, the photo and the intro lines. As drawn, the
+ * lines sit beside the photo at every width (at least 200px wide), their
+ * bottom level with the photo's: 226px tall at desktop.
  */
 export function ProfileHeaderSkeleton() {
   return (
     <CoverHeader
       {...GEOMETRY}
       as="div"
+      layout="row"
+      clearance={0}
+      contentBasis={200}
       cover={
         <CoverBanner
           className={styles.banner}
@@ -269,7 +274,7 @@ export function ProfileHeaderSkeleton() {
         />
       }
     >
-      <div className={styles.intro}>
+      <div className={cx(styles.intro, styles.skIntro)}>
         <Skeleton width="40%" height="24px" radius="md" />
         <Skeleton width="60%" height="14px" radius="md" />
         <Skeleton width="30%" height="14px" radius="md" />

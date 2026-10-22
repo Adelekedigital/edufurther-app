@@ -20,6 +20,10 @@ describe('ProfileHeaderSkeleton', () => {
     // The photo slot, then the three intro lines, all decorative.
     expect(body!.querySelectorAll('[aria-hidden]')).toHaveLength(4);
     expect((body as HTMLElement).style.getPropertyValue('--ch-overlap')).toBe('48px');
+    expect((body as HTMLElement).style.getPropertyValue('--ch-overlap-phone')).toBe('36px');
+    // The design's skeleton: the lines beside the photo at every width.
+    expect(body).toHaveClass('row');
+    expect((body as HTMLElement).style.getPropertyValue('--ch-basis')).toBe('200px');
   });
 });
 
@@ -35,6 +39,16 @@ describe('ProfileHeader', () => {
     // count leads (the first-mentees card says "New mentor").
     expect(screen.queryByText('New to EduFurther')).not.toBeInTheDocument();
     expect(screen.getByText('No sessions yet')).toBeInTheDocument();
+  });
+
+  it('the location’s "·" is an item of its own, so a wrapped line starts with "From…"', () => {
+    render(<ProfileHeader profile={fullProfile} />);
+    const location = screen.getByText(/From Nigeria, studied in the United States/);
+    const dot = location.previousElementSibling!;
+    expect(dot).toHaveTextContent('·');
+    expect(dot).toHaveAttribute('aria-hidden');
+    expect(dot.parentElement).toBe(location.parentElement);
+    expect(location.parentElement!.tagName).toBe('P');
   });
 
   it('puts the topics before the buttons, so a stacked header reads name → topics → actions', () => {

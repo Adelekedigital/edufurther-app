@@ -72,6 +72,15 @@ export const bookSessionsSub = (count: number, zone: string) =>
 export const OWNER_SUPPORT_SUBJECT = (name: string) =>
   `My mentor profile wasn’t approved (${name})`;
 
+/**
+ * The track record's count labels (Mentor Profile.dc.html stats): singular at
+ * exactly one, so "1 mentee mentored", never "1 mentees mentored".
+ */
+export const TRACK_STAT_LABELS = {
+  sessions: (n: number) => (n === 1 ? 'session completed' : 'sessions completed'),
+  mentees: (n: number) => (n === 1 ? 'mentee mentored' : 'mentees mentored'),
+} as const;
+
 /** The Reviews tab with nothing to list (Mentor Profile.dc.html `emptyText`). */
 export const REVIEWS_EMPTY = {
   all: 'No reviews yet.',

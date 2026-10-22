@@ -47,9 +47,10 @@
 }
 .chip {
   display: flex;
-  /* Top-aligned, so on a wrapped stage list the icon stays with the first
-     line (one line: the same as centred, since the chip is 24px). */
-  align-items: flex-start;
+  /* Centred, as drawn (Mentor Profile.dc.html session card meta). A chip that
+     wraps to two lines centres its icon between them, as the design's flex row
+     would; on purpose, not a lost top alignment. */
+  align-items: center;
   gap: 2px;
   /* 24px as drawn; a long stage list ("Exploring, Drafting, Revising…") may
      wrap on a narrow card, so the chip grows rather than overflowing. */

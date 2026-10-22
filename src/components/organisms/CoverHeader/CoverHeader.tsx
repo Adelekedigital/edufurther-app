@@ -13,7 +13,7 @@ export type CoverHeaderProps = Omit<HTMLAttributes<HTMLElement>, 'children'> & {
   photo: ReactNode;
   /** How far (px) the photo rises over the cover's bottom edge. */
   overlap: number;
-  /** The overlap under 768px, for a photo that shrinks there (`responsive`). */
+  /** The overlap under 768px, for a photo that shrinks there (any layout). */
   phoneOverlap?: number;
   /**
    * `row`: the content beside the photo, its bottom level with the photo's,
