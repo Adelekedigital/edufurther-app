@@ -55,7 +55,7 @@ describe('TimezonePicker', () => {
     expect(status).toHaveTextContent('No zone matches that. Try a nearby big city.');
   });
 
-  it('a second search with the same result is announced again (review of #379)', async () => {
+  it('a second search with the same result is announced again (review of PR 379)', async () => {
     picker();
     await userEvent.click(screen.getByRole('button', { name: /Change time zone/ }));
     const status = screen.getByRole('status');
@@ -69,7 +69,7 @@ describe('TimezonePicker', () => {
     expect(status.firstElementChild).not.toBe(first);
   });
 
-  it('a click outside closes it without pulling focus back to Change (review of #380)', async () => {
+  it('a click outside closes it without pulling focus back to Change (review of PR 380)', async () => {
     picker();
     const change = screen.getByRole('button', { name: /Change time zone/ });
     await userEvent.click(change);
