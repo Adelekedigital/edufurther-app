@@ -23,7 +23,7 @@ export type SessionTypeOwnerActions = {
 
 type PublicProps = {
   sessionTypes: ProfileSessionType[];
-  /** The zone each card's next free time reads in (the profile's). */
+  /** The zone each card's next free time reads in: the viewer's (account, else device). */
   timeZone: string;
   onBook: (sessionTypeId: string) => void;
   /** Why booking can't start (offline, account not ready), or null. */

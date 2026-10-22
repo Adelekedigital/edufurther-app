@@ -45,6 +45,17 @@ export function nextAvailableState(
 }
 
 /**
+ * The next free time and what it means, together, so they never disagree: the
+ * time only when the state is open (a `refreshing` reply with a time is
+ * unknown, not a time to show). Mentor cards, the profile and each session
+ * type use this one rule (backend #526).
+ */
+export function nextAvailable(state: string | null | undefined, at: string | null | undefined) {
+  const s = nextAvailableState(state, at);
+  return { nextAvailableAt: s === 'open' ? (at ?? null) : null, nextAvailableState: s };
+}
+
+/**
  * The pages as one list, each mentor once. A mentor whose bookability changes
  * mid-scroll can come back on a later page (bookable ones rank first): they
  * stay where they first appeared, with the latest data, so the card says
@@ -93,8 +104,7 @@ export function toMentor(r: MentorSummaryRead): Mentor {
     // so every mentor offers free mentorship. When the backend adds a price summary
     // (has_free_session_type / min_price, backend request #3), derive it here.
     offer: 'free',
-    nextAvailableAt: r.next_available_at ?? null,
-    nextAvailableState: nextAvailableState(r.next_available_state, r.next_available_at),
+    ...nextAvailable(r.next_available_state, r.next_available_at),
     takingBookings: r.taking_bookings ?? true,
     originCountry: r.origin_country ?? null,
     studyCountry: r.primary_study_country ?? null,

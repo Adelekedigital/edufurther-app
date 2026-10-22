@@ -6,7 +6,9 @@
  * (/users/{id}/session-types) and the bookable grid (/users/{id}/availability/slots).
  * The booking modal once had its own mock that started "tomorrow" for everyone,
  * so it contradicted the cards (failure-modes #24). Everything derives from
- * `mockNextAvailableAt` now, the way the backend derives it from one grid.
+ * one grid now, as the backend's: each session type's own next time
+ * (`mockTypeNextAvailable`), and the mentor's `mockNextAvailableAt` as the
+ * earliest of them (backend #526).
  */
 import type { components } from '@/lib/api/generated/schema';
 import { DEFAULT_WINDOW_DAYS, MAX_WINDOW_DAYS } from './bookingPrefs';

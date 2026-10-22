@@ -83,7 +83,7 @@ type Props = {
    * delete still out when the owner switches tab is still said (Codex on PR 130).
    */
   onSay: (text: string) => void;
-  /** The zone the profile shows times in. */
+  /** The viewer's zone (account, else device), as the rest of the page. */
   timeZone: string;
 };
 
