@@ -24,6 +24,9 @@ vi.mock('@/lib/api/data/reviewWrite', async () =>
 vi.mock('@/lib/api/data/similar', async () =>
   (await import('./profileScreen.harness')).mocks.similar(),
 );
+vi.mock('@/lib/api/data/freeSoon', async () =>
+  (await import('./profileScreen.harness')).mocks.freeSoon(),
+);
 vi.mock('@/lib/api/data/profile', async () =>
   (await import('./profileScreen.harness')).mocks.profile(),
 );
