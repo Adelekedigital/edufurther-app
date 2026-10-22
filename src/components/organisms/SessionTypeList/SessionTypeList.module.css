@@ -47,7 +47,9 @@
 }
 .chip {
   display: flex;
-  /* Centred, as drawn (Mentor Profile.dc.html session card meta). */
+  /* Centred, as drawn (Mentor Profile.dc.html session card meta). A chip that
+     wraps to two lines centres its icon between them, as the design's flex row
+     would; on purpose, not a lost top alignment. */
   align-items: center;
   gap: 2px;
   /* 24px as drawn; a long stage list ("Exploring, Drafting, Revising…") may
