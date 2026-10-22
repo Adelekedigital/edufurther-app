@@ -61,16 +61,41 @@ export type ZoneRow = {
 
 const cityOf = (id: string) => (id === 'UTC' ? 'UTC' : id.split('/').pop()!.replace(/_/g, ' '));
 
-function tzPart(id: string, style: 'short' | 'shortOffset', at: Date): string {
-  try {
-    return (
-      new Intl.DateTimeFormat('en-US', { timeZone: id, timeZoneName: style })
-        .formatToParts(at)
-        .find((p) => p.type === 'timeZoneName')?.value ?? ''
-    );
-  } catch {
-    return '';
+/** Old ids browsers still report (Chrome's device zone for India is Asia/Calcutta). */
+const ALIASES: Record<string, string> = {
+  'Asia/Calcutta': 'Asia/Kolkata',
+  'Europe/Kiev': 'Europe/Kyiv',
+  'Asia/Saigon': 'Asia/Ho_Chi_Minh',
+  'Asia/Katmandu': 'Asia/Kathmandu',
+  'Asia/Rangoon': 'Asia/Yangon',
+  'Atlantic/Faeroe': 'Atlantic/Faroe',
+  'America/Buenos_Aires': 'America/Argentina/Buenos_Aires',
+  'Asia/Istanbul': 'Europe/Istanbul',
+  'US/Eastern': 'America/New_York',
+  'US/Central': 'America/Chicago',
+  'US/Pacific': 'America/Los_Angeles',
+};
+
+// A picker open builds ~700 of these; one per zone and style is plenty.
+const formatters = new Map<string, Intl.DateTimeFormat | null>();
+function formatter(id: string, style: 'short' | 'shortOffset') {
+  const key = `${id}|${style}`;
+  if (!formatters.has(key)) {
+    try {
+      formatters.set(key, new Intl.DateTimeFormat('en-US', { timeZone: id, timeZoneName: style }));
+    } catch {
+      formatters.set(key, null);
+    }
   }
+  return formatters.get(key) ?? null;
+}
+
+function tzPart(id: string, style: 'short' | 'shortOffset', at: Date): string {
+  return (
+    formatter(id, style)
+      ?.formatToParts(at)
+      .find((p) => p.type === 'timeZoneName')?.value ?? ''
+  );
 }
 
 /** "GMT+1", "GMT-4", "GMT+5:30"; "GMT+0" for GMT itself. */
@@ -83,7 +108,7 @@ function minutesOf(offset: string): number {
 }
 
 /** "Lagos (WAT)", "Toronto (EDT)", or the city alone when there's no short name. */
-export const zoneLabel = (id: string): string => labelAt(id, new Date());
+export const zoneLabel = (id: string): string => labelAt(ALIASES[id] ?? id, new Date());
 
 function labelAt(id: string, at: Date): string {
   if (LABELS[id]) return LABELS[id];
@@ -108,13 +133,24 @@ function row(id: string, region: string, extra: string[], at: Date): ZoneRow {
   };
 }
 
-/** One row per zone: from the dataset (country and cities searchable), else from Intl alone. */
-export function zoneRows(data: ZoneData[] | null, at = new Date()): ZoneRow[] {
+/**
+ * One row per zone: from the dataset (country and cities searchable), else from
+ * Intl alone. `ensure` adds rows the dataset lacks (UTC, a saved zone it doesn't
+ * list), so they can still be seen and picked.
+ */
+export function zoneRows(
+  data: ZoneData[] | null,
+  at = new Date(),
+  ensure: string[] = [],
+): ZoneRow[] {
   const rows = data
     ? data.map((z) => row(z.id, z.region, [z.country, ...z.cities, ...z.ids], at))
     : intlZones().map((id) =>
         row(id, id.includes('/') ? id.split('/')[0]!.replace(/_/g, ' ') : '', [], at),
       );
+  for (const id of new Set(['UTC', ...ensure]))
+    if (!rows.some((r) => r.id === id) && formatter(id, 'short'))
+      rows.push(row(id, id.includes('/') ? id.split('/')[0]!.replace(/_/g, ' ') : '', [], at));
   return rows.sort((a, b) => a.minutes - b.minutes || a.label.localeCompare(b.label));
 }
 
@@ -137,5 +173,6 @@ export function searchZones(rows: ZoneRow[], query: string): ZoneRow[] {
 
 /** The canonical id for a saved one (Asia/Calcutta → Asia/Kolkata). */
 export function canonicalZone(id: string, data: ZoneData[] | null): string {
-  return data?.find((z) => z.ids.includes(id))?.id ?? id;
+  const known = ALIASES[id] ?? id;
+  return data?.find((z) => z.ids.includes(known))?.id ?? known;
 }

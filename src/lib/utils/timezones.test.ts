@@ -53,9 +53,17 @@ describe('with the dataset', () => {
     const mins = searchZones(rows, 'africa').map((r) => r.minutes);
     expect(mins).toEqual([...mins].sort((a, b) => a - b));
   });
+  it('always has a UTC row, and a row for a saved zone the dataset lacks', async () => {
+    const rows = zoneRows(await loadZoneData(), at, ['Etc/GMT+5']);
+    expect(rows.some((r) => r.id === 'UTC')).toBe(true);
+    expect(rows.some((r) => r.id === 'Etc/GMT+5')).toBe(true);
+  });
   it('reads an old alias as its canonical zone', async () => {
     expect(canonicalZone('Asia/Calcutta', await loadZoneData())).toBe('Asia/Kolkata');
     expect(canonicalZone('Africa/Lagos', null)).toBe('Africa/Lagos');
+    // Without the dataset too: other screens label a Chrome device zone the same way.
+    expect(canonicalZone('Asia/Calcutta', null)).toBe('Asia/Kolkata');
+    expect(zoneLabel('Asia/Calcutta')).toBe('India (IST)');
   });
 });
 

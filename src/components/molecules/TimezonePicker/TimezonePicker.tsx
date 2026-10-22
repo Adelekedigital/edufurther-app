@@ -1,8 +1,17 @@
 'use client';
 
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Input } from '@/components/atoms/Input/Input';
+import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import {
   COMMON_ZONES,
   MAX_RESULTS,
@@ -12,6 +21,8 @@ import {
   zoneRows,
   type ZoneRow,
 } from '@/lib/utils/timezones';
+import { useFocusTrap } from '@/lib/utils/useFocusTrap';
+import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { loadZoneData, type ZoneData } from '@/lib/vendor/tz/zoneData';
 import styles from './TimezonePicker.module.css';
 
@@ -52,6 +63,8 @@ export function TimezonePicker({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const wrapRef = useRef<HTMLSpanElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const isPhone = useMediaQuery('(max-width: 767px)');
 
   const close = (restoreFocus = true) => {
     setOpen(false);
@@ -74,7 +87,11 @@ export function TimezonePicker({
   }, [open]);
 
   const current = canonicalZone(value, data);
-  const rows = useMemo(() => (open ? zoneRows(data) : []), [open, data]);
+  const device = canonicalZone(deviceZone, data);
+  const rows = useMemo(
+    () => (open ? zoneRows(data, new Date(), [current]) : []),
+    [open, data, current],
+  );
   const needle = q.trim();
   const list: ZoneRow[] = needle
     ? searchZones(rows, needle)
@@ -90,15 +107,16 @@ export function TimezonePicker({
     close();
   };
 
-  // Arrow keys move through the rows; from the search field, Down enters the list.
+  // Arrow keys move through the rows; Down from the search field enters the
+  // list, Up from the first row goes back to it. In the field, Up is left alone.
   const onListKey = (e: KeyboardEvent) => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
     const items = [...(listRef.current?.querySelectorAll<HTMLButtonElement>('button') ?? [])];
-    if (!items.length) return;
-    e.preventDefault();
     const at = items.indexOf(document.activeElement as HTMLButtonElement);
-    const next = e.key === 'ArrowDown' ? Math.min(at + 1, items.length - 1) : at - 1;
-    (next < 0 ? null : items[next])?.focus();
+    if (!items.length || (e.key === 'ArrowUp' && at < 0)) return;
+    e.preventDefault();
+    if (e.key === 'ArrowUp' && at === 0) searchRef.current?.focus();
+    else items[e.key === 'ArrowDown' ? Math.min(at + 1, items.length - 1) : at - 1]?.focus();
   };
 
   const label = zoneLabel(current);
@@ -130,24 +148,35 @@ export function TimezonePicker({
       </button>
       {open && (
         <>
-          <span className={styles.backdrop} aria-hidden onClick={() => close(false)} />
-          <div id={panelId} className={styles.panel} onKeyDown={onListKey}>
+          <span className={styles.backdrop} aria-hidden onClick={() => close(!isPhone)} />
+          <Panel id={panelId} sheet={isPhone} onClose={() => close(false)} onKeyDown={onListKey}>
             <Input
+              ref={searchRef}
               autoFocus
               aria-label="Search time zones"
               placeholder="Search any city, country or zone"
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
-            {deviceZone !== current && !needle && (
-              <button type="button" className={styles.device} onClick={() => pick(deviceZone)}>
+            {device !== current && !needle && (
+              <button type="button" className={styles.device} onClick={() => pick(device)}>
                 <Icon name="my_location" size={16} />
-                Use my device’s zone ({zoneLabel(deviceZone)})
+                Use my device’s zone ({zoneLabel(device)})
               </button>
             )}
-            <span className={styles.head} aria-live="polite">
-              {head}
-            </span>
+            {/* Mounted empty with the panel, then filled as you type: a region
+                inserted with its text already in it is often skipped. */}
+            <LiveRegion
+              message={
+                needle
+                  ? {
+                      text: list.length ? head : 'No zone matches that. Try a nearby big city.',
+                      id: 0,
+                    }
+                  : null
+              }
+            />
+            <span className={styles.head}>{head}</span>
             <ul ref={listRef} className={styles.list} aria-label="Time zones">
               {list.map((r) => (
                 <li key={r.id}>
@@ -169,9 +198,44 @@ export function TimezonePicker({
             {needle && list.length === 0 && (
               <p className={styles.none}>No zone matches that. Try a nearby big city.</p>
             )}
-          </div>
+          </Panel>
         </>
       )}
     </span>
   );
 }
+
+type PanelProps = {
+  id: string;
+  sheet: boolean;
+  onClose: () => void;
+  onKeyDown: (e: KeyboardEvent) => void;
+  children: ReactNode;
+};
+
+/** A popover on desktop; on phones a bottom sheet, which is a dialog: trapped, scroll locked. */
+function Panel({ sheet, ...rest }: PanelProps) {
+  return sheet ? <SheetPanel {...rest} /> : <div className={styles.panel} {...panelProps(rest)} />;
+}
+
+function SheetPanel({ onClose, ...rest }: Omit<PanelProps, 'sheet'>) {
+  const ref = useRef<HTMLDivElement>(null);
+  // Focus in, Tab kept inside, Escape, scroll lock, focus back to Change.
+  useFocusTrap(ref, onClose);
+  return (
+    <div
+      ref={ref}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Time zone"
+      className={styles.panel}
+      {...panelProps(rest)}
+    />
+  );
+}
+
+const panelProps = ({ id, onKeyDown, children }: Omit<PanelProps, 'sheet' | 'onClose'>) => ({
+  id,
+  onKeyDown,
+  children,
+});

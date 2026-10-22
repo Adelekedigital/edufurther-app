@@ -155,7 +155,9 @@ const CHECKS = [
       await book.first().click();
       // Found by its text, not its markup, so an implementation change that
       // breaks the name fails here rather than "could not run".
-      const trigger = page.getByRole('dialog').locator('button', { hasText: 'Lagos (WAT)' });
+      const trigger = page
+        .getByRole('dialog')
+        .locator('button[aria-label^="Change time zone"]', { hasText: 'Change' });
       if (
         !(await trigger.waitFor({ timeout: 15000 }).then(
           () => true,
@@ -168,7 +170,7 @@ const CHECKS = [
       const names = nodes
         .filter((n) => n.role?.value === 'button' && /time zone/.test(n.name?.value ?? ''))
         .map((n) => n.name.value);
-      const want = 'Lagos (WAT), change time zone';
+      const want = 'Change time zone, now Lagos (WAT)';
       return names.includes(want)
         ? null
         : `Chrome names it ${JSON.stringify(names)}, want "${want}"`;
