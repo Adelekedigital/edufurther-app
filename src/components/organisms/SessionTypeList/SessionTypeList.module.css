@@ -60,8 +60,8 @@
   border-radius: var(--radius-md);
   background: var(--surface-subtle);
 }
-/* The design's footer holds the per-offering next time (left) and Book
-   (right); with the time hidden, Book keeps its place on the right. */
+/* The design's footer holds the offering's next time (left) and Book
+   (right); with no time to show, Book keeps its place on the right. */
 .foot {
   display: flex;
   justify-content: flex-end;
@@ -69,6 +69,12 @@
   gap: var(--space-2);
   padding-top: var(--space-3);
   border-top: var(--border-hairline) solid var(--border-muted);
+}
+/* Mentor Profile.dc.html `ss.nextText`. */
+.next {
+  margin-right: auto;
+  font-size: var(--text-p-xs);
+  color: var(--green-700);
 }
 
 /* The owner's "New session type" tile (Mentor Profile.dc.html `canEdit`). */
@@ -119,5 +125,9 @@
   }
   .foot > * {
     flex: 1;
+  }
+  /* Book takes the room the time leaves, as it takes the row alone. */
+  .foot > .next {
+    flex: none;
   }
 }

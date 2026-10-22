@@ -680,10 +680,12 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                       shown={p.sessionTypes}
                       onActiveCount={setOwnActive}
                       onSay={sayOwner}
+                      timeZone={timeZone}
                     />
                   ) : (
                     <SessionTypeList
                       sessionTypes={p.sessionTypes}
+                      timeZone={timeZone}
                       onBook={booking.open}
                       bookBlocked={shownBlock}
                       canBook={showBook}

@@ -78,6 +78,7 @@ export function stageLine(r: SessionTypeRead): string | null {
 
 function toProfileSessionType(r: SessionTypeRead): ProfileSessionType {
   const stage = stageLine(r);
+  const next = nextAvailableState(r.next_available_state, r.next_available_at);
   return {
     ...toSessionType(r),
     // The first of `service_offerings`, not the single `service_offering` the
@@ -87,6 +88,9 @@ function toProfileSessionType(r: SessionTypeRead): ProfileSessionType {
     // logged and CI green.
     category: r.service_offerings?.[0]?.display_name ?? null,
     stage,
+    // Backend #526: this offering's own next time, the same mapper as the mentor's.
+    nextAvailableAt: next === 'open' ? (r.next_available_at ?? null) : null,
+    nextAvailableState: next,
   };
 }
 

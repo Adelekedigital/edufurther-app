@@ -62,6 +62,9 @@ function toCard(
     requiresConfirmation:
       t.requiresApproval ??
       (defaults ? resolveDefaults(defaults).requiresApproval : shown?.requiresConfirmation),
+    // The owner's cards show no next time (and /me/session-types has none).
+    nextAvailableAt: null,
+    nextAvailableState: 'unknown',
   };
 }
 
@@ -80,6 +83,8 @@ type Props = {
    * delete still out when the owner switches tab is still said (Codex on PR 130).
    */
   onSay: (text: string) => void;
+  /** The zone the profile shows times in. */
+  timeZone: string;
 };
 
 /**
@@ -90,7 +95,7 @@ type Props = {
  * types, which the hide confirm says. The confirms are Session types' own, so
  * each action asks the same way wherever it's done.
  */
-export function OwnerSessionTypes({ mentorId, shown, onActiveCount, onSay: say }: Props) {
+export function OwnerSessionTypes({ mentorId, shown, onActiveCount, onSay: say, timeZone }: Props) {
   const own = useOwnSessionTypes(true);
   const defaults = useMentorDefaults(mentorId);
   // Active only: hidden and scheduled types are Session types' business.
@@ -292,6 +297,7 @@ export function OwnerSessionTypes({ mentorId, shown, onActiveCount, onSay: say }
         // The owner's list failed: what mentees see, with the retry above.
         <SessionTypeList
           sessionTypes={shown}
+          timeZone={timeZone}
           onBook={() => undefined}
           bookBlocked={null}
           canBook={false}

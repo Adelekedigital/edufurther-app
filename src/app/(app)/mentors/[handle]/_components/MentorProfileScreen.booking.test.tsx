@@ -307,3 +307,29 @@ describe('MentorProfileScreen — the booking card names the zone (Mentor Profil
     ).toBeInTheDocument();
   });
 });
+
+describe('MentorProfileScreen — each Sessions card’s next free time (backend #526)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-28T12:00:00Z'));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('open shows it in the account’s zone; none and refreshing show nothing', () => {
+    withLink('tab=sessions');
+    // 03:00 UTC on the 30th is still the 29th in Chicago.
+    const types = sessionTypes.map((s) =>
+      s.nextAvailableState === 'open' ? { ...s, nextAvailableAt: '2026-09-30T03:00:00Z' } : s,
+    );
+    h.profile = state({ data: { ...fullProfile, sessionTypes: types } });
+    h.viewerExtra = { timeZone: 'America/Chicago' };
+    render(<MentorProfileScreen handle="gbenga" />);
+    const card = (name: string) =>
+      within(screen.getByRole('tabpanel')).getByRole('heading', { level: 3, name }).closest('li')!;
+    expect(card(sessionTypes[0]!.name)).toHaveTextContent('Free tomorrow');
+    for (const s of sessionTypes.slice(1)) {
+      expect(card(s.name)).not.toHaveTextContent(/Free (today|tomorrow|[A-Z])/);
+      expect(card(s.name)).not.toHaveTextContent(/no (open )?times/i);
+    }
+  });
+});

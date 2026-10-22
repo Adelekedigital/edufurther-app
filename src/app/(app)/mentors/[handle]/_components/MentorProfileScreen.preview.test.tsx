@@ -140,6 +140,8 @@ describe('MentorProfileScreen — "View as mentee"', () => {
     const panel = screen.getByRole('tabpanel');
     for (const b of within(panel).getAllByRole('button', { name: 'Book session' }))
       expect(b).toBeDisabled();
+    // What mentees see, the open card's next free time included (backend #526).
+    expect(within(panel).getAllByText(/^Free /)).toHaveLength(1);
   });
 
   it('not taking bookings: shows what mentees see (review of PR 106)', async () => {
