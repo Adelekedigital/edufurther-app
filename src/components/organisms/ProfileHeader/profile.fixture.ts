@@ -12,6 +12,9 @@ export const sessionTypes: ProfileSessionType[] = [
     category: 'Application documents',
     stage: 'Drafting',
     requiresConfirmation: true,
+    // The mentor's next time is the earliest of these (fullProfile below).
+    nextAvailableAt: '2026-09-30T15:00:00Z',
+    nextAvailableState: 'open',
   },
   {
     id: 'st2',
@@ -22,6 +25,8 @@ export const sessionTypes: ProfileSessionType[] = [
     category: 'Visa and interview',
     stage: null,
     requiresConfirmation: false,
+    nextAvailableAt: null,
+    nextAvailableState: 'none',
   },
   {
     id: 'st3',
@@ -32,6 +37,9 @@ export const sessionTypes: ProfileSessionType[] = [
     category: null,
     stage: 'Exploring',
     requiresConfirmation: true,
+    // Not recomputed yet (backend `refreshing`).
+    nextAvailableAt: null,
+    nextAvailableState: 'unknown',
   },
 ];
 

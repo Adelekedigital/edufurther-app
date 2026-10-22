@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { components } from '@/lib/api/generated/schema';
 import {
-  MOCK_SESSION_TYPES,
   mockAvailabilityState,
   mockNextAvailableAt,
+  mockSessionTypesFor,
 } from '@/lib/api/mock/availability';
 import { countryIdByName, countryName, MOCK_LANGUAGES, mockItems } from '@/lib/api/mock/catalog';
 import {
@@ -85,7 +85,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ handle: string 
         ? [{ platform: 'youtube' as const, url: `https://www.youtube.com/@${m.slug}` }]
         : [],
     offerings: m.offerings,
-    session_types: MOCK_SESSION_TYPES.map((t, k) => ({
+    // Each with its own next time; the mentor's below is the earliest of them.
+    session_types: mockSessionTypesFor(m.id).map((t, k) => ({
       ...t,
       // Backend round 3: the list, plus the deprecated first item.
       application_stages: k === 0 ? ['early_exploration'] : ['drafting_stage', 'revisions'],
@@ -182,6 +183,11 @@ export async function GET(req: Request, ctx: { params: Promise<{ handle: string 
       body.taking_bookings = false;
       body.next_available_at = null;
       body.next_available_state = 'none';
+      body.session_types = (body.session_types ?? []).map((t) => ({
+        ...t,
+        next_available_at: null,
+        next_available_state: 'none' as const,
+      }));
     }
     // The owner's uploaded photo, once there is one.
     const photo = mockPhotoUrl(id);

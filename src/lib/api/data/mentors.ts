@@ -10,7 +10,7 @@ import {
 import type { components } from '@/lib/api/generated/schema';
 import { coverKey } from '@/lib/utils/cover';
 import { clampFocus, personCover, personInitials } from '@/lib/utils/person';
-import type { AppError, FeaturedMentor, Mentor, Topic } from '@/types/mentor';
+import type { AppError, FeaturedMentor, Mentor, NextAvailableState, Topic } from '@/types/mentor';
 import { api } from './http';
 import { ApiError, normaliseError } from './errors';
 import { keys, type MentorFilters } from './keys';
@@ -29,16 +29,30 @@ export const MENTOR_PAGE_SIZE = 10;
 // ---- mapping --------------------------------------------------------------
 
 /**
- * Backend (reply round 3 #13): next_available_state says open / none / refreshing.
- * Only claim "none" when it says so; refreshing or absent → unknown, say nothing.
+ * Backend (reply round 3 #13; per offering, #526): next_available_state says
+ * open / none / refreshing. Only claim "none" when it says so; refreshing is
+ * unknown, never empty, so say nothing. An older reply with no state but a time
+ * reads as open.
  */
 export function nextAvailableState(
   state: string | null | undefined,
   at: string | null | undefined,
-): Mentor['nextAvailableState'] {
+): NextAvailableState {
   if (state === 'open' && at) return 'open';
   if (state === 'none') return 'none';
+  if (state === 'refreshing') return 'unknown';
   return at ? 'open' : 'unknown';
+}
+
+/**
+ * The next free time and what it means, together, so they never disagree: the
+ * time only when the state is open (a `refreshing` reply with a time is
+ * unknown, not a time to show). Mentor cards, the profile and each session
+ * type use this one rule (backend #526).
+ */
+export function nextAvailable(state: string | null | undefined, at: string | null | undefined) {
+  const s = nextAvailableState(state, at);
+  return { nextAvailableAt: s === 'open' ? (at ?? null) : null, nextAvailableState: s };
 }
 
 /**
@@ -90,8 +104,7 @@ export function toMentor(r: MentorSummaryRead): Mentor {
     // so every mentor offers free mentorship. When the backend adds a price summary
     // (has_free_session_type / min_price, backend request #3), derive it here.
     offer: 'free',
-    nextAvailableAt: r.next_available_at ?? null,
-    nextAvailableState: nextAvailableState(r.next_available_state, r.next_available_at),
+    ...nextAvailable(r.next_available_state, r.next_available_at),
     takingBookings: r.taking_bookings ?? true,
     originCountry: r.origin_country ?? null,
     studyCountry: r.primary_study_country ?? null,

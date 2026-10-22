@@ -186,6 +186,38 @@ describe('toMentorProfile', () => {
     expect(stageLine(t({ application_stages: ['other'], custom_stage_label: '  ' }))).toBeNull();
   });
 
+  it('each offering carries its own next time, only when open (backend #526)', () => {
+    const t = (id: string, over: object) => ({
+      id,
+      name: id,
+      duration_minutes: 30,
+      min_notice_minutes: 60,
+      meeting_venue: 'daily',
+      ...over,
+    });
+    const p = toMentorProfile(
+      read({
+        session_types: [
+          t('open', { next_available_state: 'open', next_available_at: '2026-09-30T15:00:00Z' }),
+          t('none', { next_available_state: 'none', next_available_at: null }),
+          // Not recomputed yet: unknown, never empty, and a stray time is not shown.
+          t('refreshing', {
+            next_available_state: 'refreshing',
+            next_available_at: '2026-09-30T15:00:00Z',
+          }),
+          // An older reply without the fields says nothing.
+          t('older', {}),
+        ] as Read['session_types'],
+      }),
+    );
+    expect(p.sessionTypes.map((s) => [s.id, s.nextAvailableState, s.nextAvailableAt])).toEqual([
+      ['open', 'open', '2026-09-30T15:00:00Z'],
+      ['none', 'none', null],
+      ['refreshing', 'unknown', null],
+      ['older', 'unknown', null],
+    ]);
+  });
+
   it('survives a sparse profile', () => {
     const p = toMentorProfile(
       read({ first_name: null, last_name: null, education: [], reviews: undefined }),

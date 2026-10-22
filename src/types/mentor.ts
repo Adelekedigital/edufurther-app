@@ -13,6 +13,12 @@ export type Topic = {
 /** Max one per card, highest priority first. Rules: lib/api/data/labels.ts. */
 export type MentorLabel = 'top-rated' | 'experienced' | 'new';
 
+/**
+ * open: the time is set. none: known to have nothing open ("No open times at
+ * the moment"). unknown: not recomputed yet or not reported, so say nothing.
+ */
+export type NextAvailableState = 'open' | 'none' | 'unknown';
+
 export type Mentor = {
   id: string;
   /** Where the name and photo link to. */
@@ -50,7 +56,7 @@ export type Mentor = {
    * open: nextAvailableAt is set. none: known to have nothing open ("No open times
    * at the moment"). unknown: not recomputed yet or not reported — say nothing.
    */
-  nextAvailableState: 'open' | 'none' | 'unknown';
+  nextAvailableState: NextAvailableState;
   /**
    * False: listed, but nobody can book them now (no active session type, or no
    * weekly hours). The card says so and offers the profile, not Book.
@@ -305,6 +311,10 @@ export type ProfileSessionType = SessionType & {
   category: string | null;
   /** Application stage it suits, e.g. "Drafting". */
   stage: string | null;
+  /** This offering's next free slot (UTC ISO); set only when its state is open (backend #526). */
+  nextAvailableAt: string | null;
+  /** As the mentor's, for this offering alone. The owner's own list has none: unknown. */
+  nextAvailableState: NextAvailableState;
 };
 
 /** A step towards a complete profile (backend `completeness.missing`, owner-only). */

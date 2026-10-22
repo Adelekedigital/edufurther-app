@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Tag } from '@/components/atoms/Tag/Tag';
 import { BookingModeLabel } from '@/components/molecules/BookingModeLabel/BookingModeLabel';
 import { SessionTypeOwnerFooter } from '@/components/molecules/SessionTypeOwnerFooter/SessionTypeOwnerFooter';
+import { formatFreeDay } from '@/lib/utils/format';
 import type { ProfileSessionType } from '@/types/mentor';
 import styles from './SessionTypeList.module.css';
 
@@ -22,6 +23,8 @@ export type SessionTypeOwnerActions = {
 
 type PublicProps = {
   sessionTypes: ProfileSessionType[];
+  /** The zone each card's next free time reads in: the viewer's (account, else device). */
+  timeZone: string;
   onBook: (sessionTypeId: string) => void;
   /** Why booking can't start (offline, account not ready), or null. */
   bookBlocked: string | null;
@@ -36,9 +39,9 @@ type OwnerProps = { owner: SessionTypeOwnerActions };
 type SessionTypeListProps = PublicProps | OwnerProps;
 
 /**
- * The Sessions tab (Mentor Profile.dc.html): one card per offering. The
- * design's per-offering "Free Mon, Sep 28" line is not shown: availability is
- * stored per mentor, not per offering (backend reply #10).
+ * The Sessions tab (Mentor Profile.dc.html): one card per offering. Its footer
+ * leads with the offering's next free time (`ss.nextText`), shown only when the
+ * backend says open: none and refreshing (unknown) show nothing.
  */
 export function SessionTypeList(p: SessionTypeListProps) {
   const owner = p.owner;
@@ -83,6 +86,11 @@ export function SessionTypeList(p: SessionTypeListProps) {
             !p.owner &&
             p.canBook && (
               <div className={styles.foot}>
+                {s.nextAvailableState === 'open' && s.nextAvailableAt && (
+                  <span className={styles.next}>
+                    {formatFreeDay(s.nextAvailableAt, p.timeZone)}
+                  </span>
+                )}
                 {/* Repeated on every card, so outlined (CTA hierarchy). */}
                 <Button
                   variant="secondary-outlined"

@@ -196,7 +196,13 @@ export const OverviewOwnerLongAward: Story = {
 export const Sessions: Story = {
   render: () => (
     <div style={{ maxWidth: 860 }}>
-      <SessionTypeList sessionTypes={sessionTypes} onBook={fn()} bookBlocked={null} canBook />
+      <SessionTypeList
+        sessionTypes={sessionTypes}
+        timeZone="America/Chicago"
+        onBook={fn()}
+        bookBlocked={null}
+        canBook
+      />
     </div>
   ),
 };

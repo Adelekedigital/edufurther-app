@@ -24,7 +24,7 @@ import { api } from './http';
 import { keys } from './keys';
 import { deriveLabel } from './labels';
 import { clampFocus, personCover, personInitials } from '@/lib/utils/person';
-import { nextAvailableState } from './mentors';
+import { nextAvailable } from './mentors';
 import { sessionKey, useSession } from './session';
 import { stagesOf } from './sessionTypes';
 
@@ -91,6 +91,8 @@ function toProfileSessionType(r: SessionTypeRead): ProfileSessionType {
     // logged and CI green.
     category: r.service_offerings?.[0]?.display_name ?? null,
     stage,
+    // Backend #526: this offering's own next time, the same mapper as the mentor's.
+    ...nextAvailable(r.next_available_state, r.next_available_at),
   };
 }
 
@@ -119,8 +121,7 @@ export function toMentorProfile(r: MentorPublicRead): MentorProfile {
     label: deriveLabel({ rating, reviewCount, completedSessions: r.completed_sessions }),
     // PRODUCT RULE (2026-09-27): every session is free until paid sessions ship.
     offer: 'free',
-    nextAvailableAt: r.next_available_at ?? null,
-    nextAvailableState: nextAvailableState(r.next_available_state, r.next_available_at),
+    ...nextAvailable(r.next_available_state, r.next_available_at),
     takingBookings: r.taking_bookings ?? true,
     originCountry: r.origin_country ?? null,
     studyCountry: r.primary_study_country ?? null,

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { MOCK_SESSION_TYPES, mockMentorExists } from '@/lib/api/mock/availability';
+import { mockMentorExists, mockSessionTypesFor } from '@/lib/api/mock/availability';
 import { ok } from '@/lib/api/mock/respond';
 
 /** MOCK of GET /api/v1/users/{user_id}/session-types. ENABLE_MOCK_API=1 only. */
@@ -9,7 +9,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ userId: string
   if (!mockMentorExists(userId)) return new NextResponse(null, { status: 404 });
   await new Promise((r) => setTimeout(r, 200));
   return ok('/api/v1/users/{user_id}/session-types', 'get', {
-    data: MOCK_SESSION_TYPES,
+    data: mockSessionTypesFor(userId),
     next_cursor: null,
   });
 }

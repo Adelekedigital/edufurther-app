@@ -41,6 +41,14 @@ describe('deriveLabel (Design decisions §9)', () => {
 });
 
 describe('toMentor', () => {
+  it('a refreshing reply that carries a time shows neither: state and time agree (backend 526)', () => {
+    const m = toMentor(
+      row({ next_available_state: 'refreshing', next_available_at: '2026-10-23T09:00:00Z' }),
+    );
+    expect(m.nextAvailableState).toBe('unknown');
+    expect(m.nextAvailableAt).toBeNull();
+  });
+
   it('maps the wire shape to the card', () => {
     const m = toMentor(row());
     expect(m.name).toBe('Ada Okonkwo');
