@@ -55,6 +55,30 @@ describe('TimezonePicker', () => {
     expect(status).toHaveTextContent('No zone matches that. Try a nearby big city.');
   });
 
+  it('a second search with the same result is announced again (review of #379)', async () => {
+    picker();
+    await userEvent.click(screen.getByRole('button', { name: /Change time zone/ }));
+    const status = screen.getByRole('status');
+    const box = screen.getByRole('textbox', { name: 'Search time zones' });
+    await userEvent.type(box, 'zzzz');
+    const first = status.firstElementChild;
+    // Typing on: the field never empties, so only a new id re-reads the words.
+    await userEvent.type(box, 'q');
+    // Same words, a new node: screen readers read a replaced node again.
+    expect(status).toHaveTextContent('No zone matches that. Try a nearby big city.');
+    expect(status.firstElementChild).not.toBe(first);
+  });
+
+  it('a click outside closes it without pulling focus back to Change (review of #380)', async () => {
+    picker();
+    const change = screen.getByRole('button', { name: /Change time zone/ });
+    await userEvent.click(change);
+    const backdrop = document.querySelector('[class*="backdrop"]') as HTMLElement;
+    await userEvent.click(backdrop);
+    expect(screen.queryByRole('textbox', { name: 'Search time zones' })).toBeNull();
+    expect(document.activeElement).not.toBe(change);
+  });
+
   it('says when nothing matches', async () => {
     picker();
     await userEvent.click(screen.getByRole('button', { name: /Change time zone/ }));

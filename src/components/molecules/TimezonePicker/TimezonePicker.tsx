@@ -58,6 +58,9 @@ export function TimezonePicker({
 }: TimezonePickerProps) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
+  // Each search is a new announcement, so the same result text ("No zone
+  // matches that…" twice) is read again (LiveRegion repeats on a new id).
+  const [searchId, setSearchId] = useState(0);
   const [data, setData] = useState<ZoneData[] | null>(null);
   const panelId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -150,7 +153,10 @@ export function TimezonePicker({
         <>
           {/* Focus goes back to Change from here, not from the trap: it records
               the search field (focused first) as the opener. */}
-          <span className={styles.backdrop} aria-hidden onClick={() => close()} />
+          {/* An outside click on the desktop popover closes it without taking
+              focus anywhere (as the mousedown handler and ShareMenu do); the
+              phone sheet is a modal dialog, so focus goes back to Change. */}
+          <span className={styles.backdrop} aria-hidden onClick={() => close(isPhone)} />
           <Panel id={panelId} sheet={isPhone} onClose={() => close()} onKeyDown={onListKey}>
             <Input
               ref={searchRef}
@@ -158,7 +164,10 @@ export function TimezonePicker({
               aria-label="Search time zones"
               placeholder="Search any city, country or zone"
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setSearchId((n) => n + 1);
+              }}
             />
             {device !== current && !needle && (
               <button type="button" className={styles.device} onClick={() => pick(device)}>
@@ -173,7 +182,7 @@ export function TimezonePicker({
                 needle
                   ? {
                       text: list.length ? head : 'No zone matches that. Try a nearby big city.',
-                      id: 0,
+                      id: searchId,
                     }
                   : null
               }
