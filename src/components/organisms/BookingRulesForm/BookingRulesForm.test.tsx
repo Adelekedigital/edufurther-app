@@ -69,10 +69,10 @@ describe('BookingRulesForm', () => {
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ requiresApproval: false }));
   });
 
-  it('points to Settings › Booking rules in a new tab, so the rules being edited stay', () => {
+  it('points to Settings in a new tab, the whole line the link, so the rules being edited stay', () => {
     form();
     const link = screen.getByRole('link', {
-      name: 'Settings › Booking rules (opens in a new tab)',
+      name: 'Manage your booking rules in Settings (opens in a new tab)',
     });
     expect(link).toHaveAttribute('href', '/settings/booking');
     expect(link).toHaveAttribute('target', '_blank');
@@ -85,11 +85,15 @@ describe('BookingRulesForm', () => {
     ) as DayHours[];
     form({}, vi.fn(), days);
     expect(
-      screen.queryByText('Your weekly hours are too short for this session length.'),
+      screen.queryByText(
+        'Your weekly hours are too short for this session length. Add longer hours or pick a shorter length.',
+      ),
     ).not.toBeInTheDocument();
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Session length' }), '90');
     expect(
-      screen.getByText('Your weekly hours are too short for this session length.'),
+      screen.getByText(
+        'Your weekly hours are too short for this session length. Add longer hours or pick a shorter length.',
+      ),
     ).toBeInTheDocument();
   });
 

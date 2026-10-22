@@ -41,12 +41,14 @@ import {
 } from '@/lib/utils/calendar';
 import {
   BOOKING_RULES_COPY,
+  CALENDAR_PAGE_COPY,
   HOURS_COPY,
   UNLISTED_COPY,
   VIDEO_ROW_COPY,
   videoRowTitle,
 } from '@/lib/copy/calendar';
 import { deviceTimeZone } from '@/lib/utils/format';
+import { focusIfShown } from '@/lib/utils/focus';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { supportMailto } from '@/lib/utils/mailto';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
@@ -125,6 +127,8 @@ export function CalendarScreen() {
   const [switchTo, setSwitchTo] = useState<'daily' | 'google_meet' | null>(null);
   const videoAction = useRef<HTMLButtonElement>(null);
   const statusSwitch = useRef<HTMLButtonElement>(null);
+  const blockAction = useRef<HTMLButtonElement>(null);
+  const partialRetry = useRef<HTMLButtonElement>(null);
   const saveHoursBtn = useRef<HTMLButtonElement>(null);
   // Going busy waited on unsaved hours: the bar says so until they're saved or discarded.
   const [holdForHours, setHoldForHours] = useState(false);
@@ -198,6 +202,9 @@ export function CalendarScreen() {
   // One blocked-dates save at a time: each plans from the days as last read.
   const blockBusy = saveBlocked.isPending;
   const upcomingBlocked = (blocked.data?.days ?? []).filter((d) => d >= blockToday);
+  // The weekdays the hours open, and where a mentee could book: the month and the block modal tint the same days.
+  const openWeekdays = draft.days.flatMap((d, i) => (d.on ? [i] : []));
+  const blockRange = defaults.data ? bookableRange(blockToday, defaults.data) : null;
   const saveBlocks = (wanted: string[]) =>
     saveBlocked.save({
       exceptions: blocked.data?.exceptions ?? [],
@@ -211,8 +218,18 @@ export function CalendarScreen() {
     setUnblockError(null);
     setBlockOpen(true);
   };
+  // The panel's action swaps (Block dates / Edit dates) as days come and go, so
+  // the modal's remembered opener may be gone: focus whichever is there now. If
+  // the refetch after a save failed, the panel gave way to the inline error:
+  // its Try again takes focus instead.
+  const focusBlockAction = () =>
+    requestAnimationFrame(
+      () => focusIfShown(blockAction.current) || focusIfShown(partialRetry.current),
+    );
   const closeBlockOut = () => {
-    if (!saveBlocked.isPending) setBlockOpen(false);
+    if (saveBlocked.isPending) return;
+    setBlockOpen(false);
+    focusBlockAction();
   };
   // A chip's ×: no confirm (one tap puts it back), the result is read out.
   const unblock = (day: string) => {
@@ -346,8 +363,14 @@ export function CalendarScreen() {
         </ButtonLink>
       </Panel>
     );
-  // Error before empty: a failed load never reads as "no hours".
-  else if (viewer.kind === 'error' || (failed && !ready))
+  // Error before empty: a failed load never reads as "no hours". Offline, a
+  // mentor's first load waits (paused) for a reconnect, so it says so, not a
+  // skeleton. Only once they're known to be a mentor: no role UI before /me.
+  else if (
+    viewer.kind === 'error' ||
+    (failed && !ready) ||
+    (!online && isMentor && loading && !ready)
+  )
     panel = (
       <Panel
         title="We couldn’t load your calendar"
@@ -413,7 +436,7 @@ export function CalendarScreen() {
               <StatusPill
                 tone="available"
                 label="Available"
-                hint="Open for new bookings"
+                hint={CALENDAR_PAGE_COPY.availableHint}
                 switchRef={statusSwitch}
                 onChange={(on) => !on && openReturn()}
               />
@@ -551,24 +574,13 @@ export function CalendarScreen() {
                   <h2 id={monthTitleId} className={styles.cardTitle}>
                     Month at a glance
                   </h2>
-                  <button
-                    type="button"
-                    className={styles.blockedBtn}
-                    aria-disabled={blockBusy || undefined}
-                    onClick={openBlockOut}
-                  >
-                    <Icon name="event_busy" size={16} className={styles.blockedBtnIcon} />
-                    {upcomingBlocked.length
-                      ? `Blocked dates (${upcomingBlocked.length})`
-                      : 'Blocked dates'}
-                  </button>
                 </div>
                 <MonthPicker
                   readOnly
                   today={today}
                   selected={blocked.data?.days ?? []}
                   booked={(booked.data ?? []).map((b) => b.day)}
-                  available={draft.days.flatMap((d, i) => (d.on ? [i] : []))}
+                  available={openWeekdays}
                   // Open only where a mentee could book: past the notice, within the window.
                   openFrom={range.from}
                   openUntil={range.until}
@@ -586,6 +598,7 @@ export function CalendarScreen() {
                           : 'We couldn’t load your blocked dates.'}
                     </span>
                     <Button
+                      ref={partialRetry}
                       variant="text"
                       size="small"
                       onClick={() => {
@@ -605,6 +618,9 @@ export function CalendarScreen() {
                     onUnblock={unblock}
                     busy={blockBusy}
                     error={unblockError}
+                    actionRef={(el) => {
+                      blockAction.current = el;
+                    }}
                   />
                 )}
               </section>
@@ -674,15 +690,19 @@ export function CalendarScreen() {
       )}
       {blockOpen && blocked.data && (
         <ModalShell
-          title="Block out dates"
+          title={CALENDAR_PAGE_COPY.blockTitle}
           subtitle="Tap the days you’re away. Mentees won’t be able to book them."
           size="md"
+          mobile="sheet"
           onClose={closeBlockOut}
         >
           <BlockOutForm
             today={blockToday}
             initial={upcomingBlocked}
             booked={(booked.data ?? []).filter((b) => b.day >= blockToday)}
+            available={openWeekdays}
+            openFrom={blockRange?.from}
+            openUntil={blockRange?.until}
             saving={saveBlocked.isPending}
             error={saveBlocked.error?.message ?? null}
             onEdit={() => saveBlocked.error && saveBlocked.reset()}
@@ -691,6 +711,7 @@ export function CalendarScreen() {
               saveBlocks(days).then(
                 () => {
                   setBlockOpen(false);
+                  focusBlockAction();
                   announce('Blocked dates saved.');
                 },
                 (e: { message: string }) => announce(e.message),
@@ -700,7 +721,7 @@ export function CalendarScreen() {
         </ModalShell>
       )}
       {returnOpen && (
-        <ModalShell title="When will you be back?" size="md" onClose={closeReturn}>
+        <ModalShell title="When will you be back?" size="md" mobile="sheet" onClose={closeReturn}>
           <ReturnDateForm
             today={accountToday}
             booked={booked.data ?? []}
@@ -717,6 +738,7 @@ export function CalendarScreen() {
         <ModalShell
           title="Availability updated"
           size="sm"
+          mobile="sheet"
           onClose={() => {
             setDone(null);
             focusSwitch();
@@ -780,9 +802,7 @@ function PageHeader({ children }: { children?: ReactNode }) {
     <header className={styles.header}>
       <div className={styles.intro}>
         <h1 className={styles.title}>Your calendar</h1>
-        <p className={styles.lede}>
-          Set when mentees can book you, block the days you’re away, and choose how sessions run.
-        </p>
+        <p className={styles.lede}>{CALENDAR_PAGE_COPY.lede}</p>
       </div>
       {children}
     </header>

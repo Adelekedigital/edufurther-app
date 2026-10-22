@@ -75,6 +75,8 @@ export function useSaveConferencing(userId: string | null) {
       }
       if (!r.response.ok) throw videoError(apiError(r.response.status, r.error));
     },
+    // Offline, fail now with our copy rather than wait, paused, for a reconnect.
+    networkMode: 'always',
     onSettled: async () => {
       // Session types that follow the default show the new venue.
       void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });

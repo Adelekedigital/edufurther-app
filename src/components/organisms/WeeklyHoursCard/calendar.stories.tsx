@@ -56,12 +56,32 @@ export const MonthPickable: Story = {
   },
 };
 
+/** Blocking (the block-out modal): picks read grey, as on the month at a glance. */
+export const MonthBlocking: Story = {
+  render: function Render() {
+    const [sel, setSel] = useState(['2026-10-12', '2026-10-13', '2026-10-14']);
+    return (
+      <div style={{ maxWidth: 340 }}>
+        <MonthPicker
+          today="2026-09-26"
+          selected={sel}
+          selectedKind="blocked"
+          booked={['2026-10-04', '2026-10-13']}
+          available={[1, 6]}
+          onPick={(d) => setSel((s) => (s.includes(d) ? s.filter((x) => x !== d) : [...s, d]))}
+          showLegend
+        />
+      </div>
+    );
+  },
+};
+
 export const Status: Story = {
   render: () => (
     <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-      <StatusPill tone="available" label="Available" hint="Open for new bookings" />
-      <StatusPill tone="available" label="Available" hint="Open for new bookings" onChange={fn()} />
-      <StatusPill tone="busy" label="Busy" hint="Back Sat, Oct 3" onChange={fn()} />
+      <StatusPill tone="available" label="Available" hint="Mentees can book you" />
+      <StatusPill tone="available" label="Available" hint="Mentees can book you" onChange={fn()} />
+      <StatusPill tone="busy" label="Busy" hint="Reminder Sat, Oct 3" onChange={fn()} />
     </div>
   ),
 };

@@ -20,7 +20,7 @@ describe('BlockedDatesPanel', () => {
         onUnblock={onUnblock}
       />,
     );
-    expect(screen.getByText('2 blocked dates')).toBeInTheDocument();
+    expect(screen.getByText('Blocked dates · 2')).toBeInTheDocument();
     await userEvent.setup().click(screen.getByRole('button', { name: 'Unblock Tue, Oct 13' }));
     expect(onUnblock).toHaveBeenCalledWith('2026-10-13');
   });

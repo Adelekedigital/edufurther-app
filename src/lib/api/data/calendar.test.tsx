@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react';
 import { blockedDaysOf, fetchBookedSessions, planBlockSave, useSaveBlockedDays } from './calendar';
 
@@ -227,6 +227,23 @@ describe('useSaveBlockedDays', () => {
       timezone: 'Africa/Lagos',
       reason: null,
     });
+  });
+
+  it('offline, fails at once with the offline copy', async () => {
+    // Offline, a paused save never settles, so its offline copy could never show.
+    onlineManager.setOnline(false);
+    const nav = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      DELETE.mockRejectedValue(new TypeError('Failed to fetch'));
+      POST.mockRejectedValue(new TypeError('Failed to fetch'));
+      const { result } = renderHook(() => useSaveBlockedDays('m1'), { wrapper });
+      await expect(result.current.save(split)).rejects.toMatchObject({
+        message: 'You’re offline, so we couldn’t save your dates. Try again when you reconnect.',
+      });
+    } finally {
+      onlineManager.setOnline(true);
+      nav.mockRestore();
+    }
   });
 
   it('says "some" when part of it failed', async () => {

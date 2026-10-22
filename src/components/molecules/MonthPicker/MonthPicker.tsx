@@ -14,15 +14,20 @@ type MonthPickerProps = {
   min?: string;
   /** Blocked days (design `selected`). */
   selected?: readonly string[];
-  /** Days with a session booked: a gold ring round the day (design `bookedStyle=ring`). */
+  /** Days with a session booked: amber with a gold dot (design `bookedStyle=soft`). */
   booked?: readonly string[];
   /** Weekdays (0 = Sunday) with open hours, tinted green. */
   available?: readonly number[];
   /** Only days in this range are tinted open (notice to booking window). */
   openFrom?: string;
   openUntil?: string;
-  /** No picking: the month at a glance. */
+  /** No picking: the month at a glance. Blocked days read grey, as `selectedKind="blocked"`. */
   readOnly?: boolean;
+  /**
+   * What `selected` means (design `selectedKind`): `blocked` days read grey,
+   * as on the month at a glance; `selected` (a pick) stays blue.
+   */
+  selectedKind?: 'selected' | 'blocked';
   onPick?: (iso: string) => void;
   showLegend?: boolean;
   /** The month shown changed (YYYY-MM-01): the page can load what it needs for it. */
@@ -57,7 +62,7 @@ const dayLabel = (c: Extract<MonthCell, { kind: 'day' }>) =>
     }),
     c.selected && 'blocked',
     c.booked && 'session booked',
-    c.open && 'open for bookings',
+    c.open && 'available',
   ]
     .filter(Boolean)
     .join(', ');
@@ -69,8 +74,10 @@ const weeks = (cells: MonthCell[]) => {
 };
 
 /**
- * MonthPicker.dc.html, `soft` layout: one month, Sunday first. Blocked runs
- * join into one band, open weekdays are tinted green, booked days get a gold ring.
+ * MonthPicker.dc.html, `soft` layout (`bookedStyle=soft`): one month, Sunday
+ * first. Blocked runs join into one band (grey when read-only or blocking,
+ * blue for a pick), open weekdays are tinted green, booked days are amber
+ * with a gold dot.
  * Read-only it's a summary; with `onPick` the days are buttons in one tab
  * stop, moved through with the arrow keys (ours).
  */
@@ -83,6 +90,7 @@ export function MonthPicker({
   openFrom,
   openUntil,
   readOnly = false,
+  selectedKind = 'selected',
   onPick,
   showLegend = false,
   onMonthChange,
@@ -96,6 +104,8 @@ export function MonthPicker({
   const cells = monthCells({ month, today, min, selected, booked, available, openFrom, openUntil });
   const days = cells.filter((c): c is Extract<MonthCell, { kind: 'day' }> => c.kind === 'day');
   const pickable = !readOnly && !!onPick;
+  // Design `roBlocked`: blocked days are grey, the pick's blue is kept for a pick.
+  const grey = readOnly || selectedKind === 'blocked';
   const cellRole = pickable ? 'gridcell' : 'cell';
   const floor = min ?? today;
   // The one tab stop: the last focused day, else the first blocked day, else today, else the 1st.
@@ -151,7 +161,7 @@ export function MonthPicker({
   };
 
   return (
-    <div className={styles.picker}>
+    <div className={cx(styles.picker, grey && styles.pickerGrey)}>
       <div className={styles.head}>
         <span id={headingId} className={styles.month} aria-live="polite">
           {monthLabel(month)}
@@ -204,6 +214,7 @@ export function MonthPicker({
                   <Day
                     key={c.iso}
                     cell={c}
+                    grey={grey}
                     label={dayLabel(c)}
                     pickable={pickable}
                     tabStop={c.iso === stop}
@@ -229,16 +240,19 @@ export function MonthPicker({
           {available && (
             <span className={styles.key}>
               <span aria-hidden className={cx(styles.swatch, styles.swatchOpen)} />
-              Open
+              Available
             </span>
           )}
           <span className={styles.key}>
-            <span aria-hidden className={cx(styles.swatch, styles.swatchBlocked)} />
-            Blocked
-          </span>
-          <span className={styles.key}>
             <span aria-hidden className={cx(styles.swatch, styles.swatchBooked)} />
             Booked
+          </span>
+          <span className={styles.key}>
+            <span
+              aria-hidden
+              className={cx(styles.swatch, grey ? styles.swatchBlockedGrey : styles.swatchBlocked)}
+            />
+            Blocked
           </span>
         </div>
       )}
@@ -248,6 +262,7 @@ export function MonthPicker({
 
 function Day({
   cell: c,
+  grey,
   label,
   pickable,
   tabStop,
@@ -257,6 +272,8 @@ function Day({
   onKey,
 }: {
   cell: Extract<MonthCell, { kind: 'day' }>;
+  /** Blocked days read grey (design `roBlocked`). */
+  grey: boolean;
   label: string;
   pickable: boolean;
   tabStop: boolean;
@@ -269,19 +286,24 @@ function Day({
   const band = c.selected && (c.joinPrev || c.joinNext);
   const dayClass = cx(
     styles.day,
-    c.today && !c.selected && styles.today,
+    c.today && (!c.selected || grey) && styles.today,
     c.open && styles.open,
-    c.selected && (mid ? styles.mid : styles.selected),
-    c.booked && (c.selected && !mid ? styles.bookedOnBlue : styles.booked),
+    c.booked && !c.selected && styles.booked,
+    c.selected &&
+      (grey ? (mid ? styles.midGrey : styles.selectedGrey) : mid ? styles.mid : styles.selected),
     c.past && styles.past,
     (c.today || c.selected) && styles.strong,
+  );
+  // The booked dot; white only on a blue pick's end (design `dot`).
+  const dot = c.booked && (
+    <span aria-hidden className={cx(styles.dot, c.selected && !mid && !grey && styles.dotOnBlue)} />
   );
   return (
     <span
       role={pickable ? 'gridcell' : 'cell'}
       className={cx(
         styles.cell,
-        band && styles.band,
+        band && (grey ? styles.bandGrey : styles.band),
         c.joinPrev && styles.joinPrev,
         c.joinNext && styles.joinNext,
       )}
@@ -299,11 +321,13 @@ function Day({
           onKeyDown={onKey}
         >
           {c.day}
+          {dot}
         </button>
       ) : (
         <span className={dayClass}>
           <span aria-hidden>{c.day}</span>
           <span className="sr-only">{label}</span>
+          {dot}
         </span>
       )}
     </span>

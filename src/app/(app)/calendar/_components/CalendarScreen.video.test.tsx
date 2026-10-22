@@ -116,6 +116,10 @@ describe('CalendarScreen: video for sessions', () => {
     const user = userEvent.setup();
     render(<CalendarScreen />);
     expect(screen.getByText('Video for sessions: Personal meeting link')).toBeInTheDocument();
+    // The row says the trade-off in Integrations' words (one wording per concept).
+    expect(
+      screen.getByText('Every mentee gets the same link, so anyone with an old invite can join.'),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Change video for sessions' }));
     const dialog = screen.getByRole('dialog', { name: 'Video for sessions' });
     const own = within(dialog).getByRole('radio', { name: /Personal meeting link/ });

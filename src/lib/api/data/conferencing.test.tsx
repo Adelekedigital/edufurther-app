@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react';
 import { useSaveConferencing } from './conferencing';
 
@@ -29,6 +29,25 @@ describe('useSaveConferencing', () => {
     });
     const keys = invalidate.mock.calls.map((c) => JSON.stringify(c[0]!.queryKey));
     expect(keys).toEqual(expect.arrayContaining(['["calendar","video","m1"]']));
+  });
+
+  it('offline, fails at once with the offline copy', async () => {
+    // Offline, a paused save never settles, so its offline copy could never show.
+    onlineManager.setOnline(false);
+    const nav = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      PATCH.mockRejectedValue(new TypeError('Failed to fetch'));
+      const { result } = renderHook(() => useSaveConferencing('m1'), { wrapper });
+      await expect(
+        result.current.save({ provider: 'daily', customUrl: null }),
+      ).rejects.toMatchObject({
+        message:
+          'You’re offline, so we couldn’t save your video setting. Try again when you reconnect.',
+      });
+    } finally {
+      onlineManager.setOnline(true);
+      nav.mockRestore();
+    }
   });
 
   it('a failure is our copy', async () => {

@@ -59,17 +59,10 @@ export function BookingRulesForm({
       {tooShort && <p className={styles.fit}>{C.tooShort}</p>}
       <p className={styles.settings}>
         <Icon name="tune" size={16} className={styles.settingsIcon} />
-        <span>
-          {C.settingsLead}{' '}
-          {/* A new tab, as drawn: following it here would drop the rules being edited. */}
-          <ExternalLink
-            href={C.settingsHref}
-            label={C.settingsLink}
-            className={styles.settingsLink}
-          >
-            {C.settingsLink} ↗
-          </ExternalLink>
-        </span>
+        {/* A new tab: following it here would drop the rules being edited. */}
+        <ExternalLink href={C.settingsHref} label={C.settingsLink} className={styles.settingsLink}>
+          {C.settingsLink} ↗
+        </ExternalLink>
       </p>
       {error && (
         <p className={styles.error}>

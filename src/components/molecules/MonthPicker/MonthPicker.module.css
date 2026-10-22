@@ -85,6 +85,11 @@
   background: var(--blue-50);
   border-radius: 18px;
 }
+/* Read-only or blocking (design `roBlocked`): the band is grey. */
+.bandGrey {
+  background: var(--ink-200);
+  border-radius: 18px;
+}
 .joinPrev {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
@@ -116,12 +121,22 @@ button.day {
 button.day[aria-disabled='true'] {
   cursor: not-allowed;
 }
-button.day:not(.selected, .mid, [aria-disabled='true']):hover {
+/* A booked day keeps its amber on hover (design: hover only where there's no fill). */
+button.day:not(.selected, .mid, .selectedGrey, .midGrey, .booked, [aria-disabled='true']):hover {
   background: var(--ink-100);
 }
-/* Open: the green tint only (with the booked ring, the green edge was dropped). */
+/* Blocking (design `roBlocked`): a lighter hover, so the grey pick reads as the pick. */
+.pickerGrey button.day:not(.selectedGrey, .midGrey, .booked, [aria-disabled='true']):hover {
+  background: var(--ink-50);
+}
+/* Open: the green tint only (design `soft`: no green edge). */
 .open {
   background: var(--green-50);
+}
+/* Booked (design `bookedStyle=soft`): amber, with the gold dot below. Wins over open. */
+.booked {
+  background: var(--calendar-booked-bg);
+  color: var(--ink-900);
 }
 /* Today's ring wins over an open day's green (design: isToday first). */
 .today {
@@ -135,23 +150,35 @@ button.day:not(.selected, .mid, [aria-disabled='true']):hover {
   background: transparent;
   color: var(--blue-700);
 }
+.selectedGrey {
+  background: var(--ink-200);
+  color: var(--ink-700);
+}
+.midGrey {
+  background: transparent;
+  color: var(--ink-700);
+}
 /* Past days (design ink-500, 4.9:1 on white). A past blocked day keeps the
    blue day's white. */
-.past:not(.selected, .mid) {
+.past:not(.selected, .mid, .selectedGrey, .midGrey, .booked) {
   color: var(--text-tertiary);
 }
 .strong {
   font-weight: var(--weight-semibold);
 }
-/* Booked (design `bookedStyle=ring`): a 2px gold ring inside the day; on a
-   blocked end, a white inner ring and the gold outside it. */
-.booked {
-  box-shadow: inset 0 0 0 2px var(--calendar-booked-ring);
+/* The booked dot: 4px, centred 3px from the bottom; white on a blue pick. */
+.dot {
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: var(--radius-full);
+  background: var(--yellow-900);
 }
-.bookedOnBlue {
-  box-shadow:
-    inset 0 0 0 2px var(--white),
-    0 0 0 2px var(--calendar-booked-ring);
+.dotOnBlue {
+  background: var(--white);
 }
 .legend {
   display: flex;
@@ -181,9 +208,11 @@ button.day:not(.selected, .mid, [aria-disabled='true']):hover {
   background: var(--blue-500);
   border-color: var(--blue-500);
 }
+.swatchBlockedGrey {
+  background: var(--ink-200);
+}
 .swatchBooked {
-  background: transparent;
-  box-shadow: inset 0 0 0 2px var(--calendar-booked-ring);
+  background: var(--calendar-booked-bg);
 }
 /* Phones: a 44px tap area around the drawn 32px controls and 36px days. */
 @media (max-width: 767px) {

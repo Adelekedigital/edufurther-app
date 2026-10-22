@@ -10,14 +10,23 @@ import {
   VIDEO_LINK_LINE,
   type VideoChoice,
 } from './integrations';
+/** The page header (Calendar v2 `copy` research). */
+export const CALENDAR_PAGE_COPY = {
+  lede: 'Set your availability, manage days off and choose how you’ll meet with mentees.',
+  /** The status pill's hint while available (busy hints: `busyHint`). */
+  availableHint: 'Mentees can book you',
+  blockTitle: 'Block dates',
+} as const;
+
 export const BOOKING_RULES_COPY = {
   title: 'Booking rules',
   sub: 'Your default rules for every session. You can customize them for a single session.',
   editLabel: 'Edit booking rules',
   saved: 'Your booking rules are saved.',
-  tooShort: 'Your weekly hours are too short for this session length.',
-  settingsLead: 'You can manage all your booking rules in',
-  settingsLink: 'Settings › Booking rules',
+  tooShort:
+    'Your weekly hours are too short for this session length. Add longer hours or pick a shorter length.',
+  /** The whole line is the link (owner, 2026-10-21; ux-writer new-tab pattern). */
+  settingsLink: 'Manage your booking rules in Settings',
   settingsHref: '/settings/booking',
 } as const;
 
@@ -38,7 +47,7 @@ export const HOURS_COPY = {
 /** The status a mentor can't change: an admin unlisted them (PRD Calendar, "Unlisted by EduFurther"). */
 export const UNLISTED_COPY = {
   title: 'Unlisted by EduFurther',
-  body: 'EduFurther has taken your profile off the listing for now, so mentees can’t find or book you, and you can’t switch to available or busy yourself.',
+  body: 'EduFurther has taken your profile off the listing, so mentees can’t find or book you, and you can’t switch to available or busy yourself.',
   contact: 'Contact support',
   after: 'if you have questions.',
   /** The prefilled mail; support sees the sender's address, so the name signs it. */
@@ -66,7 +75,7 @@ export const VIDEO_ROW_COPY = {
   modalSub: VIDEO_LINK_LINE,
   editLabel: 'Change video for sessions',
   summary: 'A private link is created for every booking. Nothing to paste.',
-  customSummary: 'The same link is reused for every mentee.',
+  customSummary: CUSTOM_COPY.note,
   saved: 'Your video setting is saved.',
   saveFailed: VIDEO_COPY.saveFailed,
 } as const;
