@@ -19,7 +19,11 @@
   line-height: normal;
   font-weight: var(--weight-semibold);
 }
+/* A 44px target at every width, as drawn (and as `.book`). */
 .link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target-min);
   font-size: var(--text-p-xs);
   line-height: normal;
   font-weight: var(--weight-semibold);
@@ -125,17 +129,9 @@
     padding: var(--space-3) var(--space-4);
   }
 }
-/* Drawn as 12px text; an invisible area makes the tap target 44px on phones
-   (Codex on PR 102). */
-.tapLink {
-  position: relative;
-}
-@media (max-width: 767px) {
-  .tapLink::after {
-    content: '';
-    position: absolute;
-    inset: -14px -8px;
-  }
+/* `sm.notTaking` "View profile". */
+.profileLink {
+  gap: 2px;
 }
 
 /* Mentor Profile.dc.html `sm.book`: the next free time, a text button that

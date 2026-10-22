@@ -10,6 +10,7 @@ import type { Mentor, MentorLabel } from '@/types/mentor';
 import { cx } from '@/lib/utils/cx';
 import { MoreTopics } from './MoreTopics';
 import { LABEL_TEXT } from '@/lib/api/data/labels';
+import { NOT_TAKING_TITLE } from '@/lib/copy/profile';
 import styles from './MentorCard.module.css';
 
 type MentorCardProps = {
@@ -182,7 +183,7 @@ export function MentorCard({
           // MentorCard.dc.html `notTakingLine` (design, 2026-09-29).
           <p className={cx(styles.next, styles.notTaking)}>
             <Icon name="event_busy" size={14} />
-            Not taking bookings
+            {NOT_TAKING_TITLE}
           </p>
         ) : m.nextAvailableAt ? (
           <p className={styles.next}>

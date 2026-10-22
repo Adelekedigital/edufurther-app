@@ -42,13 +42,14 @@
   font-weight: var(--weight-semibold);
 }
 /* PROVISIONAL (design request #43): an unknown figure keeps its tile so the
-   grid stays whole (product, 2026-09-27). */
+   grid stays whole (product, 2026-09-27). Mentor Profile.dc.html `s.unknown`. */
 .empty {
   font-family: var(--font-ui);
   font-size: var(--text-p-sm);
-  line-height: 21.6px;
+  line-height: 1.2;
   font-weight: var(--weight-medium);
   color: var(--text-tertiary);
+  padding: 3px 0;
 }
 .label {
   font-size: var(--text-p-xs);

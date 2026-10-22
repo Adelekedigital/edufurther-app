@@ -2,24 +2,32 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
-import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import {
   DeleteConfirm,
   VisibilityConfirm,
   type ConfirmShell,
 } from '@/components/organisms/SessionTypeConfirms/SessionTypeConfirms';
-import { SessionTypeList } from '@/components/organisms/SessionTypeList/SessionTypeList';
+import {
+  SessionTypeList,
+  SessionTypeListSkeleton,
+} from '@/components/organisms/SessionTypeList/SessionTypeList';
 import { SessionTypeQuickEdit } from '@/components/organisms/SessionTypeQuickEdit/SessionTypeQuickEdit';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useQuickEditSessionType, type QuickEdit } from '@/lib/api/data/sessionTypeQuick';
-import { useDeleteSessionType, useOwnSessionTypes, useSetLive } from '@/lib/api/data/sessionTypes';
+import {
+  useDeleteSessionType,
+  useMentorDefaults,
+  useOwnSessionTypes,
+  useSetLive,
+  type MentorDefaults,
+} from '@/lib/api/data/sessionTypes';
 import { formatShortDate } from '@/lib/utils/format';
+import { resolveDefaults } from '@/lib/utils/sessionTypeDraft';
 import { stageText } from '@/lib/utils/stageText';
 import { useLatest } from '@/lib/utils/useLatest';
 import type { ProfileSessionType } from '@/types/mentor';
 import type { DeleteError, OwnSessionType } from '@/types/sessionType';
-import styles from './MentorProfileScreen.module.css';
 
 const NEW_HREF = '/session-types/new';
 /** Where a hidden type comes back, said wherever the profile hides one. */
@@ -34,9 +42,15 @@ const confirmShell = (shell: ConfirmShell, body: ReactNode) => (
 /**
  * The owner's card for one of their active types: the public profile's row
  * says it best (the mentor's own stage wording included); Session types'
- * stages fill in until the profile has refetched.
+ * stages fill in until the profile has refetched. A type that follows the
+ * mentor's approval setting reads it from their defaults (as Session types'
+ * form does), else from the profile.
  */
-function toCard(t: OwnSessionType, shown: ProfileSessionType | undefined): ProfileSessionType {
+function toCard(
+  t: OwnSessionType,
+  shown: ProfileSessionType | undefined,
+  defaults: MentorDefaults | null,
+): ProfileSessionType {
   return {
     id: t.id,
     name: t.name,
@@ -45,11 +59,15 @@ function toCard(t: OwnSessionType, shown: ProfileSessionType | undefined): Profi
     questions: shown?.questions ?? [],
     category: t.topics[0]?.label ?? null,
     stage: shown?.stage ?? stageText(t.stages, t.customStage),
-    venue: shown?.venue ?? '',
+    requiresConfirmation:
+      t.requiresApproval ??
+      (defaults ? resolveDefaults(defaults).requiresApproval : shown?.requiresConfirmation),
   };
 }
 
 type Props = {
+  /** The owner's user id, for the booking defaults their types may follow. */
+  mentorId: string;
   /** What mentees see: shown if the owner's own list fails. */
   shown: ProfileSessionType[];
   /**
@@ -72,8 +90,9 @@ type Props = {
  * types, which the hide confirm says. The confirms are Session types' own, so
  * each action asks the same way wherever it's done.
  */
-export function OwnerSessionTypes({ shown, onActiveCount, onSay: say }: Props) {
+export function OwnerSessionTypes({ mentorId, shown, onActiveCount, onSay: say }: Props) {
   const own = useOwnSessionTypes(true);
+  const defaults = useMentorDefaults(mentorId);
   // Active only: hidden and scheduled types are Session types' business.
   const list = own.data?.filter((t) => t.isLive && !t.pendingDeletion);
   const liveCount = list?.length ?? 0;
@@ -238,6 +257,7 @@ export function OwnerSessionTypes({ shown, onActiveCount, onSay: say }: Props) {
     toCard(
       t,
       shown.find((s) => s.id === t.id),
+      defaults.data,
     ),
   );
 
@@ -254,16 +274,7 @@ export function OwnerSessionTypes({ shown, onActiveCount, onSay: say }: Props) {
       {own.isLoading ? (
         // The owner's list: card-sized placeholders, so the controls never
         // pop in over the mentee view (review of PR 119).
-        <ul className={styles.ownerLoading} aria-busy>
-          <span className="sr-only" role="status">
-            Loading your sessions
-          </span>
-          {Array.from({ length: Math.max(1, shown.length) }, (_, i) => (
-            <li key={i}>
-              <Skeleton width="100%" height="240px" radius="lg" />
-            </li>
-          ))}
-        </ul>
+        <SessionTypeListSkeleton count={shown.length} label="Loading your sessions" />
       ) : cards ? (
         <SessionTypeList
           owner={{

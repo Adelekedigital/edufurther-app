@@ -191,7 +191,9 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
     hasReviews || (viewer.kind !== 'guest' && viewer.kind !== 'loading' && !isOwner);
   const { tab, setTab } = useProfileTab(sessionsTab, reviewsTab);
   // Cards only render after a client fetch, so reading the device zone here is safe.
-  const [timeZone] = useState(deviceTimeZone);
+  const [deviceZone] = useState(deviceTimeZone);
+  // The account's zone, as Bookings and the dashboard show times.
+  const timeZone = member?.timeZone ?? deviceZone;
   // The profile only exists after a client fetch, so `window` is there by then.
   const shareUrl = p ? `${window.location.origin}${p.mentor.profileHref}` : '';
   // An owner whose profile isn't public hears who can see it before sharing
@@ -412,7 +414,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           nextTime={p.mentor.nextAvailableState === 'open' ? p.mentor.nextAvailableAt : null}
           timeZone={timeZone}
           move={movedBetween(p.originCountry, p.studyCountry)}
-          award={p.awards[0]?.title ?? null}
+          award={p.awards[0] ?? null}
           // Blocked booking (guest setup, offline…) is explained on the header's
           // Book; the card just doesn't offer one.
           onBook={canStartBooking ? (time) => booking.open(undefined, time) : undefined}
@@ -662,6 +664,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                     <NotTakingEmpty firstName={p.mentor.firstName} />
                   ) : editing ? (
                     <OwnerSessionTypes
+                      mentorId={p.mentor.id}
                       shown={p.sessionTypes}
                       onActiveCount={setOwnActive}
                       onSay={sayOwner}
@@ -689,11 +692,12 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                     {!isPhone && firstMentees}
                     {asMentee &&
                       (notTaking ? (
-                        <NotTakingNote firstName={p.mentor.firstName} />
+                        <NotTakingNote firstName={p.mentor.firstName} similarBelow={similarShown} />
                       ) : (
                         <div id="profile-book" className={styles.scrollTarget}>
                           <BookSessionCard
                             sessionTypes={p.sessionTypes}
+                            timeZone={timeZone}
                             onBook={booking.open}
                             onCompare={sessionsTab ? () => setTab('sessions') : undefined}
                             bookBlocked={shownBlock}

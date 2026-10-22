@@ -45,9 +45,23 @@ describe('toOwnSessionType', () => {
       iconChoice: null,
       questionCount: 2,
       isFeatured: false,
+      requiresApproval: null,
       pendingDeletion: null,
       booked: { count: 0, lastEndsAt: null },
     });
+  });
+
+  it('keeps the type’s own approval setting; null follows the mentor’s', () => {
+    expect(toOwnSessionType(own({ requires_booking_confirmation: true })).requiresApproval).toBe(
+      true,
+    );
+    expect(toOwnSessionType(own({ requires_booking_confirmation: false })).requiresApproval).toBe(
+      false,
+    );
+    expect(toOwnSessionType(own()).requiresApproval).toBeNull();
+    expect(
+      toOwnSessionType(own({ requires_booking_confirmation: undefined })).requiresApproval,
+    ).toBeNull();
   });
 
   it('follows the booking rules only when length, notice, window and buffer are all inherited', () => {

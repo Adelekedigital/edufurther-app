@@ -7,6 +7,7 @@
  */
 import { similarMentors } from '@/components/organisms/SimilarMentorsCard/similar.fixture';
 import type { MentorReviewsResult } from '@/lib/api/data/reviews';
+import type { MentorDefaults } from '@/lib/api/data/sessionTypes';
 import type {
   MentorProfile,
   MyReview,
@@ -79,6 +80,8 @@ export const h = {
   profile: state({}),
   // The owner's own session types (Sessions tab) and the quick edit.
   ownTypes: idle as Remote<OwnSessionType[]>,
+  /** The owner's booking defaults, which a type's null approval follows. */
+  mentorDefaults: idle as Remote<MentorDefaults>,
   quickOk: true,
   quickPending: false,
   quickError: null as { copy: string } | null,
@@ -328,6 +331,7 @@ const avatarMock = () => ({
 
 const sessionTypesMock = () => ({
   useOwnSessionTypes: () => h.ownTypes,
+  useMentorDefaults: () => h.mentorDefaults,
   useSetLive: (failed: (id: string, live: boolean) => void) => {
     h.onLiveFailed = failed;
     return setLive;
@@ -589,6 +593,7 @@ beforeEach(() => {
   saveTopics.mockReset();
   saveBackground.mockReset();
   h.ownTypes = idle;
+  h.mentorDefaults = idle;
   h.quickOk = true;
   h.quickPending = false;
   h.quickError = null;

@@ -31,13 +31,6 @@ import { stagesOf } from './sessionTypes';
 type MentorPublicRead = components['schemas']['MentorPublicRead'];
 type SessionTypeRead = components['schemas']['SessionTypeRead'];
 type ApplicationStage = components['schemas']['ApplicationStage'];
-type Venue = components['schemas']['ConferencingProvider'];
-
-const VENUE: Record<Venue, string> = {
-  google_meet: 'Google Meet',
-  daily: 'EduFurther video',
-  custom: 'Video call',
-};
 
 // ---- mapping ----------------------------------------------------------------
 
@@ -94,7 +87,6 @@ function toProfileSessionType(r: SessionTypeRead): ProfileSessionType {
     // logged and CI green.
     category: r.service_offerings?.[0]?.display_name ?? null,
     stage,
-    venue: VENUE[r.meeting_venue] ?? 'Video call',
   };
 }
 

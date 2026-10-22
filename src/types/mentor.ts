@@ -299,14 +299,12 @@ export type SocialKind =
 /** The mark a link shows: a website on Medium or Substack shows theirs (the design's DETECT). */
 export type SocialMark = SocialKind | 'medium' | 'substack';
 
-/** A bookable offering as the profile shows it (category, stage, venue). */
+/** A bookable offering as the profile shows it (category, stage). */
 export type ProfileSessionType = SessionType & {
   /** The offering's help category, e.g. "Visa and interview". */
   category: string | null;
   /** Application stage it suits, e.g. "Drafting". */
   stage: string | null;
-  /** Where it happens, e.g. "Google Meet". */
-  venue: string;
 };
 
 /** A step towards a complete profile (backend `completeness.missing`, owner-only). */

@@ -11,7 +11,7 @@ export const sessionTypes: ProfileSessionType[] = [
     questions: [],
     category: 'Application documents',
     stage: 'Drafting',
-    venue: 'Google Meet',
+    requiresConfirmation: true,
   },
   {
     id: 'st2',
@@ -21,7 +21,7 @@ export const sessionTypes: ProfileSessionType[] = [
     questions: [],
     category: 'Visa and interview',
     stage: null,
-    venue: 'Google Meet',
+    requiresConfirmation: false,
   },
   {
     id: 'st3',
@@ -31,7 +31,7 @@ export const sessionTypes: ProfileSessionType[] = [
     questions: [],
     category: null,
     stage: 'Exploring',
-    venue: 'EduFurther video',
+    requiresConfirmation: true,
   },
 ];
 

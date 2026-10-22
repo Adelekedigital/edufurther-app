@@ -98,6 +98,7 @@ export function toOwnSessionType(r: OwnSessionTypeRead): OwnSessionType {
     // On the list since backend #333 (#147); null hides the chip if it's ever missing.
     questionCount: r.question_count ?? null,
     isFeatured: r.is_featured,
+    requiresApproval: r.requires_booking_confirmation ?? null,
     pendingDeletion: r.pending_deletion
       ? {
           deletesAfter: r.pending_deletion.deletes_after ?? null,

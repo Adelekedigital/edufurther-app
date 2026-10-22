@@ -44,9 +44,6 @@
   "src/components/molecules/SessionTypeRow/SessionTypeRow.module.css": {
     "declaration-property-value-disallowed-list": 2
   },
-  "src/components/molecules/StatTile/StatTile.module.css": {
-    "declaration-property-value-disallowed-list": 1
-  },
   "src/components/organisms/BlockOutForm/BlockOutForm.module.css": {
     "declaration-property-value-disallowed-list": 1
   },
@@ -58,9 +55,6 @@
   },
   "src/components/organisms/SessionTypeWizard/SessionTypeWizard.module.css": {
     "declaration-property-value-disallowed-list": 2
-  },
-  "src/components/organisms/SimilarMentorsCard/SimilarMentorsCard.module.css": {
-    "declaration-property-value-disallowed-list": 1
   },
   "src/components/organisms/TrackRecordCard/TrackRecordCard.module.css": {
     "declaration-property-value-disallowed-list": 1

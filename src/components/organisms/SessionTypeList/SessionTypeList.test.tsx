@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { sessionTypes } from '../ProfileHeader/profile.fixture';
-import { SessionTypeList } from './SessionTypeList';
+import { SessionTypeList, SessionTypeListSkeleton } from './SessionTypeList';
 
 describe('SessionTypeList', () => {
   it('Book opens that type; a block says why and disables it', async () => {
@@ -48,5 +48,36 @@ describe('SessionTypeList', () => {
       />,
     );
     expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('each card says how it books, after the length and stage chips', () => {
+    render(
+      <SessionTypeList sessionTypes={sessionTypes} onBook={vi.fn()} bookBlocked={null} canBook />,
+    );
+    const cards = screen.getAllByRole('listitem');
+    expect(cards[0]).toHaveTextContent('60 minflagDraftinghow_to_regRequest to book');
+    expect(cards[1]).toHaveTextContent('45 minboltInstant booking');
+  });
+
+  it('a card whose booking mode isn’t known yet shows no label', () => {
+    const [first] = sessionTypes;
+    render(
+      <SessionTypeList
+        sessionTypes={[{ ...first!, requiresConfirmation: undefined }]}
+        onBook={vi.fn()}
+        bookBlocked={null}
+        canBook
+      />,
+    );
+    expect(screen.queryByText(/Request to book|Instant booking/)).toBeNull();
+  });
+
+  it('the skeleton: card-sized blocks in the list’s grid, announced once', () => {
+    const { container } = render(
+      <SessionTypeListSkeleton count={2} label="Loading your sessions" />,
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('Loading your sessions');
+    expect(container.querySelectorAll('li')).toHaveLength(2);
+    expect(container.querySelector('ul')?.className).toMatch(/grid/);
   });
 });

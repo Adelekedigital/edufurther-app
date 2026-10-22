@@ -1,6 +1,7 @@
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import type { MetMentor } from '@/lib/api/data/metMentors';
+import { NOT_TAKING_TITLE } from '@/lib/copy/profile';
 import { formatShortDate } from '@/lib/utils/format';
 import styles from './MentorRow.module.css';
 
@@ -78,7 +79,7 @@ export function MentorRow({ mentor: m, timeZone, onBook }: MentorRowProps) {
             View booking
           </ButtonLink>
         ) : (
-          <span className={styles.note}>Not taking bookings</span>
+          <span className={styles.note}>{NOT_TAKING_TITLE}</span>
         )}
       </div>
     </div>

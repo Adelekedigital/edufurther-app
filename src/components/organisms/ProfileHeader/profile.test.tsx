@@ -195,7 +195,7 @@ describe('FirstMenteesCard', () => {
         nextTime="2026-09-28T13:00:00Z"
         timeZone="America/New_York"
         move={{ from: 'Nigeria', to: 'the United Kingdom' }}
-        award="Commonwealth Scholarship"
+        award={{ title: 'Commonwealth Scholarship', funding: null }}
         onBook={onBook}
       />,
     );
@@ -246,6 +246,7 @@ describe('BookSessionCard', () => {
     const onBook = vi.fn();
     render(
       <BookSessionCard
+        timeZone="Africa/Lagos"
         sessionTypes={[sessionTypes[0]!]}
         onBook={onBook}
         onCompare={vi.fn()}
@@ -263,6 +264,7 @@ describe('BookSessionCard', () => {
   it('shows why booking is blocked', () => {
     render(
       <BookSessionCard
+        timeZone="Africa/Lagos"
         sessionTypes={[sessionTypes[0]!]}
         onBook={vi.fn()}
         onCompare={vi.fn()}
@@ -277,6 +279,7 @@ describe('BookSessionCard', () => {
     const onCompare = vi.fn();
     render(
       <BookSessionCard
+        timeZone="Africa/Lagos"
         sessionTypes={sessionTypes}
         onBook={vi.fn()}
         onCompare={onCompare}

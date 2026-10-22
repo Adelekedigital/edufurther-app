@@ -1,0 +1,13 @@
+/* Mentor Profile.dc.html `cfLabel` / `cfIcon` / `cfColor`. */
+.label {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: var(--weight-medium);
+}
+.instant {
+  color: var(--green-700);
+}
+.request {
+  color: var(--ink-600);
+}

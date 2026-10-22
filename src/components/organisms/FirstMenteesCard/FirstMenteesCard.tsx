@@ -5,6 +5,7 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { formatDay, formatTime } from '@/lib/utils/format';
 import { dayKey } from '@/lib/utils/slots';
+import type { AwardFunding } from '@/types/mentor';
 import styles from './FirstMenteesCard.module.css';
 
 type FirstMenteesCardProps =
@@ -17,8 +18,8 @@ type FirstMenteesCardProps =
       timeZone: string;
       /** Origin → study country when they differ (movedBetween), else null. */
       move: { from: string; to: string } | null;
-      /** The mentor's first scholarship or award title, or null. */
-      award: string | null;
+      /** The mentor's first scholarship or award, or null. */
+      award: { title: string; funding: AwardFunding | null } | null;
       /** Opens booking on that time. Omit to show no button. */
       onBook?: (time: string) => void;
       /** Drawn, but can't be used (the owner's "View as mentee"). */
@@ -31,12 +32,18 @@ type FirstMenteesCardProps =
 
 type Fact = { icon: IconName; k: string; v: string };
 
-/**
- * The facts box (design, 2026-09-27): why a new mentor is worth booking. The
- * design's ", fully funded" after the award needs a funding field the API
- * doesn't have (design-divergence.md).
- */
-function factsFor(move: { from: string; to: string } | null, award: string | null): Fact[] {
+/** "{award}, fully funded." (Mentor Profile.dc.html facts), with the title's own stop kept. */
+function awardLine({ title, funding }: { title: string; funding: AwardFunding | null }): string {
+  const bare = title.replace(/[.!?]$/, '');
+  if (funding === 'full') return `${bare}, fully funded.`;
+  return bare === title ? `${title}.` : title;
+}
+
+/** The facts box (design, 2026-09-27): why a new mentor is worth booking. */
+function factsFor(
+  move: { from: string; to: string } | null,
+  award: { title: string; funding: AwardFunding | null } | null,
+): Fact[] {
   return [
     ...(move
       ? [
@@ -52,7 +59,7 @@ function factsFor(move: { from: string; to: string } | null, award: string | nul
           {
             icon: 'workspace_premium' as const,
             k: 'Got funded.',
-            v: /[.!?]$/.test(award) ? award : `${award}.`,
+            v: awardLine(award),
           },
         ]
       : []),
