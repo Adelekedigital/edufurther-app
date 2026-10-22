@@ -76,4 +76,14 @@ export const OWNER_SUPPORT_SUBJECT = (name: string) =>
 export const REVIEWS_EMPTY = {
   all: 'No reviews yet.',
   filtered: 'No reviews for this session yet.',
+
+/**
+ * The "isn't available" page's suggestions (Mentor Profile.dc.html notFound).
+ * The design's "Mentors mentees are booking this week" claims a demand the API
+ * doesn't rank by: these are mentors with open times (backend #521).
+ */
+export const NOT_FOUND_COPY = {
+  similarTitle: 'Mentors with similar expertise',
+  freeSoonTitle: 'Mentors you can book this week',
+  freeSoonSub: 'All have open times in the next 7 days.',
 } as const;

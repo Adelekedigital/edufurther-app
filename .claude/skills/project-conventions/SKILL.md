@@ -27,6 +27,9 @@ Sources, so the next sync can diff against them: the design project's
 | Decision | Reason | Would reopen if |
 | --- | --- | --- |
 | Next.js App Router, React, TypeScript | Handoff target (`HANDOFF_PLAN.md`) | — |
+| No approval wait: a written confidence check (A: confidence against code and docs, expected bugs and regressions; B: proceed if confident, checklist guarding each risk, stress-test while building). Ask the owner only when not confident or the call is theirs (CLAUDE.md #4) | Owner, 2026-10-21 | — |
+| A decision put to the owner is framed and recommended by what builds for today while building the product right and the right product, scales for the future, is secure, and meets industry standards | Owner, 2026-10-21 (standing, every session) | — |
+| Code review budget: one `/code-reviewer` per PR when it's final; re-run only after a behaviour fix (docs, tests, copy or a rebase: answer and merge on green CI); local review agents only on full-lane PRs; related small fixes share a PR | Owner, 2026-10-21: review tokens | — |
 | Vercel deploys `main` only: PR branches get no preview deploy (`git.deploymentEnabled`), and a push that only changes tests, stories, docs, `.claude/`, CI or the check scripts skips the build (`scripts/vercel-ignore.mjs`). PR review rounds go out as one push | Product, 2026-10-01: the Hobby plan allows 100 deployments a day across every session, and the limit was hit. CI doesn't use previews (page-review builds its own) | **On a paid Vercel plan, turn PR preview deploys back on** (drop `git.deploymentEnabled`); keep the ignore step |
 | Build order: DS tokens → DS atoms → shared components → screens | Handoff README §1; `design-sync` | — |
 | Build the **chosen default** of every design tweak; alternatives are "to test" and not built unless product asks | Handoff README §9 | product requests an A/B |

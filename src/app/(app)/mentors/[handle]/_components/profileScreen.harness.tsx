@@ -9,6 +9,7 @@ import { similarMentors } from '@/components/organisms/SimilarMentorsCard/simila
 import type { MentorReviewsResult } from '@/lib/api/data/reviews';
 import type { MentorDefaults } from '@/lib/api/data/sessionTypes';
 import type {
+  Mentor,
   MentorProfile,
   MyReview,
   Remote,
@@ -75,6 +76,7 @@ export const h = {
   },
   // The Similar mentors card's list.
   similarRemote: remote(similarMentors) as Remote<typeof similarMentors>,
+  freeSoonRemote: remote(similarMentors.map((s) => s.mentor)) as Remote<Mentor[]>,
   /** What the mocked Google sign-in start answers. */
   googleOk: true,
   profile: state({}),
@@ -118,6 +120,7 @@ export const replace = vi.fn();
 export const reviewsArgs = vi.fn();
 export const sendReview = vi.fn();
 export const similarArgs = vi.fn();
+export const freeSoonArgs = vi.fn();
 export const sessionTypesArgs = vi.fn();
 export const reviewableArgs = vi.fn();
 export const coverSave = vi.fn();
@@ -290,6 +293,14 @@ const similarMock = () => ({
   useSimilarMentors: (...args: unknown[]) => {
     similarArgs(...args);
     return h.similarRemote;
+  },
+});
+
+const freeSoonMock = () => ({
+  FREE_SOON: { days: 7, shown: 4 },
+  useMentorsFreeSoon: (...args: unknown[]) => {
+    freeSoonArgs(...args);
+    return h.freeSoonRemote;
   },
 });
 
@@ -522,6 +533,7 @@ export const mocks = {
   reviews: reviewsMock,
   reviewWrite: reviewWriteMock,
   similar: similarMock,
+  freeSoon: freeSoonMock,
   auth: authMock,
   profile: profileMock,
   freeze: freezeMock,
@@ -550,6 +562,13 @@ beforeEach(() => {
   reviewsArgs.mockReset();
   h.similarRemote = { data: similarMentors, isLoading: false, error: null, retry: vi.fn() };
   similarArgs.mockReset();
+  h.freeSoonRemote = {
+    data: similarMentors.map((s) => s.mentor),
+    isLoading: false,
+    error: null,
+    retry: vi.fn(),
+  };
+  freeSoonArgs.mockReset();
   h.googleOk = true;
   startGoogle.mockClear();
   h.myReviewRemote = remote(null);

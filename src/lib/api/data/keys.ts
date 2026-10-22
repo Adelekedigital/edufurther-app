@@ -59,6 +59,7 @@ export const keys = {
     relationship: (mentorId: string, who: string) =>
       ['mentors', 'relationship', mentorId, who] as const,
     similar: (handle: string, who: string) => ['mentors', 'similar', handle, who] as const,
+    freeSoon: (days: number, who: string) => ['mentors', 'freeSoon', days, who] as const,
     /** Prefixes, for invalidating every variant after a review is sent. */
     reviewsAll: ['mentors', 'reviews'] as const,
     profilesAll: ['mentors', 'profile'] as const,

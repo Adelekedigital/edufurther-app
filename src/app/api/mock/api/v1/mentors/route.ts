@@ -17,6 +17,9 @@ export async function GET(req: NextRequest) {
   const offerings = sp.getAll('offering').filter(Boolean);
   const limit = Number(sp.get('limit') ?? 10);
   const cursor = sp.get('cursor');
+  // Backend #521: only mentors whose stored time is open and inside N days.
+  const withinRaw = sp.get('available_within_days');
+  const within = withinRaw === null ? null : Number(withinRaw);
 
   const invalid = (detail: string) => problem(422, { title: 'Unprocessable Content', detail });
 
@@ -24,10 +27,17 @@ export async function GET(req: NextRequest) {
   if (offerings.some((o) => !OFFERINGS.some((x) => x.code === o)))
     return invalid('Unknown offering.');
   if (!Number.isInteger(limit) || limit < 1 || limit > 50) return invalid('limit must be 1..50.');
+  if (within !== null && (!Number.isInteger(within) || within < 1 || within > 14))
+    return invalid('available_within_days must be 1..14.');
   const start = cursor === null ? 0 : Number(cursor.replace(/^c/, ''));
   if (cursor !== null && (!/^c\d+$/.test(cursor) || Number.isNaN(start)))
     return invalid('Bad cursor.');
 
+  const now = Date.now();
+  const card = (m: (typeof MENTORS)[number]) => ({
+    next_available_at: m.taking_bookings === false ? null : mockNextAvailableAt(m.id, now),
+    next_available_state: m.taking_bookings === false ? 'none' : mockAvailabilityState(m.id),
+  });
   const rows = MENTORS.filter((m) => {
     const hay = [m.first_name, m.last_name, m.institution, m.study_course, m.degree]
       .join(' ')
@@ -35,18 +45,21 @@ export async function GET(req: NextRequest) {
     return (
       (!q || hay.includes(q)) &&
       (offerings.length === 0 ||
-        offerings.some((o) => (m.offerings ?? []).some((x) => x.slug === o)))
+        offerings.some((o) => (m.offerings ?? []).some((x) => x.slug === o))) &&
+      (within === null ||
+        ((c) =>
+          c.next_available_state === 'open' &&
+          !!c.next_available_at &&
+          Date.parse(c.next_available_at) < now + within * 86_400_000)(card(m)))
     );
   });
   // next_available_at / next_available_state: one source with the mocked slots
   // (lib/api/mock/availability.ts), so the modal's first time equals the card's.
-  const now = Date.now();
   const page = rows.slice(start, start + limit).map((m) => ({
     ...m,
     ...mockCountries(m.id),
     // Not taking bookings: no times, as the backend sends (#301).
-    next_available_at: m.taking_bookings === false ? null : mockNextAvailableAt(m.id, now),
-    next_available_state: m.taking_bookings === false ? 'none' : mockAvailabilityState(m.id),
+    ...card(m),
   }));
   const next = start + limit < rows.length ? `c${start + limit}` : null;
 
