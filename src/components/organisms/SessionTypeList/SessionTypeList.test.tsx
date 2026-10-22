@@ -56,7 +56,7 @@ describe('SessionTypeList', () => {
     );
     const cards = screen.getAllByRole('listitem');
     expect(cards[0]).toHaveTextContent('60 minflagDraftinghow_to_regRequest to book');
-    expect(cards[1]).toHaveTextContent('45 minboltInstant booking: confirmed right away');
+    expect(cards[1]).toHaveTextContent('45 minboltInstant booking');
   });
 
   it('a card whose booking mode isn’t known yet shows no label', () => {

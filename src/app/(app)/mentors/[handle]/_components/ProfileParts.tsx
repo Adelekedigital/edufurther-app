@@ -206,16 +206,23 @@ const notTakingBody = (first: string, onSessionsTab: boolean) =>
 
 /**
  * Where Book would be, for a mentor who isn't taking bookings (Mentor
- * Profile.dc.html `notTakingSide`): a quiet note in the aside.
+ * Profile.dc.html `notTakingSide`): a quiet note in the aside. It points to
+ * similar mentors only while that card is there to point at.
  */
-export function NotTakingNote({ firstName }: { firstName: string }) {
+export function NotTakingNote({
+  firstName,
+  similarBelow,
+}: {
+  firstName: string;
+  similarBelow: boolean;
+}) {
   return (
     <section className={styles.notTaking} aria-labelledby="not-taking-h">
       <h2 id="not-taking-h" className={styles.notTakingTitle}>
         <Icon name="event_busy" size={20} className={styles.notTakingIcon} />
         {NOT_TAKING_TITLE}
       </h2>
-      <p className={styles.notTakingBody}>{notTakingBody(firstName, false)}</p>
+      <p className={styles.notTakingBody}>{notTakingBody(firstName, !similarBelow)}</p>
     </section>
   );
 }

@@ -30,8 +30,9 @@ describe('BookSessionCard', () => {
 
   it('one offering: the meta says how booking works, not the venue', () => {
     render(<BookSessionCard {...props} sessionTypes={[sessionTypes[0]!]} />);
-    expect(screen.getByText('Request to book')).toBeInTheDocument();
-    expect(screen.getByText(': the mentor approves each booking')).toHaveClass('sr-only');
+    expect(
+      screen.getByRole('img', { name: 'Request to book: the mentor approves each booking' }),
+    ).toBeInTheDocument();
     expect(screen.queryByText('Google Meet')).not.toBeInTheDocument();
     expect(screen.queryByText('videocam')).not.toBeInTheDocument();
   });

@@ -692,7 +692,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                     {!isPhone && firstMentees}
                     {asMentee &&
                       (notTaking ? (
-                        <NotTakingNote firstName={p.mentor.firstName} />
+                        <NotTakingNote firstName={p.mentor.firstName} similarBelow={similarShown} />
                       ) : (
                         <div id="profile-book" className={styles.scrollTarget}>
                           <BookSessionCard

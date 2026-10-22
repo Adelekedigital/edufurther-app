@@ -11,18 +11,22 @@ type BookingModeLabelProps = {
 
 /**
  * "Request to book" / "Instant booking" (Mentor Profile.dc.html `cfLabel`), on
- * every session card. Its size comes from the line it sits in. The meaning is
- * visually hidden text, not the design's `aria-label`: a label on a plain span
- * isn't announced.
+ * every session card. Its size comes from the line it sits in. Read as one
+ * whole string (the design's `cfAria`): `role="img"` so the `aria-label` is
+ * announced, never a visible part plus an `.sr-only` tail that can trim itself
+ * apart (failure mode #51), as the review stars do.
  */
 export function BookingModeLabel({ requiresConfirmation, className }: BookingModeLabelProps) {
   const mode = requiresConfirmation ? 'request' : 'instant';
   const copy = BOOKING_MODE[mode];
   return (
-    <span className={cx(styles.label, styles[mode], className)}>
+    <span
+      role="img"
+      aria-label={`${copy.label}: ${copy.detail}`}
+      className={cx(styles.label, styles[mode], className)}
+    >
       <Icon name={mode === 'instant' ? 'bolt' : 'how_to_reg'} size={14} />
-      {copy.label}
-      <span className="sr-only">: {copy.detail}</span>
+      <span aria-hidden="true">{copy.label}</span>
     </span>
   );
 }

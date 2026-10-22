@@ -3,10 +3,17 @@ import { NotTakingEmpty, NotTakingNote, ProfileSkeleton } from './ProfileParts';
 
 describe('ProfileParts', () => {
   it('the aside note points to similar mentors below (Mentor Profile.dc.html `notTakingBody`)', () => {
-    render(<NotTakingNote firstName="Aisha" />);
+    render(<NotTakingNote firstName="Aisha" similarBelow />);
     expect(screen.getByRole('region', { name: 'Not taking bookings' })).toHaveTextContent(
       'Aisha isn’t taking bookings right now. Explore similar mentors below.',
     );
+  });
+
+  it('…but only while that card is there to point at (review of PR 374)', () => {
+    render(<NotTakingNote firstName="Aisha" similarBelow={false} />);
+    const note = screen.getByRole('region', { name: 'Not taking bookings' });
+    expect(note).toHaveTextContent('Aisha isn’t taking bookings right now.');
+    expect(note).not.toHaveTextContent('below');
   });
 
   it('the Sessions tab says it without pointing anywhere', () => {

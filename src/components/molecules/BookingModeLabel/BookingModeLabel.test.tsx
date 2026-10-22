@@ -2,18 +2,20 @@ import { render, screen } from '@testing-library/react';
 import { BookingModeLabel } from './BookingModeLabel';
 
 describe('BookingModeLabel', () => {
-  it('a request reads "Request to book" and says the mentor approves', () => {
+  // The computed name, not the markup (failure mode #51): one whole string.
+  it('a request reads "Request to book: the mentor approves each booking"', () => {
     const { container } = render(<BookingModeLabel requiresConfirmation />);
-    expect(container.textContent).toBe(
-      'how_to_regRequest to book: the mentor approves each booking',
-    );
-    expect(screen.getByText('how_to_reg')).toHaveAttribute('aria-hidden', 'true');
-    expect(screen.getByText(': the mentor approves each booking')).toHaveClass('sr-only');
+    expect(
+      screen.getByRole('img', { name: 'Request to book: the mentor approves each booking' }),
+    ).toBeInTheDocument();
+    expect(container.textContent).toBe('how_to_regRequest to book');
   });
 
-  it('an instant type reads "Instant booking", confirmed right away', () => {
+  it('an instant type reads "Instant booking: confirmed right away"', () => {
     const { container } = render(<BookingModeLabel requiresConfirmation={false} />);
-    expect(container.textContent).toBe('boltInstant booking: confirmed right away');
-    expect(screen.getByText('bolt')).toHaveAttribute('aria-hidden', 'true');
+    expect(
+      screen.getByRole('img', { name: 'Instant booking: confirmed right away' }),
+    ).toBeInTheDocument();
+    expect(container.textContent).toBe('boltInstant booking');
   });
 });
