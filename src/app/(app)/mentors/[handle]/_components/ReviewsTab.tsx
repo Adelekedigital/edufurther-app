@@ -3,7 +3,9 @@ import { Button } from '@/components/atoms/Button/Button';
 import { ReviewNote } from '@/components/molecules/ReviewNote/ReviewNote';
 import { ReviewsList } from '@/components/organisms/ReviewsList/ReviewsList';
 import { ReviewsSummary } from '@/components/organisms/ReviewsSummary/ReviewsSummary';
+import { useGoogleSignUp } from '@/app/_shell/useGoogleSignUp';
 import { REVIEW_PAGE_SIZE } from '@/lib/api/data/reviews';
+import { newestFirst } from '@/lib/utils/reviewable';
 import type { MentorProfile } from '@/types/mentor';
 import type { useProfileReviewing } from './useProfileReviewing';
 
@@ -19,6 +21,7 @@ export type ReviewsTabData = Pick<
   | 'mineOpen'
   | 'mineUntil'
   | 'canWrite'
+  | 'reviewable'
   | 'open'
 >;
 
@@ -28,6 +31,8 @@ type ReviewsTabProps = {
   /** The "no session yet" note may offer Book (it scrolls to the booking card). */
   offerBook: boolean;
   onBook: () => void;
+  /** The profile's zone: the due note's session day is said in it. */
+  timeZone: string;
 };
 
 /**
@@ -35,8 +40,19 @@ type ReviewsTabProps = {
  * viewer's note (your review is live / after your first session / how was
  * it?), then the list, with the guest gate.
  */
-export function ReviewsTab({ profile: p, reviews: r, offerBook, onBook }: ReviewsTabProps) {
+export function ReviewsTab({
+  profile: p,
+  reviews: r,
+  offerBook,
+  onBook,
+  timeZone,
+}: ReviewsTabProps) {
+  // Our own mapped path (/mentors/{encoded handle}); the callback re-checks it
+  // with safeReturnTo, so a sign-in only ever comes back on this site.
   const reviewsHref = `${p.mentor.profileHref}?tab=reviews`;
+  const google = useGoogleSignUp();
+  // The session a new review starts on: ReviewFlow's pick, the newest.
+  const dueSession = newestFirst(r.reviewable.data ?? [])[0] ?? null;
   return (
     <>
       <ReviewsSummary summary={p.reviews} firstName={p.mentor.firstName} />
@@ -86,12 +102,12 @@ export function ReviewsTab({ profile: p, reviews: r, offerBook, onBook }: Review
         <ReviewNote
           tone="info"
           icon="star"
-          title={`How was your session with ${p.mentor.firstName}?`}
-          body="Your review helps other mentees choose, and takes about a minute."
+          title={REVIEW_COPY.dueTitle(p.mentor.firstName)}
+          body={REVIEW_COPY.dueBody(dueSession, timeZone)}
           action={
             r.canWrite ? (
               <Button size="medium" onClick={() => r.open('new')}>
-                Write a review
+                {REVIEW_COPY.dueAction}
               </Button>
             ) : undefined
           }
@@ -106,13 +122,9 @@ export function ReviewsTab({ profile: p, reviews: r, offerBook, onBook }: Review
         isLoadingMore={r.list.isLoadingMore}
         loadMoreError={r.list.loadMoreError}
         onLoadMore={r.list.loadMore}
-        // What the next click loads: at most a page, from the unfiltered total
-        // ("Show 5 more", not "Show 15 more").
-        remaining={
-          r.filter === null
-            ? Math.min(p.reviews.count - r.list.reviews.length, REVIEW_PAGE_SIZE)
-            : null
-        }
+        // The unfiltered total; a filter's own total isn't known.
+        total={r.filter === null ? p.reviews.count : null}
+        pageSize={REVIEW_PAGE_SIZE}
         filters={p.sessionTypes.map((t) => ({ id: t.id, label: t.name }))}
         filter={r.filter}
         onFilter={r.setFilter}
@@ -132,6 +144,9 @@ export function ReviewsTab({ profile: p, reviews: r, offerBook, onBook }: Review
                 total: r.filter === null ? p.reviews.count : r.list.reviews.length,
                 signupHref: `/signup?next=${encodeURIComponent(reviewsHref)}`,
                 loginHref: `/login?next=${encodeURIComponent(reviewsHref)}`,
+                onGoogle: () => google.start(reviewsHref),
+                googleBusy: google.busy,
+                googleFailed: google.failed,
               }
             : null
         }

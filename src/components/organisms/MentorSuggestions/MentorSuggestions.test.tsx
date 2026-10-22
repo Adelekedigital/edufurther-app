@@ -78,7 +78,8 @@ describe('MentorSuggestions', () => {
     expect(section).toHaveAttribute('aria-busy', 'true');
     expect(screen.queryAllByRole('article')).toHaveLength(0);
     expect(section).not.toHaveTextContent(props.subtitle);
-    expect(container.querySelectorAll('li')).toHaveLength(3);
+    // The design draws four.
+    expect(container.querySelectorAll('li')).toHaveLength(4);
   });
 
   it('renders nothing when there is nobody to suggest', () => {

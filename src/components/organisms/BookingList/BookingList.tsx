@@ -1,17 +1,6 @@
 import type { ReactNode } from 'react';
-import { Button } from '@/components/atoms/Button/Button';
+import { LoadMore, type LoadMoreProps } from '@/components/molecules/LoadMore/LoadMore';
 import styles from './BookingList.module.css';
-
-type MoreProps = {
-  /** "Show 5 more". */
-  label: string;
-  /** "Showing 5 of 13" — or, where no total is known, how many are shown. */
-  caption: string;
-  onClick: () => void;
-  busy?: boolean;
-  /** The last attempt failed. Said here, under the button that was pressed. */
-  error?: string;
-};
 
 type BookingListProps = {
   /** Names the list for assistive technology, e.g. "Later sessions". */
@@ -21,7 +10,8 @@ type BookingListProps = {
   /** A line of context above the box (the Pending tab's explanation). */
   intro?: ReactNode;
   children: ReactNode;
-  more?: MoreProps;
+  /** The shared "Show more" footer, under the box. */
+  more?: Omit<LoadMoreProps, 'className' | 'captionFirst'>;
 };
 
 /**
@@ -38,19 +28,7 @@ export function BookingList({ label, heading, intro, children, more }: BookingLi
       {heading && <h2 className={styles.heading}>{heading}</h2>}
       {intro && <p className={styles.intro}>{intro}</p>}
       <div className={styles.box}>{children}</div>
-      {more && (
-        <div className={styles.more}>
-          <Button variant="secondary-outlined" size="medium" onClick={more.onClick} busy={more.busy}>
-            {more.label}
-          </Button>
-          <span className={styles.count}>{more.caption}</span>
-          {more.error && (
-            <span role="alert" className={styles.error}>
-              {more.error}
-            </span>
-          )}
-        </div>
-      )}
+      {more && <LoadMore {...more} className={styles.more} />}
     </section>
   );
 }

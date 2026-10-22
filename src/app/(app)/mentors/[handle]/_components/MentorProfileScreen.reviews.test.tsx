@@ -10,6 +10,7 @@ import {
   reviewsArgs,
   reviewsState,
   sendReview,
+  startGoogle,
   state,
 } from './profileScreen.harness';
 import { MentorProfileScreen } from './MentorProfileScreen';
@@ -27,6 +28,10 @@ vi.mock('@/lib/api/data/reviews', async () =>
 vi.mock('@/lib/api/data/reviewWrite', async () =>
   (await import('./profileScreen.harness')).mocks.reviewWrite(),
 );
+vi.mock('@/lib/api/data/auth', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  ...(await import('./profileScreen.harness')).mocks.auth(),
+}));
 vi.mock('@/lib/api/data/similar', async () =>
   (await import('./profileScreen.harness')).mocks.similar(),
 );
@@ -98,6 +103,7 @@ describe('MentorProfileScreen — Reviews tab', () => {
     expect(screen.getAllByRole('article')).toHaveLength(5);
     // 7 reviews, 5 shown.
     expect(screen.getByRole('button', { name: 'Show 2 more reviews' })).toBeInTheDocument();
+    expect(screen.getByText('Showing 5 of 7')).toBeInTheDocument();
   });
 
   it('"Show N more" names what one click loads: at most a page', () => {
@@ -162,6 +168,40 @@ describe('MentorProfileScreen — Reviews tab', () => {
     expect(within(gate).getByRole('link', { name: 'Log in' })).toHaveAttribute(
       'href',
       '/login?next=%2Fmentors%2Fgbenga%3Ftab%3Dreviews',
+    );
+  });
+
+  it('a guest can sign up with Google from the gate, and comes back to these reviews', async () => {
+    const user = userEvent.setup();
+    h.isGuest = true;
+    h.search = new URLSearchParams('tab=reviews');
+    h.profile = state({ data: fullProfile });
+    h.reviewsRemote = reviewsState({ reviews: [{ ...reviews[0]!, text: '' }] });
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: 'Continue with Google' }));
+    // A same-site path: the callback re-checks it (safeReturnTo).
+    expect(startGoogle).toHaveBeenCalledWith('/mentors/gbenga?tab=reviews', 'signup', 'mentee');
+    // Success leaves for Google, so the button stays busy.
+    expect(await screen.findByRole('button', { name: 'Taking you to Google…' })).toHaveAttribute(
+      'aria-busy',
+      'true',
+    );
+  });
+
+  it('a Google sign-in that fails to start says so in the gate, and can be tried again', async () => {
+    const user = userEvent.setup();
+    h.isGuest = true;
+    h.googleOk = false;
+    h.search = new URLSearchParams('tab=reviews');
+    h.profile = state({ data: fullProfile });
+    h.reviewsRemote = reviewsState({ reviews: [{ ...reviews[0]!, text: '' }] });
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: 'Continue with Google' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Google sign-in didn’t finish. Try again, or use your email.',
+    );
+    expect(screen.getByRole('button', { name: 'Continue with Google' })).not.toHaveAttribute(
+      'aria-busy',
     );
   });
 
@@ -286,6 +326,32 @@ describe('MentorProfileScreen — writing a review', () => {
       });
     },
   );
+
+  it('the due note names the newest session and its type, in the profile’s zone', () => {
+    due();
+    // Out of order on purpose: the note picks as ReviewFlow does, by time.
+    h.reviewableRemote = remote([
+      { id: 's2', startsAt: '2026-09-10T15:00:00Z', typeName: 'CV review' },
+      { id: 's1', startsAt: '2026-09-19T15:00:00Z', typeName: 'SOP draft review' },
+    ]);
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(
+      screen.getByText(
+        'Your review on Sep 19 (SOP draft review) helps other mentees choose, and takes about a minute.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('the due note drops the brackets for a session with no type name', () => {
+    due();
+    h.reviewableRemote = remote([{ id: 's1', startsAt: '2026-09-19T15:00:00Z', typeName: null }]);
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(
+      screen.getByText(
+        'Your review on Sep 19 helps other mentees choose, and takes about a minute.',
+      ),
+    ).toBeInTheDocument();
+  });
 
   it('no "Write a review" when there is no session left to review', () => {
     due();

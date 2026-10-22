@@ -11,7 +11,7 @@ type MentorSuggestionsProps = {
   /** Null while loading or when there's nothing to show. */
   mentors: Mentor[] | null;
   loading: boolean;
-  /** How many skeleton cards to hold the place with. */
+  /** How many skeleton cards to hold the place with (the design draws four). */
   expected?: number;
   exploreHref: string;
   onBook: (mentor: Mentor) => void;
@@ -32,7 +32,7 @@ export function MentorSuggestions({
   subtitle,
   mentors,
   loading,
-  expected = 3,
+  expected = 4,
   exploreHref,
   onBook,
   timeZone,
@@ -55,7 +55,8 @@ export function MentorSuggestions({
           </h2>
           {!loading && <p className={styles.sub}>{subtitle}</p>}
         </div>
-        <ButtonLink href={exploreHref} size="large" variant="secondary-outlined">
+        {/* A section's action (CTA hierarchy medium; the design's 40px). */}
+        <ButtonLink href={exploreHref} size="medium" variant="secondary-outlined">
           Explore all mentors
         </ButtonLink>
       </div>

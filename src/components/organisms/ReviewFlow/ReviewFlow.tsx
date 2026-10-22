@@ -12,7 +12,8 @@ import { ChoiceScale, type ScaleOption } from '@/components/molecules/ChoiceScal
 import { SessionPickRows } from '@/components/molecules/SessionPickRows/SessionPickRows';
 import { StarRating } from '@/components/molecules/StarRating/StarRating';
 import { cx } from '@/lib/utils/cx';
-import { formatTime } from '@/lib/utils/format';
+import { formatShortDate, formatTime } from '@/lib/utils/format';
+import { newestFirst } from '@/lib/utils/reviewable';
 import type { AttributeScore, ReviewAnswers, ReviewableSession } from '@/types/mentor';
 import styles from './ReviewFlow.module.css';
 
@@ -82,15 +83,8 @@ const RECOMMEND: ScaleOption<number>[] = Array.from({ length: 10 }, (_, i) => ({
   label: String(i + 1),
 }));
 
-/** "Sep 19" in the viewer's zone. */
-function shortDay(iso: string, timeZone: string) {
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone }).format(
-    new Date(iso),
-  );
-}
-
 function sessionText(s: { startsAt: string; typeName: string | null }, timeZone: string) {
-  return [s.typeName, shortDay(s.startsAt, timeZone)].filter(Boolean).join(' · ');
+  return [s.typeName, formatShortDate(s.startsAt, timeZone)].filter(Boolean).join(' · ');
 }
 
 /**
@@ -104,14 +98,12 @@ export function ReviewFlow(p: ReviewFlowProps) {
   const [a, setA] = useState<ReviewAnswers>({ ...EMPTY, ...p.initial });
   // Newest first, whatever order they come in; the newest is picked to start.
   // By time, not text: offsets differ (review of PR 102).
-  const newestFirst = [...p.sessions].sort(
-    (a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt),
-  );
-  const [chosen, setSessionId] = useState<string | null>(newestFirst[0]?.id ?? null);
+  const newest = newestFirst(p.sessions);
+  const [chosen, setSessionId] = useState<string | null>(newest[0]?.id ?? null);
   // A pick that has left the list (reviewed in another tab, then refetched)
   // falls back to the newest still there, so what's shown is what's sent
   // (review of PR 112).
-  const sessionId = p.sessions.some((s) => s.id === chosen) ? chosen : (newestFirst[0]?.id ?? null);
+  const sessionId = p.sessions.some((s) => s.id === chosen) ? chosen : (newest[0]?.id ?? null);
   const showPicker = p.mode === 'new' && p.sessions.length > 1;
   // ReviewModal.dc.html `compact`: one line with "Change", which opens the rows.
   const [pickOpen, setPickOpen] = useState(false);
@@ -317,10 +309,10 @@ export function ReviewFlow(p: ReviewFlowProps) {
               >
                 <SessionPickRows
                   label="Which session is this about?"
-                  rows={newestFirst.map((s) => ({
+                  rows={newest.map((s) => ({
                     id: s.id,
                     type: s.typeName ?? 'Session',
-                    date: shortDay(s.startsAt, p.timeZone),
+                    date: formatShortDate(s.startsAt, p.timeZone),
                   }))}
                   value={sessionId}
                   onChange={setSessionId}

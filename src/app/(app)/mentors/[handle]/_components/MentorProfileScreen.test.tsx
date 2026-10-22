@@ -116,13 +116,41 @@ describe('MentorProfileScreen — the four states', () => {
     expect(screen.queryByRole('link', { name: 'Explore mentors' })).toBeNull();
   });
 
-  it('while the suggestions load, their place is held', () => {
+  it('the "isn’t available" page shows four of the five, the aside three (design)', () => {
+    const five = [
+      ...similarMentors,
+      ...[4, 5].map((n) => ({
+        ...similarMentors[0]!,
+        mentor: {
+          ...similarMentors[0]!.mentor,
+          id: `s${n}`,
+          name: `Extra Mentor${n}`,
+          firstName: `Extra${n}`,
+          profileHref: `/mentors/extra-${n}`,
+        },
+      })),
+    ];
+    h.similarRemote = { data: five, isLoading: false, error: null, retry: vi.fn() };
+    h.profile = state({ notFound: true });
+    const { unmount } = render(<MentorProfileScreen handle="hidden-mentor" />);
+    const section = screen.getByRole('region', { name: 'Mentors with similar expertise' });
+    expect(within(section).getAllByRole('article')).toHaveLength(4);
+    unmount();
+
+    h.profile = state({ data: fullProfile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    const aside = screen.getByRole('region', { name: 'Similar mentors' });
+    expect(within(aside).getAllByRole('listitem')).toHaveLength(3);
+  });
+
+  it('while the suggestions load, four cards hold their place', () => {
     h.profile = state({ notFound: true });
     h.similarRemote = { data: null, isLoading: true, error: null, retry: vi.fn() };
     render(<MentorProfileScreen handle="hidden-mentor" />);
     const section = screen.getByRole('region', { name: 'Mentors with similar expertise' });
     expect(section).toHaveAttribute('aria-busy', 'true');
     expect(within(section).queryAllByRole('article')).toHaveLength(0);
+    expect(within(section).getAllByRole('listitem')).toHaveLength(4);
   });
 
   it('a suggested mentor books in the same booking modal, for that mentor (review of #69)', async () => {

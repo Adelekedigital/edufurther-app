@@ -10,7 +10,7 @@ type Page = components['schemas']['Page_SimilarMentorRead_'];
  * MOCK of GET /api/v1/mentors/{handle}/similar → Page[SimilarMentorRead]:
  * other mentors sharing an offering, each with the one they share. Every
  * seventh mentor has none, so the hidden card has data to render. Like the
- * backend: never a 404 (an unknown handle is an empty list), at most three.
+ * backend: never a 404 (an unknown handle is an empty list), at most five.
  * `hidden-mentor` stands for a mentor whose profile 404s (pending, unlisted or
  * unbookable) but who shares offerings, for the "isn't available" page.
  * ENABLE_MOCK_API=1 only.
@@ -45,7 +45,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ handle: string
       const shared = (m.offerings ?? []).find((o) => mine.has(o.slug));
       return shared ? [{ m, shared }] : [];
     })
-    .slice(0, 3)
+    .slice(0, 5)
     .map(({ m, shared }) => ({
       ...m,
       // Null whenever the mentor isn't taking bookings (backend #301).

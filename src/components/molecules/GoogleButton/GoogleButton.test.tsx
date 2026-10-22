@@ -11,6 +11,15 @@ describe('GoogleButton', () => {
     expect(button).toHaveAttribute('type', 'button');
   });
 
+  it('medium sits beside a medium Button; large is the default', () => {
+    const { rerender } = render(<GoogleButton onClick={() => {}} />);
+    const large = screen.getByRole('button').className;
+    rerender(<GoogleButton onClick={() => {}} size="medium" />);
+    const medium = screen.getByRole('button').className;
+    expect(medium).not.toBe(large);
+    expect(medium).toContain(large);
+  });
+
   it('starts sign-in on a press', async () => {
     const onClick = vi.fn();
     render(<GoogleButton onClick={onClick} />);

@@ -10,6 +10,7 @@ import type {
   ReviewAnswers,
   ReviewableSession,
 } from '@/types/mentor';
+import { newestFirst } from '@/lib/utils/reviewable';
 import { ApiError, apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
@@ -134,13 +135,13 @@ export function useReviewableSessions(
         signal,
       });
       if (!data) throw apiError(response.status, error);
-      return data.data
-        .map((s) => ({
+      return newestFirst(
+        data.data.map((s) => ({
           id: s.session_id,
           startsAt: s.starts_at,
           typeName: s.session_type_name ?? null,
-        }))
-        .sort((a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt));
+        })),
+      );
     },
     staleTime: 60_000,
     retry: false,

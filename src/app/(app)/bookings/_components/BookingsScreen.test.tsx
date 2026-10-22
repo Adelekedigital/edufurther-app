@@ -384,7 +384,7 @@ describe('a list already on screen survives a failed refetch', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('a failed "Show more" is said under the button', () => {
+  it('a failed "Show more" is said where the click was, with Try again (LoadMore)', () => {
     h.tab = 'history';
     h.history = hist({
       bookings: Array.from({ length: 6 }, (_, i) => booking({ id: `h${i}`, status: 'completed' })),
@@ -392,6 +392,7 @@ describe('a list already on screen survives a failed refetch', () => {
     });
     render(<BookingsScreen />);
     expect(screen.getByRole('alert')).toHaveTextContent('We couldn’t load more. Try again.');
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 });
 

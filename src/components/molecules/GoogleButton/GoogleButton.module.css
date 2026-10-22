@@ -20,6 +20,27 @@
   transition: background-color var(--duration-fast) var(--ease-standard);
 }
 
+/* Beside a medium Button: its 40px height and 20px side padding, its own width. */
+.medium {
+  width: auto;
+  height: var(--button-h-medium);
+  padding: 0 var(--space-5);
+}
+
+/* Drawn at 40px; an invisible 44px tap area around it on phones, as the
+   Button atom's medium size has (design rule 5). */
+@media (max-width: 767px) {
+  .medium::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, var(--touch-target-min));
+    height: var(--touch-target-min);
+    transform: translate(-50%, -50%);
+  }
+}
+
 .button:hover:not([aria-disabled='true']):not([aria-busy='true']) {
   background: var(--ink-50);
 }

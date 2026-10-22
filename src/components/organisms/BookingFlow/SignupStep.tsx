@@ -7,6 +7,7 @@ import { LegalLine } from '@/components/molecules/LegalLine/LegalLine';
 import { CodeStep } from '@/components/organisms/SignInForm';
 import { FieldError } from '@/components/molecules/FieldError/FieldError';
 import { FullNameField } from '@/components/molecules/FullNameField/FullNameField';
+import { GOOGLE_SIGN_IN_FAILED } from '@/lib/copy/auth';
 import { supportMailto } from '@/lib/utils/mailto';
 import { isEmail } from '@/lib/utils/emailTypo';
 import { checkFullName } from '@/lib/utils/name';
@@ -16,7 +17,7 @@ import styles from './SignupStep.module.css';
 const ERROR: Record<NonNullable<GuestSignIn['error']>, string> = {
   sendFailed: 'We couldn’t send your code. Check your connection and try again.',
   sendUnavailable: 'We couldn’t send your code right now. Try again in a few minutes.',
-  googleError: 'Google sign-in didn’t finish. Try again, or use your email.',
+  googleError: GOOGLE_SIGN_IN_FAILED,
 };
 
 type Props = {

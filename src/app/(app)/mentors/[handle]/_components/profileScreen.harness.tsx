@@ -74,6 +74,8 @@ export const h = {
   },
   // The Similar mentors card's list.
   similarRemote: remote(similarMentors) as Remote<typeof similarMentors>,
+  /** What the mocked Google sign-in start answers. */
+  googleOk: true,
   profile: state({}),
   // The owner's own session types (Sessions tab) and the quick edit.
   ownTypes: idle as Remote<OwnSessionType[]>,
@@ -281,6 +283,7 @@ const reviewWriteMock = () => ({
 });
 
 const similarMock = () => ({
+  SIMILAR_SHOWN: { aside: 3, missing: 4 },
   useSimilarMentors: (...args: unknown[]) => {
     similarArgs(...args);
     return h.similarRemote;
@@ -504,6 +507,10 @@ const profileEntriesMock = async () => ({
   }),
 });
 
+/** Google sign-in (the review gate): records where it would come back to. */
+export const startGoogle = vi.fn(async (..._args: unknown[]) => ({ ok: h.googleOk }));
+const authMock = () => ({ startGoogleSignIn: startGoogle });
+
 /** The mocked modules, by name; each test file registers them with vi.mock. */
 export const mocks = {
   navigation: navigationMock,
@@ -511,6 +518,7 @@ export const mocks = {
   reviews: reviewsMock,
   reviewWrite: reviewWriteMock,
   similar: similarMock,
+  auth: authMock,
   profile: profileMock,
   freeze: freezeMock,
   cover: coverMock,
@@ -538,6 +546,8 @@ beforeEach(() => {
   reviewsArgs.mockReset();
   h.similarRemote = { data: similarMentors, isLoading: false, error: null, retry: vi.fn() };
   similarArgs.mockReset();
+  h.googleOk = true;
+  startGoogle.mockClear();
   h.myReviewRemote = remote(null);
   h.authoredRemote = {
     ...remote<MyReview>(null as unknown as MyReview),

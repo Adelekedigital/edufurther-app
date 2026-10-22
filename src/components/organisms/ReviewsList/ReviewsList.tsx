@@ -1,14 +1,30 @@
 import Link from 'next/link';
-import { Button, ButtonLink } from '@/components/atoms/Button/Button';
+import { ButtonLink } from '@/components/atoms/Button/Button';
 import { Chip } from '@/components/atoms/Chip/Chip';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
+import { FieldError } from '@/components/molecules/FieldError/FieldError';
+import { GoogleButton } from '@/components/molecules/GoogleButton/GoogleButton';
+import { LoadMore } from '@/components/molecules/LoadMore/LoadMore';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { ReviewItem } from '@/components/molecules/ReviewItem/ReviewItem';
+import { GOOGLE_SIGN_IN_FAILED } from '@/lib/copy/auth';
+import { LOAD_MORE_COPY, showMoreLabel, showingCaption } from '@/lib/copy/loadMore';
 import type { AppError, Review } from '@/types/mentor';
 import styles from './ReviewsList.module.css';
 
-type Gate = { firstName: string; total: number; signupHref: string; loginHref: string };
+type Gate = {
+  firstName: string;
+  total: number;
+  signupHref: string;
+  loginHref: string;
+  /** "Continue with Google": the page starts the sign-up and brings them back here. */
+  onGoogle: () => void;
+  /** Held from the press until the browser leaves for Google. */
+  googleBusy: boolean;
+  /** Google sign-in didn't start: said under the buttons. */
+  googleFailed: boolean;
+};
 
 type ReviewsListProps = {
   reviews: Review[];
@@ -19,8 +35,13 @@ type ReviewsListProps = {
   isLoadingMore: boolean;
   loadMoreError: AppError | null;
   onLoadMore: () => void;
-  /** Reviews not shown yet, when known ("Show N more reviews"); null: "Show more reviews". */
-  remaining: number | null;
+  /**
+   * Every review there is, when known (the unfiltered list): "Show 2 more
+   * reviews" and "Showing 5 of 7". Null under a filter: a full page, no caption.
+   */
+  total: number | null;
+  /** How many one click loads. */
+  pageSize: number;
   /** Session types to filter by. Fewer than two: no chips. */
   filters: { id: string; label: string }[];
   /** The chosen session type; null = All. */
@@ -109,22 +130,18 @@ export function ReviewsList(p: ReviewsListProps) {
             />
           ))}
           {!guest && (p.hasMore || p.loadMoreError) && (
-            <div className={styles.more}>
-              {p.loadMoreError && (
-                <span className={styles.moreError} role="alert">
-                  We couldn’t load more reviews.
-                </span>
+            <LoadMore
+              className={styles.more}
+              label={showMoreLabel(
+                p.pageSize,
+                p.total !== null ? p.total - p.reviews.length : null,
+                LOAD_MORE_COPY.reviews.noun,
               )}
-              <Button
-                variant="text"
-                size="medium"
-                className={styles.moreButton}
-                busy={p.isLoadingMore}
-                onClick={p.onLoadMore}
-              >
-                {moreLabel(p)}
-              </Button>
-            </div>
+              caption={p.total !== null ? showingCaption(p.reviews.length, p.total) : undefined}
+              onLoadMore={p.onLoadMore}
+              busy={p.isLoadingMore}
+              error={p.loadMoreError ? LOAD_MORE_COPY.reviews.failed : null}
+            />
           )}
           {p.gate && <GateCard {...p.gate} shown={p.reviews.length} />}
         </div>
@@ -133,14 +150,16 @@ export function ReviewsList(p: ReviewsListProps) {
   );
 }
 
-function moreLabel(p: ReviewsListProps): string {
-  if (p.loadMoreError) return 'Try again';
-  const n = p.remaining;
-  if (n === null || n <= 0) return 'Show more reviews';
-  return `Show ${n} more ${n === 1 ? 'review' : 'reviews'}`;
-}
-
-function GateCard({ firstName, total, shown, signupHref, loginHref }: Gate & { shown: number }) {
+function GateCard({
+  firstName,
+  total,
+  shown,
+  signupHref,
+  loginHref,
+  onGoogle,
+  googleBusy,
+  googleFailed,
+}: Gate & { shown: number }) {
   const more = total - shown;
   return (
     <div className={styles.gateWrap}>
@@ -157,9 +176,13 @@ function GateCard({ firstName, total, shown, signupHref, loginHref }: Gate & { s
         </p>
         {/* No prefetch: the card renders late (after the reviews load) and the
             auth pages aren't worth fetching for every guest who scrolls past. */}
-        <ButtonLink href={signupHref} size="medium" prefetch={false}>
-          Continue with email
-        </ButtonLink>
+        <div className={styles.gateActions}>
+          <ButtonLink href={signupHref} size="medium" prefetch={false}>
+            Continue with email
+          </ButtonLink>
+          <GoogleButton size="medium" busy={googleBusy} onClick={onGoogle} />
+        </div>
+        {googleFailed && <FieldError>{GOOGLE_SIGN_IN_FAILED}</FieldError>}
         <span className={styles.gateLogin}>
           Already have an account?{' '}
           <Link href={loginHref} prefetch={false}>

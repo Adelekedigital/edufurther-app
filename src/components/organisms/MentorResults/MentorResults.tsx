@@ -1,7 +1,8 @@
 import { Button } from '@/components/atoms/Button/Button';
-import { Icon } from '@/components/atoms/Icon/Icon';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
+import { LoadMore } from '@/components/molecules/LoadMore/LoadMore';
 import { Notice } from '@/components/molecules/Notice/Notice';
+import { LOAD_MORE_COPY, showingCaption } from '@/lib/copy/loadMore';
 import type { ReactNode } from 'react';
 import type { AppError, Mentor } from '@/types/mentor';
 import { MentorCard } from '../MentorCard/MentorCard';
@@ -182,36 +183,19 @@ export function MentorResults(p: MentorResultsProps) {
       </div>
 
       <div className={styles.pager} data-pager>
-        {p.loadMoreError ? (
-          <>
-            <span role="alert" className={styles.pagerError}>
-              <Icon name="error" size={18} className={styles.errorIcon} />
-              We couldn’t load more mentors.
-            </span>
-            <Button variant="secondary-outlined" onClick={p.onLoadMore}>
-              Try again
-            </Button>
-          </>
-        ) : p.hasMore ? (
-          <>
-            <span className={styles.shown}>
-              {p.total !== null
-                ? `Showing ${p.mentors.length} of ${p.total} mentors`
-                : `Showing ${p.mentors.length} mentors`}
-            </span>
-            <Button
-              variant="secondary-outlined"
-              onClick={p.onLoadMore}
-              disabled={p.offline}
-              busy={p.isLoadingMore}
-            >
-              {p.isLoadingMore ? 'Loading mentors…' : 'Show more mentors'}
-            </Button>
-          </>
+        {p.loadMoreError || p.hasMore ? (
+          <LoadMore
+            label={LOAD_MORE_COPY.mentors.label}
+            busyLabel={LOAD_MORE_COPY.mentors.busy}
+            caption={showingCaption(p.mentors.length, p.total, 'mentors')}
+            captionFirst
+            onLoadMore={p.onLoadMore}
+            disabled={p.offline}
+            busy={p.isLoadingMore}
+            error={p.loadMoreError ? LOAD_MORE_COPY.mentors.failed : null}
+          />
         ) : (
-          <span className={styles.shown}>
-            That’s everyone for now. Try other topics to see more mentors.
-          </span>
+          <span className={styles.shown}>{LOAD_MORE_COPY.mentors.end}</span>
         )}
       </div>
       {p.interstitial && !inRow && p.interstitial}

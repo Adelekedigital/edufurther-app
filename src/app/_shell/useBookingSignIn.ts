@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation';
 import type { GuestPick, GuestSignIn, GuestStage } from '@/components/organisms/BookingFlow/types';
 import { loadAccount, toAccount } from '@/app/_auth/account';
 import { useEmailCodeAuth } from '@/app/_auth/useEmailCodeAuth';
-import { startGoogleSignIn } from '@/lib/api/data/auth';
 import { useSaveName, zoneToSave } from '@/lib/api/data/signIn';
 import { ONBOARDING_LIVE, newAccountDestination } from '@/lib/config/auth';
 import { rememberSignInMethod } from '@/lib/utils/lastUsed';
 import { useOnline } from '@/lib/utils/useOnline';
 import { profileHandle } from '@/lib/utils/guestBooking';
+import { useGoogleSignUp } from './useGoogleSignUp';
 
 /**
  * The profile's own "reopen the booking" link (useBookLink): Google leaves the
@@ -37,7 +37,7 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
   const saveName = useSaveName();
   const [stage, setStage] = useState<GuestStage>('email');
   const [error, setError] = useState<GuestSignIn['error']>();
-  const [googleBusy, setGoogleBusy] = useState(false);
+  const google = useGoogleSignUp();
   const [fullName, setFullName] = useState('');
   const [nameError, setNameError] = useState<string>();
   const [finishing, setFinishing] = useState(false);
@@ -51,13 +51,6 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
     return () => {
       mounted.current = false;
     };
-  }, []);
-
-  // Back from Google (bfcache restores the busy button): let it be pressed again.
-  useEffect(() => {
-    const clear = () => setGoogleBusy(false);
-    window.addEventListener('pageshow', clear);
-    return () => window.removeEventListener('pageshow', clear);
   }, []);
 
   const auth = useEmailCodeAuth({
@@ -99,7 +92,7 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
     },
     sending: auth.sending,
     error,
-    googleBusy,
+    googleBusy: google.busy,
     onSendCode: () => {
       setError(undefined);
       void auth.send().then((sent) => {
@@ -109,14 +102,8 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
       });
     },
     onGoogle: (pick) => {
-      setGoogleBusy(true);
       setError(undefined);
-      void startGoogleSignIn(bookingReturnPath(profileHref, pick), 'signup', 'mentee').then((r) => {
-        // Success: the browser is already leaving for Google, so stay busy.
-        if (r.ok) return;
-        setGoogleBusy(false);
-        setError('googleError');
-      });
+      google.start(bookingReturnPath(profileHref, pick), () => setError('googleError'));
     },
     code: auth.code,
     onCodeChange: auth.onCodeChange,
