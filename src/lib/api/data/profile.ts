@@ -59,6 +59,10 @@ export function toReviewSummary(r: ReviewSummaryRead | undefined): ReviewSummary
       support: percent(r?.support_rating?.percent),
       practicality: percent(r?.practicality_rating?.percent),
     },
+    // Backend #522: the topic filter chips, each with the total its filter pages through.
+    topics: (r?.review_topics ?? [])
+      .filter((t) => t.slug && t.count > 0)
+      .map((t) => ({ slug: t.slug, name: t.display_name, count: t.count })),
   };
 }
 

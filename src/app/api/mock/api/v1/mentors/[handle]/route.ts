@@ -24,6 +24,7 @@ import {
 import { MOCK_PHOTO_FOCUS, mockPhotoRemoved, mockPhotoUrl } from '@/lib/api/mock/photoStore';
 import { mockText } from '@/lib/api/mock/profileTextStore';
 import { mockOwnSessionTypes } from '@/lib/api/mock/sessionTypes';
+import { mockMentorReviewList } from '@/lib/api/mock/reviewList';
 import { mockReviewSummary } from '@/lib/api/mock/reviews';
 import { ok } from '@/lib/api/mock/respond';
 import { mockLinkedIn, mockLinks } from '@/lib/api/mock/linksStore';
@@ -129,7 +130,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ handle: string 
     // Null until a session has settled (backend); every fourth mentor has none
     // yet, so the track record's "No data yet" tile has data to render.
     attendance_rate: sessions > 0 && i % 4 !== 1 ? 88 : null,
-    reviews: mockReviewSummary(m.id),
+    // Topics counted from the rows the reviews route lists (backend #522).
+    reviews: mockReviewSummary(m.id, mockMentorReviewList(m.id)),
     languages: sparse
       ? []
       : [

@@ -75,5 +75,5 @@ export const OWNER_SUPPORT_SUBJECT = (name: string) =>
 /** The Reviews tab with nothing to list (Mentor Profile.dc.html `emptyText`). */
 export const REVIEWS_EMPTY = {
   all: 'No reviews yet.',
-  filtered: 'No reviews for this session yet.',
+  filtered: 'No reviews about this topic yet.',
 } as const;

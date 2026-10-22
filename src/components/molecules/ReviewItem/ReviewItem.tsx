@@ -44,10 +44,17 @@ export function ReviewItem({ review: r, redacted = false, mine = false, edit }: 
           </time>
         </div>
       </div>
-      {(r.topic || mine) && (
-        // The design's tag row: the session's topic, and "Your review".
+      {(r.topics.length > 0 || r.sessionType || mine) && (
+        // The design's tag row: what it was about, and "Your review". A
+        // migrated review has no topics, so its session type stands in.
         <div className={styles.tags}>
-          {r.topic && <Tag tone="neutral">{r.topic}</Tag>}
+          {r.topics.length > 0
+            ? r.topics.map((t) => (
+                <Tag key={t.slug} tone="neutral">
+                  {t.name}
+                </Tag>
+              ))
+            : r.sessionType && <Tag tone="neutral">{r.sessionType}</Tag>}
           {mine && <Tag tone="mine">Your review</Tag>}
         </div>
       )}

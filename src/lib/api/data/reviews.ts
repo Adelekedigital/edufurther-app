@@ -33,7 +33,8 @@ export function toReview(r: MentorReviewRead, guest = false): Review {
     institution: deleted ? null : r.author_institution?.trim() || null,
     createdAt: r.created_at,
     rating: Math.min(5, Math.max(1, Math.round(r.session_value))),
-    topic: r.session_type?.name ?? null,
+    topics: (r.service_offerings ?? []).map((o) => ({ slug: o.slug, name: o.display_name })),
+    sessionType: r.session_type?.name ?? null,
     text: guest ? '' : r.public_review,
   };
 }
@@ -63,23 +64,20 @@ export type MentorReviewsResult = {
 
 /**
  * GET /api/v1/mentors/{handle}/reviews, newest first, five a page.
- * `sessionTypeId`: the filter chip (null = all). A guest gets one review,
+ * `offering`: the topic chip, a service-offering slug (null = all; backend
+ * #522). A guest gets one review,
  * without its text. `active`: the list is on screen. `ready`: who is looking
  * is known (guest or not decides what's fetched); until then an active list
  * reads as loading, never as empty.
  */
 export function useMentorReviews(
   handle: string,
-  sessionTypeId: string | null,
+  offering: string | null,
   { guest, active, ready }: { guest: boolean; active: boolean; ready: boolean },
 ): MentorReviewsResult {
   const session = useSession();
   const qc = useQueryClient();
-  const key = keys.mentors.reviews(
-    handle,
-    sessionTypeId ?? 'all',
-    guest ? 'guest' : sessionKey(session),
-  );
+  const key = keys.mentors.reviews(handle, offering, guest ? 'guest' : sessionKey(session));
   const canFetch = active && ready && session.status !== 'unknown';
   const query = useInfiniteQuery({
     queryKey: key,
@@ -90,7 +88,7 @@ export function useMentorReviews(
         params: {
           path: { handle },
           query: {
-            session_type: sessionTypeId ?? undefined,
+            offering: offering ? [offering] : undefined,
             cursor: pageParam,
             limit: guest ? 1 : REVIEW_PAGE_SIZE,
           },

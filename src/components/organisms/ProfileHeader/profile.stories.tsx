@@ -360,7 +360,7 @@ const list = {
   onLoadMore: fn(),
   total: 7,
   pageSize: 5,
-  filters: sessionTypes.map((t) => ({ id: t.id, label: t.name })),
+  filters: fullProfile.reviews.topics.map((t) => ({ id: t.slug, label: t.name })),
   filter: null,
   onFilter: fn(),
   gate: null,
@@ -384,6 +384,7 @@ export const ReviewsSummarySparse: Story = {
           rating: 4,
           wouldRecommendIn10: null,
           attributes: { communication: 80, knowledge: null, support: null, practicality: null },
+          topics: [],
         }}
         firstName="Ada"
       />
@@ -410,7 +411,7 @@ export const ReviewsError: Story = {
 export const ReviewsEmptyFilter: Story = {
   render: () => (
     <div style={main}>
-      <ReviewsList {...list} reviews={[]} filter={sessionTypes[1]!.id} />
+      <ReviewsList {...list} reviews={[]} filter={fullProfile.reviews.topics[1]!.slug} />
     </div>
   ),
 };

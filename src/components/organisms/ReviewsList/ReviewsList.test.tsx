@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile, reviews } from '@/components/organisms/ProfileHeader/profile.fixture';
 import { ReviewsSummary } from '@/components/organisms/ReviewsSummary/ReviewsSummary';
@@ -55,7 +55,7 @@ describe('ReviewsList', () => {
       />,
     );
     expect(screen.getByRole('status')).toHaveTextContent('No reviews yet.');
-    expect(screen.queryByRole('group', { name: 'Filter reviews by session' })).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Filter reviews by topic' })).toBeNull();
     expect(screen.queryByText('Most recent first')).toBeNull();
   });
 
@@ -72,8 +72,8 @@ describe('ReviewsList', () => {
         })}
       />,
     );
-    expect(screen.getByRole('status')).toHaveTextContent('No reviews for this session yet.');
-    expect(screen.getByRole('group', { name: 'Filter reviews by session' })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('No reviews about this topic yet.');
+    expect(screen.getByRole('group', { name: 'Filter reviews by topic' })).toBeInTheDocument();
   });
 
   it('content: each review with its stars, date and topic; a deleted author', () => {
@@ -82,6 +82,38 @@ describe('ReviewsList', () => {
     expect(screen.getAllByRole('img', { name: 'Rated 4 out of 5' })).toHaveLength(2);
     expect(screen.getByText('Apr 19, 2026')).toBeInTheDocument();
     expect(screen.getByText('Deleted user')).toBeInTheDocument();
+  });
+
+  it('tags: each topic its own tag; no topics, the session type; neither, no tag', () => {
+    render(<ReviewsList {...props()} />);
+    const [r7, r6, , r4, r3] = screen.getAllByRole('article');
+    expect(within(r7!).getByText('Document preparation')).toBeInTheDocument();
+    // The session type stands in only when there are no topics.
+    expect(within(r7!).queryByText('SOP draft review')).not.toBeInTheDocument();
+    expect(within(r6!).getByText('Program selection')).toBeInTheDocument();
+    expect(within(r6!).getByText('Scholarships & financial aid')).toBeInTheDocument();
+    // Migrated: its session type is the tag.
+    expect(within(r3!).getByText('Mock visa interview')).toBeInTheDocument();
+    // Neither: no tag row at all, only the head and the text.
+    expect(r4!.children).toHaveLength(2);
+  });
+
+  it('under a topic, the topic total gives "Show N more" and "Showing X of N"', () => {
+    render(
+      <ReviewsList
+        {...props({
+          hasMore: true,
+          total: 9,
+          filter: 'a',
+          filters: [
+            { id: 'a', label: 'A' },
+            { id: 'b', label: 'B' },
+          ],
+        })}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Show 4 more reviews' })).toBeInTheDocument();
+    expect(screen.getByText('Showing 5 of 9')).toBeInTheDocument();
   });
 
   it('"Show N more reviews" loads the next page; "Try again" after a failure', async () => {
@@ -119,23 +151,23 @@ describe('ReviewsList', () => {
     expect(screen.queryByText(/Showing/)).not.toBeInTheDocument();
   });
 
-  it('shows filter chips only with two or more session types', () => {
+  it('shows filter chips only with two or more topics', () => {
     const { rerender } = render(
-      <ReviewsList {...props({ filters: [{ id: 'a', label: 'SOP draft review' }] })} />,
+      <ReviewsList {...props({ filters: [{ id: 'a', label: 'Document preparation' }] })} />,
     );
     expect(screen.queryByRole('group')).not.toBeInTheDocument();
     rerender(
       <ReviewsList
         {...props({
           filters: [
-            { id: 'a', label: 'SOP draft review' },
-            { id: 'b', label: 'Mock visa interview' },
+            { id: 'a', label: 'Document preparation' },
+            { id: 'b', label: 'Interview preparation' },
           ],
           filter: 'b',
         })}
       />,
     );
-    expect(screen.getByRole('button', { name: 'Mock visa interview' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'Interview preparation' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
@@ -207,6 +239,7 @@ describe('ReviewsSummary', () => {
           rating: 5,
           wouldRecommendIn10: null,
           attributes: { communication: null, knowledge: null, support: null, practicality: null },
+          topics: [],
         }}
         firstName="Ada"
       />,
