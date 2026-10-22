@@ -172,6 +172,32 @@ describe('MentorProfileScreen — Reviews tab', () => {
     expect(screen.getByRole('button', { name: 'Show 2 more reviews' })).toBeInTheDocument();
   });
 
+  it('a chosen topic the profile stops listing falls back to All (local review of PR 380)', async () => {
+    const user = userEvent.setup();
+    h.search = new URLSearchParams('tab=reviews');
+    h.profile = state({ data: fullProfile });
+    h.reviewsRemote = reviewsState({ reviews });
+    const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+    const group = () => screen.getByRole('group', { name: 'Filter reviews by topic' });
+    await user.click(within(group()).getByRole('button', { name: 'Program selection' }));
+    // The profile refetches without that topic (its last review went).
+    h.profile = state({
+      data: {
+        ...fullProfile,
+        reviews: {
+          ...fullProfile.reviews,
+          topics: fullProfile.reviews.topics.filter((t) => t.name !== 'Program selection'),
+        },
+      },
+    });
+    rerender(<MentorProfileScreen handle="gbenga" />);
+    expect(within(group()).getByRole('button', { name: 'All' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(reviewsArgs).toHaveBeenLastCalledWith('gbenga', null, expect.anything());
+  });
+
   it('one topic or none: no chips', () => {
     h.search = new URLSearchParams('tab=reviews');
     h.profile = state({
