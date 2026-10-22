@@ -1,13 +1,6 @@
+import { countryInSentence } from '@/lib/utils/format';
 import { HELP_AREAS } from '@/lib/copy/onboarding';
 import type { MatchBasis, MatchReason } from '@/types/onboarding';
-
-/** "the UK", "the US", "the Netherlands"; any other country as named (PRD H8). */
-export function countryInSentence(name: string): string {
-  if (name === 'United Kingdom') return 'the UK';
-  if (name === 'United States') return 'the US';
-  if (name === 'Netherlands') return 'the Netherlands';
-  return name;
-}
 
 /** "a", "a and b", "a, b and c". */
 export function joinAnd(items: string[]): string {

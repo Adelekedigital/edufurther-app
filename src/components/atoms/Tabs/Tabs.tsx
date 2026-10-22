@@ -25,6 +25,13 @@ type TabsProps = {
   onChange: (value: string) => void;
   /** Names the tablist, e.g. "Profile". */
   label: string;
+  /**
+   * How a count is drawn: a pill (Bookings.dc.html) or "(N)" after the label
+   * (Mentor Profile.dc.html). One rule either way: a known count shows, 0
+   * included; `null` (unknown) shows nothing. As text it is part of the tab's
+   * name, read as seen ("Reviews (0)"), so `countLabel` isn't used.
+   */
+  countStyle?: 'pill' | 'text';
   className?: string;
 };
 
@@ -33,7 +40,7 @@ type TabsProps = {
  * WAI-ARIA tabs with automatic activation: one tab stop; arrows, Home and End
  * move and select. Home/End are ours — the DS handles only the arrows.
  */
-export function Tabs({ items, value, onChange, label, className }: TabsProps) {
+export function Tabs({ items, value, onChange, label, countStyle = 'pill', className }: TabsProps) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const select = (i: number) => {
     const it = items[(i + items.length) % items.length]!;
@@ -70,7 +77,9 @@ export function Tabs({ items, value, onChange, label, className }: TabsProps) {
             id={`${it.panelId}-tab`}
             aria-selected={on}
             aria-controls={it.panelId}
-            aria-label={it.countLabel ? `${it.label}, ${it.countLabel}` : undefined}
+            aria-label={
+              countStyle === 'pill' && it.countLabel ? `${it.label}, ${it.countLabel}` : undefined
+            }
             tabIndex={on ? 0 : -1}
             className={cx(styles.tab, on && styles.on)}
             onClick={() => onChange(it.value)}
@@ -78,11 +87,14 @@ export function Tabs({ items, value, onChange, label, className }: TabsProps) {
           >
             <span className={styles.label}>
               {it.label}
-              {it.count != null && (
-                <span aria-hidden="true" className={styles.count}>
-                  {it.count}
-                </span>
-              )}
+              {it.count != null &&
+                (countStyle === 'pill' ? (
+                  <span aria-hidden="true" className={styles.count}>
+                    {it.count}
+                  </span>
+                ) : (
+                  ` (${it.count})`
+                ))}
             </span>
           </button>
         );

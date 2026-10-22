@@ -5,6 +5,7 @@ import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
+import { useClampIntoView } from '@/lib/utils/useEdgeFlip';
 import styles from './ShareMenu.module.css';
 
 type ShareMenuProps = {
@@ -65,6 +66,10 @@ export function ShareMenu({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
+  // Hung from the button's right edge, and slid just enough to stay 16px inside
+  // the screen when it wouldn't fit (the button mid-row on a phone, or at the
+  // start of a short row): it always opens under its own button.
+  const shift = useClampIntoView(open, menuRef);
   const menuId = useId();
   const noteId = useId();
 
@@ -187,6 +192,7 @@ export function ShareMenu({
         <div
           ref={menuRef}
           className={styles.menu}
+          style={shift ? { transform: `translateX(${shift}px)` } : undefined}
           // A click off the items (the note, the padding) keeps focus on them,
           // so the keys still work.
           onMouseDown={(e) => {

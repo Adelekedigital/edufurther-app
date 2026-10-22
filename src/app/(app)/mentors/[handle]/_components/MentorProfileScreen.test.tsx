@@ -279,7 +279,10 @@ describe('MentorProfileScreen — the mentor on their own page', () => {
     h.profile = state({ data: { ...fullProfile, owner: { approval: 'declined', listed: true } } });
     render(<MentorProfileScreen handle="gbenga" />);
     const link = screen.getByRole('link', { name: 'Contact support' });
-    expect(link).toHaveAttribute('href', 'mailto:support@edufurther.org');
+    // The one support address, with the subject saying what it's about.
+    expect(link.getAttribute('href')).toMatch(
+      /^mailto:support@edufurther\.org\?subject=My%20mentor%20profile/,
+    );
     expect(link.parentElement).toHaveTextContent(
       'Your profile wasn’t approved, so only you can see it. Contact support to find out what to change.',
     );

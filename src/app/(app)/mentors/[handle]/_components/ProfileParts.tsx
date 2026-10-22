@@ -4,7 +4,7 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { ProfileHeaderSkeleton } from '@/components/organisms/ProfileHeader/ProfileHeader';
-import { NOT_TAKING_TITLE } from '@/lib/copy/profile';
+import { NOT_TAKING_TITLE, OWNER_SUPPORT_SUBJECT } from '@/lib/copy/profile';
 import { supportMailto } from '@/lib/utils/mailto';
 import type { MentorProfile } from '@/types/mentor';
 import styles from './MentorProfileScreen.module.css';
@@ -133,7 +133,10 @@ export function OwnerBar({
         {state === 'declined' ? (
           <span>
             Your profile wasn’t approved, so only you can see it.{' '}
-            <a href={supportMailto()} className={styles.ownerLink}>
+            <a
+              href={supportMailto(OWNER_SUPPORT_SUBJECT(profile.mentor.name))}
+              className={styles.ownerLink}
+            >
               Contact support
             </a>{' '}
             to find out what to change.

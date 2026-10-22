@@ -29,7 +29,7 @@ import { useAvatarUpload } from '@/lib/api/data/avatar';
 import { BANNER_ACCEPT, useCoverEdit } from '@/lib/api/data/cover';
 import { useInReviewRefusal } from '@/lib/api/data/freeze';
 import { useMentorProfile } from '@/lib/api/data/profile';
-import { SHARE_NOTE } from '@/lib/copy/profile';
+import { NOT_TAKING_TITLE, SHARE_NOTE } from '@/lib/copy/profile';
 import { SIMILAR_SHOWN, useSimilarMentors } from '@/lib/api/data/similar';
 import { personCover } from '@/lib/utils/person';
 import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
@@ -182,6 +182,11 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // A mentor not taking bookings keeps it at 3+, saying so ("Sessions (0)"):
   // as built and as drawn (PRD: not taking bookings, no change).
   const sessionsTab = editing || (p?.sessionTypes.length ?? 0) >= SESSIONS_TAB_FROM;
+  const sessionCount = notTakingTab
+    ? 0
+    : editing && ownActive !== null
+      ? ownActive
+      : (p?.sessionTypes.length ?? 0);
   // The owner, editing, always has the tab: "New session type" is there.
   // The Reviews tab opens for any signed-in non-owner, not only once reviews
   // exist. Bookings links a mentee here to write the first one, and gating the
@@ -493,7 +498,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                   : undefined
               }
               // As drawn (design reply #58).
-              status={asMentee && notTaking ? 'Not taking bookings' : undefined}
+              status={asMentee && notTaking ? NOT_TAKING_TITLE : undefined}
               introEditor={
                 editing && owner.introOpen ? (
                   <IntroEditForm
@@ -566,14 +571,16 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               label="Profile"
               value={tab}
               onChange={setTab}
+              countStyle="text"
               items={[
                 { value: 'overview', label: 'Overview', panelId: 'panel-overview' },
                 ...(sessionsTab
                   ? [
                       {
                         value: 'sessions',
+                        label: 'Sessions',
                         // Nothing to book counts as none (the design's visible count).
-                        label: `Sessions (${notTakingTab ? 0 : editing && ownActive !== null ? ownActive : p.sessionTypes.length})`,
+                        count: sessionCount,
                         panelId: 'panel-sessions',
                       },
                     ]
@@ -582,9 +589,10 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                   ? [
                       {
                         value: 'reviews',
-                        // No count until there is one to give: "Reviews (0)"
-                        // reads as a number we are asserting.
-                        label: hasReviews ? `Reviews (${p.reviews.count})` : 'Reviews',
+                        label: 'Reviews',
+                        // A known count shows, 0 included, as Sessions (0) does
+                        // (one tab-count rule, owner 21 Oct 2026).
+                        count: p.reviews.count,
                         panelId: 'panel-reviews',
                       },
                     ]

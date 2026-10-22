@@ -67,3 +67,7 @@ export const BOOKING_MODE = {
 /** The booking card's subtitle with several sessions (Mentor Profile.dc.html `sessionsSub`). */
 export const bookSessionsSub = (count: number, zone: string) =>
   `${count} sessions · times in ${zone}`;
+
+/** The declined owner bar's "Contact support": the mail's subject. */
+export const OWNER_SUPPORT_SUBJECT = (name: string) =>
+  `My mentor profile wasn’t approved (${name})`;

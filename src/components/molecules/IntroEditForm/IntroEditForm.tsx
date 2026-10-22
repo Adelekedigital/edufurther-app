@@ -137,7 +137,7 @@ export function IntroEditForm({
             />
           )}
         </FormField>
-        <FrozenGroup frozen={headlineFrozen} className={styles.wide}>
+        <FrozenGroup frozen={headlineFrozen}>
           <FormField compact label="Headline" error={errorOf('headline')}>
             {(c) => (
               <Input

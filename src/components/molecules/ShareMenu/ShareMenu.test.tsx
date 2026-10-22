@@ -152,4 +152,23 @@ describe('ShareMenu', () => {
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('menu')).toBeNull();
   });
+
+  it('slides the panel back on screen, under its own button (audit: clipped on phones)', async () => {
+    const user = userEvent.setup();
+    const rect = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockReturnValue({
+        left: -65,
+        right: 195,
+        top: 0,
+        bottom: 0,
+        width: 260,
+        height: 0,
+      } as DOMRect);
+    render(<ShareMenu url="https://x.test/m" name="G E" />);
+    await user.click(screen.getByRole('button', { name: 'Share profile' }));
+    // 16px inside the screen: slid right by 81px.
+    expect(screen.getByRole('menu').parentElement).toHaveStyle({ transform: 'translateX(81px)' });
+    rect.mockRestore();
+  });
 });

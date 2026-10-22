@@ -1,3 +1,4 @@
+import { locationLine } from '@/lib/utils/format';
 /**
  * Mentor Settings (Mentor Settings.dc.html, PRD 19 Oct). Copy reviewed with
  * edufurther-ux-writer, 2026-10-19 (review freeze: 2026-10-20).
@@ -121,13 +122,9 @@ export const MENTOR_PROFILE_ERRORS = {
 } as const;
 export type MentorProfileGap = 'name' | 'headline' | 'origin' | 'study';
 
-/** "From Nigeria, studied in the US" (design `previewPlace`). */
+/** The header's location line (design `previewPlace`), or the empty prompt. */
 export function previewPlace(origin: string | null, study: string | null): string {
-  const place = [origin && `From ${origin}`, study && `studied in ${study}`]
-    .filter(Boolean)
-    .join(', ')
-    .replace('studied in United States', 'studied in the US');
-  return place || MENTOR_PROFILE_COPY.previewPlaceEmpty;
+  return locationLine(origin, study) ?? MENTOR_PROFILE_COPY.previewPlaceEmpty;
 }
 
 /** Settings › Expertise for a mentor (Mentor Settings.dc.html `isExpertise`, expertiseEdit=modal). */

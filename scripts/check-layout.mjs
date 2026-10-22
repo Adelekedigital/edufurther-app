@@ -71,10 +71,10 @@ const CHECKS = [
     },
   },
   {
-    // Design request #47: from 768px the photo sits 10px into the banner,
-    // however many lines the intro beside it runs to. fatima-okafor is a sparse
+    // From 768px the photo sits 48px into the banner (the shared cover rule,
+    // owner 21 Oct 2026), however many lines the intro beside it runs to. fatima-okafor is a sparse
     // mock profile with no headline (the short-intro case).
-    name: 'profile photo 10px into the banner',
+    name: 'profile photo 48px into the banner',
     slug: 'profile-photo-banner',
     route: ['/mentors/olajuwon-samuel', '/mentors/fatima-okafor'],
     ready: '#profile-name',
@@ -87,7 +87,7 @@ const CHECKS = [
       const photo = head?.querySelector('img:not([alt=""]), [role="img"]')?.parentElement;
       if (!banner || !photo) return { cannot: 'header photo not found' };
       const into = banner.getBoundingClientRect().bottom - photo.getBoundingClientRect().top;
-      return Math.abs(into - 10) <= 0.5 ? null : `photo is ${Math.round(into)}px into the banner`;
+      return Math.abs(into - 48) <= 0.5 ? null : `photo is ${Math.round(into)}px into the banner`;
     },
   },
   {

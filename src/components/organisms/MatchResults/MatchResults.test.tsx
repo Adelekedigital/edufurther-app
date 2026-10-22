@@ -67,12 +67,12 @@ describe('MatchResults', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'Your top 2 mentor matches',
     );
-    expect(screen.getByText('Studied in the UK')).toBeInTheDocument();
+    expect(screen.getByText('Studied in the United Kingdom')).toBeInTheDocument();
     expect(screen.getByText(/· Master’s$/)).toBeInTheDocument();
     // No reason: the mentor's own level and country, with the info icon.
-    expect(screen.getByText('Master’s · the UK')).toBeInTheDocument();
+    expect(screen.getByText('Master’s · the United Kingdom')).toBeInTheDocument();
     expect(
-      screen.getByText('Based on: Master’s Computer Science in the UK · from Ghana'),
+      screen.getByText('Based on: Master’s Computer Science in the United Kingdom · from Ghana'),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Browse all mentors/ })).toHaveAttribute(
       'href',

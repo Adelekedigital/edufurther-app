@@ -3,12 +3,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { SECURITY_COPY } from '@/lib/copy/settings';
-import {
-  SecuritySettings,
-  supportHref,
-  type DeleteShell,
-  type SecuritySettingsProps,
-} from './SecuritySettings';
+import { supportHref } from '@/lib/utils/mailto';
+import { SecuritySettings, type DeleteShell, type SecuritySettingsProps } from './SecuritySettings';
 
 // The page frames it in ModalShell (Escape, focus trap: SecurityPanel.test);
 // here a dialog with the shell's title and close.
@@ -98,9 +94,12 @@ describe('SecuritySettings', () => {
     );
     // Encoded, not raw: spaces and line breaks can't break the link.
     expect(href).not.toMatch(/\s/);
-    expect(supportHref({ name: '', email: 'x@y.co', mentor: true })).toContain(
-      encodeURIComponent('Role: Mentor'),
-    );
+    expect(
+      supportHref(
+        { name: '', email: 'x@y.co', mentor: true },
+        { subject: SECURITY_COPY.supportSubject, body: SECURITY_COPY.supportBody },
+      ),
+    ).toContain(encodeURIComponent('Role: Mentor'));
   });
 
   it('mentor copy points at Busy instead', () => {

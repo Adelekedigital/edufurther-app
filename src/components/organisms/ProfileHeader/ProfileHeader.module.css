@@ -12,7 +12,7 @@
   /* 15px: the card's 16px radius less its 1px border. */
   --cover-radius: 15px 15px 0 0;
 }
-/* The row under the banner (CoverHeader's body): the photo 10px into the
+/* The row under the banner (CoverHeader's body): the photo 48px into the
    banner, the intro at least 24px below it, the actions in the row and the
    topics on a line of their own (20px below the row, 20px above the card
    edge: the gap and padding). */

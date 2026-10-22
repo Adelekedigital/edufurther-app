@@ -1,4 +1,4 @@
-/* Share button and its menu (220px). The button is a 48px square: CTA
+/* Share button and its menu (260px), slid to stay on screen (useClampIntoView). The button is a 48px square: CTA
    Hierarchy.dc.html ("Header: Share (icon, 48×48 square)", rule 4: an icon
    button in a CTA row matches the row's height). Mentor Profile.dc.html still
    draws 32px (design request #46). */

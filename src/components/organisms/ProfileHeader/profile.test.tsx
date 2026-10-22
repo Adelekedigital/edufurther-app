@@ -5,7 +5,8 @@ import { FirstMenteesCard } from '../FirstMenteesCard/FirstMenteesCard';
 import { ProfileOverview } from '../ProfileOverview/ProfileOverview';
 import { TrackRecordCard } from '../TrackRecordCard/TrackRecordCard';
 import { coverFor } from '@/lib/utils/cover';
-import { ProfileHeader, ProfileHeaderSkeleton, locationLine } from './ProfileHeader';
+import { locationLine } from '@/lib/utils/format';
+import { ProfileHeader, ProfileHeaderSkeleton } from './ProfileHeader';
 import { fullProfile, newProfile, sessionTypes } from './profile.fixture';
 
 describe('ProfileHeaderSkeleton', () => {
@@ -18,7 +19,7 @@ describe('ProfileHeaderSkeleton', () => {
     expect(cover!.querySelector('[aria-hidden]')).toBeNull();
     // The photo slot, then the three intro lines, all decorative.
     expect(body!.querySelectorAll('[aria-hidden]')).toHaveLength(4);
-    expect((body as HTMLElement).style.getPropertyValue('--ch-overlap')).toBe('10px');
+    expect((body as HTMLElement).style.getPropertyValue('--ch-overlap')).toBe('48px');
   });
 });
 
@@ -27,7 +28,7 @@ describe('ProfileHeader', () => {
     const { rerender } = render(<ProfileHeader profile={fullProfile} />);
     expect(screen.getByRole('heading', { level: 1, name: 'Gbenga Elufisan' })).toBeInTheDocument();
     expect(screen.getByText('4.9')).toBeInTheDocument();
-    expect(screen.getByText(/From Nigeria, studied in United States/)).toBeInTheDocument();
+    expect(screen.getByText(/From Nigeria, studied in the United States/)).toBeInTheDocument();
     rerender(<ProfileHeader profile={newProfile} />);
     expect(screen.queryByText('4.9')).not.toBeInTheDocument();
     // Design reply #45: no "New to EduFurther" on the profile; the sessions
@@ -114,6 +115,10 @@ describe('ProfileHeader', () => {
     expect(locationLine('Ghana', null)).toBe('From Ghana');
     expect(locationLine(null, 'Canada')).toBe('Studied in Canada');
     expect(locationLine(null, null)).toBeNull();
+    // One country rule everywhere (owner, 21 Oct 2026): full names, with "the".
+    expect(locationLine('United Kingdom', 'United States')).toBe(
+      'From the United Kingdom, studied in the United States',
+    );
   });
 });
 

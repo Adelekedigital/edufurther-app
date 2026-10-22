@@ -77,4 +77,27 @@ describe('Tabs', () => {
     );
     expect(screen.getByRole('tab', { name: 'Pending' }).textContent).toBe('Pending');
   });
+
+  it('countStyle="text": "(N)" after the label, 0 included, and the tab is named as seen', () => {
+    const { rerender } = render(
+      <Tabs
+        label="Profile"
+        value="a"
+        onChange={() => {}}
+        countStyle="text"
+        items={[{ value: 'a', label: 'Reviews', panelId: 'pa', count: 0 }]}
+      />,
+    );
+    expect(screen.getByRole('tab', { name: 'Reviews (0)' })).toBeInTheDocument();
+    rerender(
+      <Tabs
+        label="Profile"
+        value="a"
+        onChange={() => {}}
+        countStyle="text"
+        items={[{ value: 'a', label: 'Reviews', panelId: 'pa', count: null }]}
+      />,
+    );
+    expect(screen.getByRole('tab', { name: 'Reviews' })).toBeInTheDocument();
+  });
 });

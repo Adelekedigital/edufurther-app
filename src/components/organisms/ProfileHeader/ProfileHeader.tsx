@@ -1,3 +1,4 @@
+import { locationLine } from '@/lib/utils/format';
 import type { ReactNode, Ref } from 'react';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Icon } from '@/components/atoms/Icon/Icon';
@@ -46,30 +47,22 @@ type ProfileHeaderProps = {
 
 /**
  * The header's shape, shared with its loading skeleton.
- * DIVERGENCE (product, design request #47): the photo is pinned 10px into the
- * banner, where the design draws it at desktop; with the design's flex-end it
- * slid below the banner whenever the intro ran to three lines. On phones the
- * 72px photo rises 36px into the 96px banner. The intro starts at least 24px
- * under the banner (the design's 72px padding less the 48px the row was
- * pulled up by).
+ * The photo is pinned (it never slides with the intro) and rises about 45% of
+ * its height into the cover, the rule every cover with a photo follows (owner,
+ * 21 Oct 2026, superseding design request #47's 10px): the 112px photo 48px
+ * into the banner (Mentor Profile.dc.html `margin-top:-48px`), the 72px phone
+ * photo 36px into the 96px banner. The intro starts 24px under the banner (the
+ * design's 72px padding less the 48px).
  */
 const GEOMETRY = {
   as: 'section',
   className: styles.card,
-  overlap: 10,
+  overlap: 48,
   phoneOverlap: 36,
   layout: 'responsive',
   clearance: 24,
   bodyClassName: styles.head,
 } as const;
-
-/** "From Nigeria, studied in United States", or whichever half is known. */
-export function locationLine(from: string | null, studiedIn: string | null): string | null {
-  if (from && studiedIn) return `From ${from}, studied in ${studiedIn}`;
-  if (from) return `From ${from}`;
-  if (studiedIn) return `Studied in ${studiedIn}`;
-  return null;
-}
 
 /**
  * Mentor Profile.dc.html header card: banner, 112px photo overlapping it, name,

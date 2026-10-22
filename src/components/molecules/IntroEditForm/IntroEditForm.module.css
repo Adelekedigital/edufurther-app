@@ -1,5 +1,6 @@
-/* Mentor Profile.dc.html `editingIntro`: fields in an auto-fit grid (200px
-   minimum), then Save and Cancel. */
+/* Mentor Profile.dc.html `editingIntro`: first name, last name and headline in
+   one auto-fit grid (200px minimum; three across from 1024), then Save and
+   Cancel. */
 .form {
   display: flex;
   flex-direction: column;
@@ -10,10 +11,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--space-3);
-}
-/* The headline takes the full row: two name fields share the first. */
-.wide {
-  grid-column: 1 / -1;
 }
 .actions {
   display: flex;
