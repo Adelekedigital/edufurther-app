@@ -341,7 +341,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // notFound; mentors see "View profile" on the cards). The endpoint answers
   // for hidden and unknown handles alike (#38).
   const similar = useSimilarMentors(handle, showSimilar || profile.notFound);
-  // An unknown address has no similar list: then mentors free this week
+  // When the similar list is empty or failed (an unknown address, or a mentor
+  // with none like them): mentors free this week
   // (Mentor Profile.dc.html notFound, backend #521).
   const freeSoon = useMentorsFreeSoon(
     profile.notFound && !similar.isLoading && !similar.data?.length,

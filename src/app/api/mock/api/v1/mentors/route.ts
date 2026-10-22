@@ -38,6 +38,11 @@ export async function GET(req: NextRequest) {
     next_available_at: m.taking_bookings === false ? null : mockNextAvailableAt(m.id, now),
     next_available_state: m.taking_bookings === false ? 'none' : mockAvailabilityState(m.id),
   });
+  // Backend #521: open, and before the window's end (half-open).
+  const freeWithin = (c: ReturnType<typeof card>, end: number) =>
+    c.next_available_state === 'open' &&
+    !!c.next_available_at &&
+    Date.parse(c.next_available_at) < end;
   const rows = MENTORS.filter((m) => {
     const hay = [m.first_name, m.last_name, m.institution, m.study_course, m.degree]
       .join(' ')
@@ -46,11 +51,7 @@ export async function GET(req: NextRequest) {
       (!q || hay.includes(q)) &&
       (offerings.length === 0 ||
         offerings.some((o) => (m.offerings ?? []).some((x) => x.slug === o))) &&
-      (within === null ||
-        ((c) =>
-          c.next_available_state === 'open' &&
-          !!c.next_available_at &&
-          Date.parse(c.next_available_at) < now + within * 86_400_000)(card(m)))
+      (within === null || freeWithin(card(m), now + within * 86_400_000))
     );
   });
   // next_available_at / next_available_state: one source with the mocked slots

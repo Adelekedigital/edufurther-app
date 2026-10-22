@@ -76,6 +76,7 @@ export const OWNER_SUPPORT_SUBJECT = (name: string) =>
 export const REVIEWS_EMPTY = {
   all: 'No reviews yet.',
   filtered: 'No reviews for this session yet.',
+} as const;
 
 /**
  * The "isn't available" page's suggestions (Mentor Profile.dc.html notFound).

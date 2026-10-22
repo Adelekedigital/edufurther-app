@@ -4,8 +4,9 @@ import type { ReactNode } from 'react';
 
 const get = vi.fn();
 vi.mock('./http', () => ({ api: { GET: (...a: unknown[]) => get(...a) } }));
+const session = { status: 'none' as 'none' | 'unknown' };
 vi.mock('./session', () => ({
-  useSession: () => ({ status: 'absent' }),
+  useSession: () => session,
   sessionKey: () => 'guest',
 }));
 
@@ -35,7 +36,10 @@ const row = (n: number) => ({
 });
 
 describe('useMentorsFreeSoon', () => {
-  beforeEach(() => get.mockReset());
+  beforeEach(() => {
+    get.mockReset();
+    session.status = 'none';
+  });
 
   it('asks for four mentors free in the next 7 days (backend #521)', async () => {
     get.mockResolvedValueOnce({
@@ -65,5 +69,12 @@ describe('useMentorsFreeSoon', () => {
     const { result } = renderHook(() => useMentorsFreeSoon(true), { wrapper });
     await waitFor(() => expect(result.current.error).not.toBeNull());
     expect(result.current.data).toBeNull();
+  });
+
+  it('waits for the session before asking (no guest list for a signed-in viewer)', () => {
+    session.status = 'unknown';
+    const { result } = renderHook(() => useMentorsFreeSoon(true), { wrapper });
+    expect(get).not.toHaveBeenCalled();
+    expect(result.current.isLoading).toBe(true);
   });
 });

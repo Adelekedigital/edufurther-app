@@ -10,7 +10,7 @@ import { suggestionsLine } from './suggestions';
 
 type ProfileMissingProps = {
   similar: Remote<SimilarMentor[]>;
-  /** Asked for once `similar` comes back empty: an unknown address. */
+  /** Asked for once `similar` comes back empty or failed (an unknown address, or a mentor with no similar ones). */
   freeSoon: Remote<Mentor[]>;
   onBook: (m: Mentor) => void;
   timeZone: string;
@@ -24,7 +24,7 @@ type ProfileMissingProps = {
  * notFound (#38). 404 is "not found or not public", indistinguishable on
  * purpose: the copy doesn't guess which. With mentors to suggest, they carry
  * the page on: similar ones for a mentor we know (a hidden profile), else
- * ones with open times this week (an unknown address). Without either (none,
+ * ones with open times this week when that list is empty or failed. Without either (none,
  * or the lists failed), "Explore mentors" does.
  */
 export function ProfileMissing({

@@ -8,7 +8,10 @@ import { keys } from './keys';
 import { toMentor } from './mentors';
 import { sessionKey, useSession } from './session';
 
-/** "Mentors mentees are booking this week" (Mentor Profile.dc.html notFound): four cards. */
+/**
+ * "Mentors you can book this week" (Mentor Profile.dc.html notFound, its title
+ * fixed to what #521 filters on: open times, not bookings): four cards.
+ */
 export const FREE_SOON = { days: 7, shown: 4 } as const;
 
 /**

@@ -99,6 +99,21 @@ describe('MentorProfileScreen — the four states', () => {
     expect(screen.queryByRole('link', { name: 'Explore mentors' })).toBeNull();
   });
 
+  it('the similar list failed: this week fills in (the gate covers failed, not only empty)', () => {
+    h.profile = state({ notFound: true });
+    h.similarRemote = {
+      data: null,
+      isLoading: false,
+      error: { kind: 'server', message: 'x' },
+      retry: vi.fn(),
+    };
+    render(<MentorProfileScreen handle="hidden-mentor" />);
+    expect(freeSoonArgs).toHaveBeenLastCalledWith(true);
+    expect(
+      screen.getByRole('region', { name: 'Mentors you can book this week' }),
+    ).toBeInTheDocument();
+  });
+
   it('a hidden mentor keeps the similar list and never asks for this week', () => {
     h.profile = state({ notFound: true });
     render(<MentorProfileScreen handle="hidden-mentor" />);
