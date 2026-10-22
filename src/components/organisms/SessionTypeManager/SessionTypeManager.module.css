@@ -90,8 +90,3 @@
   font-size: var(--text-p-xs);
   color: var(--ink-500);
 }
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--space-3);
-}

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { ButtonLink, Button } from '@/components/atoms/Button/Button';
+import { FormGrid } from '@/components/atoms/FormGrid/FormGrid';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
@@ -76,11 +77,11 @@ export function SessionTypeManager(p: SessionTypeManagerProps) {
               publishing.
             </p>
           </div>
-          <div className={styles.grid}>
+          <FormGrid gap={3}>
             {p.templates.map((t) => (
               <TemplateCard key={t.key} href={t.href} icon={t.icon} name={t.name} hint={t.hint} />
             ))}
-          </div>
+          </FormGrid>
         </section>
       )}
     </div>

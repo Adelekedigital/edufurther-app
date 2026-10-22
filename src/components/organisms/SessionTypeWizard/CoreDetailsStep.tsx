@@ -4,6 +4,7 @@ import { useId, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Input, Textarea } from '@/components/atoms/Input/Input';
 import { ChoiceChips } from '@/components/molecules/ChoiceChips/ChoiceChips';
+import { FieldError } from '@/components/molecules/FieldError/FieldError';
 import { FormField } from '@/components/molecules/FormField/FormField';
 import { DETAILS_COPY } from '@/lib/copy/sessionTypes';
 import {
@@ -97,11 +98,7 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
             })
           }
         />
-        {errors.topics && (
-          <p id={`${id}-topics-error`} className={styles.fieldError}>
-            {errors.topics}
-          </p>
-        )}
+        {errors.topics && <FieldError id={`${id}-topics-error`}>{errors.topics}</FieldError>}
       </div>
 
       <div className={styles.group2}>
@@ -110,7 +107,7 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
           label="Best for mentees who are"
           options={stages}
           selected={d.stages}
-          describedBy={`${id}-stage-hint`}
+          describedBy={`${id}-stage-hint${errors.stage ? ` ${id}-stage-error` : ''}`}
           onToggle={(v) =>
             update(
               d.stages.includes(v as Stage)
@@ -147,10 +144,10 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
             Add
           </Button>
         </div>
-        {errors.stage && <p className={styles.fieldError}>{errors.stage}</p>}
         <span id={`${id}-stage-hint`} className={styles.groupHint}>
           {DETAILS_COPY.stagesHint}
         </span>
+        {errors.stage && <FieldError id={`${id}-stage-error`}>{errors.stage}</FieldError>}
       </div>
     </div>
   );

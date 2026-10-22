@@ -50,8 +50,10 @@ describe('IntroEditForm', () => {
       expect(save).not.toHaveAttribute('aria-disabled');
       await user.click(save);
       expect(onSave).not.toHaveBeenCalled();
-      expect(screen.getByRole('alert')).toHaveTextContent(
-        'Fill in the required fields to continue.',
+      // Each field's FieldError is an alert too; the form line is one of them.
+      expect(screen.getByText('Fill in the required fields to continue.')).toHaveAttribute(
+        'role',
+        'alert',
       );
       expect(screen.getByRole('textbox', { name: 'First name' })).toHaveAccessibleDescription(
         'Add your first name.',
@@ -174,7 +176,7 @@ describe('IntroEditForm', () => {
       /under 300 characters/,
     );
     expect(screen.getByRole('textbox', { name: 'Headline' })).toBeInvalid();
-    expect(screen.getByRole('alert')).toHaveTextContent('Nope.');
+    expect(screen.getByText('Nope.')).toHaveAttribute('role', 'alert');
   });
 
   it('while saving: "Saving…", and no second save (the button keeps focus)', async () => {

@@ -19,14 +19,6 @@
   font-weight: var(--weight-regular);
   color: var(--ink-500);
 }
-.error {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: var(--text-p-xs);
-  font-weight: var(--weight-medium);
-  color: var(--text-danger);
-}
 /* Mentor Profile.dc.html inline edit: 12px medium labels. */
 .compact {
   font-size: var(--text-p-xs);

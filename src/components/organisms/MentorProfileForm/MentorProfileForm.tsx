@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, type ReactNode, type Ref } from 'react';
+import { FormGrid } from '@/components/atoms/FormGrid/FormGrid';
 import { FrozenGroup } from '@/components/atoms/FrozenGroup/FrozenGroup';
 import { Input } from '@/components/atoms/Input/Input';
 import { Select } from '@/components/atoms/Select/Select';
@@ -234,7 +235,7 @@ export function MentorProfileForm({
             </h2>
             <span className={styles.hint}>{C.backgroundSub}</span>
           </div>
-          <div className={styles.grid}>
+          <FormGrid>
             {(
               [
                 ['origin', C.origin, C.originHint, E.origin, values.originId],
@@ -281,7 +282,7 @@ export function MentorProfileForm({
                 {C.genderHint}
               </span>
             </div>
-          </div>
+          </FormGrid>
           <FrozenGroup frozen={frozen} className={styles.field}>
             <span className={styles.label}>{C.languages}</span>
             <LanguageChips
