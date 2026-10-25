@@ -47,6 +47,7 @@ const party = (over: Partial<BookingParty> = {}): BookingParty => ({
   institution: null,
   joinedAt: null,
   inRoomAt: null,
+  inRoom: null,
   attendance: 'pending',
   ...over,
 });

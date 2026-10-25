@@ -49,6 +49,7 @@ export const party = (name = 'Amara Okafor'): BookingParty => ({
   institution: null,
   joinedAt: null,
   inRoomAt: null,
+  inRoom: null,
   attendance: 'pending' as const,
 });
 

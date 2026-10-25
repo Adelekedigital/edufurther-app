@@ -20,6 +20,7 @@ const party = (): BookingParty => ({
   institution: null,
   joinedAt: null,
   inRoomAt: null,
+  inRoom: null,
   attendance: 'pending',
 });
 
