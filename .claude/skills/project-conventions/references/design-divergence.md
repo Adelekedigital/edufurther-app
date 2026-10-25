@@ -1117,6 +1117,17 @@ Source: the live `Session Join.dc.html` (`layout=lobbySplit`), re-read 2026-10-2
 | Sent: "Thanks. We've shared this with {First}." | "Thanks for letting us know." It survives a reload (`missed_reason_sent`), and a second send's 409 reads as sent | Founder: internal only | — (resolved: design updated) |
 | (no state) a send that fails | "We couldn't send that. Try again in a moment." under the note; the picks stay | Ours | design confirms |
 
+### Session Join — fidelity pass (measured), 2026-10-25
+
+Measured against the live `Session Join.dc.html` rendered by its own runtime, both viewers, every drawn state, at 390, 600, 768, 1024 and 1280. Fixed here: the header link (ink-700, medium, arrow ink-500), "Joined at 6:01 pm" after a session and ", waited 15 min" for whoever came to a missed one, the phone prep buttons' quiet discs, and 24px initials in the lobby's 64px avatars. These stay, on purpose:
+
+| Design | Build | Why | Revisit |
+|---|---|---|---|
+| Locked Join and the disabled Send: white on ink-300 | ink-600 on ink-100 (outlined: ink-400 on an ink-100 ring) | White on ink-300 is about 1.5:1; the locked Join carries its reason ("Join opens in 4:47"), so it must stay readable (WCAG 1.4.3). One disabled look in `Button` for every screen | never |
+| Outcome buttons 24px side padding on phones | 16px | `Button` large on phones follows CTA Hierarchy.dc.html for every screen | CTA Hierarchy changes |
+| Icons at the surrounding text's weight (500/600) | The icon font's own 400 | The DS loads Material Symbols at weight 400 only, so the design's heavier icons are the browser's synthetic bold | never |
+| Lobby avatars' initials dark on blue-50 | The person's cover deep tone, white initials | One initials avatar for every role and screen (owner, 2026-10-20) | never |
+
 ### Session Join — live presence (Session Join PRD, backend #394), 2026-10-25
 
 | Design | Build | Why | Revisit |

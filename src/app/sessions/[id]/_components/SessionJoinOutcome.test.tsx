@@ -96,6 +96,39 @@ function settled(
 
 const booking = () => screen.queryByRole('dialog', { name: 'Book Amara Okafor' });
 
+describe('the people once it is over', () => {
+  /** Settled, the viewer seen in the room at 6:01 pm (Lagos). */
+  const seen = (status: 'completed' | 'noShow', theirs: Attendance) =>
+    remote(
+      sessionRoom(
+        {
+          status,
+          side: 'mentee',
+          myAttendance: 'attended',
+          other: sampleParty({ id: 'amara', firstName: 'Amara', attendance: theirs }),
+        },
+        {
+          attendance: 'attended',
+          joinedAt: '2026-10-04T17:00:40Z',
+          inRoomAt: '2026-10-04T17:01:00Z',
+        },
+      ),
+    );
+
+  it('completed: say when each joined', () => {
+    h.room = seen('completed', 'attended');
+    renderAt('18:30:00');
+    expect(screen.getByText('Joined at 6:01 pm')).toBeVisible();
+  });
+
+  it('missed by the other: the one who came waited the row’s minutes', () => {
+    h.room = seen('noShow', 'noShow');
+    renderAt('18:30:00');
+    expect(screen.getByText('Joined at 6:01 pm, waited 15 min')).toBeVisible();
+    expect(screen.getByText('Didn’t join')).toBeVisible();
+  });
+});
+
 beforeEach(() => {
   h.viewer = MENTEE;
 });
