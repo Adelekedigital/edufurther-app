@@ -177,6 +177,10 @@ describe('meta line', () => {
 
   it('names each venue, and words a custom link neutrally', () => {
     expect(providerName('daily')).toBe('EduFurther video');
+    // The one name per venue the rest of the app uses (VIDEO_LABELS).
+    expect(providerName('google_meet')).toBe('Google Meet');
+    expect(providerName('custom')).toBe('Personal meeting link');
+    expect(providerName('zoom')).toBe('Zoom');
     expect(providerName(null)).toBeNull();
     expect(providerJoin('google_meet').join).toBe('Join on Google Meet');
     expect(providerJoin('custom').hint).toBe('Opens the meeting link in a new tab.');
