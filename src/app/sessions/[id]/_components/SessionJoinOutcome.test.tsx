@@ -157,6 +157,30 @@ describe('Book again opens the booking modal on this page', () => {
     expect(booking()).toBeVisible();
   });
 
+  it('never for a mentor whose account is gone: not on the card, nor in the review modal', async () => {
+    h.room = remote(
+      sessionRoom(
+        {
+          status: 'completed',
+          side: 'mentee',
+          myAttendance: 'attended',
+          other: sampleParty({
+            id: 'amara',
+            name: 'Deleted user',
+            firstName: 'Deleted user',
+            deleted: true,
+            attendance: 'attended',
+          }),
+        },
+        { attendance: 'attended' },
+      ),
+    );
+    renderAt('18:30:00');
+    expect(screen.queryByRole('button', { name: 'Book again' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Leave a review' }));
+    expect(screen.queryByRole('button', { name: 'Book again from the review' })).toBeNull();
+  });
+
   it('never for a mentor: no Book control, and the launcher is never given anyone', () => {
     h.viewer = { ...MENTEE, isMentee: false, isApprovedMentor: true, isMentor: true };
     h.room = settled('mentor', 'noShow', 'noShow', 'attended');

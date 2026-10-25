@@ -518,8 +518,9 @@ export function SessionJoinScreen({ id }: { id: string }) {
           error={sendReview.error?.message ?? null}
           done={!!sendReview.result}
           onClose={closeReview}
+          // Only while there is someone to book (the same gate as the modal's).
           onBookAgain={
-            canBook
+            other
               ? () => {
                   closeReview();
                   setBookingAgain(true);
