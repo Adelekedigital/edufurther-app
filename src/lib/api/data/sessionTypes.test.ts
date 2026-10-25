@@ -22,8 +22,6 @@ const own = (over: Partial<Own> = {}): Own =>
     // Both, as the server sends today. The list is what we read; the single
     // field is on its way out (backend #274).
     service_offerings: [{ code: 'document-preparation', display_name: 'Document preparation' }],
-    application_stage: null,
-    custom_stage_label: null,
     icon: null,
     requires_booking_confirmation: null,
     is_featured: false,
@@ -103,9 +101,8 @@ describe('toOwnSessionType', () => {
   // Slugs from before backend #536: the API no longer types them, so a test
   // that feeds one (a cached or older read) says so.
   const legacy = (...s: string[]) => s as unknown as Own['application_stages'];
-  const legacyOne = (s: string) => s as unknown as Own['application_stage'];
 
-  it('the stages, in the mentor’s order; the deprecated single field when the list is missing', () => {
+  it('the stages, in the mentor’s order', () => {
     expect(toOwnSessionType(own({ application_stages: ['applying', 'exploring'] })).stages).toEqual(
       ['applying', 'exploring'],
     );
@@ -125,15 +122,7 @@ describe('toOwnSessionType', () => {
       ).stages,
     ).toEqual(['awaiting_decision', 'preparing_documents', 'exploring']);
     expect(toOwnSessionType(own({ application_stages: legacy('other') })).stages).toEqual([]);
-    expect(toOwnSessionType(own({ application_stage: legacyOne('interviewing') })).stages).toEqual([
-      'interview_prep',
-    ]);
-    // An empty list is "any stage", not a reason to read the old field.
-    expect(
-      toOwnSessionType(
-        own({ application_stages: [], application_stage: legacyOne('interviewing') }),
-      ).stages,
-    ).toEqual([]);
+    expect(toOwnSessionType(own({ application_stages: [] })).stages).toEqual([]);
   });
 
   it('featured, a scheduled deletion, and the booked figures (round 4)', () => {

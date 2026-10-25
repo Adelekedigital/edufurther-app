@@ -106,12 +106,13 @@ const q = (id: string, text: string, type: QuestionRead['question_type'], requir
     options: [],
   }) as QuestionRead;
 
+/** Gone from the API (backend PR 543): sending one, even null, is a 422 at it. */
+const REMOVED_FIELDS = ['application_stage', 'custom_stage_label'] as const;
+
 function seed(): Stored[] {
   const base = {
     meeting_venue: null,
-    application_stage: null,
     application_stages: [],
-    custom_stage_label: null,
     icon: null,
     requires_booking_confirmation: null,
     // Backend #13 (merging): null = inherit. In a spread variable, so the mock
@@ -136,7 +137,6 @@ function seed(): Stored[] {
       is_active: true,
       is_starter: true,
       ...topics('school-selection'),
-      application_stage: 'exploring',
       application_stages: ['exploring'],
       questions: [
         q('qi1', 'What would you like to talk about?', 'free_text', false),
@@ -157,7 +157,6 @@ function seed(): Stored[] {
       duration_minutes: 60,
       is_active: true,
       ...topics('document-preparation'),
-      application_stage: 'preparing_documents',
       application_stages: ['preparing_documents'],
       questions: [
         q('q1', 'Which programs are you applying to?', 'free_text', true),
@@ -290,10 +289,8 @@ export function mockCreateSessionType(
     errors.push({ pointer: '/application_stages', message: 'no repeats' });
   else if (Array.isArray(stages) && stages.some((s) => !SIX_STAGES.has(s as string)))
     errors.push({ pointer: '/application_stages/0', message: 'not one of the six' });
-  if ('application_stages' in body && 'application_stage' in body)
-    errors.push({ pointer: '/application_stage', message: 'send one of the two' });
-  if (body.custom_stage_label != null)
-    errors.push({ pointer: '/custom_stage_label', message: 'must be null' });
+  for (const f of REMOVED_FIELDS)
+    if (f in body) errors.push({ pointer: `/${f}`, message: 'removed' });
   // 4 to the platform cap, like the backend (a new type has no stored value to resend).
   if ('booking_window_days' in body && !windowOk(body.booking_window_days, null))
     errors.push({ pointer: '/booking_window_days', message: 'out of range' });
@@ -353,9 +350,6 @@ export function mockCreateSessionType(
     application_stages: (Array.isArray(stages)
       ? stages
       : []) as OwnSessionTypeRead['application_stages'],
-    application_stage: ((Array.isArray(stages) ? stages[0] : body.application_stage) ??
-      null) as OwnSessionTypeRead['application_stage'],
-    custom_stage_label: (body.custom_stage_label as string | null) ?? null,
     icon: (body.icon as OwnSessionTypeRead['icon']) ?? null,
     requires_booking_confirmation: (body.requires_booking_confirmation as boolean | null) ?? null,
     ...extra,
@@ -440,8 +434,7 @@ export function mockEditSessionType(
     else if (new Set(stages).size !== stages.length)
       errors.push({ pointer: '/application_stages', message: 'no repeats' });
   }
-  if (has('application_stages') && has('application_stage'))
-    errors.push({ pointer: '/application_stage', message: 'send one of the two' });
+  for (const f of REMOVED_FIELDS) if (has(f)) errors.push({ pointer: `/${f}`, message: 'removed' });
   // The request is checked, not the stored row (a stored old slug reads as its new one).
   if (
     has('application_stages') &&
@@ -449,8 +442,6 @@ export function mockEditSessionType(
     stages.some((s) => !SIX_STAGES.has(s as string))
   )
     errors.push({ pointer: '/application_stages/0', message: 'not one of the six' });
-  if (has('custom_stage_label') && body.custom_stage_label != null)
-    errors.push({ pointer: '/custom_stage_label', message: 'must be null' });
   const ids = has('service_offering_ids') ? body.service_offering_ids : undefined;
   if (Array.isArray(ids) && ids.length > 3)
     errors.push({ pointer: '/service_offering_ids', message: 'at most 3' });
@@ -476,14 +467,10 @@ export function mockEditSessionType(
     'requires_booking_confirmation',
     'booking_window_days',
     'break_after_minutes',
-    'custom_stage_label',
     'meeting_venue',
   ] as const)
     if (has(k)) Object.assign(patch, { [k]: body[k] });
-  if (has('application_stages')) {
-    patch.application_stages = stages as Stored['application_stages'];
-    patch.application_stage = ((stages as string[])[0] ?? null) as Stored['application_stage'];
-  }
+  if (has('application_stages')) patch.application_stages = stages as Stored['application_stages'];
   if (Array.isArray(ids)) {
     const offerings = ids.flatMap((oid) => {
       const o = OFFERINGS.find((x) => x.id === oid);

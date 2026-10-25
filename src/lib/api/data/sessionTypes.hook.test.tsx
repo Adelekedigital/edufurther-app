@@ -47,8 +47,6 @@ const row = (id: string, is_active = true) => ({
   min_notice_minutes: 1440,
   meeting_venue: 'daily',
   is_active,
-  application_stage: null,
-  custom_stage_label: null,
   icon: null,
   requires_booking_confirmation: null,
   is_featured: false,
