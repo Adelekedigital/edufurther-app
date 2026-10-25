@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { components } from '@/lib/api/generated/schema';
+import { mockMissedReasons } from '@/lib/api/mock/missedReasons';
 import { ok, problem } from '@/lib/api/mock/respond';
 
 type S = components['schemas'];
@@ -118,8 +119,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       topic: o.topic === undefined ? null : o.topic,
       booking_message: o.message ?? null,
       meeting_provider: o.provider ?? 'daily',
-      // Backend #532: whether the viewer sent a missed reason; none in this mock.
-      missed_reason_sent: false,
+      // Backend #532: whether this viewer sent a missed reason.
+      missed_reason_sent: mockMissedReasons.has(id),
       meeting_url: null,
       respond_by: o.respondBy === undefined ? null : o.respondBy,
       join_opens_at: status === 'confirmed' ? minutesFrom(starts, -10) : null,
@@ -209,6 +210,16 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       meJoinedAt: fromNow(-24 * 60 + 1),
       meAttendance: 'attended',
       otherAttendance: 'no_show',
+    }),
+    // The viewer missed this one: the missed-reason form (PRD Session Join).
+    session('j-10', fromNow(-26 * 60), 'no_show', ['Tolu', 'Bello'], {
+      typeName: '1:1 call',
+      duration: 30,
+      asMentee: true,
+      otherJoinedAt: fromNow(-26 * 60 + 1),
+      otherInRoomAt: fromNow(-26 * 60 + 1),
+      meAttendance: 'no_show',
+      otherAttendance: 'attended',
     }),
     // On Google Meet, which reports no presence: "Joined" is the Join press.
     session('j-7', fromNow(-5), 'confirmed', ['Tolu', 'Bello'], {

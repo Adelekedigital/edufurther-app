@@ -283,4 +283,6 @@ export type SessionRoom = {
   typeName: string | null;
   /** Null on an older row with no venue recorded. */
   provider: MeetingProvider | null;
+  /** The viewer has told us why they missed it (backend #532); false on an older backend. */
+  missedReasonSent: boolean;
 };

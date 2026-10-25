@@ -8,6 +8,8 @@ import {
   launched,
   MENTEE,
   push,
+  reasonHook,
+  reasons,
   remote,
   sessionRoom,
   setupSessionJoinHarness,
@@ -53,6 +55,9 @@ vi.mock('@/app/_shell/BookingLauncher/BookingLauncher', async () =>
 );
 vi.mock('@/lib/api/data/intakeFiles', async () =>
   (await import('./sessionJoin.harness')).mocks.intakeFiles(),
+);
+vi.mock('@/lib/api/data/missedReason', async () =>
+  (await import('./sessionJoin.harness')).mocks.missedReason(),
 );
 
 setupSessionJoinHarness();
@@ -193,5 +198,57 @@ describe('Book again opens the booking modal on this page', () => {
     // The header's way back, and the card's own action.
     expect(screen.getAllByRole('link', { name: 'Go to Bookings' })).toHaveLength(2);
     expect(launched.every((m) => m === null)).toBe(true);
+  });
+});
+
+describe('the missed-reason form (internal only)', () => {
+  it('the person who missed it is asked what happened; Send needs a chip', async () => {
+    h.room = settled('mentee', 'noShow', 'noShow', 'attended');
+    renderAt('18:30:00');
+    const form = screen.getByRole('form', { name: 'What happened?' });
+    expect(within(form).getByRole('button', { name: 'Send' })).toBeDisabled();
+    // Internal (founder): nothing says the other person reads it.
+    expect(screen.queryByText(/sees your answer|shared this/)).toBeNull();
+    await userEvent.click(within(form).getByRole('button', { name: 'Wrong time zone' }));
+    await userEvent.type(within(form).getByRole('textbox'), 'My calendar was on UTC');
+    await userEvent.click(within(form).getByRole('button', { name: 'Send' }));
+    expect(reasons).toEqual([{ reason: 'wrong_time_zone', note: 'My calendar was on UTC' }]);
+  });
+
+  it('once sent (here or before a reload): the thanks line, no form', () => {
+    h.room = remote({
+      ...settled('mentee', 'noShow', 'noShow', 'attended').data!,
+      missedReasonSent: true,
+    });
+    renderAt('18:30:00');
+    expect(screen.getByText('Thanks for letting us know.')).toBeVisible();
+    expect(screen.queryByRole('form', { name: 'What happened?' })).toBeNull();
+  });
+
+  it('a failed send says so and keeps the form', () => {
+    reasonHook.failed = true;
+    h.room = settled('mentee', 'noShow', 'noShow', 'attended');
+    renderAt('18:30:00');
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'We couldn’t send that. Try again in a moment.',
+    );
+    expect(screen.getByRole('form', { name: 'What happened?' })).toBeVisible();
+  });
+
+  it('never for the person who turned up, nor when neither did', () => {
+    h.room = settled('mentee', 'noShow', 'attended', 'noShow');
+    const view = renderAt('18:30:00');
+    expect(screen.queryByRole('form', { name: 'What happened?' })).toBeNull();
+    view.unmount();
+    h.room = settled('mentee', 'noShow', 'noShow', 'noShow');
+    renderAt('18:30:00');
+    expect(screen.queryByRole('form', { name: 'What happened?' })).toBeNull();
+  });
+
+  it('a mentor who missed it is asked too', () => {
+    h.viewer = { ...MENTEE, isMentee: false, isApprovedMentor: true, isMentor: true };
+    h.room = settled('mentor', 'noShow', 'noShow', 'attended');
+    renderAt('18:30:00');
+    expect(screen.getByRole('form', { name: 'What happened?' })).toBeVisible();
   });
 });
