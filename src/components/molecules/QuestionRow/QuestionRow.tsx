@@ -13,6 +13,8 @@ type QuestionRowProps = {
   meta: string;
   /** A line under the meta (a synced question's options and where they change). */
   note?: ReactNode;
+  /** The note's glyph (the help-area question's `sync`). */
+  noteIcon?: IconName;
   icon: IconName;
   /** Being edited in the editor below: drawn on blue. */
   editing?: boolean;
@@ -44,6 +46,7 @@ export function QuestionRow({
   text,
   meta,
   note,
+  noteIcon,
   icon,
   editing,
   error,
@@ -84,7 +87,12 @@ export function QuestionRow({
           {text}
         </span>
         <span className={styles.meta}>{meta}</span>
-        {note && <span className={styles.meta}>{note}</span>}
+        {note && (
+          <span className={styles.note}>
+            {noteIcon && <Icon name={noteIcon} size={14} className={styles.noteIcon} />}
+            <span>{note}</span>
+          </span>
+        )}
         {error && (
           <span className={styles.error}>
             <Icon name="error" size={14} />

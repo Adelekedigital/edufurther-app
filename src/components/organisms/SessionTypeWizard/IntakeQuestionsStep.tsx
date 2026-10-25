@@ -8,7 +8,6 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { Input } from '@/components/atoms/Input/Input';
 import { Switch } from '@/components/atoms/Switch/Switch';
-import { Notice } from '@/components/molecules/Notice/Notice';
 import { QuestionRow } from '@/components/molecules/QuestionRow/QuestionRow';
 import { SegmentedControl } from '@/components/molecules/SegmentedControl/SegmentedControl';
 import { QUESTIONS_COPY, STARTER_COPY } from '@/lib/copy/sessionTypes';
@@ -165,6 +164,7 @@ export function IntakeQuestionsStep({
                   </>
                 ) : undefined
               }
+              noteIcon={x.synced ? 'sync' : undefined}
               icon={KIND_ICON[x.kind]}
               editing={editing === i}
               error={errors[`question-${i}`]}
@@ -217,20 +217,19 @@ export function IntakeQuestionsStep({
             </span>
           </div>
           <div className={styles.editorRow}>
-            {/* A synced question is a single choice from the help areas: no type to pick. */}
-            {!q.synced && (
-              <SegmentedControl
-                label="Answer type"
-                layout="hug"
-                value={q.kind}
-                onChange={(kind) => setQ({ ...q, kind })}
-                options={KINDS.map((k) => ({
-                  value: k,
-                  label: QUESTION_KIND_LABELS[k],
-                  icon: KIND_ICON[k],
-                }))}
-              />
-            )}
+            {/* A synced question is a single choice from the help areas: shown, fixed. */}
+            <SegmentedControl
+              label="Answer type"
+              layout="hug"
+              value={q.kind}
+              disabled={!!q.synced}
+              onChange={(kind) => setQ({ ...q, kind })}
+              options={KINDS.map((k) => ({
+                value: k,
+                label: QUESTION_KIND_LABELS[k],
+                icon: KIND_ICON[k],
+              }))}
+            />
             <span className={styles.required}>
               <Switch
                 checked={q.required}
@@ -267,7 +266,10 @@ export function IntakeQuestionsStep({
           )}
           {q.synced && (
             <p className={styles.syncedNote}>
-              {STARTER_COPY.syncedEditor(q.synced)} <SettingsLink />.
+              <Icon name="sync" size={16} className={styles.syncedIcon} />
+              <span>
+                {STARTER_COPY.syncedEditor(q.synced)} <SettingsLink />.
+              </span>
             </p>
           )}
           {choice && (
@@ -305,17 +307,13 @@ export function IntakeQuestionsStep({
               {editing !== null ? 'Save question' : 'Add question'}
             </Button>
             {editing !== null && (
-              <Button variant="text" onClick={reset}>
+              <Button variant="text" className={styles.editorCancel} onClick={reset}>
                 Cancel
               </Button>
             )}
           </div>
         </div>
       )}
-      <Notice tone="info">
-        Every extra question lowers bookings. Ask only what you need to prepare. You can ask the
-        rest in the session.
-      </Notice>
       <LiveRegion message={said} />
     </div>
   );

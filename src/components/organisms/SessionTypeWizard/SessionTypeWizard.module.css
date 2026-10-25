@@ -92,7 +92,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-5) var(--space-5);
+  padding: var(--space-3) var(--space-5) 0;
   font-size: var(--text-p-xs);
   color: var(--red-600);
 }
@@ -310,6 +310,10 @@
   font-size: var(--text-p-sm);
   font-weight: var(--weight-medium);
 }
+/* The Video row's title is semibold (design), the rule rows' medium. */
+.videoLabel {
+  font-weight: var(--weight-semibold);
+}
 .ruleHint {
   font-size: var(--text-p-xs);
   color: var(--ink-500);
@@ -431,11 +435,31 @@
   outline-offset: var(--focus-ring-offset);
 }
 /* The editor's line for a synced question: where its options come from. */
+/* Editing the help-area question: where its options come from (design box). */
 .syncedNote {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
   margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--blue-50);
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
-  color: var(--ink-700);
+  color: var(--ink-600);
+}
+.syncedIcon {
+  flex: none;
+  color: var(--blue-500);
+}
+/* On --blue-50 a link is --blue-700 (every blue-50 surface). */
+.syncedNote a {
+  color: var(--blue-700);
+}
+/* The DS text Button at sm, as drawn: padded, unlike our text-link variant. */
+.editorCancel {
+  height: var(--button-h-medium);
+  padding: var(--space-3) var(--space-5);
 }
 /* A link inside a rule hint: the line keeps its height, the tap area is 44px. */
 .hintLink {

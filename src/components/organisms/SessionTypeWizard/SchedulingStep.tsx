@@ -7,6 +7,7 @@ import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker'
 import { BookingRulesRows } from '@/components/organisms/BookingRulesRows/BookingRulesRows';
 import { BOOKING_COPY, approvalShort } from '@/lib/copy/mentorSettings';
 import { RULES_COPY, venueLabel } from '@/lib/copy/sessionTypes';
+import { cx } from '@/lib/utils/cx';
 import { bookingRulesSummary } from '@/lib/utils/calendar';
 import {
   resolveDefaults,
@@ -230,7 +231,7 @@ export function SchedulingStep({
       <div className={styles.sectionRuled}>
         <div className={styles.videoRow}>
           <span className={styles.ruleText}>
-            <span className={styles.ruleLabel}>{RULES_COPY.videoTitle}</span>
+            <span className={cx(styles.ruleLabel, styles.videoLabel)}>{RULES_COPY.videoTitle}</span>
             <span id={videoId} className={styles.ruleHint}>
               {RULES_COPY.videoHintLead}
               <ExternalLink
