@@ -91,10 +91,14 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     mentee: [string, string],
     o: Opts = {},
   ): S['SessionRead'] => {
-    // Live presence (backend #394): EduFurther video only; in the room now while
-    // the session runs and Daily has seen them. Null for any other venue.
+    // Live presence (backend #394): EduFurther video only; in the room now on a
+    // confirmed, completed or no_show session that hasn't ended, once Daily has
+    // seen them. Null for any other venue.
+    const running =
+      ['confirmed', 'completed', 'no_show'].includes(status) &&
+      Date.now() < Date.parse(starts) + (o.duration ?? 60) * 60_000;
     const inRoom = (seen?: string) =>
-      (o.provider ?? 'daily') === 'daily' ? status === 'confirmed' && !!seen : null;
+      (o.provider ?? 'daily') === 'daily' ? running && !!seen : null;
     const other: S['PartyRead'] = {
       ...party(`mock-${id}`, mentee[0], mentee[1], o.zone ?? 'Africa/Lagos', o.edu ?? {}),
       joined_at: o.otherJoinedAt ?? null,
@@ -163,8 +167,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
   };
 
   // Sessions on the clock, for the join page: j-1 inside its join window; j-2
-  // under way, the other side pressed Join but Daily hasn't seen them
-  // (Joining…); j-3 past its window, both seen in the room (Joined, Rejoin
+  // under way, the other side pressed Join but Daily hasn't seen them (Not in
+  // the call yet); j-3 past its window, both in the room (Here now, Rejoin
   // through the door); j-7 on Google Meet (Joined from the Join press); j-8
   // and j-9 inside their window, but the mock's /join and /door refuse them
   // (409), so /enter comes back with ?enter=closed and ?enter=notopen.

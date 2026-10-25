@@ -272,19 +272,11 @@ describe('the window is open', () => {
     expect(screen.getByText('Here now').closest('.person')).toHaveTextContent('You');
   });
 
-  it('EduFurther video on a row without live presence yet: Joined from the room sighting', () => {
-    h.room = remote(
-      sessionRoom({
-        other: sampleParty({
-          firstName: 'Amara',
-          joinedAt: '2026-10-04T16:57:00Z',
-          inRoomAt: '2026-10-04T16:57:20Z',
-        }),
-      }),
-    );
-    renderAt('16:58:00');
-    expect(screen.getByText('Joined')).toBeVisible();
+  it('before Join opens nobody is "Here now", whatever the row says', () => {
+    h.room = remote(sessionRoom({ other: sampleParty({ firstName: 'Amara', inRoom: true }) }));
+    renderAt('15:15:00');
     expect(screen.queryByText('Here now')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Not in the call yet')).toHaveLength(2);
   });
 
   it('Google Meet reports no presence: Joined on the Join press', () => {

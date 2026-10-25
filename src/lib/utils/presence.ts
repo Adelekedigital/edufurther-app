@@ -7,18 +7,16 @@ import type { BookingParty, MeetingProvider } from '@/types/booking';
  * - `here`: EduFurther video (Daily) has them in the room now (`inRoom`):
  *   joined and not left.
  * - `joined`: Google Meet or a mentor's own link, which report no presence:
- *   they opened the call from here (`joinedAt`, product 2026-10-09). Also
- *   Daily on a row without `in_room` yet (an older backend): Daily has seen
- *   them in the room (`inRoomAt`), which is "has been", not "is".
- * - `none`: neither.
+ *   they opened the call from here (`joinedAt`, product 2026-10-09).
+ * - `none`: neither. On Daily that includes `inRoom` null (no room, or a
+ *   deleted account); a deleted account shows nothing anywhere.
  */
 export type Presence = 'here' | 'joined' | 'none';
 
 export function presenceOf(p: BookingParty, provider: MeetingProvider | null): Presence {
-  if (provider === 'daily') {
-    if (p.inRoom !== null) return p.inRoom ? 'here' : 'none';
-    return p.inRoomAt ? 'joined' : 'none';
-  }
+  // A deleted account is shown nothing about where it is.
+  if (p.deleted) return 'none';
+  if (provider === 'daily') return p.inRoom ? 'here' : 'none';
   return p.joinedAt ? 'joined' : 'none';
 }
 

@@ -86,7 +86,7 @@ export type BookingParty = {
   /**
    * EduFurther video only: in the room right now, joined and not left (backend
    * #394; two tabs count until both have left). Null when the venue can't say
-   * (Google Meet, a mentor's own link) or the row predates the field.
+   * (Google Meet, a mentor's own link), there is no room, or the account is gone.
    */
   inRoom: boolean | null;
   /**

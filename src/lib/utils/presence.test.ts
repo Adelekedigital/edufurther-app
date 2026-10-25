@@ -20,10 +20,16 @@ describe('presenceOf', () => {
     expect(presenceOf(sampleParty({ joinedAt: PRESS, inRoom: false }), 'daily')).toBe('none');
   });
 
-  it('EduFurther video on a row without live presence: joined once Daily saw them', () => {
-    expect(presenceOf(inRoom, 'daily')).toBe('joined');
+  it('EduFurther video with no live answer (no room): not in the call, whatever was seen before', () => {
+    expect(presenceOf(inRoom, 'daily')).toBe('none');
     expect(presenceOf(pressed, 'daily')).toBe('none');
     expect(presenceOf(none, 'daily')).toBe('none');
+  });
+
+  it('a deleted account shows nothing, wherever it is', () => {
+    const gone = sampleParty({ deleted: true, joinedAt: PRESS, inRoomAt: ROOM, inRoom: true });
+    expect(presenceOf(gone, 'daily')).toBe('none');
+    expect(presenceOf(gone, 'google_meet')).toBe('none');
   });
 
   it('Google Meet, a mentor’s own link, or no venue: joined on the Join press, never here', () => {

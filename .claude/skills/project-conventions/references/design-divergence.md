@@ -1121,5 +1121,6 @@ Source: the live `Session Join.dc.html` (`layout=lobbySplit`), re-read 2026-10-2
 | "Here now", green ring with the pulse (`efPulseRing` 1.8s) | As drawn, while EduFurther video has them in the room (`in_room`: joined and not left). The viewer's own ring works the same way. The pulse stops under reduced motion | Founder, Oct 21: live presence in, EduFurther video only | never |
 | "Not in the call yet", grey ring, for anyone not in the room | As drawn, for both people, before and during. Replaces "Ready when you are", "Not in the call", "Not here yet" and "Joining…" | Copy pass | never |
 | (no rule) Google Meet | "Joined" from the Join press, as built: Meet reports no presence | PRD | never |
-| (no rule) a row without `in_room` (an older backend) | Daily's room sighting reads "Joined", as before | No "Here now" we can't back | never |
+| (no rule) `in_room` null on EduFurther video (no room, or a deleted account) | "Not in the call yet"; a deleted account shows nothing anywhere | No "Here now" we can't back | never |
+| (no rule) before Join opens | "Not in the call yet" for both, whatever the row says; nothing announced | "Never before the window opens" (product, 2026-10-09) | never |
 | (no rule) someone leaves | The ring goes back to grey within one poll (15 s); a screen reader hears "{First} left the call." as it hears "{First} joined." | Ours: the visible change is announced both ways | design confirms |

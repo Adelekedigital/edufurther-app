@@ -29,6 +29,16 @@ export function isDrawnPhase(p: SessionPhase): p is DrawnPhase {
   return p !== 'elsewhere';
 }
 
+/**
+ * Where the people show live presence ("Here now"): from Join opening to the
+ * end. Not before (nobody can be in the room yet; "never before the window
+ * opens"), nor once it is over, where the rings say what was recorded. The
+ * page announces arrivals and departures in exactly these phases.
+ */
+export function showsLivePresence(p: DrawnPhase): boolean {
+  return p === 'soon' || p === 'ongoing' || p === 'closed';
+}
+
 /** Over and ruled on: the outcome block shows under the lobby. */
 export function isSettled(p: DrawnPhase): p is 'completed' | 'missed' {
   return p === 'completed' || p === 'missed';
@@ -128,7 +138,7 @@ function people(room: SessionRoom, phase: DrawnPhase, timeZone: string): LobbyPr
   // say, so its "Joined" is the Join press. The same for the viewer.
   const live = (p: BookingParty): LobbyProps['people'][number] => {
     const name = p === me ? 'You' : p.firstName;
-    const presence = presenceOf(p, room.provider);
+    const presence = showsLivePresence(phase) ? presenceOf(p, room.provider) : 'none';
     if (presence === 'here') return { person: p, name, presence: 'Here now', tone: 'here' };
     if (presence === 'joined') return { person: p, name, presence: 'Joined', tone: 'joined' };
     return { person: p, name, presence: 'Not in the call yet', tone: 'away' };

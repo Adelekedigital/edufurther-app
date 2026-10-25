@@ -68,6 +68,7 @@ import {
   isDrawnPhase,
   isSettled,
   lobbyModel,
+  showsLivePresence,
   lobbyTitle,
   lobbyWhen,
   PHASE_ANNOUNCEMENT,
@@ -254,7 +255,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
   // in an effect (React: adjusting state when a prop changes).
   const otherJoined = !!(
     live &&
-    live !== 'upcoming' &&
+    showsLivePresence(live) &&
     data &&
     presenceOf(data.booking.other, data.provider) !== 'none'
   );
