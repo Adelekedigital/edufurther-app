@@ -244,7 +244,7 @@ describe('SessionTypeManager — the session limit (PRD list)', () => {
   const rows = (n: number) =>
     Array.from({ length: n }, (_, i) => ({ ...T, id: `t${i}`, name: `Session ${i}` }));
 
-  it('under the limit: "{n} of {limit}" beside Create; Create, templates and Duplicate work', async () => {
+  it('under the limit: "{n} of {limit}" beside the title; Create, templates and Duplicate work', async () => {
     const user = userEvent.setup();
     const { onDuplicate } = setup(remote({ data: rows(2) }), {}, 5);
     expect(screen.getByText((_, el) => el?.textContent === '2 of 5 sessions')).toBeInTheDocument();

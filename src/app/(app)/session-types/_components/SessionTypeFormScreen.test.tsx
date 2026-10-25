@@ -415,23 +415,19 @@ describe('SessionTypeFormScreen', () => {
     expect(screen.queryByRole('button', { name: /Edit defaults|Edit weekly hours/ })).toBeNull();
   });
 
-  it('approval: the inherit option names the default; the hint says what the choice is', async () => {
+  it('approval: "Use my default" fits a phone; the hint names the default (owner, 2026-10-25)', async () => {
     const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
     await user.click(next(/^Continue$/));
     await user.click(next(/^Continue$/));
     await user.click(screen.getByRole('radio', { name: /Customize for this session/ }));
     const select = screen.getByRole('combobox', { name: 'Approve bookings' });
-    expect(select).toHaveAccessibleDescription('Choose how bookings are confirmed.');
+    expect(select).toHaveAccessibleDescription('Your default: you approve each booking.');
     expect(
       within(select)
         .getAllByRole('option')
         .map((o) => o.textContent),
-    ).toEqual([
-      'You approve each booking (your default)',
-      'You approve each booking',
-      'Confirmed straight away',
-    ]);
+    ).toEqual(['Use my default', 'You approve each booking', 'Confirmed straight away']);
   });
 
   it('review: one Booking rules row while inheriting; a row per rule once customized', async () => {

@@ -116,6 +116,23 @@ export function RowMenu({ label, items, triggerRef, trigger, menu: drawn }: RowM
     if (!open) focused.current = null;
   });
 
+  // A "⋯" near the left edge (a phone's row footer) would open off screen
+  // to its left, and one low on a phone under the tab bar: it opens toward
+  // the room. The page's scroll-padding-bottom is what a fixed bar covers.
+  // Measured before paint and marked on the menu itself (data-side, data-up),
+  // which React doesn't manage: no second render.
+  useLayoutEffect(() => {
+    const el = menu.current;
+    const b = button.current?.getBoundingClientRect();
+    if (!open || !el || !b) return;
+    const r = el.getBoundingClientRect();
+    const root = document.documentElement;
+    const start = trigger?.align === 'start';
+    const covered = parseFloat(getComputedStyle(root).scrollPaddingBottom) || 0;
+    if (start ? r.right > root.clientWidth : r.left < 0) el.dataset.side = start ? 'end' : 'start';
+    if (r.bottom > window.innerHeight - covered && b.top - r.height >= 0) el.dataset.up = '';
+  }, [open, trigger?.align]);
+
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {

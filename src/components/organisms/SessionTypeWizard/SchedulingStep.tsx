@@ -144,19 +144,18 @@ export function SchedulingStep({
             <span className={styles.ruleText}>
               <span className={styles.ruleLabel}>{BOOKING_COPY.approveTitle}</span>
               <span id={approvalId} className={styles.ruleHint}>
-                {RULES_COPY.approvalHint}
+                {RULES_COPY.defaultApprovalHint(defaultApproval)}
               </span>
             </span>
             <Select
               aria-label={BOOKING_COPY.approveTitle}
               aria-describedby={approvalId}
-              // The design draws 200, which its own "{default} (your default)" option
-              // overflows; 280 fits the longest (measured 272) (design-divergence.md).
-              width={280}
+              // As drawn: "Use my default" keeps the longest option at 193 (owner, 2026-10-25).
+              width={200}
               value={d.approval}
               onChange={(e) => update({ approval: e.target.value as Draft['approval'] })}
               options={[
-                { value: 'inherit', label: RULES_COPY.inheritApproval(defaultApproval) },
+                { value: 'inherit', label: RULES_COPY.useDefaultApproval },
                 { value: 'on', label: approvalShort(true) },
                 { value: 'off', label: approvalShort(false) },
               ]}

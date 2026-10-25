@@ -46,6 +46,20 @@
   right: auto;
   left: 0;
 }
+/* Opened toward the room (RowMenu's measure): the drawn edge ran off screen,
+   or there was no room under the button (a low row on a phone, over the tab bar). */
+.menu[data-side='start'] {
+  right: auto;
+  left: 0;
+}
+.menu[data-side='end'] {
+  right: 0;
+  left: auto;
+}
+.menu[data-up] {
+  top: auto;
+  bottom: calc(100% + var(--space-1));
+}
 .item {
   display: flex;
   align-items: center;

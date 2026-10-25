@@ -251,3 +251,58 @@ describe('RowMenu: an item that is off', () => {
     expect(screen.queryByRole('menu')).toBeNull();
   });
 });
+
+describe('RowMenu: opens toward the room (owner, 2026-10-25)', () => {
+  const at = (left: number, width = 220) =>
+    vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockReturnValue({ left, right: left + width } as DOMRect);
+  afterEach(() => vi.restoreAllMocks());
+
+  it('a "⋯" near the left edge of a phone opens its menu to the right', async () => {
+    at(-60);
+    const { trigger } = setup();
+    await userEvent.setup().click(trigger);
+    expect(screen.getByRole('menu')).toHaveAttribute('data-side', 'start');
+  });
+
+  it('with room on the left it opens as drawn, under the button’s end', async () => {
+    at(100);
+    const { trigger } = setup();
+    await userEvent.setup().click(trigger);
+    expect(screen.getByRole('menu')).not.toHaveAttribute('data-side');
+  });
+
+  it('no room under the button (a low row on a phone): it opens above', async () => {
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      left: 100,
+      right: 320,
+      top: window.innerHeight - 40,
+      bottom: window.innerHeight + 160,
+      height: 200,
+    } as DOMRect);
+    const { trigger } = setup();
+    await userEvent.setup().click(trigger);
+    expect(screen.getByRole('menu')).toHaveAttribute('data-up');
+  });
+
+  it('room under the button: it opens below, as drawn', async () => {
+    at(100);
+    const { trigger } = setup();
+    await userEvent.setup().click(trigger);
+    expect(screen.getByRole('menu')).not.toHaveAttribute('data-up');
+  });
+
+  it('a start-aligned menu running off the right opens toward the left', async () => {
+    at(document.documentElement.clientWidth - 100);
+    render(
+      <RowMenu
+        label="Photo options"
+        trigger={{ icon: 'photo_camera', align: 'start' }}
+        items={[{ key: 'a', icon: 'upload', label: 'Upload', onSelect: vi.fn() }]}
+      />,
+    );
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Photo options' }));
+    expect(screen.getByRole('menu')).toHaveAttribute('data-side', 'end');
+  });
+});
