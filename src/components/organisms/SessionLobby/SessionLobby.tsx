@@ -19,7 +19,7 @@ export type LobbyPerson = {
   person: BookingParty;
   name: string;
   presence: string;
-  tone: 'joined' | 'absent' | 'away';
+  tone: 'here' | 'joined' | 'absent' | 'away';
 };
 
 export type LobbyLink = {

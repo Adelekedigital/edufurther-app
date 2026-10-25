@@ -29,6 +29,16 @@ export function isDrawnPhase(p: SessionPhase): p is DrawnPhase {
   return p !== 'elsewhere';
 }
 
+/**
+ * Where the people show live presence ("Here now"): from Join opening to the
+ * end. Not before (nobody can be in the room yet; "never before the window
+ * opens"), nor once it is over, where the rings say what was recorded. The
+ * page announces arrivals and departures in exactly these phases.
+ */
+export function showsLivePresence(p: DrawnPhase): boolean {
+  return p === 'soon' || p === 'ongoing' || p === 'closed';
+}
+
 /** Over and ruled on: the outcome block shows under the lobby. */
 export function isSettled(p: DrawnPhase): p is 'completed' | 'missed' {
   return p === 'completed' || p === 'missed';
@@ -80,12 +90,7 @@ export function lobbyWhen(room: SessionRoom, timeZone: string): string {
   return `${lobbyDate(b.startsAt, timeZone)}, ${lobbyTimes(b, timeZone)} ${zoneLabel(timeZone)}`;
 }
 
-function people(
-  room: SessionRoom,
-  phase: DrawnPhase,
-  timeZone: string,
-  canEnter: boolean,
-): LobbyProps['people'] {
+function people(room: SessionRoom, phase: DrawnPhase, timeZone: string): LobbyProps['people'] {
   const { me, booking } = room;
   const other = booking.other;
   if (isSettled(phase)) {
@@ -128,21 +133,17 @@ function people(
     };
     return [line(me), line(other)];
   }
-  // Joined / Joining…, never "Here now": nothing we hold says who is in the
-  // call right now (product, 2026-10-09; live presence is backend #394).
-  const live = (p: BookingParty, waiting: string): LobbyProps['people'][number] => {
+  // Live (backend #394): "Here now" while EduFurther video has them in the
+  // room, back to "Not in the call yet" when they leave. Google Meet can't
+  // say, so its "Joined" is the Join press. The same for the viewer.
+  const live = (p: BookingParty): LobbyProps['people'][number] => {
     const name = p === me ? 'You' : p.firstName;
-    const presence = phase === 'upcoming' ? 'none' : presenceOf(p, room.provider);
+    const presence = showsLivePresence(phase) ? presenceOf(p, room.provider) : 'none';
+    if (presence === 'here') return { person: p, name, presence: 'Here now', tone: 'here' };
     if (presence === 'joined') return { person: p, name, presence: 'Joined', tone: 'joined' };
-    // PROVISIONAL: ours, until design answers.
-    if (presence === 'joining') return { person: p, name, presence: 'Joining…', tone: 'away' };
-    return { person: p, name, presence: waiting, tone: 'away' };
+    return { person: p, name, presence: 'Not in the call yet', tone: 'away' };
   };
-  return [
-    live(me, canEnter ? 'Ready when you are' : 'Not in the call'),
-    // "Not here yet", never "Not here": `pending` means not known yet (backend reply §1).
-    live(other, 'Not here yet'),
-  ];
+  return [live(me), live(other)];
 }
 
 export type LobbyInput = {
@@ -232,7 +233,7 @@ export function lobbyModel({
     title: lobbyTitle(room),
     meta: lobbyMeta(room, timeZone),
     clock: lobbyClock(b, phase, now),
-    people: people(room, phase, timeZone, !!entry),
+    people: people(room, phase, timeZone),
     join,
     note,
     // While upcoming only: none once Join opens.

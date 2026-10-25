@@ -9,21 +9,34 @@ const pressed = sampleParty({ joinedAt: PRESS });
 const inRoom = sampleParty({ joinedAt: PRESS, inRoomAt: ROOM });
 
 describe('presenceOf', () => {
-  it('EduFurther video: joined only once Daily saw them in the room', () => {
-    expect(presenceOf(inRoom, 'daily')).toBe('joined');
-    expect(presenceOf(pressed, 'daily')).toBe('joining');
+  it('EduFurther video, live: here while in the room, none once they leave (backend #394)', () => {
+    expect(
+      presenceOf(sampleParty({ joinedAt: PRESS, inRoomAt: ROOM, inRoom: true }), 'daily'),
+    ).toBe('here');
+    expect(
+      presenceOf(sampleParty({ joinedAt: PRESS, inRoomAt: ROOM, inRoom: false }), 'daily'),
+    ).toBe('none');
+    // Pressed Join, never seen in the room: not in the call.
+    expect(presenceOf(sampleParty({ joinedAt: PRESS, inRoom: false }), 'daily')).toBe('none');
+  });
+
+  it('EduFurther video with no live answer (no room): not in the call, whatever was seen before', () => {
+    expect(presenceOf(inRoom, 'daily')).toBe('none');
+    expect(presenceOf(pressed, 'daily')).toBe('none');
     expect(presenceOf(none, 'daily')).toBe('none');
   });
 
-  it('Google Meet, a mentor’s own link, or no venue: joined on the Join press', () => {
+  it('a deleted account shows nothing, wherever it is', () => {
+    const gone = sampleParty({ deleted: true, joinedAt: PRESS, inRoomAt: ROOM, inRoom: true });
+    expect(presenceOf(gone, 'daily')).toBe('none');
+    expect(presenceOf(gone, 'google_meet')).toBe('none');
+  });
+
+  it('Google Meet, a mentor’s own link, or no venue: joined on the Join press, never here', () => {
     for (const provider of ['google_meet', 'custom', 'zoom', null] as const) {
       expect(presenceOf(pressed, provider)).toBe('joined');
       expect(presenceOf(none, provider)).toBe('none');
     }
-  });
-
-  it('is never "joining" outside Daily: nothing else can tell a press from a presence', () => {
-    expect(presenceOf(pressed, 'google_meet')).not.toBe('joining');
   });
 });
 

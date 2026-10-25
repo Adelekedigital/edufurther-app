@@ -572,12 +572,83 @@ describe('what a screen reader hears', () => {
           firstName: 'Amara',
           joinedAt: '2026-10-04T16:58:05Z',
           inRoomAt: '2026-10-04T16:58:10Z',
+          inRoom: true,
         }),
       }),
     );
     view.rerender(<SessionJoinScreen id="b1" />);
     expect(srStatus()).toHaveTextContent('Amara joined.');
     expect(srStatus()).not.toHaveTextContent('is here');
+  });
+
+  it('live presence: says when they arrive and when they leave the call', () => {
+    const amara = (inRoom: boolean) =>
+      remote(
+        sessionRoom({
+          other: sampleParty({
+            firstName: 'Amara',
+            joinedAt: '2026-10-04T16:58:05Z',
+            inRoomAt: '2026-10-04T16:58:10Z',
+            inRoom,
+          }),
+        }),
+      );
+    h.room = amara(false);
+    const view = renderAt('16:58:00');
+    expect(srStatus()).toBeEmptyDOMElement();
+    h.room = amara(true);
+    view.rerender(<SessionJoinScreen id="b1" />);
+    expect(srStatus()).toHaveTextContent('Amara joined.');
+    h.room = amara(false);
+    view.rerender(<SessionJoinScreen id="b1" />);
+    expect(srStatus()).toHaveTextContent('Amara left the call.');
+  });
+
+  it('live presence: a departure in the same poll as the join window closing is still said', async () => {
+    const amara = (inRoom: boolean) =>
+      remote(
+        sessionRoom({
+          other: sampleParty({
+            firstName: 'Amara',
+            joinedAt: '2026-10-04T17:00:05Z',
+            inRoomAt: '2026-10-04T17:00:10Z',
+            inRoom,
+          }),
+        }),
+      );
+    h.room = amara(true);
+    const view = renderAt('17:14:58');
+    h.room = amara(false);
+    await act(async () => {
+      vi.setSystemTime(at('17:15:05'));
+      vi.advanceTimersByTime(1000);
+    });
+    view.rerender(<SessionJoinScreen id="b1" />);
+    expect(srStatus()).toHaveTextContent('Amara left the call.');
+  });
+
+  it('live presence: nothing about leaving once the session is over', async () => {
+    const amara = (inRoom: boolean) =>
+      remote(
+        sessionRoom({
+          other: sampleParty({
+            firstName: 'Amara',
+            joinedAt: '2026-10-04T17:00:05Z',
+            inRoomAt: '2026-10-04T17:00:10Z',
+            inRoom,
+          }),
+        }),
+      );
+    h.room = amara(true);
+    const view = renderAt('17:29:58');
+    // The clock passes the end (settling), then the room empties.
+    await act(async () => {
+      vi.setSystemTime(at('17:30:05'));
+      vi.advanceTimersByTime(1000);
+    });
+    h.room = amara(false);
+    view.rerender(<SessionJoinScreen id="b1" />);
+    expect(srStatus()).not.toHaveTextContent('left the call');
   });
 
   it('never the ticking clock, but the door opening, once', () => {

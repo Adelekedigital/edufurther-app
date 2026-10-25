@@ -1,20 +1,22 @@
 import type { BookingParty, MeetingProvider } from '@/types/booking';
 
 /**
- * Where someone stands in a session's call, as far as anything we hold can
- * say. Never "in the call now": nothing records leaving yet (backend #394).
+ * Where someone stands in a session's call right now, as far as the venue can
+ * say (PRD Session Join, live presence; backend #394).
  *
- * - `joined`: EduFurther video (Daily) saw them in the room (`inRoomAt`); on
- *   Google Meet or a mentor's own link, which report no presence, they opened
- *   the call from here (`joinedAt`, product 2026-10-09).
- * - `joining`: Daily only. They pressed Join but Daily hasn't seen them in the
- *   room (yet, or ever: a blocked tab, a call that didn't connect).
- * - `none`: neither.
+ * - `here`: EduFurther video (Daily) has them in the room now (`inRoom`):
+ *   joined and not left.
+ * - `joined`: Google Meet or a mentor's own link, which report no presence:
+ *   they opened the call from here (`joinedAt`, product 2026-10-09).
+ * - `none`: neither. On Daily that includes `inRoom` null (no room, or a
+ *   deleted account); a deleted account shows nothing anywhere.
  */
-export type Presence = 'joined' | 'joining' | 'none';
+export type Presence = 'here' | 'joined' | 'none';
 
 export function presenceOf(p: BookingParty, provider: MeetingProvider | null): Presence {
-  if (provider === 'daily') return p.inRoomAt ? 'joined' : p.joinedAt ? 'joining' : 'none';
+  // A deleted account is shown nothing about where it is.
+  if (p.deleted) return 'none';
+  if (provider === 'daily') return p.inRoom ? 'here' : 'none';
   return p.joinedAt ? 'joined' : 'none';
 }
 

@@ -72,6 +72,7 @@ const party = (name = 'Olajuwon Samuel'): BookingParty => ({
   institution: null,
   joinedAt: null,
   inRoomAt: null,
+  inRoom: null,
   attendance: 'pending',
 });
 

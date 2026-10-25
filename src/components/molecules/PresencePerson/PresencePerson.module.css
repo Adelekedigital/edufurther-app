@@ -21,6 +21,32 @@
     0 0 0 5px var(--green-700);
 }
 
+/* In the call right now: the design's efPulseRing around the ring, its rgba
+   green as a token mix (as SessionStatusPill's dot). */
+.pulse {
+  position: absolute;
+  inset: -5px;
+  border-radius: var(--radius-full);
+  pointer-events: none;
+  animation: pulse-ring 1.8s infinite;
+}
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--green-600) 40%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 10px color-mix(in srgb, var(--green-600) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--green-600) 0%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    animation: none;
+  }
+}
+
 .name {
   font-size: var(--text-p-sm);
   font-weight: var(--weight-semibold);

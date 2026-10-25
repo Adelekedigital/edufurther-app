@@ -25,6 +25,7 @@ export const party = (name = 'Amara Okafor', over: Partial<BookingParty> = {}): 
   institution: null,
   joinedAt: null,
   inRoomAt: null,
+  inRoom: null,
   attendance: 'pending' as const,
   ...over,
 });
