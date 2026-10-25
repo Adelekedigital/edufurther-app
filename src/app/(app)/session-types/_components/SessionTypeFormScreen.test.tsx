@@ -629,9 +629,10 @@ describe('SessionTypeFormScreen — the Video row (backend #535)', () => {
     mockRetryVideo.mockReset();
     videoMock = { data: null, isLoading: false, error: { kind: 'server', message: 'x' } };
     await toStep3(user);
+    // In a polite live region, so it is announced when it arrives (GitHub review r2).
     expect(
       screen.getByText('We couldn’t load your default video. This session still follows it.'),
-    ).toBeInTheDocument();
+    ).toHaveAttribute('aria-live', 'polite');
     const tries = screen.getAllByRole('button', { name: 'Try again' });
     await user.click(tries[tries.length - 1]!);
     expect(mockRetryVideo).toHaveBeenCalledOnce();

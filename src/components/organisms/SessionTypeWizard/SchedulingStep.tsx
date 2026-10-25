@@ -262,15 +262,16 @@ export function SchedulingStep({
             {errors.venue}
           </p>
         )}
-        {videoFailed && (
-          // As the rules and hours rows say theirs: the session still follows it.
-          <p className={styles.videoFailed}>
-            {RULES_COPY.videoFailed}
+        {/* As the rules and hours rows say theirs: always mounted and live, so the
+            words are announced when the read fails after the step is open. */}
+        <p className={videoFailed ? styles.videoFailed : 'sr-only'}>
+          <span aria-live="polite">{videoFailed ? RULES_COPY.videoFailed : ''}</span>
+          {videoFailed && (
             <button type="button" className={styles.inlineAction} onClick={onRetryVideo}>
               Try again
             </button>
-          </p>
-        )}
+          )}
+        </p>
       </div>
     </div>
   );
