@@ -112,7 +112,6 @@ export function IntroEditForm({
               ref={first}
               {...c}
               data-ff="firstName"
-              className={styles.input}
               value={v.firstName}
               onChange={set('firstName')}
               autoComplete="given-name"
@@ -128,7 +127,6 @@ export function IntroEditForm({
             <Input
               {...c}
               data-ff="lastName"
-              className={styles.input}
               value={v.lastName}
               onChange={set('lastName')}
               autoComplete="family-name"
@@ -143,7 +141,6 @@ export function IntroEditForm({
               <Input
                 {...c}
                 data-ff="headline"
-                className={styles.input}
                 value={v.headline}
                 onChange={set('headline')}
                 maxLength={HEADLINE_MAX}

@@ -30,9 +30,3 @@
   line-height: var(--lh-p);
   color: var(--text-danger);
 }
-/* AppShell.dc.html phone rule: `padding: 0 var(--space-3)` becomes space-2. */
-@media (max-width: 767px) {
-  .input {
-    padding: 0 var(--space-2);
-  }
-}

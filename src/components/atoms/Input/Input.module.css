@@ -59,4 +59,17 @@
     font-size: var(--text-p-md);
     min-height: var(--touch-target-min);
   }
+  /* The prototype's phone rule turns `0 var(--space-3)` into 8px sides
+     (owner, 2026-10-25). Textarea and xl are drawn with other padding. */
+  .field:not(.textarea, .xl) {
+    padding-left: var(--space-2);
+    padding-right: var(--space-2);
+  }
+  /* Icon room still wins over the side padding. */
+  .field.padStart {
+    padding-left: var(--space-10);
+  }
+  .field.padEnd {
+    padding-right: var(--space-11);
+  }
 }
