@@ -41,12 +41,13 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
     (s): s is Exclude<Stage, 'other'> => s !== 'other' && !STAGE_CHIPS.includes(s),
   );
   // Its words can match an old chip's ("Exploring"): two chips alike can't be
-  // told apart, so the old one steps aside unless it's picked too.
+  // told apart, so one chip stands for both, and unpicking it clears both.
   const taken = new Set(extra.map((s) => STAGE_LABELS[s]));
   const stages = [
-    ...STAGE_CHIPS.filter((c) => d.stages.includes(c) || !taken.has(STAGE_LABELS[c])).map(
-      (value) => ({ value, label: STAGE_LABELS[value] }),
-    ),
+    ...STAGE_CHIPS.filter((c) => !taken.has(STAGE_LABELS[c])).map((value) => ({
+      value,
+      label: STAGE_LABELS[value],
+    })),
     ...extra.map((value) => ({ value, label: STAGE_LABELS[value] })),
     ...(d.stages.includes('other') && d.customStage
       ? [{ value: 'other', label: d.customStage }]
@@ -133,7 +134,14 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
             update(
               d.stages.includes(v as Stage)
                 ? {
-                    stages: d.stages.filter((s) => s !== v),
+                    // With any stage of the same words (one chip stands for both).
+                    stages: d.stages.filter(
+                      (s) =>
+                        s !== v &&
+                        (v === 'other' ||
+                          s === 'other' ||
+                          STAGE_LABELS[s] !== STAGE_LABELS[v as Exclude<Stage, 'other'>]),
+                    ),
                     customStage: v === 'other' ? '' : d.customStage,
                   }
                 : { stages: [...d.stages, v as Stage] },

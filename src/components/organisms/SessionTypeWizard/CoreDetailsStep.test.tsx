@@ -50,4 +50,25 @@ describe('CoreDetailsStep: a stage the API sent that isn’t a chip yet', () => 
     ]);
     expect(within(group()).getAllByRole('button', { name: 'Exploring' })).toHaveLength(1);
   });
+
+  it('old and new with the same words both saved: one chip, and unpicking it clears both (review r3)', async () => {
+    const update = vi.fn();
+    render(
+      <CoreDetailsStep
+        draft={{ ...blankDraft(), stages: ['early_exploration', 'revisions', 'exploring'] }}
+        update={update}
+        errors={{}}
+        topics={[]}
+      />,
+    );
+    expect(chips()).toEqual([
+      'Drafting',
+      'Submitted, waiting',
+      'Revising ✓',
+      'Interviewing',
+      'Exploring ✓',
+    ]);
+    await userEvent.click(within(group()).getByRole('button', { name: 'Exploring' }));
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({ stages: ['revisions'] }));
+  });
 });
