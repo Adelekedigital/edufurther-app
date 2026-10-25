@@ -1114,6 +1114,7 @@ Source: the live `Session Join.dc.html` (`layout=lobbySplit`), re-read 2026-10-2
 | Chips, a 3-row note, an outlined Send that stays off until a chip is picked | As drawn (`MissedReasonForm`, from ChoiceChips and the Textarea atom). The note is capped at the backend's 1,000 | Founder chose the design over the handoff's always-on Send | never |
 | Sent: "Thanks. We've shared this with {First}." | "Thanks for letting us know." It survives a reload (`missed_reason_sent`), and a second send's 409 reads as sent | Founder: internal only | the founder shares reasons |
 | (no state) a send that fails | "We couldn't send that. Try again in a moment." under the note; the picks stay | Ours | design confirms |
+
 ### Session Join — live presence (Session Join PRD, backend #394), 2026-10-25
 
 | Design | Build | Why | Revisit |
