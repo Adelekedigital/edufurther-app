@@ -19,9 +19,11 @@ import type {
   SessionIcon,
 } from '@/types/sessionType';
 import {
+  STAGE_CHIPS,
   copyForField,
   fieldForPointer,
   resolveDefaults,
+  type Stage,
   type BookingDefaults,
   type FieldErrors,
   type toCreateBody,
@@ -35,7 +37,19 @@ import { keys } from './keys';
 import { sessionKey, useSession } from './session';
 
 type OwnSessionTypeRead = components['schemas']['OwnSessionTypeRead'];
-type MentorSessionTypeWrite = components['schemas']['MentorSessionTypeWrite'];
+/**
+ * A session-type write as we send it. `custom_stage_label` is left out: it is
+ * typed `null` only (backend #536, no custom stage), which the client reads as
+ * "never sent", and the API always reads it as null.
+ */
+export type SessionTypeWriteBody = Omit<
+  components['schemas']['MentorSessionTypeWrite'],
+  'custom_stage_label'
+>;
+export type SessionTypePatchBody = Omit<
+  components['schemas']['MentorSessionTypePatch'],
+  'custom_stage_label'
+>;
 type MentorProfileWrite = components['schemas']['MentorProfileWrite'];
 
 // ---- mapping ----------------------------------------------------------------
@@ -60,16 +74,34 @@ export function autoIcon(topicCodes: readonly (string | null | undefined)[]): Se
   return TOPIC_ICON[first] ?? 'video_call';
 }
 
+/** A stored old stage onto the six, exactly as the backend reads it (backend PR 1). `other` goes. */
+const OLD_STAGE: Record<string, Stage> = {
+  early_exploration: 'exploring',
+  drafting_stage: 'preparing_documents',
+  revisions: 'preparing_documents',
+  post_submission: 'awaiting_decision',
+  interviewing: 'interview_prep',
+};
+const SIX = new Set<string>(STAGE_CHIPS);
+
 /**
  * The stages a session type is aimed at, in the mentor's order; `[]` = any
  * stage (then the old field isn't read). The single `application_stage` is the
  * deprecated form, read while a response still lacks the list (backend round 3).
+ * An old slug reads as the one it became; two that became one stay once, at
+ * the first one's place; `other` is dropped, so only `other` reads as any stage.
  */
 export function stagesOf(r: {
-  application_stages?: ApplicationStage[] | null;
-  application_stage?: ApplicationStage | null;
-}): ApplicationStage[] {
-  return r.application_stages ?? (r.application_stage ? [r.application_stage] : []);
+  application_stages?: readonly string[] | null;
+  application_stage?: string | null;
+}): Stage[] {
+  const raw = r.application_stages ?? (r.application_stage ? [r.application_stage] : []);
+  const out: Stage[] = [];
+  for (const s of raw) {
+    const six = SIX.has(s) ? (s as Stage) : OLD_STAGE[s];
+    if (six && !out.includes(six)) out.push(six);
+  }
+  return out;
 }
 
 export function toOwnSessionType(r: OwnSessionTypeRead): OwnSessionType {
@@ -91,7 +123,6 @@ export function toOwnSessionType(r: OwnSessionTypeRead): OwnSessionType {
       r.booking_window_days == null &&
       r.break_after_minutes == null,
     stages: stagesOf(r),
-    customStage: r.custom_stage_label?.trim() || null,
     topics,
     iconChoice: r.icon ?? null,
     icon: r.icon ?? autoIcon(topics.map((t) => t.code)),
@@ -539,7 +570,7 @@ export function useCreateSessionType() {
           // The generated type makes every defaulted field required (openapi-typescript);
           // the API requires only question_text, and refuses `allows_multiple`/`options`
           // on a non-choice question (backend #12), so they are sent only on choices.
-          body: body as unknown as MentorSessionTypeWrite,
+          body: body as unknown as SessionTypeWriteBody,
         });
       } catch (e) {
         throw createError(e, null);

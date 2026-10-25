@@ -24,7 +24,6 @@ const T = (over: Partial<OwnSessionType> = {}): OwnSessionType => ({
   isLive: true,
   usesOwnWindows: false,
   stages: [],
-  customStage: null,
   topics: [],
   icon: 'edit_document',
   iconChoice: null,

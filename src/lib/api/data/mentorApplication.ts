@@ -32,6 +32,7 @@ import { api } from './http';
 import { keys } from './keys';
 import { useTopics } from './mentors';
 import { aboutBody } from './profileEdit';
+import type { SessionTypeWriteBody } from './sessionTypes';
 import { toWeeklyHours, useSaveWeeklyHours, useWeeklyHours, type WeeklyHours } from './weeklyHours';
 
 type Me = components['schemas']['UserRead'];
@@ -516,7 +517,7 @@ export function useSaveMentorStep(userId: string | null) {
                 duration_minutes: 30,
                 description: introDescription(labels),
                 service_offering_ids: answers.helpIds,
-              } as components['schemas']['MentorSessionTypeWrite'],
+              } as SessionTypeWriteBody,
             }),
           );
         }

@@ -19,7 +19,14 @@ import { planQuestions, toPatchBody, type SavedQuestion } from '@/lib/utils/sess
 import { ApiError, apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
-import { createError, refreshLimitsOnRefusal, stagesOf, type CreateError } from './sessionTypes';
+import {
+  createError,
+  refreshLimitsOnRefusal,
+  stagesOf,
+  type CreateError,
+  type SessionTypePatchBody,
+  type SessionTypeWriteBody,
+} from './sessionTypes';
 import { planHoursSave, toWeeklyHours } from './weeklyHours';
 
 type OwnSessionTypeRead = components['schemas']['OwnSessionTypeRead'];
@@ -71,7 +78,6 @@ export function toDraft(s: SavedSessionType, defaults: BookingDefaults | null): 
     description: r.description ?? '',
     topics: offerings.map((o) => o.code),
     stages: stagesOf(r),
-    customStage: r.custom_stage_label ?? '',
     icon: r.icon ?? null,
     questions: s.questions.map((q): DraftQuestion => ({
       key: q.id,
@@ -209,7 +215,7 @@ export function useSaveSessionType() {
         try {
           result = await api.PATCH('/api/v1/me/session-types/{session_type_id}', {
             params: { path: { session_type_id } },
-            body: patch as components['schemas']['MentorSessionTypePatch'],
+            body: patch as SessionTypePatchBody,
           });
         } catch (e) {
           throw createError(e, null, 'save');
@@ -413,8 +419,6 @@ export function toDuplicateBody(
         offeringIds[o.code] ? [offeringIds[o.code]!] : [],
       ),
       application_stages: stages,
-      // Only with "other": a legacy row can carry a stale label the API refuses.
-      custom_stage_label: stages.includes('other') ? (r.custom_stage_label ?? null) : null,
       icon: r.icon ?? null,
       requires_booking_confirmation: r.requires_booking_confirmation ?? null,
       // Its own window as it really applies: a new type can't keep a value
@@ -462,7 +466,7 @@ export function useDuplicateSessionType() {
       try {
         result = await api.POST('/api/v1/me/session-types', {
           params: { header: { 'Idempotency-Key': crypto.randomUUID() } },
-          body: body as unknown as components['schemas']['MentorSessionTypeWrite'],
+          body: body as unknown as SessionTypeWriteBody,
         });
       } catch (e) {
         throw createError(e, null, 'duplicate');
