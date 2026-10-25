@@ -550,15 +550,17 @@ opposite of the truth and `types/booking.ts` is imported by seven components.
 
 Source: `Session Join.dc.html` at `layout=lobbySplit`, 19 Oct copy pass. The PRD's founder decisions win over the design's copy.
 
+**Resolved 2026-10-25 (owner):** the live `Session Join.dc.html` now says what we build: 15 minutes in the missed cards, first names, no "Booking pauses after 3." (the 3-miss pause is deferred; the card says "it counts as a missed session", the wording the dashboard uses), no "we've told", no reason hint, "Thanks for letting us know.", "Go to Bookings" for a mentor who missed (a mentor who missed is never offered a new time), and the mentor's completed card "Your session with Amara is complete." with Go to Home (next steps are out of scope; the design's panel is switched off). Every row below is closed.
+
 | Design says | We do | Why |
 |---|---|---|
 | Mentor sub "From her booking answers."; mentor tip "…around what she needs." | "From {First}’s booking answers."; "…around what {First} needs." | Founder: first names, never pronouns. |
 | Mentor tip "Check {First}’s response" always | Left out when the mentee answered nothing (two tips) | There is no response to check. |
-| "waited 10 minutes" / "within 10 minutes" | The number from the row: `join_closes_at` minus the start; 10 only on a row without it | The backend's arrival rule is the row's (fifteen minutes today), and the copy names it (PRD J3). |
+| "waited 10 minutes" / "within 10 minutes" | The number from the row: `join_closes_at` minus the start; 15 (`MISSED_WAIT_FALLBACK_MIN`) on a row without it | The backend's arrival rule is the row's (fifteen minutes today), and the copy names it (PRD J3). |
 | Mentee missed: "…counts as a missed session. Booking pauses after 3." | The sentence without "Booking pauses after 3." | Founder: the 3-miss pause isn't built (#444). |
 | Mentor missed a mentee's session: "Your credit is back, and we’ve told Gbenga." | "Your credit is back." | Founder: we send no missed-session email yet. |
 | Mentor missed: "…so her credit is back." + "Offer a new time" | "…so {First}’s credit is back." + "Go to Bookings" | Founder (first names); a suggested time can't ride on a missed session yet (PRD open question, default). |
-| Missed reason form ("What happened?") | Not built yet: `SessionOutcome`'s `reason` slot, shown when `askReason` | Waits on the backend's missed-reason endpoint (PRD PR 2). |
+| Missed reason form ("What happened?") | Built: see "Session Join — the missed-reason form" below | Backend #532. |
 | Mentor completed: "Share next steps with Amara" + Write next steps + Go to Home | "Your session with {First} is complete." + Go to Home | Founder: next steps are later. |
 
 ### Bookings — the answers disclosure counts questions (backend #412), 2026-10-10
@@ -1110,9 +1112,9 @@ Source: the live `Session Join.dc.html` (`layout=lobbySplit`), re-read 2026-10-2
 
 | Design | Build | Why | Revisit |
 |---|---|---|---|
-| "What happened?" with the hint "{First} sees your answer." | No hint: the reason is EduFurther's only | Founder, Oct 21: internal only | the founder shares reasons |
+| "What happened?" with the hint "{First} sees your answer." | No hint: the reason is EduFurther's only | Founder, Oct 21: internal only; owner, Oct 25: only cancel, decline and withdraw reasons go to the other party | — (resolved: design updated) |
 | Chips, a 3-row note, an outlined Send that stays off until a chip is picked | As drawn (`MissedReasonForm`, from ChoiceChips and the Textarea atom). The note is capped at the backend's 1,000 | Founder chose the design over the handoff's always-on Send | never |
-| Sent: "Thanks. We've shared this with {First}." | "Thanks for letting us know." It survives a reload (`missed_reason_sent`), and a second send's 409 reads as sent | Founder: internal only | the founder shares reasons |
+| Sent: "Thanks. We've shared this with {First}." | "Thanks for letting us know." It survives a reload (`missed_reason_sent`), and a second send's 409 reads as sent | Founder: internal only | — (resolved: design updated) |
 | (no state) a send that fails | "We couldn't send that. Try again in a moment." under the note; the picks stay | Ours | design confirms |
 
 ### Session Join — live presence (Session Join PRD, backend #394), 2026-10-25
