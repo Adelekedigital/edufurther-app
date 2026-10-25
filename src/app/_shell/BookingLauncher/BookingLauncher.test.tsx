@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { deviceTimeZone } from '@/lib/utils/format';
 import type { Mentor } from '@/types/mentor';
 import { BookingLauncher } from './BookingLauncher';
 
@@ -37,9 +38,13 @@ vi.mock('@/components/organisms/BookingFlow/BookingFlow', () => ({
 const remote = (data: unknown = null) => ({ data, isLoading: false, error: null, retry: vi.fn() });
 let requestDone = false;
 let types: { id: string }[] | null = null;
+const slotsArgs = vi.fn();
 vi.mock('@/lib/api/data/booking', () => ({
   useSessionTypes: () => remote(types),
-  useSlots: () => remote(),
+  useSlots: (...a: unknown[]) => {
+    slotsArgs(...a);
+    return remote();
+  },
   useRequestBooking: () => ({
     request: vi.fn(),
     isPending: false,
@@ -104,6 +109,18 @@ describe('BookingLauncher', () => {
     unmount();
     render(<BookingLauncher mentor={mentor} initialSessionTypeId="st-gone" onClose={vi.fn()} />);
     expect(screen.getByTestId('flow')).toHaveAttribute('data-type', 'st-general');
+    types = null;
+  });
+
+  it('asks for times in the zone it is given, else the device’s', () => {
+    types = [{ id: 'st-general' }];
+    const { unmount } = render(
+      <BookingLauncher mentor={mentor} timeZone="America/Chicago" onClose={vi.fn()} />,
+    );
+    expect(slotsArgs).toHaveBeenLastCalledWith('m1', 'st-general', 'America/Chicago');
+    unmount();
+    render(<BookingLauncher mentor={mentor} onClose={vi.fn()} />);
+    expect(slotsArgs).toHaveBeenLastCalledWith('m1', 'st-general', deviceTimeZone());
     types = null;
   });
 });

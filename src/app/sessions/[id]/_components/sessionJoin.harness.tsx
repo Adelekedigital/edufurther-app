@@ -7,7 +7,7 @@
  */
 import { sampleBookingFor, sampleParty } from '@/lib/utils/bookingTestFixtures';
 import type { BookingAnswer, SessionRoom } from '@/types/booking';
-import type { Remote, Viewer } from '@/types/mentor';
+import type { Mentor, Remote, Viewer } from '@/types/mentor';
 
 /** What the mocked hooks read, set per test. */
 export const h = {
@@ -41,6 +41,8 @@ export const cancel = { mutate: vi.fn(), reset: vi.fn(), isPending: false, error
 export const slotZones: string[] = [];
 /** Every review sent, in order. */
 export const sent: unknown[] = [];
+/** Every mentor the booking modal was given, render by render (null: closed). */
+export const launched: (Mentor | null)[] = [];
 
 /** The `vi.mock` factories, one per mocked module. */
 export const mocks = {
@@ -100,6 +102,7 @@ export const mocks = {
       done: boolean;
       onSend: (a: unknown, id: string | null) => void;
       onClose: () => void;
+      onBookAgain?: () => void;
     }) => (
       <div role="dialog" aria-label={`Review ${p.mentorFirstName}`}>
         <span>{p.done ? 'Sent' : `About ${p.sessions.map((x) => x.id).join(',')}`}</span>
@@ -109,8 +112,33 @@ export const mocks = {
         <button type="button" onClick={p.onClose}>
           Close review
         </button>
+        {p.onBookAgain && (
+          <button type="button" onClick={p.onBookAgain}>
+            Book again from the review
+          </button>
+        )}
       </div>
     ),
+  }),
+  // The modal itself is BookingLauncher's (tested on its own; its hooks need a
+  // query client): here, only who it books, in whose zone.
+  bookingLauncher: () => ({
+    BookingLauncher: (p: {
+      mentor: Mentor | null;
+      ratingUnknown?: boolean;
+      timeZone?: string;
+      onClose: () => void;
+    }) => {
+      launched.push(p.mentor);
+      return p.mentor ? (
+        <div role="dialog" aria-label={`Book ${p.mentor.name}`}>
+          <span>{`${p.mentor.profileHref} ${p.timeZone} ${String(!!p.ratingUnknown)}`}</span>
+          <button type="button" onClick={p.onClose}>
+            Close booking
+          </button>
+        </div>
+      ) : null;
+    },
   }),
   intakeFiles: () => ({
     useIntakeFile: () => ({ url: 'blob:stub', isLoading: false, error: null, retry: vi.fn() }),
@@ -206,8 +234,10 @@ export function setupSessionJoinHarness() {
     h.answers = remote<BookingAnswer[]>([]);
     sent.length = 0;
     slotZones.length = 0;
+    launched.length = 0;
     h.reviewables = remote([{ id: 'b1', startsAt: START, typeName: '1:1 call' }]);
     replace.mockClear();
+    push.mockClear();
     cancel.mutate.mockReset();
   });
   afterEach(() => {

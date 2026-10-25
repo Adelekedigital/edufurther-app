@@ -15,8 +15,13 @@ import type { Mentor } from '@/types/mentor';
 type BookingLauncherProps = {
   /** The mentor to book; null closes the flow (the query stays mounted, disabled). */
   mentor: Mentor | null;
-  /** A guest signs up after choosing a time; on member screens this is false. */
-  isGuest?: boolean;
+  /**
+   * A guest signs up after choosing a time; on member screens this is false.
+   * Null while the viewer loads (SignInBookingFlow decides on the first answer).
+   */
+  isGuest?: boolean | null;
+  /** Whose clock the times are in: the account's zone where known, else the device's. */
+  timeZone?: string;
   /** Hide the flow's "View profile" link (e.g. a mentor with no public profile). */
   hideProfileLink?: boolean;
   /** The mentor's rating/reviews aren't known (e.g. a met mentor from /me/mentors). */
@@ -47,9 +52,11 @@ export function BookingLauncher({
   initialTime,
   initialSessionTypeId,
   startAfterTime,
+  timeZone,
 }: BookingLauncherProps) {
   const [typeIdState, setTypeIdState] = useState<string | null>(null);
-  const [zone] = useState(deviceTimeZone);
+  const [deviceZone] = useState(deviceTimeZone);
+  const zone = timeZone ?? deviceZone;
   const sessionTypes = useSessionTypes(mentor?.id ?? null);
   // The offering being booked: the one picked in the modal, else the one
   // remembered from before sign-up (when the mentor still offers it), else the first.

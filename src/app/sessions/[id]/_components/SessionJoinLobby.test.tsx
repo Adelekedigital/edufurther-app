@@ -48,6 +48,9 @@ vi.mock('@/lib/api/data/reviewWrite', async () =>
 vi.mock('@/app/_reviews/ReviewDialog', async () =>
   (await import('./sessionJoin.harness')).mocks.reviewDialog(),
 );
+vi.mock('@/app/_shell/BookingLauncher/BookingLauncher', async () =>
+  (await import('./sessionJoin.harness')).mocks.bookingLauncher(),
+);
 vi.mock('@/lib/api/data/intakeFiles', async () =>
   (await import('./sessionJoin.harness')).mocks.intakeFiles(),
 );
@@ -502,7 +505,7 @@ describe('after the call, before attendance is settled', () => {
     expect(screen.getByText('Joined at 6:01 pm')).toBeVisible();
     expect(screen.getByText('No arrival recorded')).toBeVisible();
     expect(screen.queryByText(/didn’t join/i)).not.toBeInTheDocument();
-    expect(screen.queryByText('Quick guide for a rewarding session')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Quick guide' })).not.toBeInTheDocument();
   });
 
   it('shows a past arrival in green', () => {
