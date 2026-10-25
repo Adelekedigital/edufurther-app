@@ -25,6 +25,7 @@ const row = (over: Partial<SessionRead> = {}): SessionRead => ({
   mentor_id: 'me',
   mentee_id: 'them',
   mentee_attendance_sessions: 0,
+  missed_reason_sent: false,
   mentor: party('me', 'Gbenga', 'Adeyemi'),
   mentee: party('them', 'Amara', 'Okafor'),
   session_type_id: null,

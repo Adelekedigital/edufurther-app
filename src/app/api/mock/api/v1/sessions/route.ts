@@ -88,6 +88,7 @@ export async function POST(req: NextRequest) {
       duration_minutes: type.duration_minutes,
       created_at: new Date(now).toISOString(),
       mentee_attendance_sessions: 0,
+      missed_reason_sent: false,
     },
     { status: 201 },
   );

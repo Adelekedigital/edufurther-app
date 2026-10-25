@@ -34,6 +34,7 @@ const row = (myJoin: string | null = null): SessionRead => ({
   id: 's1',
   mentor_id: 'me',
   mentee_id: 'them',
+  missed_reason_sent: false,
   mentor: party('me', 'Gbenga', myJoin),
   mentee: party('them', 'Amara'),
   session_type_id: 'st1',
