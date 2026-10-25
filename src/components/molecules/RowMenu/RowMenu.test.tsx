@@ -239,6 +239,8 @@ describe('RowMenu: an item that is off', () => {
       />,
     );
     await user.click(screen.getByRole('button', { name: 'More actions' }));
+    // Opening moves focus to the first item after a frame; wait for it, as above.
+    await vi.waitFor(() => expect(screen.getByRole('menuitem', { name: /Edit/ })).toHaveFocus());
     await user.keyboard('{ArrowDown}');
     const item = screen.getByRole('menuitem', { name: /Duplicate/ });
     expect(item).toHaveFocus();

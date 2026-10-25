@@ -32,7 +32,9 @@ export const SESSIONS_COPY = {
   atLimit: (limit: number | null) =>
     limit === null
       ? 'You’ve reached your session limit.'
-      : `You can offer up to ${limit} sessions.`,
+      : limit === 1
+        ? 'You can offer 1 session.'
+        : `You can offer up to ${limit} sessions.`,
 } as const;
 
 /** The wizard's steps (design `stepDefs`, research names). */

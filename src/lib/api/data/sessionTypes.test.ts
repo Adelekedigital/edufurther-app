@@ -189,6 +189,10 @@ describe('createError: past the session limit (backend PR 3)', () => {
     expect(e.message).toBe('You can offer up to 5 sessions.');
     expect(e.fields).toEqual({});
   });
+  it('a limit of 1 reads as one session', () => {
+    const body = { ...limitBody, limit: 1 };
+    expect(createError(apiError(409, body), body).message).toBe('You can offer 1 session.');
+  });
   it('without the limit member, still not a name clash', () => {
     const body = { ...limitBody, limit: undefined };
     const e = createError(apiError(409, body), body, 'duplicate');
