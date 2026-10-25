@@ -11,6 +11,7 @@ import {
   replace,
   sessionRoom,
   setSearch,
+  slotZones,
   setupSessionJoinHarness,
 } from './sessionJoin.harness';
 import { SessionJoinScreen } from './SessionJoinScreen';
@@ -81,6 +82,25 @@ describe('before the window', () => {
     renderAt('15:15:00');
     expect(screen.getByText('Times shown in')).toBeVisible();
     expect(screen.getByRole('button', { name: /Change time zone/ })).toBeVisible();
+  });
+
+  it('another zone re-times the page and the support email; the cancel dialog keeps the account’s', async () => {
+    renderAt('15:15:00');
+    await userEvent.click(screen.getByRole('button', { name: /Change time zone/ }));
+    await userEvent.click(
+      within(screen.getByRole('list', { name: 'Time zones' })).getByRole('button', {
+        name: /Accra \(GMT\)/,
+      }),
+    );
+    expect(screen.getByText('Sun, Oct 4 · 5:00 – 5:30 pm · EduFurther video')).toBeVisible();
+    const href = screen.getByRole('link', { name: 'Contact support' }).getAttribute('href')!;
+    expect(new URLSearchParams(href.slice(href.indexOf('?') + 1)).get('body')).toContain(
+      'Session: 1:1 call with Amara Okafor, Sun, Oct 4, 5:00 – 5:30 pm Accra (GMT)',
+    );
+    // Suggesting a time is about the mentor's own calendar: their account's zone.
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(slotZones.length).toBeGreaterThan(0);
+    expect(slotZones.every((z) => z === 'Africa/Lagos')).toBe(true);
   });
 
   it('offers Add to calendar, Reschedule and Cancel while upcoming', () => {

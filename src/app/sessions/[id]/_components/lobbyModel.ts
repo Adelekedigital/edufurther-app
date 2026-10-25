@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'react';
 import type { SessionLobby } from '@/components/organisms/SessionLobby/SessionLobby';
 import type { GuideTip } from '@/components/organisms/SessionPrep/SessionPrep';
+import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import { formatTime } from '@/lib/utils/format';
 import {
   entryFor,
@@ -70,10 +71,13 @@ export function lobbyMeta(room: SessionRoom, timeZone: string): string {
     .join(' · ');
 }
 
-/** "Mon, Sep 28, 6:00 – 6:30 pm": the session's time in the support email. */
+/**
+ * "Mon, Sep 28, 6:00 – 6:30 pm Lagos (WAT)": the session's time in the support
+ * email, with its zone, since the page may be showing another one.
+ */
 export function lobbyWhen(room: SessionRoom, timeZone: string): string {
   const b = room.booking;
-  return `${lobbyDate(b.startsAt, timeZone)}, ${lobbyTimes(b, timeZone)}`;
+  return `${lobbyDate(b.startsAt, timeZone)}, ${lobbyTimes(b, timeZone)} ${zoneLabel(timeZone)}`;
 }
 
 function people(

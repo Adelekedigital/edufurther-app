@@ -44,7 +44,8 @@
   text-align: center;
 }
 
-/* Session Join.dc.html: "Having a problem? Contact support", the card's last row in every state. */
+/* Session Join.dc.html: "Having a problem? Contact support", the card's last row
+   (the session in every phase, and a failed load). */
 .support {
   margin-top: auto;
   padding: var(--space-4) var(--space-6);

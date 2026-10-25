@@ -37,6 +37,8 @@ export const replace = vi.fn((url: string) => {
 });
 export const push = vi.fn();
 export const cancel = { mutate: vi.fn(), reset: vi.fn(), isPending: false, error: null };
+/** The zone each slot request was asked in (the cancel dialog's Suggest a new time). */
+export const slotZones: string[] = [];
 /** Every review sent, in order. */
 export const sent: unknown[] = [];
 
@@ -65,7 +67,10 @@ export const mocks = {
   bookingActions: () => ({ useBookingAction: () => cancel }),
   booking: (orig: Record<string, unknown>) => ({
     ...orig,
-    useSlots: () => ({ data: [], isLoading: false, error: null, retry: vi.fn() }),
+    useSlots: (_mentor: string | null, _type: string | null, zone: string) => {
+      slotZones.push(zone);
+      return { data: [], isLoading: false, error: null, retry: vi.fn() };
+    },
   }),
   reviewableSessions: () => ({ useMyReviewableSessions: () => h.reviewables }),
   // The send hook keeps real state, so "sent" re-renders as the real one does.
@@ -200,6 +205,7 @@ export function setupSessionJoinHarness() {
     h.room = remote(sessionRoom());
     h.answers = remote<BookingAnswer[]>([]);
     sent.length = 0;
+    slotZones.length = 0;
     h.reviewables = remote([{ id: 'b1', startsAt: START, typeName: '1:1 call' }]);
     replace.mockClear();
     cancel.mutate.mockReset();

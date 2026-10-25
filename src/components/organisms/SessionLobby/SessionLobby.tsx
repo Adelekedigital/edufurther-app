@@ -59,7 +59,7 @@ type SessionLobbyProps = {
   meta: string;
   /** The time zone switcher under the date line: every time on the page follows it. */
   zone?: { value: string; onChange: (zone: string) => void; deviceZone: string };
-  clock: { label: string; value: string; sub?: string } | null;
+  clock: { label: string; value: string } | null;
   people: [LobbyPerson, LobbyPerson];
   /** Join and the line under it. Absent once nobody can join. */
   join?: LobbyJoin;
@@ -105,6 +105,26 @@ export function SessionLobby({
     }
   }, [hasJoin]);
 
+  // The links go on a tick too: Reschedule and Cancel when cancelling closes,
+  // the whole row (Add to calendar's menu with it) when Join opens. Focus that
+  // was in a link that went moves to the next link still there, else to Join,
+  // else to the title, never to <body>.
+  const linksHadFocus = useRef(false);
+  const linksRef = useRef<HTMLDivElement>(null);
+  const joinRef = useRef<HTMLDivElement>(null);
+  const linkKeys = [calendar ? 'calendar' : '', ...(links ?? []).map((l) => l.key)].join(' ');
+  useEffect(() => {
+    if (!linksHadFocus.current) return;
+    const active = document.activeElement;
+    if (active && active !== document.body && active.isConnected) return;
+    linksHadFocus.current = false;
+    const next =
+      linksRef.current?.querySelector<HTMLElement>('button, a') ??
+      joinRef.current?.querySelector<HTMLElement>('a, button:not(:disabled)') ??
+      titleRef.current;
+    next?.focus();
+  }, [linkKeys]);
+
   return (
     <div className={cx(styles.lobby, styles[ground])}>
       <div className={styles.head}>
@@ -126,6 +146,7 @@ export function SessionLobby({
 
       {join && (
         <div
+          ref={joinRef}
           className={styles.join}
           onFocus={() => (joinHadFocus.current = true)}
           onBlur={() => (joinHadFocus.current = false)}
@@ -163,7 +184,15 @@ export function SessionLobby({
       {notice && <div className={styles.notice}>{notice}</div>}
 
       {(!!links?.length || calendar) && (
-        <div className={styles.links}>
+        <div
+          ref={linksRef}
+          className={styles.links}
+          onFocus={() => (linksHadFocus.current = true)}
+          onBlur={(e) => {
+            // Leaving the row, not moving inside it (into Add to calendar's menu).
+            if (!e.currentTarget.contains(e.relatedTarget)) linksHadFocus.current = false;
+          }}
+        >
           {calendar && (
             <AddToCalendarMenu
               event={calendar}

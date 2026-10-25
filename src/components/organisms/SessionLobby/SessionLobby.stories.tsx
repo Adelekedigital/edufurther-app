@@ -33,7 +33,9 @@ const calendar = {
   pageUrl: 'https://app.test/sessions/s1',
   venue: 'EduFurther video',
 };
-const cancel = [
+// While upcoming: Reschedule opens the same cancel dialog (J2).
+const links = [
+  { key: 'reschedule', icon: 'update' as const, label: 'Reschedule', onClick: fn() },
   { key: 'cancel', icon: 'event_busy' as const, label: 'Cancel', onClick: fn(), danger: true },
 ];
 const ANSWERS: BookingAnswer[] = [
@@ -86,7 +88,7 @@ const meta: Meta<typeof SessionLobby> = {
   ],
   args: {
     title: '1:1 call with Amara Okafor',
-    meta: 'Sun, Oct 4 · 6:00 – 6:30 pm · Lagos (WAT) · EduFurther video',
+    meta: 'Sun, Oct 4 · 6:00 – 6:30 pm · EduFurther video',
   },
 };
 export default meta;
@@ -96,14 +98,15 @@ export const Upcoming: Story = {
   args: {
     ground: 'white',
     status: { tone: 'blue', label: 'Upcoming' },
-    clock: { label: 'Starts in', value: '1:45:00', sub: 'Join opens in 1:40:00' },
+    clock: { label: 'Starts in', value: '1:45:00' },
+    zone: { value: 'Africa/Lagos', onChange: fn(), deviceZone: 'Africa/Lagos' },
     people: [you('Not in the call'), her('Not here yet')],
     join: {
       label: 'Join opens in 1:40:00',
       enabled: false,
-      hint: 'The button turns on 5 minutes before the start.',
+      hint: 'The button becomes active 5 minutes before the start.',
     },
-    links: cancel,
+    links,
     calendar,
   },
 };
@@ -112,7 +115,7 @@ export const StartingSoon: Story = {
   args: {
     ground: 'blue',
     status: { tone: 'blue', label: 'Starting soon' },
-    clock: { label: 'Starts in', value: '03:12', sub: 'Join is open' },
+    clock: { label: 'Starts in', value: '03:12' },
     people: [you('Ready when you are'), her('Joined', 'joined')],
     join: {
       label: 'Join session',
@@ -120,8 +123,7 @@ export const StartingSoon: Story = {
       href: '/sessions/b1/enter',
       hint: 'Opens in your browser. No download needed.',
     },
-    links: cancel,
-    calendar,
+    // No links once Join opens.
   },
 };
 

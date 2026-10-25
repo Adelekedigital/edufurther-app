@@ -30,8 +30,9 @@ import { IntakeFileViewer } from '@/app/_sessions/IntakeFileViewer';
 import { canBookFor } from '@/app/_shell/bookBlocked';
 import { lockedPageGate, memberGate, SESSION_GATE } from '@/app/_shell/MentorGate';
 import { accessFor, memberHome } from '@/lib/utils/access';
-import { sessionSupportMail, SUPPORT_FOOTER_COPY } from '@/lib/copy/session';
-import { supportMailto } from '@/lib/utils/mailto';
+import { sessionSupportRequest, SUPPORT_FOOTER_COPY } from '@/lib/copy/session';
+import { DELETED_NAME } from '@/lib/api/data/bookings';
+import { supportHref, supportMailto } from '@/lib/utils/mailto';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
 import { useMyReviewableSessions } from '@/lib/api/data/reviewableSessions';
 import { useSendReview } from '@/lib/api/data/reviewWrite';
@@ -90,6 +91,19 @@ function enterProblemText(
     case 'failed':
       return 'We couldn’t join you. Try again in a moment.';
   }
+}
+
+/** "Having a problem? Contact support": the card's last row, on the session and on a failed load. */
+function SupportRow({ href }: { href: string }) {
+  return (
+    <div className={styles.support}>
+      <SupportLine
+        lead={SUPPORT_FOOTER_COPY.lead}
+        linkLabel={SUPPORT_FOOTER_COPY.link}
+        href={href}
+      />
+    </div>
+  );
 }
 
 /** Statuses where the session is not this page's to show: an id we may not see, or a bad one. */
@@ -285,13 +299,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
             />
           )}
         </div>
-        <div className={styles.support}>
-          <SupportLine
-            lead={SUPPORT_FOOTER_COPY.lead}
-            linkLabel={SUPPORT_FOOTER_COPY.link}
-            href={supportMailto()}
-          />
-        </div>
+        <SupportRow href={supportMailto()} />
       </section>
     );
   } else if (!data || !live) {
@@ -353,15 +361,19 @@ export function SessionJoinScreen({ id }: { id: string }) {
           guide,
         }
       : null;
+    // Signed with the viewer's own name; a nameless account (a row reads
+    // "Deleted user") signs with the first name /me gives, or its email's start.
+    const support = supportHref(
+      {
+        name: data.me.name === DELETED_NAME ? (member?.firstName ?? '') : data.me.name,
+        email: '',
+        mentor: b.side === 'mentor',
+      },
+      sessionSupportRequest({ sessionName: lobbyTitle(data), when: lobbyWhen(data, timeZone) }),
+    );
     // Plain text: the live region above already says it, and a second status
     // region would read it out twice. Not when the lobby's own note already
     // says the same (the closed rule), so it isn't printed twice.
-    const mail = sessionSupportMail({
-      sessionName: lobbyTitle(data),
-      when: lobbyWhen(data, timeZone),
-      name: data.me.name,
-      role: b.side,
-    });
     const notice =
       problem && problem.text !== lobby.note ? (
         <p className={styles.problem}>{problem.text}</p>
@@ -408,13 +420,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
               onOpen={setSheet}
             />
           )}
-          <div className={styles.support}>
-            <SupportLine
-              lead={SUPPORT_FOOTER_COPY.lead}
-              linkLabel={SUPPORT_FOOTER_COPY.link}
-              href={supportMailto(mail.subject, mail.body)}
-            />
-          </div>
+          <SupportRow href={support} />
         </section>
         {preparing && (
           <SessionPrepAside

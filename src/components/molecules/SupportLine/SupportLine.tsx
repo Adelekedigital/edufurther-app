@@ -13,7 +13,7 @@ type SupportLineProps = {
 export function SupportLine({ lead, linkLabel, href }: SupportLineProps) {
   return (
     <p className={styles.line}>
-      {lead}
+      {lead}{' '}
       <a href={href} className={styles.link}>
         {linkLabel}
       </a>

@@ -100,7 +100,7 @@ describe('the frame', () => {
         'What happened:',
         '- ',
         '',
-        'Session: 1:1 call with Amara Okafor, Sun, Oct 4, 6:00 – 6:30 pm',
+        'Session: 1:1 call with Amara Okafor, Sun, Oct 4, 6:00 – 6:30 pm Lagos (WAT)',
         'Name: Gbenga Ogundipe',
         'Role: Mentor',
         '',
@@ -108,6 +108,15 @@ describe('the frame', () => {
         'Gbenga',
       ].join('\n'),
     );
+  });
+
+  it('an account with no name on file signs with the first name /me gives', () => {
+    h.room = remote(sessionRoom({}, { name: 'Deleted user', firstName: 'Deleted user' }));
+    renderAt('15:15:00');
+    const href = screen.getByRole('link', { name: 'Contact support' }).getAttribute('href')!;
+    const q = new URLSearchParams(href.slice(href.indexOf('?') + 1));
+    expect(q.get('subject')).toBe('Session: please help (Gbenga)');
+    expect(q.get('body')!.endsWith('Thanks,\nGbenga')).toBe(true);
   });
 
   it('a session that fails to load still offers support', () => {

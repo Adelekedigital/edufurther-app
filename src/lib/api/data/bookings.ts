@@ -53,6 +53,9 @@ export function toApiStatuses(statuses: readonly BookingStatus[]): ApiStatus[] {
   return statuses.map((s) => API_STATUS[s]);
 }
 
+/** What a party is called once their account is gone, or when it has no name at all. */
+export const DELETED_NAME = 'Deleted user';
+
 export function toParty(p: PartyRead): BookingParty {
   const first = (!p.deleted && p.first_name?.trim()) || '';
   const last = (!p.deleted && p.last_name?.trim()) || '';
@@ -61,10 +64,10 @@ export function toParty(p: PartyRead): BookingParty {
     id: p.id,
     // A deleted account keeps its row — the session still happened — but loses
     // its name, as the reviews list already does.
-    name: p.deleted || !name ? 'Deleted user' : name,
+    name: p.deleted || !name ? DELETED_NAME : name,
     // A live account with only a surname keeps it: the row says "Waiting for
     // Okafor to confirm", not "Waiting for Deleted user".
-    firstName: p.deleted ? 'Deleted user' : first || name || 'Deleted user',
+    firstName: p.deleted ? DELETED_NAME : first || name || DELETED_NAME,
     initials: p.deleted ? '' : personInitials(first, last),
     avatarUrl: p.deleted ? null : (p.avatar_url ?? null),
     avatarFocus: p.deleted ? null : clampFocus(p.avatar_focus),
