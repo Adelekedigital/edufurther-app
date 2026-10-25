@@ -39,6 +39,23 @@ vi.mock('@/app/_shell/useAppShell', async () => {
     }),
   };
 });
+// The mentor's own areas of expertise (Settings › Expertise's read).
+let expertise: { status: 'loading' | 'error' | 'ready'; slugs: string[] } = {
+  status: 'ready',
+  slugs: ['document-preparation', 'school-selection'],
+};
+const retryExpertise = vi.fn();
+vi.mock('@/lib/api/data/mentorSettings', () => ({
+  useMentorSettings: () => ({
+    status: expertise.status,
+    profile:
+      expertise.status === 'ready'
+        ? { mentor: { topics: expertise.slugs.map((slug) => ({ slug, label: slug })) } }
+        : null,
+    retry: retryExpertise,
+  }),
+}));
+
 vi.mock('@/lib/api/data/mentors', () => ({
   useTopics: () => ({
     topics: [
@@ -122,6 +139,8 @@ beforeEach(() => {
   createError = null;
   defaultsMock = READY;
   videoMock = VIDEO_DEFAULT;
+  expertise = { status: 'ready', slugs: ['document-preparation', 'school-selection'] };
+  retryExpertise.mockReset();
 });
 const next = (name: RegExp) => screen.getByRole('button', { name });
 
@@ -138,6 +157,34 @@ describe('SessionTypeFormScreen', () => {
       ),
     ).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: /^Review/ })).toBeDisabled();
+  });
+
+  it('step 1 offers the mentor’s own areas of expertise (owner, 2026-10-25)', () => {
+    expertise = { status: 'ready', slugs: ['school-selection'] };
+    const chips = () =>
+      within(screen.getByRole('group', { name: 'What does this session help with?' }))
+        .getAllByRole('button')
+        .map((b) => b.textContent);
+    const { unmount } = render(<SessionTypeFormScreen template={null} />);
+    expect(chips()).toEqual(['School selection']);
+    unmount();
+    // A template's topic outside them stays, selected: nothing chosen is hidden.
+    render(<SessionTypeFormScreen template="sop-review" />);
+    expect(chips()).toEqual(['Document preparation', 'School selection']);
+  });
+
+  it('the mentor’s expertise not read: the form says so, and Try again asks again', async () => {
+    expertise = { status: 'error', slugs: [] };
+    render(<SessionTypeFormScreen template={null} />);
+    expect(screen.getByRole('heading', { name: 'We couldn’t load this form' })).toBeInTheDocument();
+    await userEvent.setup({ delay: null }).click(screen.getByRole('button', { name: 'Try again' }));
+    expect(retryExpertise).toHaveBeenCalled();
+  });
+
+  it('while it loads, the form waits', () => {
+    expertise = { status: 'loading', slugs: [] };
+    render(<SessionTypeFormScreen template={null} />);
+    expect(screen.getByRole('status', { name: 'Loading' })).toBeInTheDocument();
   });
 
   it('Continue checks the step: errors on the fields, and it stays', async () => {
