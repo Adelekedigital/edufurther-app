@@ -549,14 +549,21 @@ describe('CalendarScreen', () => {
   });
 
   it('the block modal is a phone sheet that tints the available days and keys them', async () => {
-    const user = userEvent.setup();
-    render(<CalendarScreen />);
-    await user.click(screen.getByRole('button', { name: 'Block dates' }));
-    const dialog = screen.getByRole('dialog', { name: 'Block dates' });
-    expect(dialog.className).toMatch(/phoneSheet/);
-    expect(within(dialog).getByText('Available')).toBeInTheDocument();
-    // Pickable days carry their state in the button's name.
-    expect(dialog.querySelectorAll('[aria-label$=", available"]').length).toBeGreaterThan(0);
+    // Mid-month: the fixture opens Mondays only, so near a month's end (from
+    // the 26th in Lagos, with 24 hours' notice) this month has no open day left.
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-07T12:00:00Z') });
+    try {
+      const user = userEvent.setup();
+      render(<CalendarScreen />);
+      await user.click(screen.getByRole('button', { name: 'Block dates' }));
+      const dialog = screen.getByRole('dialog', { name: 'Block dates' });
+      expect(dialog.className).toMatch(/phoneSheet/);
+      expect(within(dialog).getByText('Available')).toBeInTheDocument();
+      // Pickable days carry their state in the button's name.
+      expect(dialog.querySelectorAll('[aria-label$=", available"]').length).toBeGreaterThan(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('lists blocked days as chips; × unblocks one with no confirm and says so', async () => {
