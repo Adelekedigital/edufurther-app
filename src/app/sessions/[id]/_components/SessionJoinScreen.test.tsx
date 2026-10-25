@@ -49,6 +49,9 @@ vi.mock('@/lib/api/data/reviewWrite', async () =>
 vi.mock('@/app/_reviews/ReviewDialog', async () =>
   (await import('./sessionJoin.harness')).mocks.reviewDialog(),
 );
+vi.mock('@/app/_shell/BookingLauncher/BookingLauncher', async () =>
+  (await import('./sessionJoin.harness')).mocks.bookingLauncher(),
+);
 vi.mock('@/lib/api/data/intakeFiles', async () =>
   (await import('./sessionJoin.harness')).mocks.intakeFiles(),
 );
@@ -236,7 +239,7 @@ describe('completed', () => {
     expect(screen.getAllByText('Joined')).toHaveLength(2);
     expect(screen.queryByRole('link', { name: /join/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /join/i })).not.toBeInTheDocument();
-    expect(screen.queryByText('Quick guide for a rewarding session')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Quick guide' })).not.toBeInTheDocument();
   });
 
   it('a mentee reviews here, in the review modal, and is thanked on the page', async () => {
@@ -244,10 +247,11 @@ describe('completed', () => {
     h.room = completed('mentee');
     renderAt('17:40:00');
     expect(screen.getByText('How was your session with Amara?')).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Book again' })).toHaveAttribute(
-      'href',
-      '/mentors/amara',
-    );
+    expect(
+      screen.getByText('Your review helps other mentees pick the right mentor.'),
+    ).toBeVisible();
+    // Opens the booking modal on this page (outcome tests), not a link away.
+    expect(screen.getByRole('button', { name: 'Book again' })).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: 'Leave a review' }));
     const dialog = screen.getByRole('dialog', { name: 'Review Amara' });
     expect(within(dialog).getByText('About b1')).toBeVisible();
@@ -277,7 +281,7 @@ describe('completed', () => {
     renderAt('17:40:00');
     expect(screen.getByText('How was your session with Amara?')).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Leave a review' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Book again' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Book again' })).not.toBeInTheDocument();
   });
 
   it('a failed reviewability check says so, retries, and keeps Book again', async () => {
@@ -292,18 +296,19 @@ describe('completed', () => {
     expect(
       screen.getByText('We couldn’t check whether you can review this session.'),
     ).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Book again' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Book again' })).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(retry).toHaveBeenCalled();
   });
 
-  it('a mentor gets no review prompt and no booking', () => {
+  it('a mentor gets no review prompt and no booking: complete, with Go to Home', () => {
     h.room = completed('mentor');
     renderAt('17:40:00');
-    expect(screen.getByText('Nice work. Session complete.')).toBeVisible();
+    expect(screen.getByText('Your session with Amara is complete.')).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Leave a review' })).not.toBeInTheDocument();
-    // The header's way back, and the outcome's own action.
-    expect(screen.getAllByRole('link', { name: 'Go to Bookings' })).toHaveLength(2);
+    expect(screen.queryByRole('button', { name: /Book/ })).not.toBeInTheDocument();
+    // The viewer's Home (memberHome): an approved mentor's dashboard.
+    expect(screen.getByRole('link', { name: 'Go to Home' })).toHaveAttribute('href', '/dashboard');
   });
 });
 
@@ -330,47 +335,6 @@ describe('a Join notice belongs to joining', () => {
   });
 });
 
-describe('missed', () => {
-  const missedRoom = (
-    side: 'mentee' | 'mentor',
-    mine: 'attended' | 'noShow',
-    theirs: 'attended' | 'noShow',
-  ) =>
-    remote(
-      sessionRoom({
-        status: 'noShow',
-        side,
-        myAttendance: mine,
-        other: sampleParty({ id: 'amara', firstName: 'Amara', attendance: theirs }),
-      }),
-    );
-
-  it('the mentor missed a mentee’s session: their credit is back, with ways to rebook', () => {
-    h.viewer = MENTEE;
-    h.room = missedRoom('mentee', 'attended', 'noShow');
-    renderAt('17:40:00');
-    expect(screen.getByText('Missed')).toBeVisible();
-    expect(screen.getByText('Didn’t join')).toBeVisible();
-    expect(screen.getByText('Amara didn’t join. Your credit is back.')).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Rebook with Amara' })).toHaveAttribute(
-      'href',
-      '/mentors/amara',
-    );
-    expect(screen.getByRole('link', { name: 'Find another mentor' })).toHaveAttribute(
-      'href',
-      '/explore',
-    );
-  });
-
-  it('the viewer missed it: said plainly, never claiming how long anyone waited', () => {
-    h.viewer = MENTEE;
-    h.room = missedRoom('mentee', 'noShow', 'attended');
-    renderAt('17:40:00');
-    expect(screen.getByText('You missed this session')).toBeVisible();
-    expect(screen.queryByText(/waited/)).not.toBeInTheDocument();
-  });
-});
-
 describe('getting ready', () => {
   // Session Join.dc.html `layout=lobbySplit`: beside the lobby on wider
   // screens (an aside, always open), and two buttons that open sheets on
@@ -389,10 +353,10 @@ describe('getting ready', () => {
   it('hides the answers when nothing was answered; the guide still shows', () => {
     renderAt('15:15:00');
     expect(screen.queryByText(/wants to talk about/)).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Amara’s answers/ })).not.toBeInTheDocument();
-    expect(
-      within(aside()).getByRole('heading', { name: 'Quick guide for a rewarding session' }),
-    ).toBeVisible();
+    expect(screen.queryByRole('button', { name: /Amara’s response/ })).not.toBeInTheDocument();
+    expect(within(aside()).getByRole('heading', { name: 'Quick guide' })).toBeVisible();
+    // No answers, so nothing to check: the mentor's first tip goes.
+    expect(within(aside()).queryByText(/Check Amara’s response/)).not.toBeInTheDocument();
   });
 
   it('shows the mentee’s answers beside the lobby, open, without a toggle', () => {
@@ -413,7 +377,10 @@ describe('getting ready', () => {
     h.answers = remote([answer('Funded vs unfunded offers')]);
     renderAt('15:15:00');
     expect(within(aside()).getByRole('heading', { name: 'What you’ll talk about' })).toBeVisible();
-    expect(within(aside()).getByText('Your answers from booking.')).toBeVisible();
+    // First names, never pronouns (founder).
+    expect(
+      within(aside()).getByText('Your answers from booking. Amara sees them too.'),
+    ).toBeVisible();
     expect(screen.queryByText(/has read/)).not.toBeInTheDocument();
   });
 
@@ -426,26 +393,43 @@ describe('getting ready', () => {
     expect(retry).toHaveBeenCalled();
   });
 
-  it('lists the guide open, and never promises rescheduling or messaging', () => {
+  it('lists the mentor’s guide open: the copy-pass tips, with first names', () => {
     h.answers = remote([answer('Funded vs unfunded offers')]);
     renderAt('15:15:00');
+    const tips = within(aside());
+    expect(tips.getByText('Check Amara’s response')).toBeVisible();
+    expect(
+      tips.getByText(
+        'A quick look before the call helps you plan the session around what Amara needs.',
+      ),
+    ).toBeVisible();
+    expect(tips.getByText('Your setup')).toBeVisible();
     // No deadline on this fixture, so the tip names no number at all rather
     // than guessing one it cannot know.
     expect(
-      within(aside()).getByText('Cancel in good time, so the time can go to someone else.'),
+      tips.getByText('Canceling or rescheduling in good time lets someone else book the time.'),
     ).toBeVisible();
-    expect(within(aside()).queryByText(/\d+ hours before/)).not.toBeInTheDocument();
-    expect(within(aside()).queryByText(/reschedule|message/i)).not.toBeInTheDocument();
-    // The tip no longer points "above": the answers are beside it, or behind a button.
+    expect(tips.queryByText(/\d+ hours before/)).not.toBeInTheDocument();
+    expect(tips.queryByText(/One clear goal|message/i)).not.toBeInTheDocument();
+  });
+
+  it('the mentee’s guide leads with one clear goal and the session’s length', () => {
+    h.room = remote(sessionRoom({ side: 'mentee' }));
+    renderAt('15:15:00');
+    const tips = within(aside());
+    expect(tips.getByText('One clear goal')).toBeVisible();
     expect(
-      within(aside()).getByText('Read Amara’s answers and have one next step ready for them.'),
+      tips.getByText(
+        'It helps to bring your questions and any drafts you’d like feedback on. You have 30 minutes.',
+      ),
     ).toBeVisible();
+    expect(tips.queryByText(/response/)).not.toBeInTheDocument();
   });
 
   it('on phones, a button opens the answers in a sheet and gives focus back on close', async () => {
     h.answers = remote([answer('Funded vs unfunded offers')]);
     renderAt('15:15:00');
-    const open = screen.getByRole('button', { name: 'Amara’s answers' });
+    const open = screen.getByRole('button', { name: 'Amara’s response' });
     expect(open).toHaveAttribute('aria-haspopup', 'dialog');
     await userEvent.click(open);
     const sheet = screen.getByRole('dialog', { name: 'What Amara wants to talk about' });
@@ -459,10 +443,10 @@ describe('getting ready', () => {
     h.room = remote(sessionRoom({ side: 'mentee' }));
     h.answers = remote([answer('Funded vs unfunded offers')]);
     renderAt('15:15:00');
-    expect(screen.getByRole('button', { name: 'Your answers' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Your response' })).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: 'Quick guide' }));
     const sheet = screen.getByRole('dialog', { name: 'Quick guide' });
-    expect(within(sheet).getByText('Check your setup')).toBeVisible();
+    expect(within(sheet).getByText('Your setup')).toBeVisible();
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
@@ -533,7 +517,11 @@ describe('getting ready', () => {
       booking: { ...r.booking, refundUntil: '2026-10-04T07:00:00Z' },
     });
     renderAt('15:15:00');
-    expect(within(aside()).getByText(/Cancel at least 10 hours before/)).toBeVisible();
+    expect(
+      within(aside()).getByText(
+        'Canceling or rescheduling at least 10 hours before lets someone else book the time.',
+      ),
+    ).toBeVisible();
     expect(screen.queryByText(/12 hours/)).not.toBeInTheDocument();
   });
 });

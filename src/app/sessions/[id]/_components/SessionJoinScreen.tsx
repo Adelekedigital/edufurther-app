@@ -27,10 +27,11 @@ import { FocusPage } from '@/components/templates/FocusPage/FocusPage';
 import { ReviewDialog } from '@/app/_reviews/ReviewDialog';
 import { ConfirmActionDialog } from '@/app/_sessions/ConfirmActionDialog';
 import { IntakeFileViewer } from '@/app/_sessions/IntakeFileViewer';
+import { BookingLauncher } from '@/app/_shell/BookingLauncher/BookingLauncher';
 import { canBookFor } from '@/app/_shell/bookBlocked';
 import { lockedPageGate, memberGate, SESSION_GATE } from '@/app/_shell/MentorGate';
 import { accessFor, memberHome } from '@/lib/utils/access';
-import { sessionSupportRequest, SUPPORT_FOOTER_COPY } from '@/lib/copy/session';
+import { PREP_COPY, sessionSupportRequest, SUPPORT_FOOTER_COPY } from '@/lib/copy/session';
 import { DELETED_NAME } from '@/lib/api/data/bookings';
 import { supportHref, supportMailto } from '@/lib/utils/mailto';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
@@ -39,6 +40,7 @@ import { useSendReview } from '@/lib/api/data/reviewWrite';
 import { useBookingAnswers } from '@/lib/api/data/sessionAnswers';
 import { useSessionRoom } from '@/lib/api/data/sessionRoom';
 import { useViewer } from '@/lib/api/data/viewer';
+import { partyToMentor } from '@/lib/utils/bookableMentor';
 import { canCancel } from '@/lib/utils/bookings';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { presenceOf } from '@/lib/utils/presence';
@@ -181,6 +183,14 @@ export function SessionJoinScreen({ id }: { id: string }) {
     setReviewing(null);
   };
   const [viewing, setViewing] = useState<AnswerFile | null>(null);
+  // Book again opens the shared booking modal here, as the profile does
+  // (PRD Session Join): only a mentee booking their mentor, who may book.
+  const [bookingAgain, setBookingAgain] = useState(false);
+  const other = data?.booking.side === 'mentee' && canBook ? data.booking.other : null;
+  const bookMentor = useMemo(
+    () => (bookingAgain && other ? partyToMentor(other) : null),
+    [bookingAgain, other],
+  );
   // The phone's sheets (below 768px): the answers, the guide, or the calendar choices.
   const [sheet, setSheet] = useState<PrepSheet | 'calendar' | null>(null);
 
@@ -344,9 +354,8 @@ export function SessionJoinScreen({ id }: { id: string }) {
     const first = b.other.firstName;
     const mentee = b.side === 'mentee';
     const prepAnswers = {
-      // Not "Gbenga has read these": nothing tells us whether they have. And
-      // not "her": nothing tells us the mentee's pronouns (design-divergence.md).
-      answersSub: mentee ? 'Your answers from booking.' : `From ${first}’s booking answers.`,
+      // First names, never pronouns (founder).
+      answersSub: mentee ? PREP_COPY.answersSub.mentee(first) : PREP_COPY.answersSub.mentor(first),
       answers: answers.data,
       answersLoading: answers.isLoading,
       answersFailed: !!answers.error,
@@ -402,6 +411,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
                       ? 'loading'
                       : !!reviewSession,
                 reviewed: reviewedHere,
+                home: member ? memberHome(member) : '/bookings',
               })}
               onAction={(key) => {
                 if (key === 'review' && reviewSession) {
@@ -409,12 +419,15 @@ export function SessionJoinScreen({ id }: { id: string }) {
                   setReviewing(reviewSession);
                 }
                 if (key === 'retryReview') reviewables.retry();
+                if (key === 'book') setBookingAgain(true);
               }}
             />
           )}
           {preparing && (
             <SessionPrepButtons
-              answersLabel={mentee ? 'Your answers' : `${first}’s answers`}
+              answersLabel={
+                mentee ? PREP_COPY.answersButton.mentee : PREP_COPY.answersButton.mentor(first)
+              }
               showAnswers={hasAnswersToShow(prepAnswers) && !prepAnswers.answersLoading}
               answersLoading={prepAnswers.answersLoading && !prepAnswers.answersFailed}
               onOpen={setSheet}
@@ -471,7 +484,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
       )}
       {prep && (sheet === 'talk' || sheet === 'guide') && (
         <BottomSheet
-          title={sheet === 'guide' ? 'Quick guide' : prep.answersTitle}
+          title={sheet === 'guide' ? PREP_COPY.guideTitle : prep.answersTitle}
           onClose={() => setSheet(null)}
         >
           {sheet === 'guide' ? (
@@ -503,12 +516,19 @@ export function SessionJoinScreen({ id }: { id: string }) {
             canBook
               ? () => {
                   closeReview();
-                  router.push(`/mentors/${encodeURIComponent(data.booking.other.id)}`);
+                  setBookingAgain(true);
                 }
               : undefined
           }
         />
       )}
+      <BookingLauncher
+        mentor={bookMentor}
+        timeZone={timeZone}
+        // Rating and reviews aren't on the session row.
+        ratingUnknown
+        onClose={() => setBookingAgain(false)}
+      />
       {cancelling && data && (
         <ConfirmActionDialog
           action="cancel"

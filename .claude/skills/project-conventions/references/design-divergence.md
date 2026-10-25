@@ -472,10 +472,10 @@ Source: `Session Join.dc.html`, defaults `layout=lobby`, `provider=edufurther`; 
 | Completed: "You talked for 29 min" clock | Not shown | We only know when each person pressed Join, not how long the call ran; and product removed the in-call timer (2026-10-08) | attendance from the provider (backend #382) |
 | Leave a review opens ReviewModal in place | The same: the shared `ReviewDialog` (`app/_reviews`), which the profile now uses too. Offered only while `/me/reviewable-sessions` lists this session and the viewer can book (mentors never review); while that list loads or fails, neither Leave a review nor Book again shows | Product, 2026-10-08: review from the session page, not the profile. One implementation for both pages | never — one review dialog for both pages (product 2026-10-08) |
 | Completed, already reviewed (no state) | **Ours, provisional:** "Your session with {name} is complete." + Book again | A reload after reviewing, or past the review interval | design request |
-| Mentor completed: "Send follow-up notes" + "Go to Home" | "Go to Bookings" only | No endpoint for notes; no mentor home | #195, #189 |
-| Mentor completed body: "{name} will be asked for a review. You can send her a follow-up…" | "{name} can leave a review on your profile." | No follow-up feature; no gendered pronoun; we don't send the ask ourselves | a follow-up feature ships (#195) |
-| Missed copy: "joined and waited 15 minutes", "we've let {name} know", "counts as a completed session for you", "repeated no-shows affect your ranking" | Each trimmed | None of these is something we know or do | backend tells us otherwise |
-| Neither joined: "…we'll sort out your credit. We'll email you once it's settled." | **Provisional:** mentee "This session isn't refunded, but you can book another time."; mentor "{name} can book again." | The backend refunds nothing when neither joins and reviews nothing (backend reply #5); **product confirmed this as policy (2026-10-08): no refund when neither joins** | design writes the neither-joined copy (the no-refund policy itself is settled) |
+| ~~Mentor completed: "Send follow-up notes" + "Go to Home"~~ | ~~"Go to Bookings" only~~ | ~~No endpoint for notes; no mentor home~~ **Superseded 2026-10-25 (copy pass, PRD Session Join PR 4): see that section.** | #195, #189 |
+| ~~Mentor completed body: "{name} will be asked for a review. You can send her a follow-up…"~~ | ~~"{name} can leave a review on your profile."~~ | ~~No follow-up feature; no gendered pronoun; we don't send the ask ourselves~~ **Superseded 2026-10-25 (copy pass, PRD Session Join PR 4): see that section.** | a follow-up feature ships (#195) |
+| ~~Missed copy: "joined and waited 15 minutes", "we've let {name} know", "counts as a completed session for you", "repeated no-shows affect your ranking"~~ | ~~Each trimmed~~ | ~~None of these is something we know or do~~ **Superseded 2026-10-25 (copy pass, PRD Session Join PR 4): see that section.** | backend tells us otherwise |
+| ~~Neither joined: "…we'll sort out your credit. We'll email you once it's settled."~~ **Superseded 2026-10-25 (copy pass, PRD Session Join PR 4): see that section.** | **Provisional:** mentee "This session isn't refunded, but you can book another time."; mentor "{name} can book again." | The backend refunds nothing when neither joins and reviews nothing (backend reply #5); **product confirmed this as policy (2026-10-08): no refund when neither joins** | design writes the neither-joined copy (the no-refund policy itself is settled) |
 | Missed: "What happened?" reason chips and note | Omitted | No endpoint | #194 |
 | Missed: "Message {name}", "Offer a new time" | Omitted; the mentor's side offers "Go to Bookings" | No endpoints (a no-show can't carry a suggested time) | #168 |
 | Attendance unknown (no state) | **Ours:** "This session was missed" / "We don't have a record of who joined." with no credit claim; people read "No record" | Two migrated bookings have no attendance record | the two migrated bookings without attendance are gone |
@@ -532,9 +532,9 @@ opposite of the truth and `types/booking.ts` is imported by seven components.
 
 | Design says | We do | Why |
 |---|---|---|
-| Answers card subtitle (mentee): "Your answers from booking. Gbenga has read these." | "Your answers from booking." | Nothing tells us whether the mentor has read them. |
+| ~~Answers card subtitle (mentee): "Your answers from booking. Gbenga has read these."~~ | ~~"Your answers from booking."~~ | ~~Nothing tells us whether the mentor has read them.~~ **Superseded 2026-10-25 (copy pass, PRD Session Join PR 4): see that section.** |
 | Answers card subtitle (mentor): "From her booking answers." | "From {first}’s booking answers." | Nothing tells us the mentee's pronouns. |
-| Guide tip: "Read Amara’s answers **above**…" | "Read Amara’s answers…" | The answers sit beside the lobby, or behind a button on phones. |
+| ~~Guide tip: "Read Amara’s answers **above**…"~~ | ~~"Read Amara’s answers…"~~ | ~~The answers sit beside the lobby, or behind a button on phones.~~ **Superseded 2026-10-25 (copy pass, PRD Session Join PR 4): see that section.** |
 | The answers card's Edit (mentee) | Not shown | No endpoint to change answers yet (#186). |
 | Aside has no name | `aria-label="Getting ready"` | A landmark needs a name (ours). |
 | No loading state drawn | The answers card's placeholder; the page loads in the wide layout with a placeholder column | Without it the lobby jumped sideways when the session arrived (CLS 0.10 at 1440). Completed and missed sessions narrow to 720px after loading, the rarer case. |
@@ -544,6 +544,21 @@ opposite of the truth and `types/booking.ts` is imported by seven components.
 | Cancel opens as a bottom sheet on phones (`CancelModal sheet contained`) | Still the shared dialog's full-screen treatment | Source confirmed in the live design project, 2026-10-10: `CancelModal.dc.html` has `sheet` and `contained` props (both default false), and with `sheet` on the two buttons become one column (`btnCols: '1fr'`). Session Join.dc.html:309 sets both true on the phone frame; the desktop frame at :531 sets neither. **Queued in the cancel-modal fidelity pass**, and `ModalShell`'s `sheet` is the base — not `BottomSheet`, which closes on a backdrop click and would discard a typed reason. |
 | Title (h5 24px) and clock (display-sm 48px) | Same at every width | The design system has no phone type scale. A system-wide question for design (asked by the user, 2026-10-10), not changed per screen. |
 
+
+### Session Join — copy pass and outcomes (PRD Session Join PR 4), 2026-10-25
+
+Source: `Session Join.dc.html` at `layout=lobbySplit`, 19 Oct copy pass. The PRD's founder decisions win over the design's copy.
+
+| Design says | We do | Why |
+|---|---|---|
+| Mentor sub "From her booking answers."; mentor tip "…around what she needs." | "From {First}’s booking answers."; "…around what {First} needs." | Founder: first names, never pronouns. |
+| Mentor tip "Check {First}’s response" always | Left out when the mentee answered nothing (two tips) | There is no response to check. |
+| "waited 10 minutes" / "within 10 minutes" | The number from the row: `join_closes_at` minus the start; 10 only on a row without it | The backend's arrival rule is the row's (fifteen minutes today), and the copy names it (PRD J3). |
+| Mentee missed: "…counts as a missed session. Booking pauses after 3." | The sentence without "Booking pauses after 3." | Founder: the 3-miss pause isn't built (#444). |
+| Mentor missed a mentee's session: "Your credit is back, and we’ve told Gbenga." | "Your credit is back." | Founder: we send no missed-session email yet. |
+| Mentor missed: "…so her credit is back." + "Offer a new time" | "…so {First}’s credit is back." + "Go to Bookings" | Founder (first names); a suggested time can't ride on a missed session yet (PRD open question, default). |
+| Missed reason form ("What happened?") | Not built yet: `SessionOutcome`'s `reason` slot, shown when `askReason` | Waits on the backend's missed-reason endpoint (PRD PR 2). |
+| Mentor completed: "Share next steps with Amara" + Write next steps + Go to Home | "Your session with {First} is complete." + Go to Home | Founder: next steps are later. |
 
 ### Bookings — the answers disclosure counts questions (backend #412), 2026-10-10
 

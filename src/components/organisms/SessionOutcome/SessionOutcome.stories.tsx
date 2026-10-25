@@ -20,7 +20,14 @@ const missed = (
   theirs: BookingParty['attendance'],
 ) => sampleBookingFor({ status: 'noShow', side, myAttendance: mine, other: gbenga(theirs) });
 const of = (b: Booking, over: Partial<Parameters<typeof outcomeView>[0]> = {}) =>
-  outcomeView({ booking: b, canBook: true, reviewable: true, reviewed: false, ...over });
+  outcomeView({
+    booking: b,
+    canBook: true,
+    reviewable: true,
+    reviewed: false,
+    home: '/dashboard',
+    ...over,
+  });
 
 /** Session Join.dc.html `isCompleted` and `isMissed`, every case the page can reach. */
 const meta: Meta<typeof SessionOutcome> = {
@@ -66,4 +73,7 @@ export const MissedByMenteeMentorView: Story = {
   args: { view: of(missed('mentor', 'attended', 'noShow')) },
 };
 export const NeitherJoined: Story = { args: { view: of(missed('mentee', 'noShow', 'noShow')) } };
+export const NeitherJoinedMentorView: Story = {
+  args: { view: of(missed('mentor', 'noShow', 'noShow')) },
+};
 export const NoRecord: Story = { args: { view: of(missed('mentee', 'pending', 'pending')) } };

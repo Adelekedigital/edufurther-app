@@ -1,6 +1,7 @@
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { BookingAnswer } from '@/types/booking';
-import { hasAnswersToShow } from './SessionPrep';
+import { hasAnswersToShow, SessionPrepAside, SessionPrepButtons } from './SessionPrep';
 
 const q = (i: number, over: Partial<BookingAnswer> = {}): BookingAnswer => ({
   questionId: `q${i}`,
@@ -39,5 +40,25 @@ describe('hasAnswersToShow counts answers, not questions', () => {
   it('no form at all shows nothing', () => {
     expect(hasAnswersToShow({ answers: [] })).toBe(false);
     expect(hasAnswersToShow({ answers: null })).toBe(false);
+  });
+});
+
+describe('the copy pass (PRD Session Join, Getting ready)', () => {
+  it('the aside’s guide is titled "Quick guide"', () => {
+    render(
+      <SessionPrepAside
+        answersTitle="What Amara wants to talk about"
+        answersSub="From Amara’s booking answers."
+        answers={[]}
+        guide={[{ icon: 'wifi', title: 'Your setup', body: 'A quiet spot.' }]}
+      />,
+    );
+    expect(screen.getByRole('heading', { name: 'Quick guide' })).toBeVisible();
+  });
+
+  it('the phone buttons read the answers label given and "Quick guide"', () => {
+    render(<SessionPrepButtons answersLabel="Amara’s response" showAnswers onOpen={() => {}} />);
+    expect(screen.getByRole('button', { name: 'Amara’s response' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Quick guide' })).toBeVisible();
   });
 });

@@ -15,7 +15,7 @@ import {
   type SessionPhase,
 } from '@/lib/utils/sessionPhase';
 import { refundWindowFor } from '@/lib/utils/bookings';
-import { LOBBY_COPY } from '@/lib/copy/session';
+import { LOBBY_COPY, PREP_COPY } from '@/lib/copy/session';
 import { joinedTime, presenceOf } from '@/lib/utils/presence';
 import { missedTone } from '@/lib/utils/sessionOutcome';
 import type { BookingParty, SessionRoom } from '@/types/booking';
@@ -264,43 +264,29 @@ export function lobbyModel({
 }
 
 /**
- * The quick guide (Session Join.dc.html `guide`), with three edits: the length
- * is the session's own, "If plans change" no longer offers rescheduling or
- * messaging, which do not exist, and the answers are no longer "above", since
- * they sit beside the lobby or behind a button (logged in design-divergence.md).
+ * The quick guide (Session Join.dc.html `guide`, 19 Oct copy pass): the length
+ * is the session's own and the refund window the row's. A mentor whose mentee
+ * answered nothing gets no "Check {First}'s response" tip: there is none.
  */
 export function guideTips(room: SessionRoom, hasAnswers: boolean): GuideTip[] {
   const b = room.booking;
   const first = b.other.firstName;
+  const T = PREP_COPY.tips;
+  const lead: GuideTip[] =
+    b.side === 'mentee'
+      ? [{ icon: 'checklist', title: T.goal.title, body: T.goal.body(b.durationMin) }]
+      : hasAnswers
+        ? [{ icon: 'forum', title: T.response.title(first), body: T.response.body(first) }]
+        : [];
   return [
-    {
-      icon: 'checklist',
-      title: 'Come with one clear goal',
-      body:
-        b.side === 'mentee'
-          ? `This session is ${b.durationMin} minutes. Bring your questions and any drafts you want feedback on.`
-          : hasAnswers
-            ? `Read ${first}’s answers and have one next step ready for them.`
-            : `Have one next step ready for ${first}.`,
-    },
-    {
-      icon: 'wifi',
-      title: 'Check your setup',
-      body: 'A quiet spot, headphones and a steady connection make the call easier for both of you.',
-    },
+    ...lead,
+    { icon: 'wifi', title: T.setup.title, body: T.setup.body },
     {
       icon: 'event_repeat',
-      title: 'If plans change',
+      title: T.plans.title,
       // The window is deployment configuration (backend #413), so the number
-      // comes from this session's own deadline. Left at 12 it contradicted the
-      // cancel dialog on the same screen.
-      //
-      // With no deadline the sentence drops the number rather than guessing
-      // one. Nothing here depends on it — unlike the cancel dialog, which is
-      // explaining a decision the fallback window already made.
-      body: b.refundUntil
-        ? `Cancel at least ${refundWindowFor(b)} hours before, so the time can go to someone else.`
-        : 'Cancel in good time, so the time can go to someone else.',
+      // comes from this session's own deadline; with none, no number at all.
+      body: b.refundUntil ? T.plans.body(refundWindowFor(b)) : T.plans.bodyNoWindow,
     },
   ];
 }

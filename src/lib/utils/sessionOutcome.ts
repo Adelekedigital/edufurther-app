@@ -1,5 +1,6 @@
 import type { Booking } from '@/types/booking';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
+import { MISSED_WAIT_FALLBACK_MIN, OUTCOME_COPY as C } from '@/lib/copy/session';
 import { showedUp } from './bookings';
 
 /**
@@ -30,10 +31,20 @@ export function missedTone(b: Booking): 'red' | 'green' | 'grey' {
   return 'grey';
 }
 
+/**
+ * How long each party was waited for: the backend's arrival rule, read from
+ * the row (arrivals stop at `join_closes_at`) so the copy never states a
+ * number the server doesn't apply.
+ */
+export function missedWaitMin(b: Booking): number {
+  if (!b.joinClosesAt) return MISSED_WAIT_FALLBACK_MIN;
+  return Math.round((new Date(b.joinClosesAt).getTime() - new Date(b.startsAt).getTime()) / 60_000);
+}
+
 export type OutcomeAction = {
   key: string;
   label: string;
-  /** Where it goes; null for an action on this page (Leave a review opens the modal). */
+  /** Where it goes; null for an action on this page (review and booking open modals here). */
   href: string | null;
   variant: 'primary' | 'secondary';
 };
@@ -55,6 +66,8 @@ export type OutcomeView =
       icon: IconName;
       title: string;
       body: string;
+      /** The person who missed it is asked why (the design's `askReason`). */
+      askReason: boolean;
       actions: OutcomeAction[];
     };
 
@@ -71,74 +84,77 @@ export type OutcomeInput = {
   reviewable: boolean | 'loading' | 'error';
   /** A review was sent from this page in this visit. */
   reviewed: boolean;
+  /** The viewer's Home (`memberHome`), for the mentor's completed card. */
+  home: string;
 };
 
 const BOOKINGS: OutcomeAction = {
   key: 'bookings',
-  label: 'Go to Bookings',
+  label: C.goBookings,
   href: '/bookings',
   variant: 'primary',
 };
 
+const FIND: OutcomeAction = {
+  key: 'find',
+  label: C.findMentor,
+  href: '/explore',
+  variant: 'secondary',
+};
+
 /**
  * The outcome block under the lobby once a session has settled (Session
- * Join.dc.html `isCompleted` / `isMissed`). Copy that claims what we can't
- * know or do is trimmed (logged in design-divergence.md): how long anyone
- * waited, that the other person was told, ranking, follow-up notes,
- * messaging, offering a new time. Credit lines follow the backend's rule:
- * a refund only when the mentor alone was absent.
+ * Join.dc.html `isCompleted` / `isMissed`, with the founder's changes in PRD
+ * Session Join). Booking again opens the booking modal on this page (`book`,
+ * no link). Credit lines follow the backend's rule: a refund only when the
+ * mentor alone was absent.
  */
 export function outcomeView({
   booking: b,
   canBook,
   reviewable,
   reviewed,
+  home,
 }: OutcomeInput): OutcomeView {
   const first = b.other.firstName;
-  // The mentor's profile, where booking and reviewing happen. Only ever built
-  // for the mentee's side, where the other party is the mentor.
-  const profile = `/mentors/${encodeURIComponent(b.other.id)}`;
   const mentee = b.side === 'mentee';
+  const book = (label: string, variant: OutcomeAction['variant']): OutcomeAction => ({
+    key: 'book',
+    label,
+    href: null,
+    variant,
+  });
 
   if (b.status === 'completed') {
     if (!mentee)
       return {
         kind: 'completed',
-        title: 'Nice work. Session complete.',
-        body: `${first} can leave a review on your profile.`,
+        title: C.complete(first),
+        body: null,
         thanks: null,
-        actions: [BOOKINGS],
+        actions: [{ key: 'home', label: C.goHome, href: home, variant: 'primary' }],
       };
-    const book: OutcomeAction = {
-      key: 'book',
-      label: 'Book again',
-      href: profile,
-      variant: 'secondary',
-    };
-    const again = canBook ? [{ ...book, variant: 'primary' as const }] : [BOOKINGS];
+    const again = canBook ? [book(C.bookAgain, 'primary')] : [BOOKINGS];
     // Sent from this page: the design's reviewedDone.
     if (reviewed)
       return {
         kind: 'completed',
         title: null,
         body: null,
-        thanks: `Thanks, your review is on ${first}’s profile.`,
+        thanks: C.reviewThanks(first),
         actions: again,
       };
-    const ask = {
-      title: `How was your session with ${first}?`,
-      body: 'Your review helps other mentees choose, and takes about a minute.',
-      thanks: null,
-    };
+    const ask = { title: C.reviewTitle(first), body: C.reviewBody, thanks: null };
+    const alsoBook = canBook ? [book(C.bookAgain, 'secondary')] : [];
     if (reviewable === 'loading') return { kind: 'completed', ...ask, actions: [] };
     if (reviewable === 'error')
       return {
         kind: 'completed',
         ...ask,
-        body: 'We couldn’t check whether you can review this session.',
+        body: C.reviewCheckFailed,
         actions: [
-          { key: 'retryReview', label: 'Try again', href: null, variant: 'secondary' },
-          ...(canBook ? [book] : []),
+          { key: 'retryReview', label: C.tryAgain, href: null, variant: 'secondary' },
+          ...alsoBook,
         ],
       };
     if (reviewable)
@@ -147,14 +163,14 @@ export function outcomeView({
         ...ask,
         actions: [
           // Opens the review modal here, on this page.
-          { key: 'review', label: 'Leave a review', href: null, variant: 'primary' },
-          ...(canBook ? [book] : []),
+          { key: 'review', label: C.leaveReview, href: null, variant: 'primary' },
+          ...alsoBook,
         ],
       };
     // Reviewed already, or past the window for it. PROVISIONAL: undesigned.
     return {
       kind: 'completed',
-      title: `Your session with ${first} is complete.`,
+      title: C.complete(first),
       body: null,
       thanks: null,
       actions: again,
@@ -162,68 +178,82 @@ export function outcomeView({
   }
 
   const who = missedBy(b);
-  const bookAgain = (label: string): OutcomeAction[] =>
-    canBook ? [{ key: 'book', label, href: profile, variant: 'primary' }] : [BOOKINGS];
+  const min = missedWaitMin(b);
+  const M = C.missed;
+  const bookAnother = canBook ? [book(C.bookAnother, 'primary')] : [BOOKINGS];
 
-  if (who === 'other' && mentee)
-    return {
-      kind: 'missed',
-      tone: 'green',
-      icon: 'replay',
-      title: `${first} didn’t join. Your credit is back.`,
-      body: `We’re sorry. You weren’t charged for this session. Rebook with ${first} or try another mentor.`,
-      actions: canBook
-        ? [
-            { key: 'find', label: 'Find another mentor', href: '/explore', variant: 'secondary' },
-            { key: 'book', label: `Rebook with ${first}`, href: profile, variant: 'primary' },
-          ]
-        : [BOOKINGS],
-    };
-  if (who === 'other')
-    return {
-      kind: 'missed',
-      tone: 'grey',
-      icon: 'person_off',
-      title: `${first} didn’t join`,
-      body: `You joined, but ${first} didn’t. ${first} can book again.`,
-      actions: [BOOKINGS],
-    };
-  if (who === 'me' && mentee)
-    return {
-      kind: 'missed',
-      tone: 'red',
-      icon: 'event_busy',
-      title: 'You missed this session',
-      body: `${first} joined, but you didn’t. Missed sessions aren’t refunded, but you can book another time.`,
-      actions: bookAgain('Book another time'),
-    };
-  if (who === 'me')
-    return {
-      kind: 'missed',
-      tone: 'red',
-      icon: 'event_busy',
-      title: 'You missed this session',
-      body: `${first} joined, but you didn’t, so their credit is back.`,
-      actions: [BOOKINGS],
-    };
-  if (who === 'both')
-    return {
-      kind: 'missed',
-      tone: 'grey',
-      icon: 'help',
-      title: 'Neither of you joined',
-      // PROVISIONAL: the design promised a refund here; the backend gives none.
-      body: mentee
-        ? 'This session isn’t refunded, but you can book another time.'
-        : `${first} can book again.`,
-      actions: mentee ? bookAgain('Book another time') : [BOOKINGS],
-    };
+  if (mentee) {
+    if (who === 'me')
+      return {
+        kind: 'missed',
+        tone: 'red',
+        icon: 'event_busy',
+        title: M.youMissed,
+        body: M.menteeMissed(first, min),
+        askReason: true,
+        actions: bookAnother,
+      };
+    if (who === 'other')
+      return {
+        kind: 'missed',
+        tone: 'green',
+        icon: 'replay',
+        title: M.didntJoin(first),
+        body: M.mentorMissedForMentee,
+        askReason: false,
+        actions: canBook ? [FIND, book(C.bookMentorAgain(first), 'primary')] : [BOOKINGS],
+      };
+    if (who === 'both')
+      return {
+        kind: 'missed',
+        tone: 'grey',
+        icon: 'help',
+        title: M.neither,
+        body: M.neitherForMentee(min),
+        askReason: false,
+        actions: bookAnother,
+      };
+  } else {
+    if (who === 'other')
+      return {
+        kind: 'missed',
+        tone: 'grey',
+        icon: 'person_off',
+        title: M.didntJoin(first),
+        body: M.menteeMissedForMentor(min),
+        askReason: false,
+        actions: [BOOKINGS],
+      };
+    // "Offer a new time" waits on the founder's open question: a suggested
+    // time can't ride on a missed session yet, so Go to Bookings (PRD default).
+    if (who === 'me')
+      return {
+        kind: 'missed',
+        tone: 'red',
+        icon: 'event_busy',
+        title: M.youMissed,
+        body: M.mentorMissed(first, min),
+        askReason: true,
+        actions: [BOOKINGS],
+      };
+    if (who === 'both')
+      return {
+        kind: 'missed',
+        tone: 'grey',
+        icon: 'help',
+        title: M.neither,
+        body: M.neitherForMentor(first, min),
+        askReason: false,
+        actions: [BOOKINGS],
+      };
+  }
   return {
     kind: 'missed',
     tone: 'grey',
     icon: 'help',
-    title: 'This session was missed',
-    body: 'We don’t have a record of who joined.',
+    title: M.unknownTitle,
+    body: M.unknownBody,
+    askReason: false,
     actions: [BOOKINGS],
   };
 }

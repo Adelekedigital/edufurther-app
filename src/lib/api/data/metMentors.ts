@@ -7,6 +7,7 @@ import type { Mentor, Remote } from '@/types/mentor';
 import { apiError, normaliseError, retryOnce } from './errors';
 import { api } from './http';
 import { keys } from './keys';
+import { bookableMentor } from '@/lib/utils/bookableMentor';
 import { coverKey } from '@/lib/utils/cover';
 import { clampFocus, personCover, personInitials } from '@/lib/utils/person';
 import { sessionKey, useSession } from './session';
@@ -64,34 +65,23 @@ export function toMetMentor(r: MetMentorRead): MetMentor {
 }
 
 /**
- * A met mentor as the booking flow needs them — `BookingFlow` reads only the
- * identity and party-card fields (id, name, avatar, degree, institution), which
- * `/me/mentors` carries; the rest default (rating/reviews unknown, free, topics
- * none). The flow fetches session types and slots by id itself. Only ever called
- * for a bookable (`open`) mentor, so `takingBookings` is true.
+ * A met mentor as the booking flow needs them (`bookableMentor`). Only ever
+ * called for a bookable (`open`) mentor.
  */
 export function toBookingMentor(m: MetMentor): Mentor {
-  return {
+  return bookableMentor({
     id: m.id,
     profileHref: `/mentors/${encodeURIComponent(m.slug ?? m.id)}`,
     name: m.name,
     firstName: m.firstName,
     initials: m.initials,
-    photoUrl: m.avatarUrl,
-    photoFocus: m.avatarFocus,
     cover: m.cover,
-    degreeLine: m.degree,
     institution: m.institution,
+    avatarUrl: m.avatarUrl,
+    avatarFocus: m.avatarFocus,
+    degree: m.degree,
     completedSessions: m.sessionCount,
-    reviewCount: 0,
-    rating: null,
-    label: null,
-    offer: 'free',
-    nextAvailableAt: null,
-    nextAvailableState: 'unknown',
-    takingBookings: true,
-    topics: [],
-  };
+  });
 }
 
 // Met mentors (completed ≥1 session each) are few in practice, so one page of up

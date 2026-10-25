@@ -14,14 +14,13 @@ import { ShareMenu } from '@/components/molecules/ShareMenu/ShareMenu';
 import { BookSessionCard } from '@/components/organisms/BookSessionCard/BookSessionCard';
 import { FirstMenteesCard } from '@/components/organisms/FirstMenteesCard/FirstMenteesCard';
 import { ProfileStrengthCard } from '@/components/organisms/ProfileStrengthCard/ProfileStrengthCard';
-import { SignInBookingFlow } from '@/app/_shell/SignInBookingFlow';
+import { BookingLauncher } from '@/app/_shell/BookingLauncher/BookingLauncher';
 import { ProfileHeader } from '@/components/organisms/ProfileHeader/ProfileHeader';
 import { ProfileOverview } from '@/components/organisms/ProfileOverview/ProfileOverview';
 import { ReviewDialog } from '@/app/_reviews/ReviewDialog';
 import { SessionTypeList } from '@/components/organisms/SessionTypeList/SessionTypeList';
 import { SimilarMentorsCard } from '@/components/organisms/SimilarMentorsCard/SimilarMentorsCard';
 import { TrackRecordCard } from '@/components/organisms/TrackRecordCard/TrackRecordCard';
-import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { bookBlockedFor } from '@/app/_shell/bookBlocked';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { useSetupDetour } from '@/app/_shell/useSetupDetour';
@@ -218,7 +217,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
 
   const bookBlocked = !online ? 'Booking needs a connection' : bookBlockedFor(viewer);
   const mayBook = canBookHere && !notTaking;
-  const booking = useProfileBooking({ mentor: p?.mentor ?? null, mayBook, canBook, timeZone });
+  const booking = useProfileBooking({ mentor: p?.mentor ?? null, mayBook, canBook });
   // A booking link the page couldn't reopen (useBookLink): said, not silent.
   const [bookingDropped, setBookingDropped] = useState<'type' | 'blocked' | null>(null);
   const droppedText = !bookingDropped
@@ -819,39 +818,18 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
         />
       )}
 
-      {booking.active && (
-        <SignInBookingFlow
-          mentor={booking.active}
-          sessionTypes={booking.sessionTypes}
-          sessionTypeId={booking.typeId}
-          onSessionTypeChange={booking.setTypeId}
-          slots={booking.slots}
-          isGuest={viewer.kind === 'loading' ? null : viewer.kind === 'guest'}
-          onRequest={booking.request.request}
-          requestPending={booking.request.isPending}
-          requestDone={booking.request.isDone}
-          requestConfirmed={booking.request.isConfirmed}
-          requestError={booking.request.error}
-          onUpload={booking.uploadIntakeFile}
-          onClose={booking.close}
-          deviceZone={timeZone}
-          initialTime={booking.initialTime}
-          // On this profile the link would lead back here; a suggested mentor's is useful.
-          hideProfileLink={booking.isThisMentor}
-          renderShell={(shell, body) => (
-            <ModalShell
-              title={shell.title}
-              subtitle={shell.subtitle}
-              size="xl"
-              onClose={booking.close}
-              sheet={shell.sheet}
-              footer={shell.footer}
-            >
-              {body}
-            </ModalShell>
-          )}
-        />
-      )}
+      <BookingLauncher
+        // A fresh flow per mentor, and after a close the page forced.
+        key={booking.active?.id ?? 'closed'}
+        mentor={booking.active}
+        isGuest={viewer.kind === 'loading' ? null : viewer.kind === 'guest'}
+        timeZone={timeZone}
+        initialSessionTypeId={booking.initialSessionTypeId}
+        initialTime={booking.initialTime}
+        // On this profile the link would lead back here; a suggested mentor's is useful.
+        hideProfileLink={booking.isThisMentor}
+        onClose={booking.close}
+      />
 
       {reviews.reviewing && p && member && (
         <ReviewDialog

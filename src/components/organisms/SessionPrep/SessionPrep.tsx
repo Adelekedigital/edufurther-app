@@ -6,13 +6,14 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { AnswerItem } from '@/components/molecules/AnswerItem/AnswerItem';
+import { PREP_COPY } from '@/lib/copy/session';
 import type { AnswerFile, BookingAnswer } from '@/types/booking';
 import styles from './SessionPrep.module.css';
 
 export type GuideTip = { icon: IconName; title: string; body: string };
 
 type AnswersProps = {
-  /** "Your answers from booking." / "From Amara’s booking answers." */
+  /** "Your answers from booking. Gbenga sees them too." / "From Amara’s booking answers." */
   answersSub: string;
   /** Null while loading. */
   answers: BookingAnswer[] | null;
@@ -36,9 +37,7 @@ const prepCard = cardClass({ padding: 'none', className: styles.card });
 export function hasAnswersToShow(
   p: Pick<AnswersProps, 'answers' | 'answersLoading' | 'answersFailed'>,
 ): boolean {
-  return (
-    !!p.answersFailed || !!p.answersLoading || !!p.answers?.some((a) => a.answered)
-  );
+  return !!p.answersFailed || !!p.answersLoading || !!p.answers?.some((a) => a.answered);
 }
 
 /** The answers themselves: in the aside's card and in the phone sheet. */
@@ -116,7 +115,7 @@ export function SessionPrepAside({ answersTitle, guide, ...answers }: AsideProps
         )
       )}
       <section className={prepCard}>
-        <h2 className={styles.heading}>Quick guide for a rewarding session</h2>
+        <h2 className={styles.heading}>{PREP_COPY.guideTitle}</h2>
         <PrepGuide guide={guide} />
       </section>
     </aside>
@@ -150,7 +149,7 @@ export function SessionPrepAsideSkeleton() {
 export type PrepSheet = 'talk' | 'guide';
 
 type ButtonsProps = {
-  /** "Your answers" / "Amara’s answers". */
+  /** "Your response" / "Amara’s response". */
   answersLabel: string;
   /** Whether the answers button shows: there is something to read, or a retry. */
   showAnswers: boolean;
@@ -171,7 +170,7 @@ export function SessionPrepButtons({
 }: ButtonsProps) {
   const rows: { key: PrepSheet; icon: IconName; title: string }[] = [
     ...(showAnswers ? [{ key: 'talk' as const, icon: 'forum' as const, title: answersLabel }] : []),
-    { key: 'guide', icon: 'tips_and_updates', title: 'Quick guide' },
+    { key: 'guide', icon: 'tips_and_updates', title: PREP_COPY.guideTitle },
   ];
   return (
     <div className={styles.buttons} aria-busy={answersLoading || undefined}>

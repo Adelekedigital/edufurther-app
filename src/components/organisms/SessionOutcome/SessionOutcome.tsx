@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { cx } from '@/lib/utils/cx';
@@ -9,8 +9,13 @@ import styles from './SessionOutcome.module.css';
 
 type SessionOutcomeProps = {
   view: OutcomeView;
-  /** An action with no link: Leave a review, which opens the modal here. */
+  /** An action with no link: Leave a review or Book again, which open modals here. */
   onAction: (key: string) => void;
+  /**
+   * The missed-reason form ("What happened?"), shown only to the person who
+   * missed it (`view.askReason`), between the panel and the actions.
+   */
+  reason?: ReactNode;
 };
 
 function Actions({
@@ -40,7 +45,7 @@ function Actions({
 }
 
 /** Session Join.dc.html's outcome under the lobby: `isCompleted` and `isMissed`. */
-export function SessionOutcome({ view, onAction }: SessionOutcomeProps) {
+export function SessionOutcome({ view, onAction, reason }: SessionOutcomeProps) {
   // The thanks line replaces Leave a review, which had focus when the review
   // modal opened from it: focus comes here, not to a button that is gone.
   const thanksRef = useRef<HTMLDivElement>(null);
@@ -76,6 +81,7 @@ export function SessionOutcome({ view, onAction }: SessionOutcomeProps) {
           <span className={styles.panelBody}>{view.body}</span>
         </div>
       </div>
+      {view.askReason && reason}
       <div className={styles.missedActions}>
         <Actions actions={view.actions} onAction={onAction} />
       </div>
