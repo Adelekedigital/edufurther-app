@@ -8,6 +8,10 @@ import { DEFAULT_WINDOW_DAYS, MAX_WINDOW_DAYS, prefs, windowOk } from './booking
 import type { components } from '@/lib/api/generated/schema';
 import { OFFERINGS } from './fixtures';
 import type { MockResult } from './respond';
+import { STAGE_CHIPS } from '@/lib/utils/sessionTypeDraft';
+
+/** What a write may send since backend PR 1 step 2: the six, nothing else. */
+const SIX_STAGES = new Set<string>(STAGE_CHIPS);
 
 type OwnSessionTypeRead = components['schemas']['OwnSessionTypeRead'];
 type QuestionRead = components['schemas']['QuestionRead'];
@@ -124,8 +128,8 @@ function seed(): Stored[] {
       duration_minutes: 60,
       is_active: true,
       ...topics('document-preparation'),
-      application_stage: 'drafting_stage',
-      application_stages: ['drafting_stage'],
+      application_stage: 'preparing_documents',
+      application_stages: ['preparing_documents'],
       questions: [
         q('q1', 'Which programs are you applying to?', 'free_text', true),
         q('q2', 'Upload your current SOP draft (PDF or Word)', 'file_upload', false),
@@ -236,19 +240,19 @@ export function mockCreateSessionType(
   if (ids.length > 3) errors.push({ pointer: '/service_offering_ids', message: 'at most 3' });
   const qs = Array.isArray(body.questions) ? body.questions : [];
   if (qs.length > 5) errors.push({ pointer: '/questions', message: 'at most 5' });
-  // Stages (backend round 3 A): a list, never null, no repeats, not with the
-  // single field; `other` needs its label, and only `other` may have one.
+  // Stages (backend round 3 A, PR 1 step 2): a list of the six, never null, no
+  // repeats, not with the single field; no custom stage, so the label is null.
   const stages = body.application_stages;
   if ('application_stages' in body && !Array.isArray(stages))
     errors.push({ pointer: '/application_stages', message: 'must be a list' });
   else if (Array.isArray(stages) && new Set(stages).size !== stages.length)
     errors.push({ pointer: '/application_stages', message: 'no repeats' });
+  else if (Array.isArray(stages) && stages.some((s) => !SIX_STAGES.has(s as string)))
+    errors.push({ pointer: '/application_stages/0', message: 'not one of the six' });
   if ('application_stages' in body && 'application_stage' in body)
     errors.push({ pointer: '/application_stage', message: 'send one of the two' });
-  const hasOther = Array.isArray(stages) && stages.includes('other');
-  const label = typeof body.custom_stage_label === 'string' ? body.custom_stage_label.trim() : '';
-  if (hasOther !== !!label)
-    errors.push({ pointer: '/custom_stage_label', message: 'required exactly with other' });
+  if (body.custom_stage_label != null)
+    errors.push({ pointer: '/custom_stage_label', message: 'must be null' });
   // 4 to the platform cap, like the backend (a new type has no stored value to resend).
   if ('booking_window_days' in body && !windowOk(body.booking_window_days, null))
     errors.push({ pointer: '/booking_window_days', message: 'out of range' });
@@ -386,10 +390,10 @@ export function mockEditSessionType(
   }
   if (has('application_stages') && has('application_stage'))
     errors.push({ pointer: '/application_stage', message: 'send one of the two' });
-  const label = has('custom_stage_label') ? body.custom_stage_label : t.custom_stage_label;
-  const hasOther = Array.isArray(stages) && stages.includes('other');
-  if (hasOther !== !!(typeof label === 'string' && label.trim()))
-    errors.push({ pointer: '/custom_stage_label', message: 'required exactly with other' });
+  if (Array.isArray(stages) && stages.some((s) => !SIX_STAGES.has(s as string)))
+    errors.push({ pointer: '/application_stages/0', message: 'not one of the six' });
+  if (has('custom_stage_label') && body.custom_stage_label != null)
+    errors.push({ pointer: '/custom_stage_label', message: 'must be null' });
   const ids = has('service_offering_ids') ? body.service_offering_ids : undefined;
   if (Array.isArray(ids) && ids.length > 3)
     errors.push({ pointer: '/service_offering_ids', message: 'at most 3' });
