@@ -186,7 +186,13 @@ export function SessionJoinScreen({ id }: { id: string }) {
   // Book again opens the shared booking modal here, as the profile does
   // (PRD Session Join): only a mentee booking their mentor, who may book.
   const [bookingAgain, setBookingAgain] = useState(false);
-  const other = data?.booking.side === 'mentee' && canBook ? data.booking.other : null;
+  const other =
+    data?.booking.side === 'mentee' && canBook && !data.booking.other.deleted
+      ? data.booking.other
+      : null;
+  // No longer bookable (the account went, or the viewer can't book): the flag
+  // goes too, so the modal never comes back unasked.
+  if (bookingAgain && !other) setBookingAgain(false);
   const bookMentor = useMemo(
     () => (bookingAgain && other ? partyToMentor(other) : null),
     [bookingAgain, other],

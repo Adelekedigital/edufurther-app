@@ -38,7 +38,11 @@ export function missedTone(b: Booking): 'red' | 'green' | 'grey' {
  */
 export function missedWaitMin(b: Booking): number {
   if (!b.joinClosesAt) return MISSED_WAIT_FALLBACK_MIN;
-  return Math.round((new Date(b.joinClosesAt).getTime() - new Date(b.startsAt).getTime()) / 60_000);
+  const min = Math.round(
+    (new Date(b.joinClosesAt).getTime() - new Date(b.startsAt).getTime()) / 60_000,
+  );
+  // A window at or before the start, or one that doesn't parse, says nothing true.
+  return Number.isFinite(min) && min > 0 ? min : MISSED_WAIT_FALLBACK_MIN;
 }
 
 export type OutcomeAction = {
@@ -111,11 +115,13 @@ const FIND: OutcomeAction = {
  */
 export function outcomeView({
   booking: b,
-  canBook,
+  canBook: viewerCanBook,
   reviewable,
   reviewed,
   home,
 }: OutcomeInput): OutcomeView {
+  // A mentor whose account is gone can't be booked: no Book control at all.
+  const canBook = viewerCanBook && !b.other.deleted;
   const first = b.other.firstName;
   const mentee = b.side === 'mentee';
   const book = (label: string, variant: OutcomeAction['variant']): OutcomeAction => ({

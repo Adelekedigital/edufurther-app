@@ -4,14 +4,14 @@ import { sampleBookingFor, sampleParty } from './bookingTestFixtures';
 import { missedBy, missedTone, missedWaitMin, outcomeView } from './sessionOutcome';
 
 type Attendance = BookingParty['attendance'];
-// Arrivals stop 10 minutes after the start, as the backend's row says.
+// Arrivals close 15 minutes after the start, as the backend's row says (JOIN_CLOSES).
 const missed = (side: Booking['side'], mine: Attendance, theirs: Attendance) =>
   sampleBookingFor({
     status: 'noShow',
     side,
     myAttendance: mine,
     startsAt: '2026-10-04T16:00:00Z',
-    joinClosesAt: '2026-10-04T16:10:00Z',
+    joinClosesAt: '2026-10-04T16:15:00Z',
     other: sampleParty({ id: 'gbenga', firstName: 'Gbenga', attendance: theirs }),
   });
 const view = (b: Booking, over: Partial<Parameters<typeof outcomeView>[0]> = {}) =>
@@ -49,19 +49,30 @@ describe('missedTone', () => {
 
 describe('missedWaitMin', () => {
   it('reads the wait from the row, so the copy names the backend’s rule', () => {
-    expect(missedWaitMin(missed('mentee', 'noShow', 'attended'))).toBe(10);
+    expect(missedWaitMin(missed('mentee', 'noShow', 'attended'))).toBe(15);
+    // Whatever the row says: a session shorter than the window closes at its end.
     expect(
       missedWaitMin(
         sampleBookingFor({
           startsAt: '2026-10-04T16:00:00Z',
-          joinClosesAt: '2026-10-04T16:15:00Z',
+          joinClosesAt: '2026-10-04T16:10:00Z',
         }),
       ),
-    ).toBe(15);
+    ).toBe(10);
   });
 
   it('an older row with no window falls back to the backend’s 15 minutes', () => {
     expect(missedWaitMin(sampleBookingFor({ joinClosesAt: null }))).toBe(15);
+    // Nonsense on the row reads as the rule, never "0" or "NaN" minutes.
+    expect(
+      missedWaitMin(
+        sampleBookingFor({
+          startsAt: '2026-10-04T16:00:00Z',
+          joinClosesAt: '2026-10-04T16:00:00Z',
+        }),
+      ),
+    ).toBe(15);
+    expect(missedWaitMin(sampleBookingFor({ joinClosesAt: 'not a time' }))).toBe(15);
   });
 });
 
@@ -75,7 +86,7 @@ describe('outcomeView, the six missed cards', () => {
         icon: 'event_busy',
         tone: 'red',
         title: 'You missed this session',
-        body: 'Gbenga waited 10 minutes from the start. The credit for this session is used, and it counts as a missed session.',
+        body: 'Gbenga waited 15 minutes from the start. The credit for this session is used, and it counts as a missed session.',
         askReason: true,
       },
       [['Book another time', null]],
@@ -102,7 +113,7 @@ describe('outcomeView, the six missed cards', () => {
         icon: 'help',
         tone: 'grey',
         title: 'Neither of you joined',
-        body: 'Neither of you joined within 10 minutes of the start, so the credit for this session is used.',
+        body: 'Neither of you joined within 15 minutes of the start, so the credit for this session is used.',
         askReason: false,
       },
       [['Book another time', null]],
@@ -114,7 +125,7 @@ describe('outcomeView, the six missed cards', () => {
         icon: 'person_off',
         tone: 'grey',
         title: 'Gbenga didn’t join',
-        body: 'You waited 10 minutes from the start, so this counts as a completed session for you.',
+        body: 'You waited 15 minutes from the start, so this counts as a completed session for you.',
         askReason: false,
       },
       [['Go to Bookings', '/bookings']],
@@ -126,7 +137,7 @@ describe('outcomeView, the six missed cards', () => {
         icon: 'event_busy',
         tone: 'red',
         title: 'You missed this session',
-        body: 'Gbenga waited 10 minutes from the start, so Gbenga’s credit is back.',
+        body: 'Gbenga waited 15 minutes from the start, so Gbenga’s credit is back.',
         askReason: true,
       },
       // "Offer a new time" is the founder's open question; Go to Bookings until then.
@@ -139,7 +150,7 @@ describe('outcomeView, the six missed cards', () => {
         icon: 'help',
         tone: 'grey',
         title: 'Neither of you joined',
-        body: 'Neither of you joined within 10 minutes of the start, so Gbenga’s credit for this session is used.',
+        body: 'Neither of you joined within 15 minutes of the start, so Gbenga’s credit for this session is used.',
         askReason: false,
       },
       [['Go to Bookings', '/bookings']],
@@ -184,6 +195,18 @@ describe('outcomeView, the six missed cards', () => {
       missed('mentee', 'noShow', 'noShow'),
     ])
       expect(labels(view(b, { canBook: false }))).toEqual(['Go to Bookings']);
+  });
+  it('never offers booking a mentor whose account is gone', () => {
+    const gone = sampleBookingFor({
+      ...missed('mentee', 'attended', 'noShow'),
+      other: sampleParty({
+        id: 'gbenga',
+        firstName: 'Deleted user',
+        deleted: true,
+        attendance: 'noShow',
+      }),
+    });
+    expect(labels(view(gone))).toEqual(['Go to Bookings']);
   });
 });
 
