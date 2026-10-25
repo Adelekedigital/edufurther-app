@@ -368,6 +368,15 @@
   border: var(--border-hairline) solid var(--border-subtle);
   border-radius: var(--radius-lg);
 }
+/* The default video didn't load: the line, then Try again. */
+.videoFailed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-p-xs);
+  color: var(--ink-700);
+}
 /* Design step 3 Video: label and hint, then the select, 16px apart; no box. */
 .videoRow {
   display: flex;

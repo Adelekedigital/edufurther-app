@@ -170,6 +170,8 @@ export function SessionTypeFormScreen({
             }
             onRetryWeekly={weekly.retry}
             defaultVideo={defaultVideo}
+            videoFailed={!!video.error && !video.data}
+            onRetryVideo={video.retry}
             onStep={steps.goTo}
             onBack={onBack}
             onNext={onNext}

@@ -171,6 +171,8 @@ function seed(): Stored[] {
 }
 
 let store: Stored[] = seed();
+// Creates so far: part of each new id, so two in one millisecond differ.
+let created = 0;
 
 /** The featured type first, like the backend. */
 export function mockOwnSessionTypes(): OwnSessionTypeRead[] {
@@ -276,7 +278,7 @@ export function mockCreateSessionType(
   if (store.some((t) => t.name.toLowerCase() === name.toLowerCase()))
     return { ok: false, status: 409, problem: { title: 'Conflict' } };
 
-  const id = `mst-${Date.now().toString(36)}`;
+  const id = `mst-${Date.now().toString(36)}-${++created}`;
   const offerings = ids.flatMap((oid) => {
     const o = OFFERINGS.find((x) => x.id === oid);
     return o?.code ? [{ id: o.id, code: o.code, display_name: o.display_name }] : [];

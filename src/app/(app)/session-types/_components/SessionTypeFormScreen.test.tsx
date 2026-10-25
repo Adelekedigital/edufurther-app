@@ -97,8 +97,9 @@ const VIDEO_DEFAULT = {
   isLoading: false,
   error: null,
 };
+const mockRetryVideo = vi.fn();
 vi.mock('@/lib/api/data/conferencing', () => ({
-  useConferencing: () => ({ ...videoMock, retry: vi.fn(), retrying: false }),
+  useConferencing: () => ({ ...videoMock, retry: mockRetryVideo, retrying: false }),
 }));
 
 vi.mock('@/lib/api/data/sessionTypeEdit', () => ({
@@ -621,6 +622,26 @@ describe('SessionTypeFormScreen — the Video row (backend #535)', () => {
     videoMock = mock;
     await toStep3(user);
     expect(optionsOf()[0]).toBe('Use my default');
+  });
+
+  it('a default that failed to load says so, as the rules and hours do, and Try again reads it again (GitHub review)', async () => {
+    const user = userEvent.setup({ delay: null });
+    mockRetryVideo.mockReset();
+    videoMock = { data: null, isLoading: false, error: { kind: 'server', message: 'x' } };
+    await toStep3(user);
+    expect(
+      screen.getByText('We couldn’t load your default video. This session still follows it.'),
+    ).toBeInTheDocument();
+    const tries = screen.getAllByRole('button', { name: 'Try again' });
+    await user.click(tries[tries.length - 1]!);
+    expect(mockRetryVideo).toHaveBeenCalledOnce();
+  });
+
+  it('while it loads, nothing is said to have failed', async () => {
+    const user = userEvent.setup({ delay: null });
+    videoMock = { data: null, isLoading: true, error: null };
+    await toStep3(user);
+    expect(screen.queryByText(/couldn’t load your default video/)).toBeNull();
   });
 
   it('publishing sends null to follow the default, else the pin; Review says the select’s words', async () => {

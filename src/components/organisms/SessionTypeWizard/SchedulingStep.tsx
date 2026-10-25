@@ -39,6 +39,9 @@ type SchedulingStepProps = {
   onRetryWeekly: () => void;
   /** The mentor's default video ("EduFurther video"); null until it's known. */
   defaultVideo: string | null;
+  /** Reading the default video failed: say so and offer to read it again. */
+  videoFailed?: boolean;
+  onRetryVideo?: () => void;
 };
 
 /**
@@ -59,6 +62,8 @@ export function SchedulingStep({
   weekly,
   onRetryWeekly,
   defaultVideo,
+  videoFailed = false,
+  onRetryVideo,
 }: SchedulingStepProps) {
   // What "your default" approval is, named in its option; unknown until the defaults load.
   const defaultApproval = defaults
@@ -255,6 +260,15 @@ export function SchedulingStep({
         {errors.venue && (
           <p id={`${videoId}-error`} className={styles.fieldError}>
             {errors.venue}
+          </p>
+        )}
+        {videoFailed && (
+          // As the rules and hours rows say theirs: the session still follows it.
+          <p className={styles.videoFailed}>
+            {RULES_COPY.videoFailed}
+            <button type="button" className={styles.inlineAction} onClick={onRetryVideo}>
+              Try again
+            </button>
           </p>
         )}
       </div>

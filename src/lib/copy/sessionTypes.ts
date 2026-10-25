@@ -105,6 +105,8 @@ export const RULES_COPY = {
   manageRulesHref: '/settings/booking',
   manageHours: 'Manage weekly availability',
   manageHoursHref: '/calendar',
+  /** The default video didn't load (like the rules and hours rows say theirs). */
+  videoFailed: 'We couldn’t load your default video. This session still follows it.',
   hoursTitle: 'When can mentees book this?',
   hoursGroupLabel: 'Hours for this session',
   useWeekly: 'Use my weekly availability',
