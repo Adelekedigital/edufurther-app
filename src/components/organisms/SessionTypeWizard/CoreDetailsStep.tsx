@@ -11,6 +11,7 @@ import { DETAILS_COPY } from '@/lib/copy/sessionTypes';
 import {
   DESCRIPTION_MAX,
   MAX_TOPICS,
+  STAGE_CHIPS,
   STAGE_LABELS,
   type Draft,
   type FieldErrors,
@@ -35,7 +36,7 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
   const id = useId();
   const [stageDraft, setStageDraft] = useState('');
   const stages = [
-    ...Object.entries(STAGE_LABELS).map(([value, label]) => ({ value, label })),
+    ...STAGE_CHIPS.map((value) => ({ value, label: STAGE_LABELS[value] })),
     ...(d.stages.includes('other') && d.customStage
       ? [{ value: 'other', label: d.customStage }]
       : []),

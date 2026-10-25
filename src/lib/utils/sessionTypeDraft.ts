@@ -9,14 +9,32 @@ import type { SessionTemplate } from './sessionTemplates';
 
 export type Stage = ApplicationStage;
 
-/** Design chip labels ("Best for mentees who are…"). `other` carries the mentor's own words. */
+/**
+ * Every stage's words, for showing a stage the API sends. `other` carries the
+ * mentor's own words. The six PRD stages use the design's chip labels.
+ */
 export const STAGE_LABELS: Record<Exclude<Stage, 'other'>, string> = {
   early_exploration: 'Exploring',
   drafting_stage: 'Drafting',
   post_submission: 'Submitted, waiting',
   revisions: 'Revising',
   interviewing: 'Interviewing',
+  exploring: 'Exploring',
+  researching: 'Researching schools & scholarships',
+  preparing_documents: 'Preparing documents',
+  applying: 'Applying',
+  interview_prep: 'Preparing for interview',
+  awaiting_decision: 'Waiting for a decision',
 };
+
+/** The chips "Best for mentees who are…" offers, in order (design chip labels). */
+export const STAGE_CHIPS: Exclude<Stage, 'other'>[] = [
+  'early_exploration',
+  'drafting_stage',
+  'post_submission',
+  'revisions',
+  'interviewing',
+];
 
 export type QuestionKind = 'free_text' | 'file_upload' | 'single' | 'multi';
 export const QUESTION_KIND_LABELS: Record<QuestionKind, string> = {
