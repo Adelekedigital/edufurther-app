@@ -43,9 +43,8 @@ describe('validateStep', () => {
       'topics',
     ]);
     expect(validateStep(filled(), 1)).toEqual({});
-    expect(
-      validateStep(filled({ stages: ['drafting_stage', 'other'], customStage: ' ' }), 1).stage,
-    ).toBeTruthy();
+    // No custom stage to name any more: stages alone never block.
+    expect(validateStep(filled({ stages: ['applying'] }), 1)).toEqual({});
   });
 
   it('step 3 with dedicated hours needs a day on, and flags bad or overlapping slots', () => {
@@ -135,7 +134,6 @@ describe('toCreateBody', () => {
       requires_booking_confirmation: null,
       booking_window_days: null,
       break_after_minutes: null,
-      custom_stage_label: null,
     });
     expect(body.questions[0]).toEqual({
       question_text: 'Programs?',
@@ -161,8 +159,7 @@ describe('toCreateBody', () => {
         windowDays: 14,
         breakMin: 10,
         approval: 'off',
-        stages: ['early_exploration', 'other'],
-        customStage: ' Deferred ',
+        stages: ['exploring', 'applying'],
       }),
       ids,
     );
@@ -172,26 +169,25 @@ describe('toCreateBody', () => {
       booking_window_days: 14,
       break_after_minutes: 10,
       requires_booking_confirmation: false,
-      application_stages: ['early_exploration', 'other'],
-      custom_stage_label: 'Deferred',
+      application_stages: ['exploring', 'applying'],
     });
     // Never both: the backend refuses application_stage alongside the list.
     expect(body).not.toHaveProperty('application_stage');
+    // No custom stage label at all (backend #536 reads it as null).
+    expect(body).not.toHaveProperty('custom_stage_label');
   });
 
-  it('several stages, in the order picked; none is any stage; no label without "other"', () => {
-    expect(toCreateBody(filled({ stages: ['revisions', 'drafting_stage'] }), ids)).toMatchObject({
-      application_stages: ['revisions', 'drafting_stage'],
-      custom_stage_label: null,
+  it('several stages, in the order picked; none is any stage; never a custom label', () => {
+    expect(toCreateBody(filled({ stages: ['applying', 'exploring'] }), ids)).toMatchObject({
+      application_stages: ['applying', 'exploring'],
     });
-    expect(toCreateBody(filled({ stages: [], customStage: 'stale' }), ids)).toMatchObject({
+    expect(toCreateBody(filled({ stages: [] }), ids)).toMatchObject({
       application_stages: [],
-      custom_stage_label: null,
     });
-    expect(stagesLabel({ stages: ['drafting_stage', 'other'], customStage: 'Deferred' })).toBe(
-      'Drafting, Deferred',
+    expect(stagesLabel({ stages: ['researching', 'awaiting_decision'] })).toBe(
+      'Researching schools & scholarships, Waiting for a decision',
     );
-    expect(stagesLabel({ stages: [], customStage: '' })).toBe('All stages');
+    expect(stagesLabel({ stages: [] })).toBe('All stages');
   });
 });
 

@@ -364,18 +364,12 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
 
   it('a type not yet on the public profile reads its stages from Session types', () => {
     onSessions([
-      ownType({ id: 'st7', name: 'Essay sprint', stages: ['drafting_stage', 'revisions'] }),
+      ownType({ id: 'st7', name: 'Essay sprint', stages: ['preparing_documents', 'applying'] }),
     ]);
     render(<MentorProfileScreen handle="gbenga" />);
-    expect(within(card('Essay sprint')).getByText('Drafting, Revising')).toBeInTheDocument();
-  });
-
-  it('the mentor’s own stage wording shows on the owner card (Codex on PR 119)', () => {
-    onSessions([
-      ownType({ id: 'st7', name: 'Essay sprint', stages: ['other'], customStage: 'Pre-departure' }),
-    ]);
-    render(<MentorProfileScreen handle="gbenga" />);
-    expect(within(card('Essay sprint')).getByText('Pre-departure')).toBeInTheDocument();
+    expect(
+      within(card('Essay sprint')).getByText('Preparing documents, Applying'),
+    ).toBeInTheDocument();
   });
 
   it('in "View as mentee", the mentee view: no owner controls', async () => {

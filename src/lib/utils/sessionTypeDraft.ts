@@ -9,16 +9,8 @@ import type { SessionTemplate } from './sessionTemplates';
 
 export type Stage = ApplicationStage;
 
-/**
- * Every stage's words, for showing a stage the API sends. `other` carries the
- * mentor's own words. The six PRD stages use the design's chip labels.
- */
-export const STAGE_LABELS: Record<Exclude<Stage, 'other'>, string> = {
-  early_exploration: 'Exploring',
-  drafting_stage: 'Drafting',
-  post_submission: 'Submitted, waiting',
-  revisions: 'Revising',
-  interviewing: 'Interviewing',
+/** "Best for mentees who are…": the design's six chips, in its order, and their words. */
+export const STAGE_LABELS: Record<Stage, string> = {
   exploring: 'Exploring',
   researching: 'Researching schools & scholarships',
   preparing_documents: 'Preparing documents',
@@ -26,15 +18,7 @@ export const STAGE_LABELS: Record<Exclude<Stage, 'other'>, string> = {
   interview_prep: 'Preparing for interview',
   awaiting_decision: 'Waiting for a decision',
 };
-
-/** The chips "Best for mentees who are…" offers, in order (design chip labels). */
-export const STAGE_CHIPS: Exclude<Stage, 'other'>[] = [
-  'early_exploration',
-  'drafting_stage',
-  'post_submission',
-  'revisions',
-  'interviewing',
-];
+export const STAGE_CHIPS = Object.keys(STAGE_LABELS) as Stage[];
 
 export type QuestionKind = 'free_text' | 'file_upload' | 'single' | 'multi';
 export const QUESTION_KIND_LABELS: Record<QuestionKind, string> = {
@@ -67,8 +51,6 @@ export type Draft = {
   topics: string[];
   /** Several, in the order picked; empty = any stage (backend round 3 A). */
   stages: Stage[];
-  /** The mentor's own stage, when `stages` has `other`. */
-  customStage: string;
   /** null = automatic from the first topic. */
   icon: SessionIcon | null;
   questions: DraftQuestion[];
@@ -148,7 +130,6 @@ export function blankDraft(): Draft {
     description: '',
     topics: [],
     stages: [],
-    customStage: '',
     icon: null,
     questions: [],
     durationMin: 60,
@@ -288,7 +269,6 @@ export function step1Missing(d: Draft): FieldKey[] {
   if (!d.name.trim()) missing.push('name');
   if (!d.description.trim()) missing.push('description');
   if (d.topics.length === 0) missing.push('topics');
-  if (d.stages.includes('other') && !d.customStage.trim()) missing.push('stage');
   return missing;
 }
 
@@ -301,8 +281,6 @@ export function validateStep(d: Draft, step: 1 | 2 | 3, minLength = 0): FieldErr
       e.name = `Keep the name under ${NAME_MAX} characters.`;
     if (!d.description.trim()) e.description = 'Say what mentees get from this session.';
     if (d.topics.length === 0) e.topics = 'Pick at least one topic.';
-    if (d.stages.includes('other') && !d.customStage.trim())
-      e.stage = 'Name the stage, or pick another.';
   }
   if (step === 3 && d.hours === 'custom') {
     const on = d.days.filter((x) => x.on);
@@ -374,8 +352,8 @@ export function toCreateBody(d: Draft, offeringIds: Record<string, string>) {
     min_notice_minutes: custom ? Math.round(d.noticeHours * 60) : null,
     service_offering_ids: d.topics.map((c) => offeringIds[c]).filter((x): x is string => !!x),
     // The list (backend round 3 A); `application_stage` isn't sent with it (a 422).
+    // The six only; no custom stage label (backend PR 1, #536: it always reads null).
     application_stages: d.stages,
-    custom_stage_label: d.stages.includes('other') ? d.customStage.trim() : null,
     icon: d.icon,
     requires_booking_confirmation: !custom || d.approval === 'inherit' ? null : d.approval === 'on',
     booking_window_days: custom ? d.windowDays : null,
@@ -555,8 +533,7 @@ export function applyTemplateLength(
   return { ...d, ...customFrom(defaults), rules: 'custom', durationMin: templateMin };
 }
 
-/** "Exploring, Drafting" (the mentor's own for `other`), or "All stages". */
-export function stagesLabel(d: Pick<Draft, 'stages' | 'customStage'>): string {
-  const labels = d.stages.map((s) => (s === 'other' ? d.customStage.trim() : STAGE_LABELS[s]));
-  return labels.filter(Boolean).join(', ') || DETAILS_COPY.anyStage;
+/** "Exploring, Applying", or "All stages". */
+export function stagesLabel(d: Pick<Draft, 'stages'>): string {
+  return d.stages.map((s) => STAGE_LABELS[s]).join(', ') || DETAILS_COPY.anyStage;
 }

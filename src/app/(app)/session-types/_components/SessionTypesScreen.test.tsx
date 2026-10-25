@@ -57,7 +57,6 @@ const TYPE: OwnSessionType = {
   isLive: true,
   usesOwnWindows: false,
   stages: [],
-  customStage: null,
   topics: [],
   icon: 'video_call',
   iconChoice: null,

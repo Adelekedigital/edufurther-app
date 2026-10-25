@@ -95,8 +95,7 @@ export const CoreDetailsFull: Story = {
       start={{
         ...sop(),
         topics: ['document-preparation', 'school-selection', 'program-selection'],
-        stages: ['drafting_stage', 'revisions', 'other'],
-        customStage: 'Deferred admission',
+        stages: ['preparing_documents', 'applying'],
         icon: 'lightbulb',
       }}
     />

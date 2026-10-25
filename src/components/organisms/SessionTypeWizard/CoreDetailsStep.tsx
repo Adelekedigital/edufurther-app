@@ -1,8 +1,7 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import { Badge } from '@/components/atoms/Badge/Badge';
-import { Button } from '@/components/atoms/Button/Button';
 import { Input, Textarea } from '@/components/atoms/Input/Input';
 import { ChoiceChips } from '@/components/molecules/ChoiceChips/ChoiceChips';
 import { FieldError } from '@/components/molecules/FieldError/FieldError';
@@ -29,40 +28,12 @@ type CoreDetailsStepProps = {
 
 /**
  * Step 1 (Session Types.dc.html `isStep1`): name, what mentees get, topics,
- * stage, price. The three required fields carry `data-gap`: a Continue with
- * gaps focuses the first (the wizard).
+ * stage, price. The three required fields and the stages carry `data-gap`: a
+ * try with gaps (or a refused stage) focuses the first (the wizard).
  */
 export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetailsStepProps) {
   const id = useId();
-  const [stageDraft, setStageDraft] = useState('');
-  // A stage the API sent that isn't a chip yet (the six new ones): shown
-  // picked, so it can be seen and unpicked (GitHub review, PR 390).
-  const extra = d.stages.filter(
-    (s): s is Exclude<Stage, 'other'> => s !== 'other' && !STAGE_CHIPS.includes(s),
-  );
-  // Its words can match an old chip's ("Exploring"): two chips alike can't be
-  // told apart, so one chip stands for both, and unpicking it clears both.
-  const taken = new Set(extra.map((s) => STAGE_LABELS[s]));
-  const stages = [
-    ...STAGE_CHIPS.filter((c) => !taken.has(STAGE_LABELS[c])).map((value) => ({
-      value,
-      label: STAGE_LABELS[value],
-    })),
-    ...extra.map((value) => ({ value, label: STAGE_LABELS[value] })),
-    ...(d.stages.includes('other') && d.customStage
-      ? [{ value: 'other', label: d.customStage }]
-      : []),
-  ];
-  const addStage = () => {
-    const v = stageDraft.trim();
-    if (!v) return;
-    // One of the mentor's own (the backend keeps one label): adding another renames it.
-    update({
-      stages: d.stages.includes('other') ? d.stages : [...d.stages, 'other'],
-      customStage: v,
-    });
-    setStageDraft('');
-  };
+  const stages = STAGE_CHIPS.map((value) => ({ value, label: STAGE_LABELS[value] }));
   return (
     <div className={styles.body1}>
       <FormField label="Session name" hint={DETAILS_COPY.nameHint} error={errors.name}>
@@ -123,7 +94,7 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
         />
       </div>
 
-      <div className={styles.group2}>
+      <div className={styles.group2} data-gap="stage">
         <span className={styles.groupLabel}>Best for mentees who are…</span>
         <ChoiceChips
           label="Best for mentees who are"
@@ -131,49 +102,13 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
           selected={d.stages}
           describedBy={`${id}-stage-hint${errors.stage ? ` ${id}-stage-error` : ''}`}
           onToggle={(v) =>
-            update(
-              d.stages.includes(v as Stage)
-                ? {
-                    // With any stage of the same words (one chip stands for both).
-                    stages: d.stages.filter(
-                      (s) =>
-                        s !== v &&
-                        (v === 'other' ||
-                          s === 'other' ||
-                          STAGE_LABELS[s] !== STAGE_LABELS[v as Exclude<Stage, 'other'>]),
-                    ),
-                    customStage: v === 'other' ? '' : d.customStage,
-                  }
-                : { stages: [...d.stages, v as Stage] },
-            )
+            update({
+              stages: d.stages.includes(v as Stage)
+                ? d.stages.filter((s) => s !== v)
+                : [...d.stages, v as Stage],
+            })
           }
         />
-        <div className={styles.stageAdd}>
-          <Input
-            aria-label="Another stage"
-            data-gap="stage"
-            className={styles.stageInput}
-            value={stageDraft}
-            maxLength={100}
-            placeholder="Another stage, e.g. Deferred admission"
-            onChange={(e) => setStageDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                addStage();
-              }
-            }}
-          />
-          <Button
-            // Design btnAddStage: the 40px base button (not in the page's small list).
-            size="medium"
-            variant="secondary-outlined"
-            disabled={!stageDraft.trim()}
-            onClick={addStage}
-          >
-            Add
-          </Button>
-        </div>
         <span id={`${id}-stage-hint`} className={styles.groupHint}>
           {DETAILS_COPY.stagesHint}
         </span>
