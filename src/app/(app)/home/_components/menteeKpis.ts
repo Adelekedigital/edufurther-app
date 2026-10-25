@@ -10,8 +10,8 @@ export type Kpi = {
   info?: string;
   trend?: KpiTrend;
   valueTone?: 'warning' | 'danger';
-  /** A page link in the trend's place ("View missed"). */
-  href?: { label: string; href: string };
+  /** A page link in the trend's place ("View missed"), as KpiCard's `link`. */
+  link?: { label: string; href: string };
 };
 
 /** "9", "9.5": hours without a trailing .0. */
@@ -21,7 +21,11 @@ export function formatHours(n: number): string {
 
 const str = (n: number | null) => (n == null ? null : String(n));
 
-/** Where "View missed" goes: Bookings History with the Missed filter on (Mentee Bookings owns the filter). */
+/**
+ * Where "View missed" goes: Bookings History with the Missed filter on. The
+ * Mentee Bookings build adds `?filter=` (in flight); until it lands, this
+ * opens History unfiltered.
+ */
 export const MISSED_HREF = '/bookings?tab=history&filter=missed';
 
 /**
@@ -70,7 +74,7 @@ export function returningKpis(s: MenteeStats): Kpi[] {
           value: String(missed),
           info: missedInfo,
           valueTone: missed >= 2 ? 'danger' : 'warning',
-          href: { label: 'View missed', href: MISSED_HREF },
+          link: { label: 'View missed', href: MISSED_HREF },
         }
       : {
           key: 'missed',

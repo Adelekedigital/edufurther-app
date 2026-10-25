@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useId, useState } from 'react';
 import { ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
@@ -58,7 +57,7 @@ function fullDate(iso: string, timeZone: string): string {
  * that can only fail is worse than none (as NextSessionCard), so it drops back
  * to "View details". One rule for the card and the page's subline.
  */
-export function startsSoon(b: Booking, now: Date, timeZone = 'UTC'): boolean {
+export function startsSoon(b: Booking, now: Date, timeZone: string): boolean {
   const join = joinState(b, now);
   if (join === 'closed') return false;
   return (
@@ -103,9 +102,15 @@ export function MenteeNextSession({
             <Icon name="lightbulb" size={16} className={styles.tipsIcon} />
             Tips
           </button>
-          <Link href="/bookings" prefetch={false} className={styles.tips}>
+          <ButtonLink
+            href="/bookings"
+            prefetch={false}
+            variant="text"
+            size="small"
+            className={styles.allLink}
+          >
             All bookings
-          </Link>
+          </ButtonLink>
         </div>
       </div>
 

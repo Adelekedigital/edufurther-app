@@ -105,10 +105,15 @@ export function MenteeHomeScreen() {
   // null or 0, so "0 free sessions left" never sits beside the Book CTA.
   const freeLeft = monthly?.unlocked ? monthly.balance : null;
 
+  // Mentors you've met is open only while there is someone in it: a refetch that
+  // empties the list closes it (and gives the help pill back).
+  const metShown = metOpen && (metMentors.data?.length ?? 0) > 0;
   // The team call (MATCH_CALL_URL, a new tab): new mentees, and returning ones
   // with 2 or fewer sessions (design matchCall float, menteeSessions ≤ 2).
-  // Hidden while Mentors you've met is open, and when the URL isn't set.
-  const showHelp = !!MATCH_CALL_URL && (isNew || completed <= 2) && !metOpen;
+  // Hidden when the URL isn't set, and while Mentors you've met is open: that
+  // full-screen list is where a mentee picks whom to book, and the design takes
+  // the pill away there (helpOn: !mentorsOpen) so it doesn't compete.
+  const showHelp = !!MATCH_CALL_URL && (isNew || completed <= 2) && !metShown;
   const openCall = () => {
     if (MATCH_CALL_URL) window.open(MATCH_CALL_URL, '_blank', 'noopener,noreferrer');
   };
@@ -127,10 +132,11 @@ export function MenteeHomeScreen() {
   const listSettled = !upcoming.isLoading && !upcoming.error;
   const noConfirmed = !isNew && listSettled && nextBooking === null;
   const hasPending = noConfirmed && (counts?.pending ?? 0) > 0;
-  const soon = !!nextBooking && startsSoon(nextBooking, now, zone);
+  // listSettled: a failed refetch keeps stale rows, and the card then shows its error.
+  const soon = listSettled && !!nextBooking && startsSoon(nextBooking, now, zone);
   const subline = isNew
     ? 'Let’s find the right mentor for your goal.'
-    : noConfirmed
+    : noConfirmed && !hasPending
       ? 'No session booked right now. Pick up where you left off.'
       : soon
         ? 'Your session starts soon.'
@@ -159,12 +165,12 @@ export function MenteeHomeScreen() {
         <section aria-label="Your progress" className={styles.kpis}>
           {stats.isLoading
             ? Array.from({ length: 4 }).map((_, i) => <KpiSkeleton key={i} />)
-            : returningKpis(stats.data ?? EMPTY_STATS).map(({ key, href, ...k }) => (
+            : returningKpis(stats.data ?? EMPTY_STATS).map(({ key, link, ...k }) => (
                 <KpiCard
                   key={key}
                   {...k}
                   link={
-                    href ??
+                    link ??
                     (key === 'mentors' && (metMentors.data?.length ?? 0) > 0
                       ? { label: 'View mentors', onClick: () => setMetOpen(true) }
                       : undefined)
@@ -238,7 +244,7 @@ export function MenteeHomeScreen() {
           mentors={metMentors}
           timeZone={zone}
           onBook={setBookTarget}
-          modalOpen={metOpen}
+          modalOpen={metShown}
           onModalChange={setMetOpen}
         />
       )}

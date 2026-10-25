@@ -200,6 +200,18 @@ describe('MenteeHomeScreen', () => {
     );
   });
 
+  it('a failed refetch keeps the default subline while the card shows its error', () => {
+    const at = (m: number) => new Date(Date.now() + m * 60_000).toISOString();
+    upcoming = remote<Booking[]>(
+      [booking({ startsAt: at(20), endsAt: at(65), joinOpensAt: at(10), joinClosesAt: at(35) })],
+      { error: err },
+    );
+    render(<MenteeHomeScreen />);
+    expect(screen.getByText(/couldn’t load your next session/)).toBeInTheDocument();
+    expect(screen.queryByText('Your session starts soon.')).not.toBeInTheDocument();
+    expect(screen.getByText('Here’s what’s next on your journey.')).toBeInTheDocument();
+  });
+
   it('"Your session starts soon." once the next session is within the hour', () => {
     const at = (m: number) => new Date(Date.now() + m * 60_000).toISOString();
     upcoming = remote([
@@ -265,10 +277,8 @@ describe('MenteeHomeScreen', () => {
     render(<MenteeHomeScreen />);
     expect(screen.getByText('Waiting on your mentor')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View your request' })).toBeInTheDocument();
-    // The subline is the design's idle one: nothing is booked (confirmed) yet.
-    expect(
-      screen.getByText('No session booked right now. Pick up where you left off.'),
-    ).toBeInTheDocument();
+    // Not the idle "Pick up where you left off": something is on its way.
+    expect(screen.getByText('Here’s what’s next on your journey.')).toBeInTheDocument();
     expect(screen.queryByText('Nothing booked yet')).not.toBeInTheDocument();
   });
 
@@ -306,7 +316,9 @@ describe('MenteeHomeScreen', () => {
     expect(screen.getByRole('heading', { name: 'Your mentors' })).toBeInTheDocument();
     expect(screen.getByText('Mariam Alamata')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'View mentors' }));
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Your mentors' })).toBeInTheDocument();
+    // The full-screen list takes the help pill away while it's open.
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
   });
 
   it('opening "Book again" launches the booking flow', async () => {

@@ -25,7 +25,7 @@
   align-items: center;
   gap: var(--space-4);
 }
-/* "Tips" (with the lightbulb) and "All bookings": the head's two text links. */
+/* "Tips" — a text link with the lightbulb, beside "All bookings". */
 .tips {
   position: relative;
   display: inline-flex;
@@ -40,7 +40,6 @@
   font-size: var(--text-p-xs);
   font-weight: var(--weight-semibold);
   color: var(--text-link);
-  text-decoration: none;
 }
 .tips:hover {
   color: var(--text-link-hover);
@@ -59,6 +58,10 @@
   top: 50%;
   transform: translateY(-50%);
   height: var(--space-11);
+}
+/* The shared text ButtonLink, at the design's 32px row height. */
+.allLink {
+  min-height: var(--space-8);
 }
 .tipsIcon {
   color: inherit;

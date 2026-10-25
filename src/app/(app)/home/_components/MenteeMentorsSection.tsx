@@ -9,9 +9,6 @@ import type { Remote } from '@/types/mentor';
 import { MentorRow } from './MentorRow';
 import styles from './MenteeMentorsSection.module.css';
 
-/** The anchor the "Mentors met" KPI link scrolls to. */
-export const MENTORS_SECTION_ID = 'your-mentors';
-
 const INLINE = 3;
 
 type MenteeMentorsSectionProps = {
@@ -54,7 +51,7 @@ export function MenteeMentorsSection({
   const hasMore = all.length > INLINE;
 
   return (
-    <section id={MENTORS_SECTION_ID} aria-labelledby={headingId} className={styles.section}>
+    <section aria-labelledby={headingId} className={styles.section}>
       <div className={styles.head}>
         <div className={styles.headText}>
           <h2 id={headingId} className={styles.title}>

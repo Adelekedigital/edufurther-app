@@ -23,6 +23,27 @@ describe('KpiCard', () => {
     expect(screen.queryByText('hrs')).not.toBeInTheDocument();
   });
 
+  it('a link with an href is a page link', () => {
+    render(
+      <KpiCard
+        label="Missed · 90 days"
+        value="1"
+        link={{ label: 'View missed', href: '/bookings?tab=history&filter=missed' }}
+      />,
+    );
+    expect(screen.getByRole('link', { name: 'View missed' })).toHaveAttribute(
+      'href',
+      '/bookings?tab=history&filter=missed',
+    );
+  });
+
+  it('colours the figure by valueTone, but never the "No data yet" line', () => {
+    const { rerender } = render(<KpiCard label="Missed" value="2" valueTone="danger" />);
+    expect(screen.getByText('2').className).toMatch(/danger/);
+    rerender(<KpiCard label="Missed" value={null} valueTone="danger" />);
+    expect(screen.getByText('No data yet').className).not.toMatch(/danger/);
+  });
+
   it('calls the link handler', async () => {
     const onClick = vi.fn();
     render(<KpiCard label="Mentors met" value="8" link={{ label: 'View mentors', onClick }} />);

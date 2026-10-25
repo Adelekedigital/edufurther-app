@@ -76,13 +76,13 @@ describe('returningKpis', () => {
       tone: 'positive',
     });
     expect(missed.unit).toBeUndefined();
-    expect(missed.href).toBeUndefined();
+    expect(missed.link).toBeUndefined();
   });
 
   it('one missed is amber, two or more red, each with "View missed" to Bookings History', () => {
     const one = returningKpis(stats({ missedSessions: 1 }))[3]!;
     expect(one).toMatchObject({ label: 'Missed · 90 days', value: '1', valueTone: 'warning' });
-    expect(one.href).toEqual({ label: 'View missed', href: MISSED_HREF });
+    expect(one.link).toEqual({ label: 'View missed', href: MISSED_HREF });
     expect(one.trend).toBeUndefined();
     expect(MISSED_HREF).toBe('/bookings?tab=history&filter=missed');
     const two = returningKpis(stats({ missedSessions: 2 }))[3]!;
