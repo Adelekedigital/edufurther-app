@@ -46,7 +46,7 @@ const emptyEditor = (): Editor => ({ text: '', kind: 'free_text', required: fals
 
 /** "Short answer · Required", "Single choice (Yes, No) · Optional". */
 export function questionMeta(q: DraftQuestion): string {
-  if (q.synced) return STARTER_COPY.syncedMeta(q.required);
+  if (q.synced) return STARTER_COPY.syncedMeta(QUESTION_KIND_LABELS[q.kind], q.required);
   const opts = q.kind === 'single' || q.kind === 'multi' ? ` (${q.options.join(', ')})` : '';
   return `${QUESTION_KIND_LABELS[q.kind]}${opts} · ${q.required ? 'Required' : 'Optional'}`;
 }

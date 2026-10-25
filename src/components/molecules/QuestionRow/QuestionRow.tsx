@@ -1,5 +1,4 @@
-import type { ReactNode } from 'react';
-import type { DragEvent } from 'react';
+import type { DragEvent, ReactNode } from 'react';
 import { cx } from '@/lib/utils/cx';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';

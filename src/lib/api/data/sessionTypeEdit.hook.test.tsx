@@ -2,7 +2,12 @@ import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import { blankDraft, type Draft } from '@/lib/utils/sessionTypeDraft';
-import { toDraft, useSaveSessionType, type SavedSessionType } from './sessionTypeEdit';
+import {
+  toDraft,
+  toSavedQuestion,
+  useSaveSessionType,
+  type SavedSessionType,
+} from './sessionTypeEdit';
 
 const PATCH = vi.fn();
 const POST = vi.fn();
@@ -717,5 +722,31 @@ describe('useDuplicateSessionType — review of #74', () => {
         options: [{ text: 'A' }, { text: 'B' }],
       },
     ]);
+  });
+});
+
+describe('the help-area question (backend PR 540, local review)', () => {
+  it('an ordinary question carries no synced flag, so an untouched edit is no change', () => {
+    const q = toSavedQuestion({
+      id: 'q1',
+      question_text: 'Why?',
+      question_type: 'free_text',
+      is_required: true,
+      display_order: 0,
+      allows_multiple: false,
+      options: [],
+    } as Parameters<typeof toSavedQuestion>[0]);
+    expect(q).not.toHaveProperty('synced');
+    const s = toSavedQuestion({
+      id: 'q2',
+      question_text: 'Which area?',
+      question_type: 'multi_choice',
+      is_required: true,
+      display_order: 1,
+      allows_multiple: false,
+      options: [{ id: 'o-docs', text: 'Document preparation' }],
+      options_source: 'help_areas',
+    } as Parameters<typeof toSavedQuestion>[0]);
+    expect(s).toMatchObject({ kind: 'single', synced: true });
   });
 });

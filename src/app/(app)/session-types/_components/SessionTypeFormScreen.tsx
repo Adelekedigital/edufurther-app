@@ -205,7 +205,7 @@ export function SessionTypeFormScreen({
             defaultVideo={defaultVideo}
             topicsPreselected={
               !!edit?.saved.read.is_starter &&
-              JSON.stringify(d.draft.topics) === JSON.stringify(d.initial.topics)
+              [...d.draft.topics].sort().join() === [...d.initial.topics].sort().join()
             }
             videoFailed={!!video.error && !video.data}
             onRetryVideo={video.retry}

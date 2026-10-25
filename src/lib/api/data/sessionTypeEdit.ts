@@ -53,7 +53,7 @@ export function toSavedQuestion(q: QuestionRead): SavedQuestion {
         : (q.question_type as 'free_text' | 'file_upload'),
     required: q.is_required,
     options: (q.options ?? []).map((o) => ({ id: o.id, text: o.text })),
-    synced: q.options_source === 'help_areas',
+    ...(q.options_source === 'help_areas' ? { synced: true } : {}),
   };
 }
 
@@ -87,7 +87,7 @@ export function toDraft(s: SavedSessionType, defaults: BookingDefaults | null): 
       kind: q.kind,
       required: q.required,
       options: q.options.map((o) => o.text),
-      synced: q.synced,
+      ...(q.synced ? { synced: true } : {}),
     })),
     durationMin: r.duration_minutes,
     noticeHours: r.min_notice_minutes / 60,
@@ -433,7 +433,7 @@ export function toDuplicateBody(
     kind: q.kind,
     required: q.required,
     options: q.options.map((o) => o.text),
-    synced: q.synced,
+    ...(q.synced ? { synced: true } : {}),
   }));
   return {
     body: {

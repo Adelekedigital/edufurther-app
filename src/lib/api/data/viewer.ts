@@ -172,7 +172,8 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     awaitingResponse: 12,
     bookingCounts: { pending: 3, upcoming: 6 },
     // Not 12, so a number baked into copy would be visible in dev.
-    // Not the default 5, so a limit baked into copy would be visible in dev.
+    // Not the default 5, so a limit baked into copy would be visible in dev; 6
+    // leaves room past the four seeded sessions (the Intro chat among them).
     sessionTypeLimit: 6,
     menteeCancelRefundHours: 10,
   },

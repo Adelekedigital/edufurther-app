@@ -240,6 +240,25 @@ describe('useSaveMentorStep: hours', () => {
     expect(POST.mock.calls.some(([p]) => p === '/api/v1/me/session-types')).toBe(false);
   });
 
+  it('a renamed starter still counts as the Intro chat: none is made (local review)', async () => {
+    GET.mockImplementation((path: string) =>
+      path === '/api/v1/me/session-types'
+        ? ok(200, { data: [{ name: 'First chat', is_starter: true }] })
+        : ok(200, {}),
+    );
+    const { result } = renderHook(() => useSaveMentorStep('u1'), { wrapper });
+    await result.current.save('hours', answers(), state);
+    expect(POST.mock.calls.some(([p]) => p === '/api/v1/me/session-types')).toBe(false);
+  });
+
+  it('a 409 (a starter is already there) doesn’t fail the step (local review)', async () => {
+    POST.mockImplementation((path: string) =>
+      path === '/api/v1/me/session-types' ? fail(409) : ok(200, {}),
+    );
+    const { result } = renderHook(() => useSaveMentorStep('u1'), { wrapper });
+    await expect(result.current.save('hours', answers(), state)).resolves.not.toThrow();
+  });
+
   it('builds the key from the user and the attempt', () => {
     expect(introChatKey('u1', 'a1')).toBe('intro-chat-u1-a1');
   });

@@ -168,8 +168,8 @@ export const PUBLISHED_TITLE = 'Session published';
  */
 export const STARTER_COPY = {
   createdForYou: 'Created for you',
-  syncedMeta: (required: boolean) =>
-    `Single choice · Options come from your areas of expertise · ${required ? 'Required' : 'Optional'}`,
+  syncedMeta: (kind: string, required: boolean) =>
+    `${kind} · Options come from your areas of expertise · ${required ? 'Required' : 'Optional'}`,
   syncedLine: (options: string[]) =>
     `${options.length ? `${options.join(', ')}. ` : ''}These update when you change your topics in`,
   syncedEditor: (options: string[]) =>

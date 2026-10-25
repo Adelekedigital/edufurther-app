@@ -377,12 +377,17 @@ const newAttempt = () =>
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-/** Whether the mentor already has an Intro chat; no profile yet (404) means none. */
+/**
+ * Whether the mentor already has an Intro chat: the starter (it may have been
+ * renamed), or one by its name. No profile yet (404) means none.
+ */
 async function hasIntroChat(): Promise<boolean> {
   const { data, error, response } = await api.GET('/api/v1/me/session-types');
   if (response.status === 404) return false;
   if (!data) throw apiError(response.status, error, response);
-  return data.data.some((t) => t.name.trim().toLowerCase() === INTRO_CHAT.toLowerCase());
+  return data.data.some(
+    (t) => t.is_starter || t.name.trim().toLowerCase() === INTRO_CHAT.toLowerCase(),
+  );
 }
 
 /** The owner's saved degrees, fresh: a stale cache would re-add or delete what a retry just made. */
@@ -539,6 +544,8 @@ export function useSaveMentorStep(userId: string | null) {
                 ],
               } as SessionTypeWriteBody,
             }),
+            // One starter per mentor (backend PR 540): a 409 means it's already there.
+            409,
           );
         }
       }

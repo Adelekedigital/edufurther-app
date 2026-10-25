@@ -307,6 +307,9 @@ export function mockCreateSessionType(
     };
   if (store.some((t) => t.name.toLowerCase() === name.toLowerCase()))
     return { ok: false, status: 409, problem: { title: 'Conflict' } };
+  // One starter per mentor (backend PR 540).
+  if (body.is_starter === true && store.some((t) => t.is_starter))
+    return { ok: false, status: 409, problem: { title: 'Conflict' } };
 
   const id = `mst-${Date.now().toString(36)}-${++created}`;
   const offerings = ids.flatMap((oid) => {
@@ -410,6 +413,8 @@ export function mockEditSessionType(
   const t = store.find((x) => x.id === id);
   if (!t) return { status: 404 };
   const errors: Problem[] = [];
+  // Set on create only (backend PR 540).
+  if ('is_starter' in body) errors.push({ pointer: '/is_starter', message: 'create only' });
   const has = (k: string) => k in body;
   if (has('name')) {
     const n = typeof body.name === 'string' ? body.name.trim() : '';
@@ -508,6 +513,7 @@ export function mockAddQuestion(id: string, body: Record<string, unknown>): { id
       id: `${qid}-o${j}`,
       text: o.text,
     })),
+    options_source: body.options_source === 'help_areas' ? 'help_areas' : null,
   } as QuestionRead);
   return { id: qid };
 }
