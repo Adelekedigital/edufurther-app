@@ -549,6 +549,12 @@ describe('CalendarScreen', () => {
   });
 
   it('the block modal is a phone sheet that tints the available days and keys them', async () => {
+    // The modal opens on the current month: near its end no day is left to be
+    // available, so pin the clock early in a month (Date only; timers stay real
+    // for userEvent).
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-05T09:00:00Z'));
+    onTestFinished(() => vi.useRealTimers());
     const user = userEvent.setup();
     render(<CalendarScreen />);
     await user.click(screen.getByRole('button', { name: 'Block dates' }));
