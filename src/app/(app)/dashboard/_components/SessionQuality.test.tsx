@@ -60,7 +60,11 @@ const windowStats = (
 });
 
 const hasQuote = (over: Partial<ReviewQuote> = {}): QuoteState => ({
-  data: { quote: 'The clearest hour I spent on my application.', by: 'Amara O. · Visa and interview', ...over },
+  data: {
+    quote: 'The clearest hour I spent on my application.',
+    by: 'Amara O. · Visa and interview',
+    ...over,
+  },
   isLoading: false,
   error: null,
   retry: vi.fn(),
@@ -141,7 +145,9 @@ describe('SessionQuality', () => {
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     expect(screen.getByText('At risk')).toBeInTheDocument();
     // The at-risk teaser headlines the honest "left waiting" count, not missed-by-you.
-    expect(screen.getByText('3 mentees were left waiting in the last 3 months')).toBeInTheDocument();
+    expect(
+      screen.getByText('3 mentees were left waiting in the last 3 months'),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'See what’s pulling this down' }),
     ).toBeInTheDocument();
@@ -316,30 +322,35 @@ describe('SessionQuality', () => {
   it.each([
     [79, 'Needs attention'],
     [49, 'At risk'],
-  ])('at a rate of %i (%s) leads with left waiting and opens the warning block with both links', async (rate) => {
-    data = windowStats({ attendanceRate: rate, missedByMentor: 3, menteesLeftWaiting: 3 });
-    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
-    expect(screen.getByText('3 mentees were left waiting in the last 3 months')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'See what’s pulling this down' }));
-    expect(screen.getByText('Sessions completed')).toBeInTheDocument();
-    expect(screen.getByText('Mentee reviews')).toBeInTheDocument();
-    expect(screen.getByText('3 mentees were left waiting')).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        'Keep only the hours you can reliably make, and block the days you’ll be away.',
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Review your hours' })).toHaveAttribute(
-      'href',
-      '/calendar',
-    );
-    expect(screen.getByRole('link', { name: 'See missed sessions' })).toHaveAttribute(
-      'href',
-      '/bookings?tab=history',
-    );
-    // No streak banner below On track.
-    expect(screen.queryByText(/in a row completed/)).not.toBeInTheDocument();
-  });
+  ])(
+    'at a rate of %i (%s) leads with left waiting and opens the warning block with both links',
+    async (rate) => {
+      data = windowStats({ attendanceRate: rate, missedByMentor: 3, menteesLeftWaiting: 3 });
+      render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+      expect(
+        screen.getByText('3 mentees were left waiting in the last 3 months'),
+      ).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'See what’s pulling this down' }));
+      expect(screen.getByText('Sessions completed')).toBeInTheDocument();
+      expect(screen.getByText('Mentee reviews')).toBeInTheDocument();
+      expect(screen.getByText('3 mentees were left waiting')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'Keep only the hours you can reliably make, and block the days you’ll be away.',
+        ),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Review your hours' })).toHaveAttribute(
+        'href',
+        '/calendar',
+      );
+      expect(screen.getByRole('link', { name: 'See missed sessions' })).toHaveAttribute(
+        'href',
+        '/bookings?tab=history',
+      );
+      // No streak banner below On track.
+      expect(screen.queryByText(/in a row completed/)).not.toBeInTheDocument();
+    },
+  );
 
   it('gives On track the streak banner and no warning block or links', async () => {
     data = windowStats({ attendanceRate: 80, missedByMentor: 1, menteesLeftWaiting: 1 });
@@ -374,6 +385,45 @@ describe('SessionQuality', () => {
     }
   });
 
+  it('colours a non-zero "Missed by you" by tier: amber when Needs attention, red otherwise', async () => {
+    const cases = [
+      [65, 'toneFair'],
+      [30, 'toneLow'],
+      // On track keeps a miss red (design-divergence.md).
+      [90, 'toneLow'],
+    ] as const;
+    for (const [rate, tone] of cases) {
+      data = windowStats({ attendanceRate: rate, missedByMentor: 2, menteesLeftWaiting: 2 });
+      const { unmount } = render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: /See your full breakdown|See what’s pulling this down/,
+        }),
+      );
+      const label = screen.getByText('Missed by you');
+      expect(label.nextElementSibling!.className).toMatch(tone);
+      expect(label.previousElementSibling!.getAttribute('class')).toMatch(tone);
+      unmount();
+    }
+  });
+
+  it('names the rate in the Needs attention warning block when no mentee was left waiting', async () => {
+    data = windowStats({ attendanceRate: 65, missedByMentor: 2, menteesLeftWaiting: 0 });
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByText('Needs attention')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'See what’s pulling this down' }));
+    expect(screen.getByText('Your show-up rate is 65%', { selector: 'p' })).toBeInTheDocument();
+    expect(screen.queryByText(/left waiting/)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Review your hours' })).toHaveAttribute(
+      'href',
+      '/calendar',
+    );
+    expect(screen.getByRole('link', { name: 'See missed sessions' })).toHaveAttribute(
+      'href',
+      '/bookings?tab=history',
+    );
+  });
+
   it('moves the rate, tier and period words together when the chart range switches', () => {
     data = windowStats({ attendanceRate: 92 }, {}, { windowDays: 90 });
     const { rerender } = render(
@@ -396,14 +446,18 @@ describe('SessionQuality', () => {
     expect(screen.getByText('Needs attention')).toBeInTheDocument();
     expect(screen.queryByText('On track')).not.toBeInTheDocument();
     expect(screen.getByText(/· last 6 months/)).toBeInTheDocument();
-    expect(screen.getByText('3 mentees were left waiting in the last 6 months')).toBeInTheDocument();
+    expect(
+      screen.getByText('3 mentees were left waiting in the last 6 months'),
+    ).toBeInTheDocument();
 
     data = windowStats(
       { attendanceRate: 41, missedByMentor: 6, menteesLeftWaiting: 5 },
       {},
       { year: 2025, windowDays: 365 },
     );
-    rerender(<SessionQuality userId="u1" profileHref="/mentors/gbenga" statsQuery={{ year: 2025 }} />);
+    rerender(
+      <SessionQuality userId="u1" profileHref="/mentors/gbenga" statsQuery={{ year: 2025 }} />,
+    );
     expect(screen.getByRole('img', { name: 'Show-up rate 41%' })).toBeInTheDocument();
     expect(screen.getByText('At risk')).toBeInTheDocument();
     expect(screen.getByText(/· in 2025/)).toBeInTheDocument();
@@ -422,7 +476,9 @@ describe('SessionQuality', () => {
 
   it('fetches the window it is given and labels the subline from the data window', () => {
     data = windowStats({ attendanceRate: 86 }, {}, { windowDays: 180 });
-    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" statsQuery={{ windowDays: 180 }} />);
+    render(
+      <SessionQuality userId="u1" profileHref="/mentors/gbenga" statsQuery={{ windowDays: 180 }} />,
+    );
     expect(mentorStatsSpy).toHaveBeenCalledWith('u1', { windowDays: 180 });
     expect(screen.getByText(/last 6 months/)).toBeInTheDocument();
     expect(screen.queryByText(/last 90 days/)).not.toBeInTheDocument();
@@ -434,13 +490,23 @@ describe('SessionQuality', () => {
       {},
       { windowDays: 180 },
     );
-    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" statsQuery={{ windowDays: 180 }} />);
-    expect(screen.getByText('2 mentees were left waiting in the last 6 months')).toBeInTheDocument();
+    render(
+      <SessionQuality userId="u1" profileHref="/mentors/gbenga" statsQuery={{ windowDays: 180 }} />,
+    );
+    expect(
+      screen.getByText('2 mentees were left waiting in the last 6 months'),
+    ).toBeInTheDocument();
   });
 
   it('labels the card "in YYYY" for a calendar-year query', () => {
-    data = windowStats({ attendanceRate: 92 }, { attendanceRate: 80 }, { year: 2026, windowDays: 365 });
-    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" statsQuery={{ year: 2026 }} />);
+    data = windowStats(
+      { attendanceRate: 92 },
+      { attendanceRate: 80 },
+      { year: 2026, windowDays: 365 },
+    );
+    render(
+      <SessionQuality userId="u1" profileHref="/mentors/gbenga" statsQuery={{ year: 2026 }} />,
+    );
     expect(mentorStatsSpy).toHaveBeenCalledWith('u1', { year: 2026 });
     expect(screen.getByText(/in 2026/)).toBeInTheDocument();
     expect(screen.queryByText(/last \d+ months/)).not.toBeInTheDocument();
@@ -590,7 +656,12 @@ describe('SessionQuality', () => {
 
   it('a failed quote fetch never breaks the card — the rating line still shows', () => {
     data = windowStats({ attendanceRate: 86 });
-    quote = { data: null, isLoading: false, error: { kind: 'server', message: 'x' }, retry: vi.fn() };
+    quote = {
+      data: null,
+      isLoading: false,
+      error: { kind: 'server', message: 'x' },
+      retry: vi.fn(),
+    };
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     expect(screen.getByRole('img', { name: 'Show-up rate 86%' })).toBeInTheDocument();
     expect(screen.getByText('4.8')).toBeInTheDocument();
@@ -630,7 +701,12 @@ describe('SessionQuality', () => {
     expect(screen.queryByText(/No reviews yet/)).not.toBeInTheDocument();
     expect(screen.getByText('Sessions completed')).toBeInTheDocument();
 
-    quote = { data: null, isLoading: false, error: { kind: 'server', message: 'x' }, retry: vi.fn() };
+    quote = {
+      data: null,
+      isLoading: false,
+      error: { kind: 'server', message: 'x' },
+      retry: vi.fn(),
+    };
     rerender(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     expect(screen.getByText(/No reviews yet/)).toBeInTheDocument();
     expect(screen.queryByText('4.8')).not.toBeInTheDocument();
@@ -638,7 +714,12 @@ describe('SessionQuality', () => {
 
   it('keeps the expanded card intact when the quote fails — stars, no quote, no message', async () => {
     data = windowStats({ attendanceRate: 86 });
-    quote = { data: null, isLoading: false, error: { kind: 'server', message: 'x' }, retry: vi.fn() };
+    quote = {
+      data: null,
+      isLoading: false,
+      error: { kind: 'server', message: 'x' },
+      retry: vi.fn(),
+    };
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
     expect(screen.getByRole('img', { name: 'Rated 4.8 out of 5' })).toBeInTheDocument();
