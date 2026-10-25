@@ -39,6 +39,12 @@ export const push = vi.fn();
 export const cancel = { mutate: vi.fn(), reset: vi.fn(), isPending: false, error: null };
 /** The zone each slot request was asked in (the cancel dialog's Suggest a new time). */
 export const slotZones: string[] = [];
+/** Every missed reason sent, in order, and how the hook is answering. */
+export const reasons: { reason: string; note: string }[] = [];
+export const reasonHook: { isPending: boolean; failed: 'retry' | 'closed' | null } = {
+  isPending: false,
+  failed: null,
+};
 /** Every review sent, in order. */
 export const sent: unknown[] = [];
 /** Every mentor the booking modal was given, render by render (null: closed). */
@@ -140,6 +146,12 @@ export const mocks = {
       ) : null;
     },
   }),
+  missedReason: () => ({
+    useSendMissedReason: () => ({
+      send: (reason: string, note: string) => reasons.push({ reason, note }),
+      ...reasonHook,
+    }),
+  }),
   intakeFiles: () => ({
     useIntakeFile: () => ({ url: 'blob:stub', isLoading: false, error: null, retry: vi.fn() }),
     canPreview: () => true,
@@ -191,6 +203,7 @@ export function sessionRoom(
     me: sampleParty({ id: 'me', name: 'Gbenga Ogundipe', firstName: 'Gbenga', ...me }),
     typeName: '1:1 call',
     provider,
+    missedReasonSent: false,
   };
 }
 
@@ -233,6 +246,9 @@ export function setupSessionJoinHarness() {
     h.room = remote(sessionRoom());
     h.answers = remote<BookingAnswer[]>([]);
     sent.length = 0;
+    reasons.length = 0;
+    reasonHook.isPending = false;
+    reasonHook.failed = null;
     slotZones.length = 0;
     launched.length = 0;
     h.reviewables = remote([{ id: 'b1', startsAt: START, typeName: '1:1 call' }]);

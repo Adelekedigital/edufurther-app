@@ -6,6 +6,7 @@ import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
+import { MissedReasonForm } from '@/components/molecules/MissedReasonForm/MissedReasonForm';
 import { SupportLine } from '@/components/molecules/SupportLine/SupportLine';
 import { SessionLobby } from '@/components/organisms/SessionLobby/SessionLobby';
 import { SessionOutcome } from '@/components/organisms/SessionOutcome/SessionOutcome';
@@ -31,10 +32,16 @@ import { BookingLauncher } from '@/app/_shell/BookingLauncher/BookingLauncher';
 import { canBookFor } from '@/app/_shell/bookBlocked';
 import { lockedPageGate, memberGate, SESSION_GATE } from '@/app/_shell/MentorGate';
 import { accessFor, memberHome } from '@/lib/utils/access';
-import { PREP_COPY, sessionSupportRequest, SUPPORT_FOOTER_COPY } from '@/lib/copy/session';
+import {
+  MISSED_REASON_COPY,
+  PREP_COPY,
+  sessionSupportRequest,
+  SUPPORT_FOOTER_COPY,
+} from '@/lib/copy/session';
 import { DELETED_NAME } from '@/lib/api/data/bookings';
 import { supportHref, supportMailto } from '@/lib/utils/mailto';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
+import { useSendMissedReason, type MissedReasonCode } from '@/lib/api/data/missedReason';
 import { useMyReviewableSessions } from '@/lib/api/data/reviewableSessions';
 import { useSendReview } from '@/lib/api/data/reviewWrite';
 import { useBookingAnswers } from '@/lib/api/data/sessionAnswers';
@@ -238,6 +245,8 @@ export function SessionJoinScreen({ id }: { id: string }) {
   }, [settledEnter, params, router, id]);
 
   const cancel = useBookingAction('cancel');
+  // Why the viewer missed it, for EduFurther only (founder, Oct 21).
+  const missedReason = useSendMissedReason(id);
   const [cancelling, setCancelling] = useState(false);
 
   // Say the moments that matter, once each. The clock itself is never read
@@ -427,6 +436,27 @@ export function SessionJoinScreen({ id }: { id: string }) {
                 if (key === 'retryReview') reviewables.retry();
                 if (key === 'book') setBookingAgain(true);
               }}
+              // Drawn only on the card of the person who missed it (`askReason`).
+              reason={
+                <MissedReasonForm
+                  question={MISSED_REASON_COPY.question}
+                  options={[...MISSED_REASON_COPY.options]}
+                  placeholder={MISSED_REASON_COPY.placeholder}
+                  sendLabel={MISSED_REASON_COPY.send}
+                  thanks={MISSED_REASON_COPY.thanks}
+                  noteMax={MISSED_REASON_COPY.noteMax}
+                  onSend={(r) => missedReason.send(r.reason as MissedReasonCode, r.note)}
+                  pending={missedReason.isPending}
+                  sent={data.missedReasonSent}
+                  error={
+                    missedReason.failed === 'closed'
+                      ? MISSED_REASON_COPY.closed
+                      : missedReason.failed
+                        ? MISSED_REASON_COPY.failed
+                        : null
+                  }
+                />
+              }
             />
           )}
           {preparing && (

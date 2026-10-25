@@ -76,6 +76,13 @@ describe('toSessionRoom', () => {
   });
 });
 
+describe('toSessionRoom: the missed reason', () => {
+  it('says whether the viewer has already told us why they missed it', () => {
+    expect(toSessionRoom(row(), 'me').missedReasonSent).toBe(false);
+    expect(toSessionRoom({ ...row(), missed_reason_sent: true }, 'me').missedReasonSent).toBe(true);
+  });
+});
+
 describe('pollInterval', () => {
   const at = (iso: string) => new Date(`2026-10-04T${iso}Z`);
   const room = (over: Partial<SessionRead> = {}) => toSessionRoom({ ...row(), ...over }, 'me');

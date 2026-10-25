@@ -5,6 +5,7 @@
  * edufurther-ux-writer; no em dashes.
  */
 
+import type { MissedReasonCode } from '@/lib/api/data/missedReason';
 import type { SupportPerson } from '@/lib/utils/mailto';
 
 export const LOBBY_COPY = {
@@ -130,3 +131,27 @@ export const OUTCOME_COPY = {
  * `JOIN_CLOSES`, 15 minutes after the start (the PRD's "10" predates it).
  */
 export const MISSED_WAIT_FALLBACK_MIN = 15;
+
+/**
+ * The missed-reason form (PRD Session Join, Missed): internal only (founder,
+ * Oct 21), so no "{First} sees your answer" hint, and the thanks says nothing
+ * about sharing. The codes are the backend's.
+ */
+export const MISSED_REASON_COPY = {
+  question: 'What happened?',
+  options: [
+    { value: 'forgot', label: 'Forgot the time' },
+    { value: 'technical', label: 'Technical problem' },
+    { value: 'emergency', label: 'Emergency' },
+    { value: 'wrong_time_zone', label: 'Wrong time zone' },
+    { value: 'other', label: 'Other' },
+  ] satisfies readonly { value: MissedReasonCode; label: string }[],
+  placeholder: 'Anything else we should know? (optional)',
+  send: 'Send',
+  thanks: 'Thanks for letting us know.',
+  failed: 'We couldn’t send that. Try again in a moment.',
+  /** The session doesn't take a reason from this viewer (a refusal a retry can't change). */
+  closed: 'This session isn’t taking a reason from you.',
+  /** The longest note the backend takes. */
+  noteMax: 1000,
+} as const;

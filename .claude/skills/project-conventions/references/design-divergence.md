@@ -1105,3 +1105,12 @@ Source: the live `Session Join.dc.html` (`layout=lobbySplit`), re-read 2026-10-2
 | Ended (settling) note "You've finished this session. We're confirming who joined. Your booking updates when that's done." | As drawn | Founder, Oct 21: the design's line | never |
 | "Having a problem? Contact support", the card's last row, hairline top border | As drawn (`SupportLine`), a prefilled email with the session, its time, the viewer's name and role. Also on the load-failure card, with a blank email. **Ours:** the email's time names its zone ("…, 6:00 – 6:30 pm Lagos (WAT)"); the design's has none | PRD Frame; a failed load is when support is most needed. The switcher can show another zone than the one support would assume (review of this PR) | never |
 | Logo → the viewer's Home | `memberHome(viewer)` (`/home` or `/dashboard`); "Go to Bookings" unchanged | PRD Frame | never |
+
+### Session Join — the missed-reason form (Session Join PRD, backend #532), 2026-10-25
+
+| Design | Build | Why | Revisit |
+|---|---|---|---|
+| "What happened?" with the hint "{First} sees your answer." | No hint: the reason is EduFurther's only | Founder, Oct 21: internal only | the founder shares reasons |
+| Chips, a 3-row note, an outlined Send that stays off until a chip is picked | As drawn (`MissedReasonForm`, from ChoiceChips and the Textarea atom). The note is capped at the backend's 1,000 | Founder chose the design over the handoff's always-on Send | never |
+| Sent: "Thanks. We've shared this with {First}." | "Thanks for letting us know." It survives a reload (`missed_reason_sent`), and a second send's 409 reads as sent | Founder: internal only | the founder shares reasons |
+| (no state) a send that fails | "We couldn't send that. Try again in a moment." under the note; the picks stay | Ours | design confirms |

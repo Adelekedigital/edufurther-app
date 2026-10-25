@@ -50,16 +50,6 @@
   }
 }
 
-.count {
-  align-self: flex-end;
-  font-size: var(--text-p-xs);
-  color: var(--ink-500);
-}
-
-.countNear {
-  color: var(--ink-700);
-}
-
 /* Shown after a blocked submit. The same size as the hint it sits beside, so
    the field does not jump when it appears — and red is not the only signal:
    the wording itself says what to do, for anyone who cannot see the colour. */

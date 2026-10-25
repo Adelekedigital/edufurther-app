@@ -54,6 +54,9 @@ vi.mock('@/app/_shell/BookingLauncher/BookingLauncher', async () =>
 vi.mock('@/lib/api/data/intakeFiles', async () =>
   (await import('./sessionJoin.harness')).mocks.intakeFiles(),
 );
+vi.mock('@/lib/api/data/missedReason', async () =>
+  (await import('./sessionJoin.harness')).mocks.missedReason(),
+);
 
 setupSessionJoinHarness();
 
