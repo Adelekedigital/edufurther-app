@@ -9,6 +9,7 @@ import { SessionTypeWizard } from '@/components/organisms/SessionTypeWizard/Sess
 import { ConfirmDialog } from '@/components/templates/ConfirmDialog/ConfirmDialog';
 import { useConferencing } from '@/lib/api/data/conferencing';
 import { useTopics } from '@/lib/api/data/mentors';
+import { useMentorSettings } from '@/lib/api/data/mentorSettings';
 import {
   autoIcon,
   useMentorDefaults,
@@ -61,6 +62,9 @@ export function SessionTypeFormScreen({
   const defaults = useMentorDefaults(mentorId);
   const weekly = useWeeklyHours(mentorId);
   const video = useConferencing(mentorId);
+  // Step 1 offers the mentor's own areas of expertise (design topicSource=expertise,
+  // owner 2026-10-25), read as Settings › Expertise reads them.
+  const expertise = useMentorSettings(mentorId);
   // Never chosen: the platform's, EduFurther video. Unknown (loading, failed): not named.
   const defaultVideo = video.data
     ? VIDEO_LABELS[video.data.isDefault ? 'daily' : video.data.provider]
@@ -129,7 +133,22 @@ export function SessionTypeFormScreen({
       edit ? `/session-types/${edit.id}/edit` : '/session-types/new',
       SESSION_TYPES_GATE,
     ) ?? lockedPageGate(access, 'Sessions');
-  const loading = viewer.kind === 'loading' || topicsLoading || fullAtOpen === undefined;
+  const loading =
+    viewer.kind === 'loading' ||
+    topicsLoading ||
+    (mentorId !== null && expertise.status === 'loading') ||
+    fullAtOpen === undefined;
+  // The form can't be filled without the catalog's topics (step 1 needs one).
+  const formFailed = !!topicsError && topics.length === 0;
+  const ownSlugs = new Set(expertise.profile?.mentor.topics.map((t) => t.slug));
+  // The mentor's own, plus any this session already has (a template's, or one
+  // saved before an area was removed), so nothing selected is ever hidden.
+  // Not read (it failed) or none on record (a mentor always has one, backend
+  // #541): the whole catalog, so a failed read never blocks the form (review of PR 402).
+  const offered =
+    ownSlugs.size === 0
+      ? topics
+      : topics.filter((t) => ownSlugs.has(t.slug) || d.draft.topics.includes(t.slug));
 
   return (
     <>
@@ -149,8 +168,7 @@ export function SessionTypeFormScreen({
               }
             />
           </div>
-        ) : topicsError && topics.length === 0 ? (
-          // The form can't be filled without the catalog's topics (step 1 needs one).
+        ) : formFailed ? (
           <div className={styles.gate}>
             <EmptyState
               illustration="forms"
@@ -185,7 +203,7 @@ export function SessionTypeFormScreen({
             errors={steps.errors}
             attempt={steps.attempt}
             formError={submit.error}
-            topics={topics}
+            topics={offered}
             autoIcon={autoIcon(d.draft.topics)}
             defaults={defaults.data}
             defaultsStatus={defaults.error ? 'failed' : defaults.data ? 'ready' : 'loading'}

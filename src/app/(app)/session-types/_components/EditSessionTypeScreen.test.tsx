@@ -39,6 +39,22 @@ vi.mock('@/app/_shell/useAppShell', async () => {
     }),
   };
 });
+// The mentor's own areas of expertise (Settings › Expertise's read).
+let expertise: { status: 'loading' | 'error' | 'ready'; slugs: string[] } = {
+  status: 'ready',
+  slugs: ['document-preparation', 'school-selection'],
+};
+vi.mock('@/lib/api/data/mentorSettings', () => ({
+  useMentorSettings: () => ({
+    status: expertise.status,
+    profile:
+      expertise.status === 'ready'
+        ? { mentor: { topics: expertise.slugs.map((slug) => ({ slug, label: slug })) } }
+        : null,
+    retry: vi.fn(),
+  }),
+}));
+
 vi.mock('@/lib/api/data/mentors', () => ({
   useTopics: () => ({
     topics: [

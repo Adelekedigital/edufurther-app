@@ -99,3 +99,10 @@
   line-height: var(--lh-p);
   color: var(--ink-600);
 }
+/* The prototype's phone rule turns the drawn 0 var(--space-3) into var(--space-2),
+   as on every input (owner, 2026-10-25). */
+@media (max-width: 767px) {
+  .auto {
+    padding: 0 var(--space-2);
+  }
+}
