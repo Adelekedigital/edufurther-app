@@ -90,7 +90,6 @@ export async function GET(req: Request, ctx: { params: Promise<{ handle: string 
       ...t,
       // Backend round 3: the list, plus the deprecated first item.
       application_stages: k === 0 ? ['exploring'] : ['preparing_documents', 'applying'],
-      application_stage: k === 0 ? 'exploring' : 'preparing_documents',
       service_offerings: m.offerings?.[k]
         ? [
             {

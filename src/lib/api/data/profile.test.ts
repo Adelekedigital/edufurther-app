@@ -103,7 +103,7 @@ describe('toMentorProfile', () => {
     ]);
   });
 
-  it('labels the offering’s stage, using the custom label for "other"', () => {
+  it('labels the offering’s stage; an old stored stage reads as the one it became', () => {
     const p = toMentorProfile(
       read({
         session_types: [
@@ -113,7 +113,7 @@ describe('toMentorProfile', () => {
             duration_minutes: 60,
             min_notice_minutes: 60,
             meeting_venue: 'google_meet',
-            application_stage: 'drafting_stage',
+            application_stages: ['drafting_stage'],
             service_offerings: [
               { code: 'application-documents', display_name: 'Application documents' },
             ],
@@ -124,8 +124,7 @@ describe('toMentorProfile', () => {
             duration_minutes: 30,
             min_notice_minutes: 60,
             meeting_venue: 'daily',
-            application_stage: 'other',
-            custom_stage_label: 'Pre-departure',
+            application_stages: ['other'],
           },
         ] as unknown as Read['session_types'], // old slugs, from before backend #536
       }),
@@ -164,11 +163,9 @@ describe('toMentorProfile', () => {
       'Waiting for a decision',
     );
     // Only `other` reads as any stage: no line.
-    expect(stageLine(t({ application_stages: ['other'], custom_stage_label: 'x' }))).toBeNull();
-    // Empty means any stage, even with the deprecated field still set.
-    expect(stageLine(t({ application_stages: [], application_stage: 'applying' }))).toBeNull();
-    // An older response without the list still reads its single stage.
-    expect(stageLine(t({ application_stage: 'interviewing' }))).toBe('Preparing for interview');
+    expect(stageLine(t({ application_stages: ['other'] }))).toBeNull();
+    // Empty means any stage.
+    expect(stageLine(t({ application_stages: [] }))).toBeNull();
   });
 
   it('each offering carries its own next time, only when open (backend #526)', () => {

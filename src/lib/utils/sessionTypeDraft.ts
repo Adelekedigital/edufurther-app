@@ -363,8 +363,7 @@ export function toCreateBody(d: Draft, offeringIds: Record<string, string>) {
     // Minutes are whole; hours may not be (a stored 2000 min is 33.3 hrs).
     min_notice_minutes: custom ? Math.round(d.noticeHours * 60) : null,
     service_offering_ids: d.topics.map((c) => offeringIds[c]).filter((x): x is string => !!x),
-    // The list (backend round 3 A); `application_stage` isn't sent with it (a 422).
-    // The six only; no custom stage label (backend PR 1, #536: it always reads null).
+    // The six only (backend PR 543 removed the single stage and the custom label).
     application_stages: d.stages,
     icon: d.icon,
     requires_booking_confirmation: !custom || d.approval === 'inherit' ? null : d.approval === 'on',
@@ -425,9 +424,7 @@ export function fieldForPointer(pointer: string): FieldKey | null {
       return 'description';
     case 'service_offering_ids':
       return 'topics';
-    case 'application_stage':
     case 'application_stages':
-    case 'custom_stage_label':
       return 'stage';
     case 'questions':
       return idx !== undefined && /^\d+$/.test(idx) ? `question-${Number(idx)}` : 'questions';

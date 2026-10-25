@@ -109,7 +109,6 @@ const SAVED = {
     is_active: true,
     service_offerings: [{ code: 'document-preparation', display_name: 'Document preparation' }],
     application_stages: ['drafting_stage'],
-    custom_stage_label: null,
     icon: null,
     requires_booking_confirmation: null,
     booking_window_days: null,

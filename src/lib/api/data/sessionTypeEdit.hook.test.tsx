@@ -42,9 +42,7 @@ const read = (over: Partial<SavedSessionType['read']> = {}): SavedSessionType['r
   uses_own_windows: false,
   question_count: 0,
   service_offerings: [DOCS],
-  application_stage: 'preparing_documents',
   application_stages: ['preparing_documents'],
-  custom_stage_label: null,
   is_starter: false,
   icon: null,
   requires_booking_confirmation: null,
@@ -651,13 +649,10 @@ describe('useDuplicateSessionType — review of #74', () => {
     await expect(run({})).resolves.toMatchObject({ failed: ['topics', 'hidden'] });
   });
 
-  it('a stale label without "other" isn’t sent; choice and text questions keep their shape', async () => {
+  it('the removed stage fields are never sent (a 422 since backend PR 543); questions keep their shape', async () => {
     GET.mockImplementation((path: string) =>
       path === '/api/v1/me/session-types'
-        ? reply(
-            200,
-            list({ application_stages: ['preparing_documents'], custom_stage_label: 'Old label' }),
-          )
+        ? reply(200, list({ application_stages: ['preparing_documents'] }))
         : path.endsWith('/questions')
           ? reply(200, {
               data: [
@@ -703,6 +698,7 @@ describe('useDuplicateSessionType — review of #74', () => {
     await run();
     const body = POST.mock.calls[0]![1].body;
     expect(body).not.toHaveProperty('custom_stage_label');
+    expect(body).not.toHaveProperty('application_stage');
     expect(body.questions).toEqual([
       { question_text: 'Why?', question_type: 'free_text', is_required: true, display_order: 0 },
       {

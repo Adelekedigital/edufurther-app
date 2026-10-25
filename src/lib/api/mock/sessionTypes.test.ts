@@ -60,3 +60,22 @@ describe('the venue (backend #535)', () => {
     ]);
   });
 });
+
+describe('the removed stage fields (backend PR 543)', () => {
+  it('reads carry neither; sending either, even null, is a 422 at it', () => {
+    for (const t of mockOwnSessionTypes()) {
+      expect(t).not.toHaveProperty('application_stage');
+      expect(t).not.toHaveProperty('custom_stage_label');
+    }
+    for (const f of ['application_stage', 'custom_stage_label']) {
+      const r = mockCreateSessionType({ name: `Removed ${f}`, [f]: null }, null);
+      expect(r.ok ? [] : r.problem.errors).toEqual([expect.objectContaining({ pointer: `/${f}` })]);
+    }
+    const ok = mockCreateSessionType({ name: 'Removed patch' }, null);
+    if (!ok.ok) throw new Error('refused');
+    expect(mockEditSessionType(ok.body.id, { custom_stage_label: null })).toMatchObject({
+      status: 422,
+      errors: [{ pointer: '/custom_stage_label' }],
+    });
+  });
+});

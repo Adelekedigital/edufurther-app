@@ -38,9 +38,10 @@ import { sessionKey, useSession } from './session';
 
 type OwnSessionTypeRead = components['schemas']['OwnSessionTypeRead'];
 /**
- * A session-type write as we send it. `custom_stage_label` is left out: it is
- * typed `null` only (backend #536, no custom stage), which the client reads as
- * "never sent", and the API always reads it as null.
+ * A session-type write as we send it, without `custom_stage_label`: removed by
+ * backend PR 543 (a 422 if sent). Until that spec is the one we build against,
+ * it is typed `null` only, which the client reads as "never sent"; the Omit
+ * keeps us compiling against both, and is a no-op after.
  */
 export type SessionTypeWriteBody = Omit<
   components['schemas']['MentorSessionTypeWrite'],
@@ -86,18 +87,12 @@ const SIX = new Set<string>(STAGE_CHIPS);
 
 /**
  * The stages a session type is aimed at, in the mentor's order; `[]` = any
- * stage (then the old field isn't read). The single `application_stage` is the
- * deprecated form, read while a response still lacks the list (backend round 3).
- * An old slug reads as the one it became; two that became one stay once, at
+ * stage. An old slug reads as the one it became; two that became one stay once, at
  * the first one's place; `other` is dropped, so only `other` reads as any stage.
  */
-export function stagesOf(r: {
-  application_stages?: readonly string[] | null;
-  application_stage?: string | null;
-}): Stage[] {
-  const raw = r.application_stages ?? (r.application_stage ? [r.application_stage] : []);
+export function stagesOf(r: { application_stages?: readonly string[] | null }): Stage[] {
   const out: Stage[] = [];
-  for (const s of raw) {
+  for (const s of r.application_stages ?? []) {
     const six = SIX.has(s) ? (s as Stage) : OLD_STAGE[s];
     if (six && !out.includes(six)) out.push(six);
   }

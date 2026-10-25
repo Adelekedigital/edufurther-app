@@ -70,10 +70,8 @@ function year(date: string | null | undefined): string | null {
 }
 
 /**
- * Every stage the offering is aimed at, in the mentor's order: "Drafting,
- * Revising". `other` reads as the mentor's own wording. Empty means any stage,
- * so no chip. Falls back to the deprecated single `application_stage` while
- * a response still lacks the list (backend round 3).
+ * Every stage the offering is aimed at, in the mentor's order: "Applying,
+ * Preparing for interview". Empty means any stage, so no chip.
  */
 export function stageLine(r: SessionTypeRead): string | null {
   return stageText(stagesOf(r));

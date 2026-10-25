@@ -172,9 +172,8 @@ describe('toCreateBody', () => {
       requires_booking_confirmation: false,
       application_stages: ['exploring', 'applying'],
     });
-    // Never both: the backend refuses application_stage alongside the list.
+    // Removed from the API: sending either, even null, is a 422 (backend PR 543).
     expect(body).not.toHaveProperty('application_stage');
-    // No custom stage label at all (backend #536 reads it as null).
     expect(body).not.toHaveProperty('custom_stage_label');
   });
 
@@ -327,7 +326,6 @@ describe('422 pointers → the owning field and step', () => {
     ['/name', 'name', 1],
     ['/service_offering_ids', 'topics', 1],
     ['/service_offering_ids/3', 'topics', 1],
-    ['/custom_stage_label', 'stage', 1],
     ['/application_stages', 'stage', 1],
     ['/application_stages/1', 'stage', 1],
     ['/questions/2/options/0/text', 'question-2', 2],

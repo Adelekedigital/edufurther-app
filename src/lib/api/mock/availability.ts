@@ -179,8 +179,6 @@ export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
     requires_booking_confirmation: true,
     ...NO_TOPICS,
     ...NOT_REFRESHED,
-    application_stage: null,
-    custom_stage_label: null,
     is_starter: false,
     meeting_venue: 'google_meet',
   },
@@ -197,8 +195,6 @@ export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
     ...NOT_REFRESHED,
     // Every question kind the booking step renders (backend #268, #12, #282).
     questions: CV_QUESTIONS,
-    application_stage: null,
-    custom_stage_label: null,
     is_starter: false,
     meeting_venue: 'google_meet',
   },
