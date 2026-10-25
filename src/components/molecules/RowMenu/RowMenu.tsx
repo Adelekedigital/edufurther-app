@@ -116,6 +116,28 @@ export function RowMenu({ label, items, triggerRef, trigger, menu: drawn }: RowM
     if (!open) focused.current = null;
   });
 
+  // A "⋯" near the left edge (a phone's row footer) would open off screen
+  // to its left, and one low on a phone under the tab bar: it opens toward
+  // the room. The page's scroll-padding-bottom is what a fixed bar covers.
+  // Measured before paint and marked on the menu itself (data-side, data-up),
+  // which React doesn't manage: no second render.
+  useLayoutEffect(() => {
+    const el = menu.current;
+    const b = button.current?.getBoundingClientRect();
+    if (!open || !el || !b) return;
+    const r = el.getBoundingClientRect();
+    const root = document.documentElement;
+    const wide = root.clientWidth;
+    const start = trigger?.align === 'start';
+    const covered = parseFloat(getComputedStyle(root).scrollPaddingBottom) || 0;
+    // Only to a side it fits on: a menu wider than either side stays as drawn.
+    if (start ? r.right > wide && b.right - r.width >= 0 : r.left < 0 && b.left + r.width <= wide)
+      el.dataset.side = start ? 'end' : 'start';
+    // The gap under the button is the gap above it too.
+    const gap = r.top - b.bottom;
+    if (r.bottom > window.innerHeight - covered && b.top - gap - r.height >= 0) el.dataset.up = '';
+  }, [open, trigger?.align]);
+
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {

@@ -326,6 +326,12 @@ describe('SessionTypeFormScreen', () => {
     expect(screen.queryByText(/confirmed straight away|you approve each booking/i)).toBeNull();
     expect(screen.getByText('Your default')).toBeInTheDocument();
     expect(screen.getByText('My defaults')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^Back$/ }));
+    await user.click(screen.getByRole('radio', { name: /Customize for this session/ }));
+    // Nothing to name in the approval hint either: it says what the choice is.
+    expect(screen.getByRole('combobox', { name: 'Approve bookings' })).toHaveAccessibleDescription(
+      'Choose how bookings are confirmed.',
+    );
     unmount();
     const retry = vi.fn();
     defaultsMock = { data: null, isLoading: false, error: { kind: 'server', message: 'x' }, retry };
@@ -415,23 +421,19 @@ describe('SessionTypeFormScreen', () => {
     expect(screen.queryByRole('button', { name: /Edit defaults|Edit weekly hours/ })).toBeNull();
   });
 
-  it('approval: the inherit option names the default; the hint says what the choice is', async () => {
+  it('approval: "Use my default" fits a phone; the hint names the default (owner, 2026-10-25)', async () => {
     const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
     await user.click(next(/^Continue$/));
     await user.click(next(/^Continue$/));
     await user.click(screen.getByRole('radio', { name: /Customize for this session/ }));
     const select = screen.getByRole('combobox', { name: 'Approve bookings' });
-    expect(select).toHaveAccessibleDescription('Choose how bookings are confirmed.');
+    expect(select).toHaveAccessibleDescription('Your default: you approve each booking.');
     expect(
       within(select)
         .getAllByRole('option')
         .map((o) => o.textContent),
-    ).toEqual([
-      'You approve each booking (your default)',
-      'You approve each booking',
-      'Confirmed straight away',
-    ]);
+    ).toEqual(['Use my default', 'You approve each booking', 'Confirmed straight away']);
   });
 
   it('review: one Booking rules row while inheriting; a row per rule once customized', async () => {

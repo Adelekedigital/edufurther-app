@@ -106,13 +106,23 @@ export const RULES_COPY = {
   custom: 'Customize for this session',
   customBody: 'Set different booking rules for this session. Your default settings won’t change.',
   /**
-   * The inherit option on the approval select names what it resolves to
-   * (Session Types PRD, step 3); on and off use Settings' words. Before
+   * Review's approval row while inheriting names what it resolves to
+   * (Session Types PRD, step 4); on and off use Settings' words. Before
    * the defaults load there's nothing to name yet.
    */
   inheritApproval: (resolved: string | null) =>
     resolved ? `${resolved} (your default)` : 'Your default',
-  approvalHint: 'Choose how bookings are confirmed.',
+  /**
+   * The approval select's inherit option, short enough for a phone's select;
+   * the hint under the label names what it resolves to, or what the choice is
+   * before the defaults load (owner, 2026-10-25:
+   * "You approve each booking (your default)" was cut off on phones).
+   */
+  useDefaultApproval: 'Use my default',
+  defaultApprovalHint: (resolved: string | null) =>
+    resolved
+      ? `Your default: ${resolved.charAt(0).toLowerCase()}${resolved.slice(1)}.`
+      : 'Choose how bookings are confirmed.',
   /** New tabs: following them here would drop the session being edited. */
   manageRules: 'Manage booking rules',
   manageRulesHref: '/settings/booking',

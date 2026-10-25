@@ -239,10 +239,15 @@
 /* ProfilePhoto.dc.html's menu, over the row menu's: 188px, under the photo
    from 20px in from its right edge; 8px gaps, 12px medium labels; Remove in
    red with no divider, red-50 on hover. Doubled classes outrank the row
-   menu's whichever stylesheet loads last. */
+   menu's whichever stylesheet loads last; each offset steps aside when the
+   row menu opens toward the room instead (its data-side, data-up). */
 .photoMenu.photoMenu {
   min-width: 188px;
+}
+.photoMenu.photoMenu:not([data-side]) {
   left: 6px;
+}
+.photoMenu.photoMenu:not([data-up]) {
   top: calc(100% - 2px);
 }
 .photoItem.photoItem {

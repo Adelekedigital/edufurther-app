@@ -286,6 +286,11 @@
   .mainGuest {
     padding-bottom: var(--space-10);
   }
+  /* What the tab bar covers: scrolling to a focused control stops above it
+     (WCAG 2.4.11), and a menu low on the page opens upward (RowMenu). */
+  :global(html):has(.tabs) {
+    scroll-padding-bottom: calc(56px + env(safe-area-inset-bottom));
+  }
   .tabs {
     position: fixed;
     left: 0;

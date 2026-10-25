@@ -86,18 +86,24 @@ export function SessionTypeManager(p: SessionTypeManagerProps) {
     <div className={styles.page}>
       <div className={styles.header} ref={header}>
         <div className={styles.intro}>
-          <h1 className={styles.title}>{SESSIONS_COPY.title}</h1>
+          {/* The count reads with the title, "Sessions · 2 of 5" (owner, 2026-10-25). */}
+          <div className={styles.titleRow}>
+            <h1 className={styles.title}>{SESSIONS_COPY.title}</h1>
+            {limit !== null && p.list.data && (
+              <>
+                <span className={styles.count} aria-hidden="true">
+                  ·
+                </span>
+                <span className={styles.count}>
+                  {SESSIONS_COPY.count(p.list.data.length, limit)}
+                  <span className="sr-only"> sessions</span>
+                </span>
+              </>
+            )}
+          </div>
           <p className={styles.lede}>{SESSIONS_COPY.lede}</p>
         </div>
-        <div className={styles.createGroup}>
-          {limit !== null && p.list.data && (
-            <span className={styles.count}>
-              {SESSIONS_COPY.count(p.list.data.length, limit)}
-              <span className="sr-only"> sessions</span>
-            </span>
-          )}
-          <CreateAction href={p.createHref} off={off} limit={limit} />
-        </div>
+        <CreateAction href={p.createHref} off={off} limit={limit} />
       </div>
 
       <List {...p} />
