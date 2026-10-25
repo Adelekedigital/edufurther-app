@@ -1140,3 +1140,19 @@ Measured against the live `Session Join.dc.html` rendered by its own runtime, bo
 | (no rule) `in_room` null on EduFurther video (no room, or a deleted account) | "Not in the call yet"; a deleted account shows nothing anywhere | No "Here now" we can't back | never |
 | (no rule) before Join opens | "Not in the call yet" for both, whatever the row says; nothing announced | "Never before the window opens" (product, 2026-10-09) | never |
 | (no rule) someone leaves | The ring goes back to grey within one poll (15 s); a screen reader hears "{First} left the call." as it hears "{First} joined." | Ours: the visible change is announced both ways | design confirms |
+
+### Invite a friend — InviteModal (`InviteModal.dc.html` in `Modal.dc.html` explainer, sm, `mobile="sheet"`), 2026-10-25
+
+Built as `templates/InviteModal` (a dialog on `ModalShell`, as ConfirmDialog and SaveChangesDialog are; an organism may not import a template). Fidelity measured by probe against both files' inline styles: 1761 of 1781 checks (98.9%) at 390, 600, 768, 1024 and 1280; the 20 misses are the first two rows below.
+
+| Design | Build | Why | Revisit |
+|---|---|---|---|
+| The "You get 3 free sessions a month" badge at 6px corners (`radius-md`), drawn inline | The DS `Badge` (green accent, md, with the new `icon` prop): 4px corners | One badge component for every screen (owner, 2026-10-20); the badge's other values match | design moves this badge to the DS Badge, or the DS Badge to 6px |
+| The two buttons' 24px side padding on phones | 16px | `Button` large on phones follows CTA Hierarchy.dc.html for every screen | CTA Hierarchy changes |
+| Link `edufurther.com/i/{code}` | `{origin}/invite/{code}`, shown without the scheme | The backend contract composes `/invite/{code}` (InviteLinkRead); coordinator, 2026-10-25 | never |
+| Step 1 done: "A friend joined and verified" | "A friend joined and set up their profile" | Founder wording: the step is the friend finishing their profile (`qualified_at`), not verifying | never |
+| (no design state) the link loading | A 48px skeleton in the box's place; both buttons unavailable (`aria-disabled`) until it lands | _ours_ | design draws it |
+| (no design state) the link failed | Notice "We couldn’t load your invite link." with "Try again"; both buttons unavailable | _ours_, provisional copy | design draws it |
+| (no design state) the clipboard refused | The button keeps "Copy invite link"; a polite "Couldn’t copy the link. Try again." The design shows "Link copied" whatever happens | Never claim a copy that didn't happen (as CopyLinkButton) | never |
+| Share dismissed: nothing; any other share failure: nothing | Dismissed: nothing. Any other failure falls back to copying, as no share sheet does | A browser that refuses the payload shouldn't leave the click dead | never |
+| Copy reports `onShared` even when the clipboard fails | Only a copy or share that happened reports `onShared` | Matches what was done | never |

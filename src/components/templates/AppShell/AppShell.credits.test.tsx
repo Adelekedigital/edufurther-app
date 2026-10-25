@@ -99,7 +99,7 @@ describe('AppShell: a mentee’s credits', () => {
     const items = within(list).getAllByRole('listitem');
     expect(items.map((li) => li.textContent)).toEqual([
       'Start with 1 free credit when you finish your profile. It never expires.',
-      'Invite a friend: when they finish their profile, you get 2 more, then 3 every month.',
+      'Invite a friend: when they finish their profile, you get 2 more. Once you’ve also attended your first session, you get 3 every month.',
       'Monthly credits reset on the 1st. No rollover.',
     ]);
     // Independent of the refund toggle.
