@@ -660,7 +660,9 @@ describe('SessionTypeFormScreen — the Video row (backend #535)', () => {
     expect(screen.getByText('Step 3 of 4 · Set booking rules')).toBeInTheDocument();
     const select = screen.getByRole('combobox', { name: 'Video' });
     expect(select).toHaveAttribute('aria-invalid', 'true');
-    expect(select).toHaveAccessibleDescription(/Choose where the call happens\./);
+    // The problem is read first, then the hint; and focus is on the select.
+    expect(select).toHaveAccessibleDescription(/^Choose where the call happens\. Where the call/);
+    expect(select).toHaveFocus();
     await user.selectOptions(select, 'daily');
     expect(screen.queryByText('Choose where the call happens.')).toBeNull();
   });

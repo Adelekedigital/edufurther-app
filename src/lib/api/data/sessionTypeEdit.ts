@@ -107,10 +107,12 @@ export function toDraft(s: SavedSessionType, defaults: BookingDefaults | null): 
 
 /**
  * Its own venue, else the default. A `custom` row (a personal link, set only as
- * a default) can't be a session's own here, so it reads as following it.
+ * a default) can't be a session's own here, so it reads as following it. A read
+ * without the flag follows the default too (its schema default is true): taking
+ * the resolved provider as a pin would pin every duplicate (local review).
  */
 function venueOf(r: OwnSessionTypeRead): Draft['venue'] {
-  if (r.meeting_venue_inherited) return 'inherit';
+  if (r.meeting_venue_inherited !== false) return 'inherit';
   return r.meeting_venue === 'daily' || r.meeting_venue === 'google_meet'
     ? r.meeting_venue
     : 'inherit';

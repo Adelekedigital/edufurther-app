@@ -239,7 +239,9 @@ export function SchedulingStep({
           </span>
           <Select
             aria-label={RULES_COPY.videoTitle}
-            aria-describedby={errors.venue ? `${videoId} ${videoId}-error` : videoId}
+            data-gap="venue"
+            // The problem first, then the hint.
+            aria-describedby={errors.venue ? `${videoId}-error ${videoId}` : videoId}
             invalid={!!errors.venue}
             width={260}
             value={d.venue}

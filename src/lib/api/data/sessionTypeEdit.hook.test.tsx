@@ -103,6 +103,13 @@ describe('toDraft (a saved type as the form opens it)', () => {
       { meeting_venue: 'custom', meeting_venue_inherited: false },
       'inherit',
     ],
+    // No flag (an older read): its schema default is true, so it follows the
+    // default rather than pinning what it resolved to (local review).
+    [
+      'no inherited flag',
+      { meeting_venue: 'google_meet', meeting_venue_inherited: undefined },
+      'inherit',
+    ],
   ] as const)('the venue: %s', (_what, over, venue) => {
     expect(toDraft(saved({ read: read(over) }), defaults).venue).toBe(venue);
   });

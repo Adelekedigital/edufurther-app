@@ -23,8 +23,11 @@ import styles from './SessionTypeWizard.module.css';
 
 export type Step = 1 | 2 | 3 | 4;
 
-/** Step 1's fields, in the order they're drawn: the first with an error gets focus. */
-const STEP1_FIELDS = ['name', 'description', 'topics', 'stage'] as const;
+/**
+ * The fields a refused try can send the mentor back to, in the order they're
+ * drawn: the first with an error gets focus (step 1's, then step 3's Video).
+ */
+const GAP_FIELDS = ['name', 'description', 'topics', 'stage', 'venue'] as const;
 
 /** Session Types.dc.html `stepDefs` (copy research). */
 export const STEPS = STEP_COPY;
@@ -77,12 +80,12 @@ export function SessionTypeWizard(p: SessionTypeWizardProps) {
   const { attempt, errors } = p;
   useEffect(() => {
     if (!attempt) return;
-    const first = STEP1_FIELDS.find((k) => errors[k]);
+    const first = GAP_FIELDS.find((k) => errors[k]);
     const gap = first && cardRef.current?.querySelector<HTMLElement>(`[data-gap="${first}"]`);
     if (!gap) return;
     // A field takes focus itself; the topics group gives it to its first chip.
     // `attempt` also rises when Save on Review sends the mentor back here.
-    const target = gap.matches('input, textarea')
+    const target = gap.matches('input, textarea, select')
       ? gap
       : gap.querySelector<HTMLElement>('button:not(:disabled)');
     target?.focus();
