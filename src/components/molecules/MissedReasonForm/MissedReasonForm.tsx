@@ -57,14 +57,18 @@ export function MissedReasonForm({
   const id = useId();
   const [reason, setReason] = useState<string | null>(null);
   const [note, setNote] = useState('');
-  // Sent from here: the form, and the Send that had focus, go, so focus moves
-  // to the thanks line, which is read out. Not on a page that loads already
-  // sent (a reload), where nothing just happened.
+  // Sent from this form: the form, and the Send that had focus, go, so focus
+  // moves to the thanks line, which is read out. Not when it turns sent from
+  // elsewhere (a reload, another tab), where nothing happened here.
   const thanksRef = useRef<HTMLParagraphElement>(null);
-  const [wasSent] = useState(sent);
+  const sentHere = useRef(false);
   useEffect(() => {
-    if (sent && !wasSent) thanksRef.current?.focus();
-  }, [sent, wasSent]);
+    if (sent && sentHere.current) thanksRef.current?.focus();
+  }, [sent]);
+  // A send that failed is no longer this form's: a later "sent" came from elsewhere.
+  useEffect(() => {
+    if (error) sentHere.current = false;
+  }, [error]);
 
   if (sent)
     return (
@@ -80,7 +84,9 @@ export function MissedReasonForm({
       aria-labelledby={`${id}-q`}
       onSubmit={(e) => {
         e.preventDefault();
-        if (reason && !pending) onSend({ reason, note: note.trim() });
+        if (!reason || pending) return;
+        sentHere.current = true;
+        onSend({ reason, note: note.trim() });
       }}
     >
       <span id={`${id}-q`} className={styles.question}>

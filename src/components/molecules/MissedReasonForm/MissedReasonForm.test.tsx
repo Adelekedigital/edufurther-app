@@ -97,6 +97,21 @@ describe('MissedReasonForm', () => {
     expect(screen.getByText('Thanks for letting us know.')).toHaveFocus();
   });
 
+  it('sent from elsewhere (another tab) while open here: no focus jump', () => {
+    const props = {
+      question: C.question,
+      options: [...C.options],
+      placeholder: C.placeholder,
+      sendLabel: C.send,
+      thanks: C.thanks,
+      noteMax: C.noteMax,
+      onSend: vi.fn(),
+    };
+    const { rerender } = render(<MissedReasonForm {...props} sent={false} />);
+    rerender(<MissedReasonForm {...props} sent />);
+    expect(screen.getByText('Thanks for letting us know.')).not.toHaveFocus();
+  });
+
   it('already sent when the page loads: the thanks line takes no focus', () => {
     form({ sent: true });
     expect(screen.getByText('Thanks for letting us know.')).not.toHaveFocus();
