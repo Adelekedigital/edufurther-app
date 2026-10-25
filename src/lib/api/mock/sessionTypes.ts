@@ -98,6 +98,8 @@ const q = (id: string, text: string, type: QuestionRead['question_type'], requir
 function seed(): Stored[] {
   const base = {
     meeting_venue: 'daily' as const,
+    // Follows the mentor's default (backend PR 2, #535).
+    meeting_venue_inherited: true,
     application_stage: null,
     application_stages: [],
     custom_stage_label: null,
@@ -295,6 +297,7 @@ export function mockCreateSessionType(
     duration_minutes: body.duration_minutes == null ? null : Number(body.duration_minutes),
     min_notice_minutes: body.min_notice_minutes == null ? null : Number(body.min_notice_minutes),
     meeting_venue: 'daily',
+    meeting_venue_inherited: true,
     is_active: true,
     application_stages: (Array.isArray(stages)
       ? stages

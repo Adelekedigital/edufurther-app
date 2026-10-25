@@ -14,14 +14,25 @@ export const SESSION_ICONS = [
 ] as const;
 export type SessionIcon = (typeof SESSION_ICONS)[number];
 
-/** Where a mentee is in their application (backend ApplicationStage). `other` = the mentor's own words. */
+/**
+ * Where a mentee is in their application (backend ApplicationStage). `other` =
+ * the mentor's own words. The backend now also sends the six Session Types PRD
+ * stages (exploring … awaiting_decision) while it moves stored rows over; the
+ * old ones go when it finishes (backend PR 1).
+ */
 export type ApplicationStage =
   | 'early_exploration'
   | 'drafting_stage'
   | 'post_submission'
   | 'revisions'
   | 'interviewing'
-  | 'other';
+  | 'other'
+  | 'exploring'
+  | 'researching'
+  | 'preparing_documents'
+  | 'applying'
+  | 'interview_prep'
+  | 'awaiting_decision';
 
 /** One of the mentor's own session types, as the management list shows it. */
 export type OwnSessionType = {

@@ -11,6 +11,7 @@ import { DETAILS_COPY } from '@/lib/copy/sessionTypes';
 import {
   DESCRIPTION_MAX,
   MAX_TOPICS,
+  STAGE_CHIPS,
   STAGE_LABELS,
   type Draft,
   type FieldErrors,
@@ -34,8 +35,20 @@ type CoreDetailsStepProps = {
 export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetailsStepProps) {
   const id = useId();
   const [stageDraft, setStageDraft] = useState('');
+  // A stage the API sent that isn't a chip yet (the six new ones): shown
+  // picked, so it can be seen and unpicked (GitHub review, PR 390).
+  const extra = d.stages.filter(
+    (s): s is Exclude<Stage, 'other'> => s !== 'other' && !STAGE_CHIPS.includes(s),
+  );
+  // Its words can match an old chip's ("Exploring"): two chips alike can't be
+  // told apart, so one chip stands for both, and unpicking it clears both.
+  const taken = new Set(extra.map((s) => STAGE_LABELS[s]));
   const stages = [
-    ...Object.entries(STAGE_LABELS).map(([value, label]) => ({ value, label })),
+    ...STAGE_CHIPS.filter((c) => !taken.has(STAGE_LABELS[c])).map((value) => ({
+      value,
+      label: STAGE_LABELS[value],
+    })),
+    ...extra.map((value) => ({ value, label: STAGE_LABELS[value] })),
     ...(d.stages.includes('other') && d.customStage
       ? [{ value: 'other', label: d.customStage }]
       : []),
@@ -121,7 +134,14 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
             update(
               d.stages.includes(v as Stage)
                 ? {
-                    stages: d.stages.filter((s) => s !== v),
+                    // With any stage of the same words (one chip stands for both).
+                    stages: d.stages.filter(
+                      (s) =>
+                        s !== v &&
+                        (v === 'other' ||
+                          s === 'other' ||
+                          STAGE_LABELS[s] !== STAGE_LABELS[v as Exclude<Stage, 'other'>]),
+                    ),
                     customStage: v === 'other' ? '' : d.customStage,
                   }
                 : { stages: [...d.stages, v as Stage] },
