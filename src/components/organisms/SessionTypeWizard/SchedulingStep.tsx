@@ -221,9 +221,10 @@ export function SchedulingStep({
         {errors.hours && <p className={styles.fieldError}>{errors.hours}</p>}
       </div>
 
-      {/* Both modes: "Use my defaults" covers the rules, not where the call happens. */}
-      <div>
-        <div className={styles.approvalRow}>
+      {/* Both modes: "Use my defaults" covers the rules, not where the call happens.
+          Its own ruled section, the row unboxed (design: border-top, space-5 above). */}
+      <div className={styles.sectionRuled}>
+        <div className={styles.videoRow}>
           <span className={styles.ruleText}>
             <span className={styles.ruleLabel}>{RULES_COPY.videoTitle}</span>
             <span id={videoId} className={styles.ruleHint}>

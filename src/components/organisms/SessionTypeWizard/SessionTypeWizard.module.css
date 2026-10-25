@@ -368,6 +368,13 @@
   border: var(--border-hairline) solid var(--border-subtle);
   border-radius: var(--radius-lg);
 }
+/* Design step 3 Video: label and hint, then the select, 16px apart; no box. */
+.videoRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
 /* Design btnEditDefaults / btnEditHours: the DS text button at 32px, 8px 12px. */
 .inlineAction {
   position: relative;
