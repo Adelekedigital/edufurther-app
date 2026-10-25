@@ -59,6 +59,17 @@ const CONFIRMS_OFFERING = {
   cancel: 'Cancel and send',
 } as const;
 
+/**
+ * "Sat, Oct 3, 12:00 am" in the viewer's zone: the server's deadline, or the
+ * start less the window when an older row has none.
+ */
+function refundDeadlineLabel(b: Booking, timeZone: string): string {
+  const at =
+    b.refundUntil ??
+    new Date(new Date(b.startsAt).getTime() - refundWindowFor(b) * 3_600_000).toISOString();
+  return `${dayLabel(at, timeZone)}, ${formatTime(at, timeZone)}`;
+}
+
 /** The design's phone frame: `CancelModal sheet contained`. */
 const PHONE = '(max-width: 767px)';
 
@@ -181,13 +192,15 @@ export function ConfirmActionDialog({
     : !!reasonError({ reasonCode, text, required: true });
 
   // Mentors never see credit copy — it is not their credit (design's rule).
+  // A refundable cancel names the deadline (`Mentee Bookings.dc.html`): the
+  // mentee who keeps the session learns when the credit stops coming back.
   const creditLine = isMentor
     ? null
     : action === 'cancel'
       ? refunds
-        ? 'Your credit goes back to you.'
+        ? `Cancel before ${refundDeadlineLabel(b, timeZone)} and your credit comes back. After that, the credit is used.`
         : `This is less than ${refundWindowFor(b)} hours before the session, so the credit is not returned.`
-      : 'Your credit goes back to you.';
+      : 'Your credit comes back.';
 
   // The design's own sentences. The bold runs are its `<strong>`s.
   const lead =
