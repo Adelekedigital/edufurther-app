@@ -1,3 +1,4 @@
+import { VIDEO_LABELS } from '@/lib/copy/integrations';
 import type { Booking } from '@/types/booking';
 import { formatTime } from './format';
 
@@ -161,20 +162,15 @@ export function lobbyTimes(b: Booking, timeZone: string): string {
   return half(start) === half(end) ? `${start.slice(0, -3)} – ${end}` : `${start} – ${end}`;
 }
 
-/** What the session's video is called. Null provider: an older row with no venue. */
+/**
+ * What the session's video is called: the one name per venue that Integrations,
+ * Calendar and Session Types use (`VIDEO_LABELS`). Zoom, which no mentor can
+ * choose any more, keeps its own. Null provider: an older row with no venue.
+ */
 export function providerName(provider: string | null): string | null {
-  switch (provider) {
-    case 'daily':
-      return 'EduFurther video';
-    case 'google_meet':
-      return 'Google Meet';
-    case 'zoom':
-      return 'Zoom';
-    case 'custom':
-      return 'Video call';
-    default:
-      return null;
-  }
+  if (provider === 'daily' || provider === 'google_meet' || provider === 'custom')
+    return VIDEO_LABELS[provider];
+  return provider === 'zoom' ? 'Zoom' : null;
 }
 
 /**
