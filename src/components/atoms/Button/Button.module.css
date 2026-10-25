@@ -136,7 +136,8 @@
 .text-secondary:active {
   color: var(--ink-900);
 }
-.text-secondary:disabled:not(fieldset:disabled *) {
+.text-secondary:disabled:not(fieldset:disabled *),
+.text-secondary[data-unavailable] {
   color: var(--slate-400);
   cursor: not-allowed;
 }
@@ -170,7 +171,8 @@
   position: absolute;
   inset: -14px -8px;
 }
-.text-destructive:disabled:not(fieldset:disabled *) {
+.text-destructive:disabled:not(fieldset:disabled *),
+.text-destructive[data-unavailable] {
   color: var(--ink-500);
   background: transparent;
   /* Or it keeps the hover underline, as `.text:disabled` already guards. */
@@ -187,9 +189,8 @@
 }
 
 /* ---- disabled / busy (DS: flat ink-300 fill; outlined: ink-400 on a 2px ink-100 ring) ---- */
-/* aria-disabled too: a button that keeps focus to say why it's off. */
 .button:disabled,
-.button[aria-disabled='true'] {
+.button[data-unavailable] {
   cursor: not-allowed;
 }
 /* DIVERGENCE: DS draws white on ink-300 (~1.5:1). Our disabled buttons often carry
@@ -231,23 +232,24 @@
 .primary:disabled:not(fieldset:disabled *),
 .destructive:disabled:not(fieldset:disabled *),
 .dark:disabled:not(fieldset:disabled *),
-.primary[aria-disabled='true'],
-.destructive[aria-disabled='true'],
-.dark[aria-disabled='true'] {
+.primary[data-unavailable],
+.destructive[data-unavailable],
+.dark[data-unavailable] {
   background: var(--surface-muted);
   color: var(--ink-600);
 }
 .secondary-outlined:disabled:not(fieldset:disabled *),
 .destructive-outlined:disabled:not(fieldset:disabled *),
-.secondary-outlined[aria-disabled='true'],
-.destructive-outlined[aria-disabled='true'] {
+.secondary-outlined[data-unavailable],
+.destructive-outlined[data-unavailable] {
   /* Transparent like the enabled button (DS), so a disabled one on a tinted
      card isn't a white block. */
   background: transparent;
   color: var(--ink-500);
   box-shadow: inset 0 0 0 var(--border-emphasis) var(--border-muted);
 }
-.text:disabled:not(fieldset:disabled *) {
+.text:disabled:not(fieldset:disabled *),
+.text[data-unavailable] {
   color: var(--ink-500);
   text-decoration: none;
 }

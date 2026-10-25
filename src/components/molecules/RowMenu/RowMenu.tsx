@@ -27,6 +27,8 @@ export type RowMenuItem = {
    * order and says it's unavailable; choosing it only closes the menu.
    */
   disabled?: boolean;
+  /** Why it's off: its title, so hover shows it and a screen reader hears it. */
+  reason?: string;
 };
 
 type RowMenuProps = {
@@ -205,6 +207,7 @@ export function RowMenu({ label, items, triggerRef, trigger, menu: drawn }: RowM
                 it.disabled && styles.disabled,
               )}
               aria-disabled={it.disabled || undefined}
+              title={it.disabled ? it.reason : undefined}
               onFocus={() => (focused.current = i)}
               onClick={() => {
                 close(true);

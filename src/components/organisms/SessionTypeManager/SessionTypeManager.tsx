@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { ButtonLink, Button } from '@/components/atoms/Button/Button';
 import { FormGrid } from '@/components/atoms/FormGrid/FormGrid';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
@@ -49,11 +49,11 @@ const atLimitOf = (p: Pick<SessionTypeManagerProps, 'list' | 'limit'>) =>
 
 /**
  * Create, or at the limit a button that's off but keeps focus, so it can say
- * why: its description (and, on hover, its title) is the limit sentence. The
- * "{n} of {limit}" beside it says the same to everyone.
+ * why: its title is the limit sentence, the hover tooltip and the accessible
+ * description at once (read once). The "{n} of {limit}" beside it says the
+ * same to everyone.
  */
 function CreateAction({ href, off, limit }: { href: string; off: boolean; limit: number | null }) {
-  const whyId = useId();
   if (!off)
     return (
       <ButtonLink href={href} prefetch={false} size="large">
@@ -61,19 +61,9 @@ function CreateAction({ href, off, limit }: { href: string; off: boolean; limit:
       </ButtonLink>
     );
   return (
-    <>
-      <Button
-        size="large"
-        aria-disabled
-        title={SESSIONS_COPY.atLimit(limit)}
-        aria-describedby={whyId}
-      >
-        {SESSIONS_COPY.create}
-      </Button>
-      <span id={whyId} className="sr-only">
-        {SESSIONS_COPY.atLimit(limit)}
-      </span>
-    </>
+    <Button size="large" unavailable title={SESSIONS_COPY.atLimit(limit)}>
+      {SESSIONS_COPY.create}
+    </Button>
   );
 }
 
@@ -101,7 +91,10 @@ export function SessionTypeManager(p: SessionTypeManagerProps) {
         </div>
         <div className={styles.createGroup}>
           {limit !== null && p.list.data && (
-            <span className={styles.count}>{SESSIONS_COPY.count(p.list.data.length, limit)}</span>
+            <span className={styles.count}>
+              {SESSIONS_COPY.count(p.list.data.length, limit)}
+              <span className="sr-only"> sessions</span>
+            </span>
           )}
           <CreateAction href={p.createHref} off={off} limit={limit} />
         </div>
@@ -233,7 +226,7 @@ function List({
           onFeature={(f) => onFeature(t, f)}
           onRestore={() => onRestore(t)}
           onDuplicate={() => onDuplicate(t)}
-          duplicateOff={off}
+          duplicateOff={off ? SESSIONS_COPY.atLimit(limit ?? null) : null}
           shareUrl={shareUrl(t)}
           restoring={!!restoringIds?.includes(t.id)}
           focusMenu={typeof focusAfterRemoval === 'object' && focusAfterRemoval?.menuOf === t.id}

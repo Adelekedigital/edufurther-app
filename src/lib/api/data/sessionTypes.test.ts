@@ -1,6 +1,13 @@
 import type { components } from '@/lib/api/generated/schema';
 import { ApiError, apiError } from './errors';
-import { autoIcon, createError, deleteError, toOwnSessionType } from './sessionTypes';
+import { QueryClient } from '@tanstack/react-query';
+import {
+  autoIcon,
+  createError,
+  deleteError,
+  refreshLimitsOnRefusal,
+  toOwnSessionType,
+} from './sessionTypes';
 
 type Own = components['schemas']['OwnSessionTypeRead'];
 const own = (over: Partial<Own> = {}): Own =>
@@ -193,5 +200,19 @@ describe('createError: past the session limit (backend PR 3)', () => {
     expect(createError(apiError(409, body), body).fields.name).toBe(
       'You already have a session with this name.',
     );
+  });
+});
+
+describe('refreshLimitsOnRefusal: past the limit, the limit and the list reload', () => {
+  it('reloads /me and the sessions on a limit refusal, and the defaults on a 422', () => {
+    const qc = new QueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries').mockResolvedValue();
+    refreshLimitsOnRefusal(qc, { status: 409, limitReached: true });
+    expect(spy.mock.calls.map((c) => c[0]?.queryKey)).toEqual([['viewer'], ['sessionTypes']]);
+    spy.mockClear();
+    refreshLimitsOnRefusal(qc, { status: 409 });
+    expect(spy).not.toHaveBeenCalled();
+    refreshLimitsOnRefusal(qc, { status: 422 });
+    expect(spy.mock.calls.map((c) => c[0]?.queryKey)).toEqual([['mentorDefaults']]);
   });
 });

@@ -27,6 +27,8 @@ export const SESSIONS_COPY = {
   /** Beside Create (design `countLabel`): every session not deleted counts. */
   count: (n: number, limit: number) => `${n} of ${limit}`,
   /** Create, templates and Duplicate at the limit, and a 409 past it (PRD list). */
+  /** /session-types/new opened at the limit: what to do. Scheduled deletions count until they go. */
+  atLimitBody: 'To add a new one, delete a session you no longer offer.',
   atLimit: (limit: number | null) =>
     limit === null
       ? 'You’ve reached your session limit.'

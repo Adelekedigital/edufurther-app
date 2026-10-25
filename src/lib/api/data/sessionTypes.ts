@@ -208,9 +208,18 @@ export function rowWrite(qc: QueryClient, mutationKey: readonly string[] = ROW_W
 /**
  * A refused write (422) may be a window above a platform cap lowered since the
  * mentor's defaults were cached: reload them, so the form offers the current cap.
+ * One past the session limit: reload the limit (/me) and the list, so the count
+ * and Create show where things stand (support may have changed it, or another tab).
  */
-export function refreshLimitsOnRefusal(qc: QueryClient, error: { status?: number }) {
+export function refreshLimitsOnRefusal(
+  qc: QueryClient,
+  error: { status?: number; limitReached?: true },
+) {
   if (error.status === 422) void qc.invalidateQueries({ queryKey: ['mentorDefaults'] });
+  if (error.limitReached) {
+    void qc.invalidateQueries({ queryKey: keys.viewer.all });
+    void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });
+  }
 }
 
 export function useSetLive(onFailed: (id: string, live: boolean) => void) {
@@ -432,7 +441,7 @@ type CreateBody = ReturnType<typeof toCreateBody>;
 type WindowBody = ReturnType<typeof toWindows>[number];
 
 /** A refused create, in our copy: per-field messages when the server named fields. */
-export type CreateError = AppError & { fields: FieldErrors };
+export type CreateError = AppError & { fields: FieldErrors; limitReached?: true };
 
 /**
  * 422 `errors[{pointer, message}]` (backend #5) → our copy on each field; the
@@ -467,6 +476,7 @@ export function createError(
       return {
         ...e,
         fields,
+        limitReached: true,
         message: SESSIONS_COPY.atLimit(typeof limit === 'number' ? limit : null),
       };
     }

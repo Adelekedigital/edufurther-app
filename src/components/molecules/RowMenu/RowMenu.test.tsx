@@ -227,7 +227,14 @@ describe('RowMenu: an item that is off', () => {
         label="More actions"
         items={[
           { key: 'edit', icon: 'edit', label: 'Edit', onSelect: vi.fn() },
-          { key: 'dup', icon: 'content_copy', label: 'Duplicate', onSelect: dup, disabled: true },
+          {
+            key: 'dup',
+            icon: 'content_copy',
+            label: 'Duplicate',
+            onSelect: dup,
+            disabled: true,
+            reason: 'You can offer up to 5 sessions.',
+          },
         ]}
       />,
     );
@@ -236,6 +243,7 @@ describe('RowMenu: an item that is off', () => {
     const item = screen.getByRole('menuitem', { name: /Duplicate/ });
     expect(item).toHaveFocus();
     expect(item).toHaveAttribute('aria-disabled', 'true');
+    expect(item).toHaveAccessibleDescription('You can offer up to 5 sessions.');
     await user.keyboard('{Enter}');
     expect(dup).not.toHaveBeenCalled();
     expect(screen.queryByRole('menu')).toBeNull();

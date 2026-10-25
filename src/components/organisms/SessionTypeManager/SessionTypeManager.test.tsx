@@ -248,7 +248,7 @@ describe('SessionTypeManager — the session limit (PRD list)', () => {
   it('under the limit: "{n} of {limit}" beside Create; Create, templates and Duplicate work', async () => {
     const user = userEvent.setup();
     const { onDuplicate } = setup(remote({ data: rows(2) }), {}, 5);
-    expect(screen.getByText('2 of 5')).toBeInTheDocument();
+    expect(screen.getByText((_, el) => el?.textContent === '2 of 5 sessions')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Create session' })).toHaveAttribute(
       'href',
       '/session-types/new',
@@ -267,7 +267,7 @@ describe('SessionTypeManager — the session limit (PRD list)', () => {
       { ...T, id: 'gone', name: 'Going', pendingDeletion: { deletesAfter: null, bookedCount: 0 } },
     ];
     const { onDuplicate } = setup(remote({ data: list }), {}, 5);
-    expect(screen.getByText('5 of 5')).toBeInTheDocument();
+    expect(screen.getByText((_, el) => el?.textContent === '5 of 5 sessions')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Create session' })).toBeNull();
     const create = screen.getByRole('button', { name: 'Create session' });
     expect(create).toHaveAttribute('aria-disabled', 'true');
@@ -280,6 +280,7 @@ describe('SessionTypeManager — the session limit (PRD list)', () => {
     await user.click(screen.getByRole('button', { name: 'More actions for Session 0' }));
     const dup = screen.getByRole('menuitem', { name: /Duplicate/ });
     expect(dup).toHaveAttribute('aria-disabled', 'true');
+    expect(dup).toHaveAccessibleDescription('You can offer up to 5 sessions.');
     await user.click(dup);
     expect(onDuplicate).not.toHaveBeenCalled();
   });
