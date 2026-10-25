@@ -17,8 +17,7 @@
   color: var(--ink-600);
   cursor: pointer;
 }
-.trigger:hover,
-.trigger[aria-expanded='true'] {
+.trigger:hover {
   background: var(--ink-100);
 }
 .trigger:focus-visible,

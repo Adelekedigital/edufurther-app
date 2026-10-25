@@ -22,6 +22,11 @@ type SegmentedControlProps<V extends string> = {
   /** Width of the whole control; the design draws Price at 200px. */
   width?: number;
   className?: string;
+  /**
+   * Shown but fixed (the help-area question's type, set by its source): it
+   * stays reachable and says it's unavailable; choosing does nothing.
+   */
+  disabled?: boolean;
 };
 
 /**
@@ -36,6 +41,7 @@ export function SegmentedControl<V extends string>({
   layout = 'fill',
   width,
   className,
+  disabled,
 }: SegmentedControlProps<V>) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   // Nothing selected (or a value that isn't offered): the first segment takes
@@ -45,6 +51,7 @@ export function SegmentedControl<V extends string>({
     options.findIndex((o) => o.value === value),
   );
   const move = (i: number) => {
+    if (disabled) return;
     const n = options.length;
     const at = (i + n) % n;
     onChange(options[at]!.value);
@@ -69,6 +76,7 @@ export function SegmentedControl<V extends string>({
     <div
       role="radiogroup"
       aria-label={label}
+      aria-disabled={disabled || undefined}
       className={cx(styles.group, className)}
       style={width ? { width } : undefined}
     >
@@ -85,7 +93,7 @@ export function SegmentedControl<V extends string>({
             aria-checked={on}
             tabIndex={i === stop ? 0 : -1}
             className={cx(styles.segment, styles[layout], on && styles.on)}
-            onClick={() => onChange(o.value)}
+            onClick={() => !disabled && onChange(o.value)}
             onKeyDown={(e) => onKey(e, i)}
           >
             {o.icon && <Icon name={o.icon} size={16} />}

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { blankDraft } from '@/lib/utils/sessionTypeDraft';
 import { IntakeQuestionsStep } from './IntakeQuestionsStep';
@@ -119,11 +119,16 @@ describe('IntakeQuestionsStep: the help-area question (backend PR 540)', () => {
     expect(link).toHaveAttribute('href', '/settings/expertise');
   });
 
-  it('its editor has no type or options to change, says why, and saves its words and required only', async () => {
+  it('its editor shows the type fixed, no options to change, says why, and saves its words and required only', async () => {
     const user = userEvent.setup();
     const update = renderSynced();
     await user.click(screen.getByRole('button', { name: /Edit/ }));
-    expect(screen.queryByRole('radiogroup', { name: 'Answer type' })).toBeNull();
+    // Drawn as is (design), fixed by its source: choosing another type does nothing.
+    const type = screen.getByRole('radiogroup', { name: 'Answer type' });
+    expect(type).toHaveAttribute('aria-disabled', 'true');
+    expect(within(type).getByRole('radio', { name: /Single choice/ })).toBeChecked();
+    await user.click(within(type).getByRole('radio', { name: /Short answer/ }));
+    expect(within(type).getByRole('radio', { name: /Single choice/ })).toBeChecked();
     expect(screen.queryByRole('textbox', { name: 'Answer options' })).toBeNull();
     expect(
       screen.getByText(

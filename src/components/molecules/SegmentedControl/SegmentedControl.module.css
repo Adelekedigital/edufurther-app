@@ -54,3 +54,7 @@
     padding: 0 var(--space-2);
   }
 }
+/* Fixed by its source: drawn as is, nothing to pick. */
+.group[aria-disabled='true'] .segment {
+  cursor: default;
+}
