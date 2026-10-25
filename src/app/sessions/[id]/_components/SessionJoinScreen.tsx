@@ -273,7 +273,10 @@ export function SessionJoinScreen({ id }: { id: string }) {
     const arrived = changed && otherJoined && !seen.otherJoined && data;
     // Live presence (EduFurther video) also says when they leave; Meet's
     // "Joined" never goes back, so this is only ever heard for Daily.
-    const left = changed && !otherJoined && seen.otherJoined && live === seen.live && data;
+    // Only while the new phase still shows presence: leaving the live phases
+    // (the session ending) is not a departure.
+    const left =
+      changed && !otherJoined && seen.otherJoined && !!live && showsLivePresence(live) && data;
     const text = [
       phaseText,
       arrived ? `${data.booking.other.firstName} joined.` : null,

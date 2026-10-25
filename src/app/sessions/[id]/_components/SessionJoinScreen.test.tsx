@@ -604,6 +604,29 @@ describe('what a screen reader hears', () => {
     expect(srStatus()).toHaveTextContent('Amara left the call.');
   });
 
+  it('live presence: a departure in the same poll as the join window closing is still said', async () => {
+    const amara = (inRoom: boolean) =>
+      remote(
+        sessionRoom({
+          other: sampleParty({
+            firstName: 'Amara',
+            joinedAt: '2026-10-04T17:00:05Z',
+            inRoomAt: '2026-10-04T17:00:10Z',
+            inRoom,
+          }),
+        }),
+      );
+    h.room = amara(true);
+    const view = renderAt('17:14:58');
+    h.room = amara(false);
+    await act(async () => {
+      vi.setSystemTime(at('17:15:05'));
+      vi.advanceTimersByTime(1000);
+    });
+    view.rerender(<SessionJoinScreen id="b1" />);
+    expect(srStatus()).toHaveTextContent('Amara left the call.');
+  });
+
   it('live presence: nothing about leaving once the session is over', async () => {
     const amara = (inRoom: boolean) =>
       remote(
