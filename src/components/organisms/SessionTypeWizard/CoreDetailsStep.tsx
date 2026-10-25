@@ -37,6 +37,11 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
   const [stageDraft, setStageDraft] = useState('');
   const stages = [
     ...STAGE_CHIPS.map((value) => ({ value, label: STAGE_LABELS[value] })),
+    // A stage the API sent that isn't a chip yet (the six new ones): shown
+    // picked, so it can be seen and unpicked (GitHub review, PR 390).
+    ...d.stages
+      .filter((s): s is Exclude<Stage, 'other'> => s !== 'other' && !STAGE_CHIPS.includes(s))
+      .map((value) => ({ value, label: STAGE_LABELS[value] })),
     ...(d.stages.includes('other') && d.customStage
       ? [{ value: 'other', label: d.customStage }]
       : []),
