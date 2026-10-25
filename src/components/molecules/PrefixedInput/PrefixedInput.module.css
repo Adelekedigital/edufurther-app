@@ -50,7 +50,9 @@
     height: auto;
     min-height: var(--touch-target-min);
   }
+  /* The prototype's phone rule: 8px sides, as the Input atom. */
   .input {
+    padding: 0 var(--space-2);
     font-size: var(--text-p-md);
   }
 }
