@@ -390,7 +390,12 @@ export function mockEditSessionType(
   }
   if (has('application_stages') && has('application_stage'))
     errors.push({ pointer: '/application_stage', message: 'send one of the two' });
-  if (Array.isArray(stages) && stages.some((s) => !SIX_STAGES.has(s as string)))
+  // The request is checked, not the stored row (a stored old slug reads as its new one).
+  if (
+    has('application_stages') &&
+    Array.isArray(stages) &&
+    stages.some((s) => !SIX_STAGES.has(s as string))
+  )
     errors.push({ pointer: '/application_stages/0', message: 'not one of the six' });
   if (has('custom_stage_label') && body.custom_stage_label != null)
     errors.push({ pointer: '/custom_stage_label', message: 'must be null' });

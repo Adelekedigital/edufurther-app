@@ -28,8 +28,8 @@ type CoreDetailsStepProps = {
 
 /**
  * Step 1 (Session Types.dc.html `isStep1`): name, what mentees get, topics,
- * stage, price. The three required fields carry `data-gap`: a Continue with
- * gaps focuses the first (the wizard).
+ * stage, price. The three required fields and the stages carry `data-gap`: a
+ * try with gaps (or a refused stage) focuses the first (the wizard).
  */
 export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetailsStepProps) {
   const id = useId();

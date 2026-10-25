@@ -26,7 +26,11 @@ describe('toPatchBody (only what changed)', () => {
       name: 'SOP review+',
       service_offering_ids: ['o4', 'o1'],
       application_stages: ['preparing_documents', 'applying'],
+      // New stages clear an old custom stage label too (local review).
+      custom_stage_label: null,
     });
+    // Stages untouched: the label isn't sent either.
+    expect(toPatchBody({ ...saved, name: 'Renamed' }, saved, ids)).toEqual({ name: 'Renamed' });
   });
 
   it('switching to own rules sends them; switching back sends null (inherit)', () => {

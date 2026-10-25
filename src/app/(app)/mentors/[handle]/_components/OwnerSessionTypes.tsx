@@ -41,7 +41,7 @@ const confirmShell = (shell: ConfirmShell, body: ReactNode) => (
 
 /**
  * The owner's card for one of their active types: the public profile's row
- * says it best (the mentor's own stage wording included); Session types'
+ * says it best; Session types'
  * stages fill in until the profile has refetched. A type that follows the
  * mentor's approval setting reads it from their defaults (as Session types'
  * form does), else from the profile.
