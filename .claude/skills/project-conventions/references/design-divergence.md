@@ -1158,3 +1158,13 @@ Built as `templates/InviteModal` (a dialog on `ModalShell`, as ConfirmDialog and
 | `unlocked` = both steps done | Its own prop, from the credits grant (the page passes it) | The grant is the backend's call; the steps are what the viewer sees of it, so "both done, not yet open" can show for a moment | never |
 | (no design state) a revoked link (`active: false`) | Notice "Your invite link is turned off." / "Nobody can join through it for now."; the link isn't shown, both buttons unavailable | _ours_, provisional copy: a revoked code answers as unknown, so sharing it would pay nothing | design draws it, or a reactivate control ships |
 | Copy reports `onShared` even when the clipboard fails | Only a copy or share that happened reports `onShared` | Matches what was done | never |
+
+## Mentor Home — new-mentor hero (`Mentor Dashboard v2.dc.html` isNew, PRD Mentor Home PR 1), 2026-10-25
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| Status row "Open times, next 14 days" | "Available times, next 14 days" | ux-writer vocabulary: Available, never Open (research rule 10). A copy fix made here (small-design-fixes rule) | design file catches up |
+| First-booked card: fixed "View booking" + "Send a message", venue "· Google Meet" | The built `NextSessionCard` (`variant="hero"`): "Join session" in the join window, else "View session details"; no message button; no venue | Founder, Oct 25 (PRD scope). Messages isn't built; no per-row venue (#241) | Messages ships / venue on the session list |
+| Not live: "Choose how to start" (open hours or a waitlist) | A mentor who isn't bookable (unlisted, or `setup_needed` not empty) sees the header and setup banner only, no hero | Founder, Oct 25: nobody is told "You're live" when they aren't; no waitlist backend | waitlist ships |
+| "Listed on Explore · Since Oct 18" always has a date | "Live now" when `approved_at` is null (imported mentors with no decision) | No decision date to show; the row still links to the profile | never |
+| No loading / error states drawn for the hero | Row values show a skeleton while their own query loads and "Couldn't load" on failure (the row still links); upcoming sessions failing shows "We couldn't load your bookings." + Try again in the hero's place | All four states ship; one failing row never takes down the page (PRD States) | design draws them |

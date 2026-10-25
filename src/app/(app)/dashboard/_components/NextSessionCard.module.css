@@ -111,3 +111,35 @@
   font-size: var(--text-p-sm);
   color: var(--text-secondary);
 }
+
+/* variant="hero" (Mentor Dashboard v2.dc.html, firstBooked): a band of the
+   new-mentor hero, the session in a blue-outlined row. */
+.heroBand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--ink-100);
+}
+.heroHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.heroTitle {
+  font-size: var(--text-p-sm);
+}
+.heroRow {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--blue-500);
+  border-radius: var(--radius-lg);
+}
+.heroActions {
+  gap: var(--space-3);
+}
+.heroDetails {
+  flex: 1 1 220px;
+  min-width: 0;
+}

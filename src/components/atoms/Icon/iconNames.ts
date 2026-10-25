@@ -71,6 +71,7 @@ export const ICON_NAMES = [
   'home_pin',
   'hourglass_top',
   'how_to_reg',
+  'inbox',
   'info',
   'ios_share',
   'join_inner',

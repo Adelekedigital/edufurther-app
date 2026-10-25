@@ -10,11 +10,13 @@ import { useAppShell } from '@/app/_shell/useAppShell';
 import { useCalendarReconnect } from '@/app/_shell/useCalendarReconnect';
 import { useSetupDetour } from '@/app/_shell/useSetupDetour';
 import { useMentorDashboard, type SetupNext } from '@/lib/api/data/dashboard';
+import { DASHBOARD_SUBLINE, HERO_COPY } from '@/lib/copy/dashboard';
 import { deviceTimeZone, inSentence } from '@/lib/utils/format';
 import type { Viewer } from '@/types/mentor';
 import { ApprovedToast } from './ApprovedToast';
 import { DashboardHeader } from './DashboardHeader';
 import { KpiGrid } from './KpiGrid';
+import { NewMentorHero } from './NewMentorHero';
 import { NextSessionCard } from './NextSessionCard';
 import { PerformanceSection } from './PerformanceSection';
 import { SessionQuality } from './SessionQuality';
@@ -66,6 +68,31 @@ function DashboardLoading() {
       <Skeleton width="240px" height="28px" />
       <Skeleton width="320px" height="16px" />
       <Skeleton height="96px" radius="lg" />
+    </div>
+  );
+}
+
+/** Where the hero goes, while the upcoming sessions that pick its stage load. */
+function HeroLoading() {
+  return (
+    <div className={styles.loading} role="status" aria-busy>
+      <span className="sr-only">Loading your bookings</span>
+      <Skeleton height="168px" radius="xl" />
+    </div>
+  );
+}
+
+/**
+ * The upcoming sessions failed, so whether this mentor is booked isn't known.
+ * Say so where the hero goes rather than guess "Get your first booking".
+ */
+function HeroError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className={styles.pageState} role="alert">
+      <p className={styles.stateText}>{HERO_COPY.bookingsError}</p>
+      <Button variant="secondary-outlined" onClick={onRetry}>
+        {HERO_COPY.retry}
+      </Button>
     </div>
   );
 }
@@ -143,13 +170,19 @@ function MentorHome({ member }: { member: Member }) {
       ? { label: next.action.label, href: next.action.href }
       : { label: next.action.label, onClick: () => copyShareLink(shareUrl) };
 
+  const stage = dash.stage;
+  const subline =
+    stage === 'active'
+      ? DASHBOARD_SUBLINE.active
+      : stage === 'firstBooked'
+        ? DASHBOARD_SUBLINE.firstBooked
+        : DASHBOARD_SUBLINE.new;
+
   return (
     <>
       <DashboardHeader
         name={d.firstName}
-        subline={
-          d.isNew ? 'Let’s get your first session booked.' : 'Here’s how your mentoring is going.'
-        }
+        subline={subline}
         shareUrl={d.shareUrl}
         shareName={d.shareName}
       />
@@ -161,7 +194,9 @@ function MentorHome({ member }: { member: Member }) {
           onReconnect={reconnect.reconnect}
         />
       )}
-      {d.isNew && d.setup.next ? (
+      {/* A new mentor with steps left sees the banner, above the hero when
+          they're bookable (PRD Mentor Home). */}
+      {d.isNew && d.setup.next && (
         <SetupBanner
           doneCount={d.setup.doneCount}
           total={d.setup.total}
@@ -169,26 +204,43 @@ function MentorHome({ member }: { member: Member }) {
           nextTitle={inSentence(d.setup.next.title)}
           action={toAction(d.setup.next, d.shareUrl)}
         />
-      ) : (
-        <>
-          {/* Active mentor: the KPI strip above the next session (design order).
-              A new mentor who has finished setup sees only the next-session
-              interim (no KPIs — they would all read zero) until the hero ships. */}
-          {!d.isNew && dash.metrics && <KpiGrid kpis={dash.metrics} />}
-          <NextSessionCard
-            isLoading={dash.nextSession.isLoading}
-            error={dash.nextSession.error}
-            onRetry={dash.nextSession.retry}
-            booking={dash.nextSession.data}
+      )}
+      {
+        stage === 'firstBooked' || stage === 'noBookings' ? (
+          <NewMentorHero
+            stage={stage}
+            mentorId={member.id}
             timeZone={accountZone}
+            profileHref={d.profileHref}
+            approvedAt={d.approvedAt}
+            nextSession={dash.nextSession}
+            upcomingCount={dash.upcomingCount}
             now={now}
           />
-          {/* Active mentor: the performance chart beside the session-quality
-              panel (Mentor Dashboard v2.dc.html, notNew branch — a wrapping flex
+        ) : stage === null ? (
+          // Bookable, and the upcoming sessions that pick the hero aren't in yet.
+          dash.nextSession.error ? (
+            <HeroError onRetry={dash.nextSession.retry} />
+          ) : (
+            <HeroLoading />
+          )
+        ) : stage === 'active' ? (
+          <>
+            {/* The KPI strip above the next session (design order). */}
+            {dash.metrics && <KpiGrid kpis={dash.metrics} />}
+            <NextSessionCard
+              isLoading={dash.nextSession.isLoading}
+              error={dash.nextSession.error}
+              onRetry={dash.nextSession.retry}
+              booking={dash.nextSession.data}
+              timeZone={accountZone}
+              now={now}
+            />
+            {/* The performance chart beside the session-quality panel
+              (Mentor Dashboard v2.dc.html, notNew branch — a wrapping flex
               row that stacks below ~840px). Each keeps its own fetch and four
               states, so a blip in one never holds up the other. min-width:0 on
               the chart column lets the chart shrink rather than scroll the page. */}
-          {!d.isNew && (
             <div className={styles.perfRow}>
               <div className={styles.perfChartCol}>
                 <PerformanceSection userId={member.id} onRangeChange={setChartRange} />
@@ -202,9 +254,9 @@ function MentorHome({ member }: { member: Member }) {
                 />
               </div>
             </div>
-          )}
-        </>
-      )}
+          </>
+        ) : null /* notReady: the header and the setup banner only. */
+      }
       <LiveRegion message={announce} />
     </>
   );
@@ -213,8 +265,9 @@ function MentorHome({ member }: { member: Member }) {
 /**
  * Mentor Dashboard (home), the route every mentor lands on (homeFor →
  * /dashboard). Only mentors belong here; anyone else is bounced to '/', which
- * routes them to their own home. PR A ships the frame + activation setup banner
- * + next-session card; the activation hero and metrics follow.
+ * routes them to their own home. The view follows the mentor's stage
+ * (mentorStage): the active dashboard, the new-mentor hero, or, for a mentor
+ * who isn't bookable yet, the header and setup banner alone.
  */
 export function DashboardScreen() {
   const { viewer, member, chrome } = useAppShell();
