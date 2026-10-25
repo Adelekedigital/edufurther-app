@@ -123,6 +123,7 @@ export function toOwnSessionType(r: OwnSessionTypeRead): OwnSessionType {
       r.booking_window_days == null &&
       r.break_after_minutes == null,
     stages: stagesOf(r),
+    isStarter: r.is_starter ?? false,
     topics,
     iconChoice: r.icon ?? null,
     icon: r.icon ?? autoIcon(topics.map((t) => t.code)),

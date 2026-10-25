@@ -10,7 +10,13 @@ import {
   type Draft,
 } from '@/lib/utils/sessionTypeDraft';
 import { BOOKING_COPY, approvalShort } from '@/lib/copy/mentorSettings';
-import { DETAILS_COPY, REVIEW_COPY, RULES_COPY, venueLabel } from '@/lib/copy/sessionTypes';
+import {
+  DETAILS_COPY,
+  REVIEW_COPY,
+  RULES_COPY,
+  STARTER_COPY,
+  venueLabel,
+} from '@/lib/copy/sessionTypes';
 import { bookingRulesSummary } from '@/lib/utils/calendar';
 import type { Topic } from '@/types/mentor';
 import type { Defaults } from './SchedulingStep';
@@ -92,7 +98,7 @@ export function ReviewStep({
             d.questions.length
               ? d.questions.map((q, i) => ({
                   k: `${i + 1}. ${QUESTION_KIND_LABELS[q.kind]}`,
-                  v: `${q.text}${q.required ? '' : ' (optional)'}${q.options.length ? ` · ${q.options.join(', ')}` : ''}`,
+                  v: `${q.text}${q.required ? '' : ' (optional)'}${q.synced ? STARTER_COPY.syncedReview : q.options.length ? ` · ${q.options.join(', ')}` : ''}`,
                 }))
               : [{ k: 'Questions', v: REVIEW_COPY.none }]
           }

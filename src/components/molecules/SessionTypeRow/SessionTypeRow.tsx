@@ -2,7 +2,7 @@ import { useEffect, useId, useRef } from 'react';
 import { cx } from '@/lib/utils/cx';
 import { formatShortDate } from '@/lib/utils/format';
 import { Badge } from '@/components/atoms/Badge/Badge';
-import { DETAILS_COPY } from '@/lib/copy/sessionTypes';
+import { DETAILS_COPY, STARTER_COPY } from '@/lib/copy/sessionTypes';
 import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Switch } from '@/components/atoms/Switch/Switch';
@@ -130,6 +130,8 @@ export function SessionTypeRow({
               Featured
             </Badge>
           )}
+          {/* After the badges, as drawn (design `starter`). */}
+          {t.isStarter && <span className={styles.starter}>{STARTER_COPY.createdForYou}</span>}
         </div>
         {t.description && <p className={styles.description}>{t.description}</p>}
         {pending && (

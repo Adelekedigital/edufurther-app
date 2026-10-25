@@ -36,8 +36,10 @@ export type DraftQuestion = {
   text: string;
   kind: QuestionKind;
   required: boolean;
-  /** Choice questions only: 2–10 options. */
+  /** Choice questions only: 2–10 options. A synced one's are the mentor's help areas, as read. */
   options: string[];
+  /** Options come from the mentor's help areas (backend #540): single choice, none of its own. */
+  synced?: boolean;
 };
 
 /** Minutes since midnight: [start, end). */
@@ -304,9 +306,12 @@ export function validateStep(d: Draft, step: 1 | 2 | 3, minLength = 0): FieldErr
 }
 
 /** A question the editor can save: text, and 2+ distinct options for a choice. */
-export function questionError(q: Pick<DraftQuestion, 'text' | 'kind' | 'options'>): string | null {
+export function questionError(
+  q: Pick<DraftQuestion, 'text' | 'kind' | 'options' | 'synced'>,
+): string | null {
   if (!q.text.trim()) return 'Write the question.';
-  if (q.kind === 'single' || q.kind === 'multi') {
+  // A synced question's options are the help areas, however many: nothing to check.
+  if (!q.synced && (q.kind === 'single' || q.kind === 'multi')) {
     const opts = q.options.map((o) => o.trim()).filter(Boolean);
     if (opts.length < 2) return 'Add at least two options.';
     if (opts.length > OPTION_MAX) return `Use at most ${OPTION_MAX} options.`;
@@ -374,6 +379,16 @@ export function toCreateBody(d: Draft, offeringIds: Record<string, string>) {
 /** One question as the API takes it (create, or a new one on edit). */
 export function toQuestionWrite(q: DraftQuestion, i: number) {
   const choice = q.kind === 'single' || q.kind === 'multi';
+  // Its options are the help areas, filled on every read: none are sent (backend #540).
+  if (q.synced)
+    return {
+      question_text: q.text.trim(),
+      question_type: 'multi_choice' as const,
+      is_required: q.required,
+      display_order: i,
+      allows_multiple: q.kind === 'multi',
+      options_source: 'help_areas' as const,
+    };
   return {
     question_text: q.text.trim(),
     question_type: choice ? ('multi_choice' as const) : (q.kind as 'free_text' | 'file_upload'),

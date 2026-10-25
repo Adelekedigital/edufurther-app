@@ -3,6 +3,7 @@
 import { useId, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
+import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { Input } from '@/components/atoms/Input/Input';
@@ -10,7 +11,7 @@ import { Switch } from '@/components/atoms/Switch/Switch';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { QuestionRow } from '@/components/molecules/QuestionRow/QuestionRow';
 import { SegmentedControl } from '@/components/molecules/SegmentedControl/SegmentedControl';
-import { QUESTIONS_COPY } from '@/lib/copy/sessionTypes';
+import { QUESTIONS_COPY, STARTER_COPY } from '@/lib/copy/sessionTypes';
 import { cx } from '@/lib/utils/cx';
 import {
   MAX_QUESTIONS,
@@ -33,11 +34,19 @@ export const KIND_ICON: Record<QuestionKind, IconName> = {
 };
 const KINDS: QuestionKind[] = ['free_text', 'single', 'multi', 'file_upload'];
 
-type Editor = { text: string; kind: QuestionKind; required: boolean; options: string };
+type Editor = {
+  text: string;
+  kind: QuestionKind;
+  required: boolean;
+  options: string;
+  /** Editing a synced question: its help areas, shown, not edited. */
+  synced?: string[];
+};
 const emptyEditor = (): Editor => ({ text: '', kind: 'free_text', required: false, options: '' });
 
 /** "Short answer · Required", "Single choice (Yes, No) · Optional". */
 export function questionMeta(q: DraftQuestion): string {
+  if (q.synced) return STARTER_COPY.syncedMeta(QUESTION_KIND_LABELS[q.kind], q.required);
   const opts = q.kind === 'single' || q.kind === 'multi' ? ` (${q.options.join(', ')})` : '';
   return `${QUESTION_KIND_LABELS[q.kind]}${opts} · ${q.required ? 'Required' : 'Optional'}`;
 }
@@ -69,8 +78,10 @@ export function IntakeQuestionsStep({
   const qs = d.questions;
   const found = editingKey === null ? -1 : qs.findIndex((x) => x.key === editingKey);
   const editing = found >= 0 ? found : null;
-  const choice = q.kind === 'single' || q.kind === 'multi';
-  const editorError = tried ? questionError({ ...q, options: parseOptions(q.options) }) : null;
+  const choice = !q.synced && (q.kind === 'single' || q.kind === 'multi');
+  const editorError = tried
+    ? questionError({ ...q, options: parseOptions(q.options), synced: !!q.synced })
+    : null;
   // The question's own error shows on it; any other is about a choice question's options.
   const questionErr = editorError && !q.text.trim() ? editorError : null;
   const optionsErr = editorError && !questionErr ? editorError : null;
@@ -95,18 +106,22 @@ export function IntakeQuestionsStep({
   };
   const save = () => {
     setTried(true);
-    const options = choice ? parseOptions(q.options) : [];
-    const error = questionError({ ...q, options });
+    const options = q.synced ?? (choice ? parseOptions(q.options) : []);
+    const error = questionError({ ...q, options, synced: !!q.synced });
     if (error) {
       setSaid((was) => ({ text: error, id: (was?.id ?? 0) + 1 }));
       return;
     }
     const item: DraftQuestion = {
       key: editing === null ? newKey() : editingKey!,
+      // A saved question keeps its id: without it the edit screen deleted it
+      // and added a new one, cutting it from the answers bookings gave it.
+      ...(editing !== null && qs[editing]?.id ? { id: qs[editing]!.id } : {}),
       text: q.text.trim(),
       kind: q.kind,
       required: q.required,
       options,
+      ...(q.synced ? { synced: true } : {}),
     };
     update({
       questions: editing === null ? [...qs, item] : qs.map((x, i) => (i === editing ? item : x)),
@@ -116,7 +131,13 @@ export function IntakeQuestionsStep({
   const startEdit = (i: number) => {
     const x = qs[i]!;
     setEditingKey(x.key);
-    setQ({ text: x.text, kind: x.kind, required: x.required, options: x.options.join(', ') });
+    setQ({
+      text: x.text,
+      kind: x.kind,
+      required: x.required,
+      options: x.options.join(', '),
+      ...(x.synced ? { synced: x.options } : {}),
+    });
     setTried(false);
   };
   const showEditor = editing !== null || qs.length < MAX_QUESTIONS;
@@ -137,6 +158,13 @@ export function IntakeQuestionsStep({
               num={i + 1}
               text={x.text}
               meta={questionMeta(x)}
+              note={
+                x.synced ? (
+                  <>
+                    {STARTER_COPY.syncedLine(x.options)} <SettingsLink />.
+                  </>
+                ) : undefined
+              }
               icon={KIND_ICON[x.kind]}
               editing={editing === i}
               error={errors[`question-${i}`]}
@@ -189,17 +217,20 @@ export function IntakeQuestionsStep({
             </span>
           </div>
           <div className={styles.editorRow}>
-            <SegmentedControl
-              label="Answer type"
-              layout="hug"
-              value={q.kind}
-              onChange={(kind) => setQ({ ...q, kind })}
-              options={KINDS.map((k) => ({
-                value: k,
-                label: QUESTION_KIND_LABELS[k],
-                icon: KIND_ICON[k],
-              }))}
-            />
+            {/* A synced question is a single choice from the help areas: no type to pick. */}
+            {!q.synced && (
+              <SegmentedControl
+                label="Answer type"
+                layout="hug"
+                value={q.kind}
+                onChange={(kind) => setQ({ ...q, kind })}
+                options={KINDS.map((k) => ({
+                  value: k,
+                  label: QUESTION_KIND_LABELS[k],
+                  icon: KIND_ICON[k],
+                }))}
+              />
+            )}
             <span className={styles.required}>
               <Switch
                 checked={q.required}
@@ -232,6 +263,11 @@ export function IntakeQuestionsStep({
           {questionErr && (
             <p id={questionErrId} className={styles.fieldError}>
               {questionErr}
+            </p>
+          )}
+          {q.synced && (
+            <p className={styles.syncedNote}>
+              {STARTER_COPY.syncedEditor(q.synced)} <SettingsLink />.
             </p>
           )}
           {choice && (
@@ -282,5 +318,16 @@ export function IntakeQuestionsStep({
       </Notice>
       <LiveRegion message={said} />
     </div>
+  );
+}
+
+/** Settings › Expertise, in a new tab: leaving would drop the session being edited. */
+function SettingsLink() {
+  return (
+    <ExternalLink
+      href={STARTER_COPY.settingsHref}
+      label={STARTER_COPY.settings}
+      className={styles.hintLink}
+    />
   );
 }

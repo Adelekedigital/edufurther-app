@@ -32,3 +32,24 @@ describe('CoreDetailsStep: "Best for mentees who are…"', () => {
     expect(update).toHaveBeenCalledWith({ stages: ['exploring'] });
   });
 });
+
+describe('CoreDetailsStep: the Intro chat’s topics', () => {
+  it('while they are the ones it was made with, the hint says they were preselected', () => {
+    const { rerender } = render(
+      <CoreDetailsStep
+        draft={blankDraft()}
+        update={vi.fn()}
+        errors={{}}
+        topics={[]}
+        topicsPreselected
+      />,
+    );
+    expect(
+      screen.getByText(
+        'Pick up to 3 of your help areas. Mentees filter by these on Explore. Preselected from your areas of expertise.',
+      ),
+    ).toBeInTheDocument();
+    rerender(<CoreDetailsStep draft={blankDraft()} update={vi.fn()} errors={{}} topics={[]} />);
+    expect(screen.queryByText(/Preselected/)).toBeNull();
+  });
+});

@@ -178,6 +178,33 @@ describe('useSaveMentorStep: education', () => {
 });
 
 describe('useSaveMentorStep: hours', () => {
+  it('makes the Intro chat as the starter, with its two questions, one synced to the help areas (backend PR 540)', async () => {
+    const { result } = renderHook(() => useSaveMentorStep('u1'), { wrapper });
+    await result.current.save('hours', answers(), state);
+    const call = POST.mock.calls.find(([p]) => p === '/api/v1/me/session-types');
+    expect((call?.[1] as { body: unknown }).body).toMatchObject({
+      name: 'Intro chat',
+      is_starter: true,
+      application_stages: ['exploring'],
+      questions: [
+        {
+          question_text: 'What would you like to talk about?',
+          question_type: 'free_text',
+          is_required: false,
+        },
+        {
+          question_text: 'Which area do you need help with most?',
+          question_type: 'multi_choice',
+          allows_multiple: false,
+          is_required: true,
+          options_source: 'help_areas',
+        },
+      ],
+    });
+    const second = (call?.[1] as { body: { questions: object[] } }).body.questions[1]!;
+    expect(second).not.toHaveProperty('options');
+  });
+
   const introKey = () => {
     const call = POST.mock.calls.find(([p]) => p === '/api/v1/me/session-types');
     return (call?.[1] as { params: { header: Record<string, string> } }).params.header[
@@ -211,6 +238,25 @@ describe('useSaveMentorStep: hours', () => {
     const { result } = renderHook(() => useSaveMentorStep('u1'), { wrapper });
     await result.current.save('hours', answers(), state);
     expect(POST.mock.calls.some(([p]) => p === '/api/v1/me/session-types')).toBe(false);
+  });
+
+  it('a renamed starter still counts as the Intro chat: none is made (local review)', async () => {
+    GET.mockImplementation((path: string) =>
+      path === '/api/v1/me/session-types'
+        ? ok(200, { data: [{ name: 'First chat', is_starter: true }] })
+        : ok(200, {}),
+    );
+    const { result } = renderHook(() => useSaveMentorStep('u1'), { wrapper });
+    await result.current.save('hours', answers(), state);
+    expect(POST.mock.calls.some(([p]) => p === '/api/v1/me/session-types')).toBe(false);
+  });
+
+  it('a 409 (a starter is already there) doesn’t fail the step (local review)', async () => {
+    POST.mockImplementation((path: string) =>
+      path === '/api/v1/me/session-types' ? fail(409) : ok(200, {}),
+    );
+    const { result } = renderHook(() => useSaveMentorStep('u1'), { wrapper });
+    await expect(result.current.save('hours', answers(), state)).resolves.not.toThrow();
   });
 
   it('builds the key from the user and the attempt', () => {

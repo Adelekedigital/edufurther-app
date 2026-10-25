@@ -115,6 +115,7 @@ describe('toSessionType', () => {
       next_available_state: 'refreshing' as const,
     };
     const t = toSessionType({
+      is_starter: false,
       id: 'st',
       name: 'CV review',
       description: null,
@@ -154,6 +155,7 @@ describe('intake questions (backend #268, #12, #282)', () => {
 
   it('maps every kind, in display order', () => {
     const t = toSessionType({
+      is_starter: false,
       id: 'st',
       name: 'CV review',
       booking_window_days: 56,

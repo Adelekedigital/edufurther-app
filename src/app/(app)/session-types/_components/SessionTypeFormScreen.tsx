@@ -203,6 +203,10 @@ export function SessionTypeFormScreen({
             }
             onRetryWeekly={weekly.retry}
             defaultVideo={defaultVideo}
+            topicsPreselected={
+              !!edit?.saved.read.is_starter &&
+              [...d.draft.topics].sort().join() === [...d.initial.topics].sort().join()
+            }
             videoFailed={!!video.error && !video.data}
             onRetryVideo={video.retry}
             onStep={steps.goTo}

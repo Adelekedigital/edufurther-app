@@ -46,6 +46,7 @@ describe('toOwnSessionType', () => {
       usesOwnWindows: false,
       usesDefaultRules: false,
       stages: [],
+      isStarter: false,
       topics: [{ code: 'document-preparation', label: 'Document preparation' }],
       icon: 'edit_document',
       iconChoice: null,
@@ -240,5 +241,12 @@ describe('refreshLimitsOnRefusal: past the limit, the limit and the list reload'
     expect(spy).not.toHaveBeenCalled();
     refreshLimitsOnRefusal(qc, { status: 422 });
     expect(spy.mock.calls.map((c) => c[0]?.queryKey)).toEqual([['mentorDefaults']]);
+  });
+});
+
+describe('toOwnSessionType: the starter (backend PR 540)', () => {
+  it('the Intro chat onboarding made is the starter; absent is not', () => {
+    expect(toOwnSessionType(own({ is_starter: true })).isStarter).toBe(true);
+    expect(toOwnSessionType(own({ is_starter: false })).isStarter).toBe(false);
   });
 });

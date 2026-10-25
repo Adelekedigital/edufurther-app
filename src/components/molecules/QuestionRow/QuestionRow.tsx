@@ -1,4 +1,4 @@
-import type { DragEvent } from 'react';
+import type { DragEvent, ReactNode } from 'react';
 import { cx } from '@/lib/utils/cx';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
@@ -11,6 +11,8 @@ type QuestionRowProps = {
   text: string;
   /** "Short answer · Required", "Single choice (Yes, No) · Optional". */
   meta: string;
+  /** A line under the meta (a synced question's options and where they change). */
+  note?: ReactNode;
   icon: IconName;
   /** Being edited in the editor below: drawn on blue. */
   editing?: boolean;
@@ -41,6 +43,7 @@ export function QuestionRow({
   num,
   text,
   meta,
+  note,
   icon,
   editing,
   error,
@@ -81,6 +84,7 @@ export function QuestionRow({
           {text}
         </span>
         <span className={styles.meta}>{meta}</span>
+        {note && <span className={styles.meta}>{note}</span>}
         {error && (
           <span className={styles.error}>
             <Icon name="error" size={14} />

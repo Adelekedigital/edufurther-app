@@ -77,6 +77,14 @@
   font-size: var(--text-p-xs);
   color: var(--ink-500);
 }
+/* On the editing row's --blue-50, ink-500 is 4.28:1: secondary text there is
+   --ink-600 (design decision, every blue-50 surface), a link --blue-700. */
+.editing .meta {
+  color: var(--ink-600);
+}
+.editing .meta a {
+  color: var(--blue-700);
+}
 @media (max-width: 767px) {
   .row {
     flex-wrap: wrap;

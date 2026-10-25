@@ -209,3 +209,35 @@ describe('a different option in the same place (review r2 of #67)', () => {
       expect(isRename(x!, y!)).toBe(false);
   });
 });
+
+describe('planQuestions: a synced question (backend PR 540)', () => {
+  const saved: SavedQuestion = {
+    id: 'q2',
+    text: 'Which area do you need help with most?',
+    kind: 'single',
+    required: true,
+    options: [{ id: 'o-docs', text: 'Document preparation' }],
+    synced: true,
+  };
+  const draftQ = {
+    key: 'q2',
+    id: 'q2',
+    text: saved.text,
+    kind: 'single' as const,
+    required: true,
+    options: ['Document preparation'],
+    synced: true,
+  };
+  it('untouched: nothing to send', () => {
+    expect(planQuestions([draftQ], [saved]).update).toEqual([]);
+  });
+  it('its words and required go; never its options, type or source (the API refuses them)', () => {
+    const plan = planQuestions(
+      [{ ...draftQ, text: 'Where do you need help most?', required: false }],
+      [saved],
+    );
+    expect(plan.update).toEqual([
+      { id: 'q2', body: { question_text: 'Where do you need help most?', is_required: false } },
+    ]);
+  });
+});

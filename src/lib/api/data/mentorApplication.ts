@@ -33,6 +33,7 @@ import { keys } from './keys';
 import { useTopics } from './mentors';
 import { aboutBody } from './profileEdit';
 import type { SessionTypeWriteBody } from './sessionTypes';
+import { STARTER_COPY } from '@/lib/copy/sessionTypes';
 import { toWeeklyHours, useSaveWeeklyHours, useWeeklyHours, type WeeklyHours } from './weeklyHours';
 
 type Me = components['schemas']['UserRead'];
@@ -376,12 +377,17 @@ const newAttempt = () =>
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-/** Whether the mentor already has an Intro chat; no profile yet (404) means none. */
+/**
+ * Whether the mentor already has an Intro chat: the starter (it may have been
+ * renamed), or one by its name. No profile yet (404) means none.
+ */
 async function hasIntroChat(): Promise<boolean> {
   const { data, error, response } = await api.GET('/api/v1/me/session-types');
   if (response.status === 404) return false;
   if (!data) throw apiError(response.status, error, response);
-  return data.data.some((t) => t.name.trim().toLowerCase() === INTRO_CHAT.toLowerCase());
+  return data.data.some(
+    (t) => t.is_starter || t.name.trim().toLowerCase() === INTRO_CHAT.toLowerCase(),
+  );
 }
 
 /** The owner's saved degrees, fresh: a stale cache would re-add or delete what a retry just made. */
@@ -517,8 +523,29 @@ export function useSaveMentorStep(userId: string | null) {
                 duration_minutes: 30,
                 description: introDescription(labels),
                 service_offering_ids: answers.helpIds,
+                // "Created for you", and its help-area question in sync (backend #540).
+                is_starter: true,
+                application_stages: ['exploring'],
+                questions: [
+                  {
+                    question_text: STARTER_COPY.talkAbout,
+                    question_type: 'free_text',
+                    is_required: false,
+                    display_order: 0,
+                  },
+                  {
+                    question_text: STARTER_COPY.helpArea,
+                    question_type: 'multi_choice',
+                    allows_multiple: false,
+                    is_required: true,
+                    display_order: 1,
+                    options_source: 'help_areas',
+                  },
+                ],
               } as SessionTypeWriteBody,
             }),
+            // One starter per mentor (backend PR 540): a 409 means it's already there.
+            409,
           );
         }
       }
