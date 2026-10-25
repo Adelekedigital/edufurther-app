@@ -118,6 +118,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       topic: o.topic === undefined ? null : o.topic,
       booking_message: o.message ?? null,
       meeting_provider: o.provider ?? 'daily',
+      // Backend #532: whether the viewer sent a missed reason; none in this mock.
+      missed_reason_sent: false,
       meeting_url: null,
       respond_by: o.respondBy === undefined ? null : o.respondBy,
       join_opens_at: status === 'confirmed' ? minutesFrom(starts, -10) : null,

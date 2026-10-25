@@ -38,6 +38,7 @@ const row = (over: Partial<SessionRead> = {}, myJoin: string | null = null): Ses
   mentor_id: 'me',
   mentee_id: 'them',
   mentee_attendance_sessions: 0,
+  missed_reason_sent: false,
   mentor: party('me', myJoin),
   mentee: party('them'),
   session_type_id: 'st1',
