@@ -17,7 +17,7 @@ import {
 import { refundWindowFor } from '@/lib/utils/bookings';
 import { LOBBY_COPY, PREP_COPY } from '@/lib/copy/session';
 import { joinedTime, presenceOf } from '@/lib/utils/presence';
-import { missedTone } from '@/lib/utils/sessionOutcome';
+import { missedTone, missedWaitMin } from '@/lib/utils/sessionOutcome';
 import type { BookingParty, SessionRoom } from '@/types/booking';
 
 type LobbyProps = ComponentProps<typeof SessionLobby>;
@@ -96,9 +96,17 @@ function people(room: SessionRoom, phase: DrawnPhase, timeZone: string): LobbyPr
   if (isSettled(phase)) {
     // Ruled on: what each person's record says (the design's completed and
     // missed rings). `pending` here is no record at all, never "didn't join".
+    // The design's "Joined at 6:01 pm"; on a missed session the one who came
+    // also "waited 15 min" (the row's wait, as the missed card says).
+    const joinedLine = (p: BookingParty): string => {
+      const at = joinedTime(p, room.provider);
+      if (!at) return 'Joined';
+      const line = `Joined at ${formatTime(at, timeZone)}`;
+      return phase === 'missed' ? `${line}, waited ${missedWaitMin(booking)} min` : line;
+    };
     const settled = (p: BookingParty, name: string): LobbyProps['people'][number] =>
       p.attendance === 'attended' || p.attendance === 'leftEarly'
-        ? { person: p, name, presence: 'Joined', tone: 'joined' }
+        ? { person: p, name, presence: joinedLine(p), tone: 'joined' }
         : p.attendance === 'noShow'
           ? { person: p, name, presence: 'Didn’t join', tone: 'absent' }
           : { person: p, name, presence: 'No record', tone: 'away' };

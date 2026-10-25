@@ -42,11 +42,12 @@
   height: 56px;
   font-size: var(--text-p-md);
 }
-/* DS 2xl (Session Join's lobby people). `xxl`: a class can't start with a digit. */
+/* DS 2xl (Session Join's lobby people): 24px initials, as the DS draws them.
+   `xxl`: a class can't start with a digit. */
 .xxl {
   width: 64px;
   height: 64px;
-  font-size: var(--text-p-lg);
+  font-size: var(--text-avatar-2xl);
 }
 
 /* Mentor Settings.dc.html `pvReal`: the card preview's photo. */
@@ -80,7 +81,7 @@
   font-size: 20px;
 }
 .plain.xxl {
-  font-size: 24px;
+  font-size: var(--text-avatar-2xl);
 }
 /* DS Avatar type="icon": a grey person glyph on ink-100. */
 .blank {

@@ -29,19 +29,23 @@
   display: block;
 }
 
-/* 44px tall at every width (the design's tap target since lobbySplit). */
+/* 44px tall at every width (the design's tap target since lobbySplit). Ink,
+   medium weight, its arrow ink-500: as drawn. */
 .back {
   min-height: var(--touch-target-min);
   display: flex;
   align-items: center;
   gap: var(--space-1);
   font-size: var(--text-p-xs);
-  font-weight: var(--weight-semibold);
-  color: var(--blue-500);
+  font-weight: var(--weight-medium);
+  color: var(--ink-700);
   text-decoration: none;
 }
+.back > span[aria-hidden] {
+  color: var(--ink-500);
+}
 .back:hover {
-  color: var(--blue-700);
+  color: var(--ink-900);
 }
 .logo:focus-visible,
 .back:focus-visible {

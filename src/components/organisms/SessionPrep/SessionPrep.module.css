@@ -43,6 +43,11 @@
   justify-content: center;
   color: var(--blue-500);
 }
+/* The phone buttons' discs are quiet (ink-50, ink-600 icon); the guide's stay blue. */
+.button .disc {
+  background: var(--ink-50);
+  color: var(--ink-600);
+}
 .tipText {
   flex: 1;
   min-width: 0;

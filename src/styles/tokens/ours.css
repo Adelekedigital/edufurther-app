@@ -117,6 +117,8 @@
   /* The profile header photo's initials (Mentor Profile.dc.html literals:
      40px on the 112px photo, 26px on the phones' 72px; no DS step). */
   --text-avatar-profile: 40px;
+  /* The DS Avatar 2xl's initials (64px): 24px at every width, no DS step. */
+  --text-avatar-2xl: 24px;
 
   /* Wizard step number (Session Types.dc.html literal 11px; no DS step). */
   --step-dot-text: 11px;
