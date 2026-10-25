@@ -19,8 +19,9 @@ export function useWizardSteps(editing: boolean) {
   // Editing: every step is open (the design's `maxStep: 4`).
   const [reached, setReached] = useState<Step>(editing ? 4 : 1);
   const [errors, setErrors] = useState<FieldErrors>({});
-  // Each Continue that found gaps: moves focus to the first one and repeats the
-  // step's message, even when the gaps are the same as last time.
+  // Each try that found gaps (Continue, or Save on Review sending the mentor
+  // back): focus moves to the first and the step's message repeats, even when
+  // the gaps are the same as last time.
   const [attempt, setAttempt] = useState(0);
 
   const goTo = (n: Step) => {
@@ -31,7 +32,9 @@ export function useWizardSteps(editing: boolean) {
   const showErrors = (e: FieldErrors) => {
     setErrors(e);
     const first = Object.keys(e)[0] as FieldKey | undefined;
-    if (first) goTo(stepOf(first));
+    if (!first) return;
+    setAttempt((n) => n + 1);
+    goTo(stepOf(first));
   };
   /** A field the mentor changes is no longer wrong until they try again. */
   const clearErrorsFor = (patch: Partial<Draft>) =>
@@ -55,8 +58,7 @@ export function useWizardSteps(editing: boolean) {
     if (step < 4) {
       const e = validateStep(draft, step as 1 | 2 | 3, minLength);
       if (Object.keys(e).length) {
-        setErrors(e);
-        setAttempt((n) => n + 1);
+        showErrors(e);
         return false;
       }
       setErrors({});

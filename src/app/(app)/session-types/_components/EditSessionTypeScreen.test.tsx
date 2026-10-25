@@ -71,12 +71,10 @@ vi.mock('@/lib/api/data/sessionTypes', async (orig) => ({
     error: null,
     retry: vi.fn(),
   }),
-  useSaveMentorDefaults: () => ({ save: vi.fn(), isPending: false, error: null, reset: vi.fn() }),
 }));
 vi.mock('@/lib/api/data/weeklyHours', async (orig) => ({
   ...(await orig<typeof import('@/lib/api/data/weeklyHours')>()),
   useWeeklyHours: () => ({ data: null, isLoading: true, error: null, retry: vi.fn() }),
-  useSaveWeeklyHours: () => ({ save: vi.fn(), isPending: false, error: null, reset: vi.fn() }),
 }));
 
 let savedMock: unknown;
@@ -153,6 +151,19 @@ describe('EditSessionTypeScreen', () => {
     expect(dialog).toHaveTextContent('“SOP deep review” is live on your profile.');
     await user.click(within(dialog).getByRole('button', { name: 'Done' }));
     expect(push).toHaveBeenCalledWith('/session-types');
+  });
+
+  it('Save on Review with a blank name goes back to step 1: the message, said, and focus on the name', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<EditSessionTypeScreen id="st1" />);
+    await user.clear(screen.getByRole('textbox', { name: 'Session name' }));
+    await user.click(screen.getByRole('button', { name: /^Review/ }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(save).not.toHaveBeenCalled();
+    const name = screen.getByRole('textbox', { name: 'Session name' });
+    expect(name).toHaveFocus();
+    const status = screen.getAllByRole('status').find((x) => x.className === 'sr-only')!;
+    expect(status).toHaveTextContent('Fill in the required fields to continue.');
   });
 
   it('a partial save says what didn’t save, stays, and Save tries again', async () => {

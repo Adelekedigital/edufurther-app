@@ -1,13 +1,11 @@
 import { SessionPreviewCard } from '@/components/molecules/SessionPreviewCard/SessionPreviewCard';
 import { SummarySection } from '@/components/molecules/SummarySection/SummarySection';
 import {
-  DAY_NAMES,
   QUESTION_KIND_LABELS,
   stagesLabel,
   breakLabel,
   hoursLabel,
   resolveDefaults,
-  timeLabel,
   windowLabel,
   type Draft,
 } from '@/lib/utils/sessionTypeDraft';
@@ -18,21 +16,9 @@ import type { Topic } from '@/types/mentor';
 import type { Defaults } from './SchedulingStep';
 import styles from './SessionTypeWizard.module.css';
 
-/**
- * Weekly hours: "Your weekly availability (Mon–Fri · 9 am–5 pm)" (PRD step 4; the
- * design says "Custom hours for this session" with its own). Own hours list
- * their times: "Wed 5:00 pm–8:00 pm; Sat 9:00 am–10:00 am".
- */
+/** Availability (PRD step 4): the weekly hours with their summary, or the session's own. */
 export function hoursSummary(d: Draft, weekly: string | null): string {
-  if (d.hours === 'default') return REVIEW_COPY.weekly(weekly);
-  const parts = d.days.flatMap((day, i) =>
-    day.on
-      ? [
-          `${DAY_NAMES[i]!.slice(0, 3)} ${day.slots.map(([a, b]) => `${timeLabel(a)}–${timeLabel(b)}`).join(', ')}`,
-        ]
-      : [],
-  );
-  return parts.length ? parts.join('; ') : 'No hours yet';
+  return d.hours === 'default' ? REVIEW_COPY.weekly(weekly) : REVIEW_COPY.ownHours;
 }
 
 type ReviewStepProps = {

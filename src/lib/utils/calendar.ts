@@ -79,13 +79,11 @@ const noticeShort = (hours: number) =>
   noticeLabel(hours).replace(/ hours?$/, (u) => (u === ' hour' ? ' hr' : ' hrs'));
 
 /**
- * Calendar v2 `windowSummary` (copy research), approval first as in the modal:
- * "Confirmed straight away · 60 min · 24 hrs notice · 4 weeks ahead · 15 min buffer".
- */
-/**
- * The mentor's booking rules on one line. Calendar leads with approval;
- * Sessions ends with it, and its Review gives approval a row of its own
- * (Session Types.dc.html, PRD step 3 and 4).
+ * The mentor's booking rules on one line (Calendar v2 `windowSummary`, copy
+ * research): "Confirmed straight away · 60 min · 24 hrs notice · 4 weeks
+ * ahead · 15 min buffer". Calendar leads with approval; Sessions ends with it,
+ * and its Review gives approval a row of its own (Session Types.dc.html, PRD
+ * step 3 and 4).
  */
 export function bookingRulesSummary(
   d: BookingDefaults,

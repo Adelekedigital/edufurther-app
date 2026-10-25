@@ -131,6 +131,7 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
         <div className={styles.stageAdd}>
           <Input
             aria-label="Another stage"
+            data-gap="stage"
             className={styles.stageInput}
             value={stageDraft}
             maxLength={100}

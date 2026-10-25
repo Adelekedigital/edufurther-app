@@ -25,10 +25,6 @@
   background: var(--blue-50);
   color: var(--blue-700);
 }
-.orange-filled {
-  background: var(--orange-500);
-  color: var(--white);
-}
 /* The DS draws orange-700, about 4.3:1 on orange-50 at this size; orange-800
    (about 5.6:1) passes WCAG AA (design-divergence.md). */
 .orange-accent {

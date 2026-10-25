@@ -221,6 +221,9 @@ describe('SessionTypeFormScreen', () => {
       await user.click(next(n));
     expect(screen.getByText('Step 1 of 4 · Define your session')).toBeInTheDocument();
     expect(screen.getByText('You already have a session with this name.')).toBeInTheDocument();
+    // Filled but refused: focus goes to it, and "required fields" would be untrue.
+    expect(screen.getByRole('textbox', { name: 'Session name' })).toHaveFocus();
+    expect(screen.queryByText('Fill in the required fields to continue.')).toBeNull();
   });
 
   it('delete a question confirms first', async () => {

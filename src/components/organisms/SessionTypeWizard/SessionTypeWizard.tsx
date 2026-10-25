@@ -7,7 +7,7 @@ import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { IconPicker } from '@/components/molecules/IconPicker/IconPicker';
 import { WizardSteps } from '@/components/molecules/WizardSteps/WizardSteps';
 import { DETAILS_COPY, SESSIONS_COPY, STEP_COPY, WIZARD_COPY } from '@/lib/copy/sessionTypes';
-import type { Draft, FieldErrors } from '@/lib/utils/sessionTypeDraft';
+import { step1Missing, type Draft, type FieldErrors } from '@/lib/utils/sessionTypeDraft';
 import type { Topic } from '@/types/mentor';
 import type { SessionIcon } from '@/types/sessionType';
 import { CoreDetailsStep } from './CoreDetailsStep';
@@ -23,8 +23,8 @@ import styles from './SessionTypeWizard.module.css';
 
 export type Step = 1 | 2 | 3 | 4;
 
-/** Step 1's required fields, in the order they're drawn: the first gap gets focus. */
-const STEP1_FIELDS = ['name', 'description', 'topics'] as const;
+/** Step 1's fields, in the order they're drawn: the first with an error gets focus. */
+const STEP1_FIELDS = ['name', 'description', 'topics', 'stage'] as const;
 
 /** Session Types.dc.html `stepDefs` (copy research). */
 export const STEPS = STEP_COPY;
@@ -69,8 +69,8 @@ export function SessionTypeWizard(p: SessionTypeWizardProps) {
   const cardRef = useRef<HTMLElement>(null);
   const def = STEPS[p.step - 1]!;
   const next = p.step < 4 ? WIZARD_COPY.continue : p.finishLabel;
-  // Step 1's gaps (design `stepError`): the message stays until they're filled.
-  const step1Gaps = p.step === 1 && STEP1_FIELDS.some((k) => p.errors[k]);
+  // Step 1's blank required fields (design `stepError`): the message stays until they're filled.
+  const step1Gaps = p.step === 1 && step1Missing(p.draft).some((k) => p.errors[k]);
   // A Continue that found gaps: focus the first, in the order they're drawn.
   const { attempt, errors } = p;
   useEffect(() => {
@@ -79,6 +79,7 @@ export function SessionTypeWizard(p: SessionTypeWizardProps) {
     const gap = first && cardRef.current?.querySelector<HTMLElement>(`[data-gap="${first}"]`);
     if (!gap) return;
     // A field takes focus itself; the topics group gives it to its first chip.
+    // `attempt` also rises when Save on Review sends the mentor back here.
     const target = gap.matches('input, textarea')
       ? gap
       : gap.querySelector<HTMLElement>('button:not(:disabled)');

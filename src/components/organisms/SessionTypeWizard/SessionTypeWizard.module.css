@@ -86,7 +86,8 @@
   color: var(--ink-700);
 }
 
-/* Step 1's gaps, at the foot of the card (design `stepError`; actions top: no footer). */
+/* Step 1's gaps, at the foot of the card (design `stepError`; actions top: no footer).
+   red-600 is the markup's, a step darker than the field errors' --text-danger. */
 .stepError {
   display: flex;
   align-items: center;
