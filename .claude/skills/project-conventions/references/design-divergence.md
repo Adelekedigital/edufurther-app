@@ -493,8 +493,8 @@ Source: `Session Join.dc.html`, defaults `layout=lobby`, `provider=edufurther`; 
 
 | Design says | We do | Why | Revisit |
 |---|---|---|---|
-| "Here now" (green ring, pulse) for whoever is in the call | **"Joined"** (green ring, no pulse) for whoever has been in it; no live "Here now" and no pulse anywhere | Nothing we hold says who is in the call right now: Daily's `in_room_at` is the first time it saw them, and leaving doesn't clear it (backend #382). Product, 2026-10-09 | live presence (backend #394) or the embedded call (#191) |
-| EduFurther video: the Join press is the arrival | Joined once Daily has seen them in the room; pressed Join but not seen yet reads **"Joining…"** (ours, provisional) | Daily now reports real presence; a press whose call never connected isn't an arrival | design request |
+| "Here now" (green ring, pulse) for whoever is in the call | **"Joined"** (green ring, no pulse) for whoever has been in it; no live "Here now" and no pulse anywhere | Nothing we hold says who is in the call right now: Daily's `in_room_at` is the first time it saw them, and leaving doesn't clear it (backend #382). Product, 2026-10-09 | live presence (backend #394) or the embedded call (#191) **Superseded 2026-10-25: see "Session Join — live presence" below.** |
+| EduFurther video: the Join press is the arrival | Joined once Daily has seen them in the room; pressed Join but not seen yet reads **"Joining…"** (ours, provisional) | Daily now reports real presence; a press whose call never connected isn't an arrival | design request **Superseded 2026-10-25: see "Session Join — live presence" below.** |
 | Google Meet / a mentor's own link: same as EduFurther video | "Joined" on the Join press | Meet reports no presence (its records need a Google scope the owner has parked, backend #383). Product, 2026-10-09 | #383 |
 | Ended, unsettled: "Joined at 6:01 pm" | The room time for Daily, the press time for Meet; a Daily press never seen in the room reads **"Pressed Join at 6:01 pm"** (ours, provisional) | Settlement may still fill in the room time; a press alone isn't a join | design request |
 | Hint "{name} is in the call." | "{name} has joined." | Same reason: not "in the call now" | #394 **Superseded 2026-10-25: see "Session Join — lobby as drawn" below.** |
@@ -1114,3 +1114,12 @@ Source: the live `Session Join.dc.html` (`layout=lobbySplit`), re-read 2026-10-2
 | Chips, a 3-row note, an outlined Send that stays off until a chip is picked | As drawn (`MissedReasonForm`, from ChoiceChips and the Textarea atom). The note is capped at the backend's 1,000 | Founder chose the design over the handoff's always-on Send | never |
 | Sent: "Thanks. We've shared this with {First}." | "Thanks for letting us know." It survives a reload (`missed_reason_sent`), and a second send's 409 reads as sent | Founder: internal only | the founder shares reasons |
 | (no state) a send that fails | "We couldn't send that. Try again in a moment." under the note; the picks stay | Ours | design confirms |
+### Session Join — live presence (Session Join PRD, backend #394), 2026-10-25
+
+| Design | Build | Why | Revisit |
+|---|---|---|---|
+| "Here now", green ring with the pulse (`efPulseRing` 1.8s) | As drawn, while EduFurther video has them in the room (`in_room`: joined and not left). The viewer's own ring works the same way. The pulse stops under reduced motion | Founder, Oct 21: live presence in, EduFurther video only | never |
+| "Not in the call yet", grey ring, for anyone not in the room | As drawn, for both people, before and during. Replaces "Ready when you are", "Not in the call", "Not here yet" and "Joining…" | Copy pass | never |
+| (no rule) Google Meet | "Joined" from the Join press, as built: Meet reports no presence | PRD | never |
+| (no rule) a row without `in_room` (an older backend) | Daily's room sighting reads "Joined", as before | No "Here now" we can't back | never |
+| (no rule) someone leaves | The ring goes back to grey within one poll (15 s); a screen reader hears "{First} left the call." as it hears "{First} joined." | Ours: the visible change is announced both ways | design confirms |
