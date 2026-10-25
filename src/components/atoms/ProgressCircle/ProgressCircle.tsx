@@ -3,7 +3,7 @@ import { cx } from '@/lib/utils/cx';
 import styles from './ProgressCircle.module.css';
 
 /** The arc's tone. The track stays neutral; only the value arc changes. */
-export type ProgressCircleTone = 'primary' | 'success' | 'danger';
+export type ProgressCircleTone = 'primary' | 'success' | 'warning' | 'danger';
 
 type ProgressCircleProps = {
   /** Progress 0–100; clamped and rounded. A non-finite value renders as 0. */

@@ -54,6 +54,13 @@
   /* Mentor Profile.dc.html literal #fffbef: the gold tile behind award and
      mentoring-time icons (with --yellow-900 glyphs). Not in the DS ramp. */
   --gold-subtle: #fffbef;
+  /* "Needs attention" amber (Mentor Dashboard v2.dc.html, session quality
+     TIER.fair): AMBER_BG #fffbef is --gold-subtle, AMBER_TX is --yellow-900;
+     AMBER_BD and the ring are literals with no DS step. */
+  --attention-bg: var(--gold-subtle);
+  --attention-ink: var(--yellow-900);
+  --attention-border: oklch(0.85 0.09 80);
+  --attention-ring: oklch(0.75 0.14 75);
   /* The DS Notice `warning` ring and icon (_ds_bundle Notice TONES.warning). Not in the DS ramp. */
   --warning-ring: #5f4b02;
   /* The DS Notice copy: 12/18px (Notice.jsx), so 1.5, not --lh-p's 1.45. */

@@ -9,9 +9,27 @@
   border-radius: var(--radius-xl);
   background: var(--surface-card);
 }
-/* At-risk: the card's edge turns red to match the badge and banner. */
-.cardRisk {
+/* Below On track the card's edge takes the tier colour (design TIER.border). */
+.cardFair {
+  border-color: var(--attention-border);
+}
+.cardLow {
   border-color: var(--red-300);
+}
+
+/* Tier grounds, shared by the teaser and the warning block
+   (design TIER.alertBg). */
+.groundGood {
+  background: var(--green-50);
+}
+.groundFair {
+  background: var(--attention-bg);
+}
+.groundLow {
+  background: var(--red-50);
+}
+.tierIcon {
+  flex: none;
 }
 
 .title {
@@ -95,16 +113,21 @@
   font-weight: var(--weight-semibold);
   color: var(--ink-900);
 }
-.rowValueMissed {
-  color: var(--red-500);
-}
 .iconHeld {
   color: var(--green-600);
 }
 .iconMuted {
   color: var(--ink-500);
 }
-.iconMissed {
+/* Tier glyph and miss colours (design TIER.alertIcon). After .rowValue, so a
+   missed count takes the tier colour over the row's ink. */
+.toneGood {
+  color: var(--green-700);
+}
+.toneFair {
+  color: var(--attention-ink);
+}
+.toneLow {
   color: var(--red-500);
 }
 
@@ -121,7 +144,7 @@
   gap: var(--space-4);
 }
 
-/* Compact headline: a one-line summary, tinted on the same good/at-risk state. */
+/* Compact headline: a one-line summary, tinted by tier. */
 .teaser {
   display: flex;
   align-items: center;
@@ -129,22 +152,8 @@
   padding: var(--space-3);
   border-radius: var(--radius-md);
 }
-.teaserGood {
-  background: var(--green-50);
-}
-.teaserRisk {
-  background: var(--red-50);
-}
-.teaserIconGood {
-  flex: none;
-  color: var(--green-700);
-}
-.teaserIconRisk {
-  flex: none;
-  color: var(--red-500);
-}
 .teaserText {
-  font-size: var(--text-p-sm);
+  font-size: var(--text-p-xs);
   font-weight: var(--weight-semibold);
   color: var(--ink-900);
 }
@@ -290,19 +299,41 @@
   border-radius: var(--radius-sm);
 }
 
-/* State banner — one of two, below the reviews. */
-.bannerRisk {
+/* Warning block under Needs attention and At risk (design `q.low` alert): the
+   glyph and copy, then the actions indented to the copy's edge. */
+.alert {
   display: flex;
+  flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-4);
-  background: var(--red-50);
-  border: 1px solid var(--red-300);
+  padding: var(--space-3);
+  border: var(--border-hairline) solid transparent;
   border-radius: var(--radius-md);
 }
-.bannerIconRisk {
-  flex: none;
-  color: var(--red-500);
+.alertBorderFair {
+  border-color: var(--attention-border);
 }
+.alertBorderLow {
+  border-color: var(--red-300);
+}
+.alertHead {
+  display: flex;
+  gap: var(--space-2);
+}
+.alertBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.alertActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  /* The 20px glyph plus its gap, so the actions line up with the copy. */
+  padding-left: calc(var(--space-5) + var(--space-2));
+}
+
+/* On-track banner, below the reviews. */
 .bannerBody {
   display: flex;
   flex-direction: column;
@@ -319,13 +350,6 @@
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
   color: var(--ink-700);
-}
-.bannerActions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-1);
 }
 .bannerGood {
   display: flex;

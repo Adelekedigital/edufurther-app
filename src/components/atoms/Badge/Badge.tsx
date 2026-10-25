@@ -16,6 +16,14 @@ type BadgeProps = (
       type: 'accent';
       color: 'orange';
     }
+  | {
+      /**
+       * Amber, accent only: "Needs attention" (Mentor Dashboard v2.dc.html, the
+       * session-quality fair tier). The design draws no filled amber badge.
+       */
+      type: 'accent';
+      color: 'warning';
+    }
 ) & {
   /** sm 10px caption / md 12px. */
   size?: 'sm' | 'md';

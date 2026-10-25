@@ -1,9 +1,15 @@
+import { useState, type ReactNode } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import type { Booking } from '@/types/booking';
 import type { Kpi } from '@/lib/api/data/dashboard';
+import { keys } from '@/lib/api/data/keys';
+import type { StatBlock, WindowStats } from '@/lib/api/data/mentorStats';
+import type { ReviewQuote } from '@/lib/api/data/myReviews';
 import { DashboardHeader } from './DashboardHeader';
 import { KpiGrid } from './KpiGrid';
 import { NextSessionCard } from './NextSessionCard';
+import { SessionQuality } from './SessionQuality';
 import { SetupBanner } from './SetupBanner';
 
 /** The Mentor Dashboard sections, each rendered in isolation across its states. */
@@ -123,3 +129,79 @@ export const Kpis: Story = {
     </div>
   ),
 };
+
+// ---- Session quality: the three tiers ----------------------------------------
+// The card fetches its own figures, so each story seeds a fresh query cache
+// (never stale, never refetched) with the window it would have read.
+
+const qualityBlock = (over: Partial<StatBlock>): StatBlock => ({
+  since: '2026-07-27T00:00:00Z',
+  until: '2026-10-25T00:00:00Z',
+  completedSessions: 16,
+  mentoringMinutes: 960,
+  menteesMentored: 9,
+  attendanceRate: 94,
+  missedByMentor: 0,
+  menteesLeftWaiting: 0,
+  missedByMentee: 0,
+  cancelledByMentor: 1,
+  reviewCount: 12,
+  averageRating: 4.8,
+  ...over,
+});
+
+const qualityQuote: ReviewQuote = {
+  quote: 'Clear, practical feedback on my SOP. I left knowing exactly what to fix.',
+  by: 'Pulane L. · Statement of Purpose Review',
+};
+
+function SeededQuality({ current, children }: { current: Partial<StatBlock>; children: ReactNode }) {
+  const [client] = useState(() => {
+    const qc = new QueryClient({
+      defaultOptions: { queries: { staleTime: Infinity, retry: false, refetchOnMount: false } },
+    });
+    const stats: WindowStats = {
+      windowDays: 90,
+      year: null,
+      currentStreak: 6,
+      current: qualityBlock(current),
+      previous: qualityBlock({ attendanceRate: 70 }),
+    };
+    qc.setQueryData(keys.mentorStats.window('u1', 90), stats);
+    qc.setQueryData(keys.myReviews.quote('u1'), qualityQuote);
+    return qc;
+  });
+  return (
+    <QueryClientProvider client={client}>
+      <div style={{ maxWidth: 420 }}>{children}</div>
+    </QueryClientProvider>
+  );
+}
+
+const qualityStory = (current: Partial<StatBlock>): Story => ({
+  render: () => (
+    <SeededQuality current={current}>
+      <SessionQuality userId="u1" profileHref="/mentors/gbenga" />
+    </SeededQuality>
+  ),
+});
+
+/** 80 and up: "On track", green ring, the streak teaser. */
+export const QualityOnTrack = qualityStory({ attendanceRate: 94 });
+/** 50 to 79: "Needs attention", amber ring, badge and card border. */
+export const QualityNeedsAttention = qualityStory({
+  attendanceRate: 67,
+  completedSessions: 8,
+  missedByMentor: 3,
+  menteesLeftWaiting: 3,
+});
+/** Below 50: "At risk", red ring, badge and card border. */
+export const QualityAtRisk = qualityStory({
+  attendanceRate: 33,
+  completedSessions: 2,
+  missedByMentor: 4,
+  menteesLeftWaiting: 4,
+  cancelledByMentor: 0,
+  averageRating: 3.6,
+  reviewCount: 3,
+});

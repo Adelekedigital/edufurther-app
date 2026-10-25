@@ -137,7 +137,7 @@ describe('SessionQuality', () => {
   });
 
   it('uses a differently-worded disclosure when at risk', () => {
-    data = windowStats({ attendanceRate: 60, missedByMentor: 5, menteesLeftWaiting: 3 });
+    data = windowStats({ attendanceRate: 40, missedByMentor: 5, menteesLeftWaiting: 3 });
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
     expect(screen.getByText('At risk')).toBeInTheDocument();
     // The at-risk teaser headlines the honest "left waiting" count, not missed-by-you.
@@ -180,7 +180,7 @@ describe('SessionQuality', () => {
 
   it('renders the at-risk expanded banner and its two actions', async () => {
     data = windowStats({
-      attendanceRate: 60,
+      attendanceRate: 40,
       missedByMentor: 5,
       menteesLeftWaiting: 3,
       completedSessions: 9,
@@ -194,8 +194,13 @@ describe('SessionQuality', () => {
     );
     expect(screen.getByRole('link', { name: 'See missed sessions' })).toHaveAttribute(
       'href',
-      '/bookings',
+      '/bookings?tab=history',
     );
+    expect(
+      screen.getByText(
+        'Keep only the hours you can reliably make, and block the days you’ll be away.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('makes the at-risk banner title singular for a single mentee left waiting', async () => {
@@ -259,15 +264,150 @@ describe('SessionQuality', () => {
     expect(screen.getByText('Your show-up rate is 61%')).toBeInTheDocument();
   });
 
-  it('decides on-track on the rounded rate the ring shows, not the raw value', () => {
-    // 84.6 rounds to the "85%" the ring displays, so the card reads On track —
-    // never "At risk" beside a headline that already says 85% (the good line).
-    data = windowStats({ attendanceRate: 84.6, menteesLeftWaiting: 0, completedSessions: 5 });
-    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
-    expect(screen.getByRole('img', { name: 'Show-up rate 85%' })).toBeInTheDocument();
+  it('decides the tier on the rounded rate the ring shows, not the raw value', () => {
+    // 79.6 rounds to the "80%" the ring displays, so the card reads On track,
+    // never "Needs attention" beside a ring that already says 80%.
+    data = windowStats({ attendanceRate: 79.6, menteesLeftWaiting: 0, completedSessions: 5 });
+    const { unmount } = render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByRole('img', { name: 'Show-up rate 80%' })).toBeInTheDocument();
     expect(screen.getByText('On track')).toBeInTheDocument();
+    expect(screen.queryByText('Needs attention')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Your show-up rate is 80%/)).not.toBeInTheDocument();
+    unmount();
+
+    // 49.5 shows "50%", so it is Needs attention, not At risk.
+    data = windowStats({ attendanceRate: 49.5, menteesLeftWaiting: 0, completedSessions: 5 });
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByRole('img', { name: 'Show-up rate 50%' })).toBeInTheDocument();
+    expect(screen.getByText('Needs attention')).toBeInTheDocument();
     expect(screen.queryByText('At risk')).not.toBeInTheDocument();
-    expect(screen.queryByText(/Your show-up rate is 85%/)).not.toBeInTheDocument();
+  });
+
+  // ---- the three tiers: On track 80+, Needs attention 50 to 79, At risk below 50 ----
+
+  it.each([
+    [100, 'On track'],
+    [80, 'On track'],
+    [79, 'Needs attention'],
+    [50, 'Needs attention'],
+    [49, 'At risk'],
+    [0, 'At risk'],
+  ])('badges a show-up rate of %i "%s"', (rate, badge) => {
+    data = windowStats({ attendanceRate: rate, missedByMentor: 2, menteesLeftWaiting: 2 });
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByRole('img', { name: `Show-up rate ${rate}%` })).toBeInTheDocument();
+    for (const other of ['On track', 'Needs attention', 'At risk']) {
+      if (other === badge) expect(screen.getByText(other)).toBeInTheDocument();
+      else expect(screen.queryByText(other)).not.toBeInTheDocument();
+    }
+  });
+
+  it.each([
+    [80, 'See your full breakdown'],
+    [79, 'See what’s pulling this down'],
+    [50, 'See what’s pulling this down'],
+    [49, 'See what’s pulling this down'],
+  ])('labels the disclosure at a rate of %i "%s"', (rate, label) => {
+    data = windowStats({ attendanceRate: rate, missedByMentor: 2, menteesLeftWaiting: 2 });
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByRole('button', { name: label })).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it.each([
+    [79, 'Needs attention'],
+    [49, 'At risk'],
+  ])('at a rate of %i (%s) leads with left waiting and opens the warning block with both links', async (rate) => {
+    data = windowStats({ attendanceRate: rate, missedByMentor: 3, menteesLeftWaiting: 3 });
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByText('3 mentees were left waiting in the last 3 months')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'See what’s pulling this down' }));
+    expect(screen.getByText('Sessions completed')).toBeInTheDocument();
+    expect(screen.getByText('Mentee reviews')).toBeInTheDocument();
+    expect(screen.getByText('3 mentees were left waiting')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Keep only the hours you can reliably make, and block the days you’ll be away.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Review your hours' })).toHaveAttribute(
+      'href',
+      '/calendar',
+    );
+    expect(screen.getByRole('link', { name: 'See missed sessions' })).toHaveAttribute(
+      'href',
+      '/bookings?tab=history',
+    );
+    // No streak banner below On track.
+    expect(screen.queryByText(/in a row completed/)).not.toBeInTheDocument();
+  });
+
+  it('gives On track the streak banner and no warning block or links', async () => {
+    data = windowStats({ attendanceRate: 80, missedByMentor: 1, menteesLeftWaiting: 1 });
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByText('5 sessions in a row completed')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'See your full breakdown' }));
+    expect(screen.getByText(/5 sessions in a row completed/)).toBeInTheDocument();
+    expect(screen.queryByText(/left waiting/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Review your hours' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'See missed sessions' })).not.toBeInTheDocument();
+  });
+
+  it('themes the card, ring and badge per tier', () => {
+    // CSS-module keys stay readable in vitest (classNameStrategy: non-scoped).
+    const cases = [
+      [90, 'On track', 'arc-success', 'green-accent', null],
+      [65, 'Needs attention', 'arc-warning', 'warning-accent', 'cardFair'],
+      [30, 'At risk', 'arc-danger', 'red-accent', 'cardLow'],
+    ] as const;
+    for (const [rate, badge, arc, badgeClass, card] of cases) {
+      data = windowStats({ attendanceRate: rate, missedByMentor: 2, menteesLeftWaiting: 2 });
+      const { container, unmount } = render(
+        <SessionQuality userId="u1" profileHref="/mentors/gbenga" />,
+      );
+      const section = container.querySelector('section')!;
+      if (card) expect(section.className).toMatch(card);
+      else expect(section.className).not.toMatch(/cardFair|cardLow/);
+      const circles = container.querySelectorAll('circle');
+      expect(circles[circles.length - 1]!.getAttribute('class')).toMatch(arc);
+      expect(screen.getByText(badge).className).toMatch(badgeClass);
+      unmount();
+    }
+  });
+
+  it('moves the rate, tier and period words together when the chart range switches', () => {
+    data = windowStats({ attendanceRate: 92 }, {}, { windowDays: 90 });
+    const { rerender } = render(
+      <SessionQuality userId="u1" profileHref="/mentors/gbenga" statsQuery={{ windowDays: 90 }} />,
+    );
+    expect(screen.getByRole('img', { name: 'Show-up rate 92%' })).toBeInTheDocument();
+    expect(screen.getByText('On track')).toBeInTheDocument();
+    expect(screen.getByText(/· last 3 months/)).toBeInTheDocument();
+
+    data = windowStats(
+      { attendanceRate: 64, missedByMentor: 4, menteesLeftWaiting: 3 },
+      {},
+      { windowDays: 180 },
+    );
+    rerender(
+      <SessionQuality userId="u1" profileHref="/mentors/gbenga" statsQuery={{ windowDays: 180 }} />,
+    );
+    expect(mentorStatsSpy).toHaveBeenLastCalledWith('u1', { windowDays: 180 });
+    expect(screen.getByRole('img', { name: 'Show-up rate 64%' })).toBeInTheDocument();
+    expect(screen.getByText('Needs attention')).toBeInTheDocument();
+    expect(screen.queryByText('On track')).not.toBeInTheDocument();
+    expect(screen.getByText(/· last 6 months/)).toBeInTheDocument();
+    expect(screen.getByText('3 mentees were left waiting in the last 6 months')).toBeInTheDocument();
+
+    data = windowStats(
+      { attendanceRate: 41, missedByMentor: 6, menteesLeftWaiting: 5 },
+      {},
+      { year: 2025, windowDays: 365 },
+    );
+    rerender(<SessionQuality userId="u1" profileHref="/mentors/gbenga" statsQuery={{ year: 2025 }} />);
+    expect(screen.getByRole('img', { name: 'Show-up rate 41%' })).toBeInTheDocument();
+    expect(screen.getByText('At risk')).toBeInTheDocument();
+    expect(screen.getByText(/· in 2025/)).toBeInTheDocument();
+    expect(screen.getByText('5 mentees were left waiting in 2025')).toBeInTheDocument();
   });
 
   it('leads the no-reviews note with a star icon', () => {
