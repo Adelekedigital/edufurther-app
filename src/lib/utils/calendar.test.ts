@@ -123,6 +123,21 @@ describe('noticeLabel and bookingRulesSummary', () => {
       }),
     ).toBe('Confirmed straight away · 60 min · 24 hrs notice · 4 weeks ahead · No buffer');
   });
+  it('Sessions ends with approval, or leaves it to its own row', () => {
+    const d = {
+      durationMin: 60,
+      noticeHours: 24,
+      windowDays: 14,
+      breakMin: 0,
+      requiresApproval: true,
+    };
+    expect(bookingRulesSummary(d, 'last')).toBe(
+      '60 min · 24 hrs notice · 2 weeks ahead · No buffer · You approve each booking',
+    );
+    expect(bookingRulesSummary(d, 'none')).toBe(
+      '60 min · 24 hrs notice · 2 weeks ahead · No buffer',
+    );
+  });
   it('shortens notice in hours, and says one hour as one', () => {
     const at = (noticeHours: number) =>
       bookingRulesSummary({

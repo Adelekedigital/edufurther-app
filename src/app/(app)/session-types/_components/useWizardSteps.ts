@@ -19,6 +19,9 @@ export function useWizardSteps(editing: boolean) {
   // Editing: every step is open (the design's `maxStep: 4`).
   const [reached, setReached] = useState<Step>(editing ? 4 : 1);
   const [errors, setErrors] = useState<FieldErrors>({});
+  // Each Continue that found gaps: moves focus to the first one and repeats the
+  // step's message, even when the gaps are the same as last time.
+  const [attempt, setAttempt] = useState(0);
 
   const goTo = (n: Step) => {
     setStep(n);
@@ -53,6 +56,7 @@ export function useWizardSteps(editing: boolean) {
       const e = validateStep(draft, step as 1 | 2 | 3, minLength);
       if (Object.keys(e).length) {
         setErrors(e);
+        setAttempt((n) => n + 1);
         return false;
       }
       setErrors({});
@@ -69,5 +73,5 @@ export function useWizardSteps(editing: boolean) {
     return true;
   };
 
-  return { step, reached, errors, goTo, showErrors, clearErrorsFor, advance };
+  return { step, reached, errors, attempt, goTo, showErrors, clearErrorsFor, advance };
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, useState } from 'react';
+import { Badge } from '@/components/atoms/Badge/Badge';
 import { Button } from '@/components/atoms/Button/Button';
 import { Input, Textarea } from '@/components/atoms/Input/Input';
 import { ChoiceChips } from '@/components/molecules/ChoiceChips/ChoiceChips';
@@ -25,7 +26,11 @@ type CoreDetailsStepProps = {
   topics: Topic[];
 };
 
-/** Step 1 (Session Types.dc.html `isStep1`): name, what mentees get, topics, stage. */
+/**
+ * Step 1 (Session Types.dc.html `isStep1`): name, what mentees get, topics,
+ * stage, price. The three required fields carry `data-gap`: a Continue with
+ * gaps focuses the first (the wizard).
+ */
 export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetailsStepProps) {
   const id = useId();
   const [stageDraft, setStageDraft] = useState('');
@@ -51,6 +56,7 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
         {(f) => (
           <Input
             {...f}
+            data-gap="name"
             value={d.name}
             maxLength={200}
             placeholder="e.g. SOP draft review"
@@ -68,6 +74,7 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
         {(f) => (
           <Textarea
             {...f}
+            data-gap="description"
             rows={4}
             maxLength={DESCRIPTION_MAX}
             value={d.description}
@@ -77,15 +84,18 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
         )}
       </FormField>
 
-      <div className={styles.group3}>
+      {/* The group is the gap: focus lands on its first chip (ChoiceChips' only honest target). */}
+      <div className={styles.group3} data-gap="topics">
         <span className={styles.groupHead}>
           <span id={`${id}-topics`} className={styles.groupLabel}>
             {DETAILS_COPY.topicsLabel}
           </span>
           <span id={`${id}-topics-hint`} className={styles.groupHint}>
-            Pick up to {MAX_TOPICS}. Mentees filter by these on Explore.
+            {DETAILS_COPY.topicsHint(MAX_TOPICS)}
           </span>
         </span>
+        {/* Above the chips, as drawn (design errCats). */}
+        {errors.topics && <FieldError id={`${id}-topics-error`}>{errors.topics}</FieldError>}
         <ChoiceChips
           label={DETAILS_COPY.topicsLabel}
           options={topics.map((t) => ({ value: t.slug, label: t.label }))}
@@ -98,7 +108,6 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
             })
           }
         />
-        {errors.topics && <FieldError id={`${id}-topics-error`}>{errors.topics}</FieldError>}
       </div>
 
       <div className={styles.group2}>
@@ -148,6 +157,17 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
           {DETAILS_COPY.stagesHint}
         </span>
         {errors.stage && <FieldError id={`${id}-stage-error`}>{errors.stage}</FieldError>}
+      </div>
+
+      {/* Free only in v1 (handoff E5, design `pricing` freeOnly): nothing to choose. */}
+      <div className={styles.group2}>
+        <span className={styles.groupLabel}>{DETAILS_COPY.priceLabel}</span>
+        <span className={styles.price}>
+          <Badge type="accent" color="green" size="sm">
+            {DETAILS_COPY.free}
+          </Badge>
+          {DETAILS_COPY.freeNote}
+        </span>
       </div>
     </div>
   );

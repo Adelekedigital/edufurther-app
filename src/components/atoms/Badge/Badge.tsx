@@ -5,8 +5,11 @@ import styles from './Badge.module.css';
 type BadgeProps = {
   /** filled: solid ground, white text. accent: tinted ground. */
   type?: 'filled' | 'accent';
-  /** The DS's orange is banned in product UI, so it is not offered. */
-  color?: 'primary' | 'green' | 'red' | 'neutral';
+  /**
+   * The DS's colours. Orange is for the Featured badge only (Session
+   * Types PRD, list); the ramp stays banned elsewhere in product UI.
+   */
+  color?: 'primary' | 'orange' | 'green' | 'red' | 'neutral';
   /** sm 10px caption / md 12px. */
   size?: 'sm' | 'md';
   children: ReactNode;

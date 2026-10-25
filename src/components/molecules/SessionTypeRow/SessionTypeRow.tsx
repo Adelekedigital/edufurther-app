@@ -2,6 +2,7 @@ import { useEffect, useId, useRef } from 'react';
 import { cx } from '@/lib/utils/cx';
 import { formatShortDate } from '@/lib/utils/format';
 import { Badge } from '@/components/atoms/Badge/Badge';
+import { DETAILS_COPY } from '@/lib/copy/sessionTypes';
 import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Switch } from '@/components/atoms/Switch/Switch';
@@ -92,12 +93,14 @@ export function SessionTypeRow({
       ? { label: `${names.slice(0, 2).join(', ')}, +${names.length - 2}`, full: all, title: all }
       : { label: all || 'Any topic', title: all || undefined };
   const facts: {
-    icon: 'schedule' | 'quiz' | 'sell';
+    icon: 'schedule' | 'payments' | 'quiz' | 'sell';
     label: string;
     full?: string;
     title?: string;
   }[] = [
     { icon: 'schedule' as const, label: `${t.durationMin} min` },
+    // Every session is free in v1 (design `meta`, handoff E5).
+    { icon: 'payments' as const, label: DETAILS_COPY.free },
     ...(qn === null
       ? []
       : [{ icon: 'quiz' as const, label: `${qn} question${qn === 1 ? '' : 's'}` }]),
@@ -120,8 +123,7 @@ export function SessionTypeRow({
             {pending ? 'Scheduled for deletion' : t.isLive ? 'Live' : 'Hidden'}
           </Badge>
           {t.isFeatured && (
-            // The design's orange is banned in product UI: our blue accent (design-divergence.md).
-            <Badge type="accent" size="sm" color="primary">
+            <Badge type="accent" size="sm" color="orange">
               Featured
             </Badge>
           )}

@@ -12,14 +12,19 @@ import {
   type Draft,
 } from '@/lib/utils/sessionTypeDraft';
 import { BOOKING_COPY, approvalShort } from '@/lib/copy/mentorSettings';
-import { REVIEW_COPY } from '@/lib/copy/sessionTypes';
+import { DETAILS_COPY, REVIEW_COPY, RULES_COPY } from '@/lib/copy/sessionTypes';
+import { bookingRulesSummary } from '@/lib/utils/calendar';
 import type { Topic } from '@/types/mentor';
 import type { Defaults } from './SchedulingStep';
 import styles from './SessionTypeWizard.module.css';
 
-/** "Wed 5:00 pm–8:00 pm; Sat 9:00 am–10:00 am". */
-export function hoursSummary(d: Draft): string {
-  if (d.hours === 'default') return REVIEW_COPY.weekly;
+/**
+ * Weekly hours: "Your weekly hours (Mon–Fri · 9 am–5 pm)" (PRD step 4; the
+ * design says "Custom hours for this session" with its own). Own hours list
+ * their times: "Wed 5:00 pm–8:00 pm; Sat 9:00 am–10:00 am".
+ */
+export function hoursSummary(d: Draft, weekly: string | null): string {
+  if (d.hours === 'default') return REVIEW_COPY.weekly(weekly);
   const parts = d.days.flatMap((day, i) =>
     day.on
       ? [
@@ -34,33 +39,38 @@ type ReviewStepProps = {
   draft: Draft;
   topics: Topic[];
   defaults: Defaults | null;
+  /** The mentor's weekly hours, once loaded ("Mon–Fri · 9 am–5 pm"). */
+  weeklySummary: string | null;
   onEdit: (step: 1 | 2 | 3) => void;
 };
 
 /** Step 4 (Session Types.dc.html `isStep4`): check answers, and the card as mentees see it. */
-export function ReviewStep({ draft: d, topics, defaults, onEdit }: ReviewStepProps) {
+export function ReviewStep({ draft: d, topics, defaults, weeklySummary, onEdit }: ReviewStepProps) {
   const topicLabels = d.topics.map((c) => topics.find((t) => t.slug === c)?.label ?? c);
   const stage = stagesLabel(d);
-  // `defaults` is null until the mentor's own are known: then say "My default"
-  // without a value rather than show the platform's as theirs (review of #49).
+  // `defaults` is null until the mentor's own are known: then say "My defaults"
+  // without values rather than show the platform's as theirs (review of #49).
   const custom = d.rules === 'custom';
   const mine = defaults ? resolveDefaults(defaults) : null;
-  const inherited = (text: (r: NonNullable<typeof mine>) => string) =>
-    mine ? `${text(mine)} (my default)` : 'My default';
-  const lengthText = custom ? `${d.durationMin} min` : inherited((r) => `${r.durationMin} min`);
-  const noticeText = custom
-    ? `${hoursLabel(d.noticeHours)} hours`
-    : inherited((r) => `${hoursLabel(r.noticeHours)} hours`);
-  const windowText = custom
-    ? `${windowLabel(d.windowDays)} ahead`
-    : inherited((r) => `${windowLabel(r.windowDays)} ahead`);
-  const breakText = custom ? breakLabel(d.breakMin) : inherited((r) => breakLabel(r.breakMin));
+  // Inheriting: one "Booking rules" row (PRD step 4); customized: a row each.
+  const ruleRows = custom
+    ? [
+        { k: REVIEW_COPY.length, v: `${d.durationMin} min` },
+        { k: BOOKING_COPY.rules.noticeHours.label, v: `${hoursLabel(d.noticeHours)} hours` },
+        { k: BOOKING_COPY.rules.windowDays.label, v: `${windowLabel(d.windowDays)} ahead` },
+        { k: BOOKING_COPY.rules.breakMin.label, v: breakLabel(d.breakMin) },
+      ]
+    : [
+        {
+          k: REVIEW_COPY.rulesRow,
+          v: REVIEW_COPY.rulesMine(defaults ? bookingRulesSummary(defaults, 'none') : null),
+        },
+      ];
+  // The approval select's words: "{default} (your default)" while inheriting.
   const approval =
     custom && d.approval !== 'inherit'
       ? approvalShort(d.approval === 'on')
-      : mine
-        ? `My default (${approvalShort(mine.requiresApproval).toLowerCase()})`
-        : 'My default';
+      : RULES_COPY.inheritApproval(mine ? approvalShort(mine.requiresApproval) : null);
   // The card shows the length mentees will book; unknown until the defaults load.
   const length = custom ? d.durationMin : mine?.durationMin;
   return (
@@ -77,6 +87,7 @@ export function ReviewStep({ draft: d, topics, defaults, onEdit }: ReviewStepPro
               v: topicLabels.join(', ') || REVIEW_COPY.none,
             },
             { k: 'Best for', v: stage },
+            { k: DETAILS_COPY.priceLabel, v: DETAILS_COPY.free },
           ]}
         />
         <SummarySection
@@ -95,11 +106,8 @@ export function ReviewStep({ draft: d, topics, defaults, onEdit }: ReviewStepPro
           title={REVIEW_COPY.rules}
           onEdit={() => onEdit(3)}
           rows={[
-            { k: REVIEW_COPY.length, v: lengthText },
-            { k: 'Minimum notice', v: noticeText },
-            { k: BOOKING_COPY.rules.windowDays.label, v: windowText },
-            { k: BOOKING_COPY.rules.breakMin.label, v: breakText },
-            { k: REVIEW_COPY.hours, v: hoursSummary(d) },
+            ...ruleRows,
+            { k: REVIEW_COPY.hours, v: hoursSummary(d, weeklySummary) },
             { k: BOOKING_COPY.approveTitle, v: approval },
           ]}
         />
@@ -109,6 +117,7 @@ export function ReviewStep({ draft: d, topics, defaults, onEdit }: ReviewStepPro
         description={d.description}
         facts={[
           ...(length ? [`${length} min`] : []),
+          DETAILS_COPY.free,
           ...(topicLabels.length ? topicLabels : ['Any topic']),
         ]}
       />
