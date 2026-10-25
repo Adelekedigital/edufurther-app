@@ -30,7 +30,6 @@ import { stagesOf } from './sessionTypes';
 
 type MentorPublicRead = components['schemas']['MentorPublicRead'];
 type SessionTypeRead = components['schemas']['SessionTypeRead'];
-type ApplicationStage = components['schemas']['ApplicationStage'];
 
 // ---- mapping ----------------------------------------------------------------
 

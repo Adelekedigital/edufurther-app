@@ -127,7 +127,7 @@ describe('toMentorProfile', () => {
             application_stage: 'other',
             custom_stage_label: 'Pre-departure',
           },
-        ] as Read['session_types'],
+        ] as unknown as Read['session_types'], // old slugs, from before backend #536
       }),
     );
     // An old stored stage reads as the one it became; `other` is dropped (backend PR 1).

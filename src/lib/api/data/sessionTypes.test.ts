@@ -92,6 +92,11 @@ describe('toOwnSessionType', () => {
     expect(toOwnSessionType(older as Own).usesOwnWindows).toBe(false);
   });
 
+  // Slugs from before backend #536: the API no longer types them, so a test
+  // that feeds one (a cached or older read) says so.
+  const legacy = (...s: string[]) => s as unknown as Own['application_stages'];
+  const legacyOne = (s: string) => s as unknown as Own['application_stage'];
+
   it('the stages, in the mentor’s order; the deprecated single field when the list is missing', () => {
     expect(toOwnSessionType(own({ application_stages: ['applying', 'exploring'] })).stages).toEqual(
       ['applying', 'exploring'],
@@ -101,23 +106,25 @@ describe('toOwnSessionType', () => {
     expect(
       toOwnSessionType(
         own({
-          application_stages: [
+          application_stages: legacy(
             'post_submission',
             'revisions',
             'early_exploration',
             'drafting_stage',
             'other',
-          ],
+          ),
         }),
       ).stages,
     ).toEqual(['awaiting_decision', 'preparing_documents', 'exploring']);
-    expect(toOwnSessionType(own({ application_stages: ['other'] })).stages).toEqual([]);
-    expect(toOwnSessionType(own({ application_stage: 'interviewing' })).stages).toEqual([
+    expect(toOwnSessionType(own({ application_stages: legacy('other') })).stages).toEqual([]);
+    expect(toOwnSessionType(own({ application_stage: legacyOne('interviewing') })).stages).toEqual([
       'interview_prep',
     ]);
     // An empty list is "any stage", not a reason to read the old field.
     expect(
-      toOwnSessionType(own({ application_stages: [], application_stage: 'interviewing' })).stages,
+      toOwnSessionType(
+        own({ application_stages: [], application_stage: legacyOne('interviewing') }),
+      ).stages,
     ).toEqual([]);
   });
 

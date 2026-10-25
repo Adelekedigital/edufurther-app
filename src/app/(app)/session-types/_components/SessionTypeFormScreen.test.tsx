@@ -533,7 +533,6 @@ describe('SessionTypeFormScreen — review of #60', () => {
       await user.click(next(n));
     expect(create.mock.calls[0]![0].body).toMatchObject({
       application_stages: ['applying', 'preparing_documents'],
-      custom_stage_label: null,
     });
   });
 

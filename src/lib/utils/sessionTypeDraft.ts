@@ -352,9 +352,8 @@ export function toCreateBody(d: Draft, offeringIds: Record<string, string>) {
     min_notice_minutes: custom ? Math.round(d.noticeHours * 60) : null,
     service_offering_ids: d.topics.map((c) => offeringIds[c]).filter((x): x is string => !!x),
     // The list (backend round 3 A); `application_stage` isn't sent with it (a 422).
+    // The six only; no custom stage label (backend PR 1, #536: it always reads null).
     application_stages: d.stages,
-    // No custom stage any more (backend PR 1): null clears any old one.
-    custom_stage_label: null,
     icon: d.icon,
     requires_booking_confirmation: !custom || d.approval === 'inherit' ? null : d.approval === 'on',
     booking_window_days: custom ? d.windowDays : null,

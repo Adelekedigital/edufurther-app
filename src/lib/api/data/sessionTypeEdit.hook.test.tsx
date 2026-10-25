@@ -37,8 +37,8 @@ const read = (over: Partial<SavedSessionType['read']> = {}): SavedSessionType['r
   uses_own_windows: false,
   question_count: 0,
   service_offerings: [DOCS],
-  application_stage: 'drafting_stage',
-  application_stages: ['drafting_stage'],
+  application_stage: 'preparing_documents',
+  application_stages: ['preparing_documents'],
   custom_stage_label: null,
   icon: null,
   requires_booking_confirmation: null,
@@ -72,7 +72,6 @@ describe('toDraft (a saved type as the form opens it)', () => {
     expect(toDraft(saved(), defaults)).toMatchObject({
       name: 'SOP review',
       topics: ['document-preparation'],
-      // A stored old stage opens as the one it became (backend PR 1).
       stages: ['preparing_documents'],
       rules: 'default',
       hours: 'default',
@@ -534,7 +533,6 @@ describe('useDuplicateSessionType — review of #74', () => {
       break_after_minutes: 10,
       requires_booking_confirmation: null,
       application_stages: ['preparing_documents'],
-      custom_stage_label: null,
     });
   });
 
@@ -600,7 +598,7 @@ describe('useDuplicateSessionType — review of #74', () => {
       path === '/api/v1/me/session-types'
         ? reply(
             200,
-            list({ application_stages: ['drafting_stage'], custom_stage_label: 'Old label' }),
+            list({ application_stages: ['preparing_documents'], custom_stage_label: 'Old label' }),
           )
         : path.endsWith('/questions')
           ? reply(200, {
@@ -646,7 +644,7 @@ describe('useDuplicateSessionType — review of #74', () => {
     POST.mockImplementation(() => reply(201, { id: 'st2', question_ids: [] }));
     await run();
     const body = POST.mock.calls[0]![1].body;
-    expect(body.custom_stage_label).toBeNull();
+    expect(body).not.toHaveProperty('custom_stage_label');
     expect(body.questions).toEqual([
       { question_text: 'Why?', question_type: 'free_text', is_required: true, display_order: 0 },
       {

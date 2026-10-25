@@ -37,7 +37,19 @@ import { keys } from './keys';
 import { sessionKey, useSession } from './session';
 
 type OwnSessionTypeRead = components['schemas']['OwnSessionTypeRead'];
-type MentorSessionTypeWrite = components['schemas']['MentorSessionTypeWrite'];
+/**
+ * A session-type write as we send it. `custom_stage_label` is left out: it is
+ * typed `null` only (backend #536, no custom stage), which the client reads as
+ * "never sent", and the API always reads it as null.
+ */
+export type SessionTypeWriteBody = Omit<
+  components['schemas']['MentorSessionTypeWrite'],
+  'custom_stage_label'
+>;
+export type SessionTypePatchBody = Omit<
+  components['schemas']['MentorSessionTypePatch'],
+  'custom_stage_label'
+>;
 type MentorProfileWrite = components['schemas']['MentorProfileWrite'];
 
 // ---- mapping ----------------------------------------------------------------
@@ -538,7 +550,7 @@ export function useCreateSessionType() {
           // The generated type makes every defaulted field required (openapi-typescript);
           // the API requires only question_text, and refuses `allows_multiple`/`options`
           // on a non-choice question (backend #12), so they are sent only on choices.
-          body: body as unknown as MentorSessionTypeWrite,
+          body: body as unknown as SessionTypeWriteBody,
         });
       } catch (e) {
         throw createError(e, null);

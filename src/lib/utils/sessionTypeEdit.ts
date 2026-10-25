@@ -31,9 +31,6 @@ export function toPatchBody(d: Draft, saved: Draft, offeringIds: Record<string, 
   const out: Record<string, unknown> = {};
   for (const k of Object.keys(next) as (keyof typeof next)[])
     if (JSON.stringify(next[k]) !== JSON.stringify(before[k])) out[k] = next[k];
-  // New stages clear any stored custom stage label (`other` + words, from
-  // before backend PR 1): it reads as nothing, so it never shows as a change.
-  if ('application_stages' in out) out.custom_stage_label = null;
   return out as Partial<typeof next>;
 }
 

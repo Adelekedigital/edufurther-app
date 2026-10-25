@@ -26,10 +26,8 @@ describe('toPatchBody (only what changed)', () => {
       name: 'SOP review+',
       service_offering_ids: ['o4', 'o1'],
       application_stages: ['preparing_documents', 'applying'],
-      // New stages clear an old custom stage label too (local review).
-      custom_stage_label: null,
     });
-    // Stages untouched: the label isn't sent either.
+    // No custom stage label is ever sent (backend #536 reads it as null).
     expect(toPatchBody({ ...saved, name: 'Renamed' }, saved, ids)).toEqual({ name: 'Renamed' });
   });
 

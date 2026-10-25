@@ -134,7 +134,6 @@ describe('toCreateBody', () => {
       requires_booking_confirmation: null,
       booking_window_days: null,
       break_after_minutes: null,
-      custom_stage_label: null,
     });
     expect(body.questions[0]).toEqual({
       question_text: 'Programs?',
@@ -171,20 +170,19 @@ describe('toCreateBody', () => {
       break_after_minutes: 10,
       requires_booking_confirmation: false,
       application_stages: ['exploring', 'applying'],
-      custom_stage_label: null,
     });
     // Never both: the backend refuses application_stage alongside the list.
     expect(body).not.toHaveProperty('application_stage');
+    // No custom stage label at all (backend #536 reads it as null).
+    expect(body).not.toHaveProperty('custom_stage_label');
   });
 
   it('several stages, in the order picked; none is any stage; never a custom label', () => {
     expect(toCreateBody(filled({ stages: ['applying', 'exploring'] }), ids)).toMatchObject({
       application_stages: ['applying', 'exploring'],
-      custom_stage_label: null,
     });
     expect(toCreateBody(filled({ stages: [] }), ids)).toMatchObject({
       application_stages: [],
-      custom_stage_label: null,
     });
     expect(stagesLabel({ stages: ['researching', 'awaiting_decision'] })).toBe(
       'Researching schools & scholarships, Waiting for a decision',
