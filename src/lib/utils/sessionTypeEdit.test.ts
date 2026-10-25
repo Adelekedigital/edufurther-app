@@ -44,6 +44,13 @@ describe('toPatchBody (only what changed)', () => {
       break_after_minutes: null,
     });
   });
+
+  it('the venue goes only when changed: the pin, or null to follow the default again', () => {
+    const meet: Draft = { ...saved, venue: 'google_meet' };
+    expect(toPatchBody({ ...meet }, meet, ids)).toEqual({});
+    expect(toPatchBody(meet, saved, ids)).toEqual({ meeting_venue: 'google_meet' });
+    expect(toPatchBody(saved, meet, ids)).toEqual({ meeting_venue: null });
+  });
 });
 
 const sq = (id: string, over: Partial<SavedQuestion> = {}): SavedQuestion => ({

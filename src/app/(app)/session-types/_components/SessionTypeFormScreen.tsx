@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { SessionTypeWizard } from '@/components/organisms/SessionTypeWizard/SessionTypeWizard';
 import { ConfirmDialog } from '@/components/templates/ConfirmDialog/ConfirmDialog';
+import { useConferencing } from '@/lib/api/data/conferencing';
 import { useTopics } from '@/lib/api/data/mentors';
 import {
   autoIcon,
@@ -16,6 +17,7 @@ import {
   type Created,
 } from '@/lib/api/data/sessionTypes';
 import { useWeeklyHours } from '@/lib/api/data/weeklyHours';
+import { VIDEO_LABELS } from '@/lib/copy/integrations';
 import { SESSIONS_COPY, WIZARD_COPY } from '@/lib/copy/sessionTypes';
 import { SESSION_TEMPLATES } from '@/lib/utils/sessionTemplates';
 import { typeLength, weeklySummary, type Draft } from '@/lib/utils/sessionTypeDraft';
@@ -55,9 +57,14 @@ export function SessionTypeFormScreen({
   // A locked page (the setup lock) fetches nothing it won't show.
   const locked = access.locked.has('Sessions');
   const mentorId = isMentor && !locked ? member!.id : null;
-  // Both are edited where they live (Settings, Calendar), so step 3 reads them only.
+  // All three are edited where they live (Settings, Calendar, Integrations), so step 3 reads them only.
   const defaults = useMentorDefaults(mentorId);
   const weekly = useWeeklyHours(mentorId);
+  const video = useConferencing(mentorId);
+  // Never chosen: the platform's, EduFurther video. Unknown (loading, failed): not named.
+  const defaultVideo = video.data
+    ? VIDEO_LABELS[video.data.isDefault ? 'daily' : video.data.provider]
+    : null;
   const retry = useRetryWindows();
 
   const tmpl = edit ? null : (SESSION_TEMPLATES.find((x) => x.key === template) ?? null);
@@ -195,6 +202,9 @@ export function SessionTypeFormScreen({
                   : { status: 'loading' }
             }
             onRetryWeekly={weekly.retry}
+            defaultVideo={defaultVideo}
+            videoFailed={!!video.error && !video.data}
+            onRetryVideo={video.retry}
             onStep={steps.goTo}
             onBack={onBack}
             onNext={onNext}

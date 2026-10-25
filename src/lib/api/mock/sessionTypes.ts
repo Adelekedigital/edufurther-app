@@ -7,6 +7,7 @@
 import { DEFAULT_WINDOW_DAYS, MAX_WINDOW_DAYS, prefs, windowOk } from './bookingPrefs';
 import type { components } from '@/lib/api/generated/schema';
 import { OFFERINGS } from './fixtures';
+import { conferencing } from './mentorStatusStore';
 import type { MockResult } from './respond';
 import { STAGE_CHIPS } from '@/lib/utils/sessionTypeDraft';
 
@@ -32,9 +33,13 @@ type Stored = Omit<
   | 'effective_booking_window_days'
   | 'uses_own_windows'
   | 'question_count'
+  | 'meeting_venue'
+  | 'meeting_venue_inherited'
 > & {
   duration_minutes: number | null;
   min_notice_minutes: number | null;
+  /** Its own venue; null follows the mentor's default (backend #535). */
+  meeting_venue: 'daily' | 'google_meet' | null;
   questions: QuestionRead[];
   bookedCount: number;
 };
@@ -72,6 +77,8 @@ function resolve({ questions, bookedCount, ...t }: Stored): OwnSessionTypeRead {
     min_notice_minutes: t.min_notice_minutes ?? prefs.default_min_notice_minutes ?? 1440,
     duration_inherited: t.duration_minutes === null,
     min_notice_inherited: t.min_notice_minutes === null,
+    meeting_venue: t.meeting_venue ?? conferencing.provider,
+    meeting_venue_inherited: t.meeting_venue === null,
     effective_booking_window_days: effectiveWindow(
       t.booking_window_days,
       prefs.booking_window_days,
@@ -101,9 +108,7 @@ const q = (id: string, text: string, type: QuestionRead['question_type'], requir
 
 function seed(): Stored[] {
   const base = {
-    meeting_venue: 'daily' as const,
-    // Follows the mentor's default (backend PR 2, #535).
-    meeting_venue_inherited: true,
+    meeting_venue: null,
     application_stage: null,
     application_stages: [],
     custom_stage_label: null,
@@ -166,6 +171,8 @@ function seed(): Stored[] {
 }
 
 let store: Stored[] = seed();
+// Creates so far: part of each new id, so two in one millisecond differ.
+let created = 0;
 
 /** The featured type first, like the backend. */
 export function mockOwnSessionTypes(): OwnSessionTypeRead[] {
@@ -221,6 +228,10 @@ type WindowRead = components['schemas']['AvailabilityRuleRead'];
 const windows: Record<string, WindowRead[]> = {};
 let windowSeq = 0;
 
+/** Absent or null follows the default; a personal link (`custom`) is a default only. */
+const venueOk = (v: unknown) =>
+  v === undefined || v === null || v === 'daily' || v === 'google_meet';
+
 /** Validate like the backend (a subset): 422 errors[] with JSON pointers, 409 on a used name. */
 export function mockCreateSessionType(
   body: CreateBody,
@@ -256,6 +267,8 @@ export function mockCreateSessionType(
   // 4 to the platform cap, like the backend (a new type has no stored value to resend).
   if ('booking_window_days' in body && !windowOk(body.booking_window_days, null))
     errors.push({ pointer: '/booking_window_days', message: 'out of range' });
+  if (!venueOk(body.meeting_venue))
+    errors.push({ pointer: '/meeting_venue', message: 'daily, google_meet or null' });
   if (errors.length)
     return {
       ok: false,
@@ -265,7 +278,7 @@ export function mockCreateSessionType(
   if (store.some((t) => t.name.toLowerCase() === name.toLowerCase()))
     return { ok: false, status: 409, problem: { title: 'Conflict' } };
 
-  const id = `mst-${Date.now().toString(36)}`;
+  const id = `mst-${Date.now().toString(36)}-${++created}`;
   const offerings = ids.flatMap((oid) => {
     const o = OFFERINGS.find((x) => x.id === oid);
     return o?.code ? [{ id: o.id, code: o.code, display_name: o.display_name }] : [];
@@ -300,8 +313,7 @@ export function mockCreateSessionType(
     // null or absent = the mentor's default (backend round 3 B), resolved on read.
     duration_minutes: body.duration_minutes == null ? null : Number(body.duration_minutes),
     min_notice_minutes: body.min_notice_minutes == null ? null : Number(body.min_notice_minutes),
-    meeting_venue: 'daily',
-    meeting_venue_inherited: true,
+    meeting_venue: (body.meeting_venue as Stored['meeting_venue'] | undefined) ?? null,
     is_active: true,
     application_stages: (Array.isArray(stages)
       ? stages
@@ -381,6 +393,8 @@ export function mockEditSessionType(
   range('min_notice_minutes', 1440, 4320);
   if (has('booking_window_days') && !windowOk(body.booking_window_days, t.booking_window_days))
     errors.push({ pointer: '/booking_window_days', message: 'out of range' });
+  if (!venueOk(body.meeting_venue))
+    errors.push({ pointer: '/meeting_venue', message: 'daily, google_meet or null' });
   const stages = has('application_stages') ? body.application_stages : t.application_stages;
   if (has('application_stages')) {
     if (!Array.isArray(stages))
@@ -425,6 +439,7 @@ export function mockEditSessionType(
     'booking_window_days',
     'break_after_minutes',
     'custom_stage_label',
+    'meeting_venue',
   ] as const)
     if (has(k)) Object.assign(patch, { [k]: body[k] });
   if (has('application_stages')) {

@@ -97,6 +97,18 @@ vi.mock('@/lib/api/data/weeklyHours', async (orig) => ({
   }),
 }));
 
+// GET /me/conferencing: the mentor's default video (null data: not loaded yet).
+let videoMock: { data: unknown; isLoading: boolean; error: unknown };
+const VIDEO_DEFAULT = {
+  data: { provider: 'daily', customUrl: null, isDefault: true },
+  isLoading: false,
+  error: null,
+};
+const mockRetryVideo = vi.fn();
+vi.mock('@/lib/api/data/conferencing', () => ({
+  useConferencing: () => ({ ...videoMock, retry: mockRetryVideo, retrying: false }),
+}));
+
 vi.mock('@/lib/api/data/sessionTypeEdit', () => ({
   useSaveSessionType: () => ({ save: vi.fn(), isPending: false, error: null, reset: vi.fn() }),
 }));
@@ -109,6 +121,7 @@ beforeEach(() => {
   create.mockReset();
   createError = null;
   defaultsMock = READY;
+  videoMock = VIDEO_DEFAULT;
 });
 const next = (name: RegExp) => screen.getByRole('button', { name });
 
@@ -564,6 +577,124 @@ describe('SessionTypeFormScreen — review of #60', () => {
     ).toBeTruthy();
     await user.click(within(group).getByRole('button', { name: 'Applying' }));
     expect(screen.queryByText('Check the stage.')).toBeNull();
+  });
+});
+
+describe('SessionTypeFormScreen — the Video row (backend #535)', () => {
+  const toStep3 = async (user: ReturnType<typeof userEvent.setup>) => {
+    render(<SessionTypeFormScreen template="sop-review" />);
+    await user.click(next(/^Continue$/));
+    await user.click(next(/^Continue$/));
+  };
+  const optionsOf = () =>
+    within(screen.getByRole('combobox', { name: 'Video' }))
+      .getAllByRole('option')
+      .map((o) => o.textContent);
+
+  it('in both modes, with the default set in Integrations (a new tab)', async () => {
+    const user = userEvent.setup({ delay: null });
+    await toStep3(user);
+    const select = screen.getByRole('combobox', { name: 'Video' });
+    expect(select).toHaveValue('inherit');
+    expect(select).toHaveAccessibleDescription(
+      'Where the call happens. Your default is set in Integrations.',
+    );
+    const link = screen.getByRole('link', { name: 'Integrations (opens in a new tab)' });
+    expect(link).toHaveAttribute('href', '/integrations');
+    expect(link).toHaveAttribute('target', '_blank');
+    await user.click(screen.getByRole('radio', { name: /Customize for this session/ }));
+    expect(screen.getByRole('combobox', { name: 'Video' })).toBeInTheDocument();
+  });
+
+  it.each([
+    ['never chosen', { provider: 'daily', customUrl: null, isDefault: true }, 'EduFurther video'],
+    ['Google Meet', { provider: 'google_meet', customUrl: null, isDefault: false }, 'Google Meet'],
+    [
+      'a personal link',
+      { provider: 'custom', customUrl: 'https://x.test/me', isDefault: false },
+      'Personal meeting link',
+    ],
+  ])('the inherit option names the default: %s', async (_what, data, name) => {
+    const user = userEvent.setup({ delay: null });
+    videoMock = { data, isLoading: false, error: null };
+    await toStep3(user);
+    // No personal link of its own: that is a default only.
+    expect(optionsOf()).toEqual([`Use my default (${name})`, 'EduFurther video', 'Google Meet']);
+  });
+
+  it.each([
+    ['loading', { data: null, isLoading: true, error: null }],
+    ['failed', { data: null, isLoading: false, error: { kind: 'server', message: 'x' } }],
+  ])('%s: the inherit option names nothing yet', async (_what, mock) => {
+    const user = userEvent.setup({ delay: null });
+    videoMock = mock;
+    await toStep3(user);
+    expect(optionsOf()[0]).toBe('Use my default');
+  });
+
+  it('a default that failed to load says so, as the rules and hours do, and Try again reads it again (GitHub review)', async () => {
+    const user = userEvent.setup({ delay: null });
+    mockRetryVideo.mockReset();
+    videoMock = { data: null, isLoading: false, error: { kind: 'server', message: 'x' } };
+    await toStep3(user);
+    // In a polite live region, so it is announced when it arrives (GitHub review r2).
+    expect(
+      screen.getByText('We couldn’t load your default video. This session still follows it.'),
+    ).toHaveAttribute('aria-live', 'polite');
+    const tries = screen.getAllByRole('button', { name: 'Try again' });
+    await user.click(tries[tries.length - 1]!);
+    expect(mockRetryVideo).toHaveBeenCalledOnce();
+  });
+
+  it('while it loads, nothing is said to have failed', async () => {
+    const user = userEvent.setup({ delay: null });
+    videoMock = { data: null, isLoading: true, error: null };
+    await toStep3(user);
+    expect(screen.queryByText(/couldn’t load your default video/)).toBeNull();
+  });
+
+  it('publishing sends null to follow the default, else the pin; Review says the select’s words', async () => {
+    const user = userEvent.setup({ delay: null });
+    const { unmount } = render(<SessionTypeFormScreen template="sop-review" />);
+    for (let i = 0; i < 3; i++) await user.click(next(/^Continue$/));
+    expect(screen.getByText('Video')).toBeInTheDocument();
+    expect(screen.getByText('Use my default (EduFurther video)')).toBeInTheDocument();
+    await user.click(next(/Publish session/));
+    expect(create.mock.calls[0]![0].body.meeting_venue).toBeNull();
+    unmount();
+
+    create.mockReset();
+    await toStep3(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Video' }), 'google_meet');
+    await user.click(next(/^Continue$/));
+    // After "Approve bookings", inheriting the rules too.
+    const terms = screen.getAllByRole('term').map((t) => t.textContent);
+    expect(terms.indexOf('Video')).toBe(terms.indexOf('Approve bookings') + 1);
+    expect(screen.getByText('Google Meet')).toBeInTheDocument();
+    await user.click(next(/Publish session/));
+    expect(create.mock.calls[0]![0].body.meeting_venue).toBe('google_meet');
+  });
+
+  it('a refused venue (422 /meeting_venue) sends the mentor to step 3, on the row', async () => {
+    const user = userEvent.setup({ delay: null });
+    create.mockImplementationOnce((_v, opts) =>
+      opts.onError({
+        kind: 'validation',
+        message: 'x',
+        fields: { venue: 'Choose where the call happens.' },
+      }),
+    );
+    render(<SessionTypeFormScreen template="sop-review" />);
+    for (const n of [/^Continue$/, /^Continue$/, /^Continue$/, /Publish session/])
+      await user.click(next(n));
+    expect(screen.getByText('Step 3 of 4 · Set booking rules')).toBeInTheDocument();
+    const select = screen.getByRole('combobox', { name: 'Video' });
+    expect(select).toHaveAttribute('aria-invalid', 'true');
+    // The problem is read first, then the hint; and focus is on the select.
+    expect(select).toHaveAccessibleDescription(/^Choose where the call happens\. Where the call/);
+    expect(select).toHaveFocus();
+    await user.selectOptions(select, 'daily');
+    expect(screen.queryByText('Choose where the call happens.')).toBeNull();
   });
 });
 

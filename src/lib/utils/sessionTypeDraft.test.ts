@@ -305,6 +305,22 @@ describe('summaries (Session Types.dc.html, rulesFlow=inline)', () => {
   });
 });
 
+describe('the Video row (backend #535)', () => {
+  it('a new draft follows the default; the body sends null for it, else the pin', () => {
+    expect(blankDraft().venue).toBe('inherit');
+    expect(toCreateBody(filled(), ids).meeting_venue).toBeNull();
+    expect(toCreateBody(filled({ venue: 'google_meet' }), ids).meeting_venue).toBe('google_meet');
+    // Either mode: "Use my defaults" covers the rules, not the venue.
+    expect(toCreateBody(filled({ rules: 'default', venue: 'daily' }), ids).meeting_venue).toBe(
+      'daily',
+    );
+  });
+
+  it('a refused venue is step 3, in our words', () => {
+    expect(copyForField('venue')).toBe('Choose where the call happens.');
+  });
+});
+
 describe('422 pointers → the owning field and step', () => {
   it.each([
     ['/name', 'name', 1],
@@ -316,6 +332,7 @@ describe('422 pointers → the owning field and step', () => {
     ['/questions/2/options/0/text', 'question-2', 2],
     ['/questions', 'questions', 2],
     ['/booking_window_days', 'rules', 3],
+    ['/meeting_venue', 'venue', 3],
   ] as const)('%s → %s (step %i)', (pointer, field, step) => {
     const f = fieldForPointer(pointer)!;
     expect(f).toBe(field);

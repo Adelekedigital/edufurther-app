@@ -100,6 +100,13 @@ export const SWITCHING = 'Switching…';
 /** Mirrors ConferencingProvider; copy never imports the generated client. */
 export type VideoChoice = 'daily' | 'google_meet' | 'custom';
 
+/** What each provider is called, wherever it is named. */
+export const VIDEO_LABELS: Record<VideoChoice, string> = {
+  daily: DAILY_COPY.label,
+  google_meet: MEET_COPY.label,
+  custom: CUSTOM_COPY.label,
+};
+
 /**
  * What a provider is called when a sentence is about leaving it, and what else
  * the mentor needs to know before they go.

@@ -74,6 +74,7 @@ function Harness({
       onRetryDefaults={fn()}
       weekly={WEEKLY}
       onRetryWeekly={fn()}
+      defaultVideo="EduFurther video"
       onStep={setS}
       onBack={() => setS((x) => (x > 1 ? ((x - 1) as Step) : x))}
       onNext={() => setS((x) => (x < 4 ? ((x + 1) as Step) : x))}

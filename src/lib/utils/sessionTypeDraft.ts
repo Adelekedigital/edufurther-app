@@ -69,7 +69,12 @@ export type Draft = {
   days: DayHours[];
   /** Only with custom rules; inherit = the mentor's default. */
   approval: 'inherit' | 'on' | 'off';
+  /** In both modes; inherit = the mentor's default (`/me/conferencing`, backend #535). */
+  venue: Venue;
 };
+
+/** Where the call happens: a personal link is a default only, never a session's own. */
+export type Venue = 'inherit' | 'daily' | 'google_meet';
 
 export const MAX_TOPICS = 3;
 export const MAX_QUESTIONS = 5;
@@ -140,6 +145,7 @@ export function blankDraft(): Draft {
     hours: 'default',
     days: emptyWeek(),
     approval: 'inherit',
+    venue: 'inherit',
   };
 }
 
@@ -170,6 +176,7 @@ export type FieldKey =
   | 'questions'
   | 'rules'
   | 'hours'
+  | 'venue'
   | `question-${number}`
   | `slot-${number}-${number}`;
 export type FieldErrors = Partial<Record<FieldKey, string>>;
@@ -358,6 +365,8 @@ export function toCreateBody(d: Draft, offeringIds: Record<string, string>) {
     requires_booking_confirmation: !custom || d.approval === 'inherit' ? null : d.approval === 'on',
     booking_window_days: custom ? d.windowDays : null,
     break_after_minutes: custom ? d.breakMin : null,
+    // Either mode: null follows the mentor's default (backend #535).
+    meeting_venue: d.venue === 'inherit' ? null : d.venue,
     questions: d.questions.map(toQuestionWrite),
   };
 }
@@ -388,6 +397,7 @@ const COPY: Partial<Record<FieldKey, string>> = {
   stage: 'Check the stage.',
   rules: 'Check the length and booking rules.',
   hours: 'Check the hours.',
+  venue: 'Choose where the call happens.',
 };
 
 /** JSON Pointer → field. Unknown pointers are the request as a whole (null). */
@@ -412,6 +422,8 @@ export function fieldForPointer(pointer: string): FieldKey | null {
     case 'break_after_minutes':
     case 'requires_booking_confirmation':
       return 'rules';
+    case 'meeting_venue':
+      return 'venue';
     default:
       return null;
   }

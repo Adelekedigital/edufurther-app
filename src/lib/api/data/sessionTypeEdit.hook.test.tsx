@@ -76,8 +76,42 @@ describe('toDraft (a saved type as the form opens it)', () => {
       rules: 'default',
       hours: 'default',
       approval: 'inherit',
+      venue: 'inherit',
       questions: [{ id: 'qa', key: 'qa', text: 'Which programs?', kind: 'free_text' }],
     });
+  });
+
+  it.each([
+    [
+      'follows the default',
+      { meeting_venue: 'google_meet', meeting_venue_inherited: true },
+      'inherit',
+    ],
+    [
+      'its own Meet',
+      { meeting_venue: 'google_meet', meeting_venue_inherited: false },
+      'google_meet',
+    ],
+    [
+      'its own EduFurther video',
+      { meeting_venue: 'daily', meeting_venue_inherited: false },
+      'daily',
+    ],
+    // A personal link is a default only: the select has no such option.
+    [
+      'a stored personal link',
+      { meeting_venue: 'custom', meeting_venue_inherited: false },
+      'inherit',
+    ],
+    // No flag (an older read): its schema default is true, so it follows the
+    // default rather than pinning what it resolved to (local review).
+    [
+      'no inherited flag',
+      { meeting_venue: 'google_meet', meeting_venue_inherited: undefined },
+      'inherit',
+    ],
+  ] as const)('the venue: %s', (_what, over, venue) => {
+    expect(toDraft(saved({ read: read(over) }), defaults).venue).toBe(venue);
   });
 
   it('a window saved above a cap lowered since opens at the capped value', () => {
@@ -534,6 +568,24 @@ describe('useDuplicateSessionType — review of #74', () => {
       requires_booking_confirmation: null,
       application_stages: ['preparing_documents'],
     });
+  });
+
+  it.each([
+    [
+      'its own venue stays its own',
+      { meeting_venue: 'google_meet', meeting_venue_inherited: false },
+      'google_meet',
+    ],
+    [
+      'one that follows the default still does',
+      { meeting_venue: 'google_meet', meeting_venue_inherited: true },
+      null,
+    ],
+  ] as const)('the venue: %s', async (_what, over, sent) => {
+    serve(over);
+    POST.mockImplementation(() => reply(201, { id: 'st2', question_ids: [] }));
+    await run();
+    expect(POST.mock.calls[0]![1].body.meeting_venue).toBe(sent);
   });
 
   it('a window saved above a cap lowered since is copied as it applies, so the copy is accepted', async () => {

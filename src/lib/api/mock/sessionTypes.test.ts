@@ -1,4 +1,10 @@
-import { effectiveWindow, mockCreateSessionType, PLATFORM_WINDOW } from './sessionTypes';
+import {
+  effectiveWindow,
+  mockCreateSessionType,
+  mockEditSessionType,
+  mockOwnSessionTypes,
+  PLATFORM_WINDOW,
+} from './sessionTypes';
 
 describe('effectiveWindow (mock of the backend rule)', () => {
   it('uses the offering’s own window first', () => {
@@ -26,5 +32,31 @@ describe('mockCreateSessionType: the window, as the backend checks it', () => {
     expect(windowErrors(PLATFORM_WINDOW + 1)).toBe(1);
     expect(windowErrors(3)).toBe(1);
     expect(windowErrors(14)).toBe(0);
+  });
+});
+
+describe('the venue (backend #535)', () => {
+  const read = (id: string) => mockOwnSessionTypes().find((t) => t.id === id)!;
+  it('null or absent follows the default; a pin is its own; anything else is a 422', () => {
+    const r = mockCreateSessionType({ name: 'Venue pin', meeting_venue: 'google_meet' }, null);
+    if (!r.ok) throw new Error('refused');
+    expect(read(r.body.id)).toMatchObject({
+      meeting_venue: 'google_meet',
+      meeting_venue_inherited: false,
+    });
+    expect(mockEditSessionType(r.body.id, { meeting_venue: null }).status).toBe(200);
+    // The default, resolved on read (EduFurther video until the mentor chooses).
+    expect(read(r.body.id)).toMatchObject({
+      meeting_venue: 'daily',
+      meeting_venue_inherited: true,
+    });
+    expect(mockEditSessionType(r.body.id, { meeting_venue: 'custom' })).toMatchObject({
+      status: 422,
+      errors: [{ pointer: '/meeting_venue' }],
+    });
+    const bad = mockCreateSessionType({ name: 'Venue bad', meeting_venue: 'zoom' }, null);
+    expect(bad.ok ? [] : bad.problem.errors).toEqual([
+      expect.objectContaining({ pointer: '/meeting_venue' }),
+    ]);
   });
 });
