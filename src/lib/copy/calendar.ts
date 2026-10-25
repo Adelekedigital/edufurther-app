@@ -4,9 +4,8 @@
  */
 import {
   CUSTOM_COPY,
-  DAILY_COPY,
-  MEET_COPY,
   VIDEO_COPY,
+  VIDEO_LABELS,
   VIDEO_LINK_LINE,
   type VideoChoice,
 } from './integrations';
@@ -82,4 +81,4 @@ export const VIDEO_ROW_COPY = {
 
 /** "Video for sessions: Google Meet", in Integrations' names for each provider. */
 export const videoRowTitle = (provider: VideoChoice) =>
-  `${VIDEO_COPY.title}: ${{ daily: DAILY_COPY.label, google_meet: MEET_COPY.label, custom: CUSTOM_COPY.label }[provider]}`;
+  `${VIDEO_COPY.title}: ${VIDEO_LABELS[provider]}`;

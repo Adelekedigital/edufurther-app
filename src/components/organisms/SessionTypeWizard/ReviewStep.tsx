@@ -10,7 +10,7 @@ import {
   type Draft,
 } from '@/lib/utils/sessionTypeDraft';
 import { BOOKING_COPY, approvalShort } from '@/lib/copy/mentorSettings';
-import { DETAILS_COPY, REVIEW_COPY, RULES_COPY } from '@/lib/copy/sessionTypes';
+import { DETAILS_COPY, REVIEW_COPY, RULES_COPY, venueLabel } from '@/lib/copy/sessionTypes';
 import { bookingRulesSummary } from '@/lib/utils/calendar';
 import type { Topic } from '@/types/mentor';
 import type { Defaults } from './SchedulingStep';
@@ -27,11 +27,20 @@ type ReviewStepProps = {
   defaults: Defaults | null;
   /** The mentor's weekly hours, once loaded ("Mon–Fri · 9 am–5 pm"). */
   weeklySummary: string | null;
+  /** The mentor's default video, once loaded ("EduFurther video"). */
+  defaultVideo: string | null;
   onEdit: (step: 1 | 2 | 3) => void;
 };
 
 /** Step 4 (Session Types.dc.html `isStep4`): check answers, and the card as mentees see it. */
-export function ReviewStep({ draft: d, topics, defaults, weeklySummary, onEdit }: ReviewStepProps) {
+export function ReviewStep({
+  draft: d,
+  topics,
+  defaults,
+  weeklySummary,
+  defaultVideo,
+  onEdit,
+}: ReviewStepProps) {
   const topicLabels = d.topics.map((c) => topics.find((t) => t.slug === c)?.label ?? c);
   const stage = stagesLabel(d);
   // `defaults` is null until the mentor's own are known: then say "My defaults"
@@ -95,6 +104,8 @@ export function ReviewStep({ draft: d, topics, defaults, weeklySummary, onEdit }
             ...ruleRows,
             { k: REVIEW_COPY.hours, v: hoursSummary(d, weeklySummary) },
             { k: BOOKING_COPY.approveTitle, v: approval },
+            // The select's words, in both modes.
+            { k: RULES_COPY.videoTitle, v: venueLabel(d.venue, defaultVideo) },
           ]}
         />
       </div>

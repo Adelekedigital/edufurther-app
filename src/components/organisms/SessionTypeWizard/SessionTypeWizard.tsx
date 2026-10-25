@@ -50,6 +50,8 @@ type SessionTypeWizardProps = {
   onRetryDefaults: () => void;
   weekly: WeeklyStatus;
   onRetryWeekly: () => void;
+  /** The mentor's default video's name ("EduFurther video"); null until it's known. */
+  defaultVideo: string | null;
   onStep: (step: Step) => void;
   onBack: () => void;
   onNext: () => void;
@@ -161,6 +163,7 @@ export function SessionTypeWizard(p: SessionTypeWizardProps) {
             onRetryDefaults={p.onRetryDefaults}
             weekly={p.weekly}
             onRetryWeekly={p.onRetryWeekly}
+            defaultVideo={p.defaultVideo}
           />
         )}
         {p.step === 4 && (
@@ -169,6 +172,7 @@ export function SessionTypeWizard(p: SessionTypeWizardProps) {
             topics={p.topics}
             defaults={p.defaultsStatus === 'ready' ? p.defaults : null}
             weeklySummary={p.weekly.status === 'ready' ? p.weekly.summary : null}
+            defaultVideo={p.defaultVideo}
             onEdit={p.onStep}
           />
         )}

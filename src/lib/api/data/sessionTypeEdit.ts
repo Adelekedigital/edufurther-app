@@ -101,7 +101,19 @@ export function toDraft(s: SavedSessionType, defaults: BookingDefaults | null): 
         : r.requires_booking_confirmation
           ? 'on'
           : 'off',
+    venue: venueOf(r),
   };
+}
+
+/**
+ * Its own venue, else the default. A `custom` row (a personal link, set only as
+ * a default) can't be a session's own here, so it reads as following it.
+ */
+function venueOf(r: OwnSessionTypeRead): Draft['venue'] {
+  if (r.meeting_venue_inherited) return 'inherit';
+  return r.meeting_venue === 'daily' || r.meeting_venue === 'google_meet'
+    ? r.meeting_venue
+    : 'inherit';
 }
 
 /** The type (from the own list: there's no single GET), its questions and its hours. */
@@ -402,6 +414,7 @@ export function toDuplicateBody(
   const r = s.read;
   const offerings = r.service_offerings ?? [];
   const stages = stagesOf(r);
+  const venue = venueOf(r);
   const questions: DraftQuestion[] = s.questions.map((q) => ({
     key: q.id,
     text: q.text,
@@ -425,6 +438,8 @@ export function toDuplicateBody(
       // above a platform cap lowered since the original was saved.
       booking_window_days: r.booking_window_days == null ? null : r.effective_booking_window_days,
       break_after_minutes: r.break_after_minutes ?? null,
+      // Its own venue stays its own; one that follows the default still does.
+      meeting_venue: venue === 'inherit' ? null : venue,
       questions: questions.map(toQuestionWrite),
     },
     // Topics we couldn't match to the catalog (not loaded, or no longer offered).

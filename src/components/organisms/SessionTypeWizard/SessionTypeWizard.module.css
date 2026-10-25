@@ -414,6 +414,30 @@
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
 }
+/* A link inside a rule hint: the line keeps its height, the tap area is 44px. */
+.hintLink {
+  position: relative;
+  font-weight: var(--weight-semibold);
+  color: var(--text-action);
+  text-decoration: none;
+  border-radius: var(--radius-xs);
+}
+.hintLink::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--space-2) * -1);
+  right: calc(var(--space-2) * -1);
+  top: 50%;
+  height: var(--touch-target-min);
+  translate: 0 -50%;
+}
+.hintLink:hover {
+  color: var(--text-link-hover);
+}
+.hintLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
 @media (max-width: 767px) {
   /* Design phone rule [style*="padding: var(--space-3) var(--space-4)"]: 8px 12px. */
   .approvalRow {

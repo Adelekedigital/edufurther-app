@@ -4,6 +4,7 @@
  * words everywhere (owner, 2026-10-21), not the design's "Booking
  * confirmation": the switch and its line come from `lib/copy/mentorSettings`.
  */
+import { VIDEO_LABELS } from './integrations';
 
 /** The page and its titles. The URL stays /session-types. */
 export const SESSIONS_COPY = {
@@ -111,7 +112,21 @@ export const RULES_COPY = {
   ownHours: 'Set availability for this session',
   ownHoursBody:
     'Offer this session at different times without changing your weekly availability. Blocked dates apply to this session too.',
+  /** The Video row (Session Types PRD, step 3); the default is set in Integrations. */
+  videoTitle: 'Video',
+  videoHintLead: 'Where the call happens. Your default is set in ',
+  videoHintLink: 'Integrations',
+  videoHintHref: '/integrations',
 } as const;
+
+/**
+ * The Video select's words, also its Review row: the inherit option names the
+ * mentor's default once it's known (no guess before), as approval does.
+ */
+export function venueLabel(venue: 'inherit' | 'daily' | 'google_meet', defaultName: string | null) {
+  if (venue !== 'inherit') return VIDEO_LABELS[venue];
+  return defaultName ? `Use my default (${defaultName})` : 'Use my default';
+}
 
 /** Step 4's rows (PRD Step 4, design `summary` in the research copy). */
 export const REVIEW_COPY = {

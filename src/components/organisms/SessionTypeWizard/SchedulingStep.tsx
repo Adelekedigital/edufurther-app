@@ -6,7 +6,7 @@ import { RadioCards } from '@/components/molecules/RadioCards/RadioCards';
 import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import { BookingRulesRows } from '@/components/organisms/BookingRulesRows/BookingRulesRows';
 import { BOOKING_COPY, approvalShort } from '@/lib/copy/mentorSettings';
-import { RULES_COPY } from '@/lib/copy/sessionTypes';
+import { RULES_COPY, venueLabel } from '@/lib/copy/sessionTypes';
 import { bookingRulesSummary } from '@/lib/utils/calendar';
 import {
   resolveDefaults,
@@ -37,6 +37,8 @@ type SchedulingStepProps = {
   onRetryDefaults: () => void;
   weekly: WeeklyStatus;
   onRetryWeekly: () => void;
+  /** The mentor's default video ("EduFurther video"); null until it's known. */
+  defaultVideo: string | null;
 };
 
 /**
@@ -56,12 +58,14 @@ export function SchedulingStep({
   onRetryDefaults,
   weekly,
   onRetryWeekly,
+  defaultVideo,
 }: SchedulingStepProps) {
   // What "your default" approval is, named in its option; unknown until the defaults load.
   const defaultApproval = defaults
     ? approvalShort(resolveDefaults(defaults).requiresApproval)
     : null;
   const approvalId = useId();
+  const videoId = useId();
   return (
     <div className={styles.body3}>
       <div className={styles.section}>
@@ -215,6 +219,41 @@ export function SchedulingStep({
           </div>
         )}
         {errors.hours && <p className={styles.fieldError}>{errors.hours}</p>}
+      </div>
+
+      {/* Both modes: "Use my defaults" covers the rules, not where the call happens. */}
+      <div>
+        <div className={styles.approvalRow}>
+          <span className={styles.ruleText}>
+            <span className={styles.ruleLabel}>{RULES_COPY.videoTitle}</span>
+            <span id={videoId} className={styles.ruleHint}>
+              {RULES_COPY.videoHintLead}
+              <ExternalLink
+                href={RULES_COPY.videoHintHref}
+                label={RULES_COPY.videoHintLink}
+                className={styles.hintLink}
+              />
+              .
+            </span>
+          </span>
+          <Select
+            aria-label={RULES_COPY.videoTitle}
+            aria-describedby={errors.venue ? `${videoId} ${videoId}-error` : videoId}
+            invalid={!!errors.venue}
+            width={260}
+            value={d.venue}
+            onChange={(e) => update({ venue: e.target.value as Draft['venue'] })}
+            options={(['inherit', 'daily', 'google_meet'] as const).map((v) => ({
+              value: v,
+              label: venueLabel(v, defaultVideo),
+            }))}
+          />
+        </div>
+        {errors.venue && (
+          <p id={`${videoId}-error`} className={styles.fieldError}>
+            {errors.venue}
+          </p>
+        )}
       </div>
     </div>
   );

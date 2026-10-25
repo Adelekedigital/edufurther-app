@@ -77,6 +77,16 @@ vi.mock('@/lib/api/data/weeklyHours', async (orig) => ({
   useWeeklyHours: () => ({ data: null, isLoading: true, error: null, retry: vi.fn() }),
 }));
 
+vi.mock('@/lib/api/data/conferencing', () => ({
+  useConferencing: () => ({
+    data: { provider: 'daily', customUrl: null, isDefault: true },
+    isLoading: false,
+    error: null,
+    retry: vi.fn(),
+    retrying: false,
+  }),
+}));
+
 let savedMock: unknown;
 const save = vi.fn();
 vi.mock('@/lib/api/data/sessionTypeEdit', async (orig) => ({
@@ -95,6 +105,7 @@ const SAVED = {
     duration_inherited: true,
     min_notice_inherited: true,
     meeting_venue: 'daily',
+    meeting_venue_inherited: true,
     is_active: true,
     service_offerings: [{ code: 'document-preparation', display_name: 'Document preparation' }],
     application_stages: ['drafting_stage'],
