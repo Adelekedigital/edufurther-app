@@ -15,8 +15,14 @@
    the border, padding, focus ring and resize. */
 .note {
   width: 100%;
-  font-size: var(--text-p-sm);
   border-radius: var(--radius-md);
+}
+/* 14px only from tablet up: on phones the atom's 16px stays, or iOS zooms the
+   page on focus (as ReasonField). */
+@media (min-width: 768px) {
+  .note {
+    font-size: var(--text-p-sm);
+  }
 }
 
 .error {
