@@ -326,6 +326,12 @@ describe('SessionTypeFormScreen', () => {
     expect(screen.queryByText(/confirmed straight away|you approve each booking/i)).toBeNull();
     expect(screen.getByText('Your default')).toBeInTheDocument();
     expect(screen.getByText('My defaults')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^Back$/ }));
+    await user.click(screen.getByRole('radio', { name: /Customize for this session/ }));
+    // Nothing to name in the approval hint either: it says what the choice is.
+    expect(screen.getByRole('combobox', { name: 'Approve bookings' })).toHaveAccessibleDescription(
+      'Choose how bookings are confirmed.',
+    );
     unmount();
     const retry = vi.fn();
     defaultsMock = { data: null, isLoading: false, error: { kind: 'server', message: 'x' }, retry };

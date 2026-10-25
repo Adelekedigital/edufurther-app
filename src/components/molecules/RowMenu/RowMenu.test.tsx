@@ -253,56 +253,94 @@ describe('RowMenu: an item that is off', () => {
 });
 
 describe('RowMenu: opens toward the room (owner, 2026-10-25)', () => {
-  const at = (left: number, width = 220) =>
-    vi
-      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
-      .mockReturnValue({ left, right: left + width } as DOMRect);
+  const WIDE = 390;
+  const H = window.innerHeight;
+  type Box = { left: number; top: number; width: number; height: number };
+  const rect = ({ left, top, width, height }: Box) =>
+    ({ left, top, width, height, right: left + width, bottom: top + height }) as DOMRect;
+  // The "⋯" and the menu where CSS put it (jsdom lays nothing out).
+  const place = (button: Box, menu: Box) => {
+    vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(WIDE);
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      return rect(this.getAttribute('role') === 'menu' ? menu : button);
+    });
+  };
+  const open = async (align?: 'start') => {
+    render(
+      <RowMenu
+        label="Options"
+        trigger={align ? { icon: 'photo_camera', align } : undefined}
+        items={[{ key: 'a', icon: 'edit', label: 'Edit', onSelect: vi.fn() }]}
+      />,
+    );
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Options' }));
+    return screen.getByRole('menu');
+  };
   afterEach(() => vi.restoreAllMocks());
 
   it('a "⋯" near the left edge of a phone opens its menu to the right', async () => {
-    at(-60);
-    const { trigger } = setup();
-    await userEvent.setup().click(trigger);
-    expect(screen.getByRole('menu')).toHaveAttribute('data-side', 'start');
+    place(
+      { left: 128, top: 400, width: 32, height: 32 },
+      { left: -60, top: 436, width: 220, height: 180 },
+    );
+    expect(await open()).toHaveAttribute('data-side', 'start');
   });
 
   it('with room on the left it opens as drawn, under the button’s end', async () => {
-    at(100);
-    const { trigger } = setup();
-    await userEvent.setup().click(trigger);
-    expect(screen.getByRole('menu')).not.toHaveAttribute('data-side');
+    place(
+      { left: 300, top: 400, width: 32, height: 32 },
+      { left: 112, top: 436, width: 220, height: 180 },
+    );
+    expect(await open()).not.toHaveAttribute('data-side');
   });
 
-  it('no room under the button (a low row on a phone): it opens above', async () => {
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
-      left: 100,
-      right: 320,
-      top: window.innerHeight - 40,
-      bottom: window.innerHeight + 160,
-      height: 200,
-    } as DOMRect);
-    const { trigger } = setup();
-    await userEvent.setup().click(trigger);
-    expect(screen.getByRole('menu')).toHaveAttribute('data-up');
-  });
-
-  it('room under the button: it opens below, as drawn', async () => {
-    at(100);
-    const { trigger } = setup();
-    await userEvent.setup().click(trigger);
-    expect(screen.getByRole('menu')).not.toHaveAttribute('data-up');
+  it('no room on either side: it stays as drawn', async () => {
+    place(
+      { left: 200, top: 400, width: 32, height: 32 },
+      { left: -100, top: 436, width: 332, height: 180 },
+    );
+    expect(await open()).not.toHaveAttribute('data-side');
   });
 
   it('a start-aligned menu running off the right opens toward the left', async () => {
-    at(document.documentElement.clientWidth - 100);
-    render(
-      <RowMenu
-        label="Photo options"
-        trigger={{ icon: 'photo_camera', align: 'start' }}
-        items={[{ key: 'a', icon: 'upload', label: 'Upload', onSelect: vi.fn() }]}
-      />,
+    place(
+      { left: 300, top: 400, width: 32, height: 32 },
+      { left: 300, top: 436, width: 220, height: 180 },
     );
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Photo options' }));
-    expect(screen.getByRole('menu')).toHaveAttribute('data-side', 'end');
+    expect(await open('start')).toHaveAttribute('data-side', 'end');
+  });
+
+  it('a start-aligned menu with room on the right stays as drawn', async () => {
+    place(
+      { left: 40, top: 400, width: 32, height: 32 },
+      { left: 40, top: 436, width: 220, height: 180 },
+    );
+    expect(await open('start')).not.toHaveAttribute('data-side');
+  });
+
+  it('no room under the button (a low row on a phone): it opens above', async () => {
+    place(
+      { left: 128, top: H - 40, width: 32, height: 32 },
+      { left: 128, top: H - 4, width: 220, height: 180 },
+    );
+    expect(await open()).toHaveAttribute('data-up');
+  });
+
+  it('no room above either: it opens below, as drawn', async () => {
+    place(
+      { left: 128, top: 100, width: 32, height: 32 },
+      { left: 128, top: 136, width: 220, height: H },
+    );
+    expect(await open()).not.toHaveAttribute('data-up');
+  });
+
+  it('room under the button: it opens below, as drawn', async () => {
+    place(
+      { left: 128, top: 100, width: 32, height: 32 },
+      { left: 128, top: 136, width: 220, height: 180 },
+    );
+    expect(await open()).not.toHaveAttribute('data-up');
   });
 });

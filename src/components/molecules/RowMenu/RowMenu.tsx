@@ -127,10 +127,15 @@ export function RowMenu({ label, items, triggerRef, trigger, menu: drawn }: RowM
     if (!open || !el || !b) return;
     const r = el.getBoundingClientRect();
     const root = document.documentElement;
+    const wide = root.clientWidth;
     const start = trigger?.align === 'start';
     const covered = parseFloat(getComputedStyle(root).scrollPaddingBottom) || 0;
-    if (start ? r.right > root.clientWidth : r.left < 0) el.dataset.side = start ? 'end' : 'start';
-    if (r.bottom > window.innerHeight - covered && b.top - r.height >= 0) el.dataset.up = '';
+    // Only to a side it fits on: a menu wider than either side stays as drawn.
+    if (start ? r.right > wide && b.right - r.width >= 0 : r.left < 0 && b.left + r.width <= wide)
+      el.dataset.side = start ? 'end' : 'start';
+    // The gap under the button is the gap above it too.
+    const gap = r.top - b.bottom;
+    if (r.bottom > window.innerHeight - covered && b.top - gap - r.height >= 0) el.dataset.up = '';
   }, [open, trigger?.align]);
 
   useEffect(() => {
