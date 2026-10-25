@@ -122,27 +122,15 @@ export type LobbyClock = {
   /** "Starts in" / "In session". */
   label: string;
   value: string;
-  /** "Join opens in 04:12" / "Join is open" / "18 min left". */
-  sub: string;
 };
 
 /** The hero's clock, or null where the phase has none. */
 export function lobbyClock(b: Booking, phase: SessionPhase, now: Date): LobbyClock | null {
   const w = windowOf(b);
   const t = now.getTime();
+  // No line under it: the locked Join button carries the one countdown to the door.
   if (phase === 'upcoming' || phase === 'soon') {
-    const opensIn = w.opens - t;
-    return {
-      label: 'Starts in',
-      value: formatWait(w.starts - t),
-      sub:
-        opensIn <= 0
-          ? 'Join is open'
-          : opensIn < DAY_MS
-            ? `Join opens in ${formatClock(opensIn)}`
-            : // Days out, a second countdown says nothing the first doesn't.
-              `Join opens ${opensBeforeMin(b)} minutes before the start`,
-    };
+    return { label: 'Starts in', value: formatWait(w.starts - t) };
   }
   // No clock once it has started (product, 2026-10-08): the call may run on
   // another platform, and a timer here would disagree with it.

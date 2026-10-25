@@ -5,6 +5,7 @@ import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { AddToCalendarMenu } from '@/components/molecules/AddToCalendarMenu/AddToCalendarMenu';
 import { PresencePerson } from '@/components/molecules/PresencePerson/PresencePerson';
 import { SessionClock } from '@/components/molecules/SessionClock/SessionClock';
+import { TimezonePicker } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import {
   SessionStatusPill,
   type SessionStatusTone,
@@ -54,9 +55,11 @@ type SessionLobbyProps = {
   status: { tone: SessionStatusTone; label: string; live?: boolean };
   /** "1:1 call with Gbenga Ogundipe". */
   title: string;
-  /** "Mon, Sep 28 · 6:00 – 6:30 pm · Lagos (WAT) · EduFurther video". */
+  /** "Mon, Sep 28 · 6:00 – 6:30 pm · EduFurther video". */
   meta: string;
-  clock: { label: string; value: string; sub: string } | null;
+  /** The time zone switcher under the date line: every time on the page follows it. */
+  zone?: { value: string; onChange: (zone: string) => void; deviceZone: string };
+  clock: { label: string; value: string; sub?: string } | null;
   people: [LobbyPerson, LobbyPerson];
   /** Join and the line under it. Absent once nobody can join. */
   join?: LobbyJoin;
@@ -77,6 +80,7 @@ export function SessionLobby({
   status,
   title,
   meta,
+  zone,
   clock,
   people,
   join,
@@ -109,6 +113,7 @@ export function SessionLobby({
           {title}
         </h1>
         <span className={styles.meta}>{meta}</span>
+        {zone && <TimezonePicker {...zone} />}
       </div>
 
       {clock && <SessionClock {...clock} />}

@@ -6,6 +6,7 @@ import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
+import { SupportLine } from '@/components/molecules/SupportLine/SupportLine';
 import { SessionLobby } from '@/components/organisms/SessionLobby/SessionLobby';
 import { SessionOutcome } from '@/components/organisms/SessionOutcome/SessionOutcome';
 import {
@@ -28,7 +29,9 @@ import { ConfirmActionDialog } from '@/app/_sessions/ConfirmActionDialog';
 import { IntakeFileViewer } from '@/app/_sessions/IntakeFileViewer';
 import { canBookFor } from '@/app/_shell/bookBlocked';
 import { lockedPageGate, memberGate, SESSION_GATE } from '@/app/_shell/MentorGate';
-import { accessFor } from '@/lib/utils/access';
+import { accessFor, memberHome } from '@/lib/utils/access';
+import { sessionSupportMail, SUPPORT_FOOTER_COPY } from '@/lib/copy/session';
+import { supportMailto } from '@/lib/utils/mailto';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
 import { useMyReviewableSessions } from '@/lib/api/data/reviewableSessions';
 import { useSendReview } from '@/lib/api/data/reviewWrite';
@@ -55,11 +58,12 @@ import {
   isDrawnPhase,
   isSettled,
   lobbyModel,
+  lobbyTitle,
+  lobbyWhen,
   PHASE_ANNOUNCEMENT,
 } from './lobbyModel';
 import styles from './SessionJoinScreen.module.css';
 
-/** The design's back link names Home for mentors, but there is no mentor home yet. */
 const BACK = { href: '/bookings', label: 'Go to Bookings' };
 
 const NOT_OPEN = 'This session isn’t open to join right now.';
@@ -110,7 +114,9 @@ export function SessionJoinScreen({ id }: { id: string }) {
   const member = viewer.kind === 'member' ? viewer : null;
   const userId = member?.id ?? null;
   const deviceZone = useMemo(() => deviceTimeZone(), []);
-  const timeZone = member?.timeZone ?? deviceZone;
+  // The switcher under the date line: every time on the page follows it.
+  const [zone, setZone] = useState<string | null>(null);
+  const timeZone = zone ?? member?.timeZone ?? deviceZone;
   const accountZone = member?.timeZone ?? deviceZone;
 
   // A session is a booking: the setup lock holds it as it holds Bookings, and
@@ -279,6 +285,13 @@ export function SessionJoinScreen({ id }: { id: string }) {
             />
           )}
         </div>
+        <div className={styles.support}>
+          <SupportLine
+            lead={SUPPORT_FOOTER_COPY.lead}
+            linkLabel={SUPPORT_FOOTER_COPY.link}
+            href={supportMailto()}
+          />
+        </div>
       </section>
     );
   } else if (!data || !live) {
@@ -343,6 +356,12 @@ export function SessionJoinScreen({ id }: { id: string }) {
     // Plain text: the live region above already says it, and a second status
     // region would read it out twice. Not when the lobby's own note already
     // says the same (the closed rule), so it isn't printed twice.
+    const mail = sessionSupportMail({
+      sessionName: lobbyTitle(data),
+      when: lobbyWhen(data, timeZone),
+      name: data.me.name,
+      role: b.side,
+    });
     const notice =
       problem && problem.text !== lobby.note ? (
         <p className={styles.problem}>{problem.text}</p>
@@ -354,6 +373,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
           {/* A Join problem belongs to joining: gone once the session is over. */}
           <SessionLobby
             {...lobby}
+            zone={{ value: timeZone, onChange: setZone, deviceZone }}
             notice={preparing ? notice : null}
             onCalendarSheet={() => setSheet('calendar')}
           />
@@ -388,6 +408,13 @@ export function SessionJoinScreen({ id }: { id: string }) {
               onOpen={setSheet}
             />
           )}
+          <div className={styles.support}>
+            <SupportLine
+              lead={SUPPORT_FOOTER_COPY.lead}
+              linkLabel={SUPPORT_FOOTER_COPY.link}
+              href={supportMailto(mail.subject, mail.body)}
+            />
+          </div>
         </section>
         {preparing && (
           <SessionPrepAside
@@ -423,7 +450,12 @@ export function SessionJoinScreen({ id }: { id: string }) {
   }, [orphanedSheets]);
 
   return (
-    <FocusPage back={BACK} offline={!online} wide={wide || !!prep}>
+    <FocusPage
+      back={BACK}
+      home={member ? memberHome(member) : undefined}
+      offline={!online}
+      wide={wide || !!prep}
+    >
       <LiveRegion message={said} />
       {body}
       {sheet === 'calendar' && calendar && (

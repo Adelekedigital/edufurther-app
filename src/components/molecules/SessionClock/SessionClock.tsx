@@ -5,8 +5,8 @@ type SessionClockProps = {
   label: string;
   /** "08:00", "1:45:00". */
   value: string;
-  /** "Join opens in 03:00" / "18 min left". */
-  sub: string;
+  /** "18 min left". None before the start: the Join button says when it opens. */
+  sub?: string;
 };
 
 /**
@@ -22,7 +22,7 @@ export function SessionClock({ label, value, sub }: SessionClockProps) {
     <div className={styles.clock}>
       <span className={styles.label}>{label}</span>
       <span className={styles.value}>{value}</span>
-      <span className={styles.sub}>{sub}</span>
+      {sub && <span className={styles.sub}>{sub}</span>}
     </div>
   );
 }
