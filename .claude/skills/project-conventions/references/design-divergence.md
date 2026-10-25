@@ -430,13 +430,13 @@ Source: `Session Join.dc.html`, defaults `layout=lobby`, `provider=edufurther`; 
 | Design says | We do | Why | Revisit |
 |---|---|---|---|
 | A focused page: slim header (logo + one link back), no nav rail | Built as drawn (`templates/FocusPage`), an exception to "every app screen renders inside AppShell" | Product 2026-10-07: a page opened to do one thing now | never |
-| Mentor's header link "Go to Home" | "Go to Bookings" for both sides; the logo goes there too | There is no mentor home yet (`/dashboard` 404s) | #189 |
+| Mentor's header link "Go to Home" | "Go to Bookings" for both sides; the logo goes there too | There is no mentor home yet (`/dashboard` 404s) | #189 **Superseded 2026-10-25: see "Session Join — lobby as drawn" below.** |
 | Lobby people: DS Avatar `type=initials` (dark initials on blue-50) | The person's own colour (`cover`), as Bookings' rows show them | One person looks the same on every screen | design confirms |
 | "Join opens 10 minutes before" / the button "turns on 10 minutes before" | Read from `join_opens_at` (10 since backend #391, a backend setting) | Backend reply §2. **Product, 2026-10-08: 10 minutes, as a backend setting** (backend #391, merged); the page follows `join_opens_at` with no change | never — follows `join_opens_at`, a backend setting (product 2026-10-08) |
-| "Rejoin session" for every mentor while in progress | "Rejoin session" only for someone who has pressed Join; otherwise "Join now" | Rejoin says you were in | never — Rejoin says you were in |
+| "Rejoin session" for every mentor while in progress | "Rejoin session" only for someone who has pressed Join; otherwise "Join now" | Rejoin says you were in | never — Rejoin says you were in **Superseded 2026-10-25: see "Session Join — lobby as drawn" below.** |
 | Clock `aria-live="polite"` | Not a live region; a separate LiveRegion says "Join is open.", "The session has started.", "{name} is here." once each | A per-second clock would be read every second | never |
-| Meta line without a zone | "… · Lagos (WAT) · EduFurther video" | Product rule: times name whose clock they are | never — product rule: times name their zone |
-| Join links: Add to calendar, Message {name}, Reschedule, Cancel | Add to calendar and Cancel (Cancel while the backend allows it, more than 10 minutes out). Message and Reschedule omitted | No endpoint for those two (house rule: omit, don’t disable). Add to calendar: PR 2, below | #168, #185 |
+| Meta line without a zone | "… · Lagos (WAT) · EduFurther video" | Product rule: times name whose clock they are | never — product rule: times name their zone **Superseded 2026-10-25: see "Session Join — lobby as drawn" below.** |
+| Join links: Add to calendar, Message {name}, Reschedule, Cancel | Add to calendar and Cancel (Cancel while the backend allows it, more than 10 minutes out). Message and Reschedule omitted | No endpoint for those two (house rule: omit, don’t disable). Add to calendar: PR 2, below | #168, #185 **Superseded 2026-10-25: see "Session Join — lobby as drawn" below.** |
 | "Having a problem? Report an issue" footer | Omitted | No support channel or endpoint | #187, #108 |
 | Guide: "Reschedule or message {name} at least 12 hours before" | "Cancel at least 12 hours before, so the time can go to someone else." | Neither action exists | #185, #168 |
 | Guide: "Sessions are 30 minutes" | "This session is {n} minutes" | The length is the session's own | never — the length is the session's own |
@@ -444,13 +444,13 @@ Source: `Session Join.dc.html`, defaults `layout=lobby`, `provider=edufurther`; 
 | Answers disclosure preview "{area} · {text}" | Every answer's text joined by " · "; the row is hidden when nothing was answered | The form is the mentor's own, not a fixed pair | never — the form is the mentor's own |
 | Edit answers (mentee, until the start) | Omitted | No endpoint | #186 |
 | (no state) running, but past `join_closes_at` | Someone who joined: **Rejoin session** through `POST /door` until `door_closes_at` (PR 2). Someone who never joined: **ours, provisional:** no Join; "Joining closed at 6:15 pm, 15 minutes after the start." | Backend #380 (the door) closed #379. Late first-timers aren’t let in: they couldn’t count as attending (product, 2026-10-08) | design request |
-| (no state) over, attendance not settled | **Ours, provisional:** pill "Ended", no clock, "Joined at 6:01 pm" / "No arrival recorded", "We're confirming who joined, which can take up to an hour." | The sweep runs hourly; the backend asks us never to infer "missed" from the clock | design request |
+| (no state) over, attendance not settled | **Ours, provisional:** pill "Ended", no clock, "Joined at 6:01 pm" / "No arrival recorded", "We're confirming who joined, which can take up to an hour." | The sweep runs hourly; the backend asks us never to infer "missed" from the clock | design request **Superseded 2026-10-25: see "Session Join — lobby as drawn" below.** |
 | (no states) loading, error, not found, guest | **Ours, provisional:** the lobby's shape as a skeleton; "We couldn't load this session" + Try again; "This session isn't available" + Go to Bookings; the shared member gate ("Log in to join your session") | Undesigned | design request |
 | Pending, cancelled, declined, expired, withdrawn | Redirect (replace) to `/bookings?booking={id}` | Product 2026-10-07: Bookings already shows them | design draws those statuses on Session Join |
 | Completed and missed | Drawn here since PR 3 (below); only the statuses the page never draws redirect | PR split (product 2026-10-07) | never — drawn here since PR 3 |
 | Pulse keyframes in `rgba(4,128,46,…)` | `color-mix(in srgb, var(--green-600) …, transparent)` | No raw colours in components | never — no raw colours in components |
 | Phones: Join button padding 16/24 | 16/16 (the Button atom's phone rule) | CTA hierarchy | design revises the CTA hierarchy's phone rule |
-| Phones: Join links 32px tall | 44px tap area | Touch target | never — touch-target rule |
+| Phones: Join links 32px tall | 44px tap area | Touch target | never — touch-target rule **Superseded 2026-10-25: see "Session Join — lobby as drawn" below.** |
 | Bookings: Join opens the meeting | Join opens `/sessions/{id}`; the join call happens there | The design's Bookings Join links to Session Join | never — matches the design's Bookings → Session Join link |
 
 ### Session Join — Rejoin and Add to calendar (PR 2), 2026-10-08
@@ -463,7 +463,7 @@ Source: `Session Join.dc.html`, defaults `layout=lobby`, `provider=edufurther`; 
 | "Add to calendar": a single link | A menu from that link (ours): Google Calendar, Outlook.com, and "Download for other calendars (.ics)". The file is made in the browser | Product, 2026-10-08: any calendar, not only Google | design draws the menu |
 | (no rule) | The Google and Outlook.com links carry the session title, which names the other person, to Google or Microsoft | Product chose the web-calendar options knowing this (2026-10-08). The .ics sends nothing anywhere. No event ever contains the call link: it carries a personal access token | product revisits sending the title to Google / Microsoft |
 | Join links in `--blue-500` on every ground | `--blue-700` on the tinted grounds (blue while starting soon, green in progress) | `--blue-500` on `--blue-50` is under 4.5:1 at 12px (axe) | design adopts |
-| "Starts in 1:45:00" (the design only draws waits under two hours) | Under a day the clock; under two days "45 hours"; beyond, "3 days", with "Join opens 5 minutes before the start" and a plain locked "Join session" | "73:59:59" reads as a fault, and "1 day" for 47 hours understates | design draws waits over two hours |
+| "Starts in 1:45:00" (the design only draws waits under two hours) | Under a day the clock; under two days "45 hours"; beyond, "3 days", with "Join opens 5 minutes before the start" and a plain locked "Join session" | "73:59:59" reads as a fault, and "1 day" for 47 hours understates | design draws waits over two hours **Superseded 2026-10-25: see "Session Join — lobby as drawn" below.** |
 
 ### Session Join — completed and missed (PR 3), 2026-10-08
 
@@ -496,7 +496,7 @@ Source: `Session Join.dc.html`, defaults `layout=lobby`, `provider=edufurther`; 
 | EduFurther video: the Join press is the arrival | Joined once Daily has seen them in the room; pressed Join but not seen yet reads **"Joining…"** (ours, provisional) | Daily now reports real presence; a press whose call never connected isn't an arrival | design request |
 | Google Meet / a mentor's own link: same as EduFurther video | "Joined" on the Join press | Meet reports no presence (its records need a Google scope the owner has parked, backend #383). Product, 2026-10-09 | #383 |
 | Ended, unsettled: "Joined at 6:01 pm" | The room time for Daily, the press time for Meet; a Daily press never seen in the room reads **"Pressed Join at 6:01 pm"** (ours, provisional) | Settlement may still fill in the room time; a press alone isn't a join | design request |
-| Hint "{name} is in the call." | "{name} has joined." | Same reason: not "in the call now" | #394 |
+| Hint "{name} is in the call." | "{name} has joined." | Same reason: not "in the call now" | #394 **Superseded 2026-10-25: see "Session Join — lobby as drawn" below.** |
 | Rejoin and Bookings' Join | Unchanged: gated on the Join press (`joined_at`), not on the room sighting | A press whose call didn't connect must still get back in (agreed with backend, 2026-10-08) | never — agreed with backend, 2026-10-08 |
 
 ### Session Join — the no-link and popup-blocked notices, 2026-10-09
@@ -1074,3 +1074,18 @@ verified 21 Oct).
   row; on a full-width phone row that opens it away from its button, so ours
   keeps it under the button.)
 
+### Session Join — lobby as drawn (Session Join PRD, PR 3 without presence), 2026-10-25
+
+Source: the live `Session Join.dc.html` (`layout=lobbySplit`), re-read 2026-10-25, and the Session Join PRD (founder decisions of Oct 21). These close the rows marked superseded above.
+
+| Design | Build | Why | Revisit |
+|---|---|---|---|
+| Date line "Mon, Sep 28 · 6:00 – 6:30 pm · EduFurther video", `TimezonePicker` under it | As drawn. The zone left the text; the switcher says whose clock the times are in, and every time on the page follows it | Founder, Oct 21: the switcher replaces the zone in the text | never |
+| `TimezonePicker` at its default prefix, "Times shown in" | As drawn. The PRD's "Times in X · Change" was shorthand | Presentation follows the design | never |
+| Clock sub empty before the start | As drawn: no line under the clock. The locked Join carries the one countdown ("Join opens in 4:47:55"); days out, a plain "Join session" | Copy pass, Oct 19 | never |
+| Hint: "The button becomes active {n} minutes before the start." / the venue's hint once open | As drawn, `{n}` from `join_opens_at`. "Join now" and "{First} has joined." are gone: the people's rings say who is in | Copy pass | never |
+| "Rejoin call" | As drawn, still only for someone who has been in | | never |
+| Links while upcoming: Add to calendar · Reschedule · Cancel; none once Join opens | As drawn. Reschedule opens the cancel dialog, where a mentor suggests a new time (J2); a mentee cancels and books again. 44px at every width, `0 var(--space-1)` padding, underline on hover | PRD J2 | never |
+| Ended (settling) note "You've finished this session. We're confirming who joined. Your booking updates when that's done." | As drawn | Founder, Oct 21: the design's line | never |
+| "Having a problem? Contact support", the card's last row, hairline top border | As drawn (`SupportLine`), a prefilled email with the session, its time, the viewer's name and role. Also on the load-failure card, with a blank email | PRD Frame; a failed load is when support is most needed | never |
+| Logo → the viewer's Home | `memberHome(viewer)` (`/home` or `/dashboard`); "Go to Bookings" unchanged | PRD Frame | never |
