@@ -91,16 +91,22 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     mentee: [string, string],
     o: Opts = {},
   ): S['SessionRead'] => {
+    // Live presence (backend #394): EduFurther video only; in the room now while
+    // the session runs and Daily has seen them. Null for any other venue.
+    const inRoom = (seen?: string) =>
+      (o.provider ?? 'daily') === 'daily' ? status === 'confirmed' && !!seen : null;
     const other: S['PartyRead'] = {
       ...party(`mock-${id}`, mentee[0], mentee[1], o.zone ?? 'Africa/Lagos', o.edu ?? {}),
       joined_at: o.otherJoinedAt ?? null,
       in_room_at: o.otherInRoomAt ?? null,
+      in_room: inRoom(o.otherInRoomAt),
       attendance_status: o.otherAttendance ?? 'pending',
     };
     const me: S['PartyRead'] = {
       ...party(userId, 'Gbenga', 'Adeyemi', 'America/New_York'),
       joined_at: o.meJoinedAt ?? null,
       in_room_at: o.meInRoomAt ?? null,
+      in_room: inRoom(o.meInRoomAt),
       attendance_status: o.meAttendance ?? 'pending',
     };
     return {

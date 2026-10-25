@@ -83,6 +83,7 @@ export function toParty(p: PartyRead): BookingParty {
     institution: p.deleted ? null : (p.institution ?? null),
     joinedAt: p.joined_at ?? null,
     inRoomAt: p.in_room_at ?? null,
+    inRoom: p.in_room ?? null,
     attendance:
       p.attendance_status === 'attended'
         ? 'attended'

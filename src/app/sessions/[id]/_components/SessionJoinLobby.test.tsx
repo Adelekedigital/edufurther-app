@@ -125,9 +125,9 @@ describe('before the window', () => {
   it('shows both people, neither in the call', () => {
     renderAt('15:15:00');
     expect(screen.getByText('You')).toBeVisible();
-    expect(screen.getByText('Not in the call')).toBeVisible();
     expect(screen.getByText('Amara')).toBeVisible();
-    expect(screen.getByText('Not here yet')).toBeVisible();
+    // The same words for both (PRD live presence).
+    expect(screen.getAllByText('Not in the call yet')).toHaveLength(2);
   });
 
   it('offers Cancel, and confirms it before calling the session off', async () => {
@@ -201,7 +201,7 @@ describe('the window is open', () => {
     expect(screen.getByText('Starting soon')).toBeVisible();
     expect(screen.getByRole('link', { name: 'Join session (opens in a new tab)' })).toBeVisible();
     expect(screen.getByText('Opens in your browser. No download needed.')).toBeVisible();
-    expect(screen.getByText('Ready when you are')).toBeVisible();
+    expect(screen.getAllByText('Not in the call yet')).toHaveLength(2);
   });
 
   it('no links once Join opens: no Add to calendar, Reschedule or Cancel', () => {
@@ -226,7 +226,53 @@ describe('the window is open', () => {
     expect(screen.queryByText(/has joined/)).not.toBeInTheDocument();
   });
 
-  it('EduFurther video: Joined once Daily has seen them in the room, never "Here now"', () => {
+  it('EduFurther video: "Here now", a pulsing green ring, while Daily has them in the room', () => {
+    h.room = remote(
+      sessionRoom({
+        other: sampleParty({
+          firstName: 'Amara',
+          joinedAt: '2026-10-04T16:57:00Z',
+          inRoomAt: '2026-10-04T16:57:20Z',
+          inRoom: true,
+        }),
+      }),
+    );
+    renderAt('16:58:00');
+    const amara = screen.getByText('Here now').closest('.person')!;
+    expect(amara).toHaveClass('here', 'green');
+    expect(amara.querySelector('.pulse')).not.toBeNull();
+    // The viewer isn't in: the same grey line.
+    expect(screen.getByText('Not in the call yet')).toBeVisible();
+  });
+
+  it('EduFurther video: back to "Not in the call yet" once they leave', () => {
+    h.room = remote(
+      sessionRoom({
+        other: sampleParty({
+          firstName: 'Amara',
+          joinedAt: '2026-10-04T16:57:00Z',
+          inRoomAt: '2026-10-04T16:57:20Z',
+          inRoom: false,
+        }),
+      }),
+    );
+    renderAt('17:05:00');
+    expect(screen.queryByText('Here now')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Not in the call yet')).toHaveLength(2);
+  });
+
+  it('EduFurther video: the viewer’s own ring works the same way', () => {
+    h.room = remote(
+      sessionRoom(
+        {},
+        { joinedAt: '2026-10-04T16:57:00Z', inRoomAt: '2026-10-04T16:57:10Z', inRoom: true },
+      ),
+    );
+    renderAt('16:58:00');
+    expect(screen.getByText('Here now').closest('.person')).toHaveTextContent('You');
+  });
+
+  it('EduFurther video on a row without live presence yet: Joined from the room sighting', () => {
     h.room = remote(
       sessionRoom({
         other: sampleParty({
@@ -239,15 +285,6 @@ describe('the window is open', () => {
     renderAt('16:58:00');
     expect(screen.getByText('Joined')).toBeVisible();
     expect(screen.queryByText('Here now')).not.toBeInTheDocument();
-  });
-
-  it('EduFurther video: pressed Join but not seen in the room reads Joining…', () => {
-    h.room = remote(
-      sessionRoom({ other: sampleParty({ firstName: 'Amara', joinedAt: '2026-10-04T16:57:00Z' }) }),
-    );
-    renderAt('16:58:00');
-    expect(screen.getByText('Joining…')).toBeVisible();
-    expect(screen.queryByText('Joined')).not.toBeInTheDocument();
   });
 
   it('Google Meet reports no presence: Joined on the Join press', () => {
@@ -266,7 +303,8 @@ describe('the window is open', () => {
     h.room = remote(sessionRoom({}, { joinedAt: '2026-10-04T17:01:00Z' }));
     renderAt('17:20:00');
     expect(screen.getByRole('link', { name: 'Rejoin call (opens in a new tab)' })).toBeVisible();
-    expect(screen.getByText('Joining…')).toBeVisible();
+    // Pressed Join, never in the room: not in the call.
+    expect(screen.getAllByText('Not in the call yet')).toHaveLength(2);
   });
 
   it('Join is a new-tab link to our entry route, which records the arrival (#207)', async () => {

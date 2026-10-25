@@ -580,6 +580,29 @@ describe('what a screen reader hears', () => {
     expect(srStatus()).not.toHaveTextContent('is here');
   });
 
+  it('live presence: says when they arrive and when they leave the call', () => {
+    const amara = (inRoom: boolean) =>
+      remote(
+        sessionRoom({
+          other: sampleParty({
+            firstName: 'Amara',
+            joinedAt: '2026-10-04T16:58:05Z',
+            inRoomAt: '2026-10-04T16:58:10Z',
+            inRoom,
+          }),
+        }),
+      );
+    h.room = amara(false);
+    const view = renderAt('16:58:00');
+    expect(srStatus()).toBeEmptyDOMElement();
+    h.room = amara(true);
+    view.rerender(<SessionJoinScreen id="b1" />);
+    expect(srStatus()).toHaveTextContent('Amara joined.');
+    h.room = amara(false);
+    view.rerender(<SessionJoinScreen id="b1" />);
+    expect(srStatus()).toHaveTextContent('Amara left the call.');
+  });
+
   it('never the ticking clock, but the door opening, once', () => {
     renderAt('16:54:58');
     const status = screen.getAllByRole('status').find((el) => el.className === 'sr-only')!;

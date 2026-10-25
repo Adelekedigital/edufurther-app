@@ -27,33 +27,38 @@ export const ClockCountingDown: Story = {
   render: () => <SessionClock label="Starts in" value="1:45:00" />,
 };
 
-/** Joined (green ring) beside away (grey: Joining…, Not here yet), a long name, and a deleted account. */
+/** Here now (pulsing green ring), joined (green, no pulse), not in the call (grey), a long name, and a deleted account. */
 export const Presence: Story = {
   render: () => (
     <div style={{ display: 'flex', gap: 16 }}>
       <PresencePerson
         person={sampleParty({ id: 'me', initials: 'GO', cover: 'sky' })}
         name="You"
-        presence="Ready when you are"
+        presence="Not in the call yet"
         tone="away"
       />
-      <PresencePerson person={sampleParty()} name="Amara" presence="Joined" tone="joined" />
+      <PresencePerson person={sampleParty()} name="Amara" presence="Here now" tone="here" />
+      <PresencePerson
+        person={sampleParty({ id: 'meet', initials: 'TB' })}
+        name="Tolu"
+        presence="Joined"
+        tone="joined"
+      />
       <PresencePerson
         person={sampleParty({ id: 'long', initials: 'OA' })}
         name="Oluwadamilareoluwa"
-        presence="Not here yet"
+        presence="Not in the call yet"
         tone="away"
       />
       <PresencePerson
         person={sampleParty({ id: 'gone', deleted: true, initials: '', name: 'Deleted user' })}
         name="Deleted user"
-        presence="Not here yet"
+        presence="Not in the call yet"
         tone="away"
       />
     </div>
   ),
 };
-
 /** The design's "Add to calendar" link, opening Google, Outlook.com or a .ics file. */
 export const AddToCalendar: Story = {
   render: () => (

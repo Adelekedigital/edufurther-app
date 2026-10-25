@@ -100,7 +100,7 @@ export const Upcoming: Story = {
     status: { tone: 'blue', label: 'Upcoming' },
     clock: { label: 'Starts in', value: '1:45:00' },
     zone: { value: 'Africa/Lagos', onChange: fn(), deviceZone: 'Africa/Lagos' },
-    people: [you('Not in the call'), her('Not here yet')],
+    people: [you('Not in the call yet'), her('Not in the call yet')],
     join: {
       label: 'Join opens in 1:40:00',
       enabled: false,
@@ -116,7 +116,7 @@ export const StartingSoon: Story = {
     ground: 'blue',
     status: { tone: 'blue', label: 'Starting soon' },
     clock: { label: 'Starts in', value: '03:12' },
-    people: [you('Ready when you are'), her('Joined', 'joined')],
+    people: [you('Not in the call yet'), her('Here now', 'here')],
     join: {
       label: 'Join session',
       enabled: true,
@@ -133,7 +133,7 @@ export const InProgress: Story = {
     status: { tone: 'green', label: 'In progress', live: true },
     // No timer once started: the call may run on another platform.
     clock: null,
-    people: [you('Ready when you are'), her('Joined', 'joined')],
+    people: [you('Not in the call yet'), her('Here now', 'here')],
     join: {
       label: 'Join now',
       enabled: true,
@@ -176,7 +176,7 @@ export const WindowClosed: Story = {
     ground: 'green',
     status: { tone: 'green', label: 'In progress', live: true },
     clock: null,
-    people: [you('Not in the call'), her('Joined', 'joined')],
+    people: [you('Not in the call yet'), her('Here now', 'here')],
     note: 'Joining closed at 6:15 pm, 15 minutes after the start.',
   },
 };
@@ -196,7 +196,10 @@ export const LongNames: Story = {
   args: {
     ...Upcoming.args,
     title: 'Statement of Purpose deep review with Oluwadamilareoluwa Adebayo-Ogunlesi',
-    people: [you('Not in the call'), { ...her('Not here yet'), name: 'Oluwadamilareoluwa' }],
+    people: [
+      you('Not in the call yet'),
+      { ...her('Not in the call yet'), name: 'Oluwadamilareoluwa' },
+    ],
   },
 };
 
@@ -284,7 +287,7 @@ export const Missed: Story = {
 export const JoiningOnDaily: Story = {
   args: {
     ...InProgress.args,
-    people: [you('Ready when you are'), her('Joining…')],
+    people: [you('Not in the call yet'), her('Not in the call yet')],
     join: {
       label: 'Join now',
       enabled: true,

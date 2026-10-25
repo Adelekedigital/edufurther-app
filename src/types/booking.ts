@@ -84,6 +84,12 @@ export type BookingParty = {
    */
   inRoomAt: string | null;
   /**
+   * EduFurther video only: in the room right now, joined and not left (backend
+   * #394; two tabs count until both have left). Null when the venue can't say
+   * (Google Meet, a mentor's own link) or the row predates the field.
+   */
+  inRoom: boolean | null;
+  /**
    * Whether they turned up. `pending` means **we do not know yet** — it is the
    * state of every party until the join window shuts, and of two migrated
    * bookings that have no participant record at all. Never read it as absence.

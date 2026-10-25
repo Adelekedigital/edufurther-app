@@ -256,7 +256,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
     live &&
     live !== 'upcoming' &&
     data &&
-    presenceOf(data.booking.other, data.provider) === 'joined'
+    presenceOf(data.booking.other, data.provider) !== 'none'
   );
   const [seen, setSeen] = useState({ live, otherJoined });
   if (seen.live !== live || seen.otherJoined !== otherJoined) {
@@ -270,7 +270,14 @@ export function SessionJoinScreen({ id }: { id: string }) {
     const phaseText =
       changed && live && live !== seen.live && closedForMe ? PHASE_ANNOUNCEMENT[live] : undefined;
     const arrived = changed && otherJoined && !seen.otherJoined && data;
-    const text = [phaseText, arrived ? `${data.booking.other.firstName} joined.` : null]
+    // Live presence (EduFurther video) also says when they leave; Meet's
+    // "Joined" never goes back, so this is only ever heard for Daily.
+    const left = changed && !otherJoined && seen.otherJoined && live === seen.live && data;
+    const text = [
+      phaseText,
+      arrived ? `${data.booking.other.firstName} joined.` : null,
+      left ? `${data.booking.other.firstName} left the call.` : null,
+    ]
       .filter(Boolean)
       .join(' ');
     if (text) setSaid((last) => ({ text, id: (last?.id ?? 0) + 1 }));
