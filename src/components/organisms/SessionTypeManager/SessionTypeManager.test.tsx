@@ -13,7 +13,6 @@ const T: OwnSessionType = {
   isLive: true,
   usesOwnWindows: false,
   stages: [],
-  customStage: null,
   topics: [{ code: 'document-preparation', label: 'Document preparation' }],
   icon: 'edit_document',
   iconChoice: null,

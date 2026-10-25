@@ -502,52 +502,44 @@ describe('SessionTypeFormScreen — review of #60', () => {
     expect(screen.getByRole('alertdialog', { name: 'Discard this session?' })).toBeInTheDocument();
   });
 
-  it('"Best for mentees who are…" takes several stages and sends them all (round 3 A)', async () => {
+  it('"Best for mentees who are…": the design’s six chips, several picked, sent in order', async () => {
     const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
     const group = screen.getByRole('group', { name: 'Best for mentees who are' });
     expect(
+      within(group)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual([
+      'Exploring',
+      'Researching schools & scholarships',
+      'Preparing documents',
+      'Applying',
+      'Preparing for interview',
+      'Waiting for a decision',
+    ]);
+    // No custom stage any more (PRD step 1).
+    expect(screen.queryByRole('textbox', { name: 'Another stage' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Add' })).toBeNull();
+    expect(
       screen.getByText('Choose the stages this session is most useful for.'),
     ).toBeInTheDocument();
-    await user.click(within(group).getByRole('button', { name: 'Drafting' }));
-    await user.click(within(group).getByRole('button', { name: 'Revising' }));
-    await user.type(screen.getByRole('textbox', { name: 'Another stage' }), 'Deferred');
-    await user.click(screen.getByRole('button', { name: 'Add' }));
-    for (const n of ['Drafting', 'Revising', 'Deferred'])
-      expect(within(group).getByRole('button', { name: n })).toHaveAttribute(
-        'aria-pressed',
-        'true',
-      );
+    await user.click(within(group).getByRole('button', { name: 'Applying' }));
+    await user.click(within(group).getByRole('button', { name: 'Exploring' }));
+    await user.click(within(group).getByRole('button', { name: 'Preparing documents' }));
     // Unpicking one keeps the others.
-    await user.click(within(group).getByRole('button', { name: 'Revising' }));
+    await user.click(within(group).getByRole('button', { name: 'Exploring' }));
     for (const n of [/^Continue$/, /^Continue$/, /^Continue$/, /Publish session/])
       await user.click(next(n));
     expect(create.mock.calls[0]![0].body).toMatchObject({
-      application_stages: ['drafting_stage', 'other'],
-      custom_stage_label: 'Deferred',
+      application_stages: ['applying', 'preparing_documents'],
+      custom_stage_label: null,
     });
   });
 
-  it('your own stage: Add renames it (one label), unpicking it clears it, and a stage error clears on change', async () => {
+  it('a refused stage (422) shows on step 1 under the hint, and clears when the stages change', async () => {
     const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
-    const group = screen.getByRole('group', { name: 'Best for mentees who are' });
-    const own = screen.getByRole('textbox', { name: 'Another stage' });
-    await user.type(own, 'Deferred');
-    await user.click(screen.getByRole('button', { name: 'Add' }));
-    await user.type(own, 'Gap year');
-    await user.click(screen.getByRole('button', { name: 'Add' }));
-    // Renamed, not a second one.
-    expect(within(group).queryByRole('button', { name: 'Deferred' })).toBeNull();
-    expect(within(group).getByRole('button', { name: 'Gap year' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    // Unpicked: the chip and its label go.
-    await user.click(within(group).getByRole('button', { name: 'Gap year' }));
-    expect(within(group).queryByRole('button', { name: 'Gap year' })).toBeNull();
-
-    // A refused stage (422 /application_stages) shows on step 1 and clears when the stages change.
     create.mockImplementationOnce((_v, opts) =>
       opts.onError({ kind: 'validation', message: 'x', fields: { stage: 'Check the stage.' } }),
     );
@@ -555,19 +547,15 @@ describe('SessionTypeFormScreen — review of #60', () => {
       await user.click(next(n));
     const stageError = screen.getByText('Check the stage.').closest('p');
     expect(stageError).toHaveAttribute('role', 'alert');
-    expect(
-      screen.getByRole('group', { name: 'Best for mentees who are' }),
-    ).toHaveAccessibleDescription(/Check the stage\./);
-    // Under the hint, as every field error.
+    const group = screen.getByRole('group', { name: 'Best for mentees who are' });
+    expect(group).toHaveAccessibleDescription(/Check the stage\./);
+    // Focus goes to the stages: their first chip.
+    expect(within(group).getByRole('button', { name: 'Exploring' })).toHaveFocus();
     const stageHint = screen.getByText('Choose the stages this session is most useful for.');
     expect(
       stageHint.compareDocumentPosition(stageError!) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    await user.click(
-      within(screen.getByRole('group', { name: 'Best for mentees who are' })).getByRole('button', {
-        name: 'Drafting',
-      }),
-    );
+    await user.click(within(group).getByRole('button', { name: 'Applying' }));
     expect(screen.queryByText('Check the stage.')).toBeNull();
   });
 });

@@ -58,7 +58,7 @@ function toCard(
     durationMin: t.durationMin,
     questions: shown?.questions ?? [],
     category: t.topics[0]?.label ?? null,
-    stage: shown?.stage ?? stageText(t.stages, t.customStage),
+    stage: shown?.stage ?? stageText(t.stages),
     requiresConfirmation:
       t.requiresApproval ??
       (defaults ? resolveDefaults(defaults).requiresApproval : shown?.requiresConfirmation),

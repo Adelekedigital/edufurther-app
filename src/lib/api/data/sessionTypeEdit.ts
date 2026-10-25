@@ -71,7 +71,6 @@ export function toDraft(s: SavedSessionType, defaults: BookingDefaults | null): 
     description: r.description ?? '',
     topics: offerings.map((o) => o.code),
     stages: stagesOf(r),
-    customStage: r.custom_stage_label ?? '',
     icon: r.icon ?? null,
     questions: s.questions.map((q): DraftQuestion => ({
       key: q.id,
@@ -413,8 +412,7 @@ export function toDuplicateBody(
         offeringIds[o.code] ? [offeringIds[o.code]!] : [],
       ),
       application_stages: stages,
-      // Only with "other": a legacy row can carry a stale label the API refuses.
-      custom_stage_label: stages.includes('other') ? (r.custom_stage_label ?? null) : null,
+      custom_stage_label: null,
       icon: r.icon ?? null,
       requires_booking_confirmation: r.requires_booking_confirmation ?? null,
       // Its own window as it really applies: a new type can't keep a value

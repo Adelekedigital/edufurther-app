@@ -15,18 +15,11 @@ export const SESSION_ICONS = [
 export type SessionIcon = (typeof SESSION_ICONS)[number];
 
 /**
- * Where a mentee is in their application (backend ApplicationStage). `other` =
- * the mentor's own words. The backend now also sends the six Session Types PRD
- * stages (exploring … awaiting_decision) while it moves stored rows over; the
- * old ones go when it finishes (backend PR 1).
+ * Where a mentee is in their application: the Session Types PRD's six
+ * (backend PR 1). Reads still holding an old slug are mapped onto these
+ * (`stagesOf`); there is no custom stage any more.
  */
 export type ApplicationStage =
-  | 'early_exploration'
-  | 'drafting_stage'
-  | 'post_submission'
-  | 'revisions'
-  | 'interviewing'
-  | 'other'
   | 'exploring'
   | 'researching'
   | 'preparing_documents'
@@ -55,8 +48,6 @@ export type OwnSessionType = {
   usesDefaultRules?: boolean;
   /** The stages it's aimed at, in the mentor's order; empty = any stage. */
   stages: ApplicationStage[];
-  /** The mentor's own words for the `other` stage, or null. */
-  customStage: string | null;
   /** Catalog offerings, in the mentor's order, at most 3 (backend #9). */
   topics: { code: string; label: string }[];
   /** The icon to draw: the mentor's pick, else automatic from the topic. */

@@ -152,7 +152,6 @@ export const ownType = (over: Partial<OwnSessionType> = {}): OwnSessionType => (
   isLive: true,
   usesOwnWindows: false,
   stages: [],
-  customStage: null,
   topics: [{ code: 'application-documents', label: 'Application documents' }],
   icon: 'edit_document',
   iconChoice: null,

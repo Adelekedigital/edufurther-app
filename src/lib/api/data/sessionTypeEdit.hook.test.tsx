@@ -71,7 +71,8 @@ describe('toDraft (a saved type as the form opens it)', () => {
     expect(toDraft(saved(), defaults)).toMatchObject({
       name: 'SOP review',
       topics: ['document-preparation'],
-      stages: ['drafting_stage'],
+      // A stored old stage opens as the one it became (backend PR 1).
+      stages: ['preparing_documents'],
       rules: 'default',
       hours: 'default',
       approval: 'inherit',
@@ -186,7 +187,7 @@ describe('useSaveSessionType', () => {
     );
     const { result } = renderHook(() => useSaveSessionType(), { wrapper });
     const e = await result.current
-      .save(vars({ ...base(), stages: ['revisions'], questions: [] }))
+      .save(vars({ ...base(), stages: ['applying'], questions: [] }))
       .catch((x: unknown) => x);
     expect(e).toMatchObject({
       message: 'Some details need another look.',
@@ -531,7 +532,8 @@ describe('useDuplicateSessionType — review of #74', () => {
       booking_window_days: null,
       break_after_minutes: 10,
       requires_booking_confirmation: null,
-      application_stages: ['drafting_stage'],
+      application_stages: ['preparing_documents'],
+      custom_stage_label: null,
     });
   });
 

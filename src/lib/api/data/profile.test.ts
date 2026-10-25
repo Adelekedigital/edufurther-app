@@ -130,12 +130,13 @@ describe('toMentorProfile', () => {
         ] as Read['session_types'],
       }),
     );
+    // An old stored stage reads as the one it became; `other` is dropped (backend PR 1).
     expect(p.sessionTypes[0]).toMatchObject({
-      stage: 'Drafting',
+      stage: 'Preparing documents',
       category: 'Application documents',
       questions: [],
     });
-    expect(p.sessionTypes[1]).toMatchObject({ stage: 'Pre-departure', category: null });
+    expect(p.sessionTypes[1]).toMatchObject({ stage: null, category: null });
   });
 
   it('lists every stage an offering is aimed at, in order (application_stages)', () => {
@@ -148,42 +149,26 @@ describe('toMentorProfile', () => {
         meeting_venue: 'daily',
         ...over,
       }) as NonNullable<Read['session_types']>[number];
+    expect(stageLine(t({ application_stages: ['applying', 'exploring'] }))).toBe(
+      'Applying, Exploring',
+    );
+    // Old stored stages read as the backend reads them (backend PR 1): drafting and
+    // revising both became preparing documents, kept once at the first one's place.
     expect(
       stageLine(
-        t({
-          application_stages: ['drafting_stage', 'revisions'],
-          application_stage: 'drafting_stage',
-        }),
+        t({ application_stages: ['revisions', 'interviewing', 'drafting_stage', 'other'] }),
       ),
-    ).toBe('Drafting, Revising');
-    // `other` reads as the mentor's words, in its place.
-    expect(
-      stageLine(
-        t({
-          application_stages: ['early_exploration', 'other'],
-          custom_stage_label: ' Pre-departure ',
-        }),
-      ),
-    ).toBe('Exploring, Pre-departure');
-    // Empty means any stage: no chip, even with the deprecated field still set.
-    expect(
-      stageLine(t({ application_stages: [], application_stage: 'drafting_stage' })),
-    ).toBeNull();
-    // The list wins over the deprecated field (review of #71).
-    expect(
-      stageLine(t({ application_stages: ['revisions'], application_stage: 'drafting_stage' })),
-    ).toBe('Revising');
-    // A stage said twice (the mentor's wording matching a built-in one) reads once.
-    expect(
-      stageLine(
-        t({ application_stages: ['drafting_stage', 'other'], custom_stage_label: 'Drafting' }),
-      ),
-    ).toBe('Drafting');
-    expect(stageLine(t({ application_stages: ['post_submission'] }))).toBe('Submitted, waiting');
+    ).toBe('Preparing documents, Preparing for interview');
+    expect(stageLine(t({ application_stages: ['early_exploration'] }))).toBe('Exploring');
+    expect(stageLine(t({ application_stages: ['post_submission'] }))).toBe(
+      'Waiting for a decision',
+    );
+    // Only `other` reads as any stage: no line.
+    expect(stageLine(t({ application_stages: ['other'], custom_stage_label: 'x' }))).toBeNull();
+    // Empty means any stage, even with the deprecated field still set.
+    expect(stageLine(t({ application_stages: [], application_stage: 'applying' }))).toBeNull();
     // An older response without the list still reads its single stage.
-    expect(stageLine(t({ application_stage: 'interviewing' }))).toBe('Interviewing');
-    // `other` with no wording adds nothing.
-    expect(stageLine(t({ application_stages: ['other'], custom_stage_label: '  ' }))).toBeNull();
+    expect(stageLine(t({ application_stage: 'interviewing' }))).toBe('Preparing for interview');
   });
 
   it('each offering carries its own next time, only when open (backend #526)', () => {

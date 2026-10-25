@@ -7,7 +7,7 @@ const saved: Draft = {
   name: 'SOP review',
   description: 'Line by line.',
   topics: ['document-preparation'],
-  stages: ['drafting_stage'],
+  stages: ['preparing_documents'],
 };
 
 describe('toPatchBody (only what changed)', () => {
@@ -20,14 +20,12 @@ describe('toPatchBody (only what changed)', () => {
       ...saved,
       name: ' SOP review+ ',
       topics: ['document-preparation', 'school-selection'],
-      stages: ['drafting_stage', 'other'],
-      customStage: 'Deferred',
+      stages: ['preparing_documents', 'applying'],
     };
     expect(toPatchBody(d, saved, ids)).toEqual({
       name: 'SOP review+',
       service_offering_ids: ['o4', 'o1'],
-      application_stages: ['drafting_stage', 'other'],
-      custom_stage_label: 'Deferred',
+      application_stages: ['preparing_documents', 'applying'],
     });
   });
 

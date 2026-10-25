@@ -77,7 +77,7 @@ function year(date: string | null | undefined): string | null {
  * a response still lacks the list (backend round 3).
  */
 export function stageLine(r: SessionTypeRead): string | null {
-  return stageText(stagesOf(r), r.custom_stage_label ?? null);
+  return stageText(stagesOf(r));
 }
 
 function toProfileSessionType(r: SessionTypeRead): ProfileSessionType {

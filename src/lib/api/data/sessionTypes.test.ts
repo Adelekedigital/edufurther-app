@@ -39,7 +39,6 @@ describe('toOwnSessionType', () => {
       usesOwnWindows: false,
       usesDefaultRules: false,
       stages: [],
-      customStage: null,
       topics: [{ code: 'document-preparation', label: 'Document preparation' }],
       icon: 'edit_document',
       iconChoice: null,
@@ -94,11 +93,27 @@ describe('toOwnSessionType', () => {
   });
 
   it('the stages, in the mentor’s order; the deprecated single field when the list is missing', () => {
+    expect(toOwnSessionType(own({ application_stages: ['applying', 'exploring'] })).stages).toEqual(
+      ['applying', 'exploring'],
+    );
+    // Old stored stages read exactly as the backend reads them (backend PR 1): two
+    // that became one stay once, at the first one's place; `other` is dropped.
     expect(
-      toOwnSessionType(own({ application_stages: ['revisions', 'drafting_stage'] })).stages,
-    ).toEqual(['revisions', 'drafting_stage']);
+      toOwnSessionType(
+        own({
+          application_stages: [
+            'post_submission',
+            'revisions',
+            'early_exploration',
+            'drafting_stage',
+            'other',
+          ],
+        }),
+      ).stages,
+    ).toEqual(['awaiting_decision', 'preparing_documents', 'exploring']);
+    expect(toOwnSessionType(own({ application_stages: ['other'] })).stages).toEqual([]);
     expect(toOwnSessionType(own({ application_stage: 'interviewing' })).stages).toEqual([
-      'interviewing',
+      'interview_prep',
     ]);
     // An empty list is "any stage", not a reason to read the old field.
     expect(
