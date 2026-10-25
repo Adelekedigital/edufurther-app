@@ -138,12 +138,13 @@ export function SessionTypeFormScreen({
     topicsLoading ||
     (mentorId !== null && expertise.status === 'loading') ||
     fullAtOpen === undefined;
-  // Neither read can be guessed: step 1 can't offer the right topics without both.
-  const formFailed = (!!topicsError && topics.length === 0) || expertise.status === 'error';
+  // The form can't be filled without the catalog's topics (step 1 needs one).
+  const formFailed = !!topicsError && topics.length === 0;
   const ownSlugs = new Set(expertise.profile?.mentor.topics.map((t) => t.slug));
   // The mentor's own, plus any this session already has (a template's, or one
   // saved before an area was removed), so nothing selected is ever hidden.
-  // None on record (a mentor always has one, backend #541): the whole catalog.
+  // Not read (it failed) or none on record (a mentor always has one, backend
+  // #541): the whole catalog, so a failed read never blocks the form (review of PR 402).
   const offered =
     ownSlugs.size === 0
       ? topics
@@ -168,7 +169,6 @@ export function SessionTypeFormScreen({
             />
           </div>
         ) : formFailed ? (
-          // The form can't be filled without the catalog's topics (step 1 needs one).
           <div className={styles.gate}>
             <EmptyState
               illustration="forms"
@@ -176,18 +176,12 @@ export function SessionTypeFormScreen({
               headingLevel={1}
               title="We couldn’t load this form"
               description={
-                topicsError?.kind === 'offline'
+                topicsError.kind === 'offline'
                   ? 'You’re offline. Try again when you reconnect.'
                   : 'Something went wrong on our side. Try again in a moment.'
               }
               actions={
-                <Button
-                  size="large"
-                  onClick={() => {
-                    if (topicsError) retryTopics();
-                    if (expertise.status === 'error') expertise.retry();
-                  }}
-                >
+                <Button size="large" onClick={retryTopics}>
                   Try again
                 </Button>
               }

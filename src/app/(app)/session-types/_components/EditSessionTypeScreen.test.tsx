@@ -44,7 +44,6 @@ let expertise: { status: 'loading' | 'error' | 'ready'; slugs: string[] } = {
   status: 'ready',
   slugs: ['document-preparation', 'school-selection'],
 };
-const retryExpertise = vi.fn();
 vi.mock('@/lib/api/data/mentorSettings', () => ({
   useMentorSettings: () => ({
     status: expertise.status,
@@ -52,7 +51,7 @@ vi.mock('@/lib/api/data/mentorSettings', () => ({
       expertise.status === 'ready'
         ? { mentor: { topics: expertise.slugs.map((slug) => ({ slug, label: slug })) } }
         : null,
-    retry: retryExpertise,
+    retry: vi.fn(),
   }),
 }));
 

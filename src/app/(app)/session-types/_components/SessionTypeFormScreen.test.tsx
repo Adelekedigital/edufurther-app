@@ -44,7 +44,6 @@ let expertise: { status: 'loading' | 'error' | 'ready'; slugs: string[] } = {
   status: 'ready',
   slugs: ['document-preparation', 'school-selection'],
 };
-const retryExpertise = vi.fn();
 vi.mock('@/lib/api/data/mentorSettings', () => ({
   useMentorSettings: () => ({
     status: expertise.status,
@@ -52,7 +51,7 @@ vi.mock('@/lib/api/data/mentorSettings', () => ({
       expertise.status === 'ready'
         ? { mentor: { topics: expertise.slugs.map((slug) => ({ slug, label: slug })) } }
         : null,
-    retry: retryExpertise,
+    retry: vi.fn(),
   }),
 }));
 
@@ -140,7 +139,6 @@ beforeEach(() => {
   defaultsMock = READY;
   videoMock = VIDEO_DEFAULT;
   expertise = { status: 'ready', slugs: ['document-preparation', 'school-selection'] };
-  retryExpertise.mockReset();
 });
 const next = (name: RegExp) => screen.getByRole('button', { name });
 
@@ -173,12 +171,14 @@ describe('SessionTypeFormScreen', () => {
     expect(chips()).toEqual(['Document preparation', 'School selection']);
   });
 
-  it('the mentor’s expertise not read: the form says so, and Try again asks again', async () => {
+  it('the mentor’s expertise not read: the whole catalog, and the form still opens (review of PR 402)', () => {
     expertise = { status: 'error', slugs: [] };
     render(<SessionTypeFormScreen template={null} />);
-    expect(screen.getByRole('heading', { name: 'We couldn’t load this form' })).toBeInTheDocument();
-    await userEvent.setup({ delay: null }).click(screen.getByRole('button', { name: 'Try again' }));
-    expect(retryExpertise).toHaveBeenCalled();
+    expect(
+      within(screen.getByRole('group', { name: 'What does this session help with?' }))
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Document preparation', 'School selection']);
   });
 
   it('while it loads, the form waits', () => {
