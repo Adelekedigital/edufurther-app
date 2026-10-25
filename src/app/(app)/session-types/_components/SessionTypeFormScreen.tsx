@@ -11,24 +11,16 @@ import { useTopics } from '@/lib/api/data/mentors';
 import {
   autoIcon,
   useMentorDefaults,
-  useOwnSessionTypes,
   useRetryWindows,
-  useSaveMentorDefaults,
   type Created,
 } from '@/lib/api/data/sessionTypes';
-import { useSaveWeeklyHours, useWeeklyHours } from '@/lib/api/data/weeklyHours';
+import { useWeeklyHours } from '@/lib/api/data/weeklyHours';
 import { SESSIONS_COPY, WIZARD_COPY } from '@/lib/copy/sessionTypes';
 import { SESSION_TEMPLATES } from '@/lib/utils/sessionTemplates';
-import {
-  shortestLength,
-  typeLength,
-  withDraft,
-  weeklySummary,
-  type Draft,
-} from '@/lib/utils/sessionTypeDraft';
+import { typeLength, weeklySummary, type Draft } from '@/lib/utils/sessionTypeDraft';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { lockedPageGate, memberGate, SESSION_TYPES_GATE } from '@/app/_shell/MentorGate';
-import { DefaultsModal, PublishedModal, SavedModal, WeeklyModal } from './SessionTypeFormModals';
+import { PublishedModal, SavedModal } from './SessionTypeFormModals';
 import styles from './SessionTypesScreen.module.css';
 import { useLeaveGuard, useSessionTypeDraft, type EditTarget } from './useSessionTypeDraft';
 import { useSessionTypeSubmit } from './useSessionTypeSubmit';
@@ -41,9 +33,7 @@ type Modal =
   | { kind: 'discard' }
   | { kind: 'deleteQuestion'; index: number }
   | { kind: 'published'; created: Created }
-  | { kind: 'saved' }
-  | { kind: 'defaults' }
-  | { kind: 'weekly' };
+  | { kind: 'saved' };
 
 /**
  * The session-type form (Session Types.dc.html, form view): create at
@@ -64,21 +54,13 @@ export function SessionTypeFormScreen({
   // A locked page (the setup lock) fetches nothing it won't show.
   const locked = access.locked.has('Sessions');
   const mentorId = isMentor && !locked ? member!.id : null;
+  // Both are edited where they live (Settings, Calendar), so step 3 reads them only.
   const defaults = useMentorDefaults(mentorId);
-  const saveDefaults = useSaveMentorDefaults(mentorId);
   const weekly = useWeeklyHours(mentorId);
-  const saveWeekly = useSaveWeeklyHours(mentorId);
   const retry = useRetryWindows();
-  // Calendar hours must fit the shortest session offered (product, 2026-10-01).
-  const own = useOwnSessionTypes(isMentor && !locked);
 
   const tmpl = edit ? null : (SESSION_TEMPLATES.find((x) => x.key === template) ?? null);
   const d = useSessionTypeDraft(edit, tmpl, defaults);
-  // The type as this form will save it counts too (Codex on #149).
-  const calendarMin = shortestLength(
-    defaults.data?.durationMin,
-    withDraft(own.data, edit?.id ?? null, d.draft, defaults.data?.durationMin),
-  );
   const steps = useWizardSteps(!!edit);
   const [modal, setModal] = useState<Modal | null>(null);
   const submit = useSessionTypeSubmit({
@@ -161,18 +143,13 @@ export function SessionTypeFormScreen({
             draft={d.draft}
             update={update}
             errors={steps.errors}
+            attempt={steps.attempt}
             formError={submit.error}
             topics={topics}
             autoIcon={autoIcon(d.draft.topics)}
             defaults={defaults.data}
             defaultsStatus={defaults.error ? 'failed' : defaults.data ? 'ready' : 'loading'}
             onRetryDefaults={defaults.retry}
-            onEditDefaults={() => {
-              saveDefaults.reset();
-              // Read the cap again: it can have changed since the form opened.
-              defaults.retry();
-              setModal({ kind: 'defaults' });
-            }}
             weekly={
               weekly.error
                 ? { status: 'failed' }
@@ -185,10 +162,6 @@ export function SessionTypeFormScreen({
                   : { status: 'loading' }
             }
             onRetryWeekly={weekly.retry}
-            onEditWeekly={() => {
-              saveWeekly.reset();
-              setModal({ kind: 'weekly' });
-            }}
             onStep={steps.goTo}
             onBack={onBack}
             onNext={onNext}
@@ -224,35 +197,6 @@ export function SessionTypeFormScreen({
             update({ questions: d.draft.questions.filter((_, i) => i !== modal.index) });
             close();
           }}
-        />
-      )}
-      {modal?.kind === 'defaults' && defaults.data && !defaults.refreshing && (
-        <DefaultsModal
-          defaults={defaults.data}
-          saving={saveDefaults.isPending}
-          error={saveDefaults.error?.message ?? null}
-          onClose={close}
-          onSave={(next) =>
-            void saveDefaults
-              .save(next)
-              .then(close)
-              .catch(() => undefined)
-          }
-        />
-      )}
-      {modal?.kind === 'weekly' && weekly.data && (
-        <WeeklyModal
-          weekly={weekly.data}
-          minLength={calendarMin}
-          saving={saveWeekly.isPending}
-          error={saveWeekly.error?.message ?? null}
-          onClose={close}
-          onSave={(days) =>
-            void saveWeekly
-              .save({ current: weekly.data!, days })
-              .then(close)
-              .catch(() => undefined)
-          }
         />
       )}
       {modal?.kind === 'saved' && edit && (

@@ -79,19 +79,27 @@ const noticeShort = (hours: number) =>
   noticeLabel(hours).replace(/ hours?$/, (u) => (u === ' hour' ? ' hr' : ' hrs'));
 
 /**
- * Calendar v2 `windowSummary` (copy research), approval first as in the modal:
- * "Confirmed straight away · 60 min · 24 hrs notice · 4 weeks ahead · 15 min buffer".
+ * The mentor's booking rules on one line (Calendar v2 `windowSummary`, copy
+ * research): "Confirmed straight away · 60 min · 24 hrs notice · 4 weeks
+ * ahead · 15 min buffer". Calendar leads with approval; Sessions ends with it,
+ * and its Review gives approval a row of its own (Session Types.dc.html, PRD
+ * step 3 and 4).
  */
-export function bookingRulesSummary(d: BookingDefaults): string {
+export function bookingRulesSummary(
+  d: BookingDefaults,
+  approval: 'first' | 'last' | 'none' = 'first',
+): string {
   const r = resolveDefaults(d);
   const windowDays = d.maxWindowDays ? Math.min(r.windowDays, d.maxWindowDays) : r.windowDays;
-  return [
-    approvalShort(r.requiresApproval),
+  const rules = [
     `${r.durationMin} min`,
     `${noticeShort(r.noticeHours)} notice`,
     `${windowLabel(windowDays)} ahead`,
     r.breakMin ? `${r.breakMin} min buffer` : 'No buffer',
-  ].join(' · ');
+  ];
+  const a = approvalShort(r.requiresApproval);
+  const parts = approval === 'first' ? [a, ...rules] : approval === 'last' ? [...rules, a] : rules;
+  return parts.join(' · ');
 }
 
 /** Today's date (YYYY-MM-DD) in `timeZone`. */

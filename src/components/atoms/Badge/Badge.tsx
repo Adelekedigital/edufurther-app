@@ -2,11 +2,21 @@ import type { ReactNode } from 'react';
 import { cx } from '@/lib/utils/cx';
 import styles from './Badge.module.css';
 
-type BadgeProps = {
-  /** filled: solid ground, white text. accent: tinted ground. */
-  type?: 'filled' | 'accent';
-  /** The DS's orange is banned in product UI, so it is not offered. */
-  color?: 'primary' | 'green' | 'red' | 'neutral';
+type BadgeProps = (
+  | {
+      /** filled: solid ground, white text. accent: tinted ground. */
+      type?: 'filled' | 'accent';
+      color?: 'primary' | 'green' | 'red' | 'neutral';
+    }
+  | {
+      /**
+       * Orange, accent only: the Featured badge (Session Types PRD, list). The
+       * ramp stays banned elsewhere in product UI (project-conventions).
+       */
+      type: 'accent';
+      color: 'orange';
+    }
+) & {
   /** sm 10px caption / md 12px. */
   size?: 'sm' | 'md';
   children: ReactNode;

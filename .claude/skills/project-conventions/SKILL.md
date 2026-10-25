@@ -35,7 +35,7 @@ Sources, so the next sync can diff against them: the design project's
 | Build the **chosen default** of every design tweak; alternatives are "to test" and not built unless product asks | Handoff README §9 | product requests an A/B |
 | One screen per session. This repo's sessions coordinate with the backend session by written handoff requests | User instruction, 2026-09-26 | — |
 | Tokens are imported verbatim from the DS bundle into `src/styles/tokens/`, upstream name kept in a comment | `design-sync` provenance | DS renames tokens |
-| Primary is `--blue-500 #0064ff`. Legacy `--brand-*` (#105192) and the orange ramp are **banned** in product UI | DS readme; handoff README §6 | never |
+| Primary is `--blue-500 #0064ff`. Legacy `--brand-*` (#105192) and the orange ramp are **banned** in product UI. One exception: the Sessions **Featured** badge is the DS orange accent Badge (`--orange-50` ground, `--orange-800` text: the DS's orange-700 is about 4.3:1 at 10px, short of AA) | DS readme; handoff README §6; Session Types PRD (list) | never |
 | Fonts **self-hosted** via `next/font/local` (product 2026-09-27; files in `src/app/fonts/`). **One typeface, DM Sans, for every role** (brand, UI, button, form; product 2026-10-10, ADR 0002, ahead of the DS). DM Sans lacks ₦, Yoruba/Igbo dot-below and West African letters, so `inter-gaps.woff2` carries exactly those from Inter, fetched only on pages that show them (unicode-range). Both are cut by `scripts/fonts/build_fonts.py` from google/fonts (OFL); rebuild them together, and paste the printed unicode-range into `fonts.ts`; Material Symbols subset of our glyphs via `pnpm icons:pull` (CI `check:icons`). No Google Fonts at build or runtime | Handoff README §6 | licensed Avenir supplied |
 | Buttons follow the **CTA hierarchy** (CTA Hierarchy.dc.html, replacing #28): size by placement — `large` 48 (page, flow, modal-footer actions; empty/error states), `medium` 40 (card and section actions; the default), `small` 32 (rows, dense lists, the green match-prompt buttons #41); variant by importance — one filled button per view (a modal is its own view), repeated actions outlined, low-emphasis text, destructive opens a confirm. Labels 14px on large/medium, 12px on small. Phones: medium/small keep their height with an invisible 44px tap area; pinned sheet footers are large and full width | Design + product, 2026-09-27 | design revises the hierarchy |
 | Mobile rules (44px targets, 16px inputs, full-screen modals, tighter padding, H3/H4→H6) are **per-component responsive CSS at 768px**, not a global `body[data-ef-mobile]` override | Handoff §7.3 explicitly asks for this | — |
@@ -238,7 +238,7 @@ reply comment. Which reviewer, its keys and variables, and the seven-step loop:
 
 | Never | Because |
 | --- | --- |
-| Use `--brand-*` or `--orange-*` in product UI | superseded palettes (DS readme) |
+| Use `--brand-*` or `--orange-*` in product UI (the Featured badge excepted, above) | superseded palettes (DS readme) |
 | Put white text on the Plus gold | ~2:1 contrast; use `#3d2a00` via a token |
 | Show "★ 0 (0 reviews)" | reads as a bad rating |
 | Port the prototype's global mobile `<style>` block | handoff §7.3; it overrides by attribute-substring selectors |

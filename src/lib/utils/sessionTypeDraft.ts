@@ -257,32 +257,22 @@ export function fitSlot([a, b]: Slot, minLength: number): Slot {
 export const typeLength = (d: Pick<Draft, 'rules' | 'durationMin'>, defaultMin?: number | null) =>
   d.rules === 'custom' ? d.durationMin : (defaultMin ?? PLATFORM_DURATION_MIN);
 
-type LengthOf = { id?: string; durationMin: number; isLive: boolean; usesOwnWindows: boolean };
-
-/**
- * The types as they'll be once this form saves: the one being edited (`id`),
- * or a new one (`id` null, live once published), as the draft has it. A type
- * switched back to Calendar hours counts for the Calendar minimum before its
- * own windows are deleted (Codex on #149).
- */
-export function withDraft(
-  types: readonly LengthOf[] | null | undefined,
-  id: string | null,
-  d: Pick<Draft, 'rules' | 'durationMin' | 'hours'>,
-  defaultMin: number | null | undefined,
-): LengthOf[] | null | undefined {
-  if (!types) return types;
-  const drafted = (isLive: boolean): LengthOf => ({
-    durationMin: typeLength(d, defaultMin),
-    isLive,
-    usesOwnWindows: d.hours === 'custom',
-  });
-  if (id === null) return [...types, drafted(true)];
-  return types.map((t) => (t.id === id ? { ...drafted(t.isLive), id } : t));
-}
-
 /** A new slot's length (design `add`): the shortest session, on the half hour; an hour with no minimum. */
 export const newSlotLength = (minLength: number) => (minLength > 0 ? toStep(minLength) : 60);
+
+/**
+ * Step 1's required fields left blank, in the order they're drawn (design
+ * `stepError`). A field that's filled but wrong (too long, refused by the
+ * server) isn't one: "Fill in the required fields" would be untrue for it.
+ */
+export function step1Missing(d: Draft): FieldKey[] {
+  const missing: FieldKey[] = [];
+  if (!d.name.trim()) missing.push('name');
+  if (!d.description.trim()) missing.push('description');
+  if (d.topics.length === 0) missing.push('topics');
+  if (d.stages.includes('other') && !d.customStage.trim()) missing.push('stage');
+  return missing;
+}
 
 /** `minLength`: the type's length, which its own hours must fit (step 3). */
 export function validateStep(d: Draft, step: 1 | 2 | 3, minLength = 0): FieldErrors {

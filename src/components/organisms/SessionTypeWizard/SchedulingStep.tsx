@@ -1,10 +1,11 @@
 import { useId } from 'react';
+import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Select } from '@/components/atoms/Select/Select';
 import { RadioCards } from '@/components/molecules/RadioCards/RadioCards';
 import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import { BookingRulesRows } from '@/components/organisms/BookingRulesRows/BookingRulesRows';
-import { BOOKING_COPY, approvalLine, approvalShort } from '@/lib/copy/mentorSettings';
+import { BOOKING_COPY, approvalShort } from '@/lib/copy/mentorSettings';
 import { RULES_COPY } from '@/lib/copy/sessionTypes';
 import { bookingRulesSummary } from '@/lib/utils/calendar';
 import {
@@ -34,12 +35,8 @@ type SchedulingStepProps = {
   defaults: Defaults | null;
   defaultsStatus: DefaultsStatus;
   onRetryDefaults: () => void;
-  /** Opens the Booking rules modal. */
-  onEditDefaults: () => void;
   weekly: WeeklyStatus;
   onRetryWeekly: () => void;
-  /** Opens the Your weekly hours modal. */
-  onEditWeekly: () => void;
 };
 
 /**
@@ -47,7 +44,8 @@ type SchedulingStepProps = {
  * rulesLayout=compact): the type follows the mentor's booking preferences or
  * sets its own length, notice, window, break and approval; it books into the
  * mentor's Calendar hours or its own. The defaults and the Calendar hours are
- * edited in place, in modals.
+ * edited where they live, Settings and Calendar, in a new tab (Session
+ * Types PRD, step 3): following a link here would drop the session being edited.
  */
 export function SchedulingStep({
   draft: d,
@@ -56,18 +54,13 @@ export function SchedulingStep({
   defaults,
   defaultsStatus,
   onRetryDefaults,
-  onEditDefaults,
   weekly,
   onRetryWeekly,
-  onEditWeekly,
 }: SchedulingStepProps) {
-  // What "Use my default" resolves to, for the approval line; unknown until the defaults load.
-  const approvalOn =
-    d.approval === 'inherit'
-      ? defaults
-        ? resolveDefaults(defaults).requiresApproval
-        : null
-      : d.approval === 'on';
+  // What "your default" approval is, named in its option; unknown until the defaults load.
+  const defaultApproval = defaults
+    ? approvalShort(resolveDefaults(defaults).requiresApproval)
+    : null;
   const approvalId = useId();
   return (
     <div className={styles.body3}>
@@ -101,21 +94,20 @@ export function SchedulingStep({
                 : defaultsStatus === 'failed' || !defaults
                   ? // Copy confirmed by design (reply 2026-09-29, #5).
                     'We couldn’t load your defaults. This session still follows them.'
-                  : bookingRulesSummary(defaults)}
+                  : bookingRulesSummary(defaults, 'last')}
             </span>
             {defaultsStatus === 'failed' ? (
               <button type="button" className={styles.inlineAction} onClick={onRetryDefaults}>
                 Try again
               </button>
             ) : (
-              <button
-                type="button"
-                className={styles.inlineAction}
-                disabled={defaultsStatus !== 'ready'}
-                onClick={onEditDefaults}
+              <ExternalLink
+                href={RULES_COPY.manageRulesHref}
+                label={RULES_COPY.manageRules}
+                className={styles.manageLink}
               >
-                Edit defaults
-              </button>
+                {RULES_COPY.manageRules} ↗
+              </ExternalLink>
             )}
           </div>
         )}
@@ -142,20 +134,20 @@ export function SchedulingStep({
           <div className={styles.approvalRow}>
             <span className={styles.ruleText}>
               <span className={styles.ruleLabel}>{BOOKING_COPY.approveTitle}</span>
-              {approvalOn !== null && (
-                <span id={approvalId} className={styles.ruleHint}>
-                  {approvalLine(approvalOn, defaults?.responseWindowHours ?? null)}
-                </span>
-              )}
+              <span id={approvalId} className={styles.ruleHint}>
+                {RULES_COPY.approvalHint}
+              </span>
             </span>
             <Select
               aria-label={BOOKING_COPY.approveTitle}
-              aria-describedby={approvalOn !== null ? approvalId : undefined}
-              width={200}
+              aria-describedby={approvalId}
+              // The design draws 200, which its own "{default} (your default)" option
+              // overflows; 280 fits the longest (measured 272) (design-divergence.md).
+              width={280}
               value={d.approval}
               onChange={(e) => update({ approval: e.target.value as Draft['approval'] })}
               options={[
-                { value: 'inherit', label: RULES_COPY.inheritApproval },
+                { value: 'inherit', label: RULES_COPY.inheritApproval(defaultApproval) },
                 { value: 'on', label: approvalShort(true) },
                 { value: 'off', label: approvalShort(false) },
               ]}
@@ -203,14 +195,13 @@ export function SchedulingStep({
                 Try again
               </button>
             ) : (
-              <button
-                type="button"
-                className={styles.inlineAction}
-                disabled={weekly.status !== 'ready'}
-                onClick={onEditWeekly}
+              <ExternalLink
+                href={RULES_COPY.manageHoursHref}
+                label={RULES_COPY.manageHours}
+                className={styles.manageLink}
               >
-                Edit weekly hours
-              </button>
+                {RULES_COPY.manageHours} ↗
+              </ExternalLink>
             )}
           </div>
         )}

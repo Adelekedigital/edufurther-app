@@ -65,8 +65,16 @@ export const DETAILS_COPY = {
   nameHint: 'Be specific. Mentees see this when choosing what to book.',
   descriptionHint: 'Describe what you’ll help mentees accomplish. Aim for 3–5 sentences.',
   topicsLabel: 'What does this session help with?',
+  topicsHint: (max: number) =>
+    `Pick up to ${max} of your help areas. Mentees filter by these on Explore.`,
   stagesHint: 'Choose the stages this session is most useful for.',
   anyStage: 'All stages',
+  /** Pricing is free-only in v1 (handoff E5, design `pricing` freeOnly). */
+  priceLabel: 'Price',
+  free: 'Free',
+  freeNote: 'All sessions are free for now.',
+  /** Continue with gaps (design `stepError`): with each field's own error. */
+  stepError: 'Fill in the required fields to continue.',
 } as const;
 
 /** Step 2. */
@@ -74,7 +82,7 @@ export const QUESTIONS_COPY = {
   none: 'No questions yet. Add only what you need before the session.',
 } as const;
 
-/** Step 3 and the two modals it opens. */
+/** Step 3. */
 export const RULES_COPY = {
   sectionTitle: 'Booking rules',
   groupLabel: 'Booking rules for this session',
@@ -83,8 +91,19 @@ export const RULES_COPY = {
     'Follows your default booking rules. Changes to your defaults will appear here too.',
   custom: 'Customize for this session',
   customBody: 'Set different booking rules for this session. Your default settings won’t change.',
-  /** The inherit option on the approval select; on and off use Settings' words. */
-  inheritApproval: 'Use my default',
+  /**
+   * The inherit option on the approval select names what it resolves to
+   * (Session Types PRD, step 3); on and off use Settings' words. Before
+   * the defaults load there's nothing to name yet.
+   */
+  inheritApproval: (resolved: string | null) =>
+    resolved ? `${resolved} (your default)` : 'Your default',
+  approvalHint: 'Choose how bookings are confirmed.',
+  /** New tabs: following them here would drop the session being edited. */
+  manageRules: 'Manage booking rules',
+  manageRulesHref: '/settings/booking',
+  manageHours: 'Manage weekly availability',
+  manageHoursHref: '/calendar',
   hoursTitle: 'When can mentees book this?',
   hoursGroupLabel: 'Hours for this session',
   useWeekly: 'Use my weekly availability',
@@ -92,19 +111,22 @@ export const RULES_COPY = {
   ownHours: 'Set availability for this session',
   ownHoursBody:
     'Offer this session at different times without changing your weekly availability. Blocked dates apply to this session too.',
-  defaultsModalTitle: 'Booking rules',
-  defaultsModalSub: 'Used by every session set to “Use my defaults”. Changes apply right away.',
-  hoursModalSub: 'Shared by every session that uses your weekly availability.',
 } as const;
 
-/** Step 4's rows (design research keys). */
+/** Step 4's rows (PRD Step 4, design `summary` in the research copy). */
 export const REVIEW_COPY = {
   details: STEP_COPY[0].title,
   questions: STEP_COPY[1].title,
   rules: STEP_COPY[2].title,
   length: 'Session length',
   hours: 'Availability',
-  weekly: 'Your weekly availability',
+  /** With the mentor's weekly hours, once they've loaded. */
+  weekly: (summary: string | null) =>
+    summary ? `Your weekly availability (${summary})` : 'Your weekly availability',
+  ownHours: 'Custom hours for this session',
+  /** Inheriting: the mentor's defaults, approval in its own row. */
+  rulesRow: 'Booking rules',
+  rulesMine: (summary: string | null) => (summary ? `My defaults · ${summary}` : 'My defaults'),
   none: 'None',
 } as const;
 

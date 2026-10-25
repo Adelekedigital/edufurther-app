@@ -10,9 +10,7 @@ import {
   type Draft,
   type FieldErrors,
 } from '@/lib/utils/sessionTypeDraft';
-import { BookingPreferencesForm } from './BookingPreferencesForm';
 import { SessionTypeWizard, type Step } from './SessionTypeWizard';
-import { WeeklyHoursForm } from './WeeklyHoursForm';
 
 /** The create / edit wizard (Session Types.dc.html, form view), one story per step and state. */
 const meta: Meta = { title: 'Organisms/Session type wizard', parameters: { layout: 'padded' } };
@@ -67,16 +65,15 @@ function Harness({
       draft={d}
       update={(p) => setD((x) => ({ ...x, ...p }))}
       errors={errors}
+      attempt={0}
       formError={formError}
       topics={TOPICS}
       autoIcon="edit_document"
       defaults={DEFAULTS}
       defaultsStatus="ready"
       onRetryDefaults={fn()}
-      onEditDefaults={fn()}
       weekly={WEEKLY}
       onRetryWeekly={fn()}
-      onEditWeekly={fn()}
       onStep={setS}
       onBack={() => setS((x) => (x > 1 ? ((x - 1) as Step) : x))}
       onNext={() => setS((x) => (x < 4 ? ((x + 1) as Step) : x))}
@@ -193,76 +190,6 @@ export const ReviewPublishFailed: Story = {
       step={4}
       formError="We couldn’t publish it. We couldn’t reach EduFurther. Try again."
     />
-  ),
-};
-
-/** The Booking preferences modal's body; 20 days isn't a design option, so it's added. */
-export const BookingPreferences: Story = {
-  render: () => (
-    <div style={{ maxWidth: 432 }}>
-      <BookingPreferencesForm
-        initial={{ ...DEFAULTS, windowDays: 20 }}
-        saving={false}
-        error={null}
-        onCancel={fn()}
-        onSave={fn()}
-      />
-    </div>
-  ),
-};
-export const BookingPreferencesSaveFailed: Story = {
-  render: () => (
-    <div style={{ maxWidth: 432 }}>
-      <BookingPreferencesForm
-        initial={DEFAULTS}
-        saving={false}
-        error="Your preferences didn’t save. Try again in a moment."
-        onCancel={fn()}
-        onSave={fn()}
-      />
-    </div>
-  ),
-};
-
-const WEEK = [
-  { on: false, slots: [[540, 600]] },
-  { on: true, slots: [[1020, 1200]] },
-  { on: true, slots: [[1020, 1200]] },
-  { on: false, slots: [[540, 600]] },
-  { on: true, slots: [[1020, 1200]] },
-  { on: true, slots: [[1020, 1200]] },
-  { on: true, slots: [[540, 780]] },
-] as { on: boolean; slots: [number, number][] }[];
-
-/** The Your weekly hours modal's body (TimeSlots compact), zone named. */
-export const WeeklyHours: Story = {
-  render: () => (
-    <div style={{ maxWidth: 512 }}>
-      <WeeklyHoursForm
-        initial={WEEK}
-        timeZone="Africa/Lagos"
-        saving={false}
-        error={null}
-        onCancel={fn()}
-        onSave={fn()}
-      />
-    </div>
-  ),
-};
-/** Hours in a second zone are named, not shown; a partial save failed. */
-export const WeeklyHoursOtherZoneFailed: Story = {
-  render: () => (
-    <div style={{ maxWidth: 512 }}>
-      <WeeklyHoursForm
-        initial={WEEK}
-        timeZone="Africa/Lagos"
-        otherZones={['Europe/London']}
-        saving={false}
-        error="Some of your hours didn’t save. Check them, then try again."
-        onCancel={fn()}
-        onSave={fn()}
-      />
-    </div>
   ),
 };
 

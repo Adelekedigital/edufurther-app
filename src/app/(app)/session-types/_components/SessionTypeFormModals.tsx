@@ -1,72 +1,10 @@
 'use client';
 
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
-import { BookingPreferencesForm } from '@/components/organisms/SessionTypeWizard/BookingPreferencesForm';
-import { WeeklyHoursForm } from '@/components/organisms/SessionTypeWizard/WeeklyHoursForm';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
-import type { Created, MentorDefaults } from '@/lib/api/data/sessionTypes';
-import type { useWeeklyHours } from '@/lib/api/data/weeklyHours';
-import { PUBLISHED_TITLE, RULES_COPY } from '@/lib/copy/sessionTypes';
-import type { DayHours } from '@/lib/utils/sessionTypeDraft';
+import type { Created } from '@/lib/api/data/sessionTypes';
+import { PUBLISHED_TITLE } from '@/lib/copy/sessionTypes';
 import styles from './SessionTypesScreen.module.css';
-
-export function DefaultsModal(p: {
-  defaults: MentorDefaults;
-  saving: boolean;
-  error: string | null;
-  onClose: () => void;
-  onSave: (next: MentorDefaults) => void;
-}) {
-  return (
-    <ModalShell
-      title={RULES_COPY.defaultsModalTitle}
-      subtitle={RULES_COPY.defaultsModalSub}
-      icon="tune"
-      size="md"
-      onClose={p.onClose}
-    >
-      <BookingPreferencesForm
-        initial={p.defaults}
-        saving={p.saving}
-        error={p.error}
-        onCancel={p.onClose}
-        onSave={p.onSave}
-      />
-    </ModalShell>
-  );
-}
-
-export function WeeklyModal(p: {
-  weekly: NonNullable<ReturnType<typeof useWeeklyHours>['data']>;
-  /** The shortest session offered: these hours must fit it. */
-  minLength: number;
-  saving: boolean;
-  error: string | null;
-  onClose: () => void;
-  onSave: (days: DayHours[]) => void;
-}) {
-  return (
-    <ModalShell
-      title="Your weekly hours"
-      subtitle={RULES_COPY.hoursModalSub}
-      icon="calendar_month"
-      size="lg"
-      onClose={p.onClose}
-    >
-      <WeeklyHoursForm
-        initial={p.weekly.days}
-        timeZone={p.weekly.timeZone}
-        otherZones={p.weekly.otherZones}
-        otherSlots={p.weekly.otherSlots}
-        minLength={p.minLength}
-        saving={p.saving}
-        error={p.error}
-        onCancel={p.onClose}
-        onSave={p.onSave}
-      />
-    </ModalShell>
-  );
-}
 
 /** Session Types.dc.html `wasEdit`: "Changes saved". */
 export function SavedModal(p: {

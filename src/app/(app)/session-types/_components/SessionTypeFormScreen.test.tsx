@@ -59,28 +59,12 @@ const READY = {
   retry: vi.fn(),
 };
 let createError: unknown = null;
-// The types offered: Calendar hours must fit the shortest.
-let ownTypes: {
-  data: { durationMin: number; isLive: boolean; usesOwnWindows: boolean }[] | null;
-} = { data: [] };
 vi.mock('@/lib/api/data/sessionTypes', async (orig) => ({
-  useOwnSessionTypes: () => ownTypes,
   autoIcon: (await orig<typeof import('@/lib/api/data/sessionTypes')>()).autoIcon,
   useCreateSessionType: () => ({ create, isPending: false, error: createError, reset: vi.fn() }),
   useRetryWindows: () => ({ retry: vi.fn(), isPending: false }),
   useMentorDefaults: () => defaultsMock,
-  useSaveMentorDefaults: () => ({
-    save: saveDefaults,
-    isPending: false,
-    error: defaultsSaveError,
-    reset: resetDefaults,
-  }),
 }));
-const saveDefaults = vi.fn();
-const resetDefaults = vi.fn();
-let defaultsSaveError: unknown = null;
-const saveHours = vi.fn();
-let otherSlots: { day: number; slot: [number, number]; zone: string }[] = [];
 const WEEK = [
   { on: false, slots: [[540, 600]] },
   { on: true, slots: [[1020, 1200]] },
@@ -97,14 +81,13 @@ vi.mock('@/lib/api/data/weeklyHours', async (orig) => ({
       days: WEEK,
       timeZone: 'Africa/Lagos',
       rules: [],
-      otherZones: otherSlots.length ? ['Europe/London'] : [],
-      otherSlots,
+      otherZones: [],
+      otherSlots: [],
     },
     isLoading: false,
     error: null,
     retry: vi.fn(),
   }),
-  useSaveWeeklyHours: () => ({ save: saveHours, isPending: false, error: null, reset: vi.fn() }),
 }));
 
 vi.mock('@/lib/api/data/sessionTypeEdit', () => ({
@@ -113,17 +96,11 @@ vi.mock('@/lib/api/data/sessionTypeEdit', () => ({
 
 beforeEach(() => {
   push.mockReset();
-  ownTypes = { data: [] };
   viewer = mentor;
   resetFlags();
   create.mockReset();
   createError = null;
   defaultsMock = READY;
-  saveDefaults.mockReset().mockResolvedValue(undefined);
-  resetDefaults.mockReset();
-  defaultsSaveError = null;
-  saveHours.mockReset().mockResolvedValue(undefined);
-  otherSlots = [];
 });
 const next = (name: RegExp) => screen.getByRole('button', { name });
 
@@ -160,6 +137,42 @@ describe('SessionTypeFormScreen', () => {
       'true',
     );
     expect(screen.getByText('Step 1 of 4 · Define your session')).toBeInTheDocument();
+  });
+
+  it('Continue with gaps: the form message, said once per try, and focus on the first gap', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<SessionTypeFormScreen template={null} />);
+    const status = () => screen.getAllByRole('status').find((x) => x.className === 'sr-only')!;
+    // Mounted empty, so a screen reader hears the words when they arrive.
+    expect(status()).toBeEmptyDOMElement();
+    await user.click(next(/^Continue$/));
+    expect(screen.getAllByText('Fill in the required fields to continue.')).toHaveLength(2);
+    expect(status()).toHaveTextContent('Fill in the required fields to continue.');
+    expect(screen.getByRole('textbox', { name: 'Session name' })).toHaveFocus();
+    // Name filled: the next gap, the description, takes focus on the next try.
+    await user.type(screen.getByRole('textbox', { name: 'Session name' }), 'Essay review');
+    await user.click(next(/^Continue$/));
+    expect(screen.getByRole('textbox', { name: 'What mentees get' })).toHaveFocus();
+    await user.type(screen.getByRole('textbox', { name: 'What mentees get' }), 'Notes.');
+    await user.click(next(/^Continue$/));
+    expect(
+      within(screen.getByRole('group', { name: 'What does this session help with?' })).getByRole(
+        'button',
+        { name: 'Document preparation' },
+      ),
+    ).toHaveFocus();
+    // The last gap filled: the message goes.
+    await user.click(screen.getByRole('button', { name: 'Document preparation' }));
+    expect(screen.queryByText('Fill in the required fields to continue.')).toBeNull();
+  });
+
+  it('step 1 says the price: Free, for now', () => {
+    render(<SessionTypeFormScreen template="sop-review" />);
+    expect(screen.getByText('Price')).toBeInTheDocument();
+    expect(screen.getByText('All sessions are free for now.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Pick up to 3 of your help areas. Mentees filter by these on Explore.'),
+    ).toBeInTheDocument();
   });
 
   it('leaving step 1 with changes asks first; without changes it just goes', async () => {
@@ -208,6 +221,9 @@ describe('SessionTypeFormScreen', () => {
       await user.click(next(n));
     expect(screen.getByText('Step 1 of 4 · Define your session')).toBeInTheDocument();
     expect(screen.getByText('You already have a session with this name.')).toBeInTheDocument();
+    // Filled but refused: focus goes to it, and "required fields" would be untrue.
+    expect(screen.getByRole('textbox', { name: 'Session name' })).toHaveFocus();
+    expect(screen.queryByText('Fill in the required fields to continue.')).toBeNull();
   });
 
   it('delete a question confirms first', async () => {
@@ -284,9 +300,11 @@ describe('SessionTypeFormScreen', () => {
     await user.click(next(/^Continue$/));
     await user.click(next(/^Continue$/));
     expect(screen.getByText('Loading your defaults…')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Edit defaults' })).toBeDisabled();
     await user.click(next(/^Continue$/));
-    expect(screen.queryByText(/confirm instantly/i)).toBeNull();
+    // Nothing to name yet: no approval value, and no rule values, are guessed.
+    expect(screen.queryByText(/confirmed straight away|you approve each booking/i)).toBeNull();
+    expect(screen.getByText('Your default')).toBeInTheDocument();
+    expect(screen.getByText('My defaults')).toBeInTheDocument();
     unmount();
     const retry = vi.fn();
     defaultsMock = { data: null, isLoading: false, error: { kind: 'server', message: 'x' }, retry };
@@ -326,7 +344,7 @@ describe('SessionTypeFormScreen', () => {
     await toStep3();
     expect(
       screen.getByText(
-        'You approve each booking · 60 min · 2 days notice · 4 weeks ahead · 15 min buffer',
+        '60 min · 2 days notice · 4 weeks ahead · 15 min buffer · You approve each booking',
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: 'Session length' })).toBeNull();
@@ -355,92 +373,76 @@ describe('SessionTypeFormScreen', () => {
     });
   });
 
-  it('Edit defaults opens Booking rules; Save sends every value, Cancel nothing', async () => {
+  it('step 3 edits the defaults and weekly hours where they live: Settings and Calendar, in a new tab', async () => {
     const user = userEvent.setup({ delay: null });
     render(<SessionTypeFormScreen template="sop-review" />);
     await user.click(next(/^Continue$/));
     await user.click(next(/^Continue$/));
-    await user.click(screen.getByRole('button', { name: 'Edit defaults' }));
-    let dialog = screen.getByRole('dialog', { name: 'Booking rules' });
-    // The mentor's own values, not the platform's.
-    expect(within(dialog).getByRole('combobox', { name: 'Session length' })).toHaveValue('60');
-    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
-    expect(saveDefaults).not.toHaveBeenCalled();
-    expect(screen.queryByRole('dialog')).toBeNull();
-
-    await user.click(screen.getByRole('button', { name: 'Edit defaults' }));
-    dialog = screen.getByRole('dialog', { name: 'Booking rules' });
-    // No 6-hour notice: the platform minimum is 24 hours (backend round 3).
-    expect(
-      within(within(dialog).getByRole('combobox', { name: 'Minimum notice' })).queryByRole(
-        'option',
-        { name: '6 hours' },
-      ),
-    ).toBeNull();
-    await user.selectOptions(
-      within(dialog).getByRole('combobox', { name: 'Session length' }),
-      '30',
-    );
-    await user.click(within(dialog).getByRole('switch', { name: 'Approve bookings' }));
-    await user.click(within(dialog).getByRole('button', { name: 'Save defaults' }));
-    expect(saveDefaults).toHaveBeenCalledWith({
-      durationMin: 30,
-      noticeHours: 48,
-      windowDays: 28,
-      breakMin: 15,
-      requiresApproval: false,
+    const rules = screen.getByRole('link', { name: 'Manage booking rules (opens in a new tab)' });
+    expect(rules).toHaveAttribute('href', '/settings/booking');
+    expect(rules).toHaveAttribute('target', '_blank');
+    expect(rules).toHaveTextContent('Manage booking rules ↗');
+    const hours = screen.getByRole('link', {
+      name: 'Manage weekly availability (opens in a new tab)',
     });
-    await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-  });
-
-  it('Edit weekly hours: a shorter live session lowers where end times start', async () => {
-    ownTypes = { data: [{ durationMin: 30, isLive: true, usesOwnWindows: false }] };
-    const user = userEvent.setup({ delay: null });
-    render(<SessionTypeFormScreen template="sop-review" />);
-    await user.click(next(/^Continue$/));
-    await user.click(next(/^Continue$/));
-    await user.click(screen.getByRole('button', { name: 'Edit weekly hours' }));
-    const dialog = screen.getByRole('dialog', { name: 'Your weekly hours' });
-    const end = within(dialog).getByRole('combobox', { name: 'Monday end time' });
-    expect((within(end).getAllByRole('option')[0] as HTMLOptionElement).value).toBe('1050');
-  });
-
-  it('Edit weekly hours shows the Calendar hours and saves them; bad hours block the save', async () => {
-    const user = userEvent.setup({ delay: null });
-    render(<SessionTypeFormScreen template="sop-review" />);
-    await user.click(next(/^Continue$/));
-    await user.click(next(/^Continue$/));
+    expect(hours).toHaveAttribute('href', '/calendar');
+    expect(hours).toHaveAttribute('target', '_blank');
     // The zone is named with the times (product rule).
     expect(
       screen.getByText('Mon 5 pm–8 pm · Sat 9 am–1 pm · Lagos (WAT) time'),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Edit weekly hours' }));
-    const dialog = screen.getByRole('dialog', { name: 'Your weekly hours' });
-    // End times start a session length (the 60-min default) after the start.
-    const end = within(dialog).getByRole('combobox', { name: 'Monday end time' });
-    expect((within(end).getAllByRole('option')[0] as HTMLOptionElement).value).toBe('1080');
-    // A second slot moved onto the first overlaps it.
-    await user.click(within(dialog).getByRole('button', { name: 'Add hours on Monday' }));
-    await user.selectOptions(
-      within(dialog).getAllByRole('combobox', { name: 'Monday start time' })[1]!,
-      '1050',
-    );
-    expect(within(dialog).getAllByText('Overlaps').length).toBeGreaterThan(0);
-    await user.click(within(dialog).getByRole('button', { name: 'Save hours' }));
-    expect(saveHours).not.toHaveBeenCalled();
-    expect(within(dialog).getByRole('alert')).toHaveTextContent(
-      'Fix the hours marked in red, then save.',
-    );
-    await user.click(
-      within(dialog).getAllByRole('button', { name: 'Remove these hours on Monday' })[1]!,
-    );
-    await user.selectOptions(
-      within(dialog).getByRole('combobox', { name: 'Monday end time' }),
-      '1260',
-    );
-    await user.click(within(dialog).getByRole('button', { name: 'Save hours' }));
-    expect(saveHours).toHaveBeenCalledTimes(1);
-    expect(saveHours.mock.calls[0]![0].days[1]).toEqual({ on: true, slots: [[1020, 1260]] });
+    expect(screen.queryByRole('button', { name: /Edit defaults|Edit weekly hours/ })).toBeNull();
+  });
+
+  it('approval: the inherit option names the default; the hint says what the choice is', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<SessionTypeFormScreen template="sop-review" />);
+    await user.click(next(/^Continue$/));
+    await user.click(next(/^Continue$/));
+    await user.click(screen.getByRole('radio', { name: /Customize for this session/ }));
+    const select = screen.getByRole('combobox', { name: 'Approve bookings' });
+    expect(select).toHaveAccessibleDescription('Choose how bookings are confirmed.');
+    expect(
+      within(select)
+        .getAllByRole('option')
+        .map((o) => o.textContent),
+    ).toEqual([
+      'You approve each booking (your default)',
+      'You approve each booking',
+      'Confirmed straight away',
+    ]);
+  });
+
+  it('review: one Booking rules row while inheriting; a row per rule once customized', async () => {
+    const user = userEvent.setup({ delay: null });
+    const { unmount } = render(<SessionTypeFormScreen template="sop-review" />);
+    for (let i = 0; i < 3; i++) await user.click(next(/^Continue$/));
+    expect(
+      screen.getByText('My defaults · 60 min · 2 days notice · 4 weeks ahead · 15 min buffer'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Your weekly availability (Mon 5 pm–8 pm · Sat 9 am–1 pm)'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('You approve each booking (your default)')).toBeInTheDocument();
+    expect(screen.queryByText('Session length')).toBeNull();
+    unmount();
+
+    render(<SessionTypeFormScreen template="sop-review" />);
+    await user.click(next(/^Continue$/));
+    await user.click(next(/^Continue$/));
+    await user.click(screen.getByRole('radio', { name: /Customize for this session/ }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Approve bookings' }), 'off');
+    await user.click(next(/^Continue$/));
+    for (const k of [
+      'Session length',
+      'Minimum notice',
+      'Booking window',
+      'Buffer between sessions',
+    ])
+      expect(screen.getByText(k)).toBeInTheDocument();
+    expect(screen.getByText('48 hours')).toBeInTheDocument();
+    expect(screen.getByText('Confirmed straight away')).toBeInTheDocument();
+    expect(screen.queryByText(/^My defaults/)).toBeNull();
   });
 });
 
@@ -450,22 +452,6 @@ describe('SessionTypeFormScreen — review of #60', () => {
     await user.click(next(/^Continue$/));
     await user.click(next(/^Continue$/));
   };
-
-  it('a failed save keeps Booking rules open and says so; reopening starts clean', async () => {
-    const user = userEvent.setup({ delay: null });
-    saveDefaults.mockRejectedValue({ kind: 'server', message: 'x' });
-    defaultsSaveError = {
-      kind: 'server',
-      message: 'Your preferences didn’t save. Try again in a moment.',
-    };
-    await toStep3(user);
-    await user.click(screen.getByRole('button', { name: 'Edit defaults' }));
-    expect(resetDefaults).toHaveBeenCalledTimes(1);
-    const dialog = screen.getByRole('dialog', { name: 'Booking rules' });
-    await user.click(within(dialog).getByRole('button', { name: 'Save defaults' }));
-    expect(screen.getByRole('dialog', { name: 'Booking rules' })).toBeInTheDocument();
-    expect(within(dialog).getByRole('alert')).toHaveTextContent('Your preferences didn’t save.');
-  });
 
   it('"Customize for this session" starts from the mentor’s own values', async () => {
     const user = userEvent.setup({ delay: null });
@@ -484,40 +470,10 @@ describe('SessionTypeFormScreen — review of #60', () => {
     expect(screen.getByRole('combobox', { name: 'Minimum notice' })).toHaveValue('48');
   });
 
-  it('a stored value that isn’t a design option shows as itself, not the first option', async () => {
-    const user = userEvent.setup({ delay: null });
-    defaultsMock = { ...READY, data: { ...READY.data, windowDays: 20 } };
-    await toStep3(user);
-    await user.click(screen.getByRole('button', { name: 'Edit defaults' }));
-    const dialog = screen.getByRole('dialog', { name: 'Booking rules' });
-    const select = within(dialog).getByRole('combobox', { name: 'Booking window' });
-    expect(select).toHaveValue('20');
-    expect(within(select).getByRole('option', { name: '20 days' })).toBeInTheDocument();
-  });
-
-  it('Edit defaults reads the cap again and opens once that read is back', async () => {
-    const user = userEvent.setup({ delay: null });
-    const retry = vi.fn();
-    defaultsMock = { ...READY, retry, refreshing: true } as typeof READY;
-    await toStep3(user);
-    await user.click(screen.getByRole('button', { name: 'Edit defaults' }));
-    expect(retry).toHaveBeenCalled();
-    expect(screen.queryByRole('dialog', { name: 'Booking rules' })).toBeNull();
-  });
-
-  it('"Booking window" offers only what the platform maximum allows, in the form and in Booking rules', async () => {
+  it('"Booking window" offers only what the platform maximum allows', async () => {
     const user = userEvent.setup({ delay: null });
     defaultsMock = { ...READY, data: { ...READY.data, windowDays: 14, maxWindowDays: 14 } };
     await toStep3(user);
-    await user.click(screen.getByRole('button', { name: 'Edit defaults' }));
-    const dialog = screen.getByRole('dialog', { name: 'Booking rules' });
-    const prefs = within(dialog).getByRole('combobox', { name: 'Booking window' });
-    expect(
-      within(prefs)
-        .getAllByRole('option')
-        .map((o) => o.textContent),
-    ).toEqual(['1 week', '2 weeks']);
-    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     await user.click(screen.getByRole('radio', { name: /Customize for this session/ }));
     const own = screen.getByRole('combobox', { name: 'Booking window' });
     expect(
@@ -544,22 +500,6 @@ describe('SessionTypeFormScreen — review of #60', () => {
     // Still an unsaved change: it asks before leaving.
     expect(push).not.toHaveBeenCalled();
     expect(screen.getByRole('alertdialog', { name: 'Discard this session?' })).toBeInTheDocument();
-  });
-
-  it('new hours overlapping hours kept in another zone can’t be saved, and it says which zone', async () => {
-    const user = userEvent.setup({ delay: null });
-    otherSlots = [{ day: 1, slot: [1080, 1140], zone: 'Europe/London' }]; // Mon 6–7 pm, London
-    await toStep3(user);
-    await user.click(screen.getByRole('button', { name: 'Edit weekly hours' }));
-    const dialog = screen.getByRole('dialog', { name: 'Your weekly hours' });
-    expect(
-      within(dialog).getByText(/Hours you set in London \(UK\) aren’t shown here/),
-    ).toBeInTheDocument();
-    await user.click(within(dialog).getByRole('button', { name: 'Save hours' }));
-    expect(saveHours).not.toHaveBeenCalled();
-    expect(within(dialog).getByRole('alert')).toHaveTextContent(
-      'Some of these hours overlap hours you set in London (UK). Change them, then save.',
-    );
   });
 
   it('"Best for mentees who are…" takes several stages and sends them all (round 3 A)', async () => {

@@ -226,3 +226,16 @@ describe('SessionTypeManager — the four states', () => {
     ).not.toHaveFocus();
   });
 });
+
+describe('SessionTypeManager — a row as drawn (PRD list)', () => {
+  it('facts read length, Free, questions, topics; Featured is the orange badge', () => {
+    setup(remote({ data: [{ ...T, isFeatured: true }] }));
+    const row = screen.getByRole('article', { name: 'SOP draft review' });
+    const facts = within(row)
+      .getAllByRole('listitem')
+      .map((li) => li.textContent);
+    // Each fact is its icon's ligature, then the words: Free has the payments icon.
+    expect(facts.slice(0, 3)).toEqual(['schedule60 min', 'paymentsFree', 'quiz2 questions']);
+    expect(within(row).getByText('Featured').className).toMatch(/orange-accent/);
+  });
+});
