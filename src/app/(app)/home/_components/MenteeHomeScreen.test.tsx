@@ -111,6 +111,7 @@ const STATS: MenteeStats = {
   windowDays: 30,
   current: { sessions: 2, hours: 1.5 },
   previous: { sessions: 1, hours: 0.75 },
+  thisMonth: null,
 };
 
 const MEMBER: Extract<Viewer, { kind: 'member' }> = {
@@ -175,15 +176,37 @@ describe('MenteeHomeScreen', () => {
     expect(screen.getByRole('button', { name: 'Tips' })).toBeInTheDocument();
   });
 
-  it('a new mentee gets the first-booking invitation and encouraging zeros', () => {
+  it('a new mentee gets the first-booking invitation and no progress figures', () => {
     viewer = NEW_MEMBER;
     render(<MenteeHomeScreen />);
     expect(screen.getByRole('heading', { name: 'Book your first session' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Find a mentor' })).toBeInTheDocument();
-    expect(screen.getByText('Your first one counts here')).toBeInTheDocument();
     expect(screen.getByText('Let’s find the right mentor for your goal.')).toBeInTheDocument();
-    // No "No data yet" and no real figures in the new state.
-    expect(screen.queryByText('12')).not.toBeInTheDocument();
+    // The new view has no KPIs (design newHome nextStep: kpiTop false).
+    expect(screen.queryByRole('region', { name: 'Your progress' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Sessions held')).not.toBeInTheDocument();
+  });
+
+  it('every tile has its hint, and a missed session links to Bookings History filtered to Missed', () => {
+    stats = remote<MenteeStats>({ ...STATS, missedSessions: 1 });
+    render(<MenteeHomeScreen />);
+    expect(
+      screen.getByRole('button', { name: 'Sessions you and your mentor both joined' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Missed · 90 days')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View missed' })).toHaveAttribute(
+      'href',
+      '/bookings?tab=history&filter=missed',
+    );
+  });
+
+  it('"Your session starts soon." once the next session is within the hour', () => {
+    const at = (m: number) => new Date(Date.now() + m * 60_000).toISOString();
+    upcoming = remote([
+      booking({ startsAt: at(20), endsAt: at(65), joinOpensAt: at(10), joinClosesAt: at(35) }),
+    ]);
+    render(<MenteeHomeScreen />);
+    expect(screen.getByText('Your session starts soon.')).toBeInTheDocument();
   });
 
   it('treats a null booking count as unknown, not zero — shows the real session, not the hero', () => {
@@ -242,8 +265,9 @@ describe('MenteeHomeScreen', () => {
     render(<MenteeHomeScreen />);
     expect(screen.getByText('Waiting on your mentor')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View your request' })).toBeInTheDocument();
+    // The subline is the design's idle one: nothing is booked (confirmed) yet.
     expect(
-      screen.getByText('Your request is with your mentor. We’ll let you know.'),
+      screen.getByText('No session booked right now. Pick up where you left off.'),
     ).toBeInTheDocument();
     expect(screen.queryByText('Nothing booked yet')).not.toBeInTheDocument();
   });
@@ -276,12 +300,13 @@ describe('MenteeHomeScreen', () => {
     }
   });
 
-  it('lists Book-again mentors and links the "Mentors met" KPI to the section', () => {
+  it('lists Book-again mentors, and "View mentors" opens the mentors you have met', async () => {
     metMentors = remote([metMentor()]);
     render(<MenteeHomeScreen />);
     expect(screen.getByRole('heading', { name: 'Your mentors' })).toBeInTheDocument();
     expect(screen.getByText('Mariam Alamata')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'View mentors' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'View mentors' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
   it('opening "Book again" launches the booking flow', async () => {
@@ -293,16 +318,18 @@ describe('MenteeHomeScreen', () => {
     expect(screen.getByTestId('booking-open')).toHaveAttribute('data-hide-profile', 'false');
   });
 
-  it('shows the help pill only for an early mentee (≤ 2 sessions), not experienced or new', () => {
+  it('shows the help pill to new mentees and early ones (≤ 2 sessions), not experienced', () => {
     // Experienced (12 sessions): no "which mentor?" help pill.
     viewer = { ...MEMBER, completedSessions: 12 };
     const { unmount } = render(<MenteeHomeScreen />);
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
     unmount();
-    // A brand-new mentee gets the hero, not the pill.
+    // A brand-new mentee gets it too (design: the new view shows the float).
     viewer = NEW_MEMBER;
     const next = render(<MenteeHomeScreen />);
-    expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('complementary', { name: 'Not sure where to start?' }),
+    ).toBeInTheDocument();
     next.unmount();
     // Early (2 sessions, has a booking so not new): the pill shows.
     viewer = { ...MEMBER, completedSessions: 2 };

@@ -34,6 +34,13 @@
   font-weight: var(--weight-semibold);
   color: var(--text-primary);
 }
+/* Mentee Dashboard v2.dc.html Missed tile: amber at 1, red at 2 or more. */
+.warning {
+  color: var(--warning-text);
+}
+.danger {
+  color: var(--text-danger);
+}
 /* Nothing known yet: a muted line in its place, never a 0 that reads as a score
    (same treatment as StatTile's empty figure). */
 .empty {
@@ -83,6 +90,8 @@
   font-weight: var(--weight-semibold);
   color: var(--text-link);
   white-space: nowrap;
+  text-align: left;
+  text-decoration: none;
 }
 /* A 44px tap target without the visual height (our accessibility rule; the
    design draws 32px): extends the 32px (--space-8) link to 44px (--space-11). */

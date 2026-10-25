@@ -10,8 +10,16 @@
   border-radius: var(--radius-xl);
   background: var(--surface-card);
 }
+.lead {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
 .art {
   flex: none;
+  display: block;
 }
 .copy {
   flex: 1;
@@ -22,13 +30,13 @@
 }
 .title {
   margin: 0;
-  font-size: var(--text-p-lg);
+  font-size: var(--text-p-md);
   font-weight: var(--weight-semibold);
   color: var(--ink-900);
 }
 .body {
   margin: 0;
-  font-size: var(--text-p-sm);
+  font-size: var(--text-p-xs);
   line-height: var(--lh-p);
   color: var(--text-secondary);
 }
@@ -38,7 +46,6 @@
 @media (max-width: 767px) {
   .card {
     flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-3);
+    align-items: stretch;
   }
 }

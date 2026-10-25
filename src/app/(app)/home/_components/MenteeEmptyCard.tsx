@@ -6,7 +6,7 @@ type MenteeEmptyCardProps = {
   illustration: 'calendar' | 'calendar-grey';
   title: string;
   body: string;
-  /** One action — a ButtonLink or Button. */
+  /** One action: a ButtonLink or Button (medium on desktop, large and full width on phones). */
   action: ReactNode;
 };
 
@@ -19,17 +19,19 @@ type MenteeEmptyCardProps = {
 export function MenteeEmptyCard({ illustration, title, body, action }: MenteeEmptyCardProps) {
   return (
     <section aria-label={title} className={styles.card}>
-      {/* eslint-disable-next-line @next/next/no-img-element -- decorative vector, as EmptyState */}
-      <img
-        src={`/illustrations/${illustration}.svg`}
-        alt=""
-        width={56}
-        height={56}
-        className={styles.art}
-      />
-      <div className={styles.copy}>
-        <h2 className={styles.title}>{title}</h2>
-        <p className={styles.body}>{body}</p>
+      <div className={styles.lead}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- decorative vector, as EmptyState */}
+        <img
+          src={`/illustrations/${illustration}.svg`}
+          alt=""
+          width={56}
+          height={56}
+          className={styles.art}
+        />
+        <div className={styles.copy}>
+          <h2 className={styles.title}>{title}</h2>
+          <p className={styles.body}>{body}</p>
+        </div>
       </div>
       <div className={styles.action}>{action}</div>
     </section>

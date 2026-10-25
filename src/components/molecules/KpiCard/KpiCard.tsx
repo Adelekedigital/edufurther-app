@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { InfoTip } from '@/components/atoms/InfoTip/InfoTip';
@@ -22,8 +23,13 @@ type KpiCardProps = {
   info?: string;
   /** A trend line under the value. The design shows a trend or a link, not both. */
   trend?: KpiTrend;
-  /** A link under the value (e.g. "View mentors"). The design's alternative to a trend. */
-  link?: { label: string; onClick: () => void };
+  /**
+   * A link under the value (e.g. "View mentors"). The design's alternative to a
+   * trend: a button with `onClick`, or a page link with `href`.
+   */
+  link?: { label: string } & ({ onClick: () => void } | { href: string });
+  /** Colours the figure: warning (amber) or danger (red), as the Missed tile does. */
+  valueTone?: 'warning' | 'danger';
   className?: string;
 };
 
@@ -33,7 +39,16 @@ type KpiCardProps = {
  * trend or a link beneath. Text-only — no icon tile — so it reads as a figure,
  * not a feature. Shared so the mentor dashboard can take the same tile.
  */
-export function KpiCard({ label, value, unit, info, trend, link, className }: KpiCardProps) {
+export function KpiCard({
+  label,
+  value,
+  unit,
+  info,
+  trend,
+  link,
+  valueTone,
+  className,
+}: KpiCardProps) {
   const empty = value === null;
   return (
     <div className={cx(styles.card, className)}>
@@ -46,7 +61,15 @@ export function KpiCard({ label, value, unit, info, trend, link, className }: Kp
         <span className={styles.label}>{label}</span>
       )}
       <div className={styles.valueRow}>
-        <span className={cx(styles.value, empty && styles.empty)}>{value ?? 'No data yet'}</span>
+        <span
+          className={cx(
+            styles.value,
+            valueTone && !empty && styles[valueTone],
+            empty && styles.empty,
+          )}
+        >
+          {value ?? 'No data yet'}
+        </span>
         {unit && !empty && <span className={styles.unit}>{unit}</span>}
       </div>
       {trend && (
@@ -55,12 +78,18 @@ export function KpiCard({ label, value, unit, info, trend, link, className }: Kp
           {trend.text}
         </span>
       )}
-      {link && (
-        <button type="button" className={styles.link} onClick={link.onClick}>
-          {link.label}
-          <Icon name="arrow_forward" size={16} />
-        </button>
-      )}
+      {link &&
+        ('href' in link ? (
+          <Link href={link.href} prefetch={false} className={styles.link}>
+            {link.label}
+            <Icon name="arrow_forward" size={16} />
+          </Link>
+        ) : (
+          <button type="button" className={styles.link} onClick={link.onClick}>
+            {link.label}
+            <Icon name="arrow_forward" size={16} />
+          </button>
+        ))}
     </div>
   );
 }

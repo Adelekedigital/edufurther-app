@@ -58,8 +58,23 @@ describe('useMenteeStats', () => {
       windowDays: 30,
       current: { sessions: 2, hours: 1.5 },
       previous: { sessions: 1, hours: 0.75 },
+      thisMonth: null,
     });
     expect(result.current.error).toBeNull();
+  });
+
+  it('reads the calendar month when the backend sends it (PENDING BACKEND this_month)', async () => {
+    get.mockResolvedValue(
+      resp(200, {
+        sessions_held: 3,
+        current: window_(1, 60),
+        previous: window_(0, 0),
+        this_month: { completed_sessions: 2, minutes: 90 },
+      }),
+    );
+    const { result } = renderHook(() => useMenteeStats('me', true), { wrapper });
+    await waitFor(() => expect(result.current.data).not.toBeNull());
+    expect(result.current.data?.thisMonth).toEqual({ sessions: 2, hours: 1.5 });
   });
 
   it('reads an absent figure as null, not 0', async () => {

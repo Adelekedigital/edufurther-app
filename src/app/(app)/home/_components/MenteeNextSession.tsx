@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useId, useState } from 'react';
 import { ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
@@ -50,6 +51,24 @@ function fullDate(iso: string, timeZone: string): string {
 }
 
 /**
+ * Within the hour or already started: the live badge, Join, and the "starts
+ * soon" subline (the session page hosts the lobby before the door opens). A
+ * *closed* join window means the session is over, even while the backend still
+ * lists it as confirmed (useUpcomingBookings keeps just-settled rows): a Join
+ * that can only fail is worse than none (as NextSessionCard), so it drops back
+ * to "View details". One rule for the card and the page's subline.
+ */
+export function startsSoon(b: Booking, now: Date, timeZone = 'UTC'): boolean {
+  const join = joinState(b, now);
+  if (join === 'closed') return false;
+  return (
+    join === 'open' ||
+    nextSessionWhen(b, now, timeZone).live ||
+    new Date(b.startsAt).getTime() - now.getTime() <= HOUR
+  );
+}
+
+/**
  * The mentee's next session on the home screen (Mentee Dashboard v2.dc.html
  * "Next session"): a date chip, who and when, a client-only prep checklist, and
  * one action — Join when it is nearly time, View details otherwise.
@@ -57,11 +76,14 @@ function fullDate(iso: string, timeZone: string): string {
  * Its own card rather than the Bookings hero (NextSessionCard): the design adds
  * the date chip and the prep list the Bookings hero does not have. It takes the
  * same Booking and reuses the same join/time helpers, so the two never disagree.
- * "Send a message" is omitted until Messages ships (a dead control teaches people
- * the page is broken); the meeting provider is omitted because the upcoming
- * payload does not carry it (both tracked in design-divergence.md).
+ * "Send a message" is omitted until Messages ships (messageBtn hide): a dead
+ * control teaches people the page is broken.
  */
-export function MenteeNextSession({ booking: b, timeZone, now = new Date() }: MenteeNextSessionProps) {
+export function MenteeNextSession({
+  booking: b,
+  timeZone,
+  now = new Date(),
+}: MenteeNextSessionProps) {
   const prepId = useId();
   const [prepOpen, setPrepOpen] = useState(false);
   const [done, setDone] = useState<boolean[]>(() => PREP.map(() => false));
@@ -69,17 +91,7 @@ export function MenteeNextSession({ booking: b, timeZone, now = new Date() }: Me
 
   const { month, day } = monthDay(b.startsAt, timeZone);
   const when = nextSessionWhen(b, now, timeZone);
-  const join = joinState(b, now);
-  const joinable = join === 'open';
-  // Within the hour or already started: show the live badge and route to Join
-  // (the session page hosts the lobby before the door opens). But a *closed*
-  // join window means the session is over, even while the backend still lists it
-  // as confirmed (useUpcomingBookings keeps just-settled rows) — a Join that can
-  // only fail is worse than none (as NextSessionCard), so a closed window drops
-  // back to "View details".
-  const soon =
-    join !== 'closed' &&
-    (joinable || when.live || new Date(b.startsAt).getTime() - now.getTime() <= HOUR);
+  const soon = startsSoon(b, now, timeZone);
   const doneCount = done.filter(Boolean).length;
 
   return (
@@ -91,9 +103,9 @@ export function MenteeNextSession({ booking: b, timeZone, now = new Date() }: Me
             <Icon name="lightbulb" size={16} className={styles.tipsIcon} />
             Tips
           </button>
-          <ButtonLink href="/bookings" prefetch={false} variant="text" size="small">
+          <Link href="/bookings" prefetch={false} className={styles.tips}>
             All bookings
-          </ButtonLink>
+          </Link>
         </div>
       </div>
 
@@ -174,9 +186,7 @@ export function MenteeNextSession({ booking: b, timeZone, now = new Date() }: Me
                     type="button"
                     className={cx(styles.prepItem, done[i] && styles.prepItemDone)}
                     aria-pressed={done[i]}
-                    onClick={() =>
-                      setDone((prev) => prev.map((v, j) => (j === i ? !v : v)))
-                    }
+                    onClick={() => setDone((prev) => prev.map((v, j) => (j === i ? !v : v)))}
                   >
                     <Icon
                       name={done[i] ? 'check_circle' : 'radio_button_unchecked'}
