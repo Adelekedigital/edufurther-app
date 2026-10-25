@@ -55,6 +55,8 @@ type SessionTypeWizardProps = {
   onRetryWeekly: () => void;
   /** The mentor's default video's name ("EduFurther video"); null until it's known. */
   defaultVideo: string | null;
+  /** Step 1: the Intro chat's topics are still the ones it was made with. */
+  topicsPreselected?: boolean;
   videoFailed?: boolean;
   onRetryVideo?: () => void;
   onStep: (step: Step) => void;
@@ -148,7 +150,13 @@ export function SessionTypeWizard(p: SessionTypeWizardProps) {
           </div>
         </div>
         {p.step === 1 && (
-          <CoreDetailsStep draft={p.draft} update={p.update} errors={p.errors} topics={p.topics} />
+          <CoreDetailsStep
+            draft={p.draft}
+            update={p.update}
+            errors={p.errors}
+            topics={p.topics}
+            topicsPreselected={p.topicsPreselected}
+          />
         )}
         {p.step === 2 && (
           <IntakeQuestionsStep

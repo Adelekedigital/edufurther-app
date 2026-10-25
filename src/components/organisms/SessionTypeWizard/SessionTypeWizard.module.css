@@ -431,6 +431,13 @@
   outline-offset: var(--focus-ring-offset);
 }
 /* A link inside a rule hint: the line keeps its height, the tap area is 44px. */
+/* The editor's line for a synced question: where its options come from. */
+.syncedNote {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
 .hintLink {
   position: relative;
   font-weight: var(--weight-semibold);

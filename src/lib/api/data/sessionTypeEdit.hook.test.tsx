@@ -40,6 +40,7 @@ const read = (over: Partial<SavedSessionType['read']> = {}): SavedSessionType['r
   application_stage: 'preparing_documents',
   application_stages: ['preparing_documents'],
   custom_stage_label: null,
+  is_starter: false,
   icon: null,
   requires_booking_confirmation: null,
   booking_window_days: null,

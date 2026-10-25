@@ -122,8 +122,32 @@ function seed(): Stored[] {
     // Backend round 4 (#300): one featured per mentor; none scheduled for deletion.
     is_featured: false,
     pending_deletion: null,
+    // Backend #540: the Intro chat onboarding makes is the one starter.
+    is_starter: false,
   };
   return [
+    {
+      ...base,
+      id: 'mst-intro',
+      name: 'Intro chat',
+      description:
+        'A first conversation about where you are and what to do next: choosing a school, funding or your documents.',
+      duration_minutes: 30,
+      is_active: true,
+      is_starter: true,
+      ...topics('school-selection'),
+      application_stage: 'exploring',
+      application_stages: ['exploring'],
+      questions: [
+        q('qi1', 'What would you like to talk about?', 'free_text', false),
+        {
+          ...q('qi2', 'Which area do you need help with most?', 'multi_choice', true),
+          display_order: 1,
+          options_source: 'help_areas',
+        } as QuestionRead,
+      ],
+      bookedCount: 0,
+    },
     {
       ...base,
       id: 'mst-sop',
@@ -179,8 +203,14 @@ export function mockOwnSessionTypes(): OwnSessionTypeRead[] {
   return [...store].sort((a, b) => Number(b.is_featured) - Number(a.is_featured)).map(resolve);
 }
 
+/** The mentor's help areas: a synced question's options on every read (backend #540). */
+const HELP_AREAS = OFFERINGS.slice(0, 3).map((o) => ({ id: o.id, text: o.display_name }));
+
 export function mockQuestions(id: string): QuestionRead[] | null {
-  return store.find((t) => t.id === id)?.questions ?? null;
+  const qs = store.find((t) => t.id === id)?.questions;
+  return (
+    qs?.map((q) => (q.options_source === 'help_areas' ? { ...q, options: HELP_AREAS } : q)) ?? null
+  );
 }
 
 /** 404, 204, or 202: booked sessions go ahead, so it's hidden and deleted after (round 4). */
@@ -290,6 +320,7 @@ export function mockCreateSessionType(
       is_required?: boolean;
       allows_multiple?: boolean;
       options?: { text: string }[];
+      options_source?: 'help_areas' | null;
     };
     return {
       id: `${id}-q${i}`,
@@ -299,6 +330,7 @@ export function mockCreateSessionType(
       display_order: i,
       allows_multiple: !!w.allows_multiple,
       options: (w.options ?? []).map((o, j) => ({ id: `${id}-q${i}-o${j}`, text: o.text })),
+      options_source: w.options_source ?? null,
     } as QuestionRead;
   });
   const extra = {
@@ -327,6 +359,7 @@ export function mockCreateSessionType(
     questions,
     is_featured: false,
     pending_deletion: null,
+    is_starter: body.is_starter === true,
     bookedCount: 0,
     // The body is untyped JSON; the cast covers its loose fields, not these.
   } as Stored);

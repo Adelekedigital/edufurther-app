@@ -33,6 +33,7 @@ import { keys } from './keys';
 import { useTopics } from './mentors';
 import { aboutBody } from './profileEdit';
 import type { SessionTypeWriteBody } from './sessionTypes';
+import { STARTER_COPY } from '@/lib/copy/sessionTypes';
 import { toWeeklyHours, useSaveWeeklyHours, useWeeklyHours, type WeeklyHours } from './weeklyHours';
 
 type Me = components['schemas']['UserRead'];
@@ -517,6 +518,25 @@ export function useSaveMentorStep(userId: string | null) {
                 duration_minutes: 30,
                 description: introDescription(labels),
                 service_offering_ids: answers.helpIds,
+                // "Created for you", and its help-area question in sync (backend #540).
+                is_starter: true,
+                application_stages: ['exploring'],
+                questions: [
+                  {
+                    question_text: STARTER_COPY.talkAbout,
+                    question_type: 'free_text',
+                    is_required: false,
+                    display_order: 0,
+                  },
+                  {
+                    question_text: STARTER_COPY.helpArea,
+                    question_type: 'multi_choice',
+                    allows_multiple: false,
+                    is_required: true,
+                    display_order: 1,
+                    options_source: 'help_areas',
+                  },
+                ],
               } as SessionTypeWriteBody,
             }),
           );

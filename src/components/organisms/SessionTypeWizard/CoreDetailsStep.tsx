@@ -24,6 +24,8 @@ type CoreDetailsStepProps = {
   update: (patch: Partial<Draft>) => void;
   errors: FieldErrors;
   topics: Topic[];
+  /** The Intro chat with the topics it was made with: the hint says they were preselected. */
+  topicsPreselected?: boolean;
 };
 
 /**
@@ -31,7 +33,13 @@ type CoreDetailsStepProps = {
  * stage, price. The three required fields and the stages carry `data-gap`: a
  * try with gaps (or a refused stage) focuses the first (the wizard).
  */
-export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetailsStepProps) {
+export function CoreDetailsStep({
+  draft: d,
+  update,
+  errors,
+  topics,
+  topicsPreselected = false,
+}: CoreDetailsStepProps) {
   const id = useId();
   const stages = STAGE_CHIPS.map((value) => ({ value, label: STAGE_LABELS[value] }));
   return (
@@ -76,6 +84,7 @@ export function CoreDetailsStep({ draft: d, update, errors, topics }: CoreDetail
           </span>
           <span id={`${id}-topics-hint`} className={styles.groupHint}>
             {DETAILS_COPY.topicsHint(MAX_TOPICS)}
+            {topicsPreselected && ` ${DETAILS_COPY.topicsPreselected}`}
           </span>
         </span>
         {/* Above the chips, as drawn (design errCats). */}

@@ -19,6 +19,8 @@ export type SavedQuestion = {
   kind: QuestionKind;
   required: boolean;
   options: { id: string; text: string }[];
+  /** Options come from the help areas (backend #540): its type and options aren't editable. */
+  synced?: boolean;
 };
 
 /**
@@ -92,6 +94,12 @@ export function planQuestions(draft: DraftQuestion[], saved: SavedQuestion[]) {
     const body: Record<string, unknown> = {};
     if (w.question_text !== s.text) body.question_text = w.question_text;
     if (w.is_required !== s.required) body.is_required = w.is_required;
+    // A synced question takes text and required only: the API refuses its
+    // options and source on a PATCH (backend #540), and its type doesn't change.
+    if (s.synced) {
+      if (Object.keys(body).length) update.push({ id: s.id, body });
+      return;
+    }
     if (q.kind !== s.kind) {
       body.question_type = w.question_type;
       if ('allows_multiple' in w) body.allows_multiple = w.allows_multiple;

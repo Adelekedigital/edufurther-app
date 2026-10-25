@@ -53,6 +53,7 @@ export function toSavedQuestion(q: QuestionRead): SavedQuestion {
         : (q.question_type as 'free_text' | 'file_upload'),
     required: q.is_required,
     options: (q.options ?? []).map((o) => ({ id: o.id, text: o.text })),
+    synced: q.options_source === 'help_areas',
   };
 }
 
@@ -86,6 +87,7 @@ export function toDraft(s: SavedSessionType, defaults: BookingDefaults | null): 
       kind: q.kind,
       required: q.required,
       options: q.options.map((o) => o.text),
+      synced: q.synced,
     })),
     durationMin: r.duration_minutes,
     noticeHours: r.min_notice_minutes / 60,
@@ -198,6 +200,14 @@ function fromDraft(
   sent?: unknown,
 ): Omit<SavedQuestion, 'id'> {
   const choice = q.kind === 'single' || q.kind === 'multi';
+  if (before.synced)
+    return {
+      text: q.text.trim(),
+      kind: q.kind,
+      required: q.required,
+      options: before.options,
+      synced: true,
+    };
   const options = Array.isArray(sent)
     ? (sent as { id?: string; text: string }[]).map((o, i) => ({
         id: o.id ?? `pending-${i}`,
@@ -423,6 +433,7 @@ export function toDuplicateBody(
     kind: q.kind,
     required: q.required,
     options: q.options.map((o) => o.text),
+    synced: q.synced,
   }));
   return {
     body: {

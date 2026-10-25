@@ -145,6 +145,21 @@ describe('EditSessionTypeScreen', () => {
     expect(screen.getByRole('button', { name: /^Review/ })).toBeEnabled();
   });
 
+  it('an edited question keeps its id, so it is changed, not deleted and added again', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<EditSessionTypeScreen id="st1" />);
+    await user.click(screen.getByRole('button', { name: /^Prepare for session/ }));
+    await user.click(screen.getByRole('button', { name: 'Edit question 1' }));
+    const question = screen.getByRole('textbox', { name: 'Question' });
+    await user.clear(question);
+    await user.type(question, 'Which programs, and when?');
+    await user.click(screen.getByRole('button', { name: 'Save question' }));
+    await user.click(screen.getByRole('button', { name: /^Review/ }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    const q = save.mock.calls[0]![0].draft.questions[0];
+    expect(q).toMatchObject({ id: SAVED.questions[0]!.id, text: 'Which programs, and when?' });
+  });
+
   it('saves only through the save hook, then says "Changes saved"', async () => {
     const user = userEvent.setup({ delay: null });
     render(<EditSessionTypeScreen id="st1" />);

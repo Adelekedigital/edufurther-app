@@ -181,6 +181,7 @@ export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
     ...NOT_REFRESHED,
     application_stage: null,
     custom_stage_label: null,
+    is_starter: false,
     meeting_venue: 'google_meet',
   },
   {
@@ -198,6 +199,7 @@ export const MOCK_SESSION_TYPES: SessionTypeRead[] = [
     questions: CV_QUESTIONS,
     application_stage: null,
     custom_stage_label: null,
+    is_starter: false,
     meeting_venue: 'google_meet',
   },
 ];

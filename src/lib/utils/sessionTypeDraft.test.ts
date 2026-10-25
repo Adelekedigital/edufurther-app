@@ -24,6 +24,7 @@ import {
   newSlotLength,
   shortestLength,
   typeLength,
+  toQuestionWrite,
 } from './sessionTypeDraft';
 
 const ids = { 'document-preparation': 'o4', 'school-selection': 'o1' };
@@ -438,5 +439,33 @@ describe('hours fit the shortest session (product, 2026-10-01)', () => {
     d.days[1] = { on: true, slots: [[540, 600]] };
     expect(validateStep(d, 3, 90)['slot-1-0']).toMatch(/Too short for your 90-min sessions/);
     expect(validateStep(d, 3, 60)['slot-1-0']).toBeUndefined();
+  });
+});
+
+describe('a question synced to the help areas (backend PR 540)', () => {
+  const synced = {
+    key: 'q',
+    text: ' Which area do you need help with most? ',
+    kind: 'single' as const,
+    required: true,
+    options: ['Document preparation'],
+    synced: true,
+  };
+  it('is written as a single choice from the help areas, with no options of its own', () => {
+    const w = toQuestionWrite(synced, 1);
+    expect(w).toEqual({
+      question_text: 'Which area do you need help with most?',
+      question_type: 'multi_choice',
+      is_required: true,
+      display_order: 1,
+      allows_multiple: false,
+      options_source: 'help_areas',
+    });
+    expect(w).not.toHaveProperty('options');
+  });
+  it('needs only its words: however many help areas there are', () => {
+    expect(questionError(synced)).toBeNull();
+    expect(questionError({ ...synced, options: [] })).toBeNull();
+    expect(questionError({ ...synced, text: ' ' })).toBe('Write the question.');
   });
 });

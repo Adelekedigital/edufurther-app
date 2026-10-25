@@ -173,7 +173,7 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     bookingCounts: { pending: 3, upcoming: 6 },
     // Not 12, so a number baked into copy would be visible in dev.
     // Not the default 5, so a limit baked into copy would be visible in dev.
-    sessionTypeLimit: 4,
+    sessionTypeLimit: 6,
     menteeCancelRefundHours: 10,
   },
 };

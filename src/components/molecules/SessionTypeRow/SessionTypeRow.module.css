@@ -169,3 +169,8 @@
     inset: -8px -8px -20px;
   }
 }
+/* "Created for you" after the badges (design: p-xs, ink-600). */
+.starter {
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}

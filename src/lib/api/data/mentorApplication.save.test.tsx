@@ -178,6 +178,33 @@ describe('useSaveMentorStep: education', () => {
 });
 
 describe('useSaveMentorStep: hours', () => {
+  it('makes the Intro chat as the starter, with its two questions, one synced to the help areas (backend PR 540)', async () => {
+    const { result } = renderHook(() => useSaveMentorStep('u1'), { wrapper });
+    await result.current.save('hours', answers(), state);
+    const call = POST.mock.calls.find(([p]) => p === '/api/v1/me/session-types');
+    expect((call?.[1] as { body: unknown }).body).toMatchObject({
+      name: 'Intro chat',
+      is_starter: true,
+      application_stages: ['exploring'],
+      questions: [
+        {
+          question_text: 'What would you like to talk about?',
+          question_type: 'free_text',
+          is_required: false,
+        },
+        {
+          question_text: 'Which area do you need help with most?',
+          question_type: 'multi_choice',
+          allows_multiple: false,
+          is_required: true,
+          options_source: 'help_areas',
+        },
+      ],
+    });
+    const second = (call?.[1] as { body: { questions: object[] } }).body.questions[1]!;
+    expect(second).not.toHaveProperty('options');
+  });
+
   const introKey = () => {
     const call = POST.mock.calls.find(([p]) => p === '/api/v1/me/session-types');
     return (call?.[1] as { params: { header: Record<string, string> } }).params.header[
