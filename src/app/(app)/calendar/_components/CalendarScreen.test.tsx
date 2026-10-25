@@ -554,7 +554,9 @@ describe('CalendarScreen', () => {
     // for userEvent).
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-10-05T09:00:00Z'));
-    onTestFinished(() => vi.useRealTimers());
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     const user = userEvent.setup();
     render(<CalendarScreen />);
     await user.click(screen.getByRole('button', { name: 'Block dates' }));
