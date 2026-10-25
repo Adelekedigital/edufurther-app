@@ -19,7 +19,7 @@ import type { Defaults } from './SchedulingStep';
 import styles from './SessionTypeWizard.module.css';
 
 /**
- * Weekly hours: "Your weekly hours (Mon–Fri · 9 am–5 pm)" (PRD step 4; the
+ * Weekly hours: "Your weekly availability (Mon–Fri · 9 am–5 pm)" (PRD step 4; the
  * design says "Custom hours for this session" with its own). Own hours list
  * their times: "Wed 5:00 pm–8:00 pm; Sat 9:00 am–10:00 am".
  */

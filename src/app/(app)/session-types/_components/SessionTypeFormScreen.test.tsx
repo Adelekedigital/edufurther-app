@@ -418,7 +418,7 @@ describe('SessionTypeFormScreen', () => {
       screen.getByText('My defaults · 60 min · 2 days notice · 4 weeks ahead · 15 min buffer'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('Your weekly hours (Mon 5 pm–8 pm · Sat 9 am–1 pm)'),
+      screen.getByText('Your weekly availability (Mon 5 pm–8 pm · Sat 9 am–1 pm)'),
     ).toBeInTheDocument();
     expect(screen.getByText('You approve each booking (your default)')).toBeInTheDocument();
     expect(screen.queryByText('Session length')).toBeNull();

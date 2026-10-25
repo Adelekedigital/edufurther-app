@@ -122,7 +122,7 @@ export const REVIEW_COPY = {
   hours: 'Availability',
   /** With the mentor's weekly hours, once they've loaded. */
   weekly: (summary: string | null) =>
-    summary ? `Your weekly hours (${summary})` : 'Your weekly hours',
+    summary ? `Your weekly availability (${summary})` : 'Your weekly availability',
   ownHours: 'Custom hours for this session',
   /** Inheriting: the mentor's defaults, approval in its own row. */
   rulesRow: 'Booking rules',
