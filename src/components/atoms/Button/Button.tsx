@@ -73,6 +73,12 @@ export type ButtonProps = Common &
   Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & {
     /** Busy is distinct from disabled: it says why, and stays in the tab order. */
     busy?: boolean;
+    /**
+     * Off, but kept in the tab order so it can say why (pass the reason as
+     * `title`, which is also its accessible description): aria-disabled, drawn
+     * as disabled, and a click does nothing. Unlike `disabled`, focus stays.
+     */
+    unavailable?: boolean;
   };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
@@ -83,6 +89,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     icon,
     iconPosition,
     busy,
+    unavailable,
     className,
     children,
     disabled,
@@ -101,7 +108,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       // Kept after ...rest: a busy button must not submit twice, whatever the caller passes.
       disabled={disabled}
       aria-busy={busy || undefined}
-      onClick={busy ? (e) => e.preventDefault() : onClick}
+      aria-disabled={unavailable || rest['aria-disabled']}
+      data-unavailable={unavailable || undefined}
+      onClick={busy || unavailable ? (e) => e.preventDefault() : onClick}
     >
       <Content icon={icon} iconPosition={iconPosition} variant={variant}>
         {children}

@@ -59,7 +59,14 @@ const READY = {
   retry: vi.fn(),
 };
 let createError: unknown = null;
+// The mentor's sessions, for the limit check when the form opens.
+let ownCount = 0;
 vi.mock('@/lib/api/data/sessionTypes', async (orig) => ({
+  useOwnSessionTypes: () => ({
+    data: Array.from({ length: ownCount }, (_, i) => ({ id: `t${i}` })),
+    isLoading: false,
+    error: null,
+  }),
   autoIcon: (await orig<typeof import('@/lib/api/data/sessionTypes')>()).autoIcon,
   useCreateSessionType: () => ({ create, isPending: false, error: createError, reset: vi.fn() }),
   useRetryWindows: () => ({ retry: vi.fn(), isPending: false }),
@@ -97,6 +104,7 @@ vi.mock('@/lib/api/data/sessionTypeEdit', () => ({
 beforeEach(() => {
   push.mockReset();
   viewer = mentor;
+  ownCount = 0;
   resetFlags();
   create.mockReset();
   createError = null;
@@ -584,6 +592,34 @@ describe('the setup lock: /session-types/new opened by URL (PRD "App shell and a
   it('a mentor in review still creates sessions (only Bookings locks)', () => {
     viewer = viewers.mentorReview;
     render(<SessionTypeFormScreen template="sop-review" />);
+    expect(screen.getByRole('textbox', { name: 'Session name' })).toBeInTheDocument();
+  });
+});
+
+describe('/session-types/new at the session limit (backend PR 3)', () => {
+  it('opened at the limit: the sentence and the way back, not the form', () => {
+    viewer = { ...mentor, sessionTypeLimit: 5 };
+    ownCount = 5;
+    render(<SessionTypeFormScreen template={null} />);
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'You can offer up to 5 sessions.' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Back to sessions' })).toHaveAttribute(
+      'href',
+      '/session-types',
+    );
+    expect(screen.queryByRole('textbox', { name: 'Session name' })).toBeNull();
+  });
+
+  it('under the limit, or with none known, the form opens', () => {
+    viewer = { ...mentor, sessionTypeLimit: 5 };
+    ownCount = 4;
+    const { unmount } = render(<SessionTypeFormScreen template={null} />);
+    expect(screen.getByRole('textbox', { name: 'Session name' })).toBeInTheDocument();
+    unmount();
+    viewer = { ...mentor, sessionTypeLimit: null };
+    ownCount = 9;
+    render(<SessionTypeFormScreen template={null} />);
     expect(screen.getByRole('textbox', { name: 'Session name' })).toBeInTheDocument();
   });
 });

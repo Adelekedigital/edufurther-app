@@ -13,6 +13,12 @@
   border-color: var(--blue-500);
   color: var(--ink-900);
 }
+/* At the limit: the same card, nothing to hover. */
+.off,
+.off:hover {
+  border-color: var(--border-subtle);
+  cursor: default;
+}
 .card:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);

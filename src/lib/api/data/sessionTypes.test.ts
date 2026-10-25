@@ -1,6 +1,13 @@
 import type { components } from '@/lib/api/generated/schema';
-import { ApiError } from './errors';
-import { autoIcon, deleteError, toOwnSessionType } from './sessionTypes';
+import { ApiError, apiError } from './errors';
+import { QueryClient } from '@tanstack/react-query';
+import {
+  autoIcon,
+  createError,
+  deleteError,
+  refreshLimitsOnRefusal,
+  toOwnSessionType,
+} from './sessionTypes';
 
 type Own = components['schemas']['OwnSessionTypeRead'];
 const own = (over: Partial<Own> = {}): Own =>
@@ -190,5 +197,48 @@ describe('deleteError', () => {
     const e = deleteError(new ApiError(500, 'stack trace here'));
     expect(e.message).not.toContain('stack trace');
     expect(e.message).toMatch(/We couldn’t delete it/);
+  });
+});
+
+describe('createError: past the session limit (backend PR 3)', () => {
+  const limitBody = {
+    type: 'https://x.test/problems/session-type-limit-reached',
+    title: 'x',
+    limit: 5,
+  };
+  it('says the limit in our words; no field is blamed, and the server’s words never show', () => {
+    const e = createError(apiError(409, limitBody), limitBody);
+    expect(e.message).toBe('You can offer up to 5 sessions.');
+    expect(e.fields).toEqual({});
+  });
+  it('a limit of 1 reads as one session', () => {
+    const body = { ...limitBody, limit: 1 };
+    expect(createError(apiError(409, body), body).message).toBe('You can offer 1 session.');
+  });
+  it('without the limit member, still not a name clash', () => {
+    const body = { ...limitBody, limit: undefined };
+    const e = createError(apiError(409, body), body, 'duplicate');
+    expect(e.message).toBe('You’ve reached your session limit.');
+    expect(e.fields.name).toBeUndefined();
+  });
+  it('any other 409 is still the name', () => {
+    const body = { type: 'https://x.test/problems/conflict', title: 'x' };
+    expect(createError(apiError(409, body), body).fields.name).toBe(
+      'You already have a session with this name.',
+    );
+  });
+});
+
+describe('refreshLimitsOnRefusal: past the limit, the limit and the list reload', () => {
+  it('reloads /me and the sessions on a limit refusal, and the defaults on a 422', () => {
+    const qc = new QueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries').mockResolvedValue();
+    refreshLimitsOnRefusal(qc, { status: 409, limitReached: true });
+    expect(spy.mock.calls.map((c) => c[0]?.queryKey)).toEqual([['viewer'], ['sessionTypes']]);
+    spy.mockClear();
+    refreshLimitsOnRefusal(qc, { status: 409 });
+    expect(spy).not.toHaveBeenCalled();
+    refreshLimitsOnRefusal(qc, { status: 422 });
+    expect(spy.mock.calls.map((c) => c[0]?.queryKey)).toEqual([['mentorDefaults']]);
   });
 });

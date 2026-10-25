@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/atoms/Button/Button';
+import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { SessionTypeWizard } from '@/components/organisms/SessionTypeWizard/SessionTypeWizard';
@@ -11,6 +11,7 @@ import { useTopics } from '@/lib/api/data/mentors';
 import {
   autoIcon,
   useMentorDefaults,
+  useOwnSessionTypes,
   useRetryWindows,
   type Created,
 } from '@/lib/api/data/sessionTypes';
@@ -61,6 +62,23 @@ export function SessionTypeFormScreen({
 
   const tmpl = edit ? null : (SESSION_TEMPLATES.find((x) => x.key === template) ?? null);
   const d = useSessionTypeDraft(edit, tmpl, defaults);
+
+  // Opened at the session limit (by URL or a stale tab): say so rather than let
+  // the mentor fill in a form the server will refuse. Decided once, as the form
+  // opens: the 5th one just published mustn't swap the form for this.
+  const limit = member?.sessionTypeLimit ?? null;
+  const own = useOwnSessionTypes(isMentor && !locked && !edit && limit !== null);
+  const fullNow =
+    edit || limit === null
+      ? false
+      : own.data
+        ? own.data.length >= limit
+        : own.error
+          ? false
+          : undefined;
+  const [fullAtOpen, setFullAtOpen] = useState<boolean>();
+  if (fullAtOpen === undefined && viewer.kind !== 'loading' && fullNow !== undefined)
+    setFullAtOpen(fullNow);
   const steps = useWizardSteps(!!edit);
   const [modal, setModal] = useState<Modal | null>(null);
   const submit = useSessionTypeSubmit({
@@ -104,12 +122,27 @@ export function SessionTypeFormScreen({
       edit ? `/session-types/${edit.id}/edit` : '/session-types/new',
       SESSION_TYPES_GATE,
     ) ?? lockedPageGate(access, 'Sessions');
-  const loading = viewer.kind === 'loading' || topicsLoading;
+  const loading = viewer.kind === 'loading' || topicsLoading || fullAtOpen === undefined;
 
   return (
     <>
       {gate ??
-        (topicsError && topics.length === 0 ? (
+        (fullAtOpen ? (
+          <div className={styles.gate}>
+            <EmptyState
+              illustration="task-templates"
+              size={120}
+              headingLevel={1}
+              title={SESSIONS_COPY.atLimit(limit)}
+              description={SESSIONS_COPY.atLimitBody}
+              actions={
+                <ButtonLink href={LIST} prefetch={false} size="large">
+                  {SESSIONS_COPY.backToList}
+                </ButtonLink>
+              }
+            />
+          </div>
+        ) : topicsError && topics.length === 0 ? (
           // The form can't be filled without the catalog's topics (step 1 needs one).
           <div className={styles.gate}>
             <EmptyState

@@ -509,6 +509,7 @@ export function useDuplicateSessionType() {
       if (hours.some((x) => !x)) failed.push('hours');
       return { id: newId, name, failed };
     },
+    onError: (e) => refreshLimitsOnRefusal(qc, e),
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });
       void qc.invalidateQueries({ queryKey: keys.mentors.all });

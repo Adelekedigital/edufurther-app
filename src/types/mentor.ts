@@ -290,6 +290,12 @@ export type Viewer =
        * with no session to hand; a session's own deadline is its `refundUntil`.
        */
       menteeCancelRefundHours?: number | null;
+      /**
+       * How many sessions this mentor may have (`/me` session_type_limit):
+       * support's limit or the platform default. Every session not deleted
+       * counts. Null without a mentor profile; absent from an older /me.
+       */
+      sessionTypeLimit?: number | null;
     };
 
 export type CreditState = 'on_track' | 'moderate' | 'low' | 'exhausted';

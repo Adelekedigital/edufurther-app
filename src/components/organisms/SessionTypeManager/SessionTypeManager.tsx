@@ -36,7 +36,36 @@ type SessionTypeManagerProps = {
   onFocused?: () => void;
   /** Omitted until the edit screen ships (Session Types PR 4). */
   templates: { key: string; href: string; icon: IconName; name: string; hint: string }[];
+  /**
+   * How many sessions the mentor may have (`/me` session_type_limit); null
+   * while unknown, when nothing is held back (the server still refuses past it).
+   */
+  limit?: number | null;
 };
+
+/** Every session not deleted counts, scheduled for deletion included (backend PR 3). */
+const atLimitOf = (p: Pick<SessionTypeManagerProps, 'list' | 'limit'>) =>
+  p.limit != null && !!p.list.data && p.list.data.length >= p.limit;
+
+/**
+ * Create, or at the limit a button that's off but keeps focus, so it can say
+ * why: its title is the limit sentence, the hover tooltip and the accessible
+ * description at once (read once). The "{n} of {limit}" beside it says the
+ * same to everyone.
+ */
+function CreateAction({ href, off, limit }: { href: string; off: boolean; limit: number | null }) {
+  if (!off)
+    return (
+      <ButtonLink href={href} prefetch={false} size="large">
+        {SESSIONS_COPY.create}
+      </ButtonLink>
+    );
+  return (
+    <Button size="large" unavailable title={SESSIONS_COPY.atLimit(limit)}>
+      {SESSIONS_COPY.create}
+    </Button>
+  );
+}
 
 /**
  * The mentor's session types (Session Types.dc.html, scene List / Empty): the
@@ -48,9 +77,11 @@ export function SessionTypeManager(p: SessionTypeManagerProps) {
   const { focusAfterRemoval, onFocused } = p;
   useEffect(() => {
     if (focusAfterRemoval !== 'create') return;
-    header.current?.querySelector<HTMLElement>('a')?.focus();
+    header.current?.querySelector<HTMLElement>('a, button')?.focus();
     onFocused?.();
   }, [focusAfterRemoval, onFocused]);
+  const off = atLimitOf(p);
+  const limit = p.limit ?? null;
   return (
     <div className={styles.page}>
       <div className={styles.header} ref={header}>
@@ -58,9 +89,15 @@ export function SessionTypeManager(p: SessionTypeManagerProps) {
           <h1 className={styles.title}>{SESSIONS_COPY.title}</h1>
           <p className={styles.lede}>{SESSIONS_COPY.lede}</p>
         </div>
-        <ButtonLink href={p.createHref} prefetch={false} size="large">
-          {SESSIONS_COPY.create}
-        </ButtonLink>
+        <div className={styles.createGroup}>
+          {limit !== null && p.list.data && (
+            <span className={styles.count}>
+              {SESSIONS_COPY.count(p.list.data.length, limit)}
+              <span className="sr-only"> sessions</span>
+            </span>
+          )}
+          <CreateAction href={p.createHref} off={off} limit={limit} />
+        </div>
       </div>
 
       <List {...p} />
@@ -79,7 +116,14 @@ export function SessionTypeManager(p: SessionTypeManagerProps) {
           </div>
           <FormGrid gap={3}>
             {p.templates.map((t) => (
-              <TemplateCard key={t.key} href={t.href} icon={t.icon} name={t.name} hint={t.hint} />
+              <TemplateCard
+                key={t.key}
+                href={t.href}
+                icon={t.icon}
+                name={t.name}
+                hint={t.hint}
+                disabled={off}
+              />
             ))}
           </FormGrid>
         </section>
@@ -89,6 +133,7 @@ export function SessionTypeManager(p: SessionTypeManagerProps) {
 }
 
 function List({
+  limit,
   list,
   messages,
   infoIds,
@@ -104,6 +149,7 @@ function List({
   focusAfterRemoval,
   onFocused,
 }: SessionTypeManagerProps) {
+  const off = atLimitOf({ list, limit });
   if (list.isLoading) {
     return (
       <div className={styles.list} role="status" aria-label={SESSIONS_COPY.loading}>
@@ -160,11 +206,7 @@ function List({
           size={120}
           title={SESSIONS_COPY.emptyTitle}
           description={SESSIONS_COPY.emptyBody}
-          actions={
-            <ButtonLink href={createHref} prefetch={false} size="large">
-              {SESSIONS_COPY.create}
-            </ButtonLink>
-          }
+          actions={<CreateAction href={createHref} off={off} limit={limit ?? null} />}
         />
       </div>
     );
@@ -184,6 +226,7 @@ function List({
           onFeature={(f) => onFeature(t, f)}
           onRestore={() => onRestore(t)}
           onDuplicate={() => onDuplicate(t)}
+          duplicateOff={off ? SESSIONS_COPY.atLimit(limit ?? null) : null}
           shareUrl={shareUrl(t)}
           restoring={!!restoringIds?.includes(t.id)}
           focusMenu={typeof focusAfterRemoval === 'object' && focusAfterRemoval?.menuOf === t.id}

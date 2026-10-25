@@ -24,6 +24,17 @@ export const SESSIONS_COPY = {
   guestBody: 'Sessions are what mentees can book with you.',
   /** A 409 on create or rename: the name is already one of theirs. */
   nameTaken: 'You already have a session with this name.',
+  /** Beside Create (design `countLabel`): every session not deleted counts. */
+  count: (n: number, limit: number) => `${n} of ${limit}`,
+  /** Create, templates and Duplicate at the limit, and a 409 past it (PRD list). */
+  /** /session-types/new opened at the limit: what to do. Scheduled deletions count until they go. */
+  atLimitBody: 'To add a new one, delete a session you no longer offer.',
+  atLimit: (limit: number | null) =>
+    limit === null
+      ? 'You’ve reached your session limit.'
+      : limit === 1
+        ? 'You can offer 1 session.'
+        : `You can offer up to ${limit} sessions.`,
 } as const;
 
 /** The wizard's steps (design `stepDefs`, research names). */
