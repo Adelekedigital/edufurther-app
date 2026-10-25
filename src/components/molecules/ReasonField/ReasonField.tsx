@@ -1,7 +1,7 @@
 import { useId } from 'react';
+import { CharCount } from '@/components/atoms/CharCount/CharCount';
 import { Textarea } from '@/components/atoms/Input/Input';
 import { ChoiceChips } from '@/components/molecules/ChoiceChips/ChoiceChips';
-import { cx } from '@/lib/utils/cx';
 import { reasonsFor } from '@/lib/utils/reasons';
 import type { PickableReason } from '@/types/booking';
 import styles from './ReasonField.module.css';
@@ -75,7 +75,6 @@ export function ReasonField({
 }: ReasonFieldProps) {
   const id = useId();
   const options = reasonsFor(side);
-  const near = text.length > REASON_MAX - 100;
   // The box exists only for "Something else" — and is required wherever it
   // exists, because that code reaches the other party saying nothing at all.
   const wantsNote = reasonCode === 'other';
@@ -154,12 +153,7 @@ export function ReasonField({
             aria-describedby={noteBad ? `${id}-hint ${id}-note-err` : `${id}-hint`}
             className={styles.text}
           />
-          {/* Only once it is worth knowing: a counter from zero is noise. */}
-          {text.length > 0 && (
-            <span className={cx(styles.count, near && styles.countNear)}>
-              {text.length} / {REASON_MAX}
-            </span>
-          )}
+          <CharCount count={text.length} max={REASON_MAX} />
         </>
       )}
     </div>

@@ -73,6 +73,35 @@ describe('MissedReasonForm', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(C.failed);
   });
 
+  it('shows how much of the note is used, once there is one', async () => {
+    form();
+    await userEvent.type(screen.getByRole('textbox'), 'abc');
+    expect(screen.getByText('3 / 1000')).toBeVisible();
+  });
+
+  it('sent from here: focus moves to the thanks line, so it is heard', async () => {
+    const onSend = vi.fn();
+    const props = {
+      question: C.question,
+      options: [...C.options],
+      placeholder: C.placeholder,
+      sendLabel: C.send,
+      thanks: C.thanks,
+      noteMax: C.noteMax,
+      onSend,
+    };
+    const { rerender } = render(<MissedReasonForm {...props} sent={false} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Forgot the time' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }));
+    rerender(<MissedReasonForm {...props} sent />);
+    expect(screen.getByText('Thanks for letting us know.')).toHaveFocus();
+  });
+
+  it('already sent when the page loads: the thanks line takes no focus', () => {
+    form({ sent: true });
+    expect(screen.getByText('Thanks for letting us know.')).not.toHaveFocus();
+  });
+
   it('once sent, the thanks line replaces the form', () => {
     form({ sent: true });
     expect(screen.getByText('Thanks for letting us know.')).toBeVisible();

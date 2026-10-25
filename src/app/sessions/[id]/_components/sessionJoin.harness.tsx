@@ -41,7 +41,10 @@ export const cancel = { mutate: vi.fn(), reset: vi.fn(), isPending: false, error
 export const slotZones: string[] = [];
 /** Every missed reason sent, in order, and how the hook is answering. */
 export const reasons: { reason: string; note: string }[] = [];
-export const reasonHook = { isPending: false, failed: false };
+export const reasonHook: { isPending: boolean; failed: 'retry' | 'closed' | null } = {
+  isPending: false,
+  failed: null,
+};
 /** Every review sent, in order. */
 export const sent: unknown[] = [];
 /** Every mentor the booking modal was given, render by render (null: closed). */
@@ -245,7 +248,7 @@ export function setupSessionJoinHarness() {
     sent.length = 0;
     reasons.length = 0;
     reasonHook.isPending = false;
-    reasonHook.failed = false;
+    reasonHook.failed = null;
     slotZones.length = 0;
     launched.length = 0;
     h.reviewables = remote([{ id: 'b1', startsAt: START, typeName: '1:1 call' }]);

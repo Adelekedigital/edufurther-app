@@ -48,7 +48,7 @@ describe('useSendMissedReason', () => {
       params: { path: { session_id: 's1' } },
       body: { reason: 'forgot', note: null },
     });
-    expect(result.current.failed).toBe(false);
+    expect(result.current.failed).toBeNull();
   });
 
   it('a second send (409 already sent) is the same as sent: thanks, no error', async () => {
@@ -56,14 +56,26 @@ describe('useSendMissedReason', () => {
     const { result } = renderHook(() => useSendMissedReason('s1'), { wrapper });
     act(() => result.current.send('other', 'x'));
     await waitFor(() => expect(sentNow()).toBe(true));
-    expect(result.current.failed).toBe(false);
+    expect(result.current.failed).toBeNull();
   });
 
-  it('any other refusal is a failure and the room stays unsent', async () => {
-    post.mockResolvedValue(refused(422, '/problems/session-not-missed'));
+  it('a refusal a retry can’t change is closed, and the room stays unsent', async () => {
+    for (const [status, type] of [
+      [422, '/problems/session-not-missed'],
+      [403, '/problems/missed-reason-not-yours'],
+    ] as const) {
+      post.mockResolvedValue(refused(status, type));
+      const { result } = renderHook(() => useSendMissedReason('s1'), { wrapper });
+      act(() => result.current.send('emergency', ''));
+      await waitFor(() => expect(result.current.failed).toBe('closed'));
+      expect(sentNow()).toBe(false);
+    }
+  });
+
+  it('anything else is worth a retry', async () => {
+    post.mockResolvedValue(refused(500, 'about:blank'));
     const { result } = renderHook(() => useSendMissedReason('s1'), { wrapper });
     act(() => result.current.send('emergency', ''));
-    await waitFor(() => expect(result.current.failed).toBe(true));
-    expect(sentNow()).toBe(false);
+    await waitFor(() => expect(result.current.failed).toBe('retry'));
   });
 });

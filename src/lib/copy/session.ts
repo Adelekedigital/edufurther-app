@@ -5,6 +5,7 @@
  * edufurther-ux-writer; no em dashes.
  */
 
+import type { MissedReasonCode } from '@/lib/api/data/missedReason';
 import type { SupportPerson } from '@/lib/utils/mailto';
 
 export const LOBBY_COPY = {
@@ -144,11 +145,13 @@ export const MISSED_REASON_COPY = {
     { value: 'emergency', label: 'Emergency' },
     { value: 'wrong_time_zone', label: 'Wrong time zone' },
     { value: 'other', label: 'Other' },
-  ],
+  ] satisfies readonly { value: MissedReasonCode; label: string }[],
   placeholder: 'Anything else we should know? (optional)',
   send: 'Send',
   thanks: 'Thanks for letting us know.',
   failed: 'We couldn’t send that. Try again in a moment.',
+  /** The session doesn't take a reason from this viewer (a refusal a retry can't change). */
+  closed: 'This session isn’t taking a reason from you.',
   /** The longest note the backend takes. */
   noteMax: 1000,
 } as const;

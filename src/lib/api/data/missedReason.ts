@@ -9,9 +9,13 @@ import { keys } from './keys';
 import { sessionKey, useSession } from './session';
 
 type MissedReasonWrite = components['schemas']['MissedReasonWrite'];
+/** The backend's reason codes. */
+export type MissedReasonCode = MissedReasonWrite['reason'];
 
 /** The second send of the same reason: already stored, so the form is done. */
 const ALREADY_SENT = '/problems/missed-reason-already-sent';
+/** Refusals a retry can't change: the session doesn't take a reason from this viewer. */
+const FINAL = ['/problems/session-not-missed', '/problems/missed-reason-not-yours'];
 
 /**
  * Why a missed session was missed, from the person who missed it (PRD Session
@@ -48,11 +52,19 @@ export function useSendMissedReason(sessionId: string) {
     mutation.error instanceof ApiError &&
     mutation.error.status === 409 &&
     !!mutation.error.type?.endsWith(ALREADY_SENT);
+  const final =
+    mutation.error instanceof ApiError &&
+    FINAL.some((t) => (mutation.error as ApiError).type?.endsWith(t));
   return {
-    send: (reason: string, note: string) =>
-      mutation.mutate({ reason: reason as MissedReasonWrite['reason'], note: note || null }),
+    send: (reason: MissedReasonCode, note: string) =>
+      mutation.mutate({ reason, note: note || null }),
     isPending: mutation.isPending,
-    /** A failure worth saying; an "already sent" is not one. */
-    failed: !!mutation.error && !alreadySent,
+    /**
+     * Why the last send failed: `retry` (a fault, try again) or `closed` (the
+     * session doesn't take a reason from this viewer). An "already sent" is
+     * neither: it reads as sent.
+     */
+    failed:
+      !mutation.error || alreadySent ? null : final ? ('closed' as const) : ('retry' as const),
   };
 }

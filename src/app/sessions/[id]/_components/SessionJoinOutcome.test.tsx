@@ -226,7 +226,7 @@ describe('the missed-reason form (internal only)', () => {
   });
 
   it('a failed send says so and keeps the form', () => {
-    reasonHook.failed = true;
+    reasonHook.failed = 'retry';
     h.room = settled('mentee', 'noShow', 'noShow', 'attended');
     renderAt('18:30:00');
     expect(screen.getByRole('alert')).toHaveTextContent(

@@ -41,7 +41,7 @@ import {
 import { DELETED_NAME } from '@/lib/api/data/bookings';
 import { supportHref, supportMailto } from '@/lib/utils/mailto';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
-import { useSendMissedReason } from '@/lib/api/data/missedReason';
+import { useSendMissedReason, type MissedReasonCode } from '@/lib/api/data/missedReason';
 import { useMyReviewableSessions } from '@/lib/api/data/reviewableSessions';
 import { useSendReview } from '@/lib/api/data/reviewWrite';
 import { useBookingAnswers } from '@/lib/api/data/sessionAnswers';
@@ -445,10 +445,16 @@ export function SessionJoinScreen({ id }: { id: string }) {
                   sendLabel={MISSED_REASON_COPY.send}
                   thanks={MISSED_REASON_COPY.thanks}
                   noteMax={MISSED_REASON_COPY.noteMax}
-                  onSend={(r) => missedReason.send(r.reason, r.note)}
+                  onSend={(r) => missedReason.send(r.reason as MissedReasonCode, r.note)}
                   pending={missedReason.isPending}
                   sent={data.missedReasonSent}
-                  error={missedReason.failed ? MISSED_REASON_COPY.failed : null}
+                  error={
+                    missedReason.failed === 'closed'
+                      ? MISSED_REASON_COPY.closed
+                      : missedReason.failed
+                        ? MISSED_REASON_COPY.failed
+                        : null
+                  }
                 />
               }
             />

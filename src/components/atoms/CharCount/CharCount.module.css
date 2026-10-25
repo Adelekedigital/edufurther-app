@@ -1,0 +1,10 @@
+/* The counter under a limited box (CancelModal.dc.html). */
+.count {
+  align-self: flex-end;
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+
+.near {
+  color: var(--ink-700);
+}

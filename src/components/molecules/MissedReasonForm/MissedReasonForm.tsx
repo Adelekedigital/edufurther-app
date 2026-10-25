@@ -1,5 +1,6 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
+import { CharCount } from '@/components/atoms/CharCount/CharCount';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Textarea } from '@/components/atoms/Input/Input';
 import { ChoiceChips } from '@/components/molecules/ChoiceChips/ChoiceChips';
@@ -33,6 +34,13 @@ type MissedReasonFormProps = {
  * session. One chip, an optional note, and Send, which stays off until a chip
  * is picked (the design; founder, Oct 21). Kept for EduFurther only, so
  * nothing here says who reads it.
+ *
+ * Not `ReasonField`, though both are chips and a box: that one is the reason
+ * the other party is told on a cancel or decline, so its chips depend on the
+ * side, its box appears only for "Something else" and is then required, and
+ * it says who reads what. Here the box is always there and always optional,
+ * nobody else reads it, and it sends itself. They share the parts (ChoiceChips,
+ * Textarea, CharCount) rather than one component with modes.
  */
 export function MissedReasonForm({
   question,
@@ -49,10 +57,18 @@ export function MissedReasonForm({
   const id = useId();
   const [reason, setReason] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  // Sent from here: the form, and the Send that had focus, go, so focus moves
+  // to the thanks line, which is read out. Not on a page that loads already
+  // sent (a reload), where nothing just happened.
+  const thanksRef = useRef<HTMLParagraphElement>(null);
+  const [wasSent] = useState(sent);
+  useEffect(() => {
+    if (sent && !wasSent) thanksRef.current?.focus();
+  }, [sent, wasSent]);
 
   if (sent)
     return (
-      <p className={styles.thanks}>
+      <p ref={thanksRef} tabIndex={-1} className={styles.thanks}>
         <Icon name="check" size={16} />
         {thanks}
       </p>
@@ -87,6 +103,7 @@ export function MissedReasonForm({
         maxLength={noteMax}
         aria-label={placeholder}
       />
+      <CharCount count={note.length} max={noteMax} />
       {error && (
         <p role="alert" className={styles.error}>
           {error}
