@@ -206,3 +206,11 @@ describe('keepMockViewer: a role redirect keeps the dev mock viewer', () => {
     expect(keepMockViewer('/dashboard')).toBe('/dashboard');
   });
 });
+
+describe('toViewer: the session limit (backend PR 3)', () => {
+  it('reads /me session_type_limit; null or absent is unknown', () => {
+    expect(toViewer(me({ session_type_limit: 5 })).sessionTypeLimit).toBe(5);
+    expect(toViewer(me({ session_type_limit: null })).sessionTypeLimit).toBeNull();
+    expect(toViewer(me()).sessionTypeLimit).toBeNull();
+  });
+});

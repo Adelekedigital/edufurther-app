@@ -328,6 +328,7 @@ export function SessionTypesScreen() {
       shareUrl={shareUrl}
       createHref={CREATE_HREF}
       templates={TEMPLATES}
+      limit={member?.sessionTypeLimit ?? null}
     />
   );
 

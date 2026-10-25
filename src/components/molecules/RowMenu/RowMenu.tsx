@@ -22,6 +22,11 @@ export type RowMenuItem = {
   onSelect: () => void;
   /** A destructive item: red, after a divider (the design's Delete). */
   danger?: boolean;
+  /**
+   * Shown but off (Duplicate at the session limit): it stays in the arrow-key
+   * order and says it's unavailable; choosing it only closes the menu.
+   */
+  disabled?: boolean;
 };
 
 type RowMenuProps = {
@@ -197,11 +202,13 @@ export function RowMenu({ label, items, triggerRef, trigger, menu: drawn }: RowM
                 drawn?.itemClassName,
                 it.danger && styles.danger,
                 it.danger && drawn?.dangerClassName,
+                it.disabled && styles.disabled,
               )}
+              aria-disabled={it.disabled || undefined}
               onFocus={() => (focused.current = i)}
               onClick={() => {
                 close(true);
-                it.onSelect();
+                if (!it.disabled) it.onSelect();
               }}
             >
               <Icon name={it.icon} size={18} className={drawn?.iconClassName} />

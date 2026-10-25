@@ -29,7 +29,7 @@ const remote = (over: Partial<Remote<OwnSessionType[]>>): Remote<OwnSessionType[
   retry: vi.fn(),
   ...over,
 });
-const setup = (list: Remote<OwnSessionType[]>, messages = {}) => {
+const setup = (list: Remote<OwnSessionType[]>, messages = {}, limit: number | null = null) => {
   const onLiveChange = vi.fn();
   const onDelete = vi.fn();
   const onEdit = vi.fn();
@@ -48,6 +48,7 @@ const setup = (list: Remote<OwnSessionType[]>, messages = {}) => {
       onRestore={onRestore}
       onDuplicate={onDuplicate}
       shareUrl={(t) => `https://x.test/mentors/m1?book=${t.id}`}
+      limit={limit}
       templates={[
         {
           key: 'sop',
@@ -237,5 +238,55 @@ describe('SessionTypeManager — a row as drawn (PRD list)', () => {
     // Each fact is its icon's ligature, then the words: Free has the payments icon.
     expect(facts.slice(0, 3)).toEqual(['schedule60 min', 'paymentsFree', 'quiz2 questions']);
     expect(within(row).getByText('Featured').className).toMatch(/orange-accent/);
+  });
+});
+
+describe('SessionTypeManager — the session limit (PRD list)', () => {
+  const rows = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({ ...T, id: `t${i}`, name: `Session ${i}` }));
+
+  it('under the limit: "{n} of {limit}" beside Create; Create, templates and Duplicate work', async () => {
+    const user = userEvent.setup();
+    const { onDuplicate } = setup(remote({ data: rows(2) }), {}, 5);
+    expect(screen.getByText('2 of 5')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Create session' })).toHaveAttribute(
+      'href',
+      '/session-types/new',
+    );
+    expect(screen.getByRole('link', { name: /SOP draft review/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'More actions for Session 0' }));
+    await user.click(screen.getByRole('menuitem', { name: /Duplicate/ }));
+    expect(onDuplicate).toHaveBeenCalledTimes(1);
+  });
+
+  it('at the limit: Create is off but focusable and says why; templates and Duplicate do nothing', async () => {
+    const user = userEvent.setup();
+    // A row scheduled for deletion still counts (backend PR 3).
+    const list = [
+      ...rows(4),
+      { ...T, id: 'gone', name: 'Going', pendingDeletion: { deletesAfter: null, bookedCount: 0 } },
+    ];
+    const { onDuplicate } = setup(remote({ data: list }), {}, 5);
+    expect(screen.getByText('5 of 5')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Create session' })).toBeNull();
+    const create = screen.getByRole('button', { name: 'Create session' });
+    expect(create).toHaveAttribute('aria-disabled', 'true');
+    expect(create).not.toBeDisabled();
+    expect(create).toHaveAccessibleDescription('You can offer up to 5 sessions.');
+    expect(create).toHaveAttribute('title', 'You can offer up to 5 sessions.');
+    // The template is the same card, but not a link.
+    expect(screen.getByText('SOP draft review', { selector: 'span' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /SOP draft review/ })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'More actions for Session 0' }));
+    const dup = screen.getByRole('menuitem', { name: /Duplicate/ });
+    expect(dup).toHaveAttribute('aria-disabled', 'true');
+    await user.click(dup);
+    expect(onDuplicate).not.toHaveBeenCalled();
+  });
+
+  it('a limit not known yet holds nothing back and shows no count', () => {
+    setup(remote({ data: rows(9) }), {}, null);
+    expect(screen.queryByText(/ of /)).toBeNull();
+    expect(screen.getByRole('link', { name: 'Create session' })).toBeInTheDocument();
   });
 });

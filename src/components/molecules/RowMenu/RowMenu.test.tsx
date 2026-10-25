@@ -217,3 +217,27 @@ describe('RowMenu (WAI-ARIA menu button)', () => {
     expect(screen.getByRole('menuitem', { name: /Remove/ })).toHaveClass('i', 'd');
   });
 });
+
+describe('RowMenu: an item that is off', () => {
+  it('stays in the arrow order, says it is unavailable, and only closes the menu', async () => {
+    const user = userEvent.setup();
+    const dup = vi.fn();
+    render(
+      <RowMenu
+        label="More actions"
+        items={[
+          { key: 'edit', icon: 'edit', label: 'Edit', onSelect: vi.fn() },
+          { key: 'dup', icon: 'content_copy', label: 'Duplicate', onSelect: dup, disabled: true },
+        ]}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'More actions' }));
+    await user.keyboard('{ArrowDown}');
+    const item = screen.getByRole('menuitem', { name: /Duplicate/ });
+    expect(item).toHaveFocus();
+    expect(item).toHaveAttribute('aria-disabled', 'true');
+    await user.keyboard('{Enter}');
+    expect(dup).not.toHaveBeenCalled();
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+});

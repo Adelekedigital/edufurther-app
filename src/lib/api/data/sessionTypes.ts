@@ -437,7 +437,8 @@ export type CreateError = AppError & { fields: FieldErrors };
 /**
  * 422 `errors[{pointer, message}]` (backend #5) → our copy on each field; the
  * server's `message` and `detail` are never shown. 409 on create is a name the
- * mentor already uses (backend reply #2), or a replay still in flight.
+ * mentor already uses (backend reply #2), a replay still in flight, or one past
+ * the mentor's session limit.
  */
 export function createError(
   error: unknown,
@@ -460,6 +461,15 @@ export function createError(
   if (error instanceof ApiError && error.status === 409) {
     if (error.type?.includes('idempot'))
       return { ...e, fields, message: 'Still publishing. Give it a moment, then try again.' };
+    // Past the limit (backend PR 3): the `limit` member names it.
+    if (error.type?.endsWith('/problems/session-type-limit-reached')) {
+      const limit = (body as { limit?: unknown } | null)?.limit;
+      return {
+        ...e,
+        fields,
+        message: SESSIONS_COPY.atLimit(typeof limit === 'number' ? limit : null),
+      };
+    }
     return {
       ...e,
       fields: { name: SESSIONS_COPY.nameTaken },

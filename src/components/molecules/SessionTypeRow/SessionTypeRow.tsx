@@ -22,6 +22,8 @@ type SessionTypeRowProps = {
   /** Cancel a scheduled deletion (the row's "Keep it"). */
   onRestore: () => void;
   onDuplicate: () => void;
+  /** At the session limit: Duplicate is shown but off (PRD list). */
+  duplicateOff?: boolean;
   /** The public link to book this type; null until it can be built (no button). */
   shareUrl: string | null;
   /** Our copy under the row: a switch that didn't save, or what Duplicate did. */
@@ -49,6 +51,7 @@ export function SessionTypeRow({
   onFeature,
   onRestore,
   onDuplicate,
+  duplicateOff = false,
   shareUrl,
   message,
   messageTone = 'error',
@@ -197,7 +200,13 @@ export function SessionTypeRow({
           label={`More actions for ${t.name}`}
           items={[
             { key: 'edit', icon: 'edit', label: 'Edit', onSelect: onEdit },
-            { key: 'duplicate', icon: 'content_copy', label: 'Duplicate', onSelect: onDuplicate },
+            {
+              key: 'duplicate',
+              icon: 'content_copy',
+              label: 'Duplicate',
+              onSelect: onDuplicate,
+              disabled: duplicateOff,
+            },
             ...(pending
               ? []
               : [
