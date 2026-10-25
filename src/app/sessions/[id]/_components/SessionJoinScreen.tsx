@@ -25,10 +25,9 @@ import {
   AddToCalendarChoices,
 } from '@/components/molecules/AddToCalendarMenu/AddToCalendarMenu';
 import { FocusPage } from '@/components/templates/FocusPage/FocusPage';
-import { ReviewDialog } from '@/app/_reviews/ReviewDialog';
 import { ConfirmActionDialog } from '@/app/_sessions/ConfirmActionDialog';
 import { IntakeFileViewer } from '@/app/_sessions/IntakeFileViewer';
-import { BookingLauncher } from '@/app/_shell/BookingLauncher/BookingLauncher';
+import { useReviewAndRebook } from '@/app/_sessions/useReviewAndRebook';
 import { canBookFor } from '@/app/_shell/bookBlocked';
 import { lockedPageGate, memberGate, SESSION_GATE } from '@/app/_shell/MentorGate';
 import { accessFor, memberHome } from '@/lib/utils/access';
@@ -43,11 +42,9 @@ import { supportHref, supportMailto } from '@/lib/utils/mailto';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
 import { useSendMissedReason, type MissedReasonCode } from '@/lib/api/data/missedReason';
 import { useMyReviewableSessions } from '@/lib/api/data/reviewableSessions';
-import { useSendReview } from '@/lib/api/data/reviewWrite';
 import { useBookingAnswers } from '@/lib/api/data/sessionAnswers';
 import { useSessionRoom } from '@/lib/api/data/sessionRoom';
 import { useViewer } from '@/lib/api/data/viewer';
-import { partyToMentor } from '@/lib/utils/bookableMentor';
 import { canCancel } from '@/lib/utils/bookings';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { presenceOf } from '@/lib/utils/presence';
@@ -178,33 +175,9 @@ export function SessionJoinScreen({ id }: { id: string }) {
   const reviewAsked = live === 'completed' && data?.booking.side === 'mentee' && canBook;
   const reviewables = useMyReviewableSessions(reviewAsked);
   const reviewSession = reviewables.data?.find((r) => r.id === id) ?? null;
-  const sendReview = useSendReview();
-  // The session being reviewed, held from the moment the modal opens: sending
-  // refreshes the list, which then no longer has it, and the modal must stay
-  // for its thanks step.
-  const [reviewing, setReviewing] = useState<typeof reviewSession>(null);
-  const [reviewedHere, setReviewedHere] = useState(false);
-  const closeReview = () => {
-    // Sent: the page says thanks from now on, whatever the list says next.
-    if (sendReview.result) setReviewedHere(true);
-    sendReview.reset();
-    setReviewing(null);
-  };
+  // Leave a review and Book again open here, as on Bookings (PRD Session Join).
+  const rr = useReviewAndRebook({ canBook, author: member, timeZone });
   const [viewing, setViewing] = useState<AnswerFile | null>(null);
-  // Book again opens the shared booking modal here, as the profile does
-  // (PRD Session Join): only a mentee booking their mentor, who may book.
-  const [bookingAgain, setBookingAgain] = useState(false);
-  const other =
-    data?.booking.side === 'mentee' && canBook && !data.booking.other.deleted
-      ? data.booking.other
-      : null;
-  // No longer bookable (the account went, or the viewer can't book): the flag
-  // goes too, so the modal never comes back unasked.
-  if (bookingAgain && !other) setBookingAgain(false);
-  const bookMentor = useMemo(
-    () => (bookingAgain && other ? partyToMentor(other) : null),
-    [bookingAgain, other],
-  );
   // The phone's sheets (below 768px): the answers, the guide, or the calendar choices.
   const [sheet, setSheet] = useState<PrepSheet | 'calendar' | null>(null);
 
@@ -436,16 +409,13 @@ export function SessionJoinScreen({ id }: { id: string }) {
                     : reviewables.isLoading
                       ? 'loading'
                       : !!reviewSession,
-                reviewed: reviewedHere,
+                reviewed: rr.reviewedHere(b.id),
                 home: member ? memberHome(member) : '/bookings',
               })}
               onAction={(key) => {
-                if (key === 'review' && reviewSession) {
-                  sendReview.reset();
-                  setReviewing(reviewSession);
-                }
+                if (key === 'review' && reviewSession) rr.openReview(b, reviewSession);
                 if (key === 'retryReview') reviewables.retry();
-                if (key === 'book') setBookingAgain(true);
+                if (key === 'book') rr.bookAgain(b);
               }}
               // Drawn only on the card of the person who missed it (`askReason`).
               reason={
@@ -542,41 +512,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
         </BottomSheet>
       )}
       {viewing && <IntakeFileViewer file={viewing} onClose={() => setViewing(null)} />}
-      {reviewing && data && member && (
-        <ReviewDialog
-          mode="new"
-          mentorFirstName={data.booking.other.firstName}
-          sessions={[reviewing]}
-          editableUntil={sendReview.result?.editableUntil ?? null}
-          author={{ name: member.firstName, initials: member.initials, institution: null }}
-          timeZone={timeZone}
-          onSend={(answers, sessionId) =>
-            // As the profile does: a new review is always about a chosen session.
-            sessionId &&
-            sendReview.send({ mode: 'new', mentorId: data.booking.other.id, sessionId, answers })
-          }
-          pending={sendReview.isPending}
-          error={sendReview.error?.message ?? null}
-          done={!!sendReview.result}
-          onClose={closeReview}
-          // Only while there is someone to book (the same gate as the modal's).
-          onBookAgain={
-            other
-              ? () => {
-                  closeReview();
-                  setBookingAgain(true);
-                }
-              : undefined
-          }
-        />
-      )}
-      <BookingLauncher
-        mentor={bookMentor}
-        timeZone={timeZone}
-        // Rating and reviews aren't on the session row.
-        ratingUnknown
-        onClose={() => setBookingAgain(false)}
-      />
+      {rr.dialogs}
       {cancelling && data && (
         <ConfirmActionDialog
           action="cancel"
