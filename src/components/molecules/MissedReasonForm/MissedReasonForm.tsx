@@ -113,7 +113,7 @@ export function MissedReasonForm({
         <Button
           type="submit"
           variant="secondary-outlined"
-          size="small"
+          size="medium"
           disabled={!reason || pending}
         >
           {sendLabel}
