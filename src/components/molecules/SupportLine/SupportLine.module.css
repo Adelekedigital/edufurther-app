@@ -1,0 +1,33 @@
+/* Session Join.dc.html: the card's last row. */
+.line {
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+
+/* A 44px tap area around the link without moving the line, as the cancel
+   dialog's "Reopen it" does (sessionDialogs.module.css .freeLink). */
+.link {
+  position: relative;
+  font-weight: var(--weight-medium);
+  color: var(--ink-700);
+  text-decoration: underline;
+  border-radius: var(--radius-xs);
+}
+.link::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--space-2) * -1);
+  right: calc(var(--space-2) * -1);
+  top: 50%;
+  height: var(--touch-target-min);
+  translate: 0 -50%;
+}
+.link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+}

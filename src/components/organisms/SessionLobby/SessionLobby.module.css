@@ -98,8 +98,9 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  min-height: var(--button-h-small);
-  padding: 0;
+  /* 44px at every width, as lobbySplit draws it. */
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-1);
   border: none;
   background: none;
   cursor: pointer;
@@ -109,14 +110,10 @@
   color: var(--blue-500);
 }
 .link:hover {
-  color: var(--blue-700);
+  text-decoration: underline;
 }
 .danger {
   color: var(--red-700);
-}
-.danger:hover {
-  color: var(--red-700);
-  text-decoration: underline;
 }
 .link:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
@@ -129,9 +126,5 @@
   .lobby {
     gap: var(--space-4);
     padding: var(--space-6) var(--space-4) var(--space-5);
-  }
-  /* Ours: 44px tap area on phones. */
-  .link {
-    min-height: var(--touch-target-min);
   }
 }

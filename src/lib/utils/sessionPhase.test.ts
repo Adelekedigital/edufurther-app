@@ -137,19 +137,16 @@ describe('clock', () => {
     expect(lobbyClock(b, 'upcoming', new Date('2026-10-01T17:00:00Z'))).toEqual({
       label: 'Starts in',
       value: '3 days',
-      sub: 'Join opens 5 minutes before the start',
     });
     expect(joinOpensLabel(b, new Date('2026-10-01T17:00:00Z'))).toBe('Join session');
   });
 
-  it('counts down to the start, with when Join opens', () => {
+  it('counts down to the start with no line under it: the locked Join says when it opens', () => {
     expect(lobbyClock(b, 'upcoming', at('15:15:00'))).toEqual({
       label: 'Starts in',
       value: '1:45:00',
-      sub: 'Join opens in 1:40:00',
     });
-    expect(lobbyClock(b, 'soon', at('16:52:00'))!.sub).toBe('Join opens in 03:00');
-    expect(lobbyClock(b, 'soon', at('16:56:00'))!.sub).toBe('Join is open');
+    expect(lobbyClock(b, 'soon', at('16:56:00'))).toEqual({ label: 'Starts in', value: '04:00' });
   });
 
   it('has no clock once started: the call may run on another platform (product, 2026-10-08)', () => {

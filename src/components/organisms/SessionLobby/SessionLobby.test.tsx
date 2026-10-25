@@ -13,8 +13,8 @@ const base = {
   ground: 'green' as const,
   status: { tone: 'green' as const, label: 'In progress', live: true },
   title: '1:1 call with Amara Okafor',
-  meta: 'Sun, Oct 4 · 6:00 – 6:30 pm · Lagos (WAT) · EduFurther video',
-  clock: { label: 'In session', value: '14:59', sub: '16 min left' },
+  meta: 'Sun, Oct 4 · 6:00 – 6:30 pm · EduFurther video',
+  clock: null,
   people: [person('me', 'away'), person('them', 'joined')] as [LobbyPerson, LobbyPerson],
 };
 
@@ -75,6 +75,59 @@ describe('when Join goes away under the keyboard', () => {
       <>
         <button type="button">Elsewhere</button>
         <SessionLobby {...base} note="Joining closed at 6:15 pm, 15 minutes after the start." />
+      </>,
+    );
+    expect(screen.getByRole('button', { name: 'Elsewhere' })).toHaveFocus();
+  });
+});
+
+describe('when the links go away under the keyboard', () => {
+  const noop = () => {};
+  const both = [
+    { key: 'reschedule', icon: 'update' as const, label: 'Reschedule', onClick: noop },
+    { key: 'cancel', icon: 'event_busy' as const, label: 'Cancel', onClick: noop, danger: true },
+  ];
+  const locked = { label: 'Join opens in 00:01', enabled: false as const, hint: 'Soon.' };
+  const open = {
+    label: 'Join session',
+    enabled: true as const,
+    href: '/x/enter',
+    hint: 'Opens in your browser.',
+  };
+
+  it('Join opens and the row goes: focus moves to Join, not the page body', () => {
+    const { rerender } = render(<SessionLobby {...base} join={locked} links={both} />);
+    screen.getByRole('button', { name: /Reschedule/ }).focus();
+    rerender(<SessionLobby {...base} join={open} links={[]} />);
+    expect(screen.getByRole('link', { name: 'Join session (opens in a new tab)' })).toHaveFocus();
+  });
+
+  it('one link goes and others stay: focus moves to the first one left', () => {
+    const { rerender } = render(<SessionLobby {...base} join={locked} links={both} />);
+    screen.getByRole('button', { name: /Cancel/ }).focus();
+    rerender(<SessionLobby {...base} join={locked} links={[both[0]!]} />);
+    expect(screen.getByRole('button', { name: /Reschedule/ })).toHaveFocus();
+  });
+
+  it('nothing else to go to: the title', () => {
+    const { rerender } = render(<SessionLobby {...base} links={both} />);
+    screen.getByRole('button', { name: /Cancel/ }).focus();
+    rerender(<SessionLobby {...base} links={[]} />);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
+  });
+
+  it('leaves focus alone when it was somewhere else', () => {
+    const { rerender } = render(
+      <>
+        <button type="button">Elsewhere</button>
+        <SessionLobby {...base} join={locked} links={both} />
+      </>,
+    );
+    screen.getByRole('button', { name: 'Elsewhere' }).focus();
+    rerender(
+      <>
+        <button type="button">Elsewhere</button>
+        <SessionLobby {...base} join={open} links={[]} />
       </>,
     );
     expect(screen.getByRole('button', { name: 'Elsewhere' })).toHaveFocus();

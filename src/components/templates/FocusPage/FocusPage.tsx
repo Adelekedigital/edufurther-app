@@ -9,6 +9,8 @@ import styles from './FocusPage.module.css';
 type FocusPageProps = {
   /** Where the header's link goes, and what it says ("Go to Bookings"). */
   back: { href: string; label: string };
+  /** Where the logo goes: the viewer's Home. Falls back to `back` while unknown. */
+  home?: string;
   offline?: boolean;
   /** 1080px instead of 720px: the lobby with its aside beside it (`lobbySplit`). */
   wide?: boolean;
@@ -21,15 +23,15 @@ type FocusPageProps = {
  * right now, so nothing else competes with it. A deliberate exception to
  * "every app screen renders inside AppShell" (design-divergence.md).
  */
-export function FocusPage({ back, offline, wide, children }: FocusPageProps) {
+export function FocusPage({ back, home, offline, wide, children }: FocusPageProps) {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
         <Link
-          href={back.href}
+          href={home ?? back.href}
           prefetch={false}
           className={styles.logo}
-          aria-label={`EduFurther: ${back.label}`}
+          aria-label={home ? 'EduFurther: Home' : `EduFurther: ${back.label}`}
         >
           <Image src="/brand/edufurther-logo-full.png" alt="" width={180} height={24} priority />
         </Link>

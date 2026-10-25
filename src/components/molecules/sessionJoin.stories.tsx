@@ -24,11 +24,7 @@ export const StatusPills: Story = {
 };
 
 export const ClockCountingDown: Story = {
-  render: () => <SessionClock label="Starts in" value="1:45:00" sub="Join opens in 1:40:00" />,
-};
-
-export const ClockRunning: Story = {
-  render: () => <SessionClock label="In session" value="12:00" sub="18 min left" />,
+  render: () => <SessionClock label="Starts in" value="1:45:00" />,
 };
 
 /** Joined (green ring) beside away (grey: Joining…, Not here yet), a long name, and a deleted account. */

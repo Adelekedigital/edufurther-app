@@ -21,7 +21,3 @@
   font-variant-numeric: tabular-nums;
   color: var(--ink-900);
 }
-.sub {
-  font-size: var(--text-p-xs);
-  color: var(--ink-700);
-}

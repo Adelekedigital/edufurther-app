@@ -5,6 +5,7 @@ import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { AddToCalendarMenu } from '@/components/molecules/AddToCalendarMenu/AddToCalendarMenu';
 import { PresencePerson } from '@/components/molecules/PresencePerson/PresencePerson';
 import { SessionClock } from '@/components/molecules/SessionClock/SessionClock';
+import { TimezonePicker } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import {
   SessionStatusPill,
   type SessionStatusTone,
@@ -54,9 +55,11 @@ type SessionLobbyProps = {
   status: { tone: SessionStatusTone; label: string; live?: boolean };
   /** "1:1 call with Gbenga Ogundipe". */
   title: string;
-  /** "Mon, Sep 28 · 6:00 – 6:30 pm · Lagos (WAT) · EduFurther video". */
+  /** "Mon, Sep 28 · 6:00 – 6:30 pm · EduFurther video". */
   meta: string;
-  clock: { label: string; value: string; sub: string } | null;
+  /** The time zone switcher under the date line: every time on the page follows it. */
+  zone?: { value: string; onChange: (zone: string) => void; deviceZone: string };
+  clock: { label: string; value: string } | null;
   people: [LobbyPerson, LobbyPerson];
   /** Join and the line under it. Absent once nobody can join. */
   join?: LobbyJoin;
@@ -77,6 +80,7 @@ export function SessionLobby({
   status,
   title,
   meta,
+  zone,
   clock,
   people,
   join,
@@ -101,6 +105,26 @@ export function SessionLobby({
     }
   }, [hasJoin]);
 
+  // The links go on a tick too: Reschedule and Cancel when cancelling closes,
+  // the whole row (Add to calendar's menu with it) when Join opens. Focus that
+  // was in a link that went moves to the next link still there, else to Join,
+  // else to the title, never to <body>.
+  const linksHadFocus = useRef(false);
+  const linksRef = useRef<HTMLDivElement>(null);
+  const joinRef = useRef<HTMLDivElement>(null);
+  const linkKeys = [calendar ? 'calendar' : '', ...(links ?? []).map((l) => l.key)].join(' ');
+  useEffect(() => {
+    if (!linksHadFocus.current) return;
+    const active = document.activeElement;
+    if (active && active !== document.body && active.isConnected) return;
+    linksHadFocus.current = false;
+    const next =
+      linksRef.current?.querySelector<HTMLElement>('button, a') ??
+      joinRef.current?.querySelector<HTMLElement>('a, button:not(:disabled)') ??
+      titleRef.current;
+    next?.focus();
+  }, [linkKeys]);
+
   return (
     <div className={cx(styles.lobby, styles[ground])}>
       <div className={styles.head}>
@@ -109,6 +133,7 @@ export function SessionLobby({
           {title}
         </h1>
         <span className={styles.meta}>{meta}</span>
+        {zone && <TimezonePicker {...zone} />}
       </div>
 
       {clock && <SessionClock {...clock} />}
@@ -121,6 +146,7 @@ export function SessionLobby({
 
       {join && (
         <div
+          ref={joinRef}
           className={styles.join}
           onFocus={() => (joinHadFocus.current = true)}
           onBlur={() => (joinHadFocus.current = false)}
@@ -158,7 +184,15 @@ export function SessionLobby({
       {notice && <div className={styles.notice}>{notice}</div>}
 
       {(!!links?.length || calendar) && (
-        <div className={styles.links}>
+        <div
+          ref={linksRef}
+          className={styles.links}
+          onFocus={() => (linksHadFocus.current = true)}
+          onBlur={(e) => {
+            // Leaving the row, not moving inside it (into Add to calendar's menu).
+            if (!e.currentTarget.contains(e.relatedTarget)) linksHadFocus.current = false;
+          }}
+        >
           {calendar && (
             <AddToCalendarMenu
               event={calendar}

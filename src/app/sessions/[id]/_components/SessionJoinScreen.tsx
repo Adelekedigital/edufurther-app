@@ -6,6 +6,7 @@ import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
+import { SupportLine } from '@/components/molecules/SupportLine/SupportLine';
 import { SessionLobby } from '@/components/organisms/SessionLobby/SessionLobby';
 import { SessionOutcome } from '@/components/organisms/SessionOutcome/SessionOutcome';
 import {
@@ -28,7 +29,10 @@ import { ConfirmActionDialog } from '@/app/_sessions/ConfirmActionDialog';
 import { IntakeFileViewer } from '@/app/_sessions/IntakeFileViewer';
 import { canBookFor } from '@/app/_shell/bookBlocked';
 import { lockedPageGate, memberGate, SESSION_GATE } from '@/app/_shell/MentorGate';
-import { accessFor } from '@/lib/utils/access';
+import { accessFor, memberHome } from '@/lib/utils/access';
+import { sessionSupportRequest, SUPPORT_FOOTER_COPY } from '@/lib/copy/session';
+import { DELETED_NAME } from '@/lib/api/data/bookings';
+import { supportHref, supportMailto } from '@/lib/utils/mailto';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
 import { useMyReviewableSessions } from '@/lib/api/data/reviewableSessions';
 import { useSendReview } from '@/lib/api/data/reviewWrite';
@@ -55,11 +59,12 @@ import {
   isDrawnPhase,
   isSettled,
   lobbyModel,
+  lobbyTitle,
+  lobbyWhen,
   PHASE_ANNOUNCEMENT,
 } from './lobbyModel';
 import styles from './SessionJoinScreen.module.css';
 
-/** The design's back link names Home for mentors, but there is no mentor home yet. */
 const BACK = { href: '/bookings', label: 'Go to Bookings' };
 
 const NOT_OPEN = 'This session isn’t open to join right now.';
@@ -88,6 +93,19 @@ function enterProblemText(
   }
 }
 
+/** "Having a problem? Contact support": the card's last row, on the session and on a failed load. */
+function SupportRow({ href }: { href: string }) {
+  return (
+    <div className={styles.support}>
+      <SupportLine
+        lead={SUPPORT_FOOTER_COPY.lead}
+        linkLabel={SUPPORT_FOOTER_COPY.link}
+        href={href}
+      />
+    </div>
+  );
+}
+
 /** Statuses where the session is not this page's to show: an id we may not see, or a bad one. */
 const NOT_FOUND = new Set([403, 404, 422]);
 
@@ -110,7 +128,9 @@ export function SessionJoinScreen({ id }: { id: string }) {
   const member = viewer.kind === 'member' ? viewer : null;
   const userId = member?.id ?? null;
   const deviceZone = useMemo(() => deviceTimeZone(), []);
-  const timeZone = member?.timeZone ?? deviceZone;
+  // The switcher under the date line: every time on the page follows it.
+  const [zone, setZone] = useState<string | null>(null);
+  const timeZone = zone ?? member?.timeZone ?? deviceZone;
   const accountZone = member?.timeZone ?? deviceZone;
 
   // A session is a booking: the setup lock holds it as it holds Bookings, and
@@ -279,6 +299,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
             />
           )}
         </div>
+        <SupportRow href={supportMailto()} />
       </section>
     );
   } else if (!data || !live) {
@@ -340,6 +361,16 @@ export function SessionJoinScreen({ id }: { id: string }) {
           guide,
         }
       : null;
+    // Signed with the viewer's own name; a nameless account (a row reads
+    // "Deleted user") signs with the first name /me gives, or its email's start.
+    const support = supportHref(
+      {
+        name: data.me.name === DELETED_NAME ? (member?.firstName ?? '') : data.me.name,
+        email: '',
+        mentor: b.side === 'mentor',
+      },
+      sessionSupportRequest({ sessionName: lobbyTitle(data), when: lobbyWhen(data, timeZone) }),
+    );
     // Plain text: the live region above already says it, and a second status
     // region would read it out twice. Not when the lobby's own note already
     // says the same (the closed rule), so it isn't printed twice.
@@ -354,6 +385,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
           {/* A Join problem belongs to joining: gone once the session is over. */}
           <SessionLobby
             {...lobby}
+            zone={{ value: timeZone, onChange: setZone, deviceZone }}
             notice={preparing ? notice : null}
             onCalendarSheet={() => setSheet('calendar')}
           />
@@ -388,6 +420,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
               onOpen={setSheet}
             />
           )}
+          <SupportRow href={support} />
         </section>
         {preparing && (
           <SessionPrepAside
@@ -423,7 +456,12 @@ export function SessionJoinScreen({ id }: { id: string }) {
   }, [orphanedSheets]);
 
   return (
-    <FocusPage back={BACK} offline={!online} wide={wide || !!prep}>
+    <FocusPage
+      back={BACK}
+      home={member ? memberHome(member) : undefined}
+      offline={!online}
+      wide={wide || !!prep}
+    >
       <LiveRegion message={said} />
       {body}
       {sheet === 'calendar' && calendar && (

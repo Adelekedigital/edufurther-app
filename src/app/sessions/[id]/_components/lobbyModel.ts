@@ -15,6 +15,7 @@ import {
   type SessionPhase,
 } from '@/lib/utils/sessionPhase';
 import { refundWindowFor } from '@/lib/utils/bookings';
+import { LOBBY_COPY } from '@/lib/copy/session';
 import { joinedTime, presenceOf } from '@/lib/utils/presence';
 import { missedTone } from '@/lib/utils/sessionOutcome';
 import type { BookingParty, SessionRoom } from '@/types/booking';
@@ -59,21 +60,24 @@ export function lobbyTitle(room: SessionRoom): string {
 }
 
 /**
- * "Mon, Sep 28 · 6:00 – 6:30 pm · Lagos (WAT) · EduFurther video". The zone is
- * named (product rule: times say whose clock they are); the lobby design
- * leaves it out.
+ * "Mon, Sep 28 · 6:00 – 6:30 pm · EduFurther video". No zone in the text: the
+ * time zone switcher under it says whose clock the times are in.
  */
 export function lobbyMeta(room: SessionRoom, timeZone: string): string {
   const b = room.booking;
   const venue = providerName(room.provider);
-  return [lobbyDate(b.startsAt, timeZone), lobbyTimes(b, timeZone), zoneLabel(timeZone), venue]
+  return [lobbyDate(b.startsAt, timeZone), lobbyTimes(b, timeZone), venue]
     .filter(Boolean)
     .join(' · ');
 }
 
-/** Joined, by the venue's rule (`presenceOf`): never before the window opens. */
-function hasJoined(room: SessionRoom, p: BookingParty, phase: DrawnPhase): boolean {
-  return phase !== 'upcoming' && presenceOf(p, room.provider) === 'joined';
+/**
+ * "Mon, Sep 28, 6:00 – 6:30 pm Lagos (WAT)": the session's time in the support
+ * email, with its zone, since the page may be showing another one.
+ */
+export function lobbyWhen(room: SessionRoom, timeZone: string): string {
+  const b = room.booking;
+  return `${lobbyDate(b.startsAt, timeZone)}, ${lobbyTimes(b, timeZone)} ${zoneLabel(timeZone)}`;
 }
 
 function people(
@@ -154,7 +158,11 @@ export type LobbyInput = {
   enterHref: string;
   /** Join was followed: the page drops its last Join problem. */
   onFollow?: () => void;
-  /** Present only while the session may still be called off. */
+  /**
+   * Present only while the session may still be called off. Reschedule opens
+   * the same dialog (J2): a mentor suggests a new time in it, a mentee cancels
+   * and books again.
+   */
   onCancel?: () => void;
   /** Absolute URL of this page, for the calendar event (never the call link). */
   pageUrl: string;
@@ -187,8 +195,6 @@ export function lobbyModel({
 }: LobbyInput): LobbyProps {
   const b = room.booking;
   const pv = providerJoin(room.provider);
-  const other = b.other;
-  const otherJoined = hasJoined(room, other, phase);
   const entry = entryFor(b, room.me.joinedAt, phase, now);
 
   let join: LobbyProps['join'];
@@ -197,17 +203,17 @@ export function lobbyModel({
     join = {
       label: joinOpensLabel(b, now),
       enabled: false,
-      hint: `The button turns on ${opensBeforeMin(b)} minutes before the start.`,
+      hint: LOBBY_COPY.joinLockedHint(opensBeforeMin(b)),
     };
   } else if (entry) {
     join = {
-      // "Rejoin" only for someone who has been in (the design says it to every
-      // mentor, including one who hasn't arrived yet).
-      label: entry === 'door' ? 'Rejoin session' : phase === 'soon' ? pv.join : 'Join now',
+      // "Rejoin" only for someone who has been in. Who else is here is the
+      // people's rings to say, not the hint.
+      label: entry === 'door' ? LOBBY_COPY.rejoin : pv.join,
       enabled: true,
       href: enterHref,
       onFollow,
-      hint: otherJoined && phase !== 'soon' ? `${other.firstName} has joined. ${pv.hint}` : pv.hint,
+      hint: pv.hint,
     };
   } else if (phase === 'closed' && b.joinClosesAt && !room.me.joinedAt) {
     // PROVISIONAL: undesigned. A first arrival after the window isn't let in
@@ -216,11 +222,10 @@ export function lobbyModel({
   } else if (phase === 'closed') {
     note = 'Joining has closed for this session.';
   } else if (phase === 'settling') {
-    // PROVISIONAL: undesigned. The sweep rules within the hour (backend reply §3).
-    note = 'This session has ended. We’re confirming who joined, which can take up to an hour.';
+    // The sweep rules within the hour (backend reply §3).
+    note = LOBBY_COPY.settlingNote;
   }
 
-  const pre = phase === 'upcoming' || phase === 'soon';
   return {
     ground: phase === 'missed' ? missedTone(b) : GROUND[phase],
     status: STATUS[phase],
@@ -230,20 +235,31 @@ export function lobbyModel({
     people: people(room, phase, timeZone, !!entry),
     join,
     note,
+    // While upcoming only: none once Join opens.
     links:
-      pre && onCancel
-        ? [{ key: 'cancel', icon: 'event_busy', label: 'Cancel', onClick: onCancel, danger: true }]
+      phase === 'upcoming' && onCancel
+        ? [
+            { key: 'reschedule', icon: 'update', label: LOBBY_COPY.reschedule, onClick: onCancel },
+            {
+              key: 'cancel',
+              icon: 'event_busy',
+              label: LOBBY_COPY.cancel,
+              onClick: onCancel,
+              danger: true,
+            },
+          ]
         : [],
-    calendar: pre
-      ? {
-          id: b.id,
-          title: lobbyTitle(room),
-          startsAt: b.startsAt,
-          endsAt: b.endsAt,
-          pageUrl,
-          venue: providerName(room.provider),
-        }
-      : undefined,
+    calendar:
+      phase === 'upcoming'
+        ? {
+            id: b.id,
+            title: lobbyTitle(room),
+            startsAt: b.startsAt,
+            endsAt: b.endsAt,
+            pageUrl,
+            venue: providerName(room.provider),
+          }
+        : undefined,
   };
 }
 

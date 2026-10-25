@@ -43,3 +43,11 @@
   color: var(--red-600);
   text-align: center;
 }
+
+/* Session Join.dc.html: "Having a problem? Contact support", the card's last row
+   (the session in every phase, and a failed load). */
+.support {
+  margin-top: auto;
+  padding: var(--space-4) var(--space-6);
+  border-top: var(--border-hairline) solid var(--ink-100);
+}
