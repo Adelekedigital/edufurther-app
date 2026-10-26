@@ -3,7 +3,7 @@ import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { DateChip } from '@/components/molecules/DateChip/DateChip';
 import { DashboardNextSession } from '@/components/organisms/DashboardNextSession/DashboardNextSession';
-import { daysBetween, joinState, timeRange } from '@/lib/utils/bookings';
+import { daysBetween, timeRange } from '@/lib/utils/bookings';
 import type { Booking } from '@/types/booking';
 import type { AppError } from '@/types/mentor';
 import { cx } from '@/lib/utils/cx';
@@ -45,13 +45,9 @@ function SessionRow({
 }) {
   const days = daysBetween(now, new Date(booking.startsAt), timeZone);
   const rel = days <= 0 ? 'Today' : days === 1 ? 'Tomorrow' : `In ${days} days`;
-  // The session's own page is both the way in and, outside the join window, the
-  // countdown, details or outcome — so one href serves either CTA.
+  // Join is never greyed out or swapped (owner, 26 Oct): the session's own page
+  // shows the countdown, lobby or outcome for every phase.
   const sessionHref = `/sessions/${encodeURIComponent(booking.id)}`;
-  // Join only while the window is open: outside it, a Join that can only fail
-  // is worse than none. Every other moment (ahead of the window, running past
-  // it, just ended) still links to the session page (#255).
-  const canJoin = joinState(booking, now) === 'open';
   return (
     <div className={cx(styles.body, hero && styles.heroRow)}>
       <DateChip iso={booking.startsAt} timeZone={timeZone} />
@@ -64,15 +60,9 @@ function SessionRow({
         <span className={styles.sub}>{note ? `${rel} · ${note}` : rel}</span>
       </div>
       <div className={cx(styles.actions, hero && styles.heroActions)}>
-        {canJoin ? (
-          <ButtonLink href={sessionHref} variant="primary" size="medium">
-            Join session
-          </ButtonLink>
-        ) : (
-          <ButtonLink href={sessionHref} variant="secondary-outlined" size="medium">
-            View session details
-          </ButtonLink>
-        )}
+        <ButtonLink href={sessionHref} variant="primary" size="medium">
+          Join session
+        </ButtonLink>
       </div>
     </div>
   );
@@ -86,8 +76,7 @@ function SessionRow({
  *
  * Omitted from the design pending backend: the venue line (no per-row venue),
  * the "New mentee" tag (no first-time-with-you signal), and "Send a message"
- * (no endpoint — #334). The CTA is time-aware: "Join session" inside the join
- * window, and "View session details" at every other moment (#255).
+ * (no endpoint — #334). The CTA is always "Join session", to the session page.
  */
 export function NextSessionCard({
   isLoading,

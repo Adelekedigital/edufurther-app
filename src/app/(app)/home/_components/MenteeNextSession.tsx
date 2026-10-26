@@ -34,12 +34,9 @@ function weekday(iso: string, timeZone: string): string {
 }
 
 /**
- * Within the hour or already started: the live badge, Join, and the "starts
- * soon" subline (the session page hosts the lobby before the door opens). A
- * *closed* join window means the session is over, even while the backend still
- * lists it as confirmed (useUpcomingBookings keeps just-settled rows): a Join
- * that can only fail is worse than none (as NextSessionCard), so it drops back
- * to "View details". One rule for the card and the page's subline.
+ * Within the hour or already started: the live badge and the "starts soon"
+ * subline. A *closed* join window drops both: the viewer can no longer arrive.
+ * One rule for the card and the page's subline.
  */
 export function startsSoon(b: Booking, now: Date, timeZone: string): boolean {
   const join = joinState(b, now);
@@ -54,7 +51,7 @@ export function startsSoon(b: Booking, now: Date, timeZone: string): boolean {
 /**
  * The mentee's next session on the home screen (Mentee Dashboard v2.dc.html
  * "Next session"): a date chip, who and when, a client-only prep checklist, and
- * one action — Join when it is nearly time, View details otherwise.
+ * one action, Join, which opens the session page at any time.
  *
  * The frame and date chip are shared with the mentor's card (DashboardNextSession,
  * DateChip, #417); the prep list and Tips are the mentee's own. Not the Bookings
@@ -102,7 +99,9 @@ export function MenteeNextSession({
   const soon = startsSoon(b, now, timeZone);
   const doneCount = done.filter(Boolean).length;
 
-  const action = soon ? (
+  // Never greyed out and never swapped for "View details" (owner, 26 Oct): the
+  // session page shows the countdown, lobby or outcome for every phase.
+  const action = (
     <ButtonLink
       href={`/sessions/${encodeURIComponent(b.id)}`}
       prefetch={false}
@@ -110,15 +109,6 @@ export function MenteeNextSession({
       size="medium"
     >
       Join session
-    </ButtonLink>
-  ) : (
-    <ButtonLink
-      href={`/bookings?booking=${encodeURIComponent(b.id)}`}
-      prefetch={false}
-      variant="secondary-outlined"
-      size="medium"
-    >
-      View details
     </ButtonLink>
   );
 

@@ -177,13 +177,22 @@ describe('Upcoming', () => {
     expect(within(later).queryByText(/Statement of Purpose/)).not.toBeInTheDocument();
   });
 
-  it('Join waits for the window, and says when it opens', () => {
+  it('before the window, Join already opens the session page, never greyed out', () => {
     h.upcoming = remote([
-      booking({ startsAt: at(1), joinOpensAt: at(1 - 5 / 60), joinClosesAt: at(1.25) }),
+      booking({
+        id: 'soon',
+        startsAt: at(1),
+        joinOpensAt: at(1 - 5 / 60),
+        joinClosesAt: at(1.25),
+      }),
     ]);
     render(<BookingsScreen />);
-    expect(screen.getByRole('button', { name: 'Join session' })).toBeDisabled();
-    expect(screen.getByText('Join opens 5 min before')).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Join session' })).toHaveAttribute(
+      'href',
+      '/sessions/soon',
+    );
+    expect(screen.queryByRole('button', { name: 'Join session' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Join opens/)).not.toBeInTheDocument();
   });
 
   it('inside the window Join opens the session’s own page, where joining happens', () => {
@@ -197,8 +206,10 @@ describe('Upcoming', () => {
     );
   });
 
-  it('a session whose window has shut offers no Join at all', () => {
-    h.upcoming = remote([booking({ startsAt: at(-2), joinOpensAt: at(-2), joinClosesAt: at(-1) })]);
+  it('a session past its end offers no Join at all', () => {
+    h.upcoming = remote([
+      booking({ startsAt: at(-2), endsAt: at(-1), joinOpensAt: at(-2), joinClosesAt: at(-1.75) }),
+    ]);
     render(<BookingsScreen />);
     expect(screen.queryByRole('button', { name: 'Join session' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Join session' })).not.toBeInTheDocument();

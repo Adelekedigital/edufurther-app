@@ -63,7 +63,7 @@ export const Joinable: Story = {
   },
 };
 
-/** The next session before its window: a locked Join, then when it opens. */
+/** Before its window: Join still opens the session page, which counts down. */
 export const BeforeTheJoinWindow: Story = {
   args: {
     booking: sampleBookingFor({
@@ -73,14 +73,10 @@ export const BeforeTheJoinWindow: Story = {
       joinClosesAt: at(0.75),
     }),
     joinHref: '/sessions/b1',
-    isNext: true,
   },
 };
 
-/**
- * A later session (PRD Mentor Bookings): when Join opens and Cancel session
- * on one line, and no Join button.
- */
+/** A later session: Join, and Cancel session under it. */
 export const LaterSession: Story = {
   args: {
     booking: sampleBookingFor({
@@ -234,7 +230,13 @@ export const DeletedParty: Story = {
     booking: sampleBookingFor({
       status: 'completed',
       ...past(300),
-      other: sampleParty({ name: 'Deleted user', firstName: 'Deleted user', initials: '', deleted: true, timeZone: null }),
+      other: sampleParty({
+        name: 'Deleted user',
+        firstName: 'Deleted user',
+        initials: '',
+        deleted: true,
+        timeZone: null,
+      }),
     }),
   },
 };
@@ -243,7 +245,10 @@ export const LongEverything: Story = {
   args: {
     booking: sampleBookingFor({
       title: 'Scholarship and funding strategy for competitive postgraduate programs',
-      other: sampleParty({ name: 'Oluwadamilare Adebayo-Ogunleye Chukwuemeka', firstName: 'Oluwadamilare' }),
+      other: sampleParty({
+        name: 'Oluwadamilare Adebayo-Ogunleye Chukwuemeka',
+        firstName: 'Oluwadamilare',
+      }),
       note: 'I recently started my postgraduate scholarship application. I have attended several webinars, gathered useful information, and need help reviewing my essays before the December deadline. I also want to talk about recommendation letters, and whether my shortlist is realistic given my funding situation.',
     }),
   },

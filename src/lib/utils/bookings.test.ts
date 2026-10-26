@@ -19,7 +19,7 @@ import {
   fullDate,
   isLapsed,
   isRespondUrgent,
-  joinOpensInMinutes,
+  isUpcoming,
   joinState,
   nextSessionWhen,
   otherTimeLine,
@@ -157,10 +157,38 @@ describe('joinState', () => {
     expect(joinState({ ...b, status: 'noShow' }, NOW)).toBe('open');
     expect(joinState({ ...b, status: 'cancelled' }, NOW)).toBe('none');
   });
-  it('reads the opening offset from the session rather than assuming it', () => {
-    const b = booking({ startsAt: at(1), joinOpensAt: at(1 - 5 / 60), joinClosesAt: at(1.25) });
-    expect(joinOpensInMinutes(b)).toBe(5);
-    expect(joinOpensInMinutes(booking())).toBeNull();
+});
+
+describe('isUpcoming', () => {
+  it('is a confirmed session until its scheduled end, window or not', () => {
+    // Days away, with no join window stamped yet: still upcoming, so Join shows.
+    expect(isUpcoming(booking(), NOW)).toBe(true);
+    // Running, past the arrival window, before the end.
+    const running = booking({
+      startsAt: at(-0.5),
+      endsAt: at(0.5),
+      joinOpensAt: at(-0.6),
+      joinClosesAt: at(-0.25),
+    });
+    expect(isUpcoming(running, NOW)).toBe(true);
+    expect(isUpcoming({ ...running, endsAt: at(-0.01) }, NOW)).toBe(false);
+  });
+  it('keeps a settled session only while the viewer can still get back in', () => {
+    const settled = booking({
+      status: 'completed',
+      startsAt: at(-1),
+      endsAt: at(-0.1),
+      joinOpensAt: at(-1.1),
+      joinClosesAt: at(-0.75),
+      doorClosesAt: at(0.2),
+      myJoinedAt: at(-0.9),
+    });
+    expect(isUpcoming(settled, NOW)).toBe(true);
+    expect(isUpcoming({ ...settled, myJoinedAt: null }, NOW)).toBe(false);
+  });
+  it('is never a request or a called-off session', () => {
+    expect(isUpcoming(booking({ status: 'pending' }), NOW)).toBe(false);
+    expect(isUpcoming(booking({ status: 'cancelled' }), NOW)).toBe(false);
   });
 });
 

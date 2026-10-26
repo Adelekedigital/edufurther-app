@@ -38,7 +38,13 @@ describe('NextSessionCard', () => {
   it('error is shown before empty, with a retry', async () => {
     const onRetry = vi.fn();
     render(
-      <NextSessionCard {...base} onRetry={onRetry} isLoading={false} error={{} as AppError} booking={null} />,
+      <NextSessionCard
+        {...base}
+        onRetry={onRetry}
+        isLoading={false}
+        error={{} as AppError}
+        booking={null}
+      />,
     );
     expect(screen.getByRole('alert')).toHaveTextContent('couldn’t load');
     expect(screen.queryByText('No upcoming sessions')).not.toBeInTheDocument();
@@ -55,7 +61,7 @@ describe('NextSessionCard', () => {
     );
   });
 
-  it('content: shows the session and mentee; a far session links to details, not Join', () => {
+  it('content: shows the session and mentee; a far session already offers Join', () => {
     const now = new Date();
     render(
       <NextSessionCard {...base} now={now} isLoading={false} error={null} booking={booking()} />,
@@ -63,50 +69,25 @@ describe('NextSessionCard', () => {
     const region = screen.getByRole('region', { name: 'Next session' });
     expect(region).toHaveTextContent('SOP review');
     expect(region).toHaveTextContent('Amara Okafor');
-    // 8 days out → still ahead of the join window: details, not a Join that
-    // cannot work yet.
-    expect(screen.queryByRole('link', { name: 'Join session' })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'View session details' })).toHaveAttribute(
-      'href',
-      '/sessions/s1',
-    );
-  });
-
-  it('content: a session whose join window is open shows Join, not the details link', () => {
-    const now = new Date();
-    // joinOpensAt in the past, start five minutes out → the join window is open.
-    const soon = Date.now() + 5 * 60_000;
-    render(
-      <NextSessionCard
-        {...base}
-        now={now}
-        isLoading={false}
-        error={null}
-        booking={booking({
-          startsAt: iso(soon),
-          endsAt: iso(soon + 36e5),
-          joinOpensAt: iso(Date.now() - 6e5),
-          joinClosesAt: iso(soon + 36e5),
-        })}
-      />,
-    );
+    // 8 days out: Join opens the session page, which counts down (owner, 26 Oct).
     expect(screen.getByRole('link', { name: 'Join session' })).toHaveAttribute(
       'href',
       '/sessions/s1',
     );
     expect(screen.queryByRole('link', { name: 'View session details' })).not.toBeInTheDocument();
   });
-  // #255: outside the join window the card still leads to the session page.
+
+  // Every phase leads to the session page with the same enabled Join.
   it.each([
+    [
+      'inside the join window',
+      { start: 5 * 60_000, opens: -10 * 60_000, closes: 20 * 60_000, end: 65 * 60_000 },
+    ],
     [
       'running, past the join window',
       { start: -20 * 60_000, opens: -30 * 60_000, closes: -5 * 60_000, end: 40 * 60_000 },
     ],
-    [
-      'just ended, attendance not settled',
-      { start: -65 * 60_000, opens: -75 * 60_000, closes: -50 * 60_000, end: -5 * 60_000 },
-    ],
-  ])('content: %s links to details', (_name, t) => {
+  ])('content: %s shows Join', (_name, t) => {
     const at = (d: number) => iso(Date.now() + d);
     render(
       <NextSessionCard
@@ -122,10 +103,10 @@ describe('NextSessionCard', () => {
         })}
       />,
     );
-    expect(screen.queryByRole('link', { name: 'Join session' })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'View session details' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Join session' })).toHaveAttribute(
       'href',
       '/sessions/s1',
     );
+    expect(screen.queryByRole('button', { name: 'Join session' })).not.toBeInTheDocument();
   });
 });

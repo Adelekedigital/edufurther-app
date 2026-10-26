@@ -7,7 +7,7 @@ import {
   byNewestFirst,
   HISTORY_STATUSES,
   isLapsed,
-  joinState,
+  isUpcoming,
   respondDeadline,
   wantsLapsed,
 } from '@/lib/utils/bookings';
@@ -247,11 +247,7 @@ export function useUpcomingBookings(
       // fetch — on the dashboard that is the focus/navigation refetch
       // (refetchOnWindowFocus), which is the common way the hero is seen again.
       // A still-open door keeps a mid-session row for re-entry regardless.
-      return rows.filter(
-        (r) =>
-          (r.status === 'confirmed' && new Date(r.endsAt).getTime() > now.getTime()) ||
-          joinState(r, now) === 'open',
-      );
+      return rows.filter((r) => isUpcoming(r, now));
     },
     staleTime: 30_000,
     networkMode: 'always',

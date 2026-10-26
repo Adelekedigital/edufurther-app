@@ -597,7 +597,6 @@ export function BookingsScreen() {
                   select(null);
                 }}
                 joinHref={open ? joinHref(open.id) : undefined}
-                isNext={!!open && open.id === next?.id}
                 now={now}
               />
             )}

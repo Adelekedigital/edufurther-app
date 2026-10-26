@@ -296,8 +296,12 @@ describe('MenteeHomeScreen', () => {
     expect(screen.getByText('2 in the last 30 days')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Next session' })).toBeInTheDocument();
     expect(screen.getByText('Scholarship strategy call')).toBeInTheDocument();
-    // Far off (120h): the action is View details, not Join.
-    expect(screen.getByRole('link', { name: 'View details' })).toBeInTheDocument();
+    // Far off (120h): Join still opens the session page (owner, 26 Oct).
+    expect(screen.getByRole('link', { name: 'Join session' })).toHaveAttribute(
+      'href',
+      '/sessions/b1',
+    );
+    expect(screen.queryByRole('link', { name: 'View details' })).not.toBeInTheDocument();
     // The Next-session card offers Tips (a static modal) beside All bookings.
     expect(screen.getByRole('button', { name: 'Tips' })).toBeInTheDocument();
   });
@@ -318,6 +322,31 @@ describe('MenteeHomeScreen', () => {
     // The new view has no KPIs (design newHome nextStep: kpiTop false).
     expect(screen.queryByRole('region', { name: 'Your progress' })).not.toBeInTheDocument();
     expect(screen.queryByText('Sessions held')).not.toBeInTheDocument();
+  });
+
+  it('a new mentee’s confirmed session sits below Getting started, above Mentors for your goal', () => {
+    viewer = NEW_MEMBER;
+    matches = { data: { matches: [match('m9', 'Tunde Bakare')] }, isLoading: false, error: null };
+    render(<MenteeHomeScreen />);
+    const started = screen.getByRole('heading', { name: 'Getting started' });
+    const next = screen.getByRole('heading', { name: 'Next session' });
+    const mentors = screen.getByRole('heading', { name: 'Mentors for your goal' });
+    const follows = (a: Element, b: Element) =>
+      !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(follows(started, next)).toBe(true);
+    expect(follows(next, mentors)).toBe(true);
+    expect(screen.getByRole('link', { name: 'Join session' })).toHaveAttribute(
+      'href',
+      '/sessions/b1',
+    );
+  });
+
+  it('a new mentee with nothing confirmed gets no Next session card', () => {
+    viewer = NEW_MEMBER;
+    upcoming = remote([]);
+    render(<MenteeHomeScreen />);
+    expect(screen.getByRole('heading', { name: 'Getting started' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Next session' })).not.toBeInTheDocument();
   });
 
   it('Hide (once a first request is sent) leaves for the returning view, and Undo brings it back', async () => {
@@ -541,7 +570,7 @@ describe('MenteeHomeScreen', () => {
     expect(screen.queryByText('Nothing booked yet')).not.toBeInTheDocument();
   });
 
-  it('advances the next-session clock so "Join" opens without a reload (minute tick)', () => {
+  it('advances the next-session clock so "starts soon" shows without a reload (minute tick)', () => {
     vi.useFakeTimers();
     try {
       const base = Date.now();
@@ -557,13 +586,15 @@ describe('MenteeHomeScreen', () => {
         }),
       ]);
       render(<MenteeHomeScreen />);
-      expect(screen.getByRole('link', { name: 'View details' })).toBeInTheDocument();
-      // Two minute-ticks later it's 59 min out — the card flips to Join on its own.
+      expect(screen.queryByText('Your session starts soon.')).not.toBeInTheDocument();
+      // Join is there all along (owner, 26 Oct).
+      expect(screen.getByRole('link', { name: 'Join session' })).toBeInTheDocument();
+      // Two minute-ticks later it's 59 min out: the subline flips on its own.
       act(() => {
         vi.advanceTimersByTime(120_000);
       });
+      expect(screen.getByText('Your session starts soon.')).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Join session' })).toBeInTheDocument();
-      expect(screen.queryByRole('link', { name: 'View details' })).not.toBeInTheDocument();
     } finally {
       vi.useRealTimers();
     }

@@ -172,15 +172,18 @@ export function joinState(b: Booking, now = new Date()): JoinState {
 }
 
 /**
- * How long before the start the door opens, in whole minutes — for the copy
- * that tells people to come back. Read from the session rather than hard-coded:
- * the design's "10 min" was wrong, and a number repeated in prose goes stale
- * the day the backend changes it.
+ * Whether a session is still upcoming for the viewer, and so offers Join:
+ * confirmed and before its scheduled end, or settled while still running with
+ * the viewer's door open (Rejoin, backend #380). Join is never greyed out
+ * (owner, 26 Oct): it opens the session's own page, which shows the
+ * countdown, the lobby or the outcome for every phase. One rule for the
+ * Upcoming list, the Bookings hero and panel, and both Home cards.
  */
-export function joinOpensInMinutes(b: Booking): number | null {
-  if (!b.joinOpensAt) return null;
-  const ms = new Date(b.startsAt).getTime() - new Date(b.joinOpensAt).getTime();
-  return ms > 0 ? Math.round(ms / MINUTE) : null;
+export function isUpcoming(b: Booking, now = new Date()): boolean {
+  return (
+    (b.status === 'confirmed' && new Date(b.endsAt).getTime() > now.getTime()) ||
+    joinState(b, now) === 'open'
+  );
 }
 
 /**

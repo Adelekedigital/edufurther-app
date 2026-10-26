@@ -12,8 +12,6 @@ export const BOOKINGS_COPY = {
   pendingIntroMentee: 'Requests you sent that your mentor hasn’t confirmed yet.',
   /** On a request that would clash with a confirmed session if accepted. */
   overlap: (time: string, first: string) => `Overlaps your ${time} session with ${first}`,
-  /** Beside a locked Join, on the hero and in the panel. */
-  joinOpens: (min: number) => `Join opens ${min} min before`,
   /** The panel's answers toggle. */
   showAllAnswers: (n: number) => `Show all ${n} answers`,
   showLess: 'Show less',

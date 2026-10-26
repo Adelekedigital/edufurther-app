@@ -119,11 +119,6 @@
   gap: var(--space-3);
 }
 
-.lock {
-  font-size: var(--text-p-xs);
-  color: var(--ink-600);
-}
-
 /* Handoff §7.3 phone rules: `--space-5` becomes `--space-4`, and the inner
    `--space-3 --space-4` box becomes `--space-2 --space-3`. */
 @media (max-width: 767px) {

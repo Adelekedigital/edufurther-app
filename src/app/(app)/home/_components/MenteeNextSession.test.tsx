@@ -66,12 +66,12 @@ describe('MenteeNextSession', () => {
     })) as unknown as typeof window.matchMedia;
     try {
       render(<MenteeNextSession booking={booking()} timeZone="Africa/Lagos" now={NOW} />);
-      screen.getByRole('link', { name: 'View details' }).focus();
+      screen.getByRole('link', { name: 'Join session' }).focus();
       act(() => {
         phone = true;
         listeners.forEach((l) => l());
       });
-      expect(screen.getByRole('link', { name: 'View details' })).toHaveFocus();
+      expect(screen.getByRole('link', { name: 'Join session' })).toHaveFocus();
     } finally {
       window.matchMedia = real;
     }
@@ -79,7 +79,7 @@ describe('MenteeNextSession', () => {
 
   it('reads in the order it is drawn: beside the info on desktop, after the prep list on phones', () => {
     const order = () => {
-      const action = screen.getByRole('link', { name: 'View details' });
+      const action = screen.getByRole('link', { name: 'Join session' });
       const prep = screen.getByRole('button', { name: /Before your session/ });
       return prep.compareDocumentPosition(action) & Node.DOCUMENT_POSITION_FOLLOWING
         ? 'after prep'
@@ -103,11 +103,13 @@ describe('MenteeNextSession', () => {
     }
   });
 
-  it('a far-off session offers View details, not Join', () => {
+  it('a far-off session already offers Join, to the session page (owner, 26 Oct)', () => {
     render(<MenteeNextSession booking={booking()} timeZone="Africa/Lagos" now={NOW} />);
-    const details = screen.getByRole('link', { name: 'View details' });
-    expect(details).toHaveAttribute('href', '/bookings?booking=b1');
-    expect(screen.queryByText('Join session')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Join session' })).toHaveAttribute(
+      'href',
+      '/sessions/b1',
+    );
+    expect(screen.queryByText('View details')).not.toBeInTheDocument();
   });
 
   it('an imminent session shows the live badge and routes to the session page', () => {
@@ -125,9 +127,9 @@ describe('MenteeNextSession', () => {
     expect(screen.getByText(/Starts in 8 min/)).toBeInTheDocument();
   });
 
-  it('a closed join window falls back to View details, not a Join that can only fail', () => {
-    // Started 30 min ago and the join window shut 5 min ago, but the backend still
-    // lists it confirmed (useUpcomingBookings keeps just-settled rows).
+  it('a closed join window keeps Join (the session page explains) and drops the live badge', () => {
+    // Started 30 min ago and the join window shut 5 min ago, but it is still
+    // before the scheduled end, so the session is still upcoming.
     const b = booking({
       startsAt: at(-30),
       endsAt: at(15),
@@ -135,11 +137,12 @@ describe('MenteeNextSession', () => {
       joinClosesAt: at(-5),
     });
     render(<MenteeNextSession booking={b} timeZone="Africa/Lagos" now={NOW} />);
-    expect(screen.getByRole('link', { name: 'View details' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Join session' })).toHaveAttribute(
       'href',
-      '/bookings?booking=b1',
+      '/sessions/b1',
     );
-    expect(screen.queryByText('Join session')).not.toBeInTheDocument();
+    expect(screen.queryByText('View details')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Started 30 min ago/)).not.toBeInTheDocument();
   });
 
   it('gives the full date to assistive tech (the chip is decorative)', () => {

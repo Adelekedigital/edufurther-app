@@ -150,11 +150,6 @@
   gap: var(--space-3);
 }
 
-.lock {
-  font-size: var(--text-p-xs);
-  color: var(--ink-600);
-}
-
 /* Bookings.dc.html's close: 40px here, not the 32px of the DS IconButton and
    not its 44px `lg` — its own value, so its own control (house rule 2). The
    negative margin pulls it level with the heading's cap height. */
