@@ -27,10 +27,11 @@ export const MISSED_HREF = '/bookings?tab=history&filter=missed';
 /**
  * The four progress tiles for a returning mentee, from /me/mentee-stats.
  *
- * Trends read "+N this month" as drawn when the backend sends the calendar
- * month (`thisMonth`); until then they fall back to the 30-day window's own
- * count ("N in the last 30 days", design-divergence.md). Never a
- * current-vs-previous delta: a decline would read as a discouraging negative.
+ * Trends read "+N this month" as drawn, from the UTC calendar month the
+ * backend sends (`thisMonth`, #549). A response without it (an older backend)
+ * falls back to the 30-day window's own count ("N in the last 30 days").
+ * Never a current-vs-previous delta: a decline would read as a discouraging
+ * negative.
  * Window lengths are read from the response, never hard-coded.
  */
 export function returningKpis(s: MenteeStats): Kpi[] {

@@ -22,5 +22,7 @@ export async function GET() {
     window_days: 30,
     current: { since: iso(30), until: iso(0), completed_sessions: 2, minutes: 90 },
     previous: { since: iso(60), until: iso(30), completed_sessions: 1, minutes: 45 },
+    // The UTC calendar month so far (backend #549).
+    this_month: { since: iso(25), until: iso(-6), completed_sessions: 2, minutes: 90 },
   });
 }

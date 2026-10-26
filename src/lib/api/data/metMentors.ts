@@ -51,15 +51,7 @@ export type MetMentor = {
 
 type MetMentorRead = components['schemas']['MetMentorRead'];
 
-// PENDING BACKEND (Mentee Home request 3b, 3c): not in the published spec yet,
-// so read untyped and optional; wire to the generated type when they ship.
-type PendingFields = {
-  next_session_at?: string | null;
-  unavailable_reason?: 'not_taking' | 'no_open_times' | null;
-};
-
 export function toMetMentor(r: MetMentorRead): MetMentor {
-  const pending = r as MetMentorRead & PendingFields;
   const first = r.first_name?.trim() || '';
   const last = r.last_name?.trim() || '';
   const name = [first, last].filter(Boolean).join(' ') || 'Your mentor';
@@ -78,10 +70,11 @@ export function toMetMentor(r: MetMentorRead): MetMentor {
     sessionCount: r.session_count,
     lastSessionAt: r.last_session_at,
     bookability: r.bookability,
-    nextSessionAt: pending.next_session_at ?? null,
+    nextSessionAt: r.next_session_at ?? null,
+    // A value a later backend adds reads as unknown, like null.
     unavailableReason:
-      pending.unavailable_reason === 'not_taking' || pending.unavailable_reason === 'no_open_times'
-        ? pending.unavailable_reason
+      r.unavailable_reason === 'not_taking' || r.unavailable_reason === 'no_open_times'
+        ? r.unavailable_reason
         : null,
   };
 }

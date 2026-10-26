@@ -51,15 +51,9 @@ const n = (v: number | null | undefined) => (typeof v === 'number' ? v : null);
 const toHours = (minutes: number | null | undefined) =>
   typeof minutes === 'number' ? minutes / 60 : 0;
 
-// PENDING BACKEND (Mentee Home request 3a): `this_month` isn't in the published
-// spec yet, so it is read untyped and optional; wire to the generated type when it ships.
-type PendingStatsRead = {
-  this_month?: { completed_sessions: number; minutes: number } | null;
-};
-
 function toStats(dto: StatsRead): MenteeStats {
-  const pending = dto as StatsRead & PendingStatsRead;
-  const month = pending.this_month;
+  // The UTC calendar month so far (backend #549), for "+N this month".
+  const month = dto.this_month;
   return {
     sessionsHeld: n(dto.sessions_held),
     mentorsMet: n(dto.mentors_met),
