@@ -193,7 +193,8 @@ export const keys = {
   },
   /**
    * The viewer's personal invite link (POST /me/invite-link) and the invites
-   * sent so far (GET /me/referrals). `who` = the session identity. The link
+   * sent so far (GET /me/referrals), and the lookup of an invite a visitor
+   * arrived with. `who` = the session identity. The link
    * is never refetched by itself: a future PUT (handle) or PATCH (revoke) must
    * set or invalidate `link`.
    */
@@ -201,6 +202,10 @@ export const keys = {
     all: ['invite'] as const,
     link: (who: string) => ['invite', 'link', who] as const,
     referrals: (who: string) => ['invite', 'referrals', who] as const,
+    /** Prefix: every session's referrals list (a claim invalidates them). */
+    referralsAll: ['invite', 'referrals'] as const,
+    /** Who an invite is from (GET /invites/{code}): public, the same for every viewer. */
+    lookup: (code: string) => ['invite', 'lookup', code] as const,
   },
   /**
    * Mentor onboarding's read of /me (Mentor Onboarding PRD F1). Under `viewer`,

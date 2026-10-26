@@ -14,8 +14,10 @@ import {
   type SignInMode,
   type SignInRole,
 } from '@/lib/api/data/auth';
+import { claimInvite } from '@/lib/api/data/invite';
 import { useSaveName, zoneToSave, type NameToSave } from '@/lib/api/data/signIn';
 import { useSession } from '@/lib/api/data/session';
+import { clearInviteCode, storedInviteCode } from '@/lib/utils/inviteCode';
 import { lastSignInMethod, rememberSignInMethod } from '@/lib/utils/lastUsed';
 import { checkFullName, splitFullName } from '@/lib/utils/name';
 import { useHydrated } from '@/lib/utils/useHydrated';
@@ -66,6 +68,8 @@ export type SignInFlowOptions = {
   next: string | null;
   /** The first name of the mentor a booking `next` is with, for the toast ("Gbenga"). */
   bookingWith?: string | null;
+  /** The first name of whoever sent the invite this visit arrived with, once known ("Damilola"). */
+  inviteFrom?: string | null;
   /** Back from Google with a session: finish the sign-in here. */
   googleReturn: boolean;
   /** Back from Google without one. */
@@ -82,6 +86,7 @@ export function useSignInFlow({
   role,
   next,
   bookingWith = null,
+  inviteFrom = null,
   googleReturn,
   googleFailed,
 }: SignInFlowOptions) {
@@ -90,6 +95,11 @@ export function useSignInFlow({
   const session = useSession();
   const online = useOnline();
   const saveName = useSaveName();
+  // Read when the toast is worded: the lookup may answer after the flow began.
+  const inviter = useRef(inviteFrom);
+  useEffect(() => {
+    inviter.current = inviteFrom;
+  });
   const signOutHere = useSignOutHere();
 
   const [step, setStep] = useState<SignInStep>('start');
@@ -172,7 +182,12 @@ export function useSignInFlow({
   }, []);
 
   const finish = useCallback(
-    (a: Account, firstName: string, googleJustLinked = false) => {
+    (
+      a: Account,
+      firstName: string,
+      googleJustLinked = false,
+      invite: { from: string | null } | null = null,
+    ) => {
       const o = signInOutcome({
         method: method.current,
         mode,
@@ -190,6 +205,7 @@ export function useSignInFlow({
         googleJustLinked,
         next,
         bookingWith,
+        invite,
       });
       setOutcome(o);
       clearTimeout(redirectTimer.current);
@@ -233,13 +249,35 @@ export function useSignInFlow({
     [mode, role, qc],
   );
 
-  /** A new account, named: its role, then the toast and the redirect. */
+  /**
+   * The invite this visit arrived with, claimed by a brand-new account once it
+   * is named (issue 281). Quiet: an unknown, claimed or retired code, an
+   * account too old, or a failure shows nothing and the sign-up goes on. One
+   * attempt: the code is cleared whatever the answer. Null when nothing was
+   * claimed, so the toast mentions only an invite that really was saved.
+   */
+  const claimArrivalInvite = useCallback(async (): Promise<{ from: string | null } | null> => {
+    const code = storedInviteCode();
+    if (!code) return null;
+    try {
+      await claimInvite(qc, code);
+      return { from: inviter.current };
+    } catch {
+      return null;
+    } finally {
+      clearInviteCode();
+    }
+  }, [qc]);
+
+  /** A new account, named: its role, its invite, then the toast and the redirect. */
   const complete = useCallback(
     async (a: Account, firstName: string, onRefused?: () => void) => {
       if (!(await saveRole(a, onRefused)) || !mounted.current) return;
-      finish(a, firstName);
+      const invite = await claimArrivalInvite();
+      if (!mounted.current) return;
+      finish(a, firstName, false, invite);
     },
-    [saveRole, finish],
+    [saveRole, claimArrivalInvite, finish],
   );
 
   const name = useCallback(
@@ -279,6 +317,8 @@ export function useSignInFlow({
       account.current = a;
       named.current = false;
       if (!a.isNew) {
+        // An existing account never claims: the invite is for new accounts.
+        clearInviteCode();
         const google = via === 'google' ? await signedInUser() : null;
         if (!mounted.current) return;
         return finish(a, acct.firstName ?? '', !!google?.googleJustLinked);
@@ -363,6 +403,8 @@ export function useSignInFlow({
         setStep('finish');
         return;
       }
+      // Named already: an existing account, which never claims an invite.
+      if (acct.kind === 'member') clearInviteCode();
       router.replace(next ?? (acct.kind === 'member' ? accountHome(acct) : '/'));
     })();
   }, [session.status, next, router, setEmail]);

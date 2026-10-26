@@ -1,7 +1,14 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { toInviteLink, useInviteLink, useReferrals } from './invite';
+import {
+  claimInvite,
+  toInviteLink,
+  toInviter,
+  useInviteLink,
+  useInviteLookup,
+  useReferrals,
+} from './invite';
 
 const get = vi.fn();
 const post = vi.fn();
@@ -133,5 +140,68 @@ describe('useReferrals', () => {
     const { result } = renderHook(() => useReferrals('me'), { wrapper });
     await waitFor(() => expect(result.current.error).not.toBeNull());
     expect(result.current.friendJoined).toBe(false);
+  });
+});
+
+describe('useInviteLookup', () => {
+  it('names the inviter of a code it is given', async () => {
+    get.mockResolvedValue(
+      resp(200, { inviter: { first_name: ' Damilola ', avatar_url: 'https://x/p.jpg' } }),
+    );
+    const { result } = renderHook(() => useInviteLookup('damilola-7k2x'), { wrapper });
+    await waitFor(() =>
+      expect(result.current.data).toEqual({ firstName: 'Damilola', photoUrl: 'https://x/p.jpg' }),
+    );
+    expect(get).toHaveBeenCalledWith('/api/v1/invites/{code}', {
+      params: { path: { code: 'damilola-7k2x' } },
+      signal: expect.anything(),
+    });
+  });
+
+  it('has no inviter for an unknown, retired or revoked code, or one with no first name', () => {
+    expect(toInviter({ inviter: null })).toBeNull();
+    expect(toInviter({ inviter: { first_name: null, avatar_url: null } })).toBeNull();
+    expect(toInviter({ inviter: { first_name: '  ', avatar_url: null } })).toBeNull();
+  });
+
+  it('never asks about a code that fails the backend’s test, or no code', () => {
+    renderHook(() => useInviteLookup('<b>hi</b>'), { wrapper });
+    renderHook(() => useInviteLookup(null), { wrapper });
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  it('answers no inviter on a failure', async () => {
+    get.mockResolvedValue(resp(404, undefined));
+    const { result } = renderHook(() => useInviteLookup('gone-1234'), { wrapper });
+    await waitFor(() => expect(result.current.error).not.toBeNull());
+    expect(result.current.data).toBeNull();
+  });
+});
+
+describe('claimInvite', () => {
+  it('posts the code (ReferralClaim) and reads the referral lists again', async () => {
+    post.mockResolvedValue(resp(200, { id: 'r9', code: 'x', invited_at: 'now' }));
+    const spy = vi.spyOn(client, 'invalidateQueries');
+    await claimInvite(client, 'damilola-7k2x');
+    expect(post).toHaveBeenCalledWith('/api/v1/me/referrals/claim', {
+      body: { code: 'damilola-7k2x' },
+      signal: expect.anything(),
+    });
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['invite', 'referrals'] });
+  });
+
+  it.each([404, 409, 422, 500])(
+    'rejects on a %i, and still refreshes the lists',
+    async (status) => {
+      post.mockResolvedValue(resp(status, undefined));
+      const spy = vi.spyOn(client, 'invalidateQueries');
+      await expect(claimInvite(client, 'damilola-7k2x')).rejects.toBeTruthy();
+      expect(spy).toHaveBeenCalled();
+    },
+  );
+
+  it('never sends a code that fails the backend’s test', async () => {
+    await expect(claimInvite(client, 'a/b')).rejects.toBeTruthy();
+    expect(post).not.toHaveBeenCalled();
   });
 });

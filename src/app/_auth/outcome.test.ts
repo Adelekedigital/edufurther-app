@@ -303,3 +303,28 @@ describe('signInOutcome — mentor application (Mentor Onboarding PRD F4)', () =
     expect(out({ ...mentor, mentorApproved: false }).href).toBe('/dashboard');
   });
 });
+
+describe('signInOutcome — an invite the new account claimed (issue 281)', () => {
+  const fresh = { ...base, isNew: true, mode: 'signup' as const };
+
+  it('says whose invite is saved, then where they go', async () => {
+    const out = await load(false);
+    expect(out({ ...fresh, invite: { from: 'Damilola' } })).toMatchObject({
+      title: 'Account created. Welcome, Amara',
+      body: 'Damilola’s invite is saved. Next, let’s find your first mentor…',
+    });
+  });
+
+  it('leads the onboarding body too, and has a line without the inviter’s name', async () => {
+    const out = await load(true);
+    expect(out({ ...fresh, invite: { from: null } }).body).toBe(
+      'Your invite is saved. Next, let’s find your first mentor…',
+    );
+  });
+
+  it('no claim, no mention; a returning account never mentions it', async () => {
+    const out = await load(false);
+    expect(out(fresh).body).toBe('Next, let’s find your first mentor…');
+    expect(out({ ...base, invite: { from: 'Damilola' } }).body).not.toContain('invite');
+  });
+});

@@ -188,6 +188,7 @@ export const SHARED_ROUTES: readonly string[] = [
   '/onboarding',
   '/login',
   '/signup',
+  '/invite',
 ];
 
 /** `path` is `route` or one of its sub-routes; `/` matches the root only. */

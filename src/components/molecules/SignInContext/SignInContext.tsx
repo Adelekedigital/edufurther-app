@@ -4,9 +4,9 @@ import type { CoverKey } from '@/lib/utils/cover';
 import styles from './SignInContext.module.css';
 
 type SignInContextProps = {
-  /** Whose booking this is: their face or initials, never named twice (the text names them). */
+  /** Who the line is about (the mentor being booked, or the inviter): their face or initials, never named twice (the text names them). */
   initials: string;
-  /** The mentor's colour (`personCover`). */
+  /** Their colour (`personCover`, the invite code standing in for an id). */
   tone: CoverKey;
   photoUrl?: string | null;
   photoFocus?: { x: number; y: number } | null;
@@ -16,7 +16,8 @@ type SignInContextProps = {
 /**
  * Why they are signing in, above the title (Sign In.dc.html `showCtx`):
  * "Log in or sign up to finish booking Gbenga E." on a blue-50 row with the
- * mentor's avatar.
+ * mentor's avatar. The same row says who invited them (issue 281):
+ * "Damilola invited you. Sign up and your invite is saved."
  */
 export function SignInContext({
   initials,

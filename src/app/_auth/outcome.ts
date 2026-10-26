@@ -1,4 +1,5 @@
 import type { IconName } from '@/components/atoms/Icon/iconNames';
+import { INVITE_COPY } from '@/lib/copy/auth';
 import { MENTOR_ONBOARDING_LIVE, ONBOARDING_LIVE, newAccountDestination } from '@/lib/config/auth';
 import { memberHome } from '@/lib/utils/access';
 import { bookingFromNext, isOnboardingNext } from './booking';
@@ -55,6 +56,11 @@ export type OutcomeInput = {
   next: string | null;
   /** The first name of the mentor a booking `next` is with ("Gbenga"), once known. */
   bookingWith?: string | null;
+  /**
+   * A new account just claimed the invite it arrived with (issue 281): the
+   * toast says so first. `from` is the inviter's first name, when known.
+   */
+  invite?: { from: string | null } | null;
 };
 
 /**
@@ -70,6 +76,7 @@ export function signInOutcome(o: OutcomeInput): Outcome {
     : 'Taking you back to your booking…';
 
   if (o.isNew) {
+    const saved = o.invite ? `${INVITE_COPY.saved(o.invite.from)} ` : '';
     const title =
       o.method === 'google'
         ? 'Account created with Google'
@@ -86,7 +93,7 @@ export function signInOutcome(o: OutcomeInput): Outcome {
       const body = MENTOR_ONBOARDING_LIVE
         ? 'Opening your mentor application…'
         : 'Opening your Home…';
-      return { icon: 'how_to_reg', title, body, href };
+      return { icon: 'how_to_reg', title, body: saved + body, href };
     }
     const body = ONBOARDING_LIVE
       ? booking || intoOnboarding
@@ -97,7 +104,7 @@ export function signInOutcome(o: OutcomeInput): Outcome {
           ? toBooking
           : back
         : 'Next, let’s find your first mentor…';
-    return { icon: 'how_to_reg', title, body, href };
+    return { icon: 'how_to_reg', title, body: saved + body, href };
   }
 
   const home = accountHome(o);
