@@ -2,7 +2,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { MetMentor } from '@/lib/api/data/metMentors';
 import type { Remote } from '@/types/mentor';
-import { MenteeMentorsSection, type Recommended } from './MenteeMentorsSection';
+import { MenteeMentorsSection } from './MenteeMentorsSection';
+import type { Recommended } from './recommended';
 import { metHistory, MentorRow } from './MentorRow';
 
 vi.mock('@/components/organisms/MentorCard/MentorCard', () => ({
@@ -78,13 +79,7 @@ describe('MenteeMentorsSection', () => {
 
   it('Book again lists only bookable mentors, three at most', () => {
     render_(
-      remote([
-        mentor(),
-        mentor({ bookability: 'has_upcoming' }),
-        mentor(),
-        mentor(),
-        mentor(),
-      ]),
+      remote([mentor(), mentor({ bookability: 'has_upcoming' }), mentor(), mentor(), mentor()]),
     );
     expect(screen.getAllByRole('button', { name: /^Book again with/ })).toHaveLength(3);
     expect(screen.queryByText('Mentor 2')).not.toBeInTheDocument();
@@ -115,7 +110,10 @@ describe('MenteeMentorsSection', () => {
   it('while matches load, Recommended holds its place with skeleton cards', async () => {
     render_(remote([mentor()]), [], { isLoading: true });
     await userEvent.click(screen.getByRole('tab', { name: 'Recommended' }));
-    expect(screen.getByRole('list')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('tabpanel')).toContainElement(
+      document.querySelector('[aria-busy="true"]') as HTMLElement,
+    );
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
 });
 
@@ -124,18 +122,29 @@ describe('MentorRow', () => {
     expect(metHistory(mentor(), 'Africa/Lagos')).toBe('2 sessions · Last on Tue, Oct 6');
     expect(
       metHistory(
-        mentor({ bookability: 'has_upcoming', nextSessionAt: '2026-10-15T17:00:00Z', sessionCount: 1 }),
+        mentor({
+          bookability: 'has_upcoming',
+          nextSessionAt: '2026-10-15T17:00:00Z',
+          sessionCount: 1,
+        }),
         'Africa/Lagos',
       ),
     ).toBe('1 session · Next on Thu, Oct 15');
     // No date from the backend yet: the booking is named instead.
-    expect(metHistory(mentor({ bookability: 'pending' }), 'UTC')).toBe('2 sessions · Request pending');
+    expect(metHistory(mentor({ bookability: 'pending' }), 'UTC')).toBe(
+      '2 sessions · Request pending',
+    );
   });
 
   it('routes each bookability: Book again, View booking, or a note', async () => {
     const onBook = vi.fn();
     const { rerender } = render(
-      <MentorRow mentor={mentor({ name: 'Open One' })} timeZone="UTC" onBook={onBook} variant="modal" />,
+      <MentorRow
+        mentor={mentor({ name: 'Open One' })}
+        timeZone="UTC"
+        onBook={onBook}
+        variant="modal"
+      />,
     );
     await userEvent.click(screen.getByRole('button', { name: 'Book again with Open One' }));
     expect(onBook).toHaveBeenCalledOnce();
@@ -161,7 +170,12 @@ describe('MentorRow', () => {
     );
     expect(screen.getByText('No open times yet')).toBeInTheDocument();
     rerender(
-      <MentorRow mentor={mentor({ bookability: 'unavailable' })} timeZone="UTC" onBook={onBook} variant="modal" />,
+      <MentorRow
+        mentor={mentor({ bookability: 'unavailable' })}
+        timeZone="UTC"
+        onBook={onBook}
+        variant="modal"
+      />,
     );
     expect(screen.getByText('Not taking bookings')).toBeInTheDocument();
   });

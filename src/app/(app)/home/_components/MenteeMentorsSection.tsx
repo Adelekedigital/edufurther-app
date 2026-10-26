@@ -10,16 +10,11 @@ import { MentorCard } from '@/components/organisms/MentorCard/MentorCard';
 import type { MetMentor } from '@/lib/api/data/metMentors';
 import type { Mentor, Remote } from '@/types/mentor';
 import { MentorRow } from './MentorRow';
+import type { Recommended } from './recommended';
 import styles from './MenteeMentorsSection.module.css';
-
-/** Where "Choose your mentor" scrolls to (design `[data-ef-rec]`). */
-export const RECOMMENDED_ID = 'mentors-for-your-goal';
 
 /** Rows and cards shown on Home (design: "3 each"). */
 export const SHOWN = 3;
-
-/** A matched mentor for Recommended: the card plus what they match of the goal. */
-export type Recommended = { mentor: Mentor; matchTopics: string[] };
 
 type MenteeMentorsSectionProps = {
   mentors: Remote<MetMentor[]>;
@@ -27,8 +22,6 @@ type MenteeMentorsSectionProps = {
   recommended: { items: Recommended[]; isLoading: boolean; failed: boolean };
   /** The mentee's help areas, for "Matched to your goal: …"; null when unknown. */
   goalLine: string | null;
-  /** Recommended's heading when it stands alone ("Mentors for your goal" for a new mentee). */
-  recTitle?: string;
   timeZone: string;
   /** Phones: the compact card. */
   compact: boolean;
@@ -78,11 +71,7 @@ export function MenteeMentorsSection(p: MenteeMentorsSectionProps) {
     />
   );
   const recommended = (
-    <RecommendedPanel
-      {...p}
-      items={recShown}
-      title={tabs ? null : (p.recTitle ?? 'Recommended for you')}
-    />
+    <RecommendedPanel {...p} items={recShown} title={tabs ? null : 'Recommended for you'} />
   );
 
   if (!tabs)
@@ -117,14 +106,18 @@ export function MenteeMentorsSection(p: MenteeMentorsSectionProps) {
   );
 }
 
-type PanelHead = { title: string | null; sub: string; action: React.ReactNode };
+type PanelHead = { id: string; title: string | null; sub: string; action: React.ReactNode };
 
 /** A panel's head: its own heading only when there are no tabs to name it. */
-function Head({ title, sub, action }: PanelHead) {
+function Head({ id, title, sub, action }: PanelHead) {
   return (
     <div className={styles.head}>
       <div className={styles.headText}>
-        {title && <h2 className={styles.title}>{title}</h2>}
+        {title && (
+          <h2 id={id} className={styles.title}>
+            {title}
+          </h2>
+        )}
         <span className={styles.sub}>{sub}</span>
       </div>
       {action}
@@ -136,9 +129,11 @@ function BookAgainPanel(
   p: MenteeMentorsSectionProps & { eligible: MetMentor[]; title: string | null; sub: string },
 ) {
   const { mentors } = p;
+  const id = useId();
   return (
-    <section aria-label="Book again" className={styles.section}>
+    <Panel solo={!!p.title} labelledBy={id} busy={mentors.isLoading}>
       <Head
+        id={id}
         title={p.title}
         sub={p.sub}
         action={
@@ -166,16 +161,19 @@ function BookAgainPanel(
           ))}
         </div>
       )}
-    </section>
+    </Panel>
   );
 }
 
 function RecommendedPanel(
   p: MenteeMentorsSectionProps & { items: Recommended[]; title: string | null },
 ) {
+  const id = useId();
+  const loading = p.recommended.isLoading;
   return (
-    <section aria-label="Recommended mentors" id={RECOMMENDED_ID} className={styles.section}>
+    <Panel solo={!!p.title} labelledBy={id} busy={loading}>
       <Head
+        id={id}
         title={p.title}
         sub={p.goalLine ? `Matched to your goal: ${p.goalLine}` : 'Matched to your goal'}
         action={
@@ -184,29 +182,57 @@ function RecommendedPanel(
           </Link>
         }
       />
-      <ul className={styles.grid} aria-busy={p.recommended.isLoading || undefined}>
-        {p.recommended.isLoading
-          ? Array.from({ length: SHOWN }).map((_, i) => (
-              <li key={i} aria-hidden="true">
-                <CardSkeleton />
-              </li>
-            ))
-          : p.items.map((r) => (
-              <li key={r.mentor.id} className={styles.cell}>
-                <MentorCard
-                  mentor={r.mentor}
-                  matchTopics={r.matchTopics}
-                  variant={p.compact ? 'compact' : 'photo'}
-                  headingLevel={3}
-                  timeZone={p.timeZone}
-                  offline={p.offline}
-                  bookBlocked={p.bookBlocked}
-                  onBook={p.onBookMentor}
-                />
-              </li>
-            ))}
-      </ul>
+      {loading ? (
+        <div className={styles.grid} aria-hidden="true">
+          {Array.from({ length: SHOWN }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
+        </div>
+      ) : (
+        <ul className={styles.grid}>
+          {p.items.map((r) => (
+            <li key={r.mentor.id} className={styles.cell}>
+              <MentorCard
+                mentor={r.mentor}
+                matchTopics={r.matchTopics}
+                variant={p.compact ? 'compact' : 'photo'}
+                headingLevel={3}
+                timeZone={p.timeZone}
+                offline={p.offline}
+                bookBlocked={p.bookBlocked}
+                onBook={p.onBookMentor}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+    </Panel>
+  );
+}
+
+/**
+ * A panel's frame: its own region, named by its heading, when it stands alone;
+ * a plain block inside a tab panel, which its tab already names.
+ */
+function Panel({
+  solo,
+  labelledBy,
+  busy,
+  children,
+}: {
+  solo: boolean;
+  labelledBy: string;
+  busy?: boolean;
+  children: React.ReactNode;
+}) {
+  return solo ? (
+    <section aria-labelledby={labelledBy} aria-busy={busy || undefined} className={styles.section}>
+      {children}
     </section>
+  ) : (
+    <div aria-busy={busy || undefined} className={styles.section}>
+      {children}
+    </div>
   );
 }
 

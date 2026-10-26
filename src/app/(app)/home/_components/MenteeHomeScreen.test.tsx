@@ -51,7 +51,10 @@ vi.mock('@/lib/api/data/catalog', () => ({
   useDegreeLevels: () => ({ levels: [], status: 'ready' }),
 }));
 vi.mock('@/lib/api/data/goals', () => ({
-  useMenteeGoals: () => ({ read: { goal: { needs: [{ id: 't1' }, { id: 't2' }] } }, status: 'ready' }),
+  useMenteeGoals: () => ({
+    read: { goal: { needs: [{ id: 't1' }, { id: 't2' }] } },
+    status: 'ready',
+  }),
 }));
 type MatchesRemote = { data: { matches: unknown[] } | null; isLoading: boolean; error: unknown };
 let matches: MatchesRemote;
@@ -88,9 +91,21 @@ const match = (id: string, name: string, slugs: string[] = ['scholarships']) => 
 // BookingLauncher pulls in the booking query hooks (need a QueryClient); the
 // screen only needs to know a booking opened, so stub it to a marker.
 vi.mock('@/app/_shell/BookingLauncher/BookingLauncher', () => ({
-  BookingLauncher: ({ mentor, hideProfileLink }: { mentor: unknown; hideProfileLink?: boolean }) =>
+  BookingLauncher: ({
+    mentor,
+    hideProfileLink,
+    ratingUnknown,
+  }: {
+    mentor: unknown;
+    hideProfileLink?: boolean;
+    ratingUnknown?: boolean;
+  }) =>
     mentor ? (
-      <div data-testid="booking-open" data-hide-profile={String(!!hideProfileLink)} />
+      <div
+        data-testid="booking-open"
+        data-hide-profile={String(!!hideProfileLink)}
+        data-rating-unknown={String(!!ratingUnknown)}
+      />
     ) : null,
 }));
 
@@ -380,8 +395,13 @@ describe('MenteeHomeScreen', () => {
     };
     render(<MenteeHomeScreen />);
     expect(screen.getByRole('heading', { name: 'Mentors' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Book again' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByText('Pick up where you left off with a mentor you’ve met')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Book again' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(
+      screen.getByText('Pick up where you left off with a mentor you’ve met'),
+    ).toBeInTheDocument();
     await userEvent.click(screen.getByRole('tab', { name: 'Recommended' }));
     expect(
       screen.getByText('Matched to your goal: Scholarships & funding, Application documents'),
@@ -392,7 +412,8 @@ describe('MenteeHomeScreen', () => {
     expect(screen.queryByRole('article', { name: 'Mariam Alamata' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'See all' })).toHaveAttribute('href', '/explore');
     await userEvent.click(screen.getByRole('button', { name: 'Book Tunde Bakare' }));
-    expect(screen.getByTestId('booking-open')).toBeInTheDocument();
+    // A matched mentor's card carries their rating; only met mentors' doesn't.
+    expect(screen.getByTestId('booking-open')).toHaveAttribute('data-rating-unknown', 'false');
   });
 
   it('with nobody to book again, Recommended stands alone under its heading', () => {
@@ -401,6 +422,21 @@ describe('MenteeHomeScreen', () => {
     render(<MenteeHomeScreen />);
     expect(screen.queryByRole('tab')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Recommended for you' })).toBeInTheDocument();
+  });
+
+  it('Recommended waits for the met list, so nobody already met shows under it', async () => {
+    metMentors = remote<MetMentor[]>(null, { isLoading: true });
+    matches = { data: { matches: [match('m1', 'Mariam Alamata')] }, isLoading: false, error: null };
+    render(<MenteeHomeScreen />);
+    await userEvent.click(screen.getByRole('tab', { name: 'Recommended' }));
+    expect(screen.queryByRole('article', { name: 'Mariam Alamata' })).not.toBeInTheDocument();
+  });
+
+  it('a failed refetch keeps the matches already shown', () => {
+    metMentors = remote([metMentor()]);
+    matches = { data: { matches: [match('m9', 'Tunde Bakare')] }, isLoading: false, error: {} };
+    render(<MenteeHomeScreen />);
+    expect(screen.getByRole('tab', { name: 'Recommended' })).toBeInTheDocument();
   });
 
   it('a failed match read hides Recommended, never the page', () => {
@@ -415,13 +451,20 @@ describe('MenteeHomeScreen', () => {
   it('"See all mentors" lists everyone met; booking from it closes the list first', async () => {
     metMentors = remote([
       metMentor(),
-      metMentor({ id: 'm2', name: 'Efua Owusu', bookability: 'unavailable', unavailableReason: 'no_open_times' }),
+      metMentor({
+        id: 'm2',
+        name: 'Efua Owusu',
+        bookability: 'unavailable',
+        unavailableReason: 'no_open_times',
+      }),
     ]);
     render(<MenteeHomeScreen />);
     await userEvent.click(screen.getByRole('button', { name: 'See all mentors' }));
     const dialog = screen.getByRole('dialog', { name: 'Mentors you’ve met' });
     expect(dialog).toHaveTextContent('No open times yet');
-    await userEvent.click(screen.getAllByRole('button', { name: 'Book again with Mariam Alamata' }).at(-1)!);
+    await userEvent.click(
+      screen.getAllByRole('button', { name: 'Book again with Mariam Alamata' }).at(-1)!,
+    );
     expect(screen.queryByRole('dialog', { name: 'Mentors you’ve met' })).not.toBeInTheDocument();
     expect(screen.getByTestId('booking-open')).toBeInTheDocument();
   });
@@ -433,6 +476,7 @@ describe('MenteeHomeScreen', () => {
     expect(screen.getByTestId('booking-open')).toBeInTheDocument();
     // "View profile" isn't hidden: a met mentor is reachable by id, slug or not.
     expect(screen.getByTestId('booking-open')).toHaveAttribute('data-hide-profile', 'false');
+    expect(screen.getByTestId('booking-open')).toHaveAttribute('data-rating-unknown', 'true');
   });
 
   it('shows the help pill to new mentees and early ones (≤ 2 sessions), not experienced', () => {

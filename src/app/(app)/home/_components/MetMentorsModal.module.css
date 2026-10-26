@@ -1,8 +1,5 @@
-/* Mentors you've met: rows divided by a hairline, none above the first. */
+/* Mentors you've met: the rows (MentorRow draws the dividers). */
 .list {
   display: flex;
   flex-direction: column;
-}
-.list > * + * {
-  border-top: 1px solid var(--border-muted);
 }

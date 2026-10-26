@@ -27,7 +27,8 @@ export function metHistory(m: MetMentor, timeZone: string): string {
   const n = m.sessionCount;
   const sessions = `${n} session${n === 1 ? '' : 's'}`;
   const booked = m.bookability === 'has_upcoming' || m.bookability === 'pending';
-  if (booked && m.nextSessionAt) return `${sessions} · Next on ${dayLabel(m.nextSessionAt, timeZone)}`;
+  if (booked && m.nextSessionAt)
+    return `${sessions} · Next on ${dayLabel(m.nextSessionAt, timeZone)}`;
   if (m.bookability === 'has_upcoming') return `${sessions} · Upcoming session`;
   if (m.bookability === 'pending') return `${sessions} · Request pending`;
   return `${sessions} · Last on ${dayLabel(m.lastSessionAt, timeZone)}`;

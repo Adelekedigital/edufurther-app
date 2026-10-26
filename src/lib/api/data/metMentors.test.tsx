@@ -59,6 +59,22 @@ describe('toMetMentor', () => {
     expect(m.cover).toBe(coverFor('m1'));
   });
 
+  it('reads the pending next date and unavailable reason, and drops an unknown reason', () => {
+    expect(toMetMentor(row() as never)).toMatchObject({
+      nextSessionAt: null,
+      unavailableReason: null,
+    });
+    expect(
+      toMetMentor(
+        row({
+          next_session_at: '2026-10-15T17:00:00Z',
+          unavailable_reason: 'no_open_times',
+        }) as never,
+      ),
+    ).toMatchObject({ nextSessionAt: '2026-10-15T17:00:00Z', unavailableReason: 'no_open_times' });
+    expect(toMetMentor(row({ unavailable_reason: 'away' }) as never).unavailableReason).toBeNull();
+  });
+
   it('a null slug stays null (card renders but does not link)', () => {
     expect(toMetMentor(row({ slug: null }) as never).slug).toBeNull();
   });

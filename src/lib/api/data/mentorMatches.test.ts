@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { components } from '@/lib/api/generated/schema';
 import { toMatches, type WireMatches } from './mentorMatches';
 
@@ -128,5 +128,35 @@ describe('toMatches', () => {
     ).toBe('Diploma');
     // An unknown level keeps the backend's name.
     expect(toMatches(w, [], []).basis.degree).toBe('Master’s Degree');
+  });
+});
+
+describe('useMentorMatches', () => {
+  it('asks for the limit it is given, and keeps each limit in its own cache entry', async () => {
+    const { renderHook, waitFor } = await import('@testing-library/react');
+    const { QueryClient, QueryClientProvider } = await import('@tanstack/react-query');
+    const { createElement } = await import('react');
+    const { useMentorMatches } = await import('./mentorMatches');
+    const { api } = await import('./http');
+    const body = { matches: [], exact: true, based_on: {}, for_mentor_bookable: true };
+    const get = vi
+      .spyOn(api, 'GET')
+      .mockResolvedValue({ data: body, response: { ok: true, status: 200 } } as never);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      createElement(QueryClientProvider, { client }, children);
+    const { result } = renderHook(
+      () => useMentorMatches('me', [], [], { enabled: true, limit: 6 }),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.data).not.toBeNull());
+    expect(get).toHaveBeenCalledWith(
+      '/api/v1/me/mentor-matches',
+      expect.objectContaining({ params: { query: { limit: 6 } } }),
+    );
+    expect(
+      client.getQueryCache().find({ queryKey: ['onboarding', 'matches', 'me', '', 6] }),
+    ).toBeTruthy();
+    get.mockRestore();
   });
 });

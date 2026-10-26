@@ -1,6 +1,8 @@
 import type { MentorMatch } from '@/types/onboarding';
-import type { Topic } from '@/types/mentor';
-import type { Recommended } from './MenteeMentorsSection';
+import type { Mentor, Topic } from '@/types/mentor';
+
+/** A matched mentor for Recommended: the card plus what they match of the goal. */
+export type Recommended = { mentor: Mentor; matchTopics: string[] };
 
 /**
  * Recommended on Home: the mentee's matches, in the backend's order, without
@@ -16,11 +18,16 @@ export function recommendedFrom(
     .filter((m) => !metIds.has(m.mentor.id))
     .map((m) => ({
       mentor: m.mentor,
-      matchTopics: m.reasons.flatMap((r) =>
-        r.code === 'help_areas'
-          ? r.slugs.flatMap((slug) => topics.find((t) => t.slug === slug)?.label ?? [])
-          : [],
-      ),
+      // Once each, even if two reasons name the same area.
+      matchTopics: [
+        ...new Set(
+          m.reasons.flatMap((r) =>
+            r.code === 'help_areas'
+              ? r.slugs.flatMap((slug) => topics.find((t) => t.slug === slug)?.label ?? [])
+              : [],
+          ),
+        ),
+      ],
     }));
 }
 

@@ -74,9 +74,6 @@
   background: var(--surface-card);
   overflow: hidden;
 }
-.list > * + * {
-  border-top: 1px solid var(--border-muted);
-}
 /* "Try again" inside the error notice: a text action with a 44px tap target. */
 .inlineAction {
   position: relative;

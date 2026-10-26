@@ -85,10 +85,10 @@ export function MenteeHomeScreen() {
   const bookMatched = (m: Mentor) => setBooking({ mentor: m, ratingUnknown: false });
   // Recommended: matches not yet met. A few more than shown, as met ones drop out.
   const topics = useTopics();
-  const levels = useDegreeLevels(menteeSide);
-  const goals = useMenteeGoals(menteeSide ? (member?.id ?? null) : null);
+  const levels = useDegreeLevels(menteeSide && !isNew);
+  const goals = useMenteeGoals(menteeSide && !isNew ? (member?.id ?? null) : null);
   const matches = useMentorMatches(member?.id ?? null, topics.topics, levels.levels, {
-    enabled: menteeSide,
+    enabled: menteeSide && !isNew,
     limit: MATCHES_FETCHED,
   });
   const online = useOnline();
@@ -270,8 +270,11 @@ export function MenteeHomeScreen() {
           mentors={metMentors}
           recommended={{
             items: recommended,
-            isLoading: matches.isLoading || topics.isLoading,
-            failed: !!matches.error,
+            // Until the met list settles, nobody can be left out of it yet.
+            isLoading: matches.isLoading || topics.isLoading || metMentors.isLoading,
+            // A failed refetch keeps the matches it had (no vanishing tab under
+            // a reader). Without the met list, met mentors would leak in: hidden.
+            failed: (!!matches.error && !matches.data) || !!metMentors.error,
           }}
           goalLine={goalLineFrom(goals.read?.goal?.needs.map((n) => n.id) ?? [], topics.topics)}
           timeZone={zone}
@@ -305,9 +308,10 @@ export function MenteeHomeScreen() {
         external
         onAction={openCall}
       />
-      {/* No hideProfileLink: Book-again only opens for an `open` (taking-bookings)
-          mentor, who is approved + listed = public, so "View profile"
-          (/mentors/{slug ?? id}) always resolves — as Explore does. */}
+      {/* No hideProfileLink: both callers book public mentors. Book again opens
+          only for an `open` (taking-bookings, so approved and listed) mentor, and
+          matches come from the public listing, so "View profile"
+          (/mentors/{slug ?? id}) always resolves, as on Explore. */}
       <BookingLauncher
         mentor={booking?.mentor ?? null}
         ratingUnknown={booking?.ratingUnknown ?? false}

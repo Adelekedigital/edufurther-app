@@ -177,21 +177,24 @@ export function MentorCard({
             )}
           </ul>
         </div>
-      ) : showTopics && topics.length > 0 && (
-        <ul className={styles.topics} aria-label="Helps with">
-          {(cut ? topics.slice(0, TOPICS_SHOWN) : topics).map((t) => (
-            <li key={t.slug}>
-              <Tag tone="neutral">{t.label}</Tag>
-            </li>
-          ))}
-          {cut && (
-            <MoreTopics
-              mentor={{ ...m, topics }}
-              hidden={topics.length - TOPICS_SHOWN}
-              onOpenSheet={onMoreTopics}
-            />
-          )}
-        </ul>
+      ) : (
+        showTopics &&
+        topics.length > 0 && (
+          <ul className={styles.topics} aria-label="Helps with">
+            {(cut ? topics.slice(0, TOPICS_SHOWN) : topics).map((t) => (
+              <li key={t.slug}>
+                <Tag tone="neutral">{t.label}</Tag>
+              </li>
+            ))}
+            {cut && (
+              <MoreTopics
+                mentor={{ ...m, topics }}
+                hidden={topics.length - TOPICS_SHOWN}
+                onOpenSheet={onMoreTopics}
+              />
+            )}
+          </ul>
+        )
       )}
 
       {/* MentorCard.dc.html bottom block: offer line, then availability. */}

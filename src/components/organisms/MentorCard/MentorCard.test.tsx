@@ -119,3 +119,28 @@ describe('MentorCard, topics', () => {
     expect(screen.queryByRole('button', { name: /show all/ })).toBeNull();
   });
 });
+
+describe('MentorCard, matched to the goal', () => {
+  it('shows the matched areas in place of the topic tags, two then "+N more", never a % score', () => {
+    render(
+      <MentorCard
+        mentor={mentor()}
+        matchTopics={['Scholarships & funding', 'Application documents', 'Visa and interview']}
+        onBook={vi.fn()}
+        timeZone="UTC"
+      />,
+    );
+    const list = screen.getByRole('list', { name: 'Matches your goal' });
+    expect(list).toHaveTextContent('Scholarships & funding');
+    expect(list).toHaveTextContent('Application documents');
+    expect(list).toHaveTextContent('+1 more');
+    expect(list).not.toHaveTextContent('Visa and interview');
+    expect(screen.queryByRole('list', { name: 'Helps with' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/% match/)).not.toBeInTheDocument();
+  });
+
+  it('with nothing matched, the topic tags stay', () => {
+    render(<MentorCard mentor={mentor()} matchTopics={[]} onBook={vi.fn()} timeZone="UTC" />);
+    expect(screen.getByRole('list', { name: 'Helps with' })).toBeInTheDocument();
+  });
+});
