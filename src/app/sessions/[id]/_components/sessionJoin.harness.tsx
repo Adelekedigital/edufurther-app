@@ -8,9 +8,9 @@
 import { sampleBookingFor, sampleParty } from '@/lib/utils/bookingTestFixtures';
 import type { BookingAnswer, SessionRoom } from '@/types/booking';
 import type { Remote, Viewer } from '@/types/mentor';
-import { resetReviewAndRebook, reviewAndRebookMocks } from '@/app/_sessions/reviewAndRebook.mocks';
+import { resetReviewAndRebook, reviewAndRebookMocks } from '@/app/_sessions/reviewAndRebook.harness';
 
-export { launched, sent } from '@/app/_sessions/reviewAndRebook.mocks';
+export { launched, sent } from '@/app/_sessions/reviewAndRebook.harness';
 
 /** What the mocked hooks read, set per test. */
 export const h = {

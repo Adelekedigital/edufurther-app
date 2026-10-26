@@ -52,13 +52,13 @@ vi.mock('@/lib/api/data/reviewableSessions', async () =>
   (await import('./bookingsScreen.harness')).mocks.reviewableSessions(),
 );
 vi.mock('@/lib/api/data/reviewWrite', async () =>
-  (await import('@/app/_sessions/reviewAndRebook.mocks')).reviewAndRebookMocks.reviewWrite(),
+  (await import('@/app/_sessions/reviewAndRebook.harness')).reviewAndRebookMocks.reviewWrite(),
 );
 vi.mock('@/app/_reviews/ReviewDialog', async () =>
-  (await import('@/app/_sessions/reviewAndRebook.mocks')).reviewAndRebookMocks.reviewDialog(),
+  (await import('@/app/_sessions/reviewAndRebook.harness')).reviewAndRebookMocks.reviewDialog(),
 );
 vi.mock('@/app/_shell/BookingLauncher/BookingLauncher', async () =>
-  (await import('@/app/_sessions/reviewAndRebook.mocks')).reviewAndRebookMocks.bookingLauncher(),
+  (await import('@/app/_sessions/reviewAndRebook.harness')).reviewAndRebookMocks.bookingLauncher(),
 );
 vi.mock('@/lib/api/data/booking', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
@@ -313,13 +313,23 @@ describe('History', () => {
   });
 
   it('?filter=missed opens History with Missed on (Mentee Home’s "View missed")', () => {
+    h.tab = 'upcoming';
     h.filter = 'missed';
     render(<BookingsScreen />);
+    // No `tab=history` on the link: the filter is a way into History.
+    expect(screen.getByRole('tab', { name: 'History' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('button', { name: 'Missed' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Completed' })).toHaveAttribute(
       'aria-pressed',
       'false',
     );
+  });
+
+  it('the link’s filter is only the way in: a chip change drops it from the URL', async () => {
+    h.filter = 'missed';
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Missed' }));
+    expect(replace).toHaveBeenLastCalledWith('/bookings?tab=history', { scroll: false });
   });
 
   it('an unknown ?filter= is ignored', () => {

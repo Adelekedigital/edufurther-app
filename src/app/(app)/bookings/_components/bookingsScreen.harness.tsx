@@ -9,7 +9,7 @@
  * `beforeEach` puts it all back.
  */
 import type { BookingHistoryResult } from '@/lib/api/data/bookings';
-import { resetReviewAndRebook } from '@/app/_sessions/reviewAndRebook.mocks';
+import { resetReviewAndRebook } from '@/app/_sessions/reviewAndRebook.harness';
 import { accessFor } from '@/lib/utils/access';
 import type { Booking, BookingAnswer, BookingParty } from '@/types/booking';
 import type { Remote, Viewer } from '@/types/mentor';

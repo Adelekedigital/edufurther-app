@@ -176,7 +176,12 @@ export function SessionJoinScreen({ id }: { id: string }) {
   const reviewables = useMyReviewableSessions(reviewAsked);
   const reviewSession = reviewables.data?.find((r) => r.id === id) ?? null;
   // Leave a review and Book again open here, as on Bookings (PRD Session Join).
-  const rr = useReviewAndRebook({ canBook, author: member, timeZone });
+  const rr = useReviewAndRebook({
+    canBook,
+    author: member,
+    timeZone,
+    live: (bookingId) => (data?.booking.id === bookingId ? data.booking : undefined),
+  });
   const [viewing, setViewing] = useState<AnswerFile | null>(null);
   // The phone's sheets (below 768px): the answers, the guide, or the calendar choices.
   const [sheet, setSheet] = useState<PrepSheet | 'calendar' | null>(null);

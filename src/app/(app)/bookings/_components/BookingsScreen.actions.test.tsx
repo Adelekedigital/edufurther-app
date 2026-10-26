@@ -18,7 +18,7 @@ import {
   replace,
   resetHarness,
 } from './bookingsScreen.harness';
-import { launched, sent } from '@/app/_sessions/reviewAndRebook.mocks';
+import { launched, sent } from '@/app/_sessions/reviewAndRebook.harness';
 
 // The data hooks, mocked. Hoisted above the imports, so each factory
 // reaches the harness through a dynamic import rather than a binding
@@ -45,13 +45,13 @@ vi.mock('@/lib/api/data/reviewableSessions', async () =>
   (await import('./bookingsScreen.harness')).mocks.reviewableSessions(),
 );
 vi.mock('@/lib/api/data/reviewWrite', async () =>
-  (await import('@/app/_sessions/reviewAndRebook.mocks')).reviewAndRebookMocks.reviewWrite(),
+  (await import('@/app/_sessions/reviewAndRebook.harness')).reviewAndRebookMocks.reviewWrite(),
 );
 vi.mock('@/app/_reviews/ReviewDialog', async () =>
-  (await import('@/app/_sessions/reviewAndRebook.mocks')).reviewAndRebookMocks.reviewDialog(),
+  (await import('@/app/_sessions/reviewAndRebook.harness')).reviewAndRebookMocks.reviewDialog(),
 );
 vi.mock('@/app/_shell/BookingLauncher/BookingLauncher', async () =>
-  (await import('@/app/_sessions/reviewAndRebook.mocks')).reviewAndRebookMocks.bookingLauncher(),
+  (await import('@/app/_sessions/reviewAndRebook.harness')).reviewAndRebookMocks.bookingLauncher(),
 );
 vi.mock('@/lib/api/data/booking', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
@@ -483,6 +483,49 @@ describe('the review entry on History', () => {
     h.tab = 'history';
     render(<BookingsScreen />);
     expect(screen.queryByRole('button', { name: 'Book again' })).not.toBeInTheDocument();
+  });
+
+  it('a viewer who can’t book is offered no review, as on Session Join', () => {
+    h.viewer = { ...MEMBER, isMentor: true };
+    h.history = hist({ bookings: [completed()] });
+    h.reviewable = reviewable();
+    h.tab = 'history';
+    render(<BookingsScreen />);
+    expect(screen.queryByRole('button', { name: /Leave a review|Book again/ })).toBeNull();
+  });
+
+  it('an open booking modal closes when the mentor’s account goes meanwhile', async () => {
+    h.history = hist({ bookings: [completed()] });
+    h.tab = 'history';
+    const { rerender } = render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Book again' }));
+    expect(screen.getByRole('dialog', { name: 'Book Amara Okafor' })).toBeVisible();
+    h.history = hist({
+      bookings: [completed({ other: { ...party('Deleted user'), deleted: true } })],
+    });
+    rerender(<BookingsScreen />);
+    expect(screen.queryByRole('dialog', { name: /^Book / })).not.toBeInTheDocument();
+  });
+
+  it('and when the viewer turns out to be a mentor', async () => {
+    h.history = hist({ bookings: [completed()] });
+    h.tab = 'history';
+    const { rerender } = render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Book again' }));
+    h.viewer = { ...MEMBER, isMentor: true };
+    rerender(<BookingsScreen />);
+    expect(screen.queryByRole('dialog', { name: /^Book / })).not.toBeInTheDocument();
+  });
+
+  it('after a sent review, focus lands on the row’s Book again, not the page top', async () => {
+    h.history = hist({ bookings: [completed()] });
+    h.reviewable = reviewable();
+    h.tab = 'history';
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Leave a review' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Send review' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Close review' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Book again' })).toHaveFocus());
   });
 
   it('while reviewability is unknown, a completed row offers nothing', () => {
