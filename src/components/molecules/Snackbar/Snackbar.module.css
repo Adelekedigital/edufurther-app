@@ -22,6 +22,31 @@
   font-size: var(--text-p-xs);
 }
 
+/* With an action (Mentee Dashboard v2.dc.html gsToast): tighter on the
+   action's side, 12px between. */
+.withAction {
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+}
+.action {
+  min-height: var(--space-8);
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-300);
+}
+.action:hover {
+  text-decoration: underline;
+}
+.action:focus-visible {
+  outline: var(--focus-ring-width) solid var(--blue-300);
+  outline-offset: 2px;
+}
 @media (max-width: 767px) {
   .region {
     bottom: calc(56px + env(safe-area-inset-bottom) + var(--space-3));

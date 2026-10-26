@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Snackbar } from './Snackbar';
 
 describe('Snackbar', () => {
@@ -31,5 +32,27 @@ describe('Snackbar with two panels kept mounted', () => {
     );
     expect(screen.queryByText('Profile saved')).toBeNull();
     expect(screen.getByText('Goals saved')).toBeInTheDocument();
+  });
+});
+
+describe('Snackbar with an action', () => {
+  it('shows the action beside the message, runs it, and can take focus when it shows', async () => {
+    const onClick = vi.fn();
+    render(
+      <Snackbar
+        message="Getting started hidden"
+        stamp={1}
+        action={{ label: 'Undo', onClick, focus: true }}
+      />,
+    );
+    const undo = screen.getByRole('button', { name: 'Undo' });
+    expect(undo).toHaveFocus();
+    await userEvent.click(undo);
+    expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  it('without focus asked, it leaves focus where it is', () => {
+    render(<Snackbar message="Saved" stamp={1} action={{ label: 'Undo', onClick: vi.fn() }} />);
+    expect(screen.getByRole('button', { name: 'Undo' })).not.toHaveFocus();
   });
 });

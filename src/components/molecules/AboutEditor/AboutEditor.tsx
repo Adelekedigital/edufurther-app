@@ -24,6 +24,13 @@ type AboutEditorProps = {
   error?: string | null;
   /** "Write a draft" / "Improve" (PRD F6). Absent: a plain field. */
   assist?: AboutAssist;
+  /** The field's label; "About" (the mentor's) by default, "Short bio" for a mentee. */
+  label?: string;
+  /** The line under the field; null for none. */
+  hint?: string | null;
+  rows?: number;
+  /** What the leave guard calls the edit ("your About section"). */
+  leaveLabel?: string;
 };
 
 /**
@@ -40,6 +47,10 @@ export function AboutEditor({
   saving,
   error,
   assist,
+  label = 'About',
+  hint = 'Lead with the path you’ve walked.',
+  rows = 6,
+  leaveLabel = 'your About section',
 }: AboutEditorProps) {
   const [text, setText] = useState(initial);
   const [drafted, setDrafted] = useState(initialDrafted);
@@ -50,7 +61,7 @@ export function AboutEditor({
   // Leaving with edits asks first (any in-app link, Logout, the browser's
   // prompt). Against the text it opened on: a refetch mid-edit isn't an edit.
   const [opened] = useState(initial);
-  useLeaveGuard(text !== opened, 'your About section');
+  useLeaveGuard(text !== opened, leaveLabel);
   const ref = useRef<HTMLTextAreaElement>(null);
   const errorId = useId();
   // A failed save: back to the text, whose description now carries why.
@@ -81,7 +92,7 @@ export function AboutEditor({
     >
       <AiField
         ref={ref}
-        label="About"
+        label={label}
         value={text}
         drafted={drafted}
         onChange={(next, meta) => {
@@ -89,8 +100,8 @@ export function AboutEditor({
           setDrafted(meta.drafted);
         }}
         max={ABOUT_MAX}
-        rows={6}
-        hint="Lead with the path you’ve walked."
+        rows={rows}
+        hint={hint ?? undefined}
         onAssist={
           assist &&
           (async (mode, current) => {

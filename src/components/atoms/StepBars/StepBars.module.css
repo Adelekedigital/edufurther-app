@@ -31,3 +31,18 @@
 .spaced .off {
   transition-duration: var(--duration-slow);
 }
+/* Mentee Dashboard v2.dc.html profile meter: 8px bars, the blue fill, the
+   unfilled ones ink-100, or white on a tinted card. */
+.meter .on,
+.meter .off {
+  height: 8px;
+}
+.meter .on {
+  background: var(--blue-500);
+}
+.meter .off {
+  background: var(--ink-100);
+}
+.onCard .off {
+  background: var(--white);
+}

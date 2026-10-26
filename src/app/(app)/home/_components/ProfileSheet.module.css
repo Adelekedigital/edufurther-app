@@ -1,0 +1,99 @@
+/* Mentee Dashboard v2.dc.html "Your profile" sheet; values from its inline styles. */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.count {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+.hint {
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+}
+.item + .item {
+  border-top: 1px solid var(--ink-100);
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--space-11);
+}
+.dot {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  box-sizing: border-box;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--ink-300);
+  background: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+}
+.dotDone {
+  border: none;
+  background: var(--green-600);
+}
+.lines {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.label {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+.value {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+  text-wrap: pretty;
+}
+.valueEmpty {
+  color: var(--ink-500);
+}
+/* "Edit": the design's text link at a 44px row height, 8px sides. */
+.edit {
+  min-height: var(--space-11);
+  padding: 0 var(--space-2);
+}
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  /* Under the text, past the 24px dot and its 12px gap. */
+  padding-left: calc(var(--space-6) + var(--space-3));
+}
