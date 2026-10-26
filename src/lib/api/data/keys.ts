@@ -192,6 +192,17 @@ export const keys = {
     list: (who: string) => ['metMentors', 'list', who] as const,
   },
   /**
+   * The viewer's personal invite link (POST /me/invite-link) and the invites
+   * sent so far (GET /me/referrals). `who` = the session identity. The link
+   * is never refetched by itself: a future PUT (handle) or PATCH (revoke) must
+   * set or invalidate `link`.
+   */
+  invite: {
+    all: ['invite'] as const,
+    link: (who: string) => ['invite', 'link', who] as const,
+    referrals: (who: string) => ['invite', 'referrals', who] as const,
+  },
+  /**
    * Mentor onboarding's read of /me (Mentor Onboarding PRD F1). Under `viewer`,
    * so whatever refreshes the viewer (a new photo) refreshes the answers too.
    * Its own key: the status page caches a different shape of the same /me

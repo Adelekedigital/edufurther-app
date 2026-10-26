@@ -6,7 +6,10 @@ import { Badge } from '@/components/atoms/Badge/Badge';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
-import { ProgressCircle } from '@/components/atoms/ProgressCircle/ProgressCircle';
+import {
+  ProgressCircle,
+  type ProgressCircleTone,
+} from '@/components/atoms/ProgressCircle/ProgressCircle';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Star } from '@/components/atoms/Star/Star';
 import { useMentorStats, type StatBlock, type StatsQuery } from '@/lib/api/data/mentorStats';
@@ -34,10 +37,38 @@ function windowLabels(windowDays: number): {
   return { period, periodPhrase: `in the ${period}`, priorLabel: `the previous ${months} months` };
 }
 /**
- * A show-up rate at or above this reads "On track"; below it "At risk". A UI
- * decision — the backend defines no quality cutoff (see design-divergence.md).
+ * Show-up rate cutoffs (Mentor Home PRD, design TIER): at or above ON_TRACK_MIN
+ * reads "On track", at or above NEEDS_ATTENTION_MIN "Needs attention", below it
+ * "At risk". A UI decision: the backend defines no quality band.
  */
-const GOOD_THRESHOLD = 85;
+const ON_TRACK_MIN = 80;
+const NEEDS_ATTENTION_MIN = 50;
+
+type QualityTier = 'good' | 'fair' | 'low';
+
+/** Decided on the displayed (rounded) rate, so the tier never disagrees with the ring. */
+function tierOf(displayRate: number): QualityTier {
+  if (displayRate >= ON_TRACK_MIN) return 'good';
+  return displayRate >= NEEDS_ATTENTION_MIN ? 'fair' : 'low';
+}
+
+/** What each tier draws: the badge, the ring tone and the warning glyph. */
+const TIERS = {
+  good: { badge: 'On track', badgeColor: 'green', ring: 'success', icon: 'local_fire_department' },
+  fair: { badge: 'Needs attention', badgeColor: 'warning', ring: 'warning', icon: 'warning' },
+  low: { badge: 'At risk', badgeColor: 'red', ring: 'danger', icon: 'error' },
+} as const satisfies Record<
+  QualityTier,
+  {
+    badge: string;
+    badgeColor: 'green' | 'warning' | 'red';
+    ring: ProgressCircleTone;
+    icon: IconName;
+  }
+>;
+
+/** The tier's CSS-module suffix: Good / Fair / Low. */
+const TIER_CLASS = { good: 'Good', fair: 'Fair', low: 'Low' } as const;
 
 /**
  * The line under the show-up rate, keyed on the same `onTrack` signal as the
@@ -102,26 +133,21 @@ function streakLine(streak: number): string {
 }
 
 /**
- * The compact headline, keyed on the quality state. On track it leads with the
- * streak (the design's "N sessions in a row completed"), falling back to plain
- * reassurance when there is no streak; at risk it names the mentees left waiting.
+ * The compact headline, keyed on the tier. On track it leads with the streak
+ * (the design's "N sessions in a row completed"), falling back to plain
+ * reassurance when there is no streak; below that it names the mentees left waiting.
  */
 function teaserOf(
-  onTrack: boolean,
+  tier: QualityTier,
   streak: number,
   leftWaiting: number,
   displayRate: number,
   periodPhrase: string,
-): { text: string; icon: IconName; good: boolean } {
-  if (onTrack) {
-    const text = streak > 0 ? streakLine(streak) : 'You’re holding your sessions';
-    return { text, icon: 'local_fire_department', good: true };
-  }
-  const text =
-    leftWaiting > 0
-      ? `${leftWaiting} ${leftWaiting === 1 ? 'mentee was' : 'mentees were'} left waiting ${periodPhrase}`
-      : `Your show-up rate is ${displayRate}%`;
-  return { text, icon: 'error', good: false };
+): string {
+  if (tier === 'good') return streak > 0 ? streakLine(streak) : 'You’re holding your sessions';
+  return leftWaiting > 0
+    ? `${leftWaiting} ${leftWaiting === 1 ? 'mentee was' : 'mentees were'} left waiting ${periodPhrase}`
+    : `Your show-up rate is ${displayRate}%`;
 }
 
 type BreakdownRow = {
@@ -138,8 +164,11 @@ type BreakdownRow = {
  * (Mentor Dashboard v2.dc.html). The mentee's own no-shows are deliberately not
  * surfaced to the mentor.
  */
-function breakdownRows(current: StatBlock): BreakdownRow[] {
+function breakdownRows(current: StatBlock, tier: QualityTier): BreakdownRow[] {
   const missed = current.missedByMentor;
+  // A miss takes the tier's warning colour (amber when Needs attention); on
+  // track it stays red, since the design's good tier draws no miss colour.
+  const missedTone = styles[tier === 'fair' ? 'toneFair' : 'toneLow'];
   return [
     {
       key: 'completed',
@@ -158,10 +187,10 @@ function breakdownRows(current: StatBlock): BreakdownRow[] {
     {
       key: 'missed',
       icon: 'person_off',
-      iconClass: missed > 0 ? styles.iconMissed : styles.iconMuted,
+      iconClass: missed > 0 ? missedTone : styles.iconMuted,
       label: 'Missed by you',
       value: missed,
-      valueClass: missed > 0 ? styles.rowValueMissed : undefined,
+      valueClass: missed > 0 ? missedTone : undefined,
     },
   ];
 }
@@ -281,10 +310,10 @@ function ReviewSlot({ quoteData, showNote }: { quoteData: ReviewQuote | null; sh
 }
 
 /** The outcome rows — inline in the no-reviews view, and inside the expanded view. */
-function Breakdown({ current }: { current: StatBlock }) {
+function Breakdown({ current, tier }: { current: StatBlock; tier: QualityTier }) {
   return (
     <div className={styles.breakdown}>
-      {breakdownRows(current).map((row) => (
+      {breakdownRows(current, tier).map((row) => (
         <div key={row.key} className={styles.row}>
           <Icon name={row.icon} size={16} className={row.iconClass} />
           <span className={styles.rowLabel}>{row.label}</span>
@@ -295,16 +324,67 @@ function Breakdown({ current }: { current: StatBlock }) {
   );
 }
 
-/** The compact headline chip, tinted on the on-track / at-risk state. */
-function Teaser({ teaser }: { teaser: { text: string; icon: IconName; good: boolean } }) {
+/** The compact headline chip, tinted by tier (the design's teaserBg / teaserColor). */
+function Teaser({ text, tier }: { text: string; tier: QualityTier }) {
+  const t = TIER_CLASS[tier];
   return (
-    <div className={cx(styles.teaser, teaser.good ? styles.teaserGood : styles.teaserRisk)}>
-      <Icon
-        name={teaser.icon}
-        size={20}
-        className={teaser.good ? styles.teaserIconGood : styles.teaserIconRisk}
-      />
-      <span className={styles.teaserText}>{teaser.text}</span>
+    <div className={cx(styles.teaser, styles[`ground${t}`])}>
+      <Icon name={TIERS[tier].icon} size={20} className={cx(styles.tierIcon, styles[`tone${t}`])} />
+      <span className={styles.teaserText}>{text}</span>
+    </div>
+  );
+}
+
+/**
+ * The warning block under Needs attention and At risk (the design's `q.low`
+ * alert), tinted by tier. The left-waiting copy only holds when a mentee was
+ * actually waiting: mentees_left_waiting (backend #466) counts exactly that, so
+ * it can be lower than the ring's miss rate; with none, the block names the rate.
+ */
+function WarningBlock({
+  tier,
+  leftWaiting,
+  displayRate,
+}: {
+  tier: Exclude<QualityTier, 'good'>;
+  leftWaiting: number;
+  displayRate: number;
+}) {
+  const t = TIER_CLASS[tier];
+  return (
+    <div className={cx(styles.alert, styles[`ground${t}`], styles[`alertBorder${t}`])}>
+      <div className={styles.alertHead}>
+        <Icon name={TIERS[tier].icon} size={20} className={cx(styles.tierIcon, styles[`tone${t}`])} />
+        <div className={styles.alertBody}>
+          {leftWaiting > 0 ? (
+            <>
+              {/* The teaser carries the window qualifier; this sits under the
+                  ring's period subline, so it isn't repeated (design). */}
+              <p className={styles.bannerTitle}>
+                {leftWaiting} {leftWaiting === 1 ? 'mentee was' : 'mentees were'} left waiting
+              </p>
+              <p className={styles.bannerText}>
+                Keep only the hours you can reliably make, and block the days you’ll be away.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className={styles.bannerTitle}>Your show-up rate is {displayRate}%</p>
+              <p className={styles.bannerText}>
+                Hold your upcoming booked sessions to bring it back up.
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+      <div className={styles.alertActions}>
+        <ButtonLink href="/calendar" variant="secondary-outlined" size="medium">
+          Review your hours
+        </ButtonLink>
+        <ButtonLink href="/bookings?tab=history" variant="text" size="small">
+          See missed sessions
+        </ButtonLink>
+      </div>
     </div>
   );
 }
@@ -358,7 +438,8 @@ export function SessionQuality({
   useEffect(() => {
     const c = stats.data?.current;
     const expandable =
-      c?.attendanceRate != null && (c.attendanceRate < GOOD_THRESHOLD || c.averageRating != null);
+      c?.attendanceRate != null &&
+      (tierOf(Math.round(c.attendanceRate)) !== 'good' || c.averageRating != null);
     if (prevExpandable.current && !expandable && document.activeElement === document.body) {
       headingRef.current?.focus();
     }
@@ -374,8 +455,8 @@ export function SessionQuality({
 
   const rate = current.attendanceRate;
   // The ring, badge, and headline all show the same rounded integer, so the
-  // on-track decision is made on that integer too. Otherwise a rate like 84.6
-  // rounds to a displayed "85%" while the raw value (< 85) still badges "At risk".
+  // tier is decided on that integer too. Otherwise a rate like 79.6 rounds to a
+  // displayed "80%" while the raw value (< 80) still badges "Needs attention".
   const displayRate = Math.round(rate);
   // "Missed by you" (the breakdown row) is every mentor no-show; the "left
   // waiting" headline is only the ones where a mentee was actually present
@@ -385,7 +466,8 @@ export function SessionQuality({
   const leftWaiting = Math.min(current.menteesLeftWaiting, current.missedByMentor);
   const rating = current.averageRating;
   const reviewCount = current.reviewCount;
-  const onTrack = displayRate >= GOOD_THRESHOLD;
+  const tier = tierOf(displayRate);
+  const onTrack = tier === 'good';
   // Labels for the window the figures are actually for — the data's own window,
   // not the requested query — so a mid-switch placeholder can't mislabel them. A
   // calendar year reads "in YYYY"; a trailing window reads "last N months".
@@ -403,12 +485,12 @@ export function SessionQuality({
   // settled, so it never flashes before the quote arrives.
   const showNote = rating == null && quote.data == null && !quote.isLoading;
   // The compact no-reviews layout (breakdown inline, no disclosure) is only for an
-  // on-track mentor with no window rating. At risk always keeps the "what's pulling
-  // this down" disclosure and its guidance banner; a window rating gets the full
-  // breakdown disclosure.
+  // on-track mentor with no window rating. Below On track always keeps the "what's
+  // pulling this down" disclosure and its warning block; a window rating gets the
+  // full breakdown disclosure.
   const canExpand = !onTrack || rating != null;
   const isOpen = expanded && canExpand;
-  const teaser = teaserOf(onTrack, currentStreak, leftWaiting, displayRate, periodPhrase);
+  const teaser = teaserOf(tier, currentStreak, leftWaiting, displayRate, periodPhrase);
 
   const toggleLabel = isOpen
     ? 'Show less'
@@ -435,7 +517,10 @@ export function SessionQuality({
     .join(' ');
 
   return (
-    <section className={cx(styles.card, !onTrack && styles.cardRisk)} aria-labelledby={headingId}>
+    <section
+      className={cx(styles.card, !onTrack && styles[`card${TIER_CLASS[tier]}`])}
+      aria-labelledby={headingId}
+    >
       <header className={styles.header}>
         <div className={styles.headingGroup}>
           <h2 id={headingId} ref={headingRef} tabIndex={-1} className={styles.title}>
@@ -445,8 +530,8 @@ export function SessionQuality({
             How you show up for booked sessions · {period}
           </span>
         </div>
-        <Badge type="accent" color={onTrack ? 'green' : 'red'} size="sm">
-          {onTrack ? 'On track' : 'At risk'}
+        <Badge type="accent" color={TIERS[tier].badgeColor} size="sm">
+          {TIERS[tier].badge}
         </Badge>
       </header>
 
@@ -454,7 +539,7 @@ export function SessionQuality({
         <ProgressCircle
           value={rate}
           size="lg"
-          tone={onTrack ? 'success' : 'danger'}
+          tone={TIERS[tier].ring}
           aria-label="Show-up rate"
         />
         <div className={styles.showUpText}>
@@ -468,7 +553,7 @@ export function SessionQuality({
       <div id={panelId}>
         {isOpen ? (
           <div className={styles.expanded}>
-            <Breakdown current={current} />
+            <Breakdown current={current} tier={tier} />
 
             <div className={styles.reviewsSection}>
               <div className={styles.reviewsHead}>
@@ -485,7 +570,7 @@ export function SessionQuality({
               <ReviewSlot quoteData={quote.data} showNote={showNote} />
             </div>
 
-            {onTrack ? (
+            {tier === 'good' ? (
               <div className={styles.bannerGood}>
                 <Icon name="local_fire_department" size={20} className={styles.bannerIconGood} />
                 <div className={styles.bannerBody}>
@@ -496,49 +581,7 @@ export function SessionQuality({
                 </div>
               </div>
             ) : (
-              <div className={styles.bannerRisk}>
-                <Icon name="error" size={20} className={styles.bannerIconRisk} />
-                <div className={styles.bannerBody}>
-                  {/*
-                    The left-waiting copy only holds when a mentee was actually
-                    waiting. mentees_left_waiting (backend #466) counts exactly
-                    that — a mentor no-show with the mentee present — so it can be
-                    lower than the ring's miss rate; guard the copy on it rather
-                    than assert a count we can't stand behind.
-                  */}
-                  {leftWaiting > 0 ? (
-                    <>
-                      {/* The compact teaser carries the "in 90 days" qualifier;
-                          the banner sits under the ring's "last 90 days" subline,
-                          so it isn't repeated here (design). */}
-                      <p className={styles.bannerTitle}>
-                        {leftWaiting} {leftWaiting === 1 ? 'mentee was' : 'mentees were'} left waiting
-                      </p>
-                      <p className={styles.bannerText}>
-                        Most missed sessions happen on hours you can’t really keep. Trim those hours,
-                        or block the days you’ll be away.
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      {/* No mentee was left waiting, but the rate itself is the
-                          risk — name it, rather than a vague "slipping". */}
-                      <p className={styles.bannerTitle}>Your show-up rate is {displayRate}%</p>
-                      <p className={styles.bannerText}>
-                        Hold your upcoming booked sessions to bring it back up.
-                      </p>
-                    </>
-                  )}
-                  <div className={styles.bannerActions}>
-                    <ButtonLink href="/calendar" variant="secondary-outlined" size="small">
-                      Review your hours
-                    </ButtonLink>
-                    <ButtonLink href="/bookings" variant="text" size="small">
-                      See missed sessions
-                    </ButtonLink>
-                  </div>
-                </div>
-              </div>
+              <WarningBlock tier={tier} leftWaiting={leftWaiting} displayRate={displayRate} />
             )}
           </div>
         ) : (
@@ -546,8 +589,8 @@ export function SessionQuality({
           // (the design's no-reviews layout, no disclosure); otherwise the rating
           // line previews the review above the disclosure.
           <div className={styles.compact}>
-            <Teaser teaser={teaser} />
-            {!canExpand && <Breakdown current={current} />}
+            <Teaser text={teaser} tier={tier} />
+            {!canExpand && <Breakdown current={current} tier={tier} />}
             {rating != null && (
               <div className={styles.ratingLine}>
                 <span className={styles.ratingLineStar}>
@@ -565,7 +608,8 @@ export function SessionQuality({
       {canExpand && (
         <Button
           variant={toggleVariant}
-          size="small"
+          // The design draws the disclosure at 40px (its `btn` style), Show less as a link.
+          size={isOpen ? 'small' : 'medium'}
           fullWidth={!isOpen}
           icon={isOpen ? 'expand_less' : 'expand_more'}
           iconPosition="trailing"

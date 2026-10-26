@@ -102,6 +102,8 @@
   font-size: var(--text-p-sm);
   line-height: var(--lh-p);
   color: var(--text-tertiary);
+  /* Modal.dc.html: no short last line under the title. */
+  text-wrap: pretty;
 }
 
 @keyframes fade {

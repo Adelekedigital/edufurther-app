@@ -31,6 +31,13 @@
   background: var(--orange-50);
   color: var(--orange-800);
 }
+/* Mentor Dashboard v2.dc.html TIER.fair badgeProps: amber ground and text
+   with a 1px inset amber ring. */
+.warning-accent {
+  background: var(--attention-bg);
+  color: var(--attention-ink);
+  box-shadow: inset 0 0 0 var(--border-hairline) var(--attention-border);
+}
 .green-filled {
   background: var(--green-600);
   color: var(--white);

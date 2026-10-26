@@ -11,8 +11,27 @@ describe('Badge', () => {
     expect(screen.getByText('Featured').className).toMatch(/orange-accent/);
     expect(screen.getByText('Featured').className).toMatch(/\bsm\b|_sm/);
   });
+  it('draws the amber accent for warning', () => {
+    render(
+      <Badge type="accent" color="warning" size="sm">
+        Needs attention
+      </Badge>,
+    );
+    expect(screen.getByText('Needs attention').className).toMatch(/warning-accent/);
+  });
   it('defaults to the filled primary badge', () => {
     render(<Badge>New</Badge>);
     expect(screen.getByText('New').className).toMatch(/primary-filled/);
+  });
+  it('a leading icon is decorative: the badge reads as its label only', () => {
+    const { container } = render(
+      <Badge type="accent" color="green" icon="check_circle">
+        You get 3 free sessions a month
+      </Badge>,
+    );
+    const badge = container.firstElementChild as HTMLElement;
+    expect(badge.firstElementChild).toHaveAttribute('aria-hidden', 'true');
+    expect(badge.firstElementChild).toHaveTextContent('check_circle');
+    expect(screen.getByText('You get 3 free sessions a month')).toBe(badge);
   });
 });

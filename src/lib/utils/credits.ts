@@ -198,12 +198,12 @@ export function summarySub(v: CreditsView): string | null {
 /**
  * "How credits work" in the explainer (design howList, owner 2026-10-18).
  * Matches the backend's ladder: a never-expiring starter on finishing the
- * profile, +2 then 3 a month once an invitee finishes theirs, monthly credits
- * dying at the 1st (UTC).
+ * profile, +2 once an invitee finishes theirs, 3 a month once the viewer has
+ * also attended a first session, monthly credits dying at the 1st (UTC).
  */
 export const HOW_CREDITS_WORK = [
   'Start with 1 free credit when you finish your profile. It never expires.',
-  'Invite a friend: when they finish their profile, you get 2 more, then 3 every month.',
+  'Invite a friend: when they finish their profile, you get 2 more. Once you’ve also attended your first session, you get 3 every month.',
   'Monthly credits reset on the 1st. No rollover.',
 ] as const;
 
