@@ -28,11 +28,19 @@ export type InviteModalProps = {
   /** The link couldn't be read: the box becomes a notice with `onRetry`. */
   urlError: boolean;
   onRetry: () => void;
+  /**
+   * False while the owner has revoked the link (`InviteLink.active`): the code
+   * then answers as unknown, so it is never offered to copy or share.
+   */
+  linkActive?: boolean;
   /** A friend joined through the link and finished their profile. */
   friendJoined: boolean;
   /** The viewer attended their first session. */
   attended: boolean;
-  /** The monthly grant is open: the badge instead of the steps. */
+  /**
+   * The monthly grant is open: the badge instead of the steps. Its own prop,
+   * from the credits grant, rather than both steps done (design-divergence.md).
+   */
   unlocked: boolean;
   /** The link was copied or shared. */
   onShared?: () => void;
@@ -52,6 +60,7 @@ export function InviteModal({
   urlLoading,
   urlError,
   onRetry,
+  linkActive = true,
   friendJoined,
   attended,
   unlocked,
@@ -63,7 +72,8 @@ export function InviteModal({
   const n = useRef(0);
   const say = (text: string) => setSaid({ text, id: ++n.current });
 
-  const ready = url !== null && !urlLoading && !urlError;
+  const linkOff = url !== null && !urlLoading && !urlError && !linkActive;
+  const ready = url !== null && !urlLoading && !urlError && linkActive;
 
   const copyLink = async () => {
     if (!url) return;
@@ -74,13 +84,18 @@ export function InviteModal({
 
   const share = async () => {
     if (!url) return;
-    if (typeof navigator.share !== 'function') return copyLink();
+    const payload = { ...INVITE_SHARE, url };
+    // Checked first, so the fallback copy still runs inside the click: after a
+    // refused share the gesture is spent and Safari would refuse the copy too.
+    if (typeof navigator.share !== 'function' || navigator.canShare?.(payload) === false) {
+      return copyLink();
+    }
     try {
-      await navigator.share({ ...INVITE_SHARE, url });
+      await navigator.share(payload);
       onShared?.();
     } catch (e) {
-      // Dismissing the share sheet is not a failure. Anything else (a browser
-      // that refuses this payload) falls back to copying, as no share at all does.
+      // Dismissing the share sheet is not a failure. Anything else falls back
+      // to copying, as no share at all does.
       if ((e as { name?: string } | null)?.name !== 'AbortError') await copyLink();
     }
   };
@@ -134,8 +149,13 @@ export function InviteModal({
               Try again
             </Button>
           </Notice>
+        ) : linkOff ? (
+          <Notice tone="neutral" icon="link_off" title="Your invite link is turned off.">
+            Nobody can join through it for now.
+          </Notice>
         ) : !ready ? (
-          <div aria-busy="true" aria-label="Loading your invite link" role="status">
+          <div aria-busy={urlLoading || undefined}>
+            {urlLoading && <span className="sr-only">Loading your invite link</span>}
             <Skeleton height="48px" radius="md" />
           </div>
         ) : (

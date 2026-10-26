@@ -9,6 +9,10 @@ const clip = (writeText: (t: string) => Promise<void>) =>
   Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
 const setShare = (share: ((d: ShareData) => Promise<void>) | undefined) =>
   Object.defineProperty(navigator, 'share', { value: share, configurable: true });
+const setCanShare = (canShare: ((d: ShareData) => boolean) | undefined) =>
+  Object.defineProperty(navigator, 'canShare', { value: canShare, configurable: true });
+/** Lets a rejected share's catch (and the copy after it) run. */
+const flush = () => act(async () => {});
 
 function renderModal(over: Partial<ComponentProps<typeof InviteModal>> = {}) {
   const props = {
@@ -27,7 +31,11 @@ function renderModal(over: Partial<ComponentProps<typeof InviteModal>> = {}) {
   return props;
 }
 
-afterEach(() => setShare(undefined));
+afterEach(() => {
+  setShare(undefined);
+  setCanShare(undefined);
+  vi.useRealTimers();
+});
 
 describe('InviteModal', () => {
   it('is a dialog named by its title and described by its subtitle', () => {
@@ -78,7 +86,8 @@ describe('InviteModal', () => {
   });
 
   it('copies the link, says so politely, then reads "Copy invite link" again after 2s', async () => {
-    const user = userEvent.setup();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const write = vi.fn().mockResolvedValue(undefined);
     clip(write);
     const p = renderModal();
@@ -87,7 +96,13 @@ describe('InviteModal', () => {
     expect(await screen.findByRole('button', { name: 'Link copied' })).toBeInTheDocument();
     expect(screen.getAllByRole('status').some((s) => s.textContent === 'Link copied')).toBe(true);
     expect(p.onShared).toHaveBeenCalledTimes(1);
-    await act(() => new Promise((r) => setTimeout(r, 2100)));
+    await act(async () => {
+      vi.advanceTimersByTime(1900);
+    });
+    expect(screen.getByRole('button', { name: 'Link copied' })).toBeInTheDocument();
+    await act(async () => {
+      vi.advanceTimersByTime(200);
+    });
     expect(screen.getByRole('button', { name: 'Copy invite link' })).toBeInTheDocument();
   });
 
@@ -118,8 +133,34 @@ describe('InviteModal', () => {
     setShare(() => Promise.reject(Object.assign(new Error('x'), { name: 'AbortError' })));
     const p = renderModal();
     await user.click(screen.getByRole('button', { name: 'Share' }));
+    await flush();
     expect(write).not.toHaveBeenCalled();
     expect(p.onShared).not.toHaveBeenCalled();
+  });
+
+  it('a share the browser refuses falls back to copying', async () => {
+    const user = userEvent.setup();
+    const write = vi.fn().mockResolvedValue(undefined);
+    clip(write);
+    setShare(() => Promise.reject(Object.assign(new Error('x'), { name: 'NotAllowedError' })));
+    const p = renderModal();
+    await user.click(screen.getByRole('button', { name: 'Share' }));
+    await flush();
+    expect(write).toHaveBeenCalledWith(URL);
+    expect(p.onShared).toHaveBeenCalledTimes(1);
+  });
+
+  it('a payload the browser can’t share is copied straight away, without the sheet', async () => {
+    const user = userEvent.setup();
+    const write = vi.fn().mockResolvedValue(undefined);
+    const share = vi.fn().mockResolvedValue(undefined);
+    clip(write);
+    setShare(share);
+    setCanShare(() => false);
+    renderModal();
+    await user.click(screen.getByRole('button', { name: 'Share' }));
+    expect(share).not.toHaveBeenCalled();
+    expect(write).toHaveBeenCalledWith(URL);
   });
 
   it('without a share sheet, Share copies the link instead', async () => {
@@ -138,7 +179,26 @@ describe('InviteModal', () => {
     const write = vi.fn().mockResolvedValue(undefined);
     clip(write);
     renderModal({ url: null, urlLoading: true });
-    expect(screen.getByLabelText('Loading your invite link')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByText('Loading your invite link').parentElement).toHaveAttribute(
+      'aria-busy',
+      'true',
+    );
+    const copy = screen.getByRole('button', { name: 'Copy invite link' });
+    const share = screen.getByRole('button', { name: 'Share' });
+    expect(copy).toHaveAttribute('aria-disabled', 'true');
+    expect(share).toHaveAttribute('aria-disabled', 'true');
+    await user.click(copy);
+    await user.click(share);
+    expect(write).not.toHaveBeenCalled();
+  });
+
+  it('a turned-off link is never shown or offered', async () => {
+    const user = userEvent.setup();
+    const write = vi.fn().mockResolvedValue(undefined);
+    clip(write);
+    renderModal({ linkActive: false });
+    expect(screen.getByText('Your invite link is turned off.')).toBeInTheDocument();
+    expect(screen.queryByText('app.test/invite/damilola-7k2x')).toBeNull();
     const copy = screen.getByRole('button', { name: 'Copy invite link' });
     expect(copy).toHaveAttribute('aria-disabled', 'true');
     await user.click(copy);

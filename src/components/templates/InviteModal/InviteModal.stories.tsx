@@ -40,5 +40,8 @@ export const LinkLoading: Story = { args: { url: null, urlLoading: true } };
 /** The link couldn't be read (ours: the design draws no failure). */
 export const LinkError: Story = { args: { url: null, urlError: true } };
 
+/** The owner revoked the link (ours: the design draws no such state). */
+export const LinkOff: Story = { args: { linkActive: false } };
+
 /** Under 768px: a bottom sheet (Modal.dc.html `mobile="sheet"`). */
 export const Phone: Story = { globals: { viewport: { value: 'mobile2', isRotated: false } } };

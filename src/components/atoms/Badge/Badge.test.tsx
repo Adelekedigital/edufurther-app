@@ -15,4 +15,15 @@ describe('Badge', () => {
     render(<Badge>New</Badge>);
     expect(screen.getByText('New').className).toMatch(/primary-filled/);
   });
+  it('a leading icon is decorative: the badge reads as its label only', () => {
+    const { container } = render(
+      <Badge type="accent" color="green" icon="check_circle">
+        You get 3 free sessions a month
+      </Badge>,
+    );
+    const badge = container.firstElementChild as HTMLElement;
+    expect(badge.firstElementChild).toHaveAttribute('aria-hidden', 'true');
+    expect(badge.firstElementChild).toHaveTextContent('check_circle');
+    expect(screen.getByText('You get 3 free sessions a month')).toBe(badge);
+  });
 });

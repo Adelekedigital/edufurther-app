@@ -193,7 +193,9 @@ export const keys = {
   },
   /**
    * The viewer's personal invite link (POST /me/invite-link) and the invites
-   * sent so far (GET /me/referrals). `who` = the session identity.
+   * sent so far (GET /me/referrals). `who` = the session identity. The link
+   * is never refetched by itself: a future PUT (handle) or PATCH (revoke) must
+   * set or invalidate `link`.
    */
   invite: {
     all: ['invite'] as const,

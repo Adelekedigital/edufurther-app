@@ -39,16 +39,21 @@ export function toInviteLink(
 /**
  * The viewer's personal invite link. A POST, but safe to repeat: the first call
  * creates the link (201), every later one returns it (200), and two first calls
- * at once agree on one code. So it is cached as a read.
+ * at once agree on one code. So it is cached as a read, asked once per session:
+ * no refetch on focus or reconnect, since each one is a write. `userId`: the
+ * signed-in viewer (null for a guest, who has no link).
  */
-export function useInviteLink(active = true): Remote<InviteLink> {
+export function useInviteLink(userId: string | null, active = true): Remote<InviteLink> {
   const session = useSession();
-  const enabled = active && session.status !== 'unknown';
+  const enabled = active && !!userId && session.status !== 'unknown';
   const query = useQuery({
     queryKey: keys.invite.link(sessionKey(session)),
     enabled,
-    // The code changes only when the owner picks a handle, which nothing here does.
-    staleTime: 5 * 60_000,
+    // Only a handle change (PUT) or a revoke (PATCH) changes it; whatever adds
+    // those must update this key (keys.invite).
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     networkMode: 'always',
     retry: retryOnce,
     queryFn: async ({ signal }): Promise<InviteLink> => {
@@ -86,9 +91,12 @@ export function toReferral(r: components['schemas']['ReferralRead']): Referral {
  * finished their profile, the first step to the monthly grant. False while the
  * list loads or fails, so a step is never shown done that isn't.
  */
-export function useReferrals(active = true): Remote<Referral[]> & { friendJoined: boolean } {
+export function useReferrals(
+  userId: string | null,
+  active = true,
+): Remote<Referral[]> & { friendJoined: boolean } {
   const session = useSession();
-  const enabled = active && session.status !== 'unknown';
+  const enabled = active && !!userId && session.status !== 'unknown';
   const query = useQuery({
     queryKey: keys.invite.referrals(sessionKey(session)),
     enabled,

@@ -62,7 +62,7 @@ describe('toInviteLink', () => {
 describe('useInviteLink', () => {
   it('creates or reads the link once and builds the URL on this origin', async () => {
     post.mockResolvedValue(resp(201, { code: 'damilola-7k2x', active: true }));
-    const { result } = renderHook(() => useInviteLink(), { wrapper });
+    const { result } = renderHook(() => useInviteLink('me'), { wrapper });
     expect(result.current.isLoading).toBe(true);
     await waitFor(() => expect(result.current.data).not.toBeNull());
     expect(post).toHaveBeenCalledWith('/api/v1/me/invite-link', expect.anything());
@@ -72,7 +72,7 @@ describe('useInviteLink', () => {
 
   it('a failure is an error with a retry, not a link', async () => {
     post.mockResolvedValueOnce(resp(500, null));
-    const { result } = renderHook(() => useInviteLink(), { wrapper });
+    const { result } = renderHook(() => useInviteLink('me'), { wrapper });
     await waitFor(() => expect(result.current.error).not.toBeNull());
     expect(result.current.data).toBeNull();
     post.mockResolvedValueOnce(resp(200, { code: 'damilola-7k2x', active: true }));
@@ -80,8 +80,23 @@ describe('useInviteLink', () => {
     await waitFor(() => expect(result.current.data?.code).toBe('damilola-7k2x'));
   });
 
+  it('asks nothing for a guest', () => {
+    const { result } = renderHook(() => useInviteLink(null), { wrapper });
+    expect(post).not.toHaveBeenCalled();
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('asks once: no second POST on window focus', async () => {
+    post.mockResolvedValue(resp(200, { code: 'damilola-7k2x', active: true }));
+    const { result } = renderHook(() => useInviteLink('me'), { wrapper });
+    await waitFor(() => expect(result.current.data).not.toBeNull());
+    window.dispatchEvent(new Event('visibilitychange'));
+    window.dispatchEvent(new Event('focus'));
+    expect(post).toHaveBeenCalledTimes(1);
+  });
+
   it('asks nothing while inactive', () => {
-    const { result } = renderHook(() => useInviteLink(false), { wrapper });
+    const { result } = renderHook(() => useInviteLink('me', false), { wrapper });
     expect(post).not.toHaveBeenCalled();
     expect(result.current.isLoading).toBe(false);
   });
@@ -95,7 +110,7 @@ describe('useReferrals', () => {
         referral({ id: 'r2', qualified_at: '2026-10-22T10:00:00Z' }),
       ]),
     );
-    const { result } = renderHook(() => useReferrals(), { wrapper });
+    const { result } = renderHook(() => useReferrals('me'), { wrapper });
     await waitFor(() => expect(result.current.data).toHaveLength(2));
     expect(get).toHaveBeenCalledWith('/api/v1/me/referrals', expect.anything());
     expect(result.current.friendJoined).toBe(true);
@@ -103,14 +118,19 @@ describe('useReferrals', () => {
 
   it('signed up but not finished is not joined', async () => {
     get.mockResolvedValue(resp(200, [referral({ signed_up_at: '2026-10-21T10:00:00Z' })]));
-    const { result } = renderHook(() => useReferrals(), { wrapper });
+    const { result } = renderHook(() => useReferrals('me'), { wrapper });
     await waitFor(() => expect(result.current.data).toHaveLength(1));
     expect(result.current.friendJoined).toBe(false);
   });
 
+  it('asks nothing for a guest', () => {
+    renderHook(() => useReferrals(null), { wrapper });
+    expect(get).not.toHaveBeenCalled();
+  });
+
   it('a failed read is an error, and never a joined friend', async () => {
     get.mockResolvedValue(resp(500, null));
-    const { result } = renderHook(() => useReferrals(), { wrapper });
+    const { result } = renderHook(() => useReferrals('me'), { wrapper });
     await waitFor(() => expect(result.current.error).not.toBeNull());
     expect(result.current.friendJoined).toBe(false);
   });
