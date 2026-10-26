@@ -111,7 +111,7 @@ export function ModalShell({
           {/* Decorative: the sheet is dismissed by the leading button, not by dragging. */}
           {contained && <span className={styles.grabber} aria-hidden />}
           {/* div, not <header>/<footer>: inside a dialog those read as duplicate page landmarks (axe). */}
-          <div className={styles.sheetHeader}>
+          <div className={cx(styles.sheetHeader, sheet.caption && styles.hasCaption)}>
             <IconButton
               size="lg"
               icon={sheet.leading.icon}
@@ -157,7 +157,12 @@ export function ModalShell({
           [subtitle ? subId : null, describedBy].filter(Boolean).join(' ') || undefined
         }
         tabIndex={-1}
-        className={cx(styles.dialog, styles[size], phoneSheet && styles.phoneSheet)}
+        className={cx(
+          styles.dialog,
+          styles[size],
+          phoneSheet && styles.phoneSheet,
+          icon && styles.iconRow,
+        )}
       >
         {phoneSheet && <span className={cx(styles.grabber, styles.phoneGrabber)} aria-hidden />}
         <IconButton
