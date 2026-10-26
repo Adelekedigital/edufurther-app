@@ -51,6 +51,32 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
 });
 
 describe('MenteeNextSession', () => {
+  it('reads in the order it is drawn: beside the info on desktop, after the prep list on phones', () => {
+    const order = () => {
+      const action = screen.getByRole('link', { name: 'View details' });
+      const prep = screen.getByRole('button', { name: /Before your session/ });
+      return prep.compareDocumentPosition(action) & Node.DOCUMENT_POSITION_FOLLOWING
+        ? 'after prep'
+        : 'before prep';
+    };
+    const { unmount } = render(
+      <MenteeNextSession booking={booking()} timeZone="Africa/Lagos" now={NOW} />,
+    );
+    expect(order()).toBe('before prep');
+    unmount();
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({
+      ...real(q),
+      matches: q.includes('max-width: 767px'),
+    })) as typeof window.matchMedia;
+    try {
+      render(<MenteeNextSession booking={booking()} timeZone="Africa/Lagos" now={NOW} />);
+      expect(order()).toBe('after prep');
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+
   it('a far-off session offers View details, not Join', () => {
     render(<MenteeNextSession booking={booking()} timeZone="Africa/Lagos" now={NOW} />);
     const details = screen.getByRole('link', { name: 'View details' });

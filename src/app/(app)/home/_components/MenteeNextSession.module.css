@@ -72,32 +72,16 @@
   gap: var(--space-4);
   padding: var(--space-5);
 }
-/* Desktop (design nextActions=beside): the action beside the info, the prep
-   list across the card below. The DOM is info, prep, action (reading order);
-   dense packing back-fills the action into the info's row. */
-@media (min-width: 768px) {
-  .body {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-auto-flow: row dense;
-  }
-  .soon,
-  .prep {
-    grid-column: 1 / -1;
-  }
-  .when {
-    grid-column: 1;
-  }
-  .actions {
-    grid-column: 2;
-    align-self: center;
-  }
+/* Info + action side by side on desktop (design nextActions=beside). */
+.main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
 }
 
 /* "Starts in 8 min" — only when the session is near or live. */
 .soon {
   align-self: flex-start;
-  justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -271,11 +255,8 @@
   gap: var(--space-3);
 }
 
-/* Phone (design nextActsBelow): the action at the bottom of the card, under
-   the prep list (its DOM place), full width. */
-@media (max-width: 767px) {
-  .actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
+/* Phone (design nextActsBelow): the action under the prep list, full width. */
+.actionsBelow {
+  flex-direction: column;
+  align-items: stretch;
 }

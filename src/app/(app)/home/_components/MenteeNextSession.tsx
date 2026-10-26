@@ -4,6 +4,7 @@ import { useId, useState } from 'react';
 import { ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { cx } from '@/lib/utils/cx';
+import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { joinState, nextSessionWhen, timeRange } from '@/lib/utils/bookings';
 import type { Booking } from '@/types/booking';
 import { MenteeTipsModal } from './MenteeTipsModal';
@@ -87,11 +88,32 @@ export function MenteeNextSession({
   const [prepOpen, setPrepOpen] = useState(false);
   const [done, setDone] = useState<boolean[]>(() => PREP.map(() => false));
   const [tipsOpen, setTipsOpen] = useState(false);
+  const phone = useMediaQuery('(max-width: 767px)');
 
   const { month, day } = monthDay(b.startsAt, timeZone);
   const when = nextSessionWhen(b, now, timeZone);
   const soon = startsSoon(b, now, timeZone);
   const doneCount = done.filter(Boolean).length;
+
+  const action = soon ? (
+    <ButtonLink
+      href={`/sessions/${encodeURIComponent(b.id)}`}
+      prefetch={false}
+      variant="primary"
+      size="medium"
+    >
+      Join session
+    </ButtonLink>
+  ) : (
+    <ButtonLink
+      href={`/bookings?booking=${encodeURIComponent(b.id)}`}
+      prefetch={false}
+      variant="secondary-outlined"
+      size="medium"
+    >
+      View details
+    </ButtonLink>
+  );
 
   return (
     <section aria-label="Next session" className={styles.card}>
@@ -122,24 +144,27 @@ export function MenteeNextSession({
           </span>
         )}
 
-        {/* DOM order is reading order: info, prep, then the action. On desktop
-            the action sits beside the info (design nextActions=beside) by grid
-            placement; on phones it follows the prep list (nextActsBelow). */}
-        <div className={styles.when}>
-          <span aria-hidden="true" className={styles.date}>
-            <span className={styles.dateMonth}>{month}</span>
-            <span className={styles.dateDay}>{day}</span>
-          </span>
-          <div className={styles.detail}>
-            <span className="sr-only">{fullDate(b.startsAt, timeZone)}</span>
-            <span className={styles.sessionTitle}>{b.title ?? 'Session'}</span>
-            <span className={styles.with}>
-              with <strong className={styles.name}>{b.other.name}</strong>
+        {/* The action is placed once, where the layout draws it: beside the info
+            on desktop (design nextActions=beside), under the prep list on phones
+            (nextActsBelow). So focus and reading order follow what's shown. */}
+        <div className={styles.main}>
+          <div className={styles.when}>
+            <span aria-hidden="true" className={styles.date}>
+              <span className={styles.dateMonth}>{month}</span>
+              <span className={styles.dateDay}>{day}</span>
             </span>
-            <span className={styles.time}>
-              {weekday(b.startsAt, timeZone)}, {timeRange(b, timeZone)}
-            </span>
+            <div className={styles.detail}>
+              <span className="sr-only">{fullDate(b.startsAt, timeZone)}</span>
+              <span className={styles.sessionTitle}>{b.title ?? 'Session'}</span>
+              <span className={styles.with}>
+                with <strong className={styles.name}>{b.other.name}</strong>
+              </span>
+              <span className={styles.time}>
+                {weekday(b.startsAt, timeZone)}, {timeRange(b, timeZone)}
+              </span>
+            </div>
           </div>
+          {!phone && <div className={styles.actions}>{action}</div>}
         </div>
 
         <div className={styles.prep}>
@@ -182,28 +207,7 @@ export function MenteeNextSession({
             </ul>
           )}
         </div>
-
-        <div className={styles.actions}>
-          {soon ? (
-            <ButtonLink
-              href={`/sessions/${encodeURIComponent(b.id)}`}
-              prefetch={false}
-              variant="primary"
-              size="medium"
-            >
-              Join session
-            </ButtonLink>
-          ) : (
-            <ButtonLink
-              href={`/bookings?booking=${encodeURIComponent(b.id)}`}
-              prefetch={false}
-              variant="secondary-outlined"
-              size="medium"
-            >
-              View details
-            </ButtonLink>
-          )}
-        </div>
+        {phone && <div className={cx(styles.actions, styles.actionsBelow)}>{action}</div>}
       </div>
       {tipsOpen && <MenteeTipsModal onClose={() => setTipsOpen(false)} />}
     </section>
