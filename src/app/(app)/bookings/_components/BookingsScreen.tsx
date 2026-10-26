@@ -544,7 +544,8 @@ export function BookingsScreen() {
             {showPanel && (
               <BookingDetailsPanel
                 asSheet={asSheet}
-                booking={open ?? null}
+                // The row's view of it, so the panel's pill agrees with the row's.
+                booking={open ? reminders.withReminder(open) : null}
                 onCallOff={(action) => open && setConfirming({ action, booking: open })}
                 // Pressing Details on a request awaiting an answer used to open
                 // a panel saying "Respond within 2 days" with nothing to

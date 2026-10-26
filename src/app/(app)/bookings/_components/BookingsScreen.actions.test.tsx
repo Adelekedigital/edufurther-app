@@ -206,6 +206,17 @@ describe('the actions appear only where they can succeed', () => {
       expect(screen.getByRole('button', { name: 'Reminder sent' })).toBeDisabled();
     });
 
+    it('the open details panel says Reminder sent with the row, not after the refetch', async () => {
+      h.pending = remote([pendingRow({ side: 'mentee', respondBy: at(5) })]);
+      h.tab = 'pending';
+      h.selectedBooking = 'p1';
+      render(<BookingsScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Send a reminder' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Send reminder' }));
+      const panel = document.getElementById('booking-details')!;
+      expect(within(panel).getByText(/^Reminder sent · Amara has/)).toBeVisible();
+    });
+
     it('"already sent" (a lost response, or another tab) reads as sent, not refused', async () => {
       reminders.refuse = 'alreadySent';
       h.pending = remote([pendingRow({ side: 'mentee', respondBy: at(5) })]);
