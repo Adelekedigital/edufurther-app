@@ -278,13 +278,20 @@ describe('deriveKpiTrends', () => {
 });
 
 describe('mentorStage (PRD Mentor Home, "Which view a mentor sees")', () => {
-  const ready = { completedSessions: 0, listed: true, setupNeeded: [], hasUpcoming: false };
+  const ready = {
+    completedSessions: 0,
+    approved: true,
+    listed: true,
+    setupNeeded: [],
+    hasUpcoming: false,
+  };
 
   it('active once 1 session is complete, whatever else holds', () => {
     expect(mentorStage({ ...ready, completedSessions: 1 })).toBe('active');
     expect(
       mentorStage({
         completedSessions: 3,
+        approved: true,
         listed: false,
         setupNeeded: ['weekly_hours'],
         hasUpcoming: null,
@@ -298,6 +305,11 @@ describe('mentorStage (PRD Mentor Home, "Which view a mentor sees")', () => {
     expect(mentorStage({ ...ready, setupNeeded: ['weekly_hours'], hasUpcoming: true })).toBe(
       'notReady',
     );
+  });
+
+  it('notReady while the application is in review, even listed and set up (review of PR 1)', () => {
+    expect(mentorStage({ ...ready, approved: false })).toBe('notReady');
+    expect(mentorStage({ ...ready, approved: false, hasUpcoming: true })).toBe('notReady');
   });
 
   it('firstBooked with a confirmed session coming up', () => {

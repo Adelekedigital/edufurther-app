@@ -4,7 +4,7 @@ import { useQueries } from '@tanstack/react-query';
 import { addDays, dayKey } from '@/lib/utils/slots';
 import type { Remote } from '@/types/mentor';
 import { fetchSlotStarts } from './booking';
-import { normaliseError } from './errors';
+import { normaliseError, retryOnce } from './errors';
 import { keys } from './keys';
 import { useOwnSessionTypes } from './sessionTypes';
 
@@ -38,6 +38,9 @@ export function useOpenTimesCount(mentorId: string, timeZone: string): Remote<nu
       queryFn: ({ signal }: { signal: AbortSignal }) =>
         fetchSlotStarts(mentorId, t.id, window, signal),
       staleTime: 60 * 1000,
+      // Like the other dashboard reads: one more go on a server error only, so
+      // a failing row says so in seconds rather than after three backoffs.
+      retry: retryOnce,
     })),
   });
   const failed = slots.find((q) => q.error);

@@ -25,6 +25,11 @@ vi.mock('./PerformanceSection', () => ({ PerformanceSection: () => <div data-tes
 vi.mock('./SessionQuality', () => ({ SessionQuality: () => <div data-testid="quality" /> }));
 vi.mock('./NextSessionCard', () => ({ NextSessionCard: () => <div data-testid="next" /> }));
 
+let status: { approved: boolean; listed: boolean; pausedByMentor: boolean } | null = null;
+vi.mock('@/lib/api/data/mentorStatus', () => ({
+  useMentorStatus: () => ({ data: status, isLoading: !status, error: null, retry: vi.fn() }),
+}));
+
 let dash: MentorDashboard;
 vi.mock('@/lib/api/data/dashboard', () => ({ useMentorDashboard: () => dash }));
 
@@ -65,6 +70,10 @@ function make(stage: MentorStage | null, over: Partial<MentorDashboard> = {}, st
 
 const banner = () => screen.queryByRole('region', { name: 'Account setup' });
 
+beforeEach(() => {
+  status = null;
+});
+
 describe('DashboardScreen stages (PRD Mentor Home)', () => {
   it('noBookings: the hero under the setup banner, no KPIs, chart or quality', () => {
     make('noBookings');
@@ -95,6 +104,35 @@ describe('DashboardScreen stages (PRD Mentor Home)', () => {
     expect(banner()).toBeInTheDocument();
     for (const id of ['hero', 'kpis', 'chart', 'quality', 'next'])
       expect(screen.queryByTestId(id)).toBeNull();
+  });
+
+  it('notReady with nothing left to set up, paused: says they are on a break', () => {
+    status = { approved: true, listed: false, pausedByMentor: true };
+    make('notReady', {}, false);
+    render(<DashboardScreen />);
+    expect(screen.getByText('You’re taking a break')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Manage it on Calendar' })).toHaveAttribute(
+      'href',
+      '/calendar',
+    );
+  });
+
+  it('notReady with nothing left to set up, unlisted by EduFurther: says so, with support', () => {
+    status = { approved: true, listed: false, pausedByMentor: false };
+    make('notReady', {}, false);
+    render(<DashboardScreen />);
+    expect(screen.getByText('Unlisted by EduFurther')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Contact support' })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/^mailto:/),
+    );
+  });
+
+  it('notReady with steps left shows the banner, not the notice', () => {
+    status = { approved: true, listed: false, pausedByMentor: true };
+    make('notReady');
+    render(<DashboardScreen />);
+    expect(screen.queryByText('You’re taking a break')).toBeNull();
   });
 
   it('active: KPIs, next session, chart and quality, no hero or banner', () => {

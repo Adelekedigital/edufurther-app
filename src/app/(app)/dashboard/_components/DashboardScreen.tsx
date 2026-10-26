@@ -10,6 +10,7 @@ import { useAppShell } from '@/app/_shell/useAppShell';
 import { useCalendarReconnect } from '@/app/_shell/useCalendarReconnect';
 import { useSetupDetour } from '@/app/_shell/useSetupDetour';
 import { useMentorDashboard, type SetupNext } from '@/lib/api/data/dashboard';
+import { useMentorStatus } from '@/lib/api/data/mentorStatus';
 import { DASHBOARD_SUBLINE, HERO_COPY } from '@/lib/copy/dashboard';
 import { deviceTimeZone, inSentence } from '@/lib/utils/format';
 import type { Viewer } from '@/types/mentor';
@@ -18,6 +19,7 @@ import { DashboardHeader } from './DashboardHeader';
 import { KpiGrid } from './KpiGrid';
 import { NewMentorHero } from './NewMentorHero';
 import { NextSessionCard } from './NextSessionCard';
+import { NotLiveNotice } from './NotLiveNotice';
 import { PerformanceSection } from './PerformanceSection';
 import { SessionQuality } from './SessionQuality';
 import type { StatsQuery } from '@/lib/api/data/mentorStats';
@@ -120,6 +122,9 @@ function MentorHome({ member }: { member: Member }) {
   // too rather than leaving it on Integrations, a page they rarely open.
   const reconnect = useCalendarReconnect(member.id, say);
   const dash = useMentorDashboard(member, accountZone, shared);
+  // Paused or unlisted, for a not-ready mentor with nothing left to set up
+  // (the reconnect banner reads the same query, so no second request).
+  const status = useMentorStatus(member.id);
   // A minute tick, as on the mentee Home: without it `now` is frozen at the
   // last render, so the next-session card never turns to Join on its own.
   const [clock, setClock] = useState(() => Date.now());
@@ -205,58 +210,58 @@ function MentorHome({ member }: { member: Member }) {
           action={toAction(d.setup.next, d.shareUrl)}
         />
       )}
-      {
-        stage === 'firstBooked' || stage === 'noBookings' ? (
-          <NewMentorHero
-            stage={stage}
-            mentorId={member.id}
+      {stage === 'firstBooked' || stage === 'noBookings' ? (
+        <NewMentorHero
+          stage={stage}
+          mentorId={member.id}
+          timeZone={accountZone}
+          profileHref={d.profileHref}
+          approvedAt={d.approvedAt}
+          nextSession={dash.nextSession}
+          upcomingCount={dash.upcomingCount}
+          now={now}
+        />
+      ) : stage === null ? (
+        // Bookable, and the upcoming sessions that pick the hero aren't in yet.
+        dash.nextSession.error ? (
+          <HeroError onRetry={dash.nextSession.retry} />
+        ) : (
+          <HeroLoading />
+        )
+      ) : stage === 'active' ? (
+        <>
+          {/* The KPI strip above the next session (design order). */}
+          {dash.metrics && <KpiGrid kpis={dash.metrics} />}
+          <NextSessionCard
+            isLoading={dash.nextSession.isLoading}
+            error={dash.nextSession.error}
+            onRetry={dash.nextSession.retry}
+            booking={dash.nextSession.data}
             timeZone={accountZone}
-            profileHref={d.profileHref}
-            approvedAt={d.approvedAt}
-            nextSession={dash.nextSession}
-            upcomingCount={dash.upcomingCount}
             now={now}
           />
-        ) : stage === null ? (
-          // Bookable, and the upcoming sessions that pick the hero aren't in yet.
-          dash.nextSession.error ? (
-            <HeroError onRetry={dash.nextSession.retry} />
-          ) : (
-            <HeroLoading />
-          )
-        ) : stage === 'active' ? (
-          <>
-            {/* The KPI strip above the next session (design order). */}
-            {dash.metrics && <KpiGrid kpis={dash.metrics} />}
-            <NextSessionCard
-              isLoading={dash.nextSession.isLoading}
-              error={dash.nextSession.error}
-              onRetry={dash.nextSession.retry}
-              booking={dash.nextSession.data}
-              timeZone={accountZone}
-              now={now}
-            />
-            {/* The performance chart beside the session-quality panel
+          {/* The performance chart beside the session-quality panel
               (Mentor Dashboard v2.dc.html, notNew branch — a wrapping flex
               row that stacks below ~840px). Each keeps its own fetch and four
               states, so a blip in one never holds up the other. min-width:0 on
               the chart column lets the chart shrink rather than scroll the page. */}
-            <div className={styles.perfRow}>
-              <div className={styles.perfChartCol}>
-                <PerformanceSection userId={member.id} onRangeChange={setChartRange} />
-              </div>
-              <div className={styles.perfQualityCol}>
-                <SessionQuality
-                  userId={member.id}
-                  profileHref={d.profileHref}
-                  statsQuery={statsQuery}
-                  nextSession={nextSession}
-                />
-              </div>
+          <div className={styles.perfRow}>
+            <div className={styles.perfChartCol}>
+              <PerformanceSection userId={member.id} onRangeChange={setChartRange} />
             </div>
-          </>
-        ) : null /* notReady: the header and the setup banner only. */
-      }
+            <div className={styles.perfQualityCol}>
+              <SessionQuality
+                userId={member.id}
+                profileHref={d.profileHref}
+                statsQuery={statsQuery}
+                nextSession={nextSession}
+              />
+            </div>
+          </div>
+        </>
+      ) : d.setup.next ? null /* notReady: the header and the setup banner only. */ : (
+        <NotLiveNotice status={status.data} firstName={member.firstName} />
+      )}
       <LiveRegion message={announce} />
     </>
   );

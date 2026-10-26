@@ -42,3 +42,10 @@ export const STATUS_COPY = {
   /** A row whose own query failed; the row still links. */
   failed: 'Couldn’t load',
 } as const;
+
+/** notReady with no setup step left: why the hero isn't there. */
+export const NOT_LIVE_COPY = {
+  breakTitle: 'You’re taking a break',
+  breakBody: 'Mentees can’t find or book you until you’re back.',
+  breakLink: 'Manage it on Calendar',
+} as const;

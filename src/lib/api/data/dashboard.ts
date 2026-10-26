@@ -27,6 +27,8 @@ export type MentorStage = 'active' | 'notReady' | 'firstBooked' | 'noBookings';
 
 export type StageInputs = {
   completedSessions: number;
+  /** The application is approved: a mentor in review can be listed and set up, and still not live. */
+  approved: boolean;
   listed: boolean;
   setupNeeded: readonly string[];
   /** A confirmed upcoming session the mentor hosts; null while that is unknown. */
@@ -36,7 +38,7 @@ export type StageInputs = {
 /** The stage, or null while it hangs on the upcoming sessions still loading. Pure. */
 export function mentorStage(i: StageInputs): MentorStage | null {
   if (i.completedSessions >= 1) return 'active';
-  if (!i.listed || i.setupNeeded.length > 0) return 'notReady';
+  if (!i.approved || !i.listed || i.setupNeeded.length > 0) return 'notReady';
   if (i.hasUpcoming === null) return null;
   return i.hasUpcoming ? 'firstBooked' : 'noBookings';
 }
@@ -452,6 +454,9 @@ export function useMentorDashboard(
   const stage = data
     ? mentorStage({
         completedSessions: p?.mentor.completedSessions ?? 0,
+        // The owner read always says; a missing approval reads as approved,
+        // as a missing listing reads as listed.
+        approved: (owner?.approval ?? 'approved') === 'approved',
         listed: data.listed,
         setupNeeded: owner?.setupNeeded ?? [],
         // An upcoming-sessions failure leaves the stage open too: the screen
