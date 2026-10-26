@@ -38,11 +38,23 @@ export type MetMentor = {
   /** ISO; when the most recent completed session started (the list's order). */
   lastSessionAt: string;
   bookability: Bookability;
+  /** ISO; the earliest upcoming or pending booking with them, for "Next on …". Null when none, or not sent yet. */
+  nextSessionAt: string | null;
+  /** Why an `unavailable` mentor can't be booked; null when not sent (read as not taking bookings). */
+  unavailableReason: 'not_taking' | 'no_open_times' | null;
 };
 
 type MetMentorRead = components['schemas']['MetMentorRead'];
 
+// PENDING BACKEND (Mentee Home request 3b, 3c): not in the published spec yet,
+// so read untyped and optional; wire to the generated type when they ship.
+type PendingFields = {
+  next_session_at?: string | null;
+  unavailable_reason?: 'not_taking' | 'no_open_times' | null;
+};
+
 export function toMetMentor(r: MetMentorRead): MetMentor {
+  const pending = r as MetMentorRead & PendingFields;
   const first = r.first_name?.trim() || '';
   const last = r.last_name?.trim() || '';
   const name = [first, last].filter(Boolean).join(' ') || 'Your mentor';
@@ -61,6 +73,11 @@ export function toMetMentor(r: MetMentorRead): MetMentor {
     sessionCount: r.session_count,
     lastSessionAt: r.last_session_at,
     bookability: r.bookability,
+    nextSessionAt: pending.next_session_at ?? null,
+    unavailableReason:
+      pending.unavailable_reason === 'not_taking' || pending.unavailable_reason === 'no_open_times'
+        ? pending.unavailable_reason
+        : null,
   };
 }
 

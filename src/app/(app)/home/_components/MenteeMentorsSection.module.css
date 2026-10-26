@@ -1,5 +1,23 @@
-/* Home "Book again" section (Mentee Dashboard v2.dc.html). */
+/* Home "Mentors" (Mentee Dashboard v2.dc.html rebookWith tabs): the heading
+   and the tab line, then the selected panel, 24px apart (the page's gap). */
+.block,
+.solo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-width: 0;
+}
+.tabsHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.tabsLine {
+  border-bottom: 1px solid var(--border-subtle);
+}
+/* One panel: Book again or Recommended. */
 .section {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -27,8 +45,9 @@
   line-height: var(--lh-p);
   color: var(--ink-600);
 }
-/* "See all mentors" — a text link with a 44px tap target (design draws it so). */
+/* "See all mentors" / "See all": a text link with a 44px tap target (design draws it so). */
 .seeAll {
+  text-decoration: none;
   flex: none;
   display: flex;
   align-items: center;
@@ -55,13 +74,8 @@
   background: var(--surface-card);
   overflow: hidden;
 }
-.list > * + *,
-.modalList > * + * {
-  border-top: 1px solid var(--border-subtle);
-}
-.modalList {
-  display: flex;
-  flex-direction: column;
+.list > * + * {
+  border-top: 1px solid var(--border-muted);
 }
 /* "Try again" inside the error notice: a text action with a 44px tap target. */
 .inlineAction {
@@ -105,4 +119,29 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+}
+
+/* Recommended: the matched cards (design mGrid). */
+.grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: var(--space-4);
+}
+.cell {
+  display: flex;
+  min-width: 0;
+}
+.cell > * {
+  flex: 1;
+}
+.skelCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
 }

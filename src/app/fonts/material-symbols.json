@@ -55,6 +55,7 @@
     "folder_open",
     "format_list_numbered",
     "forum",
+    "group",
     "group_add",
     "groups",
     "handshake",
@@ -152,5 +153,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "e5222af481ae6b2d82da9a78de0480cca250191a2db46c4cbc0d1809d06beebe"
+  "sha256": "e0c9d4c1dd52e2d157cb96fd0d18302bf6444b8f10ae79f7ae5302598b407ad8"
 }

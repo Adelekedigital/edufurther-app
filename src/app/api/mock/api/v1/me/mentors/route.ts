@@ -26,6 +26,9 @@ export async function GET() {
         session_count: 3,
         last_session_at: iso(2),
         bookability: 'has_upcoming',
+        // PENDING BACKEND (Mentee Home request 3b): the next booking's start;
+        // spread, as the published type doesn't list it yet.
+        ...{ next_session_at: new Date(Date.now() + 5 * 86_400_000).toISOString() },
       },
       {
         id: 'm-mariam',
@@ -68,6 +71,8 @@ export async function GET() {
         session_count: 1,
         last_session_at: iso(34),
         bookability: 'unavailable',
+        // PENDING BACKEND (Mentee Home request 3c).
+        ...{ unavailable_reason: 'no_open_times' },
       },
     ],
     next_cursor: null,

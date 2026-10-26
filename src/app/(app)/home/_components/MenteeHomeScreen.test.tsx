@@ -39,6 +39,52 @@ vi.mock('@/lib/api/data/metMentors', () => ({
   toBookingMentor: (m: MetMentor) => m,
 }));
 
+// Recommended's reads: the topics catalogue, degree levels, the goal and the matches.
+const TOPICS = [
+  { id: 't1', slug: 'scholarships', label: 'Scholarships & funding' },
+  { id: 't2', slug: 'documents', label: 'Application documents' },
+];
+vi.mock('@/lib/api/data/mentors', () => ({
+  useTopics: () => ({ topics: TOPICS, isLoading: false, error: null }),
+}));
+vi.mock('@/lib/api/data/catalog', () => ({
+  useDegreeLevels: () => ({ levels: [], status: 'ready' }),
+}));
+vi.mock('@/lib/api/data/goals', () => ({
+  useMenteeGoals: () => ({ read: { goal: { needs: [{ id: 't1' }, { id: 't2' }] } }, status: 'ready' }),
+}));
+type MatchesRemote = { data: { matches: unknown[] } | null; isLoading: boolean; error: unknown };
+let matches: MatchesRemote;
+vi.mock('@/lib/api/data/mentorMatches', () => ({
+  useMentorMatches: () => matches,
+}));
+vi.mock('@/lib/utils/useOnline', () => ({ useOnline: () => true }));
+// The card has its own tests; here it only needs to say whom it's for and book.
+vi.mock('@/components/organisms/MentorCard/MentorCard', () => ({
+  MentorCard: ({
+    mentor,
+    matchTopics,
+    onBook,
+  }: {
+    mentor: { id: string; name: string };
+    matchTopics?: string[];
+    onBook: (m: unknown) => void;
+  }) => (
+    <article aria-label={mentor.name}>
+      {matchTopics?.join(' | ')}
+      <button type="button" onClick={() => onBook(mentor)}>
+        Book {mentor.name}
+      </button>
+    </article>
+  ),
+}));
+const match = (id: string, name: string, slugs: string[] = ['scholarships']) => ({
+  mentor: { id, name },
+  reasons: [{ code: 'help_areas', slugs }],
+  level: null,
+  studyCountry: null,
+});
+
 // BookingLauncher pulls in the booking query hooks (need a QueryClient); the
 // screen only needs to know a booking opened, so stub it to a marker.
 vi.mock('@/app/_shell/BookingLauncher/BookingLauncher', () => ({
@@ -149,6 +195,8 @@ const metMentor = (over: Partial<MetMentor> = {}): MetMentor => ({
   sessionCount: 2,
   lastSessionAt: inHours(-200),
   bookability: 'open',
+  nextSessionAt: null,
+  unavailableReason: null,
   ...over,
 });
 
@@ -159,6 +207,7 @@ beforeEach(() => {
   viewer = MEMBER;
   stats = remote(STATS);
   upcoming = remote([booking()]);
+  matches = { data: { matches: [] }, isLoading: false, error: null };
   metMentors = remote([]);
 });
 
@@ -311,15 +360,70 @@ describe('MenteeHomeScreen', () => {
     }
   });
 
-  it('lists Book-again mentors, and "View mentors" opens the mentors you have met', async () => {
+  it('lists Book-again mentors, and "View mentors" opens Mentors you’ve met', async () => {
     metMentors = remote([metMentor()]);
     render(<MenteeHomeScreen />);
-    expect(screen.getByRole('heading', { name: 'Your mentors' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Book again' })).toBeInTheDocument();
     expect(screen.getByText('Mariam Alamata')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'View mentors' }));
-    expect(screen.getByRole('dialog', { name: 'Your mentors' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Mentors you’ve met' })).toBeInTheDocument();
     // The full-screen list takes the help pill away while it's open.
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+  });
+
+  it('Book again and Recommended are tabs; Recommended leaves out mentors already met', async () => {
+    metMentors = remote([metMentor()]);
+    matches = {
+      data: { matches: [match('m1', 'Mariam Alamata'), match('m9', 'Tunde Bakare')] },
+      isLoading: false,
+      error: null,
+    };
+    render(<MenteeHomeScreen />);
+    expect(screen.getByRole('heading', { name: 'Mentors' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Book again' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('Pick up where you left off with a mentor you’ve met')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('tab', { name: 'Recommended' }));
+    expect(
+      screen.getByText('Matched to your goal: Scholarships & funding, Application documents'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('article', { name: 'Tunde Bakare' })).toHaveTextContent(
+      'Scholarships & funding',
+    );
+    expect(screen.queryByRole('article', { name: 'Mariam Alamata' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'See all' })).toHaveAttribute('href', '/explore');
+    await userEvent.click(screen.getByRole('button', { name: 'Book Tunde Bakare' }));
+    expect(screen.getByTestId('booking-open')).toBeInTheDocument();
+  });
+
+  it('with nobody to book again, Recommended stands alone under its heading', () => {
+    metMentors = remote([metMentor({ bookability: 'has_upcoming' })]);
+    matches = { data: { matches: [match('m9', 'Tunde Bakare')] }, isLoading: false, error: null };
+    render(<MenteeHomeScreen />);
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Recommended for you' })).toBeInTheDocument();
+  });
+
+  it('a failed match read hides Recommended, never the page', () => {
+    metMentors = remote([metMentor()]);
+    matches = { data: null, isLoading: false, error: {} };
+    render(<MenteeHomeScreen />);
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Matched to your goal/)).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Book again' })).toBeInTheDocument();
+  });
+
+  it('"See all mentors" lists everyone met; booking from it closes the list first', async () => {
+    metMentors = remote([
+      metMentor(),
+      metMentor({ id: 'm2', name: 'Efua Owusu', bookability: 'unavailable', unavailableReason: 'no_open_times' }),
+    ]);
+    render(<MenteeHomeScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'See all mentors' }));
+    const dialog = screen.getByRole('dialog', { name: 'Mentors you’ve met' });
+    expect(dialog).toHaveTextContent('No open times yet');
+    await userEvent.click(screen.getAllByRole('button', { name: 'Book again with Mariam Alamata' }).at(-1)!);
+    expect(screen.queryByRole('dialog', { name: 'Mentors you’ve met' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('booking-open')).toBeInTheDocument();
   });
 
   it('opening "Book again" launches the booking flow', async () => {
