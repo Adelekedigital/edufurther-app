@@ -1,8 +1,7 @@
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import styles from './MenteeTipsModal.module.css';
 
-/** The four session tips (Mentee Dashboard v2.dc.html tips modal). The third
- *  avoids naming Messages, which isn't built yet. */
+/** The four session tips (Mentee Dashboard v2.dc.html tips modal, messageBtn hide). */
 const TIPS = [
   {
     title: 'Take notes',
@@ -14,7 +13,7 @@ const TIPS = [
   },
   {
     title: 'Share drafts early',
-    body: 'Send your CV or statement ahead of the session so your mentor can read it first.',
+    body: 'Attach your CV or statement when you book so your mentor can read it first.',
   },
   {
     title: 'Follow up',
@@ -29,7 +28,13 @@ const TIPS = [
  */
 export function MenteeTipsModal({ onClose }: { onClose: () => void }) {
   return (
-    <ModalShell title="Tips for great sessions" size="sm" onClose={onClose}>
+    <ModalShell
+      title="Tips for great sessions"
+      icon="lightbulb"
+      size="sm"
+      mobile="sheet"
+      onClose={onClose}
+    >
       <ol className={styles.list}>
         {TIPS.map((t, i) => (
           <li key={t.title} className={styles.item}>

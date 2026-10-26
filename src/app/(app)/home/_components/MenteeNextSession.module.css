@@ -23,7 +23,7 @@
 .headActions {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-4);
 }
 /* "Tips" — a text link with the lightbulb, beside "All bookings". */
 .tips {
@@ -35,8 +35,9 @@
   background: none;
   padding: 0;
   cursor: pointer;
+  min-height: var(--space-8);
   font: inherit;
-  font-size: var(--text-p-sm);
+  font-size: var(--text-p-xs);
   font-weight: var(--weight-semibold);
   color: var(--text-link);
 }
@@ -58,6 +59,10 @@
   transform: translateY(-50%);
   height: var(--space-11);
 }
+/* The shared text ButtonLink, at the design's 32px row height. */
+.allLink {
+  min-height: var(--space-8);
+}
 .tipsIcon {
   color: inherit;
 }
@@ -67,12 +72,11 @@
   gap: var(--space-4);
   padding: var(--space-5);
 }
-
-/* Info + action side by side on desktop (design nextActions=beside); stacks below. */
+/* Info + action side by side on desktop (design nextActions=beside). */
 .main {
   display: flex;
   align-items: center;
-  gap: var(--space-5);
+  gap: var(--space-4);
 }
 
 /* "Starts in 8 min" — only when the session is near or live. */
@@ -103,7 +107,7 @@
   min-width: 0;
   display: flex;
   gap: var(--space-4);
-  align-items: flex-start;
+  align-items: center;
 }
 .date {
   width: 56px;
@@ -237,10 +241,10 @@
   color: var(--ink-500);
 }
 .prepItemDone {
-  color: var(--text-tertiary);
+  color: var(--ink-600);
 }
 .prepItemDone .prepItemIcon {
-  color: var(--text-link);
+  color: var(--green-700);
 }
 
 .actions {
@@ -251,15 +255,8 @@
   gap: var(--space-3);
 }
 
-/* Phone (AppShell.dc.html 768px rule): actions stack and stretch full width. */
-@media (max-width: 767px) {
-  .main {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-4);
-  }
-  .actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
+/* Phone (design nextActsBelow): the action under the prep list, full width. */
+.actionsBelow {
+  flex-direction: column;
+  align-items: stretch;
 }

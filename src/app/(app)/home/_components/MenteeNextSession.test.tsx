@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Booking, BookingParty } from '@/types/booking';
 import { MenteeNextSession } from './MenteeNextSession';
@@ -51,6 +51,57 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
 });
 
 describe('MenteeNextSession', () => {
+  it('keeps focus on the action when the layout crosses 768px', () => {
+    const real = window.matchMedia;
+    let phone = false;
+    const listeners = new Set<() => void>();
+    window.matchMedia = ((q: string) => ({
+      ...real(q),
+      get matches() {
+        return q.includes('max-width: 767px') ? phone : false;
+      },
+      addEventListener: (_: string, cb: () => void) => listeners.add(cb),
+      removeEventListener: (_: string, cb: () => void) => listeners.delete(cb),
+    })) as unknown as typeof window.matchMedia;
+    try {
+      render(<MenteeNextSession booking={booking()} timeZone="Africa/Lagos" now={NOW} />);
+      screen.getByRole('link', { name: 'View details' }).focus();
+      act(() => {
+        phone = true;
+        listeners.forEach((l) => l());
+      });
+      expect(screen.getByRole('link', { name: 'View details' })).toHaveFocus();
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+
+  it('reads in the order it is drawn: beside the info on desktop, after the prep list on phones', () => {
+    const order = () => {
+      const action = screen.getByRole('link', { name: 'View details' });
+      const prep = screen.getByRole('button', { name: /Before your session/ });
+      return prep.compareDocumentPosition(action) & Node.DOCUMENT_POSITION_FOLLOWING
+        ? 'after prep'
+        : 'before prep';
+    };
+    const { unmount } = render(
+      <MenteeNextSession booking={booking()} timeZone="Africa/Lagos" now={NOW} />,
+    );
+    expect(order()).toBe('before prep');
+    unmount();
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({
+      ...real(q),
+      matches: q.includes('max-width: 767px'),
+    })) as typeof window.matchMedia;
+    try {
+      render(<MenteeNextSession booking={booking()} timeZone="Africa/Lagos" now={NOW} />);
+      expect(order()).toBe('after prep');
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+
   it('a far-off session offers View details, not Join', () => {
     render(<MenteeNextSession booking={booking()} timeZone="Africa/Lagos" now={NOW} />);
     const details = screen.getByRole('link', { name: 'View details' });
@@ -59,7 +110,12 @@ describe('MenteeNextSession', () => {
   });
 
   it('an imminent session shows the live badge and routes to the session page', () => {
-    const b = booking({ startsAt: at(8), endsAt: at(53), joinOpensAt: at(3), joinClosesAt: at(23) });
+    const b = booking({
+      startsAt: at(8),
+      endsAt: at(53),
+      joinOpensAt: at(3),
+      joinClosesAt: at(23),
+    });
     render(<MenteeNextSession booking={b} timeZone="Africa/Lagos" now={NOW} />);
     expect(screen.getByRole('link', { name: 'Join session' })).toHaveAttribute(
       'href',
@@ -101,6 +157,8 @@ describe('MenteeNextSession', () => {
     expect(first).toHaveAttribute('aria-pressed', 'false');
     await userEvent.click(first);
     expect(first).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: /Before your session · 1 of 3/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Before your session · 1 of 3/ }),
+    ).toBeInTheDocument();
   });
 });

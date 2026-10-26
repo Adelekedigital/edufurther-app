@@ -1,5 +1,5 @@
 import type { MenteeStats } from '@/lib/api/data/menteeHome';
-import { NEW_MENTEE_KPIS, returningKpis } from './menteeKpis';
+import { MISSED_HREF, returningKpis } from './menteeKpis';
 
 const stats = (over: Partial<MenteeStats> = {}): MenteeStats => ({
   sessionsHeld: 12,
@@ -10,6 +10,7 @@ const stats = (over: Partial<MenteeStats> = {}): MenteeStats => ({
   windowDays: 30,
   current: { sessions: 2, hours: 1.5 },
   previous: { sessions: 1, hours: 0.75 },
+  thisMonth: null,
   ...over,
 });
 
@@ -37,26 +38,57 @@ describe('returningKpis', () => {
   it('reads the window length from the data (not hard-coded)', () => {
     const k = returningKpis(stats({ windowDays: 7, missedWindowDays: 60, missedSessions: 0 }));
     expect(k[0]!.trend?.text).toBe('2 in the last 7 days');
-    expect(k[3]!.trend?.text).toBe('None in the last 60 days');
+    expect(k[3]!.trend?.text).toBe('None in 60 days');
+    expect(k[3]!.info).toContain('in the last 60 days');
   });
 
-  it('mentors met is value-only in PR 1 (no trend, no link)', () => {
+  it('mentors met has no trend: the screen adds "View mentors" in its place', () => {
     const mentors = returningKpis(stats())[1]!;
     expect(mentors).toMatchObject({ label: 'Mentors met', value: '8' });
     expect(mentors.trend).toBeUndefined();
   });
 
-  it('zero missed reads "None in the last 90 days" (positive), with no "of N" unit', () => {
-    const missed = returningKpis(stats({ missedSessions: 0 }))[3]!;
-    expect(missed).toMatchObject({ value: '0' });
-    expect(missed.trend).toMatchObject({ text: 'None in the last 90 days', tone: 'positive' });
-    expect(missed.unit).toBeUndefined();
+  it('every tile carries its design hint', () => {
+    expect(returningKpis(stats()).map((k) => k.info)).toEqual([
+      'Sessions you and your mentor both joined',
+      'Mentors you’ve completed at least one session with',
+      'Total length of your completed sessions',
+      'Sessions your mentor joined and you didn’t, in the last 90 days.',
+    ]);
   });
 
-  it('a positive missed count reads negative, with no icon', () => {
-    const missed = returningKpis(stats({ missedSessions: 2 }))[3]!;
-    expect(missed.trend).toMatchObject({ text: '2 in the last 90 days', tone: 'negative' });
-    expect(missed.trend?.icon).toBeUndefined();
+  it('reads "+N this month" when the backend sends the calendar month', () => {
+    const k = returningKpis(stats({ thisMonth: { sessions: 2, hours: 1.5 } }));
+    expect(k[0]!.trend?.text).toBe('+2 this month');
+    expect(k[2]!.trend?.text).toBe('+1.5 hrs this month');
+    // A quiet month shows no trend, never "+0".
+    const quiet = returningKpis(stats({ thisMonth: { sessions: 0, hours: 0 } }));
+    expect(quiet[0]!.trend).toBeUndefined();
+    expect(quiet[2]!.trend).toBeUndefined();
+  });
+
+  it('zero missed reads "None in 90 days" with the check, no "of N" unit and no link', () => {
+    const missed = returningKpis(stats({ missedSessions: 0 }))[3]!;
+    expect(missed).toMatchObject({ label: 'Missed sessions', value: '0' });
+    expect(missed.trend).toMatchObject({
+      text: 'None in 90 days',
+      icon: 'check_circle',
+      tone: 'positive',
+    });
+    expect(missed.unit).toBeUndefined();
+    expect(missed.link).toBeUndefined();
+  });
+
+  it('one missed is amber, two or more red, each with "View missed" to Bookings History', () => {
+    const one = returningKpis(stats({ missedSessions: 1 }))[3]!;
+    expect(one).toMatchObject({ label: 'Missed · 90 days', value: '1', valueTone: 'warning' });
+    expect(one.link).toEqual({ label: 'View missed', href: MISSED_HREF });
+    expect(one.trend).toBeUndefined();
+    expect(MISSED_HREF).toBe('/bookings?tab=history&filter=missed');
+    const two = returningKpis(stats({ missedSessions: 2 }))[3]!;
+    expect(two.valueTone).toBe('danger');
+    // No pause wording until #444 is decided.
+    expect(two.info).not.toMatch(/paus/i);
   });
 
   it('a null figure stays null ("No data yet"), with no activity trend over it', () => {
@@ -70,13 +102,5 @@ describe('returningKpis', () => {
     expect(k[2]!.value).toBeNull();
     expect(k[2]!.trend).toBeUndefined();
     expect(k[3]!.value).toBeNull();
-  });
-});
-
-describe('NEW_MENTEE_KPIS', () => {
-  it('are encouraging zeros with no missed cap', () => {
-    expect(NEW_MENTEE_KPIS.map((k) => k.value)).toEqual(['0', '0', '0', '0']);
-    expect(NEW_MENTEE_KPIS[3]!.unit).toBeUndefined();
-    expect(NEW_MENTEE_KPIS[0]!.trend).toMatchObject({ text: 'Your first one counts here' });
   });
 });

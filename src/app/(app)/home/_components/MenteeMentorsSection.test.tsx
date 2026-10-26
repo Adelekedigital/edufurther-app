@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { MetMentor } from '@/lib/api/data/metMentors';
@@ -30,8 +31,28 @@ const mentor = (over: Partial<MetMentor> = {}): MetMentor => ({
   ...over,
 });
 
+/** The screen owns the modal's open state; this stands in for it. */
+function Section({
+  mentors,
+  onBook,
+}: {
+  mentors: Remote<MetMentor[]>;
+  onBook: (m: MetMentor) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <MenteeMentorsSection
+      mentors={mentors}
+      timeZone="Africa/Lagos"
+      onBook={onBook}
+      modalOpen={open}
+      onModalChange={setOpen}
+    />
+  );
+}
+
 const render_ = (mentors: Remote<MetMentor[]>, onBook = vi.fn()) => {
-  render(<MenteeMentorsSection mentors={mentors} timeZone="Africa/Lagos" onBook={onBook} />);
+  render(<Section mentors={mentors} onBook={onBook} />);
   return onBook;
 };
 
@@ -41,9 +62,7 @@ beforeEach(() => {
 
 describe('MenteeMentorsSection', () => {
   it('a settled-empty list hides the section (nothing to re-book)', () => {
-    const { container } = render(
-      <MenteeMentorsSection mentors={remote<MetMentor[]>([])} timeZone="UTC" onBook={vi.fn()} />,
-    );
+    const { container } = render(<Section mentors={remote<MetMentor[]>([])} onBook={vi.fn()} />);
     expect(container).toBeEmptyDOMElement();
   });
 

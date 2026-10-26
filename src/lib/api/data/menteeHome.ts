@@ -38,6 +38,8 @@ export type MenteeStats = {
   /** The last `windowDays` days, and the equal window before, for the trend. */
   current: StatsWindow;
   previous: StatsWindow;
+  /** The calendar month so far, for "+N this month"; null until the backend sends it. */
+  thisMonth: StatsWindow | null;
 };
 
 type StatsRead = components['schemas']['MenteeStatsRead'];
@@ -47,7 +49,12 @@ const n = (v: number | null | undefined) => (typeof v === 'number' ? v : null);
 const toHours = (minutes: number | null | undefined) =>
   typeof minutes === 'number' ? minutes / 60 : 0;
 
+// PENDING BACKEND (Mentee Home request 3a): `this_month` isn't in the published
+// spec yet, so it is read untyped and optional; wire to the generated type when it ships.
+type ThisMonthRead = { this_month?: { completed_sessions: number; minutes: number } | null };
+
 function toStats(dto: StatsRead): MenteeStats {
+  const month = (dto as StatsRead & ThisMonthRead).this_month;
   return {
     sessionsHeld: n(dto.sessions_held),
     mentorsMet: n(dto.mentors_met),
@@ -57,6 +64,7 @@ function toStats(dto: StatsRead): MenteeStats {
     windowDays: dto.window_days ?? 30,
     current: { sessions: dto.current.completed_sessions, hours: toHours(dto.current.minutes) },
     previous: { sessions: dto.previous.completed_sessions, hours: toHours(dto.previous.minutes) },
+    thisMonth: month ? { sessions: month.completed_sessions, hours: toHours(month.minutes) } : null,
   };
 }
 
@@ -70,6 +78,7 @@ export const EMPTY_STATS: MenteeStats = {
   windowDays: 30,
   current: { sessions: 0, hours: 0 },
   previous: { sessions: 0, hours: 0 },
+  thisMonth: null,
 };
 
 /** The authenticated mentee's progress stats for the home KPI strip. */

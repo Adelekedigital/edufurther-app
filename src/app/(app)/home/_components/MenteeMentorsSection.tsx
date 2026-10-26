@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
@@ -9,15 +9,15 @@ import type { Remote } from '@/types/mentor';
 import { MentorRow } from './MentorRow';
 import styles from './MenteeMentorsSection.module.css';
 
-/** The anchor the "Mentors met" KPI link scrolls to. */
-export const MENTORS_SECTION_ID = 'your-mentors';
-
 const INLINE = 3;
 
 type MenteeMentorsSectionProps = {
   mentors: Remote<MetMentor[]>;
   timeZone: string;
   onBook: (mentor: MetMentor) => void;
+  /** Mentors you've met: the screen owns it, as the KPI's "View mentors" opens it too. */
+  modalOpen: boolean;
+  onModalChange: (open: boolean) => void;
 };
 
 /**
@@ -28,9 +28,14 @@ type MenteeMentorsSectionProps = {
  * (design-divergence.md). All four states; a settled-empty list hides the
  * section — there's nothing to re-book.
  */
-export function MenteeMentorsSection({ mentors, timeZone, onBook }: MenteeMentorsSectionProps) {
+export function MenteeMentorsSection({
+  mentors,
+  timeZone,
+  onBook,
+  modalOpen,
+  onModalChange: setModalOpen,
+}: MenteeMentorsSectionProps) {
   const headingId = useId();
-  const [modalOpen, setModalOpen] = useState(false);
   const all = mentors.data ?? [];
 
   // Error before empty (ui-states). A settled-empty list is "nothing to re-book":
@@ -46,7 +51,7 @@ export function MenteeMentorsSection({ mentors, timeZone, onBook }: MenteeMentor
   const hasMore = all.length > INLINE;
 
   return (
-    <section id={MENTORS_SECTION_ID} aria-labelledby={headingId} className={styles.section}>
+    <section aria-labelledby={headingId} className={styles.section}>
       <div className={styles.head}>
         <div className={styles.headText}>
           <h2 id={headingId} className={styles.title}>
@@ -82,7 +87,12 @@ export function MenteeMentorsSection({ mentors, timeZone, onBook }: MenteeMentor
       )}
 
       {modalOpen && (
-        <ModalShell title="Your mentors" subtitle="Everyone you’ve met" size="md" onClose={() => setModalOpen(false)}>
+        <ModalShell
+          title="Your mentors"
+          subtitle="Everyone you’ve met"
+          size="md"
+          onClose={() => setModalOpen(false)}
+        >
           <div className={styles.modalList}>
             {all.map((m) => (
               <MentorRow key={m.id} mentor={m} timeZone={timeZone} onBook={book} />

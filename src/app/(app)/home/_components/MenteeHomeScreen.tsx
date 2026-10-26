@@ -13,13 +13,14 @@ import { useUpcomingBookings } from '@/lib/api/data/bookings';
 import { EMPTY_STATS, useMenteeStats } from '@/lib/api/data/menteeHome';
 import { toBookingMentor, useMetMentors, type MetMentor } from '@/lib/api/data/metMentors';
 import { deviceTimeZone } from '@/lib/utils/format';
+import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { MATCH_CALL_URL, useAppShell } from '@/app/_shell/useAppShell';
 import { MenteeEmptyCard } from './MenteeEmptyCard';
 import { MenteeFirstSession } from './MenteeFirstSession';
-import { MENTORS_SECTION_ID, MenteeMentorsSection } from './MenteeMentorsSection';
-import { MenteeNextSession } from './MenteeNextSession';
+import { MenteeMentorsSection } from './MenteeMentorsSection';
+import { MenteeNextSession, startsSoon } from './MenteeNextSession';
 import { greeting } from './greeting';
-import { NEW_MENTEE_KPIS, returningKpis } from './menteeKpis';
+import { returningKpis } from './menteeKpis';
 import styles from './MenteeHomeScreen.module.css';
 
 /**
@@ -32,6 +33,8 @@ export function MenteeHomeScreen() {
   const router = useRouter();
   // deviceTimeZone is a lazy initializer; read it once (as the other screens do).
   const [browserZone] = useState(deviceTimeZone);
+  // Phones: the idle CTA is large and full width (design btnIdleSm: 40px, 48px on phones).
+  const phone = useMediaQuery('(max-width: 767px)');
 
   // A minute tick so the next-session card's join state advances while the tab
   // stays open (as BookingsScreen does). Without it `now` is frozen at the
@@ -64,6 +67,8 @@ export function MenteeHomeScreen() {
   const upcoming = useUpcomingBookings(member?.id ?? null, zone, menteeSide && !isNew);
   const metMentors = useMetMentors(menteeSide && !isNew);
   const [bookTarget, setBookTarget] = useState<MetMentor | null>(null);
+  // Mentors you've met: opened from the KPI's "View mentors" and the section's "See all mentors".
+  const [metOpen, setMetOpen] = useState(false);
   const bookMentor = useMemo(() => (bookTarget ? toBookingMentor(bookTarget) : null), [bookTarget]);
 
   // A mentor or a signed-out visitor who lands on /home directly goes to their
@@ -100,26 +105,22 @@ export function MenteeHomeScreen() {
   // null or 0, so "0 free sessions left" never sits beside the Book CTA.
   const freeLeft = monthly?.unlocked ? monthly.balance : null;
 
-  // The "Mentors met" KPI links down to the Book-again section on the same page.
-  const scrollToMentors = () => {
-    const el = document.getElementById(MENTORS_SECTION_ID);
-    if (!el) return;
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
-  };
-  // "Talk to us" opens the external Cal booking page (same link as Explore's
-  // "Find my mentor matches"). Hidden when unconfigured, and — per the design
-  // (menteeSessions ≤ 2) — shown only to an early mentee: a brand-new one gets
-  // the hero instead, and an experienced one (3+ sessions) doesn't need help
-  // choosing a mentor.
-  const showHelp = !!MATCH_CALL_URL && !isNew && completed <= 2;
+  // Mentors you've met is open only while there is someone in it: a refetch that
+  // empties the list closes it (and gives the help pill back).
+  const metShown = metOpen && (metMentors.data?.length ?? 0) > 0;
+  // The team call (MATCH_CALL_URL, a new tab): new mentees, and returning ones
+  // with 2 or fewer sessions (design matchCall float, menteeSessions ≤ 2).
+  // Hidden when the URL isn't set, and while Mentors you've met is open: that
+  // full-screen list is where a mentee picks whom to book, and the design takes
+  // the pill away there (helpOn: !mentorsOpen) so it doesn't compete.
+  const showHelp = !!MATCH_CALL_URL && (isNew || completed <= 2) && !metShown;
   const openCall = () => {
     if (MATCH_CALL_URL) window.open(MATCH_CALL_URL, '_blank', 'noopener,noreferrer');
   };
 
-  // State-dependent subline (Mentee Dashboard v2.dc.html: new / nothingNext /
-  // default), read from the upcoming list — the SAME source the next-session
-  // card below uses — so the subline and the card never disagree (a count and
+  // State-dependent subline (Mentee Dashboard v2.dc.html: new / soon / idle /
+  // upcoming), read from the upcoming list, the SAME source the next-session
+  // card below uses, so the subline and the card never disagree (a count and
   // the list can). Only once the list has loaded; while it loads the card shows
   // a skeleton and the subline stays the default.
   //
@@ -131,13 +132,14 @@ export function MenteeHomeScreen() {
   const listSettled = !upcoming.isLoading && !upcoming.error;
   const noConfirmed = !isNew && listSettled && nextBooking === null;
   const hasPending = noConfirmed && (counts?.pending ?? 0) > 0;
-  const noUpcoming = noConfirmed && !hasPending;
+  // listSettled: a failed refetch keeps stale rows, and the card then shows its error.
+  const soon = listSettled && !!nextBooking && startsSoon(nextBooking, now, zone);
   const subline = isNew
     ? 'Let’s find the right mentor for your goal.'
-    : hasPending
-      ? 'Your request is with your mentor. We’ll let you know.'
-      : noUpcoming
-        ? 'No session booked right now. Pick up where you left off.'
+    : noConfirmed && !hasPending
+      ? 'No session booked right now. Pick up where you left off.'
+      : soon
+        ? 'Your session starts soon.'
         : 'Here’s what’s next on your journey.';
 
   return (
@@ -152,8 +154,8 @@ export function MenteeHomeScreen() {
         <p className={styles.subline}>{subline}</p>
       </header>
 
-      {/* Progress — error checked before the figures (ui-states). */}
-      {!isNew && stats.error ? (
+      {/* Progress, returning mentees only: error checked before the figures (ui-states). */}
+      {isNew ? null : stats.error ? (
         <Notice tone="neutral" icon="error" title="We couldn’t load your progress.">
           <button type="button" className={styles.inlineAction} onClick={stats.retry}>
             Try again
@@ -161,21 +163,20 @@ export function MenteeHomeScreen() {
         </Notice>
       ) : (
         <section aria-label="Your progress" className={styles.kpis}>
-          {isNew
-            ? NEW_MENTEE_KPIS.map(({ key, ...k }) => <KpiCard key={key} {...k} />)
-            : stats.isLoading
-              ? Array.from({ length: 4 }).map((_, i) => <KpiSkeleton key={i} />)
-              : returningKpis(stats.data ?? EMPTY_STATS).map(({ key, ...k }) => (
-                  <KpiCard
-                    key={key}
-                    {...k}
-                    link={
-                      key === 'mentors' && (metMentors.data?.length ?? 0) > 0
-                        ? { label: 'View mentors', onClick: scrollToMentors }
-                        : undefined
-                    }
-                  />
-                ))}
+          {stats.isLoading
+            ? Array.from({ length: 4 }).map((_, i) => <KpiSkeleton key={i} />)
+            : returningKpis(stats.data ?? EMPTY_STATS).map(({ key, link, ...k }) => (
+                <KpiCard
+                  key={key}
+                  {...k}
+                  link={
+                    link ??
+                    (key === 'mentors' && (metMentors.data?.length ?? 0) > 0
+                      ? { label: 'View mentors', onClick: () => setMetOpen(true) }
+                      : undefined)
+                  }
+                />
+              ))}
         </section>
       )}
 
@@ -208,7 +209,8 @@ export function MenteeHomeScreen() {
               href="/bookings?tab=pending"
               prefetch={false}
               variant="secondary-outlined"
-              size="large"
+              size={phone ? 'large' : 'medium'}
+              fullWidth={phone}
             >
               View your request
             </ButtonLink>
@@ -224,7 +226,13 @@ export function MenteeHomeScreen() {
               : 'Book a mentor you’ve met or someone new.'
           }
           action={
-            <ButtonLink href="/explore" prefetch={false} variant="primary" size="large">
+            <ButtonLink
+              href="/explore"
+              prefetch={false}
+              variant="primary"
+              size={phone ? 'large' : 'medium'}
+              fullWidth={phone}
+            >
               Book a session
             </ButtonLink>
           }
@@ -232,7 +240,13 @@ export function MenteeHomeScreen() {
       )}
 
       {!isNew && (
-        <MenteeMentorsSection mentors={metMentors} timeZone={zone} onBook={setBookTarget} />
+        <MenteeMentorsSection
+          mentors={metMentors}
+          timeZone={zone}
+          onBook={setBookTarget}
+          modalOpen={metShown}
+          onModalChange={setMetOpen}
+        />
       )}
 
       <FloatingHelp

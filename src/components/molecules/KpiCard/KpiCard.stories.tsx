@@ -34,6 +34,18 @@ export const KpiCards: Story = {
         trend={{ text: 'None in the last 90 days', icon: 'check_circle', tone: 'positive' }}
       />
       <KpiCard label="Hours of guidance" value={null} />
+      <KpiCard
+        label="Missed · 90 days"
+        value="1"
+        valueTone="warning"
+        link={{ label: 'View missed', href: '/bookings?tab=history&filter=missed' }}
+      />
+      <KpiCard
+        label="Missed · 90 days"
+        value="2"
+        valueTone="danger"
+        link={{ label: 'View missed', href: '/bookings?tab=history&filter=missed' }}
+      />
     </div>
   ),
 };

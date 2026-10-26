@@ -6,10 +6,15 @@ export type Kpi = {
   label: string;
   value: string | null;
   unit?: string;
+  /** The ⓘ hint on the label row (Mentee Dashboard v2.dc.html HINT). */
+  info?: string;
   trend?: KpiTrend;
+  valueTone?: 'warning' | 'danger';
+  /** A page link in the trend's place ("View missed"), as KpiCard's `link`. */
+  link?: { label: string; href: string };
 };
 
-/** "9", "9.5" — hours without a trailing .0. */
+/** "9", "9.5": hours without a trailing .0. */
 export function formatHours(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }
@@ -17,76 +22,93 @@ export function formatHours(n: number): string {
 const str = (n: number | null) => (n == null ? null : String(n));
 
 /**
+ * Where "View missed" goes: Bookings History with the Missed filter on. The
+ * Mentee Bookings build adds `?filter=` (in flight); until it lands, this
+ * opens History unfiltered.
+ */
+export const MISSED_HREF = '/bookings?tab=history&filter=missed';
+
+/**
  * The four progress tiles for a returning mentee, from /me/mentee-stats.
  *
- * The trend shows the recent window's own activity — "N in the last 30 days" —
- * not a current-vs-previous delta: a decline would read as a discouraging
- * negative on a progress dashboard, and the backend sends both windows raw so
- * the choice is ours (noted in design-divergence.md). The window length and the
- * missed window are read from the response, never hard-coded.
+ * Trends read "+N this month" as drawn when the backend sends the calendar
+ * month (`thisMonth`); until then they fall back to the 30-day window's own
+ * count ("N in the last 30 days", design-divergence.md). Never a
+ * current-vs-previous delta: a decline would read as a discouraging negative.
+ * Window lengths are read from the response, never hard-coded.
  */
 export function returningKpis(s: MenteeStats): Kpi[] {
   const win = s.windowDays;
+  const month = s.thisMonth;
   // Gate each trend on its all-time value being known too: a null value renders
-  // "No data yet", so a recent-activity trend beneath it would contradict the
-  // same card (the backend may omit the all-time figure while still sending the
-  // window). No value, no trend.
+  // "No data yet", and a trend under it would contradict the same card.
+  const sessionsN = month ? month.sessions : s.current.sessions;
   const sessionsTrend: KpiTrend | undefined =
-    s.sessionsHeld != null && s.current.sessions > 0
-      ? { text: `${s.current.sessions} in the last ${win} days`, icon: 'trending_up', tone: 'positive' }
-      : undefined;
-  const hoursTrend: KpiTrend | undefined =
-    s.hoursOfGuidance != null && s.current.hours > 0
+    s.sessionsHeld != null && sessionsN > 0
       ? {
-          text: `${formatHours(s.current.hours)} hrs in the last ${win} days`,
+          text: month ? `+${sessionsN} this month` : `${sessionsN} in the last ${win} days`,
+          icon: 'trending_up',
+          tone: 'positive',
+        }
+      : undefined;
+  const hoursN = month ? month.hours : s.current.hours;
+  const hoursTrend: KpiTrend | undefined =
+    s.hoursOfGuidance != null && hoursN > 0
+      ? {
+          text: month
+            ? `+${formatHours(hoursN)} hrs this month`
+            : `${formatHours(hoursN)} hrs in the last ${win} days`,
           icon: 'trending_up',
           tone: 'positive',
         }
       : undefined;
   const missedWin = s.missedWindowDays;
-  const missedTrend: KpiTrend | undefined =
-    s.missedSessions == null
-      ? undefined
-      : s.missedSessions === 0
-        ? { text: `None in the last ${missedWin} days`, icon: 'check_circle', tone: 'positive' }
-        : { text: `${s.missedSessions} in the last ${missedWin} days`, tone: 'negative' };
+  const missed = s.missedSessions;
+  const missedInfo = `Sessions your mentor joined and you didn’t, in the last ${missedWin} days.`;
+  // No "of 3" and no pause wording: the pause rule is undecided (#444, founder 25 Oct).
+  const missedTile: Kpi =
+    missed != null && missed > 0
+      ? {
+          key: 'missed',
+          label: `Missed · ${missedWin} days`,
+          value: String(missed),
+          info: missedInfo,
+          valueTone: missed >= 2 ? 'danger' : 'warning',
+          link: { label: 'View missed', href: MISSED_HREF },
+        }
+      : {
+          key: 'missed',
+          label: 'Missed sessions',
+          value: str(missed),
+          info: missedInfo,
+          trend:
+            missed === 0
+              ? { text: `None in ${missedWin} days`, icon: 'check_circle', tone: 'positive' }
+              : undefined,
+        };
   return [
-    { key: 'sessions', label: 'Sessions held', value: str(s.sessionsHeld), trend: sessionsTrend },
-    // The design's "View mentors" link opens the mentors-met list, which ships
-    // with Book again (PR 2); until then the tile is value-only (design-divergence.md).
-    { key: 'mentors', label: 'Mentors met', value: str(s.mentorsMet) },
+    {
+      key: 'sessions',
+      label: 'Sessions held',
+      value: str(s.sessionsHeld),
+      info: 'Sessions you and your mentor both joined',
+      trend: sessionsTrend,
+    },
+    // "View mentors" (opens Mentors you've met) is added by the screen, which owns the modal.
+    {
+      key: 'mentors',
+      label: 'Mentors met',
+      value: str(s.mentorsMet),
+      info: 'Mentors you’ve completed at least one session with',
+    },
     {
       key: 'hours',
       label: 'Hours of guidance',
       value: s.hoursOfGuidance == null ? null : formatHours(s.hoursOfGuidance),
       unit: 'hrs',
+      info: 'Total length of your completed sessions',
       trend: hoursTrend,
     },
-    // No "of N" unit: the cap policy is undecided (backend #444, design-divergence.md).
-    { key: 'missed', label: 'Missed sessions', value: str(s.missedSessions), trend: missedTrend },
+    missedTile,
   ];
 }
-
-/** The new mentee's encouraging, all-zero tiles (Mentee Dashboard v2.dc.html new state). */
-export const NEW_MENTEE_KPIS: Kpi[] = [
-  {
-    key: 'sessions',
-    label: 'Sessions held',
-    value: '0',
-    trend: { text: 'Your first one counts here', tone: 'neutral' },
-  },
-  {
-    key: 'mentors',
-    label: 'Mentors met',
-    value: '0',
-    trend: { text: 'Pick one to start', tone: 'neutral' },
-  },
-  {
-    key: 'hours',
-    label: 'Hours of guidance',
-    value: '0',
-    unit: 'hrs',
-    trend: { text: 'Adds up as you go', tone: 'neutral' },
-  },
-  { key: 'missed', label: 'Missed sessions', value: '0', trend: { text: 'None so far', tone: 'neutral' } },
-];
