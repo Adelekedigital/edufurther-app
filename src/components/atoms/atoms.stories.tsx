@@ -113,6 +113,7 @@ export const ProgressCircles: Story = {
     <div style={row}>
       <ProgressCircle value={94} tone="success" aria-label="Show-up rate" />
       <ProgressCircle value={72} tone="primary" aria-label="Show-up rate" />
+      <ProgressCircle value={67} tone="warning" aria-label="Show-up rate" />
       <ProgressCircle value={48} tone="danger" aria-label="Show-up rate" />
       <ProgressCircle value={88} size="md" tone="primary" aria-label="Show-up rate" />
       <ProgressCircle
@@ -216,6 +217,9 @@ export const Badges: Story = {
       </Badge>
       <Badge color="neutral" type="accent">
         Neutral
+      </Badge>
+      <Badge color="warning" type="accent" size="sm">
+        Needs attention
       </Badge>
     </div>
   ),

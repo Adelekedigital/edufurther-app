@@ -22,8 +22,12 @@
 .arc-primary {
   stroke: var(--action-primary);
 }
+/* Mentor Dashboard v2.dc.html ringProps: green-600 / amber / red-500 by tier. */
 .arc-success {
-  stroke: var(--green-500);
+  stroke: var(--green-600);
+}
+.arc-warning {
+  stroke: var(--attention-ring);
 }
 .arc-danger {
   stroke: var(--red-500);
