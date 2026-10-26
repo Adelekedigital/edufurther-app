@@ -65,6 +65,7 @@
     "home_pin",
     "hourglass_top",
     "how_to_reg",
+    "inbox",
     "info",
     "ios_share",
     "join_inner",
@@ -151,5 +152,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "c6c3f081945098961e2dc673f1a5b8045fc59187f5b447d32f4a7f72b2411f94"
+  "sha256": "e5222af481ae6b2d82da9a78de0480cca250191a2db46c4cbc0d1809d06beebe"
 }

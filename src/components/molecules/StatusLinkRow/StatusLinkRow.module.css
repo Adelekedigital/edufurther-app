@@ -1,0 +1,50 @@
+/* Mentor Dashboard v2.dc.html: the hero's status rows (`status`). */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--touch-target-min);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  color: var(--ink-900);
+  text-decoration: none;
+}
+.row:hover {
+  background: var(--ink-50);
+  color: var(--ink-900);
+}
+.row:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.disc {
+  width: var(--space-9);
+  height: var(--space-9);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--blue-50);
+  color: var(--blue-500);
+}
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.label {
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+.value {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.chevron {
+  color: var(--ink-400);
+}

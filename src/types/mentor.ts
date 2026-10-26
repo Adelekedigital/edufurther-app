@@ -418,6 +418,8 @@ export type MentorProfile = {
     listed: boolean;
     /** What stops them taking bookings (backend `setup_needed`, owner-only). */
     setupNeeded?: ('session_type' | 'weekly_hours')[];
+    /** When the current approval was granted (backend `approved_at`, owner-only). */
+    approvedAt?: string | null;
     /** How complete the profile is, and what to do next, in order (Profile strength). */
     completeness?: Completeness;
   } | null;

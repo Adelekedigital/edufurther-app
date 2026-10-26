@@ -15,6 +15,35 @@ export type DashboardMember = { id: string; firstName: string };
 export type SetupStepKey = 'profile' | 'sessions' | 'google' | 'share';
 
 /**
+ * Which Home a mentor sees (PRD Mentor Home, "Which view a mentor sees"):
+ * - `active`: 1 or more completed sessions. KPIs, next session, chart, quality.
+ * - `notReady`: none yet, and unlisted or `setup_needed` not empty. Header and
+ *   setup banner only: nobody is told "You're live" when they aren't.
+ * - `firstBooked`: none yet, bookable, and a confirmed session is coming up.
+ * - `noBookings`: none yet, bookable, nothing confirmed. A pending request
+ *   doesn't count as booked.
+ */
+export type MentorStage = 'active' | 'notReady' | 'firstBooked' | 'noBookings';
+
+export type StageInputs = {
+  completedSessions: number;
+  /** The application is approved: a mentor in review can be listed and set up, and still not live. */
+  approved: boolean;
+  listed: boolean;
+  setupNeeded: readonly string[];
+  /** A confirmed upcoming session the mentor hosts; null while that is unknown. */
+  hasUpcoming: boolean | null;
+};
+
+/** The stage, or null while it hangs on the upcoming sessions still loading. Pure. */
+export function mentorStage(i: StageInputs): MentorStage | null {
+  if (i.completedSessions >= 1) return 'active';
+  if (!i.approved || !i.listed || i.setupNeeded.length > 0) return 'notReady';
+  if (i.hasUpcoming === null) return null;
+  return i.hasUpcoming ? 'firstBooked' : 'noBookings';
+}
+
+/**
  * The next incomplete setup step. `action` is an intent: a route to open, or a
  * `copy` of the profile link the screen performs (it owns the clipboard + the
  * announce). Kept side-effect-free so the hook stays pure data.
@@ -34,6 +63,10 @@ export type DashboardActivation = {
   shareName: string;
   /** The mentor's own profile path ('/mentors/{handle}') for in-app links. */
   profileHref: string;
+  /** Listed on Explore (owner `listing_status`). */
+  listed: boolean;
+  /** When the current approval was granted; null when not known. */
+  approvedAt: string | null;
   setup: {
     doneCount: number;
     total: number;
@@ -54,6 +87,10 @@ export type MentorDashboard = {
   metrics: Kpi[] | null;
   /** The soonest confirmed session the mentor hosts, with its own four states. */
   nextSession: Remote<Booking | null>;
+  /** How many confirmed sessions the mentor hosts are coming up. */
+  upcomingCount: number | null;
+  /** Which Home to show; null while it hangs on the upcoming sessions (see mentorStage). */
+  stage: MentorStage | null;
 };
 
 /** Everything the activation view is derived from — primitives only, so it is pure and testable. */
@@ -63,6 +100,8 @@ export type ActivationInputs = {
   missing: readonly string[];
   /** setup_needed: 'session_type' and/or 'weekly_hours'. */
   setupNeeded: readonly string[];
+  listed: boolean;
+  approvedAt: string | null;
   calendarConnected: boolean;
   shared: boolean;
   firstName: string;
@@ -136,6 +175,8 @@ export function deriveActivation(i: ActivationInputs): DashboardActivation {
     shareUrl: i.origin ? `${i.origin}${i.profileHref}` : '',
     shareName: i.fullName || i.firstName,
     profileHref: i.profileHref,
+    listed: i.listed,
+    approvedAt: i.approvedAt,
     setup: {
       doneCount,
       total,
@@ -327,8 +368,10 @@ export function useMentorDashboard(
   // just-settled rows whose door is still open, but those serve the Bookings tab's
   // re-entry — a finished session is deliberately not the dashboard hero, so the
   // hero stays `status === 'confirmed'`.
-  const nextBooking =
-    (upcoming.data ?? []).find((b) => b.side === 'mentor' && b.status === 'confirmed') ?? null;
+  const hosted = (upcoming.data ?? []).filter(
+    (b) => b.side === 'mentor' && b.status === 'confirmed',
+  );
+  const nextBooking = hosted[0] ?? null;
   const nextSession: Remote<Booking | null> = {
     data: upcoming.data ? nextBooking : null,
     isLoading: upcoming.isLoading,
@@ -357,6 +400,10 @@ export function useMentorDashboard(
       completedSessions: p.mentor.completedSessions ?? 0,
       missing: owner?.completeness?.missing ?? [],
       setupNeeded: owner?.setupNeeded ?? [],
+      // An owner read always says; a missing owner block reads as listed, as
+      // the profile mapper does.
+      listed: owner?.listed ?? true,
+      approvedAt: owner?.approvedAt ?? null,
       // A revoked / errored grant still returns an object; only an active
       // connection counts as done, so a broken one keeps prompting a reconnect.
       // A grant EXISTS, which is what the setup step asks. A broken one is
@@ -403,5 +450,20 @@ export function useMentorDashboard(
       return trend ? { ...k, trend } : k;
     }) ?? null;
 
-  return { isLoading, error, retry, data, metrics, nextSession };
+  const upcomingCount = upcoming.data ? hosted.length : null;
+  const stage = data
+    ? mentorStage({
+        completedSessions: p?.mentor.completedSessions ?? 0,
+        // The owner read always says; a missing approval reads as approved,
+        // as a missing listing reads as listed.
+        approved: (owner?.approval ?? 'approved') === 'approved',
+        listed: data.listed,
+        setupNeeded: owner?.setupNeeded ?? [],
+        // An upcoming-sessions failure leaves the stage open too: the screen
+        // shows that failure where the hero would be, rather than guess.
+        hasUpcoming: upcoming.data ? hosted.length > 0 : null,
+      })
+    : null;
+
+  return { isLoading, error, retry, data, metrics, nextSession, upcomingCount, stage };
 }

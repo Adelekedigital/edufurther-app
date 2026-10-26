@@ -2,6 +2,7 @@ import {
   deriveActivation,
   deriveKpis,
   deriveKpiTrends,
+  mentorStage,
   type ActivationInputs,
   type KpiInputs,
 } from './dashboard';
@@ -17,6 +18,8 @@ const base: ActivationInputs = {
   fullName: 'Gbenga Adeyemi',
   profileHref: '/mentors/m1',
   origin: 'https://edufurther.com',
+  listed: true,
+  approvedAt: '2026-10-18T09:00:00Z',
 };
 const inputs = (over: Partial<ActivationInputs> = {}): ActivationInputs => ({ ...base, ...over });
 
@@ -39,12 +42,16 @@ describe('deriveActivation', () => {
   });
 
   it('the sessions step points at Sessions when a type is missing, else Calendar', () => {
-    expect(deriveActivation(inputs({ missing: [], setupNeeded: ['session_type'] })).setup.next).toMatchObject({
+    expect(
+      deriveActivation(inputs({ missing: [], setupNeeded: ['session_type'] })).setup.next,
+    ).toMatchObject({
       key: 'sessions',
       title: 'Create your first session',
       action: { href: '/session-types' },
     });
-    expect(deriveActivation(inputs({ missing: [], setupNeeded: ['weekly_hours'] })).setup.next).toMatchObject({
+    expect(
+      deriveActivation(inputs({ missing: [], setupNeeded: ['weekly_hours'] })).setup.next,
+    ).toMatchObject({
       key: 'sessions',
       title: 'Open your weekly hours',
       action: { href: '/calendar' },
@@ -58,7 +65,9 @@ describe('deriveActivation', () => {
   });
 
   it('share is a copy intent, and finishing all four hides the banner', () => {
-    const shareNext = deriveActivation(inputs({ missing: [], setupNeeded: [], calendarConnected: true }));
+    const shareNext = deriveActivation(
+      inputs({ missing: [], setupNeeded: [], calendarConnected: true }),
+    );
     expect(shareNext.setup.next).toMatchObject({ key: 'share', action: { copy: true } });
     const allDone = deriveActivation(
       inputs({ missing: [], setupNeeded: [], calendarConnected: true, shared: true }),
@@ -100,7 +109,10 @@ describe('deriveKpis', () => {
 
   it('shows mentoring time in minutes, not rounded hours', () => {
     expect(deriveKpis(kpiInputs({ mentoringMinutes: 90 }))[1]!.value).toBe('90');
-    expect(deriveKpis(kpiInputs({ mentoringMinutes: 45 }))[1]).toMatchObject({ value: '45', unit: 'min' });
+    expect(deriveKpis(kpiInputs({ mentoringMinutes: 45 }))[1]).toMatchObject({
+      value: '45',
+      unit: 'min',
+    });
   });
 
   it('separates thousands in the minutes figure', () => {
@@ -187,7 +199,10 @@ describe('deriveKpiTrends', () => {
 
   it('separates thousands in a large minute delta', () => {
     const t = deriveKpiTrends({
-      monthly: { current: stat({ mentoringMinutes: 1500 }), previous: stat({ mentoringMinutes: 180 }) },
+      monthly: {
+        current: stat({ mentoringMinutes: 1500 }),
+        previous: stat({ mentoringMinutes: 180 }),
+      },
       quarterly: null,
     });
     expect(t.time?.text).toBe('+1,320 min this month');
@@ -259,5 +274,55 @@ describe('deriveKpiTrends', () => {
 
   it('no windows loaded yet → no trends (cards render their value alone)', () => {
     expect(deriveKpiTrends({ monthly: null, quarterly: null })).toEqual({});
+  });
+});
+
+describe('mentorStage (PRD Mentor Home, "Which view a mentor sees")', () => {
+  const ready = {
+    completedSessions: 0,
+    approved: true,
+    listed: true,
+    setupNeeded: [],
+    hasUpcoming: false,
+  };
+
+  it('active once 1 session is complete, whatever else holds', () => {
+    expect(mentorStage({ ...ready, completedSessions: 1 })).toBe('active');
+    expect(
+      mentorStage({
+        completedSessions: 3,
+        approved: true,
+        listed: false,
+        setupNeeded: ['weekly_hours'],
+        hasUpcoming: null,
+      }),
+    ).toBe('active');
+  });
+
+  it('notReady when unlisted, or while setup_needed is not empty', () => {
+    expect(mentorStage({ ...ready, listed: false })).toBe('notReady');
+    expect(mentorStage({ ...ready, setupNeeded: ['session_type'] })).toBe('notReady');
+    expect(mentorStage({ ...ready, setupNeeded: ['weekly_hours'], hasUpcoming: true })).toBe(
+      'notReady',
+    );
+  });
+
+  it('notReady while the application is in review, even listed and set up (review of PR 1)', () => {
+    expect(mentorStage({ ...ready, approved: false })).toBe('notReady');
+    expect(mentorStage({ ...ready, approved: false, hasUpcoming: true })).toBe('notReady');
+  });
+
+  it('firstBooked with a confirmed session coming up', () => {
+    expect(mentorStage({ ...ready, hasUpcoming: true })).toBe('firstBooked');
+  });
+
+  it('noBookings with nothing confirmed (a pending request is not booked)', () => {
+    expect(mentorStage(ready)).toBe('noBookings');
+  });
+
+  it('waits (null) while a bookable mentor’s upcoming sessions are unknown', () => {
+    expect(mentorStage({ ...ready, hasUpcoming: null })).toBeNull();
+    // Not bookable: the answer doesn't depend on bookings, so no wait.
+    expect(mentorStage({ ...ready, listed: false, hasUpcoming: null })).toBe('notReady');
   });
 });

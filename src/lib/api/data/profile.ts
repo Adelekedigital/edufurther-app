@@ -199,6 +199,9 @@ export function toMentorProfile(r: MentorPublicRead): MentorProfile {
           approval: r.approval_status ?? null,
           listed: r.listing_status !== 'unlisted',
           setupNeeded: r.setup_needed ?? [],
+          // When the current approval was granted (owner only); null while
+          // pending or declined, and for imported mentors with no decision.
+          approvedAt: r.approved_at ?? null,
         }
       : null,
   };

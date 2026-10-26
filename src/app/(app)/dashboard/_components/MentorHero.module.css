@@ -1,0 +1,62 @@
+/* Mentor Dashboard v2.dc.html: the new-mentor hero section. */
+.hero {
+  border: 1px solid var(--blue-100);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  overflow: hidden;
+}
+.intro {
+  display: flex;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+  align-items: center;
+  padding: var(--space-6);
+  background: var(--blue-50);
+}
+.illus {
+  width: 120px;
+  height: 120px;
+  flex: none;
+  display: block;
+}
+.text {
+  flex: 1 1 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.eyebrow {
+  font-size: var(--text-caption-sm);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-caption-sm);
+  text-transform: uppercase;
+  color: var(--blue-700);
+}
+.title {
+  margin: 0;
+  font-family: var(--font-brand);
+  font-size: var(--text-h6);
+  line-height: var(--lh-h6);
+  letter-spacing: var(--ls-h6);
+  font-weight: var(--weight-semibold);
+}
+.body {
+  margin: 0;
+  max-width: 560px;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+.rows {
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--ink-100);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: var(--space-3);
+}
+/* The last band sits on the card's own border: no second line. The hero's
+   bands may also be other components (NextSessionCard's hero variant). */
+.hero > :last-child {
+  border-bottom: none;
+}

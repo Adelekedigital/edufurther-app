@@ -1,3 +1,4 @@
+import { mockStageFrom } from '@/lib/api/mock/mentorStage';
 import { NextResponse } from 'next/server';
 import type { components } from '@/lib/api/generated/schema';
 import { mockMissedReasons } from '@/lib/api/mock/missedReasons';
@@ -384,7 +385,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
   const to = q.get('to');
   const statuses = q.getAll('status');
   const asc = q.get('order') === 'asc';
+  // ?mockStage=noBookings: a new mentor with nothing confirmed or completed yet.
+  const stage = mockStageFrom(req);
   const rows = all
+    .filter((s) => stage !== 'noBookings' || (s.status !== 'confirmed' && s.status !== 'completed'))
     .filter(
       (s) =>
         (!from || s.starts_at.slice(0, 10) >= from) &&

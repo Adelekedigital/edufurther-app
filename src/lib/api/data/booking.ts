@@ -192,6 +192,28 @@ export function useSessionTypes(
 }
 
 /**
+ * One read of GET /users/{id}/availability/slots: the bookable start instants
+ * (UTC) of one offering between two days (`end` exclusive, mentor's days).
+ * Shared by the booking picker and the dashboard's open-times count.
+ */
+export async function fetchSlotStarts(
+  mentorId: string,
+  sessionTypeId: string,
+  window: { start: string; end: string },
+  signal?: AbortSignal,
+): Promise<string[]> {
+  const { data, error, response } = await api.GET('/api/v1/users/{user_id}/availability/slots', {
+    params: {
+      path: { user_id: mentorId },
+      query: { session_type_id: sessionTypeId, start: window.start, end: window.end },
+    },
+    signal,
+  });
+  if (!data) throw apiError(response.status, error);
+  return data.data.map((s) => s.start);
+}
+
+/**
  * GET /users/{id}/availability/slots for one offering: UTC instants. The UI
  * groups them into days in the viewer's zone (utils/slots.ts).
  */
@@ -240,24 +262,15 @@ export function useSlots(
     ],
     enabled,
     queryFn: async ({ signal }) => {
-      const { data, error, response } = await api.GET(
-        '/api/v1/users/{user_id}/availability/slots',
-        {
-          params: {
-            path: { user_id: mentorId! },
-            query: { session_type_id: sessionTypeId!, start: window.start, end: window.end },
-          },
-          signal,
-        },
-      );
-      if (!data) {
+      try {
+        return await fetchSlotStarts(mentorId!, sessionTypeId!, window, signal);
+      } catch (e) {
         // A range the backend refuses: its maximum may have been lowered since
         // the types were cached. Reload them; the new window makes a new request.
-        if (response.status === 422)
+        if (e instanceof ApiError && e.status === 422)
           void qc.invalidateQueries({ queryKey: keys.booking.sessionTypes(mentorId!) });
-        throw apiError(response.status, error);
+        throw e;
       }
-      return data.data.map((s) => s.start);
     },
     // Slots go stale as people book; a minute is short enough and saves a
     // refetch when the type select is toggled back and forth.

@@ -27,6 +27,7 @@ import { mockOwnSessionTypes } from '@/lib/api/mock/sessionTypes';
 import { mockMentorReviewList } from '@/lib/api/mock/reviewList';
 import { mockReviewSummary } from '@/lib/api/mock/reviews';
 import { ok } from '@/lib/api/mock/respond';
+import { mockStageFrom } from '@/lib/api/mock/mentorStage';
 import { mockLinkedIn, mockLinks } from '@/lib/api/mock/linksStore';
 
 type MentorPublicRead = components['schemas']['MentorPublicRead'];
@@ -57,7 +58,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ handle: string 
   await new Promise((r) => setTimeout(r, 250));
 
   const { sparse } = mockProfileIndex(m.id);
-  const sessions = m.completed_sessions;
+  // ?mockStage= (new-mentor Home stages): the owner has no completed session yet.
+  const sessions = own && mockStageFrom(req) ? 0 : m.completed_sessions;
   const body: MentorPublicRead = {
     id,
     slug: own ? OWNER_ID : m.slug,
@@ -174,6 +176,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ handle: string 
       approval_status: approval,
       listing_status: approval === 'approved' ? 'listed' : 'unlisted',
       setup_needed: setupNeeded,
+      // When the current approval was granted (owner only; null unless approved).
+      approved_at: approval === 'approved' ? '2026-10-18T09:00:00Z' : null,
     });
     // The real API lists active types only (Codex on PR 106).
     if (setupNeeded.includes('session_type')) body.session_types = [];

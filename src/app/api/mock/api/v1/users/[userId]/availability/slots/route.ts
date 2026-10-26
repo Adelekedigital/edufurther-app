@@ -1,3 +1,4 @@
+import { mockOwnSessionTypes } from '@/lib/api/mock/sessionTypes';
 import { NextResponse, type NextRequest } from 'next/server';
 import { MOCK_SESSION_TYPES, mockMentorExists, mockSlots } from '@/lib/api/mock/availability';
 import { MAX_WINDOW_DAYS } from '@/lib/api/mock/bookingPrefs';
@@ -22,7 +23,11 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ userId: str
   // Pending tab and can offer another time when declining. `mockMentorExists`
   // only knows the browsable directory, which they are not in.
   const known = userId === 'mock-viewer' || mockMentorExists(userId);
-  if (!known || !MOCK_SESSION_TYPES.some((t) => t.id === typeId))
+  // The mock mentor viewer's own live session types (Mentor Home's
+  // available-times count reads them).
+  const ownType =
+    userId === 'mock-mentor' && mockOwnSessionTypes().some((t) => t.id === typeId && t.is_active);
+  if (!ownType && (!known || !MOCK_SESSION_TYPES.some((t) => t.id === typeId)))
     return new NextResponse(null, { status: 404 });
   const now = Date.now();
   const startParam = sp.get('start');
@@ -30,7 +35,12 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ userId: str
   const start = startParam ? Date.parse(`${startParam}T00:00:00Z`) : now;
   const end = endParam ? Date.parse(`${endParam}T00:00:00Z`) : now + 7 * DAY;
   // The contract's rule: end after start, and at most the maximum window + 5 days.
-  if (Number.isNaN(start) || Number.isNaN(end) || end <= start || end - start > (MAX_WINDOW_DAYS + 5) * DAY)
+  if (
+    Number.isNaN(start) ||
+    Number.isNaN(end) ||
+    end <= start ||
+    end - start > (MAX_WINDOW_DAYS + 5) * DAY
+  )
     return problem(422, { title: 'Unprocessable Content' });
   await new Promise((r) => setTimeout(r, 300));
   return ok('/api/v1/users/{user_id}/availability/slots', 'get', {

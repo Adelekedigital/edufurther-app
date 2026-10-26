@@ -5,6 +5,7 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { daysBetween, joinState, timeRange } from '@/lib/utils/bookings';
 import type { Booking } from '@/types/booking';
 import type { AppError } from '@/types/mentor';
+import { cx } from '@/lib/utils/cx';
 import styles from './NextSessionCard.module.css';
 
 type NextSessionCardProps = {
@@ -16,6 +17,13 @@ type NextSessionCardProps = {
   /** The viewer's display zone. */
   timeZone: string;
   now: Date;
+  /**
+   * `hero`: the card drawn inside the new-mentor hero (firstBooked), a band of
+   * the hero with the session in an outlined row. Default: its own card.
+   */
+  variant?: 'card' | 'hero';
+  /** Added after the "In 6 days" line, e.g. "Your first booking". */
+  note?: string;
 };
 
 const inZone = (iso: string, timeZone: string, opts: Intl.DateTimeFormatOptions) =>
@@ -25,10 +33,14 @@ function SessionRow({
   booking,
   timeZone,
   now,
+  note,
+  hero,
 }: {
   booking: Booking;
   timeZone: string;
   now: Date;
+  note?: string;
+  hero: boolean;
 }) {
   const days = daysBetween(now, new Date(booking.startsAt), timeZone);
   const rel = days <= 0 ? 'Today' : days === 1 ? 'Tomorrow' : `In ${days} days`;
@@ -40,26 +52,30 @@ function SessionRow({
   // it, just ended) still links to the session page (#255).
   const canJoin = joinState(booking, now) === 'open';
   return (
-    <div className={styles.body}>
+    <div className={cx(styles.body, hero && styles.heroRow)}>
       <div className={styles.chip} aria-hidden>
-        <span className={styles.chipMonth}>{inZone(booking.startsAt, timeZone, { month: 'short' })}</span>
-        <span className={styles.chipDay}>{inZone(booking.startsAt, timeZone, { day: 'numeric' })}</span>
+        <span className={styles.chipMonth}>
+          {inZone(booking.startsAt, timeZone, { month: 'short' })}
+        </span>
+        <span className={styles.chipDay}>
+          {inZone(booking.startsAt, timeZone, { day: 'numeric' })}
+        </span>
       </div>
-      <div className={styles.details}>
+      <div className={cx(styles.details, hero && styles.heroDetails)}>
         <span className={styles.sessionTitle}>{booking.title ?? 'Session'}</span>
         <span className={styles.meta}>
           with <strong className={styles.who}>{booking.other.name}</strong> ·{' '}
           {inZone(booking.startsAt, timeZone, { weekday: 'short' })}, {timeRange(booking, timeZone)}
         </span>
-        <span className={styles.sub}>{rel}</span>
+        <span className={styles.sub}>{note ? `${rel} · ${note}` : rel}</span>
       </div>
-      <div className={styles.actions}>
+      <div className={cx(styles.actions, hero && styles.heroActions)}>
         {canJoin ? (
-          <ButtonLink href={sessionHref} variant="primary" size="small">
+          <ButtonLink href={sessionHref} variant="primary" size="medium">
             Join session
           </ButtonLink>
         ) : (
-          <ButtonLink href={sessionHref} variant="secondary-outlined" size="small">
+          <ButtonLink href={sessionHref} variant="secondary-outlined" size="medium">
             View session details
           </ButtonLink>
         )}
@@ -85,11 +101,20 @@ export function NextSessionCard({
   booking,
   timeZone,
   now,
+  variant = 'card',
+  note,
 }: NextSessionCardProps) {
+  const hero = variant === 'hero';
+  // In the hero it's a band under the hero's own h2, not a landmark of its own.
+  const Frame = hero ? 'div' : 'section';
+  const Heading = hero ? 'h3' : 'h2';
   return (
-    <section className={styles.card} aria-label="Next session">
-      <div className={styles.head}>
-        <h2 className={styles.title}>Next session</h2>
+    <Frame
+      className={hero ? styles.heroBand : styles.card}
+      aria-label={hero ? undefined : 'Next session'}
+    >
+      <div className={hero ? styles.heroHead : styles.head}>
+        <Heading className={cx(styles.title, hero && styles.heroTitle)}>Next session</Heading>
         <Link href="/bookings" className={styles.allLink}>
           All bookings
         </Link>
@@ -111,7 +136,7 @@ export function NextSessionCard({
           </Button>
         </div>
       ) : booking ? (
-        <SessionRow booking={booking} timeZone={timeZone} now={now} />
+        <SessionRow booking={booking} timeZone={timeZone} now={now} note={note} hero={hero} />
       ) : (
         <div className={styles.body}>
           <div className={styles.empty}>
@@ -129,11 +154,11 @@ export function NextSessionCard({
               </span>
             </div>
           </div>
-          <ButtonLink href="/calendar" variant="primary" size="small">
+          <ButtonLink href="/calendar" variant="primary" size="medium">
             Update availability
           </ButtonLink>
         </div>
       )}
-    </section>
+    </Frame>
   );
 }
