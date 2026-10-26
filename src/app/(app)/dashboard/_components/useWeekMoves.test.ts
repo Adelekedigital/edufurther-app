@@ -32,6 +32,18 @@ describe('useWeekMoves', () => {
     expect(renderHook(() => useWeekMoves('m2', ZONE, tue)).result.current.done).toEqual([]);
   });
 
+  it('a mark never drops one made elsewhere (another tab) since this render', () => {
+    const { result } = renderHook(() => useWeekMoves('m1', ZONE, tue));
+    // Another tab marks About after this one rendered.
+    localStorage.setItem('ef-dash-week-m1-2026-44', JSON.stringify(['about']));
+    act(() => result.current.mark('share'));
+    expect(JSON.parse(localStorage.getItem('ef-dash-week-m1-2026-44')!)).toEqual([
+      'about',
+      'share',
+    ]);
+    expect(result.current.done).toEqual(expect.arrayContaining(['about', 'share']));
+  });
+
   it('marking twice keeps one entry', () => {
     const { result } = renderHook(() => useWeekMoves('m1', ZONE, tue));
     act(() => result.current.mark('share'));

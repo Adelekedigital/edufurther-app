@@ -56,3 +56,8 @@
   font-weight: var(--weight-semibold);
   color: var(--green-700);
 }
+.done:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-sm);
+}

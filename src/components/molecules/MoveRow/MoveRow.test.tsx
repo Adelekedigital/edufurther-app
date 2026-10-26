@@ -38,6 +38,14 @@ describe('MoveRow', () => {
     expect(onClick).toHaveBeenCalled();
   });
 
+  it('focus follows to the done mark when the focused action is replaced', async () => {
+    const action = { label: 'Copy link', variant: 'primary' as const, onClick: vi.fn() };
+    const { rerender } = render(<MoveRow {...base} done={false} action={action} />);
+    screen.getByRole('button', { name: 'Copy link' }).focus();
+    rerender(<MoveRow {...base} done action={action} />);
+    expect(screen.getByText('Done this week')).toHaveFocus();
+  });
+
   it('done: the action gives way to the done mark', () => {
     render(
       <MoveRow

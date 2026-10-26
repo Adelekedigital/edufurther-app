@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useRef } from 'react';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
@@ -28,6 +31,20 @@ type MoveRowProps = {
  * reason, and one action, or a done mark in its place once taken.
  */
 export function MoveRow({ icon, title, why, action, done, doneLabel }: MoveRowProps) {
+  // The action is replaced by the done mark while it holds focus (Copy link
+  // lands in place): keep the keyboard user there, not back at the page top.
+  const actionHadFocus = useRef(false);
+  const doneRef = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (done && actionHadFocus.current && document.activeElement === document.body) {
+      doneRef.current?.focus();
+    }
+    actionHadFocus.current = false;
+  }, [done]);
+  const focusProps = {
+    onFocus: () => (actionHadFocus.current = true),
+    onBlur: () => (actionHadFocus.current = false),
+  };
   return (
     <div className={cx(styles.row, done && styles.rowDone)}>
       <span className={cx(styles.disc, done && styles.discDone)}>
@@ -38,7 +55,7 @@ export function MoveRow({ icon, title, why, action, done, doneLabel }: MoveRowPr
         <span className={styles.why}>{why}</span>
       </div>
       {done ? (
-        <span className={styles.done}>
+        <span ref={doneRef} tabIndex={-1} className={styles.done}>
           <Icon name="check_circle" size={16} />
           {doneLabel}
         </span>
@@ -48,11 +65,12 @@ export function MoveRow({ icon, title, why, action, done, doneLabel }: MoveRowPr
           variant={action.variant}
           size="medium"
           onClick={action.onClick}
+          {...focusProps}
         >
           {action.label}
         </ButtonLink>
       ) : (
-        <Button variant={action.variant} size="medium" onClick={action.onClick}>
+        <Button variant={action.variant} size="medium" onClick={action.onClick} {...focusProps}>
           {action.label}
         </Button>
       )}
