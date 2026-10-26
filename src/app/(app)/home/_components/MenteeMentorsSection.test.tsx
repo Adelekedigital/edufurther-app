@@ -85,6 +85,13 @@ describe('MenteeMentorsSection', () => {
     expect(screen.queryByText('Mentor 2')).not.toBeInTheDocument();
   });
 
+  it('a mentor taking bookings with no open times is left out of Book again (backend #549)', () => {
+    const { container } = render_(
+      remote([mentor({ bookability: 'open', unavailableReason: 'no_open_times' })]),
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
   it('an error keeps Book again with a retry, not an empty list', async () => {
     const mentors = remote<MetMentor[]>(null, { error: {} as never });
     render_(mentors);

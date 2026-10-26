@@ -20,6 +20,14 @@
   }
 }
 
+/* The title and subline, with Invite a friend on the right (wraps under on phones). */
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
 .greeting {
   display: flex;
   flex-direction: column;
@@ -114,4 +122,27 @@
   gap: var(--space-2);
   flex: 1;
   min-width: 0;
+}
+
+/* The new view loading: the next step and Getting started frames. */
+.skelNew {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(280px, 2fr);
+  gap: var(--space-6);
+}
+@media (max-width: 767px) {
+  .skelNew {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The new view's blocks, at the page's own 24px rhythm. */
+.newView {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+/* The title takes focus when the new view gives way under it: no ring for a heading. */
+.hello:focus {
+  outline: none;
 }

@@ -21,11 +21,7 @@ export function formatHours(n: number): string {
 
 const str = (n: number | null) => (n == null ? null : String(n));
 
-/**
- * Where "View missed" goes: Bookings History with the Missed filter on. The
- * Mentee Bookings build adds `?filter=` (in flight); until it lands, this
- * opens History unfiltered.
- */
+/** Where "View missed" goes: Bookings History with the Missed filter on (#415). */
 export const MISSED_HREF = '/bookings?tab=history&filter=missed';
 
 /**
