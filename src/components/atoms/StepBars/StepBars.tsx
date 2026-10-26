@@ -13,10 +13,25 @@ type StepBarsProps = {
   faint?: boolean;
   /** 8px apart, filling over 240ms (Mentee Onboarding v5.dc.html). */
   spaced?: boolean;
+  /**
+   * A profile meter (Mentee Dashboard v2.dc.html): 8px bars, 4px apart.
+   * `onCard` draws the unfilled bars white, for a tinted card.
+   */
+  meter?: boolean;
+  onCard?: boolean;
 };
 
 /** Segmented progress across the top of a multi-step flow. */
-export function StepBars({ total, current, label, thin, faint, spaced }: StepBarsProps) {
+export function StepBars({
+  total,
+  current,
+  label,
+  thin,
+  faint,
+  spaced,
+  meter,
+  onCard,
+}: StepBarsProps) {
   return (
     <div
       className={cx(
@@ -24,12 +39,14 @@ export function StepBars({ total, current, label, thin, faint, spaced }: StepBar
         thin && styles.thin,
         faint && styles.faint,
         spaced && styles.spaced,
+        meter && styles.meter,
+        onCard && styles.onCard,
       )}
       role="progressbar"
       aria-label={label}
-      aria-valuemin={1}
+      aria-valuemin={meter ? 0 : 1}
       aria-valuemax={total}
-      aria-valuenow={Math.min(current + 1, total)}
+      aria-valuenow={Math.max(0, Math.min(current + 1, total))}
       style={{ gridTemplateColumns: `repeat(${total}, minmax(0, 1fr))` }}
     >
       {Array.from({ length: total }, (_, i) => (

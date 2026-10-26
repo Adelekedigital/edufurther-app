@@ -1,0 +1,13 @@
+/* Mentee Dashboard v2.dc.html new view: next step (3) beside Getting started
+   (2, at least 280px), stacked on phones. */
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(280px, 2fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+@media (max-width: 767px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

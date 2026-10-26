@@ -1,0 +1,132 @@
+/* Mentee Dashboard v2.dc.html "Getting started"; values from its inline styles. */
+.card {
+  min-width: 0;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-xl);
+  background: var(--white);
+  overflow: hidden;
+}
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--ink-100);
+}
+.title {
+  margin: 0;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+.headEnd {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.count {
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+.hide {
+  position: relative;
+  min-height: var(--space-8);
+  padding: 0 var(--space-2);
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+}
+/* A 44px tap target without the visual height (our rule; the design draws 32px). */
+.hide::before {
+  content: '';
+  position: absolute;
+  inset: calc((var(--space-11) - var(--space-8)) / -2) 0;
+}
+.hide:hover {
+  color: var(--blue-700);
+}
+.list {
+  margin: 0;
+  padding: var(--space-2);
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 56px;
+  padding: var(--space-2) var(--space-3);
+  box-sizing: border-box;
+  border: none;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--ink-900);
+  text-align: left;
+  text-decoration: none;
+  font-family: var(--font-ui);
+  cursor: pointer;
+}
+.rowNow {
+  background: var(--blue-50);
+}
+.row:hover {
+  background: var(--ink-50);
+}
+.hide:focus-visible,
+.row:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-md);
+}
+.dot {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.done {
+  background: var(--green-600);
+  color: var(--white);
+}
+.now {
+  background: var(--blue-500);
+  color: var(--white);
+}
+.todo {
+  background: var(--ink-100);
+  color: var(--ink-500);
+}
+.lines {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.label {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+.labelDone {
+  color: var(--ink-600);
+}
+.note {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+.chevron {
+  color: var(--ink-500);
+}

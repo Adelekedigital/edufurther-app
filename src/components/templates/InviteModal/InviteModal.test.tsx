@@ -1,7 +1,8 @@
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
-import { INVITE_SHARE, InviteModal } from './InviteModal';
+import { INVITE_SHARE } from '@/components/molecules/InviteLinkPanel/InviteLinkPanel';
+import { InviteModal } from './InviteModal';
 
 const URL = 'https://app.test/invite/damilola-7k2x';
 

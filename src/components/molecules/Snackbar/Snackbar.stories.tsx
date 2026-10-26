@@ -12,3 +12,12 @@ export default meta;
 type Story = StoryObj<typeof Snackbar>;
 
 export const Saved: Story = { args: { message: 'Profile saved' } };
+
+/** With an action (Mentee Dashboard v2.dc.html gsToast). */
+export const WithUndo: Story = {
+  args: {
+    message: 'Getting started hidden',
+    stamp: 1,
+    action: { label: 'Undo', onClick: () => {} },
+  },
+};

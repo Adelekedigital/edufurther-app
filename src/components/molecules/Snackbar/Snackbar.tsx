@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useId, useSyncExternalStore } from 'react';
+import { useEffect, useId, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
+import { cx } from '@/lib/utils/cx';
 import styles from './Snackbar.module.css';
 
 const noop = () => () => {};
@@ -31,11 +32,19 @@ const setOwner = (id: string | null) => {
 export function Snackbar({
   message,
   stamp = 0,
+  action,
 }: {
   message: string | null;
   /** Moves with each outcome, so the same words twice are shown and heard again. */
   stamp?: number;
+  /**
+   * One action beside the message, such as Undo (Mentee Dashboard v2.dc.html).
+   * `focus`: it takes focus when it shows, for an outcome that removed the
+   * control the person was on (Hide), so they land on the way back.
+   */
+  action?: { label: string; onClick: () => void; focus?: boolean };
 }) {
+  const actionRef = useRef<HTMLButtonElement>(null);
   const id = useId();
   // The server render has no <body> to portal into; the client's first pass agrees.
   // The whole region moves, empty, before any message can arrive.
@@ -58,11 +67,25 @@ export function Snackbar({
     };
   }, [message, stamp, id]);
   const shown = message && current === id ? message : null;
+  const focusAction = !!shown && !!action?.focus;
+  useEffect(() => {
+    if (focusAction) actionRef.current?.focus();
+  }, [focusAction, stamp]);
   const region = (
     <div role="status" className={styles.region}>
       {shown && (
-        <div key={stamp} className={styles.toast}>
+        <div key={stamp} className={cx(styles.toast, action && styles.withAction)}>
           {shown}
+          {action && (
+            <button
+              ref={actionRef}
+              type="button"
+              className={styles.action}
+              onClick={action.onClick}
+            >
+              {action.label}
+            </button>
+          )}
         </div>
       )}
     </div>

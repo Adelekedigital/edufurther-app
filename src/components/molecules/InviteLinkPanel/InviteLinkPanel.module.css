@@ -1,0 +1,61 @@
+/* The invite link box and its actions. `modal` from InviteModal.dc.html,
+   `card` from Mentee Dashboard v2.dc.html's next step; values from their
+   inline styles. */
+.link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  /* 48px, the height of the large buttons with it. */
+  min-height: var(--button-h-large);
+  padding: 0 var(--space-3);
+  box-sizing: border-box;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-md);
+  background: var(--ink-50);
+}
+/* On the blue next-step card: white, wider padding, at most 420px. */
+.cardLink {
+  max-width: 420px;
+  padding: 0 var(--space-4);
+  background: var(--white);
+}
+.cardWidth {
+  max-width: 420px;
+}
+.linkIcon {
+  color: var(--ink-500);
+}
+.linkText {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-p-sm);
+  color: var(--ink-900);
+}
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+/* Next step: Copy and a text Share side by side, 12px apart. */
+.cardActions {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-3);
+}
+/* The design gives the text Share the large button's box (48px, 24px sides);
+   doubled so it outranks the text variant's own padding and height. */
+.cardShare.cardShare {
+  min-height: var(--button-h-large);
+  padding: 0 var(--space-6);
+  /* blue-500 on the card's blue-50 is under 4.5:1; blue-700 passes (ours). */
+  color: var(--blue-700);
+}
+@media (max-width: 767px) {
+  .cardActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
