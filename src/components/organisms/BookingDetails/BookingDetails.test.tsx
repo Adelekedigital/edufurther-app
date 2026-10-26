@@ -120,9 +120,26 @@ describe('the footer', () => {
         joinClosesAt: at(0.75),
       }),
       joinHref: '/sessions/b1',
+      isNext: true,
     });
     expect(screen.getByRole('button', { name: 'Join session' })).toBeDisabled();
-    expect(screen.getByText(/Join opens \d+ minutes before/)).toBeVisible();
+    expect(screen.getByText('Join opens 6 min before')).toBeVisible();
+  });
+
+  it('a later session says when Join opens, with no Join button (PRD Mentor Bookings)', () => {
+    panel({
+      booking: sampleBookingFor({
+        startsAt: at(26),
+        endsAt: at(27),
+        joinOpensAt: at(25.9),
+        joinClosesAt: at(26.25),
+      }),
+      joinHref: '/sessions/b1',
+      onCallOff: vi.fn(),
+    });
+    expect(screen.queryByRole('button', { name: 'Join session' })).not.toBeInTheDocument();
+    expect(screen.getByText('Join opens 6 min before')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Cancel session' })).toBeVisible();
   });
 
   it('has no footer where there is nothing to do yet', () => {
@@ -325,7 +342,7 @@ describe('the booking form answers', () => {
     expect(screen.getByText('Answer 1.')).toBeVisible();
     expect(screen.getByText('Answer 2.')).toBeVisible();
     expect(screen.queryByText('Answer 3.')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Show all 6 questions' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Show all 6 answers' })).toBeVisible();
   });
 
   it('two or fewer need no disclosure at all', () => {
@@ -335,7 +352,7 @@ describe('the booking form answers', () => {
 
   it('the disclosure says what it does and what it controls', () => {
     panel({ answers: six, onToggleAnswers: vi.fn() });
-    const button = screen.getByRole('button', { name: 'Show all 6 questions' });
+    const button = screen.getByRole('button', { name: 'Show all 6 answers' });
     expect(button).toHaveAttribute('aria-expanded', 'false');
     expect(button).toHaveAttribute('aria-controls', 'booking-answers');
   });
@@ -569,13 +586,19 @@ describe('questions the mentee left blank', () => {
   });
   const blank = (i: number) => q(i, { answered: false, text: '' });
 
-  it('the toggle counts questions, never promising answers that do not exist', () => {
-    // Seven asked, three answered. "Show all 7 answers" was a claim the panel
-    // could not keep: expanding showed three answers and four blanks.
+  it('the toggle counts answers, never promising ones that do not exist', () => {
+    // Seven asked, three answered: "Show all 3 answers", the row's count too.
+    // "Show all 7 answers" would be a claim the panel could not keep.
     const mixed = [q(1), q(2), q(3), blank(4), blank(5), blank(6), blank(7)];
     panel({ answers: mixed, onToggleAnswers: vi.fn() });
-    expect(screen.getByRole('button', { name: 'Show all 7 questions' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Show all 3 answers' })).toBeVisible();
     expect(screen.queryByRole('button', { name: /7 answers/ })).not.toBeInTheDocument();
+  });
+
+  it('counts questions when only blanks are hidden', () => {
+    // Both answers already show; "Show all 2 answers" would reveal none.
+    panel({ answers: [q(1), q(2), blank(3)], onToggleAnswers: vi.fn() });
+    expect(screen.getByRole('button', { name: 'Show all 3 questions' })).toBeVisible();
   });
 
   it('the collapsed preview shows answers, not the blanks that came first', () => {
@@ -616,7 +639,7 @@ describe('questions the mentee left blank', () => {
     panel({ answers: [q(1), q(2), q(3)], onToggleAnswers: vi.fn() });
     expect(screen.getByText('Answer 1.')).toBeVisible();
     expect(screen.queryByText('No answer')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Show all 3 questions' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Show all 3 answers' })).toBeVisible();
   });
 });
 

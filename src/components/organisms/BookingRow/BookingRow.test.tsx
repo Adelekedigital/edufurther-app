@@ -170,3 +170,21 @@ describe('what the row says is unchanged by the swap', () => {
     expect(rule('.selected')).toMatch(/background:\s*var\(--blue-50\)/);
   });
 });
+
+describe('what the row says (PRD Mentor Bookings)', () => {
+  it('tags a past session with who canceled it', () => {
+    row({ booking: sampleBookingFor({ status: 'cancelled', cancelledBy: 'mentee' }) });
+    expect(screen.getByText('Canceled by Amara')).toBeVisible();
+  });
+
+  it('shows the clash line, with an id Accept can point at', () => {
+    row({
+      booking: sampleBookingFor({ status: 'pending', respondBy: at(20) }),
+      overlap: { id: 'clash-b1', text: 'Overlaps your 9:00 am session with Tunde' },
+    });
+    expect(screen.getByText('Overlaps your 9:00 am session with Tunde')).toHaveAttribute(
+      'id',
+      'clash-b1',
+    );
+  });
+});

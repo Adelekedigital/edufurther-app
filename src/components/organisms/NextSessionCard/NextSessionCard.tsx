@@ -4,6 +4,7 @@ import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { BOOKINGS_COPY } from '@/lib/copy/bookings';
 import { cx } from '@/lib/utils/cx';
 import {
   bookingHeading,
@@ -71,11 +72,18 @@ export function NextSessionCard({
   const opensIn = joinOpensInMinutes(b);
   const other = otherTimeLine(b, timeZone);
   const lockId = useId();
-  const coverLabel =
-    // The note, not the form. "What X wants to cover" is the answers preview's
-    // label in the new design, so this field takes the panel's wording and the
-    // two stop being two names for one thing.
-    b.side === 'mentee' ? 'Your note' : `Note from ${b.other.firstName}`;
+  // The first booking-form answer, as drawn (PRD Mentor Bookings), under the
+  // question as the mentor asked it. A booking with no answers (a migrated one
+  // has only a note) shows the note, under the panel's own label for it.
+  const first = b.answersPreview?.first.text ? b.answersPreview : null;
+  const cover = first
+    ? { label: first.first.question, body: first.first.text }
+    : b.note
+      ? {
+          label: b.side === 'mentee' ? 'Your note' : `Note from ${b.other.firstName}`,
+          body: b.note,
+        }
+      : null;
 
   return (
     <section
@@ -135,23 +143,24 @@ export function NextSessionCard({
         </div>
       </div>
 
-      {b.note && (
+      {cover && (
         <div className={styles.note}>
-          <span className={styles.noteLabel}>{coverLabel}</span>
-          <p className={styles.noteBody}>{b.note}</p>
+          <span className={styles.noteLabel}>{cover.label}</span>
+          {/* Isolated: another user's text, which may carry bidi marks. */}
+          <p className={styles.noteBody} dir="auto">
+            {cover.body}
+          </p>
+          {/* Inside the box, as drawn: the link to the rest of the form. */}
+          {first && onOpenAnswers && (
+            <AnswerPreview
+              preview={first}
+              onOpenAll={onOpenAnswers}
+              controls={answersControls}
+              forBooking={bookingHeading(b)}
+              linkOnly
+            />
+          )}
         </div>
-      )}
-
-      {/* The hero gets the link, not the box: it is already a card, and the
-          design hangs "See all N answers" under the note. */}
-      {b.answersPreview && onOpenAnswers && (
-        <AnswerPreview
-          preview={b.answersPreview}
-          onOpenAll={onOpenAnswers}
-          controls={answersControls}
-          forBooking={bookingHeading(b)}
-          linkOnly
-        />
       )}
 
       {/* A shut window means the session is over bar the backend's bookkeeping;
@@ -170,7 +179,7 @@ export function NextSessionCard({
           )}
           {state === 'before' && opensIn != null && (
             <span id={lockId} className={styles.lock}>
-              Join opens {opensIn} minutes before
+              {BOOKINGS_COPY.joinOpens(opensIn)}
             </span>
           )}
         </div>

@@ -73,6 +73,15 @@
   margin-top: var(--space-1);
 }
 
+/* A request that would clash with a confirmed session if accepted. */
+.overlap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+  color: var(--red-700);
+}
+
 .actions {
   display: flex;
   align-items: center;

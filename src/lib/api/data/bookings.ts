@@ -14,7 +14,7 @@ import {
 import { coverKey } from '@/lib/utils/cover';
 import { clampFocus, personCover, personInitials } from '@/lib/utils/person';
 import { dayKey } from '@/lib/utils/slots';
-import type { Booking, BookingParty, BookingStatus } from '@/types/booking';
+import type { Booking, BookingParty, BookingSide, BookingStatus } from '@/types/booking';
 import type { AppError, Remote } from '@/types/mentor';
 import { ApiError, apiError, normaliseError, retryOnce } from './errors';
 import { api } from './http';
@@ -100,6 +100,17 @@ export function toParty(p: PartyRead): BookingParty {
  * derived per row, not from their role: one account can host some of these and
  * have booked others (backend reply §2).
  */
+/**
+ * PENDING BACKEND (bookings request #11): `cancelled_by` is not in the
+ * published spec yet. Read untyped until it is; a missing field is null, which
+ * says "Canceled" without a name, so nothing is claimed before the data exists.
+ */
+function cancelledBy(s: SessionRead): BookingSide | null {
+  if (s.status !== 'cancelled') return null;
+  const by = (s as { cancelled_by?: unknown }).cancelled_by;
+  return by === 'mentor' || by === 'mentee' ? by : null;
+}
+
 export function toBooking(s: SessionRead, viewerId: string): Booking {
   const side = s.mentor_id === viewerId ? 'mentor' : 'mentee';
   const start = new Date(s.starts_at);
@@ -117,6 +128,7 @@ export function toBooking(s: SessionRead, viewerId: string): Booking {
     // Carried on every list row, so a page of twenty costs no extra requests.
     myAttendance: toParty(side === 'mentor' ? s.mentor : s.mentee).attendance,
     myJoinedAt: (side === 'mentor' ? s.mentor : s.mentee).joined_at ?? null,
+    cancelledBy: cancelledBy(s),
     // The offer rides on the session, so a row carries it without a second call.
     suggestion: s.suggestion
       ? {

@@ -139,6 +139,7 @@ describe('Upcoming', () => {
   it('empty invites a mentor to open their calendar', () => {
     render(<BookingsScreen />);
     expect(screen.getByRole('heading', { name: 'No upcoming sessions yet' })).toBeVisible();
+    expect(screen.getByText(/Want more sessions\?/)).toBeVisible();
     expect(screen.getByRole('link', { name: 'Update your availability' })).toHaveAttribute(
       'href',
       '/calendar',
@@ -170,7 +171,7 @@ describe('Upcoming', () => {
     ]);
     render(<BookingsScreen />);
     expect(screen.getByRole('button', { name: 'Join session' })).toBeDisabled();
-    expect(screen.getByText('Join opens 5 minutes before')).toBeVisible();
+    expect(screen.getByText('Join opens 5 min before')).toBeVisible();
   });
 
   it('inside the window Join opens the session’s own page, where joining happens', () => {
@@ -217,7 +218,11 @@ describe('Pending', () => {
   it('a mentor is told these are theirs to answer', () => {
     h.pending = remote([booking({ status: 'pending', respondBy: at(5) })]);
     render(<BookingsScreen />);
-    expect(screen.getByText('These mentees asked for a time.')).toBeVisible();
+    expect(
+      screen.getByText(
+        'These mentees asked for a time. Accept to confirm it, or decline so they can pick another.',
+      ),
+    ).toBeVisible();
     expect(screen.getByText('Respond within 5h')).toBeVisible();
   });
 
@@ -564,7 +569,7 @@ describe('the booking form answers, wired up', () => {
     h.answers = { data: some, isLoading: false, error: null, retry: vi.fn() };
     render(<BookingsScreen />);
     expect(screen.queryByText('A3.')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Show all 3 questions' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Show all 3 answers' }));
     expect(screen.getByText('A3.')).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: 'Show less' }));
     expect(screen.queryByText('A3.')).not.toBeInTheDocument();
@@ -650,17 +655,34 @@ describe('the answers preview on the rows', () => {
     expect(screen.queryByText('Nine programs.')).not.toBeInTheDocument();
   });
 
-  it('the hero offers the link, not the box — that card has its own note', async () => {
+  it('the hero shows the first answer under its question, then the link (PRD Mentor Bookings)', async () => {
     h.upcoming = remote([
-      withPreview({ id: 'a', title: 'Statement of Purpose', startsAt: at(2), endsAt: at(3) }),
+      withPreview({
+        id: 'a',
+        title: 'Statement of Purpose',
+        startsAt: at(2),
+        endsAt: at(3),
+        note: 'A free note.',
+      }),
     ]);
     render(<BookingsScreen />);
+    expect(screen.getByText('What do you want to cover?')).toBeVisible();
+    expect(screen.getByText('Nine programs.')).toBeVisible();
     // The link names its booking like every other one.
     expect(
       screen.getByRole('button', { name: /See all 4 answers for Statement of Purpose/ }),
     ).toBeVisible();
-    // ...and the hero shows no preview box, only the link.
-    expect(screen.queryByText('What do you want to cover?')).not.toBeInTheDocument();
+    // The free note stays in the panel; the card shows the form.
+    expect(screen.queryByText('A free note.')).not.toBeInTheDocument();
+  });
+
+  it('a hero booking with only a note shows the note', () => {
+    h.upcoming = remote([
+      booking({ id: 'a', startsAt: at(2), endsAt: at(3), note: 'A free note.' }),
+    ]);
+    render(<BookingsScreen />);
+    expect(screen.getByText('Note from Amara')).toBeVisible();
+    expect(screen.getByText('A free note.')).toBeVisible();
   });
 
   it('the hero link opens the panel expanded, like the rows', async () => {

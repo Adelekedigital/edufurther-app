@@ -26,11 +26,6 @@
   color: var(--ink-900);
 }
 
-/* Clear of the home indicator, as the design's footer is. */
-.sheet > :last-child {
-  padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
-}
-
 /* A ?booking= link opened cold: the panel's own loading and error states.
    Ours — the design never drew the panel without a booking to put in it. */
 .fallback {

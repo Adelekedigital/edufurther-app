@@ -1,4 +1,5 @@
 import type { Illustration } from '@/components/molecules/EmptyState/EmptyState';
+import { BOOKINGS_COPY } from '@/lib/copy/bookings';
 import type { BookingTab } from '@/types/booking';
 
 export type EmptyCopy = {
@@ -7,6 +8,8 @@ export type EmptyCopy = {
   description: string;
   /** Where the state sends someone who has nothing yet. */
   action?: { label: string; href: string };
+  /** A quiet line under the state with a link in it, where the design draws one. */
+  more?: { lead: string; link: string; href: string };
 };
 
 /**
@@ -23,7 +26,7 @@ export function emptyFor(tab: BookingTab, isMentor: boolean, filtered: boolean):
           illustration: 'calendar',
           title: 'No upcoming sessions yet',
           description: 'Once a mentee books a session with you, it will appear here.',
-          action: { label: 'Update your availability', href: '/calendar' },
+          more: { ...BOOKINGS_COPY.moreSessions, href: '/calendar' },
         }
       : {
           illustration: 'calendar',

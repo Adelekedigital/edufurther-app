@@ -116,6 +116,31 @@ describe('toBooking', () => {
     expect(toBooking(row({ mentee_attendance_rate: null }), 'me').menteeAttendanceRate).toBeNull();
     expect(toBooking(row({ mentee_attendance_rate: 0 }), 'me').menteeAttendanceRate).toBe(0);
   });
+
+  // PENDING BACKEND (request #11): untyped until the spec carries it.
+  describe('cancelledBy', () => {
+    const cancelled = (by: unknown) =>
+      toBooking({ ...row({ status: 'cancelled' }), cancelled_by: by } as SessionRead, 'me')
+        .cancelledBy;
+
+    it('reads which side canceled', () => {
+      expect(cancelled('mentor')).toBe('mentor');
+      expect(cancelled('mentee')).toBe('mentee');
+    });
+
+    it('is null for a system or admin cancel, and before the field ships', () => {
+      expect(cancelled(null)).toBeNull();
+      expect(cancelled(undefined)).toBeNull();
+      expect(cancelled('admin')).toBeNull();
+    });
+
+    it('is null on any status but cancelled', () => {
+      expect(
+        toBooking({ ...row({ status: 'completed' }), cancelled_by: 'mentor' } as SessionRead, 'me')
+          .cancelledBy,
+      ).toBeNull();
+    });
+  });
 });
 
 describe('toApiStatuses', () => {

@@ -26,7 +26,8 @@ import {
   waitingPill,
   safeMeetingUrl,
   respondDeadline,
-  statusTag,
+  outcomeTag,
+  panelStatus,
   timeRange,
 } from './bookings';
 
@@ -59,6 +60,7 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
   other: party(),
   myAttendance: 'pending' as const,
   myJoinedAt: null,
+  cancelledBy: null,
   startsAt: at(24),
   endsAt: at(25),
   durationMin: 60,
@@ -178,18 +180,74 @@ describe('nextSessionWhen', () => {
   });
 });
 
-describe('statusTag', () => {
-  it('names all six past outcomes, in their tone', () => {
-    expect(statusTag('completed')).toEqual({ label: 'Completed', tone: 'success' });
-    expect(statusTag('cancelled')).toEqual({ label: 'Canceled', tone: 'warning' });
-    expect(statusTag('noShow')).toEqual({ label: 'Missed', tone: 'danger' });
-    expect(statusTag('declined')).toEqual({ label: 'Declined', tone: 'danger' });
-    expect(statusTag('expired')).toEqual({ label: 'Expired', tone: 'warning' });
-    expect(statusTag('withdrawn')).toEqual({ label: 'Withdrawn', tone: 'warning' });
+describe('outcomeTag', () => {
+  const tag = (over: Partial<Booking>) => outcomeTag(booking(over), NOW);
+  const missed = (mine: BookingParty['attendance'], theirs: BookingParty['attendance']) =>
+    tag({ status: 'noShow', myAttendance: mine, other: party({ attendance: theirs }) })?.label;
+
+  it('names the plain outcomes, in their tone', () => {
+    expect(tag({ status: 'completed' })).toEqual({ label: 'Completed', tone: 'success' });
+    expect(tag({ status: 'declined' })).toEqual({ label: 'Declined', tone: 'danger' });
+    expect(tag({ status: 'expired' })).toEqual({ label: 'Expired', tone: 'warning' });
+    expect(tag({ status: 'withdrawn' })).toEqual({ label: 'Withdrawn', tone: 'warning' });
   });
-  it('draws nothing for a session that is not over', () => {
-    expect(statusTag('confirmed')).toBeNull();
-    expect(statusTag('pending')).toBeNull();
+
+  it('names who canceled, from the row’s side (B7)', () => {
+    expect(tag({ status: 'cancelled', cancelledBy: 'mentor' })).toEqual({
+      label: 'Canceled by you',
+      tone: 'warning',
+    });
+    expect(tag({ status: 'cancelled', cancelledBy: 'mentee' })?.label).toBe('Canceled by Amara');
+    // The same row read from the mentee's side flips who "you" is.
+    expect(tag({ status: 'cancelled', side: 'mentee', cancelledBy: 'mentee' })?.label).toBe(
+      'Canceled by you',
+    );
+    expect(tag({ status: 'cancelled', side: 'mentee', cancelledBy: 'mentor' })?.label).toBe(
+      'Canceled by Amara',
+    );
+  });
+
+  it('says only "Canceled" when the system or an admin canceled', () => {
+    expect(tag({ status: 'cancelled', cancelledBy: null })?.label).toBe('Canceled');
+  });
+
+  it('names who missed it, in the danger tone (B7)', () => {
+    expect(missed('noShow', 'attended')).toBe('Missed by you');
+    expect(missed('noShow', 'leftEarly')).toBe('Missed by you');
+    expect(missed('attended', 'noShow')).toBe('Missed by Amara');
+    expect(missed('leftEarly', 'noShow')).toBe('Missed by Amara');
+    expect(tag({ status: 'noShow' })?.tone).toBe('danger');
+  });
+
+  it('reads "Missed by you" for each side when nobody joined', () => {
+    expect(missed('noShow', 'noShow')).toBe('Missed by you');
+  });
+
+  it('says only "Missed" when attendance is unknown (a migrated booking)', () => {
+    expect(missed('pending', 'pending')).toBe('Missed');
+  });
+
+  it('calls a lapsed request Expired before the API does', () => {
+    expect(tag({ status: 'pending', respondBy: at(-1) })).toEqual({
+      label: 'Expired',
+      tone: 'warning',
+    });
+    expect(tag({ status: 'pending', respondBy: at(1) })).toBeNull();
+  });
+
+  it('draws nothing for a confirmed session', () => {
+    expect(tag({ status: 'confirmed' })).toBeNull();
+  });
+
+  it('is what the panel’s status line says too', () => {
+    const b = booking({ status: 'cancelled', cancelledBy: 'mentee' });
+    expect(panelStatus(b, NOW)).toEqual({ label: 'Canceled by Amara', tone: 'warning' });
+    const m = booking({
+      status: 'noShow',
+      myAttendance: 'attended',
+      other: party({ attendance: 'noShow' }),
+    });
+    expect(panelStatus(m, NOW).label).toBe('Missed by Amara');
   });
 });
 
@@ -481,17 +539,17 @@ describe('who the other person is, and how reliable (backend #409)', () => {
 
   it('a new mentee is not a bad one — no rate, no count, no claim', () => {
     // 0 with a null rate is a new mentee. "0 sessions" would read as a record.
-    expect(attendanceLine(mentorView({ menteeAttendanceRate: null, menteeAttendanceSessions: 0 }))).toBe(
-      'Mentee',
-    );
+    expect(
+      attendanceLine(mentorView({ menteeAttendanceRate: null, menteeAttendanceSessions: 0 })),
+    ).toBe('Mentee');
   });
 
   it('a rate with no count is still a rate', () => {
     // The field is defaulted, so a 0 can arrive beside a real rate. Printing
     // "(0 sessions)" next to "90%" would contradict itself.
-    expect(attendanceLine(mentorView({ menteeAttendanceRate: 90, menteeAttendanceSessions: 0 }))).toBe(
-      'Attendance rate: 90%',
-    );
+    expect(
+      attendanceLine(mentorView({ menteeAttendanceRate: 90, menteeAttendanceSessions: 0 })),
+    ).toBe('Attendance rate: 90%');
   });
 
   it('a mentee sees the other side as a mentor, with no record at all', () => {

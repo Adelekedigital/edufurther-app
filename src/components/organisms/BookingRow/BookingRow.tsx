@@ -6,7 +6,6 @@ import { BookingStatusTag } from '@/components/molecules/BookingStatusTag/Bookin
 import { AnswerPreview } from '@/components/molecules/AnswerPreview/AnswerPreview';
 import { DeadlinePill } from '@/components/molecules/DeadlinePill/DeadlinePill';
 import {
-  isLapsed,
   bookingHeading,
   fullDate,
   otherTimeLine,
@@ -29,6 +28,11 @@ type BookingRowProps = {
    * for nowrap controls: a block in there collapses the content column.
    */
   notice?: ReactNode;
+  /**
+   * The clash line on a request: "Overlaps your 9:00 am session with Amara".
+   * `id` lets the row's Accept name it in `aria-describedby`.
+   */
+  overlap?: { text: string; id: string };
   /**
    * Opens this booking's details panel. The row's primary action, so it is a
    * labelled button in the corner rather than an item in a menu.
@@ -69,6 +73,7 @@ export function BookingRow({
   timeZone,
   actions,
   notice,
+  overlap,
   onOpenDetails,
   selected,
   onOpenAnswers,
@@ -76,12 +81,6 @@ export function BookingRow({
   now = new Date(),
   inHistory,
 }: BookingRowProps) {
-  // The tag follows the deadline, not the list: the moment `respond_by` passes
-  // this request is dead, accept and decline already 409, and saying so at once
-  // is the honest thing even while it is still sitting in Pending's cached
-  // list. The layout below is the opposite — it must not move under someone
-  // mid-read. Same fact, two different right answers.
-  const lapsed = isLapsed(b, now);
   // Whether this reads as over: it carries the full date its neighbours carry,
   // and drops the "their time" line nobody can act on.
   //
@@ -101,8 +100,11 @@ export function BookingRow({
       <div className={styles.content}>
         <span className={styles.title}>
           <span className={styles.heading}>{bookingHeading(b)}</span>
-          <BookingStatusTag status={b.status} />
-          {lapsed && <BookingStatusTag status="expired" />}
+          {/* The tag follows the deadline, not the list: once `respond_by`
+              passes it reads Expired even while the row still sits in Pending's
+              cached list. The layout below must not move under someone mid-read,
+              so `past` comes from the list instead. */}
+          <BookingStatusTag booking={b} now={now} />
         </span>
         <span className={styles.meta}>
           <span className={styles.metaItem}>
@@ -119,6 +121,12 @@ export function BookingRow({
               <Icon name={other.odd ? 'bedtime' : 'public'} size={14} />
               {other.text}
             </span>
+          </span>
+        )}
+        {overlap && (
+          <span id={overlap.id} className={styles.overlap}>
+            <Icon name="event_busy" size={14} />
+            {overlap.text}
           </span>
         )}
         {pill && (

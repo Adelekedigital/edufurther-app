@@ -63,6 +63,7 @@ export const Joinable: Story = {
   },
 };
 
+/** The next session before its window: a locked Join, then when it opens. */
 export const BeforeTheJoinWindow: Story = {
   args: {
     booking: sampleBookingFor({
@@ -72,6 +73,24 @@ export const BeforeTheJoinWindow: Story = {
       joinClosesAt: at(0.75),
     }),
     joinHref: '/sessions/b1',
+    isNext: true,
+  },
+};
+
+/**
+ * A later session (PRD Mentor Bookings): when Join opens and Cancel session
+ * on one line, and no Join button.
+ */
+export const LaterSession: Story = {
+  args: {
+    booking: sampleBookingFor({
+      startsAt: at(26),
+      endsAt: at(27),
+      joinOpensAt: at(25.9),
+      joinClosesAt: at(26.25),
+    }),
+    joinHref: '/sessions/b1',
+    onCallOff: fn(),
   },
 };
 

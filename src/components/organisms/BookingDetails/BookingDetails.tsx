@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { AnswerItem } from '@/components/molecules/AnswerItem/AnswerItem';
 import { SuggestionNotice } from '@/components/organisms/SuggestionNotice/SuggestionNotice';
 import { DetailFacts, type Fact } from '@/components/molecules/DetailFacts/DetailFacts';
+import { BOOKINGS_COPY } from '@/lib/copy/bookings';
 import { cx } from '@/lib/utils/cx';
 import {
   attendanceLine,
@@ -50,6 +51,12 @@ type BookingDetailsProps = {
   retryOutcome?: () => void;
   /** The session's own page, where joining happens. Absent: no Join here at all. */
   joinHref?: string;
+  /**
+   * The Upcoming tab's next session, the one on the hero. Only it shows a
+   * locked Join before its window opens; a later session shows just when Join
+   * opens (PRD Mentor Bookings), so the footer offers nothing it can't do.
+   */
+  isNext?: boolean;
   /** The reason is still being fetched: the block has a shape, not a gap. */
   outcomeLoading?: boolean;
   /** What the mentee wrote on the booking form (GET /sessions/{id}/answers). */
@@ -186,13 +193,15 @@ export function BookingDetails({
   answer,
   answerNotice,
   joinHref,
+  isNext = false,
   now = new Date(),
 }: BookingDetailsProps) {
   const status = panelStatus(b, now);
   const other = otherTimeLine(b, timeZone);
   const join = joinState(b, now);
   const opensIn = joinOpensInMinutes(b);
-  const showJoin = !!joinHref && (join === 'open' || join === 'before');
+  const showJoin = !!joinHref && (join === 'open' || (join === 'before' && isNext));
+  const showLock = !!joinHref && join === 'before' && opensIn != null;
   // The one destructive thing this viewer can still do to this booking, in the
   // panel rather than a tap away in a scrolling list. The two are mutually
   // exclusive — one wants `pending`, the other `confirmed` — so the order only
@@ -229,6 +238,14 @@ export function BookingDetails({
   // *now*. Comparing against the current view made the toggle disappear once
   // expanded, stranding the panel open with no way back.
   const hasMore = allAnswers.length > collapsed.length;
+  // Counts answers, like the row's "See all N answers", so the two agree.
+  // Only when expanding shows more answers: if all that is hidden is blank
+  // questions, "Show all 2 answers" over the two already shown would be a
+  // claim the panel can't keep, so it counts the questions instead.
+  const moreLabel =
+    answeredOnly.length > collapsed.length
+      ? BOOKINGS_COPY.showAllAnswers(answeredOnly.length)
+      : `Show all ${allAnswers.length} questions`;
 
   const facts: Fact[] = [
     { icon: 'calendar_today', text: fullDate(b.startsAt, timeZone) },
@@ -243,7 +260,12 @@ export function BookingDetails({
           <h2 id={titleId} className={styles.title}>
             Booking details
           </h2>
-          <button type="button" aria-label="Close details" onClick={onClose} className={styles.close}>
+          <button
+            type="button"
+            aria-label="Close details"
+            onClick={onClose}
+            className={styles.close}
+          >
             <Icon name="close" size={20} />
           </button>
         </div>
@@ -261,9 +283,7 @@ export function BookingDetails({
             <span className={styles.name}>{b.other.name}</span>
             {/* Who they are, where there is anything to say (backend #409).
                 Above the role line because it is the more human fact. */}
-            {partyLine(b.other) && (
-              <span className={styles.label}>{partyLine(b.other)}</span>
-            )}
+            {partyLine(b.other) && <span className={styles.label}>{partyLine(b.other)}</span>}
             <span className={styles.label}>{attendanceLine(b)}</span>
           </span>
         </div>
@@ -348,11 +368,7 @@ export function BookingDetails({
                 aria-expanded={!!answersExpanded}
                 aria-controls={ANSWERS_ID}
               >
-                {/* "questions", not "answers": the list counts every
-                    question asked, and some carry no answer. Offering to
-                    "show all 7 answers" and then showing three answers and
-                    four blanks is a claim the panel cannot keep. */}
-                {answersExpanded ? 'Show less' : `Show all ${allAnswers.length} questions`}
+                {answersExpanded ? BOOKINGS_COPY.showLess : moreLabel}
               </button>
             )}
           </div>
@@ -430,7 +446,7 @@ export function BookingDetails({
         </div>
       </div>
 
-      {(showJoin || showCallOff || !!answer) && (
+      {(showJoin || showLock || showCallOff || !!answer) && (
         <div className={styles.footer}>
           {/* Above the buttons, so it is read before it is acted on rather
               than explaining afterwards. */}
@@ -441,7 +457,13 @@ export function BookingDetails({
           {showJoin &&
             /* It navigates once open, so it is a link; before that, a locked button. */
             (join === 'open' ? (
-              <ButtonLink href={joinHref!} prefetch={false} variant="primary" size="large" fullWidth>
+              <ButtonLink
+                href={joinHref!}
+                prefetch={false}
+                variant="primary"
+                size="large"
+                fullWidth
+              >
                 Join session
               </ButtonLink>
             ) : (
@@ -449,20 +471,22 @@ export function BookingDetails({
                 Join session
               </Button>
             ))}
-          {showJoin && join === 'before' && opensIn != null && (
-            <span className={styles.lock}>Join opens {opensIn} minutes before</span>
-          )}
-          {/* Low emphasis, under Join: calling the session off is the rarer
-              choice, and the same `text-destructive` the row's Decline uses. */}
-          {showCallOff && (
-            <Button
-              variant="text-destructive"
-              size="large"
-              fullWidth
-              onClick={() => onCallOff!(callOff!.action)}
-            >
-              {callOff!.label}
-            </Button>
+          {/* The design's second line: when Join opens on the left, the
+              call-off on the right, a quiet text button rather than a second
+              full-width one. */}
+          {(showLock || showCallOff) && (
+            <div className={styles.footRow}>
+              {showLock && <span className={styles.lock}>{BOOKINGS_COPY.joinOpens(opensIn!)}</span>}
+              {showCallOff && (
+                <Button
+                  variant="text-destructive"
+                  size="large"
+                  onClick={() => onCallOff!(callOff!.action)}
+                >
+                  {callOff!.label}
+                </Button>
+              )}
+            </div>
           )}
         </div>
       )}

@@ -99,9 +99,11 @@
   color: var(--ink-600);
 }
 
-/* Two lines here; the whole note is in the details panel. */
+/* Two lines here; the whole answer is in the details panel. */
 .noteBody {
   margin: 0;
+  /* A pasted link or id has no break opportunity; the clamp is vertical. */
+  overflow-wrap: anywhere;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;

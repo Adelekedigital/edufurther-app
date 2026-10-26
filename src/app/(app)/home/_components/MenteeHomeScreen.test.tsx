@@ -83,6 +83,7 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
   other: party(),
   myAttendance: 'pending',
   myJoinedAt: null,
+  cancelledBy: null,
   startsAt: inHours(120),
   endsAt: inHours(121),
   durationMin: 60,

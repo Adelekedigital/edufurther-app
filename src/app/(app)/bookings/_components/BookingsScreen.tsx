@@ -19,7 +19,8 @@ import {
 import { useBookingAnswers } from '@/lib/api/data/sessionAnswers';
 import { useBookingOutcome } from '@/lib/api/data/sessionEvents';
 import { normaliseError } from '@/lib/api/data/errors';
-import { deviceTimeZone } from '@/lib/utils/format';
+import { BOOKINGS_COPY } from '@/lib/copy/bookings';
+import { deviceTimeZone, formatTime } from '@/lib/utils/format';
 import { useHydrated } from '@/lib/utils/useHydrated';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type { AnswerFile, Booking, BookingStatus } from '@/types/booking';
@@ -177,10 +178,9 @@ export function BookingsScreen() {
   const sending = pendingRows.some((b) => b.side === 'mentee');
   const pendingIntro =
     hosting && !sending
-      ? // PR 1 has no accept or decline control, so the line stops at the fact.
-        'These mentees asked for a time.'
+      ? BOOKINGS_COPY.pendingIntroMentor
       : sending && !hosting
-        ? 'Requests you sent that your mentor hasn’t confirmed yet.'
+        ? BOOKINGS_COPY.pendingIntroMentee
         : undefined;
 
   // The write actions (backend: accept/decline/withdraw/cancel). One hook per
@@ -208,51 +208,62 @@ export function BookingsScreen() {
   // "you have reviewed everything", which is the error-before-empty rule.
   const reviewUnknown = reviewable.isLoading || !!reviewable.error;
 
-  const clashId = (id: string) => `clash-${id}`;
-  /**
-   * The row's copy of the warning, except for the row whose panel is open —
-   * that one is rendered in the panel instead, beside the Accept being pressed.
-   *
-   * Exactly one, always. Above 1100px the panel is an aside and the row stays
-   * on screen beside it, so rendering both put two live regions carrying the
-   * same sentence on the page: it announced twice, and the shared `clash-<id>`
-   * meant `aria-describedby` on either Accept resolved to whichever the browser
-   * found first (GitHub review, PR 233). Both buttons point at the one that
-   * exists, which is what that attribute is for.
-   */
-  const panelNotice = (b: Booking) => (open?.id === b.id ? null : rowNotice(b));
+  // The clash has two homes (PRD Mentor Bookings): a line on the row, and a
+  // Notice in the panel beside its Accept, because on a phone the sheet covers
+  // the row. Each Accept names the copy beside it.
+  const clashId = (id: string, place: 'row' | 'panel') =>
+    place === 'row' ? `clash-${id}` : `clash-panel-${id}`;
+  const clashFor = (b: Booking) => (canAccept(b, now) ? overlapping(b, upcoming.data ?? []) : null);
+  const overlapFor = (b: Booking) => {
+    const clash = clashFor(b);
+    return clash
+      ? {
+          id: clashId(b.id, 'row'),
+          text: BOOKINGS_COPY.overlap(formatTime(clash.startsAt, timeZone), clash.other.firstName),
+        }
+      : undefined;
+  };
 
   /**
-   * Full width under the row's detail, never in the button rail: a block in
-   * there collapses the content column to nothing from 1100px up.
+   * Why Accept just failed. Accept has no dialog to carry its refusal, and the
+   * live region is screen-reader only, so a sighted mentor saw nothing at all.
    */
-  const rowNotice = (b: Booking) => {
-    if (!canAccept(b, now)) return null;
-    const clash = overlapping(b, upcoming.data ?? []);
+  const failedNotice = (b: Booking) => {
     const failed = accept.isError && accept.variables?.bookingId === b.id ? accept.error : null;
+    return failed ? (
+      <Notice tone="neutral" icon="error">
+        {failed.message}
+      </Notice>
+    ) : null;
+  };
+
+  /**
+   * The row's copy of the failure, except for the row whose panel is open:
+   * that one is in the panel, beside the Accept being pressed. Exactly one, so
+   * the page never shows the same refusal twice (GitHub review, PR 233).
+   */
+  const rowNotice = (b: Booking) => (open?.id === b.id ? null : failedNotice(b));
+
+  /** The panel's warning and failure, read before its Accept. */
+  const panelNotice = (b: Booking) => {
+    const clash = clashFor(b);
+    const failed = failedNotice(b);
     if (!clash && !failed) return null;
     return (
       <>
         {/* The design warns rather than blocks: accepting both may be exactly
             what they mean. Saying so first is the point. */}
         {clash && (
-          <Notice tone="info" icon="error" id={clashId(b.id)}>
+          <Notice tone="info" icon="error" id={clashId(b.id, 'panel')}>
             This overlaps your session with <strong>{clash.other.firstName}</strong> on{' '}
             <strong>{fullDate(clash.startsAt, timeZone)}</strong>. Accepting books both.
           </Notice>
         )}
-        {/* Accept has no dialog to carry its refusal, and the live region is
-            screen-reader only — so a sighted mentor saw nothing at all. */}
-        {failed && (
-          <Notice tone="neutral" icon="error">
-            {failed.message}
-          </Notice>
-        )}
+        {failed}
       </>
     );
   };
 
-  /** The mentor's two answers to a pending request, on the row itself. */
   /**
    * Accept and Decline, for the row and for the details panel both. One
    * builder, so there is one set of mutations, one busy state and one opinion
@@ -270,7 +281,7 @@ export function BookingsScreen() {
     // (`Bookings.dc.html`, the `d.pending` footer).
     const inPanel = place === 'panel';
     const size = inPanel ? ('large' as const) : ('small' as const);
-    const clash = overlapping(b, upcoming.data ?? []);
+    const clash = clashFor(b);
     return (
       <>
         {/* The design's own variants: an outlined Accept and a destructive
@@ -280,7 +291,7 @@ export function BookingsScreen() {
           size={size}
           fullWidth={inPanel}
           busy={accept.isPending && accept.variables?.bookingId === b.id}
-          aria-describedby={clash ? clashId(b.id) : undefined}
+          aria-describedby={clash ? clashId(b.id, place) : undefined}
           onClick={() =>
             accept.mutate(
               { bookingId: b.id },
@@ -303,7 +314,6 @@ export function BookingsScreen() {
         <Button
           variant="text-destructive"
           size={size}
-          fullWidth={inPanel}
           onClick={() => setConfirming({ action: 'decline', booking: b })}
         >
           Decline
@@ -396,7 +406,8 @@ export function BookingsScreen() {
                   now={now}
                   onOpenDetails={toggle}
                   actionsFor={rowActions}
-                  noticeFor={panelNotice}
+                  noticeFor={rowNotice}
+                  overlapFor={overlapFor}
                   onOpenAnswers={openAnswers}
                   answersControls={showPanel ? PANEL_ID : undefined}
                   selectedId={selected}
@@ -488,7 +499,7 @@ export function BookingsScreen() {
                 // phone the sheet covers the row, so a notice left only there
                 // is behind it and the mentor accepts a double booking having
                 // read nothing (GitHub review, PR 233).
-                answerNotice={open ? rowNotice(open) : null}
+                answerNotice={open ? panelNotice(open) : null}
                 timeZone={timeZone}
                 outcome={outcome.data}
                 outcomeLoading={outcome.isLoading}
@@ -528,6 +539,7 @@ export function BookingsScreen() {
                   select(null);
                 }}
                 joinHref={open ? joinHref(open.id) : undefined}
+                isNext={!!open && open.id === next?.id}
                 now={now}
               />
             )}

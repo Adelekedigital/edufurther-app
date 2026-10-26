@@ -114,6 +114,11 @@ export type Booking = {
    * can get back in (the door).
    */
   myJoinedAt: string | null;
+  /**
+   * Which side called a `cancelled` session off. Null when the system or an
+   * admin did, and on every other status.
+   */
+  cancelledBy: BookingSide | null;
   /** UTC instant. Rendered in the viewer's zone, never the stored one. */
   startsAt: string;
   /** UTC instant, derived from `startsAt` + the duration. */

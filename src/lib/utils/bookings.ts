@@ -45,7 +45,7 @@ export const HISTORY_STATUSES: BookingStatus[] = [
  * deadline shipped; older migrated requests carry none and lapse at their start
  * instead (backend reply §3).
  */
-export function respondDeadline(b: Booking): string {
+export function respondDeadline(b: Pick<Booking, 'respondBy' | 'startsAt'>): string {
   return b.respondBy ?? b.startsAt;
 }
 
@@ -62,7 +62,10 @@ export function respondDeadline(b: Booking): string {
  * In either case accept and decline already return 409 while the API still
  * says `pending`, and a row this says nothing about would sit in neither tab.
  */
-export function isLapsed(b: Booking, now = new Date()): boolean {
+export function isLapsed(
+  b: Pick<Booking, 'status' | 'respondBy' | 'startsAt'>,
+  now = new Date(),
+): boolean {
   return b.status === 'pending' && new Date(respondDeadline(b)).getTime() <= now.getTime();
 }
 
@@ -70,7 +73,7 @@ export function isLapsed(b: Booking, now = new Date()): boolean {
  * Does this set of History filters want the requests that have lapsed while
  * the API still calls them pending?
  *
- * They ride with `expired`, because that is what they are: `statusTag` and
+ * They ride with `expired`, because that is what they are: `outcomeTag` and
  * `panelStatus` already print "Expired" for them, and the server only has to
  * catch up with the name. Tied to the status rather than to the chip, so the
  * grouping behind "Didn't happen" can change without losing them.
@@ -89,7 +92,9 @@ export function wantsLapsed(statuses: readonly BookingStatus[]): boolean {
  * happened to leave it.
  */
 export function byNewestFirst(a: Booking, b: Booking): number {
-  return new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime() || b.id.localeCompare(a.id);
+  return (
+    new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime() || b.id.localeCompare(a.id)
+  );
 }
 
 /**
@@ -254,7 +259,7 @@ export function panelStatus(
   now = new Date(),
 ): { label: string; tone: StatusTone | 'info' } {
   if (b.status === 'pending') {
-    // "Expired", like `statusTag`: the status has not flipped yet, but it is the
+    // "Expired", like `outcomeTag`: the status has not flipped yet, but it is the
     // same state, and otherwise the user meets both words within an hour.
     if (isLapsed(b, now)) return { label: 'Expired', tone: 'warning' };
     // The same words as the row it was opened from, so the panel never tells a
@@ -265,36 +270,74 @@ export function panelStatus(
       : { label: 'Expired', tone: 'warning' };
   }
   if (b.status === 'confirmed') return { label: 'Upcoming', tone: 'info' };
-  const tag = statusTag(b.status);
+  // The row's own words, so the panel never names a different person.
+  const tag = outcomeTag(b, now);
   return tag ? { label: tag.label, tone: tag.tone } : { label: 'Upcoming', tone: 'info' };
 }
 
 export type StatusTone = 'success' | 'warning' | 'danger';
 
 /**
- * What a past booking is called on screen, and in which tone.
+ * What a past booking is called on screen, and in which tone: the row's tag
+ * and the panel's status line both (Bookings.dc.html `historyStatus=tag`).
  *
- * Design's table, 2026-10-03, with the owner's call on "Expired" over "Closed":
- * it matches the API's own status and says *why* nothing happened, where
- * "closed" would equally describe a cancellation or a withdrawal.
+ * Canceled and Missed name who (owner decision B7), always from this row's
+ * `side`, never the viewer's role: one account can be on both sides. "Missed"
+ * and "Canceled" alone are for when we can't say who: attendance unknown (a
+ * migrated booking), or a cancel by the system or an admin.
+ *
+ * A request whose deadline has passed reads "Expired" before the API flips its
+ * status, like `panelStatus`: accept and decline already refuse it.
+ *
+ * "Expired" over "Closed" (owner, 2026-10-03): it matches the API's own status
+ * and says *why* nothing happened.
  */
-export function statusTag(status: BookingStatus): { label: string; tone: StatusTone } | null {
-  switch (status) {
+export function outcomeTag(
+  b: Pick<
+    Booking,
+    'status' | 'side' | 'cancelledBy' | 'myAttendance' | 'other' | 'respondBy' | 'startsAt'
+  >,
+  now = new Date(),
+): { label: string; tone: StatusTone } | null {
+  switch (b.status) {
     case 'completed':
       return { label: 'Completed', tone: 'success' };
     case 'cancelled':
-      return { label: 'Canceled', tone: 'warning' };
+      return {
+        label: !b.cancelledBy
+          ? 'Canceled'
+          : b.cancelledBy === b.side
+            ? 'Canceled by you'
+            : `Canceled by ${b.other.firstName}`,
+        tone: 'warning',
+      };
     case 'noShow':
-      return { label: 'Missed', tone: 'danger' };
+      return { label: missedLabel(b), tone: 'danger' };
     case 'declined':
       return { label: 'Declined', tone: 'danger' };
     case 'expired':
       return { label: 'Expired', tone: 'warning' };
     case 'withdrawn':
       return { label: 'Withdrawn', tone: 'warning' };
+    case 'pending':
+      return isLapsed(b, now) ? { label: 'Expired', tone: 'warning' } : null;
     default:
       return null;
   }
+}
+
+/**
+ * Whose miss it was (B7). Nobody joining reads "Missed by you" for each side:
+ * naming the other person would blame them for a miss both made.
+ */
+function missedLabel(b: Pick<Booking, 'myAttendance' | 'other'>): string {
+  const came = (a: BookingParty['attendance']) => a === 'attended' || a === 'leftEarly';
+  const iCame = came(b.myAttendance);
+  const theyCame = came(b.other.attendance);
+  if (theyCame && !iCame) return 'Missed by you';
+  if (iCame && !theyCame) return `Missed by ${b.other.firstName}`;
+  if (b.myAttendance === 'noShow' && b.other.attendance === 'noShow') return 'Missed by you';
+  return 'Missed';
 }
 
 /**
