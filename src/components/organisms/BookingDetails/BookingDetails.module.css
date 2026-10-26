@@ -9,6 +9,12 @@
   padding: var(--space-5);
 }
 
+/* With no footer the body is last, and on a phone sheet it keeps clear of the
+   home indicator, as the footer does. */
+.body:last-child {
+  padding-bottom: calc(var(--space-5) + env(safe-area-inset-bottom));
+}
+
 .head {
   display: flex;
   align-items: flex-start;
@@ -102,6 +108,8 @@
 .status {
   font-size: var(--text-p-xs);
   font-weight: var(--weight-semibold);
+  /* It can carry a name ("Missed by {First}"), which has no length limit. */
+  overflow-wrap: anywhere;
 }
 .success {
   color: var(--green-700);
@@ -133,9 +141,8 @@
 
 /* Stacked, not side by side: `Bookings.dc.html` draws the panel's pending
    footer as a full-width "Accept request" with the quieter Decline beneath it,
-   which is also the shape Join and Cancel already take here. Two equal halves
-   gave Decline the same weight as Accept, which is not what either the design
-   or the CTA hierarchy says. */
+   at its natural width. Two equal halves gave Decline the same weight as
+   Accept, which is not what either the design or the CTA hierarchy says. */
 .answer {
   display: flex;
   flex-direction: column;
@@ -208,7 +215,10 @@
     padding: var(--space-4);
   }
   .footer {
-    padding: var(--space-3) var(--space-4);
+    padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom));
+  }
+  .body:last-child {
+    padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
   }
   .meta {
     gap: var(--space-4);

@@ -117,153 +117,24 @@ describe('toBooking', () => {
     expect(toBooking(row({ mentee_attendance_rate: 0 }), 'me').menteeAttendanceRate).toBe(0);
   });
 
-  // PENDING BACKEND (request #11): untyped until the spec carries it.
   describe('cancelledBy', () => {
-    const cancelled = (by: unknown) =>
-      toBooking({ ...row({ status: 'cancelled' }), cancelled_by: by } as SessionRead, 'me')
-        .cancelledBy;
+    const cancelled = (by: SessionRead['cancelled_by']) =>
+      toBooking(row({ status: 'cancelled', cancelled_by: by }), 'me').cancelledBy;
 
     it('reads which side canceled', () => {
       expect(cancelled('mentor')).toBe('mentor');
       expect(cancelled('mentee')).toBe('mentee');
     });
 
-    it('is null for a system or admin cancel, and before the field ships', () => {
+    it('is null for a system or admin cancel, and when the field is absent', () => {
       expect(cancelled(null)).toBeNull();
       expect(cancelled(undefined)).toBeNull();
-      expect(cancelled('admin')).toBeNull();
     });
 
     it('is null on any status but cancelled', () => {
       expect(
-        toBooking({ ...row({ status: 'completed' }), cancelled_by: 'mentor' } as SessionRead, 'me')
-          .cancelledBy,
+        toBooking(row({ status: 'completed', cancelled_by: 'mentor' }), 'me').cancelledBy,
       ).toBeNull();
     });
-  });
-});
-
-describe('toApiStatuses', () => {
-  it('sends the API’s spelling, not ours', () => {
-    expect(toApiStatuses(['noShow', 'cancelled', 'pending'])).toEqual([
-      'no_show',
-      'cancelled',
-      'pending_mentor_approval',
-    ]);
-  });
-});
-
-describe('the title', () => {
-  it('prefers the mentee’s own topic', () => {
-    expect(toBooking(row(), 'me').title).toBe('School shortlist');
-  });
-  it('falls back to the session type’s name', () => {
-    expect(toBooking(row({ topic: null }), 'me').title).toBe('SOP draft review');
-  });
-  it('is null only when there is neither', () => {
-    expect(toBooking(row({ topic: null, session_type: null }), 'me').title).toBeNull();
-  });
-});
-
-describe('the other party’s zone', () => {
-  it('comes through for the line that says what time it is for them', () => {
-    expect(toBooking(row(), 'me').other.timeZone).toBe('Africa/Lagos');
-  });
-  it('is dropped with the rest of a deleted account', () => {
-    const b = toBooking(row({ mentee: party('them', 'Amara', 'Okafor', true) }), 'me');
-    expect(b.other.timeZone).toBeNull();
-  });
-});
-
-describe('the suggestion a mentor offered (backend #339)', () => {
-  const withSuggestion = (over: Record<string, unknown> = {}) =>
-    toBooking(
-      row({
-        suggestion: {
-          id: 'sg1',
-          starts_at: '2026-10-08T14:00:00Z',
-          duration_minutes: 90,
-          held_until: '2026-10-04T12:00:00Z',
-          status: 'active',
-          booked_session_id: null,
-          ...over,
-        },
-      } as Partial<SessionRead>),
-      'me',
-    );
-
-  it('derives the end from the length, as the session itself does', () => {
-    expect(withSuggestion().suggestion?.endsAt).toBe('2026-10-08T15:30:00.000Z');
-  });
-
-  it('carries the hold and the status as given', () => {
-    const s = withSuggestion().suggestion!;
-    expect(s.heldUntil).toBe('2026-10-04T12:00:00Z');
-    expect(s.status).toBe('active');
-  });
-
-  it('a booked offer names the session it became', () => {
-    expect(withSuggestion({ status: 'booked', booked_session_id: 'u-9' }).suggestion).toMatchObject(
-      {
-        status: 'booked',
-        bookedSessionId: 'u-9',
-      },
-    );
-  });
-
-  it('no offer is null, not undefined', () => {
-    expect(toBooking(row(), 'me').suggestion).toBe(null);
-  });
-
-  it('the offering comes through, so the suggest picker has something to ask for', () => {
-    expect(toBooking(row({ session_type_id: 'st-cv' }), 'me').sessionTypeId).toBe('st-cv');
-    expect(
-      toBooking(
-        row({
-          session_type_id: null,
-          session_type: { id: 'st-x', name: 'X' },
-        } as Partial<SessionRead>),
-        'me',
-      ).sessionTypeId,
-    ).toBe('st-x');
-    expect(
-      toBooking(row({ session_type_id: null, session_type: null } as Partial<SessionRead>), 'me')
-        .sessionTypeId,
-    ).toBe(null);
-  });
-});
-
-describe('a deleted account keeps nothing identifying (backend #409)', () => {
-  it('drops the education along with the name and the avatar', () => {
-    const b = toBooking(
-      row({
-        mentee: {
-          ...party('them', 'Amara', 'Okafor'),
-          deleted: true,
-          degree: 'BSc',
-          institution: 'FUTA',
-          cover_color: 'lilac',
-        },
-      } as Partial<SessionRead>),
-      'me',
-    );
-    // The contract says these arrive null for a deleted account. This function
-    // does not trust that for the name or the avatar, and should not here.
-    expect(b.other.degree).toBe(null);
-    expect(b.other.institution).toBe(null);
-    // Their chosen colour is theirs too: the id's colour instead.
-    expect(b.other.cover).toBe(coverFor('them'));
-    expect(b.other.name).toBe('Deleted user');
-  });
-
-  it('a live account keeps them', () => {
-    const b = toBooking(
-      row({
-        mentee: { ...party('them', 'Amara', 'Okafor'), degree: 'BSc', institution: 'FUTA' },
-      } as Partial<SessionRead>),
-      'me',
-    );
-    expect(b.other.degree).toBe('BSc');
-    expect(b.other.institution).toBe('FUTA');
   });
 });

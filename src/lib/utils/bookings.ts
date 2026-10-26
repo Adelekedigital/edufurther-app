@@ -308,7 +308,10 @@ export function outcomeTag(
           ? 'Canceled'
           : b.cancelledBy === b.side
             ? 'Canceled by you'
-            : `Canceled by ${b.other.firstName}`,
+            : // A deleted account has no name to give, so it says less.
+              b.other.deleted
+              ? 'Canceled'
+              : `Canceled by ${b.other.firstName}`,
         tone: 'warning',
       };
     case 'noShow':
@@ -335,7 +338,7 @@ function missedLabel(b: Pick<Booking, 'myAttendance' | 'other'>): string {
   const iCame = came(b.myAttendance);
   const theyCame = came(b.other.attendance);
   if (theyCame && !iCame) return 'Missed by you';
-  if (iCame && !theyCame) return `Missed by ${b.other.firstName}`;
+  if (iCame && !theyCame) return b.other.deleted ? 'Missed' : `Missed by ${b.other.firstName}`;
   if (b.myAttendance === 'noShow' && b.other.attendance === 'noShow') return 'Missed by you';
   return 'Missed';
 }

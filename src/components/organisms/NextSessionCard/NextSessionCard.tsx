@@ -75,15 +75,25 @@ export function NextSessionCard({
   // The first booking-form answer, as drawn (PRD Mentor Bookings), under the
   // question as the mentor asked it. A booking with no answers (a migrated one
   // has only a note) shows the note, under the panel's own label for it.
-  const first = b.answersPreview?.first.text ? b.answersPreview : null;
-  const cover = first
-    ? { label: first.first.question, body: first.first.text }
+  const preview = b.answersPreview;
+  const cover = preview?.first.text
+    ? { label: preview.first.question, body: preview.first.text }
     : b.note
       ? {
           label: b.side === 'mentee' ? 'Your note' : `Note from ${b.other.firstName}`,
           body: b.note,
         }
       : null;
+  // The way into every answer, whatever the first one says.
+  const answersLink = preview && onOpenAnswers && (
+    <AnswerPreview
+      preview={preview}
+      onOpenAll={onOpenAnswers}
+      controls={answersControls}
+      forBooking={bookingHeading(b)}
+      linkOnly
+    />
+  );
 
   return (
     <section
@@ -143,7 +153,7 @@ export function NextSessionCard({
         </div>
       </div>
 
-      {cover && (
+      {cover ? (
         <div className={styles.note}>
           <span className={styles.noteLabel}>{cover.label}</span>
           {/* Isolated: another user's text, which may carry bidi marks. */}
@@ -151,16 +161,10 @@ export function NextSessionCard({
             {cover.body}
           </p>
           {/* Inside the box, as drawn: the link to the rest of the form. */}
-          {first && onOpenAnswers && (
-            <AnswerPreview
-              preview={first}
-              onOpenAll={onOpenAnswers}
-              controls={answersControls}
-              forBooking={bookingHeading(b)}
-              linkOnly
-            />
-          )}
+          {answersLink}
         </div>
+      ) : (
+        answersLink
       )}
 
       {/* A shut window means the session is over bar the backend's bookkeeping;

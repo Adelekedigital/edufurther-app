@@ -104,7 +104,7 @@ export function BookingRow({
               passes it reads Expired even while the row still sits in Pending's
               cached list. The layout below must not move under someone mid-read,
               so `past` comes from the list instead. */}
-          <BookingStatusTag booking={b} now={now} />
+          <BookingStatusTag booking={b} now={now} className={styles.tag} />
         </span>
         <span className={styles.meta}>
           <span className={styles.metaItem}>
@@ -146,20 +146,15 @@ export function BookingRow({
           />
         )}
       </div>
-      {/* Before the actions in the DOM because below 1100px the actions take
-          their own line underneath, and Details keeps the corner above them —
-          tabbing down and then back up to it is the bug this order avoids. On
-          wider screens `order` swaps them back, horizontally, within one line. */}
+      {/* Before the actions in the DOM: they take their own line underneath,
+          and Details keeps the corner above them, so tabbing runs top to
+          bottom without doubling back. */}
       {onOpenDetails && (
         <DetailsButton
           name={bookingHeading(b)}
           controls={answersControls}
           expanded={selected}
           onClick={onOpenDetails}
-          // The row owns only where it sits: above 1100px `order` puts it after
-          // the actions, horizontally, while the DOM keeps it first so a phone
-          // tabs down and stops. Without this class that rule matches nothing.
-          className={styles.details}
         />
       )}
       {!!actions && <div className={styles.actions}>{actions}</div>}

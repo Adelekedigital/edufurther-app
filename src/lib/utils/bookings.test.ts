@@ -211,6 +211,18 @@ describe('outcomeTag', () => {
     expect(tag({ status: 'cancelled', cancelledBy: null })?.label).toBe('Canceled');
   });
 
+  it('names nobody for a deleted account', () => {
+    const gone = party({ deleted: true, firstName: 'Deleted user', attendance: 'noShow' });
+    expect(tag({ status: 'cancelled', cancelledBy: 'mentee', other: gone })?.label).toBe(
+      'Canceled',
+    );
+    expect(tag({ status: 'noShow', myAttendance: 'attended', other: gone })?.label).toBe('Missed');
+    // The viewer's own side still reads as theirs.
+    expect(tag({ status: 'cancelled', cancelledBy: 'mentor', other: gone })?.label).toBe(
+      'Canceled by you',
+    );
+  });
+
   it('names who missed it, in the danger tone (B7)', () => {
     expect(missed('noShow', 'attended')).toBe('Missed by you');
     expect(missed('noShow', 'leftEarly')).toBe('Missed by you');

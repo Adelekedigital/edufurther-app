@@ -96,21 +96,18 @@ export function toParty(p: PartyRead): BookingParty {
 }
 
 /**
+ * Which side called a cancelled session off (backend #545). Null for a cancel
+ * by an admin or the system, and on any other status: those read "Canceled".
+ */
+function cancelledBy(s: SessionRead): BookingSide | null {
+  return s.status === 'cancelled' ? (s.cancelled_by ?? null) : null;
+}
+
+/**
  * One API session as this screen reads it. Which side the viewer is on is
  * derived per row, not from their role: one account can host some of these and
  * have booked others (backend reply §2).
  */
-/**
- * PENDING BACKEND (bookings request #11): `cancelled_by` is not in the
- * published spec yet. Read untyped until it is; a missing field is null, which
- * says "Canceled" without a name, so nothing is claimed before the data exists.
- */
-function cancelledBy(s: SessionRead): BookingSide | null {
-  if (s.status !== 'cancelled') return null;
-  const by = (s as { cancelled_by?: unknown }).cancelled_by;
-  return by === 'mentor' || by === 'mentee' ? by : null;
-}
-
 export function toBooking(s: SessionRead, viewerId: string): Booking {
   const side = s.mentor_id === viewerId ? 'mentor' : 'mentee';
   const start = new Date(s.starts_at);

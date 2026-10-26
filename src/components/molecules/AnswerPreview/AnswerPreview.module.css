@@ -31,7 +31,7 @@
   overflow: hidden;
 }
 
-/* "See all N answers". Shared by the row box and the hero, which has no box. */
+/* "See all N answers". Shared by the row's box and the hero's. */
 .more {
   align-self: flex-start;
   min-height: var(--button-h-small);
@@ -62,9 +62,9 @@
 }
 
 /* On the hero the link sits inside the card's own answer box (Mentor
-   Bookings.dc.html `hero.ansLink`): 20px high, 4px under the answer, with a
-   44px hit area drawn by an overlay. Join is a box padding and a card gap
-   below, so the overlay cannot reach it. */
+   Bookings.dc.html `hero.ansLink`): 20px high, its 4px margin on top of the
+   box's gap, with a 44px hit area drawn by an overlay. Join is a box padding
+   and a card gap below, so the overlay cannot reach it. */
 .bare {
   position: relative;
   height: 20px;

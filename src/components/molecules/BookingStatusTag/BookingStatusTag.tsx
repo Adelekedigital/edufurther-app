@@ -4,6 +4,7 @@ import { outcomeTag } from '@/lib/utils/bookings';
 type BookingStatusTagProps = {
   booking: Parameters<typeof outcomeTag>[0];
   now?: Date;
+  className?: string;
 };
 
 /**
@@ -14,8 +15,12 @@ type BookingStatusTagProps = {
  * Draws nothing for a session that is not over — "Upcoming" as a tag would
  * repeat the tab it is sitting in.
  */
-export function BookingStatusTag({ booking, now }: BookingStatusTagProps) {
+export function BookingStatusTag({ booking, now, className }: BookingStatusTagProps) {
   const tag = outcomeTag(booking, now);
   if (!tag) return null;
-  return <Tag tone={tag.tone}>{tag.label}</Tag>;
+  return (
+    <Tag tone={tag.tone} className={className}>
+      {tag.label}
+    </Tag>
+  );
 }

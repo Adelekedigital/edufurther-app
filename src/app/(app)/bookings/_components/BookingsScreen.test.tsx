@@ -676,6 +676,22 @@ describe('the answers preview on the rows', () => {
     expect(screen.queryByText('A free note.')).not.toBeInTheDocument();
   });
 
+  it('the hero keeps its link when the first answer is blank', () => {
+    h.upcoming = remote([
+      withPreview({
+        id: 'a',
+        title: 'Statement of Purpose',
+        startsAt: at(2),
+        endsAt: at(3),
+        answersPreview: { count: 3, first: { question: 'What do you want to cover?', text: '' } },
+      }),
+    ]);
+    render(<BookingsScreen />);
+    expect(
+      screen.getByRole('button', { name: /See all 3 answers for Statement of Purpose/ }),
+    ).toBeVisible();
+  });
+
   it('a hero booking with only a note shows the note', () => {
     h.upcoming = remote([
       booking({ id: 'a', startsAt: at(2), endsAt: at(3), note: 'A free note.' }),

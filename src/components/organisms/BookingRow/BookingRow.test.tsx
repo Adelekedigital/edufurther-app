@@ -109,9 +109,9 @@ describe('the row keeps the actions that are its own job', () => {
   });
 
   it('Details comes before the actions in the DOM, so a phone tabs down and stops', () => {
-    // Below 1100px the actions take their own line underneath. Reading order
-    // has to match: tabbing down to them and then back up to the corner was
-    // the bug this order avoids, and `order` only swaps them horizontally.
+    // The actions take their own line underneath (`actionsPos=below`).
+    // Reading order has to match: tabbing down to them and then back up to the
+    // corner was the bug this order avoids.
     const { container } = row(pending());
     const order = [...container.querySelectorAll('button')].map((el) => el.textContent);
     expect(order[0]).toMatch(/^Details/);

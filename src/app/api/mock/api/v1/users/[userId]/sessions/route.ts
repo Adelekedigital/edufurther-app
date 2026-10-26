@@ -80,9 +80,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     provider?: 'daily' | 'google_meet';
     /** When the viewer pressed Join (the join page's Rejoin). */
     meJoinedAt?: string;
-    /** Settled attendance, for the join page's completed and missed outcomes. */
-    /** PENDING BACKEND (bookings request #11): which side canceled. */
+    /** Which side canceled (backend #545). */
     cancelledBy?: 'mentor' | 'mentee';
+    /** Settled attendance, for the join page's completed and missed outcomes. */
     meAttendance?: 'attended' | 'no_show';
     otherAttendance?: 'attended' | 'no_show';
   };
@@ -131,8 +131,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       topic: o.topic === undefined ? null : o.topic,
       booking_message: o.message ?? null,
       meeting_provider: o.provider ?? 'daily',
-      // PENDING BACKEND (#11): not in the spec yet, so spread rather than typed.
-      ...(status === 'cancelled' ? { cancelled_by: o.cancelledBy ?? null } : {}),
+      cancelled_by: status === 'cancelled' ? (o.cancelledBy ?? null) : null,
       // Backend #532: whether this viewer sent a missed reason.
       missed_reason_sent: mockMissedReasons.has(userId, id),
       meeting_url: null,
@@ -335,7 +334,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       respondBy: at(1, 20),
       answers: {
         count: 2,
-        first: { question_text: 'What do you want to cover?', text: 'The F-1 interview questions.' },
+        first: {
+          question_text: 'What do you want to cover?',
+          text: 'The F-1 interview questions.',
+        },
       },
     }),
     session('p-3', at(1, 11), 'pending_mentor_approval', ['Kofi', 'Mensah'], {
