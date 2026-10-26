@@ -2,9 +2,11 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { useSession } from '@/lib/api/data/session';
 import { INVITE_COPY } from '@/lib/copy/auth';
 import { clearInviteCode, rememberInviteCode } from '@/lib/utils/inviteCode';
+import { useHydrated } from '@/lib/utils/useHydrated';
 
 /**
  * `/invite/{code}` (issue 281): a guest's invite is remembered for the visit,
@@ -16,6 +18,10 @@ import { clearInviteCode, rememberInviteCode } from '@/lib/utils/inviteCode';
 export function InviteArrival({ code }: { code: string }) {
   const session = useSession();
   const router = useRouter();
+  // Rendered empty (server and first paint), then filled once a guest is
+  // known: a region inserted with its words is often not read.
+  const hydrated = useHydrated();
+  const said = hydrated && session.status === 'none' ? { text: INVITE_COPY.opening, id: 1 } : null;
   useEffect(() => {
     if (session.status === 'unknown') return;
     if (session.status === 'present') {
@@ -28,9 +34,7 @@ export function InviteArrival({ code }: { code: string }) {
   }, [session.status, code, router]);
   return (
     <main>
-      <p role="status" className="sr-only">
-        {INVITE_COPY.opening}
-      </p>
+      <LiveRegion message={said} />
     </main>
   );
 }

@@ -19,6 +19,7 @@ describe('/invite/{code}', () => {
     render(<InviteArrival code="damilola-7k2x" />);
     expect(storedInviteCode()).toBe('damilola-7k2x');
     expect(replace).toHaveBeenCalledWith('/signup');
+    // The region is there empty first, then says it (LiveRegion).
     expect(screen.getByRole('status')).toHaveTextContent('Opening sign-up…');
   });
 
@@ -42,5 +43,6 @@ describe('/invite/{code}', () => {
     render(<InviteArrival code="damilola-7k2x" />);
     expect(replace).not.toHaveBeenCalled();
     expect(storedInviteCode()).toBeNull();
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
   });
 });
