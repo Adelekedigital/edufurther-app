@@ -206,3 +206,31 @@ describe('MonthPicker past days (axe color-contrast on /calendar)', () => {
     expect(css).not.toMatch(/calendar-booked-ring|box-shadow:\s*inset 0 0 0 2px/);
   });
 });
+
+describe('MonthPicker, a day picker over open times (SuggestTime.dc.html dayPicker)', () => {
+  it('marks exact open days, opens on a later month, and never calls a pick "blocked"', () => {
+    render(
+      <MonthPicker
+        today="2026-10-20"
+        initialMonth="2026-11-14"
+        openDays={['2026-11-03', '2026-11-05']}
+        selected={['2026-11-05']}
+        selectedLabel={null}
+        onPick={() => {}}
+      />,
+    );
+    expect(screen.getByRole('grid', { name: 'November 2026' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tuesday, November 3, available' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Wednesday, November 4' })).toBeVisible();
+    // The pick: pressed, and no "blocked" in its name.
+    expect(screen.getByRole('button', { name: 'Thursday, November 5' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('a month before today’s opens on today’s', () => {
+    render(<MonthPicker today="2026-10-20" initialMonth="2026-08-01" onPick={() => {}} />);
+    expect(screen.getByRole('grid', { name: 'October 2026' })).toBeInTheDocument();
+  });
+});

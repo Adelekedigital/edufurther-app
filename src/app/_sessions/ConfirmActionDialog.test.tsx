@@ -112,7 +112,9 @@ describe('what happens to the credit is said before the button', () => {
     dialog({
       booking: sampleBookingFor({ side: 'mentor', status: 'confirmed', startsAt: at(9), endsAt: at(10) }),
     });
-    expect(screen.queryByText(/credit/i)).not.toBeInTheDocument();
+    // No credit notice of their own. The suggest row's "Their credit comes
+    // back if they don't" (PRD fix 5) is about the mentee's credit, not theirs.
+    expect(screen.queryByText(/your credit|the credit/i)).not.toBeInTheDocument();
   });
 
   it('a withdrawal returns the credit whenever it happens', () => {
@@ -142,7 +144,7 @@ describe('what happens to the hour, said as a line', () => {
   it('the link flips the line, and says how to undo itself', async () => {
     dialog({ booking: mentorCancel() });
     await userEvent.click(screen.getByRole('button', { name: 'Reopen it' }));
-    expect(screen.getByText(/slot stays open on your calendar/)).toBeVisible();
+    expect(screen.getByText(/slot stays opened on your calendar\./)).toBeVisible();
     expect(screen.getByRole('button', { name: 'Keep it blocked' })).toBeVisible();
   });
 
@@ -354,13 +356,17 @@ describe('what offering a time promises depends on what was approved', () => {
     // offered time is pre-approved and the booking confirms at once.
     dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }) });
     expect(
-      screen.getByText('They book it in one tap, with no wait for your approval'),
+      screen.getByText('Amara books it in one tap, with no wait for your approval.'),
     ).toBeVisible();
   });
 
-  it('a cancel promises nothing of the sort, because there is nothing to skip', () => {
+  it('a cancel names the hold and the credit instead, because there is nothing to skip', () => {
     dialog({ booking: sampleBookingFor({ side: 'mentor', status: 'confirmed' }) });
-    expect(screen.getByText('They get one tap to book it')).toBeVisible();
+    expect(
+      screen.getByText(
+        'Amara gets one tap to book it, held for 2 hours. Their credit comes back if they don’t.',
+      ),
+    ).toBeVisible();
   });
 });
 
@@ -465,11 +471,13 @@ describe('offering another time (SuggestTime.dc.html)', () => {
   it('a mentor declining is offered their real open times, two of them', () => {
     dialog({ action: 'decline', booking: mentorPending() });
     expect(screen.getByText('Suggested time')).toBeVisible();
-    // Two chips, then "Pick another day" — the design's own count.
+    // Two chips, then "Pick another day": the design's own count.
     expect(screen.getAllByRole('radio', { name: /^\w{3}, Oct \d+ · \d/ })).toHaveLength(2);
-    // Eight more at a time: revealing a month of open hours at once pushed the
-    // dialog's own buttons about 900px below the fold on a phone.
-    expect(screen.getByRole('button', { name: 'Show more times' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Pick another day' })).toHaveAttribute(
+      'aria-haspopup',
+      'dialog',
+    );
+    expect(screen.queryByRole('button', { name: 'Show more times' })).not.toBeInTheDocument();
   });
 
   it('the picked time is what gets sent, and only from the picker', async () => {
@@ -602,24 +610,6 @@ describe('whose calendar the picker reads', () => {
 describe('the picker does not bury the dialog', () => {
   const many = (n: number) =>
     Array.from({ length: n }, (_, i) => new Date(Date.UTC(2026, 9, 8, 14 + i)).toISOString());
-
-  it('reveals more a handful at a time, not a month at once', async () => {
-    slots = { data: many(48), isLoading: false, error: null, retry: vi.fn() };
-    dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }) });
-    expect(screen.getAllByRole('radio')).toHaveLength(2);
-    await userEvent.click(screen.getByRole('button', { name: 'Show more times' }));
-    expect(screen.getAllByRole('radio')).toHaveLength(10);
-    await userEvent.click(screen.getByRole('button', { name: 'Show more times' }));
-    expect(screen.getAllByRole('radio')).toHaveLength(18);
-  });
-
-  it('stops offering more once everything is shown', async () => {
-    slots = { data: many(3), isLoading: false, error: null, retry: vi.fn() };
-    dialog({ action: 'decline', booking: sampleBookingFor({ side: 'mentor', status: 'pending' }) });
-    await userEvent.click(screen.getByRole('button', { name: 'Show more times' }));
-    expect(screen.getAllByRole('radio')).toHaveLength(3);
-    expect(screen.queryByRole('button', { name: 'Show more times' })).not.toBeInTheDocument();
-  });
 
   it('a slot we cannot read is dropped, not thrown', () => {
     // An unparseable instant threw out of the date formatter and took the whole

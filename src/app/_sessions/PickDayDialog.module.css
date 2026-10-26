@@ -1,0 +1,42 @@
+/* SuggestTime.dc.html `dayPicker`: the month, then the picked day's times. */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.times {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* The suggest step's own label: 12px semibold. */
+.timesLabel {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.none {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+
+/* Two equal buttons, as the cancel dialog's footer. */
+.footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.footer > * {
+  width: 100%;
+}

@@ -384,6 +384,38 @@
   }
 }
 
+/* `mobile="centred"`: on phones the centred card stays a card, inside the 16px
+   gutter, for a small dialog stacked over another (SuggestTime.dc.html's
+   dayPicker: max 400px, "also on phones"). Close and padding as the phone sheet. */
+@media (max-width: 767px) {
+  .phoneCentredRoot {
+    padding: var(--space-4);
+    align-items: center;
+  }
+  .dialog.phoneCentred {
+    min-height: 0;
+    max-height: 100%;
+    border-radius: var(--radius-2xl);
+    padding: var(--space-8) var(--space-5) var(--space-5);
+  }
+  .dialog.phoneCentred.sm {
+    max-width: 400px;
+  }
+  .dialog.phoneCentred.md {
+    max-width: 480px;
+  }
+  .dialog.phoneCentred.lg {
+    max-width: 560px;
+  }
+  .phoneCentred .close {
+    top: var(--space-3);
+    right: var(--space-3);
+  }
+  .phoneCentred .header {
+    padding-right: var(--space-8);
+  }
+}
+
 /* Scoped to the sheets: the centred modal's motion is not ours to change. */
 @media (prefers-reduced-motion: reduce) {
   .sheet.contained,
