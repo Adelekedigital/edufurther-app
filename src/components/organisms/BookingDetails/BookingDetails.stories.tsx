@@ -129,7 +129,7 @@ export const PendingForMentor: Story = {
 };
 
 /** The same request from the other side: waiting, not acting — and theirs to
-    take back, so the panel carries "Withdraw request". */
+    take back, so the panel carries "Cancel request" (Mentee Bookings.dc.html). */
 export const PendingForMentee: Story = {
   args: {
     booking: sampleBookingFor({ status: 'pending', side: 'mentee', respondBy: at(5) }),

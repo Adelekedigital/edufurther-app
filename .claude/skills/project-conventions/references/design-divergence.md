@@ -579,6 +579,15 @@ their real content sat behind the toggle. This matches what the row already
 does — `answers_preview.first` is the first answered question, "skipping any
 blank before it".
 
+
+### Mentee Bookings — PRD Mentee Bookings (founder, 2026-10-25)
+
+| Design (`Mentee Bookings.dc.html` saved defaults) | Built | Why | Would reopen if |
+|---|---|---|---|
+| Book again on every past mentee row (canceled and missed too) | Completed rows only, and never for a deleted mentor | Founder, 25 Oct: completed only | the founder asks for it on canceled or missed rows (PRD "Revisit later") |
+| A completed row shows Leave a review for 72 hours (`reviewWindow` 72), then Book again; the other sits in a menu that the default `detailsAccess=corner` hides | Leave a review (outlined) and Book again (text) together while `/me/reviewable-sessions` lists the session, with no 72-hour cutoff; then Book again alone (outlined) | Founder, 25 Oct: "visible until the mentee reviews", and a mentee who never reviews still sees Book again | the review window (B6) comes back |
+| Book again goes to Mentor Profile | BookingModal on this page (`useReviewAndRebook`, shared with Session Join) | Handoff "never via the profile"; one booking flow | never |
+
 ### Bookings — PRD Mentor Bookings (2026-10-25)
 
 Built from `Mentor Bookings.dc.html` (SHA `4baff9bb9bbb7314`) at its saved

@@ -1,4 +1,3 @@
-import { cx } from '@/lib/utils/cx';
 import type { AnswersPreview } from '@/types/booking';
 import styles from './AnswerPreview.module.css';
 
@@ -49,7 +48,7 @@ export function AnswerPreview({
   const more = worthOpening && (
     <button
       type="button"
-      className={cx(styles.more, linkOnly && styles.bare)}
+      className={styles.more}
       // The whole name in one attribute rather than a visually hidden span:
       // accessible-name computation trims each node before joining them, so a
       // leading space in the span is dropped and the name runs together.

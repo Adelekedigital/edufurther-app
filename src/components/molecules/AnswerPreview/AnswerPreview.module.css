@@ -10,6 +10,9 @@
 }
 
 .question {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
   color: var(--ink-600);
@@ -31,10 +34,15 @@
   overflow: hidden;
 }
 
-/* "See all N answers". Shared by the row's box and the hero's. */
+/* "See all N answers", on the row's box and the hero's alike (Mentee
+   Bookings.dc.html `r.ansOpen`, `hero.ansLink`): 20px high, 4px on top of the
+   box's gap, with a 44px hit area drawn by an overlay. */
 .more {
+  position: relative;
   align-self: flex-start;
-  min-height: var(--button-h-small);
+  height: 20px;
+  min-height: 0;
+  margin-top: var(--space-1);
   padding: 0;
   border: none;
   background: none;
@@ -55,37 +63,8 @@
   outline-offset: 2px;
 }
 
-/* Inside the box the button sits flush with the padding; the design pulls the
-   bottom back so the box does not grow a second gap. */
-.box .more {
-  margin-bottom: calc(var(--space-2) * -1);
-}
-
-/* On the hero the link sits inside the card's own answer box (Mentor
-   Bookings.dc.html `hero.ansLink`): 20px high, its 4px margin on top of the
-   box's gap, with a 44px hit area drawn by an overlay. Join is a box padding
-   and a card gap below, so the overlay cannot reach it. */
-.bare {
-  position: relative;
-  height: 20px;
-  min-height: 0;
-  margin-top: var(--space-1);
-}
-.bare::after {
+.more::after {
   content: '';
   position: absolute;
   inset: calc(var(--space-3) * -1) 0;
-}
-
-/* A phone keeps the row's 32px look with a reachable target (CTA hierarchy).
-   The hero's overlay is drawn at every width, above. */
-@media (max-width: 767px) {
-  .box .more {
-    position: relative;
-  }
-  .box .more::after {
-    content: '';
-    position: absolute;
-    inset: -6px 0;
-  }
 }
