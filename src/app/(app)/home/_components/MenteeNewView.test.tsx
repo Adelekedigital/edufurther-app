@@ -96,6 +96,16 @@ describe('MenteeNewView', () => {
     expect(within(list).getByText(/^Requested with Mariam/)).toBeInTheDocument();
   });
 
+  it('each row is named in one string: the step, "done" when it is, and its note', () => {
+    render(<MenteeNewView {...props({ profileDone: true, fields: fields(4) })} />);
+    expect(
+      screen.getByRole('button', { name: 'Complete your profile, Done' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Book your first session, Free with your starter credit' }),
+    ).toBeInTheDocument();
+  });
+
   it('the current step is marked as the current one, and the book step leads to Explore', () => {
     render(<MenteeNewView {...props({ profileDone: true, fields: fields(4) })} />);
     const items = screen.getAllByRole('listitem');

@@ -56,7 +56,6 @@ export function GettingStarted({ rows, doneCount, onHide, hideRef }: GettingStar
               <span className={styles.lines}>
                 <span className={cx(styles.label, r.state === 'done' && styles.labelDone)}>
                   {r.label}
-                  {r.state === 'done' && <span className="sr-only"> (done)</span>}
                 </span>
                 <span className={styles.note}>{r.note}</span>
               </span>
@@ -65,14 +64,31 @@ export function GettingStarted({ rows, doneCount, onHide, hideRef }: GettingStar
           );
           const cls = cx(styles.row, r.state === 'now' && styles.rowNow);
           const current = r.state === 'now' ? ('step' as const) : undefined;
+          // One string, so the name keeps its spacing ("…, done, …"): a name
+          // built from visible text plus an sr-only fragment loses it.
+          const name = [r.label, r.state === 'done' && r.note !== C.done ? 'done' : null, r.note]
+            .filter(Boolean)
+            .join(', ');
           return (
             <li key={r.key}>
               {'href' in r ? (
-                <Link href={r.href} prefetch={false} className={cls} aria-current={current}>
+                <Link
+                  href={r.href}
+                  prefetch={false}
+                  className={cls}
+                  aria-current={current}
+                  aria-label={name}
+                >
                   {inner}
                 </Link>
               ) : (
-                <button type="button" className={cls} onClick={r.onClick} aria-current={current}>
+                <button
+                  type="button"
+                  className={cls}
+                  onClick={r.onClick}
+                  aria-current={current}
+                  aria-label={name}
+                >
                   {inner}
                 </button>
               )}
