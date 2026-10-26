@@ -37,6 +37,7 @@ export const sampleBooking = (over: Partial<Booking> = {}): Booking => ({
   other: party(),
   myAttendance: 'pending' as const,
   myJoinedAt: null,
+  cancelledBy: null,
   startsAt: at(26),
   endsAt: at(27),
   durationMin: 60,
@@ -123,7 +124,52 @@ export const Completed: Story = {
   },
 };
 
+/** Attendance unknown (a migrated booking): no name to give. */
 export const Missed: Story = { args: { booking: sampleBooking({ status: 'noShow' }) } };
+
+/** Tags name who (owner decision B7). */
+export const MissedByThem: Story = {
+  args: {
+    booking: sampleBooking({
+      status: 'noShow',
+      myAttendance: 'attended',
+      other: party('Amara Okafor', { attendance: 'noShow' }),
+    }),
+  },
+};
+export const MissedByYou: Story = {
+  args: {
+    booking: sampleBooking({
+      status: 'noShow',
+      myAttendance: 'noShow',
+      other: party('Amara Okafor', { attendance: 'attended' }),
+    }),
+  },
+};
+export const CanceledByYou: Story = {
+  args: { booking: sampleBooking({ status: 'cancelled', cancelledBy: 'mentor' }) },
+};
+export const CanceledByThem: Story = {
+  args: { booking: sampleBooking({ status: 'cancelled', cancelledBy: 'mentee' }) },
+};
+
+/** A request that would clash with a confirmed session (Mentor Bookings.dc.html `conflictLine`). */
+export const PendingWithOverlap: Story = {
+  args: {
+    booking: sampleBooking({ status: 'pending', respondBy: at(20) }),
+    overlap: { id: 'clash-b1', text: 'Overlaps your 9:00 am session with Tunde' },
+    actions: (
+      <>
+        <Button variant="secondary-outlined" size="small" aria-describedby="clash-b1">
+          Accept
+        </Button>
+        <Button variant="text-destructive" size="small">
+          Decline
+        </Button>
+      </>
+    ),
+  },
+};
 
 /** An hour nobody wants: the line says so, with the bedtime icon. */
 export const OddHourForThem: Story = {

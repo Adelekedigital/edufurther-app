@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
+import { BOOKINGS_COPY } from '@/lib/copy/bookings';
 import { sampleBooking } from '@/components/organisms/BookingRow/BookingRow.stories';
 import type { AppError } from '@/types/mentor';
 import { BookingsPanel } from './BookingsPanel';
@@ -69,7 +70,7 @@ export const PendingContent: Story = {
       sampleBooking({ id: 'p2', status: 'pending', respondBy: at(50) }),
       sampleBooking({ id: 'p3', status: 'pending', respondBy: at(-2) }),
     ],
-    intro: 'These mentees asked for a time.',
+    intro: BOOKINGS_COPY.pendingIntroMentor,
   },
 };
 export const EmptyPendingMentor: Story = { args: { tab: 'pending', bookings: [] } };

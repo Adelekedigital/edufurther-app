@@ -31,7 +31,7 @@
   overflow: hidden;
 }
 
-/* "See all N answers". Shared by the row box and the hero, which has no box. */
+/* "See all N answers". Shared by the row's box and the hero's. */
 .more {
   align-self: flex-start;
   min-height: var(--button-h-small);
@@ -61,28 +61,24 @@
   margin-bottom: calc(var(--space-2) * -1);
 }
 
-/* On the hero there is no box, and the link hangs under the note. */
+/* On the hero the link sits inside the card's own answer box (Mentor
+   Bookings.dc.html `hero.ansLink`): 20px high, its 4px margin on top of the
+   box's gap, with a 44px hit area drawn by an overlay. Join is a box padding
+   and a card gap below, so the overlay cannot reach it. */
 .bare {
-  margin-bottom: calc(var(--space-2) * -1);
+  position: relative;
+  height: 20px;
+  min-height: 0;
+  margin-top: var(--space-1);
+}
+.bare::after {
+  content: '';
+  position: absolute;
+  inset: calc(var(--space-3) * -1) 0;
 }
 
-/* On a phone the hero link sits just above "Join session", which posts
-   attendance and opens the meeting. A 32px target with 8px of clearance is one
-   low thumb away from the wrong action, and an invisible overlay would reach
-   into Join itself — so here the control takes a real target and gives up the
-   design's negative pull to make the room. Divergence recorded. */
-@media (max-width: 767px) {
-  .bare {
-    min-height: var(--touch-target-min);
-    margin-bottom: 0;
-  }
-}
-
-/* A phone keeps the 32px look with a reachable target (CTA hierarchy). */
-/* A phone keeps the 32px look with a reachable target (CTA hierarchy). Inside
-   the box only: on the hero this button's negative bottom margin leaves ~8px
-   to "Join session", and an overlay reaching below it would swallow taps meant
-   for the primary action. */
+/* A phone keeps the row's 32px look with a reachable target (CTA hierarchy).
+   The hero's overlay is drawn at every width, above. */
 @media (max-width: 767px) {
   .box .more {
     position: relative;

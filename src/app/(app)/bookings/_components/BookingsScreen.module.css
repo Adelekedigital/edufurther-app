@@ -37,6 +37,26 @@
   padding: var(--space-16) var(--space-4);
 }
 
+/* Under the mentor's empty Upcoming: "Want more sessions? Update your availability". */
+.more {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  color: var(--ink-500);
+}
+
+.moreLink {
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+  text-decoration: none;
+}
+.moreLink:hover {
+  color: var(--blue-700);
+}
+.moreLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
 .skeleton {
   display: flex;
   flex-direction: column;

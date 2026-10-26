@@ -224,7 +224,7 @@ Backend contract: `docs/handoff/explore-backend-reply.md`.
 | TimeSlots `add` (`scene="tooShort"`): the new slot starts at min(last end + 1h, midnight − minLen)                                                                      | It starts at the later of that and the last slot's end, so it never lands inside the last slot; one too short to fit shows the too-short error                                                                                                                                                                                                                                                                                                                                       | Review of PR 148: the design's formula overlaps the last slot late in the day (e.g. 10–11 pm with a 90-min minimum)                                                                                                       | design changes `add`                                                                                           |
 | TimeSlots start-time list: every half hour                                                                                                                              | Start times leave room for a `minLen` session before midnight (the slot's current start stays listed)                                                                                                                                                                                                                                                                                                                                                                                | Review of PR 148: a later start can only make a slot that's always too short                                                                                                                                              | design filters starts                                                                                          |
 | TimeSlots `toggle`: switching a day on leaves its slots as they are                                                                                                     | A slot shorter than `minLen` is stretched to fit when the day is switched on                                                                                                                                                                                                                                                                                                                                                                                                         | A day switched on is ready to book, not born with an error                                                                                                                                                                | design changes `toggle`                                                                                        |
-| Bookings hero: "Join opens 10 min before" | "Join opens {n} minutes before", read from join_opens_at (10 since backend #391, a backend setting) | The window is 5 min before to 15 min after (backend reply §6). A number repeated in prose goes stale the day the backend changes it | never — the copy follows the API |
+| Bookings hero: "Join opens 10 min before" | "Join opens {n} min before" (as drawn since PRD Mentor Bookings, 2026-10-25), read from join_opens_at (10 since backend #391, a backend setting) | The window is 5 min before to 15 min after (backend reply §6). A number repeated in prose goes stale the day the backend changes it | never — the copy follows the API |
 | Bookings cancel modal credit line: "your credit comes back", 1-hour cut-off | The cut-off is **12 hours**, not 1, and the mentor-side line is unconditional | Backend #338 (live 2026-10-03) decided the policy the design guessed at: a mentor's cancellation always refunds the mentee; a mentee's refunds at ≥12 h before the start and is used inside it. Nobody may cancel within 10 minutes of the start at all | never — the copy follows the policy |
 | "Send a quick message" modal on every row and in the details panel | Omitted everywhere, not disabled | No endpoint exists and none is in progress (backend roadmap #334). A dead control on every row teaches people the page is broken | a messaging endpoint ships |
 | Details panel: "Notes from {first}" as several paragraphs | One block, from booking_message | The intake answers are not readable for a booked session (backend roadmap #269) | #269 ships |
@@ -289,7 +289,7 @@ Defined in `src/styles/tokens/ours.css`. A redesign must not silently drop them:
 | 17 | No state for a question the mentor has since removed | The question is italic with "(no longer asked)" beside it | `retired: true` exists in the contract and the answer still shows. **Provisional copy**, listed for design. |
 | 18 | The answers replace the "Notes from {first}" block outright | Both are shown, each under its own label — "Answers from {first}" then "Note from {first}" | `booking_message` and the form are independent fields, both current (backend 2026-10-03). The design's fixture builds its answers *from* the message, so it never had to choose. Dropping the block would hide a real message whenever a form exists. |
 | 19 | A file answer is plain text | A button that opens the file in a viewer | The bucket is private, so a file cannot be linked at all — it has to be fetched with the token. Given that, product chose viewing over downloading: a PDF renders in the browser's own viewer with Download beside it. |
-| 20 | `hero.note` is labelled "What {first} wants to cover" | "Note from {first}" / "Your note" | In the new design that label belongs to the answers preview. Leaving it would give one field two names on one screen. The preview takes the label back when the rows are built. |
+| 20 | ~~`hero.note` is labelled "What {first} wants to cover"~~ | ~~"Note from {first}" / "Your note"~~ **SUPERSEDED 2026-10-25 (PRD Mentor Bookings)** | The hero now shows the first booking-form answer under the question as asked, as drawn; the note keeps "Note from {first}" in the panel, and on the hero only when there are no answers. |
 
 **Not built here:** the row preview box and `hero.ansLink`. They need
 `SessionRead.answers_preview`, which went live mid-build (backend #352) and
@@ -310,7 +310,7 @@ the declared default) with `flex: none; align-self: flex-start` and a `-space-2`
 pull into the corner. It is now built that way, and `.content` takes a zero flex
 basis below 1100px so it shrinks rather than pushing the ⋯ onto its own line.
 
-| 23 | The hero link carries the design's `-space-2` pull at every width | On phones it takes a 44px target and no negative pull | At 390 the link sat 32px tall with 8px to "Join session", which posts attendance and opens the meeting. A low thumb hit the wrong action, and an invisible tap overlay would have reached into Join itself. The room has to come from somewhere. |
+| 23 | ~~The hero link carries the design's `-space-2` pull at every width~~ | ~~On phones it takes a 44px target and no negative pull~~ **SUPERSEDED 2026-10-25 (PRD Mentor Bookings)** | The link now sits inside the hero’s answer box, as drawn (20px, 4px under the answer), with a 44px overlay. A box padding and the card gap separate it from Join, so the phone exception is gone. |
 | 24 | The hero's "See all N answers" | "See the answer" when there is one | "See all 1 answers" is not a sentence, and on the hero "all" has no referent because no answer is shown there. |
 
 ### Bookings — the actions (PR 3a), 2026-10-03
@@ -569,7 +569,7 @@ Source: `Session Join.dc.html` at `layout=lobbySplit`, 19 Oct copy pass. The PRD
 
 | # | Design | Built | Why |
 |---|---|---|---|
-| 39 | "Show all N answers" | "Show all N **questions**" | Since #412 the list carries every question the form asked, answered or not. With 7 asked and 3 answered, "Show all 7 answers" is a claim the panel cannot keep — it expands to 3 answers and 4 blanks. The row still says "See all 3 answers", which is right: `answers_preview.count` counts answered ones only. |
+| 39 | ~~"Show all N answers"~~ | ~~"Show all N **questions**"~~ **SUPERSEDED 2026-10-25 (PRD Mentor Bookings)** | Reconciled with the PRD: "Show all {n} answers" counts answered questions (the row’s count too); only when the hidden ones are all blank does it read "Show all {n} questions". See row 58. |
 | 40 | Nothing | "You didn't answer the questions on this form." / "{Name} didn't answer any of the questions." | A form left entirely blank collapses to a heading with nothing under it, which reads as a failed load. The design draws no state for it. |
 
 **Also, not a divergence:** the collapsed preview shows the first two
@@ -578,6 +578,27 @@ skipped the opening questions was previewed as two "No answer" rows while
 their real content sat behind the toggle. This matches what the row already
 does — `answers_preview.first` is the first answered question, "skipping any
 blank before it".
+
+### Bookings — PRD Mentor Bookings (2026-10-25)
+
+Built from `Mentor Bookings.dc.html` (SHA `4baff9bb9bbb7314`) at its saved
+defaults. Now as drawn, so no longer divergences: History tags name who
+(`outcomeTag`, owner B7), the hero's first answer and link inside its box,
+the Pending intro in full, the row's `event_busy` overlap line, "Join opens
+{N} min before", a later session's panel footer (the lock line and Cancel
+session on one row, no Join), Cancel and Decline at their natural width, the
+footer's safe-area padding, a row's actions on their own line at every width
+(`actionsPos=below`; they were inline beside Details from 1100px, found by
+the Mentee Bookings session's probe), the phone sheet's 20px body padding when
+there is no footer, and "Want more sessions? Update your availability".
+
+| # | Design | Built | Why |
+|---|---|---|---|
+| 58 | The panel's toggle: "Show all " + every question + " answers" | "Show all {n} answers" with n the answered questions; "Show all {n} questions" when only blanks are hidden | Since backend #412 the list carries blank questions too. Counting answers keeps the row's "See all {n} answers" and the panel's toggle on one number, and never promises answers that aren't there (row 39, reconciled). |
+| 59 | The hero's link: "See all {n} answers" | "See the answer" when there is one | Row 24, kept: "all 1 answers" is not a sentence. The PRD names it. |
+| 60 | No overlap Notice in the panel | The panel keeps its Notice above Accept; the row has the line | On a phone the panel is a full-screen sheet over the row, so the warning has to sit beside the button being pressed (PRD). |
+| 61 | Accept shows a toast (handoff) | Announced to screen readers only | The design draws no toast. Noted for the designer (PRD). |
+| 62 | History chips: Didn't happen · Missed · Completed | Completed · Didn't happen · Missed | Owner decision B2 and the handoff. Noted for the designer (PRD). |
 
 ### Typography — one typeface, DM Sans (2026-10-10, ADR 0002)
 

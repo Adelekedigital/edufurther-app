@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
@@ -40,6 +41,8 @@ type BookingsPanelProps = {
   actionsFor?: (b: Booking) => ReactNode;
   /** A full-width block under the row's detail. */
   noticeFor?: (b: Booking) => ReactNode;
+  /** The clash line on a request, where accepting would double-book. */
+  overlapFor?: (b: Booking) => { text: string; id: string } | undefined;
   /** Opens one row's details panel, from the labelled button in its corner. */
   onOpenDetails?: (id: string) => void;
   /**
@@ -80,6 +83,7 @@ export function BookingsPanel({
   intro,
   actionsFor,
   noticeFor,
+  overlapFor,
   onOpenDetails,
   onOpenAnswers,
   answersControls,
@@ -132,6 +136,14 @@ export function BookingsPanel({
             )
           }
         />
+        {copy.more && (
+          <p className={styles.more}>
+            {copy.more.lead}{' '}
+            <Link href={copy.more.href} prefetch={false} className={styles.moreLink}>
+              {copy.more.link}
+            </Link>
+          </p>
+        )}
       </div>
     );
   }
@@ -175,6 +187,7 @@ export function BookingsPanel({
               timeZone={timeZone}
               actions={actionsFor?.(b)}
               notice={noticeFor?.(b)}
+              overlap={overlapFor?.(b)}
               onOpenDetails={onOpenDetails ? () => onOpenDetails(b.id) : undefined}
               selected={selectedId === b.id}
               onOpenAnswers={onOpenAnswers ? () => onOpenAnswers(b.id) : undefined}

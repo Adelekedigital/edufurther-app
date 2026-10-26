@@ -186,7 +186,9 @@ describe('the actions appear only where they can succeed', () => {
     // The guarantee the move itself rests on. Wiring `onCallOff` straight to
     // the mutation would leave every other test in this file green, so this is
     // the one that holds it — the Decline equivalent is above.
-    h.upcoming = remote([booking({ id: 'later', title: 'Later one', startsAt: at(48), endsAt: at(49) })]);
+    h.upcoming = remote([
+      booking({ id: 'later', title: 'Later one', startsAt: at(48), endsAt: at(49) }),
+    ]);
     h.selectedBooking = 'later';
     render(<BookingsScreen />);
     await userEvent.click(screen.getByRole('button', { name: 'Cancel session' }));
@@ -262,8 +264,38 @@ describe('accepting a request that runs into another session', () => {
     ]);
     h.tab = 'pending';
     render(<BookingsScreen />);
-    expect(screen.getByText(/This overlaps your session with/)).toBeVisible();
+    // On the row: the design's line, at the clashing session's start, in the
+    // viewer's zone (22:00 UTC is 11:00 pm in Lagos), and Accept names it.
+    const line = screen.getByText(/^Overlaps your 11:00 pm session with /);
+    expect(line).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Accept' })).toHaveAttribute(
+      'aria-describedby',
+      line.id,
+    );
+    // The row no longer carries the Notice; the panel does.
+    expect(screen.queryByText(/Accepting books both/)).not.toBeInTheDocument();
+  });
+
+  it('the panel keeps the Notice beside its Accept, for the phone sheet', () => {
+    h.viewer = { ...MEMBER, isMentor: true };
+    h.upcoming = remote([booking({ id: 'u1', startsAt: at(10), endsAt: at(11) })]);
+    h.pending = remote([
+      booking({
+        id: 'p1',
+        status: 'pending',
+        side: 'mentor',
+        respondBy: at(5),
+        startsAt: at(10.5),
+        endsAt: at(11.5),
+      }),
+    ]);
+    h.tab = 'pending';
+    h.selectedBooking = 'p1';
+    render(<BookingsScreen />);
+    const notice = screen.getByText(/This overlaps your session with/);
     expect(screen.getByText(/Accepting books both/)).toBeVisible();
+    const accept = screen.getByRole('button', { name: 'Accept request' });
+    expect(accept.getAttribute('aria-describedby')).toBe(notice.closest('[id]')?.id);
   });
 
   it('does not block it — accepting both may be the intention', async () => {
@@ -306,6 +338,7 @@ describe('accepting a request that runs into another session', () => {
     h.tab = 'pending';
     render(<BookingsScreen />);
     expect(screen.queryByText(/This overlaps your session with/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Overlaps your/)).not.toBeInTheDocument();
   });
 });
 

@@ -109,9 +109,9 @@ describe('the row keeps the actions that are its own job', () => {
   });
 
   it('Details comes before the actions in the DOM, so a phone tabs down and stops', () => {
-    // Below 1100px the actions take their own line underneath. Reading order
-    // has to match: tabbing down to them and then back up to the corner was
-    // the bug this order avoids, and `order` only swaps them horizontally.
+    // The actions take their own line underneath (`actionsPos=below`).
+    // Reading order has to match: tabbing down to them and then back up to the
+    // corner was the bug this order avoids.
     const { container } = row(pending());
     const order = [...container.querySelectorAll('button')].map((el) => el.textContent);
     expect(order[0]).toMatch(/^Details/);
@@ -168,5 +168,23 @@ describe('what the row says is unchanged by the swap', () => {
     const { container } = row({ onOpenDetails: () => {}, selected: true });
     expect(container.firstElementChild).toHaveClass('row', 'selected');
     expect(rule('.selected')).toMatch(/background:\s*var\(--blue-50\)/);
+  });
+});
+
+describe('what the row says (PRD Mentor Bookings)', () => {
+  it('tags a past session with who canceled it', () => {
+    row({ booking: sampleBookingFor({ status: 'cancelled', cancelledBy: 'mentee' }) });
+    expect(screen.getByText('Canceled by Amara')).toBeVisible();
+  });
+
+  it('shows the clash line, with an id Accept can point at', () => {
+    row({
+      booking: sampleBookingFor({ status: 'pending', respondBy: at(20) }),
+      overlap: { id: 'clash-b1', text: 'Overlaps your 9:00 am session with Tunde' },
+    });
+    expect(screen.getByText('Overlaps your 9:00 am session with Tunde')).toHaveAttribute(
+      'id',
+      'clash-b1',
+    );
   });
 });

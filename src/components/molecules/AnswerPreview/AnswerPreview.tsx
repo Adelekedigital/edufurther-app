@@ -20,8 +20,8 @@ type AnswerPreviewProps = {
    */
   forBooking?: string;
   /**
-   * The hero has no box — it already sits in a card, and the design gives it
-   * the link alone, under the note.
+   * The link alone, for the hero: it draws the first answer in its own box and
+   * hangs this link inside it (Mentor Bookings.dc.html `hero.ansLink`).
    */
   linkOnly?: boolean;
 };
@@ -40,11 +40,11 @@ export function AnswerPreview({
   forBooking,
   linkOnly,
 }: AnswerPreviewProps) {
-  // "all" has a referent on a row, where one answer is already shown. On the
-  // hero nothing is shown, and with a single answer "all 1 answers" is wrong.
+  // "See all 1 answers" is not a sentence (divergence row 59).
   const label = preview.count === 1 ? 'See the answer' : `See all ${preview.count} answers`;
-  // The hero shows no answers, so anything at all is worth a way in. A row
-  // already shows the first, so it only offers more when there is more.
+  // The hero clamps its answer to two lines and is the way into the panel, so
+  // even one answer is worth opening in full. A row offers more only when
+  // there is more.
   const worthOpening = linkOnly ? preview.count >= 1 : preview.count > 1;
   const more = worthOpening && (
     <button

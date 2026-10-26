@@ -26,18 +26,13 @@
   color: var(--ink-900);
 }
 
-/* Clear of the home indicator, as the design's footer is. */
-.sheet > :last-child {
-  padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
-}
-
 /* A ?booking= link opened cold: the panel's own loading and error states.
    Ours — the design never drew the panel without a booking to put in it. */
 .fallback {
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
-  padding: var(--space-5);
+  padding: var(--space-5) var(--space-5) calc(var(--space-5) + env(safe-area-inset-bottom));
 }
 
 .fallbackHead {
@@ -105,6 +100,6 @@
 /* Handoff §7.3: the sheet's own body and its fallback match the panel body. */
 @media (max-width: 767px) {
   .fallback {
-    padding: var(--space-4);
+    padding: var(--space-4) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom));
   }
 }

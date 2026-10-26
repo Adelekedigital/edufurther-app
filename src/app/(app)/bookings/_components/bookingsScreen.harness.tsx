@@ -60,6 +60,7 @@ export const booking = (over: Partial<Booking> = {}): Booking => ({
   other: party(),
   myAttendance: 'pending' as const,
   myJoinedAt: null,
+  cancelledBy: null,
   startsAt: at(24),
   endsAt: at(25),
   durationMin: 60,

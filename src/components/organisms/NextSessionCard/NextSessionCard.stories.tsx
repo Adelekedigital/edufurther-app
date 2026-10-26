@@ -27,6 +27,37 @@ const meta: Meta<typeof NextSessionCard> = {
 export default meta;
 type Story = StoryObj<typeof NextSessionCard>;
 
+/** The first booking-form answer under its question, then the link (PRD Mentor Bookings). */
+export const FirstAnswer: Story = {
+  args: {
+    onOpenAnswers: fn(),
+    booking: sampleBooking({
+      title: 'Statement of Purpose review',
+      answersPreview: {
+        count: 4,
+        first: {
+          question: 'What do you want to cover?',
+          text: 'I have nine programs and need to cut it to five. Funding matters most.',
+        },
+      },
+    }),
+  },
+};
+
+/** One answer: the link reads "See the answer". */
+export const OneAnswer: Story = {
+  args: {
+    onOpenAnswers: fn(),
+    booking: sampleBooking({
+      title: 'Statement of Purpose review',
+      answersPreview: {
+        count: 1,
+        first: { question: 'What do you want to cover?', text: 'Funding.' },
+      },
+    }),
+  },
+};
+
 /** The panel it opens is on screen, so the control says so. */
 export const DetailsOpen: Story = {
   args: { detailsOpen: true },

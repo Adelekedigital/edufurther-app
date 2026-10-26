@@ -14,7 +14,7 @@ import {
 import { coverKey } from '@/lib/utils/cover';
 import { clampFocus, personCover, personInitials } from '@/lib/utils/person';
 import { dayKey } from '@/lib/utils/slots';
-import type { Booking, BookingParty, BookingStatus } from '@/types/booking';
+import type { Booking, BookingParty, BookingSide, BookingStatus } from '@/types/booking';
 import type { AppError, Remote } from '@/types/mentor';
 import { ApiError, apiError, normaliseError, retryOnce } from './errors';
 import { api } from './http';
@@ -96,6 +96,14 @@ export function toParty(p: PartyRead): BookingParty {
 }
 
 /**
+ * Which side called a cancelled session off (backend #545). Null for a cancel
+ * by an admin or the system, and on any other status: those read "Canceled".
+ */
+function cancelledBy(s: SessionRead): BookingSide | null {
+  return s.status === 'cancelled' ? (s.cancelled_by ?? null) : null;
+}
+
+/**
  * One API session as this screen reads it. Which side the viewer is on is
  * derived per row, not from their role: one account can host some of these and
  * have booked others (backend reply §2).
@@ -117,6 +125,7 @@ export function toBooking(s: SessionRead, viewerId: string): Booking {
     // Carried on every list row, so a page of twenty costs no extra requests.
     myAttendance: toParty(side === 'mentor' ? s.mentor : s.mentee).attendance,
     myJoinedAt: (side === 'mentor' ? s.mentor : s.mentee).joined_at ?? null,
+    cancelledBy: cancelledBy(s),
     // The offer rides on the session, so a row carries it without a second call.
     suggestion: s.suggestion
       ? {
