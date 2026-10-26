@@ -3,6 +3,8 @@
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { DateChip } from '@/components/molecules/DateChip/DateChip';
+import { DashboardNextSession } from '@/components/organisms/DashboardNextSession/DashboardNextSession';
 import { cx } from '@/lib/utils/cx';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { joinState, nextSessionWhen, timeRange } from '@/lib/utils/bookings';
@@ -26,14 +28,6 @@ const PREP = [
   'Write down the two questions that matter most',
   'Test your camera and microphone',
 ] as const;
-
-function monthDay(iso: string, timeZone: string): { month: string; day: string } {
-  const d = new Date(iso);
-  return {
-    month: new Intl.DateTimeFormat('en-US', { month: 'short', timeZone }).format(d),
-    day: new Intl.DateTimeFormat('en-US', { day: 'numeric', timeZone }).format(d),
-  };
-}
 
 function weekday(iso: string, timeZone: string): string {
   return new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone }).format(new Date(iso));
@@ -73,9 +67,10 @@ export function startsSoon(b: Booking, now: Date, timeZone: string): boolean {
  * "Next session"): a date chip, who and when, a client-only prep checklist, and
  * one action — Join when it is nearly time, View details otherwise.
  *
- * Its own card rather than the Bookings hero (NextSessionCard): the design adds
- * the date chip and the prep list the Bookings hero does not have. It takes the
- * same Booking and reuses the same join/time helpers, so the two never disagree.
+ * The frame and date chip are shared with the mentor's card (DashboardNextSession,
+ * DateChip, #417); the prep list and Tips are the mentee's own. Not the Bookings
+ * hero (organisms/NextSessionCard), a different design, though it reuses the
+ * same join/time helpers, so the two never disagree.
  * "Send a message" is omitted until Messages ships (messageBtn hide): a dead
  * control teaches people the page is broken.
  */
@@ -114,7 +109,6 @@ export function MenteeNextSession({
     },
   };
 
-  const { month, day } = monthDay(b.startsAt, timeZone);
   const when = nextSessionWhen(b, now, timeZone);
   const soon = startsSoon(b, now, timeZone);
   const doneCount = done.filter(Boolean).length;
@@ -140,26 +134,14 @@ export function MenteeNextSession({
   );
 
   return (
-    <section aria-label="Next session" className={styles.card}>
-      <div className={styles.head}>
-        <h2 className={styles.title}>Next session</h2>
-        <div className={styles.headActions}>
-          <button type="button" className={styles.tips} onClick={() => setTipsOpen(true)}>
-            <Icon name="lightbulb" size={16} className={styles.tipsIcon} />
-            Tips
-          </button>
-          <ButtonLink
-            href="/bookings"
-            prefetch={false}
-            variant="text"
-            size="small"
-            className={styles.allLink}
-          >
-            All bookings
-          </ButtonLink>
-        </div>
-      </div>
-
+    <DashboardNextSession
+      headActions={
+        <button type="button" className={styles.tips} onClick={() => setTipsOpen(true)}>
+          <Icon name="lightbulb" size={16} className={styles.tipsIcon} />
+          Tips
+        </button>
+      }
+    >
       <div className={styles.body}>
         {soon && (
           <span className={styles.soon}>
@@ -173,10 +155,7 @@ export function MenteeNextSession({
             (nextActsBelow). So focus and reading order follow what's shown. */}
         <div className={styles.main}>
           <div className={styles.when}>
-            <span aria-hidden="true" className={styles.date}>
-              <span className={styles.dateMonth}>{month}</span>
-              <span className={styles.dateDay}>{day}</span>
-            </span>
+            <DateChip iso={b.startsAt} timeZone={timeZone} />
             <div className={styles.detail}>
               <span className="sr-only">{fullDate(b.startsAt, timeZone)}</span>
               <span className={styles.sessionTitle}>{b.title ?? 'Session'}</span>
@@ -242,6 +221,6 @@ export function MenteeNextSession({
         )}
       </div>
       {tipsOpen && <MenteeTipsModal onClose={() => setTipsOpen(false)} />}
-    </section>
+    </DashboardNextSession>
   );
 }

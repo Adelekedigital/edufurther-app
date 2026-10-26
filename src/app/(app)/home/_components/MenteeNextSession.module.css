@@ -1,30 +1,5 @@
 /* Mentee Dashboard v2.dc.html "Next session" card. Values read from the design's
    inline styles. */
-.card {
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  background: var(--surface-card);
-  overflow: hidden;
-}
-.head {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--border-muted);
-}
-.title {
-  margin: 0;
-  font-size: var(--text-p-md);
-  font-weight: var(--weight-semibold);
-}
-.headActions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
 /* "Tips" — a text link with the lightbulb, beside "All bookings". */
 .tips {
   position: relative;
@@ -58,10 +33,6 @@
   top: 50%;
   transform: translateY(-50%);
   height: var(--space-11);
-}
-/* The shared text ButtonLink, at the design's 32px row height. */
-.allLink {
-  min-height: var(--space-8);
 }
 .tipsIcon {
   color: inherit;
@@ -108,29 +79,6 @@
   display: flex;
   gap: var(--space-4);
   align-items: center;
-}
-.date {
-  width: 56px;
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: var(--space-2) 0;
-  border-radius: var(--radius-lg);
-  background: var(--blue-50);
-  color: var(--blue-700);
-}
-.dateMonth {
-  font-size: var(--text-caption-xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--ls-caption-xs);
-  text-transform: uppercase;
-}
-.dateDay {
-  font-family: var(--font-brand);
-  font-size: var(--text-h6);
-  font-weight: var(--weight-semibold);
-  line-height: 1.2;
 }
 .detail {
   /* The .sr-only full-date band is absolutely placed; without a positioned
