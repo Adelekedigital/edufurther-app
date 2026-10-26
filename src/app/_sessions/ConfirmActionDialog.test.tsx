@@ -81,11 +81,17 @@ describe('the dialog says which session it is about', () => {
 });
 
 describe('what happens to the credit is said before the button', () => {
-  it('a mentee cancelling with notice is told the credit comes back', () => {
+  it('a mentee cancelling with notice is told until when the credit comes back', () => {
+    // No `refundUntil` on the row: the deadline is the start less the
+    // fallback twelve hours, read in the viewer's zone (EDT).
     dialog({
       booking: sampleBookingFor({ side: 'mentee', status: 'confirmed', startsAt: at(48), endsAt: at(49) }),
     });
-    expect(screen.getByText('Your credit goes back to you.')).toBeVisible();
+    expect(
+      screen.getByText(
+        'Cancel before Sun, Oct 4, 8:00 pm and your credit comes back. After that, the credit is used.',
+      ),
+    ).toBeVisible();
   });
 
   it('a mentee cancelling inside twelve hours is told before they confirm, not after', () => {
@@ -111,7 +117,7 @@ describe('what happens to the credit is said before the button', () => {
 
   it('a withdrawal returns the credit whenever it happens', () => {
     dialog({ action: 'withdraw', booking: sampleBookingFor({ side: 'mentee', status: 'pending' }) });
-    expect(screen.getByText('Your credit goes back to you.')).toBeVisible();
+    expect(screen.getByText('Your credit comes back.')).toBeVisible();
   });
 });
 
@@ -669,7 +675,8 @@ describe('the refund deadline is the server’s, not a number we remember', () =
         refundUntil: at(1),
       }),
     });
-    expect(screen.getByText('Your credit goes back to you.')).toBeVisible();
+    // The server's deadline, not the start less twelve hours.
+    expect(screen.getByText(/^Cancel before Sat, Oct 3, 9:00 am and your credit comes back/)).toBeVisible();
   });
 });
 
