@@ -223,7 +223,6 @@ export function MenteeHomeScreen() {
   const monthly = member.credits?.monthly;
   const freeLeft = monthly?.unlocked ? monthly.balance : null;
   const metShown = metOpen && (metMentors.data?.length ?? 0) > 0;
-  const metIds = new Set((metMentors.data ?? []).map((m) => m.id));
   const goalNeeds = goals.read?.goal?.needs.map((n) => n.id) ?? [];
   const firstDone = !!fresh.firstDone;
 
@@ -291,7 +290,7 @@ export function MenteeHomeScreen() {
     <MenteeMentorsSection
       mentors={metMentors}
       recommended={{
-        items: recommendedFrom(matches.data?.matches ?? [], metIds, topics.topics),
+        items: recommendedFrom(matches.data?.matches ?? [], topics.topics),
         isLoading: topics.isLoading || (!matches.data && !matches.error),
         // A failed refetch keeps the matches it had.
         failed: !!matches.error && !matches.data,

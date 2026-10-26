@@ -580,10 +580,10 @@ describe('MenteeHomeScreen', () => {
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
   });
 
-  it('Book again and Recommended are tabs; Recommended leaves out mentors already met', async () => {
+  it('Book again and Recommended are tabs; Recommended shows the matches as sent', async () => {
     metMentors = remote([metMentor()]);
     matches = {
-      data: { matches: [match('m1', 'Mariam Alamata'), match('m9', 'Tunde Bakare')] },
+      data: { matches: [match('m9', 'Tunde Bakare')] },
       isLoading: false,
       error: null,
     };
@@ -603,7 +603,6 @@ describe('MenteeHomeScreen', () => {
     expect(screen.getByRole('article', { name: 'Tunde Bakare' })).toHaveTextContent(
       'Scholarships & funding',
     );
-    expect(screen.queryByRole('article', { name: 'Mariam Alamata' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'See all' })).toHaveAttribute('href', '/explore');
     await userEvent.click(screen.getByRole('button', { name: 'Book Tunde Bakare' }));
     // A matched mentor's card carries their rating; only met mentors' doesn't.
