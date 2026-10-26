@@ -20,8 +20,8 @@ export const keys = {
     all: ['onboarding'] as const,
     state: (userId: string) => ['onboarding', 'state', userId] as const,
     matchesAll: ['onboarding', 'matches'] as const,
-    matches: (userId: string, forMentor: string, limit: number) =>
-      ['onboarding', 'matches', userId, forMentor, limit] as const,
+    matches: (userId: string, forMentor: string, limit: number, excludeMet: boolean) =>
+      ['onboarding', 'matches', userId, forMentor, limit, excludeMet] as const,
   },
   viewer: {
     all: ['viewer'] as const,

@@ -83,7 +83,7 @@ export function toMatches(w: WireMatches, topics: Topic[], levels: LevelCodes = 
 
 /**
  * The mentee's top matches (PRD B4), ranked by the backend's one rule: 2 for
- * onboarding, more where a page leaves some out (Home drops mentors already met). `topics`
+ * onboarding; Home asks for 3 it hasn't met (`excludeMet`). `topics`
  * (the offering catalog) turns help-area ids into the slugs the copy is keyed by.
  */
 export function useMentorMatches(
@@ -94,13 +94,26 @@ export function useMentorMatches(
     enabled,
     forMentor = null,
     limit = 2,
-  }: { enabled: boolean; forMentor?: string | null; limit?: number },
+    excludeMet = false,
+  }: {
+    enabled: boolean;
+    forMentor?: string | null;
+    limit?: number;
+    /** Leave out mentors already met (backend #550); `limit` then counts only the rest. */
+    excludeMet?: boolean;
+  },
 ) {
   const query = useQuery({
-    queryKey: keys.onboarding.matches(userId ?? 'none', forMentor ?? '', limit),
+    queryKey: keys.onboarding.matches(userId ?? 'none', forMentor ?? '', limit, excludeMet),
     queryFn: async ({ signal }) => {
       const { data, response } = await api.GET('/api/v1/me/mentor-matches', {
-        params: { query: { limit, ...(forMentor ? { for_mentor: forMentor } : {}) } },
+        params: {
+          query: {
+            limit,
+            ...(forMentor ? { for_mentor: forMentor } : {}),
+            ...(excludeMet ? { exclude_met: true } : {}),
+          },
+        },
         signal,
       });
       if (!response.ok || !data) throw new ApiError(response.status);

@@ -51,17 +51,9 @@ const n = (v: number | null | undefined) => (typeof v === 'number' ? v : null);
 const toHours = (minutes: number | null | undefined) =>
   typeof minutes === 'number' ? minutes / 60 : 0;
 
-// PENDING BACKEND (Mentee Home request 3a): `this_month` isn't in the published
-// spec yet, so it is read untyped and optional; wire to the generated type when it ships.
-// Likewise `sessions_attended` (the invite unlock's count, owner 25 Oct).
-type PendingStatsRead = {
-  this_month?: { completed_sessions: number; minutes: number } | null;
-  sessions_attended?: number | null;
-};
-
 function toStats(dto: StatsRead): MenteeStats {
-  const pending = dto as StatsRead & PendingStatsRead;
-  const month = pending.this_month;
+  // The UTC calendar month so far (backend #549), for "+N this month".
+  const month = dto.this_month;
   return {
     sessionsHeld: n(dto.sessions_held),
     mentorsMet: n(dto.mentors_met),
@@ -72,7 +64,8 @@ function toStats(dto: StatsRead): MenteeStats {
     current: { sessions: dto.current.completed_sessions, hours: toHours(dto.current.minutes) },
     previous: { sessions: dto.previous.completed_sessions, hours: toHours(dto.previous.minutes) },
     thisMonth: month ? { sessions: month.completed_sessions, hours: toHours(month.minutes) } : null,
-    sessionsAttended: n(pending.sessions_attended),
+    // The invite unlock's count (backend #548): a mentor no-show still counts.
+    sessionsAttended: n(dto.sessions_attended),
   };
 }
 

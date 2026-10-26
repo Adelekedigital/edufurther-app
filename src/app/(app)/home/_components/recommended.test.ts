@@ -15,18 +15,16 @@ const match = (id: string, reasons: MentorMatch['reasons']): MentorMatch => ({
 });
 
 describe('recommendedFrom', () => {
-  it('keeps the backend order, leaves out mentors already met, and names the matched areas', () => {
+  it('keeps the backend order and names the matched areas', () => {
     const out = recommendedFrom(
       [
         match('a', [{ code: 'help_areas', slugs: ['documents'] }]),
-        match('met', [{ code: 'help_areas', slugs: ['scholarships'] }]),
         match('b', [
           { code: 'field', field: 'Public Health' },
           { code: 'help_areas', slugs: ['scholarships', 'documents'] },
           { code: 'help_areas', slugs: ['scholarships'] },
         ]),
       ],
-      new Set(['met']),
       TOPICS,
     );
     expect(out.map((r) => r.mentor.id)).toEqual(['a', 'b']);
@@ -36,11 +34,7 @@ describe('recommendedFrom', () => {
   });
 
   it('skips an area the catalogue does not know', () => {
-    const out = recommendedFrom(
-      [match('a', [{ code: 'help_areas', slugs: ['gone'] }])],
-      new Set(),
-      TOPICS,
-    );
+    const out = recommendedFrom([match('a', [{ code: 'help_areas', slugs: ['gone'] }])], TOPICS);
     expect(out[0]!.matchTopics).toEqual([]);
   });
 });

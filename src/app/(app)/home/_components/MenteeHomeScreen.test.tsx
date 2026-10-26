@@ -580,10 +580,10 @@ describe('MenteeHomeScreen', () => {
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
   });
 
-  it('Book again and Recommended are tabs; Recommended leaves out mentors already met', async () => {
+  it('Book again and Recommended are tabs; Recommended shows the matches as sent', async () => {
     metMentors = remote([metMentor()]);
     matches = {
-      data: { matches: [match('m1', 'Mariam Alamata'), match('m9', 'Tunde Bakare')] },
+      data: { matches: [match('m9', 'Tunde Bakare')] },
       isLoading: false,
       error: null,
     };
@@ -603,7 +603,6 @@ describe('MenteeHomeScreen', () => {
     expect(screen.getByRole('article', { name: 'Tunde Bakare' })).toHaveTextContent(
       'Scholarships & funding',
     );
-    expect(screen.queryByRole('article', { name: 'Mariam Alamata' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'See all' })).toHaveAttribute('href', '/explore');
     await userEvent.click(screen.getByRole('button', { name: 'Book Tunde Bakare' }));
     // A matched mentor's card carries their rating; only met mentors' doesn't.
@@ -618,31 +617,14 @@ describe('MenteeHomeScreen', () => {
     expect(screen.getByRole('heading', { name: 'Recommended for you' })).toBeInTheDocument();
   });
 
-  it('asks for enough matches that 3 remain once the met ones drop out, and only once the met list is in', () => {
-    metMentors = remote([metMentor(), metMentor({ id: 'm2' }), metMentor({ id: 'm3' })]);
+  it('asks the backend for 3 mentors not yet met', () => {
     render(<MenteeHomeScreen />);
     expect(matchesArgs).toHaveBeenLastCalledWith(
       'me',
       expect.anything(),
       expect.anything(),
-      expect.objectContaining({ enabled: true, limit: 6 }),
+      expect.objectContaining({ enabled: true, limit: 3, excludeMet: true }),
     );
-    metMentors = remote<MetMentor[]>(null, { isLoading: true });
-    render(<MenteeHomeScreen />);
-    expect(matchesArgs).toHaveBeenLastCalledWith(
-      'me',
-      expect.anything(),
-      expect.anything(),
-      expect.objectContaining({ enabled: false }),
-    );
-  });
-
-  it('Recommended waits for the met list, so nobody already met shows under it', async () => {
-    metMentors = remote<MetMentor[]>(null, { isLoading: true });
-    matches = { data: { matches: [match('m1', 'Mariam Alamata')] }, isLoading: false, error: null };
-    render(<MenteeHomeScreen />);
-    await userEvent.click(screen.getByRole('tab', { name: 'Recommended' }));
-    expect(screen.queryByRole('article', { name: 'Mariam Alamata' })).not.toBeInTheDocument();
   });
 
   it('a failed refetch keeps the matches already shown', () => {
