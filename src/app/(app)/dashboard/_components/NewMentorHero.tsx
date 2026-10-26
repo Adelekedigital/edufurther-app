@@ -7,8 +7,10 @@ import { useOpenTimesCount } from '@/lib/api/data/openTimes';
 import { HERO_COPY, STATUS_COPY } from '@/lib/copy/dashboard';
 import type { Booking } from '@/types/booking';
 import type { AppError, Remote } from '@/types/mentor';
+import type { MoveKey } from '@/lib/utils/weekMoves';
 import { HeroRows, MentorHero } from './MentorHero';
 import { NextSessionCard } from './NextSessionCard';
+import { WeekMoves } from './WeekMoves';
 
 type NewMentorHeroProps = {
   stage: Extract<MentorStage, 'firstBooked' | 'noBookings'>;
@@ -20,6 +22,10 @@ type NewMentorHeroProps = {
   nextSession: Remote<Booking | null>;
   upcomingCount: number | null;
   now: Date;
+  /** This week's moves already pressed. */
+  movesDone: readonly MoveKey[];
+  onMove: (move: MoveKey) => void;
+  onCopyLink: () => void;
 };
 
 /** A row's value from its own query: loading, failed ("Couldn't load"), or the figure. */
@@ -43,6 +49,9 @@ export function NewMentorHero({
   nextSession,
   upcomingCount,
   now,
+  movesDone,
+  onMove,
+  onCopyLink,
 }: NewMentorHeroProps) {
   const firstBooked = stage === 'firstBooked';
   const copy = firstBooked ? HERO_COPY.firstBooked : HERO_COPY.noBookings;
@@ -105,6 +114,15 @@ export function NewMentorHero({
           />
         )}
       </HeroRows>
+      {/* firstBooked keeps only the Hours move, with no counter (design). */}
+      <WeekMoves
+        moves={firstBooked ? ['hours'] : ['share', 'about', 'hours']}
+        done={movesDone}
+        showCounter={!firstBooked}
+        profileHref={profileHref}
+        onMark={onMove}
+        onCopyLink={onCopyLink}
+      />
     </MentorHero>
   );
 }

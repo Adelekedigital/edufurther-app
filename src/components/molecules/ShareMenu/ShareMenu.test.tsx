@@ -117,6 +117,27 @@ describe('ShareMenu', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Link copied');
   });
 
+  it('tells its owner once a copy lands, and not when it fails', async () => {
+    const user = userEvent.setup();
+    const onCopied = vi.fn();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    const { unmount } = render(<ShareMenu url="https://x.test/m" name="G E" onCopied={onCopied} />);
+    await user.click(screen.getByRole('button', { name: 'Share profile' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Copy profile link' }));
+    await screen.findByRole('status');
+    expect(onCopied).toHaveBeenCalledTimes(1);
+    unmount();
+
+    onCopied.mockClear();
+    writeText.mockRejectedValue(new Error('denied'));
+    render(<ShareMenu url="https://x.test/m" name="G E" onCopied={onCopied} />);
+    await user.click(screen.getByRole('button', { name: 'Share profile' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Copy profile link' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Couldn’t copy the link');
+    expect(onCopied).not.toHaveBeenCalled();
+  });
+
   it('says so when the clipboard API is missing (plain-http previews; review of #21)', async () => {
     const user = userEvent.setup();
     Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true });
@@ -155,16 +176,14 @@ describe('ShareMenu', () => {
 
   it('slides the panel back on screen, under its own button (audit: clipped on phones)', async () => {
     const user = userEvent.setup();
-    const rect = vi
-      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
-      .mockReturnValue({
-        left: -65,
-        right: 195,
-        top: 0,
-        bottom: 0,
-        width: 260,
-        height: 0,
-      } as DOMRect);
+    const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      left: -65,
+      right: 195,
+      top: 0,
+      bottom: 0,
+      width: 260,
+      height: 0,
+    } as DOMRect);
     render(<ShareMenu url="https://x.test/m" name="G E" />);
     await user.click(screen.getByRole('button', { name: 'Share profile' }));
     // 16px inside the screen: slid right by 81px.

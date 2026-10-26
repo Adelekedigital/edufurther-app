@@ -25,6 +25,8 @@ type ShareMenuProps = {
    * which is still fully usable.
    */
   note?: string;
+  /** After "Copy profile link" lands (Mentor Home marks its Share moves done). */
+  onCopied?: () => void;
 } & (
   | {
       /**
@@ -53,6 +55,7 @@ export function ShareMenu({
   name,
   triggerLabel,
   note,
+  onCopied,
   open: openProp,
   onOpenChange,
 }: ShareMenuProps) {
@@ -119,7 +122,10 @@ export function ShareMenu({
           return;
         }
         navigator.clipboard.writeText(url).then(
-          () => setStatus('Link copied'),
+          () => {
+            setStatus('Link copied');
+            onCopied?.();
+          },
           () => setStatus('Couldn’t copy the link'),
         );
       },
