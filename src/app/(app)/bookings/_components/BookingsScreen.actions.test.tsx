@@ -16,6 +16,7 @@ import {
   push,
   remote,
   replace,
+  reminders,
   resetHarness,
 } from './bookingsScreen.harness';
 import { launched, sent } from '@/app/_sessions/reviewAndRebook.harness';
@@ -43,6 +44,9 @@ vi.mock('@/lib/api/data/bookingActions', async () =>
 );
 vi.mock('@/lib/api/data/reviewableSessions', async () =>
   (await import('./bookingsScreen.harness')).mocks.reviewableSessions(),
+);
+vi.mock('@/lib/api/data/reminders', async () =>
+  (await import('./bookingsScreen.harness')).mocks.reminders(),
 );
 vi.mock('@/lib/api/data/reviewWrite', async () =>
   (await import('@/app/_sessions/reviewAndRebook.harness')).reviewAndRebookMocks.reviewWrite(),
@@ -131,6 +135,105 @@ describe('the actions appear only where they can succeed', () => {
     expect(screen.getByRole('dialog', { name: 'Withdraw this request?' })).toBeVisible();
     expect(screen.getByText('Your credit comes back.')).toBeVisible();
     expect(actions.withdraw!.mutate).not.toHaveBeenCalled();
+  });
+
+  describe('Send a reminder (under 24 hours left for the mentor)', () => {
+    it('shows beside Cancel request only when the deadline is close', () => {
+      h.pending = remote([
+        pendingRow({ id: 'soon', side: 'mentee', respondBy: at(5) }),
+        pendingRow({ id: 'later', side: 'mentee', respondBy: at(48) }),
+      ]);
+      h.tab = 'pending';
+      render(<BookingsScreen />);
+      expect(screen.getAllByRole('button', { name: 'Send a reminder' })).toHaveLength(1);
+      expect(screen.getAllByRole('button', { name: 'Cancel request' })).toHaveLength(2);
+    });
+
+    it('opens the dialog drafted, sends, then the row says Reminder sent (disabled)', async () => {
+      h.pending = remote([pendingRow({ side: 'mentee', respondBy: at(5) })]);
+      h.tab = 'pending';
+      render(<BookingsScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Send a reminder' }));
+      expect(screen.getByRole('heading', { name: 'Send Amara a reminder?' })).toBeVisible();
+      expect(
+        (screen.getByRole('textbox', { name: 'Reminder message' }) as HTMLTextAreaElement).value,
+      ).toMatch(/^Hi Amara, just checking in on my request for /);
+      await userEvent.click(screen.getByRole('button', { name: 'Send reminder' }));
+      expect(reminders.sent).toEqual([
+        expect.objectContaining({ bookingId: 'p1', message: expect.stringMatching(/^Hi Amara/) }),
+      ]);
+      expect(screen.queryByRole('heading', { name: 'Send Amara a reminder?' })).toBeNull();
+      expect(screen.getByRole('button', { name: 'Reminder sent' })).toBeDisabled();
+    });
+
+    it('a reminder already on the session reads as sent, on the row and in the pill', () => {
+      h.pending = remote([
+        pendingRow({ side: 'mentee', respondBy: at(5), reminderSentAt: at(-1) }),
+      ]);
+      h.tab = 'pending';
+      render(<BookingsScreen />);
+      expect(screen.getByRole('button', { name: 'Reminder sent' })).toBeDisabled();
+      expect(screen.getByText(/^Reminder sent · Amara has .* left to confirm$/)).toBeVisible();
+    });
+
+    it('a refusal keeps the dialog open with the text and says why', async () => {
+      reminders.refuse = 'closed';
+      h.pending = remote([pendingRow({ side: 'mentee', respondBy: at(5) })]);
+      h.tab = 'pending';
+      render(<BookingsScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Send a reminder' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Send reminder' }));
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'This request has closed, so the reminder can’t go.',
+      );
+      expect(screen.getByRole('heading', { name: 'Send Amara a reminder?' })).toBeVisible();
+    });
+
+    it('a reminder sent on one row stays sent when another row’s dialog opens', async () => {
+      h.pending = remote([
+        pendingRow({ id: 'a', side: 'mentee', respondBy: at(5) }),
+        pendingRow({ id: 'b', side: 'mentee', respondBy: at(6), other: party('Kofi Mensah') }),
+      ]);
+      h.tab = 'pending';
+      render(<BookingsScreen />);
+      const [first] = screen.getAllByRole('button', { name: 'Send a reminder' });
+      await userEvent.click(first!);
+      await userEvent.click(screen.getByRole('button', { name: 'Send reminder' }));
+      // The pill says so at once, before the list is refetched.
+      expect(screen.getByText(/^Reminder sent · Amara has/)).toBeVisible();
+      await userEvent.click(screen.getByRole('button', { name: 'Send a reminder' }));
+      expect(screen.getByRole('heading', { name: 'Send Kofi a reminder?' })).toBeVisible();
+      expect(screen.getByRole('button', { name: 'Reminder sent' })).toBeDisabled();
+    });
+
+    it('"already sent" (a lost response, or another tab) reads as sent, not refused', async () => {
+      reminders.refuse = 'alreadySent';
+      h.pending = remote([pendingRow({ side: 'mentee', respondBy: at(5) })]);
+      h.tab = 'pending';
+      render(<BookingsScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Send a reminder' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Send reminder' }));
+      expect(screen.queryByRole('heading', { name: 'Send Amara a reminder?' })).toBeNull();
+      expect(screen.getByRole('button', { name: 'Reminder sent' })).toBeDisabled();
+    });
+
+    it('the dialog closes if the request is answered while it is open', async () => {
+      h.pending = remote([pendingRow({ side: 'mentee', respondBy: at(5) })]);
+      h.tab = 'pending';
+      const { rerender } = render(<BookingsScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Send a reminder' }));
+      h.pending = remote([pendingRow({ side: 'mentee', status: 'confirmed', respondBy: at(5) })]);
+      rerender(<BookingsScreen />);
+      expect(screen.queryByRole('heading', { name: 'Send Amara a reminder?' })).toBeNull();
+    });
+
+    it('never on a mentor’s row', () => {
+      h.viewer = { ...MEMBER, isMentor: true };
+      h.pending = remote([pendingRow({ side: 'mentor', respondBy: at(5) })]);
+      h.tab = 'pending';
+      render(<BookingsScreen />);
+      expect(screen.queryByRole('button', { name: /reminder/i })).toBeNull();
+    });
   });
 
   it('a lapsed request of the mentee’s has no Cancel request: it is expiring', () => {

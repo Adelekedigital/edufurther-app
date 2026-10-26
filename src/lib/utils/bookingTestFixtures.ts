@@ -31,6 +31,7 @@ export function sampleBookingFor(over: Partial<Booking> = {}): Booking {
     myAttendance: 'pending',
     myJoinedAt: null,
     cancelledBy: null,
+    reminderSentAt: null,
     startsAt: '2026-10-04T16:00:00Z',
     endsAt: '2026-10-04T17:00:00Z',
     durationMin: 60,

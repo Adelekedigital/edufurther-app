@@ -2,7 +2,6 @@
 
 import { useId, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
-import { cx } from '@/lib/utils/cx';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Switch } from '@/components/atoms/Switch/Switch';
 import { ReasonField } from '@/components/molecules/ReasonField/ReasonField';
@@ -187,9 +186,7 @@ export function ConfirmActionDialog({
   const impliesUnavailable = !(action === 'cancel' && isMentor && free);
   // What the confirm is waiting for, which is also what the server will refuse
   // without: a time, or a reason (backend #417).
-  const incomplete = offering
-    ? !suggested
-    : !!reasonError({ reasonCode, text, required: true });
+  const incomplete = offering ? !suggested : !!reasonError({ reasonCode, text, required: true });
 
   // Mentors never see credit copy — it is not their credit (design's rule).
   // A refundable cancel names the deadline (`Mentee Bookings.dc.html`): the
@@ -207,8 +204,8 @@ export function ConfirmActionDialog({
     action === 'cancel' ? (
       <>
         Are you sure you want to cancel this session with <strong>{b.other.name}</strong> on{' '}
-        <strong>{when.day}</strong> at <strong>{when.start}</strong>? They’ll be notified, and
-        this action cannot be undone.
+        <strong>{when.day}</strong> at <strong>{when.start}</strong>? They’ll be notified, and this
+        action cannot be undone.
       </>
     ) : action === 'withdraw' ? (
       <>
@@ -265,7 +262,7 @@ export function ConfirmActionDialog({
             // still pressable, because a disabled-looking button with nothing
             // saying why is the confirm people learn to click past. Pressing it
             // explains and moves focus.
-            className={cx(incomplete && !tooLate && styles.confirmNotYet)}
+            incomplete={incomplete && !tooLate}
             // Points at the credit line, so the confirm is not pressed without
             // hearing what happens to it — which is why that line is above the
             // button in the first place.
@@ -316,7 +313,11 @@ export function ConfirmActionDialog({
                 // the reason, we do not know what is, and the server's
                 // `suggested_starts_at` exemption is exactly for a request
                 // that honestly has none.
-                reasonCode: offering ? (impliesUnavailable ? 'mentor_unavailable' : null) : reasonCode,
+                reasonCode: offering
+                  ? impliesUnavailable
+                    ? 'mentor_unavailable'
+                    : null
+                  : reasonCode,
                 // Offering a time now sends words too — the drafted message,
                 // or whatever the mentor made of it. Before 2026-10-13 this
                 // path sent `''` and the mentee received a suggested hour with
@@ -339,11 +340,7 @@ export function ConfirmActionDialog({
             // it also swallows the second click.
             busy={pending}
           >
-            {pending
-              ? 'Working…'
-              : offering
-                ? CONFIRMS_OFFERING[action]
-                : CONFIRMS[action]}
+            {pending ? 'Working…' : offering ? CONFIRMS_OFFERING[action] : CONFIRMS[action]}
           </Button>
         </div>
       }
@@ -472,7 +469,9 @@ export function ConfirmActionDialog({
                 const was = offerSentence(slotLabel(suggested, timeZone));
                 const at = m.indexOf(was);
                 if (at === -1) return m;
-                return m.slice(0, at) + offerSentence(slotLabel(v, timeZone)) + m.slice(at + was.length);
+                return (
+                  m.slice(0, at) + offerSentence(slotLabel(v, timeZone)) + m.slice(at + was.length)
+                );
               });
               setSuggested(v);
               setOfferBad(false);
@@ -485,33 +484,33 @@ export function ConfirmActionDialog({
         {/* One question at a time: offering a time replaces giving a reason,
             which is how the design draws it and what the server accepts. */}
         {!offering && (
-        <ReasonField
-          side={b.side}
-          label={REASON_LABELS[action]}
-          placeholder={PLACEHOLDERS[action][isMentor ? 'mentor' : 'mentee']}
-          reasonCode={reasonCode}
-          onReasonCode={(v) => {
-            setReasonCode(v);
-            // The text is never cleared by a tap (owner, 2026-10-12). Tapping
-            // chips is how someone explores the options, and losing what they
-            // wrote to an exploratory tap — with no undo — is the worse
-            // failure. It survives unpicking, re-picking and switching away,
-            // and comes back untouched. What stops it travelling invisibly is
-            // the payload below, not the field.
-            // Clear on change rather than re-validate: a message about the
-            // thing they just fixed, still sitting there, reads as broken.
-            setReasonBad(null);
-          }}
-          text={text}
-          onText={(v) => {
-            setText(v);
-            if (reasonBad?.field === 'note') setReasonBad(null);
-          }}
-          readerFirstName={first}
-          error={reasonBad}
-          groupRef={firstChipRef}
-          noteRef={noteRef}
-        />
+          <ReasonField
+            side={b.side}
+            label={REASON_LABELS[action]}
+            placeholder={PLACEHOLDERS[action][isMentor ? 'mentor' : 'mentee']}
+            reasonCode={reasonCode}
+            onReasonCode={(v) => {
+              setReasonCode(v);
+              // The text is never cleared by a tap (owner, 2026-10-12). Tapping
+              // chips is how someone explores the options, and losing what they
+              // wrote to an exploratory tap — with no undo — is the worse
+              // failure. It survives unpicking, re-picking and switching away,
+              // and comes back untouched. What stops it travelling invisibly is
+              // the payload below, not the field.
+              // Clear on change rather than re-validate: a message about the
+              // thing they just fixed, still sitting there, reads as broken.
+              setReasonBad(null);
+            }}
+            text={text}
+            onText={(v) => {
+              setText(v);
+              if (reasonBad?.field === 'note') setReasonBad(null);
+            }}
+            readerFirstName={first}
+            error={reasonBad}
+            groupRef={firstChipRef}
+            noteRef={noteRef}
+          />
         )}
 
         {tooLate && (

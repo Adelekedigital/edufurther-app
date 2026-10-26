@@ -119,6 +119,11 @@ export type Booking = {
    * admin did, and on every other status.
    */
   cancelledBy: BookingSide | null;
+  /**
+   * When the mentee sent their one reminder about this request; null or absent
+   * if not yet (optional, so screens that never show it build without it).
+   */
+  reminderSentAt?: string | null;
   /** UTC instant. Rendered in the viewer's zone, never the stored one. */
   startsAt: string;
   /** UTC instant, derived from `startsAt` + the duration. */

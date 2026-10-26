@@ -416,6 +416,11 @@ describe('waitingPill', () => {
     });
   });
 
+  it('after the mentee’s reminder, the close pill says so first', () => {
+    const b = pending({ side: 'mentee', respondBy: at(18), reminderSentAt: at(-1) });
+    expect(waitingPill(b, NOW)?.text).toBe('Reminder sent · Amara has 18h left to confirm');
+  });
+
   it('the mentor’s own pill goes warm on the same deadline', () => {
     expect(waitingPill(pending({ side: 'mentor', respondBy: at(18) }), NOW)).toMatchObject({
       text: 'Respond within 18h',

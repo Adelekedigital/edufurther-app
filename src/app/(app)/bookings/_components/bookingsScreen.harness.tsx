@@ -62,6 +62,7 @@ export const booking = (over: Partial<Booking> = {}): Booking => ({
   myAttendance: 'pending' as const,
   myJoinedAt: null,
   cancelledBy: null,
+  reminderSentAt: null,
   startsAt: at(24),
   endsAt: at(25),
   durationMin: 60,
@@ -103,6 +104,8 @@ export function stubAction() {
 }
 /** The four write actions, stubbed at the data boundary like every read here. */
 export const actions: Record<string, ReturnType<typeof stubAction>> = {};
+/** Every reminder sent, and how the next send is answered (null: it goes). */
+export const reminders: { sent: unknown[]; refuse: string | null } = { sent: [], refuse: null };
 
 type Answers = {
   data: BookingAnswer[] | undefined;
@@ -174,6 +177,31 @@ export const mocks = {
   sessionAnswers: () => ({ useBookingAnswers: () => h.answers }),
   bookingActions: () => ({ useBookingAction: (a: string) => (actions[a] ??= stubAction()) }),
   reviewableSessions: () => ({ useMyReviewableSessions: () => h.reviewable }),
+  // Keeps real state, so "sent" and a refusal re-render as the real hook does.
+  reminders: async () => {
+    const { useState } = await import('react');
+    return {
+      useSendReminder: () => {
+        const [failure, setFailure] = useState<string | null>(null);
+        return {
+          send: (
+            input: { bookingId: string; message: string },
+            opts?: { onSuccess?: () => void; onError?: (f: string) => void },
+          ) => {
+            reminders.sent.push(input);
+            if (reminders.refuse) {
+              setFailure(reminders.refuse);
+              return opts?.onError?.(reminders.refuse);
+            }
+            opts?.onSuccess?.();
+          },
+          isPending: false,
+          failure,
+          reset: () => setFailure(null),
+        };
+      },
+    };
+  },
   intakeFiles: () => ({
     useIntakeFile: () => ({ url: 'blob:stub', isLoading: false, error: null, retry: vi.fn() }),
     canPreview: () => true,
@@ -205,6 +233,8 @@ export function resetHarness() {
   h.answers = { data: [], isLoading: false, error: null, retry: vi.fn() };
   h.reviewable = { data: [], isLoading: false, error: null, retry: vi.fn() };
   for (const a of ['accept', 'decline', 'withdraw', 'cancel']) actions[a] = stubAction();
+  reminders.sent.length = 0;
+  reminders.refuse = null;
   push.mockReset();
   replace.mockReset();
   resetReviewAndRebook();

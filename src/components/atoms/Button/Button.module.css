@@ -188,6 +188,23 @@
   color: var(--text-on-action);
 }
 
+/* ---- incomplete (ours): a confirm whose form isn't done yet, soft but pressable.
+   Danger as CancelModal.dc.html draws it (`softRed`); primary the same in blue. ---- */
+.primary[data-incomplete],
+.primary[data-incomplete]:hover,
+.primary[data-incomplete]:active {
+  background: var(--blue-100);
+  color: var(--blue-500);
+  cursor: not-allowed;
+}
+.destructive[data-incomplete],
+.destructive[data-incomplete]:hover,
+.destructive[data-incomplete]:active {
+  background: var(--red-50);
+  color: var(--red-500);
+  cursor: not-allowed;
+}
+
 /* ---- disabled / busy (DS: flat ink-300 fill; outlined: ink-400 on a 2px ink-100 ring) ---- */
 .button:disabled,
 .button[data-unavailable] {

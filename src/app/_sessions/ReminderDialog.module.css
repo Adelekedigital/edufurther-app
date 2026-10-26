@@ -1,0 +1,33 @@
+/* Mentee Bookings.dc.html, the reminder Modal's children. */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.box {
+  height: 112px;
+  border-color: var(--ink-300);
+  border-radius: var(--radius-xs);
+}
+
+/* The two buttons side by side, full width, at every width (the design's grid). */
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+.error {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--text-danger);
+}
+
+/* Desktop only: under 768px the atom raises the text to 16px so iOS doesn't zoom. */
+@media (min-width: 768px) {
+  .box {
+    font-size: var(--text-p-xs);
+  }
+}

@@ -126,6 +126,7 @@ export function toBooking(s: SessionRead, viewerId: string): Booking {
     myAttendance: toParty(side === 'mentor' ? s.mentor : s.mentee).attendance,
     myJoinedAt: (side === 'mentor' ? s.mentor : s.mentee).joined_at ?? null,
     cancelledBy: cancelledBy(s),
+    reminderSentAt: s.reminder_sent_at ?? null,
     // The offer rides on the session, so a row carries it without a second call.
     suggestion: s.suggestion
       ? {
