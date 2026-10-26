@@ -1,5 +1,8 @@
 /* Mentor and Mentee Dashboard v2.dc.html date chip: 56px wide, blue-50 ground. */
 .chip {
+  /* Holds the absolutely placed .sr-only date inside the card: unanchored, it
+     escapes an overflow:hidden card and widens the page (failure log #29). */
+  position: relative;
   width: 56px;
   flex: none;
   display: flex;

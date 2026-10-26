@@ -1,8 +1,6 @@
 /* Mentor and Mentee Dashboard v2.dc.html "Next session" card frame. */
+/* The surface is the Card atom; the frame only clips to its radius. */
 .card {
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  background: var(--surface-card);
   overflow: hidden;
 }
 .head {
@@ -30,6 +28,8 @@
   padding: var(--space-5) var(--space-6);
   border-bottom: 1px solid var(--border-muted);
 }
-.heroTitle {
+/* Scoped under .hero so it outranks CardHeader's .title whatever order the
+   two stylesheets load in. */
+.hero .heroTitle {
   font-size: var(--text-p-sm);
 }

@@ -81,10 +81,6 @@
   align-items: center;
 }
 .detail {
-  /* The .sr-only full-date band is absolutely placed; without a positioned
-     ancestor it escapes .card's overflow:hidden and widens the page (failure
-     log #29, as SuggestionCountdown .pill). */
-  position: relative;
   flex: 1;
   min-width: 0;
   display: flex;

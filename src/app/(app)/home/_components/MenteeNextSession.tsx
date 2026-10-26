@@ -33,17 +33,6 @@ function weekday(iso: string, timeZone: string): string {
   return new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone }).format(new Date(iso));
 }
 
-/** The full date for assistive tech — the visible chip is decorative, and the
- *  time line alone can't say which day a session weeks away falls on. */
-function fullDate(iso: string, timeZone: string): string {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone,
-  }).format(new Date(iso));
-}
-
 /**
  * Within the hour or already started: the live badge, Join, and the "starts
  * soon" subline (the session page hosts the lobby before the door opens). A
@@ -157,7 +146,6 @@ export function MenteeNextSession({
           <div className={styles.when}>
             <DateChip iso={b.startsAt} timeZone={timeZone} />
             <div className={styles.detail}>
-              <span className="sr-only">{fullDate(b.startsAt, timeZone)}</span>
               <span className={styles.sessionTitle}>{b.title ?? 'Session'}</span>
               <span className={styles.with}>
                 with <strong className={styles.name}>{b.other.name}</strong>

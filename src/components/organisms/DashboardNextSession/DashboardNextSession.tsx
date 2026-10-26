@@ -1,5 +1,6 @@
 import { useId, type ReactNode } from 'react';
 import { ButtonLink } from '@/components/atoms/Button/Button';
+import { Card } from '@/components/atoms/Card/Card';
 import { CardHeader } from '@/components/molecules/CardHeader/CardHeader';
 import styles from './DashboardNextSession.module.css';
 
@@ -62,9 +63,9 @@ export function DashboardNextSession({
     );
   }
   return (
-    <section aria-labelledby={headingId} className={styles.card}>
+    <Card as="section" padding="none" aria-labelledby={headingId} className={styles.card}>
       {header}
       {children}
-    </section>
+    </Card>
   );
 }
