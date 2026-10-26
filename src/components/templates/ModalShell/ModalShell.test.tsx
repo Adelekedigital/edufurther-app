@@ -175,3 +175,66 @@ describe('ModalShell describedBy', () => {
     );
   });
 });
+
+describe('ModalShell close position: centred on the title first line', () => {
+  const css = readFileSync(join(__dirname, 'ModalShell.module.css'), 'utf8');
+  const rule = (selector: string) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return css.match(new RegExp(`(?:^|\\n)\\s*${escaped}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
+  };
+
+  it('centred dialog: top is the header padding plus half the row minus half the button', () => {
+    const close = rule('.dialog .close');
+    expect(close).toMatch(/var\(--modal-pad-top\)/);
+    expect(close).toMatch(/var\(--modal-row-h\)\s*-\s*var\(--close-size\)\)\s*\/\s*2/);
+    // The size the offset assumes is the size drawn.
+    expect(close).toMatch(/width:\s*var\(--close-size\)/);
+    expect(close).toMatch(/height:\s*var\(--close-size\)/);
+    // The title row height and the title line height read the same value.
+    expect(rule('.title')).toMatch(/line-height:\s*var\(--modal-title-lh\)/);
+    // No variant pins the X with a fixed top any more.
+    expect(css).not.toMatch(/\.close\s*\{[^}]*\btop:\s*var\(--space-\d+\)/);
+  });
+
+  it('with a header icon the first row is the icon disc', () => {
+    render(
+      <ModalShell title="Locked" icon="lock" onClose={vi.fn()}>
+        <p>Body</p>
+      </ModalShell>,
+    );
+    expect(screen.getByRole('dialog', { name: 'Locked' })).toHaveClass('iconRow');
+    expect(rule('.dialog.iconRow')).toMatch(/--modal-row-h:\s*var\(--space-12\)/);
+  });
+
+  it('without an icon the first row stays the title line', () => {
+    render(
+      <ModalShell title="Plain" onClose={vi.fn()}>
+        <p>Body</p>
+      </ModalShell>,
+    );
+    expect(screen.getByRole('dialog', { name: 'Plain' })).not.toHaveClass('iconRow');
+  });
+
+  it('full-screen sheet with a caption: the controls offset past the caption to the heading', () => {
+    const { rerender } = render(
+      <ModalShell title="Book" onClose={vi.fn()} sheet={sheet}>
+        <p>Body</p>
+      </ModalShell>,
+    );
+    expect(document.querySelector('.sheetHeader')).toHaveClass('hasCaption');
+    rerender(
+      <ModalShell title="Book" onClose={vi.fn()} sheet={{ ...sheet, caption: undefined }}>
+        <p>Body</p>
+      </ModalShell>,
+    );
+    expect(document.querySelector('.sheetHeader')).not.toHaveClass('hasCaption');
+    expect(rule('.sheetHeader')).toMatch(/align-items:\s*flex-start/);
+    expect(rule('.sheetHeading')).toMatch(/line-height:\s*var\(--sheet-heading-lh\)/);
+  });
+
+  it('contained sheet: top is the header padding plus the same offset', () => {
+    expect(rule('.sheet.contained .sheetHeader > :first-child')).toMatch(
+      /top:\s*calc\(var\(--space-3\)\s*\+\s*var\(--sheet-x-offset\)\)/,
+    );
+  });
+});

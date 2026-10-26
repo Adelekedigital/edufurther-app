@@ -24,7 +24,16 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
+  /* The X's centre is the centre of the header's first row: the title's first
+     line, or the icon disc when there is one. Computed from the same values
+     that draw that row, so it holds at every size and breakpoint. */
+  --modal-pad-top: var(--space-6);
+  --modal-title-lh: 1.3;
+  --modal-row-top: 0px;
+  --modal-row-h: calc(var(--text-p-lg) * var(--modal-title-lh));
+  --close-size: var(--space-8);
   padding: var(--space-6);
+  padding-top: var(--modal-pad-top);
   border-radius: var(--radius-2xl);
   background: var(--surface-card);
   box-shadow: var(--shadow-modal);
@@ -47,10 +56,21 @@
 .xl {
   max-width: 880px;
 }
-.close {
+.dialog.iconRow {
+  /* The disc's own top margin and size (.icon). */
+  --modal-row-top: var(--space-1);
+  --modal-row-h: var(--space-12);
+}
+/* Two classes: the pinned size must beat IconButton's own, whatever the order. */
+.dialog .close {
   position: absolute;
-  top: var(--space-4);
+  top: calc(
+    var(--modal-pad-top) + var(--modal-row-top) + (var(--modal-row-h) - var(--close-size)) / 2
+  );
   right: var(--space-4);
+  /* Pinned to the size the offset assumes (IconButton md: 32, 44 on phones). */
+  width: var(--close-size);
+  height: var(--close-size);
 }
 .header {
   display: flex;
@@ -92,7 +112,7 @@
 .title {
   font-family: var(--font-brand);
   font-size: var(--text-p-lg);
-  line-height: 1.3;
+  line-height: var(--modal-title-lh);
   letter-spacing: -0.01em;
   font-weight: var(--weight-semibold);
   /* Modal.dc.html: no word left alone on a title's second line. */
@@ -128,11 +148,12 @@
     max-height: none;
     min-height: 100%;
     border-radius: 0;
+    --modal-pad-top: calc(var(--space-4) + env(safe-area-inset-top));
+    --close-size: var(--touch-target-min);
     padding: var(--space-4);
-    padding-top: calc(var(--space-4) + env(safe-area-inset-top));
+    padding-top: var(--modal-pad-top);
   }
-  .close {
-    top: calc(var(--space-2) + env(safe-area-inset-top));
+  .dialog .close {
     right: var(--space-2);
   }
   .header {
@@ -158,11 +179,27 @@
   outline: none;
 }
 .sheetHeader {
+  /* The leading control, X and spacer centre on the heading's first line, not
+     on caption + heading together: top-aligned, then offset by the caption
+     block and half the gap between heading line and 44px button. Whichever
+     side is shorter takes the difference as top space. */
+  --sheet-heading-lh: calc(var(--text-p-sm) * var(--lh-p));
+  --sheet-title-gap: 2px;
+  --sheet-caption-block: 0px;
+  --sheet-x-offset: calc(
+    var(--sheet-caption-block) + (var(--sheet-heading-lh) - var(--touch-target-min)) / 2
+  );
   flex: none;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-1);
   padding: max(var(--space-1), env(safe-area-inset-top)) var(--space-1) var(--space-1);
+}
+.sheetHeader.hasCaption {
+  --sheet-caption-block: calc(var(--text-caption-xs) * var(--lh-caption) + var(--sheet-title-gap));
+}
+.sheetHeader > :not(.sheetTitle) {
+  margin-top: max(0px, var(--sheet-x-offset));
 }
 .sheetTitle {
   flex: 1;
@@ -170,7 +207,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: var(--sheet-title-gap);
+  padding-top: max(0px, calc(var(--sheet-x-offset) * -1));
   text-align: center;
 }
 .sheetCaption {
@@ -183,6 +221,7 @@
 }
 .sheetHeading {
   font-size: var(--text-p-sm);
+  line-height: var(--sheet-heading-lh);
   font-weight: var(--weight-semibold);
 }
 .sheetSpacer {
@@ -253,17 +292,22 @@
    on a one-question confirm. Reordered rather than rebuilt: the leading control
    here is already a close button, so it just moves to the right. */
 .sheet.contained .sheetHeader {
+  --sheet-heading-lh: calc(var(--text-p-lg) * 1.3);
   position: relative;
   padding: var(--space-3) var(--space-5) 0;
 }
 .sheet.contained .sheetHeader > :first-child {
   position: absolute;
-  top: var(--space-3);
+  /* The header's top padding plus the offset onto the heading's first line. */
+  top: calc(var(--space-3) + var(--sheet-x-offset));
+  margin-top: 0;
   right: var(--space-3);
   width: var(--touch-target-min);
   height: var(--touch-target-min);
 }
 .sheet.contained .sheetTitle {
+  /* In the flow: the absolute close takes no room, so no top space to share. */
+  padding-top: 0;
   /* Room for the close, so a long title does not run under it. */
   padding-right: var(--space-8);
   /* `align-items`, not just `text-align`: this is a flex column, so the h2
@@ -275,7 +319,6 @@
 .sheet.contained .sheetHeading {
   font-family: var(--font-brand);
   font-size: var(--text-p-lg);
-  line-height: 1.3;
   letter-spacing: -0.01em;
 }
 /* The spacer only exists to balance a centred title. */
@@ -319,13 +362,13 @@
     min-height: 0;
     max-height: 92%;
     border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
-    padding: var(--space-8) var(--space-5) calc(var(--space-6) + env(safe-area-inset-bottom));
+    --modal-pad-top: var(--space-8);
+    padding: var(--modal-pad-top) var(--space-5) calc(var(--space-6) + env(safe-area-inset-bottom));
     animation:
       fade var(--duration-base) var(--ease-standard),
       rise var(--duration-slow) var(--ease-standard);
   }
   .phoneSheet .close {
-    top: var(--space-3);
     right: var(--space-3);
   }
   .phoneSheet .header {
