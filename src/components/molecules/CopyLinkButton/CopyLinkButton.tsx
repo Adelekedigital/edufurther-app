@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import { cx } from '@/lib/utils/cx';
+import { useCopyText } from '@/lib/utils/useCopyText';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import styles from './CopyLinkButton.module.css';
 
@@ -17,22 +17,7 @@ type CopyLinkButtonProps = {
  * the browser refuses the clipboard, it says so instead (ours).
  */
 export function CopyLinkButton({ label, url }: CopyLinkButtonProps) {
-  const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle');
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => () => clearTimeout(timer.current), []);
-  const settle = (s: 'copied' | 'failed') => {
-    clearTimeout(timer.current);
-    setState(s);
-    timer.current = setTimeout(() => setState('idle'), 1800);
-  };
-  const copy = () => {
-    const done = navigator.clipboard?.writeText(url);
-    if (!done) return settle('failed');
-    done.then(
-      () => settle('copied'),
-      () => settle('failed'),
-    );
-  };
+  const { state, copy } = useCopyText(1800);
   return (
     <span className={styles.wrap}>
       <button
@@ -40,7 +25,7 @@ export function CopyLinkButton({ label, url }: CopyLinkButtonProps) {
         className={cx(styles.button, state === 'copied' && styles.copied)}
         aria-label={label}
         title="Copy share link"
-        onClick={copy}
+        onClick={() => void copy(url)}
       >
         <Icon name={state === 'copied' ? 'check' : 'link'} size={20} />
       </button>
