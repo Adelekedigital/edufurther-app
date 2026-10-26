@@ -146,6 +146,7 @@
 /* Focus lands on the block after "Choose your mentor" (it scrolls there); a
    region isn't a control, so no ring. */
 .block:focus,
+.solo:focus,
 .section:focus {
   outline: none;
 }

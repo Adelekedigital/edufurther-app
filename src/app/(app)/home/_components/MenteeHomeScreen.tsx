@@ -27,7 +27,7 @@ import { deviceTimeZone } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { Mentor } from '@/types/mentor';
-import { MenteeMentorsSection, RECOMMENDED_ID, SHOWN } from './MenteeMentorsSection';
+import { MENTORS_ID, MenteeMentorsSection, RECOMMENDED_ID, SHOWN } from './MenteeMentorsSection';
 import { MenteeNewView } from './MenteeNewView';
 import { MenteeReturningView, KpiSkeleton, NextSkeleton } from './MenteeReturningView';
 import { MenteeNextSession, startsSoon } from './MenteeNextSession';
@@ -192,7 +192,8 @@ export function MenteeHomeScreen() {
   useEffect(() => {
     if (!scrollPending.current || profileOpen) return;
     scrollPending.current = false;
-    const el = document.getElementById(RECOMMENDED_ID);
+    // Recommended when it's there; else the Mentors block (Book again alone).
+    const el = document.getElementById(RECOMMENDED_ID) ?? document.getElementById(MENTORS_ID);
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     el?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
     el?.focus({ preventScroll: true });
@@ -420,9 +421,10 @@ export function MenteeHomeScreen() {
           onRetry={link.retry}
           linkActive={link.data?.active ?? true}
           friendJoined={friendJoinedRead.friendJoined}
-          // The unlock counts attended sessions (owner, 25 Oct); completed
-          // stands in until the backend sends that count.
-          attended={(stats.data?.sessionsAttended ?? stats.data?.sessionsHeld ?? completed) >= 1}
+          // The unlock counts attended sessions (owner, 25 Oct). A completed
+          // session was attended, so /me's count (what the header and the new
+          // view go by) ticks it too: the modal never contradicts the page.
+          attended={completed >= 1 || (stats.data?.sessionsAttended ?? 0) >= 1}
           unlocked={!!monthly?.unlocked}
           onShared={() => setInvited(true)}
           onClose={() => setInviteOpen(false)}

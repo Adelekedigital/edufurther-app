@@ -19,6 +19,8 @@ import styles from './MenteeMentorsSection.module.css';
  * Recommended standing alone. Focusable, so focus can follow the scroll.
  */
 export const RECOMMENDED_ID = 'mentors-for-your-goal';
+/** The Mentors block standing alone: where that scroll lands when Recommended isn't shown. */
+export const MENTORS_ID = 'home-mentors';
 
 /** Rows and cards shown on Home (design: "3 each"). */
 export const SHOWN = 3;
@@ -96,7 +98,11 @@ export function MenteeMentorsSection(p: MenteeMentorsSectionProps) {
   );
 
   if (!tabs)
-    return <div className={styles.solo}>{active === 'yours' ? bookAgain : recommended}</div>;
+    return (
+      <div id={MENTORS_ID} tabIndex={-1} className={styles.solo}>
+        {active === 'yours' ? bookAgain : recommended}
+      </div>
+    );
 
   const panel = (t: Tab) => `${ids}-${t}`;
   return (

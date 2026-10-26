@@ -336,6 +336,26 @@ describe('MenteeHomeScreen', () => {
     expect(screen.getByRole('heading', { name: 'Getting started' })).toBeInTheDocument();
   });
 
+  it('Invite a friend: a completed first session ticks "attended", whatever the stats say', async () => {
+    viewer = { ...MEMBER, completedSessions: 3 };
+    stats = remote<MenteeStats>({ ...STATS, sessionsHeld: 0, sessionsAttended: null });
+    render(<MenteeHomeScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Invite a friend' }));
+    expect(screen.getByText('You attended your first session')).toBeInTheDocument();
+  });
+
+  it('Choose your mentor lands on the Mentors block when Recommended isn’t shown', async () => {
+    viewer = { ...NEW_MEMBER, bookingCounts: { pending: 0, upcoming: 0 } };
+    metMentors = remote([metMentor()]);
+    matches = { data: { matches: [] }, isLoading: false, error: null };
+    fresh = freshWith({ profileDone: true, fields: FIELDS(4) });
+    // jsdom has no scrolling.
+    Element.prototype.scrollIntoView = vi.fn();
+    render(<MenteeHomeScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Choose your mentor' }));
+    expect(document.getElementById('home-mentors')).toHaveFocus();
+  });
+
   it('Undo puts focus back on Hide', async () => {
     viewer = { ...NEW_MEMBER, bookingCounts: { pending: 1, upcoming: 0 } };
     fresh = freshWith({
