@@ -11,13 +11,22 @@ import { BookingLauncher } from '@/app/_shell/BookingLauncher/BookingLauncher';
 import { FloatingHelp } from '@/components/organisms/FloatingHelp/FloatingHelp';
 import { useUpcomingBookings } from '@/lib/api/data/bookings';
 import { EMPTY_STATS, useMenteeStats } from '@/lib/api/data/menteeHome';
+import { useDegreeLevels } from '@/lib/api/data/catalog';
+import { useMenteeGoals } from '@/lib/api/data/goals';
+import { useMentorMatches } from '@/lib/api/data/mentorMatches';
+import { useTopics } from '@/lib/api/data/mentors';
 import { toBookingMentor, useMetMentors, type MetMentor } from '@/lib/api/data/metMentors';
+import { bookBlockedFor } from '@/app/_shell/bookBlocked';
+import { useOnline } from '@/lib/utils/useOnline';
+import type { Mentor } from '@/types/mentor';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { MATCH_CALL_URL, useAppShell } from '@/app/_shell/useAppShell';
 import { MenteeEmptyCard } from './MenteeEmptyCard';
 import { MenteeFirstSession } from './MenteeFirstSession';
-import { MenteeMentorsSection } from './MenteeMentorsSection';
+import { MenteeMentorsSection, SHOWN } from './MenteeMentorsSection';
+import { MetMentorsModal } from './MetMentorsModal';
+import { goalLineFrom, recommendedFrom } from './recommended';
 import { MenteeNextSession, startsSoon } from './MenteeNextSession';
 import { greeting } from './greeting';
 import { returningKpis } from './menteeKpis';
@@ -28,6 +37,9 @@ import styles from './MenteeHomeScreen.module.css';
  * session. The app shell is mounted once by the (app) route-group layout
  * (ADR 0007), so this screen renders only its own content.
  */
+/** The backend's most matches per request (`/me/mentor-matches` limit). */
+const MATCHES_MAX = 10;
+
 export function MenteeHomeScreen() {
   const { viewer, member } = useAppShell();
   const router = useRouter();
@@ -66,10 +78,26 @@ export function MenteeHomeScreen() {
   const stats = useMenteeStats(member?.id ?? null, menteeSide && !isNew);
   const upcoming = useUpcomingBookings(member?.id ?? null, zone, menteeSide && !isNew);
   const metMentors = useMetMentors(menteeSide && !isNew);
-  const [bookTarget, setBookTarget] = useState<MetMentor | null>(null);
+  // Every Book opens the booking flow in place. A met mentor's card carries no
+  // rating (`ratingUnknown`); a matched mentor's does.
+  const [booking, setBooking] = useState<{ mentor: Mentor; ratingUnknown: boolean } | null>(null);
+  const bookMet = (m: MetMentor) => setBooking({ mentor: toBookingMentor(m), ratingUnknown: true });
+  const bookMatched = (m: Mentor) => setBooking({ mentor: m, ratingUnknown: false });
+  // Recommended: matches not yet met. A few more than shown, as met ones drop out.
+  const topics = useTopics();
+  const levels = useDegreeLevels(menteeSide && !isNew);
+  const goals = useMenteeGoals(menteeSide && !isNew ? (member?.id ?? null) : null);
+  const matches = useMentorMatches(member?.id ?? null, topics.topics, levels.levels, {
+    // Asked once the met list is in, for enough that 3 remain after the met
+    // ones drop out (up to the backend's 10; a mentee with more met mentors
+    // than that among the top matches sees fewer, until the backend can leave
+    // them out itself).
+    enabled: menteeSide && !isNew && !!metMentors.data,
+    limit: Math.min(MATCHES_MAX, SHOWN + (metMentors.data?.length ?? 0)),
+  });
+  const online = useOnline();
   // Mentors you've met: opened from the KPI's "View mentors" and the section's "See all mentors".
   const [metOpen, setMetOpen] = useState(false);
-  const bookMentor = useMemo(() => (bookTarget ? toBookingMentor(bookTarget) : null), [bookTarget]);
 
   // A mentor or a signed-out visitor who lands on /home directly goes to their
   // own home instead (homeFor sends them there from /, this covers a typed URL).
@@ -108,6 +136,8 @@ export function MenteeHomeScreen() {
   // Mentors you've met is open only while there is someone in it: a refetch that
   // empties the list closes it (and gives the help pill back).
   const metShown = metOpen && (metMentors.data?.length ?? 0) > 0;
+  const metIds = new Set((metMentors.data ?? []).map((m) => m.id));
+  const recommended = recommendedFrom(matches.data?.matches ?? [], metIds, topics.topics);
   // The team call (MATCH_CALL_URL, a new tab): new mentees, and returning ones
   // with 2 or fewer sessions (design matchCall float, menteeSessions ≤ 2).
   // Hidden when the URL isn't set, and while Mentors you've met is open: that
@@ -242,10 +272,36 @@ export function MenteeHomeScreen() {
       {!isNew && (
         <MenteeMentorsSection
           mentors={metMentors}
+          recommended={{
+            items: recommended,
+            // Until the met list settles, nobody can be left out of it yet.
+            // Loading until matches arrive; they're only asked for once the met list is in.
+            isLoading:
+              topics.isLoading || metMentors.isLoading || (!matches.data && !matches.error),
+            // A failed refetch keeps the matches it had (no vanishing tab under
+            // a reader). Without the met list, met mentors would leak in: hidden.
+            failed: (!!matches.error && !matches.data) || !!metMentors.error,
+          }}
+          goalLine={goalLineFrom(goals.read?.goal?.needs.map((n) => n.id) ?? [], topics.topics)}
           timeZone={zone}
-          onBook={setBookTarget}
-          modalOpen={metShown}
-          onModalChange={setMetOpen}
+          compact={phone}
+          offline={!online}
+          bookBlocked={bookBlockedFor(viewer)}
+          onBook={bookMet}
+          onBookMentor={bookMatched}
+          onSeeAll={() => setMetOpen(true)}
+        />
+      )}
+      {metShown && (
+        <MetMentorsModal
+          mentors={metMentors.data ?? []}
+          timeZone={zone}
+          onBook={(m) => {
+            // Close the list first, so the booking flow isn't stacked on it.
+            setMetOpen(false);
+            bookMet(m);
+          }}
+          onClose={() => setMetOpen(false)}
         />
       )}
 
@@ -258,10 +314,15 @@ export function MenteeHomeScreen() {
         external
         onAction={openCall}
       />
-      {/* No hideProfileLink: Book-again only opens for an `open` (taking-bookings)
-          mentor, who is approved + listed = public, so "View profile"
-          (/mentors/{slug ?? id}) always resolves — as Explore does. */}
-      <BookingLauncher mentor={bookMentor} ratingUnknown onClose={() => setBookTarget(null)} />
+      {/* No hideProfileLink: both callers book public mentors. Book again opens
+          only for an `open` (taking-bookings, so approved and listed) mentor, and
+          matches come from the public listing, so "View profile"
+          (/mentors/{slug ?? id}) always resolves, as on Explore. */}
+      <BookingLauncher
+        mentor={booking?.mentor ?? null}
+        ratingUnknown={booking?.ratingUnknown ?? false}
+        onClose={() => setBooking(null)}
+      />
     </div>
   );
 }

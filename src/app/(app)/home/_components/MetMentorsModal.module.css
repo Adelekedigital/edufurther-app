@@ -1,0 +1,5 @@
+/* Mentors you've met: the rows (MentorRow draws the dividers). */
+.list {
+  display: flex;
+  flex-direction: column;
+}

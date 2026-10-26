@@ -1,9 +1,14 @@
-import { useState } from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { MetMentor } from '@/lib/api/data/metMentors';
 import type { Remote } from '@/types/mentor';
 import { MenteeMentorsSection } from './MenteeMentorsSection';
+import type { Recommended } from './recommended';
+import { metHistory, MentorRow } from './MentorRow';
+
+vi.mock('@/components/organisms/MentorCard/MentorCard', () => ({
+  MentorCard: ({ mentor }: { mentor: { name: string } }) => <article aria-label={mentor.name} />,
+}));
 
 const remote = <T,>(data: T | null, over: Partial<Remote<T>> = {}): Remote<T> => ({
   data,
@@ -28,32 +33,38 @@ const mentor = (over: Partial<MetMentor> = {}): MetMentor => ({
   sessionCount: 2,
   lastSessionAt: '2026-10-06T10:00:00Z',
   bookability: 'open',
+  nextSessionAt: null,
+  unavailableReason: null,
   ...over,
 });
 
-/** The screen owns the modal's open state; this stands in for it. */
-function Section({
-  mentors,
-  onBook,
-}: {
-  mentors: Remote<MetMentor[]>;
-  onBook: (m: MetMentor) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
+const rec = (name: string): Recommended => ({
+  mentor: { id: name, name } as Recommended['mentor'],
+  matchTopics: [],
+});
+
+const render_ = (
+  mentors: Remote<MetMentor[]>,
+  recommended: Recommended[] = [],
+  over: { failed?: boolean; isLoading?: boolean } = {},
+) => {
+  const onBook = vi.fn();
+  const onSeeAll = vi.fn();
+  const view = render(
     <MenteeMentorsSection
       mentors={mentors}
+      recommended={{ items: recommended, isLoading: !!over.isLoading, failed: !!over.failed }}
+      goalLine="Scholarships & funding"
       timeZone="Africa/Lagos"
+      compact={false}
+      offline={false}
+      bookBlocked={null}
       onBook={onBook}
-      modalOpen={open}
-      onModalChange={setOpen}
-    />
+      onBookMentor={vi.fn()}
+      onSeeAll={onSeeAll}
+    />,
   );
-}
-
-const render_ = (mentors: Remote<MetMentor[]>, onBook = vi.fn()) => {
-  render(<Section mentors={mentors} onBook={onBook} />);
-  return onBook;
+  return { onBook, onSeeAll, ...view };
 };
 
 beforeEach(() => {
@@ -61,12 +72,20 @@ beforeEach(() => {
 });
 
 describe('MenteeMentorsSection', () => {
-  it('a settled-empty list hides the section (nothing to re-book)', () => {
-    const { container } = render(<Section mentors={remote<MetMentor[]>([])} onBook={vi.fn()} />);
+  it('renders nothing when nobody can be booked again and there are no matches', () => {
+    const { container } = render_(remote([mentor({ bookability: 'unavailable' })]));
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('an error shows a retry, not an empty list', async () => {
+  it('Book again lists only bookable mentors, three at most', () => {
+    render_(
+      remote([mentor(), mentor({ bookability: 'has_upcoming' }), mentor(), mentor(), mentor()]),
+    );
+    expect(screen.getAllByRole('button', { name: /^Book again with/ })).toHaveLength(3);
+    expect(screen.queryByText('Mentor 2')).not.toBeInTheDocument();
+  });
+
+  it('an error keeps Book again with a retry, not an empty list', async () => {
     const mentors = remote<MetMentor[]>(null, { error: {} as never });
     render_(mentors);
     expect(screen.getByText(/couldn’t load your mentors/)).toBeInTheDocument();
@@ -74,47 +93,90 @@ describe('MenteeMentorsSection', () => {
     expect(mentors.retry).toHaveBeenCalled();
   });
 
-  it('shows up to three inline and no "See all" at three or fewer', () => {
-    render_(remote([mentor(), mentor(), mentor()]));
-    expect(screen.getByRole('heading', { name: 'Your mentors' })).toBeInTheDocument();
-    expect(screen.getAllByText(/^Mentor \d$/)).toHaveLength(3);
-    expect(screen.queryByRole('button', { name: 'See all mentors' })).not.toBeInTheDocument();
-  });
-
-  it('shows "See all" past three, and the modal lists everyone', async () => {
-    render_(remote([mentor(), mentor(), mentor(), mentor()]));
-    // The fourth isn't in the inline list of three.
-    expect(screen.queryByText('Mentor 4')).not.toBeInTheDocument();
+  it('"See all mentors" asks the screen to open Mentors you’ve met', async () => {
+    const { onSeeAll } = render_(remote([mentor()]));
     await userEvent.click(screen.getByRole('button', { name: 'See all mentors' }));
-    const dialog = screen.getByRole('dialog');
-    expect(within(dialog).getByText('Mentor 4')).toBeInTheDocument();
+    expect(onSeeAll).toHaveBeenCalledOnce();
   });
 
-  it('routes each bookability: Book again opens the flow; others go to Bookings; unavailable is a note', async () => {
-    const onBook = render_(
-      remote([
-        mentor({ bookability: 'open', name: 'Open One' }),
-        mentor({ bookability: 'has_upcoming', name: 'Upcoming One' }),
-        mentor({ bookability: 'pending', name: 'Pending One' }),
-      ]),
+  it('with both, the tabs switch between the panels; Recommended shows three at most', async () => {
+    render_(remote([mentor()]), [rec('A'), rec('B'), rec('C'), rec('D')]);
+    expect(screen.getByRole('heading', { name: 'Mentors' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('tab', { name: 'Recommended' }));
+    expect(screen.getAllByRole('article')).toHaveLength(3);
+    expect(screen.getByText('Matched to your goal: Scholarships & funding')).toBeInTheDocument();
+  });
+
+  it('while matches load, Recommended holds its place with skeleton cards', async () => {
+    render_(remote([mentor()]), [], { isLoading: true });
+    await userEvent.click(screen.getByRole('tab', { name: 'Recommended' }));
+    expect(screen.getByRole('tabpanel')).toContainElement(
+      document.querySelector('[aria-busy="true"]') as HTMLElement,
     );
-    // open → Book again opens the flow; each CTA names its mentor so they're distinct.
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
+  });
+});
+
+describe('MentorRow', () => {
+  it('names when you last met, or the next booking when there is one', () => {
+    expect(metHistory(mentor(), 'Africa/Lagos')).toBe('2 sessions · Last on Tue, Oct 6');
+    expect(
+      metHistory(
+        mentor({
+          bookability: 'has_upcoming',
+          nextSessionAt: '2026-10-15T17:00:00Z',
+          sessionCount: 1,
+        }),
+        'Africa/Lagos',
+      ),
+    ).toBe('1 session · Next on Thu, Oct 15');
+    // No date from the backend yet: the booking is named instead.
+    expect(metHistory(mentor({ bookability: 'pending' }), 'UTC')).toBe(
+      '2 sessions · Request pending',
+    );
+  });
+
+  it('routes each bookability: Book again, View booking, or a note', async () => {
+    const onBook = vi.fn();
+    const { rerender } = render(
+      <MentorRow
+        mentor={mentor({ name: 'Open One' })}
+        timeZone="UTC"
+        onBook={onBook}
+        variant="modal"
+      />,
+    );
     await userEvent.click(screen.getByRole('button', { name: 'Book again with Open One' }));
     expect(onBook).toHaveBeenCalledOnce();
-    // has_upcoming / pending → View booking links to Bookings, each naming its mentor.
-    expect(screen.getByRole('link', { name: 'View booking with Upcoming One' })).toHaveAttribute(
-      'href',
-      '/bookings',
+    rerender(
+      <MentorRow
+        mentor={mentor({ name: 'Pending One', bookability: 'pending' })}
+        timeZone="UTC"
+        onBook={onBook}
+        variant="modal"
+      />,
     );
     expect(screen.getByRole('link', { name: 'View booking with Pending One' })).toHaveAttribute(
       'href',
       '/bookings?tab=pending',
     );
-  });
-
-  it('an unavailable mentor shows a note, not a button', () => {
-    render_(remote([mentor({ bookability: 'unavailable' })]));
+    rerender(
+      <MentorRow
+        mentor={mentor({ bookability: 'unavailable', unavailableReason: 'no_open_times' })}
+        timeZone="UTC"
+        onBook={onBook}
+        variant="modal"
+      />,
+    );
+    expect(screen.getByText('No open times yet')).toBeInTheDocument();
+    rerender(
+      <MentorRow
+        mentor={mentor({ bookability: 'unavailable' })}
+        timeZone="UTC"
+        onBook={onBook}
+        variant="modal"
+      />,
+    );
     expect(screen.getByText('Not taking bookings')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^Book again/ })).not.toBeInTheDocument();
   });
 });

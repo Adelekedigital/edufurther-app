@@ -1,5 +1,5 @@
-/* One mentor row in the "Book again" list (Mentee Dashboard v2.dc.html). The
-   list owns the dividers; the row owns its own layout. */
+/* One mentor you've met (Mentee Dashboard v2.dc.html). The list owns the
+   dividers; the row owns its own layout. */
 .row {
   min-width: 0;
   display: flex;
@@ -8,19 +8,31 @@
   gap: var(--space-3) var(--space-4);
   padding: var(--space-4) var(--space-5);
 }
+/* Rows in a list are divided by a hairline, none above the first. */
+.row + .row {
+  border-top: 1px solid var(--border-muted);
+}
+/* Mentors you've met: the modal's own padding frames it. */
+.modalRow {
+  gap: var(--space-3);
+  padding: var(--space-4) 0;
+}
 .who {
-  flex: 1 1 16rem;
+  flex: 1 1 260px;
   min-width: 0;
   display: flex;
   align-items: center;
   gap: var(--space-3);
+}
+.modalRow .who {
+  flex-basis: 200px;
 }
 .lines {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 2px;
 }
 .name {
   font-size: var(--text-p-sm);
@@ -46,7 +58,15 @@
   align-items: center;
   gap: var(--space-2) var(--space-4);
 }
+.modalRow .cta {
+  gap: var(--space-2);
+}
 .note {
   font-size: var(--text-p-xs);
-  color: var(--ink-500);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+/* The modal has room for the whole degree line (no ellipsis), as drawn. */
+.modalRow .sub {
+  white-space: normal;
 }

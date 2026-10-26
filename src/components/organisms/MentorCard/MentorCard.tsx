@@ -46,10 +46,18 @@ type MentorCardProps = {
   onMoreTopics?: (mentor: Mentor) => void;
   /** The name's heading level, so the card fits the page outline (h2 under a page's h1). */
   headingLevel?: 2 | 3;
+  /**
+   * What this mentor matches of the mentee's goal (MentorCard.dc.html
+   * `showMatch`): a green box of ticked items in place of the topic tags. Never
+   * a "% match" figure (project rule: no match score).
+   */
+  matchTopics?: string[];
 };
 
 /** Chips a card shows before "+N" (MentorCard.dc.html `topicsMore=popover`). */
 const TOPICS_SHOWN = 3;
+/** Matched items shown before "+N more" (MentorCard.dc.html matchTopics.slice(0, 2)). */
+const MATCH_SHOWN = 2;
 
 /**
  * MentorCard, `photo` variant (the chosen default) or `compact`. Name and photo
@@ -75,6 +83,7 @@ export function MentorCard({
   highlight = [],
   onMoreTopics,
   headingLevel = 3,
+  matchTopics,
 }: MentorCardProps) {
   const H = `h${headingLevel}` as const;
   const compact = variant === 'compact';
@@ -154,21 +163,38 @@ export function MentorCard({
         </div>
       </div>
 
-      {showTopics && topics.length > 0 && (
-        <ul className={styles.topics} aria-label="Helps with">
-          {(cut ? topics.slice(0, TOPICS_SHOWN) : topics).map((t) => (
-            <li key={t.slug}>
-              <Tag tone="neutral">{t.label}</Tag>
-            </li>
-          ))}
-          {cut && (
-            <MoreTopics
-              mentor={{ ...m, topics }}
-              hidden={topics.length - TOPICS_SHOWN}
-              onOpenSheet={onMoreTopics}
-            />
-          )}
-        </ul>
+      {matchTopics && matchTopics.length > 0 ? (
+        <div className={styles.match}>
+          <ul className={styles.matchList} aria-label="Matches your goal">
+            {matchTopics.slice(0, MATCH_SHOWN).map((t) => (
+              <li key={t} className={styles.matchItem}>
+                <Icon name="check" size={14} className={styles.matchTick} />
+                {t}
+              </li>
+            ))}
+            {matchTopics.length > MATCH_SHOWN && (
+              <li className={styles.matchMore}>+{matchTopics.length - MATCH_SHOWN} more</li>
+            )}
+          </ul>
+        </div>
+      ) : (
+        showTopics &&
+        topics.length > 0 && (
+          <ul className={styles.topics} aria-label="Helps with">
+            {(cut ? topics.slice(0, TOPICS_SHOWN) : topics).map((t) => (
+              <li key={t.slug}>
+                <Tag tone="neutral">{t.label}</Tag>
+              </li>
+            ))}
+            {cut && (
+              <MoreTopics
+                mentor={{ ...m, topics }}
+                hidden={topics.length - TOPICS_SHOWN}
+                onOpenSheet={onMoreTopics}
+              />
+            )}
+          </ul>
+        )
       )}
 
       {/* MentorCard.dc.html bottom block: offer line, then availability. */}

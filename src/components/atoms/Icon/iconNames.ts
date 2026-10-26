@@ -61,6 +61,7 @@ export const ICON_NAMES = [
   'folder_open',
   'format_list_numbered',
   'forum',
+  'group',
   'group_add',
   'groups',
   'handshake',
