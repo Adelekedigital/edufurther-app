@@ -98,11 +98,20 @@ describe('MenteeNewView', () => {
 
   it('each row is named in one string: the step, "done" when it is, and its note', () => {
     render(<MenteeNewView {...props({ profileDone: true, fields: fields(4) })} />);
-    expect(
-      screen.getByRole('button', { name: 'Complete your profile, Done' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Complete your profile, Done' })).toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: 'Book your first session, Free with your starter credit' }),
+    ).toBeInTheDocument();
+  });
+
+  it('a note that already says done is not doubled', () => {
+    render(
+      <MenteeNewView
+        {...props({ firstDone: { mentorFirst: 'Mariam', startsAt: '2026-10-08T10:00:00Z' } })}
+      />,
+    );
+    expect(
+      screen.getByRole('link', { name: 'Book your first session, Done with Mariam on Thu, Oct 8' }),
     ).toBeInTheDocument();
   });
 

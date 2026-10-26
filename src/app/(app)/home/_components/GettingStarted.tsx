@@ -66,7 +66,11 @@ export function GettingStarted({ rows, doneCount, onHide, hideRef }: GettingStar
           const current = r.state === 'now' ? ('step' as const) : undefined;
           // One string, so the name keeps its spacing ("…, done, …"): a name
           // built from visible text plus an sr-only fragment loses it.
-          const name = [r.label, r.state === 'done' && r.note !== C.done ? 'done' : null, r.note]
+          const name = [
+            r.label,
+            r.state === 'done' && !r.note.startsWith(C.done) ? 'done' : null,
+            r.note,
+          ]
             .filter(Boolean)
             .join(', ');
           return (
