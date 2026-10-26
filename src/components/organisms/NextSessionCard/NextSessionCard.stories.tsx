@@ -63,10 +63,10 @@ export const DetailsOpen: Story = {
   args: { detailsOpen: true },
 };
 
-/** Days away: no Join yet, and no explanation needed either. */
+/** Days away: Join opens the session page, which counts down (owner, 26 Oct). */
 export const DaysAway: Story = {};
 
-/** Within the hour, before the door opens: Join waits, and says why. */
+/** Within the hour, before the door opens: the same Join, never greyed out. */
 export const BeforeTheWindow: Story = {
   args: {
     booking: sampleBooking({

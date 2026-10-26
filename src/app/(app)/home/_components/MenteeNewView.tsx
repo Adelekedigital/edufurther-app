@@ -29,7 +29,7 @@ type MenteeNewViewProps = NewMenteeState & {
   /** Shown once a first request is sent (design canHide); null before. */
   onHide: (() => void) | null;
   hideRef?: React.Ref<HTMLButtonElement>;
-  /** Mentors for your goal, under the two cards. */
+  /** Under the two cards: the next session when there is one, then Mentors for your goal. */
   children?: ReactNode;
 };
 
@@ -38,7 +38,8 @@ const when = (iso: string, zone: string) => `${dayLabel(iso, zone)}, ${formatTim
 /**
  * The new mentee's Home (Mentee Dashboard v2.dc.html, newHome nextStep): the
  * next step and Getting started side by side (stacked on phones), then
- * Mentors for your goal. No KPIs. Props only; the screen reads.
+ * what the screen passes below them (a booked session's card, Mentors for your
+ * goal). No KPIs. Props only; the screen reads.
  */
 export function MenteeNewView(p: MenteeNewViewProps) {
   const n = doneCount(p.fields);

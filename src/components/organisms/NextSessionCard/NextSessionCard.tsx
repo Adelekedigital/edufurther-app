@@ -1,15 +1,12 @@
-import { useId } from 'react';
 import { DetailsButton } from '@/components/molecules/DetailsButton/DetailsButton';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
-import { Button, ButtonLink } from '@/components/atoms/Button/Button';
+import { ButtonLink } from '@/components/atoms/Button/Button';
 import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
-import { BOOKINGS_COPY } from '@/lib/copy/bookings';
 import { cx } from '@/lib/utils/cx';
 import {
   bookingHeading,
-  joinOpensInMinutes,
-  joinState,
+  isUpcoming,
   nextSessionWhen,
   otherTimeLine,
   timeRange,
@@ -68,10 +65,7 @@ export function NextSessionCard({
   now = new Date(),
 }: NextSessionCardProps) {
   const when = nextSessionWhen(b, now);
-  const state = joinState(b, now);
-  const opensIn = joinOpensInMinutes(b);
   const other = otherTimeLine(b, timeZone);
-  const lockId = useId();
   // The first booking-form answer, as drawn (PRD Mentor Bookings), under the
   // question as the mentor asked it. A booking with no answers (a migrated one
   // has only a note) shows the note, under the panel's own label for it.
@@ -167,25 +161,13 @@ export function NextSessionCard({
         answersLink
       )}
 
-      {/* A shut window means the session is over bar the backend's bookkeeping;
-          a Join that can only fail is worse than none. */}
-      {(state === 'open' || state === 'before') && (
+      {/* Never greyed out (owner, 26 Oct): the session page shows the
+          countdown before the door opens. */}
+      {isUpcoming(b, now) && (
         <div className={styles.actions}>
-          {/* It navigates once open, so it is a link; before that, a locked button. */}
-          {state === 'open' ? (
-            <ButtonLink href={joinHref} prefetch={false} variant="primary" size="medium">
-              Join session
-            </ButtonLink>
-          ) : (
-            <Button variant="primary" size="medium" disabled aria-describedby={lockId}>
-              Join session
-            </Button>
-          )}
-          {state === 'before' && opensIn != null && (
-            <span id={lockId} className={styles.lock}>
-              {BOOKINGS_COPY.joinOpens(opensIn)}
-            </span>
-          )}
+          <ButtonLink href={joinHref} prefetch={false} variant="primary" size="medium">
+            Join session
+          </ButtonLink>
         </div>
       )}
     </section>

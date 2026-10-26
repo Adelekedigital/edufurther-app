@@ -121,7 +121,7 @@ describe('NewMentorHero, noBookings', () => {
 describe('NewMentorHero, firstBooked', () => {
   const booked = { ...base, nextSession: remote<Booking | null>(booking()), upcomingCount: 1 };
 
-  it('leads with the booking card, its first-booking line and the time-aware CTA', () => {
+  it('leads with the booking card, its first-booking line and Join', () => {
     render(<NewMentorHero {...booked} stage="firstBooked" />);
     const hero = screen.getByRole('region', { name: 'Your first session' });
     expect(
@@ -129,8 +129,11 @@ describe('NewMentorHero, firstBooked', () => {
     ).toBeInTheDocument();
     expect(within(hero).getByRole('heading', { name: 'Next session' })).toBeInTheDocument();
     expect(within(hero).getByText('In 6 days · Your first booking')).toBeInTheDocument();
-    // Outside the join window.
-    expect(within(hero).getByRole('link', { name: 'View session details' })).toBeInTheDocument();
+    // Outside the join window, Join still opens the session page (owner, 26 Oct).
+    expect(within(hero).getByRole('link', { name: 'Join session' })).toBeInTheDocument();
+    expect(
+      within(hero).queryByRole('link', { name: 'View session details' }),
+    ).not.toBeInTheDocument();
     expect(within(hero).getByRole('link', { name: 'All bookings' })).toHaveAttribute(
       'href',
       '/bookings',

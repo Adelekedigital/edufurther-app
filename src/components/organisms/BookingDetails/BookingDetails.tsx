@@ -13,8 +13,7 @@ import {
   canCancel,
   canWithdraw,
   fullDate,
-  joinOpensInMinutes,
-  joinState,
+  isUpcoming,
   otherTimeLine,
   panelStatus,
   timeRange,
@@ -49,14 +48,11 @@ type BookingDetailsProps = {
    */
   outcomeFailed?: boolean;
   retryOutcome?: () => void;
-  /** The session's own page, where joining happens. Absent: no Join here at all. */
-  joinHref?: string;
   /**
-   * The Upcoming tab's next session, the one on the hero. Only it shows a
-   * locked Join before its window opens; a later session shows just when Join
-   * opens (PRD Mentor Bookings), so the footer offers nothing it can't do.
+   * The session's own page, where joining happens. Absent: no Join here at all.
+   * Present, every upcoming session offers it, never greyed out (owner, 26 Oct).
    */
-  isNext?: boolean;
+  joinHref?: string;
   /** The reason is still being fetched: the block has a shape, not a gap. */
   outcomeLoading?: boolean;
   /** What the mentee wrote on the booking form (GET /sessions/{id}/answers). */
@@ -193,15 +189,11 @@ export function BookingDetails({
   answer,
   answerNotice,
   joinHref,
-  isNext = false,
   now = new Date(),
 }: BookingDetailsProps) {
   const status = panelStatus(b, now);
   const other = otherTimeLine(b, timeZone);
-  const join = joinState(b, now);
-  const opensIn = joinOpensInMinutes(b);
-  const showJoin = !!joinHref && (join === 'open' || (join === 'before' && isNext));
-  const showLock = !!joinHref && join === 'before' && opensIn != null;
+  const showJoin = !!joinHref && isUpcoming(b, now);
   // The one destructive thing this viewer can still do to this booking, in the
   // panel rather than a tap away in a scrolling list. The two are mutually
   // exclusive — one wants `pending`, the other `confirmed` — so the order only
@@ -446,7 +438,7 @@ export function BookingDetails({
         </div>
       </div>
 
-      {(showJoin || showLock || showCallOff || !!answer) && (
+      {(showJoin || showCallOff || !!answer) && (
         <div className={styles.footer}>
           {/* Above the buttons, so it is read before it is acted on rather
               than explaining afterwards. */}
@@ -454,38 +446,24 @@ export function BookingDetails({
           {/* For a request awaiting an answer this is the whole reason the
               panel was opened. */}
           {!!answer && <div className={styles.answer}>{answer}</div>}
-          {showJoin &&
-            /* It navigates once open, so it is a link; before that, a locked button. */
-            (join === 'open' ? (
-              <ButtonLink
-                href={joinHref!}
-                prefetch={false}
-                variant="primary"
-                size="large"
-                fullWidth
-              >
-                Join session
-              </ButtonLink>
-            ) : (
-              <Button variant="primary" size="large" fullWidth disabled>
-                Join session
-              </Button>
-            ))}
-          {/* The design's second line: when Join opens on the left, the
-              call-off on the right, a quiet text button rather than a second
-              full-width one. */}
-          {(showLock || showCallOff) && (
+          {/* Never greyed out (owner, 26 Oct): the session page shows the
+              countdown before the door opens. */}
+          {showJoin && (
+            <ButtonLink href={joinHref!} prefetch={false} variant="primary" size="large" fullWidth>
+              Join session
+            </ButtonLink>
+          )}
+          {/* The design's second line: the call-off, a quiet text button rather
+              than a second full-width one. */}
+          {showCallOff && (
             <div className={styles.footRow}>
-              {showLock && <span className={styles.lock}>{BOOKINGS_COPY.joinOpens(opensIn!)}</span>}
-              {showCallOff && (
-                <Button
-                  variant="text-destructive"
-                  size="large"
-                  onClick={() => onCallOff!(callOff!.action)}
-                >
-                  {callOff!.label}
-                </Button>
-              )}
+              <Button
+                variant="text-destructive"
+                size="large"
+                onClick={() => onCallOff!(callOff!.action)}
+              >
+                {callOff!.label}
+              </Button>
             </div>
           )}
         </div>

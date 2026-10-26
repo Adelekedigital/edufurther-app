@@ -346,16 +346,6 @@ export function MenteeHomeScreen() {
         </Notice>
       ) : newView ? (
         <div ref={viewRef} className={styles.newView}>
-          {/* A confirmed first session is joined from here too (ours: the
-              design's new view has no Next session card). */}
-          {nextBooking && (
-            <MenteeNextSession
-              key={nextBooking.id}
-              booking={nextBooking}
-              timeZone={zone}
-              now={now}
-            />
-          )}
           <MenteeNewView
             {...state}
             fields={fresh.fields}
@@ -377,6 +367,17 @@ export function MenteeHomeScreen() {
             onHide={fresh.booked || firstDone ? hide : null}
             hideRef={hideRef}
           >
+            {/* A confirmed first session is joined from here too, below Getting
+                started (owner, 26 Oct; the design's new view has no Next
+                session card). */}
+            {nextBooking && (
+              <MenteeNextSession
+                key={nextBooking.id}
+                booking={nextBooking}
+                timeZone={zone}
+                now={now}
+              />
+            )}
             {mentors}
           </MenteeNewView>
         </div>
