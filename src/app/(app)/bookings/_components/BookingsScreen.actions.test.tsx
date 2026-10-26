@@ -18,6 +18,7 @@ import {
   replace,
   resetHarness,
 } from './bookingsScreen.harness';
+import { launched, sent } from '@/app/_sessions/reviewAndRebook.mocks';
 
 // The data hooks, mocked. Hoisted above the imports, so each factory
 // reaches the harness through a dynamic import rather than a binding
@@ -42,6 +43,15 @@ vi.mock('@/lib/api/data/bookingActions', async () =>
 );
 vi.mock('@/lib/api/data/reviewableSessions', async () =>
   (await import('./bookingsScreen.harness')).mocks.reviewableSessions(),
+);
+vi.mock('@/lib/api/data/reviewWrite', async () =>
+  (await import('@/app/_sessions/reviewAndRebook.mocks')).reviewAndRebookMocks.reviewWrite(),
+);
+vi.mock('@/app/_reviews/ReviewDialog', async () =>
+  (await import('@/app/_sessions/reviewAndRebook.mocks')).reviewAndRebookMocks.reviewDialog(),
+);
+vi.mock('@/app/_shell/BookingLauncher/BookingLauncher', async () =>
+  (await import('@/app/_sessions/reviewAndRebook.mocks')).reviewAndRebookMocks.bookingLauncher(),
 );
 vi.mock('@/lib/api/data/booking', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
@@ -98,15 +108,36 @@ describe('the actions appear only where they can succeed', () => {
     expect(actions.decline!.mutate).not.toHaveBeenCalled();
   });
 
-  it('a mentee gets Withdraw in the panel, and no Accept anywhere', () => {
+  it('a mentee gets Cancel request on the row and in the panel, and no Accept anywhere', () => {
     h.pending = remote([pendingRow({ side: 'mentee' })]);
     h.tab = 'pending';
-    // Opened, because the call-off lives in the panel now: the row carries
-    // only what answering a request needs, and a mentee answers nothing.
     h.selectedBooking = 'p1';
     render(<BookingsScreen />);
     expect(screen.queryByRole('button', { name: 'Accept' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Withdraw request' })).toBeVisible();
+    // `pendingActions` visible: one on the row, one in the panel's footer.
+    expect(screen.getAllByRole('button', { name: 'Cancel request' })).toHaveLength(2);
+    expect(
+      within(document.getElementById('booking-details')!).getByRole('button', {
+        name: 'Cancel request',
+      }),
+    ).toBeVisible();
+  });
+
+  it('the row’s Cancel request asks first, in the withdraw dialog', async () => {
+    h.pending = remote([pendingRow({ side: 'mentee' })]);
+    h.tab = 'pending';
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel request' }));
+    expect(screen.getByRole('dialog', { name: 'Withdraw this request?' })).toBeVisible();
+    expect(screen.getByText('Your credit comes back.')).toBeVisible();
+    expect(actions.withdraw!.mutate).not.toHaveBeenCalled();
+  });
+
+  it('a lapsed request of the mentee’s has no Cancel request: it is expiring', () => {
+    h.pending = remote([pendingRow({ side: 'mentee', respondBy: at(-1) })]);
+    h.tab = 'pending';
+    render(<BookingsScreen />);
+    expect(screen.queryByRole('button', { name: 'Cancel request' })).not.toBeInTheDocument();
   });
 
   it('a request awaiting an answer can be answered from the panel', async () => {
@@ -201,7 +232,11 @@ describe('the actions appear only where they can succeed', () => {
     h.tab = 'pending';
     h.selectedBooking = 'p1';
     render(<BookingsScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'Withdraw request' }));
+    await userEvent.click(
+      within(document.getElementById('booking-details')!).getByRole('button', {
+        name: 'Cancel request',
+      }),
+    );
     expect(screen.getByRole('dialog')).toBeVisible();
     expect(actions.withdraw!.mutate).not.toHaveBeenCalled();
   });
@@ -359,25 +394,103 @@ describe('the review entry on History', () => {
       ...over,
     });
 
-  it('offers a review only for a session the list says is still reviewable', async () => {
-    h.history = hist({ bookings: [completed()] });
-    h.reviewable = { data: [{ id: 'h1' }], isLoading: false, error: null, retry: vi.fn() };
-    h.tab = 'history';
-    render(<BookingsScreen />);
-    const link = screen.getByRole('link', { name: 'Leave a review' });
-    // The flow lives on the profile; one implementation, not two.
-    expect(link).toHaveAttribute('href', '/mentors/p1?tab=reviews');
+  const reviewable = (over = {}) => ({
+    data: [{ id: 'h1', startsAt: at(-48), typeName: 'SOP review', ...over }],
+    isLoading: false,
+    error: null,
+    retry: vi.fn(),
   });
 
-  it('a session already reviewed falls back to Book again', () => {
+  it('a reviewable session offers Leave a review and Book again together', () => {
+    h.history = hist({ bookings: [completed()] });
+    h.reviewable = reviewable();
+    h.tab = 'history';
+    render(<BookingsScreen />);
+    expect(screen.getByRole('button', { name: 'Leave a review' })).toBeVisible();
+    // Beside it until reviewed (founder, Oct 25): never a link to the profile.
+    expect(screen.getByRole('button', { name: 'Book again' })).toBeVisible();
+    expect(screen.queryByRole('link', { name: /Leave a review|Book again/ })).toBeNull();
+  });
+
+  it('Leave a review opens the review here, for this session', async () => {
+    h.history = hist({ bookings: [completed()] });
+    h.reviewable = reviewable();
+    h.tab = 'history';
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Leave a review' }));
+    const dialog = screen.getByRole('dialog', { name: 'Review Amara' });
+    expect(within(dialog).getByText('About h1')).toBeVisible();
+  });
+
+  it('once sent, the row turns to Book again alone', async () => {
+    h.history = hist({ bookings: [completed()] });
+    h.reviewable = reviewable();
+    h.tab = 'history';
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Leave a review' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Send review' }));
+    expect(sent).toEqual([
+      expect.objectContaining({ mode: 'new', mentorId: 'p1', sessionId: 'h1' }),
+    ]);
+    await userEvent.click(screen.getByRole('button', { name: 'Close review' }));
+    // The list is still catching up (it refetches); the page already knows.
+    expect(screen.queryByRole('button', { name: 'Leave a review' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Book again' })).toBeVisible();
+  });
+
+  it('Book again opens the booking modal here for that mentor', async () => {
+    h.history = hist({ bookings: [completed()] });
+    h.reviewable = reviewable();
+    h.tab = 'history';
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Book again' }));
+    expect(screen.getByRole('dialog', { name: 'Book Amara Okafor' })).toBeVisible();
+    expect(launched.at(-1)?.id).toBe('p1');
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('the review’s own Book again closes the review, then books', async () => {
+    h.history = hist({ bookings: [completed()] });
+    h.reviewable = reviewable();
+    h.tab = 'history';
+    render(<BookingsScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Leave a review' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Book again from the review' }));
+    expect(screen.queryByRole('dialog', { name: 'Review Amara' })).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Book Amara Okafor' })).toBeVisible();
+  });
+
+  it('a session already reviewed (or inside the 30 days) offers Book again alone', () => {
     // The list drops a session once a review is written, so nothing here has to
     // re-derive eligibility — and nothing offers a second review.
     h.history = hist({ bookings: [completed()] });
     h.reviewable = { data: [], isLoading: false, error: null, retry: vi.fn() };
     h.tab = 'history';
     render(<BookingsScreen />);
-    expect(screen.queryByRole('link', { name: 'Leave a review' })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Book again' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Leave a review' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Book again' })).toBeVisible();
+  });
+
+  it('no Book again for a mentor whose account is gone, nor on a canceled or missed row', () => {
+    h.history = hist({
+      bookings: [
+        completed({ id: 'gone', other: { ...party('Deleted user'), deleted: true } }),
+        completed({ id: 'c1', status: 'cancelled' }),
+        completed({ id: 'm1', status: 'noShow' }),
+      ],
+    });
+    h.reviewable = { data: [], isLoading: false, error: null, retry: vi.fn() };
+    h.tab = 'history';
+    render(<BookingsScreen />);
+    expect(screen.queryByRole('button', { name: 'Book again' })).not.toBeInTheDocument();
+  });
+
+  it('while reviewability is unknown, a completed row offers nothing', () => {
+    h.history = hist({ bookings: [completed()] });
+    h.reviewable = { data: null, isLoading: true, error: null, retry: vi.fn() };
+    h.tab = 'history';
+    render(<BookingsScreen />);
+    expect(screen.queryByRole('button', { name: /Leave a review|Book again/ })).toBeNull();
   });
 
   it('a mentor is never offered one — only mentees review', () => {
@@ -385,7 +498,7 @@ describe('the review entry on History', () => {
     h.reviewable = { data: [{ id: 'h1' }], isLoading: false, error: null, retry: vi.fn() };
     h.tab = 'history';
     render(<BookingsScreen />);
-    expect(screen.queryByRole('link', { name: 'Leave a review' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Leave a review' })).not.toBeInTheDocument();
   });
 });
 

@@ -214,7 +214,7 @@ export function BookingDetails({
   // on a phone the sheet covered the row's own buttons (UI review, PR 233).
   // Both, or nothing.
   const callOff = canWithdraw(b, now)
-    ? { action: 'withdraw' as const, label: 'Withdraw request' }
+    ? { action: 'withdraw' as const, label: 'Cancel request' }
     : canCancel(b, now)
       ? { action: 'cancel' as const, label: 'Cancel session' }
       : null;

@@ -51,6 +51,15 @@ vi.mock('@/lib/api/data/bookingActions', async () =>
 vi.mock('@/lib/api/data/reviewableSessions', async () =>
   (await import('./bookingsScreen.harness')).mocks.reviewableSessions(),
 );
+vi.mock('@/lib/api/data/reviewWrite', async () =>
+  (await import('@/app/_sessions/reviewAndRebook.mocks')).reviewAndRebookMocks.reviewWrite(),
+);
+vi.mock('@/app/_reviews/ReviewDialog', async () =>
+  (await import('@/app/_sessions/reviewAndRebook.mocks')).reviewAndRebookMocks.reviewDialog(),
+);
+vi.mock('@/app/_shell/BookingLauncher/BookingLauncher', async () =>
+  (await import('@/app/_sessions/reviewAndRebook.mocks')).reviewAndRebookMocks.bookingLauncher(),
+);
 vi.mock('@/lib/api/data/booking', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
   useSlots: () => ({ data: [], isLoading: false, error: null, retry: vi.fn() }),
@@ -303,6 +312,23 @@ describe('History', () => {
     expect(screen.getByRole('heading', { name: 'No sessions match these filters' })).toBeVisible();
   });
 
+  it('?filter=missed opens History with Missed on (Mentee Home’s "View missed")', () => {
+    h.filter = 'missed';
+    render(<BookingsScreen />);
+    expect(screen.getByRole('button', { name: 'Missed' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Completed' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+
+  it('an unknown ?filter= is ignored', () => {
+    h.filter = 'everything';
+    render(<BookingsScreen />);
+    for (const name of ['Completed', 'Didn’t happen', 'Missed'])
+      expect(screen.getByRole('button', { name })).toHaveAttribute('aria-pressed', 'false');
+  });
+
   it('only a session the viewer booked can be booked again', () => {
     h.history = hist({
       bookings: [
@@ -312,9 +338,8 @@ describe('History', () => {
     });
     h.viewer = { ...MEMBER, isMentor: false, isApprovedMentor: false, isMentee: true };
     render(<BookingsScreen />);
-    const links = screen.getAllByRole('link', { name: 'Book again' });
-    expect(links).toHaveLength(1);
-    expect(links[0]).toHaveAttribute('href', '/mentors/p1');
+    // A button: the booking modal opens on this page (PRD Mentee Bookings).
+    expect(screen.getAllByRole('button', { name: 'Book again' })).toHaveLength(1);
   });
 
   it('a mentor is never offered Book again — mentors cannot book', () => {
@@ -326,7 +351,7 @@ describe('History', () => {
     });
     h.viewer = MEMBER;
     render(<BookingsScreen />);
-    expect(screen.queryByRole('link', { name: 'Book again' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Book again' })).not.toBeInTheDocument();
   });
 
   it('asks the server for another page when the reveal runs past what is loaded', async () => {

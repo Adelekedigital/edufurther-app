@@ -193,7 +193,7 @@ describe('calling the session off', () => {
     });
     // Not "Cancel session": there is no session yet, only a request.
     expect(screen.queryByRole('button', { name: 'Cancel session' })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Withdraw request' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel request' }));
     expect(onCallOff).toHaveBeenCalledWith('withdraw');
   });
 

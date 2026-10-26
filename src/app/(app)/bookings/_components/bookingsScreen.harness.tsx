@@ -9,6 +9,7 @@
  * `beforeEach` puts it all back.
  */
 import type { BookingHistoryResult } from '@/lib/api/data/bookings';
+import { resetReviewAndRebook } from '@/app/_sessions/reviewAndRebook.mocks';
 import { accessFor } from '@/lib/utils/access';
 import type { Booking, BookingAnswer, BookingParty } from '@/types/booking';
 import type { Remote, Viewer } from '@/types/mentor';
@@ -120,6 +121,8 @@ type Reviewable = {
 export const h = {
   tab: 'upcoming',
   selectedBooking: null as string | null,
+  /** `?filter=` on the link that opened the page. */
+  filter: null as string | null,
   viewer: null as unknown as Viewer,
   upcoming: null as unknown as Remote<Booking[]>,
   pending: null as unknown as Remote<Booking[]>,
@@ -139,6 +142,7 @@ export const mocks = {
     useSearchParams: () => {
       const q = new URLSearchParams(h.tab === 'upcoming' ? '' : `tab=${h.tab}`);
       if (h.selectedBooking) q.set('booking', h.selectedBooking);
+      if (h.filter) q.set('filter', h.filter);
       return q;
     },
   }),
@@ -192,6 +196,7 @@ export function resetHarness() {
   }));
   h.tab = 'upcoming';
   h.selectedBooking = null;
+  h.filter = null;
   h.bookingActive = false;
   h.viewer = MEMBER;
   h.upcoming = remote<Booking[]>([]);
@@ -202,4 +207,5 @@ export function resetHarness() {
   for (const a of ['accept', 'decline', 'withdraw', 'cancel']) actions[a] = stubAction();
   push.mockReset();
   replace.mockReset();
+  resetReviewAndRebook();
 }

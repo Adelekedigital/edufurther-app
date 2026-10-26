@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ButtonLink } from '@/components/atoms/Button/Button';
 import { Chip } from '@/components/atoms/Chip/Chip';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Tabs, type TabItem } from '@/components/atoms/Tabs/Tabs';
@@ -31,9 +30,11 @@ import { useAppShell } from '@/app/_shell/useAppShell';
 import { Button } from '@/components/atoms/Button/Button';
 import { ConfirmActionDialog } from '@/app/_sessions/ConfirmActionDialog';
 import { IntakeFileViewer } from '@/app/_sessions/IntakeFileViewer';
+import { useReviewAndRebook } from '@/app/_sessions/useReviewAndRebook';
 import {
   bookingHeading,
   canAccept,
+  canWithdraw,
   fullDate,
   HISTORY_FILTERS,
   overlapping,
@@ -43,7 +44,7 @@ import { useMyReviewableSessions } from '@/lib/api/data/reviewableSessions';
 import { BookingsPanel } from './BookingsPanel';
 import { useBookingsTab } from './useBookingsTab';
 import { useRevealed } from './useRevealed';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useSelectedBooking } from './useSelectedBooking';
 import styles from './BookingsScreen.module.css';
 
@@ -77,7 +78,12 @@ export function BookingsScreen() {
   // What the backend compares `from` against — never the display override.
   const accountZone = member?.timeZone ?? deviceZone;
 
-  const [filters, setFilters] = useState<BookingStatus[]>([]);
+  // `?filter=missed` (Mentee Home's "View missed") opens History filtered.
+  // Read once: the chips own it from then on.
+  const params = useSearchParams();
+  const [filters, setFilters] = useState<BookingStatus[]>(
+    () => HISTORY_FILTERS.find((f) => f.key === params.get('filter'))?.statuses ?? [],
+  );
   // Fetched on Pending too: the clash check reads it, and Pending is where the
   // nav badge sends a mentor, so gating it on the Upcoming tab meant the one
   // warning that matters never appeared on the path that matters.
@@ -200,8 +206,12 @@ export function BookingsScreen() {
   // authority — it already applies "completed only", "not already reviewed" and
   // the 30-day interval per offering — so nothing here re-derives eligibility.
   const reviewable = useMyReviewableSessions(tab === 'history' && !access.locked.has('Bookings'));
-  const canReview = (b: Booking) =>
-    b.side === 'mentee' && (reviewable.data ?? []).some((r) => r.id === b.id);
+  // Leave a review and Book again open here, as on Session Join (PRD Mentee Bookings).
+  const rr = useReviewAndRebook({ canBook, author: member, timeZone });
+  const reviewableFor = (b: Booking) =>
+    b.side === 'mentee' && !rr.reviewedHere(b.id)
+      ? ((reviewable.data ?? []).find((r) => r.id === b.id) ?? null)
+      : null;
   // While we do not know, offer neither. "Book again" standing in for a moment
   // and then turning into "Leave a review" is two destinations in one place,
   // one of which spends a credit. A failed read is the same: it would read as
@@ -272,6 +282,18 @@ export function BookingsScreen() {
    * `large` in a modal footer.
    */
   const rowActions = (b: Booking, place: 'row' | 'panel' = 'row') => {
+    // The mentee's own request: Cancel request on the row (`pendingActions`
+    // visible). The panel has its own, in its footer.
+    if (place === 'row' && canWithdraw(b, now))
+      return (
+        <Button
+          variant="text-destructive"
+          size="small"
+          onClick={() => setConfirming({ action: 'withdraw', booking: b })}
+        >
+          Cancel request
+        </Button>
+      );
     if (!canAccept(b, now)) return null;
     // The design draws these differently in the two places, so the placement
     // decides the variant, the size and the label — not just the size. In a
@@ -454,33 +476,43 @@ export function BookingsScreen() {
                   hasMore={history.hasMore}
                   loadMoreError={history.loadMoreError}
                   isLoadingMore={history.isLoadingMore}
-                  actionsFor={(b) =>
-                    // Only a session this viewer booked can be booked again, and a
-                    // mentor never books at all.
-                    reviewUnknown &&
-                    b.side === 'mentee' &&
-                    b.status === 'completed' ? null : canReview(b) ? (
-                      <ButtonLink
-                        // The review flow lives on the profile; linking there keeps
-                        // one implementation rather than mounting it twice.
-                        href={`/mentors/${b.other.id}?tab=reviews`}
-                        prefetch={false}
+                  actionsFor={(b) => {
+                    // Only a completed session this viewer booked. While it's
+                    // unknown whether it can be reviewed, offer neither (see
+                    // `reviewUnknown`).
+                    if (b.side !== 'mentee' || b.status !== 'completed' || reviewUnknown)
+                      return null;
+                    const session = reviewableFor(b);
+                    const again = rr.canRebook(b);
+                    if (session)
+                      return (
+                        <>
+                          <Button
+                            variant="secondary-outlined"
+                            size="small"
+                            onClick={() => rr.openReview(b, session)}
+                          >
+                            Leave a review
+                          </Button>
+                          {/* Beside it until reviewed, so a mentee who never
+                              reviews still has Book again (founder, Oct 25). */}
+                          {again && (
+                            <Button variant="text" size="small" onClick={() => rr.bookAgain(b)}>
+                              Book again
+                            </Button>
+                          )}
+                        </>
+                      );
+                    return again ? (
+                      <Button
                         variant="secondary-outlined"
                         size="small"
-                      >
-                        Leave a review
-                      </ButtonLink>
-                    ) : canBook && b.side === 'mentee' && b.status === 'completed' ? (
-                      <ButtonLink
-                        href={`/mentors/${b.other.id}`}
-                        prefetch={false}
-                        variant="secondary-outlined"
-                        size="small"
+                        onClick={() => rr.bookAgain(b)}
                       >
                         Book again
-                      </ButtonLink>
-                    ) : null
-                  }
+                      </Button>
+                    ) : null;
+                  }}
                 />
               </TabPanel>
             </div>
@@ -545,6 +577,7 @@ export function BookingsScreen() {
             )}
           </div>
           {viewing && <IntakeFileViewer file={viewing} onClose={() => setViewing(null)} />}
+          {rr.dialogs}
           {confirming && pendingAction && (
             <ConfirmActionDialog
               action={confirming.action}
