@@ -46,6 +46,9 @@ const base = {
   nextSession: remote<Booking | null>(null),
   upcomingCount: 0,
   now: new Date(),
+  movesDone: [] as const,
+  onMove: vi.fn(),
+  onCopyLink: vi.fn(),
 };
 
 beforeEach(() => {
@@ -156,5 +159,27 @@ describe('NewMentorHero, firstBooked', () => {
       '/bookings',
     );
     expect(screen.queryByRole('link', { name: /Booking requests/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('NewMentorHero, Do this week', () => {
+  it('noBookings: three moves with a counter', () => {
+    render(<NewMentorHero {...base} movesDone={['about']} stage="noBookings" />);
+    expect(screen.getByRole('heading', { name: 'Do this week' })).toBeInTheDocument();
+    expect(screen.getByText('1 of 3 done')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Copy link' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Add hours' })).toHaveAttribute('href', '/calendar');
+    // Edit About is done this week: its button gives way to the mark.
+    expect(screen.queryByRole('link', { name: 'Edit About' })).toBeNull();
+    expect(screen.getByText('Done this week')).toBeInTheDocument();
+  });
+
+  it('firstBooked: only the Hours move, with no counter', () => {
+    const booked = { ...base, nextSession: remote<Booking | null>(booking()), upcomingCount: 1 };
+    render(<NewMentorHero {...booked} stage="firstBooked" />);
+    expect(screen.getByRole('link', { name: 'Add hours' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Copy link' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Edit About' })).toBeNull();
+    expect(screen.queryByText(/of \d done/)).toBeNull();
   });
 });

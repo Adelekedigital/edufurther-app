@@ -24,6 +24,7 @@ import { PerformanceSection } from './PerformanceSection';
 import { SessionQuality } from './SessionQuality';
 import type { StatsQuery } from '@/lib/api/data/mentorStats';
 import { SetupBanner, type SetupAction } from './SetupBanner';
+import { useWeekMoves } from './useWeekMoves';
 import styles from './DashboardScreen.module.css';
 
 type Member = Extract<Viewer, { kind: 'member' }>;
@@ -133,6 +134,15 @@ function MentorHome({ member }: { member: Member }) {
     return () => clearInterval(t);
   }, []);
   const now = useMemo(() => new Date(clock), [clock]);
+  const weekMoves = useWeekMoves(member.id, accountZone, now);
+
+  // A copy from anywhere (the share menu, the setup banner, the Share move)
+  // counts for both the setup step and this week's Share move (design shared()).
+  const markShared = () => {
+    setShared(true);
+    persistShared(member.id);
+    weekMoves.mark('share');
+  };
 
   const copyShareLink = (url: string) => {
     if (!url || !navigator.clipboard) {
@@ -141,8 +151,7 @@ function MentorHome({ member }: { member: Member }) {
     }
     navigator.clipboard.writeText(url).then(
       () => {
-        setShared(true);
-        persistShared(member.id);
+        markShared();
         say('Link copied');
       },
       () => say('Couldn’t copy the link'),
@@ -194,6 +203,7 @@ function MentorHome({ member }: { member: Member }) {
         subline={subline}
         shareUrl={d.shareUrl}
         shareName={d.shareName}
+        onShareCopied={markShared}
       />
       {reconnect.show && (
         <CalendarReconnectBanner
@@ -224,6 +234,9 @@ function MentorHome({ member }: { member: Member }) {
           nextSession={dash.nextSession}
           upcomingCount={dash.upcomingCount}
           now={now}
+          movesDone={weekMoves.done}
+          onMove={weekMoves.mark}
+          onCopyLink={() => copyShareLink(d.shareUrl)}
         />
       ) : stage === null ? (
         // Bookable, and the upcoming sessions that pick the hero aren't in yet.

@@ -51,3 +51,26 @@ export const NOT_LIVE_COPY = {
   breakBody: 'Mentees can’t find or book you until you’re back.',
   breakLink: 'Manage it on Calendar',
 } as const;
+
+/** The hero's "Do this week" moves (design `moveDefs`, tracking=none). */
+export const MOVES_COPY = {
+  heading: 'Do this week',
+  counter: (done: number, total: number) => `${done} of ${total} done`,
+  done: 'Done this week',
+  share: {
+    title: 'Share your profile',
+    why: 'Post your link on LinkedIn or in a WhatsApp group you’re in. Mentees you already know are often the first to book.',
+    action: 'Copy link',
+  },
+  about: {
+    title: 'Lead your About with your result',
+    why: 'A concrete outcome, like “Fully funded PhD”, tells mentees quickly what you can help with.',
+    action: 'Edit About',
+  },
+  hours: {
+    /** "available", not "open": ux-writer vocabulary (design says "open times"). */
+    title: 'Keep at least 3 available times next week',
+    why: 'Mentees who find you need a time they can pick.',
+    action: 'Add hours',
+  },
+} as const;

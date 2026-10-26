@@ -1187,3 +1187,12 @@ Built as `templates/InviteModal` (a dialog on `ModalShell`, as ConfirmDialog and
 | Not live: "Choose how to start" (open hours or a waitlist) | A mentor who isn't bookable (unlisted, or `setup_needed` not empty) sees the header and setup banner only, no hero | Founder, Oct 25: nobody is told "You're live" when they aren't; no waitlist backend | waitlist ships |
 | "Listed on Explore · Since Oct 18" always has a date | "Live now" when `approved_at` is null (imported mentors with no decision) | No decision date to show; the row still links to the profile | never |
 | No loading / error states drawn for the hero | Row values show a skeleton while their own query loads and "Couldn't load" on failure (the row still links); upcoming sessions failing shows "We couldn't load your bookings." + Try again in the hero's place | All four states ship; one failing row never takes down the page (PRD States) | design draws them |
+
+### Mentor Home — "Do this week" moves (PRD Mentor Home PR 2), 2026-10-26
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| Hours move "Keep at least 3 open times next week" | "Keep at least 3 available times next week" | ux-writer vocabulary: Available, never Open (same fix as the status row) | design file catches up |
+| Edit About and Add hours only mark the move done | They mark it done, then open the mentor's profile and Calendar | Founder, Oct 25 (PRD) | never |
+| A move's done state lives in component state (lost on reload) | Kept per mentor and ISO week in `localStorage` (`ef-dash-week-{userId}-{yyyy-ww}`, try/catch); a new week shows the buttons again | PRD: done when pressed this ISO week, kept across reloads | a backend record of moves |
+| Share marks done on press | Marks done once the copy lands (a refused clipboard says so and leaves it to do); copying from the header's share menu or the setup banner counts too, and also completes the setup banner's Share step (design `shared()`) | Honest: nothing was shared if the copy failed | never |

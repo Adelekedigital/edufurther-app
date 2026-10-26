@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { MentorDashboard, MentorStage } from '@/lib/api/data/dashboard';
 import { viewers } from '@/app/_shell/lockedPage.harness';
 import { DashboardScreen } from './DashboardScreen';
@@ -18,7 +19,12 @@ vi.mock('@/app/_shell/useCalendarReconnect', () => ({
 vi.mock('./ApprovedToast', () => ({ ApprovedToast: () => null }));
 // Each section has its own tests; here only which ones the stage shows.
 vi.mock('./NewMentorHero', () => ({
-  NewMentorHero: ({ stage }: { stage: string }) => <div data-testid="hero">{stage}</div>,
+  NewMentorHero: ({ stage, movesDone }: { stage: string; movesDone: string[] }) => (
+    <div data-testid="hero">
+      {stage}
+      <span data-testid="moves">{movesDone.join(',')}</span>
+    </div>
+  ),
 }));
 vi.mock('./KpiGrid', () => ({ KpiGrid: () => <div data-testid="kpis" /> }));
 vi.mock('./PerformanceSection', () => ({ PerformanceSection: () => <div data-testid="chart" /> }));
@@ -136,6 +142,37 @@ describe('DashboardScreen stages (PRD Mentor Home)', () => {
     make('notReady');
     render(<DashboardScreen />);
     expect(screen.queryByText('You’re taking a break')).toBeNull();
+  });
+
+  it('a copy from the header’s share menu marks this week’s Share move done', async () => {
+    localStorage.clear();
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    make('noBookings');
+    render(<DashboardScreen />);
+    await user.click(screen.getByRole('button', { name: 'Share profile' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Copy profile link' }));
+    expect(await screen.findByTestId('moves')).toHaveTextContent('share');
+  });
+
+  it('a refused copy leaves Share to do, and says so', async () => {
+    localStorage.clear();
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockRejectedValue(new Error('denied'));
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    make('noBookings');
+    // The setup banner's own Copy link (the same copy the Share move uses).
+    dash.data!.setup.next = {
+      key: 'share',
+      title: 'Share your profile',
+      action: { label: 'Copy link', copy: true },
+    };
+    render(<DashboardScreen />);
+    await user.click(screen.getByRole('button', { name: 'Copy link' }));
+    expect(await screen.findByText('Couldn’t copy the link')).toBeInTheDocument();
+    expect(screen.getByTestId('moves')).toHaveTextContent('');
+    expect(localStorage.getItem('ef-dash-shared-' + viewers.mentorApproved.id)).toBeNull();
   });
 
   it('active: KPIs, next session, chart and quality, no hero or banner', () => {
