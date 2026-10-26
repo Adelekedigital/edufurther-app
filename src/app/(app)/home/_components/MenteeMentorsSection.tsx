@@ -9,9 +9,16 @@ import { Notice } from '@/components/molecules/Notice/Notice';
 import { MentorCard } from '@/components/organisms/MentorCard/MentorCard';
 import type { MetMentor } from '@/lib/api/data/metMentors';
 import type { Mentor, Remote } from '@/types/mentor';
-import { MentorRow } from './MentorRow';
+import { canBookAgain, MentorRow } from './MentorRow';
 import type { Recommended } from './recommended';
 import styles from './MenteeMentorsSection.module.css';
+
+/**
+ * Where "Choose your mentor" scrolls to (design `[data-ef-rec]`): the Mentors
+ * block when it has tabs (the screen then selects Recommended), else
+ * Recommended standing alone. Focusable, so focus can follow the scroll.
+ */
+export const RECOMMENDED_ID = 'mentors-for-your-goal';
 
 /** Rows and cards shown on Home (design: "3 each"). */
 export const SHOWN = 3;
@@ -22,6 +29,8 @@ type MenteeMentorsSectionProps = {
   recommended: { items: Recommended[]; isLoading: boolean; failed: boolean };
   /** The mentee's help areas, for "Matched to your goal: …"; null when unknown. */
   goalLine: string | null;
+  /** Recommended's heading when it stands alone ("Mentors for your goal" for a new mentee). */
+  recTitle?: string;
   timeZone: string;
   /** Phones: the compact card. */
   compact: boolean;
@@ -31,6 +40,8 @@ type MenteeMentorsSectionProps = {
   onBookMentor: (mentor: Mentor) => void;
   /** Opens Mentors you've met (the screen owns it). */
   onSeeAll: () => void;
+  /** Bumped by "Choose your mentor": selects the Recommended tab. */
+  showRecommended?: number;
 };
 
 type Tab = 'yours' | 'rec';
@@ -45,8 +56,14 @@ type Tab = 'yours' | 'rec';
 export function MenteeMentorsSection(p: MenteeMentorsSectionProps) {
   const ids = useId();
   const [tab, setTab] = useState<Tab>('yours');
+  const [seen, setSeen] = useState(p.showRecommended);
+  // A new request selects Recommended (React's derived-state pattern).
+  if (p.showRecommended !== seen) {
+    setSeen(p.showRecommended);
+    setTab('rec');
+  }
   const met = p.mentors.data ?? [];
-  const eligible = met.filter((m) => m.bookability === 'open').slice(0, SHOWN);
+  const eligible = met.filter(canBookAgain).slice(0, SHOWN);
   const rec = p.recommended;
   const recShown = rec.items.slice(0, SHOWN);
 
@@ -71,7 +88,11 @@ export function MenteeMentorsSection(p: MenteeMentorsSectionProps) {
     />
   );
   const recommended = (
-    <RecommendedPanel {...p} items={recShown} title={tabs ? null : 'Recommended for you'} />
+    <RecommendedPanel
+      {...p}
+      items={recShown}
+      title={tabs ? null : (p.recTitle ?? 'Recommended for you')}
+    />
   );
 
   if (!tabs)
@@ -79,7 +100,12 @@ export function MenteeMentorsSection(p: MenteeMentorsSectionProps) {
 
   const panel = (t: Tab) => `${ids}-${t}`;
   return (
-    <section aria-labelledby={`${ids}-h`} className={styles.block}>
+    <section
+      id={RECOMMENDED_ID}
+      tabIndex={-1}
+      aria-labelledby={`${ids}-h`}
+      className={styles.block}
+    >
       <div className={styles.tabsHead}>
         <h2 id={`${ids}-h`} className={styles.title}>
           Mentors
@@ -171,7 +197,12 @@ function RecommendedPanel(
   const id = useId();
   const loading = p.recommended.isLoading;
   return (
-    <Panel solo={!!p.title} labelledBy={id} busy={loading}>
+    <Panel
+      id={p.title ? RECOMMENDED_ID : undefined}
+      solo={!!p.title}
+      labelledBy={id}
+      busy={loading}
+    >
       <Head
         id={id}
         title={p.title}
@@ -215,18 +246,27 @@ function RecommendedPanel(
  * a plain block inside a tab panel, which its tab already names.
  */
 function Panel({
+  id,
   solo,
   labelledBy,
   busy,
   children,
 }: {
+  /** Recommended's scroll target, only where it stands alone (a tab panel may not be shown). */
+  id?: string;
   solo: boolean;
   labelledBy: string;
   busy?: boolean;
   children: React.ReactNode;
 }) {
   return solo ? (
-    <section aria-labelledby={labelledBy} aria-busy={busy || undefined} className={styles.section}>
+    <section
+      id={id}
+      tabIndex={id ? -1 : undefined}
+      aria-labelledby={labelledBy}
+      aria-busy={busy || undefined}
+      className={styles.section}
+    >
       {children}
     </section>
   ) : (

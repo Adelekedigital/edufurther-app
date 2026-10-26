@@ -11,6 +11,7 @@ const stats = (over: Partial<MenteeStats> = {}): MenteeStats => ({
   current: { sessions: 2, hours: 1.5 },
   previous: { sessions: 1, hours: 0.75 },
   thisMonth: null,
+  sessionsAttended: null,
   ...over,
 });
 

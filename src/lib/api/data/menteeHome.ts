@@ -40,6 +40,8 @@ export type MenteeStats = {
   previous: StatsWindow;
   /** The calendar month so far, for "+N this month"; null until the backend sends it. */
   thisMonth: StatsWindow | null;
+  /** Sessions the mentee attended (pressed Join; a mentor no-show counts), for the invite unlock; null until sent. */
+  sessionsAttended: number | null;
 };
 
 type StatsRead = components['schemas']['MenteeStatsRead'];
@@ -51,10 +53,15 @@ const toHours = (minutes: number | null | undefined) =>
 
 // PENDING BACKEND (Mentee Home request 3a): `this_month` isn't in the published
 // spec yet, so it is read untyped and optional; wire to the generated type when it ships.
-type ThisMonthRead = { this_month?: { completed_sessions: number; minutes: number } | null };
+// Likewise `sessions_attended` (the invite unlock's count, owner 25 Oct).
+type PendingStatsRead = {
+  this_month?: { completed_sessions: number; minutes: number } | null;
+  sessions_attended?: number | null;
+};
 
 function toStats(dto: StatsRead): MenteeStats {
-  const month = (dto as StatsRead & ThisMonthRead).this_month;
+  const pending = dto as StatsRead & PendingStatsRead;
+  const month = pending.this_month;
   return {
     sessionsHeld: n(dto.sessions_held),
     mentorsMet: n(dto.mentors_met),
@@ -65,6 +72,7 @@ function toStats(dto: StatsRead): MenteeStats {
     current: { sessions: dto.current.completed_sessions, hours: toHours(dto.current.minutes) },
     previous: { sessions: dto.previous.completed_sessions, hours: toHours(dto.previous.minutes) },
     thisMonth: month ? { sessions: month.completed_sessions, hours: toHours(month.minutes) } : null,
+    sessionsAttended: n(pending.sessions_attended),
   };
 }
 
@@ -79,6 +87,7 @@ export const EMPTY_STATS: MenteeStats = {
   current: { sessions: 0, hours: 0 },
   previous: { sessions: 0, hours: 0 },
   thisMonth: null,
+  sessionsAttended: null,
 };
 
 /** The authenticated mentee's progress stats for the home KPI strip. */

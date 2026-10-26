@@ -59,6 +59,7 @@ describe('useMenteeStats', () => {
       current: { sessions: 2, hours: 1.5 },
       previous: { sessions: 1, hours: 0.75 },
       thisMonth: null,
+      sessionsAttended: null,
     });
     expect(result.current.error).toBeNull();
   });

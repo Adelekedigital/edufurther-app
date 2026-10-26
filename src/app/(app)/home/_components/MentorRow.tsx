@@ -34,7 +34,11 @@ export function metHistory(m: MetMentor, timeZone: string): string {
   return `${sessions} · Last on ${dayLabel(m.lastSessionAt, timeZone)}`;
 }
 
-/** Why an unavailable mentor can't be booked, in the design's words. */
+/** Book again needs them taking bookings and an open time (design `eligible`). */
+export const canBookAgain = (m: MetMentor) =>
+  m.bookability === 'open' && m.unavailableReason !== 'no_open_times';
+
+/** Why a mentor can't be booked now, in the design's words. */
 function unavailableNote(m: MetMentor): string {
   return m.unavailableReason === 'no_open_times' ? 'No open times yet' : NOT_TAKING_TITLE;
 }
@@ -68,7 +72,7 @@ export function MentorRow({ mentor: m, timeZone, onBook, variant = 'list' }: Men
         </span>
       </div>
       <div className={styles.cta}>
-        {m.bookability === 'open' ? (
+        {canBookAgain(m) ? (
           <Button
             variant="secondary-outlined"
             size={size}

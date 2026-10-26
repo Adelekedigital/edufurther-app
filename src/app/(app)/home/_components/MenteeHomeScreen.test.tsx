@@ -33,6 +33,60 @@ vi.mock('@/lib/api/data/bookings', () => ({
   useUpcomingBookings: () => upcoming,
 }));
 
+// The new view's reads, as one controllable value (useNewMentee has its own tests).
+type Fresh = ReturnType<typeof import('./useNewMentee').useNewMentee>;
+const FIELDS = (done: number) =>
+  (['target', 'help', 'education', 'bio'] as const).map((key, i) => ({
+    key,
+    label: {
+      target: 'What you’re applying for',
+      help: 'What you need help with',
+      education: 'Education',
+      bio: 'Short bio',
+    }[key],
+    value: i < done ? 'Saved' : null,
+  }));
+let fresh: Fresh;
+const freshWith = (over: Partial<Fresh> = {}): Fresh => ({
+  fields: FIELDS(3),
+  goalParts: { degree: 'Master’s', field: 'Public Health', country: 'United Kingdom' },
+  education: [],
+  profileDone: false,
+  booked: null,
+  firstDone: null,
+  loading: false,
+  error: false,
+  retry: vi.fn(),
+  menteeProfile: null,
+  ...over,
+});
+vi.mock('./useNewMentee', () => ({ useNewMentee: () => fresh }));
+vi.mock('@/lib/api/data/invite', () => ({
+  useInviteLink: () => ({
+    data: {
+      code: 'damilola-7k2x',
+      active: true,
+      url: 'https://edufurther.test/invite/damilola-7k2x',
+    },
+    isLoading: false,
+    error: null,
+    retry: vi.fn(),
+  }),
+  useReferrals: () => ({
+    data: [],
+    isLoading: false,
+    error: null,
+    retry: vi.fn(),
+    friendJoined: false,
+  }),
+}));
+vi.mock('@/lib/api/data/settings', () => ({
+  useSaveMenteeProfile: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}));
+vi.mock('@/app/_profile/EducationEditor', () => ({
+  EducationEditor: () => <div role="dialog" aria-label="Education editor" />,
+}));
+
 let metMentors: Remote<MetMentor[]>;
 vi.mock('@/lib/api/data/metMentors', () => ({
   useMetMentors: () => metMentors,
@@ -178,6 +232,7 @@ const STATS: MenteeStats = {
   current: { sessions: 2, hours: 1.5 },
   previous: { sessions: 1, hours: 0.75 },
   thisMonth: null,
+  sessionsAttended: null,
 };
 
 const MEMBER: Extract<Viewer, { kind: 'member' }> = {
@@ -227,6 +282,8 @@ beforeEach(() => {
   stats = remote(STATS);
   upcoming = remote([booking()]);
   matches = { data: { matches: [] }, isLoading: false, error: null };
+  fresh = freshWith();
+  window.localStorage.clear();
   metMentors = remote([]);
 });
 
@@ -245,15 +302,128 @@ describe('MenteeHomeScreen', () => {
     expect(screen.getByRole('button', { name: 'Tips' })).toBeInTheDocument();
   });
 
-  it('a new mentee gets the first-booking invitation and no progress figures', () => {
+  it('a new mentee gets the next step, Getting started and Mentors for your goal, no progress figures', () => {
     viewer = NEW_MEMBER;
     render(<MenteeHomeScreen />);
-    expect(screen.getByRole('heading', { name: 'Book your first session' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Find a mentor' })).toBeInTheDocument();
-    expect(screen.getByText('Let’s find the right mentor for your goal.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Welcome, Damilola' })).toBeInTheDocument();
+    expect(screen.getByText('Let’s set you up for a great first session.')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Finish your profile for better matches' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('3 of 4 done · Next: short bio')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Getting started' })).toBeInTheDocument();
+    // No Hide before a first request; no Invite a friend before the first session.
+    expect(screen.queryByRole('button', { name: 'Hide' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Invite a friend' })).not.toBeInTheDocument();
     // The new view has no KPIs (design newHome nextStep: kpiTop false).
     expect(screen.queryByRole('region', { name: 'Your progress' })).not.toBeInTheDocument();
     expect(screen.queryByText('Sessions held')).not.toBeInTheDocument();
+  });
+
+  it('Hide (once a first request is sent) leaves for the returning view, and Undo brings it back', async () => {
+    viewer = { ...NEW_MEMBER, bookingCounts: { pending: 1, upcoming: 0 } };
+    fresh = freshWith({
+      booked: { mentorFirst: 'Mariam', startsAt: inHours(48), confirmed: false },
+    });
+    render(<MenteeHomeScreen />);
+    expect(screen.getByText('Your first session is requested.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Hide' }));
+    expect(screen.queryByRole('heading', { name: 'Getting started' })).not.toBeInTheDocument();
+    expect(screen.getByText('Getting started hidden')).toBeInTheDocument();
+    // Undo has focus, so the person who pressed Hide lands on the way back.
+    expect(screen.getByRole('button', { name: 'Undo' })).toHaveFocus();
+    await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(screen.getByRole('heading', { name: 'Getting started' })).toBeInTheDocument();
+  });
+
+  it('Undo puts focus back on Hide', async () => {
+    viewer = { ...NEW_MEMBER, bookingCounts: { pending: 1, upcoming: 0 } };
+    fresh = freshWith({
+      booked: { mentorFirst: 'Mariam', startsAt: inHours(48), confirmed: false },
+    });
+    render(<MenteeHomeScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Hide' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(screen.getByRole('button', { name: 'Hide' })).toHaveFocus();
+  });
+
+  it('a failed read says so with a retry, never a wrong stage', async () => {
+    viewer = NEW_MEMBER;
+    const retry = vi.fn();
+    fresh = freshWith({ error: true, retry });
+    render(<MenteeHomeScreen />);
+    expect(screen.getByText('We couldn’t load your next steps.')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Getting started' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(retry).toHaveBeenCalled();
+  });
+
+  it('done sticks: once Getting started has given way, it stays away on this device', () => {
+    window.localStorage.setItem('ef-home-getting-started-done-me', '1');
+    viewer = NEW_MEMBER;
+    render(<MenteeHomeScreen />);
+    expect(screen.queryByRole('heading', { name: 'Getting started' })).not.toBeInTheDocument();
+  });
+
+  it('hidden stays hidden on this device', () => {
+    window.localStorage.setItem('ef-home-getting-started-hidden-me', '1');
+    viewer = NEW_MEMBER;
+    render(<MenteeHomeScreen />);
+    expect(screen.queryByRole('heading', { name: 'Getting started' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Welcome back, Damilola' })).toBeInTheDocument();
+  });
+
+  it('finishing all three steps shows the returning view after a moment', () => {
+    vi.useFakeTimers();
+    try {
+      viewer = { ...NEW_MEMBER, bookingCounts: { pending: 1, upcoming: 0 } };
+      const booked = { mentorFirst: 'Mariam', startsAt: inHours(48), confirmed: false };
+      fresh = freshWith({ booked });
+      const { rerender } = render(<MenteeHomeScreen />);
+      expect(screen.getByRole('heading', { name: 'Getting started' })).toBeInTheDocument();
+      // The last step lands (the profile), as a save would bring it.
+      fresh = freshWith({ booked, profileDone: true, fields: FIELDS(4) });
+      window.localStorage.setItem('ef-home-invite-shared-me', '1');
+      rerender(<MenteeHomeScreen />);
+      act(() => {
+        vi.advanceTimersByTime(1600);
+      });
+      expect(screen.queryByRole('heading', { name: 'Getting started' })).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('an account with everything already done never sees the new view', () => {
+    window.localStorage.setItem('ef-home-invite-shared-me', '1');
+    viewer = { ...NEW_MEMBER, completedSessions: 1, bookingCounts: { pending: 0, upcoming: 0 } };
+    fresh = freshWith({
+      profileDone: true,
+      fields: FIELDS(4),
+      firstDone: { mentorFirst: 'Mariam', startsAt: inHours(-48) },
+    });
+    render(<MenteeHomeScreen />);
+    expect(screen.queryByRole('heading', { name: 'Getting started' })).not.toBeInTheDocument();
+  });
+
+  it('after the first session, the new view offers Invite a friend in the header, opening InviteModal', async () => {
+    viewer = { ...NEW_MEMBER, completedSessions: 1 };
+    fresh = freshWith({ firstDone: { mentorFirst: 'Mariam', startsAt: inHours(-48) } });
+    render(<MenteeHomeScreen />);
+    expect(screen.getByRole('heading', { name: 'Welcome back, Damilola' })).toBeInTheDocument();
+    expect(screen.getByText('First session done')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Invite a friend' }));
+    expect(screen.getByRole('dialog', { name: 'Invite a friend' })).toBeInTheDocument();
+  });
+
+  it('while the new view reads, it shows its loading frames, not a stage or a greeting', () => {
+    viewer = NEW_MEMBER;
+    fresh = freshWith({ loading: true });
+    render(<MenteeHomeScreen />);
+    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Invite a friend' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Getting started' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Your progress' })).not.toBeInTheDocument();
   });
 
   it('every tile has its hint, and a missed session links to Bookings History filtered to Missed', () => {
@@ -341,7 +511,7 @@ describe('MenteeHomeScreen', () => {
     // completedSessions 0 with a pending request (count) but no confirmed
     // upcoming: useUpcomingBookings returns only confirmed rows, so the list is
     // empty. The screen must surface the outstanding request, not invite a rebook.
-    viewer = { ...MEMBER, completedSessions: 0, bookingCounts: { pending: 1, upcoming: 0 } };
+    viewer = { ...MEMBER, completedSessions: 3, bookingCounts: { pending: 1, upcoming: 0 } };
     upcoming = remote([]);
     render(<MenteeHomeScreen />);
     expect(screen.getByText('Waiting on your mentor')).toBeInTheDocument();
@@ -532,10 +702,10 @@ describe('MenteeHomeScreen', () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it('a no-goal member with no activity still gets the first-booking invitation', () => {
+  it('a no-goal member with no activity still gets the new view', () => {
     viewer = { ...NEW_MEMBER, isMentee: false, isMentor: false };
     render(<MenteeHomeScreen />);
-    expect(screen.getByRole('heading', { name: 'Book your first session' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Getting started' })).toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();
   });
 
@@ -556,11 +726,12 @@ describe('MenteeHomeScreen', () => {
     expect(stats.retry).toHaveBeenCalled();
   });
 
-  it('greets an account made this week, with no session held, with "Welcome"', () => {
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    viewer = { ...NEW_MEMBER, createdAt: yesterday };
+  it('the returning view always says "Welcome back"', () => {
+    viewer = { ...MEMBER, completedSessions: 3 };
     render(<MenteeHomeScreen />);
-    expect(screen.getByRole('heading', { name: 'Welcome, Damilola' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Welcome back, Damilola' })).toBeInTheDocument();
+    // Invite a friend sits beside the title in the returning view.
+    expect(screen.getByRole('button', { name: 'Invite a friend' })).toBeInTheDocument();
   });
 
   it('shows no content while /me is still loading', () => {

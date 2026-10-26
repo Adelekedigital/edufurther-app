@@ -196,6 +196,28 @@ MOCK_VIEWERS['mentor-applicant'] = {
   bookingCounts: { pending: 0, upcoming: 0 },
 };
 
+// Home's two views (Mentee Dashboard v2). `mentee-new`: no session held and
+// 3 free sessions a month not yet on, so the new view's invite step is open.
+// The sessions mock is shared by every viewer, so it still has bookings: it
+// shows the booked stage (with the Next session card), not incomplete or ready.
+// The default `mentee` (no session held either) shows the new view too.
+MOCK_VIEWERS['mentee-new'] = {
+  ...(MOCK_VIEWERS.mentee as Extract<Viewer, { kind: 'member' }>),
+  awaitingResponse: 0,
+  bookingCounts: { pending: 0, upcoming: 0 },
+  credits: {
+    balance: 1,
+    state: 'on_track',
+    nextResetAt: '2026-11-01T00:00:00Z',
+    monthly: { balance: 0, ceiling: 0, expiresAt: null, unlocked: false },
+    bonus: { balance: 1, groups: [{ count: 1, expiresAt: null }] },
+  },
+};
+MOCK_VIEWERS['mentee-returning'] = {
+  ...(MOCK_VIEWERS.mentee as Extract<Viewer, { kind: 'member' }>),
+  completedSessions: 12,
+};
+
 // The same mentee, onboarding unfinished: the setup lock (Home → /onboarding).
 MOCK_VIEWERS['mentee-unfinished'] = {
   ...(MOCK_VIEWERS.mentee as Extract<Viewer, { kind: 'member' }>),

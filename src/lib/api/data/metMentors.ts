@@ -40,7 +40,12 @@ export type MetMentor = {
   bookability: Bookability;
   /** ISO; the earliest upcoming or pending booking with them, for "Next on …". Null when none, or not sent yet. */
   nextSessionAt: string | null;
-  /** Why an `unavailable` mentor can't be booked; null when not sent (read as not taking bookings). */
+  /**
+   * Why they can't be booked now (backend #549): `not_taking` is exactly
+   * `unavailable`; `no_open_times` comes with bookability `open` when nothing
+   * is free in their window. Null when not sent, or while their next time is
+   * still being worked out (never read null as "has times").
+   */
   unavailableReason: 'not_taking' | 'no_open_times' | null;
 };
 
