@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { cx } from '@/lib/utils/cx';
@@ -89,6 +89,30 @@ export function MenteeNextSession({
   const [done, setDone] = useState<boolean[]>(() => PREP.map(() => false));
   const [tipsOpen, setTipsOpen] = useState(false);
   const phone = useMediaQuery('(max-width: 767px)');
+  // Crossing 768px moves the action to its other place, a new element: if it
+  // had focus, focus follows it rather than dropping to <body>.
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const actionFocused = useRef(false);
+  const firstLayout = useRef(true);
+  useLayoutEffect(() => {
+    if (firstLayout.current) {
+      firstLayout.current = false;
+      return;
+    }
+    if (actionFocused.current) actionsRef.current?.querySelector<HTMLElement>('a, button')?.focus();
+  }, [phone]);
+  const actionProps = {
+    ref: actionsRef,
+    onFocus: () => (actionFocused.current = true),
+    // A blur from the element being removed (the switch itself) isn't the user
+    // leaving: only a blur from an element still in the page clears the flag.
+    onBlur: (e: React.FocusEvent<HTMLDivElement>) => {
+      const el = e.target;
+      queueMicrotask(() => {
+        if (el.isConnected) actionFocused.current = false;
+      });
+    },
+  };
 
   const { month, day } = monthDay(b.startsAt, timeZone);
   const when = nextSessionWhen(b, now, timeZone);
@@ -164,7 +188,11 @@ export function MenteeNextSession({
               </span>
             </div>
           </div>
-          {!phone && <div className={styles.actions}>{action}</div>}
+          {!phone && (
+            <div className={styles.actions} {...actionProps}>
+              {action}
+            </div>
+          )}
         </div>
 
         <div className={styles.prep}>
@@ -207,7 +235,11 @@ export function MenteeNextSession({
             </ul>
           )}
         </div>
-        {phone && <div className={cx(styles.actions, styles.actionsBelow)}>{action}</div>}
+        {phone && (
+          <div className={cx(styles.actions, styles.actionsBelow)} {...actionProps}>
+            {action}
+          </div>
+        )}
       </div>
       {tipsOpen && <MenteeTipsModal onClose={() => setTipsOpen(false)} />}
     </section>
