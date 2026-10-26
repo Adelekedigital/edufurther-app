@@ -1,7 +1,8 @@
 /* eslint-disable @next/next/no-img-element -- static decorative SVG; next/image adds nothing for vector art */
-import Link from 'next/link';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
+import { DateChip } from '@/components/molecules/DateChip/DateChip';
+import { DashboardNextSession } from '@/components/organisms/DashboardNextSession/DashboardNextSession';
 import { daysBetween, joinState, timeRange } from '@/lib/utils/bookings';
 import type { Booking } from '@/types/booking';
 import type { AppError } from '@/types/mentor';
@@ -53,14 +54,7 @@ function SessionRow({
   const canJoin = joinState(booking, now) === 'open';
   return (
     <div className={cx(styles.body, hero && styles.heroRow)}>
-      <div className={styles.chip} aria-hidden>
-        <span className={styles.chipMonth}>
-          {inZone(booking.startsAt, timeZone, { month: 'short' })}
-        </span>
-        <span className={styles.chipDay}>
-          {inZone(booking.startsAt, timeZone, { day: 'numeric' })}
-        </span>
-      </div>
+      <DateChip iso={booking.startsAt} timeZone={timeZone} />
       <div className={cx(styles.details, hero && styles.heroDetails)}>
         <span className={styles.sessionTitle}>{booking.title ?? 'Session'}</span>
         <span className={styles.meta}>
@@ -85,7 +79,8 @@ function SessionRow({
 }
 
 /**
- * Mentor Dashboard v2 "Next session" card. Renders all four states; error is
+ * Mentor Dashboard v2 "Next session" card, in the shared DashboardNextSession
+ * frame (one with the mentee's, #417). Renders all four states; error is
  * checked before empty, so a failed load never reads as "no sessions". The
  * soonest confirmed session the mentor hosts is the hero row.
  *
@@ -105,20 +100,8 @@ export function NextSessionCard({
   note,
 }: NextSessionCardProps) {
   const hero = variant === 'hero';
-  // In the hero it's a band under the hero's own h2, not a landmark of its own.
-  const Frame = hero ? 'div' : 'section';
-  const Heading = hero ? 'h3' : 'h2';
   return (
-    <Frame
-      className={hero ? styles.heroBand : styles.card}
-      aria-label={hero ? undefined : 'Next session'}
-    >
-      <div className={hero ? styles.heroHead : styles.head}>
-        <Heading className={cx(styles.title, hero && styles.heroTitle)}>Next session</Heading>
-        <Link href="/bookings" className={styles.allLink}>
-          All bookings
-        </Link>
-      </div>
+    <DashboardNextSession variant={variant}>
       {isLoading ? (
         <div className={styles.body} aria-busy>
           <span className="sr-only">Loading your next session</span>
@@ -159,6 +142,6 @@ export function NextSessionCard({
           </ButtonLink>
         </div>
       )}
-    </Frame>
+    </DashboardNextSession>
   );
 }

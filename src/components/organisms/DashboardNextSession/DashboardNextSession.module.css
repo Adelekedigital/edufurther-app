@@ -1,0 +1,35 @@
+/* Mentor and Mentee Dashboard v2.dc.html "Next session" card frame. */
+/* The surface is the Card atom; the frame only clips to its radius. */
+.card {
+  overflow: hidden;
+}
+.head {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-muted);
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+/* The text link at the design's 32px row height for clicks, hung on negative
+   margins so it never makes the head taller than its title. */
+.allLink {
+  min-height: var(--space-8);
+  margin-block: calc(var(--space-2) * -1);
+}
+
+/* variant="hero" (Mentor Dashboard v2.dc.html, firstBooked): a band of the
+   new-mentor hero. */
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--border-muted);
+}
+/* Scoped under .hero so it outranks CardHeader's .title whatever order the
+   two stylesheets load in. */
+.hero .heroTitle {
+  font-size: var(--text-p-sm);
+}

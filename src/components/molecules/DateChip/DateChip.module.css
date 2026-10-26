@@ -1,0 +1,27 @@
+/* Mentor and Mentee Dashboard v2.dc.html date chip: 56px wide, blue-50 ground. */
+.chip {
+  /* Holds the absolutely placed .sr-only date inside the card: unanchored, it
+     escapes an overflow:hidden card and widens the page (failure log #29). */
+  position: relative;
+  width: 56px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-2) 0;
+  border-radius: var(--radius-lg);
+  background: var(--blue-50);
+  color: var(--blue-700);
+}
+.month {
+  font-size: var(--text-caption-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-caption-xs);
+  text-transform: uppercase;
+}
+.day {
+  font-family: var(--font-brand);
+  font-size: var(--text-h6);
+  font-weight: var(--weight-semibold);
+  line-height: 1.2;
+}

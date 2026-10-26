@@ -1,56 +1,10 @@
-/* Mentor Dashboard v2 "Next session" card. */
-.card {
-  border: 1px solid var(--ink-200);
-  border-radius: var(--radius-xl);
-  background: var(--surface-card);
-}
-.head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--ink-100);
-}
-.title {
-  margin: 0;
-  font-size: var(--text-p-md);
-  font-weight: var(--weight-semibold);
-}
-.allLink {
-  font-size: var(--text-p-xs);
-  font-weight: var(--weight-semibold);
-  color: var(--action-primary);
-}
+/* Mentor Dashboard v2 "Next session" body (the frame is DashboardNextSession). */
 .body {
   display: flex;
   align-items: center;
   gap: var(--space-4);
   flex-wrap: wrap;
   padding: var(--space-4) var(--space-5);
-}
-.chip {
-  width: 56px;
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: var(--space-2) 0;
-  border-radius: var(--radius-lg);
-  background: var(--blue-50);
-  color: var(--blue-700);
-}
-.chipMonth {
-  font-size: var(--text-caption-xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--ls-caption-xs);
-  text-transform: uppercase;
-}
-.chipDay {
-  font-family: var(--font-brand);
-  font-size: var(--text-h6);
-  font-weight: var(--weight-semibold);
-  line-height: 1.2;
 }
 .details {
   flex: 1;
@@ -112,25 +66,8 @@
   color: var(--text-secondary);
 }
 
-/* variant="hero" (Mentor Dashboard v2.dc.html, firstBooked): a band of the
-   new-mentor hero, the session in a blue-outlined row. */
-.heroBand {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-5) var(--space-6);
-  border-bottom: 1px solid var(--ink-100);
-}
-.heroHead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-}
-.heroTitle {
-  font-size: var(--text-p-sm);
-}
+/* variant="hero" (Mentor Dashboard v2.dc.html, firstBooked): the session in a
+   blue-outlined row. */
 .heroRow {
   padding: var(--space-3) var(--space-4);
   border: 1px solid var(--blue-500);
