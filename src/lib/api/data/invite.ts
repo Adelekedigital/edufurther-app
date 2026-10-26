@@ -124,17 +124,33 @@ export function useReferrals(
 /** Who sent the invite, as much as a signed-out page may show (InviterRead). */
 export type Inviter = { firstName: string; photoUrl: string | null };
 
+/**
+ * A photo shown to a signed-out visitor loads only from our image host
+ * (https, `*.supabase.co`, as next.config's `remotePatterns`): any other URL
+ * could count who opens an invite. Anything else shows the initials.
+ */
+export function inviterPhoto(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    return u.protocol === 'https:' && u.hostname.endsWith('.supabase.co') ? url : null;
+  } catch {
+    return null;
+  }
+}
+
 /** No first name, no line: the sign-in page can't say who invited them. */
 export function toInviter(r: components['schemas']['InviteLookupRead']): Inviter | null {
   const first = r.inviter?.first_name?.trim();
   if (!first) return null;
-  return { firstName: first, photoUrl: r.inviter?.avatar_url ?? null };
+  return { firstName: first, photoUrl: inviterPhoto(r.inviter?.avatar_url) };
 }
 
 /**
  * Who the invite a visitor arrived with is from (GET /invites/{code}, before
  * sign-in). Every code that can't be joined through answers `inviter: null`,
- * so `data` is null then, and on any failure too: the page just has no line.
+ * so `data` is null then, and on any failure too (the lookup is rate-limited
+ * per IP: a 429 is not retried): the page just has no line.
  * Only a code that passes the backend's test is asked about.
  */
 export function useInviteLookup(code: string | null): Remote<Inviter> {
@@ -167,11 +183,14 @@ export function useInviteLookup(code: string | null): Remote<Inviter> {
 export const CLAIM_TIMEOUT_MS = 5000;
 
 /**
- * POST /me/referrals/claim: a brand-new account attaches itself to the invite
- * it arrived with (the sign-up flow, once the account is named). Rejects on
- * any refusal (404 unknown, 409 claimed, own, or the account is too old, 422)
- * or failure; the caller keeps it quiet. Settled either way, the referral
- * lists are read again: a claim is what moves an invite to "signed up".
+ * POST /me/referrals/claim (body exactly `{code}`; idempotent): a brand-new
+ * account attaches itself to the invite it arrived with (the sign-up flow,
+ * once the account is named). Rejects on any refusal (404 unknown, revoked or
+ * retired; 409 its own, already claimed, or already arrived through another;
+ * 409 `/problems/invite-for-new-accounts` when the account is older than the
+ * claim window; 422), on a failure, or after CLAIM_TIMEOUT_MS; the caller
+ * keeps it quiet. Settled either way, any cached referral list is marked
+ * stale, so this browser never shows one from before the claim.
  */
 export async function claimInvite(qc: QueryClient, code: string): Promise<void> {
   if (!isInviteCode(code)) throw normaliseError(new ApiError(422));

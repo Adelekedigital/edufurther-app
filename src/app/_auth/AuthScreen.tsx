@@ -112,9 +112,11 @@ export function AuthScreen({ mode, role, next, google, deleted = false }: AuthSc
                   Log in or sign up to finish booking {booking.mentorName}
                   {booking.mentorName.endsWith('.') ? '' : '.'}
                 </SignInContext>
-              ) : inviter && inviteCode && role !== 'mentor' ? (
-                // Issue 281: who invited them, in the same slot. An unknown,
-                // retired or revoked code has no inviter, so no line.
+              ) : inviter && inviteCode ? (
+                // Issue 281: who invited them, in the same slot, on every
+                // sign-up page: any new account claims the invite, so it is
+                // never claimed unsaid. An unknown, retired or revoked code
+                // has no inviter, so no line.
                 <SignInContext
                   initials={personInitials(inviter.firstName, null)}
                   tone={personCover(inviteCode)}

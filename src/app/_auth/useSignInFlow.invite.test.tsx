@@ -15,16 +15,18 @@ const send = vi.fn();
 const verify = vi.fn();
 const account = vi.fn();
 const claim = vi.fn();
+const user = vi.fn();
+const save = vi.fn();
 vi.mock('@/lib/api/data/auth', () => ({
   sendSignInCode: (...a: unknown[]) => send(...a),
   verifySignInCode: (...a: unknown[]) => verify(...a),
   startGoogleSignIn: vi.fn(),
-  signedInUser: vi.fn(),
+  signedInUser: () => user(),
   useSignOutHere: () => vi.fn(),
 }));
 vi.mock('@/lib/api/data/signIn', () => ({
   fetchSignInAccount: () => account(),
-  useSaveName: () => ({ mutateAsync: vi.fn().mockResolvedValue(undefined) }),
+  useSaveName: () => ({ mutateAsync: (v: unknown) => save(v) }),
   zoneToSave: () => undefined,
 }));
 vi.mock('@/lib/api/data/invite', () => ({
@@ -32,6 +34,7 @@ vi.mock('@/lib/api/data/invite', () => ({
 }));
 
 const { useSignInFlow, TOAST_MS } = await import('./useSignInFlow');
+const { rememberInviteCode, storedInviteCode } = await import('@/lib/utils/inviteCode');
 
 const member = (over: object = {}) => ({
   kind: 'member',
@@ -78,12 +81,13 @@ async function signIn(acct: object, over: Partial<Opts> = {}) {
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   session = { status: 'none' };
-  [replace, send, verify, account, claim].forEach((f) => f.mockReset());
+  [replace, send, verify, account, claim, user, save].forEach((f) => f.mockReset());
+  save.mockResolvedValue(undefined);
   send.mockResolvedValue({ ok: true });
   claim.mockResolvedValue(undefined);
   sessionStorage.clear();
   localStorage.clear();
-  sessionStorage.setItem('ef-invite-code', 'damilola-7k2x');
+  rememberInviteCode('damilola-7k2x');
 });
 afterEach(() => vi.useRealTimers());
 
@@ -96,31 +100,32 @@ describe('useSignInFlow — the invite a new account arrived with (issue 281)', 
       title: 'Account created. Welcome, Amara',
       body: 'Damilola’s invite is saved. Next, let’s find your first mentor…',
     });
-    expect(sessionStorage.getItem('ef-invite-code')).toBeNull();
+    expect(storedInviteCode()).toBeNull();
     act(() => vi.advanceTimersByTime(TOAST_MS));
     expect(replace).toHaveBeenCalledWith('/home');
   });
 
   it.each([
-    ['404 unknown', 404],
-    ['409 already claimed', 409],
-    ['422 account too old', 422],
-    ['a server error', 500],
-  ])('fails quietly on %s: no error, no mention, the code cleared', async (_label, status) => {
-    claim.mockRejectedValueOnce({ kind: 'http', status });
+    ['404 unknown, revoked or retired', { status: 404 }],
+    ['409 own or already claimed', { status: 409 }],
+    ['409 account too old', { status: 409, type: '/problems/invite-for-new-accounts' }],
+    ['422 validation', { status: 422 }],
+    ['a server error or timeout', { status: 500 }],
+  ])('fails quietly on %s: no error, no mention, the code cleared', async (_label, error) => {
+    claim.mockRejectedValueOnce(error);
     const { result } = await signIn(member());
     expect(claim).toHaveBeenCalledTimes(1);
     expect(result.current.form.nameError).toBeUndefined();
     expect(result.current.form.step).not.toBe('finish');
     expect(result.current.toast).toMatchObject({ body: 'Next, let’s find your first mentor…' });
-    expect(sessionStorage.getItem('ef-invite-code')).toBeNull();
+    expect(storedInviteCode()).toBeNull();
   });
 
   it('an existing account never claims, and the code is cleared', async () => {
     const { result } = await signIn(member({ firstName: 'Amara' }), { mode: 'login' });
     expect(claim).not.toHaveBeenCalled();
     expect(result.current.toast?.body).not.toContain('invite');
-    expect(sessionStorage.getItem('ef-invite-code')).toBeNull();
+    expect(storedInviteCode()).toBeNull();
   });
 
   it('an existing account already signed in on the page never claims', async () => {
@@ -130,7 +135,33 @@ describe('useSignInFlow — the invite a new account arrived with (issue 281)', 
     await flush();
     await flush();
     expect(claim).not.toHaveBeenCalled();
-    expect(sessionStorage.getItem('ef-invite-code')).toBeNull();
+    expect(storedInviteCode()).toBeNull();
+  });
+
+  it('a new Google account claims it once', async () => {
+    session = { status: 'present', userId: 'u1' };
+    account.mockResolvedValueOnce(member());
+    user.mockResolvedValue({ givenName: 'Amara', familyName: 'Okafor', email: 'a@x.com' });
+    const { result } = renderHook(() => useSignInFlow(opts({ googleReturn: true })));
+    await flush();
+    await flush();
+    await flush();
+    expect(claim).toHaveBeenCalledTimes(1);
+    expect(result.current.toast?.body).toBe(
+      'Damilola’s invite is saved. Next, let’s find your first mentor…',
+    );
+  });
+
+  it('a name that won’t save claims nothing; the retry on the finish step claims once', async () => {
+    save.mockRejectedValueOnce(new Error('We couldn’t save your name. Try again.'));
+    const { result } = await signIn(member());
+    expect(result.current.form.step).toBe('finish');
+    expect(claim).not.toHaveBeenCalled();
+    expect(storedInviteCode()).toBe('damilola-7k2x');
+    await act(async () => result.current.form.onFinish!());
+    await flush();
+    expect(claim).toHaveBeenCalledTimes(1);
+    expect(result.current.toast?.body).toContain('Damilola’s invite is saved.');
   });
 
   it('no invite this visit: nothing is claimed', async () => {

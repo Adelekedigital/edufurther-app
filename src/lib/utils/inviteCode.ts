@@ -7,6 +7,13 @@
 
 const KEY = 'ef-invite-code';
 
+/**
+ * A remembered invite lasts an hour: long enough to sign up (Google's round
+ * trip included), short enough that a tab left open on a shared computer
+ * doesn't hand one visitor's invite to the next.
+ */
+export const INVITE_CODE_TTL_MS = 60 * 60_000;
+
 /** The backend's longest code (`MAX_CODE_LENGTH`), for a lookup or a claim. */
 export const MAX_INVITE_CODE_LENGTH = 128;
 
@@ -32,19 +39,29 @@ export function isInviteCode(code: unknown): code is string {
 export function rememberInviteCode(code: string): boolean {
   if (!isInviteCode(code)) return false;
   try {
-    sessionStorage.setItem(KEY, code);
+    sessionStorage.setItem(KEY, JSON.stringify({ code, at: Date.now() }));
   } catch {
     // Storage off: the visitor signs up without the invite.
   }
   return true;
 }
 
-/** The code this visit arrived with, or null. A stored value that fails the test is dropped. */
+/**
+ * The code this visit arrived with in the last hour, or null. A stored value
+ * that is malformed, fails the test or is too old is dropped.
+ */
 export function storedInviteCode(): string | null {
   try {
-    const code = sessionStorage.getItem(KEY);
-    if (code === null) return null;
-    if (isInviteCode(code)) return code;
+    const raw = sessionStorage.getItem(KEY);
+    if (raw === null) return null;
+    let saved: { code?: unknown; at?: unknown } | null = null;
+    try {
+      saved = JSON.parse(raw) as { code?: unknown; at?: unknown } | null;
+    } catch {
+      // Not ours: dropped below.
+    }
+    const age = typeof saved?.at === 'number' ? Date.now() - saved.at : NaN;
+    if (isInviteCode(saved?.code) && age >= 0 && age < INVITE_CODE_TTL_MS) return saved.code;
     sessionStorage.removeItem(KEY);
   } catch {
     // Storage off: no invite.

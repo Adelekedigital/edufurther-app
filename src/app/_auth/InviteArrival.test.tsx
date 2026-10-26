@@ -6,6 +6,7 @@ let session: { status: string; userId?: string } = { status: 'none' };
 vi.mock('@/lib/api/data/session', () => ({ useSession: () => session }));
 
 const { InviteArrival } = await import('./InviteArrival');
+const { rememberInviteCode, storedInviteCode } = await import('@/lib/utils/inviteCode');
 
 beforeEach(() => {
   replace.mockReset();
@@ -16,15 +17,15 @@ beforeEach(() => {
 describe('/invite/{code}', () => {
   it('remembers a valid code for the visit, then opens sign-up', () => {
     render(<InviteArrival code="damilola-7k2x" />);
-    expect(sessionStorage.getItem('ef-invite-code')).toBe('damilola-7k2x');
+    expect(storedInviteCode()).toBe('damilola-7k2x');
     expect(replace).toHaveBeenCalledWith('/signup');
     expect(screen.getByRole('status')).toHaveTextContent('Opening sign-up…');
   });
 
   it('drops an invalid code (and any older one), and still opens sign-up', () => {
-    sessionStorage.setItem('ef-invite-code', 'older-1234');
+    rememberInviteCode('older-1234');
     render(<InviteArrival code={'"><script>alert(1)</script>'} />);
-    expect(sessionStorage.getItem('ef-invite-code')).toBeNull();
+    expect(storedInviteCode()).toBeNull();
     expect(replace).toHaveBeenCalledWith('/signup');
     expect(document.body.innerHTML).not.toContain('<script>');
   });
@@ -32,7 +33,7 @@ describe('/invite/{code}', () => {
   it('sends a signed-in member home and remembers nothing: an existing account never claims', () => {
     session = { status: 'present', userId: 'u1' };
     render(<InviteArrival code="damilola-7k2x" />);
-    expect(sessionStorage.getItem('ef-invite-code')).toBeNull();
+    expect(storedInviteCode()).toBeNull();
     expect(replace).toHaveBeenCalledWith('/');
   });
 
@@ -40,6 +41,6 @@ describe('/invite/{code}', () => {
     session = { status: 'unknown' };
     render(<InviteArrival code="damilola-7k2x" />);
     expect(replace).not.toHaveBeenCalled();
-    expect(sessionStorage.getItem('ef-invite-code')).toBeNull();
+    expect(storedInviteCode()).toBeNull();
   });
 });

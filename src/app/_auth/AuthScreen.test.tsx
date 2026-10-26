@@ -30,6 +30,7 @@ vi.mock('@/components/organisms/SignInForm', () => ({
 }));
 
 const { AuthScreen } = await import('./AuthScreen');
+const { rememberInviteCode } = await import('@/lib/utils/inviteCode');
 
 const gbenga = (last: string) => ({
   mentorName: last ? `Gbenga ${last[0]}.` : 'Gbenga',
@@ -121,7 +122,7 @@ describe('AuthScreen — arriving through an invite (issue 281)', () => {
   });
 
   it('on sign-up, names the inviter above the title', () => {
-    sessionStorage.setItem('ef-invite-code', 'damilola-7k2x');
+    rememberInviteCode('damilola-7k2x');
     h.inviter = { firstName: 'Damilola', photoUrl: null };
     render(<AuthScreen mode="signup" role="mentee" next={null} />);
     expect(h.looked).toContain('damilola-7k2x');
@@ -131,7 +132,7 @@ describe('AuthScreen — arriving through an invite (issue 281)', () => {
   });
 
   it('on log-in, says invites count for new accounts', () => {
-    sessionStorage.setItem('ef-invite-code', 'damilola-7k2x');
+    rememberInviteCode('damilola-7k2x');
     h.inviter = { firstName: 'Damilola', photoUrl: null };
     render(<AuthScreen mode="login" role="mentee" next={null} />);
     expect(screen.getByTestId('form')).toHaveTextContent(
@@ -140,7 +141,7 @@ describe('AuthScreen — arriving through an invite (issue 281)', () => {
   });
 
   it('an unknown, retired or revoked code: no line and no error', () => {
-    sessionStorage.setItem('ef-invite-code', 'gone-1234');
+    rememberInviteCode('gone-1234');
     render(<AuthScreen mode="signup" role="mentee" next={null} />);
     expect(screen.getByTestId('form')).toBeEmptyDOMElement();
   });
@@ -152,8 +153,24 @@ describe('AuthScreen — arriving through an invite (issue 281)', () => {
     expect(screen.getByTestId('form')).toBeEmptyDOMElement();
   });
 
+  it('shows on the mentor sign-up too: any new account claims it', () => {
+    rememberInviteCode('damilola-7k2x');
+    h.inviter = { firstName: 'Damilola', photoUrl: null };
+    render(<AuthScreen mode="signup" role="mentor" next={null} />);
+    expect(screen.getByTestId('form')).toHaveTextContent('Damilola invited you.');
+  });
+
+  it('keeps the line once the claim clears the stored code', () => {
+    rememberInviteCode('damilola-7k2x');
+    h.inviter = { firstName: 'Damilola', photoUrl: null };
+    const view = render(<AuthScreen mode="signup" role="mentee" next={null} />);
+    sessionStorage.clear();
+    view.rerender(<AuthScreen mode="signup" role="mentee" next={null} />);
+    expect(screen.getByTestId('form')).toHaveTextContent('Damilola invited you.');
+  });
+
   it('a booking’s line comes first: one line in the slot', () => {
-    sessionStorage.setItem('ef-invite-code', 'damilola-7k2x');
+    rememberInviteCode('damilola-7k2x');
     h.inviter = { firstName: 'Damilola', photoUrl: null };
     h.booking = gbenga('Eze');
     render(<AuthScreen mode="signup" role="mentee" next="/mentors/gbenga?book=st1&at=x" />);

@@ -1,4 +1,10 @@
-import { clearInviteCode, isInviteCode, rememberInviteCode, storedInviteCode } from './inviteCode';
+import {
+  clearInviteCode,
+  INVITE_CODE_TTL_MS,
+  isInviteCode,
+  rememberInviteCode,
+  storedInviteCode,
+} from './inviteCode';
 
 beforeEach(() => {
   sessionStorage.clear();
@@ -48,6 +54,24 @@ describe('the stored invite', () => {
     sessionStorage.setItem('ef-invite-code', 'x"><b>');
     expect(storedInviteCode()).toBeNull();
     expect(sessionStorage.getItem('ef-invite-code')).toBeNull();
+  });
+
+  it('forgets it after an hour: a shared tab doesn’t pass one visitor’s invite on', () => {
+    const now = Date.now();
+    vi.spyOn(Date, 'now').mockReturnValue(now);
+    rememberInviteCode('damilola-7k2x');
+    vi.spyOn(Date, 'now').mockReturnValue(now + INVITE_CODE_TTL_MS - 1);
+    expect(storedInviteCode()).toBe('damilola-7k2x');
+    vi.spyOn(Date, 'now').mockReturnValue(now + INVITE_CODE_TTL_MS);
+    expect(storedInviteCode()).toBeNull();
+    expect(sessionStorage.getItem('ef-invite-code')).toBeNull();
+  });
+
+  it('drops a stored code with no time, or an invalid one in the right shape', () => {
+    sessionStorage.setItem('ef-invite-code', JSON.stringify({ code: 'damilola-7k2x' }));
+    expect(storedInviteCode()).toBeNull();
+    sessionStorage.setItem('ef-invite-code', JSON.stringify({ code: 'a/b', at: Date.now() }));
+    expect(storedInviteCode()).toBeNull();
   });
 
   it('with storage off, remembers nothing and never throws', () => {

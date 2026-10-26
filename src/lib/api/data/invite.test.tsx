@@ -4,6 +4,8 @@ import type { ReactNode } from 'react';
 import {
   claimInvite,
   toInviteLink,
+  CLAIM_TIMEOUT_MS,
+  inviterPhoto,
   toInviter,
   useInviteLink,
   useInviteLookup,
@@ -146,11 +148,16 @@ describe('useReferrals', () => {
 describe('useInviteLookup', () => {
   it('names the inviter of a code it is given', async () => {
     get.mockResolvedValue(
-      resp(200, { inviter: { first_name: ' Damilola ', avatar_url: 'https://x/p.jpg' } }),
+      resp(200, {
+        inviter: { first_name: ' Damilola ', avatar_url: 'https://x.supabase.co/p.jpg' },
+      }),
     );
     const { result } = renderHook(() => useInviteLookup('damilola-7k2x'), { wrapper });
     await waitFor(() =>
-      expect(result.current.data).toEqual({ firstName: 'Damilola', photoUrl: 'https://x/p.jpg' }),
+      expect(result.current.data).toEqual({
+        firstName: 'Damilola',
+        photoUrl: 'https://x.supabase.co/p.jpg',
+      }),
     );
     expect(get).toHaveBeenCalledWith('/api/v1/invites/{code}', {
       params: { path: { code: 'damilola-7k2x' } },
@@ -168,6 +175,25 @@ describe('useInviteLookup', () => {
     renderHook(() => useInviteLookup('<b>hi</b>'), { wrapper });
     renderHook(() => useInviteLookup(null), { wrapper });
     expect(get).not.toHaveBeenCalled();
+  });
+
+  it('only loads a photo from our image host', () => {
+    const ours = 'https://abc.supabase.co/storage/v1/object/public/avatars/p.jpg';
+    expect(inviterPhoto(ours)).toBe(ours);
+    expect(inviterPhoto('https://tracker.example/p.gif')).toBeNull();
+    expect(inviterPhoto('http://abc.supabase.co/p.jpg')).toBeNull();
+    expect(inviterPhoto('https://supabase.co.evil.test/p.jpg')).toBeNull();
+    expect(inviterPhoto('javascript:alert(1)')).toBeNull();
+    expect(inviterPhoto('not a url')).toBeNull();
+    expect(inviterPhoto(null)).toBeNull();
+  });
+
+  it('answers no inviter when rate-limited (429), without retrying', async () => {
+    get.mockResolvedValue(resp(429, undefined));
+    const { result } = renderHook(() => useInviteLookup('damilola-7k2x'), { wrapper });
+    await waitFor(() => expect(result.current.error).not.toBeNull());
+    expect(result.current.data).toBeNull();
+    expect(get).toHaveBeenCalledTimes(1);
   });
 
   it('answers no inviter on a failure', async () => {
@@ -199,6 +225,25 @@ describe('claimInvite', () => {
       expect(spy).toHaveBeenCalled();
     },
   );
+
+  it('gives up after CLAIM_TIMEOUT_MS, so a hung claim never holds up the sign-up', async () => {
+    vi.useFakeTimers();
+    try {
+      post.mockImplementation(
+        (_path: string, init: { signal: AbortSignal }) =>
+          new Promise((_resolve, reject) =>
+            init.signal.addEventListener('abort', () => reject(new Error('aborted'))),
+          ),
+      );
+      const spy = vi.spyOn(client, 'invalidateQueries');
+      const settled = expect(claimInvite(client, 'damilola-7k2x')).rejects.toBeTruthy();
+      await vi.advanceTimersByTimeAsync(CLAIM_TIMEOUT_MS);
+      await settled;
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['invite', 'referrals'] });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 
   it('never sends a code that fails the backend’s test', async () => {
     await expect(claimInvite(client, 'a/b')).rejects.toBeTruthy();
