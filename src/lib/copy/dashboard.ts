@@ -9,6 +9,8 @@ export const DASHBOARD_SUBLINE = {
   firstBooked: 'Your first session is coming up.',
   /** noBookings and notReady, and while the stage is still loading. */
   new: 'Let’s get your first session booked.',
+  /** notReady with nothing left to set up: paused, unlisted or in review. */
+  notLive: 'You’re not taking bookings right now.',
 } as const;
 
 export const HERO_COPY = {

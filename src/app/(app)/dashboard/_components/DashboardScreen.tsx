@@ -176,12 +176,16 @@ function MentorHome({ member }: { member: Member }) {
       : { label: next.action.label, onClick: () => copyShareLink(shareUrl) };
 
   const stage = dash.stage;
+  // Not bookable with nothing left to set up: never "let's get booked" above a
+  // notice that says they can't be (GitHub review, PR 410).
   const subline =
     stage === 'active'
       ? DASHBOARD_SUBLINE.active
       : stage === 'firstBooked'
         ? DASHBOARD_SUBLINE.firstBooked
-        : DASHBOARD_SUBLINE.new;
+        : stage === 'notReady' && !d.setup.next
+          ? DASHBOARD_SUBLINE.notLive
+          : DASHBOARD_SUBLINE.new;
 
   return (
     <>

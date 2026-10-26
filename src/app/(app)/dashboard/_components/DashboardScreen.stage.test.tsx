@@ -111,6 +111,9 @@ describe('DashboardScreen stages (PRD Mentor Home)', () => {
     make('notReady', {}, false);
     render(<DashboardScreen />);
     expect(screen.getByText('You’re taking a break')).toBeInTheDocument();
+    // The subline never asks them to chase a booking they can't take (GitHub review, PR 410).
+    expect(screen.getByText('You’re not taking bookings right now.')).toBeInTheDocument();
+    expect(screen.queryByText('Let’s get your first session booked.')).toBeNull();
     expect(screen.getByRole('link', { name: 'Manage it on Calendar' })).toHaveAttribute(
       'href',
       '/calendar',
