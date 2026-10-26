@@ -146,16 +146,16 @@ describe('useMentorMatches', () => {
     const wrapper = ({ children }: { children: React.ReactNode }) =>
       createElement(QueryClientProvider, { client }, children);
     const { result } = renderHook(
-      () => useMentorMatches('me', [], [], { enabled: true, limit: 6 }),
+      () => useMentorMatches('me', [], [], { enabled: true, limit: 3, excludeMet: true }),
       { wrapper },
     );
     await waitFor(() => expect(result.current.data).not.toBeNull());
     expect(get).toHaveBeenCalledWith(
       '/api/v1/me/mentor-matches',
-      expect.objectContaining({ params: { query: { limit: 6 } } }),
+      expect.objectContaining({ params: { query: { limit: 3, exclude_met: true } } }),
     );
     expect(
-      client.getQueryCache().find({ queryKey: ['onboarding', 'matches', 'me', '', 6] }),
+      client.getQueryCache().find({ queryKey: ['onboarding', 'matches', 'me', '', 3, true] }),
     ).toBeTruthy();
     get.mockRestore();
   });

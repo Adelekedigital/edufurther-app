@@ -14,6 +14,7 @@ export async function GET() {
   const iso = (daysAgo: number) => new Date(now - daysAgo * 86_400_000).toISOString();
   return ok('/api/v1/me/mentee-stats', 'get', {
     sessions_held: 12,
+    sessions_attended: 13,
     mentors_met: 8,
     minutes_of_guidance: 540,
     missed_sessions: 0,

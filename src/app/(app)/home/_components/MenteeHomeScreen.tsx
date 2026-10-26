@@ -38,8 +38,6 @@ import { goalLineFrom, recommendedFrom } from './recommended';
 import { useNewMentee } from './useNewMentee';
 import styles from './MenteeHomeScreen.module.css';
 
-/** The backend's most matches per request (`/me/mentor-matches` limit). */
-const MATCHES_MAX = 10;
 /** Getting started leaves this long after its last step is done (design gsDone). */
 const FINISH_MS = 1500;
 /** How long "Getting started hidden" offers Undo (design gsToast). */
@@ -91,11 +89,11 @@ export function MenteeHomeScreen() {
   const topics = useTopics();
   const levels = useDegreeLevels(menteeSide);
   const goals = useMenteeGoals(menteeSide ? userId : null);
+  // Recommended: 3 the mentee hasn't met; the backend leaves met mentors out.
   const matches = useMentorMatches(userId, topics.topics, levels.levels, {
-    // Asked once the met list is in, for enough that 3 remain after the met
-    // ones drop out (up to the backend's 10).
-    enabled: menteeSide && !!metMentors.data,
-    limit: Math.min(MATCHES_MAX, SHOWN + (metMentors.data?.length ?? 0)),
+    enabled: menteeSide,
+    limit: SHOWN,
+    excludeMet: true,
   });
   const fresh = useNewMentee({
     userId,
@@ -294,11 +292,9 @@ export function MenteeHomeScreen() {
       mentors={metMentors}
       recommended={{
         items: recommendedFrom(matches.data?.matches ?? [], metIds, topics.topics),
-        // Loading until matches arrive; they're only asked for once the met list is in.
-        isLoading: topics.isLoading || metMentors.isLoading || (!matches.data && !matches.error),
-        // A failed refetch keeps the matches it had. Without the met list, met
-        // mentors would leak in: hidden.
-        failed: (!!matches.error && !matches.data) || !!metMentors.error,
+        isLoading: topics.isLoading || (!matches.data && !matches.error),
+        // A failed refetch keeps the matches it had.
+        failed: !!matches.error && !matches.data,
       }}
       goalLine={goalLineFrom(goalNeeds, topics.topics)}
       recTitle={newView ? MENTORS_FOR_GOAL : undefined}
