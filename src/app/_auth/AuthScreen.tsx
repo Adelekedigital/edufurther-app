@@ -12,7 +12,11 @@ import {
   type SignInMode,
   type SignInRole,
 } from '@/lib/api/data/auth';
+import { useInviteLookup } from '@/lib/api/data/invite';
+import { INVITE_COPY } from '@/lib/copy/auth';
 import { SECURITY_COPY } from '@/lib/copy/settings';
+import { storedInviteCode } from '@/lib/utils/inviteCode';
+import { personCover, personInitials } from '@/lib/utils/person';
 import { useBookingContext } from './useBookingContext';
 import { useSignInFlow } from './useSignInFlow';
 import styles from './AuthScreen.module.css';
@@ -55,11 +59,23 @@ export function AuthScreen({ mode, role, next, google, deleted = false }: AuthSc
     () => false,
   );
   const booking = useBookingContext(next);
+  // The invite this visit arrived with (`/invite/{code}`): null on the server,
+  // read once on the client and kept, so the line stays while the claim
+  // clears the stored code.
+  const invited = useRef<string | null | undefined>(undefined);
+  const inviteCode = useSyncExternalStore(
+    noSubscribe,
+    () =>
+      invited.current === undefined ? (invited.current = storedInviteCode()) : invited.current,
+    () => null,
+  );
+  const inviter = useInviteLookup(inviteCode).data;
   const { form, toast } = useSignInFlow({
     mode,
     role,
     next,
     bookingWith: booking?.firstName ?? null,
+    inviteFrom: inviter?.firstName ?? null,
     googleReturn: google === 'returned',
     googleFailed: google === 'failed',
   });
@@ -95,6 +111,20 @@ export function AuthScreen({ mode, role, next, google, deleted = false }: AuthSc
                   {/* "Gbenga E." already ends the sentence: no second full stop. */}
                   Log in or sign up to finish booking {booking.mentorName}
                   {booking.mentorName.endsWith('.') ? '' : '.'}
+                </SignInContext>
+              ) : inviter && inviteCode ? (
+                // Issue 281: who invited them, in the same slot, on every
+                // sign-up page: any new account claims the invite, so it is
+                // never claimed unsaid. An unknown, retired or revoked code
+                // has no inviter, so no line.
+                <SignInContext
+                  initials={personInitials(inviter.firstName, null)}
+                  tone={personCover(inviteCode)}
+                  photoUrl={inviter.photoUrl}
+                >
+                  {mode === 'signup'
+                    ? INVITE_COPY.signupLine(inviter.firstName)
+                    : INVITE_COPY.loginLine(inviter.firstName)}
                 </SignInContext>
               ) : undefined
             }
