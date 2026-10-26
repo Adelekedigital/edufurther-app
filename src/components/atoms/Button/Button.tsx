@@ -79,6 +79,13 @@ export type ButtonProps = Common &
      * as disabled, and a click does nothing. Unlike `disabled`, focus stays.
      */
     unavailable?: boolean;
+    /**
+     * A confirm whose form isn't complete yet: drawn soft, but still pressable,
+     * because pressing it is how someone finds out what is missing (the caller
+     * says so and moves focus). Marking it disabled would tell assistive tech the
+     * one control that explains the gap is unavailable.
+     */
+    incomplete?: boolean;
   };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
@@ -90,6 +97,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     iconPosition,
     busy,
     unavailable,
+    incomplete,
     className,
     children,
     disabled,
@@ -110,6 +118,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       aria-busy={busy || undefined}
       aria-disabled={unavailable || rest['aria-disabled']}
       data-unavailable={unavailable || undefined}
+      data-incomplete={incomplete || undefined}
       onClick={busy || unavailable ? (e) => e.preventDefault() : onClick}
     >
       <Content icon={icon} iconPosition={iconPosition} variant={variant}>

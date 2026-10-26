@@ -165,11 +165,6 @@
    Doubled selector because the atom's own `.button.destructive` is two classes
    and would otherwise win. This overrides a variant rather than theming one,
    so it has to out-specify it. */
-.confirmNotYet.confirmNotYet {
-  background: var(--red-50);
-  color: var(--red-500);
-  cursor: not-allowed;
-}
 
 /* `CancelModal.dc.html` `freeStyle="line"`: what happens to the hour, said as a
    sentence with a way to change it — not a switch to come and set. */

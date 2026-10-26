@@ -2,6 +2,7 @@ import { mockStageFrom } from '@/lib/api/mock/mentorStage';
 import { NextResponse } from 'next/server';
 import type { components } from '@/lib/api/generated/schema';
 import { mockMissedReasons } from '@/lib/api/mock/missedReasons';
+import { mockReminders } from '@/lib/api/mock/reminders';
 import { ok, problem } from '@/lib/api/mock/respond';
 
 type S = components['schemas'];
@@ -135,6 +136,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       cancelled_by: status === 'cancelled' ? (o.cancelledBy ?? null) : null,
       // Backend #532: whether this viewer sent a missed reason.
       missed_reason_sent: mockMissedReasons.has(userId, id),
+      reminder_sent_at: mockReminders.get(id),
       meeting_url: null,
       respond_by: o.respondBy === undefined ? null : o.respondBy,
       join_opens_at: status === 'confirmed' ? minutesFrom(starts, -10) : null,

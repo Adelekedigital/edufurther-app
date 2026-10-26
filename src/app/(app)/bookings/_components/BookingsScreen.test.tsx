@@ -51,6 +51,9 @@ vi.mock('@/lib/api/data/bookingActions', async () =>
 vi.mock('@/lib/api/data/reviewableSessions', async () =>
   (await import('./bookingsScreen.harness')).mocks.reviewableSessions(),
 );
+vi.mock('@/lib/api/data/reminders', async () =>
+  (await import('./bookingsScreen.harness')).mocks.reminders(),
+);
 vi.mock('@/lib/api/data/reviewWrite', async () =>
   (await import('@/app/_sessions/reviewAndRebook.harness')).reviewAndRebookMocks.reviewWrite(),
 );

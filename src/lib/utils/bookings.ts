@@ -5,6 +5,7 @@
  */
 import { formatTime } from '@/lib/utils/format';
 import type { Booking, BookingStatus, BookingParty } from '@/types/booking';
+import { REMINDER_SENT } from '@/lib/copy/reminder';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -132,8 +133,14 @@ export function waitingPill(
   const urgent = isRespondUrgent(deadline, now);
   const left = formatRespondIn(deadline, now);
   if (b.side === 'mentor') return { icon: 'timer', text: `Respond within ${left}`, urgent };
+  // Once the mentee has reminded them, the pill says so (Mentee Bookings.dc.html).
+  const sent = b.reminderSentAt ? `${REMINDER_SENT} · ` : '';
   return urgent
-    ? { icon: 'timer', text: `${b.other.firstName} has ${left} left to confirm`, urgent: true }
+    ? {
+        icon: 'timer',
+        text: `${sent}${b.other.firstName} has ${left} left to confirm`,
+        urgent: true,
+      }
     : { icon: 'hourglass_top', text: `Waiting for ${b.other.firstName} to confirm`, urgent: false };
 }
 

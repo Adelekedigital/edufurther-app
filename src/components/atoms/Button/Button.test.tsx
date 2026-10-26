@@ -30,3 +30,20 @@ describe('Button: unavailable', () => {
     expect(onClick).toHaveBeenCalledOnce();
   });
 });
+
+describe('Button: incomplete', () => {
+  it('is drawn soft but stays pressable and enabled, so it can say what is missing', async () => {
+    const onClick = vi.fn();
+    render(
+      <Button variant="primary" incomplete onClick={onClick}>
+        Send reminder
+      </Button>,
+    );
+    const b = screen.getByRole('button', { name: 'Send reminder' });
+    expect(b).toHaveAttribute('data-incomplete');
+    expect(b).toBeEnabled();
+    expect(b).not.toHaveAttribute('aria-disabled');
+    await userEvent.click(b);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+});

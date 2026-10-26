@@ -45,6 +45,7 @@ import { BookingsPanel } from './BookingsPanel';
 import { useBookingsTab } from './useBookingsTab';
 import { useRevealed } from './useRevealed';
 import { useRouter } from 'next/navigation';
+import { useReminders } from './useReminders';
 import { useSelectedBooking } from './useSelectedBooking';
 import styles from './BookingsScreen.module.css';
 
@@ -194,6 +195,12 @@ export function BookingsScreen() {
   const decline = useBookingAction('decline');
   const withdraw = useBookingAction('withdraw');
   const cancel = useBookingAction('cancel');
+  const reminders = useReminders({
+    timeZone,
+    now,
+    live: (id) => pending.data?.find((b) => b.id === id),
+    say,
+  });
   const [confirming, setConfirming] = useState<{
     action: 'decline' | 'withdraw' | 'cancel';
     booking: Booking;
@@ -297,16 +304,21 @@ export function BookingsScreen() {
   const rowActions = (b: Booking, place: 'row' | 'panel' = 'row') => {
     // The mentee's own request: Cancel request on the row (`pendingActions`
     // visible). The panel has its own, in its footer.
-    if (place === 'row' && canWithdraw(b, now))
+    if (place === 'row' && canWithdraw(b, now)) {
       return (
-        <Button
-          variant="text-destructive"
-          size="small"
-          onClick={() => setConfirming({ action: 'withdraw', booking: b })}
-        >
-          Cancel request
-        </Button>
+        <>
+          {/* Under 24 hours left for the mentor (`menteeReminder` on). */}
+          {reminders.buttonFor(b)}
+          <Button
+            variant="text-destructive"
+            size="small"
+            onClick={() => setConfirming({ action: 'withdraw', booking: b })}
+          >
+            Cancel request
+          </Button>
+        </>
       );
+    }
     if (!canAccept(b, now)) return null;
     // The design draws these differently in the two places, so the placement
     // decides the variant, the size and the label — not just the size. In a
@@ -432,7 +444,7 @@ export function BookingsScreen() {
               <TabPanel id="bookings-pending" active={tab === 'pending'}>
                 <BookingsPanel
                   tab="pending"
-                  bookings={pending.data ?? []}
+                  bookings={(pending.data ?? []).map(reminders.withReminder)}
                   isLoading={pending.isLoading}
                   error={pending.error}
                   retry={pending.retry}
@@ -532,7 +544,8 @@ export function BookingsScreen() {
             {showPanel && (
               <BookingDetailsPanel
                 asSheet={asSheet}
-                booking={open ?? null}
+                // The row's view of it, so the panel's pill agrees with the row's.
+                booking={open ? reminders.withReminder(open) : null}
                 onCallOff={(action) => open && setConfirming({ action, booking: open })}
                 // Pressing Details on a request awaiting an answer used to open
                 // a panel saying "Respond within 2 days" with nothing to
@@ -591,6 +604,7 @@ export function BookingsScreen() {
           </div>
           {viewing && <IntakeFileViewer file={viewing} onClose={() => setViewing(null)} />}
           {rr.dialogs}
+          {reminders.dialog}
           {confirming && pendingAction && (
             <ConfirmActionDialog
               action={confirming.action}
