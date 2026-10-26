@@ -58,8 +58,12 @@ vi.mock('@/lib/api/data/goals', () => ({
 }));
 type MatchesRemote = { data: { matches: unknown[] } | null; isLoading: boolean; error: unknown };
 let matches: MatchesRemote;
+const matchesArgs = vi.fn();
 vi.mock('@/lib/api/data/mentorMatches', () => ({
-  useMentorMatches: () => matches,
+  useMentorMatches: (...a: unknown[]) => {
+    matchesArgs(...a);
+    return matches;
+  },
 }));
 vi.mock('@/lib/utils/useOnline', () => ({ useOnline: () => true }));
 // The card has its own tests; here it only needs to say whom it's for and book.
@@ -422,6 +426,25 @@ describe('MenteeHomeScreen', () => {
     render(<MenteeHomeScreen />);
     expect(screen.queryByRole('tab')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Recommended for you' })).toBeInTheDocument();
+  });
+
+  it('asks for enough matches that 3 remain once the met ones drop out, and only once the met list is in', () => {
+    metMentors = remote([metMentor(), metMentor({ id: 'm2' }), metMentor({ id: 'm3' })]);
+    render(<MenteeHomeScreen />);
+    expect(matchesArgs).toHaveBeenLastCalledWith(
+      'me',
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ enabled: true, limit: 6 }),
+    );
+    metMentors = remote<MetMentor[]>(null, { isLoading: true });
+    render(<MenteeHomeScreen />);
+    expect(matchesArgs).toHaveBeenLastCalledWith(
+      'me',
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ enabled: false }),
+    );
   });
 
   it('Recommended waits for the met list, so nobody already met shows under it', async () => {

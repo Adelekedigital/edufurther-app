@@ -24,7 +24,7 @@ import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { MATCH_CALL_URL, useAppShell } from '@/app/_shell/useAppShell';
 import { MenteeEmptyCard } from './MenteeEmptyCard';
 import { MenteeFirstSession } from './MenteeFirstSession';
-import { MenteeMentorsSection } from './MenteeMentorsSection';
+import { MenteeMentorsSection, SHOWN } from './MenteeMentorsSection';
 import { MetMentorsModal } from './MetMentorsModal';
 import { goalLineFrom, recommendedFrom } from './recommended';
 import { MenteeNextSession, startsSoon } from './MenteeNextSession';
@@ -37,8 +37,8 @@ import styles from './MenteeHomeScreen.module.css';
  * session. The app shell is mounted once by the (app) route-group layout
  * (ADR 0007), so this screen renders only its own content.
  */
-/** Matches fetched for Recommended: 3 shown, with room for mentors already met to drop out. */
-const MATCHES_FETCHED = 6;
+/** The backend's most matches per request (`/me/mentor-matches` limit). */
+const MATCHES_MAX = 10;
 
 export function MenteeHomeScreen() {
   const { viewer, member } = useAppShell();
@@ -88,8 +88,12 @@ export function MenteeHomeScreen() {
   const levels = useDegreeLevels(menteeSide && !isNew);
   const goals = useMenteeGoals(menteeSide && !isNew ? (member?.id ?? null) : null);
   const matches = useMentorMatches(member?.id ?? null, topics.topics, levels.levels, {
-    enabled: menteeSide && !isNew,
-    limit: MATCHES_FETCHED,
+    // Asked once the met list is in, for enough that 3 remain after the met
+    // ones drop out (up to the backend's 10; a mentee with more met mentors
+    // than that among the top matches sees fewer, until the backend can leave
+    // them out itself).
+    enabled: menteeSide && !isNew && !!metMentors.data,
+    limit: Math.min(MATCHES_MAX, SHOWN + (metMentors.data?.length ?? 0)),
   });
   const online = useOnline();
   // Mentors you've met: opened from the KPI's "View mentors" and the section's "See all mentors".
@@ -271,7 +275,9 @@ export function MenteeHomeScreen() {
           recommended={{
             items: recommended,
             // Until the met list settles, nobody can be left out of it yet.
-            isLoading: matches.isLoading || topics.isLoading || metMentors.isLoading,
+            // Loading until matches arrive; they're only asked for once the met list is in.
+            isLoading:
+              topics.isLoading || metMentors.isLoading || (!matches.data && !matches.error),
             // A failed refetch keeps the matches it had (no vanishing tab under
             // a reader). Without the met list, met mentors would leak in: hidden.
             failed: (!!matches.error && !matches.data) || !!metMentors.error,
