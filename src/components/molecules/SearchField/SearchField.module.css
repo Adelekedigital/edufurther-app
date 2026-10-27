@@ -13,6 +13,16 @@
   position: absolute;
   right: var(--space-2);
 }
+/* `labelled`: the label above the field (Admin.dc.html "Find a mentee"). */
+.labelled {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.label {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
 @media (max-width: 767px) {
   .clear {
     right: 0;

@@ -22,3 +22,22 @@ export const Searching: Story = {
     );
   },
 };
+
+/** `labelled`: the label above the field, no glyph (Admin.dc.html "Find a mentee"). */
+export const Labelled: Story = {
+  render: function Render() {
+    const [q, setQ] = useState('');
+    return (
+      <div style={{ maxWidth: 420 }}>
+        <SearchField
+          labelled
+          label="Find a mentee"
+          placeholder="Email, name or user ID"
+          value={q}
+          onChange={setQ}
+          onClear={() => setQ('')}
+        />
+      </div>
+    );
+  },
+};

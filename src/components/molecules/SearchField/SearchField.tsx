@@ -16,6 +16,11 @@ type SearchFieldProps = {
   /** × clears only the query (Design decisions §1). */
   onClear: () => void;
   disabled?: boolean;
+  /**
+   * The label shown above the field, and no search glyph (Admin.dc.html
+   * "Find a mentee"). Default: the label is for screen readers, a glyph leads.
+   */
+  labelled?: boolean;
 };
 
 export function SearchField({
@@ -26,6 +31,7 @@ export function SearchField({
   onSubmit,
   onClear,
   disabled,
+  labelled = false,
 }: SearchFieldProps) {
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -33,18 +39,15 @@ export function SearchField({
     e.preventDefault();
     onSubmit?.(value);
   };
-  return (
-    <form role="search" className={styles.field} onSubmit={handleSubmit}>
-      <label htmlFor={id} className="sr-only">
-        {label}
-      </label>
-      <Icon name="search" size={20} className={styles.icon} />
+  const control = (
+    <>
+      {!labelled && <Icon name="search" size={20} className={styles.icon} />}
       <Input
         ref={inputRef}
         id={id}
         type="search"
         fieldSize="lg"
-        padStart
+        padStart={!labelled}
         padEnd
         placeholder={placeholder}
         value={value}
@@ -65,6 +68,18 @@ export function SearchField({
           }}
         />
       )}
+    </>
+  );
+  return (
+    <form
+      role="search"
+      className={labelled ? styles.labelled : styles.field}
+      onSubmit={handleSubmit}
+    >
+      <label htmlFor={id} className={labelled ? styles.label : 'sr-only'}>
+        {label}
+      </label>
+      {labelled ? <div className={styles.field}>{control}</div> : control}
     </form>
   );
 }
