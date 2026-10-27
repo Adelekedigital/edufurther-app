@@ -66,6 +66,7 @@ export function EducationFields({
           <SchoolSelect
             {...c}
             text="sm"
+            required
             placeholder="e.g. Mississippi State University"
             value={{ name: values.school, institutionId: values.institutionId }}
             onChange={({ name, institutionId }) => {

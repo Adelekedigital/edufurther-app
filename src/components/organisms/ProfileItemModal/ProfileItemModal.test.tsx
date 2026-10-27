@@ -506,6 +506,11 @@ describe('ProfileItemModal — education', () => {
     expect(onSave).not.toHaveBeenCalled();
   });
 
+  it('School is announced as required, like Course of study', () => {
+    education();
+    expect(school()).toHaveAttribute('aria-required', 'true');
+  });
+
   it('a school picked from the list saves its id and name', async () => {
     const { user, onSave, onQueryChange } = education({ ...saved, school: '' });
     await user.type(school(), 'Lag');

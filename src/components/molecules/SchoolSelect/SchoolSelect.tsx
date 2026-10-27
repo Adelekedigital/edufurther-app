@@ -26,6 +26,8 @@ type SchoolSelectProps = {
   density?: 'default' | 'xl';
   text?: 'xs' | 'sm';
   invalid?: boolean;
+  /** Announced as required (aria-required); the form still says what's missing. */
+  required?: boolean;
   'aria-describedby'?: string;
 };
 
