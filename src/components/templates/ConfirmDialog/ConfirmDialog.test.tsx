@@ -13,6 +13,13 @@ const base = {
 };
 
 describe('ConfirmDialog', () => {
+  it('opens as a bottom sheet on phones unless asked for full screen (Modal.dc.html confirm)', () => {
+    const { rerender } = render(<ConfirmDialog {...base} onKeep={vi.fn()} onConfirm={vi.fn()} />);
+    expect(screen.getByRole('alertdialog').className).toMatch(/phoneSheet/);
+    rerender(<ConfirmDialog {...base} mobile="full" onKeep={vi.fn()} onConfirm={vi.fn()} />);
+    expect(screen.getByRole('alertdialog').className).not.toMatch(/phoneSheet/);
+  });
+
   it('draws extra body between the explanation and the buttons, with no glyph when none is given', () => {
     render(
       <ConfirmDialog {...base} icon={undefined} onKeep={vi.fn()} onConfirm={vi.fn()}>

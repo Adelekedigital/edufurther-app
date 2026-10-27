@@ -39,7 +39,7 @@ const TEMPLATES = SESSION_TEMPLATES.map((t) => ({
 }));
 
 const confirmShell = (shell: ConfirmShell, body: ReactNode) => (
-  <ModalShell {...shell} size="sm">
+  <ModalShell {...shell} size="sm" mobile="sheet">
     {body}
   </ModalShell>
 );
