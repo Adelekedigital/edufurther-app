@@ -21,8 +21,14 @@
   gap: var(--space-5);
   min-width: 0;
 }
+/* Focus lands here after an action; keyboard users see where (mouse users don't). */
 .region:focus {
   outline: none;
+}
+.region:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-md);
 }
 /* Error and empty: the table card's frame around a centred state. */
 .stateCard {
