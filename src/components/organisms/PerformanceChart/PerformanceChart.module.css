@@ -90,9 +90,10 @@
   outline-offset: var(--focus-ring-offset);
 }
 
-/* The range segmented control + year select share one pill. */
+/* The range segmented control + year Select (variant segment) share one pill. */
 .rangeWrap {
   display: flex;
+  gap: 2px;
   padding: 2px;
   border-radius: var(--radius-md);
   background: var(--ink-100);
@@ -100,8 +101,7 @@
 .radios {
   display: flex;
 }
-.range,
-.year {
+.range {
   height: 28px;
   border: none;
   border-radius: var(--radius-xs);
@@ -118,29 +118,22 @@
 .range {
   padding: 0 var(--space-3);
 }
-.year {
-  margin-left: 2px;
-  padding: 0 var(--space-2);
-}
-.rangeOn,
-.yearOn {
+.rangeOn {
   background: var(--surface-card);
   box-shadow: var(--shadow-control);
   color: var(--ink-900);
 }
-.range:focus-visible,
-.year:focus-visible {
+.range:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
 }
 /* Phones: the segmented controls meet the 44px tap-target minimum (the project's
-   mobile rule). Grow the whole row, not just the buttons — a native <select>
-   can't take an invisible overlay — so the chart-type, range and year controls
-   stay aligned. Desktop keeps the design's 28px pill. */
+   mobile rule). Grow the whole row, not just the buttons, so the chart-type,
+   range and year (Select's own phone rule) controls stay aligned. Desktop
+   keeps the design's 28px pill. */
 @media (max-width: 768px) {
   .type,
-  .range,
-  .year {
+  .range {
     min-height: var(--touch-target-min);
   }
 }

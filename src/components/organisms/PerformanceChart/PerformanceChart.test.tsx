@@ -2,6 +2,7 @@ import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PerformanceChart } from './PerformanceChart';
 import type { ChartSeries } from './model';
+import { optionValues, pickOption } from '@/test-utils/select';
 
 const months = Array.from({ length: 12 }, (_, i) => {
   const d = new Date(Date.UTC(2025, i, 1));
@@ -75,10 +76,8 @@ describe('PerformanceChart', () => {
     render(<PerformanceChart series={series} months={recentMonths} />);
     const select = screen.getByRole('combobox', { name: 'Show a year' });
     // Any offered year does — which years are offered is the model's concern.
-    const [year] = within(select)
-      .getAllByRole('option')
-      .filter((o) => (o as HTMLOptionElement).value);
-    await user.selectOptions(select, year as HTMLOptionElement);
+    const [year] = (await optionValues(user, select)).filter(Boolean);
+    await pickOption(user, select, year!);
     expect(screen.getByRole('radio', { name: '6M' })).toHaveAttribute('aria-checked', 'false');
   });
 

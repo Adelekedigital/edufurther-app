@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { Select } from '@/components/atoms/Select/Select';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { cx } from '@/lib/utils/cx';
 import { buildChartModel, type ChartRange, type ChartSeries } from './model';
@@ -339,22 +340,19 @@ export function PerformanceChart({
             {/* No picker when the mentor has no year the backend can query (only
                 stale data entirely outside the range), so it's never an empty box. */}
             {m.yearOptions.length > 0 && (
-              <select
+              <Select
                 aria-label="Show a year"
-                className={cx(styles.year, m.isYear && styles.yearOn)}
+                variant="segment"
                 value={m.yearValue}
                 onChange={(e) => {
                   setRange(e.target.value ? `y${e.target.value}` : '12m');
                   setHover(-1);
                 }}
-              >
-                <option value="">Year</option>
-                {m.yearOptions.map((yr) => (
-                  <option key={yr} value={yr}>
-                    {yr}
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: '', label: 'Year' },
+                  ...m.yearOptions.map((yr) => ({ value: yr, label: yr })),
+                ]}
+              />
             )}
           </div>
         </div>

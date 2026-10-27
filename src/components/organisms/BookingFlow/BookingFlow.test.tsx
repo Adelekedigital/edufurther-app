@@ -17,6 +17,7 @@ import {
   guestSignIn,
   signedIn,
 } from './BookingFlow.testkit';
+import { pickOption } from '@/test-utils/select';
 
 pinToday();
 
@@ -430,7 +431,7 @@ describe('BookingFlow on real slots', () => {
     const user = userEvent.setup();
     const onSessionTypeChange = vi.fn();
     render(<BookingFlow {...props({ onSessionTypeChange })} />);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Session type' }), 'st2');
+    await pickOption(user, screen.getByRole('combobox', { name: 'Session type' }), 'st2');
     expect(onSessionTypeChange).toHaveBeenCalledWith('st2');
   });
 
@@ -452,7 +453,7 @@ describe('BookingFlow on real slots', () => {
     await user.click(screen.getByRole('button', { name: 'Later dates' }));
     await user.click(screen.getByRole('radio', { name: '9:00 am' })); // Tue, Oct 6
     expect(screen.getByRole('button', { name: /^Request Tue, Oct 6/ })).toBeEnabled();
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Session type' }), 'st1');
+    await pickOption(user, screen.getByRole('combobox', { name: 'Session type' }), 'st1');
     expect(screen.getByText('Next 7 days · Sep 27 – Oct 3')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Pick a time' })).toBeDisabled();
   });
@@ -593,7 +594,7 @@ describe('BookingFlow questions', () => {
       await toQuestions(user);
       await user.upload(screen.getByLabelText(/Upload your CV/), cv);
       await user.click(screen.getByRole('button', { name: 'Back' }));
-      await user.selectOptions(screen.getByRole('combobox', { name: 'Session type' }), 'st2');
+      await pickOption(user, screen.getByRole('combobox', { name: 'Session type' }), 'st2');
       await user.click(screen.getByRole('radio', { name: '9:00 am' }));
       const send = screen.getByRole('button', { name: /^Request Mon, Sep 28/ });
       // The other type's upload doesn't hold this one up.

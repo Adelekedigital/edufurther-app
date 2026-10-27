@@ -3,7 +3,6 @@
 import { useEffect, useId } from 'react';
 import { Chip } from '@/components/atoms/Chip/Chip';
 import { Icon } from '@/components/atoms/Icon/Icon';
-import { Input } from '@/components/atoms/Input/Input';
 import { Select } from '@/components/atoms/Select/Select';
 import { CountryPicker } from '@/components/molecules/CountryPicker/CountryPicker';
 import type { CatalogOption } from '@/lib/api/data/catalog';
@@ -94,17 +93,18 @@ export function SchoolFields({
         <label htmlFor={fid('school')} className={step.label}>
           {EDUCATION_COPY.university}
         </label>
-        <Input
+        <Select
           id={fid('school')}
-          fieldSize="xl"
-          list={`${id}-unis`}
-          autoComplete="off"
+          searchable
+          remote
+          minChars={2}
+          allowCustom
+          density="xl"
           maxLength={200}
           placeholder={EDUCATION_COPY.universityPlaceholder}
-          value={s.school}
-          onChange={(e) => {
-            const name = e.target.value;
-            // Picking a suggestion fills the box with its name: that's the catalogue school.
+          query={s.school}
+          onQueryChange={(name) => {
+            // A name typed in full that the catalogue knows is that school.
             const hit = search.options.find(
               (o) => o.name.toLowerCase() === name.trim().toLowerCase(),
             );
@@ -116,12 +116,26 @@ export function SchoolFields({
               countryOpen: false,
             });
           }}
+          value={s.institutionId ?? ''}
+          options={search.options.map((o) => ({
+            value: o.id,
+            label: o.name,
+            meta: o.countryLabel ?? undefined,
+          }))}
+          onChange={(e, o) => {
+            const hit = search.options.find((x) => x.id === e.target.value);
+            set({
+              school: o.label,
+              institutionId: e.target.value,
+              catalogCountryId: hit?.countryId ?? null,
+              countryId: '',
+              countryOpen: false,
+            });
+          }}
+          status={search.isLoading ? 'loading' : search.isError ? 'error' : 'ready'}
+          onRetry={search.retry}
+          copy={{ failed: EDUCATION_COPY.schoolSearchFailed }}
         />
-        <datalist id={`${id}-unis`}>
-          {search.options.map((o) => (
-            <option key={o.id} value={o.name} />
-          ))}
-        </datalist>
       </div>
 
       {auto && (
@@ -186,21 +200,19 @@ export function SchoolFields({
         <label htmlFor={fid('field')} className={step.label}>
           {EDUCATION_COPY.field}
         </label>
-        <Input
+        <Select
           id={fid('field')}
-          fieldSize="xl"
-          list={`${id}-fields`}
-          autoComplete="off"
+          searchable
+          allowCustom
+          density="xl"
           maxLength={200}
           placeholder={EDUCATION_COPY.fieldPlaceholder}
+          query={s.field}
+          onQueryChange={(field) => set({ field })}
           value={s.field}
+          options={fields.map((f) => ({ value: f, label: f }))}
           onChange={(e) => set({ field: e.target.value })}
         />
-        <datalist id={`${id}-fields`}>
-          {fields.map((f) => (
-            <option key={f} value={f} />
-          ))}
-        </datalist>
       </div>
 
       <div className={styles.years}>

@@ -233,7 +233,12 @@ export function useInstitutionSearch(q: string, countries: CatalogOption[]) {
     countryId: idByCode(countries, i.country?.code) || null,
     countryLabel: i.country?.display_name ?? null,
   }));
-  return { options, isLoading: query.isFetching, isError: query.isError };
+  return {
+    options,
+    isLoading: query.isFetching,
+    isError: query.isError,
+    retry: () => void query.refetch(),
+  };
 }
 
 // ---- saving ------------------------------------------------------------------

@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { Select } from '@/components/atoms/Select/Select';
 import type { SessionType } from '@/types/mentor';
 import type { FirstReason } from './types';
 import styles from './BookingFlow.module.css';
@@ -20,22 +21,14 @@ export function SessionTypeSelect(p: {
       <label htmlFor={id} className={styles.fieldLabel}>
         Session type
       </label>
-      <span className={styles.selectWrap}>
-        <select
-          id={id}
-          className={styles.select}
-          value={p.value}
-          disabled={p.locked}
-          onChange={(e) => p.onChange(e.target.value)}
-        >
-          {p.types.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
-        <Icon name="expand_more" size={18} className={styles.chevron} />
-      </span>
+      <Select
+        id={id}
+        text="sm"
+        value={p.value}
+        disabled={p.locked}
+        onChange={(e) => p.onChange(e.target.value)}
+        options={p.types.map((t) => ({ value: t.id, label: t.name }))}
+      />
     </div>
   );
 }

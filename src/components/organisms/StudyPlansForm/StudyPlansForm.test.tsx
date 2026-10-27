@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { EMPTY_PLANS } from '@/lib/utils/onboardingAnswers';
 import type { PlanAnswers } from '@/types/onboarding';
 import { StudyPlansForm } from './StudyPlansForm';
-import { pickOption } from '@/test-utils/select';
+import { optionLabels, pickOption } from '@/test-utils/select';
 
 const countries = [
   { id: 'ca', label: 'Canada' },
@@ -78,14 +78,32 @@ describe('StudyPlansForm', () => {
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ degree: 'mba' }));
   });
 
-  it('suggests the catalog’s fields once they load, and the short list until then', () => {
-    const options = () =>
-      [...document.querySelectorAll('datalist option')].map((o) => o.getAttribute('value'));
+  it('suggests the catalog’s fields once they load, and the short list until then', async () => {
+    const user = userEvent.setup();
+    const field = () => screen.getByRole('combobox', { name: 'What do you want to study?' });
     const { unmount } = render(<Harness fields={null} />);
-    expect(options()).toContain('Computer Science');
+    expect(await optionLabels(user, field())).toContain('Computer Science');
     unmount();
     render(<Harness fields={['Law', 'Data Science']} />);
-    expect(options()).toEqual(['Law', 'Data Science']);
+    expect(await optionLabels(user, field())).toEqual(['Law', 'Data Science']);
+  });
+
+  it('field of study: typing filters the list, and a name not listed is kept', async () => {
+    const user = userEvent.setup();
+    render(<Harness fields={['Law', 'Data Science', 'Public Health']} />);
+    const field = screen.getByRole('combobox', { name: 'What do you want to study?' });
+    expect(field).toHaveAttribute('aria-autocomplete', 'list');
+    await user.type(field, 'sci');
+    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual([
+      'Data Science',
+      'Use “sci”',
+    ]);
+    await user.keyboard('{ArrowDown}{Enter}');
+    expect(field).toHaveValue('Data Science');
+    await user.clear(field);
+    await user.type(field, 'Marine Biology{Enter}');
+    expect(field).toHaveValue('Marine Biology');
+    expect(screen.queryByRole('listbox', { name: 'What do you want to study?' })).toBeNull();
   });
 
   it('the destination hint links "Settings" to Settings › Goals, in a new tab', () => {
