@@ -11,6 +11,7 @@ import { useCountries, useDegreeLevels } from '@/lib/api/data/catalog';
 import { savedOriginId, toGoalValues, useMenteeGoals, useSaveGoals } from '@/lib/api/data/goals';
 import { useInstitutionSearch } from '@/lib/api/data/mentorApplication';
 import { useTopics } from '@/lib/api/data/mentors';
+import { HELP_LIMIT } from '@/lib/copy/onboarding';
 import {
   GOALS_COPY,
   SAVE_COPY,
@@ -52,6 +53,7 @@ const gapsOf = (v: MenteeGoalValues): GoalsGap[] => [
   ...(v.degree ? [] : ['degree' as const]),
   ...(fieldOk(v.field) ? [] : ['field' as const]),
   ...(v.needIds.length ? [] : ['help' as const]),
+  ...(v.needIds.length > HELP_LIMIT ? ['helpMax' as const] : []),
 ];
 
 /**

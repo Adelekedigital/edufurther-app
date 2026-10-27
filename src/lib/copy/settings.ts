@@ -216,6 +216,8 @@ export const GOALS_COPY = {
   schoolsFull: 'You’ve added 10 schools, the most you can add.',
   help: 'What you need help with',
   helpSub: 'So you get matched with mentors who can help with exactly this.',
+  /** Onboarding's cap, in its first sentence (HELP_LIMIT; PRD fix 3). */
+  helpHint: 'Choose up to 3 areas.',
   bar: 'Unsaved changes to your goals',
   saved: 'Goals saved. Your mentor matches are updated.',
   saveFailed: 'We couldn’t save your goals. Your changes are still here. Try again.',
@@ -231,6 +233,8 @@ export const GOALS_ERRORS = {
   degree: 'Pick what you’re applying for.',
   field: 'Add what you want to study.',
   help: 'Pick at least one area.',
+  /** Saved before the cap (PRD fix 3): more than 3 still show, and must come down to 3. */
+  helpMax: 'Pick up to 3 areas.',
 } as const;
 export type GoalsGap = keyof typeof GOALS_ERRORS;
 

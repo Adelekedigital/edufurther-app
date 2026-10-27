@@ -48,6 +48,9 @@ vi.mock('@/lib/api/data/mentors', () => ({
     topics: [
       { id: 'o-school', slug: 'school-selection', label: 'School selection' },
       { id: 'o-docs', slug: 'document-preparation', label: 'Document preparation' },
+      { id: 'o-prog', slug: 'program-selection', label: 'Program selection' },
+      { id: 'o-test', slug: 'test-preparation', label: 'Test preparation' },
+      { id: 'o-schol', slug: 'scholarships-financial-aid', label: 'Scholarships' },
     ],
     isLoading: false,
     error: null,
@@ -191,6 +194,50 @@ describe('GoalsPanel', () => {
     expect(screen.getByRole('button', { name: 'Sweden' })).toHaveAttribute('aria-pressed', 'true');
   });
 
+  it('help areas: up to 3, hinted; the others dim and can’t be picked', async () => {
+    ready();
+    render(<GoalsPanel userId="u1" />);
+    const group = screen.getByRole('group', { name: GOALS_COPY.help });
+    expect(group).toHaveAccessibleDescription(GOALS_COPY.helpHint);
+    await userEvent.click(within(group).getByRole('button', { name: /Find a program/ }));
+    await userEvent.click(within(group).getByRole('button', { name: /Test preparation/ }));
+    const fourth = within(group).getByRole('button', { name: /Scholarship guidance/ });
+    expect(fourth).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(fourth);
+    expect(fourth).toHaveAttribute('aria-pressed', 'false');
+    // Unpicking one frees a place again.
+    await userEvent.click(within(group).getByRole('button', { name: /Test preparation/ }));
+    expect(fourth).not.toHaveAttribute('aria-disabled');
+  });
+
+  it('more than 3 saved before the cap: all show picked, Save says to pick up to 3', async () => {
+    const need = (id: string, code: string) => ({ id, code, display_name: code });
+    ready({
+      goal: goal({
+        needs: [
+          need('o-docs', 'document-preparation'),
+          need('o-prog', 'program-selection'),
+          need('o-test', 'test-preparation'),
+          need('o-schol', 'scholarships-financial-aid'),
+        ],
+      }),
+    });
+    render(<GoalsPanel userId="u1" />);
+    const group = screen.getByRole('group', { name: GOALS_COPY.help });
+    expect(within(group).getAllByRole('button', { pressed: true })).toHaveLength(4);
+    await userEvent.click(screen.getByRole('radio', { name: 'MBA' }));
+    await userEvent.click(await saveButton());
+    expect(screen.getAllByText(SAVE_COPY.formError).length).toBeGreaterThan(0);
+    expect(screen.getByText(GOALS_ERRORS.helpMax)).toBeInTheDocument();
+    await waitFor(() => expect(group).toHaveFocus());
+    expect(mutateAsync).not.toHaveBeenCalled();
+    // Unpicking one clears it, and the save goes.
+    await userEvent.click(within(group).getByRole('button', { name: /Scholarship guidance/ }));
+    expect(screen.queryByText(GOALS_ERRORS.helpMax)).toBeNull();
+    await userEvent.click(await saveButton());
+    expect(mutateAsync).toHaveBeenCalledTimes(1);
+  });
+
   it('"Not sure yet": on with no countries, clears them, stays usable at the limit', async () => {
     ready();
     render(<GoalsPanel userId="u1" />);
@@ -260,7 +307,9 @@ describe('GoalsPanel', () => {
     await userEvent.type(screen.getByLabelText(GOALS_COPY.field), 'L');
     await userEvent.click(await saveButton());
     expect(screen.getAllByText(SAVE_COPY.formError).length).toBeGreaterThan(0);
-    for (const e of Object.values(GOALS_ERRORS)) expect(screen.getByText(e)).toBeInTheDocument();
+    const { helpMax, ...missing } = GOALS_ERRORS;
+    for (const e of Object.values(missing)) expect(screen.getByText(e)).toBeInTheDocument();
+    expect(screen.queryByText(helpMax)).toBeNull();
     await waitFor(() => expect(screen.getByLabelText(GOALS_COPY.origin)).toHaveFocus());
     expect(mutateAsync).not.toHaveBeenCalled();
   });
