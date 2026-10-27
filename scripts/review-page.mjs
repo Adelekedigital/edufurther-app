@@ -293,16 +293,27 @@ async function reviewWidth(width) {
     document.body.setAttribute('tabindex', '-1');
     document.body.focus();
   });
-  const ringBefore = new Map();
   for (let i = 0; i < 40; i++) {
     await page.keyboard.press('Tab');
     const stop = await page.evaluate(() => {
       const el = document.activeElement;
       if (!el || el === document.body || el === document.documentElement) return null;
+      // Next's dev overlay sits after the page's last stop; it isn't the app's.
+      if (el.tagName === 'NEXTJS-PORTAL') return null;
+      // Mark the element itself: a tag/id/class key wrongly called two sibling
+      // nav links with one class "the same stop" and ended the trace there.
+      const seen = el.hasAttribute('data-review-focus');
+      el.setAttribute('data-review-focus', '');
       const s = getComputedStyle(el);
       const r = el.getBoundingClientRect();
+      const labelledBy = (el.getAttribute('aria-labelledby') || '')
+        .split(/\s+/)
+        .map((id) => (id ? document.getElementById(id)?.textContent : '') || '')
+        .join(' ')
+        .trim();
       const name =
         el.getAttribute('aria-label') ||
+        labelledBy ||
         (el.id ? document.querySelector(`label[for="${el.id}"]`)?.textContent : '') ||
         el.textContent?.trim().slice(0, 40) ||
         el.getAttribute('placeholder') ||
@@ -311,15 +322,14 @@ async function reviewWidth(width) {
         tag: el.tagName.toLowerCase(),
         role: el.getAttribute('role') || '',
         name: (name || '').replace(/\s+/g, ' ').trim(),
-        key: `${el.tagName}:${el.id || ''}:${(el.className || '').toString().slice(0, 40)}`,
+        seen,
         ring: [s.outlineStyle, s.outlineWidth, s.boxShadow].join('|'),
         offscreen: r.width === 0 || r.height === 0,
         visible: s.visibility !== 'hidden' && s.display !== 'none',
       };
     });
     if (!stop) break;
-    if (ringBefore.has(stop.key) && result.focusStops.length > 0) break; // wrapped
-    ringBefore.set(stop.key, stop.ring);
+    if (stop.seen) break; // wrapped back to a stop already traced
 
     const noRing = stop.ring.startsWith('none|0px|none') || stop.ring === 'none|0px|none';
     if (noRing) {
