@@ -274,6 +274,20 @@ describe('the confirms', () => {
     expect(within(confirmBox()).getByRole('textbox')).toHaveValue('');
   });
 
+  it('select all and clear all keep a check that the search hides', async () => {
+    const user = userEvent.setup();
+    renderScreen(<AdminMentorsScreen />);
+    await user.click(await screen.findByRole('checkbox', { name: 'Select Bisi Folarin' }));
+    await user.type(screen.getByRole('searchbox', { name: 'Search mentors' }), 'jimoh');
+    const all = screen.getByRole('checkbox', { name: 'Select all applications' });
+    await user.click(all);
+    await user.click(all);
+    await user.clear(screen.getByRole('searchbox', { name: 'Search mentors' }));
+    expect(await screen.findByText('1 selected')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Select Bisi Folarin' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Select Jimoh Marko' })).not.toBeChecked();
+  });
+
   it('select all checks every visible application', async () => {
     const user = userEvent.setup();
     renderScreen(<AdminMentorsScreen />);

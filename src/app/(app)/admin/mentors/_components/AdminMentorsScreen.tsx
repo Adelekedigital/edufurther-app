@@ -327,13 +327,16 @@ export function AdminMentorsScreen() {
                 onToggle={(id) =>
                   setChecked((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]))
                 }
-                onToggleAll={() =>
-                  setChecked(
-                    visible.every((r) => liveChecked.includes(r.id))
-                      ? []
-                      : visible.map((r) => r.id),
-                  )
-                }
+                // Only the rows on screen change: a check hidden by search or
+                // filters stays, as the admin never unchecked it.
+                onToggleAll={() => {
+                  const ids = visible.map((r) => r.id);
+                  const allOn = ids.every((id) => liveChecked.includes(id));
+                  setChecked((c) => {
+                    const hidden = c.filter((id) => !ids.includes(id));
+                    return allOn ? hidden : [...hidden, ...ids];
+                  });
+                }}
                 rowRef={rowRef}
               />
             ))}
