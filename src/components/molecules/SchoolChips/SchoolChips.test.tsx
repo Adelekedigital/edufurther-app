@@ -148,6 +148,30 @@ describe('SchoolChips', () => {
     ]);
   });
 
+  it('Tab to Add, then Enter, still takes the highlighted match, linked', async () => {
+    render(<Schools />);
+    await userEvent.type(field(), 'univ');
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}');
+    await userEvent.tab();
+    expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    expect(added).toEqual([
+      {
+        institutionId: 'inst-2',
+        raw: 'University College London',
+        label: 'University College London',
+      },
+    ]);
+  });
+
+  it('Add with the Use row highlighted keeps the typed name, not the row before it', async () => {
+    render(<Schools />);
+    await userEvent.type(field(), 'univ');
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}');
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }));
+    expect(added).toEqual([school('univ')]);
+  });
+
   it('the same school twice is not added', async () => {
     render(<Schools initial={[school('Lagos Business School')]} />);
     await userEvent.type(field(), 'lagos business school{Enter}');

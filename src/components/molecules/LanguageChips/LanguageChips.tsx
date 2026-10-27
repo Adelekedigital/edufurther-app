@@ -74,10 +74,13 @@ export function LanguageChips({
   const addButton = useRef<HTMLButtonElement>(null);
   const field = useRef<HTMLElement>(null);
   // The row the list last highlighted, for Add. Pressing Add closes the list
-  // first (its null arrives before Add's own events), so that null is not
-  // taken: typing, Escape and leaving the field forget the row instead.
+  // first (its closing null arrives before Add's own events), so that null
+  // is not taken: typing, Escape and leaving the field for anything but Add
+  // forget the row instead. A click reads it as the press starts (Safari doesn't
+  // focus a clicked button); Enter or Space after Tab reads it as kept.
   const highlight = useRef<string | null>(null);
   const pressed = useRef<string | null>(null);
+  const addRow = useRef<HTMLButtonElement>(null);
   const group = useRef<HTMLDivElement>(null);
   // The failure line, heard: put into the always-present region after it
   // mounts (a region that arrives with its text in it is often skipped).
@@ -106,6 +109,7 @@ export function LanguageChips({
   // or to the group when that pick filled it and the button is now disabled.
   const close = () => {
     setAdding(false);
+    highlight.current = null;
     onQueryChange('');
     requestAnimationFrame(() => {
       const add = addButton.current;
@@ -189,7 +193,7 @@ export function LanguageChips({
           className={styles.adder}
           onKeyDown={onKey}
           onKeyDownCapture={(e) => e.key === 'Escape' && (highlight.current = null)}
-          onBlurCapture={() => (highlight.current = null)}
+          onBlurCapture={(e) => e.relatedTarget !== addRow.current && (highlight.current = null)}
         >
           <Select
             ref={field}
@@ -205,7 +209,10 @@ export function LanguageChips({
               highlight.current = null;
               onQueryChange(q);
             }}
-            onHighlight={(o) => o && (highlight.current = o.value)}
+            onHighlight={(o, open) => {
+              // A null as the list closes is Add's own press: keep the row.
+              if (o || open) highlight.current = o?.value ?? null;
+            }}
             value=""
             options={matches.map((m) => ({ value: m.id, label: m.label }))}
             onChange={(e) => pick(matches.find((m) => m.id === e.target.value))}
@@ -216,10 +223,10 @@ export function LanguageChips({
             variant="secondary-outlined"
             size="medium"
             disabled={!chosen}
+            ref={addRow}
             onPointerDown={() => (pressed.current = highlight.current)}
             onClick={(e) => {
-              // detail 0: Enter or Space on Add, after Tab closed the list.
-              const row = e.detail > 0 ? pressed.current : null;
+              const row = e.detail > 0 ? pressed.current : highlight.current;
               pressed.current = null;
               pick(matches.find((m) => m.id === row) ?? chosen);
             }}

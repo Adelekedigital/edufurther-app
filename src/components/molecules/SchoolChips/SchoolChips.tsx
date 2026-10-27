@@ -70,10 +70,13 @@ export function SchoolChips({
   const asked = useRef(false);
 
   // The row the list last highlighted, for Add. Pressing Add closes the list
-  // first (its null arrives before Add's own events), so that null is not
-  // taken: typing, Escape and leaving the field forget the row instead.
+  // first (its closing null arrives before Add's own events), so that null
+  // is not taken: typing, Escape and leaving the field for anything but Add
+  // forget the row instead. A click reads it as the press starts (Safari doesn't
+  // focus a clicked button); Enter or Space after Tab reads it as kept.
   const highlight = useRef<string | null>(null);
   const pressed = useRef<string | null>(null);
+  const addRow = useRef<HTMLButtonElement>(null);
 
   // The removed chip's button is gone: focus the next one, else the field.
   const remove = (i: number) => {
@@ -93,6 +96,7 @@ export function SchoolChips({
     } else if (typed && !has(typed)) {
       onAdd({ institutionId: null, raw: typed, label: typed });
     }
+    highlight.current = null;
     onQueryChange('');
   };
 
@@ -125,9 +129,9 @@ export function SchoolChips({
         onPointerDownCapture={(e) =>
           (asked.current = e.target instanceof Element && !!e.target.closest('[role="option"]'))
         }
-        onBlurCapture={() => {
+        onBlurCapture={(e) => {
           asked.current = false;
-          highlight.current = null;
+          if (e.relatedTarget !== addRow.current) highlight.current = null;
         }}
         // Enter with the list closed (after Escape), which the Select leaves alone.
         onKeyDown={(e) => {
@@ -160,7 +164,10 @@ export function SchoolChips({
             highlight.current = null;
             onQueryChange(q);
           }}
-          onHighlight={(o) => o && (highlight.current = o.value)}
+          onHighlight={(o, open) => {
+            // A null as the list closes is Add's own press: keep the row.
+            if (o || open) highlight.current = o?.value ?? null;
+          }}
           value=""
           options={matches.map((m) => ({ value: m.id, label: m.name }))}
           onChange={(e) => add(matches.find((m) => m.id === e.target.value))}
@@ -174,10 +181,10 @@ export function SchoolChips({
           variant="secondary-outlined"
           size="medium"
           disabled={full || !typed}
+          ref={addRow}
           onPointerDown={() => (pressed.current = highlight.current)}
           onClick={(e) => {
-            // detail 0: Enter or Space on Add, after Tab closed the list.
-            const row = e.detail > 0 ? pressed.current : null;
+            const row = e.detail > 0 ? pressed.current : highlight.current;
             pressed.current = null;
             add(matches.find((m) => m.id === row));
             // The button disables once the field empties: keep focus in the field.

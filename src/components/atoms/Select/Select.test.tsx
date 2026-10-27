@@ -220,11 +220,11 @@ describe('Select (select-only)', () => {
     await user.keyboard('{ArrowDown}');
     await user.keyboard('p');
     await user.keyboard('{Escape}');
-    expect(onHighlight.mock.calls.map(([o]) => o?.value ?? null)).toEqual([
-      'ba',
-      'bsc',
-      'phd',
-      null,
+    expect(onHighlight.mock.calls.map(([o, open]) => [o?.value ?? null, open])).toEqual([
+      ['ba', true],
+      ['bsc', true],
+      ['phd', true],
+      [null, false],
     ]);
   });
 
@@ -451,11 +451,17 @@ describe('Select allowCustom', () => {
     render(<Search onHighlight={onHighlight} />);
     screen.getByRole('combobox', { name: 'School' }).focus();
     await user.keyboard('uni');
-    expect(onHighlight).not.toHaveBeenCalled();
+    expect(onHighlight).toHaveBeenCalledOnce();
+    expect(onHighlight).toHaveBeenLastCalledWith(null, true);
     await user.keyboard('{ArrowDown}');
-    expect(onHighlight).toHaveBeenLastCalledWith(schools[0]);
+    expect(onHighlight).toHaveBeenLastCalledWith(schools[0], true);
     await user.keyboard('{ArrowDown}{ArrowDown}');
-    expect(onHighlight.mock.calls.map(([o]) => o?.value ?? null)).toEqual(['u1', 'u2', null]);
+    expect(onHighlight.mock.calls.map(([o, open]) => [o?.value ?? null, open])).toEqual([
+      [null, true],
+      ['u1', true],
+      ['u2', true],
+      [null, true],
+    ]);
   });
 
   it('picking the Use row keeps the text', async () => {

@@ -102,6 +102,18 @@ describe('LanguageChips', () => {
     expect(screen.queryByRole('button', { name: 'Twi' })).not.toBeInTheDocument();
   });
 
+  it('Tab to Add, then Enter, still takes the highlighted match', async () => {
+    render(<Chips />);
+    await openAdder();
+    await userEvent.type(field(), 't');
+    await userEvent.keyboard('{ArrowDown}');
+    await userEvent.tab();
+    expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    expect(screen.getByRole('button', { name: 'Tswana' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('button', { name: 'Twi' })).not.toBeInTheDocument();
+  });
+
   it('after Escape, Add takes the first match again, not the old highlight', async () => {
     render(<Chips />);
     await openAdder();
