@@ -2,7 +2,7 @@
    bar), ink-900, white p-xs, a green-300 verified mark. */
 .region {
   position: fixed;
-  left: 50%;
+  left: var(--fixed-center-x);
   bottom: 88px;
   z-index: 60;
   transform: translateX(-50%);

@@ -275,9 +275,9 @@
   max-height: 92vh;
   max-height: 92dvh;
   border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
-  animation:
-    fade var(--duration-base) var(--ease-standard),
-    rise var(--duration-slow) var(--ease-standard);
+  /* Slides up solid; only the scrim fades. A fading panel let the page show
+     through it while it rose, so the page seemed to slide across its content. */
+  animation: rise var(--duration-slow) var(--ease-standard);
 }
 /* Content-sized: it may shrink and scroll at the cap, but never pads itself out
    to fill a height the sheet does not have. */
@@ -364,9 +364,8 @@
     border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
     --modal-pad-top: var(--space-8);
     padding: var(--modal-pad-top) var(--space-5) calc(var(--space-6) + env(safe-area-inset-bottom));
-    animation:
-      fade var(--duration-base) var(--ease-standard),
-      rise var(--duration-slow) var(--ease-standard);
+    /* Solid as it rises; only the scrim fades (as .sheet.contained). */
+    animation: rise var(--duration-slow) var(--ease-standard);
   }
   .phoneSheet .close {
     right: var(--space-3);

@@ -1,7 +1,7 @@
 /* The region holds the position; empty, it has no size. */
 .region {
   position: fixed;
-  left: 50%;
+  left: var(--fixed-center-x);
   bottom: var(--space-6);
   /* Above SideDrawer (44), below ModalShell (50): a drawer's toast stays visible. */
   z-index: 46;

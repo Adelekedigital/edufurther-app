@@ -4,7 +4,7 @@
    32px above the bottom, at most the width less 16px a side. */
 .region {
   position: fixed;
-  left: 50%;
+  left: var(--fixed-center-x);
   bottom: var(--space-8);
   z-index: 100;
   transform: translateX(-50%);

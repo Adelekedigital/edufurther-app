@@ -90,7 +90,10 @@ export function FloatingHelp({
   // + the safe-area so the pill clears a phone's bottom nav (tab bar is 56px +
   // env(safe-area-inset-bottom)); env() resolves to 0 on desktop, so the desktop
   // offset is unchanged.
-  const pos = { right: 'var(--space-6)', bottom: `calc(${base}px + env(safe-area-inset-bottom))` };
+  const pos = {
+    right: 'calc(var(--space-6) + var(--fixed-edge-gap))',
+    bottom: `calc(${base}px + env(safe-area-inset-bottom))`,
+  };
   const trail: IconName = external ? 'open_in_new' : 'arrow_forward';
 
   const fire = () => {
@@ -129,7 +132,7 @@ export function FloatingHelp({
               id={sheetId}
               className={styles.sheet}
               style={{
-                right: 'var(--space-6)',
+                right: 'calc(var(--space-6) + var(--fixed-edge-gap))',
                 bottom: `calc(${base}px + var(--space-14) + env(safe-area-inset-bottom))`,
               }}
             >

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, type RefObject } from 'react';
+import { lockScroll } from './scrollLock';
 
 /**
  * Everything a dialog may send focus to. Kept here so every dialog agrees on
@@ -20,8 +21,6 @@ export const FOCUSABLE =
  * portalled siblings the one appended later is on top.
  */
 const traps: RefObject<HTMLElement | null>[] = [];
-/** What `body` overflow was before the outermost dialog locked it. */
-let overflowBeforeLock: string | null = null;
 
 /**
  * WAI-ARIA dialog behaviour, in one place: move focus in, keep Tab inside,
@@ -74,11 +73,8 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>, onClose: () => 
     // scrolling its container to the button made it jump, then settle.
     (first ?? dialog)?.focus({ preventScroll: true });
 
-    // Only the outermost dialog takes the lock, and only it gives it back.
-    if (traps.length === 1) {
-      overflowBeforeLock = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-    }
+    // Counted (scrollLock): only the outermost dialog takes it, only the last gives it back.
+    const unlock = lockScroll();
 
     const onKey = (e: KeyboardEvent) => {
       // A dialog with another one open on top of it is inert.
@@ -115,12 +111,7 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>, onClose: () => 
       document.removeEventListener('keydown', onKey);
       const at = traps.indexOf(ref);
       if (at >= 0) traps.splice(at, 1);
-      // Only when the last dialog goes, and to the value it had rather than
-      // '': something else may have locked it too.
-      if (traps.length === 0) {
-        document.body.style.overflow = overflowBeforeLock ?? '';
-        overflowBeforeLock = null;
-      }
+      unlock();
       opener?.focus?.();
     };
     // Once per mount, on purpose: re-running would steal focus mid-dialog.
