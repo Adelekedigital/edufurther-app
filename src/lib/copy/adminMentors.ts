@@ -190,6 +190,7 @@ export const MENTOR_DRAWER = {
   decline: 'Not approved',
   pause: 'Pause',
   resume: 'Resume',
+  loading: 'Loading mentor',
   loadFailed: 'We couldn’t load this mentor',
   loadFailedBody: 'Check your connection and try again.',
   retry: 'Try again',

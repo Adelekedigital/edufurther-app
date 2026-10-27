@@ -1,0 +1,18 @@
+/* Admin.dc.html modal `m.list`: avatar + semibold name rows, gap space-3. */
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.person {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.name {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}

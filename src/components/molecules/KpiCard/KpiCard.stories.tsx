@@ -49,3 +49,43 @@ export const KpiCards: Story = {
     </div>
   ),
 };
+
+/** Admin.dc.html summary cards: each one is a button that opens its tab. */
+export const SummaryButtons: Story = {
+  render: () => (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+        gap: 16,
+        maxWidth: 760,
+      }}
+    >
+      <KpiCard
+        size="lg"
+        label="Applications waiting"
+        value="4"
+        valueTone="danger"
+        trend={{ text: 'Longest wait 7 days', tone: 'neutral' }}
+        onClick={fn()}
+        ariaLabel="Applications waiting: 4. Open Applications"
+      />
+      <KpiCard
+        size="lg"
+        label="Approved mentors"
+        value="6"
+        trend={{ text: 'Average show-up 84%', tone: 'neutral' }}
+        onClick={fn()}
+        ariaLabel="Approved mentors: 6. Open Approved"
+      />
+      <KpiCard
+        size="lg"
+        label="At risk"
+        value="0"
+        trend={{ text: 'Show-up rate under 50%', tone: 'neutral' }}
+        onClick={fn()}
+        ariaLabel="At risk: 0. Open Approved"
+      />
+    </div>
+  ),
+};

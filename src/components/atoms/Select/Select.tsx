@@ -50,6 +50,11 @@ type SelectProps = {
   text?: 'xs' | 'sm';
   /** segment: the borderless pill inside a segmented control (PerformanceChart's year). */
   variant?: 'field' | 'segment';
+  /**
+   * Off its default: a blue border on a blue-50 ground, so a changed filter
+   * shows at a glance (Admin.dc.html filter row). Field variant only.
+   */
+  changed?: boolean;
   className?: string;
   id?: string;
   disabled?: boolean;
@@ -129,6 +134,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(props
     density = 'default',
     text = 'xs',
     variant = 'field',
+    changed = false,
     className,
     id,
     disabled,
@@ -424,6 +430,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(props
         text === 'sm' && styles.sm,
         variant === 'segment' && styles.segment,
         variant === 'segment' && value !== '' && styles.segmentOn,
+        changed && variant === 'field' && styles.changed,
         text === 'sm' && !searchable && value === '' && styles.empty,
         className,
       )}

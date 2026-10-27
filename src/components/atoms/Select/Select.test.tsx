@@ -158,6 +158,18 @@ describe('Select (select-only)', () => {
     expect(css).toMatch(/\.md \.control \{\s*height: var\(--button-h-medium\);/);
   });
 
+  it('changed: the filter look, from tokens, on the field variant only', () => {
+    const { unmount } = render(<Plain changed />);
+    expect(field().parentElement).toHaveClass('changed');
+    unmount();
+    render(<Plain changed variant="segment" />);
+    expect(field().parentElement).not.toHaveClass('changed');
+    const css = readFileSync(join(__dirname, 'Select.module.css'), 'utf8');
+    expect(css).toMatch(
+      /\.changed \.control \{\s*border-color: var\(--blue-500\);\s*background: var\(--blue-50\);/,
+    );
+  });
+
   it('a real option whose value is empty ("No year") carries the check when chosen', async () => {
     const user = userEvent.setup();
     const years: SelectOption[] = [

@@ -91,6 +91,12 @@ input.control {
   right: var(--space-3);
 }
 
+/* A filter off its default (Admin.dc.html `sel0`: blue-500 border, blue-50 ground). */
+.changed .control {
+  border-color: var(--blue-500);
+  background: var(--blue-50);
+}
+
 /* PerformanceChart's year, a pill in the range switch: 28px, borderless,
    ink-600 until a year is picked. */
 .segment .control {

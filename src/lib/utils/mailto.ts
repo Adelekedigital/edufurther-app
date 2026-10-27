@@ -26,3 +26,13 @@ export function supportHref(
     request.body({ name, firstName, email: p.email, mentor: p.mentor }),
   );
 }
+
+/**
+ * A mail to one person. The local part is encoded, so an address that
+ * carries `?` or `&` can't add a subject, body or recipients of its own.
+ */
+export function mailtoHref(email: string): string {
+  const at = email.lastIndexOf('@');
+  if (at < 1) return `mailto:${encodeURIComponent(email)}`;
+  return `mailto:${encodeURIComponent(email.slice(0, at))}@${encodeURIComponent(email.slice(at + 1))}`;
+}

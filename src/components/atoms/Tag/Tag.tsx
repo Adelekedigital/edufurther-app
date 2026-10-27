@@ -16,6 +16,9 @@ type TagProps = {
    *            (Bookings.dc.html: how a past session ended, and how long a
    *            request has left). Not the same spec as `free`, which is a
    *            rounded-rect in the same green. Takes a 14px icon before the text.
+   * progress — the status pill in blue: something under way (Admin.dc.html
+   *            "Application", a booking's "Upcoming").
+   * area     — a grey, read-only chip: a mentor's help areas (Admin.dc.html drawer).
    * fact     — 24px grey chip: a session type's length, notice, topics.
    */
   tone:
@@ -31,6 +34,8 @@ type TagProps = {
     | 'warning'
     | 'danger'
     | 'pending'
+    | 'progress'
+    | 'area'
     | 'fact';
   /**
    * rect — the status chip as a rounded rectangle, semibold

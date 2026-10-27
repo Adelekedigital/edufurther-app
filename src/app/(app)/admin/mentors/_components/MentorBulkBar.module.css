@@ -1,0 +1,15 @@
+/* Admin.dc.html bulk bar: blue-50, radius-lg, padding space-3 space-4. */
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--blue-50);
+}
+.count {
+  flex: 1;
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}

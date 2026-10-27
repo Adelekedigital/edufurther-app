@@ -1,0 +1,199 @@
+/* Admin.dc.html Mentors table (mentorLayout=drawer). Columns by tab come in
+   as --cols from the component (the design's `grid` value). */
+.card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}
+.head,
+.row {
+  display: grid;
+  grid-template-columns: var(--cols);
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
+}
+.head {
+  background: var(--ink-50);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-600);
+}
+.row {
+  position: relative;
+  min-height: 64px;
+  border-top: 1px solid var(--ink-100);
+  background: var(--surface-card);
+}
+.row:hover {
+  background: var(--ink-50);
+}
+.checked {
+  background: var(--ink-50);
+}
+.open,
+.open:hover {
+  background: var(--blue-50);
+  box-shadow: inset 3px 0 0 var(--blue-500);
+}
+/* 44px target around an 18px box (the design's label). Above the row's
+   stretched button, so a tick never opens the drawer. */
+.check {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  margin: -6px 0;
+  cursor: pointer;
+}
+.check input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--blue-500);
+  cursor: pointer;
+}
+.headCheck .check {
+  margin: 0;
+  height: auto;
+}
+.headCheck,
+.colHead {
+  min-width: 0;
+}
+.who {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.names {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+/* The row's one control: its name, stretched over the whole row. */
+.opener {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.opener::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+.opener:focus-visible {
+  outline: none;
+}
+.opener:focus-visible::after {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: calc(var(--focus-ring-width) * -1);
+}
+.email {
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.meta {
+  display: none;
+  margin-top: 2px;
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+.cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+.text,
+.sub {
+  max-width: 100%;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.text {
+  color: var(--ink-900);
+}
+.sub {
+  color: var(--ink-600);
+}
+.pill {
+  max-width: 100%;
+  line-height: var(--lh-p);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Waiting and tier colours (Admin.dc.html waitFg, tier fg). */
+.danger {
+  color: var(--red-700);
+}
+.warning {
+  color: var(--yellow-900);
+}
+.success {
+  color: var(--green-700);
+}
+.pending {
+  color: var(--ink-700);
+}
+.chevron {
+  display: flex;
+  color: var(--ink-500);
+}
+.skelRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 64px;
+  padding: var(--space-3) var(--space-5);
+}
+.skelRow + .skelRow {
+  border-top: 1px solid var(--ink-100);
+}
+.skelText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+/* Phones: name, email and one coloured meta line; no header or columns. */
+@media (max-width: 767px) {
+  .head {
+    display: none;
+  }
+  .row {
+    grid-template-columns: minmax(0, 1fr) 24px;
+  }
+  .selectable .row {
+    grid-template-columns: var(--touch-target-min) minmax(0, 1fr) 24px;
+  }
+  .cell {
+    display: none;
+  }
+  .meta {
+    display: block;
+  }
+}

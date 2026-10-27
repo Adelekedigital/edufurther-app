@@ -13,25 +13,49 @@ export type KpiTrend = {
   tone: 'positive' | 'neutral' | 'negative';
 };
 
-type KpiCardProps = {
+type Common = {
   label: string;
   /** The figure, already formatted. Null → a muted "No data yet", never 0. */
   value: string | null;
   /** A unit after the value ("hrs", "of 3"); omitted when there is none. */
   unit?: string;
-  /** An info tooltip (ⓘ) on the label row — the Mentor Dashboard's metric hint. */
-  info?: string;
   /** A trend line under the value. The design shows a trend or a link, not both. */
   trend?: KpiTrend;
-  /**
-   * A link under the value (e.g. "View mentors"). The design's alternative to a
-   * trend: a button with `onClick`, or a page link with `href`.
-   */
-  link?: { label: string } & ({ onClick: () => void } | { href: string });
   /** Colours the figure: warning (amber) or danger (red), as the Missed tile does. */
   valueTone?: 'warning' | 'danger';
+  /**
+   * lg: the admin summary card (Admin.dc.html `mKpis`): roomier, a bold
+   * figure, a regular label. Default: the dashboards' card.
+   */
+  size?: 'md' | 'lg';
   className?: string;
 };
+
+type KpiCardProps = Common &
+  (
+    | {
+        /** An info tooltip (ⓘ) on the label row — the Mentor Dashboard's metric hint. */
+        info?: string;
+        /**
+         * A link under the value (e.g. "View mentors"). The design's alternative to a
+         * trend: a button with `onClick`, or a page link with `href`.
+         */
+        link?: { label: string } & ({ onClick: () => void } | { href: string });
+        onClick?: never;
+        ariaLabel?: never;
+      }
+    | {
+        /**
+         * The whole card is one button (Admin.dc.html summary cards, which open
+         * a tab), named by `ariaLabel`. No `info` or `link`: a button can't
+         * hold another control.
+         */
+        onClick: () => void;
+        ariaLabel: string;
+        info?: never;
+        link?: never;
+      }
+  );
 
 /**
  * One progress figure on a dashboard's stats strip (Mentee Dashboard v2.dc.html,
@@ -39,7 +63,29 @@ type KpiCardProps = {
  * trend or a link beneath. Text-only — no icon tile — so it reads as a figure,
  * not a feature. Shared so the mentor dashboard can take the same tile.
  */
-export function KpiCard({
+export function KpiCard(props: KpiCardProps) {
+  const { size = 'md', className } = props;
+  if (props.onClick) {
+    // Inside a button only phrasing content is valid: the rows are spans.
+    return (
+      <button
+        type="button"
+        onClick={props.onClick}
+        aria-label={props.ariaLabel}
+        className={cx(styles.card, size === 'lg' && styles.lg, styles.action, className)}
+      >
+        <Figure {...props} row="span" />
+      </button>
+    );
+  }
+  return (
+    <div className={cx(styles.card, size === 'lg' && styles.lg, className)}>
+      <Figure {...props} row="div" />
+    </div>
+  );
+}
+
+function Figure({
   label,
   value,
   unit,
@@ -47,11 +93,11 @@ export function KpiCard({
   trend,
   link,
   valueTone,
-  className,
-}: KpiCardProps) {
+  row: Row,
+}: KpiCardProps & { row: 'span' | 'div' }) {
   const empty = value === null;
   return (
-    <div className={cx(styles.card, className)}>
+    <>
       {info ? (
         <div className={styles.labelRow}>
           <span className={styles.label}>{label}</span>
@@ -60,7 +106,7 @@ export function KpiCard({
       ) : (
         <span className={styles.label}>{label}</span>
       )}
-      <div className={styles.valueRow}>
+      <Row className={styles.valueRow}>
         <span
           className={cx(
             styles.value,
@@ -71,7 +117,7 @@ export function KpiCard({
           {value ?? 'No data yet'}
         </span>
         {unit && !empty && <span className={styles.unit}>{unit}</span>}
-      </div>
+      </Row>
       {trend && (
         <span className={cx(styles.trend, styles[trend.tone])}>
           {trend.icon && <Icon name={trend.icon} size={16} />}
@@ -90,6 +136,6 @@ export function KpiCard({
             <Icon name="arrow_forward" size={16} />
           </button>
         ))}
-    </div>
+    </>
   );
 }

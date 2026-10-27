@@ -358,6 +358,18 @@ export const Selects: Story = {
           { value: 'Woman', label: 'Woman' },
         ]}
       />
+      <DemoSelect
+        aria-label="Filter off its default (changed)"
+        density="md"
+        text="sm"
+        width={200}
+        changed
+        defaultValue="7"
+        options={[
+          { value: 'all', label: 'Any time' },
+          { value: '7', label: 'Last 7 days' },
+        ]}
+      />
     </div>
   ),
 };

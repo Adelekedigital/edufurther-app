@@ -10,6 +10,40 @@
   border-radius: var(--radius-xl);
   background: var(--surface-card);
 }
+/* Admin.dc.html `mKpis`: padding space-5, gap space-2, a bold figure on a
+   regular label; the note under it is the neutral trend line. */
+.lg {
+  gap: var(--space-2);
+  padding: var(--space-5);
+}
+.lg .label {
+  font-weight: var(--weight-regular);
+  color: var(--ink-600);
+}
+.lg .value {
+  font-weight: var(--weight-bold);
+}
+.lg .danger {
+  color: var(--red-700);
+}
+.lg .trend {
+  text-wrap: pretty;
+}
+/* The card as one button: drawn the same, with the design's hover border. */
+.action {
+  align-items: flex-start;
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.action:hover {
+  border-color: var(--blue-300);
+}
+.action:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
 .labelRow {
   display: flex;
   align-items: center;
