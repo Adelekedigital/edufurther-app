@@ -1,4 +1,5 @@
-import { render, screen, within } from '@testing-library/react';
+import { useState } from 'react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   toAdminMentorDetail,
@@ -7,6 +8,9 @@ import {
 } from '@/lib/api/data/adminMentors';
 import { mockMentorDetail, mockMentorRows } from '@/lib/api/mock/adminMentors';
 import { MentorDialogs } from './MentorDialogs';
+import { MentorFilterBar } from './MentorFilterBar';
+import { MentorSummaryCards } from './MentorSummaryCards';
+import { NO_FILTERS, type MentorFilters } from './mentorList';
 import { MentorDrawer } from './MentorDrawer';
 import { MentorNotes } from './MentorNotes';
 import { MentorTable } from './MentorTable';
@@ -171,5 +175,59 @@ describe('MentorTable', () => {
     expect(within(t).getByRole('columnheader', { name: 'Waiting' })).toBeInTheDocument();
     await user.click(within(t).getByRole('button', { name: 'Open Jimoh Marko' }));
     expect(onOpen).toHaveBeenCalledWith('m-jm');
+  });
+});
+
+describe('MentorSummaryCards', () => {
+  const summary = (applications: number, longestWaitDays: number | null) => ({
+    counts: { applications, approved: 6, paused: 2, notApproved: 1 },
+    longestWaitDays,
+    averageShowUp: 90,
+    atRisk: 0,
+  });
+
+  it('applications waiting with no longest wait: no "Nothing waiting" beside a count', () => {
+    render(<MentorSummaryCards summary={summary(3, null)} onOpen={vi.fn()} />);
+    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.queryByText('Nothing waiting')).toBeNull();
+  });
+
+  it('nothing waiting says so; a known wait names it', () => {
+    const { unmount } = render(<MentorSummaryCards summary={summary(0, null)} onOpen={vi.fn()} />);
+    expect(screen.getByText('Nothing waiting')).toBeInTheDocument();
+    unmount();
+    render(<MentorSummaryCards summary={summary(2, 7)} onOpen={vi.fn()} />);
+    expect(screen.getByText('Longest wait 7 days')).toBeInTheDocument();
+  });
+});
+
+describe('MentorFilterBar', () => {
+  function Harness() {
+    const [filters, setFilters] = useState<MentorFilters>({ ...NO_FILTERS, date: '7' });
+    const active = JSON.stringify(filters) !== JSON.stringify(NO_FILTERS);
+    return (
+      <MentorFilterBar
+        tab="applications"
+        filters={filters}
+        onChange={setFilters}
+        shown={1}
+        total={4}
+        active={active}
+        onClear={() => setFilters(NO_FILTERS)}
+      />
+    );
+  }
+
+  it('Clear filters keeps keyboard focus in the bar, on its first field', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(screen.queryByRole('button', { name: 'Clear filters' })).toBeNull();
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole('group').querySelector('[aria-labelledby]'),
+      ),
+    );
+    expect(document.activeElement).not.toBe(document.body);
   });
 });

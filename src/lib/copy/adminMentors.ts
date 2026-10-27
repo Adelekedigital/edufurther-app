@@ -14,8 +14,13 @@ export const MENTOR_SEARCH = { label: 'Search mentors', placeholder: 'Search by 
 export const MENTOR_CARDS = {
   waiting: {
     label: 'Applications waiting',
-    note: (longest: number | null) =>
-      longest == null ? 'Nothing waiting' : `Longest wait ${plural(longest, 'day')}`,
+    /** Null: applications wait but the API has no longest wait; the card shows no note. */
+    note: (waiting: number, longest: number | null) =>
+      waiting === 0
+        ? 'Nothing waiting'
+        : longest == null
+          ? null
+          : `Longest wait ${plural(longest, 'day')}`,
   },
   approved: {
     label: 'Approved mentors',

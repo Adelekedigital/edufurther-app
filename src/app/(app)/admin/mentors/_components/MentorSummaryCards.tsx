@@ -25,7 +25,7 @@ export function MentorSummaryCards({
       tab: 'applications' as const,
       label: MENTOR_CARDS.waiting.label,
       value: waiting,
-      note: MENTOR_CARDS.waiting.note(longest),
+      note: MENTOR_CARDS.waiting.note(waiting, longest),
       red: (longest ?? 0) >= 5,
     },
     {
@@ -54,7 +54,7 @@ export function MentorSummaryCards({
           label={c.label}
           value={String(c.value)}
           valueTone={c.red ? 'danger' : undefined}
-          trend={{ text: c.note, tone: 'neutral' }}
+          trend={c.note ? { text: c.note, tone: 'neutral' } : undefined}
           onClick={() => onOpen(c.tab)}
           ariaLabel={MENTOR_CARDS.aria(c.label, c.value, MENTOR_TAB_LABELS[c.tab])}
         />
