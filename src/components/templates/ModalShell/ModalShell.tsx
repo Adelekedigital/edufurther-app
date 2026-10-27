@@ -42,9 +42,11 @@ type ModalShellProps = {
   /**
    * Under 768px (Modal.dc.html `mobile`): `full`, the whole screen (default),
    * or `sheet`, a bottom sheet as tall as its content that keeps the centred
-   * modal's header, icon included. Centred modal only.
+   * modal's header, icon included; or `centred`, the same centred card as on
+   * desktop (a small dialog opened over another, e.g. "Pick another day").
+   * Centred modal only.
    */
-  mobile?: 'full' | 'sheet';
+  mobile?: 'full' | 'sheet' | 'centred';
   /**
    * Id of an element in the body that says what the dialog is about (a
    * confirm's warning), for its accessible description. Centred modal only;
@@ -145,8 +147,15 @@ export function ModalShell({
   }
 
   const phoneSheet = mobile === 'sheet';
+  const phoneCentred = mobile === 'centred';
   return createPortal(
-    <div className={cx(styles.root, phoneSheet && styles.phoneSheetRoot)}>
+    <div
+      className={cx(
+        styles.root,
+        phoneSheet && styles.phoneSheetRoot,
+        phoneCentred && styles.phoneCentredRoot,
+      )}
+    >
       <div className={styles.overlay} aria-hidden />
       <div
         ref={dialogRef}
@@ -162,6 +171,7 @@ export function ModalShell({
           styles[size],
           phoneSheet && styles.phoneSheet,
           icon && styles.iconRow,
+          phoneCentred && styles.phoneCentred,
         )}
       >
         {phoneSheet && <span className={cx(styles.grabber, styles.phoneGrabber)} aria-hidden />}

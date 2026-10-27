@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
-import { monthCells, monthStart, type MonthCell } from '@/lib/utils/calendar';
+import { monthCells, monthStart, monthsBetween, type MonthCell } from '@/lib/utils/calendar';
 import { addDays } from '@/lib/utils/slots';
 import { cx } from '@/lib/utils/cx';
 import styles from './MonthPicker.module.css';
@@ -21,6 +21,10 @@ type MonthPickerProps = {
   /** Only days in this range are tinted open (notice to booking window). */
   openFrom?: string;
   openUntil?: string;
+  /** Exact days (YYYY-MM-DD) tinted open: days that have open times. */
+  openDays?: readonly string[];
+  /** The month to open on (any day in it); never before today's month. */
+  initialMonth?: string;
   /** No picking: the month at a glance. Blocked days read grey, as `selectedKind="blocked"`. */
   readOnly?: boolean;
   /**
@@ -28,6 +32,11 @@ type MonthPickerProps = {
    * as on the month at a glance; `selected` (a pick) stays blue.
    */
   selectedKind?: 'selected' | 'blocked';
+  /**
+   * What a screen reader hears for a `selected` day. A pick is already
+   * announced as pressed, so a picker of one day passes null.
+   */
+  selectedLabel?: string | null;
   onPick?: (iso: string) => void;
   showLegend?: boolean;
   /** The month shown changed (YYYY-MM-01): the page can load what it needs for it. */
@@ -52,7 +61,7 @@ const monthLabel = (month: string) =>
     timeZone: 'UTC',
   });
 
-const dayLabel = (c: Extract<MonthCell, { kind: 'day' }>) =>
+const dayLabel = (c: Extract<MonthCell, { kind: 'day' }>, selectedLabel: string | null) =>
   [
     new Date(`${c.iso}T12:00:00Z`).toLocaleDateString('en-US', {
       weekday: 'long',
@@ -60,7 +69,7 @@ const dayLabel = (c: Extract<MonthCell, { kind: 'day' }>) =>
       day: 'numeric',
       timeZone: 'UTC',
     }),
-    c.selected && 'blocked',
+    c.selected && selectedLabel,
     c.booked && 'session booked',
     c.open && 'available',
   ]
@@ -89,19 +98,34 @@ export function MonthPicker({
   available,
   openFrom,
   openUntil,
+  openDays,
+  initialMonth,
   readOnly = false,
   selectedKind = 'selected',
+  selectedLabel = 'blocked',
   onPick,
   showLegend = false,
   onMonthChange,
 }: MonthPickerProps) {
-  const [offset, setOffset] = useState(0);
+  const [offset, setOffset] = useState(() =>
+    initialMonth ? Math.max(0, monthsBetween(today, initialMonth)) : 0,
+  );
   const [focusIso, setFocusIso] = useState<string | null>(null);
   const moved = useRef(false);
   const dayRefs = useRef(new Map<string, HTMLButtonElement>());
   const headingId = useId();
   const month = monthStart(today, offset);
-  const cells = monthCells({ month, today, min, selected, booked, available, openFrom, openUntil });
+  const cells = monthCells({
+    month,
+    today,
+    min,
+    selected,
+    booked,
+    available,
+    openFrom,
+    openUntil,
+    openDays,
+  });
   const days = cells.filter((c): c is Extract<MonthCell, { kind: 'day' }> => c.kind === 'day');
   const pickable = !readOnly && !!onPick;
   // Design `roBlocked`: blocked days are grey, the pick's blue is kept for a pick.
@@ -127,12 +151,7 @@ export function MonthPicker({
   }, [focusIso, month]);
 
   const go = (iso: string) => {
-    const target = monthStart(iso, 0);
-    const base = monthStart(today, 0);
-    const delta =
-      (Number(target.slice(0, 4)) - Number(base.slice(0, 4))) * 12 +
-      Number(target.slice(5, 7)) -
-      Number(base.slice(5, 7));
+    const delta = monthsBetween(today, iso);
     if (delta < 0) return;
     moved.current = true;
     setOffset(delta);
@@ -215,7 +234,7 @@ export function MonthPicker({
                     key={c.iso}
                     cell={c}
                     grey={grey}
-                    label={dayLabel(c)}
+                    label={dayLabel(c, selectedLabel)}
                     pickable={pickable}
                     tabStop={c.iso === stop}
                     disabled={c.iso < floor}

@@ -1,13 +1,9 @@
 'use client';
 
-import { useId, useState } from 'react';
-import { Chip } from '@/components/atoms/Chip/Chip';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Textarea } from '@/components/atoms/Input/Input';
-import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
-import { useSlots } from '@/lib/api/data/booking';
-import { dayLabel, formatTime } from '@/lib/utils/format';
 import type { Booking } from '@/types/booking';
+import { SlotPicker } from './SlotPicker';
 import styles from './SuggestTimeStep.module.css';
 
 /**
@@ -23,12 +19,7 @@ import styles from './SuggestTimeStep.module.css';
  *
  * If a `hold_hours` ever appears on the contract, read it and delete this.
  */
-const HOLD_HOURS = 2;
-
-/** The design's own count: the two earliest, then a way to more. */
-const CHIPS = 2;
-/** How many more each press reveals. A month of hourly slots is hundreds. */
-const MORE = 8;
+export const HOLD_HOURS = 2;
 
 /**
  * `SuggestTime.dc.html`'s cap on the message. The contract's `reason_text`
@@ -37,22 +28,6 @@ const MORE = 8;
  * most of the room free to rewrite.
  */
 const MESSAGE_MAX = 500;
-
-/**
- * A slot as the chips print it — `SuggestTime.dc.html`: "Mon, Sep 28 · 10:00
- * am". Weekday, no year, and the start only. The year is noise inside a booking
- * window weeks long, and the end time is the duration they already agreed —
- * printing the range made the chip twice as wide for nothing, which is what
- * forced the "show more" problem into the picker in the first place.
- *
- * Exported because the drafted message names the same instant, and the two have
- * to be the same string: a message edited by hand keeps the edit through a
- * change of slot by swapping the old label for the new one inside it, which
- * only works while the chip and the sentence agree character for character.
- */
-export function slotLabel(iso: string, timeZone: string): string {
-  return `${dayLabel(iso, timeZone)} · ${formatTime(iso, timeZone)}`;
-}
 
 /**
  * The message that goes with the offer, drafted as `SuggestTime.dc.html` drafts
@@ -121,6 +96,8 @@ type SuggestTimeStepProps = {
    */
   message: string;
   onMessage: (value: string) => void;
+  /** Injected in tests and stories; the clock otherwise. */
+  now?: Date;
 };
 
 /**
@@ -130,10 +107,8 @@ type SuggestTimeStepProps = {
  * which is what makes a 422 unreachable: the contract requires the suggested
  * instant to be one `/slots` currently lists, exactly.
  *
- * The design's "Pick another day" month picker is not built here — see the
- * divergence note. The chips cover the common case, and a month picker that
- * cannot be driven by the slots we already hold would be a second source of
- * truth for availability.
+ * The picker (chips, then "Pick another day") is `SlotPicker`, shared with the
+ * mentee's move; this step adds the hold line and the message.
  */
 export function SuggestTimeStep({
   booking: b,
@@ -144,98 +119,26 @@ export function SuggestTimeStep({
   onChange,
   message,
   onMessage,
+  now,
 }: SuggestTimeStepProps) {
-  const [limit, setLimit] = useState(CHIPS);
-  // Not a literal: a second instance would be a duplicate-id violation.
-  const labelId = useId();
-  const slots = useSlots(mentorId, b.sessionTypeId, accountZone);
-
-  // A slot we cannot read is not a slot we can offer: an unparseable instant
-  // threw out of the formatter and took the whole Bookings screen with it.
-  const all = (slots.data ?? []).filter((iso) => !Number.isNaN(new Date(iso).getTime()));
-  const shown = all.slice(0, limit);
-  const label = (iso: string) => slotLabel(iso, timeZone);
-
-  if (slots.isLoading) {
-    return (
-      <div className={styles.step}>
-        <span className={styles.label}>Suggested time</span>
-        <Skeleton height="32px" width="70%" />
-      </div>
-    );
-  }
-
-  // Three different things, and only one of them is "you have no open times".
-  // `data === null` means we never got an answer — a booking with no offering
-  // recorded, or a read that could not be made — and saying "you have none"
-  // there tells a mentor something untrue about their own calendar.
-  const unknown = !slots.data;
-  if (slots.error || unknown || all.length === 0) {
-    return (
-      <div className={styles.step}>
-        <span className={styles.label}>Suggested time</span>
-        <p className={styles.empty}>
-          {/* Only the last of these can conclude anything. If we cannot read the
-              times we cannot know whether there are any, and telling a mentor
-              with a full calendar that there is "nothing to offer" is a claim
-              about their own availability we have no basis for. */}
-          {slots.error
-            ? 'We couldn’t load your open times just now.'
-            : unknown
-              ? 'We can’t show your open times for this session right now.'
-              : 'You have no open times for this session, so there’s nothing to offer.'}
-        </p>
-        {(slots.error || unknown) && (
-          <button type="button" className={styles.more} onClick={slots.retry}>
-            Try again
-          </button>
-        )}
-      </div>
-    );
-  }
-
   return (
     <div className={styles.step}>
-      {/* No "Optional" tag: while the offer is switched on the confirm waits
-          for a time, so marking it optional and then insisting on it is the
-          contradiction failure mode #62 names — on the time this round rather
-          than on the reason. Opting out is the switch above, not this label. */}
-      <span className={styles.label} id={labelId}>
-        Suggested time
-      </span>
-      <div className={styles.chips} role="radiogroup" aria-labelledby={labelId}>
-        {shown.map((iso) => (
-          <Chip
-            key={iso}
-            role="radio"
-            pressed={value === iso}
-            // Picking the chosen one again clears it: offering a time is
-            // optional, and there must be a way back to offering none.
-            onClick={() => onChange(value === iso ? null : iso)}
-          >
-            {label(iso)}
-          </Chip>
-        ))}
-        {/* Eight at a time, not everything: a month of open hours is hundreds
-            of chips, and one press used to push the dialog's own buttons about
-            900px below the fold on a phone. The label says what it does — it
-            reveals more times, it does not pick a day. */}
-        {all.length > limit && (
-          <button
-            type="button"
-            className={styles.more}
-            onClick={() => setLimit((n) => n + MORE)}
-          >
-            Show more times
-          </button>
-        )}
-      </div>
+      <SlotPicker
+        mentorId={mentorId}
+        sessionTypeId={b.sessionTypeId}
+        accountZone={accountZone}
+        timeZone={timeZone}
+        value={value}
+        onChange={onChange}
+        otherFirst={b.other.firstName}
+        label="Suggested time"
+        now={now}
+      />
       {value && (
         <>
           <span className={styles.hold}>
-            <Icon name="lock_clock" size={14} />
-            Held for {b.other.firstName} for {HOLD_HOURS} hours, then it opens to others
-            again.
+            <Icon name="lock_clock" size={14} className={styles.holdIcon} />
+            Held for {b.other.firstName} for {HOLD_HOURS} hours, then it opens to others again.
           </span>
           {/* Last in the step, where the design puts it — and behind the same
               condition as the hold line above it. A message whose whole point

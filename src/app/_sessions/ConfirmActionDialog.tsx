@@ -7,7 +7,8 @@ import { Switch } from '@/components/atoms/Switch/Switch';
 import { ReasonField } from '@/components/molecules/ReasonField/ReasonField';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { reasonError } from '@/lib/utils/reasons';
-import { SuggestTimeStep, offerSentence, slotLabel, suggestDraft } from './SuggestTimeStep';
+import { slotLabel } from './SlotPicker';
+import { HOLD_HOURS, SuggestTimeStep, offerSentence, suggestDraft } from './SuggestTimeStep';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type { ActionInput, BookingAction } from '@/lib/api/data/bookingActions';
@@ -419,15 +420,15 @@ export function ConfirmActionDialog({
               <span id={`${fieldId}-sg`} className={styles.slotLabel}>
                 Suggest a new time to {first}
               </span>
-              {/* Only a decline can promise this, and only since backend #435
-                  (2026-10-13). A declined request was never approved, so the
-                  offered time skips the wait the mentee would otherwise sit
-                  through a second time. A cancel had its approval already —
-                  there is nothing to skip, so it promises nothing. */}
+              {/* The design's two sentences (CancelModal.dc.html, PRD fix 5).
+                  Only a decline promises no approval wait (backend #435): a
+                  declined request was never approved, so the offered time skips
+                  the wait. A cancel had its approval already, so it names the
+                  hold and the credit instead. */}
               <p id={`${fieldId}-sg-hint`} className={styles.slotHint}>
                 {action === 'decline'
-                  ? 'They book it in one tap, with no wait for your approval'
-                  : 'They get one tap to book it'}
+                  ? `${first} books it in one tap, with no wait for your approval.`
+                  : `${first} gets one tap to book it, held for ${HOLD_HOURS} hours. Their credit comes back if they don’t.`}
               </p>
               {offerBad && (
                 <p id={`${fieldId}-sg-err`} role="alert" className={styles.confirmError}>
@@ -478,6 +479,7 @@ export function ConfirmActionDialog({
             }}
             message={messageText}
             onMessage={setMessage}
+            now={now}
           />
         )}
 

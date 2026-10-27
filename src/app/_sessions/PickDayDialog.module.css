@@ -1,0 +1,49 @@
+/* SuggestTime.dc.html `dayPicker`: the month, then the picked day's times. */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.times {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* SuggestTime.dc.html: 12px regular, ink-600 (not the step's semibold label). */
+.timesLabel {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-regular);
+  color: var(--ink-600);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.none {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+
+/* SuggestTime.dc.html: two equal buttons, 16px apart. */
+.footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+.footer > * {
+  width: 100%;
+}
+/* The design keeps the large button's 24px sides on phones too (the atom drops
+   them to 16px there). Full width, so only a long label would notice. */
+@media (max-width: 767px) {
+  .footer > * {
+    padding-inline: var(--space-6);
+  }
+}

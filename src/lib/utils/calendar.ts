@@ -132,6 +132,15 @@ export function monthStart(today: string, offset: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** Whole months from `from`'s month to `to`'s (either any day in the month); negative if earlier. */
+export function monthsBetween(from: string, to: string): number {
+  return (
+    (Number(to.slice(0, 4)) - Number(from.slice(0, 4))) * 12 +
+    Number(to.slice(5, 7)) -
+    Number(from.slice(5, 7))
+  );
+}
+
 /**
  * MonthPicker.dc.html's cells for one month: blanks before the 1st (Sunday
  * first), then each day. A selected run joins within a week only, as drawn.
@@ -147,10 +156,13 @@ export function monthCells(p: {
   /** Only days in this range can be open (minimum notice to the booking window). */
   openFrom?: string;
   openUntil?: string;
+  /** Exact days (YYYY-MM-DD) with open times, as read from the slots themselves. */
+  openDays?: readonly string[];
 }): MonthCell[] {
   const sel = new Set(p.selected);
   const booked = new Set(p.booked);
   const avail = p.available ? new Set(p.available) : null;
+  const openDays = new Set(p.openDays);
   const min = p.min ?? p.today;
   const first = new Date(`${p.month}T12:00:00Z`);
   const lead = first.getUTCDay();
@@ -175,12 +187,13 @@ export function monthCells(p: {
       joinNext: selected && n < length && weekday < 6 && sel.has(addDays(iso, 1)),
       booked: booked.has(iso),
       open:
-        !!avail &&
         !past &&
         !selected &&
-        avail.has(weekday) &&
-        (!p.openFrom || iso >= p.openFrom) &&
-        (!p.openUntil || iso <= p.openUntil),
+        (openDays.has(iso) ||
+          (!!avail &&
+            avail.has(weekday) &&
+            (!p.openFrom || iso >= p.openFrom) &&
+            (!p.openUntil || iso <= p.openUntil))),
     });
   }
   return cells;
